@@ -25,7 +25,7 @@ type Custom[T ResponseData] struct {
 	title    string
 	elements []Element
 	data     T
-	onClose  Closer
+	onClose  Handler
 	onSubmit func(Submitter, T)
 }
 
@@ -40,26 +40,32 @@ func (f Custom[T]) MarshalJSON() ([]byte, error) {
 
 // NewCustom creates a new (custom) form with the title passed and returns it. The title is formatted according to
 // the rules of fmt.Sprintln.
-// The submittable passed is used to create the structure of the form. The values of the Submittable's form
-// fields are used to set text, defaults and placeholders. If the Submittable passed is not a struct, NewCustom
-// panics. NewCustom also panics if one of the exported field types of the Submittable is not one that implements
-// the Element interface.
+// The data passed is used to create the structure of the form. The fields of the data struct
+// are used to filled by parsed response data. If the data passed is not a struct, NewCustom
+// panics.
 func NewCustom[T ResponseData](data T, title ...any) Custom[T] {
+	v := reflect.ValueOf(data)
+	if v.Kind() != reflect.Struct {
+		panic(fmt.Sprintf("invalid kind of data: %v", v.Kind().String()))
+	}
 	f := Custom[T]{title: format(title), data: data}
 	f.verify()
 	return f
 }
 
+// WithElements creates a copy of the Custom form and append the elements passed.
 func (f Custom[T]) WithElements(elem ...Element) Custom[T] {
 	f.elements = append(f.elements, elem...)
 	return f
 }
 
-func (f Custom[T]) OnClose(c Closer) Custom[T] {
+// OnClose creates a copy of the Menu form and set the form close callback to the passed one.
+func (f Custom[T]) OnClose(c Handler) Custom[T] {
 	f.onClose = c
 	return f
 }
 
+// OnSubmit creates a copy of the Menu form and set the form submit callback to the passed one.
 func (f Custom[T]) OnSubmit(c func(Submitter, T)) Custom[T] {
 	f.onSubmit = c
 	return f
@@ -77,13 +83,11 @@ func (f Custom[T]) Elements() []Element {
 
 // SubmitJSON submits a JSON data slice to the form. The form will check all values in the JSON array passed,
 // making sure their values are valid for the form's elements.
-// If the values are valid and can be parsed properly, the Submittable.Submit() method of the form's Submittable is
-// called and the fields of the Submittable will be filled out.
+// If the values are valid and can be parsed properly, the fields of the Submittable will be filled out, and
+// the onSubmit callback will be called.
 func (f Custom[T]) SubmitJSON(b []byte, submitter Submitter) error {
 	if b == nil {
-		if f.onClose != nil {
-			f.onClose(submitter)
-		}
+		f.onClose.Call(submitter)
 		return nil
 	}
 
@@ -123,8 +127,8 @@ func (f Custom[T]) SubmitJSON(b []byte, submitter Submitter) error {
 	return nil
 }
 
-// parseValue parses a value into the Element passed and returns it as a reflection Value. If the value is not
-// valid for the element, an error is returned.
+// parseValue parses a value into the Element passed and returns it as a parsed Value. If the value is not
+// valid for the element, no value, an error is returned.
 func (f Custom[T]) parseValue(elem Element, s any) (interface{}, bool, error) {
 	var ok bool
 	var value interface{}
@@ -183,7 +187,7 @@ func (f Custom[T]) parseValue(elem Element, s any) (interface{}, bool, error) {
 // verify verifies if the form is valid, checking if the fields all implement the Element interface. It panics
 // if the form is not valid.
 func (f Custom[T]) verify() {
-
+	//TODO
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the

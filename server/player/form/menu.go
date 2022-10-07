@@ -9,13 +9,13 @@ import (
 // come below the body. These buttons may also have images on the side of them.
 type buttonData struct {
 	btn     Button
-	onClick Closer
+	onClick Handler
 }
 
 type Menu struct {
 	title, body string
 	btnData     []buttonData
-	onClose     Closer
+	onClose     Handler
 }
 
 // NewMenu creates a new Menu form using the MenuSubmittable passed to handle the output of the form. The
@@ -43,14 +43,15 @@ func (m Menu) WithBody(body ...any) Menu {
 	return m
 }
 
-// WithButtons creates a copy of the Menu form and appends the buttons passed to the existing buttons, after
+// WithButton creates a copy of the Menu form and appends the button passed to the existing buttons, after
 // which the new Menu form is returned.
-func (m Menu) Button(btn Button, onClick func(Submitter)) Menu {
+func (m Menu) WithButton(btn Button, onClick Handler) Menu {
 	m.btnData = append(m.btnData, buttonData{btn, onClick})
 	return m
 }
 
-func (m Menu) OnClose(onClose Closer) Menu {
+// OnClose creates a copy of the Menu form and set the form close callback to the passed one.
+func (m Menu) OnClose(onClose Handler) Menu {
 	m.onClose = onClose
 	return m
 }
@@ -65,8 +66,7 @@ func (m Menu) Body() string {
 	return m.body
 }
 
-// Buttons returns a list of all buttons of the MenuSubmittable. It parses them from the fields using
-// reflection and returns them.
+// Buttons returns a list of all buttons of the Menu. It is appended by calling WithButton.
 func (m Menu) Buttons() []Button {
 	buttons := make([]Button, len(m.btnData))
 	for i, data := range m.btnData {
@@ -78,9 +78,7 @@ func (m Menu) Buttons() []Button {
 // SubmitJSON submits a JSON value to the menu, containing the index of the button clicked.
 func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 	if b == nil {
-		if m.onClose != nil {
-			m.onClose(submitter)
-		}
+		m.onClose.Call(submitter)
 		return nil
 	}
 
@@ -93,17 +91,14 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 	if index >= uint(len(btnData)) {
 		return fmt.Errorf("button index points to inexistent button: %v (only %v buttons present)", index, len(btnData))
 	}
-	call := btnData[index].onClick
-	if call != nil {
-		call(submitter)
-	}
+	btnData[index].onClick.Call(submitter)
 	return nil
 }
 
 // verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
 // not valid.
 func (m Menu) verify() {
-
+	//TODO
 }
 
 func (m Menu) __() {}

@@ -11,7 +11,7 @@ import (
 type Modal struct {
 	title, body string
 	btn1, btn2  buttonData
-	onClose     Closer
+	onClose     Handler
 }
 
 // NewModal creates a new Modal form using the ModalSubmittable passed to handle the output of the form. The
@@ -56,12 +56,14 @@ func (m Modal) WithBody(body ...any) Modal {
 	return m
 }
 
-func (m Modal) WithButton1(btn Button, onClick Closer) Modal {
+// WithButton1 creates a copy of the Modal form and change the button 1 to the button passed.
+func (m Modal) WithButton1(btn Button, onClick Handler) Modal {
 	m.btn1 = buttonData{btn, onClick}
 	return m
 }
 
-func (m Modal) WithButton2(btn Button, onClick Closer) Modal {
+// WithButton2 creates a copy of the Modal form and change the button 2 to the button passed.
+func (m Modal) WithButton2(btn Button, onClick Handler) Modal {
 	m.btn2 = buttonData{btn, onClick}
 	return m
 }
@@ -80,9 +82,7 @@ func (m Modal) Body() string {
 // which is used to determine which button was clicked.
 func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 	if b == nil {
-		if m.onClose != nil {
-			m.onClose(submitter)
-		}
+		m.onClose.Call(submitter)
 		return nil
 	}
 
@@ -91,14 +91,10 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 		return fmt.Errorf("error parsing JSON as bool: %w", err)
 	}
 	if value {
-		if m.btn1.onClick != nil {
-			m.btn1.onClick(submitter)
-		}
+		m.btn1.onClick.Call(submitter)
 		return nil
 	}
-	if m.btn2.onClick != nil {
-		m.btn2.onClick(submitter)
-	}
+	m.btn2.onClick.Call(submitter)
 	return nil
 }
 
@@ -110,7 +106,7 @@ func (m Modal) Buttons() []Button {
 // verify verifies that the Modal form is valid. It checks if exactly two exported fields are present and
 // ensures that both have the Button type.
 func (m Modal) verify() {
-
+	//TODO
 }
 
 func (Modal) __() {}

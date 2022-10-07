@@ -6,5 +6,11 @@ type Submitter interface {
 	SendForm(form Form)
 }
 
-// Closer represents a form which has special logic when being closed by a Submitter.
-type Closer = func(Submitter)
+// Handler is closure used in form closing, button click
+type Handler func(Submitter)
+
+func (c Handler) Call(s Submitter) {
+	if c != nil {
+		c(s)
+	}
+}
