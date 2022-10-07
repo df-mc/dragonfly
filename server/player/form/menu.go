@@ -18,7 +18,7 @@ type Menu struct {
 	onClose     Handler
 }
 
-// NewMenu creates a new Menu form using the MenuSubmittable passed to handle the output of the form. The
+// NewMenu creates a new Menu form. The
 // title passed is formatted following the rules of fmt.Sprintln.
 func NewMenu(title ...any) Menu {
 	m := Menu{title: format(title)}

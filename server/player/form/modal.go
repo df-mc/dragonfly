@@ -14,10 +14,9 @@ type Modal struct {
 	onClose     Handler
 }
 
-// NewModal creates a new Modal form using the ModalSubmittable passed to handle the output of the form. The
+// NewModal creates a new Modal form. The
 // title passed is formatted following the fmt.Sprintln rules.
-// Default 'yes' and 'no' buttons may be passed by setting the two exported struct fields of the submittable
-// to YesButton() and NoButton() respectively.
+// Default buttons are 'yes' and 'no'
 func NewModal(title ...any) Modal {
 	m := Modal{
 		title: format(title),

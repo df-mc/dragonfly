@@ -76,14 +76,14 @@ func (f Custom[T]) Title() string {
 	return f.title
 }
 
-// Elements returns a list of all elements as set in the Submittable passed to form.NewCustom().
+// Elements returns a list of all elements passed in WithElements.
 func (f Custom[T]) Elements() []Element {
 	return f.elements
 }
 
 // SubmitJSON submits a JSON data slice to the form. The form will check all values in the JSON array passed,
 // making sure their values are valid for the form's elements.
-// If the values are valid and can be parsed properly, the fields of the Submittable will be filled out, and
+// If the values are valid and can be parsed properly, the fields of the data will be filled out, and
 // the onSubmit callback will be called.
 func (f Custom[T]) SubmitJSON(b []byte, submitter Submitter) error {
 	if b == nil {
