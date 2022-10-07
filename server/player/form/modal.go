@@ -56,6 +56,16 @@ func (m Modal) WithBody(body ...any) Modal {
 	return m
 }
 
+func (m Modal) WithButton1(btn Button, onClick Closer) Modal {
+	m.btn1 = buttonData{btn, onClick}
+	return m
+}
+
+func (m Modal) WithButton2(btn Button, onClick Closer) Modal {
+	m.btn2 = buttonData{btn, onClick}
+	return m
+}
+
 // Title returns the formatted title passed to the menu upon construction using NewModal().
 func (m Modal) Title() string {
 	return m.title

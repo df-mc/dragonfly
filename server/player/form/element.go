@@ -6,7 +6,7 @@ import (
 )
 
 // Element represents an element that may be added to a Form. Any of the types in this package that implement
-// the element interface may be used as struct fields when passing the form structure to form.New().
+// the element interface may be used as struct fields when passing the form structure to form.NewCustom().
 type Element interface {
 	json.Marshaler
 	elem()
@@ -43,8 +43,6 @@ type Input struct {
 	// Placeholder is the text displayed in the input box if it does not contain any text filled out by the
 	// user. The text may contain Minecraft formatting codes.
 	Placeholder string
-
-	value string
 }
 
 // NewInput creates and returns a new Input with the values passed.
@@ -62,11 +60,6 @@ func (i Input) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// Value returns the value filled out by the user.
-func (i Input) Value() string {
-	return i.value
-}
-
 // Toggle represents an on-off button element. Submitters may either toggle this on or off, which will then
 // hold a value of true or false respectively.
 type Toggle struct {
@@ -75,8 +68,6 @@ type Toggle struct {
 	// Default is the default value filled out in the input. The user may remove this value and fill out its
 	// own text. The text may contain Minecraft formatting codes.
 	Default bool
-
-	value bool
 }
 
 // NewToggle creates and returns a new Toggle with the values passed.
@@ -93,11 +84,6 @@ func (t Toggle) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// Value returns the value filled out by the user.
-func (t Toggle) Value() bool {
-	return t.value
-}
-
 // Slider represents a slider element. Submitters may move the slider to values within the range of the slider
 // to select a value.
 type Slider struct {
@@ -111,8 +97,6 @@ type Slider struct {
 	StepSize float64
 	// Default is the default value filled out for the slider.
 	Default float64
-
-	value float64
 }
 
 // NewSlider creates and returns a new Slider using the values passed.
@@ -132,11 +116,6 @@ func (s Slider) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// Value returns the value filled out by the user.
-func (s Slider) Value() float64 {
-	return s.value
-}
-
 // Dropdown represents a dropdown which, when clicked, opens a window with the options set in the Options
 // field. Submitters may select one of the options.
 type Dropdown struct {
@@ -148,8 +127,6 @@ type Dropdown struct {
 	// DefaultIndex is the index in the Options slice that is used as default. When sent to a Submitter, the
 	// value at this index in the Options slice will be selected.
 	DefaultIndex int
-
-	value int
 }
 
 // NewDropdown creates and returns new Dropdown using the values passed.
@@ -165,12 +142,6 @@ func (d Dropdown) MarshalJSON() ([]byte, error) {
 		"default": d.DefaultIndex,
 		"options": d.Options,
 	})
-}
-
-// Value returns the value that the Submitter submitted. The value is an index pointing to the selected option
-// in the Options slice.
-func (d Dropdown) Value() int {
-	return d.value
 }
 
 // StepSlider represents a slider that has a number of options that may be selected. It is essentially a
@@ -190,12 +161,6 @@ func (s StepSlider) MarshalJSON() ([]byte, error) {
 		"default": s.DefaultIndex,
 		"steps":   s.Options,
 	})
-}
-
-// Value returns the value that the Submitter submitted. The value is an index pointing to the selected option
-// in the Options slice.
-func (s StepSlider) Value() int {
-	return s.value
 }
 
 // Button represents a button added to a Menu or Modal form. The button has text on it and an optional image,
