@@ -3,25 +3,25 @@ package form
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 )
 
 // Menu represents a menu form. These menus are made up of a title and a body, with a number of buttons which
 // come below the body. These buttons may also have images on the side of them.
+type buttonData struct {
+	btn     Button
+	onClick Closer
+}
+
 type Menu struct {
 	title, body string
-	submittable MenuSubmittable
-	buttons     []Button
+	btnData     []buttonData
+	onClose     Closer
 }
 
 // NewMenu creates a new Menu form using the MenuSubmittable passed to handle the output of the form. The
 // title passed is formatted following the rules of fmt.Sprintln.
-func NewMenu(submittable MenuSubmittable, title ...any) Menu {
-	t := reflect.TypeOf(submittable)
-	if t.Kind() != reflect.Struct {
-		panic("submittable must be struct")
-	}
-	m := Menu{title: format(title), submittable: submittable}
+func NewMenu(title ...any) Menu {
+	m := Menu{title: format(title)}
 	m.verify()
 	return m
 }
@@ -45,8 +45,13 @@ func (m Menu) WithBody(body ...any) Menu {
 
 // WithButtons creates a copy of the Menu form and appends the buttons passed to the existing buttons, after
 // which the new Menu form is returned.
-func (m Menu) WithButtons(buttons ...Button) Menu {
-	m.buttons = append(m.buttons, buttons...)
+func (m Menu) Button(btn Button, onClick func(Submitter)) Menu {
+	m.btnData = append(m.btnData, buttonData{btn, onClick})
+	return m
+}
+
+func (m Menu) OnClose(onClose Closer) Menu {
+	m.onClose = onClose
 	return m
 }
 
@@ -63,27 +68,18 @@ func (m Menu) Body() string {
 // Buttons returns a list of all buttons of the MenuSubmittable. It parses them from the fields using
 // reflection and returns them.
 func (m Menu) Buttons() []Button {
-	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
-	v.Set(reflect.ValueOf(m.submittable))
-
-	buttons := make([]Button, 0)
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		if !field.CanSet() {
-			continue
-		}
-		// Each exported field is guaranteed to be of type Button.
-		buttons = append(buttons, field.Interface().(Button))
+	buttons := make([]Button, len(m.btnData))
+	for i, data := range m.btnData {
+		buttons[i] = data.btn
 	}
-	buttons = append(buttons, m.buttons...)
 	return buttons
 }
 
 // SubmitJSON submits a JSON value to the menu, containing the index of the button clicked.
 func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 	if b == nil {
-		if closer, ok := m.submittable.(Closer); ok {
-			closer.Close(submitter)
+		if m.onClose != nil {
+			m.onClose(submitter)
 		}
 		return nil
 	}
@@ -93,27 +89,21 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 	if err != nil {
 		return fmt.Errorf("cannot parse button index as int: %w", err)
 	}
-	buttons := m.Buttons()
-	if index >= uint(len(buttons)) {
-		return fmt.Errorf("button index points to inexistent button: %v (only %v buttons present)", index, len(buttons))
+	btnData := m.btnData
+	if index >= uint(len(btnData)) {
+		return fmt.Errorf("button index points to inexistent button: %v (only %v buttons present)", index, len(btnData))
 	}
-	m.submittable.Submit(submitter, buttons[index])
+	call := btnData[index].onClick
+	if call != nil {
+		call(submitter)
+	}
 	return nil
 }
 
 // verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
 // not valid.
 func (m Menu) verify() {
-	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
-	v.Set(reflect.ValueOf(m.submittable))
-	for i := 0; i < v.NumField(); i++ {
-		if !v.Field(i).CanSet() {
-			continue
-		}
-		if _, ok := v.Field(i).Interface().(Button); !ok {
-			panic("all exported fields must be of the type form.Button")
-		}
-	}
+
 }
 
 func (m Menu) __() {}

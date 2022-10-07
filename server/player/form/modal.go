@@ -3,7 +3,6 @@ package form
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 )
 
 // Modal represents a modal form. These forms have a body with text and two buttons at the end, typically one
@@ -11,19 +10,20 @@ import (
 // images next to them.
 type Modal struct {
 	title, body string
-	submittable ModalSubmittable
+	btn1, btn2  buttonData
+	onClose     Closer
 }
 
 // NewModal creates a new Modal form using the ModalSubmittable passed to handle the output of the form. The
 // title passed is formatted following the fmt.Sprintln rules.
 // Default 'yes' and 'no' buttons may be passed by setting the two exported struct fields of the submittable
 // to YesButton() and NoButton() respectively.
-func NewModal(submittable ModalSubmittable, title ...any) Modal {
-	t := reflect.TypeOf(submittable)
-	if t.Kind() != reflect.Struct {
-		panic("submittable must be struct")
+func NewModal(title ...any) Modal {
+	m := Modal{
+		title: format(title),
+		btn1:  buttonData{YesButton(), nil},
+		btn2:  buttonData{NoButton(), nil},
 	}
-	m := Modal{title: format(title), submittable: submittable}
 	m.verify()
 	return m
 }
@@ -70,8 +70,8 @@ func (m Modal) Body() string {
 // which is used to determine which button was clicked.
 func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 	if b == nil {
-		if closer, ok := m.submittable.(Closer); ok {
-			closer.Close(submitter)
+		if m.onClose != nil {
+			m.onClose(submitter)
 		}
 		return nil
 	}
@@ -81,50 +81,26 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 		return fmt.Errorf("error parsing JSON as bool: %w", err)
 	}
 	if value {
-		m.submittable.Submit(submitter, m.Buttons()[0])
+		if m.btn1.onClick != nil {
+			m.btn1.onClick(submitter)
+		}
 		return nil
 	}
-	m.submittable.Submit(submitter, m.Buttons()[1])
+	if m.btn2.onClick != nil {
+		m.btn2.onClick(submitter)
+	}
 	return nil
 }
 
 // Buttons returns a list of all buttons of the Modal form, which will always be a total of two buttons.
 func (m Modal) Buttons() []Button {
-	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
-	v.Set(reflect.ValueOf(m.submittable))
-
-	buttons := make([]Button, 0, v.NumField())
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		if !field.CanSet() {
-			continue
-		}
-		// Each exported field is guaranteed to be of type Button.
-		buttons = append(buttons, field.Interface().(Button))
-	}
-	return buttons
+	return []Button{m.btn1.btn, m.btn2.btn}
 }
 
 // verify verifies that the Modal form is valid. It checks if exactly two exported fields are present and
 // ensures that both have the Button type.
 func (m Modal) verify() {
-	var count int
 
-	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
-	v.Set(reflect.ValueOf(m.submittable))
-
-	for i := 0; i < v.NumField(); i++ {
-		if !v.Field(i).CanSet() {
-			continue
-		}
-		if _, ok := v.Field(i).Interface().(Button); !ok {
-			panic("both exported fields must be of the type form.Button")
-		}
-		count++
-	}
-	if count != 2 {
-		panic("modal form must have exactly two exported fields of the type form.Button")
-	}
 }
 
 func (Modal) __() {}
