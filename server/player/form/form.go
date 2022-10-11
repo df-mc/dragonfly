@@ -221,8 +221,16 @@ func (f Custom) verify() {
 		if elemIndex >= len(elems) {
 			panic(fmt.Errorf("mismatched params given in OnSubmit"))
 		}
-		for !elems[elemIndex].haveData() {
-			elemIndex++
+		for {
+			if v, ok := elems[elemIndex].(interface{ haveData() bool }); ok {
+				if !v.haveData() {
+					elemIndex++
+				} else {
+					break
+				}
+			} else {
+				elemIndex++
+			}
 		}
 		valid := f.validateParam(in, elems[elemIndex])
 		if !valid {

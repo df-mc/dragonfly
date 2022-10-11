@@ -10,7 +10,6 @@ import (
 type Element interface {
 	json.Marshaler
 	elem()
-	haveData() bool
 }
 
 // Label represents a static label on a form. It serves only to display a box of text, and users cannot
@@ -34,7 +33,7 @@ func (l Label) MarshalJSON() ([]byte, error) {
 }
 
 // haveData ...
-func (l Label) haveData() bool {
+func (Label) haveData() bool {
 	return false
 }
 
@@ -67,7 +66,7 @@ func (i Input) MarshalJSON() ([]byte, error) {
 }
 
 // haveData ...
-func (i Input) haveData() bool {
+func (Input) haveData() bool {
 	return true
 }
 
@@ -96,7 +95,7 @@ func (t Toggle) MarshalJSON() ([]byte, error) {
 }
 
 // haveData ...
-func (t Toggle) haveData() bool {
+func (Toggle) haveData() bool {
 	return true
 }
 
@@ -133,7 +132,7 @@ func (s Slider) MarshalJSON() ([]byte, error) {
 }
 
 // haveData ...
-func (s Slider) haveData() bool {
+func (Slider) haveData() bool {
 	return true
 }
 
@@ -166,7 +165,7 @@ func (d Dropdown) MarshalJSON() ([]byte, error) {
 }
 
 // haveData ...
-func (d Dropdown) haveData() bool {
+func (Dropdown) haveData() bool {
 	return true
 }
 
@@ -190,7 +189,7 @@ func (s StepSlider) MarshalJSON() ([]byte, error) {
 }
 
 // haveData ...
-func (s StepSlider) haveData() bool {
+func (StepSlider) haveData() bool {
 	return true
 }
 
@@ -222,11 +221,6 @@ func (b Button) MarshalJSON() ([]byte, error) {
 		m["image"] = map[string]any{"type": buttonType, "data": b.Image}
 	}
 	return json.Marshal(m)
-}
-
-// haveData ...
-func (b Button) haveData() bool {
-	return false
 }
 
 func (Label) elem()      {}
