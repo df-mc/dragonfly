@@ -22,7 +22,6 @@ type Menu struct {
 // title passed is formatted following the rules of fmt.Sprintln.
 func NewMenu(title ...any) Menu {
 	m := Menu{title: format(title)}
-	m.verify()
 	return m
 }
 
@@ -93,12 +92,6 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 	}
 	btnData[index].onClick.Call(submitter)
 	return nil
-}
-
-// verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
-// not valid.
-func (m Menu) verify() {
-	//TODO
 }
 
 func (m Menu) __() {}

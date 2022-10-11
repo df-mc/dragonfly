@@ -23,7 +23,6 @@ func NewModal(title ...any) Modal {
 		btn1:  buttonData{YesButton(), nil},
 		btn2:  buttonData{NoButton(), nil},
 	}
-	m.verify()
 	return m
 }
 
@@ -100,12 +99,6 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 // Buttons returns a list of all buttons of the Modal form, which will always be a total of two buttons.
 func (m Modal) Buttons() []Button {
 	return []Button{m.btn1.btn, m.btn2.btn}
-}
-
-// verify verifies that the Modal form is valid. It checks if exactly two exported fields are present and
-// ensures that both have the Button type.
-func (m Modal) verify() {
-	//TODO
 }
 
 func (Modal) __() {}

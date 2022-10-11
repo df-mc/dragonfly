@@ -10,6 +10,7 @@ import (
 type Element interface {
 	json.Marshaler
 	elem()
+	haveData() bool
 }
 
 // Label represents a static label on a form. It serves only to display a box of text, and users cannot
@@ -30,6 +31,11 @@ func (l Label) MarshalJSON() ([]byte, error) {
 		"type": "label",
 		"text": l.Text,
 	})
+}
+
+// haveData ...
+func (l Label) haveData() bool {
+	return false
 }
 
 // Input represents a text input box element. Submitters may write any text in these boxes with no specific
@@ -60,6 +66,11 @@ func (i Input) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// haveData ...
+func (i Input) haveData() bool {
+	return true
+}
+
 // Toggle represents an on-off button element. Submitters may either toggle this on or off, which will then
 // hold a value of true or false respectively.
 type Toggle struct {
@@ -82,6 +93,11 @@ func (t Toggle) MarshalJSON() ([]byte, error) {
 		"text":    t.Text,
 		"default": t.Default,
 	})
+}
+
+// haveData ...
+func (t Toggle) haveData() bool {
+	return true
 }
 
 // Slider represents a slider element. Submitters may move the slider to values within the range of the slider
@@ -116,6 +132,11 @@ func (s Slider) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// haveData ...
+func (s Slider) haveData() bool {
+	return true
+}
+
 // Dropdown represents a dropdown which, when clicked, opens a window with the options set in the Options
 // field. Submitters may select one of the options.
 type Dropdown struct {
@@ -144,6 +165,11 @@ func (d Dropdown) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// haveData ...
+func (d Dropdown) haveData() bool {
+	return true
+}
+
 // StepSlider represents a slider that has a number of options that may be selected. It is essentially a
 // combination of a Dropdown and a Slider, looking like a slider but having properties like a dropdown.
 type StepSlider Dropdown
@@ -161,6 +187,11 @@ func (s StepSlider) MarshalJSON() ([]byte, error) {
 		"default": s.DefaultIndex,
 		"steps":   s.Options,
 	})
+}
+
+// haveData ...
+func (s StepSlider) haveData() bool {
+	return true
 }
 
 // Button represents a button added to a Menu or Modal form. The button has text on it and an optional image,
@@ -191,6 +222,11 @@ func (b Button) MarshalJSON() ([]byte, error) {
 		m["image"] = map[string]any{"type": buttonType, "data": b.Image}
 	}
 	return json.Marshal(m)
+}
+
+// haveData ...
+func (b Button) haveData() bool {
+	return false
 }
 
 func (Label) elem()      {}
