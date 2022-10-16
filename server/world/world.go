@@ -360,10 +360,11 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 								rid := BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
+								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
 								if nbtBlocks[rid] {
-									c.e[cube.Pos{xOffset, yOffset, zOffset}] = b
+									c.e[nbtPos] = b
 								} else {
-									delete(c.e, cube.Pos{xOffset, yOffset, zOffset})
+									delete(c.e, nbtPos)
 								}
 							}
 							if liq != nil {
