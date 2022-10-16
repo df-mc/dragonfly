@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"strings"
 )
 
 type (
@@ -30,6 +31,8 @@ var (
 	DiskEncoding diskEncoding
 	// NetworkEncoding is the Encoding used for sending a Chunk over network. It does not use NBT and writes varints.
 	NetworkEncoding networkEncoding
+	// NetworkPersistentEncoding is the Encoding used for sending a Chunk over network. It uses NBT, unlike NetworkEncoding.
+	NetworkPersistentEncoding networkPersistentEncoding
 	// BiomePaletteEncoding is the paletteEncoding used for encoding a palette of biomes.
 	BiomePaletteEncoding biomePaletteEncoding
 	// BlockPaletteEncoding is the paletteEncoding used for encoding a palette of block states encoded as NBT.
@@ -161,4 +164,54 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _
 		blocks[i] = uint32(temp)
 	}
 	return &Palette{values: blocks, size: blockSize}, nil
+}
+
+// networkPersistentEncoding implements the Chunk encoding for sending over network with persistent storage.
+type networkPersistentEncoding struct{}
+
+func (networkPersistentEncoding) network() byte { return 1 }
+func (networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEncoding) {
+	if p.size != 0 {
+		_ = protocol.WriteVarint32(buf, int32(p.Len()))
+	}
+
+	enc := nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian)
+	for _, val := range p.values {
+		name, props, _ := RuntimeIDToState(val)
+		_ = enc.Encode(blockEntry{Name: strings.Split(":", name)[1], State: props, Version: CurrentBlockVersion})
+	}
+}
+func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding) (*Palette, error) {
+	var paletteCount int32 = 1
+	if blockSize != 0 {
+		err := protocol.Varint32(buf, &paletteCount)
+		if err != nil {
+			panic(err)
+		}
+		if paletteCount <= 0 {
+			return nil, fmt.Errorf("invalid palette entry count %v", paletteCount)
+		}
+	}
+
+	blocks := make([]blockEntry, paletteCount)
+	dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
+	for i := int32(0); i < paletteCount; i++ {
+		if err := dec.Decode(&blocks[i]); err != nil {
+			return nil, fmt.Errorf("error decoding block state: %w", err)
+		}
+	}
+
+	var ok bool
+	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), uint32(0)
+	for i, b := range blocks {
+		temp, ok = StateToRuntimeID(b.Name, b.State)
+		if !ok {
+			temp, ok = StateToRuntimeID("minecraft:"+b.Name, b.State)
+			if !ok {
+				return nil, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", b.Name, b.State)
+			}
+		}
+		palette.values[i] = temp
+	}
+	return palette, nil
 }
