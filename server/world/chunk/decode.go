@@ -13,7 +13,7 @@ var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uin
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
+func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, r cube.Range) (*Chunk, error) {
 	var (
 		c   = New(air, r)
 		buf = bytes.NewBuffer(data)
@@ -26,24 +26,44 @@ func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, er
 			return nil, err
 		}
 	}
-	var last *PalettedStorage
-	for i := 0; i < len(c.sub); i++ {
-		b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
-		if err != nil {
-			return nil, err
+	if oldBiomes {
+		// Read the old biomes.
+		biomes := make([]byte, 256)
+		if _, err := buf.Read(biomes[:]); err != nil {
+			return nil, fmt.Errorf("error reading biomes: %w", err)
 		}
-		if b == nil {
+
+		// Make our 2D biomes 3D.
+		for x := 0; x < 16; x++ {
+			for z := 0; z < 16; z++ {
+				id := biomes[(x&15)|(z&15)<<4]
+				for y := r.Min(); y <= r.Max(); y++ {
+					c.SetBiome(uint8(x), int16(y), uint8(z), uint32(id))
+				}
+			}
+		}
+	} else {
+		var last *PalettedStorage
+		for i := 0; i < len(c.sub); i++ {
+			b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
+			if err != nil {
+				return nil, err
+			}
 			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
 			// inherit whatever palette we decoded last.
-			if i == 0 {
+			if i == 0 && b == nil {
 				// This should never happen and there is no way to handle this.
 				return nil, fmt.Errorf("first biome storage pointed to previous one")
 			}
-			b = last
-		} else {
-			last = b
+			if b == nil {
+				// This means this paletted storage had the flag pointing to the previous one. It basically means we should
+				// inherit whatever palette we decoded last.
+				b = last
+			} else {
+				last = b
+			}
+			c.biomes[i] = b
 		}
-		c.biomes[i] = b
 	}
 	return c, nil
 }

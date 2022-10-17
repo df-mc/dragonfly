@@ -204,6 +204,9 @@ func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize pale
 	var ok bool
 	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), uint32(0)
 	for i, b := range blocks {
+		if updated, ok := upgradeAliasEntry(b); ok {
+			b = updated
+		}
 		temp, ok = StateToRuntimeID(b.Name, b.State)
 		if !ok {
 			temp, ok = StateToRuntimeID("minecraft:"+b.Name, b.State)
