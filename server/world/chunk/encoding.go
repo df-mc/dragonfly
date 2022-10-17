@@ -204,15 +204,16 @@ func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize pale
 	var ok bool
 	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), uint32(0)
 	for i, b := range blocks {
+		if !strings.ContainsRune(b.Name, ':') {
+			// If we don't already have a prefix on this block, add the default Minecraft prefix.
+			b.Name = "minecraft:" + b.Name
+		}
 		if updated, ok := upgradeAliasEntry(b); ok {
 			b = updated
 		}
 		temp, ok = StateToRuntimeID(b.Name, b.State)
 		if !ok {
-			temp, ok = StateToRuntimeID("minecraft:"+b.Name, b.State)
-			if !ok {
-				return nil, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", b.Name, b.State)
-			}
+			return nil, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", b.Name, b.State)
 		}
 		palette.values[i] = temp
 	}
