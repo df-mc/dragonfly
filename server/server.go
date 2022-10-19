@@ -221,14 +221,10 @@ func (srv *Server) close() {
 	}
 
 	srv.conf.Log.Debugf("Closing worlds...")
-	if err := srv.nether.Close(); err != nil {
-		srv.conf.Log.Errorf("Error closing nether %v", err)
-	}
-	if err := srv.end.Close(); err != nil {
-		srv.conf.Log.Errorf("Error closing end: %v", err)
-	}
-	if err := srv.world.Close(); err != nil {
-		srv.conf.Log.Errorf("Error closing overworld: %v", err)
+	for _, w := range []*world.World{srv.end, srv.nether, srv.world} {
+		if err := w.Close(); err != nil {
+			srv.conf.Log.Errorf("Error closing %v: %v", w.Dimension(), err)
+		}
 	}
 
 	srv.conf.Log.Debugf("Closing listeners...")
@@ -244,38 +240,34 @@ func (srv *Server) close() {
 // the maximum player count of additional Listeners added is not enforced
 // automatically. The limit must be enforced by the Listener.
 func (srv *Server) listen(l Listener) {
-	srv.wg.Add(1)
-
 	wg := new(sync.WaitGroup)
-	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		for {
-			c, err := l.Accept()
-			if err != nil {
-				// Cancel the context so that any call to StartGameContext is
-				// cancelled rapidly.
-				cancel()
-				// First wait until all connections that are being handled are
-				// done inserting the player into the channel. Afterwards, when
-				// we're sure no more values will be inserted in the players
-				// channel, we can return so the player channel can be closed.
-				wg.Wait()
-				srv.wg.Done()
+	ctx, cancel := context.WithCancel(context.Background())
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			// Cancel the context so that any call to StartGameContext is
+			// cancelled rapidly.
+			cancel()
+			// First wait until all connections that are being handled are
+			// done inserting the player into the channel. Afterwards, when
+			// we're sure no more values will be inserted in the players
+			// channel, we can return so the player channel can be closed.
+			wg.Wait()
+			srv.wg.Done()
+			return
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if msg, ok := srv.conf.Allower.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
+				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
+				_ = c.Close()
 				return
 			}
-
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				if msg, ok := srv.conf.Allower.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
-					_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
-					_ = c.Close()
-					return
-				}
-				srv.finaliseConn(ctx, c, l)
-			}()
-		}
-	}()
+			srv.finaliseConn(ctx, c, l)
+		}()
+	}
 }
 
 // startListening starts making the EncodeBlock listener listen, accepting new
@@ -283,13 +275,14 @@ func (srv *Server) listen(l Listener) {
 func (srv *Server) startListening() {
 	srv.makeItemComponents()
 
+	srv.wg.Add(len(srv.conf.Listeners))
 	for _, lf := range srv.conf.Listeners {
 		l, err := lf(srv.conf)
 		if err != nil {
 			srv.conf.Log.Fatalf("create listener: %v", err)
 		}
 		srv.listeners = append(srv.listeners, l)
-		srv.listen(l)
+		go srv.listen(l)
 	}
 }
 
