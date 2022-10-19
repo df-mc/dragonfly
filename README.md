@@ -38,7 +38,8 @@ Dragonfly features a well-documented codebase with an easy-to-use API. Documenta
 [here](https://pkg.go.dev/github.com/df-mc/dragonfly/server) and in the subpackages found by clicking *Directories*.
 
 Publishing your project on GitHub? Consider adding the **[#df-mc](https://github.com/topic/df-mc)** topic to your
-repository to improve visibility of your project.
+repository and opening a pull request at [df-wiki](https://github.com/df-mc/df-wiki) adding your project as a Community
+Project to improve its visibility.
 
 ## Contributing
 Contributions are very welcome! Issues, pull requests and feature requests are highly appreciated. Opening a pull
