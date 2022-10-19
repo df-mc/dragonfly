@@ -2,6 +2,10 @@ package world
 
 import (
 	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
@@ -11,9 +15,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-	"math/rand"
-	"sync"
-	"time"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
@@ -359,10 +360,11 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 								rid := BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
+								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
 								if nbtBlocks[rid] {
-									c.e[pos] = b
+									c.e[nbtPos] = b
 								} else {
-									delete(c.e, pos)
+									delete(c.e, nbtPos)
 								}
 							}
 							if liq != nil {
