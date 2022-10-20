@@ -2,7 +2,6 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -32,7 +31,7 @@ type Living interface {
 	// Heal heals the entity for a given amount of health. The source passed represents the cause of the
 	// healing, for example healing.SourceFood if the entity healed by having a full food bar. If the health
 	// added to the original health exceeds the entity's max health, Heal may not add the full amount.
-	Heal(health float64, src healing.Source)
+	Heal(health float64, src world.HealingSource)
 	// KnockBack knocks the entity back with a given force and height. A source is passed which indicates the
 	// source of the velocity, typically the position of an attacking entity. The source is used to calculate
 	// the direction which the entity should be knocked back in.

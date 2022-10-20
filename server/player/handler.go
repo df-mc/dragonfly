@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -42,7 +41,7 @@ type Handler interface {
 	// HandleHeal handles the player being healed by a healing source. ctx.Cancel() may be called to cancel
 	// the healing.
 	// The health added may be changed by assigning to *health.
-	HandleHeal(ctx *event.Context, health *float64, src healing.Source)
+	HandleHeal(ctx *event.Context, health *float64, src world.HealingSource)
 	// HandleHurt handles the player being hurt by any damage source. ctx.Cancel() may be called to cancel the
 	// damage being dealt to the player.
 	// The damage dealt to the player may be changed by assigning to *damage.
@@ -166,7 +165,7 @@ func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *fl
 func (NopHandler) HandleExperienceGain(*event.Context, *int)                                  {}
 func (NopHandler) HandlePunchAir(*event.Context)                                              {}
 func (NopHandler) HandleHurt(*event.Context, *float64, *time.Duration, world.DamageSource)    {}
-func (NopHandler) HandleHeal(*event.Context, *float64, healing.Source)                        {}
+func (NopHandler) HandleHeal(*event.Context, *float64, world.HealingSource)                   {}
 func (NopHandler) HandleFoodLoss(*event.Context, int, int)                                    {}
 func (NopHandler) HandleDeath(world.DamageSource)                                             {}
 func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                                   {}

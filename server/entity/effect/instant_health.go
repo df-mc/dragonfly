@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -31,7 +30,7 @@ func (i InstantHealth) Apply(e world.Entity, lvl int, _ time.Duration) {
 	}
 	base := 2 << lvl
 	if l, ok := e.(living); ok {
-		l.Heal(float64(base)*i.Potency, healing.SourceInstantHealthEffect{})
+		l.Heal(float64(base)*i.Potency, InstantHealingSource{})
 	}
 }
 
@@ -39,3 +38,9 @@ func (i InstantHealth) Apply(e world.Entity, lvl int, _ time.Duration) {
 func (InstantHealth) RGBA() color.RGBA {
 	return color.RGBA{R: 0xf8, G: 0x24, B: 0x23, A: 0xff}
 }
+
+// InstantHealingSource is a healing source used when an entity regains
+// health from an effect.InstantHealth.
+type InstantHealingSource struct{}
+
+func (InstantHealingSource) HealingSource() {}

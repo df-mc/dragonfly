@@ -99,3 +99,9 @@ type DamageSource interface {
 	// an entity has the fire resistance effect.
 	Fire() bool
 }
+
+// HealingSource represents a source of healing for an entity. This source may
+// be passed to the Heal() method of a living entity.
+type HealingSource interface {
+	HealingSource()
+}

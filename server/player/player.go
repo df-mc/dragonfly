@@ -16,7 +16,6 @@ import (
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
@@ -471,10 +470,10 @@ func (p *Player) addHealth(health float64) {
 }
 
 // Heal heals the entity for a given amount of health. The source passed represents the cause of the
-// healing, for example healing.SourceFood if the entity healed by having a full food bar. If the health
+// healing, for example healing.FoodHealingSource if the entity healed by having a full food bar. If the health
 // added to the original health exceeds the entity's max health, Heal will not add the full amount.
 // If the health passed is negative, Heal will not do anything.
-func (p *Player) Heal(health float64, source healing.Source) {
+func (p *Player) Heal(health float64, source world.HealingSource) {
 	if p.Dead() || health < 0 || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
@@ -2401,7 +2400,7 @@ func (p *Player) regenerate() {
 	if p.Health() == p.MaxHealth() {
 		return
 	}
-	p.Heal(1, healing.SourceFood{})
+	p.Heal(1, entity.FoodHealingSource{})
 	p.Exhaust(6)
 }
 

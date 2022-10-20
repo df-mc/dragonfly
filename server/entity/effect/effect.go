@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -162,7 +161,7 @@ type living interface {
 	// Heal heals the entity for a given amount of health. The source passed represents the cause of the
 	// healing, for example healing.SourceFood if the entity healed by having a full food bar. If the health
 	// added to the original health exceeds the entity's max health, Heal may not add the full amount.
-	Heal(health float64, source healing.Source)
+	Heal(health float64, source world.HealingSource)
 	// Speed returns the current speed of the living entity. The default value is different for each entity.
 	Speed() float64
 	// SetSpeed sets the speed of an entity to a new value.
