@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
@@ -243,7 +242,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
 			if living, ok := res.Entity().(Living); ok {
-				living.Hurt(a.damage(pastVel), damage.SourceProjectile{Projectile: a, Owner: a.owner})
+				living.Hurt(a.damage(pastVel), ProjectileDamageSource{Projectile: a, Owner: a.owner})
 				living.KnockBack(m.pos, 0.45, 0.3608)
 				for _, eff := range a.tip.Effects() {
 					living.AddEffect(eff)

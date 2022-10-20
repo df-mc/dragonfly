@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -84,7 +83,7 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 	if result != nil {
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, damage.SourceProjectile{Projectile: e, Owner: owner}); vulnerable {
+				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: e, Owner: owner}); vulnerable {
 					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
@@ -99,7 +98,7 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 				w.AddParticle(m.pos, particle.EndermanTeleportParticle{})
 				w.PlaySound(m.pos, sound.Teleport{})
 
-				user.Hurt(5, damage.SourceFall{})
+				user.Hurt(5, FallDamageSource{})
 			}
 		}
 

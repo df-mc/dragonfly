@@ -1,7 +1,6 @@
 package enchantment
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -28,12 +27,6 @@ func (FeatherFalling) Cost(level int) (int, int) {
 // Rarity ...
 func (FeatherFalling) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
-}
-
-// Affects ...
-func (FeatherFalling) Affects(src damage.Source) bool {
-	_, fall := src.(damage.SourceFall)
-	return fall
 }
 
 // Modifier returns the base protection modifier for the enchantment.

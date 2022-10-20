@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -30,7 +29,7 @@ func (i InstantDamage) Apply(e world.Entity, lvl int, _ time.Duration) {
 	}
 	base := 3 << lvl
 	if l, ok := e.(living); ok {
-		l.Hurt(float64(base)*i.Potency, damage.SourceInstantDamageEffect{})
+		l.Hurt(float64(base)*i.Potency, InstantDamageSource{})
 	}
 }
 
@@ -38,3 +37,11 @@ func (i InstantDamage) Apply(e world.Entity, lvl int, _ time.Duration) {
 func (InstantDamage) RGBA() color.RGBA {
 	return color.RGBA{R: 0x43, G: 0x0a, B: 0x09, A: 0xff}
 }
+
+// InstantDamageSource is used for damage caused by an effect.InstantDamage
+// applied to an entity.
+type InstantDamageSource struct{}
+
+func (InstantDamageSource) ReducedByArmour() bool     { return false }
+func (InstantDamageSource) ReducedByResistance() bool { return true }
+func (InstantDamageSource) Fire() bool                { return false }

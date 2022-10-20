@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
@@ -159,7 +158,7 @@ type living interface {
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
 	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the player currently has, the entity is killed.
-	Hurt(damage float64, source damage.Source) (n float64, vulnerable bool)
+	Hurt(damage float64, source world.DamageSource) (n float64, vulnerable bool)
 	// Heal heals the entity for a given amount of health. The source passed represents the cause of the
 	// healing, for example healing.SourceFood if the entity healed by having a full food bar. If the health
 	// added to the original health exceeds the entity's max health, Heal may not add the full amount.

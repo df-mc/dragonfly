@@ -1,7 +1,6 @@
 package enchantment
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -28,11 +27,6 @@ func (FireProtection) Cost(level int) (int, int) {
 // Rarity ...
 func (FireProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
-}
-
-// Affects ...
-func (FireProtection) Affects(src damage.Source) bool {
-	return src.Fire()
 }
 
 // Modifier returns the base protection modifier for the enchantment.

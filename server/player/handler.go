@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
@@ -47,9 +46,9 @@ type Handler interface {
 	// HandleHurt handles the player being hurt by any damage source. ctx.Cancel() may be called to cancel the
 	// damage being dealt to the player.
 	// The damage dealt to the player may be changed by assigning to *damage.
-	HandleHurt(ctx *event.Context, damage *float64, attackImmunity *time.Duration, src damage.Source)
+	HandleHurt(ctx *event.Context, damage *float64, attackImmunity *time.Duration, src world.DamageSource)
 	// HandleDeath handles the player dying to a particular damage cause.
-	HandleDeath(src damage.Source)
+	HandleDeath(src world.DamageSource)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos. The world.World in which the Player is respawned may be modifying by assigning to
 	// *w. This world may be the world the Player died in, but it might also point to a different world (the overworld)
@@ -166,9 +165,9 @@ func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int)             
 func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64, *bool) {}
 func (NopHandler) HandleExperienceGain(*event.Context, *int)                                  {}
 func (NopHandler) HandlePunchAir(*event.Context)                                              {}
-func (NopHandler) HandleHurt(*event.Context, *float64, *time.Duration, damage.Source)         {}
+func (NopHandler) HandleHurt(*event.Context, *float64, *time.Duration, world.DamageSource)    {}
 func (NopHandler) HandleHeal(*event.Context, *float64, healing.Source)                        {}
 func (NopHandler) HandleFoodLoss(*event.Context, int, int)                                    {}
-func (NopHandler) HandleDeath(damage.Source)                                                  {}
+func (NopHandler) HandleDeath(world.DamageSource)                                             {}
 func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                                   {}
 func (NopHandler) HandleQuit()                                                                {}
