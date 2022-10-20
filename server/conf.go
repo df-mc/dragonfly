@@ -190,7 +190,7 @@ type UserConfig struct {
 		// SaveData controls whether a world's data will be saved and loaded.
 		// If true, the server will use the default LevelDB data provider and if
 		// false, an empty provider will be used. To use your own provider, turn
-		// this value to false as you will still be able to pass your own
+		// this value to false, as you will still be able to pass your own
 		// provider.
 		SaveData bool
 		// Folder is the folder that the data of the world resides in.
@@ -208,7 +208,7 @@ type UserConfig struct {
 		// SaveData controls whether a player's data will be saved and loaded.
 		// If true, the server will use the default LevelDB data provider and if
 		// false, an empty provider will be used. To use your own provider, turn
-		// this value to false as you will still be able to pass your own
+		// this value to false, as you will still be able to pass your own
 		// provider.
 		SaveData bool
 		// Folder controls where the player data will be stored by the default
