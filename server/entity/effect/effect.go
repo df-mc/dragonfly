@@ -156,7 +156,7 @@ type living interface {
 	// SetMaxHealth changes the maximum health of the entity to the value passed.
 	SetMaxHealth(v float64)
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
-	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
+	// damage, for example entity.AttackDamageSource if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the player currently has, the entity is killed.
 	Hurt(damage float64, source world.DamageSource) (n float64, vulnerable bool)
 	// Heal heals the entity for a given amount of health. The source passed represents the cause of the

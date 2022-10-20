@@ -24,7 +24,7 @@ type Living interface {
 	// immune for half a second after being attacked.
 	AttackImmune() bool
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
-	// damage, for example damage.AttackDamageSource if the entity is attacked by another entity.
+	// damage, for example AttackDamageSource if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the entity currently has, the entity is killed.
 	// Hurt returns the final amount of damage dealt to the Living entity and returns whether the Living entity
 	// was vulnerable to the damage at all.
