@@ -469,10 +469,11 @@ func (p *Player) addHealth(health float64) {
 	p.session().SendHealth(p.health)
 }
 
-// Heal heals the entity for a given amount of health. The source passed represents the cause of the
-// healing, for example healing.FoodHealingSource if the entity healed by having a full food bar. If the health
-// added to the original health exceeds the entity's max health, Heal will not add the full amount.
-// If the health passed is negative, Heal will not do anything.
+// Heal heals the entity for a given amount of health. The source passed
+// represents the cause of the healing, for example entity.FoodHealingSource if
+// the entity healed by having a full food bar. If the health added to the
+// original health exceeds the entity's max health, Heal will not add the full
+// amount. If the health passed is negative, Heal will not do anything.
 func (p *Player) Heal(health float64, source world.HealingSource) {
 	if p.Dead() || health < 0 || !p.GameMode().AllowsTakingDamage() {
 		return
@@ -523,12 +524,14 @@ func (p *Player) fall(distance float64) {
 	p.Hurt(math.Ceil(dmg), entity.FallDamageSource{})
 }
 
-// Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
-// for example damage.AttackDamageSource if the player is attacked by another entity.
-// If the final damage exceeds the health that the player currently has, the player is killed and will have to
+// Hurt hurts the player for a given amount of damage. The source passed
+// represents the cause of the damage, for example entity.AttackDamageSource if
+// the player is attacked by another entity. If the final damage exceeds the
+// health that the player currently has, the player is killed and will have to
 // respawn.
-// If the damage passed is negative, Hurt will not do anything.
-// Hurt returns the final damage dealt to the Player and if the Player was vulnerable to this kind of damage.
+// If the damage passed is negative, Hurt will not do anything. Hurt returns the
+// final damage dealt to the Player and if the Player was vulnerable to this
+// kind of damage.
 func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	if _, ok := p.Effect(effect.FireResistance{}); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return 0, false
