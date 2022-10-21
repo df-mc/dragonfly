@@ -582,7 +582,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	p.immunity.Store(time.Now().Add(immunity))
 	if p.Dead() {
-		p.kill(src)
+		p.Kill(src)
 	}
 	return totalDamage, true
 }
@@ -878,7 +878,7 @@ func (p *Player) DeathPosition() (mgl64.Vec3, world.Dimension, bool) {
 }
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
-func (p *Player) kill(src world.DamageSource) {
+func (p *Player) Kill(src world.DamageSource) {
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
