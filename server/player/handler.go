@@ -47,7 +47,7 @@ type Handler interface {
 	// The damage dealt to the player may be changed by assigning to *damage.
 	HandleHurt(ctx *event.Context, damage *float64, attackImmunity *time.Duration, src world.DamageSource)
 	// HandleDeath handles the player dying to a particular damage cause.
-	HandleDeath(src world.DamageSource)
+	HandleDeath(src world.DamageSource, keepInv *bool)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos. The world.World in which the Player is respawned may be modifying by assigning to
 	// *w. This world may be the world the Player died in, but it might also point to a different world (the overworld)
@@ -167,6 +167,6 @@ func (NopHandler) HandlePunchAir(*event.Context)                                
 func (NopHandler) HandleHurt(*event.Context, *float64, *time.Duration, world.DamageSource)    {}
 func (NopHandler) HandleHeal(*event.Context, *float64, world.HealingSource)                   {}
 func (NopHandler) HandleFoodLoss(*event.Context, int, int)                                    {}
-func (NopHandler) HandleDeath(world.DamageSource)                                             {}
+func (NopHandler) HandleDeath(world.DamageSource, *bool)                                      {}
 func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                                   {}
 func (NopHandler) HandleQuit()                                                                {}
