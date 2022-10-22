@@ -885,12 +885,15 @@ func (p *Player) kill(src world.DamageSource) {
 
 	p.addHealth(-p.MaxHealth())
 
-	p.Handler().HandleDeath(src)
+	keepInv := false
+	p.Handler().HandleDeath(src, &keepInv)
 	p.StopSneaking()
 	p.StopSprinting()
 
 	w, pos := p.World(), p.Position()
-	p.dropContents()
+	if !keepInv {
+		p.dropContents()
+	}
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
 	}
