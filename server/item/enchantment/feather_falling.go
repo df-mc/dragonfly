@@ -31,7 +31,7 @@ func (FeatherFalling) Rarity() item.EnchantmentRarity {
 
 // Modifier returns the base protection modifier for the enchantment.
 func (FeatherFalling) Modifier() float64 {
-	return 2.5
+	return 0.12
 }
 
 // CompatibleWithEnchantment ...

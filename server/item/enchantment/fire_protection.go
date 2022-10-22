@@ -31,7 +31,7 @@ func (FireProtection) Rarity() item.EnchantmentRarity {
 
 // Modifier returns the base protection modifier for the enchantment.
 func (FireProtection) Modifier() float64 {
-	return 1.25
+	return 0.08
 }
 
 // CompatibleWithEnchantment ...

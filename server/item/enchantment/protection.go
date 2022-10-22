@@ -31,7 +31,7 @@ func (Protection) Rarity() item.EnchantmentRarity {
 
 // Modifier returns the base protection modifier for the enchantment.
 func (Protection) Modifier() float64 {
-	return 0.75
+	return 0.04
 }
 
 // CompatibleWithEnchantment ...

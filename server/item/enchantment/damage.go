@@ -24,10 +24,10 @@ type DamageModifier interface {
 }
 
 // ProtectionFactor calculates the combined protection factor for a slice of
-// item.Enchantment. The factor depends on the world.DamageSource passed.
-// If the factor returned would otherwise exceed 25, it is capped at that
-// number.
-func ProtectionFactor(src world.DamageSource, enchantments []item.Enchantment) int {
+// item.Enchantment. The factor depends on the world.DamageSource passed and is
+// in a range of [0, 0.8], where 0.8 means incoming damage would be reduced by
+// 80%.
+func ProtectionFactor(src world.DamageSource, enchantments []item.Enchantment) float64 {
 	f := 0.0
 	for _, e := range enchantments {
 		t := e.Type()
@@ -45,9 +45,8 @@ func ProtectionFactor(src world.DamageSource, enchantments []item.Enchantment) i
 		}
 
 		if reduced {
-			lvl := e.Level()
-			f += math.Floor(float64(6+lvl*lvl) * modifier.Modifier() / 3)
+			f += float64(e.Level()) * modifier.Modifier()
 		}
 	}
-	return int(math.Min(f, 25))
+	return math.Min(f, 0.8)
 }

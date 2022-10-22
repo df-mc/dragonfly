@@ -649,36 +649,13 @@ func (p *Player) applyThorns(src world.DamageSource) {
 // enchantments on the individual pieces.
 // The damage returned will be at the least 0.
 func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
-	if src.ReducedByArmour() {
-		defencePoints := 0.0
-		toughness := 0.0
-		for _, it := range p.armour.Items() {
-			if a, ok := it.Item().(item.Armour); ok {
-				defencePoints += a.DefencePoints()
-				toughness += a.Toughness()
-			}
-		}
+	dmg = math.Max(dmg, 0)
 
-		// First calculate the enchantment protection factor. Then, multiply it by a random percent
-		// and round up. Cap that value at 20, and then subtract it from the damage but multiplied by 0.04.
-		f := p.enchantmentProtectionFactor(src)
-		m := math.Ceil(float64(f) * (float64(rand.Intn(100-50)+50) / 100.0))
-		if m > 20 {
-			m = 20
-		}
-		dmg -= dmg * m * 0.04
-
-		// Armour in Bedrock edition reduces the damage taken by 4% for each effective armour point. Effective
-		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defense
-		// reduction is decreased by the toughness armor value. Effective armour points will at minimum be 20% of
-		// armour points.
-		dmg -= dmg * 0.04 * math.Max(defencePoints*0.2, defencePoints-dmg/(2+toughness/4))
-	}
+	dmg -= p.Armour().DamageReduction(dmg, src)
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
-
-	return math.Max(dmg, 0)
+	return dmg
 }
 
 // Explode ...
@@ -686,16 +663,6 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 	diff := p.Position().Sub(explosionPos)
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), entity.ExplosionDamageSource{})
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
-}
-
-// enchantmentProtectionFactor returns the combined enchantment protection factor the player inhibits spanning each
-// armour piece.
-func (p *Player) enchantmentProtectionFactor(src world.DamageSource) int {
-	var enchantments []item.Enchantment
-	for _, it := range p.armour.Items() {
-		enchantments = append(enchantments, it.Enchantments()...)
-	}
-	return enchantment.ProtectionFactor(src, enchantments)
 }
 
 // highestArmourEnchantmentLevel returns the highest level of the enchantment passed based spanning each armour piece.
