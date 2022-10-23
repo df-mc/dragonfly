@@ -3,7 +3,6 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -143,7 +142,7 @@ func (f *Firework) Tick(w *world.World, current int64) {
 				return true
 			}); ok {
 				dmg := force * math.Sqrt((5.0-dist)/5.0)
-				e.(Living).Hurt(dmg, damage.SourceProjectile{Owner: f.Owner(), Projectile: f})
+				e.(Living).Hurt(dmg, ProjectileDamageSource{Owner: f.Owner(), Projectile: f})
 			}
 		}
 	}

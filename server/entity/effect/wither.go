@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -18,7 +17,7 @@ func (Wither) Apply(e world.Entity, lvl int, d time.Duration) {
 	interval := 80 >> lvl
 	if tickDuration(d)%interval == 0 {
 		if l, ok := e.(living); ok {
-			l.Hurt(1, damage.SourceWitherEffect{})
+			l.Hurt(1, WitherDamageSource{})
 		}
 	}
 }
@@ -27,3 +26,11 @@ func (Wither) Apply(e world.Entity, lvl int, d time.Duration) {
 func (Wither) RGBA() color.RGBA {
 	return color.RGBA{R: 0x35, G: 0x2a, B: 0x27, A: 0xff}
 }
+
+// WitherDamageSource is used for damage caused by an effect.Wither applied
+// to an entity.
+type WitherDamageSource struct{}
+
+func (WitherDamageSource) ReducedByResistance() bool { return true }
+func (WitherDamageSource) ReducedByArmour() bool     { return false }
+func (WitherDamageSource) Fire() bool                { return false }

@@ -10,8 +10,15 @@ import (
 // specific events such as when an entity is added to the world.
 type Handler interface {
 	// HandleLiquidFlow handles the flowing of a liquid from one block position from into another block
-	// position into. The liquid that will replace the block replaced is also passed.
-	HandleLiquidFlow(ctx *event.Context, from, into cube.Pos, liquid, replaced Block)
+	// position into. The liquid that will replace the block is also passed. This replaced block might
+	// also be a Liquid. The Liquid's depth and falling state can be checked to see if the resulting
+	// liquid is a new source block (in the case of water).
+	HandleLiquidFlow(ctx *event.Context, from, into cube.Pos, liquid Liquid, replaced Block)
+	// HandleLiquidDecay handles the decaying of a Liquid block at a position. Liquid decaying happens
+	// when there is no Liquid that can serve as the source block neighbouring it. The state of the
+	// Liquid before and after the decaying is passed. The Liquid after is nil if the liquid is
+	// completely removed as a result of the decay.
+	HandleLiquidDecay(ctx *event.Context, pos cube.Pos, before, after Liquid)
 	// HandleLiquidHarden handles the hardening of a liquid at hardenedPos. The liquid that was hardened,
 	// liquidHardened, and the liquid that caused it to harden, otherLiquid, are passed. The block created
 	// as a result is also passed.
@@ -46,11 +53,12 @@ var _ Handler = (*NopHandler)(nil)
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
-func (NopHandler) HandleLiquidFlow(*event.Context, cube.Pos, cube.Pos, Block, Block) {}
-func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Block)  {}
-func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3)                     {}
-func (NopHandler) HandleFireSpread(*event.Context, cube.Pos, cube.Pos)               {}
-func (NopHandler) HandleBlockBurn(*event.Context, cube.Pos)                          {}
-func (NopHandler) HandleEntitySpawn(Entity)                                          {}
-func (NopHandler) HandleEntityDespawn(Entity)                                        {}
-func (NopHandler) HandleClose()                                                      {}
+func (NopHandler) HandleLiquidFlow(*event.Context, cube.Pos, cube.Pos, Liquid, Block) {}
+func (NopHandler) HandleLiquidDecay(*event.Context, cube.Pos, Liquid, Liquid)         {}
+func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Block)   {}
+func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3)                      {}
+func (NopHandler) HandleFireSpread(*event.Context, cube.Pos, cube.Pos)                {}
+func (NopHandler) HandleBlockBurn(*event.Context, cube.Pos)                           {}
+func (NopHandler) HandleEntitySpawn(Entity)                                           {}
+func (NopHandler) HandleEntityDespawn(Entity)                                         {}
+func (NopHandler) HandleClose()                                                       {}

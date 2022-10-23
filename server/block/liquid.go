@@ -38,11 +38,15 @@ func (s flowingWaterDisplacer) CanDisplace(b world.Liquid) bool {
 // be turned into a solid block if a different liquid is next to it.
 func tickLiquid(b world.Liquid, pos cube.Pos, w *world.World) {
 	if !source(b) && !sourceAround(b, pos, w) {
-		if b.LiquidDepth()-4 <= 0 {
-			w.SetLiquid(pos, nil)
+		var res world.Liquid
+		if b.LiquidDepth()-4 > 0 {
+			res = b.WithDepth(b.LiquidDepth()-2*b.SpreadDecay(), false)
+		}
+		ctx := event.C()
+		if w.Handler().HandleLiquidDecay(ctx, pos, b, res); ctx.Cancelled() {
 			return
 		}
-		w.SetLiquid(pos, b.WithDepth(b.LiquidDepth()-2*b.SpreadDecay(), false))
+		w.SetLiquid(pos, res)
 		return
 	}
 	displacer, _ := w.Block(pos).(world.LiquidDisplacer)
