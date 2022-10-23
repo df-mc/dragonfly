@@ -158,7 +158,7 @@ func (m entityMetadata) setFlag(key uint32, index uint8) {
 	}
 }
 
-//noinspection GoUnusedConst
+// noinspection GoUnusedConst
 const (
 	dataKeyFlags = iota
 	dataKeyHealth
@@ -188,12 +188,12 @@ const (
 	dataKeyAreaEffectCloudRadiusPerTick        = 97
 	dataKeyAreaEffectCloudRadiusChangeOnPickup = 98
 	dataKeyAreaEffectCloudPickupCount          = 99
-	dataKeyPlayerLastDeathPos                  = 128
-	dataKeyPlayerLastDeathDimension            = 129
-	dataKeyPlayerHasDied                       = 130
+	dataKeyPlayerLastDeathPos                  = 127
+	dataKeyPlayerLastDeathDimension            = 128
+	dataKeyPlayerHasDied                       = 129
 )
 
-//noinspection GoUnusedConst
+// noinspection GoUnusedConst
 const (
 	dataFlagOnFire = iota
 	dataFlagSneaking

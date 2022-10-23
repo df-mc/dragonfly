@@ -2,7 +2,7 @@
 [Network]
   # The address of the server, including the port. The server will be listening on this address. If another
   # server is already running on this port, please select a different port.
-  Address = ":19132"
+  Address = ":19131"
 
 [Server]
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the

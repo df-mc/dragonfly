@@ -1,7 +1,6 @@
 package creative
 
 import (
-	"bytes"
 	_ "embed"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	// The following three imports are essential for this package: They make sure this package is loaded after
@@ -46,14 +45,11 @@ type creativeItemEntry struct {
 // init initialises the creative items, registering all creative items that have also been registered as
 // normal items and are present in vanilla.
 func init() {
-	dec := nbt.NewDecoder(bytes.NewBuffer(creativeItemData))
-
-	// Register all creative items present in the creative_items.nbt file.
-	for {
-		var data creativeItemEntry
-		if err := dec.Decode(&data); err != nil {
-			break
-		}
+	var m []creativeItemEntry
+	if err := nbt.Unmarshal(creativeItemData, &m); err != nil {
+		panic(err)
+	}
+	for _, data := range m {
 		var (
 			it world.Item
 			ok bool
