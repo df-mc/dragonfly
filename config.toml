@@ -24,6 +24,10 @@
   # The folder that the world files (will) reside in, relative to the working directory. If not currently
   # present, the folder will be made.
   Folder = "world"
+  # Whether or not the worlds' data will be saved and loaded. If true, the server will use the
+  # default LevelDB data provider and if false, an empty provider will be used. To use your
+  # own provider, turn this value to false, as you will still be able to pass your own provider.
+  SaveData = true
 
 [Players]
   # The maximum amount of players accepted into the server. If set to 0, there is no player limit. The max
@@ -32,9 +36,9 @@
   # The maximum chunk radius that players may set in their settings. If they try to set it above this number,
   # it will be capped and set to the max.
   MaximumChunkRadius = 32
-  # whether or not a player's data will be saved and loaded. If true, the server will use the
+  # Whether or not a player's data will be saved and loaded. If true, the server will use the
   # default LevelDB data provider and if false, an empty provider will be used. To use your
-  # own provider, turn this value to false as you will still be able to pass your own provider.
+  # own provider, turn this value to false, as you will still be able to pass your own provider.
   SaveData = true
   # Folder controls where the player data will be stored by the default LevelDB
   # player provider if it is enabled.

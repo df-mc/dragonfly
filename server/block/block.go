@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -254,7 +253,7 @@ type livingEntity interface {
 	// If the final damage exceeds the health that the entity currently has, the entity is killed.
 	// Hurt returns the final amount of damage dealt to the Living entity and returns whether the Living entity
 	// was vulnerable to the damage at all.
-	Hurt(damage float64, src damage.Source) (n float64, vulnerable bool)
+	Hurt(damage float64, src world.DamageSource) (n float64, vulnerable bool)
 }
 
 // flammableEntity ...
