@@ -33,6 +33,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -184,7 +185,7 @@ func (srv *Server) PlayerByXUID(xuid string) (*player.Player, bool) {
 // all data of the server are saved properly.
 func (srv *Server) CloseOnProgramEnd() {
 	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, os.Kill)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-c
 		if err := srv.Close(); err != nil {
