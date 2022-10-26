@@ -39,7 +39,7 @@ func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res 
 			return !living || entity == e
 		}) {
 			otherPos := otherE.Position()
-			if !otherE.BBox().Translate(otherPos).IntersectsWith(box.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
+			if !otherE.Type().BBox(otherE).Translate(otherPos).IntersectsWith(box.GrowVec3(mgl64.Vec3{4.125, 2.125, 4.125})) {
 				continue
 			}
 

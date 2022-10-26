@@ -163,6 +163,10 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	return p
 }
 
+func (p *Player) Type() world.EntityType {
+	return Type{}
+}
+
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
 // the client. (Typically the XBOX Live name)
 func (p *Player) Name() string {
@@ -1770,7 +1774,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 			// Placing blocks inside arrow entities is fine.
 			continue
 		}
-		if cube.AnyIntersections(blockBoxes, e.BBox().Translate(e.Position()).Grow(-1e-6)) {
+		if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
 			return true
 		}
 	}
@@ -2565,14 +2569,7 @@ func (p *Player) checkOnGround(w *world.World) bool {
 
 // BBox returns the axis aligned bounding box of the player.
 func (p *Player) BBox() cube.BBox {
-	s := p.Scale()
-	switch {
-	// TODO: Shrink BBox for sneaking once implemented in Bedrock Edition. This is already a thing in Java Edition.
-	case p.Gliding(), p.Swimming():
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
-	default:
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
-	}
+	return Type{}.BBox(p)
 }
 
 // Scale returns the scale modifier of the Player. The default value for a normal scale is 1. A scale of 0
@@ -2679,7 +2676,7 @@ func (p *Player) PunchAir() {
 
 // EncodeEntity ...
 func (p *Player) EncodeEntity() string {
-	return "minecraft:player"
+	return Type{}.EncodeEntity()
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item

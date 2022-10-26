@@ -9,6 +9,28 @@ import (
 	"time"
 )
 
+type LightningType struct{}
+
+func (LightningType) String() string {
+	return "Lightning"
+}
+
+func (LightningType) EncodeEntity() string {
+	return "minecraft:lightning_bolt"
+}
+
+func (LightningType) BBox(world.Entity) cube.BBox {
+	return cube.BBox{}
+}
+
+func (LightningType) DecodeNBT(data map[string]any) world.Entity {
+	return nil
+}
+
+func (LightningType) EncodeNBT(e world.Entity) map[string]any {
+	return map[string]any{}
+}
+
 // Lightning is a lethal element to thunderstorms. Lightning momentarily increases the skylight's brightness to slightly greater than full daylight.
 type Lightning struct {
 	pos mgl64.Vec3
@@ -44,6 +66,10 @@ func NewLightningWithDamage(pos mgl64.Vec3, dmg float64, blockFire, entityFire b
 	return li
 }
 
+func (*Lightning) Type() world.EntityType {
+	return LightningType{}
+}
+
 // Position returns the current position of the lightning entity.
 func (li *Lightning) Position() mgl64.Vec3 {
 	return li.pos
@@ -55,11 +81,6 @@ func (li *Lightning) World() *world.World {
 	return w
 }
 
-// BBox ...
-func (Lightning) BBox() cube.BBox {
-	return cube.Box(0, 0, 0, 0, 0, 0)
-}
-
 // Close closes the lighting.
 func (li *Lightning) Close() error {
 	li.World().RemoveEntity(li)
@@ -69,16 +90,6 @@ func (li *Lightning) Close() error {
 // Rotation ...
 func (li *Lightning) Rotation() (yaw, pitch float64) {
 	return 0, 0
-}
-
-// EncodeEntity ...
-func (li *Lightning) EncodeEntity() string {
-	return "minecraft:lightning_bolt"
-}
-
-// Name ...
-func (li *Lightning) Name() string {
-	return "Lightning Bolt"
 }
 
 // New strikes the Lightning at a specific position in a new world.
@@ -96,7 +107,7 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 		w.PlaySound(li.pos, sound.Thunder{})
 		w.PlaySound(li.pos, sound.Explosion{})
 
-		bb := li.BBox().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(li.pos.Add(mgl64.Vec3{0, 3}))
+		bb := li.Type().BBox(li).GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(li.pos.Add(mgl64.Vec3{0, 3}))
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
@@ -125,16 +136,6 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 			}
 		}
 	}
-}
-
-// DecodeNBT does nothing.
-func (li *Lightning) DecodeNBT(map[string]any) any {
-	return nil
-}
-
-// EncodeNBT does nothing.
-func (li *Lightning) EncodeNBT() map[string]any {
-	return map[string]any{}
 }
 
 // fire returns a fire block.

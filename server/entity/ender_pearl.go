@@ -11,6 +11,34 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+type EnderPearlType struct{}
+
+func (EnderPearlType) String() string {
+	return "Ender Pearl"
+}
+
+func (EnderPearlType) EncodeEntity() string {
+	return "minecraft:ender_pearl"
+}
+
+func (EnderPearlType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (EnderPearlType) DecodeNBT(data map[string]any) world.Entity {
+	ep := NewEnderPearl(nbtconv.MapVec3(data, "Pos"), nil)
+	ep.vel = nbtconv.MapVec3(data, "Motion")
+	return ep
+}
+
+func (EnderPearlType) EncodeNBT(e world.Entity) map[string]any {
+	ep := e.(*EnderPearl)
+	return map[string]any{
+		"Pos":    nbtconv.Vec3ToFloat32Slice(ep.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(ep.Velocity()),
+	}
+}
+
 // EnderPearl is a smooth, greenish-blue item used to teleport and to make an eye of ender.
 type EnderPearl struct {
 	transform
@@ -37,19 +65,8 @@ func NewEnderPearl(pos mgl64.Vec3, owner world.Entity) *EnderPearl {
 	return e
 }
 
-// Name ...
-func (e *EnderPearl) Name() string {
-	return "Ender Pearl"
-}
-
-// EncodeEntity ...
-func (e *EnderPearl) EncodeEntity() string {
-	return "minecraft:ender_pearl"
-}
-
-// BBox ...
-func (e *EnderPearl) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+func (e *EnderPearl) Type() world.EntityType {
+	return EnderPearlType{}
 }
 
 // teleporter represents a living entity that can teleport.
@@ -132,21 +149,4 @@ func (e *EnderPearl) Owner() world.Entity {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.owner
-}
-
-// DecodeNBT decodes the properties in a map to a EnderPearl and returns a new EnderPearl entity.
-func (e *EnderPearl) DecodeNBT(data map[string]any) any {
-	return e.New(
-		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
-		nil,
-	)
-}
-
-// EncodeNBT encodes the EnderPearl entity's properties as a map and returns it.
-func (e *EnderPearl) EncodeNBT() map[string]any {
-	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(e.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(e.Velocity()),
-	}
 }

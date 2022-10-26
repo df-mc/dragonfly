@@ -500,8 +500,8 @@ func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 // registerTargetFunc registers a cmd.TargetFunc to be able to get all players
 // connected and all entities in the server's world.
 func (srv *Server) registerTargetFunc() {
-	cmd.AddTargetFunc(func(src cmd.Source) (entities, players []cmd.Target) {
-		return sliceutil.Convert[cmd.Target](src.World().Entities()), sliceutil.Convert[cmd.Target](srv.Players())
+	cmd.AddTargetFunc(func(src cmd.Source) (entities []cmd.Target, players []cmd.NamedTarget) {
+		return sliceutil.Convert[cmd.Target](src.World().Entities()), sliceutil.Convert[cmd.NamedTarget](srv.Players())
 	})
 }
 

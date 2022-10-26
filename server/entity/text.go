@@ -3,8 +3,40 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
+
+type TextType struct {
+}
+
+func (TextType) String() string {
+	return "Text"
+}
+
+func (TextType) EncodeEntity() string {
+	return "dragonfly:text"
+}
+
+func (TextType) NetworkEncodeEntity() string {
+	return "minecraft:falling_block"
+}
+
+func (TextType) BBox(world.Entity) cube.BBox {
+	return cube.BBox{}
+}
+
+func (TextType) DecodeNBT(data map[string]any) world.Entity {
+	return NewText(nbtconv.Map[string](data, "Text"), nbtconv.MapVec3(data, "Pos"))
+}
+
+func (TextType) EncodeNBT(e world.Entity) map[string]any {
+	t := e.(*Text)
+	return map[string]any{
+		"Pos":  nbtconv.Vec3ToFloat32Slice(t.Position()),
+		"Text": t.text,
+	}
+}
 
 // Text is an entity that only displays floating text. The entity is otherwise invisible and cannot be moved.
 type Text struct {
@@ -19,24 +51,8 @@ func NewText(text string, pos mgl64.Vec3) *Text {
 	return t
 }
 
-// Name returns the name of the text entity, including the text written on it.
-func (t *Text) Name() string {
-	return "Text('" + t.text + "')"
-}
-
-// EncodeEntity returns the ID for text.
-func (t *Text) EncodeEntity() string {
-	return "dragonfly:text"
-}
-
-// NetworkEncodeEntity returns the network ID for falling blocks.
-func (*Text) NetworkEncodeEntity() string {
-	return "minecraft:falling_block"
-}
-
-// BBox returns an empty physics.BBox so that players cannot interact with the entity.
-func (t *Text) BBox() cube.BBox {
-	return cube.BBox{}
+func (*Text) Type() world.EntityType {
+	return TextType{}
 }
 
 // Immobile always returns true.
@@ -65,17 +81,4 @@ func (t *Text) Text() string {
 // NameTag returns the designated text of the entity. It is an alias for the Text function.
 func (t *Text) NameTag() string {
 	return t.Text()
-}
-
-// DecodeNBT decodes the data passed to create and return a new Text entity.
-func (t *Text) DecodeNBT(data map[string]any) any {
-	return NewText(nbtconv.Map[string](data, "Text"), nbtconv.MapVec3(data, "Pos"))
-}
-
-// EncodeNBT encodes the Text entity to a map representation that can be encoded to NBT.
-func (t *Text) EncodeNBT() map[string]any {
-	return map[string]any{
-		"Pos":  nbtconv.Vec3ToFloat32Slice(t.Position()),
-		"Text": t.text,
-	}
 }

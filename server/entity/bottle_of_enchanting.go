@@ -11,6 +11,34 @@ import (
 	"math/rand"
 )
 
+type BottleOfEnchantingType struct{}
+
+func (BottleOfEnchantingType) String() string {
+	return "Bottle o' Enchanting"
+}
+
+func (BottleOfEnchantingType) EncodeEntity() string {
+	return "minecraft:xp_bottle"
+}
+
+func (BottleOfEnchantingType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (BottleOfEnchantingType) DecodeNBT(data map[string]any) world.Entity {
+	b := NewBottleOfEnchanting(nbtconv.MapVec3(data, "Pos"), nil)
+	b.vel = nbtconv.MapVec3(data, "Motion")
+	return b
+}
+
+func (BottleOfEnchantingType) EncodeNBT(e world.Entity) map[string]any {
+	b := e.(*BottleOfEnchanting)
+	return map[string]any{
+		"Pos":    nbtconv.Vec3ToFloat32Slice(b.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(b.Velocity()),
+	}
+}
+
 // BottleOfEnchanting is a bottle that releases experience orbs when thrown.
 type BottleOfEnchanting struct {
 	transform
@@ -36,24 +64,13 @@ func NewBottleOfEnchanting(pos mgl64.Vec3, owner world.Entity) *BottleOfEnchanti
 	return b
 }
 
-// Name ...
-func (b *BottleOfEnchanting) Name() string {
-	return "Bottle o' Enchanting"
-}
-
-// EncodeEntity ...
-func (b *BottleOfEnchanting) EncodeEntity() string {
-	return "minecraft:xp_bottle"
+func (b *BottleOfEnchanting) Type() world.EntityType {
+	return BottleOfEnchantingType{}
 }
 
 // Glint returns true if the bottle should render with glint. It always returns true.
 func (b *BottleOfEnchanting) Glint() bool {
 	return true
-}
-
-// BBox ...
-func (b *BottleOfEnchanting) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
 // Tick ...
@@ -108,21 +125,4 @@ func (b *BottleOfEnchanting) Owner() world.Entity {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.owner
-}
-
-// DecodeNBT decodes the properties in a map to a BottleOfEnchanting and returns a new BottleOfEnchanting entity.
-func (b *BottleOfEnchanting) DecodeNBT(data map[string]any) any {
-	return b.New(
-		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
-		nil,
-	)
-}
-
-// EncodeNBT encodes the BottleOfEnchanting entity's properties as a map and returns it.
-func (b *BottleOfEnchanting) EncodeNBT() map[string]any {
-	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(b.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(b.Velocity()),
-	}
 }

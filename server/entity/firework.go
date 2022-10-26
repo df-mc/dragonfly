@@ -12,6 +12,43 @@ import (
 	"math/rand"
 )
 
+type FireworkType struct{}
+
+func (FireworkType) String() string {
+	return "Firework Rocket"
+}
+
+func (FireworkType) EncodeEntity() string {
+	return "minecraft:fireworks_rocket"
+}
+
+func (FireworkType) BBox(world.Entity) cube.BBox {
+	return cube.BBox{}
+}
+
+func (FireworkType) DecodeNBT(data map[string]any) world.Entity {
+	f := NewFirework(
+		nbtconv.MapVec3(data, "Pos"),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
+		nbtconv.MapItem(data, "Item").Item().(item.Firework),
+	)
+	f.vel = nbtconv.MapVec3(data, "Motion")
+	return f
+}
+
+func (FireworkType) EncodeNBT(e world.Entity) map[string]any {
+	f := e.(*Firework)
+	yaw, pitch := f.Rotation()
+	return map[string]any{
+		"Item":   nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(f.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(f.Velocity()),
+		"Yaw":    float32(yaw),
+		"Pitch":  float32(pitch),
+	}
+}
+
 // Firework is an item (and entity) used for creating decorative explosions, boosting when flying with elytra, and
 // loading into a crossbow as ammunition.
 type Firework struct {
@@ -44,19 +81,8 @@ func NewFirework(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework) *Fi
 	return f
 }
 
-// Name ...
-func (f *Firework) Name() string {
-	return "Firework Rocket"
-}
-
-// EncodeEntity ...
-func (f *Firework) EncodeEntity() string {
-	return "minecraft:fireworks_rocket"
-}
-
-// BBox ...
-func (f *Firework) BBox() cube.BBox {
-	return cube.BBox{}
+func (f *Firework) Type() world.EntityType {
+	return FireworkType{}
 }
 
 // Firework returns the underlying item.Firework of the Firework.
@@ -128,7 +154,7 @@ func (f *Firework) Tick(w *world.World, current int64) {
 
 	if len(explosions) > 0 {
 		force := float64(len(explosions)*2) + 5.0
-		for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(5.25), func(e world.Entity) bool {
+		for _, e := range w.EntitiesWithin(f.Type().BBox(f).Translate(m.pos).Grow(5.25), func(e world.Entity) bool {
 			l, living := e.(Living)
 			return !living || l.AttackImmune()
 		}) {
@@ -138,7 +164,7 @@ func (f *Firework) Tick(w *world.World, current int64) {
 				// The maximum distance allowed is 5.0 blocks.
 				continue
 			}
-			if _, ok := trace.Perform(m.pos, pos, w, e.BBox().Grow(0.3), func(world.Entity) bool {
+			if _, ok := trace.Perform(m.pos, pos, w, e.Type().BBox(e).Grow(0.3), func(world.Entity) bool {
 				return true
 			}); ok {
 				dmg := force * math.Sqrt((5.0-dist)/5.0)
@@ -150,7 +176,7 @@ func (f *Firework) Tick(w *world.World, current int64) {
 	f.close = true
 }
 
-// New creates an firework with the position, velocity, yaw, and pitch provided. It doesn't spawn the firework,
+// New creates a firework with the position, velocity, yaw, and pitch provided. It doesn't spawn the firework,
 // only returns it.
 func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework item.Firework, owner world.Entity) world.Entity {
 	fw := NewFirework(pos, yaw, pitch, firework)
@@ -169,28 +195,4 @@ func (f *Firework) Owner() world.Entity {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.owner
-}
-
-// DecodeNBT decodes the properties in a map to a Firework and returns a new Firework entity.
-func (f *Firework) DecodeNBT(data map[string]any) any {
-	firework := NewFirework(
-		nbtconv.MapVec3(data, "Pos"),
-		float64(nbtconv.Map[float32](data, "Pitch")),
-		float64(nbtconv.Map[float32](data, "Yaw")),
-		nbtconv.MapItem(data, "Item").Item().(item.Firework),
-	)
-	firework.vel = nbtconv.MapVec3(data, "Motion")
-	return firework
-}
-
-// EncodeNBT encodes the Firework entity's properties as a map and returns it.
-func (f *Firework) EncodeNBT() map[string]any {
-	yaw, pitch := f.Rotation()
-	return map[string]any{
-		"Item":   nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(f.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(f.Velocity()),
-		"Yaw":    float32(yaw),
-		"Pitch":  float32(pitch),
-	}
 }

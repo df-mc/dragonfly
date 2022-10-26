@@ -16,6 +16,56 @@ import (
 	"time"
 )
 
+type ArrowType struct{}
+
+func (ArrowType) String() string {
+	return "Arrow"
+}
+
+func (ArrowType) EncodeEntity() string {
+	return "minecraft:arrow"
+}
+
+func (ArrowType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (ArrowType) DecodeNBT(data map[string]any) world.Entity {
+	arr := NewTippedArrowWithDamage(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), float64(nbtconv.Map[float32](data, "Damage")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
+	arr.vel = nbtconv.MapVec3(data, "Motion")
+	arr.disallowPickup = nbtconv.Map[byte](data, "player") == 0
+	arr.obtainArrowOnPickup = nbtconv.Map[byte](data, "isCreative") == 1
+	arr.fireTicks = int64(nbtconv.Map[int16](data, "Fire"))
+	arr.punchLevel = int(nbtconv.Map[byte](data, "enchantPunch"))
+	if _, ok := data["StuckToBlockPos"]; ok {
+		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
+		arr.collided = true
+	}
+	return arr
+}
+
+func (ArrowType) EncodeNBT(e world.Entity) map[string]any {
+	a := e.(*Arrow)
+	yaw, pitch := a.Rotation()
+	data := map[string]any{
+		"Pos":          nbtconv.Vec3ToFloat32Slice(a.Position()),
+		"Yaw":          float32(yaw),
+		"Pitch":        float32(pitch),
+		"Motion":       nbtconv.Vec3ToFloat32Slice(a.Velocity()),
+		"Damage":       float32(a.BaseDamage()),
+		"Fire":         int16(a.OnFireDuration() * 20),
+		"enchantPunch": byte(a.punchLevel),
+		"auxValue":     int32(a.tip.Uint8() + 1),
+		"player":       boolByte(!a.disallowPickup),
+		"isCreative":   boolByte(!a.obtainArrowOnPickup),
+	}
+	// TODO: Save critical flag if Minecraft ever saves it?
+	if collisionPos, ok := a.CollisionPos(); ok {
+		data["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
+	}
+	return data
+}
+
 // Arrow is used as ammunition for bows, crossbows, and dispensers. Arrows can be modified to imbue status effects
 // on players and mobs.
 type Arrow struct {
@@ -77,14 +127,8 @@ func NewTippedArrowWithDamage(pos mgl64.Vec3, yaw, pitch, damage float64, owner 
 	return a
 }
 
-// Name ...
-func (a *Arrow) Name() string {
-	return "Arrow"
-}
-
-// EncodeEntity ...
-func (a *Arrow) EncodeEntity() string {
-	return "minecraft:arrow"
+func (a *Arrow) Type() world.EntityType {
+	return ArrowType{}
 }
 
 // CollisionPos returns the position of the block the arrow collided with. If the arrow has not collided with any
@@ -178,11 +222,6 @@ func (a *Arrow) Extinguish() {
 	a.SetOnFire(0)
 }
 
-// BBox ...
-func (a *Arrow) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
 // Rotation ...
 func (a *Arrow) Rotation() (float64, float64) {
 	a.mu.Lock()
@@ -200,7 +239,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 	a.mu.Lock()
 	if a.collided {
 		boxes := w.Block(a.collisionPos).Model().BBox(a.collisionPos, w)
-		box := a.BBox().Translate(a.pos)
+		box := a.Type().BBox(a).Translate(a.pos)
 		for _, bb := range boxes {
 			if box.IntersectsWith(bb.Translate(a.collisionPos.Vec3()).Grow(0.05)) {
 				if a.ageCollided > 5 && !a.disallowPickup {
@@ -299,52 +338,15 @@ func (a *Arrow) Owner() world.Entity {
 	return a.owner
 }
 
-// DecodeNBT decodes the properties in a map to an Arrow and returns a new Arrow entity.
-func (a *Arrow) DecodeNBT(data map[string]any) any {
-	arr := NewTippedArrowWithDamage(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), float64(nbtconv.Map[float32](data, "Damage")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
-	arr.vel = nbtconv.MapVec3(data, "Motion")
-	arr.disallowPickup = nbtconv.Map[byte](data, "player") == 0
-	arr.obtainArrowOnPickup = nbtconv.Map[byte](data, "isCreative") == 1
-	arr.fireTicks = int64(nbtconv.Map[int16](data, "Fire"))
-	arr.punchLevel = int(nbtconv.Map[byte](data, "enchantPunch"))
-	if _, ok := data["StuckToBlockPos"]; ok {
-		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
-		arr.collided = true
-	}
-	return arr
-}
-
-// EncodeNBT encodes the Arrow entity's properties as a map and returns it.
-func (a *Arrow) EncodeNBT() map[string]any {
-	yaw, pitch := a.Rotation()
-	data := map[string]any{
-		"Pos":          nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"Yaw":          float32(yaw),
-		"Pitch":        float32(pitch),
-		"Motion":       nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"Damage":       float32(a.BaseDamage()),
-		"Fire":         int16(a.OnFireDuration() * 20),
-		"enchantPunch": byte(a.punchLevel),
-		"auxValue":     int32(a.tip.Uint8() + 1),
-		"player":       boolByte(!a.disallowPickup),
-		"isCreative":   boolByte(!a.obtainArrowOnPickup),
-	}
-	// TODO: Save critical flag if Minecraft ever saves it?
-	if collisionPos, ok := a.CollisionPos(); ok {
-		data["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
-	}
-	return data
-}
-
 // checkNearby checks for nearby arrow collectors and closes the Arrow if one was found and when the Arrow can be
 // picked up.
 func (a *Arrow) checkNearby(w *world.World) {
-	grown := a.BBox().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
+	grown := a.Type().BBox(a).GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(a.pos)
 	ignore := func(e world.Entity) bool {
 		return e == a
 	}
-	for _, e := range w.EntitiesWithin(a.BBox().Translate(a.pos).Grow(2), ignore) {
-		if e.BBox().Translate(e.Position()).IntersectsWith(grown) {
+	for _, e := range w.EntitiesWithin(a.Type().BBox(a).Translate(a.pos).Grow(2), ignore) {
+		if e.Type().BBox(e).Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				if a.obtainArrowOnPickup {
 					// A collector was within range to pick up the entity.
