@@ -3,6 +3,9 @@ package inventory
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
+	"github.com/df-mc/dragonfly/server/world"
+	"math"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and
@@ -98,6 +101,35 @@ func (a *Armour) SetBoots(boots item.Stack) {
 func (a *Armour) Boots() item.Stack {
 	i, _ := a.inv.Item(3)
 	return i
+}
+
+// DamageReduction returns the amount of damage that is reduced by the Armour for
+// an amount of damage and damage source. The value returned takes into account
+// the armour itself and its enchantments.
+func (a *Armour) DamageReduction(dmg float64, src world.DamageSource) float64 {
+	var (
+		original                 = dmg
+		defencePoints, toughness float64
+		enchantments             []item.Enchantment
+	)
+
+	for _, it := range a.Items() {
+		enchantments = append(enchantments, it.Enchantments()...)
+		if armour, ok := it.Item().(item.Armour); ok {
+			defencePoints += armour.DefencePoints()
+			toughness += armour.Toughness()
+		}
+	}
+
+	dmg -= dmg * enchantment.ProtectionFactor(src, enchantments)
+	if src.ReducedByArmour() {
+		// Armour in Bedrock edition reduces the damage taken by 4% for each effective armour point. Effective
+		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defense
+		// reduction is decreased by the toughness armor value. Effective armour points will at minimum be 20% of
+		// armour points.
+		dmg -= dmg * 0.04 * math.Max(defencePoints*0.2, defencePoints-dmg/(2+toughness/4))
+	}
+	return original - dmg
 }
 
 // Slots returns all items (including) air of the armour inventory in the order of helmet, chestplate, leggings,

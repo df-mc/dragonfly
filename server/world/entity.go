@@ -83,3 +83,25 @@ func Entities() []Entity {
 type EntityAction interface {
 	EntityAction()
 }
+
+// DamageSource represents the source of the damage dealt to an entity. This
+// source may be passed to the Hurt() method of an entity in order to deal
+// damage to an entity with a specific source.
+type DamageSource interface {
+	// ReducedByArmour checks if the source of damage may be reduced if the
+	// receiver of the damage is wearing armour.
+	ReducedByArmour() bool
+	// ReducedByResistance specifies if the Source is affected by the resistance
+	// effect. If false, damage dealt to an entity with this source will not be
+	// lowered if the entity has the resistance effect.
+	ReducedByResistance() bool
+	// Fire specifies if the Source is fire related and should be ignored when
+	// an entity has the fire resistance effect.
+	Fire() bool
+}
+
+// HealingSource represents a source of healing for an entity. This source may
+// be passed to the Heal() method of a living entity.
+type HealingSource interface {
+	HealingSource()
+}
