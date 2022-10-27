@@ -13,7 +13,7 @@ var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uin
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, r cube.Range) (*Chunk, error) {
+func NetworkDecode(air uint32, data []byte, count int, legacy bool, r cube.Range) (*Chunk, error) {
 	var (
 		c   = New(air, r)
 		buf = bytes.NewBuffer(data)
@@ -21,12 +21,15 @@ func NetworkDecode(air uint32, data []byte, count int, oldBiomes bool, r cube.Ra
 	)
 	for i := 0; i < count; i++ {
 		index := uint8(i)
+		if legacy {
+			index += uint8(-r.Min() >> 4)
+		}
 		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if oldBiomes {
+	if legacy {
 		// Read the old biomes.
 		biomes := make([]byte, 256)
 		if _, err := buf.Read(biomes[:]); err != nil {
