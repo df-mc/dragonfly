@@ -11,37 +11,6 @@ import (
 	"time"
 )
 
-type ExperienceOrbType struct{}
-
-func (ExperienceOrbType) String() string {
-	return "Experience Orb"
-}
-
-func (ExperienceOrbType) EncodeEntity() string {
-	return "minecraft:xp_orb"
-}
-
-func (ExperienceOrbType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
-func (ExperienceOrbType) DecodeNBT(data map[string]any) world.Entity {
-	o := NewExperienceOrb(nbtconv.MapVec3(data, "Pos"), int(nbtconv.Map[int32](data, "Value")))
-	o.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	o.age = int(nbtconv.Map[int16](data, "Age"))
-	return o
-}
-
-func (ExperienceOrbType) EncodeNBT(e world.Entity) map[string]any {
-	orb := e.(*ExperienceOrb)
-	return map[string]any{
-		"Age":    int16(orb.age),
-		"Value":  int32(orb.xp),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(orb.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(orb.Velocity()),
-	}
-}
-
 // ExperienceOrb is an entity that carries a varying amount of experience. These can be collected by nearby players, and
 // are then added to the player's own experience.
 type ExperienceOrb struct {
@@ -84,6 +53,7 @@ func NewExperienceOrb(pos mgl64.Vec3, xp int) *ExperienceOrb {
 	return o
 }
 
+// Type returns ExperienceOrbType.
 func (*ExperienceOrb) Type() world.EntityType {
 	return ExperienceOrbType{}
 }
@@ -160,4 +130,30 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 // Explode ...
 func (e *ExperienceOrb) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 	_ = e.Close()
+}
+
+// ExperienceOrbType is a world.EntityType implementation for ExperienceOrb.
+type ExperienceOrbType struct{}
+
+func (ExperienceOrbType) String() string       { return "Experience Orb" }
+func (ExperienceOrbType) EncodeEntity() string { return "minecraft:xp_orb" }
+func (ExperienceOrbType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (ExperienceOrbType) DecodeNBT(data map[string]any) world.Entity {
+	o := NewExperienceOrb(nbtconv.MapVec3(data, "Pos"), int(nbtconv.Map[int32](data, "Value")))
+	o.SetVelocity(nbtconv.MapVec3(data, "Motion"))
+	o.age = int(nbtconv.Map[int16](data, "Age"))
+	return o
+}
+
+func (ExperienceOrbType) EncodeNBT(e world.Entity) map[string]any {
+	orb := e.(*ExperienceOrb)
+	return map[string]any{
+		"Age":    int16(orb.age),
+		"Value":  int32(orb.xp),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(orb.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(orb.Velocity()),
+	}
 }

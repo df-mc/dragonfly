@@ -11,36 +11,7 @@ import (
 	"time"
 )
 
-type TNTType struct{}
-
-func (TNTType) String() string {
-	return "Primed TNT"
-}
-
-func (TNTType) EncodeEntity() string {
-	return "minecraft:tnt"
-}
-
-func (TNTType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
-}
-
-func (TNTType) DecodeNBT(data map[string]any) world.Entity {
-	tnt := NewTNT(nbtconv.MapVec3(data, "Pos"), time.Duration(nbtconv.Map[uint8](data, "Fuse"))*time.Millisecond*50)
-	tnt.vel = nbtconv.MapVec3(data, "Motion")
-	return tnt
-}
-
-func (TNTType) EncodeNBT(e world.Entity) map[string]any {
-	t := e.(*TNT)
-	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(t.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(t.Velocity()),
-		"Fuse":   uint8(t.Fuse().Milliseconds() / 50),
-	}
-}
-
-// TNT represents a prime TNT entity.
+// TNT represents a primed TNT entity.
 type TNT struct {
 	transform
 
@@ -66,6 +37,7 @@ func NewTNT(pos mgl64.Vec3, fuse time.Duration) *TNT {
 	return t
 }
 
+// Type returns TNTType.
 func (*TNT) Type() world.EntityType {
 	return TNTType{}
 }
@@ -117,4 +89,28 @@ func (t *TNT) Tick(w *world.World, _ int64) {
 // New creates and returns an TNT with the world.Block and position provided. It doesn't spawn the TNT by itself.
 func (t *TNT) New(pos mgl64.Vec3, fuse time.Duration) world.Entity {
 	return NewTNT(pos, fuse)
+}
+
+// TNTType is a world.EntityType implementation for TNT.
+type TNTType struct{}
+
+func (TNTType) String() string       { return "Primed TNT" }
+func (TNTType) EncodeEntity() string { return "minecraft:tnt" }
+func (TNTType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
+}
+
+func (TNTType) DecodeNBT(data map[string]any) world.Entity {
+	tnt := NewTNT(nbtconv.MapVec3(data, "Pos"), time.Duration(nbtconv.Map[uint8](data, "Fuse"))*time.Millisecond*50)
+	tnt.vel = nbtconv.MapVec3(data, "Motion")
+	return tnt
+}
+
+func (TNTType) EncodeNBT(e world.Entity) map[string]any {
+	t := e.(*TNT)
+	return map[string]any{
+		"Pos":    nbtconv.Vec3ToFloat32Slice(t.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(t.Velocity()),
+		"Fuse":   uint8(t.Fuse().Milliseconds() / 50),
+	}
 }

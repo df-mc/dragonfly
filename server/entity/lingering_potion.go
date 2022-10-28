@@ -8,35 +8,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-type LingeringPotionType struct{}
-
-func (LingeringPotionType) String() string {
-	return "Lingering Potion"
-}
-
-func (LingeringPotionType) EncodeEntity() string {
-	return "minecraft:lingering_potion"
-}
-
-func (LingeringPotionType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
-func (LingeringPotionType) DecodeNBT(data map[string]any) world.Entity {
-	pot := NewLingeringPotion(nbtconv.MapVec3(data, "Pos"), nil, potion.From(nbtconv.Map[int32](data, "PotionId")))
-	pot.vel = nbtconv.MapVec3(data, "Motion")
-	return pot
-}
-
-func (LingeringPotionType) EncodeNBT(e world.Entity) map[string]any {
-	pot := e.(*LingeringPotion)
-	return map[string]any{
-		"Pos":      nbtconv.Vec3ToFloat32Slice(pot.Position()),
-		"Motion":   nbtconv.Vec3ToFloat32Slice(pot.Velocity()),
-		"PotionId": pot.t.Uint8(),
-	}
-}
-
 // LingeringPotion is a variant of a splash potion that can be thrown to leave clouds with status effects that linger on
 // the ground in an area.
 type LingeringPotion struct {
@@ -66,6 +37,7 @@ func NewLingeringPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *Li
 	return l
 }
 
+// Type returns LingeringPotionType.
 func (*LingeringPotion) Type() world.EntityType {
 	return LingeringPotionType{}
 }
@@ -122,4 +94,30 @@ func (l *LingeringPotion) Owner() world.Entity {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.owner
+}
+
+// LingeringPotionType is a world.EntityType implementation for LingeringPotion.
+type LingeringPotionType struct{}
+
+func (LingeringPotionType) String() string { return "Lingering Potion" }
+func (LingeringPotionType) EncodeEntity() string {
+	return "minecraft:lingering_potion"
+}
+func (LingeringPotionType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (LingeringPotionType) DecodeNBT(data map[string]any) world.Entity {
+	pot := NewLingeringPotion(nbtconv.MapVec3(data, "Pos"), nil, potion.From(nbtconv.Map[int32](data, "PotionId")))
+	pot.vel = nbtconv.MapVec3(data, "Motion")
+	return pot
+}
+
+func (LingeringPotionType) EncodeNBT(e world.Entity) map[string]any {
+	pot := e.(*LingeringPotion)
+	return map[string]any{
+		"Pos":      nbtconv.Vec3ToFloat32Slice(pot.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(pot.Velocity()),
+		"PotionId": pot.t.Uint8(),
+	}
 }

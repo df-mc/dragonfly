@@ -9,28 +9,6 @@ import (
 	"time"
 )
 
-type LightningType struct{}
-
-func (LightningType) String() string {
-	return "Lightning"
-}
-
-func (LightningType) EncodeEntity() string {
-	return "minecraft:lightning_bolt"
-}
-
-func (LightningType) BBox(world.Entity) cube.BBox {
-	return cube.BBox{}
-}
-
-func (LightningType) DecodeNBT(data map[string]any) world.Entity {
-	return nil
-}
-
-func (LightningType) EncodeNBT(e world.Entity) map[string]any {
-	return map[string]any{}
-}
-
 // Lightning is a lethal element to thunderstorms. Lightning momentarily increases the skylight's brightness to slightly greater than full daylight.
 type Lightning struct {
 	pos mgl64.Vec3
@@ -66,6 +44,7 @@ func NewLightningWithDamage(pos mgl64.Vec3, dmg float64, blockFire, entityFire b
 	return li
 }
 
+// Type returns LightningType.
 func (*Lightning) Type() world.EntityType {
 	return LightningType{}
 }
@@ -145,4 +124,15 @@ func fire() world.Block {
 		panic("could not find fire block")
 	}
 	return f
+}
+
+// LightningType is a world.EntityType implementation for Lightning.
+type LightningType struct{}
+
+func (LightningType) String() string                        { return "Lightning" }
+func (LightningType) EncodeEntity() string                  { return "minecraft:lightning_bolt" }
+func (LightningType) BBox(world.Entity) cube.BBox           { return cube.BBox{} }
+func (LightningType) DecodeNBT(map[string]any) world.Entity { return nil }
+func (LightningType) EncodeNBT(world.Entity) map[string]any {
+	return map[string]any{}
 }

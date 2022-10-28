@@ -10,48 +10,6 @@ import (
 	"time"
 )
 
-type AreaEffectCloudType struct{}
-
-func (AreaEffectCloudType) String() string {
-	return "Area Effect Cloud"
-}
-
-func (AreaEffectCloudType) EncodeEntity() string {
-	return "minecraft:area_effect_cloud"
-}
-
-func (AreaEffectCloudType) BBox(e world.Entity) cube.BBox {
-	r, _, _ := e.(*AreaEffectCloud).Radius()
-	return cube.Box(-r, 0, -r, r, 0.5, r)
-}
-
-func (AreaEffectCloudType) DecodeNBT(data map[string]any) world.Entity {
-	return NewAreaEffectCloudWith(
-		nbtconv.MapVec3(data, "Pos"),
-		potion.From(nbtconv.Map[int32](data, "PotionId")),
-		time.Duration(nbtconv.Map[int32](data, "Duration"))*time.Millisecond*50,
-		time.Duration(nbtconv.Map[int32](data, "ReapplicationDelay"))*time.Millisecond*50,
-		time.Duration(nbtconv.Map[int32](data, "DurationOnUse"))*time.Millisecond*50,
-		float64(nbtconv.Map[float32](data, "Radius")),
-		float64(nbtconv.Map[float32](data, "RadiusOnUse")),
-		float64(nbtconv.Map[float32](data, "RadiusPerTick")),
-	)
-}
-
-func (AreaEffectCloudType) EncodeNBT(e world.Entity) map[string]any {
-	a := e.(*AreaEffectCloud)
-	return map[string]any{
-		"Pos":                nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"ReapplicationDelay": int32(a.reapplicationDelay),
-		"RadiusPerTick":      float32(a.radiusGrowth),
-		"RadiusOnUse":        float32(a.radiusOnUse),
-		"DurationOnUse":      int32(a.durationOnUse),
-		"Radius":             float32(a.radius),
-		"Duration":           int32(a.duration),
-		"PotionId":           int32(a.t.Uint8()),
-	}
-}
-
 // AreaEffectCloud is the cloud that is created when: lingering potions are thrown; creepers with potion effects explode;
 // dragon fireballs hit the ground.
 type AreaEffectCloud struct {
@@ -96,6 +54,7 @@ func NewAreaEffectCloudWith(pos mgl64.Vec3, t potion.Potion, duration, reapplica
 	return a
 }
 
+// Type returns AreaEffectCloudType.
 func (a *AreaEffectCloud) Type() world.EntityType {
 	return AreaEffectCloudType{}
 }
@@ -238,4 +197,41 @@ func (a *AreaEffectCloud) useRadius() bool {
 		a.close = true
 	}
 	return true
+}
+
+// AreaEffectCloudType is a world.EntityType implementation for AreaEffectCloud.
+type AreaEffectCloudType struct{}
+
+func (AreaEffectCloudType) String() string       { return "Area Effect Cloud" }
+func (AreaEffectCloudType) EncodeEntity() string { return "minecraft:area_effect_cloud" }
+func (AreaEffectCloudType) BBox(e world.Entity) cube.BBox {
+	r, _, _ := e.(*AreaEffectCloud).Radius()
+	return cube.Box(-r, 0, -r, r, 0.5, r)
+}
+
+func (AreaEffectCloudType) DecodeNBT(data map[string]any) world.Entity {
+	return NewAreaEffectCloudWith(
+		nbtconv.MapVec3(data, "Pos"),
+		potion.From(nbtconv.Map[int32](data, "PotionId")),
+		time.Duration(nbtconv.Map[int32](data, "Duration"))*time.Millisecond*50,
+		time.Duration(nbtconv.Map[int32](data, "ReapplicationDelay"))*time.Millisecond*50,
+		time.Duration(nbtconv.Map[int32](data, "DurationOnUse"))*time.Millisecond*50,
+		float64(nbtconv.Map[float32](data, "Radius")),
+		float64(nbtconv.Map[float32](data, "RadiusOnUse")),
+		float64(nbtconv.Map[float32](data, "RadiusPerTick")),
+	)
+}
+
+func (AreaEffectCloudType) EncodeNBT(e world.Entity) map[string]any {
+	a := e.(*AreaEffectCloud)
+	return map[string]any{
+		"Pos":                nbtconv.Vec3ToFloat32Slice(a.Position()),
+		"ReapplicationDelay": int32(a.reapplicationDelay),
+		"RadiusPerTick":      float32(a.radiusGrowth),
+		"RadiusOnUse":        float32(a.radiusOnUse),
+		"DurationOnUse":      int32(a.durationOnUse),
+		"Radius":             float32(a.radius),
+		"Duration":           int32(a.duration),
+		"PotionId":           int32(a.t.Uint8()),
+	}
 }

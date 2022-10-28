@@ -16,56 +16,6 @@ import (
 	"time"
 )
 
-type ArrowType struct{}
-
-func (ArrowType) String() string {
-	return "Arrow"
-}
-
-func (ArrowType) EncodeEntity() string {
-	return "minecraft:arrow"
-}
-
-func (ArrowType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
-func (ArrowType) DecodeNBT(data map[string]any) world.Entity {
-	arr := NewTippedArrowWithDamage(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), float64(nbtconv.Map[float32](data, "Damage")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
-	arr.vel = nbtconv.MapVec3(data, "Motion")
-	arr.disallowPickup = nbtconv.Map[byte](data, "player") == 0
-	arr.obtainArrowOnPickup = nbtconv.Map[byte](data, "isCreative") == 1
-	arr.fireTicks = int64(nbtconv.Map[int16](data, "Fire"))
-	arr.punchLevel = int(nbtconv.Map[byte](data, "enchantPunch"))
-	if _, ok := data["StuckToBlockPos"]; ok {
-		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
-		arr.collided = true
-	}
-	return arr
-}
-
-func (ArrowType) EncodeNBT(e world.Entity) map[string]any {
-	a := e.(*Arrow)
-	yaw, pitch := a.Rotation()
-	data := map[string]any{
-		"Pos":          nbtconv.Vec3ToFloat32Slice(a.Position()),
-		"Yaw":          float32(yaw),
-		"Pitch":        float32(pitch),
-		"Motion":       nbtconv.Vec3ToFloat32Slice(a.Velocity()),
-		"Damage":       float32(a.BaseDamage()),
-		"Fire":         int16(a.OnFireDuration() * 20),
-		"enchantPunch": byte(a.punchLevel),
-		"auxValue":     int32(a.tip.Uint8() + 1),
-		"player":       boolByte(!a.disallowPickup),
-		"isCreative":   boolByte(!a.obtainArrowOnPickup),
-	}
-	// TODO: Save critical flag if Minecraft ever saves it?
-	if collisionPos, ok := a.CollisionPos(); ok {
-		data["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
-	}
-	return data
-}
-
 // Arrow is used as ammunition for bows, crossbows, and dispensers. Arrows can be modified to imbue status effects
 // on players and mobs.
 type Arrow struct {
@@ -127,6 +77,7 @@ func NewTippedArrowWithDamage(pos mgl64.Vec3, yaw, pitch, damage float64, owner 
 	return a
 }
 
+// Type returns ArrowType.
 func (a *Arrow) Type() world.EntityType {
 	return ArrowType{}
 }
@@ -378,4 +329,49 @@ func boolByte(b bool) uint8 {
 		return 1
 	}
 	return 0
+}
+
+// ArrowType is a world.EntityType implementation for Arrow.
+type ArrowType struct{}
+
+func (ArrowType) String() string       { return "Arrow" }
+func (ArrowType) EncodeEntity() string { return "minecraft:arrow" }
+func (ArrowType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (ArrowType) DecodeNBT(data map[string]any) world.Entity {
+	arr := NewTippedArrowWithDamage(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), float64(nbtconv.Map[float32](data, "Damage")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
+	arr.vel = nbtconv.MapVec3(data, "Motion")
+	arr.disallowPickup = nbtconv.Map[byte](data, "player") == 0
+	arr.obtainArrowOnPickup = nbtconv.Map[byte](data, "isCreative") == 1
+	arr.fireTicks = int64(nbtconv.Map[int16](data, "Fire"))
+	arr.punchLevel = int(nbtconv.Map[byte](data, "enchantPunch"))
+	if _, ok := data["StuckToBlockPos"]; ok {
+		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
+		arr.collided = true
+	}
+	return arr
+}
+
+func (ArrowType) EncodeNBT(e world.Entity) map[string]any {
+	a := e.(*Arrow)
+	yaw, pitch := a.Rotation()
+	data := map[string]any{
+		"Pos":          nbtconv.Vec3ToFloat32Slice(a.Position()),
+		"Yaw":          float32(yaw),
+		"Pitch":        float32(pitch),
+		"Motion":       nbtconv.Vec3ToFloat32Slice(a.Velocity()),
+		"Damage":       float32(a.BaseDamage()),
+		"Fire":         int16(a.OnFireDuration() * 20),
+		"enchantPunch": byte(a.punchLevel),
+		"auxValue":     int32(a.tip.Uint8() + 1),
+		"player":       boolByte(!a.disallowPickup),
+		"isCreative":   boolByte(!a.obtainArrowOnPickup),
+	}
+	// TODO: Save critical flag if Minecraft ever saves it?
+	if collisionPos, ok := a.CollisionPos(); ok {
+		data["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
+	}
+	return data
 }

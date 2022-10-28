@@ -10,34 +10,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-type EggType struct{}
-
-func (EggType) String() string {
-	return "Egg"
-}
-
-func (EggType) EncodeEntity() string {
-	return "minecraft:egg"
-}
-
-func (EggType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
-func (EggType) DecodeNBT(data map[string]any) world.Entity {
-	egg := NewEgg(nbtconv.MapVec3(data, "Pos"), nil)
-	egg.vel = nbtconv.MapVec3(data, "Motion")
-	return egg
-}
-
-func (EggType) EncodeNBT(e world.Entity) map[string]any {
-	egg := e.(*Egg)
-	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(egg.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(egg.Velocity()),
-	}
-}
-
 // Egg is an item that can be used to craft food items, or as a throwable entity to spawn chicks.
 type Egg struct {
 	transform
@@ -64,6 +36,7 @@ func NewEgg(pos mgl64.Vec3, owner world.Entity) *Egg {
 	return s
 }
 
+// Type returns EggType.
 func (egg *Egg) Type() world.EntityType {
 	return EggType{}
 }
@@ -121,9 +94,9 @@ func (*Egg) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
 }
 
 // Explode ...
-func (egg *Egg) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
+func (egg *Egg) Explode(src mgl64.Vec3, force float64, _ block.ExplosionConfig) {
 	egg.mu.Lock()
-	egg.vel = egg.vel.Add(egg.pos.Sub(explosionPos).Normalize().Mul(impact))
+	egg.vel = egg.vel.Add(egg.pos.Sub(src).Normalize().Mul(force))
 	egg.mu.Unlock()
 }
 
@@ -132,4 +105,27 @@ func (egg *Egg) Owner() world.Entity {
 	egg.mu.Lock()
 	defer egg.mu.Unlock()
 	return egg.owner
+}
+
+// EggType is a world.EntityType implementation for Egg.
+type EggType struct{}
+
+func (EggType) String() string       { return "Egg" }
+func (EggType) EncodeEntity() string { return "minecraft:egg" }
+func (EggType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (EggType) DecodeNBT(data map[string]any) world.Entity {
+	egg := NewEgg(nbtconv.MapVec3(data, "Pos"), nil)
+	egg.vel = nbtconv.MapVec3(data, "Motion")
+	return egg
+}
+
+func (EggType) EncodeNBT(e world.Entity) map[string]any {
+	egg := e.(*Egg)
+	return map[string]any{
+		"Pos":    nbtconv.Vec3ToFloat32Slice(egg.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(egg.Velocity()),
+	}
 }

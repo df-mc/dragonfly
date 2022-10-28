@@ -10,34 +10,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-type SnowballType struct{}
-
-func (SnowballType) String() string {
-	return "Snowball"
-}
-
-func (SnowballType) EncodeEntity() string {
-	return "minecraft:snowball"
-}
-
-func (SnowballType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
-func (SnowballType) DecodeNBT(data map[string]any) world.Entity {
-	s := NewSnowball(nbtconv.MapVec3(data, "Pos"), nil)
-	s.vel = nbtconv.MapVec3(data, "Motion")
-	return s
-}
-
-func (SnowballType) EncodeNBT(e world.Entity) map[string]any {
-	s := e.(*Snowball)
-	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-	}
-}
-
 // Snowball is a throwable projectile which damages entities on impact.
 type Snowball struct {
 	transform
@@ -64,6 +36,7 @@ func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Snowball {
 	return s
 }
 
+// Type returns SnowballType.
 func (s *Snowball) Type() world.EntityType {
 	return SnowballType{}
 }
@@ -130,4 +103,27 @@ func (s *Snowball) Owner() world.Entity {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.owner
+}
+
+// SnowballType is a world.EntityType implementation for Snowball.
+type SnowballType struct{}
+
+func (SnowballType) String() string       { return "Snowball" }
+func (SnowballType) EncodeEntity() string { return "minecraft:snowball" }
+func (SnowballType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (SnowballType) DecodeNBT(data map[string]any) world.Entity {
+	s := NewSnowball(nbtconv.MapVec3(data, "Pos"), nil)
+	s.vel = nbtconv.MapVec3(data, "Motion")
+	return s
+}
+
+func (SnowballType) EncodeNBT(e world.Entity) map[string]any {
+	s := e.(*Snowball)
+	return map[string]any{
+		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
+	}
 }

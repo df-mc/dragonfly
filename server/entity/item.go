@@ -11,44 +11,6 @@ import (
 	"time"
 )
 
-type ItemType struct{}
-
-func (ItemType) String() string {
-	return "Item"
-}
-
-func (ItemType) EncodeEntity() string {
-	return "minecraft:item"
-}
-
-func (ItemType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
-func (ItemType) DecodeNBT(data map[string]any) world.Entity {
-	i := nbtconv.MapItem(data, "Item")
-	if i.Empty() {
-		return nil
-	}
-	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
-	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.age = int(nbtconv.Map[int16](data, "Age"))
-	n.pickupDelay = int(nbtconv.Map[int64](data, "PickupDelay"))
-	return n
-}
-
-func (ItemType) EncodeNBT(e world.Entity) map[string]any {
-	it := e.(*Item)
-	return map[string]any{
-		"Health":      int16(5),
-		"Age":         int16(it.age),
-		"PickupDelay": int64(it.pickupDelay),
-		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
-		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
-		"Item":        nbtconv.WriteItem(it.Item(), true),
-	}
-}
-
 // Item represents an item entity which may be added to the world. Players and several humanoid entities such
 // as zombies are able to pick up these entities so that the items are added to their inventory.
 type Item struct {
@@ -77,6 +39,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	return it
 }
 
+// Type returns ItemType.
 func (it *Item) Type() world.EntityType {
 	return ItemType{}
 }
@@ -217,4 +180,37 @@ type Collector interface {
 	Collect(stack item.Stack) (n int)
 	// GameMode returns the gamemode of the collector.
 	GameMode() world.GameMode
+}
+
+// ItemType is a world.EntityType implementation for Item.
+type ItemType struct{}
+
+func (ItemType) String() string       { return "Item" }
+func (ItemType) EncodeEntity() string { return "minecraft:item" }
+func (ItemType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (ItemType) DecodeNBT(data map[string]any) world.Entity {
+	i := nbtconv.MapItem(data, "Item")
+	if i.Empty() {
+		return nil
+	}
+	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
+	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
+	n.age = int(nbtconv.Map[int16](data, "Age"))
+	n.pickupDelay = int(nbtconv.Map[int64](data, "PickupDelay"))
+	return n
+}
+
+func (ItemType) EncodeNBT(e world.Entity) map[string]any {
+	it := e.(*Item)
+	return map[string]any{
+		"Health":      int16(5),
+		"Age":         int16(it.age),
+		"PickupDelay": int64(it.pickupDelay),
+		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
+		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
+		"Item":        nbtconv.WriteItem(it.Item(), true),
+	}
 }

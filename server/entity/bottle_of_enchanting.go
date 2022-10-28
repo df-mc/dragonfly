@@ -11,34 +11,6 @@ import (
 	"math/rand"
 )
 
-type BottleOfEnchantingType struct{}
-
-func (BottleOfEnchantingType) String() string {
-	return "Bottle o' Enchanting"
-}
-
-func (BottleOfEnchantingType) EncodeEntity() string {
-	return "minecraft:xp_bottle"
-}
-
-func (BottleOfEnchantingType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
-}
-
-func (BottleOfEnchantingType) DecodeNBT(data map[string]any) world.Entity {
-	b := NewBottleOfEnchanting(nbtconv.MapVec3(data, "Pos"), nil)
-	b.vel = nbtconv.MapVec3(data, "Motion")
-	return b
-}
-
-func (BottleOfEnchantingType) EncodeNBT(e world.Entity) map[string]any {
-	b := e.(*BottleOfEnchanting)
-	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(b.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(b.Velocity()),
-	}
-}
-
 // BottleOfEnchanting is a bottle that releases experience orbs when thrown.
 type BottleOfEnchanting struct {
 	transform
@@ -64,6 +36,7 @@ func NewBottleOfEnchanting(pos mgl64.Vec3, owner world.Entity) *BottleOfEnchanti
 	return b
 }
 
+// Type returns BottleOfEnchantingType.
 func (b *BottleOfEnchanting) Type() world.EntityType {
 	return BottleOfEnchantingType{}
 }
@@ -125,4 +98,29 @@ func (b *BottleOfEnchanting) Owner() world.Entity {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.owner
+}
+
+// BottleOfEnchantingType is a world.EntityType for BottleOfEnchanting.
+type BottleOfEnchantingType struct{}
+
+func (BottleOfEnchantingType) String() string { return "Bottle o' Enchanting" }
+func (BottleOfEnchantingType) EncodeEntity() string {
+	return "minecraft:xp_bottle"
+}
+func (BottleOfEnchantingType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (BottleOfEnchantingType) DecodeNBT(data map[string]any) world.Entity {
+	b := NewBottleOfEnchanting(nbtconv.MapVec3(data, "Pos"), nil)
+	b.vel = nbtconv.MapVec3(data, "Motion")
+	return b
+}
+
+func (BottleOfEnchantingType) EncodeNBT(e world.Entity) map[string]any {
+	b := e.(*BottleOfEnchanting)
+	return map[string]any{
+		"Pos":    nbtconv.Vec3ToFloat32Slice(b.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(b.Velocity()),
+	}
 }

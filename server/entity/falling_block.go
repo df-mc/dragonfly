@@ -12,42 +12,6 @@ import (
 	"math/rand"
 )
 
-type FallingBlockType struct{}
-
-func (FallingBlockType) String() string {
-	return "Falling Block"
-}
-
-func (FallingBlockType) EncodeEntity() string {
-	return "minecraft:falling_block"
-}
-
-func (FallingBlockType) BBox(world.Entity) cube.BBox {
-	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
-}
-
-func (FallingBlockType) DecodeNBT(data map[string]any) world.Entity {
-	b := nbtconv.MapBlock(data, "FallingBlock")
-	if b == nil {
-		return nil
-	}
-	n := NewFallingBlock(b, nbtconv.MapVec3(data, "Pos"))
-	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.fallDistance.Store(nbtconv.Map[float64](data, "FallDistance"))
-	return n
-}
-
-func (FallingBlockType) EncodeNBT(e world.Entity) map[string]any {
-	f := e.(*FallingBlock)
-	return map[string]any{
-		"UniqueID":     -rand.Int63(),
-		"FallDistance": f.FallDistance(),
-		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
-		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),
-		"FallingBlock": nbtconv.WriteBlock(f.block),
-	}
-}
-
 // FallingBlock is the entity form of a block that appears when a gravity-affected block loses its support.
 type FallingBlock struct {
 	transform
@@ -72,6 +36,7 @@ func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
 	return b
 }
 
+// Type returns FallingBlockType.
 func (*FallingBlock) Type() world.EntityType {
 	return FallingBlockType{}
 }
@@ -180,4 +145,35 @@ type Solidifiable interface {
 
 type replaceable interface {
 	ReplaceableBy(b world.Block) bool
+}
+
+// FallingBlockType is a world.EntityType implementation for FallingBlock.
+type FallingBlockType struct{}
+
+func (FallingBlockType) String() string       { return "Falling Block" }
+func (FallingBlockType) EncodeEntity() string { return "minecraft:falling_block" }
+func (FallingBlockType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
+}
+
+func (FallingBlockType) DecodeNBT(data map[string]any) world.Entity {
+	b := nbtconv.MapBlock(data, "FallingBlock")
+	if b == nil {
+		return nil
+	}
+	n := NewFallingBlock(b, nbtconv.MapVec3(data, "Pos"))
+	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
+	n.fallDistance.Store(nbtconv.Map[float64](data, "FallDistance"))
+	return n
+}
+
+func (FallingBlockType) EncodeNBT(e world.Entity) map[string]any {
+	f := e.(*FallingBlock)
+	return map[string]any{
+		"UniqueID":     -rand.Int63(),
+		"FallDistance": f.FallDistance(),
+		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
+		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),
+		"FallingBlock": nbtconv.WriteBlock(f.block),
+	}
 }

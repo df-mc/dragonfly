@@ -7,37 +7,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-type TextType struct {
-}
-
-func (TextType) String() string {
-	return "Text"
-}
-
-func (TextType) EncodeEntity() string {
-	return "dragonfly:text"
-}
-
-func (TextType) NetworkEncodeEntity() string {
-	return "minecraft:falling_block"
-}
-
-func (TextType) BBox(world.Entity) cube.BBox {
-	return cube.BBox{}
-}
-
-func (TextType) DecodeNBT(data map[string]any) world.Entity {
-	return NewText(nbtconv.Map[string](data, "Text"), nbtconv.MapVec3(data, "Pos"))
-}
-
-func (TextType) EncodeNBT(e world.Entity) map[string]any {
-	t := e.(*Text)
-	return map[string]any{
-		"Pos":  nbtconv.Vec3ToFloat32Slice(t.Position()),
-		"Text": t.text,
-	}
-}
-
 // Text is an entity that only displays floating text. The entity is otherwise invisible and cannot be moved.
 type Text struct {
 	transform
@@ -51,6 +20,7 @@ func NewText(text string, pos mgl64.Vec3) *Text {
 	return t
 }
 
+// Type returns TextType.
 func (*Text) Type() world.EntityType {
 	return TextType{}
 }
@@ -81,4 +51,24 @@ func (t *Text) Text() string {
 // NameTag returns the designated text of the entity. It is an alias for the Text function.
 func (t *Text) NameTag() string {
 	return t.Text()
+}
+
+// TextType is a world.EntityType implementation for Text.
+type TextType struct{}
+
+func (TextType) String() string              { return "Text" }
+func (TextType) EncodeEntity() string        { return "dragonfly:text" }
+func (TextType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
+func (TextType) NetworkEncodeEntity() string { return "minecraft:falling_block" }
+
+func (TextType) DecodeNBT(data map[string]any) world.Entity {
+	return NewText(nbtconv.Map[string](data, "Text"), nbtconv.MapVec3(data, "Pos"))
+}
+
+func (TextType) EncodeNBT(e world.Entity) map[string]any {
+	t := e.(*Text)
+	return map[string]any{
+		"Pos":  nbtconv.Vec3ToFloat32Slice(t.Position()),
+		"Text": t.text,
+	}
 }

@@ -12,43 +12,6 @@ import (
 	"math/rand"
 )
 
-type FireworkType struct{}
-
-func (FireworkType) String() string {
-	return "Firework Rocket"
-}
-
-func (FireworkType) EncodeEntity() string {
-	return "minecraft:fireworks_rocket"
-}
-
-func (FireworkType) BBox(world.Entity) cube.BBox {
-	return cube.BBox{}
-}
-
-func (FireworkType) DecodeNBT(data map[string]any) world.Entity {
-	f := NewFirework(
-		nbtconv.MapVec3(data, "Pos"),
-		float64(nbtconv.Map[float32](data, "Pitch")),
-		float64(nbtconv.Map[float32](data, "Yaw")),
-		nbtconv.MapItem(data, "Item").Item().(item.Firework),
-	)
-	f.vel = nbtconv.MapVec3(data, "Motion")
-	return f
-}
-
-func (FireworkType) EncodeNBT(e world.Entity) map[string]any {
-	f := e.(*Firework)
-	yaw, pitch := f.Rotation()
-	return map[string]any{
-		"Item":   nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(f.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(f.Velocity()),
-		"Yaw":    float32(yaw),
-		"Pitch":  float32(pitch),
-	}
-}
-
 // Firework is an item (and entity) used for creating decorative explosions, boosting when flying with elytra, and
 // loading into a crossbow as ammunition.
 type Firework struct {
@@ -81,6 +44,7 @@ func NewFirework(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework) *Fi
 	return f
 }
 
+// Type returns FireworkType.
 func (f *Firework) Type() world.EntityType {
 	return FireworkType{}
 }
@@ -195,4 +159,34 @@ func (f *Firework) Owner() world.Entity {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.owner
+}
+
+// FireworkType is a world.EntityType implementation for Firework.
+type FireworkType struct{}
+
+func (FireworkType) String() string              { return "Firework Rocket" }
+func (FireworkType) EncodeEntity() string        { return "minecraft:fireworks_rocket" }
+func (FireworkType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
+
+func (FireworkType) DecodeNBT(data map[string]any) world.Entity {
+	f := NewFirework(
+		nbtconv.MapVec3(data, "Pos"),
+		float64(nbtconv.Map[float32](data, "Pitch")),
+		float64(nbtconv.Map[float32](data, "Yaw")),
+		nbtconv.MapItem(data, "Item").Item().(item.Firework),
+	)
+	f.vel = nbtconv.MapVec3(data, "Motion")
+	return f
+}
+
+func (FireworkType) EncodeNBT(e world.Entity) map[string]any {
+	f := e.(*Firework)
+	yaw, pitch := f.Rotation()
+	return map[string]any{
+		"Item":   nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(f.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(f.Velocity()),
+		"Yaw":    float32(yaw),
+		"Pitch":  float32(pitch),
+	}
 }

@@ -13,6 +13,7 @@ import (
 type Entity interface {
 	io.Closer
 
+	// Type returns the EntityType of the Entity.
 	Type() EntityType
 
 	// Position returns the current position of the entity in the world.
@@ -26,15 +27,23 @@ type Entity interface {
 	World() *World
 }
 
+// EntityType is the type of Entity. It specifies the name, encoded entity
+// ID and bounding box of an Entity.
 type EntityType interface {
 	String() string
 	EncodeEntity() string
 	BBox(e Entity) cube.BBox
 }
 
+// SaveableEntityType is an EntityType that may be saved to disk by decoding
+// and encoding from/to NBT.
 type SaveableEntityType interface {
 	EntityType
+	// DecodeNBT reads the fields from the NBT data map passed and converts it
+	// to an Entity of the same EntityType.
 	DecodeNBT(data map[string]any) Entity
+	// EncodeNBT encodes the Entity of the same EntityType passed to a map of
+	// properties that can be encoded to NBT.
 	EncodeNBT(e Entity) map[string]any
 }
 
