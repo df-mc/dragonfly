@@ -28,6 +28,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 
 	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
 	m.setFlag(dataKeyFlags, dataFlagCanClimb)
+	if npc, ok := e.(world.NPC); ok && npc.NPC() {
+		m[dataKeyHasNpcComponent] = boolByte(npc.NPC())
+	}
 	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
 		m.setFlag(dataKeyFlags, dataFlagSneaking)
 	}
@@ -175,6 +178,7 @@ const (
 	dataKeyCustomDisplay                       = 18
 	dataKeyPotionAuxValue                      = 36
 	dataKeyScale                               = 38
+	dataKeyHasNpcComponent                     = 39
 	dataKeyMaxAir                              = 42
 	dataKeyBoundingBoxWidth                    = 53
 	dataKeyBoundingBoxHeight                   = 54

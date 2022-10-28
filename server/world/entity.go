@@ -33,6 +33,13 @@ type Entity interface {
 	World() *World
 }
 
+// NPC represents an entity can be seen within Npc Dialogues. Only entities that implement NPC can be used to create
+// dialogue forms.
+type NPC interface {
+	Entity
+	NPC() bool
+}
+
 // TickerEntity represents an entity that has a Tick method which should be called every time the entity is
 // ticked every 20th of a second.
 type TickerEntity interface {

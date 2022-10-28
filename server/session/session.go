@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -446,6 +447,7 @@ func (s *Session) registerHandlers() {
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:            nil,
+		packet.IDNPCRequest:            &NpcRequestHandler{dialogues: make(map[string]dialogue.Dialogue)},
 		packet.IDPlayerAction:          &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
 		packet.IDPlayerSkin:            &PlayerSkinHandler{},

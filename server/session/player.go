@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -325,6 +326,57 @@ func (s *Session) SendForm(f form.Form) {
 	s.writePacket(&packet.ModalFormRequest{
 		FormID:   id,
 		FormData: b,
+	})
+}
+
+// SendDialogue shows a npc dialogue to the client of the connection. The Submit method of the dialogue is called when
+// the client clicks a button or closes the menu.
+func (s *Session) SendDialogue(d dialogue.Dialogue) {
+	h := s.handlers[packet.IDNPCRequest].(*NpcRequestHandler)
+
+	m := d.Menu()
+	h.mu.Lock()
+	h.dialogues[s.c.XUID()] = d
+	h.mu.Unlock()
+
+	s.entityMutex.Lock()
+	RID := s.entityRuntimeIDs[m.NPC()]
+	s.entityMutex.Unlock()
+
+	aj, _ := json.Marshal(m)
+	s.writePacket(&packet.NPCDialogue{
+		EntityUniqueID: RID,
+		ActionType:     packet.NPCDialogueActionOpen,
+		Dialogue:       m.Body(),
+		SceneName:      "default",
+		NPCName:        m.Title(),
+		ActionJSON:     string(aj),
+	})
+}
+
+// CloseDialogue forcefully closes the users current dialogue. The Close method of dialogue.Closer is called when the
+// form closes on the client.
+func (s *Session) CloseDialogue(d dialogue.Dialogue) {
+	h := s.handlers[packet.IDNPCRequest].(*NpcRequestHandler)
+
+	m := d.Menu()
+	s.entityMutex.Lock()
+	RID := s.entityRuntimeIDs[m.NPC()]
+	s.entityMutex.Unlock()
+
+	h.mu.Lock()
+	_, ok := h.dialogues[s.c.XUID()]
+	h.mu.Unlock()
+	if !ok {
+		return
+	}
+	s.writePacket(&packet.NPCDialogue{
+		EntityUniqueID: RID,
+		ActionType:     packet.NPCDialogueActionClose,
+		Dialogue:       m.Body(),
+		SceneName:      "default",
+		NPCName:        m.Title(),
+		ActionJSON:     "",
 	})
 }
 
