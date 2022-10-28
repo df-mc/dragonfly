@@ -42,7 +42,7 @@ func readConfig(log server.Logger) (server.Config, error) {
 		if err := os.WriteFile("config.toml", data, 0644); err != nil {
 			return zero, fmt.Errorf("create default config: %v", err)
 		}
-		return zero, nil
+		return c.Config(log)
 	}
 	data, err := os.ReadFile("config.toml")
 	if err != nil {

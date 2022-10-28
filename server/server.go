@@ -337,7 +337,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It
-// may later be modified if the player was saved in the player provide rof the
+// may later be modified if the player was saved in the player provider of the
 // server.
 func (srv *Server) defaultGameData() minecraft.GameData {
 	return minecraft.GameData{
