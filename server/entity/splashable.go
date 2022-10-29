@@ -23,8 +23,8 @@ func (s *splashable) Glint() bool {
 	return len(s.t.Effects()) > 0
 }
 
-// Type returns the type of potion the splashable will grant effects for when thrown.
-func (s *splashable) Type() potion.Potion {
+// Potion returns the type of potion the splashable will grant effects for when thrown.
+func (s *splashable) Potion() potion.Potion {
 	return s.t
 }
 

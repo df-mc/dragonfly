@@ -115,7 +115,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 		m[dataKeyPlayerHasDied] = boolByte(died)
 	}
 	if p, ok := e.(splash); ok {
-		m[dataKeyPotionAuxValue] = int16(p.Type().Uint8())
+		m[dataKeyPotionAuxValue] = int16(p.Potion().Uint8())
 	}
 	if g, ok := e.(glint); ok && g.Glint() {
 		m.setFlag(dataKeyFlags, dataFlagEnchanted)
@@ -263,7 +263,7 @@ type scoreTag interface {
 }
 
 type splash interface {
-	Type() potion.Potion
+	Potion() potion.Potion
 }
 
 type glint interface {
