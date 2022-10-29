@@ -36,37 +36,27 @@ func NewEgg(pos mgl64.Vec3, owner world.Entity) *Egg {
 	return s
 }
 
-// Name ...
-func (s *Egg) Name() string {
-	return "Egg"
-}
-
-// EncodeEntity ...
-func (s *Egg) EncodeEntity() string {
-	return "minecraft:egg"
-}
-
-// BBox ...
-func (s *Egg) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+// Type returns EggType.
+func (egg *Egg) Type() world.EntityType {
+	return EggType{}
 }
 
 // Tick ...
-func (s *Egg) Tick(w *world.World, current int64) {
-	if s.close {
-		_ = s.Close()
+func (egg *Egg) Tick(w *world.World, current int64) {
+	if egg.close {
+		_ = egg.Close()
 		return
 	}
-	s.mu.Lock()
-	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0, s.ignores)
-	s.pos, s.vel = m.pos, m.vel
-	s.mu.Unlock()
+	egg.mu.Lock()
+	m, result := egg.c.TickMovement(egg, egg.pos, egg.vel, 0, 0, egg.ignores)
+	egg.pos, egg.vel = m.pos, m.vel
+	egg.mu.Unlock()
 
-	s.age++
+	egg.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
-		s.close = true
+		egg.close = true
 		return
 	}
 
@@ -77,59 +67,65 @@ func (s *Egg) Tick(w *world.World, current int64) {
 
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: s, Owner: s.Owner()}); vulnerable {
+				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: egg, Owner: egg.Owner()}); vulnerable {
 					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
 		}
 
-		// TODO: Spawn chicken(s) 12.5% of the time?
+		// TODO: Spawn chicken(egg) 12.5% of the time?
 
-		s.close = true
+		egg.close = true
 	}
 }
 
 // ignores returns whether the egg should ignore collision with the entity passed.
-func (s *Egg) ignores(entity world.Entity) bool {
+func (egg *Egg) ignores(entity world.Entity) bool {
 	_, ok := entity.(Living)
-	return !ok || entity == s || (s.age < 5 && entity == s.owner)
+	return !ok || entity == egg || (egg.age < 5 && entity == egg.owner)
 }
 
 // New creates a egg with the position, velocity, yaw, and pitch provided. It doesn't spawn the egg,
 // only returns it.
-func (s *Egg) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
+func (*Egg) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
 	egg := NewEgg(pos, owner)
 	egg.vel = vel
 	return egg
 }
 
 // Explode ...
-func (s *Egg) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
-	s.mu.Lock()
-	s.vel = s.vel.Add(s.pos.Sub(explosionPos).Normalize().Mul(impact))
-	s.mu.Unlock()
+func (egg *Egg) Explode(src mgl64.Vec3, force float64, _ block.ExplosionConfig) {
+	egg.mu.Lock()
+	egg.vel = egg.vel.Add(egg.pos.Sub(src).Normalize().Mul(force))
+	egg.mu.Unlock()
 }
 
 // Owner ...
-func (s *Egg) Owner() world.Entity {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.owner
+func (egg *Egg) Owner() world.Entity {
+	egg.mu.Lock()
+	defer egg.mu.Unlock()
+	return egg.owner
 }
 
-// DecodeNBT decodes the properties in a map to a Egg and returns a new Egg entity.
-func (s *Egg) DecodeNBT(data map[string]any) any {
-	return s.New(
-		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
-		nil,
-	)
+// EggType is a world.EntityType implementation for Egg.
+type EggType struct{}
+
+func (EggType) String() string       { return "Egg" }
+func (EggType) EncodeEntity() string { return "minecraft:egg" }
+func (EggType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// EncodeNBT encodes the Egg entity's properties as a map and returns it.
-func (s *Egg) EncodeNBT() map[string]any {
+func (EggType) DecodeNBT(data map[string]any) world.Entity {
+	egg := NewEgg(nbtconv.MapVec3(data, "Pos"), nil)
+	egg.vel = nbtconv.MapVec3(data, "Motion")
+	return egg
+}
+
+func (EggType) EncodeNBT(e world.Entity) map[string]any {
+	egg := e.(*Egg)
 	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(egg.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(egg.Velocity()),
 	}
 }

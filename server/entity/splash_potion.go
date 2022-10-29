@@ -38,19 +38,9 @@ func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *Splas
 	return s
 }
 
-// Name ...
-func (s *SplashPotion) Name() string {
-	return "Splash Potion"
-}
-
-// EncodeEntity ...
-func (s *SplashPotion) EncodeEntity() string {
-	return "minecraft:splash_potion"
-}
-
-// BBox ...
-func (s *SplashPotion) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+// Type returns SplashPotionType.
+func (*SplashPotion) Type() world.EntityType {
+	return SplashPotionType{}
 }
 
 // Tick ...
@@ -73,7 +63,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		s.splash(s, w, m.pos, result, s.BBox())
+		s.splash(s, w, m.pos, result, s.Type().BBox(s))
 		s.close = true
 	}
 }
@@ -107,21 +97,26 @@ func (s *SplashPotion) Owner() world.Entity {
 	return s.owner
 }
 
-// DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.
-func (s *SplashPotion) DecodeNBT(data map[string]any) any {
-	return s.New(
-		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
-		potion.From(nbtconv.Map[int32](data, "PotionId")),
-		nil,
-	)
+// SplashPotionType is a world.EntityType implementation for SplashPotion.
+type SplashPotionType struct{}
+
+func (SplashPotionType) String() string       { return "Splash Potion" }
+func (SplashPotionType) EncodeEntity() string { return "minecraft:splash_potion" }
+func (SplashPotionType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// EncodeNBT encodes the SplashPotion entity's properties as a map and returns it.
-func (s *SplashPotion) EncodeNBT() map[string]any {
+func (SplashPotionType) DecodeNBT(data map[string]any) world.Entity {
+	pot := NewSplashPotion(nbtconv.MapVec3(data, "Pos"), nil, potion.From(nbtconv.Map[int32](data, "PotionId")))
+	pot.vel = nbtconv.MapVec3(data, "Motion")
+	return pot
+}
+
+func (SplashPotionType) EncodeNBT(e world.Entity) map[string]any {
+	pot := e.(*SplashPotion)
 	return map[string]any{
-		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
-		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-		"PotionId": int32(s.t.Uint8()),
+		"Pos":      nbtconv.Vec3ToFloat32Slice(pot.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(pot.Velocity()),
+		"PotionId": int32(pot.t.Uint8()),
 	}
 }
