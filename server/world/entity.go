@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/maps"
@@ -30,8 +31,12 @@ type Entity interface {
 // EntityType is the type of Entity. It specifies the name, encoded entity
 // ID and bounding box of an Entity.
 type EntityType interface {
-	String() string
+	fmt.Stringer
+	// EncodeEntity converts the entity to its encoded representation: It
+	// returns the type of the Minecraft entity, for example
+	// 'minecraft:falling_block'.
 	EncodeEntity() string
+	// BBox returns the bounding box of an Entity with this EntityType.
 	BBox(e Entity) cube.BBox
 }
 
