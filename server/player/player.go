@@ -163,6 +163,7 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	return p
 }
 
+// Type returns the world.EntityType for the Player.
 func (p *Player) Type() world.EntityType {
 	return Type{}
 }
@@ -2443,7 +2444,7 @@ func (p *Player) insideOfWater(w *world.World) bool {
 // insideOfSolid returns true if the player is inside a solid block.
 func (p *Player) insideOfSolid(w *world.World) bool {
 	pos := cube.PosFromVec3(entity.EyePosition(p))
-	b, box := w.Block(pos), p.BBox().Translate(p.Position())
+	b, box := w.Block(pos), p.Type().BBox(p).Translate(p.Position())
 
 	_, solid := b.Model().(model.Solid)
 	if !solid {
@@ -2465,7 +2466,7 @@ func (p *Player) insideOfSolid(w *world.World) bool {
 
 // checkCollisions checks the player's block collisions.
 func (p *Player) checkBlockCollisions(vel mgl64.Vec3, w *world.World) {
-	entityBBox := p.BBox().Translate(p.Position())
+	entityBBox := p.Type().BBox(p).Translate(p.Position())
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	p.checkEntityInsiders(w, entityBBox)
@@ -2546,7 +2547,7 @@ func (p *Player) checkEntityInsiders(w *world.World, entityBBox cube.BBox) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround(w *world.World) bool {
-	box := p.BBox().Translate(p.Position())
+	box := p.Type().BBox(p).Translate(p.Position())
 
 	b := box.Grow(1)
 
@@ -2565,11 +2566,6 @@ func (p *Player) checkOnGround(w *world.World) bool {
 		}
 	}
 	return false
-}
-
-// BBox returns the axis aligned bounding box of the player.
-func (p *Player) BBox() cube.BBox {
-	return Type{}.BBox(p)
 }
 
 // Scale returns the scale modifier of the Player. The default value for a normal scale is 1. A scale of 0
@@ -2672,11 +2668,6 @@ func (p *Player) PunchAir() {
 	}
 	p.SwingArm()
 	p.World().PlaySound(p.Position(), sound.Attack{})
-}
-
-// EncodeEntity ...
-func (p *Player) EncodeEntity() string {
-	return Type{}.EncodeEntity()
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
