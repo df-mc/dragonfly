@@ -3,7 +3,7 @@ package mcdb
 // data holds a collection of data that specify a range of settings of the world. These settings usually
 // alter the way that players interact with the world.
 // The data held here is usually saved in a level.dat file of the world.
-//noinspection SpellCheckingInspection
+// noinspection SpellCheckingInspection
 type data struct {
 	BaseGameVersion                string `nbt:"baseGameVersion"`
 	BiomeOverride                  string
@@ -96,7 +96,7 @@ type data struct {
 	LightningTime                  int32          `nbt:"lightningTime"`
 	MaxCommandChainLength          int32          `nbt:"maxcommandchainlength"`
 	MobGriefing                    bool           `nbt:"mobgriefing"`
-	NaturalRegeneration            bool           `nbt:"naturalregeneration"`
+	NaturalRegeneration            bool           `nbt:"naturalgeneration"`
 	PRID                           string         `nbt:"prid"`
 	PVP                            bool           `nbt:"pvp"`
 	RainLevel                      float32        `nbt:"rainLevel"`

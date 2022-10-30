@@ -115,7 +115,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.LANBroadcast = true
 	p.d.LANBroadcastIntent = true
 	p.d.LastOpenedWithVersion = minimumCompatibleClientVersion
-	p.d.LevelName = "My World"
+	p.d.LevelName = "World"
 	p.d.LightningLevel = 1.0
 	p.d.LimitedWorldDepth = 16
 	p.d.LimitedWorldOriginY = math.MaxInt16

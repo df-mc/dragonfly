@@ -127,6 +127,9 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 			return nil, err
 		}
 	}
+	if paletteCount == 0 {
+		return palette, fmt.Errorf("invalid palette entry count: found 0, but palette with %v bits per block must have at least 1 value", blockSize)
+	}
 	return palette, nil
 }
 
