@@ -17,7 +17,7 @@ type entityMetadata map[uint32]any
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
 func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
-	bb := e.BBox()
+	bb := e.Type().BBox(e)
 	m := entityMetadata{
 		dataKeyBoundingBoxWidth:  float32(bb.Width()),
 		dataKeyBoundingBoxHeight: float32(bb.Height()),
@@ -115,7 +115,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 		m[dataKeyPlayerHasDied] = boolByte(died)
 	}
 	if p, ok := e.(splash); ok {
-		m[dataKeyPotionAuxValue] = int16(p.Type().Uint8())
+		m[dataKeyPotionAuxValue] = int16(p.Potion().Uint8())
 	}
 	if g, ok := e.(glint); ok && g.Glint() {
 		m.setFlag(dataKeyFlags, dataFlagEnchanted)
@@ -158,7 +158,7 @@ func (m entityMetadata) setFlag(key uint32, index uint8) {
 	}
 }
 
-//noinspection GoUnusedConst
+// noinspection GoUnusedConst
 const (
 	dataKeyFlags = iota
 	dataKeyHealth
@@ -188,12 +188,12 @@ const (
 	dataKeyAreaEffectCloudRadiusPerTick        = 97
 	dataKeyAreaEffectCloudRadiusChangeOnPickup = 98
 	dataKeyAreaEffectCloudPickupCount          = 99
-	dataKeyPlayerLastDeathPos                  = 128
-	dataKeyPlayerLastDeathDimension            = 129
-	dataKeyPlayerHasDied                       = 130
+	dataKeyPlayerLastDeathPos                  = 127
+	dataKeyPlayerLastDeathDimension            = 128
+	dataKeyPlayerHasDied                       = 129
 )
 
-//noinspection GoUnusedConst
+// noinspection GoUnusedConst
 const (
 	dataFlagOnFire = iota
 	dataFlagSneaking
@@ -263,7 +263,7 @@ type scoreTag interface {
 }
 
 type splash interface {
-	Type() potion.Potion
+	Potion() potion.Potion
 }
 
 type glint interface {

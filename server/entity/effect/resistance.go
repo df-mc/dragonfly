@@ -1,7 +1,7 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
+	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 )
 
@@ -12,7 +12,7 @@ type Resistance struct {
 }
 
 // Multiplier returns a damage multiplier for the damage source passed.
-func (Resistance) Multiplier(e damage.Source, lvl int) float64 {
+func (Resistance) Multiplier(e world.DamageSource, lvl int) float64 {
 	if !e.ReducedByResistance() {
 		return 1
 	}

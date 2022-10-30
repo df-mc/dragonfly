@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -37,19 +36,9 @@ func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Snowball {
 	return s
 }
 
-// Name ...
-func (s *Snowball) Name() string {
-	return "Snowball"
-}
-
-// EncodeEntity ...
-func (s *Snowball) EncodeEntity() string {
-	return "minecraft:snowball"
-}
-
-// BBox ...
-func (s *Snowball) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+// Type returns SnowballType.
+func (s *Snowball) Type() world.EntityType {
+	return SnowballType{}
 }
 
 // Tick ...
@@ -78,7 +67,7 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, damage.SourceProjectile{Projectile: s, Owner: s.Owner()}); vulnerable {
+				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: s, Owner: s.Owner()}); vulnerable {
 					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
@@ -116,17 +105,23 @@ func (s *Snowball) Owner() world.Entity {
 	return s.owner
 }
 
-// DecodeNBT decodes the properties in a map to a Snowball and returns a new Snowball entity.
-func (s *Snowball) DecodeNBT(data map[string]any) any {
-	return s.New(
-		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
-		nil,
-	)
+// SnowballType is a world.EntityType implementation for Snowball.
+type SnowballType struct{}
+
+func (SnowballType) String() string       { return "Snowball" }
+func (SnowballType) EncodeEntity() string { return "minecraft:snowball" }
+func (SnowballType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// EncodeNBT encodes the Snowball entity's properties as a map and returns it.
-func (s *Snowball) EncodeNBT() map[string]any {
+func (SnowballType) DecodeNBT(data map[string]any) world.Entity {
+	s := NewSnowball(nbtconv.MapVec3(data, "Pos"), nil)
+	s.vel = nbtconv.MapVec3(data, "Motion")
+	return s
+}
+
+func (SnowballType) EncodeNBT(e world.Entity) map[string]any {
+	s := e.(*Snowball)
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
