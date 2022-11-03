@@ -127,7 +127,6 @@ func (e *EnderPearl) Owner() world.Entity {
 // EnderPearlType is a world.EntityType implementation for EnderPearl.
 type EnderPearlType struct{}
 
-func (EnderPearlType) String() string       { return "Ender Pearl" }
 func (EnderPearlType) EncodeEntity() string { return "minecraft:ender_pearl" }
 func (EnderPearlType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)

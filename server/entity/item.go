@@ -185,7 +185,6 @@ type Collector interface {
 // ItemType is a world.EntityType implementation for Item.
 type ItemType struct{}
 
-func (ItemType) String() string       { return "Item" }
 func (ItemType) EncodeEntity() string { return "minecraft:item" }
 func (ItemType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)

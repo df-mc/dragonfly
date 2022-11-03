@@ -129,7 +129,6 @@ func fire() world.Block {
 // LightningType is a world.EntityType implementation for Lightning.
 type LightningType struct{}
 
-func (LightningType) String() string                        { return "Lightning" }
 func (LightningType) EncodeEntity() string                  { return "minecraft:lightning_bolt" }
 func (LightningType) BBox(world.Entity) cube.BBox           { return cube.BBox{} }
 func (LightningType) DecodeNBT(map[string]any) world.Entity { return nil }

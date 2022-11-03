@@ -100,7 +100,6 @@ func (s *SplashPotion) Owner() world.Entity {
 // SplashPotionType is a world.EntityType implementation for SplashPotion.
 type SplashPotionType struct{}
 
-func (SplashPotionType) String() string       { return "Splash Potion" }
 func (SplashPotionType) EncodeEntity() string { return "minecraft:splash_potion" }
 func (SplashPotionType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)

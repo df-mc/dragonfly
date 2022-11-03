@@ -150,7 +150,6 @@ type replaceable interface {
 // FallingBlockType is a world.EntityType implementation for FallingBlock.
 type FallingBlockType struct{}
 
-func (FallingBlockType) String() string       { return "Falling Block" }
 func (FallingBlockType) EncodeEntity() string { return "minecraft:falling_block" }
 func (FallingBlockType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)

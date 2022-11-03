@@ -103,7 +103,6 @@ func (b *BottleOfEnchanting) Owner() world.Entity {
 // BottleOfEnchantingType is a world.EntityType for BottleOfEnchanting.
 type BottleOfEnchantingType struct{}
 
-func (BottleOfEnchantingType) String() string { return "Bottle o' Enchanting" }
 func (BottleOfEnchantingType) EncodeEntity() string {
 	return "minecraft:xp_bottle"
 }

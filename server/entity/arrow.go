@@ -334,7 +334,6 @@ func boolByte(b bool) uint8 {
 // ArrowType is a world.EntityType implementation for Arrow.
 type ArrowType struct{}
 
-func (ArrowType) String() string       { return "Arrow" }
 func (ArrowType) EncodeEntity() string { return "minecraft:arrow" }
 func (ArrowType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)

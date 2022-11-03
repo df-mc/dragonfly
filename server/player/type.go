@@ -8,7 +8,6 @@ import (
 // Type is a world.EntityType implementation for Player.
 type Type struct{}
 
-func (Type) String() string       { return "Player" }
 func (Type) EncodeEntity() string { return "minecraft:player" }
 func (Type) BBox(e world.Entity) cube.BBox {
 	p := e.(*Player)

@@ -94,7 +94,6 @@ func (t *TNT) New(pos mgl64.Vec3, fuse time.Duration) world.Entity {
 // TNTType is a world.EntityType implementation for TNT.
 type TNTType struct{}
 
-func (TNTType) String() string       { return "Primed TNT" }
 func (TNTType) EncodeEntity() string { return "minecraft:tnt" }
 func (TNTType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)

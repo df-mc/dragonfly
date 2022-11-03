@@ -99,7 +99,6 @@ func (l *LingeringPotion) Owner() world.Entity {
 // LingeringPotionType is a world.EntityType implementation for LingeringPotion.
 type LingeringPotionType struct{}
 
-func (LingeringPotionType) String() string { return "Lingering Potion" }
 func (LingeringPotionType) EncodeEntity() string {
 	return "minecraft:lingering_potion"
 }

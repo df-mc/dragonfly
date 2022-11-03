@@ -164,7 +164,6 @@ func (f *Firework) Owner() world.Entity {
 // FireworkType is a world.EntityType implementation for Firework.
 type FireworkType struct{}
 
-func (FireworkType) String() string              { return "Firework Rocket" }
 func (FireworkType) EncodeEntity() string        { return "minecraft:fireworks_rocket" }
 func (FireworkType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 

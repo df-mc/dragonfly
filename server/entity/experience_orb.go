@@ -135,7 +135,6 @@ func (e *ExperienceOrb) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 // ExperienceOrbType is a world.EntityType implementation for ExperienceOrb.
 type ExperienceOrbType struct{}
 
-func (ExperienceOrbType) String() string       { return "Experience Orb" }
 func (ExperienceOrbType) EncodeEntity() string { return "minecraft:xp_orb" }
 func (ExperienceOrbType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)

@@ -202,7 +202,6 @@ func (a *AreaEffectCloud) useRadius() bool {
 // AreaEffectCloudType is a world.EntityType implementation for AreaEffectCloud.
 type AreaEffectCloudType struct{}
 
-func (AreaEffectCloudType) String() string       { return "Area Effect Cloud" }
 func (AreaEffectCloudType) EncodeEntity() string { return "minecraft:area_effect_cloud" }
 func (AreaEffectCloudType) BBox(e world.Entity) cube.BBox {
 	r, _, _ := e.(*AreaEffectCloud).Radius()

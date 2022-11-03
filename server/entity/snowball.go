@@ -108,7 +108,6 @@ func (s *Snowball) Owner() world.Entity {
 // SnowballType is a world.EntityType implementation for Snowball.
 type SnowballType struct{}
 
-func (SnowballType) String() string       { return "Snowball" }
 func (SnowballType) EncodeEntity() string { return "minecraft:snowball" }
 func (SnowballType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)

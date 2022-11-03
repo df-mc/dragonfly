@@ -110,7 +110,6 @@ func (egg *Egg) Owner() world.Entity {
 // EggType is a world.EntityType implementation for Egg.
 type EggType struct{}
 
-func (EggType) String() string       { return "Egg" }
 func (EggType) EncodeEntity() string { return "minecraft:egg" }
 func (EggType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)

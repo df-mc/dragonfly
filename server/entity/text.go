@@ -56,7 +56,6 @@ func (t *Text) NameTag() string {
 // TextType is a world.EntityType implementation for Text.
 type TextType struct{}
 
-func (TextType) String() string              { return "Text" }
 func (TextType) EncodeEntity() string        { return "dragonfly:text" }
 func (TextType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 func (TextType) NetworkEncodeEntity() string { return "minecraft:falling_block" }
