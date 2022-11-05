@@ -191,14 +191,15 @@ func (ItemType) BBox(world.Entity) cube.BBox {
 }
 
 func (ItemType) DecodeNBT(data map[string]any) world.Entity {
-	i := nbtconv.MapItem(data, "Item")
+	m := nbtconv.Map(data)
+	i := m.Item("Item")
 	if i.Empty() {
 		return nil
 	}
-	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
-	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.age = int(nbtconv.Map[int16](data, "Age"))
-	n.pickupDelay = int(nbtconv.Map[int64](data, "PickupDelay"))
+	n := NewItem(i, m.Vec3("Pos"))
+	n.SetVelocity(m.Vec3("Motion"))
+	n.age = int(m.Int16("Age"))
+	n.pickupDelay = int(m.Int64("PickupDelay"))
 	return n
 }
 

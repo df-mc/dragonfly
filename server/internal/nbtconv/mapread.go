@@ -7,9 +7,9 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Map reads a value of the type T from the map passed. Map never panics. If the key was not found in the map
+// Read reads a value of the type T from the map passed. Read never panics. If the key was not found in the map
 // or if the value was of a different type, the default value of type T is returned.
-func Map[T any](m map[string]any, key string) T {
+func Read[T any](m map[string]any, key string) T {
 	v, _ := m[key].(T)
 	return v
 }

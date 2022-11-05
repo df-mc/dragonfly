@@ -100,8 +100,9 @@ func (TNTType) BBox(world.Entity) cube.BBox {
 }
 
 func (TNTType) DecodeNBT(data map[string]any) world.Entity {
-	tnt := NewTNT(nbtconv.MapVec3(data, "Pos"), time.Duration(nbtconv.Map[uint8](data, "Fuse"))*time.Millisecond*50)
-	tnt.vel = nbtconv.MapVec3(data, "Motion")
+	m := nbtconv.Map(data)
+	tnt := NewTNT(m.Vec3("Pos"), time.Duration(m.Uint8("Fuse"))*time.Millisecond*50)
+	tnt.vel = m.Vec3("Motion")
 	return tnt
 }
 

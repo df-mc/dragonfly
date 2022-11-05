@@ -12,6 +12,16 @@ type ProjectileComputer struct {
 	*MovementComputer
 }
 
+// newProjectileComputer creates a ProjectileComputer with a gravity and drag
+// value and if drag should be applied before gravity.
+func newProjectileComputer(gravity, drag float64) *ProjectileComputer {
+	return &ProjectileComputer{&MovementComputer{
+		Gravity:           gravity,
+		Drag:              drag,
+		DragBeforeGravity: true,
+	}}
+}
+
 // TickMovement performs a movement tick on a projectile. Velocity is applied and changed according to the values
 // of its Drag and Gravity. A ray trace is performed to see if the projectile has collided with any block or entity,
 // the ray trace result is returned.

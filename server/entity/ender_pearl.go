@@ -24,14 +24,7 @@ type EnderPearl struct {
 
 // NewEnderPearl ...
 func NewEnderPearl(pos mgl64.Vec3, owner world.Entity) *EnderPearl {
-	e := &EnderPearl{
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.03,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
-		owner: owner,
-	}
+	e := &EnderPearl{c: newProjectileComputer(0.03, 0.01), owner: owner}
 	e.transform = newTransform(e, pos)
 
 	return e
@@ -133,8 +126,9 @@ func (EnderPearlType) BBox(world.Entity) cube.BBox {
 }
 
 func (EnderPearlType) DecodeNBT(data map[string]any) world.Entity {
-	ep := NewEnderPearl(nbtconv.MapVec3(data, "Pos"), nil)
-	ep.vel = nbtconv.MapVec3(data, "Motion")
+	m := nbtconv.Map(data)
+	ep := NewEnderPearl(m.Vec3("Pos"), nil)
+	ep.vel = m.Vec3("Motion")
 	return ep
 }
 

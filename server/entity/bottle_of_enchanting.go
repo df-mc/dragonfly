@@ -24,14 +24,7 @@ type BottleOfEnchanting struct {
 
 // NewBottleOfEnchanting ...
 func NewBottleOfEnchanting(pos mgl64.Vec3, owner world.Entity) *BottleOfEnchanting {
-	b := &BottleOfEnchanting{
-		owner: owner,
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.07,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
-	}
+	b := &BottleOfEnchanting{owner: owner, c: newProjectileComputer(0.07, 0.01)}
 	b.transform = newTransform(b, pos)
 	return b
 }
@@ -111,8 +104,9 @@ func (BottleOfEnchantingType) BBox(world.Entity) cube.BBox {
 }
 
 func (BottleOfEnchantingType) DecodeNBT(data map[string]any) world.Entity {
-	b := NewBottleOfEnchanting(nbtconv.MapVec3(data, "Pos"), nil)
-	b.vel = nbtconv.MapVec3(data, "Motion")
+	m := nbtconv.Map(data)
+	b := NewBottleOfEnchanting(m.Vec3("Pos"), nil)
+	b.vel = m.Vec3("Motion")
 	return b
 }
 

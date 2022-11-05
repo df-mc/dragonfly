@@ -12,7 +12,7 @@ func InvFromNBT(inv *inventory.Inventory, items []any) {
 		if it.Empty() {
 			continue
 		}
-		_ = inv.SetItem(int(Map[byte](data, "Slot")), it)
+		_ = inv.SetItem(int(Read[byte](data, "Slot")), it)
 	}
 }
 

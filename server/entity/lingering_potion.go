@@ -27,11 +27,7 @@ func NewLingeringPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *Li
 	l := &LingeringPotion{
 		owner:      owner,
 		splashable: splashable{t: t, m: 0.25},
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.05,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
+		c:          newProjectileComputer(0.05, 0.01),
 	}
 	l.transform = newTransform(l, pos)
 	return l
@@ -107,8 +103,9 @@ func (LingeringPotionType) BBox(world.Entity) cube.BBox {
 }
 
 func (LingeringPotionType) DecodeNBT(data map[string]any) world.Entity {
-	pot := NewLingeringPotion(nbtconv.MapVec3(data, "Pos"), nil, potion.From(nbtconv.Map[int32](data, "PotionId")))
-	pot.vel = nbtconv.MapVec3(data, "Motion")
+	m := nbtconv.Map(data)
+	pot := NewLingeringPotion(m.Vec3("Pos"), nil, potion.From(m.Int32("PotionId")))
+	pot.vel = m.Vec3("Motion")
 	return pot
 }
 

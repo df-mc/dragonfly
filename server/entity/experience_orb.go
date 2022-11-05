@@ -141,9 +141,10 @@ func (ExperienceOrbType) BBox(world.Entity) cube.BBox {
 }
 
 func (ExperienceOrbType) DecodeNBT(data map[string]any) world.Entity {
-	o := NewExperienceOrb(nbtconv.MapVec3(data, "Pos"), int(nbtconv.Map[int32](data, "Value")))
-	o.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	o.age = int(nbtconv.Map[int16](data, "Age"))
+	m := nbtconv.Map(data)
+	o := NewExperienceOrb(m.Vec3("Pos"), int(m.Int32("Value")))
+	o.vel = m.Vec3("Motion")
+	o.age = int(m.Int16("Age"))
 	return o
 }
 

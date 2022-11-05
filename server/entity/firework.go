@@ -168,11 +168,12 @@ func (FireworkType) EncodeEntity() string        { return "minecraft:fireworks_r
 func (FireworkType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 
 func (FireworkType) DecodeNBT(data map[string]any) world.Entity {
+	m := nbtconv.Map(data)
 	f := NewFirework(
-		nbtconv.MapVec3(data, "Pos"),
-		float64(nbtconv.Map[float32](data, "Pitch")),
-		float64(nbtconv.Map[float32](data, "Yaw")),
-		nbtconv.MapItem(data, "Item").Item().(item.Firework),
+		m.Vec3("Pos"),
+		float64(m.Float32("Pitch")),
+		float64(m.Float32("Yaw")),
+		m.Item("Item").Item().(item.Firework),
 	)
 	f.vel = nbtconv.MapVec3(data, "Motion")
 	return f

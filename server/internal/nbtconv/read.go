@@ -36,7 +36,7 @@ func readItemStack(m map[string]any) item.Stack {
 	if blockItem, ok := MapBlock(m, "Block").(world.Item); ok {
 		it = blockItem
 	}
-	if v, ok := world.ItemByName(Map[string](m, "Name"), Map[int16](m, "Damage")); ok {
+	if v, ok := world.ItemByName(Read[string](m, "Name"), Read[int16](m, "Damage")); ok {
 		it = v
 	}
 	if it == nil {
@@ -45,36 +45,36 @@ func readItemStack(m map[string]any) item.Stack {
 	if n, ok := it.(world.NBTer); ok {
 		it = n.DecodeNBT(m).(world.Item)
 	}
-	return item.NewStack(it, int(Map[byte](m, "Count")))
+	return item.NewStack(it, int(Read[byte](m, "Count")))
 }
 
 // readDamage reads the damage value stored in the NBT with the Damage tag and saves it to the item.Stack passed.
 func readDamage(m map[string]any, s *item.Stack, disk bool) {
 	if disk {
-		*s = s.Damage(int(Map[int16](m, "Damage")))
+		*s = s.Damage(int(Read[int16](m, "Damage")))
 		return
 	}
-	*s = s.Damage(int(Map[int32](m, "Damage")))
+	*s = s.Damage(int(Read[int32](m, "Damage")))
 }
 
 // readAnvilCost ...
 func readAnvilCost(m map[string]any, s *item.Stack) {
-	*s = s.WithAnvilCost(int(Map[int32](m, "RepairCost")))
+	*s = s.WithAnvilCost(int(Read[int32](m, "RepairCost")))
 }
 
 // readEnchantments reads the enchantments stored in the ench tag of the NBT passed and stores it into an item.Stack.
 func readEnchantments(m map[string]any, s *item.Stack) {
 	enchantments, ok := m["ench"].([]map[string]any)
 	if !ok {
-		for _, e := range Map[[]any](m, "ench") {
+		for _, e := range Read[[]any](m, "ench") {
 			if v, ok := e.(map[string]any); ok {
 				enchantments = append(enchantments, v)
 			}
 		}
 	}
 	for _, ench := range enchantments {
-		if t, ok := item.EnchantmentByID(int(Map[int16](ench, "id"))); ok {
-			*s = s.WithEnchantments(item.NewEnchantment(t, int(Map[int16](ench, "lvl"))))
+		if t, ok := item.EnchantmentByID(int(Read[int16](ench, "id"))); ok {
+			*s = s.WithEnchantments(item.NewEnchantment(t, int(Read[int16](ench, "lvl"))))
 		}
 	}
 }

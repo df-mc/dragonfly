@@ -25,14 +25,9 @@ type SplashPotion struct {
 // NewSplashPotion ...
 func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *SplashPotion {
 	s := &SplashPotion{
-		owner: owner,
-
+		owner:      owner,
 		splashable: splashable{t: t, m: 0.75},
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.05,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
+		c:          newProjectileComputer(0.05, 0.01),
 	}
 	s.transform = newTransform(s, pos)
 	return s
@@ -106,8 +101,9 @@ func (SplashPotionType) BBox(world.Entity) cube.BBox {
 }
 
 func (SplashPotionType) DecodeNBT(data map[string]any) world.Entity {
-	pot := NewSplashPotion(nbtconv.MapVec3(data, "Pos"), nil, potion.From(nbtconv.Map[int32](data, "PotionId")))
-	pot.vel = nbtconv.MapVec3(data, "Motion")
+	m := nbtconv.Map(data)
+	pot := NewSplashPotion(m.Vec3("Pos"), nil, potion.From(m.Int32("PotionId")))
+	pot.vel = m.Vec3("Motion")
 	return pot
 }
 

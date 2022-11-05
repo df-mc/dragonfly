@@ -61,7 +61,8 @@ func (TextType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 func (TextType) NetworkEncodeEntity() string { return "minecraft:falling_block" }
 
 func (TextType) DecodeNBT(data map[string]any) world.Entity {
-	return NewText(nbtconv.Map[string](data, "Text"), nbtconv.MapVec3(data, "Pos"))
+	m := nbtconv.Map(data)
+	return NewText(m.String("Text"), m.Vec3("Pos"))
 }
 
 func (TextType) EncodeNBT(e world.Entity) map[string]any {

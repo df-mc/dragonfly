@@ -104,8 +104,8 @@ func (b Banner) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (b Banner) DecodeNBT(data map[string]any) any {
-	b.Colour = invertColourID(int16(nbtconv.Map[int32](data, "Base")))
-	b.Illager = nbtconv.Map[int32](data, "Type") == 1
+	b.Colour = invertColourID(int16(nbtconv.Read[int32](data, "Base")))
+	b.Illager = nbtconv.Read[int32](data, "Type") == 1
 	if patterns, ok := data["Patterns"].([]any); ok {
 		b.Patterns = make([]BannerPatternLayer, len(patterns))
 		for i, p := range b.Patterns {
