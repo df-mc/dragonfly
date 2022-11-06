@@ -14,7 +14,6 @@ type SplashPotion struct {
 	splashable
 	transform
 
-	age   int
 	close bool
 
 	owner world.Entity
@@ -45,11 +44,10 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 		return
 	}
 	s.mu.Lock()
-	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0, s.ignores)
+	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0)
 	s.pos, s.vel = m.pos, m.vel
 	s.mu.Unlock()
 
-	s.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -61,12 +59,6 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 		s.splash(s, w, m.pos, result, s.Type().BBox(s))
 		s.close = true
 	}
-}
-
-// ignores returns whether the SplashPotion should ignore collision with the entity passed.
-func (s *SplashPotion) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == s || (s.age < 5 && entity == s.owner)
 }
 
 // New creates a SplashPotion with the position and velocity provided. It doesn't spawn the SplashPotion,

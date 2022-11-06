@@ -23,8 +23,8 @@ type Arrow struct {
 	yaw, pitch float64
 	baseDamage float64
 
-	age, ageCollided int
-	close, critical  bool
+	ageCollided     int
+	close, critical bool
 
 	collisionPos cube.Pos
 	collided     bool
@@ -200,16 +200,15 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 	}
 
 	pastVel := a.vel
-	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch, a.ignores)
+	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch)
 	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
 	a.collisionPos, a.collided = cube.Pos{}, false
 	a.mu.Unlock()
 
-	a.age++
 	a.ageCollided = 0
 	m.Send()
 
-	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 || a.age > 1200 {
+	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 || a.c.age > 1200 {
 		a.close = true
 		return
 	}
@@ -251,12 +250,6 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 		a.setCritical(false)
 		w.PlaySound(m.pos, sound.ArrowHit{})
 	}
-}
-
-// ignores returns whether the arrow should ignore collision with the entity passed.
-func (a *Arrow) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == a || (a.age < 5 && entity == a.owner)
 }
 
 // New creates and returns an Arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the Arrow

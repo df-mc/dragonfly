@@ -13,7 +13,6 @@ import (
 // Egg is an item that can be used to craft food items, or as a throwable entity to spawn chicks.
 type Egg struct {
 	transform
-	age   int
 	close bool
 
 	owner world.Entity
@@ -41,11 +40,10 @@ func (egg *Egg) Tick(w *world.World, current int64) {
 		return
 	}
 	egg.mu.Lock()
-	m, result := egg.c.TickMovement(egg, egg.pos, egg.vel, 0, 0, egg.ignores)
+	m, result := egg.c.TickMovement(egg, egg.pos, egg.vel, 0, 0)
 	egg.pos, egg.vel = m.pos, m.vel
 	egg.mu.Unlock()
 
-	egg.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -70,12 +68,6 @@ func (egg *Egg) Tick(w *world.World, current int64) {
 
 		egg.close = true
 	}
-}
-
-// ignores returns whether the egg should ignore collision with the entity passed.
-func (egg *Egg) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == egg || (egg.age < 5 && entity == egg.owner)
 }
 
 // New creates a egg with the position, velocity, yaw, and pitch provided. It doesn't spawn the egg,

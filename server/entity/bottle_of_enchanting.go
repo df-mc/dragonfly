@@ -14,7 +14,6 @@ import (
 // BottleOfEnchanting is a bottle that releases experience orbs when thrown.
 type BottleOfEnchanting struct {
 	transform
-	age   int
 	close bool
 
 	owner world.Entity
@@ -46,11 +45,10 @@ func (b *BottleOfEnchanting) Tick(w *world.World, current int64) {
 		return
 	}
 	b.mu.Lock()
-	m, result := b.c.TickMovement(b, b.pos, b.vel, 0, 0, b.ignores)
+	m, result := b.c.TickMovement(b, b.pos, b.vel, 0, 0)
 	b.pos, b.vel = m.pos, m.vel
 	b.mu.Unlock()
 
-	b.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -70,12 +68,6 @@ func (b *BottleOfEnchanting) Tick(w *world.World, current int64) {
 
 		b.close = true
 	}
-}
-
-// ignores returns whether the BottleOfEnchanting should ignore collision with the entity passed.
-func (b *BottleOfEnchanting) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == b || (b.age < 5 && entity == b.owner)
 }
 
 // New creates a BottleOfEnchanting with the position, velocity, yaw, and pitch provided. It doesn't spawn the

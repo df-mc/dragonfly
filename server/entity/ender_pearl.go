@@ -14,7 +14,6 @@ import (
 // EnderPearl is a smooth, greenish-blue item used to teleport and to make an eye of ender.
 type EnderPearl struct {
 	transform
-	age   int
 	close bool
 
 	owner world.Entity
@@ -49,13 +48,12 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 		return
 	}
 	e.mu.Lock()
-	m, result := e.c.TickMovement(e, e.pos, e.vel, 0, 0, e.ignores)
+	m, result := e.c.TickMovement(e, e.pos, e.vel, 0, 0)
 	e.pos, e.vel = m.pos, m.vel
 
 	owner := e.owner
 	e.mu.Unlock()
 
-	e.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -87,12 +85,6 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 
 		e.close = true
 	}
-}
-
-// ignores returns whether the ender pearl should ignore collision with the entity passed.
-func (e *EnderPearl) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == e || (e.age < 5 && entity == e.owner)
 }
 
 // New creates an ender pearl with the position, velocity, yaw, and pitch provided. It doesn't spawn the ender pearl,

@@ -14,7 +14,6 @@ type LingeringPotion struct {
 	splashable
 	transform
 
-	age   int
 	close bool
 
 	owner world.Entity
@@ -50,11 +49,10 @@ func (l *LingeringPotion) Tick(w *world.World, current int64) {
 		return
 	}
 	l.mu.Lock()
-	m, result := l.c.TickMovement(l, l.pos, l.vel, 0, 0, l.ignores)
+	m, result := l.c.TickMovement(l, l.pos, l.vel, 0, 0)
 	l.pos, l.vel = m.pos, m.vel
 	l.mu.Unlock()
 
-	l.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -68,12 +66,6 @@ func (l *LingeringPotion) Tick(w *world.World, current int64) {
 
 		l.close = true
 	}
-}
-
-// ignores returns whether the LingeringPotion should ignore collision with the entity passed.
-func (l *LingeringPotion) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == l || (l.age < 5 && entity == l.owner)
 }
 
 // New creates a LingeringPotion with the position and velocity provided. It doesn't spawn the

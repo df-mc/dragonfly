@@ -13,7 +13,6 @@ import (
 // Snowball is a throwable projectile which damages entities on impact.
 type Snowball struct {
 	transform
-	age   int
 	close bool
 
 	owner world.Entity
@@ -41,11 +40,10 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 		return
 	}
 	s.mu.Lock()
-	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0, s.ignores)
+	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0)
 	s.pos, s.vel = m.pos, m.vel
 	s.mu.Unlock()
 
-	s.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -68,12 +66,6 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 
 		s.close = true
 	}
-}
-
-// ignores returns whether the snowball should ignore collision with the entity passed.
-func (s *Snowball) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == s || (s.age < 5 && entity == s.owner)
 }
 
 // New creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,
