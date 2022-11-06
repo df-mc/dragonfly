@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func New(log Logger, dir string, compression opt.Compression) (*Provider, error)
 		// A level.dat was not currently present for the world.
 		p.initDefaultLevelDat()
 	} else {
-		f, err := ioutil.ReadFile(filepath.Join(dir, "level.dat"))
+		f, err := os.ReadFile(filepath.Join(dir, "level.dat"))
 		if err != nil {
 			return nil, fmt.Errorf("error opening level.dat file: %w", err)
 		}
@@ -521,7 +520,7 @@ func (p *Provider) Close() error {
 		return fmt.Errorf("error closing level.dat: %w", err)
 	}
 	//noinspection SpellCheckingInspection
-	if err := ioutil.WriteFile(filepath.Join(p.dir, "levelname.txt"), []byte(p.d.LevelName), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(p.dir, "levelname.txt"), []byte(p.d.LevelName), 0644); err != nil {
 		return fmt.Errorf("error writing levelname.txt: %w", err)
 	}
 	return p.db.Close()
