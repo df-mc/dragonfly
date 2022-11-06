@@ -3,12 +3,15 @@ package nbtconv
 import (
 	"bytes"
 	"encoding/gob"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
+	"golang.org/x/exp/constraints"
 	"time"
 )
 
-// Bool reads a boolean value from a map at key k.
+// Bool reads a uint8 value from a map at key k and returns true if it equals 1.
 func Bool(m map[string]any, k string) bool {
 	return Uint8(m, k) == 1
 }
@@ -37,16 +40,27 @@ func Int32(m map[string]any, k string) int32 {
 	return v
 }
 
-// Int16 reads an int16 value from a map at key k.
+// Int64 reads an int16 value from a map at key k.
 func Int64(m map[string]any, k string) int64 {
 	v, _ := m[k].(int64)
 	return v
 }
 
-// TickDuration reads an int32 value from a map at key k and converts it from
-// ticks to a time.Duration.
-func TickDuration(m map[string]any, k string) time.Duration {
-	return time.Duration(Int32(m, k)) * time.Millisecond * 50
+// TickDuration reads a uint8/int16/in32 value from a map at key k and converts
+// it from ticks to a time.Duration.
+func TickDuration[T constraints.Integer](m map[string]any, k string) time.Duration {
+	var v time.Duration
+	switch any(*new(T)).(type) {
+	case uint8:
+		v = time.Duration(Uint8(m, k))
+	case int16:
+		v = time.Duration(Int16(m, k))
+	case int32:
+		v = time.Duration(Int32(m, k))
+	default:
+		panic("invalid tick duration value type")
+	}
+	return v * time.Millisecond * 50
 }
 
 // Float32 reads a float32 value from a map at key k.
@@ -59,6 +73,78 @@ func Float32(m map[string]any, k string) float32 {
 func Float64(m map[string]any, k string) float64 {
 	v, _ := m[k].(float64)
 	return v
+}
+
+// Slice reads a []any value from a map at key k.
+func Slice(m map[string]any, k string) []any {
+	v, _ := m[k].([]any)
+	return v
+}
+
+// Vec3 converts x, y and z values in an NBT map to an mgl64.Vec3.
+func Vec3(x map[string]any, k string) mgl64.Vec3 {
+	if i, ok := x[k].([]any); ok {
+		if len(i) != 3 {
+			return mgl64.Vec3{}
+		}
+		var v mgl64.Vec3
+		for index, f := range i {
+			f32, _ := f.(float32)
+			v[index] = float64(f32)
+		}
+		return v
+	} else if i, ok := x[k].([]float32); ok {
+		if len(i) != 3 {
+			return mgl64.Vec3{}
+		}
+		return mgl64.Vec3{float64(i[0]), float64(i[1]), float64(i[2])}
+	}
+	return mgl64.Vec3{}
+}
+
+// Vec3ToFloat32Slice converts an mgl64.Vec3 to a []float32 with 3 elements.
+func Vec3ToFloat32Slice(x mgl64.Vec3) []float32 {
+	return []float32{float32(x[0]), float32(x[1]), float32(x[2])}
+}
+
+// Pos converts x, y and z values in an NBT map to a cube.Pos.
+func Pos(x map[string]any, k string) cube.Pos {
+	if i, ok := x[k].([]any); ok {
+		if len(i) != 3 {
+			return cube.Pos{}
+		}
+		var v cube.Pos
+		for index, f := range i {
+			f32, _ := f.(int32)
+			v[index] = int(f32)
+		}
+		return v
+	} else if i, ok := x[k].([]int32); ok {
+		if len(i) != 3 {
+			return cube.Pos{}
+		}
+		return cube.Pos{int(i[0]), int(i[1]), int(i[2])}
+	}
+	return cube.Pos{}
+}
+
+// PosToInt32Slice converts a cube.Pos to a []int32 with 3 elements.
+func PosToInt32Slice(x cube.Pos) []int32 {
+	return []int32{int32(x[0]), int32(x[1]), int32(x[2])}
+}
+
+// MapItem converts an item's name, count, damage (and properties when it is a block) in a map obtained by decoding NBT
+// to a world.Item.
+func MapItem(x map[string]any, k string) item.Stack {
+	if m, ok := x[k].(map[string]any); ok {
+		s := readItemStack(m)
+		readDamage(m, &s, true)
+		readEnchantments(m, &s)
+		readDisplay(m, &s)
+		readDragonflyData(m, &s)
+		return s
+	}
+	return item.Stack{}
 }
 
 // Item decodes the data of an item into an item stack.
@@ -93,7 +179,7 @@ func readItemStack(m map[string]any) item.Stack {
 	if blockItem, ok := Block(m, "Block").(world.Item); ok {
 		it = blockItem
 	}
-	if v, ok := world.ItemByName(Read[string](m, "Name"), Read[int16](m, "Damage")); ok {
+	if v, ok := world.ItemByName(String(m, "Name"), Int16(m, "Damage")); ok {
 		it = v
 	}
 	if it == nil {
@@ -102,36 +188,36 @@ func readItemStack(m map[string]any) item.Stack {
 	if n, ok := it.(world.NBTer); ok {
 		it = n.DecodeNBT(m).(world.Item)
 	}
-	return item.NewStack(it, int(Read[byte](m, "Count")))
+	return item.NewStack(it, int(Uint8(m, "Count")))
 }
 
 // readDamage reads the damage value stored in the NBT with the Damage tag and saves it to the item.Stack passed.
 func readDamage(m map[string]any, s *item.Stack, disk bool) {
 	if disk {
-		*s = s.Damage(int(Read[int16](m, "Damage")))
+		*s = s.Damage(int(Int16(m, "Damage")))
 		return
 	}
-	*s = s.Damage(int(Read[int32](m, "Damage")))
+	*s = s.Damage(int(Int32(m, "Damage")))
 }
 
 // readAnvilCost ...
 func readAnvilCost(m map[string]any, s *item.Stack) {
-	*s = s.WithAnvilCost(int(Read[int32](m, "RepairCost")))
+	*s = s.WithAnvilCost(int(Int32(m, "RepairCost")))
 }
 
 // readEnchantments reads the enchantments stored in the ench tag of the NBT passed and stores it into an item.Stack.
 func readEnchantments(m map[string]any, s *item.Stack) {
 	enchantments, ok := m["ench"].([]map[string]any)
 	if !ok {
-		for _, e := range Read[[]any](m, "ench") {
+		for _, e := range Slice(m, "ench") {
 			if v, ok := e.(map[string]any); ok {
 				enchantments = append(enchantments, v)
 			}
 		}
 	}
 	for _, ench := range enchantments {
-		if t, ok := item.EnchantmentByID(int(Read[int16](ench, "id"))); ok {
-			*s = s.WithEnchantments(item.NewEnchantment(t, int(Read[int16](ench, "lvl"))))
+		if t, ok := item.EnchantmentByID(int(Int16(ench, "id"))); ok {
+			*s = s.WithEnchantments(item.NewEnchantment(t, int(Int16(ench, "lvl"))))
 		}
 	}
 }

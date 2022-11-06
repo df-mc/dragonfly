@@ -212,9 +212,9 @@ func (AreaEffectCloudType) DecodeNBT(m map[string]any) world.Entity {
 	return NewAreaEffectCloudWith(
 		nbtconv.Vec3(m, "Pos"),
 		potion.From(nbtconv.Int32(m, "PotionId")),
-		nbtconv.TickDuration(m, "Duration"),
-		nbtconv.TickDuration(m, "ReapplicationDelay"),
-		nbtconv.TickDuration(m, "DurationOnUse"),
+		nbtconv.TickDuration[int32](m, "Duration"),
+		nbtconv.TickDuration[int32](m, "ReapplicationDelay"),
+		nbtconv.TickDuration[int32](m, "DurationOnUse"),
 		float64(nbtconv.Float32(m, "Radius")),
 		float64(nbtconv.Float32(m, "RadiusOnUse")),
 		float64(nbtconv.Float32(m, "RadiusPerTick")),
