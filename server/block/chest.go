@@ -127,7 +127,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	}
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
-	c.Facing = user.Facing().Opposite()
+	c.Facing = user.Rotation().Direction().Opposite()
 
 	place(w, pos, c, user, ctx)
 	return placed(ctx)

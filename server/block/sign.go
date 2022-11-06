@@ -108,8 +108,7 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 	}
 
 	if face == cube.FaceUp {
-		yaw, _ := user.Rotation()
-		s.Attach = StandingAttachment(cube.OrientationFromYaw(yaw).Opposite())
+		s.Attach = StandingAttachment(user.Rotation().Orientation().Opposite())
 		place(w, pos, s, user, ctx)
 		return
 	}

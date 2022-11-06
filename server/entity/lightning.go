@@ -67,8 +67,8 @@ func (li *Lightning) Close() error {
 }
 
 // Rotation ...
-func (li *Lightning) Rotation() (yaw, pitch float64) {
-	return 0, 0
+func (li *Lightning) Rotation() (c cube.Rotation) {
+	return cube.Rotation{}
 }
 
 // New strikes the Lightning at a specific position in a new world.

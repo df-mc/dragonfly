@@ -170,10 +170,10 @@ func (a *Arrow) Extinguish() {
 }
 
 // Rotation ...
-func (a *Arrow) Rotation() (float64, float64) {
+func (a *Arrow) Rotation() cube.Rotation {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return a.yaw, a.pitch
+	return cube.Rotation{a.yaw, a.pitch}
 }
 
 // Tick ...
@@ -351,7 +351,7 @@ func (ArrowType) DecodeNBT(m map[string]any) world.Entity {
 
 func (ArrowType) EncodeNBT(e world.Entity) map[string]any {
 	a := e.(*Arrow)
-	yaw, pitch := a.Rotation()
+	yaw, pitch := a.Rotation().Elem()
 	data := map[string]any{
 		"Pos":          nbtconv.Vec3ToFloat32Slice(a.Position()),
 		"Yaw":          float32(yaw),

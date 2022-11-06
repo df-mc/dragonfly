@@ -66,7 +66,7 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 
-	place(w, pos, NewSmoker(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewSmoker(user.Rotation().Direction().Face().Opposite()), user, ctx)
 	return placed(ctx)
 }
 

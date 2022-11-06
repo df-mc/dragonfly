@@ -55,10 +55,10 @@ func (f *Firework) Firework() item.Firework {
 }
 
 // Rotation ...
-func (f *Firework) Rotation() (float64, float64) {
+func (f *Firework) Rotation() cube.Rotation {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.yaw, f.pitch
+	return cube.Rotation{f.yaw, f.pitch}
 }
 
 // Tick ...
@@ -74,7 +74,7 @@ func (f *Firework) Tick(w *world.World, current int64) {
 			Velocity() mgl64.Vec3
 		}); ok {
 			vel := o.Velocity()
-			dV := DirectionVector(f.owner)
+			dV := f.owner.Rotation().Vec3()
 
 			// The client will propel itself to match the firework's velocity since we set the appropriate metadata.
 			f.pos = f.owner.Position()
@@ -180,7 +180,7 @@ func (FireworkType) DecodeNBT(m map[string]any) world.Entity {
 
 func (FireworkType) EncodeNBT(e world.Entity) map[string]any {
 	f := e.(*Firework)
-	yaw, pitch := f.Rotation()
+	yaw, pitch := f.Rotation().Elem()
 	return map[string]any{
 		"Item":   nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
 		"Pos":    nbtconv.Vec3ToFloat32Slice(f.Position()),

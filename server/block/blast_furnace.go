@@ -66,7 +66,7 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 		return false
 	}
 
-	place(w, pos, NewBlastFurnace(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewBlastFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
 	return placed(ctx)
 }
 

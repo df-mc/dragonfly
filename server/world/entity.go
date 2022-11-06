@@ -21,7 +21,7 @@ type Entity interface {
 	// Rotation returns the yaw and pitch of the entity in degrees. Yaw is horizontal rotation (rotation around the
 	// vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 	// when facing forward).
-	Rotation() (yaw, pitch float64)
+	Rotation() cube.Rotation
 	// World returns the current world of the entity. This is always the world that the entity can actually be
 	// found in.
 	World() *World
@@ -44,7 +44,7 @@ type SaveableEntityType interface {
 	EntityType
 	// DecodeNBT reads the fields from the NBT data map passed and converts it
 	// to an Entity of the same EntityType.
-	DecodeNBT(data map[string]any) Entity
+	DecodeNBT(m map[string]any) Entity
 	// EncodeNBT encodes the Entity of the same EntityType passed to a map of
 	// properties that can be encoded to NBT.
 	EncodeNBT(e Entity) map[string]any

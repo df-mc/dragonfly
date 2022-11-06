@@ -48,8 +48,7 @@ func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	}
 
 	if face == cube.FaceUp {
-		yaw, _ := user.Rotation()
-		b.Attach = StandingAttachment(cube.OrientationFromYaw(yaw).Opposite())
+		b.Attach = StandingAttachment(user.Rotation().Orientation().Opposite())
 		place(w, pos, b, user, ctx)
 		return
 	}

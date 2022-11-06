@@ -1960,7 +1960,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	var (
 		w                     = p.World()
 		pos                   = p.Position()
-		yaw, pitch            = p.Rotation()
+		yaw, pitch            = p.Rotation().Elem()
 		res, resYaw, resPitch = pos.Add(deltaPos), yaw + deltaYaw, pitch + deltaPitch
 	)
 	ctx := event.C()
@@ -2017,11 +2017,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 }
 
-// Facing returns the horizontal direction that the player is facing.
-func (p *Player) Facing() cube.Direction {
-	return entity.Facing(p)
-}
-
 // World returns the world that the player is currently in.
 func (p *Player) World() *world.World {
 	w, _ := world.OfEntity(p)
@@ -2054,8 +2049,8 @@ func (p *Player) SetVelocity(velocity mgl64.Vec3) {
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
 // vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 // when facing forward).
-func (p *Player) Rotation() (float64, float64) {
-	return p.yaw.Load(), p.pitch.Load()
+func (p *Player) Rotation() cube.Rotation {
+	return cube.Rotation{p.yaw.Load(), p.pitch.Load()}
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
@@ -2201,7 +2196,7 @@ func (p *Player) mendItems(xp int) int {
 // or 0 if dropping the item.Stack was cancelled.
 func (p *Player) Drop(s item.Stack) int {
 	e := entity.NewItem(s, p.Position().Add(mgl64.Vec3{0, 1.4}))
-	e.SetVelocity(entity.DirectionVector(p).Mul(0.4))
+	e.SetVelocity(p.Rotation().Vec3().Mul(0.4))
 	e.SetPickupDelay(time.Second * 2)
 
 	ctx := event.C()
@@ -2824,7 +2819,7 @@ func (p *Player) loadInventory(data InventoryData) {
 // Data returns the player data that needs to be saved. This is used when the player
 // gets disconnected and the player provider needs to save the data.
 func (p *Player) Data() Data {
-	yaw, pitch := p.Rotation()
+	yaw, pitch := p.Rotation().Elem()
 	offHand, _ := p.offHand.Item(0)
 
 	p.hunger.mu.RLock()

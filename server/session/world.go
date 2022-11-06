@@ -60,7 +60,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	}
 	s.entityMutex.Unlock()
 
-	yaw, pitch := e.Rotation()
+	yaw, pitch := e.Rotation().Elem()
 	metadata := s.parseEntityMetadata(e)
 
 	id := e.Type().EncodeEntity()
@@ -220,7 +220,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		return
 	}
 
-	yaw, pitch := e.Rotation()
+	yaw, pitch := e.Rotation().Elem()
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
 		s.teleportPos.Store(&position)

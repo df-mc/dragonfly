@@ -95,7 +95,7 @@ func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 			return cube.FaceDown
 		}
 	}
-	return user.Facing().Opposite().Face()
+	return user.Rotation().Direction().Opposite().Face()
 }
 
 func abs(x int) int {

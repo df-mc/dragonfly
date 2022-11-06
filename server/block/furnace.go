@@ -65,7 +65,7 @@ func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 		return false
 	}
 
-	place(w, pos, NewFurnace(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
