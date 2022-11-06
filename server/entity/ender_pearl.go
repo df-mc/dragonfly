@@ -125,10 +125,9 @@ func (EnderPearlType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (EnderPearlType) DecodeNBT(data map[string]any) world.Entity {
-	m := nbtconv.Map(data)
-	ep := NewEnderPearl(m.Vec3("Pos"), nil)
-	ep.vel = m.Vec3("Motion")
+func (EnderPearlType) DecodeNBT(m map[string]any) world.Entity {
+	ep := NewEnderPearl(nbtconv.Vec3(m, "Pos"), nil)
+	ep.vel = nbtconv.Vec3(m, "Motion")
 	return ep
 }
 

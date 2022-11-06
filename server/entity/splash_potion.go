@@ -100,10 +100,9 @@ func (SplashPotionType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (SplashPotionType) DecodeNBT(data map[string]any) world.Entity {
-	m := nbtconv.Map(data)
-	pot := NewSplashPotion(m.Vec3("Pos"), nil, potion.From(m.Int32("PotionId")))
-	pot.vel = m.Vec3("Motion")
+func (SplashPotionType) DecodeNBT(m map[string]any) world.Entity {
+	pot := NewSplashPotion(nbtconv.Vec3(m, "Pos"), nil, potion.From(nbtconv.Int32(m, "PotionId")))
+	pot.vel = nbtconv.Vec3(m, "Motion")
 	return pot
 }
 

@@ -28,7 +28,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.MaxCount() - i.Count())
 	}
-	i = nbtconv.ReadItem(nbtconv.WriteItem(i, true), nil)
+	i = nbtconv.Item(nbtconv.WriteItem(i, true), nil)
 
 	it := &Item{i: i, pickupDelay: 10, c: &MovementComputer{
 		Gravity:           0.04,
@@ -190,16 +190,15 @@ func (ItemType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (ItemType) DecodeNBT(data map[string]any) world.Entity {
-	m := nbtconv.Map(data)
-	i := m.Item("Item")
+func (ItemType) DecodeNBT(m map[string]any) world.Entity {
+	i := nbtconv.MapItem(m, "Item")
 	if i.Empty() {
 		return nil
 	}
-	n := NewItem(i, m.Vec3("Pos"))
-	n.SetVelocity(m.Vec3("Motion"))
-	n.age = int(m.Int16("Age"))
-	n.pickupDelay = int(m.Int64("PickupDelay"))
+	n := NewItem(i, nbtconv.Vec3(m, "Pos"))
+	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
+	n.age = int(nbtconv.Int16(m, "Age"))
+	n.pickupDelay = int(nbtconv.Int64(m, "PickupDelay"))
 	return n
 }
 

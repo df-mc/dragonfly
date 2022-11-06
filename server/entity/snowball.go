@@ -106,10 +106,9 @@ func (SnowballType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (SnowballType) DecodeNBT(data map[string]any) world.Entity {
-	m := nbtconv.Map(data)
-	s := NewSnowball(m.Vec3("Pos"), nil)
-	s.vel = m.Vec3("Motion")
+func (SnowballType) DecodeNBT(m map[string]any) world.Entity {
+	s := NewSnowball(nbtconv.Vec3(m, "Pos"), nil)
+	s.vel = nbtconv.Vec3(m, "Motion")
 	return s
 }
 

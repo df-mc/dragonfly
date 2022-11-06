@@ -5,10 +5,64 @@ import (
 	"encoding/gob"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"time"
 )
 
-// ReadItem decodes the data of an item into an item stack.
-func ReadItem(data map[string]any, s *item.Stack) item.Stack {
+// Bool reads a boolean value from a map at key k.
+func Bool(m map[string]any, k string) bool {
+	return Uint8(m, k) == 1
+}
+
+// Uint8 reads a uint8 value from a map at key k.
+func Uint8(m map[string]any, k string) uint8 {
+	v, _ := m[k].(uint8)
+	return v
+}
+
+// String reads a string value from a map at key k.
+func String(m map[string]any, k string) string {
+	v, _ := m[k].(string)
+	return v
+}
+
+// Int16 reads an int16 value from a map at key k.
+func Int16(m map[string]any, k string) int16 {
+	v, _ := m[k].(int16)
+	return v
+}
+
+// Int32 reads an int32 value from a map at key k.
+func Int32(m map[string]any, k string) int32 {
+	v, _ := m[k].(int32)
+	return v
+}
+
+// Int16 reads an int16 value from a map at key k.
+func Int64(m map[string]any, k string) int64 {
+	v, _ := m[k].(int64)
+	return v
+}
+
+// TickDuration reads an int32 value from a map at key k and converts it from
+// ticks to a time.Duration.
+func TickDuration(m map[string]any, k string) time.Duration {
+	return time.Duration(Int32(m, k)) * time.Millisecond * 50
+}
+
+// Float32 reads a float32 value from a map at key k.
+func Float32(m map[string]any, k string) float32 {
+	v, _ := m[k].(float32)
+	return v
+}
+
+// Float64 reads a float64 value from a map at key k.
+func Float64(m map[string]any, k string) float64 {
+	v, _ := m[k].(float64)
+	return v
+}
+
+// Item decodes the data of an item into an item stack.
+func Item(data map[string]any, s *item.Stack) item.Stack {
 	disk := s == nil
 	if disk {
 		a := readItemStack(data)
@@ -22,18 +76,21 @@ func ReadItem(data map[string]any, s *item.Stack) item.Stack {
 	return *s
 }
 
-// ReadBlock decodes the data of a block into a world.Block.
-func ReadBlock(m map[string]any) world.Block {
-	name, _ := m["name"].(string)
-	properties, _ := m["states"].(map[string]any)
-	b, _ := world.BlockByName(name, properties)
-	return b
+// Block decodes the data of a block into a world.Block.
+func Block(m map[string]any, k string) world.Block {
+	if mk, ok := m[k].(map[string]any); ok {
+		name, _ := mk["name"].(string)
+		properties, _ := mk["states"].(map[string]any)
+		b, _ := world.BlockByName(name, properties)
+		return b
+	}
+	return nil
 }
 
 // readItemStack reads an item.Stack from the NBT in the map passed.
 func readItemStack(m map[string]any) item.Stack {
 	var it world.Item
-	if blockItem, ok := MapBlock(m, "Block").(world.Item); ok {
+	if blockItem, ok := Block(m, "Block").(world.Item); ok {
 		it = blockItem
 	}
 	if v, ok := world.ItemByName(Read[string](m, "Name"), Read[int16](m, "Damage")); ok {

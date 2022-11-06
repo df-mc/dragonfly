@@ -3,7 +3,6 @@ package nbtconv
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -14,8 +13,8 @@ func Read[T any](m map[string]any, key string) T {
 	return v
 }
 
-// MapVec3 converts x, y and z values in an NBT map to an mgl64.Vec3.
-func MapVec3(x map[string]any, k string) mgl64.Vec3 {
+// Vec3 converts x, y and z values in an NBT map to an mgl64.Vec3.
+func Vec3(x map[string]any, k string) mgl64.Vec3 {
 	if i, ok := x[k].([]any); ok {
 		if len(i) != 3 {
 			return mgl64.Vec3{}
@@ -40,8 +39,8 @@ func Vec3ToFloat32Slice(x mgl64.Vec3) []float32 {
 	return []float32{float32(x[0]), float32(x[1]), float32(x[2])}
 }
 
-// MapPos converts x, y and z values in an NBT map to a cube.Pos.
-func MapPos(x map[string]any, k string) cube.Pos {
+// Pos converts x, y and z values in an NBT map to a cube.Pos.
+func Pos(x map[string]any, k string) cube.Pos {
 	if i, ok := x[k].([]any); ok {
 		if len(i) != 3 {
 			return cube.Pos{}
@@ -64,14 +63,6 @@ func MapPos(x map[string]any, k string) cube.Pos {
 // PosToInt32Slice converts a cube.Pos to a []int32 with 3 elements.
 func PosToInt32Slice(x cube.Pos) []int32 {
 	return []int32{int32(x[0]), int32(x[1]), int32(x[2])}
-}
-
-// MapBlock converts a block's name and properties in a map obtained by decoding NBT to a world.Block.
-func MapBlock(x map[string]any, k string) world.Block {
-	if m, ok := x[k].(map[string]any); ok {
-		return ReadBlock(m)
-	}
-	return nil
 }
 
 // MapItem converts an item's name, count, damage (and properties when it is a block) in a map obtained by decoding NBT

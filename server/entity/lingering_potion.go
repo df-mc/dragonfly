@@ -102,10 +102,9 @@ func (LingeringPotionType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (LingeringPotionType) DecodeNBT(data map[string]any) world.Entity {
-	m := nbtconv.Map(data)
-	pot := NewLingeringPotion(m.Vec3("Pos"), nil, potion.From(m.Int32("PotionId")))
-	pot.vel = m.Vec3("Motion")
+func (LingeringPotionType) DecodeNBT(m map[string]any) world.Entity {
+	pot := NewLingeringPotion(nbtconv.Vec3(m, "Pos"), nil, potion.From(nbtconv.Int32(m, "PotionId")))
+	pot.vel = nbtconv.Vec3(m, "Motion")
 	return pot
 }
 

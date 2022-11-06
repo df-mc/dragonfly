@@ -167,15 +167,14 @@ type FireworkType struct{}
 func (FireworkType) EncodeEntity() string        { return "minecraft:fireworks_rocket" }
 func (FireworkType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 
-func (FireworkType) DecodeNBT(data map[string]any) world.Entity {
-	m := nbtconv.Map(data)
+func (FireworkType) DecodeNBT(m map[string]any) world.Entity {
 	f := NewFirework(
-		m.Vec3("Pos"),
-		float64(m.Float32("Pitch")),
-		float64(m.Float32("Yaw")),
-		m.Item("Item").Item().(item.Firework),
+		nbtconv.Vec3(m, "Pos"),
+		float64(nbtconv.Float32(m, "Pitch")),
+		float64(nbtconv.Float32(m, "Yaw")),
+		nbtconv.MapItem(m, "Item").Item().(item.Firework),
 	)
-	f.vel = nbtconv.MapVec3(data, "Motion")
+	f.vel = nbtconv.Vec3(m, "Motion")
 	return f
 }
 

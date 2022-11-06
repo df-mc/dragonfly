@@ -335,16 +335,15 @@ func (ArrowType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (ArrowType) DecodeNBT(data map[string]any) world.Entity {
-	m := nbtconv.Map(data)
-	arr := NewTippedArrowWithDamage(m.Vec3("Pos"), float64(m.Float32("Yaw")), float64(m.Float32("Pitch")), float64(m.Float32("Damage")), nil, potion.From(m.Int32("auxValue")-1))
-	arr.vel = m.Vec3("Motion")
-	arr.disallowPickup = !m.Bool("player")
-	arr.obtainArrowOnPickup = !m.Bool("isCreative")
-	arr.fireTicks = int64(m.Int16("Fire"))
-	arr.punchLevel = int(m.Uint8("enchantPunch"))
-	if _, ok := data["StuckToBlockPos"]; ok {
-		arr.collisionPos = m.Pos("StuckToBlockPos")
+func (ArrowType) DecodeNBT(m map[string]any) world.Entity {
+	arr := NewTippedArrowWithDamage(nbtconv.Vec3(m, "Pos"), float64(nbtconv.Float32(m, "Yaw")), float64(nbtconv.Float32(m, "Pitch")), float64(nbtconv.Float32(m, "Damage")), nil, potion.From(nbtconv.Int32(m, "auxValue")-1))
+	arr.vel = nbtconv.Vec3(m, "Motion")
+	arr.disallowPickup = !nbtconv.Bool(m, "player")
+	arr.obtainArrowOnPickup = !nbtconv.Bool(m, "isCreative")
+	arr.fireTicks = int64(nbtconv.Int16(m, "Fire"))
+	arr.punchLevel = int(nbtconv.Uint8(m, "enchantPunch"))
+	if _, ok := m["StuckToBlockPos"]; ok {
+		arr.collisionPos = nbtconv.Pos(m, "StuckToBlockPos")
 		arr.collided = true
 	}
 	return arr

@@ -8,7 +8,7 @@ import (
 func InvFromNBT(inv *inventory.Inventory, items []any) {
 	for _, itemData := range items {
 		data, _ := itemData.(map[string]any)
-		it := ReadItem(data, nil)
+		it := Item(data, nil)
 		if it.Empty() {
 			continue
 		}

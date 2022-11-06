@@ -108,10 +108,9 @@ func (EggType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (EggType) DecodeNBT(data map[string]any) world.Entity {
-	m := nbtconv.Map(data)
-	egg := NewEgg(m.Vec3("Pos"), nil)
-	egg.vel = m.Vec3("Motion")
+func (EggType) DecodeNBT(m map[string]any) world.Entity {
+	egg := NewEgg(nbtconv.Vec3(m, "Pos"), nil)
+	egg.vel = nbtconv.Vec3(m, "Motion")
 	return egg
 }
 
