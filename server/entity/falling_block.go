@@ -155,14 +155,14 @@ func (FallingBlockType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
 }
 
-func (FallingBlockType) DecodeNBT(data map[string]any) world.Entity {
-	b := nbtconv.MapBlock(data, "FallingBlock")
+func (FallingBlockType) DecodeNBT(m map[string]any) world.Entity {
+	b := nbtconv.Block(m, "FallingBlock")
 	if b == nil {
 		return nil
 	}
-	n := NewFallingBlock(b, nbtconv.MapVec3(data, "Pos"))
-	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.fallDistance.Store(nbtconv.Map[float64](data, "FallDistance"))
+	n := NewFallingBlock(b, nbtconv.Vec3(m, "Pos"))
+	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
+	n.fallDistance.Store(nbtconv.Float64(m, "FallDistance"))
 	return n
 }
 

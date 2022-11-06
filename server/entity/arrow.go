@@ -67,11 +67,7 @@ func NewTippedArrowWithDamage(pos mgl64.Vec3, yaw, pitch, damage float64, owner 
 		owner:               owner,
 		tip:                 tip,
 		obtainArrowOnPickup: true,
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.05,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
+		c:                   newProjectileComputer(0.05, 0.01),
 	}
 	a.transform = newTransform(a, pos)
 	return a
@@ -339,15 +335,15 @@ func (ArrowType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (ArrowType) DecodeNBT(data map[string]any) world.Entity {
-	arr := NewTippedArrowWithDamage(nbtconv.MapVec3(data, "Pos"), float64(nbtconv.Map[float32](data, "Yaw")), float64(nbtconv.Map[float32](data, "Pitch")), float64(nbtconv.Map[float32](data, "Damage")), nil, potion.From(nbtconv.Map[int32](data, "auxValue")-1))
-	arr.vel = nbtconv.MapVec3(data, "Motion")
-	arr.disallowPickup = nbtconv.Map[byte](data, "player") == 0
-	arr.obtainArrowOnPickup = nbtconv.Map[byte](data, "isCreative") == 1
-	arr.fireTicks = int64(nbtconv.Map[int16](data, "Fire"))
-	arr.punchLevel = int(nbtconv.Map[byte](data, "enchantPunch"))
-	if _, ok := data["StuckToBlockPos"]; ok {
-		arr.collisionPos = nbtconv.MapPos(data, "StuckToBlockPos")
+func (ArrowType) DecodeNBT(m map[string]any) world.Entity {
+	arr := NewTippedArrowWithDamage(nbtconv.Vec3(m, "Pos"), float64(nbtconv.Float32(m, "Yaw")), float64(nbtconv.Float32(m, "Pitch")), float64(nbtconv.Float32(m, "Damage")), nil, potion.From(nbtconv.Int32(m, "auxValue")-1))
+	arr.vel = nbtconv.Vec3(m, "Motion")
+	arr.disallowPickup = !nbtconv.Bool(m, "player")
+	arr.obtainArrowOnPickup = !nbtconv.Bool(m, "isCreative")
+	arr.fireTicks = int64(nbtconv.Int16(m, "Fire"))
+	arr.punchLevel = int(nbtconv.Uint8(m, "enchantPunch"))
+	if _, ok := m["StuckToBlockPos"]; ok {
+		arr.collisionPos = nbtconv.Pos(m, "StuckToBlockPos")
 		arr.collided = true
 	}
 	return arr

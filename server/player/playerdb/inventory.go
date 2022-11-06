@@ -75,5 +75,5 @@ func decodeItem(data []byte) item.Stack {
 	if err != nil {
 		return item.Stack{}
 	}
-	return nbtconv.ReadItem(itemNBT, nil)
+	return nbtconv.Item(itemNBT, nil)
 }

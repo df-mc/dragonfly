@@ -23,14 +23,7 @@ type Egg struct {
 
 // NewEgg ...
 func NewEgg(pos mgl64.Vec3, owner world.Entity) *Egg {
-	s := &Egg{
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.03,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
-		owner: owner,
-	}
+	s := &Egg{c: newProjectileComputer(0.03, 0.01), owner: owner}
 	s.transform = newTransform(s, pos)
 
 	return s
@@ -115,9 +108,9 @@ func (EggType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (EggType) DecodeNBT(data map[string]any) world.Entity {
-	egg := NewEgg(nbtconv.MapVec3(data, "Pos"), nil)
-	egg.vel = nbtconv.MapVec3(data, "Motion")
+func (EggType) DecodeNBT(m map[string]any) world.Entity {
+	egg := NewEgg(nbtconv.Vec3(m, "Pos"), nil)
+	egg.vel = nbtconv.Vec3(m, "Motion")
 	return egg
 }
 

@@ -23,14 +23,7 @@ type Snowball struct {
 
 // NewSnowball ...
 func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Snowball {
-	s := &Snowball{
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.03,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
-		owner: owner,
-	}
+	s := &Snowball{c: newProjectileComputer(0.01, 0.01), owner: owner}
 	s.transform = newTransform(s, pos)
 
 	return s
@@ -113,9 +106,9 @@ func (SnowballType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (SnowballType) DecodeNBT(data map[string]any) world.Entity {
-	s := NewSnowball(nbtconv.MapVec3(data, "Pos"), nil)
-	s.vel = nbtconv.MapVec3(data, "Motion")
+func (SnowballType) DecodeNBT(m map[string]any) world.Entity {
+	s := NewSnowball(nbtconv.Vec3(m, "Pos"), nil)
+	s.vel = nbtconv.Vec3(m, "Motion")
 	return s
 }
 

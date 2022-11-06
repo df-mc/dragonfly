@@ -208,16 +208,16 @@ func (AreaEffectCloudType) BBox(e world.Entity) cube.BBox {
 	return cube.Box(-r, 0, -r, r, 0.5, r)
 }
 
-func (AreaEffectCloudType) DecodeNBT(data map[string]any) world.Entity {
+func (AreaEffectCloudType) DecodeNBT(m map[string]any) world.Entity {
 	return NewAreaEffectCloudWith(
-		nbtconv.MapVec3(data, "Pos"),
-		potion.From(nbtconv.Map[int32](data, "PotionId")),
-		time.Duration(nbtconv.Map[int32](data, "Duration"))*time.Millisecond*50,
-		time.Duration(nbtconv.Map[int32](data, "ReapplicationDelay"))*time.Millisecond*50,
-		time.Duration(nbtconv.Map[int32](data, "DurationOnUse"))*time.Millisecond*50,
-		float64(nbtconv.Map[float32](data, "Radius")),
-		float64(nbtconv.Map[float32](data, "RadiusOnUse")),
-		float64(nbtconv.Map[float32](data, "RadiusPerTick")),
+		nbtconv.Vec3(m, "Pos"),
+		potion.From(nbtconv.Int32(m, "PotionId")),
+		nbtconv.TickDuration[int32](m, "Duration"),
+		nbtconv.TickDuration[int32](m, "ReapplicationDelay"),
+		nbtconv.TickDuration[int32](m, "DurationOnUse"),
+		float64(nbtconv.Float32(m, "Radius")),
+		float64(nbtconv.Float32(m, "RadiusOnUse")),
+		float64(nbtconv.Float32(m, "RadiusPerTick")),
 	)
 }
 
