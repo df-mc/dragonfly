@@ -27,10 +27,10 @@ var plantSelection = []world.Block{
 // init adds extra variants of TallGrass to the plant selection.
 func init() {
 	for i := 0; i < 8; i++ {
-		plantSelection = append(plantSelection, TallGrass{Type: Fern()})
+		plantSelection = append(plantSelection, TallGrass{Type: FernTallGrass()})
 	}
 	for i := 0; i < 12; i++ {
-		plantSelection = append(plantSelection, TallGrass{Type: NormalGrass()})
+		plantSelection = append(plantSelection, TallGrass{Type: NormalTallGrass()})
 	}
 }
 
