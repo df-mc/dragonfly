@@ -45,8 +45,8 @@ func (c *ProjectileComputer) TickMovement(e Projectile, pos, vel mgl64.Vec3, yaw
 	var ok bool
 	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
 		hit, ok = trace.Perform(pos, end, w, e.Type().BBox(e).Grow(1.0), func(ent world.Entity) bool {
-			g, ok := e.(interface{ GameMode() world.GameMode })
-			_, living := e.(Living)
+			g, ok := ent.(interface{ GameMode() world.GameMode })
+			_, living := ent.(Living)
 			return (ok && !g.GameMode().HasCollision()) || e == ent || (c.age < 5 && e.Owner() == ent) || !living
 		})
 	}
