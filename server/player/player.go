@@ -163,6 +163,11 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 	return p
 }
 
+// Type returns the world.EntityType for the Player.
+func (p *Player) Type() world.EntityType {
+	return Type{}
+}
+
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
 // the client. (Typically the XBOX Live name)
 func (p *Player) Name() string {
@@ -1770,7 +1775,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 			// Placing blocks inside arrow entities is fine.
 			continue
 		}
-		if cube.AnyIntersections(blockBoxes, e.BBox().Translate(e.Position()).Grow(-1e-6)) {
+		if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
 			return true
 		}
 	}
@@ -1955,7 +1960,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	var (
 		w                     = p.World()
 		pos                   = p.Position()
-		yaw, pitch            = p.Rotation()
+		yaw, pitch            = p.Rotation().Elem()
 		res, resYaw, resPitch = pos.Add(deltaPos), yaw + deltaYaw, pitch + deltaPitch
 	)
 	ctx := event.C()
@@ -2012,11 +2017,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 }
 
-// Facing returns the horizontal direction that the player is facing.
-func (p *Player) Facing() cube.Direction {
-	return entity.Facing(p)
-}
-
 // World returns the world that the player is currently in.
 func (p *Player) World() *world.World {
 	w, _ := world.OfEntity(p)
@@ -2049,8 +2049,8 @@ func (p *Player) SetVelocity(velocity mgl64.Vec3) {
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
 // vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 // when facing forward).
-func (p *Player) Rotation() (float64, float64) {
-	return p.yaw.Load(), p.pitch.Load()
+func (p *Player) Rotation() cube.Rotation {
+	return cube.Rotation{p.yaw.Load(), p.pitch.Load()}
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
@@ -2196,7 +2196,7 @@ func (p *Player) mendItems(xp int) int {
 // or 0 if dropping the item.Stack was cancelled.
 func (p *Player) Drop(s item.Stack) int {
 	e := entity.NewItem(s, p.Position().Add(mgl64.Vec3{0, 1.4}))
-	e.SetVelocity(entity.DirectionVector(p).Mul(0.4))
+	e.SetVelocity(p.Rotation().Vec3().Mul(0.4))
 	e.SetPickupDelay(time.Second * 2)
 
 	ctx := event.C()
@@ -2439,7 +2439,7 @@ func (p *Player) insideOfWater(w *world.World) bool {
 // insideOfSolid returns true if the player is inside a solid block.
 func (p *Player) insideOfSolid(w *world.World) bool {
 	pos := cube.PosFromVec3(entity.EyePosition(p))
-	b, box := w.Block(pos), p.BBox().Translate(p.Position())
+	b, box := w.Block(pos), p.Type().BBox(p).Translate(p.Position())
 
 	_, solid := b.Model().(model.Solid)
 	if !solid {
@@ -2461,7 +2461,7 @@ func (p *Player) insideOfSolid(w *world.World) bool {
 
 // checkCollisions checks the player's block collisions.
 func (p *Player) checkBlockCollisions(vel mgl64.Vec3, w *world.World) {
-	entityBBox := p.BBox().Translate(p.Position())
+	entityBBox := p.Type().BBox(p).Translate(p.Position())
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	p.checkEntityInsiders(w, entityBBox)
@@ -2542,7 +2542,7 @@ func (p *Player) checkEntityInsiders(w *world.World, entityBBox cube.BBox) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround(w *world.World) bool {
-	box := p.BBox().Translate(p.Position())
+	box := p.Type().BBox(p).Translate(p.Position())
 
 	b := box.Grow(1)
 
@@ -2561,18 +2561,6 @@ func (p *Player) checkOnGround(w *world.World) bool {
 		}
 	}
 	return false
-}
-
-// BBox returns the axis aligned bounding box of the player.
-func (p *Player) BBox() cube.BBox {
-	s := p.Scale()
-	switch {
-	// TODO: Shrink BBox for sneaking once implemented in Bedrock Edition. This is already a thing in Java Edition.
-	case p.Gliding(), p.Swimming():
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
-	default:
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
-	}
 }
 
 // Scale returns the scale modifier of the Player. The default value for a normal scale is 1. A scale of 0
@@ -2675,11 +2663,6 @@ func (p *Player) PunchAir() {
 	}
 	p.SwingArm()
 	p.World().PlaySound(p.Position(), sound.Attack{})
-}
-
-// EncodeEntity ...
-func (p *Player) EncodeEntity() string {
-	return "minecraft:player"
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
@@ -2836,7 +2819,7 @@ func (p *Player) loadInventory(data InventoryData) {
 // Data returns the player data that needs to be saved. This is used when the player
 // gets disconnected and the player provider needs to save the data.
 func (p *Player) Data() Data {
-	yaw, pitch := p.Rotation()
+	yaw, pitch := p.Rotation().Elem()
 	offHand, _ := p.offHand.Item(0)
 
 	p.hunger.mu.RLock()

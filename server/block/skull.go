@@ -58,8 +58,7 @@ func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	}
 
 	if face == cube.FaceUp {
-		yaw, _ := user.Rotation()
-		s.Attach = StandingAttachment(cube.OrientationFromYaw(yaw))
+		s.Attach = StandingAttachment(user.Rotation().Orientation())
 	} else {
 		s.Attach = WallAttachment(face.Direction())
 	}
@@ -89,8 +88,8 @@ func (s Skull) EncodeItem() (name string, meta int16) {
 
 // DecodeNBT ...
 func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
-	s.Type = SkullType{skull(nbtconv.Map[byte](data, "SkullType"))}
-	s.Attach.o = cube.Orientation(nbtconv.Map[byte](data, "Rot"))
+	s.Type = SkullType{skull(nbtconv.Uint8(data, "SkullType"))}
+	s.Attach.o = cube.Orientation(nbtconv.Uint8(data, "Rot"))
 	if s.Attach.facing >= 0 {
 		s.Attach.hanging = true
 	}

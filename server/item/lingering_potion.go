@@ -34,7 +34,7 @@ func (l LingeringPotion) Use(w *world.World, user User, ctx *UseContext) bool {
 	}
 
 	w.PlaySound(user.Position(), sound.ItemThrow{})
-	w.AddEntity(p.New(eyePosition(user), directionVector(user).Mul(0.5), l.Type, user))
+	w.AddEntity(p.New(eyePosition(user), user.Rotation().Vec3().Mul(0.5), l.Type, user))
 
 	ctx.SubtractFromCount(1)
 	return true

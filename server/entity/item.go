@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -29,7 +28,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.MaxCount() - i.Count())
 	}
-	i = nbtconv.ReadItem(nbtconv.WriteItem(i, true), nil)
+	i = nbtconv.Item(nbtconv.WriteItem(i, true), nil)
 
 	it := &Item{i: i, pickupDelay: 10, c: &MovementComputer{
 		Gravity:           0.04,
@@ -40,19 +39,9 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	return it
 }
 
-// Name ...
-func (it *Item) Name() string {
-	return fmt.Sprintf("%T", it.i.Item())
-}
-
-// EncodeEntity ...
-func (it *Item) EncodeEntity() string {
-	return "minecraft:item"
-}
-
-// BBox ...
-func (it *Item) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+// Type returns ItemType.
+func (it *Item) Type() world.EntityType {
+	return ItemType{}
 }
 
 // Item returns the item stack that the item entity holds.
@@ -99,13 +88,14 @@ func (it *Item) Tick(w *world.World, current int64) {
 // collector is found in range, the item will be picked up. If another item stack with the same item type is
 // found in range, the item stacks will merge.
 func (it *Item) checkNearby(w *world.World, pos mgl64.Vec3) {
-	grown := it.BBox().GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	for _, e := range w.EntitiesWithin(it.BBox().Translate(pos).Grow(2), nil) {
+	bbox := it.Type().BBox(it)
+	grown := bbox.GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
+	for _, e := range w.EntitiesWithin(bbox.Translate(pos).Grow(2), nil) {
 		if e == it {
 			// Skip the item entity itself.
 			continue
 		}
-		if e.BBox().Translate(e.Position()).IntersectsWith(grown) {
+		if e.Type().BBox(e).Translate(e.Position()).IntersectsWith(grown) {
 			if collector, ok := e.(Collector); ok {
 				// A collector was within range to pick up the entity.
 				it.collect(w, collector, pos)
@@ -180,31 +170,6 @@ func (it *Item) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 	_ = it.Close()
 }
 
-// DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
-func (it *Item) DecodeNBT(data map[string]any) any {
-	i := nbtconv.MapItem(data, "Item")
-	if i.Empty() {
-		return nil
-	}
-	n := NewItem(i, nbtconv.MapVec3(data, "Pos"))
-	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.age = int(nbtconv.Map[int16](data, "Age"))
-	n.pickupDelay = int(nbtconv.Map[int64](data, "PickupDelay"))
-	return n
-}
-
-// EncodeNBT encodes the Item entity's properties as a map and returns it.
-func (it *Item) EncodeNBT() map[string]any {
-	return map[string]any{
-		"Health":      int16(5),
-		"Age":         int16(it.age),
-		"PickupDelay": int64(it.pickupDelay),
-		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
-		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
-		"Item":        nbtconv.WriteItem(it.Item(), true),
-	}
-}
-
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as
 // a player or a zombie.
 type Collector interface {
@@ -215,4 +180,36 @@ type Collector interface {
 	Collect(stack item.Stack) (n int)
 	// GameMode returns the gamemode of the collector.
 	GameMode() world.GameMode
+}
+
+// ItemType is a world.EntityType implementation for Item.
+type ItemType struct{}
+
+func (ItemType) EncodeEntity() string { return "minecraft:item" }
+func (ItemType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (ItemType) DecodeNBT(m map[string]any) world.Entity {
+	i := nbtconv.MapItem(m, "Item")
+	if i.Empty() {
+		return nil
+	}
+	n := NewItem(i, nbtconv.Vec3(m, "Pos"))
+	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
+	n.age = int(nbtconv.Int16(m, "Age"))
+	n.pickupDelay = int(nbtconv.Int64(m, "PickupDelay"))
+	return n
+}
+
+func (ItemType) EncodeNBT(e world.Entity) map[string]any {
+	it := e.(*Item)
+	return map[string]any{
+		"Health":      int16(5),
+		"Age":         int16(it.age),
+		"PickupDelay": int64(it.pickupDelay),
+		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
+		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
+		"Item":        nbtconv.WriteItem(it.Item(), true),
+	}
 }

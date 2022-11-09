@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func New(log Logger, dir string, compression opt.Compression) (*Provider, error)
 		// A level.dat was not currently present for the world.
 		p.initDefaultLevelDat()
 	} else {
-		f, err := ioutil.ReadFile(filepath.Join(dir, "level.dat"))
+		f, err := os.ReadFile(filepath.Join(dir, "level.dat"))
 		if err != nil {
 			return nil, fmt.Errorf("error opening level.dat file: %w", err)
 		}
@@ -115,7 +114,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.LANBroadcast = true
 	p.d.LANBroadcastIntent = true
 	p.d.LastOpenedWithVersion = minimumCompatibleClientVersion
-	p.d.LevelName = "My World"
+	p.d.LevelName = "World"
 	p.d.LightningLevel = 1.0
 	p.d.LimitedWorldDepth = 16
 	p.d.LimitedWorldOriginY = math.MaxInt16
@@ -405,12 +404,12 @@ func (p *Provider) saveDifficulty(d world.Difficulty) {
 }
 
 // LoadEntities loads all entities from the chunk position passed.
-func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]world.SaveableEntity, error) {
+func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]world.Entity, error) {
 	data, err := p.db.Get(append(p.index(pos, dim), keyEntities), nil)
 	if err != leveldb.ErrNotFound && err != nil {
 		return nil, err
 	}
-	var a []world.SaveableEntity
+	var a []world.Entity
 
 	buf := bytes.NewBuffer(data)
 	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
@@ -431,9 +430,9 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 			p.log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
 			continue
 		}
-		if s, ok := e.(world.SaveableEntity); ok {
+		if s, ok := e.Type().(world.SaveableEntityType); ok {
 			if v := s.DecodeNBT(m); v != nil {
-				a = append(a, v.(world.SaveableEntity))
+				a = append(a, v)
 			}
 		}
 	}
@@ -441,7 +440,7 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 }
 
 // SaveEntities saves all entities to the chunk position passed.
-func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEntity, dim world.Dimension) error {
+func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim world.Dimension) error {
 	if len(entities) == 0 {
 		return p.db.Delete(append(p.index(pos, dim), keyEntities), nil)
 	}
@@ -449,8 +448,12 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEnt
 	buf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
 	for _, e := range entities {
-		x := e.EncodeNBT()
-		x["identifier"] = e.EncodeEntity()
+		t, ok := e.Type().(world.SaveableEntityType)
+		if !ok {
+			continue
+		}
+		x := t.EncodeNBT(e)
+		x["identifier"] = t.EncodeEntity()
 		if err := enc.Encode(x); err != nil {
 			return fmt.Errorf("save entities: error encoding NBT: %w", err)
 		}
@@ -517,7 +520,7 @@ func (p *Provider) Close() error {
 		return fmt.Errorf("error closing level.dat: %w", err)
 	}
 	//noinspection SpellCheckingInspection
-	if err := ioutil.WriteFile(filepath.Join(p.dir, "levelname.txt"), []byte(p.d.LevelName), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(p.dir, "levelname.txt"), []byte(p.d.LevelName), 0644); err != nil {
 		return fmt.Errorf("error writing levelname.txt: %w", err)
 	}
 	return p.db.Close()

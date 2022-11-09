@@ -14,7 +14,6 @@ import (
 // EnderPearl is a smooth, greenish-blue item used to teleport and to make an eye of ender.
 type EnderPearl struct {
 	transform
-	age   int
 	close bool
 
 	owner world.Entity
@@ -24,32 +23,15 @@ type EnderPearl struct {
 
 // NewEnderPearl ...
 func NewEnderPearl(pos mgl64.Vec3, owner world.Entity) *EnderPearl {
-	e := &EnderPearl{
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.03,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
-		owner: owner,
-	}
+	e := &EnderPearl{c: newProjectileComputer(0.03, 0.01), owner: owner}
 	e.transform = newTransform(e, pos)
 
 	return e
 }
 
-// Name ...
-func (e *EnderPearl) Name() string {
-	return "Ender Pearl"
-}
-
-// EncodeEntity ...
-func (e *EnderPearl) EncodeEntity() string {
-	return "minecraft:ender_pearl"
-}
-
-// BBox ...
-func (e *EnderPearl) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+// Type returns EnderPearlType.
+func (e *EnderPearl) Type() world.EntityType {
+	return EnderPearlType{}
 }
 
 // teleporter represents a living entity that can teleport.
@@ -66,13 +48,12 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 		return
 	}
 	e.mu.Lock()
-	m, result := e.c.TickMovement(e, e.pos, e.vel, 0, 0, e.ignores)
+	m, result := e.c.TickMovement(e, e.pos, e.vel, 0, 0)
 	e.pos, e.vel = m.pos, m.vel
 
 	owner := e.owner
 	e.mu.Unlock()
 
-	e.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -106,12 +87,6 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 	}
 }
 
-// ignores returns whether the ender pearl should ignore collision with the entity passed.
-func (e *EnderPearl) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == e || (e.age < 5 && entity == e.owner)
-}
-
 // New creates an ender pearl with the position, velocity, yaw, and pitch provided. It doesn't spawn the ender pearl,
 // only returns it.
 func (e *EnderPearl) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
@@ -134,19 +109,24 @@ func (e *EnderPearl) Owner() world.Entity {
 	return e.owner
 }
 
-// DecodeNBT decodes the properties in a map to a EnderPearl and returns a new EnderPearl entity.
-func (e *EnderPearl) DecodeNBT(data map[string]any) any {
-	return e.New(
-		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
-		nil,
-	)
+// EnderPearlType is a world.EntityType implementation for EnderPearl.
+type EnderPearlType struct{}
+
+func (EnderPearlType) EncodeEntity() string { return "minecraft:ender_pearl" }
+func (EnderPearlType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// EncodeNBT encodes the EnderPearl entity's properties as a map and returns it.
-func (e *EnderPearl) EncodeNBT() map[string]any {
+func (EnderPearlType) DecodeNBT(m map[string]any) world.Entity {
+	ep := NewEnderPearl(nbtconv.Vec3(m, "Pos"), nil)
+	ep.vel = nbtconv.Vec3(m, "Motion")
+	return ep
+}
+
+func (EnderPearlType) EncodeNBT(e world.Entity) map[string]any {
+	ep := e.(*EnderPearl)
 	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(e.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(e.Velocity()),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(ep.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(ep.Velocity()),
 	}
 }

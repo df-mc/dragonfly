@@ -337,7 +337,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It
-// may later be modified if the player was saved in the player provide rof the
+// may later be modified if the player was saved in the player provider of the
 // server.
 func (srv *Server) defaultGameData() minecraft.GameData {
 	return minecraft.GameData{
@@ -500,8 +500,8 @@ func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 // registerTargetFunc registers a cmd.TargetFunc to be able to get all players
 // connected and all entities in the server's world.
 func (srv *Server) registerTargetFunc() {
-	cmd.AddTargetFunc(func(src cmd.Source) (entities, players []cmd.Target) {
-		return sliceutil.Convert[cmd.Target](src.World().Entities()), sliceutil.Convert[cmd.Target](srv.Players())
+	cmd.AddTargetFunc(func(src cmd.Source) (entities []cmd.Target, players []cmd.NamedTarget) {
+		return sliceutil.Convert[cmd.Target](src.World().Entities()), sliceutil.Convert[cmd.NamedTarget](srv.Players())
 	})
 }
 
