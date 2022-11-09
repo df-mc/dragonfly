@@ -15,8 +15,8 @@ type TallGrass struct {
 	transparent
 	empty
 
-	// Type is the type of grass that the plant represents.
-	Type GrassType
+	// Type is the type of tall grass that the plant represents.
+	Type TallGrassType
 }
 
 // FlammabilityInfo ...
@@ -39,9 +39,9 @@ func (g TallGrass) BreakInfo() BreakInfo {
 
 // BoneMeal attempts to affect the block using a bone meal item.
 func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
-	upper := DoubleTallGrass{Type: g.Type, UpperPart: true}
+	upper := DoubleTallGrass{Type: g.Type.Double(), UpperPart: true}
 	if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-		w.SetBlock(pos, DoubleTallGrass{Type: g.Type}, nil)
+		w.SetBlock(pos, DoubleTallGrass{Type: g.Type.Double()}, nil)
 		w.SetBlock(pos.Side(cube.FaceUp), upper, nil)
 		return true
 	}
@@ -50,7 +50,7 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 // CompostChance ...
 func (g TallGrass) CompostChance() float64 {
-	if g.Type == Fern() {
+	if g.Type == FernTallGrass() {
 		return 0.65
 	}
 	return 0.3
@@ -85,23 +85,17 @@ func (g TallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 
 // EncodeItem ...
 func (g TallGrass) EncodeItem() (name string, meta int16) {
-	return "minecraft:tallgrass", int16(g.Type.Uint8() + 1)
+	return "minecraft:tallgrass", int16(g.Type.Uint8())
 }
 
 // EncodeBlock ...
 func (g TallGrass) EncodeBlock() (name string, properties map[string]any) {
-	switch g.Type {
-	case NormalGrass():
-		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "tall"}
-	case Fern():
-		return "minecraft:tallgrass", map[string]any{"tall_grass_type": "fern"}
-	}
-	panic("should never happen")
+	return "minecraft:tallgrass", map[string]any{"tall_grass_type": g.Type.String()}
 }
 
 // allTallGrass ...
 func allTallGrass() (grasses []world.Block) {
-	for _, g := range GrassTypes() {
+	for _, g := range TallGrassTypes() {
 		grasses = append(grasses, TallGrass{Type: g})
 	}
 	return

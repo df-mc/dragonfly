@@ -351,6 +351,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		Items:                        srv.itemEntries(),
 		Time:                         int64(srv.world.Time()),
 		PlayerGameMode:               packet.GameTypeCreative,
+		BaseGameVersion:              protocol.CurrentVersion,
 		PlayerPermissions:            packet.PermissionLevelMember,
 		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
 		PlayerPosition:               vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
