@@ -21,9 +21,9 @@ type Parameter interface {
 // this parameter in order to allow a specific set of options only.
 // Enum implementations must be of the type string, for example:
 //
-//   type GameMode string
-//   func (GameMode) Type() string { return "GameMode" }
-//   func (GameMode) Options(Source) []string { return []string{"survival", "creative"} }
+//	type GameMode string
+//	func (GameMode) Type() string { return "GameMode" }
+//	func (GameMode) Options(Source) []string { return []string{"survival", "creative"} }
 //
 // Their values will then automatically be set to whichever option returned in Enum.Options is selected by
 // the user.

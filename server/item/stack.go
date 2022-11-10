@@ -382,8 +382,9 @@ func newID() int32 {
 }
 
 // id returns the unique ID of the stack passed.
+// noinspection GoUnusedFunction
+//
 //lint:ignore U1000 Function is used through compiler directives.
-//noinspection GoUnusedFunction
 func id(s Stack) int32 {
 	if s.Empty() {
 		return 0
