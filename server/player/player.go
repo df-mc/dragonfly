@@ -2856,7 +2856,7 @@ func (p *Player) Data() Data {
 		Effects:             p.Effects(),
 		FireTicks:           p.fireTicks.Load(),
 		FallDistance:        p.fallDistance.Load(),
-		Dimension:           p.World().Dimension().EncodeDimension(),
+		World:               p.World(),
 	}
 }
 
