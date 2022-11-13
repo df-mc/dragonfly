@@ -315,17 +315,17 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := srv.defaultGameData()
 
-	var playerData *player.Data
-	if d, err := srv.conf.PlayerProvider.Load(id); err == nil {
-		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
-		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
-		data.Dimension = int32(srv.dimension(d.Dimension).Dimension().EncodeDimension())
-
-		playerData = &d
+	p, err := srv.conf.PlayerProvider.Load(id, srv.dimension)
+	if err != nil {
+		p.World, p.Position, p.GameMode = srv.world, srv.world.Spawn().Vec3Middle(), srv.world.DefaultGameMode()
 	}
+	data.PlayerPosition = vec64To32(p.Position).Add(mgl32.Vec3{0, 1.62})
+	data.Dimension = int32(p.World.Dimension().EncodeDimension())
+	data.Yaw, data.Pitch = float32(p.Yaw), float32(p.Pitch)
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
+
 		srv.conf.Log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
 		return
 	}
@@ -333,7 +333,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	if p, ok := srv.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
-	srv.incoming <- srv.createPlayer(id, conn, playerData)
+	srv.incoming <- srv.createPlayer(id, conn, &p)
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It
@@ -345,7 +345,6 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		EntityUniqueID:               1,
 		EntityRuntimeID:              1,
 		Difficulty:                   2,
-		Yaw:                          90,
 		ServerAuthoritativeInventory: true,
 		WorldName:                    srv.conf.Name,
 		Items:                        srv.itemEntries(),
@@ -354,19 +353,18 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		BaseGameVersion:              protocol.CurrentVersion,
 		PlayerPermissions:            packet.PermissionLevelMember,
 		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
-		PlayerPosition:               vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
 	}
 }
 
-// dimension returns a world by a dimension ID passed.
-func (srv *Server) dimension(id int) *world.World {
-	switch id {
+// dimension returns a world by a dimension passed.
+func (srv *Server) dimension(dimension world.Dimension) *world.World {
+	switch dimension {
 	default:
 		return srv.world
-	case 1:
+	case world.Nether:
 		return srv.nether
-	case 2:
+	case world.End:
 		return srv.end
 	}
 }
@@ -409,14 +407,10 @@ func (srv *Server) handleSessionClose(c session.Controllable) {
 // createPlayer creates a new player instance using the UUID and connection
 // passed.
 func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *session.Session {
-	w, gm, pos := srv.world, srv.world.DefaultGameMode(), srv.world.Spawn().Vec3Middle()
-	if data != nil {
-		w, gm, pos = srv.dimension(data.Dimension), data.GameMode, data.Position
-	}
 	s := session.New(conn, srv.conf.MaxChunkRadius, srv.conf.Log, srv.conf.JoinMessage, srv.conf.QuitMessage)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.parseSkin(conn.ClientData()), s, pos, data)
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.parseSkin(conn.ClientData()), s, data.Position, data)
 
-	s.Spawn(p, pos, w, gm, srv.handleSessionClose)
+	s.Spawn(p, data.Position, data.World, data.GameMode, srv.handleSessionClose)
 	srv.pwg.Add(1)
 	return s
 }
