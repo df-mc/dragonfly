@@ -315,13 +315,17 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := srv.defaultGameData()
 
-	p, err := srv.conf.PlayerProvider.Load(id, srv.dimension)
-	if err != nil {
-		p.World, p.Position, p.GameMode = srv.world, srv.world.Spawn().Vec3Middle(), srv.world.DefaultGameMode()
+	var playerData *player.Data
+	if d, err := srv.conf.PlayerProvider.Load(id, srv.dimension); err == nil {
+		if d.World == nil {
+			d.World = srv.world
+		}
+		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
+		data.Dimension = int32(d.World.Dimension().EncodeDimension())
+		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
+
+		playerData = &d
 	}
-	data.PlayerPosition = vec64To32(p.Position).Add(mgl32.Vec3{0, 1.62})
-	data.Dimension = int32(p.World.Dimension().EncodeDimension())
-	data.Yaw, data.Pitch = float32(p.Yaw), float32(p.Pitch)
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
@@ -333,7 +337,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	if p, ok := srv.Player(id); ok {
 		p.Disconnect("Logged in from another location.")
 	}
-	srv.incoming <- srv.createPlayer(id, conn, &p)
+	srv.incoming <- srv.createPlayer(id, conn, playerData)
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It
@@ -342,18 +346,26 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 func (srv *Server) defaultGameData() minecraft.GameData {
 	return minecraft.GameData{
 		// We set these IDs to 1, because that's how the session will treat them.
-		EntityUniqueID:               1,
-		EntityRuntimeID:              1,
-		Difficulty:                   2,
+		EntityUniqueID:  1,
+		EntityRuntimeID: 1,
+
+		WorldName:       srv.conf.Name,
+		BaseGameVersion: protocol.CurrentVersion,
+
+		Time: int64(srv.world.Time()),
+
+		PlayerGameMode:    packet.GameTypeCreative,
+		PlayerPermissions: packet.PermissionLevelMember,
+		PlayerPosition:    vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
+
+		Items:     srv.itemEntries(),
+		GameRules: []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+
 		ServerAuthoritativeInventory: true,
-		WorldName:                    srv.conf.Name,
-		Items:                        srv.itemEntries(),
-		Time:                         int64(srv.world.Time()),
-		PlayerGameMode:               packet.GameTypeCreative,
-		BaseGameVersion:              protocol.CurrentVersion,
-		PlayerPermissions:            packet.PermissionLevelMember,
-		GameRules:                    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
-		PlayerMovementSettings:       protocol.PlayerMovementSettings{MovementType: protocol.PlayerMovementModeServer, ServerAuthoritativeBlockBreaking: true},
+		PlayerMovementSettings: protocol.PlayerMovementSettings{
+			MovementType:                     protocol.PlayerMovementModeServer,
+			ServerAuthoritativeBlockBreaking: true,
+		},
 	}
 }
 
@@ -407,10 +419,14 @@ func (srv *Server) handleSessionClose(c session.Controllable) {
 // createPlayer creates a new player instance using the UUID and connection
 // passed.
 func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *session.Session {
+	w, gm, pos := srv.world, srv.world.DefaultGameMode(), srv.world.Spawn().Vec3Middle()
+	if data != nil {
+		w, gm, pos = data.World, data.GameMode, data.Position
+	}
 	s := session.New(conn, srv.conf.MaxChunkRadius, srv.conf.Log, srv.conf.JoinMessage, srv.conf.QuitMessage)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.parseSkin(conn.ClientData()), s, data.Position, data)
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.parseSkin(conn.ClientData()), s, pos, data)
 
-	s.Spawn(p, data.Position, data.World, data.GameMode, srv.handleSessionClose)
+	s.Spawn(p, pos, w, gm, srv.handleSessionClose)
 	srv.pwg.Add(1)
 	return s
 }
