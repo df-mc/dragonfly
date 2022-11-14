@@ -63,7 +63,7 @@ func (p *Provider) toJson(d player.Data) jsonData {
 		FallDistance:        d.FallDistance,
 		Inventory:           invToData(d.Inventory),
 		EnderChestInventory: encodeItems(d.EnderChestInventory),
-		Dimension:           dimensionToID(d.World.Dimension()),
+		Dimension:           uint8(d.World.Dimension().EncodeDimension()),
 	}
 }
 
