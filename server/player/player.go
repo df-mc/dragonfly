@@ -1802,8 +1802,16 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	held, _ := p.HeldItems()
 	drops := p.drops(held, b)
 
+	xp := 0
+	if breakable, ok := b.(block.Breakable); ok {
+		info := breakable.BreakInfo()
+		if diff := (info.XPDrops[1] - info.XPDrops[0]) + 1; diff > 0 && !p.GameMode().CreativeInventory() {
+			xp = rand.Intn(diff) + info.XPDrops[0]
+		}
+	}
+
 	ctx := event.C()
-	if p.Handler().HandleBlockBreak(ctx, pos, &drops); ctx.Cancelled() {
+	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
 		p.resendBlocks(pos, w)
 		return
 	}
@@ -1818,12 +1826,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		if info.BreakHandler != nil {
 			info.BreakHandler(pos, w, p)
 		}
-		if diff := (info.XPDrops[1] - info.XPDrops[0]) + 1; diff > 0 && !p.GameMode().CreativeInventory() {
-			amount := rand.Intn(diff) + info.XPDrops[0]
-			for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), amount) {
-				orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
-				w.AddEntity(orb)
-			}
+		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
+			orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
+			w.AddEntity(orb)
 		}
 	}
 	for _, drop := range drops {
