@@ -22,32 +22,31 @@ type Egg struct {
 
 // NewEgg ...
 func NewEgg(pos mgl64.Vec3, owner world.Entity) *Egg {
-	s := &Egg{c: newProjectileComputer(0.03, 0.01), owner: owner}
-	s.transform = newTransform(s, pos)
-
-	return s
+	e := &Egg{c: newProjectileComputer(0.03, 0.01), owner: owner}
+	e.transform = newTransform(e, pos)
+	return e
 }
 
 // Type returns EggType.
-func (egg *Egg) Type() world.EntityType {
+func (e *Egg) Type() world.EntityType {
 	return EggType{}
 }
 
 // Tick ...
-func (egg *Egg) Tick(w *world.World, current int64) {
-	if egg.close {
-		_ = egg.Close()
+func (e *Egg) Tick(w *world.World, current int64) {
+	if e.close {
+		_ = e.Close()
 		return
 	}
-	egg.mu.Lock()
-	m, result := egg.c.TickMovement(egg, egg.pos, egg.vel, 0, 0)
-	egg.pos, egg.vel = m.pos, m.vel
-	egg.mu.Unlock()
+	e.mu.Lock()
+	m, result := e.c.TickMovement(e, e.pos, e.vel, 0, 0)
+	e.pos, e.vel = m.pos, m.vel
+	e.mu.Unlock()
 
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
-		egg.close = true
+		e.close = true
 		return
 	}
 
@@ -58,15 +57,15 @@ func (egg *Egg) Tick(w *world.World, current int64) {
 
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: egg, Owner: egg.Owner()}); vulnerable {
+				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: e, Owner: e.Owner()}); vulnerable {
 					l.KnockBack(m.pos, 0.45, 0.3608)
 				}
 			}
 		}
 
-		// TODO: Spawn chicken(egg) 12.5% of the time?
+		// TODO: Spawn chicken(e) 12.5% of the time?
 
-		egg.close = true
+		e.close = true
 	}
 }
 
@@ -79,17 +78,15 @@ func (*Egg) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
 }
 
 // Explode ...
-func (egg *Egg) Explode(src mgl64.Vec3, force float64, _ block.ExplosionConfig) {
-	egg.mu.Lock()
-	egg.vel = egg.vel.Add(egg.pos.Sub(src).Normalize().Mul(force))
-	egg.mu.Unlock()
+func (e *Egg) Explode(src mgl64.Vec3, force float64, _ block.ExplosionConfig) {
+	e.mu.Lock()
+	e.vel = e.vel.Add(e.pos.Sub(src).Normalize().Mul(force))
+	e.mu.Unlock()
 }
 
 // Owner ...
-func (egg *Egg) Owner() world.Entity {
-	egg.mu.Lock()
-	defer egg.mu.Unlock()
-	return egg.owner
+func (e *Egg) Owner() world.Entity {
+	return e.owner
 }
 
 // EggType is a world.EntityType implementation for Egg.

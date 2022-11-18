@@ -273,8 +273,6 @@ func (a *Arrow) Explode(explosionPos mgl64.Vec3, impact float64, _ block.Explosi
 
 // Owner returns the world.Entity that fired the Arrow, or nil if it did not have any.
 func (a *Arrow) Owner() world.Entity {
-	a.mu.Lock()
-	defer a.mu.Unlock()
 	return a.owner
 }
 

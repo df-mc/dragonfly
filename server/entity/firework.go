@@ -156,8 +156,6 @@ func (f *Firework) Attached() bool {
 
 // Owner ...
 func (f *Firework) Owner() world.Entity {
-	f.mu.Lock()
-	defer f.mu.Unlock()
 	return f.owner
 }
 

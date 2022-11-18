@@ -79,8 +79,6 @@ func (l *LingeringPotion) New(pos, vel mgl64.Vec3, t potion.Potion, owner world.
 
 // Owner ...
 func (l *LingeringPotion) Owner() world.Entity {
-	l.mu.Lock()
-	defer l.mu.Unlock()
 	return l.owner
 }
 
