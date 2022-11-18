@@ -80,8 +80,6 @@ func (b *BottleOfEnchanting) New(pos, vel mgl64.Vec3, owner world.Entity) world.
 
 // Owner ...
 func (b *BottleOfEnchanting) Owner() world.Entity {
-	b.mu.Lock()
-	defer b.mu.Unlock()
 	return b.owner
 }
 

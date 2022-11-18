@@ -85,8 +85,6 @@ func (s *Snowball) Explode(explosionPos mgl64.Vec3, impact float64, _ block.Expl
 
 // Owner ...
 func (s *Snowball) Owner() world.Entity {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	return s.owner
 }
 

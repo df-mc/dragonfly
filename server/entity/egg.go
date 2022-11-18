@@ -87,8 +87,6 @@ func (egg *Egg) Explode(src mgl64.Vec3, force float64, _ block.ExplosionConfig) 
 
 // Owner ...
 func (egg *Egg) Owner() world.Entity {
-	egg.mu.Lock()
-	defer egg.mu.Unlock()
 	return egg.owner
 }
 
