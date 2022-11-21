@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-//noinspection SpellCheckingInspection
+// noinspection SpellCheckingInspection
 func init() {
 	world.RegisterItem(AmethystShard{})
 	world.RegisterItem(Apple{})

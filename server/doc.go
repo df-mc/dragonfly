@@ -4,8 +4,8 @@
 // `Server.Listen()` may be called to start and run the server. It should be
 // followed up by a loop as such:
 //
-//   for srv.Accept(nil) {
-//	 }
+//	  for srv.Accept(nil) {
+//		 }
 //
 // `Server.Accept()` blocks until a new player connects to the server and
 // spawns in the default world, and calls the function passed to it once this

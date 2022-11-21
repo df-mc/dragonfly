@@ -104,8 +104,6 @@ func (e *EnderPearl) Explode(explosionPos mgl64.Vec3, impact float64, _ block.Ex
 
 // Owner ...
 func (e *EnderPearl) Owner() world.Entity {
-	e.mu.Lock()
-	defer e.mu.Unlock()
 	return e.owner
 }
 

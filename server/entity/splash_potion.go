@@ -79,8 +79,6 @@ func (s *SplashPotion) Explode(explosionPos mgl64.Vec3, impact float64, _ block.
 
 // Owner ...
 func (s *SplashPotion) Owner() world.Entity {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	return s.owner
 }
 

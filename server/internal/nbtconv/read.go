@@ -137,11 +137,16 @@ func PosToInt32Slice(x cube.Pos) []int32 {
 // to a world.Item.
 func MapItem(x map[string]any, k string) item.Stack {
 	if m, ok := x[k].(map[string]any); ok {
-		s := readItemStack(m)
-		readDamage(m, &s, true)
-		readEnchantments(m, &s)
-		readDisplay(m, &s)
-		readDragonflyData(m, &s)
+		tag, ok := m["tag"].(map[string]any)
+		if !ok {
+			tag = map[string]any{}
+		}
+
+		s := readItemStack(m, tag)
+		readDamage(tag, &s, true)
+		readEnchantments(tag, &s)
+		readDisplay(tag, &s)
+		readDragonflyData(tag, &s)
 		return s
 	}
 	return item.Stack{}
@@ -149,16 +154,23 @@ func MapItem(x map[string]any, k string) item.Stack {
 
 // Item decodes the data of an item into an item stack.
 func Item(data map[string]any, s *item.Stack) item.Stack {
-	disk := s == nil
+	disk, tag := s == nil, data
 	if disk {
-		a := readItemStack(data)
+		t, ok := data["tag"].(map[string]any)
+		if !ok {
+			t = map[string]any{}
+		}
+		tag = t
+
+		a := readItemStack(data, tag)
 		s = &a
 	}
-	readDamage(data, s, disk)
-	readAnvilCost(data, s)
-	readDisplay(data, s)
-	readEnchantments(data, s)
-	readDragonflyData(data, s)
+
+	readAnvilCost(tag, s)
+	readDamage(tag, s, disk)
+	readDisplay(tag, s)
+	readDragonflyData(tag, s)
+	readEnchantments(tag, s)
 	return *s
 }
 
@@ -174,7 +186,7 @@ func Block(m map[string]any, k string) world.Block {
 }
 
 // readItemStack reads an item.Stack from the NBT in the map passed.
-func readItemStack(m map[string]any) item.Stack {
+func readItemStack(m, t map[string]any) item.Stack {
 	var it world.Item
 	if blockItem, ok := Block(m, "Block").(world.Item); ok {
 		it = blockItem
@@ -186,7 +198,7 @@ func readItemStack(m map[string]any) item.Stack {
 		return item.Stack{}
 	}
 	if n, ok := it.(world.NBTer); ok {
-		it = n.DecodeNBT(m).(world.Item)
+		it = n.DecodeNBT(t).(world.Item)
 	}
 	return item.NewStack(it, int(Uint8(m, "Count")))
 }
