@@ -352,7 +352,8 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		WorldName:       srv.conf.Name,
 		BaseGameVersion: protocol.CurrentVersion,
 
-		Time: int64(srv.world.Time()),
+		Time:       int64(srv.world.Time()),
+		Difficulty: 2,
 
 		PlayerGameMode:    packet.GameTypeCreative,
 		PlayerPermissions: packet.PermissionLevelMember,
