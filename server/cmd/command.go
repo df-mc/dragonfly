@@ -303,14 +303,19 @@ func verifySignature(command reflect.Value) error {
 	optionalField := false
 	for _, t := range exportedFields(command) {
 		field := command.FieldByName(t.Name)
-		if _, ok := field.Interface().(Enum); ok && field.Kind() != reflect.String {
-			return fmt.Errorf("parameters implementing Enum must be of the type string")
-		}
+
 		// If the field is not optional, while the last field WAS optional, we return an error, as this is
 		// not parsable in an expected way.
 		opt := optional(field)
 		if !opt && optionalField {
 			return fmt.Errorf("command must only have optional parameters at the end")
+		}
+		val := field
+		if opt {
+			val = reflect.New(field.Field(0).Type()).Elem()
+		}
+		if _, ok := val.Interface().(Enum); ok && val.Kind() != reflect.String {
+			return fmt.Errorf("parameters implementing Enum must be of the type string")
 		}
 		optionalField = opt
 	}
