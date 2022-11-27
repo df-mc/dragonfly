@@ -100,5 +100,3 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 func (m Modal) Buttons() []Button {
 	return []Button{m.btn1.btn, m.btn2.btn}
 }
-
-func (Modal) __() {}

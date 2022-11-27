@@ -55,7 +55,7 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 		return
 	}
 
-	rYaw, rPitch := releaser.Rotation()
+	rYaw, rPitch := releaser.Rotation().Elem()
 	yaw, pitch := -rYaw, -rPitch
 	if rYaw > 180 {
 		yaw = 360 - rYaw
@@ -91,7 +91,7 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 			}
 		}
 
-		projectile := p.New(eyePosition(releaser), directionVector(releaser).Mul(force*5), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
+		projectile := p.New(eyePosition(releaser), releaser.Rotation().Vec3().Mul(force*5), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
 		if f, ok := projectile.(interface{ SetOnFire(duration time.Duration) }); ok {
 			f.SetOnFire(burnDuration)
 		}

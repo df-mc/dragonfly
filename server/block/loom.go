@@ -43,7 +43,7 @@ func (l Loom) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 	if !used {
 		return
 	}
-	l.Facing = user.Facing().Opposite()
+	l.Facing = user.Rotation().Direction().Opposite()
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
 }

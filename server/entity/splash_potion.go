@@ -14,7 +14,6 @@ type SplashPotion struct {
 	splashable
 	transform
 
-	age   int
 	close bool
 
 	owner world.Entity
@@ -25,32 +24,17 @@ type SplashPotion struct {
 // NewSplashPotion ...
 func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *SplashPotion {
 	s := &SplashPotion{
-		owner: owner,
-
+		owner:      owner,
 		splashable: splashable{t: t, m: 0.75},
-		c: &ProjectileComputer{&MovementComputer{
-			Gravity:           0.05,
-			Drag:              0.01,
-			DragBeforeGravity: true,
-		}},
+		c:          newProjectileComputer(0.05, 0.01),
 	}
 	s.transform = newTransform(s, pos)
 	return s
 }
 
-// Name ...
-func (s *SplashPotion) Name() string {
-	return "Splash Potion"
-}
-
-// EncodeEntity ...
-func (s *SplashPotion) EncodeEntity() string {
-	return "minecraft:splash_potion"
-}
-
-// BBox ...
-func (s *SplashPotion) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+// Type returns SplashPotionType.
+func (*SplashPotion) Type() world.EntityType {
+	return SplashPotionType{}
 }
 
 // Tick ...
@@ -60,11 +44,10 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 		return
 	}
 	s.mu.Lock()
-	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0, s.ignores)
+	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0)
 	s.pos, s.vel = m.pos, m.vel
 	s.mu.Unlock()
 
-	s.age++
 	m.Send()
 
 	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
@@ -73,15 +56,9 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		s.splash(s, w, m.pos, result, s.BBox())
+		s.splash(s, w, m.pos, result, s.Type().BBox(s))
 		s.close = true
 	}
-}
-
-// ignores returns whether the SplashPotion should ignore collision with the entity passed.
-func (s *SplashPotion) ignores(entity world.Entity) bool {
-	_, ok := entity.(Living)
-	return !ok || entity == s || (s.age < 5 && entity == s.owner)
 }
 
 // New creates a SplashPotion with the position and velocity provided. It doesn't spawn the SplashPotion,
@@ -102,26 +79,28 @@ func (s *SplashPotion) Explode(explosionPos mgl64.Vec3, impact float64, _ block.
 
 // Owner ...
 func (s *SplashPotion) Owner() world.Entity {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	return s.owner
 }
 
-// DecodeNBT decodes the properties in a map to a SplashPotion and returns a new SplashPotion entity.
-func (s *SplashPotion) DecodeNBT(data map[string]any) any {
-	return s.New(
-		nbtconv.MapVec3(data, "Pos"),
-		nbtconv.MapVec3(data, "Motion"),
-		potion.From(nbtconv.Map[int32](data, "PotionId")),
-		nil,
-	)
+// SplashPotionType is a world.EntityType implementation for SplashPotion.
+type SplashPotionType struct{}
+
+func (SplashPotionType) EncodeEntity() string { return "minecraft:splash_potion" }
+func (SplashPotionType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-// EncodeNBT encodes the SplashPotion entity's properties as a map and returns it.
-func (s *SplashPotion) EncodeNBT() map[string]any {
+func (SplashPotionType) DecodeNBT(m map[string]any) world.Entity {
+	pot := NewSplashPotion(nbtconv.Vec3(m, "Pos"), nil, potion.From(nbtconv.Int32(m, "PotionId")))
+	pot.vel = nbtconv.Vec3(m, "Motion")
+	return pot
+}
+
+func (SplashPotionType) EncodeNBT(e world.Entity) map[string]any {
+	pot := e.(*SplashPotion)
 	return map[string]any{
-		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
-		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
-		"PotionId": int32(s.t.Uint8()),
+		"Pos":      nbtconv.Vec3ToFloat32Slice(pot.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(pot.Velocity()),
+		"PotionId": int32(pot.t.Uint8()),
 	}
 }

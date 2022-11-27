@@ -1,7 +1,6 @@
 package enchantment
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -30,15 +29,9 @@ func (ProjectileProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// Affects ...
-func (ProjectileProtection) Affects(src damage.Source) bool {
-	_, projectile := src.(damage.SourceProjectile)
-	return projectile
-}
-
 // Modifier returns the base protection modifier for the enchantment.
 func (ProjectileProtection) Modifier() float64 {
-	return 1.5
+	return 0.08
 }
 
 // CompatibleWithEnchantment ...

@@ -127,7 +127,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	}
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
-	c.Facing = user.Facing().Opposite()
+	c.Facing = user.Rotation().Direction().Opposite()
 
 	place(w, pos, c, user, ctx)
 	return placed(ctx)
@@ -154,8 +154,8 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
 	c.Facing = facing
-	c.CustomName = nbtconv.Map[string](data, "CustomName")
-	nbtconv.InvFromNBT(c.inventory, nbtconv.Map[[]any](data, "Items"))
+	c.CustomName = nbtconv.String(data, "CustomName")
+	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
 	return c
 }
 

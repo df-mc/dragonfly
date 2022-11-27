@@ -77,6 +77,9 @@ type Config struct {
 	// chunks will always be newly generated when loaded. The world provider
 	// will be used for storing/loading the default overworld, nether and end.
 	WorldProvider world.Provider
+	// ReadOnlyWorld specifies if the standard worlds should be read only. If
+	// set to true, the WorldProvider won't be saved to at all.
+	ReadOnlyWorld bool
 	// Generator should return a function that specifies the world.Generator to
 	// use for every world.Dimension (world.Overworld, world.Nether and
 	// world.End). If left empty, Generator will be set to a flat world for each
@@ -184,6 +187,12 @@ type UserConfig struct {
 		QuitMessage string
 	}
 	World struct {
+		// SaveData controls whether a world's data will be saved and loaded.
+		// If true, the server will use the default LevelDB data provider and if
+		// false, an empty provider will be used. To use your own provider, turn
+		// this value to false, as you will still be able to pass your own
+		// provider.
+		SaveData bool
 		// Folder is the folder that the data of the world resides in.
 		Folder string
 	}
@@ -199,7 +208,7 @@ type UserConfig struct {
 		// SaveData controls whether a player's data will be saved and loaded.
 		// If true, the server will use the default LevelDB data provider and if
 		// false, an empty provider will be used. To use your own provider, turn
-		// this value to false as you will still be able to pass your own
+		// this value to false, as you will still be able to pass your own
 		// provider.
 		SaveData bool
 		// Folder controls where the player data will be stored by the default
@@ -236,9 +245,11 @@ func (uc UserConfig) Config(log Logger) (Config, error) {
 		ShutdownMessage:         uc.Server.ShutdownMessage,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
 	}
-	conf.WorldProvider, err = mcdb.New(log, uc.World.Folder, opt.FlateCompression)
-	if err != nil {
-		return conf, fmt.Errorf("create world provider: %w", err)
+	if uc.World.SaveData {
+		conf.WorldProvider, err = mcdb.New(log, uc.World.Folder, opt.FlateCompression)
+		if err != nil {
+			return conf, fmt.Errorf("create world provider: %w", err)
+		}
 	}
 	conf.Resources, err = loadResources(uc.Resources.Folder)
 	if err != nil {
@@ -294,6 +305,7 @@ func DefaultConfig() UserConfig {
 	c.Server.AuthEnabled = true
 	c.Server.JoinMessage = "%v has joined the game"
 	c.Server.QuitMessage = "%v has left the game"
+	c.World.SaveData = true
 	c.World.Folder = "world"
 	c.Players.MaximumChunkRadius = 32
 	c.Players.SaveData = true

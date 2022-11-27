@@ -39,7 +39,7 @@ func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3,
 	if !used {
 		return
 	}
-	t.Facing = user.Facing().Opposite()
+	t.Facing = user.Rotation().Direction().Opposite()
 
 	place(w, pos, t, user, ctx)
 	return placed(ctx)

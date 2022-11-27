@@ -48,7 +48,7 @@ func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Ve
 	if !used {
 		return false
 	}
-	t.Facing = user.Facing().Opposite()
+	t.Facing = user.Rotation().Direction().Opposite()
 	t.Top = (clickPos.Y() > 0.5 && face != cube.FaceUp) || face == cube.FaceDown
 
 	place(w, pos, t, user, ctx)

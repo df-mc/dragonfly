@@ -2,7 +2,6 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -45,6 +44,11 @@ func NewLightningWithDamage(pos mgl64.Vec3, dmg float64, blockFire, entityFire b
 	return li
 }
 
+// Type returns LightningType.
+func (*Lightning) Type() world.EntityType {
+	return LightningType{}
+}
+
 // Position returns the current position of the lightning entity.
 func (li *Lightning) Position() mgl64.Vec3 {
 	return li.pos
@@ -56,11 +60,6 @@ func (li *Lightning) World() *world.World {
 	return w
 }
 
-// BBox ...
-func (Lightning) BBox() cube.BBox {
-	return cube.Box(0, 0, 0, 0, 0, 0)
-}
-
 // Close closes the lighting.
 func (li *Lightning) Close() error {
 	li.World().RemoveEntity(li)
@@ -68,18 +67,8 @@ func (li *Lightning) Close() error {
 }
 
 // Rotation ...
-func (li *Lightning) Rotation() (yaw, pitch float64) {
-	return 0, 0
-}
-
-// EncodeEntity ...
-func (li *Lightning) EncodeEntity() string {
-	return "minecraft:lightning_bolt"
-}
-
-// Name ...
-func (li *Lightning) Name() string {
-	return "Lightning Bolt"
+func (li *Lightning) Rotation() (c cube.Rotation) {
+	return cube.Rotation{}
 }
 
 // New strikes the Lightning at a specific position in a new world.
@@ -97,12 +86,12 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 		w.PlaySound(li.pos, sound.Thunder{})
 		w.PlaySound(li.pos, sound.Explosion{})
 
-		bb := li.BBox().GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(li.pos.Add(mgl64.Vec3{0, 3}))
+		bb := li.Type().BBox(li).GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(li.pos.Add(mgl64.Vec3{0, 3}))
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
 				if li.damage > 0 {
-					l.Hurt(li.damage, damage.SourceLightning{})
+					l.Hurt(li.damage, LightningDamageSource{})
 				}
 				if f, ok := e.(Flammable); ok && li.entityFire && f.OnFireDuration() < time.Second*8 {
 					f.SetOnFire(time.Second * 8)
@@ -128,16 +117,6 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 	}
 }
 
-// DecodeNBT does nothing.
-func (li *Lightning) DecodeNBT(map[string]any) any {
-	return nil
-}
-
-// EncodeNBT does nothing.
-func (li *Lightning) EncodeNBT() map[string]any {
-	return map[string]any{}
-}
-
 // fire returns a fire block.
 func fire() world.Block {
 	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
@@ -145,4 +124,14 @@ func fire() world.Block {
 		panic("could not find fire block")
 	}
 	return f
+}
+
+// LightningType is a world.EntityType implementation for Lightning.
+type LightningType struct{}
+
+func (LightningType) EncodeEntity() string                  { return "minecraft:lightning_bolt" }
+func (LightningType) BBox(world.Entity) cube.BBox           { return cube.BBox{} }
+func (LightningType) DecodeNBT(map[string]any) world.Entity { return nil }
+func (LightningType) EncodeNBT(world.Entity) map[string]any {
+	return map[string]any{}
 }
