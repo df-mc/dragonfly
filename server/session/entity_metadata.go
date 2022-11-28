@@ -103,15 +103,14 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 			m[protocol.EntityDataKeyEffectAmbience] = byte(0)
 		}
 	}
-	// TODO: Fix this.
-	//if l, ok := e.(living); ok && s.c == e {
-	//	deathPos, deathDimension, died := l.DeathPosition()
-	//	if died {
-	//		m[protocol.EntityDataKeyPlayerLastDeathPosition] = vec64To32(deathPos)
-	//		m[protocol.EntityDataKeyPlayerLastDeathDimension] = int32(deathDimension.EncodeDimension())
-	//	}
-	//	m[protocol.EntityDataKeyPlayerHasDied] = boolByte(died)
-	//}
+	if l, ok := e.(living); ok && s.c == e {
+		deathPos, deathDimension, died := l.DeathPosition()
+		if died {
+			m[protocol.EntityDataKeyPlayerLastDeathPosition] = vec64To32(deathPos)
+			m[protocol.EntityDataKeyPlayerLastDeathDimension] = int32(deathDimension.EncodeDimension())
+		}
+		m[protocol.EntityDataKeyPlayerHasDied] = boolByte(died)
+	}
 	if p, ok := e.(splash); ok {
 		m[protocol.EntityDataKeyAuxValueData] = int16(p.Potion().Uint8())
 	}
