@@ -28,7 +28,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 
 	// Next, check if the input slot has a valid banner item.
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerLoomInput,
+		ContainerID: protocol.ContainerLoomInput,
 		Slot:        loomInputSlot,
 	}, s)
 	if input.Empty() {
@@ -44,7 +44,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 
 	// Do the same with the input dye.
 	dye, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerLoomDye,
+		ContainerID: protocol.ContainerLoomDye,
 		Slot:        loomDyeSlot,
 	}, s)
 	if dye.Empty() {
@@ -62,7 +62,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 	// Some banner patterns have equivalent banner pattern items that are required to craft the pattern. If the expected
 	// pattern has a pattern item, check if the player input the correct pattern item.
 	pattern, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerLoomPattern,
+		ContainerID: protocol.ContainerLoomMaterial,
 		Slot:        loomPatternSlot,
 	}, s)
 	if expectedPatternItem, hasPatternItem := expectedPattern.Item(); hasPatternItem {
@@ -84,11 +84,11 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		Colour: d.Colour,
 	})
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerLoomInput,
+		ContainerID: protocol.ContainerLoomInput,
 		Slot:        loomInputSlot,
 	}, input.Grow(-1), s)
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerLoomDye,
+		ContainerID: protocol.ContainerLoomDye,
 		Slot:        loomDyeSlot,
 	}, dye.Grow(-1), s)
 	return h.createResults(s, duplicateStack(input, b))

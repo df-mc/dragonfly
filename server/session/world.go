@@ -119,9 +119,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 		})
 		return
 	case *entity.FallingBlock:
-		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
+		metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
 	case *entity.Text:
-		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
+		metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
 	}
 	if v, ok := e.Type().(NetworkEncodeableEntity); ok {
 		id = v.NetworkEncodeEntity()
@@ -891,27 +891,30 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	var containerType byte
 	switch b := b.(type) {
 	case block.CraftingTable:
-		containerType = 1
+		containerType = protocol.ContainerTypeWorkbench
 	case block.EnchantingTable:
-		containerType = 3
+		containerType = protocol.ContainerTypeEnchantment
 	case block.Anvil:
-		containerType = 5
+		containerType = protocol.ContainerTypeAnvil
 	case block.Beacon:
-		containerType = 13
+		containerType = protocol.ContainerTypeBeacon
 	case block.Loom:
-		containerType = 24
+		containerType = protocol.ContainerTypeLoom
 	case block.Grindstone:
-		containerType = 26
+		containerType = protocol.ContainerTypeGrindstone
 	case block.Stonecutter:
-		containerType = 29
+		containerType = protocol.ContainerTypeStonecutter
 	case block.SmithingTable:
-		containerType = 33
+		containerType = protocol.ContainerTypeSmithingTable
 	case block.EnderChest:
 		b.AddViewer(w, pos)
+
 		inv := s.c.EnderChestInventory()
 		s.openedWindow.Store(inv)
+
 		defer s.sendInv(inv, uint32(nextID))
 	}
+
 	s.openedContainerID.Store(uint32(containerType))
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
@@ -920,12 +923,6 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		ContainerEntityUniqueID: -1,
 	})
 }
-
-const (
-	containerTypeFurnace      = 2
-	containerTypeBlastFurnace = 27
-	containerTypeSmoker       = 28
-)
 
 // openNormalContainer opens a normal container that can hold items in it server-side.
 func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
@@ -939,11 +936,11 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	var containerType byte
 	switch b.(type) {
 	case block.Furnace:
-		containerType = containerTypeFurnace
+		containerType = protocol.ContainerTypeFurnace
 	case block.BlastFurnace:
-		containerType = containerTypeBlastFurnace
+		containerType = protocol.ContainerTypeBlastFurnace
 	case block.Smoker:
-		containerType = containerTypeSmoker
+		containerType = protocol.ContainerTypeSmoker
 	}
 
 	s.writePacket(&packet.ContainerOpen{

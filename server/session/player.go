@@ -125,37 +125,6 @@ const (
 	craftingResult          = 50
 )
 
-const (
-	containerAnvilInput            = 0
-	containerAnvilMaterial         = 1
-	containerSmithingInput         = 3
-	containerSmithingMaterial      = 4
-	containerArmour                = 6
-	containerChest                 = 7
-	containerBeacon                = 8
-	containerFullInventory         = 12
-	containerCraftingGrid          = 13
-	containerEnchantingTableInput  = 21
-	containerEnchantingTableLapis  = 22
-	containerFurnaceFuel           = 23
-	containerFurnaceResult         = 25
-	containerFurnaceInput          = 24
-	containerHotbar                = 27
-	containerInventory             = 28
-	containerOffHand               = 33
-	containerLoomInput             = 40
-	containerLoomDye               = 41
-	containerLoomPattern           = 42
-	containerBlastFurnaceInput     = 44
-	containerSmokerInput           = 45
-	containerGrindstoneFirstInput  = 49
-	containerGrindstoneSecondInput = 50
-	containerStonecutterInput      = 52
-	containerBarrel                = 57
-	containerCursor                = 58
-	containerOutput                = 59
-)
-
 // smelter is an interface representing a block used to smelt items.
 type smelter interface {
 	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
@@ -166,18 +135,18 @@ type smelter interface {
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case containerCraftingGrid, containerOutput, containerCursor:
+	case protocol.ContainerCraftingInput, protocol.ContainerCreatedOutput, protocol.ContainerCursor:
 		// UI inventory.
 		return s.ui, true
-	case containerHotbar, containerInventory, containerFullInventory:
+	case protocol.ContainerHotBar, protocol.ContainerInventory, protocol.ContainerCombinedHotBarAndInventory:
 		// Hotbar 'inventory', rest of inventory, inventory when container is opened.
 		return s.inv, true
-	case containerOffHand:
+	case protocol.ContainerOffhand:
 		return s.offHand, true
-	case containerArmour:
+	case protocol.ContainerArmor:
 		// Armour inventory.
 		return s.armour.Inventory(), true
-	case containerChest:
+	case protocol.ContainerLevelEntity:
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
@@ -186,55 +155,56 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBarrel:
+	case protocol.ContainerBarrel:
 		if s.containerOpened.Load() {
 			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBeacon:
+	case protocol.ContainerBeaconPayment:
 		if s.containerOpened.Load() {
 			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
 		}
-	case containerAnvilInput, containerAnvilMaterial:
+	case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
 		if s.containerOpened.Load() {
 			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
 		}
-	case containerSmithingInput, containerSmithingMaterial:
+	case protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
 		if s.containerOpened.Load() {
 			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true
 			}
 		}
-	case containerLoomInput, containerLoomDye, containerLoomPattern:
+	case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
 		if s.containerOpened.Load() {
 			if _, loom := s.c.World().Block(s.openedPos.Load()).(block.Loom); loom {
 				return s.ui, true
 			}
 		}
-	case containerStonecutterInput:
+	case protocol.ContainerStonecutterInput:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
 		}
-	case containerGrindstoneFirstInput, containerGrindstoneSecondInput:
+	case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); ok {
 				return s.ui, true
 			}
 		}
-	case containerEnchantingTableInput, containerEnchantingTableLapis:
+	case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
 		if s.containerOpened.Load() {
 			if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}
-	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
+	case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
+		protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
 				return s.openedWindow.Load(), true

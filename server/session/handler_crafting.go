@@ -49,7 +49,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
-				ContainerID: containerCraftingGrid,
+				ContainerID: protocol.ContainerCraftingInput,
 				Slot:        byte(slot),
 			}, st, s)
 			break
@@ -99,7 +99,10 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	}
 
 	for _, expected := range flattenedInputs {
-		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
+		for id, inv := range map[byte]*inventory.Inventory{
+			protocol.ContainerCraftingInput:              s.ui,
+			protocol.ContainerCombinedHotBarAndInventory: s.inv,
+		} {
 			for slot, has := range inv.Slots() {
 				if has.Empty() {
 					// We don't have this item, skip it.
