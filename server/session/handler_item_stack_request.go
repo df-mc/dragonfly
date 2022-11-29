@@ -263,7 +263,7 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 // by Mojang to deal with the durability changes client-side.
 func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequestAction, s *Session) error {
 	slot := protocol.StackRequestSlotInfo{
-		ContainerID:    containerInventory,
+		ContainerID:    protocol.ContainerInventory,
 		Slot:           byte(a.HotbarSlot),
 		StackNetworkID: a.StackNetworkID,
 	}
@@ -293,7 +293,7 @@ func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAct
 	h.pendingResults[slot] = item.Stack{}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
+		ContainerID: protocol.ContainerCreatedOutput,
 		Slot:        craftingResult,
 	}, res, s)
 	return nil
