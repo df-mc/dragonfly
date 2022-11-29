@@ -169,6 +169,8 @@ github.com/sandertv/gophertunnel v1.25.3-0.20221128223358-89a35151e73e h1:jUSAzc
 github.com/sandertv/gophertunnel v1.25.3-0.20221128223358-89a35151e73e/go.mod h1:dYFetA6r62huhc1EgR9p8VFAFtKOuGgVE/iXf5CzZ4o=
 github.com/sandertv/gophertunnel v1.25.3-0.20221128232255-bce3b31e5608 h1:DuSNpIWNGN1V5yr56lLE1V9L9psoFh5SkwuEqJ61zng=
 github.com/sandertv/gophertunnel v1.25.3-0.20221128232255-bce3b31e5608/go.mod h1:dYFetA6r62huhc1EgR9p8VFAFtKOuGgVE/iXf5CzZ4o=
+github.com/sandertv/gophertunnel v1.26.0 h1:6wCDkCh6j6t8wh0G+3U4X1KNVJtrmlj7yI58LuCh720=
+github.com/sandertv/gophertunnel v1.26.0/go.mod h1:dYFetA6r62huhc1EgR9p8VFAFtKOuGgVE/iXf5CzZ4o=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
