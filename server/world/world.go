@@ -1325,13 +1325,9 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
 func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	c.Lock()
 	if c.Modified() && !w.conf.ReadOnly {
-		m := make([]map[string]any, 0, len(c.e))
-		for pos, b := range c.e {
-			if n, ok := b.(NBTer); ok {
-				data := n.EncodeNBT()
-				data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-				m = append(m, data)
-			}
+		c.Compact()
+		if err := w.provider().SaveChunk(pos, c.Chunk, w.conf.Dim); err != nil {
+			w.conf.Log.Errorf("error saving chunk %v to provider: %v", pos, err)
 		}
 
 		s := make([]Entity, 0, len(c.entities))
@@ -1340,13 +1336,17 @@ func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 				s = append(s, e)
 			}
 		}
-
-		c.Compact()
-		if err := w.provider().SaveChunk(pos, c.Chunk, w.conf.Dim); err != nil {
-			w.conf.Log.Errorf("error saving chunk %v to provider: %v", pos, err)
-		}
 		if err := w.provider().SaveEntities(pos, s, w.conf.Dim); err != nil {
 			w.conf.Log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
+		}
+
+		m := make([]map[string]any, 0, len(c.e))
+		for pos, b := range c.e {
+			if n, ok := b.(NBTer); ok {
+				data := n.EncodeNBT()
+				data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+				m = append(m, data)
+			}
 		}
 		if err := w.provider().SaveBlockNBT(pos, m, w.conf.Dim); err != nil {
 			w.conf.Log.Errorf("error saving block NBT in chunk %v to provider: %v", pos, err)
