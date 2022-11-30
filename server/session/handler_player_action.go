@@ -27,7 +27,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		// Don't do anything for these actions.
 	case protocol.PlayerActionStopSleeping:
 		if mode := s.c.GameMode(); !mode.Visible() && !mode.HasCollision() {
-			// As of 1.19.50, the client sends this packet when switching to spectator mode... even if it wasn't
+			// As of v1.19.50, the client sends this packet when switching to spectator mode... even if it wasn't
 			// sleeping in the first place. This accounts for that.
 			return nil
 		}
