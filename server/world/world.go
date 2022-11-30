@@ -1324,7 +1324,7 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
 // the provider.
 func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	c.Lock()
-	if c.Chunk.Modified() && !w.conf.ReadOnly {
+	if c.Modified() && !w.conf.ReadOnly {
 		m := make([]map[string]any, 0, len(c.e))
 		for pos, b := range c.e {
 			if n, ok := b.(NBTer); ok {
