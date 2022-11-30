@@ -14,6 +14,8 @@ type Chunk struct {
 	r cube.Range
 	// air is the runtime ID of air.
 	air uint32
+	// modified is true if the chunk has been modified since it was last saved.
+	modified bool
 	// recalculateHeightMap is true if the chunk's height map should be recalculated on the next call to the HeightMap
 	// function.
 	recalculateHeightMap bool
@@ -54,6 +56,11 @@ func (chunk *Chunk) Sub() []*SubChunk {
 	return chunk.sub
 }
 
+// Modified returns true if the chunk has been modified since it was last saved.
+func (chunk *Chunk) Modified() bool {
+	return chunk.modified
+}
+
 // Block returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
 // sub chunk exists at the given y, the block is assumed to be air.
 func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
@@ -74,7 +81,7 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 		return
 	}
 	sub.Layer(layer).Set(x, uint8(y), z, block)
-	chunk.recalculateHeightMap = true
+	chunk.modified, chunk.recalculateHeightMap = true, true
 }
 
 // Biome returns the biome ID at a specific column in the chunk.
