@@ -19,8 +19,6 @@ const (
 // bytes.
 // Methods on PalettedStorage must not be called simultaneously from multiple goroutines.
 type PalettedStorage struct {
-	// modified is true if the storage has been modified since it was last saved.
-	modified bool
 	// bitsPerIndex is the amount of bits required to store one block. The number increases as the block
 	// storage holds more unique block states.
 	bitsPerIndex uint16
@@ -61,11 +59,6 @@ func emptyStorage(v uint32) *PalettedStorage {
 	return newPalettedStorage([]uint32{}, newPalette(0, []uint32{v}))
 }
 
-// Modified returns true if the PalettedStorage was modified since it was last saved.
-func (storage *PalettedStorage) Modified() bool {
-	return storage.modified
-}
-
 // Palette returns the Palette of the PalettedStorage.
 func (storage *PalettedStorage) Palette() *Palette {
 	return storage.palette
@@ -86,7 +79,6 @@ func (storage *PalettedStorage) Set(x, y, z byte, v uint32) {
 		index = storage.addNew(v)
 	}
 	storage.setPaletteIndex(x&15, y&15, z&15, uint16(index))
-	storage.modified = true
 }
 
 // addNew adds a new value to the PalettedStorage's Palette and returns its index. If needed, the storage is resized.

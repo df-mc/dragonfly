@@ -88,16 +88,6 @@ func (sub *SubChunk) SkyLight(x, y, z byte) uint8 {
 	return (sub.skyLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 
-// Modified returns true if any of the SubChunk's storages were modified.
-func (sub *SubChunk) Modified() bool {
-	for _, storage := range sub.storages {
-		if storage.modified {
-			return true
-		}
-	}
-	return false
-}
-
 // Compact cleans the garbage from all block storages that sub chunk contains, so that they may be
 // cleanly written to a database.
 func (sub *SubChunk) compact() {

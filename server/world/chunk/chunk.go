@@ -160,16 +160,6 @@ func (chunk *Chunk) Compact() {
 	}
 }
 
-// Modified returns true if the chunk has been modified since it was last saved.
-func (chunk *Chunk) Modified() bool {
-	for _, sub := range chunk.sub {
-		if sub.Modified() {
-			return true
-		}
-	}
-	return false
-}
-
 // SubChunk finds the correct SubChunk in the Chunk by a Y value.
 func (chunk *Chunk) SubChunk(y int16) *SubChunk {
 	return chunk.sub[chunk.SubIndex(y)]
