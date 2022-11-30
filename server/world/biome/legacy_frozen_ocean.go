@@ -20,5 +20,5 @@ func (LegacyFrozenOcean) String() string {
 
 // EncodeBiome ...
 func (LegacyFrozenOcean) EncodeBiome() int {
-	return 47
+	return 10
 }
