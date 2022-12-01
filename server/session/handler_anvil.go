@@ -91,20 +91,11 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		}
 	}
 
-	// First get the new name and the existing name. The existing name is either the custom name if it exists, or the
-	// item's display name in-game, which is locale dependent.
-	newName := filterStrings[int(a.FilterStringIndex)]
-	existingName := item.DisplayName(input.Item(), s.c.Locale())
-	if customName := input.CustomName(); len(customName) > 0 {
-		existingName = customName
-	}
-
-	// If our existing name isn't the same as the new name, then something changed, and we should update the custom
-	// name of the item.
-	if existingName != newName {
+	// If we have a filter string, then the client is intending to rename the item.
+	if len(filterStrings) > 0 {
 		renameCost = 1
 		actionCost += renameCost
-		result = result.WithCustomName(newName)
+		result = result.WithCustomName(filterStrings[int(a.FilterStringIndex)])
 	}
 
 	// Calculate the total cost. (action cost + anvil cost)
