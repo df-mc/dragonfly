@@ -25,7 +25,7 @@ func (e EnderPearl) Use(w *world.World, user User, ctx *UseContext) bool {
 	}
 
 	w.PlaySound(user.Position(), sound.ItemThrow{})
-	w.AddEntity(p.New(eyePosition(user), directionVector(user).Mul(1.5), user))
+	w.AddEntity(p.New(eyePosition(user), user.Rotation().Vec3().Mul(1.5), user))
 
 	ctx.SubtractFromCount(1)
 	return true

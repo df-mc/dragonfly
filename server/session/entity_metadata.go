@@ -7,125 +7,122 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"time"
 )
 
-// entityMetadata represents a map that holds metadata associated with an entity. The data held in the map
-// depends on the entity and varies on a per-entity basis.
-type entityMetadata map[uint32]any
-
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
-func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
-	bb := e.BBox()
-	m := entityMetadata{
-		dataKeyBoundingBoxWidth:  float32(bb.Width()),
-		dataKeyBoundingBoxHeight: float32(bb.Height()),
-		dataKeyPotionColour:      int32(0),
-		dataKeyPotionAmbient:     byte(0),
-		dataKeyColour:            byte(0),
-	}
+func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
+	bb := e.Type().BBox(e)
+	m := protocol.NewEntityMetadata()
 
-	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
-	m.setFlag(dataKeyFlags, dataFlagCanClimb)
+	m[protocol.EntityDataKeyWidth] = float32(bb.Width())
+	m[protocol.EntityDataKeyHeight] = float32(bb.Height())
+	m[protocol.EntityDataKeyEffectColor] = int32(0)
+	m[protocol.EntityDataKeyEffectAmbience] = byte(0)
+	m[protocol.EntityDataKeyColorIndex] = byte(0)
+
+	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasGravity)
+	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagClimb)
 	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
-		m.setFlag(dataKeyFlags, dataFlagSneaking)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSneaking)
 	}
 	if sp, ok := e.(sprinter); ok && sp.Sprinting() {
-		m.setFlag(dataKeyFlags, dataFlagSprinting)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSprinting)
 	}
 	if sw, ok := e.(swimmer); ok && sw.Swimming() {
-		m.setFlag(dataKeyFlags, dataFlagSwimming)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSwimming)
 	}
 	if gl, ok := e.(glider); ok && gl.Gliding() {
-		m.setFlag(dataKeyFlags, dataFlagGliding)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagGliding)
 	}
 	if b, ok := e.(breather); ok {
-		m[dataKeyAir] = int16(b.AirSupply().Milliseconds() / 50)
-		m[dataKeyMaxAir] = int16(b.MaxAirSupply().Milliseconds() / 50)
+		m[protocol.EntityDataKeyAirSupply] = int16(b.AirSupply().Milliseconds() / 50)
+		m[protocol.EntityDataKeyAirSupplyMax] = int16(b.MaxAirSupply().Milliseconds() / 50)
 		if b.Breathing() {
-			m.setFlag(dataKeyFlags, dataFlagBreathing)
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagBreathing)
 		}
 	}
 	if i, ok := e.(invisible); ok && i.Invisible() {
-		m.setFlag(dataKeyFlags, dataFlagInvisible)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
 	}
 	if i, ok := e.(immobile); ok && i.Immobile() {
-		m.setFlag(dataKeyFlags, dataFlagNoAI)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagNoAI)
 	}
 	if o, ok := e.(onFire); ok && o.OnFireDuration() > 0 {
-		m.setFlag(dataKeyFlags, dataFlagOnFire)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagOnFire)
 	}
 	if u, ok := e.(using); ok && u.UsingItem() {
-		m.setFlag(dataKeyFlags, dataFlagUsingItem)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagUsingItem)
 	}
 	if c, ok := e.(arrow); ok && c.Critical() {
-		m.setFlag(dataKeyFlags, dataFlagCritical)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCritical)
 	}
 	if g, ok := e.(gameMode); ok && g.GameMode().HasCollision() {
-		m.setFlag(dataKeyFlags, dataFlagHasCollision)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasCollision)
 	}
 	if o, ok := e.(orb); ok {
-		m[dataKeyExperienceValue] = int32(o.Experience())
+		m[protocol.EntityDataKeyValue] = int32(o.Experience())
 	}
 	if f, ok := e.(firework); ok {
-		m[dataKeyFireworkItem] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
+		m[protocol.EntityDataKeyDisplayTileRuntimeID] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
 		if o, ok := e.(owned); ok && f.Attached() {
-			m[dataKeyCustomDisplay] = int64(s.entityRuntimeID(o.Owner()))
+			m[protocol.EntityDataKeyCustomDisplay] = int64(s.entityRuntimeID(o.Owner()))
 		}
 	} else if o, ok := e.(owned); ok {
-		m[dataKeyOwnerRuntimeID] = int64(s.entityRuntimeID(o.Owner()))
+		m[protocol.EntityDataKeyOwner] = int64(s.entityRuntimeID(o.Owner()))
 	}
 	if sc, ok := e.(scaled); ok {
-		m[dataKeyScale] = float32(sc.Scale())
+		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
 	}
 	if t, ok := e.(tnt); ok {
-		m[dataKeyFuseLength] = int32(t.Fuse().Milliseconds() / 50)
-		m.setFlag(dataKeyFlags, dataFlagIgnited)
+		m[protocol.EntityDataKeyFuseTime] = int32(t.Fuse().Milliseconds() / 50)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagIgnited)
 	}
 	if n, ok := e.(named); ok {
-		m[dataKeyNameTag] = n.NameTag()
-		m[dataKeyAlwaysShowNameTag] = uint8(1)
-		m.setFlag(dataKeyFlags, dataFlagAlwaysShowNameTag)
-		m.setFlag(dataKeyFlags, dataFlagCanShowNameTag)
+		m[protocol.EntityDataKeyName] = n.NameTag()
+		m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
 	}
 	if sc, ok := e.(scoreTag); ok {
-		m[dataKeyScoreTag] = sc.ScoreTag()
+		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
 	}
 	if c, ok := e.(areaEffectCloud); ok {
 		radius, radiusOnUse, radiusGrowth := c.Radius()
 		colour, am := effect.ResultingColour(c.Effects())
-		m[dataKeyAreaEffectCloudDuration] = int32(c.Duration().Milliseconds() / 50)
-		m[dataKeyAreaEffectCloudRadius] = float32(radius)
-		m[dataKeyAreaEffectCloudRadiusChangeOnPickup] = float32(radiusOnUse)
-		m[dataKeyAreaEffectCloudRadiusPerTick] = float32(radiusGrowth)
-		m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
+		m[protocol.EntityDataKeyDataDuration] = int32(c.Duration().Milliseconds() / 50)
+		m[protocol.EntityDataKeyDataRadius] = float32(radius)
+		m[protocol.EntityDataKeyDataChangeOnPickup] = float32(radiusOnUse)
+		m[protocol.EntityDataKeyDataChangeRate] = float32(radiusGrowth)
+		m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
 		if am {
-			m[dataKeyPotionAmbient] = byte(1)
+			m[protocol.EntityDataKeyEffectAmbience] = byte(1)
 		} else {
-			m[dataKeyPotionAmbient] = byte(0)
+			m[protocol.EntityDataKeyEffectAmbience] = byte(0)
 		}
 	}
 	if l, ok := e.(living); ok && s.c == e {
 		deathPos, deathDimension, died := l.DeathPosition()
 		if died {
-			m[dataKeyPlayerLastDeathPos] = vec64To32(deathPos)
-			m[dataKeyPlayerLastDeathDimension] = int32(deathDimension.EncodeDimension())
+			m[protocol.EntityDataKeyPlayerLastDeathPosition] = vec64To32(deathPos)
+			m[protocol.EntityDataKeyPlayerLastDeathDimension] = int32(deathDimension.EncodeDimension())
 		}
-		m[dataKeyPlayerHasDied] = boolByte(died)
+		m[protocol.EntityDataKeyPlayerHasDied] = boolByte(died)
 	}
 	if p, ok := e.(splash); ok {
-		m[dataKeyPotionAuxValue] = int16(p.Type().Uint8())
+		m[protocol.EntityDataKeyAuxValueData] = int16(p.Potion().Uint8())
 	}
 	if g, ok := e.(glint); ok && g.Glint() {
-		m.setFlag(dataKeyFlags, dataFlagEnchanted)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
 	}
 	if l, ok := e.(lingers); ok && l.Lingers() {
-		m.setFlag(dataKeyFlags, dataFlagLinger)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
 	}
 	if t, ok := e.(tipped); ok {
 		if tip := t.Tip().Uint8(); tip > 4 {
-			m[dataKeyCustomDisplay] = tip + 1
+			m[protocol.EntityDataKeyCustomDisplay] = tip + 1
 		}
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
@@ -137,84 +134,16 @@ func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
 		}
 		if len(visibleEffects) > 0 {
 			colour, am := effect.ResultingColour(visibleEffects)
-			m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
+			m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
 			if am {
-				m[dataKeyPotionAmbient] = byte(1)
+				m[protocol.EntityDataKeyEffectAmbience] = byte(1)
 			} else {
-				m[dataKeyPotionAmbient] = byte(0)
+				m[protocol.EntityDataKeyEffectAmbience] = byte(0)
 			}
 		}
 	}
 	return m
 }
-
-// setFlag sets a flag with a specific index in the int64 stored in the entity metadata map to the value
-// passed. It is typically used for entity metadata flags.
-func (m entityMetadata) setFlag(key uint32, index uint8) {
-	if v, ok := m[key]; !ok {
-		m[key] = int64(0) ^ (1 << uint64(index))
-	} else {
-		m[key] = v.(int64) ^ (1 << uint64(index))
-	}
-}
-
-//noinspection GoUnusedConst
-const (
-	dataKeyFlags = iota
-	dataKeyHealth
-	dataKeyVariant
-	dataKeyColour
-	dataKeyNameTag
-	dataKeyOwnerRuntimeID
-	dataKeyTargetRuntimeID
-	dataKeyAir
-	dataKeyPotionColour
-	dataKeyPotionAmbient
-	dataKeyExperienceValue                     = 15
-	dataKeyFireworkItem                        = 16
-	dataKeyCustomDisplay                       = 18
-	dataKeyPotionAuxValue                      = 36
-	dataKeyScale                               = 38
-	dataKeyMaxAir                              = 42
-	dataKeyBoundingBoxWidth                    = 53
-	dataKeyBoundingBoxHeight                   = 54
-	dataKeyFuseLength                          = 55
-	dataKeyAreaEffectCloudRadius               = 61
-	dataKeyAreaEffectCloudParticleID           = 63
-	dataKeyAlwaysShowNameTag                   = 81
-	dataKeyScoreTag                            = 84
-	dataKeyAreaEffectCloudDuration             = 95
-	dataKeyAreaEffectCloudSpawnTime            = 96
-	dataKeyAreaEffectCloudRadiusPerTick        = 97
-	dataKeyAreaEffectCloudRadiusChangeOnPickup = 98
-	dataKeyAreaEffectCloudPickupCount          = 99
-	dataKeyPlayerLastDeathPos                  = 128
-	dataKeyPlayerLastDeathDimension            = 129
-	dataKeyPlayerHasDied                       = 130
-)
-
-//noinspection GoUnusedConst
-const (
-	dataFlagOnFire = iota
-	dataFlagSneaking
-	dataFlagRiding
-	dataFlagSprinting
-	dataFlagUsingItem
-	dataFlagInvisible
-	dataFlagIgnited           = 10
-	dataFlagCritical          = 13
-	dataFlagCanShowNameTag    = 14
-	dataFlagAlwaysShowNameTag = 15
-	dataFlagNoAI              = 16
-	dataFlagCanClimb          = 19
-	dataFlagGliding           = 32
-	dataFlagBreathing         = 35
-	dataFlagLinger            = 46
-	dataFlagHasCollision      = 47
-	dataFlagAffectedByGravity = 48
-	dataFlagEnchanted         = 51
-	dataFlagSwimming          = 56
-)
 
 type sneaker interface {
 	Sneaking() bool
@@ -263,7 +192,7 @@ type scoreTag interface {
 }
 
 type splash interface {
-	Type() potion.Potion
+	Potion() potion.Potion
 }
 
 type glint interface {

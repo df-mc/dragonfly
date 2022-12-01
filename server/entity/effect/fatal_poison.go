@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -18,7 +17,7 @@ func (FatalPoison) Apply(e world.Entity, lvl int, d time.Duration) {
 	interval := 50 >> lvl
 	if tickDuration(d)%interval == 0 {
 		if l, ok := e.(living); ok {
-			l.Hurt(1, damage.SourcePoisonEffect{Fatal: true})
+			l.Hurt(1, PoisonDamageSource{Fatal: true})
 		}
 	}
 }

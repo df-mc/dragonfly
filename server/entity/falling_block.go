@@ -1,11 +1,9 @@
 package entity
 
 import (
-	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -38,19 +36,9 @@ func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
 	return b
 }
 
-// Name ...
-func (f *FallingBlock) Name() string {
-	return fmt.Sprintf("%T", f.block)
-}
-
-// EncodeEntity ...
-func (f *FallingBlock) EncodeEntity() string {
-	return "minecraft:falling_block"
-}
-
-// BBox ...
-func (f *FallingBlock) BBox() cube.BBox {
-	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
+// Type returns FallingBlockType.
+func (*FallingBlock) Type() world.EntityType {
+	return FallingBlockType{}
 }
 
 // Block ...
@@ -104,8 +92,8 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 			damagePerBlock, maxDamage := d.Damage()
 			if dist := math.Ceil(f.fallDistance.Load() - 1.0); dist > 0 {
 				force := math.Min(math.Floor(dist*damagePerBlock), maxDamage)
-				for _, e := range w.EntitiesWithin(f.BBox().Translate(m.pos).Grow(0.05), f.ignores) {
-					e.(Living).Hurt(force, damage.SourceBlock{Block: f.block})
+				for _, e := range w.EntitiesWithin(f.Type().BBox(f).Translate(m.pos).Grow(0.05), f.ignores) {
+					e.(Living).Hurt(force, block.DamageSource{Block: f.block})
 				}
 				if b, ok := f.block.(breakable); ok && force > 0.0 && rand.Float64() < 0.05+dist*0.05 {
 					f.block = b.Break()
@@ -141,29 +129,6 @@ func (f *FallingBlock) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 	_ = f.Close()
 }
 
-// DecodeNBT decodes the relevant data from the entity NBT passed and returns a new FallingBlock entity.
-func (f *FallingBlock) DecodeNBT(data map[string]any) any {
-	b := nbtconv.MapBlock(data, "FallingBlock")
-	if b == nil {
-		return nil
-	}
-	n := NewFallingBlock(b, nbtconv.MapVec3(data, "Pos"))
-	n.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	n.fallDistance.Store(nbtconv.Map[float64](data, "FallDistance"))
-	return n
-}
-
-// EncodeNBT encodes the FallingBlock entity to a map that can be encoded for NBT.
-func (f *FallingBlock) EncodeNBT() map[string]any {
-	return map[string]any{
-		"UniqueID":     -rand.Int63(),
-		"FallDistance": f.FallDistance(),
-		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
-		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),
-		"FallingBlock": nbtconv.WriteBlock(f.block),
-	}
-}
-
 // ignores returns whether the FallingBlock should ignore collision with the entity passed.
 func (f *FallingBlock) ignores(entity world.Entity) bool {
 	_, ok := entity.(Living)
@@ -180,4 +145,34 @@ type Solidifiable interface {
 
 type replaceable interface {
 	ReplaceableBy(b world.Block) bool
+}
+
+// FallingBlockType is a world.EntityType implementation for FallingBlock.
+type FallingBlockType struct{}
+
+func (FallingBlockType) EncodeEntity() string { return "minecraft:falling_block" }
+func (FallingBlockType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
+}
+
+func (FallingBlockType) DecodeNBT(m map[string]any) world.Entity {
+	b := nbtconv.Block(m, "FallingBlock")
+	if b == nil {
+		return nil
+	}
+	n := NewFallingBlock(b, nbtconv.Vec3(m, "Pos"))
+	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
+	n.fallDistance.Store(nbtconv.Float64(m, "FallDistance"))
+	return n
+}
+
+func (FallingBlockType) EncodeNBT(e world.Entity) map[string]any {
+	f := e.(*FallingBlock)
+	return map[string]any{
+		"UniqueID":     -rand.Int63(),
+		"FallDistance": f.FallDistance(),
+		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
+		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),
+		"FallingBlock": nbtconv.WriteBlock(f.block),
+	}
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/text/language"
 	"image/color"
-	"math"
 	"time"
 )
 
@@ -162,8 +161,6 @@ type Releasable interface {
 // which interact with the world using an item.
 type User interface {
 	Carrier
-	// Facing returns the direction that the user is facing.
-	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
 
 	UsingItem() bool
@@ -223,20 +220,6 @@ func DisplayName(item world.Item, locale language.Tag) string {
 		panic("should never happen")
 	}
 	return name
-}
-
-// directionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
-// returned is always 1.
-func directionVector(e world.Entity) mgl64.Vec3 {
-	yaw, pitch := e.Rotation()
-	yawRad, pitchRad := mgl64.DegToRad(yaw), mgl64.DegToRad(pitch)
-	m := math.Cos(pitchRad)
-
-	return mgl64.Vec3{
-		-m * math.Sin(yawRad),
-		-math.Sin(pitchRad),
-		m * math.Cos(yawRad),
-	}.Normalize()
 }
 
 // eyePosition returns the position of the eyes of the entity if the entity implements entity.Eyed, or the

@@ -74,7 +74,7 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 		// Deduct the experience and Lapis Lazuli.
 		s.c.SetExperienceLevel(s.c.ExperienceLevel() - cost)
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID: containerEnchantingTableLapis,
+			ContainerID: protocol.ContainerEnchantingMaterial,
 			Slot:        enchantingLapisSlot,
 		}, lapis.Grow(-cost), s)
 	}
@@ -85,7 +85,7 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 	// Clear the existing input item, and apply the new item into the crafting result slot of the UI. The client will
 	// automatically move the item into the input slot.
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerEnchantingTableInput,
+		ContainerID: protocol.ContainerEnchantingInput,
 		Slot:        enchantingInputSlot,
 	}, item.Stack{}, s)
 

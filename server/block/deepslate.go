@@ -20,11 +20,10 @@ type Deepslate struct {
 
 // BreakInfo ...
 func (d Deepslate) BreakInfo() BreakInfo {
-	hardness := 3.5
 	if d.Type == NormalDeepslate() {
-		hardness = 3
+		return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Deepslate{Type: CobbledDeepslate()}, d)).withBlastResistance(18)
 	}
-	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(18)
+	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(18)
 }
 
 // SmeltInfo ...

@@ -18,9 +18,11 @@ import (
 // optional), or a type that implements the cmd.Parameter or cmd.Enum interface. cmd.Enum implementations must be of the
 // type string.
 // Fields in the Runnable struct may have `cmd:` struct tag to specify the name and suffix of a parameter as such:
-//   type T struct {
-//       Param int `cmd:"name,suffix"`
-//   }
+//
+//	type T struct {
+//	    Param int `cmd:"name,suffix"`
+//	}
+//
 // If no name is set, the field name is used. Additionally, the name as specified in the struct tag may be '-' to make
 // the parser ignore the field. In this case, the field does not have to be of one of the types above.
 type Runnable interface {
@@ -301,14 +303,19 @@ func verifySignature(command reflect.Value) error {
 	optionalField := false
 	for _, t := range exportedFields(command) {
 		field := command.FieldByName(t.Name)
-		if _, ok := field.Interface().(Enum); ok && field.Kind() != reflect.String {
-			return fmt.Errorf("parameters implementing Enum must be of the type string")
-		}
+
 		// If the field is not optional, while the last field WAS optional, we return an error, as this is
 		// not parsable in an expected way.
 		opt := optional(field)
 		if !opt && optionalField {
 			return fmt.Errorf("command must only have optional parameters at the end")
+		}
+		val := field
+		if opt {
+			val = reflect.New(field.Field(0).Type()).Elem()
+		}
+		if _, ok := val.Interface().(Enum); ok && val.Kind() != reflect.String {
+			return fmt.Errorf("parameters implementing Enum must be of the type string")
 		}
 		optionalField = opt
 	}

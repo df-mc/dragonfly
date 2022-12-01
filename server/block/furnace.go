@@ -65,7 +65,7 @@ func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 		return false
 	}
 
-	place(w, pos, NewFurnace(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
@@ -103,11 +103,11 @@ func (f Furnace) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
-	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
-	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
-	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
+	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
+	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
+	cook := nbtconv.TickDuration[int16](data, "CookTime")
 
-	xp := int(nbtconv.Map[int16](data, "StoredXPInt"))
+	xp := int(nbtconv.Int16(data, "StoredXPInt"))
 	lit := f.Lit
 
 	//noinspection GoAssignmentToReceiver
@@ -115,7 +115,7 @@ func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
 	f.Lit = lit
 	f.setExperience(xp)
 	f.setDurations(remaining, maximum, cook)
-	nbtconv.InvFromNBT(f.Inventory(), nbtconv.Map[[]any](data, "Items"))
+	nbtconv.InvFromNBT(f.Inventory(), nbtconv.Slice(data, "Items"))
 	return f
 }
 
