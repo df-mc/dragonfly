@@ -1330,7 +1330,7 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
 func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	c.Lock()
 	if !w.conf.ReadOnly {
-		if c.m {
+		if len(c.e) > 0 || c.m {
 			c.Compact()
 			if err := w.provider().SaveChunk(pos, c.Chunk, w.conf.Dim); err != nil {
 				w.conf.Log.Errorf("error saving chunk %v to provider: %v", pos, err)
