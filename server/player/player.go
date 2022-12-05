@@ -192,6 +192,33 @@ func (p *Player) XUID() string {
 	return p.xuid
 }
 
+// DeviceID returns the device ID of the player. If the Player is not connected to a network session, an empty string is
+// returned. Otherwise, the device ID the network session sent in the ClientData is returned.
+func (p *Player) DeviceID() string {
+	if p.session() == session.Nop {
+		return ""
+	}
+	return p.session().ClientData().DeviceID
+}
+
+// DeviceModel returns the device model of the player. If the Player is not connected to a network session, an empty
+// string is returned. Otherwise, the device model the network session sent in the ClientData is returned.
+func (p *Player) DeviceModel() string {
+	if p.session() == session.Nop {
+		return ""
+	}
+	return p.session().ClientData().DeviceModel
+}
+
+// SelfSignedID returns the self-signed ID of the player. If the Player is not connected to a network session, an empty
+// string is returned. Otherwise, the self-signed ID the network session sent in the ClientData is returned.
+func (p *Player) SelfSignedID() string {
+	if p.session() == session.Nop {
+		return ""
+	}
+	return p.session().ClientData().SelfSignedID
+}
+
 // Addr returns the net.Addr of the Player. If the Player is not connected to a network session, nil is returned.
 func (p *Player) Addr() net.Addr {
 	if p.session() == session.Nop {
