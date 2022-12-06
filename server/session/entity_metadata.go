@@ -91,10 +91,10 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
 	}
 	if c, ok := e.(areaEffectCloud); ok {
-		m[protocol.EntityDataKeyDataDuration] = int32(c.Duration().Milliseconds() / 50)
 		m[protocol.EntityDataKeyDataRadius] = float32(c.Radius())
 
 		// We purposely fill these in with invalid values to disable the client-sided shrinking of the cloud.
+		m[protocol.EntityDataKeyDataDuration] = int32(math.MaxInt32)
 		m[protocol.EntityDataKeyDataChangeOnPickup] = float32(math.SmallestNonzeroFloat32)
 		m[protocol.EntityDataKeyDataChangeRate] = float32(math.SmallestNonzeroFloat32)
 
