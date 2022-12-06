@@ -95,7 +95,6 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 		m[protocol.EntityDataKeyDataRadius] = float32(c.Radius())
 
 		// We purposely fill these in with invalid values to disable the client-sided shrinking of the cloud.
-		// After initialisation, we'll send the correct values in the entity metadata.
 		m[protocol.EntityDataKeyDataChangeOnPickup] = float32(math.SmallestNonzeroFloat32)
 		m[protocol.EntityDataKeyDataChangeRate] = float32(math.SmallestNonzeroFloat32)
 
