@@ -32,8 +32,15 @@ type AreaEffectCloud struct {
 }
 
 // NewAreaEffectCloud ...
-func NewAreaEffectCloud(pos mgl64.Vec3, t potion.Potion) *AreaEffectCloud {
-	return NewAreaEffectCloudWith(pos, t, time.Second*30, time.Second*2, 0, 3.0, -0.5, -0.005)
+func NewAreaEffectCloud(pos mgl64.Vec3, p potion.Potion) *AreaEffectCloud {
+	r := time.Second * 2
+	for _, e := range p.Effects() {
+		if _, ok := e.Type().(effect.LastingType); !ok {
+			r = 0
+			break
+		}
+	}
+	return NewAreaEffectCloudWith(pos, p, time.Minute/2, r, 0, 3.0, -0.5, -0.005)
 }
 
 // NewAreaEffectCloudWith ...
@@ -66,11 +73,11 @@ func (a *AreaEffectCloud) Duration() time.Duration {
 	return time.Duration(a.duration) * time.Millisecond * 50
 }
 
-// Radius returns information about the cloud's, radius, change rate, and growth rate.
-func (a *AreaEffectCloud) Radius() (radius, radiusOnUse, radiusGrowth float64) {
+// Radius returns the current radius of the area effect cloud.
+func (a *AreaEffectCloud) Radius() float64 {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return a.radius, a.radiusOnUse, a.radiusGrowth
+	return a.radius
 }
 
 // Effects returns the effects the area effect cloud provides.
@@ -117,8 +124,8 @@ func (a *AreaEffectCloud) Tick(w *world.World, _ int64) {
 		a.mu.Lock()
 	}
 
-	if a.age%5 != 0 {
-		// Area effect clouds only trigger updates every five ticks.
+	if a.age%10 != 0 {
+		// Area effect clouds only trigger updates every ten ticks.
 		a.mu.Unlock()
 		return
 	}
@@ -204,7 +211,7 @@ type AreaEffectCloudType struct{}
 
 func (AreaEffectCloudType) EncodeEntity() string { return "minecraft:area_effect_cloud" }
 func (AreaEffectCloudType) BBox(e world.Entity) cube.BBox {
-	r, _, _ := e.(*AreaEffectCloud).Radius()
+	r := e.(*AreaEffectCloud).Radius()
 	return cube.Box(-r, 0, -r, r, 0.5, r)
 }
 

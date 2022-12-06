@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"math"
 	"time"
 )
 
@@ -90,12 +91,15 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
 	}
 	if c, ok := e.(areaEffectCloud); ok {
-		radius, radiusOnUse, radiusGrowth := c.Radius()
-		colour, am := effect.ResultingColour(c.Effects())
 		m[protocol.EntityDataKeyDataDuration] = int32(c.Duration().Milliseconds() / 50)
-		m[protocol.EntityDataKeyDataRadius] = float32(radius)
-		m[protocol.EntityDataKeyDataChangeOnPickup] = float32(radiusOnUse)
-		m[protocol.EntityDataKeyDataChangeRate] = float32(radiusGrowth)
+		m[protocol.EntityDataKeyDataRadius] = float32(c.Radius())
+
+		// We purposely fill these in with invalid values to disable the client-sided shrinking of the cloud.
+		// After initialisation, we'll send the correct values in the entity metadata.
+		m[protocol.EntityDataKeyDataChangeOnPickup] = float32(math.SmallestNonzeroFloat32)
+		m[protocol.EntityDataKeyDataChangeRate] = float32(math.SmallestNonzeroFloat32)
+
+		colour, am := effect.ResultingColour(c.Effects())
 		m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
 		if am {
 			m[protocol.EntityDataKeyEffectAmbience] = byte(1)
@@ -206,7 +210,7 @@ type lingers interface {
 type areaEffectCloud interface {
 	effectBearer
 	Duration() time.Duration
-	Radius() (radius, radiusOnUse, radiusGrowth float64)
+	Radius() float64
 }
 
 type onFire interface {
