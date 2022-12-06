@@ -24,6 +24,11 @@ func (m MelonSlice) Consume(_ *world.World, c Consumer) Stack {
 	return Stack{}
 }
 
+// CompostChance ...
+func (MelonSlice) CompostChance() float64 {
+	return 0.5
+}
+
 // EncodeItem ...
 func (m MelonSlice) EncodeItem() (name string, meta int16) {
 	return "minecraft:melon_slice", 0

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"sync"
@@ -42,8 +43,8 @@ func (t *transform) SetVelocity(v mgl64.Vec3) {
 	t.vel = v
 }
 
-// Rotation always returns 0.
-func (t *transform) Rotation() (float64, float64) { return 0, 0 }
+// Rotation always returns an empty cube.Rotation.
+func (t *transform) Rotation() cube.Rotation { return cube.Rotation{} }
 
 // World returns the world of the entity.
 func (t *transform) World() *world.World {

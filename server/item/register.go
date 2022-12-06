@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-//noinspection SpellCheckingInspection
+// noinspection SpellCheckingInspection
 func init() {
 	world.RegisterItem(AmethystShard{})
 	world.RegisterItem(Apple{})
@@ -20,6 +20,7 @@ func init() {
 	world.RegisterItem(BlazeRod{})
 	world.RegisterItem(BoneMeal{})
 	world.RegisterItem(Bone{})
+	world.RegisterItem(BookAndQuill{})
 	world.RegisterItem(Book{})
 	world.RegisterItem(BottleOfEnchanting{})
 	world.RegisterItem(Bowl{})
@@ -102,6 +103,7 @@ func init() {
 	world.RegisterItem(RawCopper{})
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
+	world.RegisterItem(RecoveryCompass{})
 	world.RegisterItem(RottenFlesh{})
 	world.RegisterItem(Salmon{Cooked: true})
 	world.RegisterItem(Salmon{})
@@ -118,6 +120,7 @@ func init() {
 	world.RegisterItem(TurtleShell{})
 	world.RegisterItem(WarpedFungusOnAStick{})
 	world.RegisterItem(Wheat{})
+	world.RegisterItem(WrittenBook{})
 	for _, t := range ArmourTiers() {
 		world.RegisterItem(Helmet{Tier: t})
 		world.RegisterItem(Chestplate{Tier: t})
@@ -151,5 +154,8 @@ func init() {
 	}
 	for _, disc := range sound.MusicDiscs() {
 		world.RegisterItem(MusicDisc{DiscType: disc})
+	}
+	for _, stew := range StewTypes() {
+		world.RegisterItem(SuspiciousStew{Type: stew})
 	}
 }

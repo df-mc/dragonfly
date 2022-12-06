@@ -35,6 +35,7 @@ const (
 	hashCoalOre
 	hashCobblestone
 	hashCocoaBean
+	hashComposter
 	hashConcrete
 	hashConcretePowder
 	hashCopperOre
@@ -76,6 +77,7 @@ const (
 	hashGranite
 	hashGrass
 	hashGravel
+	hashGrindstone
 	hashHayBale
 	hashHoneycomb
 	hashInvisibleBedrock
@@ -297,6 +299,10 @@ func (c CocoaBean) Hash() uint64 {
 	return hashCocoaBean | uint64(c.Facing)<<8 | uint64(c.Age)<<10
 }
 
+func (c Composter) Hash() uint64 {
+	return hashComposter | uint64(c.Level)<<8
+}
+
 func (c Concrete) Hash() uint64 {
 	return hashConcrete | uint64(c.Colour.Uint8())<<8
 }
@@ -459,6 +465,10 @@ func (Grass) Hash() uint64 {
 
 func (Gravel) Hash() uint64 {
 	return hashGravel
+}
+
+func (g Grindstone) Hash() uint64 {
+	return hashGrindstone | uint64(g.Attach.Uint8())<<8 | uint64(g.Facing)<<10
 }
 
 func (h HayBale) Hash() uint64 {

@@ -20,5 +20,5 @@ func (BambooJungleHills) String() string {
 
 // EncodeBiome ...
 func (BambooJungleHills) EncodeBiome() int {
-	return 169
+	return 49
 }

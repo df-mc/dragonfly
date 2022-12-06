@@ -113,6 +113,18 @@ type SmokerCrackle struct{ sound }
 // BellRing is a sound played when a bell is rung.
 type BellRing struct{ sound }
 
+// ComposterEmpty is a sound played when a composter has been emptied.
+type ComposterEmpty struct{ sound }
+
+// ComposterFill is a sound played when a composter has been filled, but not gone up a layer.
+type ComposterFill struct{ sound }
+
+// ComposterFillLayer is a sound played when a composter has been filled and gone up a layer.
+type ComposterFillLayer struct{ sound }
+
+// ComposterReady is a sound played when a composter has produced bone meal and is ready to be collected.
+type ComposterReady struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

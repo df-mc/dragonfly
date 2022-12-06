@@ -39,7 +39,7 @@ func (f Firework) Use(w *world.World, user User, ctx *UseContext) bool {
 	}
 
 	pos := user.Position()
-	yaw, pitch := user.Rotation()
+	yaw, pitch := user.Rotation().Elem()
 
 	w.PlaySound(pos, sound.FireworkLaunch{})
 	w.AddEntity(p.New(pos, yaw, pitch, true, f, user))

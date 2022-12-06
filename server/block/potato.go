@@ -77,6 +77,11 @@ func (p Potato) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
+func (Potato) CompostChance() float64 {
+	return 0.65
+}
+
 // EncodeItem ...
 func (p Potato) EncodeItem() (name string, meta int16) {
 	return "minecraft:potato", 0

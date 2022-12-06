@@ -2,6 +2,10 @@ package world
 
 import (
 	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
@@ -11,9 +15,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-	"math/rand"
-	"sync"
-	"time"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
@@ -359,10 +360,11 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 								rid := BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
+								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
 								if nbtBlocks[rid] {
-									c.e[pos] = b
+									c.e[nbtPos] = b
 								} else {
-									delete(c.e, pos)
+									delete(c.e, nbtPos)
 								}
 							}
 							if liq != nil {
@@ -1163,12 +1165,12 @@ func (w *World) chunk(pos ChunkPos) *chunkData {
 	if !ok {
 		var err error
 		c, err = w.loadChunk(pos)
+		chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 		if err != nil {
 			w.chunkMu.Unlock()
 			w.conf.Log.Errorf("load chunk: failed loading %v: %v\n", pos, err)
 			return c
 		}
-		chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 		c.Unlock()
 		w.chunkMu.Lock()
 
@@ -1183,6 +1185,7 @@ func (w *World) chunk(pos ChunkPos) *chunkData {
 
 // setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
 // position.
+//
 //lint:ignore U1000 This method is explicitly present to be used using compiler directives.
 func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 	if w == nil {
@@ -1336,10 +1339,10 @@ func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 		if err := w.provider().SaveChunk(pos, c.Chunk, w.conf.Dim); err != nil {
 			w.conf.Log.Errorf("error saving chunk %v to provider: %v", pos, err)
 		}
-		s := make([]SaveableEntity, 0, len(c.entities))
+		s := make([]Entity, 0, len(c.entities))
 		for _, e := range c.entities {
-			if saveable, ok := e.(SaveableEntity); ok {
-				s = append(s, saveable)
+			if _, ok := e.Type().(SaveableEntityType); ok {
+				s = append(s, e)
 			}
 		}
 		if err := w.provider().SaveEntities(pos, s, w.conf.Dim); err != nil {

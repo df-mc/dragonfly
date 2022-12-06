@@ -28,7 +28,7 @@ type smelter struct {
 // newSmelter initializes a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
 func newSmelter() *smelter {
 	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
-	s.inventory = inventory.New(3, func(slot int, item item.Stack) {
+	s.inventory = inventory.New(3, func(slot int, _, item item.Stack) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		for viewer := range s.viewers {

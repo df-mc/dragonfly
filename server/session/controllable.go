@@ -19,6 +19,7 @@ import (
 // implemented in the form of a Player.
 // Methods in Controllable will be added as Session needs them in order to handle packets.
 type Controllable interface {
+	Name() string
 	world.Entity
 	item.User
 	form.Submitter

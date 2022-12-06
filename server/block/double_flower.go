@@ -74,6 +74,11 @@ func (d DoubleFlower) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(d))
 }
 
+// CompostChance ...
+func (DoubleFlower) CompostChance() float64 {
+	return 0.65
+}
+
 // HasLiquidDrops ...
 func (d DoubleFlower) HasLiquidDrops() bool {
 	return true

@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -26,10 +25,18 @@ type Provider struct {
 	dir string
 	d   data
 	set *world.Settings
+	log Logger
 }
 
 // chunkVersion is the current version of chunks.
 const chunkVersion = 40
+
+// Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug
+// messages to this Logger when appropriate.
+type Logger interface {
+	Errorf(format string, a ...any)
+	Debugf(format string, a ...any)
+}
 
 // New creates a new provider reading and writing from/to files under the path passed. If a world is present
 // at the path, New will parse its data and initialise the world with it. If the data cannot be parsed, an
@@ -37,15 +44,15 @@ const chunkVersion = 40
 // A compression type may be passed which will be used for the compression of new blocks written to the database. This
 // will only influence the compression. Decompression of the database will happen based on IDs found in the compressed
 // blocks.
-func New(dir string, compression opt.Compression) (*Provider, error) {
+func New(log Logger, dir string, compression opt.Compression) (*Provider, error) {
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
-	p := &Provider{dir: dir}
+	p := &Provider{log: log, dir: dir}
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
 		// A level.dat was not currently present for the world.
 		p.initDefaultLevelDat()
 	} else {
-		f, err := ioutil.ReadFile(filepath.Join(dir, "level.dat"))
+		f, err := os.ReadFile(filepath.Join(dir, "level.dat"))
 		if err != nil {
 			return nil, fmt.Errorf("error opening level.dat file: %w", err)
 		}
@@ -107,7 +114,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.LANBroadcast = true
 	p.d.LANBroadcastIntent = true
 	p.d.LastOpenedWithVersion = minimumCompatibleClientVersion
-	p.d.LevelName = "My World"
+	p.d.LevelName = "World"
 	p.d.LightningLevel = 1.0
 	p.d.LimitedWorldDepth = 16
 	p.d.LimitedWorldOriginY = math.MaxInt16
@@ -397,12 +404,12 @@ func (p *Provider) saveDifficulty(d world.Difficulty) {
 }
 
 // LoadEntities loads all entities from the chunk position passed.
-func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]world.SaveableEntity, error) {
+func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]world.Entity, error) {
 	data, err := p.db.Get(append(p.index(pos, dim), keyEntities), nil)
 	if err != leveldb.ErrNotFound && err != nil {
 		return nil, err
 	}
-	var a []world.SaveableEntity
+	var a []world.Entity
 
 	buf := bytes.NewBuffer(data)
 	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
@@ -414,18 +421,18 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 		}
 		id, ok := m["identifier"]
 		if !ok {
-			return nil, fmt.Errorf("entity has no ID but data (%v)", m)
+			p.log.Errorf("load entities: failed loading %v: entity had data but no identifier (%v)", pos, m)
+			continue
 		}
 		name, _ := id.(string)
 		e, ok := world.EntityByName(name)
 		if !ok {
-			// Entity was not registered: This can only be expected sometimes, so the best we can do is to just
-			// ignore this and proceed.
+			p.log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
 			continue
 		}
-		if s, ok := e.(world.SaveableEntity); ok {
+		if s, ok := e.Type().(world.SaveableEntityType); ok {
 			if v := s.DecodeNBT(m); v != nil {
-				a = append(a, v.(world.SaveableEntity))
+				a = append(a, v)
 			}
 		}
 	}
@@ -433,7 +440,7 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension) ([]worl
 }
 
 // SaveEntities saves all entities to the chunk position passed.
-func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEntity, dim world.Dimension) error {
+func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim world.Dimension) error {
 	if len(entities) == 0 {
 		return p.db.Delete(append(p.index(pos, dim), keyEntities), nil)
 	}
@@ -441,8 +448,12 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.SaveableEnt
 	buf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
 	for _, e := range entities {
-		x := e.EncodeNBT()
-		x["identifier"] = e.EncodeEntity()
+		t, ok := e.Type().(world.SaveableEntityType)
+		if !ok {
+			continue
+		}
+		x := t.EncodeNBT(e)
+		x["identifier"] = t.EncodeEntity()
 		if err := enc.Encode(x); err != nil {
 			return fmt.Errorf("save entities: error encoding NBT: %w", err)
 		}
@@ -509,7 +520,7 @@ func (p *Provider) Close() error {
 		return fmt.Errorf("error closing level.dat: %w", err)
 	}
 	//noinspection SpellCheckingInspection
-	if err := ioutil.WriteFile(filepath.Join(p.dir, "levelname.txt"), []byte(p.d.LevelName), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(p.dir, "levelname.txt"), []byte(p.d.LevelName), 0644); err != nil {
 		return fmt.Errorf("error writing levelname.txt: %w", err)
 	}
 	return p.db.Close()
