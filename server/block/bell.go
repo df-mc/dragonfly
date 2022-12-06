@@ -24,7 +24,7 @@ type Bell struct {
 // Model ...
 func (b Bell) Model() world.BlockModel {
 	// TODO: Use the actual bell model.
-	return model.Solid{}
+	return model.Slab{}
 }
 
 // BreakInfo ...
@@ -38,7 +38,7 @@ func (b Bell) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 	if !used {
 		return false
 	}
-	b.Facing = user.Facing().Opposite()
+	b.Facing = user.Rotation().Direction().Opposite()
 	if face == cube.FaceUp {
 		if _, ok := w.Block(pos.Side(cube.FaceDown)).Model().(model.Solid); !ok {
 			return false
@@ -88,7 +88,7 @@ func (b Bell) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // Activate ...
 func (b Bell) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
-	s, f := u.Facing().Opposite().Face(), b.Facing.Face()
+	s, f := u.Rotation().Direction().Opposite().Face(), b.Facing.Face()
 	switch b.Attach {
 	case HangingBellAttachment():
 		b.Ring(pos, s, w)
@@ -105,6 +105,16 @@ func (b Bell) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _
 		}
 	}
 	return false
+}
+
+// EntityInside ...
+func (b Bell) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
+	if e, ok := e.(EntityEjector); ok {
+		e.EntityEject(pos)
+
+		// BDS always rings the bell on it's facing direction, even if the entity is ejected in a different direction.
+		b.Ring(pos, b.Facing.Face(), w)
+	}
 }
 
 // ProjectileHit ...

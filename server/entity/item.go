@@ -59,6 +59,21 @@ func (it *Item) SetPickupDelay(d time.Duration) {
 	it.pickupDelay = ticks
 }
 
+// EntityEject ejects the item entity from the block it is currently on. This is called when items are dropped on bells,
+// for example, to make the item entity pop off the bell.
+func (it *Item) EntityEject(pos cube.Pos) {
+	it.mu.Lock()
+	defer it.mu.Unlock()
+
+	delta := it.pos.Sub(pos.Vec3Centre())
+	if delta.Len() <= epsilon {
+		// There is no delta between the item entity and the block, so we can't eject it.
+		return
+	}
+
+	it.vel = it.vel.Add(delta.Normalize())
+}
+
 // Tick ticks the entity, performing movement.
 func (it *Item) Tick(w *world.World, current int64) {
 	it.mu.Lock()
@@ -77,6 +92,7 @@ func (it *Item) Tick(w *world.World, current int64) {
 		return
 	}
 
+	it.checkEntityInsiders(w, m.pos)
 	if it.pickupDelay == 0 {
 		it.checkNearby(w, m.pos)
 	} else if it.pickupDelay != math.MaxInt16 {
@@ -155,6 +171,33 @@ func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
 	w.AddEntity(NewItem(it.i.Grow(-n), pos))
 
 	_ = it.Close()
+}
+
+// checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
+func (it *Item) checkEntityInsiders(w *world.World, pos mgl64.Vec3) {
+	box := it.Type().BBox(it).Translate(pos).Grow(-0.0001)
+	min, max := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+
+	for y := min[1]; y <= max[1]; y++ {
+		for x := min[0]; x <= max[0]; x++ {
+			for z := min[2]; z <= max[2]; z++ {
+				blockPos := cube.Pos{x, y, z}
+				b := w.Block(blockPos)
+				if collide, ok := b.(block.EntityInsider); ok {
+					collide.EntityInside(blockPos, w, it)
+					if _, liquid := b.(world.Liquid); liquid {
+						continue
+					}
+				}
+
+				if l, ok := w.Liquid(blockPos); ok {
+					if collide, ok := l.(block.EntityInsider); ok {
+						collide.EntityInside(blockPos, w, it)
+					}
+				}
+			}
+		}
+	}
 }
 
 // New creates and returns an Item with the item.Stack, position, and velocity provided. It doesn't spawn the Item
