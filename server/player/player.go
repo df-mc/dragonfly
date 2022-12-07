@@ -1250,6 +1250,9 @@ func (p *Player) EnderChestInventory() *inventory.Inventory {
 func (p *Player) SetGameMode(mode world.GameMode) {
 	previous := p.gameMode.Swap(mode)
 	p.session().SendGameMode(mode)
+	for _, v := range p.viewers() {
+		v.ViewEntityGameMode(p)
+	}
 
 	if !mode.AllowsFlying() {
 		p.StopFlying()

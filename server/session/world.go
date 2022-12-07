@@ -86,14 +86,15 @@ func (s *Session) ViewEntity(e world.Entity) {
 		}
 
 		s.writePacket(&packet.AddPlayer{
+			EntityMetadata:  metadata,
+			EntityRuntimeID: runtimeID,
+			GameType:        gameTypeFromMode(v.GameMode()),
+			HeadYaw:         float32(yaw),
+			Pitch:           float32(pitch),
+			Position:        vec64To32(e.Position()),
 			UUID:            v.UUID(),
 			Username:        v.Name(),
-			EntityRuntimeID: runtimeID,
-			Position:        vec64To32(e.Position()),
-			EntityMetadata:  metadata,
-			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
 			AbilityData: protocol.AbilityData{
 				EntityUniqueID: int64(runtimeID),
 				Layers: []protocol.AbilityLayer{{
@@ -142,6 +143,21 @@ func (s *Session) ViewEntity(e world.Entity) {
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
 		HeadYaw:         float32(yaw),
+	})
+}
+
+// ViewEntityGameMode ...
+func (s *Session) ViewEntityGameMode(e world.Entity) {
+	if s.entityHidden(e) {
+		return
+	}
+	c, ok := e.(Controllable)
+	if !ok {
+		return
+	}
+	s.writePacket(&packet.UpdatePlayerGameType{
+		GameType:       gameTypeFromMode(c.GameMode()),
+		PlayerUniqueID: int64(s.entityRuntimeID(c)),
 	})
 }
 
