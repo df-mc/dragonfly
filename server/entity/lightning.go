@@ -71,11 +71,6 @@ func (li *Lightning) Rotation() (c cube.Rotation) {
 	return cube.Rotation{}
 }
 
-// New strikes the Lightning at a specific position in a new world.
-func (li *Lightning) New(pos mgl64.Vec3) world.Entity {
-	return NewLightning(pos)
-}
-
 // Tick ...
 func (li *Lightning) Tick(w *world.World, _ int64) {
 	f := fire().(interface {

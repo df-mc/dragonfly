@@ -5,6 +5,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/maps"
 	"io"
+	"time"
 )
 
 // Entity represents an entity in the world, typically an object that may be moved around and can be
@@ -58,35 +59,6 @@ type TickerEntity interface {
 	Tick(w *World, current int64)
 }
 
-// entities holds a map of name => SaveableEntityType to be used for looking up
-// the entity by a string ID. It is registered to when calling
-// RegisterEntity.
-var entities = map[string]Entity{}
-
-// RegisterEntity registers an Entity to the map so that it can be
-// saved and loaded with the world.
-func RegisterEntity(e Entity) {
-	name := e.Type().EncodeEntity()
-	if _, ok := entities[name]; ok {
-		panic("cannot register the same entity (" + name + ") twice")
-	}
-	entities[name] = e
-}
-
-// EntityByName looks up a SaveableEntityType by a name (for example,
-// 'minecraft:tnt') and returns it if found. EntityByName can only return
-// entities previously registered using RegisterEntity. If not found, the
-// bool returned is false.
-func EntityByName(name string) (Entity, bool) {
-	e, ok := entities[name]
-	return e, ok
-}
-
-// Entities returns all registered entities.
-func Entities() []Entity {
-	return maps.Values(entities)
-}
-
 // EntityAction represents an action that may be performed by an entity. Typically, these actions are sent to
 // viewers in a world so that they can see these actions.
 type EntityAction interface {
@@ -113,4 +85,61 @@ type DamageSource interface {
 // be passed to the Heal() method of a living entity.
 type HealingSource interface {
 	HealingSource()
+}
+
+// EntityRegistry is a mapping that EntityTypes may be registered to. It is used
+// for loading entities from disk in a World's Provider.
+type EntityRegistry struct {
+	conf EntityRegistryConfig
+	ent  map[string]EntityType
+}
+
+// EntityRegistryConfig holds functions used by the block and item packages to
+// create entities as a result of their behaviour. ALL functions of
+// EntityRegistryConfig must be filled out for the behaviour of these blocks and
+// items not to fail.
+type EntityRegistryConfig struct {
+	Item               func(it any, pos, vel mgl64.Vec3) Entity
+	FallingBlock       func(bl Block, pos mgl64.Vec3) Entity
+	TNT                func(pos mgl64.Vec3, fuse time.Duration) Entity
+	BottleOfEnchanting func(pos, vel mgl64.Vec3, owner Entity) Entity
+	Arrow              func(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) Entity
+	Egg                func(pos, vel mgl64.Vec3, owner Entity) Entity
+	EnderPearl         func(pos, vel mgl64.Vec3, owner Entity) Entity
+	Firework           func(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework Item, owner Entity) Entity
+	LingeringPotion    func(pos, vel mgl64.Vec3, t any, owner Entity) Entity
+	Snowball           func(pos, vel mgl64.Vec3, owner Entity) Entity
+	SplashPotion       func(pos, vel mgl64.Vec3, t any, owner Entity) Entity
+	Lightning          func(pos mgl64.Vec3) Entity
+}
+
+// New creates an EntityRegistry using conf and the EntityTypes passed.
+func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
+	m := make(map[string]EntityType, len(ent))
+	for _, e := range ent {
+		name := e.EncodeEntity()
+		if _, ok := m[name]; ok {
+			panic("cannot register the same entity (" + name + ") twice")
+		}
+		m[name] = e
+	}
+	return EntityRegistry{conf: conf, ent: m}
+}
+
+// Config returns the EntityRegistryConfig that was used to create the
+// EntityRegistry.
+func (reg EntityRegistry) Config() EntityRegistryConfig {
+	return reg.conf
+}
+
+// Lookup looks up an EntityType by its name. If found, the EntityType is
+// returned and the bool is true. The bool is false otherwise.
+func (reg EntityRegistry) Lookup(name string) (EntityType, bool) {
+	t, ok := reg.ent[name]
+	return t, ok
+}
+
+// Types returns all EntityTypes passed upon construction of the EntityRegistry.
+func (reg EntityRegistry) Types() []EntityType {
+	return maps.Values(reg.ent)
 }

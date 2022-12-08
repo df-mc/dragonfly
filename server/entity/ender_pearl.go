@@ -87,14 +87,6 @@ func (e *EnderPearl) Tick(w *world.World, current int64) {
 	}
 }
 
-// New creates an ender pearl with the position, velocity, yaw, and pitch provided. It doesn't spawn the ender pearl,
-// only returns it.
-func (e *EnderPearl) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
-	pearl := NewEnderPearl(pos, owner)
-	pearl.vel = vel
-	return pearl
-}
-
 // Explode ...
 func (e *EnderPearl) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
 	e.mu.Lock()

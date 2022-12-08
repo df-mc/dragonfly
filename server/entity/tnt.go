@@ -86,11 +86,6 @@ func (t *TNT) Tick(w *world.World, _ int64) {
 	}
 }
 
-// New creates and returns an TNT with the world.Block and position provided. It doesn't spawn the TNT by itself.
-func (t *TNT) New(pos mgl64.Vec3, fuse time.Duration) world.Entity {
-	return NewTNT(pos, fuse)
-}
-
 // TNTType is a world.EntityType implementation for TNT.
 type TNTType struct{}
 

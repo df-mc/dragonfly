@@ -68,14 +68,6 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 	}
 }
 
-// New creates a snowball with the position, velocity, yaw, and pitch provided. It doesn't spawn the snowball,
-// only returns it.
-func (s *Snowball) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
-	snow := NewSnowball(pos, owner)
-	snow.vel = vel
-	return snow
-}
-
 // Explode ...
 func (s *Snowball) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
 	s.mu.Lock()

@@ -29,7 +29,8 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ct
 
 // Ignite ...
 func (t TNT) Ignite(pos cube.Pos, w *world.World) bool {
-	return spawnTnt(pos, w, time.Second*4)
+	spawnTnt(pos, w, time.Second*4)
+	return true
 }
 
 // Explode ...
@@ -58,18 +59,8 @@ func (t TNT) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // spawnTnt creates a new TNT entity at the given position with the given fuse duration.
-func spawnTnt(pos cube.Pos, w *world.World, fuse time.Duration) bool {
-	ent, ok := world.EntityByName("minecraft:tnt")
-	if !ok {
-		return false
-	}
-
+func spawnTnt(pos cube.Pos, w *world.World, fuse time.Duration) {
 	w.PlaySound(pos.Vec3Centre(), sound.TNT{})
 	w.SetBlock(pos, nil, nil)
-	if p, ok := ent.(interface {
-		New(pos mgl64.Vec3, fuse time.Duration) world.Entity
-	}); ok {
-		w.AddEntity(p.New(pos.Vec3Centre(), fuse))
-	}
-	return true
+	w.AddEntity(w.EntityRegistry().Config().TNT(pos.Vec3Centre(), fuse))
 }
