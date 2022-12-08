@@ -70,14 +70,6 @@ func (b *BottleOfEnchanting) Tick(w *world.World, current int64) {
 	}
 }
 
-// New creates a BottleOfEnchanting with the position, velocity, yaw, and pitch provided. It doesn't spawn the
-// BottleOfEnchanting, only returns it.
-func (b *BottleOfEnchanting) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
-	bottle := NewBottleOfEnchanting(pos, owner)
-	bottle.vel = vel
-	return bottle
-}
-
 // Owner ...
 func (b *BottleOfEnchanting) Owner() world.Entity {
 	return b.owner

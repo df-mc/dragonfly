@@ -68,15 +68,6 @@ func (l *LingeringPotion) Tick(w *world.World, current int64) {
 	}
 }
 
-// New creates a LingeringPotion with the position and velocity provided. It doesn't spawn the
-// LingeringPotion, only returns it.
-func (l *LingeringPotion) New(pos, vel mgl64.Vec3, t potion.Potion, owner world.Entity) world.Entity {
-	lingering := NewLingeringPotion(pos, nil, t)
-	lingering.vel = vel
-	lingering.owner = owner
-	return lingering
-}
-
 // Owner ...
 func (l *LingeringPotion) Owner() world.Entity {
 	return l.owner

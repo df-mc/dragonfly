@@ -69,14 +69,6 @@ func (e *Egg) Tick(w *world.World, current int64) {
 	}
 }
 
-// New creates a egg with the position, velocity, yaw, and pitch provided. It doesn't spawn the egg,
-// only returns it.
-func (*Egg) New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
-	egg := NewEgg(pos, owner)
-	egg.vel = vel
-	return egg
-}
-
 // Explode ...
 func (e *Egg) Explode(src mgl64.Vec3, force float64, _ block.ExplosionConfig) {
 	e.mu.Lock()
