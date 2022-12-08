@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// DefaultRegistry is a world.EntityRegistry that registers all default entities
+// implemented by Dragonfly.
 var DefaultRegistry = conf.New([]world.EntityType{
 	AreaEffectCloudType{},
 	ArrowType{},

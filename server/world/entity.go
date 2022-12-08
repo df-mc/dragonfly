@@ -87,11 +87,17 @@ type HealingSource interface {
 	HealingSource()
 }
 
+// EntityRegistry is a mapping that EntityTypes may be registered to. It is used
+// for loading entities from disk in a World's Provider.
 type EntityRegistry struct {
 	conf EntityRegistryConfig
 	ent  map[string]EntityType
 }
 
+// EntityRegistryConfig holds functions used by the block and item packages to
+// create entities as a result of their behaviour. ALL functions of
+// EntityRegistryConfig must be filled out for the behaviour of these blocks and
+// items not to fail.
 type EntityRegistryConfig struct {
 	Item               func(it any, pos, vel mgl64.Vec3) Entity
 	FallingBlock       func(bl Block, pos mgl64.Vec3) Entity
@@ -107,6 +113,7 @@ type EntityRegistryConfig struct {
 	Lightning          func(pos mgl64.Vec3) Entity
 }
 
+// New creates an EntityRegistry using conf and the EntityTypes passed.
 func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
 	m := make(map[string]EntityType, len(ent))
 	for _, e := range ent {
@@ -119,15 +126,20 @@ func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
 	return EntityRegistry{conf: conf, ent: m}
 }
 
+// Config returns the EntityRegistryConfig that was used to create the
+// EntityRegistry.
 func (reg EntityRegistry) Config() EntityRegistryConfig {
 	return reg.conf
 }
 
+// Lookup looks up an EntityType by its name. If found, the EntityType is
+// returned and the bool is true. The bool is false otherwise.
 func (reg EntityRegistry) Lookup(name string) (EntityType, bool) {
 	t, ok := reg.ent[name]
 	return t, ok
 }
 
+// Types returns all EntityTypes passed upon construction of the EntityRegistry.
 func (reg EntityRegistry) Types() []EntityType {
 	return maps.Values(reg.ent)
 }

@@ -93,7 +93,9 @@ type Config struct {
 	// left as 0, the RandomTickSpeed will default to a speed of 3 blocks per
 	// sub chunk per tick (normal ticking speed).
 	RandomTickSpeed int
-
+	// Entities is a world.EntityRegistry with all entity types registered that
+	// may be added to the Server's worlds. If no entity types are registered,
+	// Entities will be set to entity.DefaultRegistry.
 	Entities world.EntityRegistry
 }
 

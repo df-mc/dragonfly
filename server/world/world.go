@@ -100,6 +100,8 @@ func (w *World) Range() cube.Range {
 	return w.ra
 }
 
+// EntityRegistry returns the EntityRegistry that was passed to the World's
+// Config upon construction.
 func (w *World) EntityRegistry() EntityRegistry {
 	return w.conf.Entities
 }
