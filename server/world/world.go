@@ -100,6 +100,10 @@ func (w *World) Range() cube.Range {
 	return w.ra
 }
 
+func (w *World) EntityRegistry() EntityRegistry {
+	return w.conf.Entities
+}
+
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
@@ -1227,7 +1231,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	data := newChunkData(c)
 	w.chunks[pos] = data
 
-	ent, err := w.provider().LoadEntities(pos, w.conf.Dim)
+	ent, err := w.provider().LoadEntities(pos, w.conf.Dim, w.conf.Entities)
 	if err != nil {
 		return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)
 	}

@@ -192,31 +192,27 @@ func (p *Player) XUID() string {
 	return p.xuid
 }
 
-// DeviceID returns the device ID of the player. If the Player is not connected to a network session, an empty string is
-// returned. Otherwise, the device ID the network session sent in the ClientData is returned.
-func (p *Player) DeviceID() string {
-	if p.session() == session.Nop {
-		return ""
-	}
-	return p.session().ClientData().DeviceID
+type Device struct {
+	// ID is a semi-unique ID for the device. It is either a UUID or a base64
+	// encoded string and can be changed by editing a text file stored on the
+	// device.
+	ID string
+	// SelfSignedID is a UUID that remains consistent through restarts of the
+	// game and new game sessions.
+	SelfSignedID uuid.UUID
 }
 
-// DeviceModel returns the device model of the player. If the Player is not connected to a network session, an empty
-// string is returned. Otherwise, the device model the network session sent in the ClientData is returned.
-func (p *Player) DeviceModel() string {
+// Device returns a Device struct that holds information on the device
+// of the player.
+func (p *Player) Device() Device {
 	if p.session() == session.Nop {
-		return ""
+		return Device{}
 	}
-	return p.session().ClientData().DeviceModel
-}
-
-// SelfSignedID returns the self-signed ID of the player. If the Player is not connected to a network session, an empty
-// string is returned. Otherwise, the self-signed ID the network session sent in the ClientData is returned.
-func (p *Player) SelfSignedID() string {
-	if p.session() == session.Nop {
-		return ""
+	d := p.session().ClientData()
+	return Device{
+		ID:           d.DeviceID,
+		SelfSignedID: uuid.MustParse(d.SelfSignedID),
 	}
-	return p.session().ClientData().SelfSignedID
 }
 
 // Addr returns the net.Addr of the Player. If the Player is not connected to a network session, nil is returned.

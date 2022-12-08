@@ -3,7 +3,6 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Egg is an item that can be used to craft food items, or as a throwable entity to spawn chicks.
@@ -16,20 +15,9 @@ func (e Egg) MaxCount() int {
 
 // Use ...
 func (e Egg) Use(w *world.World, user User, ctx *UseContext) bool {
-	egg, ok := world.EntityByName("minecraft:egg")
-	if !ok {
-		return false
-	}
-
-	p, ok := egg.(interface {
-		New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity
-	})
-	if !ok {
-		return false
-	}
-
+	create := w.EntityRegistry().Config().Egg
+	w.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(1.5), user))
 	w.PlaySound(user.Position(), sound.ItemThrow{})
-	w.AddEntity(p.New(eyePosition(user), user.Rotation().Vec3().Mul(1.5), user))
 
 	ctx.SubtractFromCount(1)
 	return true
