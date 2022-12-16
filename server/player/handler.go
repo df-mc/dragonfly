@@ -163,9 +163,10 @@ func (NopHandler) HandleItemConsume(*event.Context, item.Stack)                 
 func (NopHandler) HandleItemDamage(*event.Context, item.Stack, int)                           {}
 func (NopHandler) HandleAttackEntity(*event.Context, world.Entity, *float64, *float64, *bool) {}
 func (NopHandler) HandleExperienceGain(*event.Context, *int)                                  {}
+func (NopHandler) HandlePunchAir(*event.Context)                                              {}
 func (NopHandler) HandleHurt(*event.Context, *float64, *time.Duration, world.DamageSource)    {}
 func (NopHandler) HandleHeal(*event.Context, *float64, world.HealingSource)                   {}
 func (NopHandler) HandleFoodLoss(*event.Context, int, *int)                                   {}
-func (NopHandler) HandleDeath(world.DamageSource, *bool)                                                 {}
+func (NopHandler) HandleDeath(world.DamageSource, *bool)                                      {}
 func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                                   {}
 func (NopHandler) HandleQuit()                                                                {}
