@@ -8,7 +8,8 @@ import (
 // Type is a world.EntityType implementation for Player.
 type Type struct{}
 
-func (Type) EncodeEntity() string { return "minecraft:player" }
+func (Type) EncodeEntity() string   { return "minecraft:player" }
+func (Type) NetworkOffset() float64 { return 1.62 }
 func (Type) BBox(e world.Entity) cube.BBox {
 	p := e.(*Player)
 	s := p.Scale()

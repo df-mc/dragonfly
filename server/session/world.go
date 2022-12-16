@@ -22,10 +22,19 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
-// NetworkEncodeableEntity is an Entity where the save ID and network ID are not the same.
+// NetworkEncodeableEntity is a world.EntityType where the save ID and network
+// ID are not the same.
 type NetworkEncodeableEntity interface {
-	// NetworkEncodeEntity returns the network type ID of the entity. This is NOT the save ID.
+	// NetworkEncodeEntity returns the network type ID of the entity. This is
+	// NOT the save ID.
 	NetworkEncodeEntity() string
+}
+
+// OffsetEntity is a world.EntityType that has an additional offset when sent
+// over network. This is mostly the case for older entities such as players and
+// TNT.
+type OffsetEntity interface {
+	NetworkOffset() float64
 }
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
@@ -213,13 +222,8 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 
 // entityOffset returns the offset that entities have client-side.
 func entityOffset(e world.Entity) mgl64.Vec3 {
-	switch e.(type) {
-	case Controllable:
-		return mgl64.Vec3{0, 1.62}
-	case *entity.Item:
-		return mgl64.Vec3{0, 0.125}
-	case *entity.FallingBlock, *entity.TNT:
-		return mgl64.Vec3{0, 0.49, 0}
+	if offset, ok := e.Type().(OffsetEntity); ok {
+		return mgl64.Vec3{0, offset.NetworkOffset()}
 	}
 	return mgl64.Vec3{}
 }

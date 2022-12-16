@@ -89,7 +89,8 @@ func (t *TNT) Tick(w *world.World, _ int64) {
 // TNTType is a world.EntityType implementation for TNT.
 type TNTType struct{}
 
-func (TNTType) EncodeEntity() string { return "minecraft:tnt" }
+func (TNTType) EncodeEntity() string   { return "minecraft:tnt" }
+func (TNTType) NetworkOffset() float64 { return 0.49 }
 func (TNTType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
 }
