@@ -16,14 +16,13 @@ func (LecternUpdateHandler) Handle(p packet.Packet, s *Session) error {
 		// This is completely redundant, so ignore this packet.
 		return nil
 	}
+
 	pos := blockPosFromProtocol(pk.Position)
-	if !s.c.CanReach(pos.Vec3Middle()) {
+	if !canReach(s.c, pos.Vec3Middle()) {
 		return fmt.Errorf("block at %v is not within reach", pos)
 	}
-	w := s.c.World()
-	lectern, ok := w.Block(pos).(block.Lectern)
-	if !ok {
+	if _, ok := s.c.World().Block(pos).(block.Lectern); !ok {
 		return fmt.Errorf("block at %v is not a lectern", pos)
 	}
-	return lectern.TurnPage(pos, w, int(pk.Page))
+	return s.c.TurnLecternPage(pos, int(pk.Page))
 }

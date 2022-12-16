@@ -57,7 +57,7 @@ func (l Lectern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 	if !used {
 		return false
 	}
-	l.Facing = user.Facing().Opposite()
+	l.Facing = user.Rotation().Direction().Opposite()
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
 }
@@ -75,17 +75,20 @@ type readableBook interface {
 func (l Lectern) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	if !l.Book.Empty() {
 		// We can't put a book on the lectern if it's full.
-		return true
+		return false
 	}
-	held, _ := u.HeldItems()
-	if _, ok := held.Item().(readableBook); ok {
-		l.Page = 0
-		l.Book = held
 
-		w.SetBlock(pos, l, nil)
-		w.PlaySound(pos.Vec3Centre(), sound.LecternBookPlace{})
-		ctx.SubtractFromCount(1)
+	held, _ := u.HeldItems()
+	if _, ok := held.Item().(readableBook); !ok {
+		// We can't put a non-book item on the lectern.
+		return false
 	}
+
+	l.Book, l.Page = held, 0
+	w.SetBlock(pos, l, nil)
+
+	w.PlaySound(pos.Vec3Centre(), sound.LecternBookPlace{})
+	ctx.SubtractFromCount(1)
 	return true
 }
 
@@ -106,7 +109,7 @@ func (l Lectern) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 // TurnPage updates the page the lectern is currently on to the page given.
 func (l Lectern) TurnPage(pos cube.Pos, w *world.World, page int) error {
 	if page == l.Page {
-		// We're already on the correct page, so ignore this packet.
+		// We're already on the correct page, so we don't need to do anything.
 		return nil
 	}
 	if l.Book.Empty() {
@@ -136,7 +139,7 @@ func (l Lectern) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (l Lectern) DecodeNBT(m map[string]any) any {
-	l.Page = int(nbtconv.Map[int32](m, "page"))
+	l.Page = int(nbtconv.Int32(m, "page"))
 	l.Book = nbtconv.MapItem(m, "book")
 	return l
 }

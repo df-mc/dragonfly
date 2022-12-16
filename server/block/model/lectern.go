@@ -10,7 +10,7 @@ type Lectern struct{}
 
 // BBox ...
 func (Lectern) BBox(cube.Pos, *world.World) []cube.BBox {
-	return []cube.BBox{full.ExtendTowards(cube.FaceDown, 0.1)}
+	return []cube.BBox{cube.Box(0, 0, 0, 1, 0.9, 1)}
 }
 
 // FaceSolid ...
