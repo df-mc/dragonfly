@@ -26,7 +26,7 @@ type brewer struct {
 // newBrewer creates a new initialised brewer. The inventory is properly initialised.
 func newBrewer() *brewer {
 	b := &brewer{viewers: make(map[ContainerViewer]struct{})}
-	b.inventory = inventory.New(5, func(slot int, item item.Stack) {
+	b.inventory = inventory.New(5, func(slot int, _, item item.Stack) {
 		b.mu.Lock()
 		defer b.mu.Unlock()
 		for viewer := range b.viewers {

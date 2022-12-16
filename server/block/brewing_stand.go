@@ -104,16 +104,16 @@ func (b BrewingStand) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (b BrewingStand) DecodeNBT(data map[string]any) any {
-	brew := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
+	brew := time.Duration(nbtconv.Int16(data, "CookTime")) * time.Millisecond * 50
 
-	fuel := int32(nbtconv.Map[int16](data, "FuelAmount"))
-	maxFuel := int32(nbtconv.Map[int16](data, "FuelTotal"))
+	fuel := int32(nbtconv.Int16(data, "FuelAmount"))
+	maxFuel := int32(nbtconv.Int16(data, "FuelTotal"))
 
 	//noinspection GoAssignmentToReceiver
 	b = NewBrewingStand()
 	b.setDuration(brew)
 	b.setFuel(fuel, maxFuel)
-	nbtconv.InvFromNBT(b.Inventory(), nbtconv.Map[[]any](data, "Items"))
+	nbtconv.InvFromNBT(b.Inventory(), nbtconv.Slice(data, "Items"))
 	return b
 }
 

@@ -167,7 +167,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBrewingStandIngredient, containerBrewingStandBottle, containerBrewingStandFuel:
+	case protocol.ContainerBrewingStandInput, protocol.ContainerBrewingStandResult, protocol.ContainerBrewingStandFuel:
 		if s.containerOpened.Load() {
 			if _, brewingStand := s.c.World().Block(s.openedPos.Load()).(block.BrewingStand); brewingStand {
 				return s.openedWindow.Load(), true
