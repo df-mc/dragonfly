@@ -581,12 +581,12 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	w, pos := p.World(), p.Position()
 	totalDamage := p.FinalDamageFrom(dmg, src)
-	if ok, _ := p.Blocking(); ok && source.ReducedByArmour() {
+	if ok, _ := p.Blocking(); ok && src.ReducedByArmour() {
 		affected := true
-		if src, ok := source.(damage.SourceEntityAttack); ok {
+		if src, ok := src.(entity.AttackDamageSource); ok {
 			diff := p.Position().Sub(src.Attacker.Position())
 			diff[1] = 0
-			if diff.Dot(entity.DirectionVector(p)) >= 0.0 {
+			if diff.Dot(p.Rotation().Vec3()) >= 0.0 {
 				affected = false
 			}
 		}
@@ -594,7 +594,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 			w.PlaySound(pos, sound.ShieldBlock{})
 			p.SetBlockingDelay(time.Millisecond * 250)
 
-			if src, ok := source.(damage.SourceEntityAttack); ok {
+			if src, ok := src.(entity.AttackDamageSource); ok {
 				if l, ok := src.Attacker.(entity.Living); ok {
 					l.KnockBack(pos, 0.5, 0.4)
 				}

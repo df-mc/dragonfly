@@ -238,7 +238,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 						a.vel, a.close = pastVel.Mul(-0.25), false
 					}
 				}
-				if _, vulnerable := l.Hurt(a.damage(pastVel), damage.SourceProjectile{Projectile: a, Owner: a.owner}); vulnerable {
+				if _, vulnerable := living.Hurt(a.damage(pastVel), ProjectileDamageSource{Projectile: a, Owner: a.owner}); vulnerable {
 					living.KnockBack(m.pos, 0.45, 0.3608)
 					for _, eff := range a.tip.Effects() {
 						living.AddEffect(eff)
