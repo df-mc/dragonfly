@@ -80,7 +80,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
 		return false
 	}
-	d.Facing = user.Facing()
+	d.Facing = user.Rotation().Direction()
 	left := w.Block(pos.Side(d.Facing.RotateLeft().Face()))
 	right := w.Block(pos.Side(d.Facing.RotateRight().Face()))
 	if door, ok := left.(WoodDoor); ok {

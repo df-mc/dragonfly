@@ -14,7 +14,6 @@ import (
 type Form interface {
 	json.Marshaler
 	SubmitJSON(b []byte, submitter Submitter) error
-	__()
 }
 
 // Custom represents a form that may be sent to a player and has fields that should be filled out by the
@@ -201,5 +200,3 @@ func (f Custom) verify() {
 func format(a []any) string {
 	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
 }
-
-func (f Custom) __() {}

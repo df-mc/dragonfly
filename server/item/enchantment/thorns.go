@@ -39,3 +39,13 @@ func (Thorns) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Armour)
 	return ok
 }
+
+// ThornsDamageSource is used for damage caused by thorns.
+type ThornsDamageSource struct {
+	// Owner holds the entity wearing the thorns armour.
+	Owner world.Entity
+}
+
+func (ThornsDamageSource) ReducedByResistance() bool { return true }
+func (ThornsDamageSource) ReducedByArmour() bool     { return false }
+func (ThornsDamageSource) Fire() bool                { return false }

@@ -8,8 +8,8 @@ import (
 
 // legacyBlockEntry represents a block entry used in versions prior to 1.13.
 type legacyBlockEntry struct {
-	Name string `nbt:"name,omitempty"`
-	Meta int16  `nbt:"val,omitempty"`
+	Name string `nbt:"name"`
+	Meta int16  `nbt:"meta"`
 }
 
 var (
@@ -34,6 +34,10 @@ func upgradeAliasEntry(entry blockEntry) (blockEntry, bool) {
 
 // upgradeLegacyEntry upgrades a legacy block entry to a new one.
 func upgradeLegacyEntry(name string, meta int16) (blockEntry, bool) {
+	if alias, ok := aliasMappings[name]; ok {
+		// First upgrade the alias to the correct name.
+		name = alias
+	}
 	entry, ok := legacyMappings[legacyBlockEntry{Name: name, Meta: meta}]
 	if !ok {
 		// Also try cases where the meta should be disregarded.

@@ -40,7 +40,7 @@ func (g Grindstone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 	if !used {
 		return false
 	}
-	g.Facing = user.Facing().Opposite()
+	g.Facing = user.Rotation().Direction().Opposite()
 	if face == cube.FaceDown {
 		g.Attach = HangingGrindstoneAttachment()
 	} else if face != cube.FaceUp {

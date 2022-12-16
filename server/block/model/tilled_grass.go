@@ -10,8 +10,7 @@ type TilledGrass struct{}
 
 // BBox returns a physics.BBox that spans an entire block.
 func (TilledGrass) BBox(cube.Pos, *world.World) []cube.BBox {
-	// TODO: Make the max Y value 0.9375 once https://bugs.mojang.com/browse/MCPE-12109 gets fixed.
-	return []cube.BBox{full}
+	return []cube.BBox{full.ExtendTowards(cube.FaceDown, 0.0625)}
 }
 
 // FaceSolid always returns true.

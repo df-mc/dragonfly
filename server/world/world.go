@@ -2,6 +2,10 @@ package world
 
 import (
 	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
@@ -11,9 +15,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-	"math/rand"
-	"sync"
-	"time"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
@@ -97,6 +98,12 @@ func (w *World) Range() cube.Range {
 		return cube.Range{}
 	}
 	return w.ra
+}
+
+// EntityRegistry returns the EntityRegistry that was passed to the World's
+// Config upon construction.
+func (w *World) EntityRegistry() EntityRegistry {
+	return w.conf.Entities
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -238,6 +245,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		before = c.Block(x, y, z, 0)
 	}
 
+	c.m = true
 	c.SetBlock(x, y, z, 0, rid)
 	if nbtBlocks[rid] {
 		c.e[pos] = b
@@ -293,6 +301,8 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 	}
 	c := w.chunk(chunkPosFromBlockPos(pos))
 	defer c.Unlock()
+
+	c.m = true
 	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
 }
 
@@ -359,10 +369,11 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 								rid := BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
+								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
 								if nbtBlocks[rid] {
-									c.e[pos] = b
+									c.e[nbtPos] = b
 								} else {
-									delete(c.e, pos)
+									delete(c.e, nbtPos)
 								}
 							}
 							if liq != nil {
@@ -375,6 +386,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 				}
 			}
 			c.SetBlock(0, 0, 0, 0, c.Block(0, 0, 0, 0)) // Make sure the heightmap is recalculated.
+			c.m = true
 
 			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
 			// viewers once, and unlock it.
@@ -454,6 +466,7 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 			v.ViewBlockUpdate(pos, b, 1)
 		}
 	}
+	c.m = true
 	c.Unlock()
 
 	w.doBlockUpdatesAround(pos)
@@ -1163,12 +1176,12 @@ func (w *World) chunk(pos ChunkPos) *chunkData {
 	if !ok {
 		var err error
 		c, err = w.loadChunk(pos)
+		chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 		if err != nil {
 			w.chunkMu.Unlock()
 			w.conf.Log.Errorf("load chunk: failed loading %v: %v\n", pos, err)
 			return c
 		}
-		chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 		c.Unlock()
 		w.chunkMu.Lock()
 
@@ -1183,6 +1196,7 @@ func (w *World) chunk(pos ChunkPos) *chunkData {
 
 // setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
 // position.
+//
 //lint:ignore U1000 This method is explicitly present to be used using compiler directives.
 func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 	if w == nil {
@@ -1224,7 +1238,7 @@ func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
 	data := newChunkData(c)
 	w.chunks[pos] = data
 
-	ent, err := w.provider().LoadEntities(pos, w.conf.Dim)
+	ent, err := w.provider().LoadEntities(pos, w.conf.Dim, w.conf.Entities)
 	if err != nil {
 		return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)
 	}
@@ -1321,32 +1335,34 @@ func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
 // the provider.
 func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 	c.Lock()
-	// We allocate a new map for all block entities.
-	m := make([]map[string]any, 0, len(c.e))
-	for pos, b := range c.e {
-		if n, ok := b.(NBTer); ok {
-			// Encode the block entities and add the 'x', 'y' and 'z' tags to it.
-			data := n.EncodeNBT()
-			data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-			m = append(m, data)
-		}
-	}
 	if !w.conf.ReadOnly {
-		c.Compact()
-		if err := w.provider().SaveChunk(pos, c.Chunk, w.conf.Dim); err != nil {
-			w.conf.Log.Errorf("error saving chunk %v to provider: %v", pos, err)
+		if len(c.e) > 0 || c.m {
+			c.Compact()
+			if err := w.provider().SaveChunk(pos, c.Chunk, w.conf.Dim); err != nil {
+				w.conf.Log.Errorf("error saving chunk %v to provider: %v", pos, err)
+			}
+
+			m := make([]map[string]any, 0, len(c.e))
+			for pos, b := range c.e {
+				if n, ok := b.(NBTer); ok {
+					data := n.EncodeNBT()
+					data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+					m = append(m, data)
+				}
+			}
+			if err := w.provider().SaveBlockNBT(pos, m, w.conf.Dim); err != nil {
+				w.conf.Log.Errorf("error saving block NBT in chunk %v to provider: %v", pos, err)
+			}
 		}
-		s := make([]SaveableEntity, 0, len(c.entities))
+
+		s := make([]Entity, 0, len(c.entities))
 		for _, e := range c.entities {
-			if saveable, ok := e.(SaveableEntity); ok {
-				s = append(s, saveable)
+			if _, ok := e.Type().(SaveableEntityType); ok {
+				s = append(s, e)
 			}
 		}
 		if err := w.provider().SaveEntities(pos, s, w.conf.Dim); err != nil {
 			w.conf.Log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
-		}
-		if err := w.provider().SaveBlockNBT(pos, m, w.conf.Dim); err != nil {
-			w.conf.Log.Errorf("error saving block NBT in chunk %v to provider: %v", pos, err)
 		}
 	}
 	ent := c.entities
@@ -1398,6 +1414,7 @@ func (w *World) chunkCacheJanitor() {
 // by the mutex present in the chunk.Chunk held.
 type chunkData struct {
 	*chunk.Chunk
+	m        bool
 	e        map[cube.Pos]Block
 	v        []Viewer
 	l        []*Loader
