@@ -39,15 +39,15 @@ func (c *ClientCacheBlobStatusHandler) Handle(p packet.Packet, s *Session) error
 	return nil
 }
 
-// resolveBlob resolves a blob hash in the session passed.
+// resolveBlob resolves a blob hash in the session passed. It assumes s.blobMu is locked upon calling.
 func (c *ClientCacheBlobStatusHandler) resolveBlob(hash uint64, s *Session) {
-	var newOpenTransactions []map[uint64]struct{}
+	leftover := make([]map[uint64]struct{}, 0, len(s.openChunkTransactions))
 	for _, m := range s.openChunkTransactions {
 		delete(m, hash)
 		if len(m) != 0 {
-			newOpenTransactions = append(newOpenTransactions, m)
+			leftover = append(leftover, m)
 		}
 	}
-	s.openChunkTransactions = newOpenTransactions
+	s.openChunkTransactions = leftover
 	delete(s.blobs, hash)
 }

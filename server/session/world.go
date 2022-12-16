@@ -1,6 +1,11 @@
 package session
 
 import (
+	"image/color"
+	"math/rand"
+	"strings"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -15,11 +20,22 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"image/color"
-	"math/rand"
-	"strings"
-	"time"
 )
+
+// NetworkEncodeableEntity is a world.EntityType where the save ID and network
+// ID are not the same.
+type NetworkEncodeableEntity interface {
+	// NetworkEncodeEntity returns the network type ID of the entity. This is
+	// NOT the save ID.
+	NetworkEncodeEntity() string
+}
+
+// OffsetEntity is a world.EntityType that has an additional offset when sent
+// over network. This is mostly the case for older entities such as players and
+// TNT.
+type OffsetEntity interface {
+	NetworkOffset() float64
+}
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
@@ -53,10 +69,10 @@ func (s *Session) ViewEntity(e world.Entity) {
 	}
 	s.entityMutex.Unlock()
 
-	yaw, pitch := e.Rotation()
+	yaw, pitch := e.Rotation().Elem()
 	metadata := s.parseEntityMetadata(e)
 
-	id := e.EncodeEntity()
+	id := e.Type().EncodeEntity()
 	switch v := e.(type) {
 	case Controllable:
 		actualPlayer := false
@@ -79,19 +95,22 @@ func (s *Session) ViewEntity(e world.Entity) {
 		}
 
 		s.writePacket(&packet.AddPlayer{
+			EntityMetadata:  metadata,
+			EntityRuntimeID: runtimeID,
+			GameType:        gameTypeFromMode(v.GameMode()),
+			HeadYaw:         float32(yaw),
+			Pitch:           float32(pitch),
+			Position:        vec64To32(e.Position()),
 			UUID:            v.UUID(),
 			Username:        v.Name(),
-			EntityUniqueID:  int64(runtimeID),
-			EntityRuntimeID: runtimeID,
-			Position:        vec64To32(e.Position()),
-			EntityMetadata:  metadata,
-			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
-			Layers: []protocol.AbilityLayer{{
-				Type:      protocol.AbilityLayerTypeBase,
-				Abilities: protocol.AbilityCount - 1,
-			}},
+			AbilityData: protocol.AbilityData{
+				EntityUniqueID: int64(runtimeID),
+				Layers: []protocol.AbilityLayer{{
+					Type:      protocol.AbilityLayerTypeBase,
+					Abilities: protocol.AbilityCount - 1,
+				}},
+			},
 		})
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
@@ -110,10 +129,12 @@ func (s *Session) ViewEntity(e world.Entity) {
 		})
 		return
 	case *entity.FallingBlock:
-		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
+		metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
 	case *entity.Text:
-		metadata[dataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
-		id = "falling_block" // TODO: Get rid of this hack and split up disk and network IDs?
+		metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
+	}
+	if v, ok := e.Type().(NetworkEncodeableEntity); ok {
+		id = v.NetworkEncodeEntity()
 	}
 
 	var vel mgl64.Vec3
@@ -131,6 +152,21 @@ func (s *Session) ViewEntity(e world.Entity) {
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
 		HeadYaw:         float32(yaw),
+	})
+}
+
+// ViewEntityGameMode ...
+func (s *Session) ViewEntityGameMode(e world.Entity) {
+	if s.entityHidden(e) {
+		return
+	}
+	c, ok := e.(Controllable)
+	if !ok {
+		return
+	}
+	s.writePacket(&packet.UpdatePlayerGameType{
+		GameType:       gameTypeFromMode(c.GameMode()),
+		PlayerUniqueID: int64(s.entityRuntimeID(c)),
 	})
 }
 
@@ -186,13 +222,8 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 
 // entityOffset returns the offset that entities have client-side.
 func entityOffset(e world.Entity) mgl64.Vec3 {
-	switch e.(type) {
-	case Controllable:
-		return mgl64.Vec3{0, 1.62}
-	case *entity.Item:
-		return mgl64.Vec3{0, 0.125}
-	case *entity.FallingBlock, *entity.TNT:
-		return mgl64.Vec3{0, 0.49, 0}
+	if offset, ok := e.Type().(OffsetEntity); ok {
+		return mgl64.Vec3{0, offset.NetworkOffset()}
 	}
 	return mgl64.Vec3{}
 }
@@ -209,7 +240,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		return
 	}
 
-	yaw, pitch := e.Rotation()
+	yaw, pitch := e.Rotation().Elem()
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
 		s.teleportPos.Store(&position)
@@ -396,6 +427,32 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleLegacyEvent | 33,
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
+			Position:  vec64To32(pos),
+		})
+	case particle.EntityFlame:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 18,
+			Position:  vec64To32(pos),
+		})
+	case particle.Dust:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 32,
+			Position:  vec64To32(pos),
+			EventData: nbtconv.Int32FromRGBA(pa.Colour),
+		})
+	case particle.WaterDrip:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 27,
+			Position:  vec64To32(pos),
+		})
+	case particle.LavaDrip:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 28,
+			Position:  vec64To32(pos),
+		})
+	case particle.Lava:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 10,
 			Position:  vec64To32(pos),
 		})
 	}
@@ -680,6 +737,15 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			EventType: packet.LevelEventSoundBlazeFireball,
 			Position:  vec64To32(pos),
 		})
+		return
+	case sound.ComposterEmpty:
+		pk.SoundType = packet.SoundEventComposterEmpty
+	case sound.ComposterFill:
+		pk.SoundType = packet.SoundEventComposterFill
+	case sound.ComposterFillLayer:
+		pk.SoundType = packet.SoundEventComposterFillLayer
+	case sound.ComposterReady:
+		pk.SoundType = packet.SoundEventComposterReady
 	}
 	s.writePacket(pk)
 }
@@ -847,25 +913,30 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	var containerType byte
 	switch b := b.(type) {
 	case block.CraftingTable:
-		containerType = 1
+		containerType = protocol.ContainerTypeWorkbench
 	case block.EnchantingTable:
-		containerType = 3
+		containerType = protocol.ContainerTypeEnchantment
 	case block.Anvil:
-		containerType = 5
+		containerType = protocol.ContainerTypeAnvil
 	case block.Beacon:
-		containerType = 13
+		containerType = protocol.ContainerTypeBeacon
 	case block.Loom:
-		containerType = 24
+		containerType = protocol.ContainerTypeLoom
+	case block.Grindstone:
+		containerType = protocol.ContainerTypeGrindstone
 	case block.Stonecutter:
-		containerType = 29
+		containerType = protocol.ContainerTypeStonecutter
 	case block.SmithingTable:
-		containerType = 33
+		containerType = protocol.ContainerTypeSmithingTable
 	case block.EnderChest:
 		b.AddViewer(w, pos)
+
 		inv := s.c.EnderChestInventory()
 		s.openedWindow.Store(inv)
+
 		defer s.sendInv(inv, uint32(nextID))
 	}
+
 	s.openedContainerID.Store(uint32(containerType))
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
@@ -874,12 +945,6 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		ContainerEntityUniqueID: -1,
 	})
 }
-
-const (
-	containerTypeFurnace      = 2
-	containerTypeBlastFurnace = 27
-	containerTypeSmoker       = 28
-)
 
 // openNormalContainer opens a normal container that can hold items in it server-side.
 func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
@@ -893,11 +958,11 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	var containerType byte
 	switch b.(type) {
 	case block.Furnace:
-		containerType = containerTypeFurnace
+		containerType = protocol.ContainerTypeFurnace
 	case block.BlastFurnace:
-		containerType = containerTypeBlastFurnace
+		containerType = protocol.ContainerTypeBlastFurnace
 	case block.Smoker:
-		containerType = containerTypeSmoker
+		containerType = protocol.ContainerTypeSmoker
 	}
 
 	s.writePacket(&packet.ContainerOpen{
@@ -1031,7 +1096,7 @@ func (s *Session) closeWindow() {
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.
-//noinspection GoCommentLeadingSpace
+// noinspection GoCommentLeadingSpace
 func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	s.entityMutex.RLock()
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
@@ -1057,6 +1122,14 @@ func vec32To64(vec3 mgl32.Vec3) mgl64.Vec3 {
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
+}
+
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // abs ...

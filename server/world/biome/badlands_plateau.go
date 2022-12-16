@@ -20,5 +20,5 @@ func (BadlandsPlateau) String() string {
 
 // EncodeBiome ...
 func (BadlandsPlateau) EncodeBiome() int {
-	return 38
+	return 39
 }

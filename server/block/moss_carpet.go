@@ -50,6 +50,11 @@ func (m MossCarpet) BreakInfo() BreakInfo {
 	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(m))
 }
 
+// CompostChance ...
+func (MossCarpet) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (m MossCarpet) EncodeItem() (name string, meta int16) {
 	return "minecraft:moss_carpet", 0

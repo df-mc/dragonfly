@@ -115,5 +115,3 @@ func (m Menu) verify() {
 		}
 	}
 }
-
-func (m Menu) __() {}

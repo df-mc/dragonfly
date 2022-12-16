@@ -23,7 +23,7 @@ func (b BannerPatternLayer) EncodeNBT() map[string]any {
 
 // DecodeNBT decodes the given NBT map into a BannerPatternLayer and returns it.
 func (b BannerPatternLayer) DecodeNBT(data map[string]any) any {
-	b.Type = BannerPatternByID(nbtconv.Map[string](data, "Pattern"))
-	b.Colour = invertColourID(int16(nbtconv.Map[int32](data, "Color")))
+	b.Type = BannerPatternByID(nbtconv.String(data, "Pattern"))
+	b.Colour = invertColourID(int16(nbtconv.Int32(data, "Color")))
 	return b
 }

@@ -24,7 +24,7 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 
 	expectedInputs := craft.Input()
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerStonecutterInput,
+		ContainerID: protocol.ContainerStonecutterInput,
 		Slot:        stonecutterInputSlot,
 	}, s)
 	if !matchingStacks(input, expectedInputs[0]) {
@@ -33,12 +33,8 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 
 	output := craft.Output()
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerStonecutterInput,
+		ContainerID: protocol.ContainerStonecutterInput,
 		Slot:        stonecutterInputSlot,
 	}, input.Grow(-1), s)
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, output...)
 }

@@ -73,10 +73,13 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 		meta, _ := m["val"].(int16)
 
 		// Upgrade the pre-1.13 state into a post-1.13 state.
-		stateI, ok = upgradeLegacyEntry(name, meta)
+		state, ok := upgradeLegacyEntry(name, meta)
 		if !ok {
 			return 0, fmt.Errorf("cannot find mapping for legacy block entry: %v, %v", name, meta)
 		}
+
+		// Update the state.
+		stateI = state.State
 	}
 	state, ok := stateI.(map[string]any)
 	if !ok {
@@ -123,6 +126,9 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 		if err != nil {
 			return nil, err
 		}
+	}
+	if paletteCount == 0 {
+		return palette, fmt.Errorf("invalid palette entry count: found 0, but palette with %v bits per block must have at least 1 value", blockSize)
 	}
 	return palette, nil
 }

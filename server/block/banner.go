@@ -48,8 +48,7 @@ func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	}
 
 	if face == cube.FaceUp {
-		yaw, _ := user.Rotation()
-		b.Attach = StandingAttachment(cube.OrientationFromYaw(yaw).Opposite())
+		b.Attach = StandingAttachment(user.Rotation().Orientation().Opposite())
 		place(w, pos, b, user, ctx)
 		return
 	}
@@ -103,10 +102,10 @@ func (b Banner) EncodeNBT() map[string]any {
 }
 
 // DecodeNBT ...
-func (b Banner) DecodeNBT(data map[string]any) any {
-	b.Colour = invertColourID(int16(nbtconv.Map[int32](data, "Base")))
-	b.Illager = nbtconv.Map[int32](data, "Type") == 1
-	if patterns, ok := data["Patterns"].([]any); ok {
+func (b Banner) DecodeNBT(m map[string]any) any {
+	b.Colour = invertColourID(int16(nbtconv.Int32(m, "Base")))
+	b.Illager = nbtconv.Int32(m, "Type") == 1
+	if patterns := nbtconv.Slice(m, "Patterns"); patterns != nil {
 		b.Patterns = make([]BannerPatternLayer, len(patterns))
 		for i, p := range b.Patterns {
 			b.Patterns[i] = p.DecodeNBT(patterns[i].(map[string]any)).(BannerPatternLayer)

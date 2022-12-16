@@ -1,7 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -18,7 +17,7 @@ func (Regeneration) Apply(e world.Entity, lvl int, d time.Duration) {
 	interval := 50 >> lvl
 	if tickDuration(d)%interval == 0 {
 		if l, ok := e.(living); ok {
-			l.Heal(1, healing.SourceRegenerationEffect{})
+			l.Heal(1, RegenerationHealingSource{})
 		}
 	}
 }
@@ -27,3 +26,9 @@ func (Regeneration) Apply(e world.Entity, lvl int, d time.Duration) {
 func (Regeneration) RGBA() color.RGBA {
 	return color.RGBA{R: 0xcd, G: 0x5c, B: 0xab, A: 0xff}
 }
+
+// RegenerationHealingSource is a healing source used when an entity regenerates
+// health from an effect.Regeneration.
+type RegenerationHealingSource struct{}
+
+func (RegenerationHealingSource) HealingSource() {}

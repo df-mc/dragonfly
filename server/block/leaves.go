@@ -101,6 +101,11 @@ func (l Leaves) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
+func (Leaves) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (l Leaves) EncodeItem() (name string, meta int16) {
 	switch l.Wood {

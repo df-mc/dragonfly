@@ -93,6 +93,11 @@ func (p PumpkinSeeds) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p))
 }
 
+// CompostChance ...
+func (PumpkinSeeds) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (p PumpkinSeeds) EncodeItem() (name string, meta int16) {
 	return "minecraft:pumpkin_seeds", 0
