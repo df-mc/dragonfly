@@ -122,7 +122,7 @@ func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.
 // applyLiquidFlow applies liquid flow to the entity's velocity.
 func (c *MovementComputer) applyLiquidFlow(e world.Entity, pos, vel mgl64.Vec3) mgl64.Vec3 {
 	w := e.World()
-	box := e.BBox().Grow(-0.001).Translate(pos)
+	box := e.Type().BBox(e).Grow(-0.001).Translate(pos)
 
 	min, max := box.Min(), box.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
