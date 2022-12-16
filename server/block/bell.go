@@ -23,8 +23,7 @@ type Bell struct {
 
 // Model ...
 func (b Bell) Model() world.BlockModel {
-	// TODO: Use the actual bell model.
-	return model.Slab{}
+	return model.Bell{Attach: b.Attach.String(), Facing: b.Facing}
 }
 
 // BreakInfo ...
