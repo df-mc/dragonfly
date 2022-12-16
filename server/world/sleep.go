@@ -30,19 +30,15 @@ func (t ticker) tryAdvanceDay() {
 		return
 	}
 
-	thunderAnywhere, advanceTime := false, true
+	var thunderAnywhere bool
 	for _, s := range sleepers {
 		if !thunderAnywhere {
 			thunderAnywhere = t.w.ThunderingAt(cube.PosFromVec3(s.Position()))
 		}
 		if _, ok := s.Sleeping(); !ok {
-			advanceTime = false
-			break
+			// We can't advance the time - not everyone is sleeping.
+			return
 		}
-	}
-	if !advanceTime {
-		// We can't advance the time - not everyone is sleeping.
-		return
 	}
 
 	for _, s := range sleepers {
