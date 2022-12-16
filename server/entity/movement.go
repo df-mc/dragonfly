@@ -124,7 +124,7 @@ func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	// Entities only ever have a single bounding box.
-	entityBBox := e.BBox().Translate(pos)
+	entityBBox := e.Type().BBox(e).Translate(pos)
 	blocks := blockBBoxsAround(e, entityBBox.Extend(vel))
 
 	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {

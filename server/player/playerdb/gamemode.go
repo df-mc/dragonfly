@@ -9,7 +9,7 @@ const (
 	spectator
 )
 
-func gameModeToData(mode world.GameMode) uint8 {
+func gameModeToID(mode world.GameMode) uint8 {
 	switch mode {
 	case world.GameModeCreative:
 		return creative
@@ -22,7 +22,7 @@ func gameModeToData(mode world.GameMode) uint8 {
 	}
 }
 
-func dataToGameMode(mode uint8) world.GameMode {
+func idToGameMode(mode uint8) world.GameMode {
 	switch mode {
 	case creative:
 		return world.GameModeCreative

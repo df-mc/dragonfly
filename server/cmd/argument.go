@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"reflect"
@@ -270,11 +271,11 @@ func (p parser) parseTargets(line *Line) ([]Target, error) {
 		if len(players) == 0 {
 			return nil, nil
 		}
-		return players[0:1], nil
+		return sliceutil.Convert[Target](players[0:1]), nil
 	case "@e":
 		return entities, nil
 	case "@a":
-		return players, nil
+		return sliceutil.Convert[Target](players), nil
 	case "@s":
 		return []Target{line.src}, nil
 	case "@r":
@@ -290,7 +291,7 @@ func (p parser) parseTargets(line *Line) ([]Target, error) {
 
 // parsePlayer parses one Player from the Line, reading more arguments if necessary to find a valid player
 // from the players Target list.
-func (p parser) parsePlayer(players []Target, name string) (Target, error) {
+func (p parser) parsePlayer(players []NamedTarget, name string) (Target, error) {
 	for _, p := range players {
 		if strings.EqualFold(p.Name(), name) {
 			// We found a match for this amount of arguments. Following arguments may still be a better

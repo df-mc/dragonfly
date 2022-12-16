@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -43,7 +42,7 @@ func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // RandomTick ...
-func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+func (c Cactus) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if c.Age < 15 {
 		c.Age++
 	} else if c.Age == 15 {
@@ -78,7 +77,7 @@ func (c Cactus) canGrowHere(pos cube.Pos, w *world.World, recursive bool) bool {
 // EntityInside ...
 func (c Cactus) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
-		l.Hurt(0.5, damage.SourceBlock{Block: c})
+		l.Hurt(0.5, DamageSource{Block: c})
 	}
 }
 
@@ -114,3 +113,14 @@ func allCactus() (b []world.Block) {
 	}
 	return
 }
+
+// DamageSource is passed as world.DamageSource for damage caused by a block,
+// such as a cactus or a falling anvil.
+type DamageSource struct {
+	// Block is the block that caused the damage.
+	Block world.Block
+}
+
+func (DamageSource) ReducedByResistance() bool { return true }
+func (DamageSource) ReducedByArmour() bool     { return true }
+func (DamageSource) Fire() bool                { return false }

@@ -17,8 +17,8 @@ type DoubleTallGrass struct {
 
 	// UpperPart is set if the plant is the upper part.
 	UpperPart bool
-	// Type is the type of grass
-	Type GrassType
+	// Type is the type of double tall grass.
+	Type DoubleTallGrassType
 }
 
 // HasLiquidDrops ...
@@ -84,7 +84,7 @@ func (d DoubleTallGrass) BreakInfo() BreakInfo {
 
 // CompostChance ...
 func (d DoubleTallGrass) CompostChance() float64 {
-	if d.Type == Fern() {
+	if d.Type == FernDoubleTallGrass() {
 		return 0.65
 	}
 	return 0.5
@@ -102,7 +102,7 @@ func (d DoubleTallGrass) EncodeBlock() (string, map[string]any) {
 
 // allDoubleTallGrass ...
 func allDoubleTallGrass() (b []world.Block) {
-	for _, g := range GrassTypes() {
+	for _, g := range DoubleTallGrassTypes() {
 		b = append(b, DoubleTallGrass{Type: g})
 		b = append(b, DoubleTallGrass{Type: g, UpperPart: true})
 	}

@@ -35,14 +35,14 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerAnvilInput,
+		ContainerID: protocol.ContainerAnvilInput,
 		Slot:        anvilInputSlot,
 	}, s)
 	if input.Empty() {
 		return fmt.Errorf("no item in input input slot")
 	}
 	material, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerAnvilMaterial,
+		ContainerID: protocol.ContainerAnvilMaterial,
 		Slot:        anvilMaterialSlot,
 	}, s)
 	result := input
@@ -91,20 +91,11 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		}
 	}
 
-	// First get the new name and the existing name. The existing name is either the custom name if it exists, or the
-	// item's display name in-game, which is locale dependent.
-	newName := filterStrings[int(a.FilterStringIndex)]
-	existingName := item.DisplayName(input.Item(), s.c.Locale())
-	if customName := input.CustomName(); len(customName) > 0 {
-		existingName = customName
-	}
-
-	// If our existing name isn't the same as the new name, then something changed, and we should update the custom
-	// name of the item.
-	if existingName != newName {
+	// If we have a filter string, then the client is intending to rename the item.
+	if len(filterStrings) > 0 {
 		renameCost = 1
 		actionCost += renameCost
-		result = result.WithCustomName(newName)
+		result = result.WithCustomName(filterStrings[int(a.FilterStringIndex)])
 	}
 
 	// Calculate the total cost. (action cost + anvil cost)
@@ -159,17 +150,17 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerAnvilInput,
+		ContainerID: protocol.ContainerAnvilInput,
 		Slot:        anvilInputSlot,
 	}, item.Stack{}, s)
 	if repairCount > 0 {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID: containerAnvilMaterial,
+			ContainerID: protocol.ContainerAnvilMaterial,
 			Slot:        anvilMaterialSlot,
 		}, material.Grow(-repairCount), s)
 	} else {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID: containerAnvilMaterial,
+			ContainerID: protocol.ContainerAnvilMaterial,
 			Slot:        anvilMaterialSlot,
 		}, item.Stack{}, s)
 	}

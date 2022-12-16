@@ -36,6 +36,9 @@ type Config struct {
 	// tick or when deciding where to strike lightning. If set to nil, `rand.NewSource(time.Now().Unix())` will be used
 	// to generate a new source.
 	RandSource rand.Source
+	// Entities is an EntityRegistry with all entity types registered that may
+	// be added to the World.
+	Entities EntityRegistry
 }
 
 // Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug
