@@ -62,7 +62,7 @@ func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 		return
 	}
 
-	b.Facing = user.Facing()
+	b.Facing = user.Rotation().Direction()
 
 	side, sidePos := b, pos.Side(b.Facing.Face())
 	side.Head = true
@@ -194,7 +194,7 @@ func (b Bed) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (b Bed) DecodeNBT(data map[string]interface{}) interface{} {
-	b.Colour = item.Colours()[nbtconv.Map[uint8](data, "color")]
+	b.Colour = item.Colours()[nbtconv.Uint8(data, "color")]
 	return b
 }
 

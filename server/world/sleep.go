@@ -10,6 +10,7 @@ type Sleeper interface {
 	Entity
 
 	UUID() uuid.UUID
+	Name() string
 
 	Message(a ...any)
 	Messaget(key string, a ...string)

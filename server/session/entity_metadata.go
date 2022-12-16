@@ -98,8 +98,8 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	}
 	if sl, ok := e.(sleeper); ok {
 		if pos, ok := sl.Sleeping(); ok {
-			m[dataKeyBedPosition] = blockPosToProtocol(pos)
-			m.setFlag(dataKeyPlayerFlags, playerDataFlagSleep)
+			m[protocol.EntityDataKeyBedPosition] = blockPosToProtocol(pos)
+			m.SetFlag(protocol.EntityDataKeyPlayerFlags, protocol.EntityDataFlagSleeping)
 		}
 	}
 	if c, ok := e.(areaEffectCloud); ok {
