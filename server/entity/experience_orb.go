@@ -53,19 +53,9 @@ func NewExperienceOrb(pos mgl64.Vec3, xp int) *ExperienceOrb {
 	return o
 }
 
-// Name ...
-func (*ExperienceOrb) Name() string {
-	return "Experience Orb"
-}
-
-// EncodeEntity ...
-func (*ExperienceOrb) EncodeEntity() string {
-	return "minecraft:xp_orb"
-}
-
-// BBox ...
-func (*ExperienceOrb) BBox() cube.BBox {
-	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+// Type returns ExperienceOrbType.
+func (*ExperienceOrb) Type() world.EntityType {
+	return ExperienceOrbType{}
 }
 
 // Experience returns the amount of experience the orb carries.
@@ -131,7 +121,7 @@ func (e *ExperienceOrb) Tick(w *world.World, current int64) {
 			e.vel = e.vel.Add(vec.Normalize().Mul(0.2 * math.Pow(1-math.Sqrt(dist), 2)))
 		}
 
-		if e.BBox().Translate(e.pos).IntersectsWith(e.target.BBox().Translate(e.target.Position())) && e.target.CollectExperience(e.xp) {
+		if e.Type().BBox(e).Translate(e.pos).IntersectsWith(e.target.Type().BBox(e.target).Translate(e.target.Position())) && e.target.CollectExperience(e.xp) {
 			_ = e.Close()
 		}
 	}
@@ -142,20 +132,27 @@ func (e *ExperienceOrb) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
 	_ = e.Close()
 }
 
-// DecodeNBT decodes the properties in a map to an Item and returns a new Item entity.
-func (e *ExperienceOrb) DecodeNBT(data map[string]any) any {
-	o := NewExperienceOrb(nbtconv.MapVec3(data, "Pos"), int(nbtconv.Map[int32](data, "Value")))
-	o.SetVelocity(nbtconv.MapVec3(data, "Motion"))
-	o.age = int(nbtconv.Map[int16](data, "Age"))
+// ExperienceOrbType is a world.EntityType implementation for ExperienceOrb.
+type ExperienceOrbType struct{}
+
+func (ExperienceOrbType) EncodeEntity() string { return "minecraft:xp_orb" }
+func (ExperienceOrbType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+
+func (ExperienceOrbType) DecodeNBT(m map[string]any) world.Entity {
+	o := NewExperienceOrb(nbtconv.Vec3(m, "Pos"), int(nbtconv.Int32(m, "Value")))
+	o.vel = nbtconv.Vec3(m, "Motion")
+	o.age = int(nbtconv.Int16(m, "Age"))
 	return o
 }
 
-// EncodeNBT encodes the Item entity's properties as a map and returns it.
-func (e *ExperienceOrb) EncodeNBT() map[string]any {
+func (ExperienceOrbType) EncodeNBT(e world.Entity) map[string]any {
+	orb := e.(*ExperienceOrb)
 	return map[string]any{
-		"Age":    int16(e.age),
-		"Value":  int32(e.xp),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(e.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(e.Velocity()),
+		"Age":    int16(orb.age),
+		"Value":  int32(orb.xp),
+		"Pos":    nbtconv.Vec3ToFloat32Slice(orb.Position()),
+		"Motion": nbtconv.Vec3ToFloat32Slice(orb.Velocity()),
 	}
 }

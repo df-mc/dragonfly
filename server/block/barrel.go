@@ -38,7 +38,7 @@ func NewBarrel() Barrel {
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{}, 1)
 	return Barrel{
-		inventory: inventory.New(27, func(slot int, item item.Stack) {
+		inventory: inventory.New(27, func(slot int, _, item item.Stack) {
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {
@@ -143,8 +143,8 @@ func (b Barrel) DecodeNBT(data map[string]any) any {
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
 	b.Facing = facing
-	b.CustomName = nbtconv.Map[string](data, "CustomName")
-	nbtconv.InvFromNBT(b.inventory, nbtconv.Map[[]any](data, "Items"))
+	b.CustomName = nbtconv.String(data, "CustomName")
+	nbtconv.InvFromNBT(b.inventory, nbtconv.Slice(data, "Items"))
 	return b
 }
 

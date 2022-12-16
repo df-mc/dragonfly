@@ -58,7 +58,7 @@ func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 	}
 	//noinspection GoAssignmentToReceiver
 	c = NewEnderChest()
-	c.Facing = user.Facing().Opposite()
+	c.Facing = user.Rotation().Direction().Opposite()
 
 	place(w, pos, c, user, ctx)
 	return placed(ctx)

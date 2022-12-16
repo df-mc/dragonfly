@@ -42,7 +42,7 @@ func (s Stonecutter) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *w
 	if !used {
 		return
 	}
-	s.Facing = user.Facing().Opposite()
+	s.Facing = user.Rotation().Direction().Opposite()
 	place(w, pos, s, user, ctx)
 	return placed(ctx)
 }

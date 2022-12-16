@@ -10,7 +10,7 @@ type Stonecutter struct{}
 
 // BBox ...
 func (Stonecutter) BBox(cube.Pos, *world.World) []cube.BBox {
-	return []cube.BBox{full.ExtendTowards(cube.FaceDown, 0.4375)}
+	return []cube.BBox{cube.Box(0, 0, 0, 1, 0.5625, 1)}
 }
 
 // FaceSolid ...

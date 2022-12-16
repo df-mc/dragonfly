@@ -20,5 +20,5 @@ func (DeepWarmOcean) String() string {
 
 // EncodeBiome ...
 func (DeepWarmOcean) EncodeBiome() int {
-	return 43
+	return 41
 }

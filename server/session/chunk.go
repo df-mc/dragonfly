@@ -25,7 +25,7 @@ func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities ma
 }
 
 // ViewSubChunks ...
-func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
+func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.SubChunkOffset) {
 	w := s.c.World()
 	r := w.Range()
 
@@ -52,7 +52,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets [][3]int8) {
 		higher, lower := true, true
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
-				y, i := chunkMap.At(x, z), (uint16(x)<<4)|uint16(z)
+				y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
 				otherInd := ch.SubIndex(y)
 				if otherInd > ind {
 					subMap[i], lower = 16, false
@@ -228,8 +228,6 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 // connection.
 func (s *Session) trackBlob(hash uint64, blob []byte) bool {
 	s.blobMu.Lock()
-	defer s.blobMu.Unlock()
-
 	if l := len(s.blobs); l > 4096 {
 		s.blobMu.Unlock()
 		s.log.Errorf("player %v has too many blobs pending %v: disconnecting", s.c.Name(), l)
@@ -237,5 +235,6 @@ func (s *Session) trackBlob(hash uint64, blob []byte) bool {
 		return false
 	}
 	s.blobs[hash] = blob
+	s.blobMu.Unlock()
 	return true
 }

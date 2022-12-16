@@ -31,7 +31,7 @@ func (s Stairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w 
 	if !used {
 		return
 	}
-	s.Facing = user.Facing()
+	s.Facing = user.Rotation().Direction()
 	if face == cube.FaceDown || (clickPos[1] > 0.5 && face != cube.FaceUp) {
 		s.UpsideDown = true
 	}

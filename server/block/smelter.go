@@ -28,7 +28,7 @@ type smelter struct {
 // newSmelter creates a new initialised smelter. The inventory is properly initialised.
 func newSmelter() *smelter {
 	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
-	s.inventory = inventory.New(3, func(slot int, item item.Stack) {
+	s.inventory = inventory.New(3, func(slot int, _, item item.Stack) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		for viewer := range s.viewers {

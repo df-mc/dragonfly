@@ -32,7 +32,7 @@ func (p Pumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 	if !used {
 		return
 	}
-	p.Facing = user.Facing().Opposite()
+	p.Facing = user.Rotation().Direction().Opposite()
 
 	place(w, pos, p, user, ctx)
 	return placed(ctx)
