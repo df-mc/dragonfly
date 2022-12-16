@@ -1833,11 +1833,8 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	drops := p.drops(held, b)
 
 	xp := 0
-	if breakable, ok := b.(block.Breakable); ok {
-		info := breakable.BreakInfo()
-		if diff := (info.XPDrops[1] - info.XPDrops[0]) + 1; diff > 0 && !p.GameMode().CreativeInventory() {
-			xp = rand.Intn(diff) + info.XPDrops[0]
-		}
+	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+		xp = breakable.BreakInfo().XPDrops.RandomValue()
 	}
 
 	ctx := event.C()
