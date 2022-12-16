@@ -79,7 +79,7 @@ var _ Viewer = NopViewer{}
 
 func (NopViewer) ViewEntity(Entity)                                                          {}
 func (NopViewer) HideEntity(Entity)                                                          {}
-func (NopViewer) ViewEntityGameMode(Entity)                                     {}
+func (NopViewer) ViewEntityGameMode(Entity)                                                  {}
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool)              {}
 func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                                      {}
 func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                                      {}
