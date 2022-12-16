@@ -1884,7 +1884,7 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 		drops = container.Inventory().Items()
 		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
-				drops = breakable.BreakInfo().Drops(t, held.Enchantments())
+				drops = append(drops, breakable.BreakInfo().Drops(t, held.Enchantments())...)
 			}
 		}
 		container.Inventory().Clear()
