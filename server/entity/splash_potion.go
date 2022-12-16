@@ -61,15 +61,6 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 }
 
-// New creates a SplashPotion with the position and velocity provided. It doesn't spawn the SplashPotion,
-// only returns it.
-func (s *SplashPotion) New(pos, vel mgl64.Vec3, t potion.Potion, owner world.Entity) world.Entity {
-	splash := NewSplashPotion(pos, owner, t)
-	splash.vel = vel
-	splash.owner = owner
-	return splash
-}
-
 // Explode ...
 func (s *SplashPotion) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
 	s.mu.Lock()

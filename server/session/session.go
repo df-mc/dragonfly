@@ -187,7 +187,7 @@ func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
-	s.sendAvailableEntities()
+	s.sendAvailableEntities(w)
 
 	s.initPlayerList()
 
@@ -520,10 +520,10 @@ type actorIdentifier struct {
 }
 
 // sendAvailableEntities sends all registered entities to the player.
-func (s *Session) sendAvailableEntities() {
+func (s *Session) sendAvailableEntities(w *world.World) {
 	var identifiers []actorIdentifier
-	for _, entity := range world.Entities() {
-		identifiers = append(identifiers, actorIdentifier{ID: entity.Type().EncodeEntity()})
+	for _, t := range w.EntityRegistry().Types() {
+		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
 	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {

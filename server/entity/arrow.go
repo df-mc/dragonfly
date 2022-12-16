@@ -252,18 +252,6 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 	}
 }
 
-// New creates and returns an Arrow with the position, velocity, yaw, and pitch provided. It doesn't spawn the Arrow
-// by itself.
-func (a *Arrow) New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip potion.Potion) world.Entity {
-	arrow := NewTippedArrowWithDamage(pos, yaw, pitch, damage, owner, tip)
-	arrow.vel = vel
-	arrow.punchLevel = punchLevel
-	arrow.disallowPickup = disallowPickup
-	arrow.obtainArrowOnPickup = obtainArrowOnPickup
-	arrow.setCritical(critical)
-	return arrow
-}
-
 // Explode ...
 func (a *Arrow) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
 	a.mu.Lock()

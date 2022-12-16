@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
+	"math/rand"
 	"time"
 )
 
@@ -125,6 +126,13 @@ func (b BreakInfo) withBreakHandler(handler func(pos cube.Pos, w *world.World, u
 
 // XPDropRange holds the min & max XP drop amounts of blocks.
 type XPDropRange [2]int
+
+// RandomValue returns a random XP value that falls within the drop range.
+func (r XPDropRange) RandomValue() int {
+	diff := r[1] - r[0]
+	// Add one because it's a [r[0], r[1]] interval.
+	return rand.Intn(diff+1) + r[0]
+}
 
 // pickaxeEffective is a convenience function for blocks that are effectively mined with a pickaxe.
 var pickaxeEffective = func(t item.Tool) bool {

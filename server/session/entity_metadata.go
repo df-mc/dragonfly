@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"math"
 	"time"
 )
 
@@ -59,8 +60,13 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	if c, ok := e.(arrow); ok && c.Critical() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCritical)
 	}
-	if g, ok := e.(gameMode); ok && g.GameMode().HasCollision() {
-		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasCollision)
+	if g, ok := e.(gameMode); ok {
+		if g.GameMode().HasCollision() {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasCollision)
+		}
+		if !g.GameMode().Visible() {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		}
 	}
 	if o, ok := e.(orb); ok {
 		m[protocol.EntityDataKeyValue] = int32(o.Experience())
@@ -90,12 +96,14 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
 	}
 	if c, ok := e.(areaEffectCloud); ok {
-		radius, radiusOnUse, radiusGrowth := c.Radius()
+		m[protocol.EntityDataKeyDataRadius] = float32(c.Radius())
+
+		// We purposely fill these in with invalid values to disable the client-sided shrinking of the cloud.
+		m[protocol.EntityDataKeyDataDuration] = int32(math.MaxInt32)
+		m[protocol.EntityDataKeyDataChangeOnPickup] = float32(math.SmallestNonzeroFloat32)
+		m[protocol.EntityDataKeyDataChangeRate] = float32(math.SmallestNonzeroFloat32)
+
 		colour, am := effect.ResultingColour(c.Effects())
-		m[protocol.EntityDataKeyDataDuration] = int32(c.Duration().Milliseconds() / 50)
-		m[protocol.EntityDataKeyDataRadius] = float32(radius)
-		m[protocol.EntityDataKeyDataChangeOnPickup] = float32(radiusOnUse)
-		m[protocol.EntityDataKeyDataChangeRate] = float32(radiusGrowth)
 		m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
 		if am {
 			m[protocol.EntityDataKeyEffectAmbience] = byte(1)
@@ -206,7 +214,7 @@ type lingers interface {
 type areaEffectCloud interface {
 	effectBearer
 	Duration() time.Duration
-	Radius() (radius, radiusOnUse, radiusGrowth float64)
+	Radius() float64
 }
 
 type onFire interface {

@@ -86,15 +86,11 @@ func (t *TNT) Tick(w *world.World, _ int64) {
 	}
 }
 
-// New creates and returns an TNT with the world.Block and position provided. It doesn't spawn the TNT by itself.
-func (t *TNT) New(pos mgl64.Vec3, fuse time.Duration) world.Entity {
-	return NewTNT(pos, fuse)
-}
-
 // TNTType is a world.EntityType implementation for TNT.
 type TNTType struct{}
 
-func (TNTType) EncodeEntity() string { return "minecraft:tnt" }
+func (TNTType) EncodeEntity() string   { return "minecraft:tnt" }
+func (TNTType) NetworkOffset() float64 { return 0.49 }
 func (TNTType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
 }

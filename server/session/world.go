@@ -22,10 +22,19 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
-// NetworkEncodeableEntity is an Entity where the save ID and network ID are not the same.
+// NetworkEncodeableEntity is a world.EntityType where the save ID and network
+// ID are not the same.
 type NetworkEncodeableEntity interface {
-	// NetworkEncodeEntity returns the network type ID of the entity. This is NOT the save ID.
+	// NetworkEncodeEntity returns the network type ID of the entity. This is
+	// NOT the save ID.
 	NetworkEncodeEntity() string
+}
+
+// OffsetEntity is a world.EntityType that has an additional offset when sent
+// over network. This is mostly the case for older entities such as players and
+// TNT.
+type OffsetEntity interface {
+	NetworkOffset() float64
 }
 
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
@@ -86,14 +95,15 @@ func (s *Session) ViewEntity(e world.Entity) {
 		}
 
 		s.writePacket(&packet.AddPlayer{
+			EntityMetadata:  metadata,
+			EntityRuntimeID: runtimeID,
+			GameType:        gameTypeFromMode(v.GameMode()),
+			HeadYaw:         float32(yaw),
+			Pitch:           float32(pitch),
+			Position:        vec64To32(e.Position()),
 			UUID:            v.UUID(),
 			Username:        v.Name(),
-			EntityRuntimeID: runtimeID,
-			Position:        vec64To32(e.Position()),
-			EntityMetadata:  metadata,
-			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
-			HeadYaw:         float32(yaw),
 			AbilityData: protocol.AbilityData{
 				EntityUniqueID: int64(runtimeID),
 				Layers: []protocol.AbilityLayer{{
@@ -142,6 +152,21 @@ func (s *Session) ViewEntity(e world.Entity) {
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
 		HeadYaw:         float32(yaw),
+	})
+}
+
+// ViewEntityGameMode ...
+func (s *Session) ViewEntityGameMode(e world.Entity) {
+	if s.entityHidden(e) {
+		return
+	}
+	c, ok := e.(Controllable)
+	if !ok {
+		return
+	}
+	s.writePacket(&packet.UpdatePlayerGameType{
+		GameType:       gameTypeFromMode(c.GameMode()),
+		PlayerUniqueID: int64(s.entityRuntimeID(c)),
 	})
 }
 
@@ -197,13 +222,8 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 
 // entityOffset returns the offset that entities have client-side.
 func entityOffset(e world.Entity) mgl64.Vec3 {
-	switch e.(type) {
-	case Controllable:
-		return mgl64.Vec3{0, 1.62}
-	case *entity.Item:
-		return mgl64.Vec3{0, 0.125}
-	case *entity.FallingBlock, *entity.TNT:
-		return mgl64.Vec3{0, 0.49, 0}
+	if offset, ok := e.Type().(OffsetEntity); ok {
+		return mgl64.Vec3{0, offset.NetworkOffset()}
 	}
 	return mgl64.Vec3{}
 }

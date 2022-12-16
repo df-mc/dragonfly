@@ -1,10 +1,7 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/potion"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
 )
@@ -60,50 +57,38 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	if rYaw > 180 {
 		yaw = 360 - rYaw
 	}
+	tip := arrow.Item().(Arrow).Tip
 
-	proj, ok := world.EntityByName("minecraft:arrow")
-	if !ok {
-		return
+	held, _ := releaser.HeldItems()
+	damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), !creative
+	for _, enchant := range held.Enchantments() {
+		if f, ok := enchant.Type().(interface{ BurnDuration() time.Duration }); ok {
+			burnDuration = f.BurnDuration()
+		}
+		if _, ok := enchant.Type().(interface{ PunchMultiplier(int, float64) float64 }); ok {
+			punchLevel = enchant.Level()
+		}
+		if p, ok := enchant.Type().(interface{ PowerDamage(int) float64 }); ok {
+			damage += p.PowerDamage(enchant.Level())
+		}
+		if i, ok := enchant.Type().(interface{ ConsumesArrows() bool }); ok && !i.ConsumesArrows() {
+			consume = false
+		}
 	}
 
-	if p, ok := proj.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip potion.Potion) world.Entity
-	}); ok {
-		var tip potion.Potion
-		if !arrow.Empty() {
-			tip = arrow.Item().(Arrow).Tip
-		}
-
-		held, _ := releaser.HeldItems()
-		damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), !creative
-		for _, enchant := range held.Enchantments() {
-			if f, ok := enchant.Type().(interface{ BurnDuration() time.Duration }); ok {
-				burnDuration = f.BurnDuration()
-			}
-			if _, ok := enchant.Type().(interface{ PunchMultiplier(int, float64) float64 }); ok {
-				punchLevel = enchant.Level()
-			}
-			if p, ok := enchant.Type().(interface{ PowerDamage(int) float64 }); ok {
-				damage += p.PowerDamage(enchant.Level())
-			}
-			if i, ok := enchant.Type().(interface{ ConsumesArrows() bool }); ok && !i.ConsumesArrows() {
-				consume = false
-			}
-		}
-
-		projectile := p.New(eyePosition(releaser), releaser.Rotation().Vec3().Mul(force*5), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
-		if f, ok := projectile.(interface{ SetOnFire(duration time.Duration) }); ok {
-			f.SetOnFire(burnDuration)
-		}
-
-		ctx.DamageItem(1)
-		if consume {
-			ctx.Consume(arrow.Grow(-arrow.Count() + 1))
-		}
-
-		releaser.PlaySound(sound.BowShoot{})
-		releaser.World().AddEntity(projectile)
+	create := releaser.World().EntityRegistry().Config().Arrow
+	projectile := create(eyePosition(releaser), releaser.Rotation().Vec3().Mul(force*5), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
+	if f, ok := projectile.(interface{ SetOnFire(duration time.Duration) }); ok {
+		f.SetOnFire(burnDuration)
 	}
+
+	ctx.DamageItem(1)
+	if consume {
+		ctx.Consume(arrow.Grow(-arrow.Count() + 1))
+	}
+
+	releaser.PlaySound(sound.BowShoot{})
+	releaser.World().AddEntity(projectile)
 }
 
 // EnchantmentValue ...

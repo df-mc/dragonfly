@@ -32,7 +32,7 @@ type Provider interface {
 	SaveChunk(position ChunkPos, c *chunk.Chunk, dim Dimension) error
 	// LoadEntities loads all entities stored at a particular chunk position. If the entities cannot be read,
 	// LoadEntities returns a non-nil error.
-	LoadEntities(position ChunkPos, dim Dimension) ([]Entity, error)
+	LoadEntities(position ChunkPos, dim Dimension, reg EntityRegistry) ([]Entity, error)
 	// SaveEntities saves a list of entities in a chunk position. If writing is not successful, an error is
 	// returned.
 	SaveEntities(position ChunkPos, entities []Entity, dim Dimension) error
@@ -61,8 +61,10 @@ func (n NopProvider) Settings() *Settings {
 	}
 	return n.Set
 }
-func (NopProvider) SaveSettings(*Settings)                                     {}
-func (NopProvider) LoadEntities(ChunkPos, Dimension) ([]Entity, error)         { return nil, nil }
+func (NopProvider) SaveSettings(*Settings) {}
+func (NopProvider) LoadEntities(ChunkPos, Dimension, EntityRegistry) ([]Entity, error) {
+	return nil, nil
+}
 func (NopProvider) SaveEntities(ChunkPos, []Entity, Dimension) error           { return nil }
 func (NopProvider) LoadBlockNBT(ChunkPos, Dimension) ([]map[string]any, error) { return nil, nil }
 func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any, Dimension) error   { return nil }

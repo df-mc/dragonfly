@@ -140,15 +140,6 @@ func (f *Firework) Tick(w *world.World, current int64) {
 	f.close = true
 }
 
-// New creates a firework with the position, velocity, yaw, and pitch provided. It doesn't spawn the firework,
-// only returns it.
-func (f *Firework) New(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework item.Firework, owner world.Entity) world.Entity {
-	fw := NewFirework(pos, yaw, pitch, firework)
-	fw.attached = attached
-	fw.owner = owner
-	return fw
-}
-
 // Attached returns true if the firework is currently attached to the owner. This is mainly the case with gliding.
 func (f *Firework) Attached() bool {
 	return f.attached
