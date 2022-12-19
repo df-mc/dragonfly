@@ -39,6 +39,7 @@ func (e *Egg) Tick(w *world.World, current int64) {
 		return
 	}
 	e.mu.Lock()
+	pastVel := e.vel
 	m, result := e.c.TickMovement(e, e.pos, e.vel, 0, 0)
 	e.pos, e.vel = m.pos, m.vel
 	e.mu.Unlock()
@@ -58,7 +59,9 @@ func (e *Egg) Tick(w *world.World, current int64) {
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
 				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: e, Owner: e.Owner()}); vulnerable {
-					l.KnockBack(m.pos, 0.45, 0.3608)
+					horizontalVel := pastVel
+					horizontalVel[1] = 0
+					l.KnockBack(l.Position().Sub(horizontalVel), 0.4, 0.4)
 				}
 			}
 		}

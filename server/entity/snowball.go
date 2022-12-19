@@ -40,6 +40,7 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 		return
 	}
 	s.mu.Lock()
+	pastVel := s.vel
 	m, result := s.c.TickMovement(s, s.pos, s.vel, 0, 0)
 	s.pos, s.vel = m.pos, m.vel
 	s.mu.Unlock()
@@ -59,7 +60,9 @@ func (s *Snowball) Tick(w *world.World, current int64) {
 		if r, ok := result.(trace.EntityResult); ok {
 			if l, ok := r.Entity().(Living); ok {
 				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: s, Owner: s.Owner()}); vulnerable {
-					l.KnockBack(m.pos, 0.45, 0.3608)
+					horizontalVel := pastVel
+					horizontalVel[1] = 0
+					l.KnockBack(l.Position().Sub(horizontalVel), 0.4, 0.4)
 				}
 			}
 		}
