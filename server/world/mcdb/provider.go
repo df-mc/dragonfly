@@ -108,7 +108,7 @@ func (p *Provider) initDefaultLevelDat() {
 	p.d.FreezeDamage = true
 	p.d.FunctionCommandLimit = 10000
 	p.d.GameType = 1
-	p.d.Generator = 1
+	p.d.Generator = 2
 	p.d.HasBeenLoadedInCreative = true
 	p.d.InventoryVersion = protocol.CurrentVersion
 	p.d.LANBroadcast = true
