@@ -2384,29 +2384,40 @@ func (p *Player) tickAirSupply(w *world.World) {
 // is full enough.
 func (p *Player) tickFood(w *world.World) {
 	p.hunger.foodTick++
-	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
+	if p.hunger.foodTick >= 80 {
 		p.hunger.foodTick = 0
-		p.regenerate()
+	}
+
+	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
 		if w.Difficulty().FoodRegenerates() {
 			p.AddFood(1)
 		}
-	} else if p.hunger.foodTick == 80 {
-		p.hunger.foodTick = 0
+		if p.hunger.foodTick%20 == 0 {
+			p.regenerate(false)
+		}
+	}
+	if p.hunger.foodTick == 0 {
 		if p.hunger.canRegenerate() {
-			p.regenerate()
+			p.regenerate(true)
 		} else if p.hunger.starving() {
 			p.starve(w)
 		}
 	}
+
+	if !p.hunger.canSprint() {
+		p.StopSprinting()
+	}
 }
 
 // regenerate attempts to regenerate half a heart of health, typically caused by a full food bar.
-func (p *Player) regenerate() {
+func (p *Player) regenerate(exhaust bool) {
 	if p.Health() == p.MaxHealth() {
 		return
 	}
 	p.Heal(1, entity.FoodHealingSource{})
-	p.Exhaust(6)
+	if exhaust {
+		p.Exhaust(6)
+	}
 }
 
 // starve deals starvation damage to the player if the difficult allows it. In peaceful mode, no damage will
