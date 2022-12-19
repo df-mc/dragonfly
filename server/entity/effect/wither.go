@@ -14,7 +14,7 @@ type Wither struct {
 
 // Apply ...
 func (Wither) Apply(e world.Entity, lvl int, d time.Duration) {
-	interval := 50 >> (lvl - 1)
+	interval := 80 >> (lvl - 1)
 	if interval < 1 {
 		interval = 1
 	}
