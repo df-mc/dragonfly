@@ -23,6 +23,7 @@ func (p *Provider) fromJson(d jsonData, world func(world.Dimension) *world.World
 		FoodTick:            d.FoodTick,
 		ExhaustionLevel:     d.ExhaustionLevel,
 		SaturationLevel:     d.SaturationLevel,
+		AbsorptionLevel:     d.AbsorptionLevel,
 		Experience:          d.Experience,
 		AirSupply:           d.AirSupply,
 		MaxAirSupply:        d.MaxAirSupply,
@@ -53,6 +54,7 @@ func (p *Provider) toJson(d player.Data) jsonData {
 		FoodTick:            d.FoodTick,
 		ExhaustionLevel:     d.ExhaustionLevel,
 		SaturationLevel:     d.SaturationLevel,
+		AbsorptionLevel:     d.AbsorptionLevel,
 		Experience:          d.Experience,
 		AirSupply:           d.AirSupply,
 		MaxAirSupply:        d.MaxAirSupply,
@@ -76,6 +78,7 @@ type jsonData struct {
 	Hunger                           int
 	FoodTick                         int
 	ExhaustionLevel, SaturationLevel float64
+	AbsorptionLevel                  float64
 	EnchantmentSeed                  int64
 	Experience                       int
 	AirSupply, MaxAirSupply          int64
