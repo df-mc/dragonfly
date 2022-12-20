@@ -377,17 +377,13 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 
 // SendAbsorption sends the absorption value passed to the player.
 func (s *Session) SendAbsorption(value float64) {
-	maximum := value
-	if math.Mod(value, 2) != 0 {
-		maximum = value + 1
-	}
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			AttributeValue: protocol.AttributeValue{
 				Name:  "minecraft:absorption",
 				Value: float32(math.Ceil(value)),
-				Max:   float32(math.Ceil(maximum)),
+				Max:   float32(math.MaxFloat32),
 			},
 		}},
 	})

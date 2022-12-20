@@ -2823,6 +2823,9 @@ func (p *Player) load(data Data) {
 	p.health.AddHealth(data.Health - p.Health())
 	p.session().SendHealth(p.health)
 
+	p.absorptionHealth.Store(data.AbsorptionLevel)
+	p.session().SendAbsorption(data.AbsorptionLevel)
+
 	p.hunger.SetFood(data.Hunger)
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
@@ -2884,6 +2887,7 @@ func (p *Player) Data() Data {
 		MaxAirSupply:    p.maxAirSupplyTicks.Load(),
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
+		AbsorptionLevel: p.Absorption(),
 		GameMode:        p.GameMode(),
 		Inventory: InventoryData{
 			Items:        p.Inventory().Slots(),
