@@ -2824,7 +2824,7 @@ func (p *Player) load(data Data) {
 	p.session().SendHealth(p.health)
 
 	p.absorptionHealth.Store(data.AbsorptionLevel)
-	p.session().SendAbsorption(data.AbsorptionLevel)
+	p.session().SendAbsorption(p.absorptionHealth.Load())
 
 	p.hunger.SetFood(data.Hunger)
 	p.hunger.foodTick = data.FoodTick
