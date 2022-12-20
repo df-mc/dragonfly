@@ -584,10 +584,9 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		if damageLeft > a {
 			damageLeft -= a
 			p.SetAbsorption(0)
-			p.effects.Remove(effect.Absorption{}, p)
 		} else {
-			p.SetAbsorption(a - damageLeft)
 			damageLeft = 0
+			p.SetAbsorption(a - damageLeft)
 		}
 	}
 	p.addHealth(-damageLeft)
