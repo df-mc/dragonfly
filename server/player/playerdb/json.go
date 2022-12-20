@@ -3,12 +3,13 @@ package playerdb
 import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"time"
 )
 
-func fromJson(d jsonData) player.Data {
+func (p *Provider) fromJson(d jsonData, world func(world.Dimension) *world.World) player.Data {
 	data := player.Data{
 		UUID:                uuid.MustParse(d.UUID),
 		Username:            d.Username,
@@ -22,23 +23,24 @@ func fromJson(d jsonData) player.Data {
 		FoodTick:            d.FoodTick,
 		ExhaustionLevel:     d.ExhaustionLevel,
 		SaturationLevel:     d.SaturationLevel,
+		AbsorptionLevel:     d.AbsorptionLevel,
 		Experience:          d.Experience,
 		AirSupply:           d.AirSupply,
 		MaxAirSupply:        d.MaxAirSupply,
 		EnchantmentSeed:     d.EnchantmentSeed,
-		GameMode:            dataToGameMode(d.GameMode),
+		GameMode:            idToGameMode(d.GameMode),
 		Effects:             dataToEffects(d.Effects),
 		FireTicks:           d.FireTicks,
 		FallDistance:        d.FallDistance,
 		Inventory:           dataToInv(d.Inventory),
 		EnderChestInventory: make([]item.Stack, 27),
-		Dimension:           d.Dimension,
+		World:               world(idToDimension(d.Dimension)),
 	}
 	decodeItems(d.EnderChestInventory, data.EnderChestInventory)
 	return data
 }
 
-func toJson(d player.Data) jsonData {
+func (p *Provider) toJson(d player.Data) jsonData {
 	return jsonData{
 		UUID:                d.UUID.String(),
 		Username:            d.Username,
@@ -52,17 +54,18 @@ func toJson(d player.Data) jsonData {
 		FoodTick:            d.FoodTick,
 		ExhaustionLevel:     d.ExhaustionLevel,
 		SaturationLevel:     d.SaturationLevel,
+		AbsorptionLevel:     d.AbsorptionLevel,
 		Experience:          d.Experience,
 		AirSupply:           d.AirSupply,
 		MaxAirSupply:        d.MaxAirSupply,
 		EnchantmentSeed:     d.EnchantmentSeed,
-		GameMode:            gameModeToData(d.GameMode),
+		GameMode:            gameModeToID(d.GameMode),
 		Effects:             effectsToData(d.Effects),
 		FireTicks:           d.FireTicks,
 		FallDistance:        d.FallDistance,
 		Inventory:           invToData(d.Inventory),
 		EnderChestInventory: encodeItems(d.EnderChestInventory),
-		Dimension:           d.Dimension,
+		Dimension:           uint8(d.World.Dimension().EncodeDimension()),
 	}
 }
 
@@ -75,6 +78,7 @@ type jsonData struct {
 	Hunger                           int
 	FoodTick                         int
 	ExhaustionLevel, SaturationLevel float64
+	AbsorptionLevel                  float64
 	EnchantmentSeed                  int64
 	Experience                       int
 	AirSupply, MaxAirSupply          int64
@@ -84,7 +88,7 @@ type jsonData struct {
 	Effects                          []jsonEffect
 	FireTicks                        int64
 	FallDistance                     float64
-	Dimension                        int
+	Dimension                        uint8
 }
 
 type jsonInventoryData struct {

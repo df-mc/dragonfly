@@ -227,8 +227,11 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 			}
 		} else if res, ok := result.(trace.EntityResult); ok {
 			if living, ok := res.Entity().(Living); ok {
+				horizontalVel := pastVel
+				horizontalVel[1] = 0
+
 				living.Hurt(a.damage(pastVel), ProjectileDamageSource{Projectile: a, Owner: a.owner})
-				living.KnockBack(m.pos, 0.45, 0.3608)
+				living.KnockBack(living.Position().Sub(horizontalVel), 0.4, 0.4)
 				for _, eff := range a.tip.Effects() {
 					living.AddEffect(eff)
 				}
@@ -236,8 +239,6 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 					flammable.SetOnFire(time.Second * 5)
 				}
 				if a.punchLevel > 0 {
-					horizontalVel := pastVel
-					horizontalVel[1] = 0
 					if speed := horizontalVel.Len(); speed > 0 {
 						multiplier := (enchantment.Punch{}).PunchMultiplier(a.punchLevel, speed)
 						living.SetVelocity(living.Velocity().Add(mgl64.Vec3{pastVel[0] * multiplier, 0.1, pastVel[2] * multiplier}))
@@ -288,8 +289,7 @@ func (a *Arrow) checkNearby(w *world.World) {
 	}
 }
 
-// damage returns the full damage the arrow should deal. In Bedrock, this is the initial velocity length multiplied by
-// base damage and then multiplied by 0.6. If the arrow is critical, it is also multiplied by 1.5.
+// damage returns the full damage the arrow should deal.
 func (a *Arrow) damage(vel mgl64.Vec3) float64 {
 	base := math.Ceil(vel.Len() * a.BaseDamage())
 	if a.Critical() {

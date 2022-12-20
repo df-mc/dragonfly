@@ -14,7 +14,10 @@ type Poison struct {
 
 // Apply ...
 func (Poison) Apply(e world.Entity, lvl int, d time.Duration) {
-	interval := 50 >> lvl
+	interval := 50 >> (lvl - 1)
+	if interval < 1 {
+		interval = 1
+	}
 	if tickDuration(d)%interval == 0 {
 		if l, ok := e.(living); ok && l.Health() > 1 {
 			l.Hurt(1, PoisonDamageSource{})

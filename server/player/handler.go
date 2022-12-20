@@ -37,7 +37,7 @@ type Handler interface {
 	HandleChat(ctx *event.Context, message *string)
 	// HandleFoodLoss handles the food bar of a player depleting naturally, for example because the player was
 	// sprinting and jumping. ctx.Cancel() may be called to cancel the food points being lost.
-	HandleFoodLoss(ctx *event.Context, from, to int)
+	HandleFoodLoss(ctx *event.Context, from int, to *int)
 	// HandleHeal handles the player being healed by a healing source. ctx.Cancel() may be called to cancel
 	// the healing.
 	// The health added may be changed by assigning to *health.
@@ -62,7 +62,7 @@ type Handler interface {
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered
 	// to change what items will actually be dropped.
-	HandleBlockBreak(ctx *event.Context, pos cube.Pos, drops *[]item.Stack)
+	HandleBlockBreak(ctx *event.Context, pos cube.Pos, drops *[]item.Stack, xp *int)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
 	HandleBlockPlace(ctx *event.Context, pos cube.Pos, b world.Block)
@@ -151,7 +151,7 @@ func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr)                  
 func (NopHandler) HandleChat(*event.Context, *string)                                         {}
 func (NopHandler) HandleSkinChange(*event.Context, *skin.Skin)                                {}
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos)                                  {}
-func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack)                   {}
+func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack, *int)             {}
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
 func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block)                      {}
 func (NopHandler) HandleSignEdit(*event.Context, string, string)                              {}
@@ -166,7 +166,7 @@ func (NopHandler) HandleExperienceGain(*event.Context, *int)                    
 func (NopHandler) HandlePunchAir(*event.Context)                                              {}
 func (NopHandler) HandleHurt(*event.Context, *float64, *time.Duration, world.DamageSource)    {}
 func (NopHandler) HandleHeal(*event.Context, *float64, world.HealingSource)                   {}
-func (NopHandler) HandleFoodLoss(*event.Context, int, int)                                    {}
+func (NopHandler) HandleFoodLoss(*event.Context, int, *int)                                   {}
 func (NopHandler) HandleDeath(world.DamageSource, *bool)                                      {}
 func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                                   {}
 func (NopHandler) HandleQuit()                                                                {}
