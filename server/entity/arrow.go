@@ -201,7 +201,7 @@ func (a *Arrow) Tick(w *world.World, current int64) {
 
 	pastVel := a.vel
 	m, result := a.c.TickMovement(a, a.pos, a.vel, a.yaw, a.pitch)
-	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.yaw, m.pitch
+	a.pos, a.vel, a.yaw, a.pitch = m.pos, m.vel, m.rot.Yaw(), m.rot.Pitch()
 	a.collisionPos, a.collided = cube.Pos{}, false
 	a.mu.Unlock()
 

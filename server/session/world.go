@@ -382,7 +382,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(world.BlockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
-	case particle.EndermanTeleportParticle:
+	case particle.EndermanTeleport:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesTeleport,
 			Position:  vec64To32(pos),

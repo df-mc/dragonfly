@@ -10,8 +10,6 @@ import (
 )
 
 type ProjectileLifetimeConfig struct {
-	Owner world.Entity
-
 	Gravity float64
 
 	Drag float64
@@ -19,10 +17,14 @@ type ProjectileLifetimeConfig struct {
 	Damage float64
 
 	Particle world.Particle
+
+	Sound world.Sound
+
+	Hit func(e *Ent, target trace.Result)
 }
 
-func (conf ProjectileLifetimeConfig) New() *ProjectileLifetime {
-	return &ProjectileLifetime{conf: conf, mc: &MovementComputer{
+func (conf ProjectileLifetimeConfig) New(owner world.Entity) *ProjectileLifetime {
+	return &ProjectileLifetime{conf: conf, owner: owner, mc: &MovementComputer{
 		Gravity:           conf.Gravity,
 		Drag:              conf.Drag,
 		DragBeforeGravity: true,
@@ -31,6 +33,7 @@ func (conf ProjectileLifetimeConfig) New() *ProjectileLifetime {
 
 type ProjectileLifetime struct {
 	conf  ProjectileLifetimeConfig
+	owner world.Entity
 	mc    *MovementComputer
 	age   int
 	close bool
@@ -60,14 +63,20 @@ func (lt *ProjectileLifetime) Tick(e *Ent) *Movement {
 			e.World().AddParticle(result.Position(), lt.conf.Particle)
 		}
 	}
+	if lt.conf.Sound != nil {
+		e.World().PlaySound(result.Position(), lt.conf.Sound)
+	}
 
 	if r, ok := result.(trace.EntityResult); ok {
 		if l, ok := r.Entity().(Living); ok {
-			src := ProjectileDamageSource{Projectile: e, Owner: lt.conf.Owner}
+			src := ProjectileDamageSource{Projectile: e, Owner: lt.owner}
 			if _, vulnerable := l.Hurt(lt.conf.Damage, src); vulnerable {
 				l.KnockBack(before, 0.45, 0.3608)
 			}
 		}
+	}
+	if lt.conf.Hit != nil {
+		lt.conf.Hit(e, result)
 	}
 
 	lt.close = true
@@ -108,7 +117,7 @@ func (lt *ProjectileLifetime) ignores(e *Ent) func(other world.Entity) bool {
 	return func(other world.Entity) bool {
 		g, ok := other.(interface{ GameMode() world.GameMode })
 		_, living := other.(Living)
-		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (lt.age < 5 && lt.conf.Owner == other)
+		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (lt.age < 5 && lt.owner == other)
 	}
 }
 

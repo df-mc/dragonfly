@@ -11,14 +11,14 @@ import (
 // NewEgg creates an Egg entity. Egg is as a throwable entity that can be used
 // to spawn chicks.
 func NewEgg(pos mgl64.Vec3, owner world.Entity) *Ent {
-	lt := ProjectileLifetimeConfig{
-		Owner:    owner,
-		Gravity:  0.03,
-		Drag:     0.01,
-		Particle: particle.EggSmash{},
-	}.New()
-	// TODO: Spawn chicken(e) 12.5% of the time.
-	return Config{Lifetime: lt}.New(EggType{}, pos)
+	return Config{Lifetime: eggConf.New(owner)}.New(EggType{}, pos)
+}
+
+// TODO: Spawn chicken(e) 12.5% of the time.
+var eggConf = ProjectileLifetimeConfig{
+	Gravity:  0.03,
+	Drag:     0.01,
+	Particle: particle.EggSmash{},
 }
 
 // EggType is a world.EntityType implementation for Egg.
