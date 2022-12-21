@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Curse of Binding is an enchantment that prevents removal of a cursed item from its armour slot.
+// CurseOfBinding is an enchantment that prevents the removal of an equipped item enchanted with the curse of binding from its armour slot.
 type CurseOfBinding struct{}
 
 // Name ...
