@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -157,6 +158,15 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	if (dest.Count()+int(count) > dest.MaxCount()) && !dest.Empty() {
 		return fmt.Errorf("client tried adding %v to item count %v, but max is %v", count, dest.Count(), dest.MaxCount())
 	}
+
+	// Do not allow an equipped item cursed with binding to be transferred.
+	if from.ContainerID == protocol.ContainerArmor {
+		i, _ := h.itemInSlot(from, s)
+		if _, isCursed := i.Enchantment(enchantment.CurseOfBinding{}); isCursed {
+			return nil
+		}
+	}
+
 	if dest.Empty() {
 		dest = i.Grow(-math.MaxInt32)
 	}
@@ -195,6 +205,14 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 	err := call(ctx, int(a.Destination.Slot), i, invB.Handler().HandlePlace)
 	if err != nil {
 		return err
+	}
+
+	// Do not allow an equipped item cursed with binding to be swapped out.
+	if a.Destination.ContainerID == protocol.ContainerArmor {
+		i, _ := h.itemInSlot(a.Destination, s)
+		if _, isCursed := i.Enchantment(enchantment.CurseOfBinding{}); isCursed {
+			return nil
+		}
 	}
 
 	h.setItemInSlot(a.Source, dest, s)
@@ -252,6 +270,14 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	inv, _ := s.invByID(int32(a.Source.ContainerID))
 	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
 		return err
+	}
+
+	// Do not allow an equipped item cursed with binding to be dropped.
+	if a.Source.ContainerID == protocol.ContainerArmor {
+		i, _ := h.itemInSlot(a.Source, s)
+		if _, isCursed := i.Enchantment(enchantment.CurseOfBinding{}); isCursed {
+			return nil
+		}
 	}
 
 	n := s.c.Drop(i.Grow(int(a.Count) - i.Count()))
