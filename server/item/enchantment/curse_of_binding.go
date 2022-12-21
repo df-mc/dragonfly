@@ -42,10 +42,10 @@ func (CurseOfBinding) CompatibleWithItem(i world.Item) bool {
 
 // Treasure ...
 func (CurseOfBinding) Treasure() bool {
-    return true
+	return true
 }
 
 // Curse ...
 func (CurseOfBinding) Curse() bool {
-    return true
+	return true
 }
