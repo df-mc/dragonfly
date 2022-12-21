@@ -39,3 +39,13 @@ func (CurseOfBinding) CompatibleWithItem(i world.Item) bool {
 
 	return isArmour
 }
+
+// Treasure ...
+func (CurseOfBinding) Treasure() bool {
+    return true
+}
+
+// Curse ...
+func (CurseOfBinding) Curse() bool {
+    return true
+}
