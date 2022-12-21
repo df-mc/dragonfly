@@ -25,7 +25,7 @@ func (CurseOfBinding) Cost(level int) (int, int) {
 
 // Rarity ...
 func (CurseOfBinding) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityCommon
+	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...
