@@ -47,6 +47,7 @@ func (e *Ent) Type() world.EntityType {
 	return e.t
 }
 
+// Owner returns the owner of the Ent, or nil if it doesn't have one.
 func (e *Ent) Owner() world.Entity {
 	// TODO: Change this signature to Owner() (world.Entity, bool) once all
 	//  entities use this type.

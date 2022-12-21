@@ -45,7 +45,12 @@ func (lt *ProjectileLifetime) Tick(e *Ent) *Movement {
 		_ = e.Close()
 		return nil
 	}
+	e.mu.Lock()
+	before := e.pos
 	m, result := lt.tickMovement(e)
+	e.pos, e.vel = m.pos, m.vel
+	e.mu.Unlock()
+
 	if result == nil {
 		return m
 	}
@@ -60,7 +65,7 @@ func (lt *ProjectileLifetime) Tick(e *Ent) *Movement {
 		if l, ok := r.Entity().(Living); ok {
 			src := ProjectileDamageSource{Projectile: e, Owner: lt.conf.Owner}
 			if _, vulnerable := l.Hurt(lt.conf.Damage, src); vulnerable {
-				l.KnockBack(m.pos, 0.45, 0.3608)
+				l.KnockBack(before, 0.45, 0.3608)
 			}
 		}
 	}

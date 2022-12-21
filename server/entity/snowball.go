@@ -10,12 +10,13 @@ import (
 
 // NewSnowball creates a snowball entity at a position with an owner entity.
 func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Ent {
-	return Config{Lifetime: ProjectileLifetimeConfig{
+	lt := ProjectileLifetimeConfig{
 		Owner:    owner,
 		Gravity:  0.01,
 		Drag:     0.01,
 		Particle: particle.SnowballPoof{},
-	}.New()}.New(SnowballType{}, pos)
+	}.New()
+	return Config{Lifetime: lt}.New(SnowballType{}, pos)
 }
 
 // SnowballType is a world.EntityType implementation for snowballs.
