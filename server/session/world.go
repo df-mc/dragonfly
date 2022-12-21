@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand"
 	"strings"
@@ -418,6 +419,9 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 		})
 	case particle.Splash:
+		if (pa.Colour == color.RGBA{}) {
+			pa.Colour, _ = effect.ResultingColour(nil)
+		}
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesPotionSplash,
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),

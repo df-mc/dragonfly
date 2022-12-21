@@ -18,12 +18,17 @@ type ProjectileLifetimeConfig struct {
 
 	Particle world.Particle
 
+	ParticleCount int
+
 	Sound world.Sound
 
 	Hit func(e *Ent, target trace.Result)
 }
 
 func (conf ProjectileLifetimeConfig) New(owner world.Entity) *ProjectileLifetime {
+	if conf.ParticleCount == 0 {
+		conf.ParticleCount = 1
+	}
 	return &ProjectileLifetime{conf: conf, owner: owner, mc: &MovementComputer{
 		Gravity:           conf.Gravity,
 		Drag:              conf.Drag,
@@ -59,7 +64,7 @@ func (lt *ProjectileLifetime) Tick(e *Ent) *Movement {
 	}
 
 	if lt.conf.Particle != nil {
-		for i := 0; i < 6; i++ {
+		for i := 0; i < lt.conf.ParticleCount; i++ {
 			e.World().AddParticle(result.Position(), lt.conf.Particle)
 		}
 	}

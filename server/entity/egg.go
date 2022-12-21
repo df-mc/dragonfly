@@ -16,9 +16,10 @@ func NewEgg(pos mgl64.Vec3, owner world.Entity) *Ent {
 
 // TODO: Spawn chicken(e) 12.5% of the time.
 var eggConf = ProjectileLifetimeConfig{
-	Gravity:  0.03,
-	Drag:     0.01,
-	Particle: particle.EggSmash{},
+	Gravity:       0.03,
+	Drag:          0.01,
+	Particle:      particle.EggSmash{},
+	ParticleCount: 6,
 }
 
 // EggType is a world.EntityType implementation for Egg.
