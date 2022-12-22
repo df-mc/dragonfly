@@ -213,6 +213,12 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 		}
 	}
 
+	if a.Source.ContainerID == protocol.ContainerArmor && !s.c.GameMode().CreativeInventory() {
+		if _, isCursed := i.Enchantment(enchantment.CurseOfBinding{}); isCursed {
+			return nil
+		}
+	}
+
 	h.setItemInSlot(a.Source, dest, s)
 	h.setItemInSlot(a.Destination, i, s)
 	h.collectRewards(s, invA, int(a.Source.Slot))
