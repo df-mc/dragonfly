@@ -2932,6 +2932,11 @@ func (p *Player) useContext() *item.UseContext {
 			src, dst, srcInv, dstInv := int(p.heldSlot.Load()), i, p.inv, p.armour.Inventory()
 			srcIt, _ := srcInv.Item(src)
 			dstIt, _ := dstInv.Item(dst)
+            
+            // If dstIt is enchanted with curse of binding, do not swap.
+            if _, isCursed := dstIt.Enchantment(enchantment.CurseOfBinding{}); isCursed && !p.GameMode().CreativeInventory() {
+                return
+            }
 
 			ctx := event.C()
 			_ = call(ctx, src, srcIt, srcInv.Handler().HandleTake)
