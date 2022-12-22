@@ -20,7 +20,7 @@ func (CurseOfBinding) MaxLevel() int {
 
 // Cost ...
 func (CurseOfBinding) Cost(level int) (int, int) {
-	return 0, 0
+	return 25, 50
 }
 
 // Rarity ...
