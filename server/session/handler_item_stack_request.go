@@ -205,11 +205,7 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 	}
 
 	// Do not allow an equipped item cursed with binding to be swapped out by cursor or touch screen.
-	if curseOfBinding(a.Destination.ContainerID, dest, s) {
-		return fmt.Errorf("client attempted to swap an equipped armour item enchanted with the curse of binding")
-	}
-
-	if curseOfBinding(a.Source.ContainerID, i, s) {
+	if curseOfBinding(a.Destination.ContainerID, dest, s) || curseOfBinding(a.Source.ContainerID, i, s) {
 		return fmt.Errorf("client attempted to swap an equipped armour item enchanted with the curse of binding")
 	}
 
