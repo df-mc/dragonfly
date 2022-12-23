@@ -160,10 +160,8 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	}
 
 	// Do not allow an equipped item cursed with binding to be transferred.
-	if from.ContainerID == protocol.ContainerArmor && !s.c.GameMode().CreativeInventory() {
-		if _, isCursed := i.Enchantment(enchantment.CurseOfBinding{}); isCursed {
-			return fmt.Errorf("client attempted to transfer an equipped armour item enchanted with the curse of binding")
-		}
+	if curseOfBinding(from.ContainerID, i, s) {
+		return fmt.Errorf("client attempted to transfer an equipped armour item enchanted with the curse of binding")
 	}
 
 	if dest.Empty() {
@@ -206,17 +204,13 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 		return err
 	}
 
-	// Do not allow an equipped item cursed with binding to be swapped out.
-	if a.Destination.ContainerID == protocol.ContainerArmor && !s.c.GameMode().CreativeInventory() {
-		if _, isCursed := dest.Enchantment(enchantment.CurseOfBinding{}); isCursed {
-			return fmt.Errorf("client attempted to swap an equipped armour item enchanted with the curse of binding")
-		}
+	// Do not allow an equipped item cursed with binding to be swapped out by cursor or touch screen.
+	if curseOfBinding(a.Destination.ContainerID, dest, s) {
+		return fmt.Errorf("client attempted to swap an equipped armour item enchanted with the curse of binding")
 	}
 
-	if a.Source.ContainerID == protocol.ContainerArmor && !s.c.GameMode().CreativeInventory() {
-		if _, isCursed := i.Enchantment(enchantment.CurseOfBinding{}); isCursed {
-			return fmt.Errorf("client attempted to swap an equipped armour item enchanted with the curse of binding")
-		}
+	if curseOfBinding(a.Source.ContainerID, i, s) {
+		return fmt.Errorf("client attempted to swap an equipped armour item enchanted with the curse of binding")
 	}
 
 	h.setItemInSlot(a.Source, dest, s)
@@ -277,10 +271,8 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	}
 
 	// Do not allow an equipped item cursed with binding to be dropped.
-	if a.Source.ContainerID == protocol.ContainerArmor && !s.c.GameMode().CreativeInventory() {
-		if _, isCursed := i.Enchantment(enchantment.CurseOfBinding{}); isCursed {
-			return fmt.Errorf("client attempted to drop an equipped armour item enchanted with the curse of binding")
-		}
+	if curseOfBinding(a.Source.ContainerID, i, s) {
+		return fmt.Errorf("client attempted to drop an equipped armour item enchanted with the curse of binding")
 	}
 
 	n := s.c.Drop(i.Grow(int(a.Count) - i.Count()))
@@ -540,4 +532,16 @@ func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context
 		return fmt.Errorf("action was cancelled")
 	}
 	return nil
+}
+
+// curseOfBinding returns true if an ItemStackRequestHandler should be cancelled as a result of the given combination of
+// containerID, item and session. containerID should be the ID of the container where i is currently.
+func curseOfBinding(containerID byte, i item.Stack, s *Session) bool {
+	if containerID != protocol.ContainerArmor || s.c.GameMode().CreativeInventory() {
+		return false
+	}
+
+	_, isCursed := i.Enchantment(enchantment.CurseOfBinding{})
+
+	return isCursed
 }
