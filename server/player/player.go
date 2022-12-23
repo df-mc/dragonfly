@@ -565,6 +565,9 @@ func (p *Player) fall(distance float64) {
 // final damage dealt to the Player and if the Player was vulnerable to this
 // kind of damage.
 func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
+	// TODO: Prevent damage from magma blocks and campfires when walked over if
+	//       player is wearing boots enchanted with frost walker.
+
 	if _, ok := p.Effect(effect.FireResistance{}); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return 0, false
 	}
@@ -2045,6 +2048,51 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		p.Exhaust(0.01 * horizontalVel.Len())
 	} else if p.Sprinting() {
 		p.Exhaust(0.1 * horizontalVel.Len())
+	}
+
+	if !deltaPos.ApproxEqual(mgl64.Vec3{0, 0, 0}) {
+		p.frostWalkerMove()
+	}
+}
+
+func (p *Player) frostWalkerMove() {
+	i := p.Armour().Boots()
+	_, isBoots := i.Item().(item.Boots)
+	if !isBoots {
+		return
+	}
+
+	ench, isEnchanted := i.Enchantment(enchantment.FrostWalker{})
+	if !isEnchanted {
+		return
+	}
+
+	w := p.World()
+	for offx := -ench.Level() - 2; offx <= ench.Level()+2; offx++ {
+		for offz := -ench.Level() - 2; offz <= ench.Level()+2; offz++ {
+			// Get block under boots.
+			bPos := cube.PosFromVec3(p.Position()).Add(cube.PosFromVec3(mgl64.Vec3{float64(offx), -1, float64(offz)}))
+			b := w.Block(bPos)
+
+			// Check if block is water, and if it is, if it is still water. Also check if block is frosted ice.
+			if wb, isWater := b.(block.Water); isWater {
+				if !wb.Still {
+					continue
+				}
+			} else {
+				continue
+			}
+
+			// Get block on level of boots.
+			ba := w.Block(bPos.Add(cube.PosFromVec3(mgl64.Vec3{0, 1, 0})))
+
+			// Check if block above still water is air.
+			if _, isAir := ba.(block.Air); !isAir {
+				continue
+			}
+
+			w.SetBlock(bPos, block.FrostedIce{}, nil)
+		}
 	}
 }
 
