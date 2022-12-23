@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"math"
 	"time"
@@ -57,7 +58,11 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	if rYaw > 180 {
 		yaw = 360 - rYaw
 	}
-	tip := arrow.Item().(Arrow).Tip
+	var tip potion.Potion
+	if !arrow.Empty() {
+		// Arrow is empty if not found in the creative inventory.
+		tip = arrow.Item().(Arrow).Tip
+	}
 
 	held, _ := releaser.HeldItems()
 	damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), !creative
