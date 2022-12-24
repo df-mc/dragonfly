@@ -34,6 +34,7 @@ func main() {
 		p.Inventory().AddItem(item.NewStack(block.FrostedIce{}, 1))
 		i, _ := world.ItemByName("minecraft:diamond_boots", 0)
 		p.Inventory().AddItem(item.NewStack(i, 1).WithEnchantments(item.NewEnchantment(enchantment.FrostWalker{}, 1)))
+		p.Inventory().AddItem(item.NewStack(i, 1).WithEnchantments(item.NewEnchantment(enchantment.FrostWalker{}, 2)))
 	}) {
 	}
 }
