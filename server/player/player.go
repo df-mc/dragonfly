@@ -2057,10 +2057,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 
 func (p *Player) frostWalkerMove() {
 	i := p.Armour().Boots()
-	_, isBoots := i.Item().(item.Boots)
-	if !isBoots {
-		return
-	}
 
 	ench, isEnchanted := i.Enchantment(enchantment.FrostWalker{})
 	if !isEnchanted {
