@@ -2046,6 +2046,56 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	} else if p.Sprinting() {
 		p.Exhaust(0.1 * horizontalVel.Len())
 	}
+
+	p.handleFrostWalker(deltaPos)
+}
+
+// frostWalker handles the frost walker enchantment.
+func (p *Player) handleFrostWalker(movement mgl64.Vec3) {
+	if movement.X() < 0.0001 && movement.Z() < 0.0001 {
+		return
+	}
+
+	// The player does not need to be on the ground for frost walker to have an effect,
+	// but they need to be close to the block below them.
+	if p.Position().Y()-math.Floor(p.Position().Y()) > 0.4 {
+		return
+	}
+
+	i := p.Armour().Boots()
+
+	enchant, isEnchanted := i.Enchantment(enchantment.FrostWalker{})
+	if !isEnchanted {
+		return
+	}
+
+	w := p.World()
+
+	for offx := -enchant.Level() - 2; offx <= enchant.Level()+2; offx++ {
+		for offz := -enchant.Level() - 2; offz <= enchant.Level()+2; offz++ {
+			offPos := mgl64.Vec3{float64(offx), -1, float64(offz)}
+			bPos := p.Position().Add(offPos)
+			b := w.Block(cube.PosFromVec3(bPos))
+
+			if b, isWater := b.(block.Water); isWater {
+				if !b.Still {
+					continue
+				}
+			} else {
+				continue
+			}
+
+			offPos = offPos.Add(mgl64.Vec3{0, 1, 0})
+			baPos := p.Position().Add(offPos)
+			ba := w.Block(cube.PosFromVec3(baPos))
+
+			if _, isAir := ba.(block.Air); !isAir {
+				continue
+			}
+
+			w.SetBlock(cube.PosFromVec3(bPos), block.FrostedIce{}, nil)
+		}
+	}
 }
 
 // World returns the world that the player is currently in.
