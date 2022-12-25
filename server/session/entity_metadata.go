@@ -150,6 +150,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 			}
 		}
 	}
+	if as, ok := e.(armourStand); ok {
+		m[protocol.EntityDataKeyPoseIndex] = int32(as.PoseIndex())
+	}
 	return m
 }
 
@@ -256,4 +259,8 @@ type tnt interface {
 
 type living interface {
 	DeathPosition() (mgl64.Vec3, world.Dimension, bool)
+}
+
+type armourStand interface {
+	PoseIndex() int
 }

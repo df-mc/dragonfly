@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"os"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 func main() {
@@ -25,7 +28,11 @@ func main() {
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		as := entity.NewArmourStand(p.Position().Add(mgl64.Vec3{0, 5, 0}))
+		fmt.Println(as)
+        	p.World().AddEntity(as)
+    	}) {
 	}
 }
 
