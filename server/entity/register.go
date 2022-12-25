@@ -12,6 +12,7 @@ import (
 // implemented by Dragonfly.
 var DefaultRegistry = conf.New([]world.EntityType{
 	AreaEffectCloudType{},
+	ArmourStandType{},
 	ArrowType{},
 	BottleOfEnchantingType{},
 	EggType{},
@@ -53,6 +54,10 @@ var conf = world.EntityRegistryConfig{
 		a.obtainArrowOnPickup = obtainArrowOnPickup
 		a.setCritical(critical)
 		return a
+	},
+	ArmourStand: func(pos mgl64.Vec3) world.Entity {
+		as := NewArmourStand(pos)
+		return as
 	},
 	Egg: func(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
 		e := NewEgg(pos, owner)
