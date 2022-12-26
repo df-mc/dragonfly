@@ -22,7 +22,8 @@ func (FrostWalker) MaxLevel() int {
 
 // Cost ...
 func (FrostWalker) Cost(level int) (int, int) {
-	return 25, 50
+	min := level * 10
+	return min, min + 15
 }
 
 // Rarity ...

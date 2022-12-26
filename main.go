@@ -31,6 +31,8 @@ func main() {
 
 	srv.Listen()
 	for srv.Accept(func(p *player.Player) {
+		p.World().SetTime(20000)
+		p.SetGameMode(world.GameModeCreative)
 		p.Inventory().AddItem(item.NewStack(block.FrostedIce{}, 1))
 		i, _ := world.ItemByName("minecraft:diamond_boots", 0)
 		p.Inventory().AddItem(item.NewStack(i, 1).WithEnchantments(item.NewEnchantment(enchantment.FrostWalker{}, 1)))
