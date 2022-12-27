@@ -160,7 +160,7 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	}
 
 	// Do not allow an equipped item cursed with binding to be transferred.
-	if curseOfBinding(from.ContainerID, i, s) {
+	if curseOfBinding(from.ContainerID, i, s) || curseOfBinding(to.ContainerID, dest, s) {
 		return fmt.Errorf("client attempted to transfer an equipped armour item enchanted with the curse of binding")
 	}
 
