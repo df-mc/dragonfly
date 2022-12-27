@@ -582,9 +582,8 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	if a := p.Absorption(); a > 0 {
 		if damageLeft > a {
-			damageLeft -= a
 			p.SetAbsorption(0)
-			p.effects.Remove(effect.Absorption{}, p)
+			damageLeft -= a
 		} else {
 			p.SetAbsorption(a - damageLeft)
 			damageLeft = 0
@@ -2384,29 +2383,40 @@ func (p *Player) tickAirSupply(w *world.World) {
 // is full enough.
 func (p *Player) tickFood(w *world.World) {
 	p.hunger.foodTick++
-	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
+	if p.hunger.foodTick >= 80 {
 		p.hunger.foodTick = 0
-		p.regenerate()
+	}
+
+	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
 		if w.Difficulty().FoodRegenerates() {
 			p.AddFood(1)
 		}
-	} else if p.hunger.foodTick == 80 {
-		p.hunger.foodTick = 0
+		if p.hunger.foodTick%20 == 0 {
+			p.regenerate(false)
+		}
+	}
+	if p.hunger.foodTick == 0 {
 		if p.hunger.canRegenerate() {
-			p.regenerate()
+			p.regenerate(true)
 		} else if p.hunger.starving() {
 			p.starve(w)
 		}
 	}
+
+	if !p.hunger.canSprint() {
+		p.StopSprinting()
+	}
 }
 
 // regenerate attempts to regenerate half a heart of health, typically caused by a full food bar.
-func (p *Player) regenerate() {
+func (p *Player) regenerate(exhaust bool) {
 	if p.Health() == p.MaxHealth() {
 		return
 	}
 	p.Heal(1, entity.FoodHealingSource{})
-	p.Exhaust(6)
+	if exhaust {
+		p.Exhaust(6)
+	}
 }
 
 // starve deals starvation damage to the player if the difficult allows it. In peaceful mode, no damage will
@@ -2813,6 +2823,9 @@ func (p *Player) load(data Data) {
 	p.health.AddHealth(data.Health - p.Health())
 	p.session().SendHealth(p.health)
 
+	p.absorptionHealth.Store(data.AbsorptionLevel)
+	p.session().SendAbsorption(p.absorptionHealth.Load())
+
 	p.hunger.SetFood(data.Hunger)
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
@@ -2874,6 +2887,7 @@ func (p *Player) Data() Data {
 		MaxAirSupply:    p.maxAirSupplyTicks.Load(),
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
+		AbsorptionLevel: p.Absorption(),
 		GameMode:        p.GameMode(),
 		Inventory: InventoryData{
 			Items:        p.Inventory().Slots(),
