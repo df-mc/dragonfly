@@ -13,15 +13,16 @@ import (
 
 // NewBottleOfEnchanting ...
 func NewBottleOfEnchanting(pos mgl64.Vec3, owner world.Entity) *Ent {
-	return Config{Lifetime: bottleOfEnchantingConf.New(owner)}.New(BottleOfEnchantingType{}, pos)
+	return Config{Behaviour: bottleOfEnchantingConf.New(owner)}.New(BottleOfEnchantingType{}, pos)
 }
 
-var bottleOfEnchantingConf = ProjectileLifetimeConfig{
+var bottleOfEnchantingConf = ProjectileBehaviourConfig{
 	Gravity:  0.07,
 	Drag:     0.01,
 	Particle: particle.Splash{},
 	Sound:    sound.GlassBreak{},
 	Hit:      spawnExperience,
+	Damage:   -1,
 }
 
 // spawnExperience spawns experience orbs with a value of 3-11 at the target of

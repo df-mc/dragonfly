@@ -56,7 +56,7 @@ func (s *SplashPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		s.splash(s, w, m.pos, result, s.Type().BBox(s))
+		s.splash(s, w, m.pos, result)
 		s.close = true
 	}
 }

@@ -19,9 +19,9 @@ import (
 // Arrow is used as ammunition for bows, crossbows, and dispensers. Arrows can be modified to imbue status effects
 // on players and mobs.
 type Arrow struct {
-	transform
-	yaw, pitch float64
-	baseDamage float64
+	transform          //
+	yaw, pitch float64 //
+	baseDamage float64 //
 
 	ageCollided     int
 	close, critical bool
@@ -29,15 +29,15 @@ type Arrow struct {
 	collisionPos cube.Pos
 	collided     bool
 
-	owner world.Entity
-	tip   potion.Potion
+	owner world.Entity  //
+	tip   potion.Potion //
 
-	fireTicks  int64
-	punchLevel int
+	fireTicks  int64 //
+	punchLevel int   //
 
 	disallowPickup, obtainArrowOnPickup bool
 
-	c *ProjectileComputer
+	c *ProjectileComputer //
 }
 
 // NewArrow creates a new Arrow and returns it. It is equivalent to calling NewTippedArrow with `potion.Potion{}` as
@@ -343,7 +343,7 @@ func (ArrowType) EncodeNBT(e world.Entity) map[string]any {
 		"player":       boolByte(!a.disallowPickup),
 		"isCreative":   boolByte(!a.obtainArrowOnPickup),
 	}
-	// TODO: Save critical flag if Minecraft ever saves it?
+	// TODO: Save critical flag if Minecraft ever s aves it?
 	if collisionPos, ok := a.CollisionPos(); ok {
 		data["StuckToBlockPos"] = nbtconv.PosToInt32Slice(collisionPos)
 	}

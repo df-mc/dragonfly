@@ -29,10 +29,9 @@ func (s *splashable) Potion() potion.Potion {
 }
 
 // splash splashes the projectile at the given position.
-func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res trace.Result, box cube.BBox) {
+func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res trace.Result) {
 	effects := s.t.Effects()
-	box = box.Translate(pos)
-	colour, _ := effect.ResultingColour(effects)
+	box := e.Type().BBox(e).Translate(pos)
 	if len(effects) > 0 {
 		for _, otherE := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), func(entity world.Entity) bool {
 			_, living := entity.(Living)
@@ -85,6 +84,6 @@ func (s *splashable) splash(e world.Entity, w *world.World, pos mgl64.Vec3, res 
 		}
 	}
 
-	w.AddParticle(pos, particle.Splash{Colour: colour})
+	w.AddParticle(pos, particle.Splash{})
 	w.PlaySound(pos, sound.GlassBreak{})
 }

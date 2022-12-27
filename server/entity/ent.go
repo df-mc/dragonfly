@@ -6,16 +6,15 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"sync"
+	"time"
 )
 
-type Lifetime interface {
+type Behaviour interface {
 	Tick(e *Ent) *Movement
-
-	Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig)
 }
 
 type Config struct {
-	Lifetime Lifetime
+	Behaviour Behaviour
 }
 
 func (conf Config) New(t world.EntityType, pos mgl64.Vec3) *Ent {
@@ -30,10 +29,16 @@ type Ent struct {
 	pos mgl64.Vec3
 	vel mgl64.Vec3
 	rot cube.Rotation
+
+	fireDuration time.Duration
 }
 
 func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
-	e.conf.Lifetime.Explode(e, src, impact, conf)
+	if expl, ok := e.conf.Behaviour.(interface {
+		Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig)
+	}); ok {
+		expl.Explode(e, src, impact, conf)
+	}
 }
 
 func NewEnt(t world.EntityType, pos mgl64.Vec3) *Ent {
@@ -51,7 +56,7 @@ func (e *Ent) Type() world.EntityType {
 func (e *Ent) Owner() world.Entity {
 	// TODO: Change this signature to Owner() (world.Entity, bool) once all
 	//  entities use this type.
-	if owned, ok := e.conf.Lifetime.(interface {
+	if owned, ok := e.conf.Behaviour.(interface {
 		Owner() world.Entity
 	}); ok {
 		return owned.Owner()
@@ -93,6 +98,37 @@ func (e *Ent) World() *world.World {
 	return w
 }
 
+// OnFireDuration ...
+func (e *Ent) OnFireDuration() time.Duration {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.fireDuration
+}
+
+// SetOnFire ...
+func (e *Ent) SetOnFire(duration time.Duration) {
+	if duration < 0 {
+		duration = 0
+	}
+	e.mu.Lock()
+	before, after := e.fireDuration > 0, duration > 0
+	e.fireDuration = duration
+	pos := e.pos
+	e.mu.Unlock()
+
+	if before == after {
+		return
+	}
+	for _, v := range e.World().Viewers(pos) {
+		v.ViewEntityState(e)
+	}
+}
+
+// Extinguish ...
+func (e *Ent) Extinguish() {
+	e.SetOnFire(0)
+}
+
 // Tick ticks Ent, progressing its lifetime and closing the entity if it is
 // in the void.
 func (e *Ent) Tick(w *world.World, current int64) {
@@ -100,8 +136,11 @@ func (e *Ent) Tick(w *world.World, current int64) {
 		_ = e.Close()
 		return
 	}
-	m := e.conf.Lifetime.Tick(e)
-	m.Send()
+	e.SetOnFire(e.OnFireDuration() - time.Second/20)
+
+	if m := e.conf.Behaviour.Tick(e); m != nil {
+		m.Send()
+	}
 }
 
 // Close closes the Ent and removes the associated entity from the world.

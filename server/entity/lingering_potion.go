@@ -61,7 +61,7 @@ func (l *LingeringPotion) Tick(w *world.World, current int64) {
 	}
 
 	if result != nil {
-		l.splash(l, w, m.pos, result, l.Type().BBox(l))
+		l.splash(l, w, m.pos, result)
 		w.AddEntity(NewAreaEffectCloud(m.pos, l.t))
 
 		l.close = true
