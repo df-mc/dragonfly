@@ -79,17 +79,6 @@ func (fi FrostedIce) EncodeBlock() (string, map[string]any) {
 	return "minecraft:frosted_ice", map[string]any{"age": int32(fi.Age)}
 }
 
-// DecodeNBT ...
-func (fi FrostedIce) DecodeNBT(data map[string]any) any {
-	fi.Age, _ = data["age"].(int)
-	return fi
-}
-
-// EncodeNBT ...
-func (fi FrostedIce) EncodeNBT() map[string]any {
-	return map[string]any{"age": int32(fi.Age)}
-}
-
 func frostedIce(pos cube.Pos, w *world.World) int {
 	count := 0
 
