@@ -2,8 +2,8 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 	"time"
 )
@@ -16,7 +16,7 @@ func init() {
 // near water while wearing boots enchanted with frost walker.
 type FrostedIce struct {
 	solid
-	
+
 	// Age is the melting state of frosted ice. Values range from 0 to 4.
 	// When the age is 4 however, the block melts completely into water.
 	Age int
@@ -27,7 +27,7 @@ func (fi FrostedIce) BreakInfo() BreakInfo {
 	bi := newBreakInfo(0.5, alwaysHarvestable, nothingEffective, simpleDrops())
 
 	breakHandler := func(pos cube.Pos, w *world.World, _ item.User) {
-		w.SetBlock(pos, Water{ Still: true, Depth: 8 }, nil)
+		w.SetBlock(pos, Water{Still: true, Depth: 8}, nil)
 	}
 
 	bi.BreakHandler = breakHandler
@@ -62,7 +62,7 @@ func (fi FrostedIce) Tick(_ int64, pos cube.Pos, w *world.World) {
 	fi.Age++
 
 	if fi.Age > 3 {
-		w.SetBlock(pos, Water{ Still: true, Depth: 8 }, nil)
+		w.SetBlock(pos, Water{Still: true, Depth: 8}, nil)
 		return
 	}
 
@@ -102,7 +102,7 @@ func frostedIce(pos cube.Pos, w *world.World) int {
 // allFrostedIce returns all possible states of a frosted ice block.
 func allFrostedIce() (b []world.Block) {
 	for i := 0; i < 4; i++ {
-		b = append(b, FrostedIce{ Age: i })
+		b = append(b, FrostedIce{Age: i})
 	}
 	return
 }
