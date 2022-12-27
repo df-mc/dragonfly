@@ -4,8 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/enchantment"
-	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
 )
@@ -26,19 +24,9 @@ type FrostedIce struct {
 
 // BreakInfo ...
 func (fi FrostedIce) BreakInfo() BreakInfo {
-	effective := func(_ item.Tool) bool { return true }
+	bi := newBreakInfo(0.5, alwaysHarvestable, nothingEffective, simpleDrops())
 
-	drops := func(_ item.Tool, _ []item.Enchantment) []item.Stack { return []item.Stack{} }
-
-	bi := newBreakInfo(0.5, alwaysHarvestable, effective, drops)
-
-	breakHandler := func(pos cube.Pos, w *world.World, u item.User) {
-		mainHandItem, _ := u.HeldItems()
-
-		if _, isSilkTouch := mainHandItem.Enchantment(enchantment.SilkTouch{}); isSilkTouch {
-			return
-		}
-
+	breakHandler := func(pos cube.Pos, w *world.World, _ item.User) {
 		w.SetBlock(pos, Water{ Still: true, Depth: 8 }, nil)
 	}
 
@@ -52,22 +40,22 @@ func (fi FrostedIce) Friction() float64 {
 }
 
 // LightDiffusionLevel ...
-func LightDiffusionLevel() uint8 {
+func (FrostedIce) LightDiffusionLevel() uint8 {
 	return 3
 }
 
 // Tick ...
 func (fi FrostedIce) Tick(_ int64, pos cube.Pos, w *world.World) {
-	// Tick block once every one and a half seconds.
-	if rand.Intn(19) != 0 {
+	// Tick block once every second.
+	if rand.Intn(20) != 0 {
 		return
 	}
 
-	// One of two conditions must be met in order to increase the age of frosted ice.
+	// Two conditions must be met in order to increase the age of frosted ice.
 	// 1) A random number generator with possible values [0, 1, 2] chooses 0 OR the frosted
 	//    ice block has fewer than 4 frosted ice blocks immediately surrounding it.
 	// 2) The light level at the block is greater than 11 minus its age.
-	if (rand.Intn(2) != 0 && (frostedIce(pos, w) >= 4)) || w.Light(pos) <= uint8((11-fi.Age)) {
+	if (rand.Intn(3) != 0 && (frostedIce(pos, w) >= 4)) || w.Light(pos) <= uint8((11-fi.Age)) {
 		return
 	}
 
@@ -111,7 +99,7 @@ func frostedIce(pos cube.Pos, w *world.World) int {
 				continue
 			}
 
-			offPos := pos.Add(cube.PosFromVec3(mgl64.Vec3{float64(offx), 0, float64(offz)}))
+			offPos := pos.Add(cube.Pos{offx, 0, offz})
 
 			if _, isFrostedIce := w.Block(offPos).(FrostedIce); isFrostedIce {
 				count++
