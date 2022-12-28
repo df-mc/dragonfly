@@ -13,29 +13,43 @@ import (
 	"time"
 )
 
+// ProjectileBehaviourConfig allows the configuration of projectiles. Calling
+// ProjectileBehaviourConfig.New() creates a ProjectileBehaviour using these
+// settings.
 type ProjectileBehaviourConfig struct {
+	// Gravity is the amount of Y velocity subtracted every tick.
 	Gravity float64
-
+	// Drag is used to reduce all axes of the velocity every tick. Velocity is
+	// multiplied with (1-Drag) every tick.
 	Drag float64
-
 	// Damage specifies the damage dealt by the Projectile. If set to a negative
-	// number, entities hitEntity are not hurt at all and are not knocked back.
+	// number, entities hit are not hurt at all and are not knocked back.
 	Damage float64
-
+	// Potion is the potion effect that is applied to an entity when the
+	// projectile hits it.
 	Potion potion.Potion
-
+	// KnockBackAddend is the additional velocity that is applied to an entity
+	// when it is hit by the projectile.
 	KnockBackAddend float64
-
+	// Particle is a particle that is spawned when the projectile hits a
+	// target, either a block or an entity. No particle is spawned if left nil.
 	Particle world.Particle
-
+	// ParticleCount is the amount of particles that should be spawned if
+	// Particle is not nil. ParticleCount will be set to 1 if Particle is not
+	// nil and ParticleCount is 0.
 	ParticleCount int
-
+	// Sound is a sound that is played when the projectile hits a target, either
+	// a block or an entity. No sound is played if left nil.
 	Sound world.Sound
-
+	// Critical specifies if the projectile is critical. This spawns critical
+	// hit particles behind the projectile and causes it to deal up to 50% more
+	// damage.
 	Critical bool
-
+	// Hit is a function that is called when the projectile Ent hits a target
+	// (the trace.Result). The target is either of the type trace.EntityResult
+	// or trace.BlockResult. Hit may be set to run additional behaviour when a
+	// projectile hits a target.
 	Hit func(e *Ent, target trace.Result)
-
 	// SurviveBlockCollision specifies if a projectile with this
 	// ProjectileBehaviour should survive collision with a block. If set to
 	// false, the projectile will break when hitting a block (like a snowball).
@@ -47,14 +61,20 @@ type ProjectileBehaviourConfig struct {
 	// multiplier such as 0.5 will reduce the projectile's velocity, but retain
 	// half of it after inverting the axis on which the projectile collided.
 	BlockCollisionVelocityMultiplier float64
-
+	// DisablePickup specifies if picking up the projectile should be disabled,
+	// which is relevant in the case SurviveBlockCollision is set to true. Some
+	// projectiles, such as arrows, cannot be picked up if they are shot by
+	// monsters like skeletons.
 	DisablePickup bool
-
+	// PickupItem is the item that is given to a player when it picks up this
+	// projectile. If left as an empty item.Stack, no item is given upon pickup.
 	PickupItem item.Stack
 }
 
+// New creates a new ProjectileBehaviour using conf. The owner passed may be nil
+// if the projectile does not have one.
 func (conf ProjectileBehaviourConfig) New(owner world.Entity) *ProjectileBehaviour {
-	if conf.ParticleCount == 0 {
+	if conf.ParticleCount == 0 && conf.Particle != nil {
 		conf.ParticleCount = 1
 	}
 	return &ProjectileBehaviour{conf: conf, owner: owner, mc: &MovementComputer{
@@ -64,6 +84,8 @@ func (conf ProjectileBehaviourConfig) New(owner world.Entity) *ProjectileBehavio
 	}}
 }
 
+// ProjectileBehaviour implements the behaviour of projectiles. Its specifics
+// may be configured using ProjectileBehaviourConfig.
 type ProjectileBehaviour struct {
 	conf             ProjectileBehaviourConfig
 	owner            world.Entity
@@ -75,14 +97,29 @@ type ProjectileBehaviour struct {
 	collided     bool
 }
 
+// Explode adds velocity to a projectile to blast it away from the explosion's
+// source.
 func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
 	e.vel = e.vel.Add(e.pos.Sub(src).Normalize().Mul(impact))
 }
 
+// Potion returns the potion.Potion that is applied to an entity if hit by the
+// projectile.
 func (lt *ProjectileBehaviour) Potion() potion.Potion {
 	return lt.conf.Potion
 }
 
+// Critical returns true if ProjectileBehaviourConfig.Critical was set to true
+// and if the projectile has not collided.
+func (lt *ProjectileBehaviour) Critical(e *Ent) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return lt.conf.Critical && !lt.collided
+}
+
+// Tick runs the tick-based behaviour of a ProjectileBehaviour and returns the
+// Movement within the tick. Tick handles the movement, collision and hitting
+// of a projectile.
 func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 	if lt.close {
 		_ = e.Close()
@@ -110,10 +147,8 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 		return m
 	}
 
-	if lt.conf.Particle != nil {
-		for i := 0; i < lt.conf.ParticleCount; i++ {
-			w.AddParticle(result.Position(), lt.conf.Particle)
-		}
+	for i := 0; i < lt.conf.ParticleCount; i++ {
+		w.AddParticle(result.Position(), lt.conf.Particle)
 	}
 	if lt.conf.Sound != nil {
 		w.PlaySound(result.Position(), lt.conf.Sound)
@@ -142,12 +177,8 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 	return m
 }
 
-func (lt *ProjectileBehaviour) Critical(e *Ent) bool {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	return lt.conf.Critical && !lt.collided
-}
-
+// tickAttached performs the attached logic for a projectile. It checks if the
+// projectile is still attached to a block and if it can be picked up.
 func (lt *ProjectileBehaviour) tickAttached(e *Ent) bool {
 	w := e.World()
 	boxes := w.Block(lt.collisionPos).Model().BBox(lt.collisionPos, w)
@@ -194,6 +225,10 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
 	}
 }
 
+// hitBlockSurviving is called if
+// ProjectileBehaviourConfig.SurviveBlockCollision is set to true and the
+// projectile collides with a block. If the resulting velocity is roughly 0,
+// it sets the projectile as having collided with the block.
 func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m *Movement) {
 	e.mu.Lock()
 	if mgl64.FloatEqualThreshold(m.dpos.Len(), 0, epsilon) {
@@ -209,6 +244,9 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 	e.mu.Unlock()
 }
 
+// hitEntity is called when a projectile hits a Living. It deals damage to the
+// entity and knocks it back. Additionally, it applies any potion effects and
+// fire if applicable.
 func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec3) {
 	src := ProjectileDamageSource{Projectile: e, Owner: lt.owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
@@ -227,6 +265,9 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec
 	}
 }
 
+// tickMovement ticks the movement of a projectile. It updates the position and
+// rotation of the projectile based on its velocity and updates the velocity
+// based on gravity and drag.
 func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
 	w, pos, vel, rot := e.World(), e.pos, e.vel, e.rot
 	viewers := w.Viewers(pos)
