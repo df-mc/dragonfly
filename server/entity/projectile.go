@@ -187,17 +187,8 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
 }
 
 func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m *Movement) {
-	x, y, z := m.vel.Mul(lt.conf.BlockCollisionVelocityMultiplier).Elem()
-	// Calculate multipliers for all coordinates: 1 for the ones that
-	// weren't on the same axis as the one collided with, -1 for the one
-	// that was on that axis to deflect the projectile.
-	mx, my, mz := r.Face().Axis().Vec3().Mul(-2).Add(mgl64.Vec3{1, 1, 1}).Elem()
-	res := mgl64.Vec3{x * mx, y * my, z * mz}
-
 	e.mu.Lock()
-	e.vel = res
-
-	if mgl64.FloatEqual(res.Len(), 0) {
+	if mgl64.FloatEqualThreshold(m.dpos.Len(), 0, epsilon) {
 		lt.collisionPos, lt.collided = r.BlockPosition(), true
 		e.mu.Unlock()
 
@@ -246,7 +237,17 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
 	)
 	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
 		if hit, ok = trace.Perform(pos, end, w, e.Type().BBox(e).Grow(1.0), lt.ignores(e)); ok {
-			vel = zeroVec3
+			if _, ok := hit.(trace.BlockResult); ok {
+				x, y, z := vel.Mul(lt.conf.BlockCollisionVelocityMultiplier).Elem()
+				// Calculate multipliers for all coordinates: 1 for the ones that
+				// weren't on the same axis as the one collided with, -1 for the one
+				// that was on that axis to deflect the projectile.
+				mx, my, mz := hit.Face().Axis().Vec3().Mul(-2).Add(mgl64.Vec3{1, 1, 1}).Elem()
+
+				vel = mgl64.Vec3{x * mx, y * my, z * mz}
+			} else {
+				vel = zeroVec3
+			}
 			end = hit.Position()
 		}
 	}
