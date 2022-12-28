@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"math/rand"
 )
 
@@ -22,6 +23,10 @@ func (Ice) LightDiffusionLevel() uint8 {
 func (i Ice) BreakInfo() BreakInfo {
 	b := newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(i))
 	b.withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		if w.Dimension().WaterEvaporates() {
+			w.AddParticle(pos.Vec3Centre(), particle.Evaporate{})
+			return
+		}
 		if p, ok := u.(interface {
 			GameMode() world.GameMode
 		}); ok && p.GameMode().CreativeInventory() {
@@ -41,7 +46,13 @@ func (i Ice) BreakInfo() BreakInfo {
 
 // RandomTick ...
 func (i Ice) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
-	if w.Light(pos) >= 12 {
+	if w.Light(pos) < 12 {
+		return
+	}
+	if w.Dimension().WaterEvaporates() {
+		w.SetBlock(pos, nil, nil)
+		w.AddParticle(pos.Vec3Centre(), particle.Evaporate{})
+	} else {
 		w.SetBlock(pos, Water{}, nil)
 	}
 }
