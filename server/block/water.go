@@ -121,7 +121,7 @@ func (w Water) RandomTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 	if wo.Temperature(pos) > 0.0 {
 		return
 	}
-	if wo.Light(pos) > 11 {
+	if wo.Light(pos) > 12 {
 		return
 	}
 	if _, ok := wo.Block(cube.Pos{pos[0], wo.HighestBlock(pos[0], pos[2]), pos[2]}).Model().(model.Solid); ok {
