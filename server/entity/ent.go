@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"sync"
@@ -74,6 +75,15 @@ func (e *Ent) Critical() bool {
 	return false
 }
 
+func (e *Ent) Potion() potion.Potion {
+	if pot, ok := e.conf.Behaviour.(interface {
+		Potion() potion.Potion
+	}); ok {
+		return pot.Potion()
+	}
+	return potion.Potion{}
+}
+
 // Position returns the current position of the entity.
 func (e *Ent) Position() mgl64.Vec3 {
 	e.mu.Lock()
@@ -142,7 +152,10 @@ func (e *Ent) Extinguish() {
 // Tick ticks Ent, progressing its lifetime and closing the entity if it is
 // in the void.
 func (e *Ent) Tick(w *world.World, current int64) {
-	if e.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
+	e.mu.Lock()
+	y := e.pos[1]
+	e.mu.Unlock()
+	if y < float64(w.Range()[0]) && current%10 == 0 {
 		_ = e.Close()
 		return
 	}

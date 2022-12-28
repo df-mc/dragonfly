@@ -79,6 +79,10 @@ func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _
 	e.vel = e.vel.Add(e.pos.Sub(src).Normalize().Mul(impact))
 }
 
+func (lt *ProjectileBehaviour) Potion() potion.Potion {
+	return lt.conf.Potion
+}
+
 func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 	if lt.close {
 		_ = e.Close()
