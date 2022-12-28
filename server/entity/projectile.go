@@ -89,13 +89,17 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 	e.mu.Lock()
 	if lt.collided && lt.tickAttached(e) {
 		e.mu.Unlock()
+
+		if lt.ageCollided > 1200 {
+			lt.close = true
+		}
 		return nil
 	}
 	before, vel := e.pos, e.vel
 	m, result := lt.tickMovement(e)
 	e.pos, e.vel = m.pos, m.vel
 
-	lt.collisionPos, lt.collided = cube.Pos{}, false
+	lt.collisionPos, lt.collided, lt.ageCollided = cube.Pos{}, false, 0
 	e.mu.Unlock()
 
 	if result == nil {
