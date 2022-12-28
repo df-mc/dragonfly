@@ -18,7 +18,7 @@ type Config struct {
 }
 
 func (conf Config) New(t world.EntityType, pos mgl64.Vec3) *Ent {
-	return &Ent{t: t, pos: pos}
+	return &Ent{t: t, pos: pos, conf: conf}
 }
 
 type Ent struct {
@@ -62,6 +62,16 @@ func (e *Ent) Owner() world.Entity {
 		return owned.Owner()
 	}
 	return nil
+}
+
+// Critical returns true if the entity's behaviour marked it as critical.
+func (e *Ent) Critical() bool {
+	if crit, ok := e.conf.Behaviour.(interface {
+		Critical(e *Ent) bool
+	}); ok {
+		return crit.Critical(e)
+	}
+	return false
 }
 
 // Position returns the current position of the entity.

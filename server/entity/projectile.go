@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -21,6 +22,8 @@ type ProjectileBehaviourConfig struct {
 	// number, entities hitEntity are not hurt at all and are not knocked back.
 	Damage float64
 
+	Potion potion.Potion
+
 	KnockBackAddend float64
 
 	Particle world.Particle
@@ -29,7 +32,7 @@ type ProjectileBehaviourConfig struct {
 
 	Sound world.Sound
 
-	Critical bool // TODO: Change this to have a method that specifies if the arrow is critical and make that return false if collided.
+	Critical bool
 
 	Hit func(e *Ent, target trace.Result)
 
@@ -131,6 +134,12 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 	return m
 }
 
+func (lt *ProjectileBehaviour) Critical(e *Ent) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return lt.conf.Critical && !lt.collided
+}
+
 func (lt *ProjectileBehaviour) tickAttached(e *Ent) bool {
 	w := e.World()
 	boxes := w.Block(lt.collisionPos).Model().BBox(lt.collisionPos, w)
@@ -187,26 +196,32 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 
 	e.mu.Lock()
 	e.vel = res
-	e.mu.Unlock()
 
 	if mgl64.FloatEqual(res.Len(), 0) {
 		lt.collisionPos, lt.collided = r.BlockPosition(), true
+		e.mu.Unlock()
 
 		for _, v := range e.World().Viewers(m.pos) {
 			v.ViewEntityAction(e, ArrowShakeAction{Duration: time.Millisecond * 350})
+			v.ViewEntityState(e)
 		}
+		return
 	}
+	e.mu.Unlock()
 }
 
 func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec3) {
 	src := ProjectileDamageSource{Projectile: e, Owner: lt.owner}
-	dmg := lt.conf.Damage * vel.Len()
+	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
 	if _, vulnerable := l.Hurt(lt.conf.Damage, src); vulnerable {
 		l.KnockBack(origin, 0.45+lt.conf.KnockBackAddend, 0.3608)
 
+		for _, eff := range lt.conf.Potion.Effects() {
+			l.AddEffect(eff)
+		}
 		if flammable, ok := l.(Flammable); ok && e.OnFireDuration() > 0 {
 			flammable.SetOnFire(time.Second * 5)
 		}
@@ -214,7 +229,7 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec
 }
 
 func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
-	w, pos, vel, rot := e.World(), e.Position(), e.Velocity(), e.Rotation()
+	w, pos, vel, rot := e.World(), e.pos, e.vel, e.rot
 	viewers := w.Viewers(pos)
 
 	velBefore := vel
@@ -244,7 +259,7 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
 // either a spectator, not living, the entity itself or its owner in the first
 // 5 ticks.
 func (lt *ProjectileBehaviour) ignores(e *Ent) func(other world.Entity) bool {
-	return func(other world.Entity) bool {
+	return func(other world.Entity) (ignored bool) {
 		g, ok := other.(interface{ GameMode() world.GameMode })
 		_, living := other.(Living)
 		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (lt.age < 5 && lt.owner == other)
