@@ -20,27 +20,23 @@ func (Ice) LightDiffusionLevel() uint8 {
 
 // BreakInfo ...
 func (i Ice) BreakInfo() BreakInfo {
-	return BreakInfo{
-		Hardness:    0.5,
-		Harvestable: alwaysHarvestable,
-		Effective:   pickaxeEffective,
-		Drops:       silkTouchOnlyDrop(i),
-		BreakHandler: func(pos cube.Pos, w *world.World, u item.User) {
-			if p, ok := u.(interface {
-				GameMode() world.GameMode
-			}); ok && p.GameMode().CreativeInventory() {
-				return
-			}
-			if mainHand, _ := u.HeldItems(); hasSilkTouch(mainHand.Enchantments()) {
-				return
-			}
-			if _, ok := w.Block(pos.Side(cube.FaceDown)).Model().(model.Solid); !ok {
-				return
-			}
-			w.SetBlock(pos, Water{}, nil)
-		},
-		BlastResistance: 0.5,
-	}
+	b := newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(i))
+	b.withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		if p, ok := u.(interface {
+			GameMode() world.GameMode
+		}); ok && p.GameMode().CreativeInventory() {
+			return
+		}
+		if mainHand, _ := u.HeldItems(); hasSilkTouch(mainHand.Enchantments()) {
+			return
+		}
+		if _, ok := w.Block(pos.Side(cube.FaceDown)).Model().(model.Solid); !ok {
+			return
+		}
+		w.SetBlock(pos, Water{}, nil)
+	})
+	b.withBlastResistance(0.5)
+	return b
 }
 
 // RandomTick ...
