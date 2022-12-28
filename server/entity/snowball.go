@@ -14,7 +14,7 @@ func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Ent {
 }
 
 var snowballConf = ProjectileBehaviourConfig{
-	Gravity:       0.01,
+	Gravity:       0.03,
 	Drag:          0.01,
 	Particle:      particle.SnowballPoof{},
 	ParticleCount: 6,
