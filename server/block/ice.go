@@ -51,9 +51,9 @@ func (i Ice) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	if w.Dimension().WaterEvaporates() {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.Evaporate{})
-	} else {
-		w.SetBlock(pos, Water{}, nil)
+		return
 	}
+	w.SetBlock(pos, Water{}, nil)
 }
 
 // Friction ...
