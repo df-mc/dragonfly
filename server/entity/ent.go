@@ -10,18 +10,27 @@ import (
 	"time"
 )
 
+// Behaviour implements the behaviour of an Ent.
 type Behaviour interface {
+	// Tick ticks the Ent using the Behaviour. A Movement is returned that
+	// specifies the movement of the entity over the tick. Nil may be returned
+	// if the entity did not move.
 	Tick(e *Ent) *Movement
 }
 
+// Config allows specifying options that influence the way an Ent behaves.
 type Config struct {
 	Behaviour Behaviour
 }
 
+// New creates a new Ent using conf. The entity has a type and a position.
 func (conf Config) New(t world.EntityType, pos mgl64.Vec3) *Ent {
 	return &Ent{t: t, pos: pos, conf: conf}
 }
 
+// Ent is a world.Entity implementation that allows entity implementations to
+// share a lot of code. It is currently under development and is prone to
+// (breaking) changes.
 type Ent struct {
 	conf Config
 	t    world.EntityType
@@ -34,6 +43,7 @@ type Ent struct {
 	fireDuration time.Duration
 }
 
+// Explode propagates the explosion behaviour of the underlying Behaviour.
 func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
 	if expl, ok := e.conf.Behaviour.(interface {
 		Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig)
@@ -42,13 +52,7 @@ func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig
 	}
 }
 
-func NewEnt(t world.EntityType, pos mgl64.Vec3) *Ent {
-	var conf Config
-	// TODO: Default lifetime. What would the behaviour of that be?
-	return conf.New(t, pos)
-}
-
-// Type returns the world.EntityType passed to NewEnt.
+// Type returns the world.EntityType passed to Config.New.
 func (e *Ent) Type() world.EntityType {
 	return e.t
 }
@@ -75,6 +79,7 @@ func (e *Ent) Critical() bool {
 	return false
 }
 
+// Potion propagates the potion.Potion specified by the underlying Behaviour.
 func (e *Ent) Potion() potion.Potion {
 	if pot, ok := e.conf.Behaviour.(interface {
 		Potion() potion.Potion
