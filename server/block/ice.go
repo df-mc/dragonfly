@@ -21,26 +21,25 @@ func (Ice) LightDiffusionLevel() uint8 {
 
 // BreakInfo ...
 func (i Ice) BreakInfo() BreakInfo {
-	b := newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(i))
-	b.withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		if w.Dimension().WaterEvaporates() {
-			w.AddParticle(pos.Vec3Centre(), particle.Evaporate{})
-			return
-		}
-		if p, ok := u.(interface {
-			GameMode() world.GameMode
-		}); ok && p.GameMode().CreativeInventory() {
-			return
-		}
-		if mainHand, _ := u.HeldItems(); hasSilkTouch(mainHand.Enchantments()) {
-			return
-		}
-		if _, ok := w.Block(pos.Side(cube.FaceDown)).Model().(model.Solid); !ok {
-			return
-		}
-		w.SetBlock(pos, Water{}, nil)
-	})
-	return b
+	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(i)).
+		withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+			if w.Dimension().WaterEvaporates() {
+				w.AddParticle(pos.Vec3Centre(), particle.Evaporate{})
+				return
+			}
+			if p, ok := u.(interface {
+				GameMode() world.GameMode
+			}); ok && p.GameMode().CreativeInventory() {
+				return
+			}
+			if mainHand, _ := u.HeldItems(); hasSilkTouch(mainHand.Enchantments()) {
+				return
+			}
+			if _, ok := w.Block(pos.Side(cube.FaceDown)).Model().(model.Solid); !ok {
+				return
+			}
+			w.SetBlock(pos, Water{}, nil)
+		})
 }
 
 // RandomTick ...
