@@ -24,7 +24,6 @@ func (i Ice) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, silkTouchOnlyDrop(i)).
 		withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
 			if w.Dimension().WaterEvaporates() {
-				w.AddParticle(pos.Vec3Centre(), particle.Evaporate{})
 				return
 			}
 			if p, ok := u.(interface {
@@ -49,7 +48,6 @@ func (i Ice) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	}
 	if w.Dimension().WaterEvaporates() {
 		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.Evaporate{})
 		return
 	}
 	w.SetBlock(pos, Water{}, nil)
