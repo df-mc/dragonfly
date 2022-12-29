@@ -135,9 +135,7 @@ func (w Water) RandomTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 		if neighbour[1] != pos[1] {
 			return
 		}
-		if _, ok := wo.Block(neighbour).Model().(model.Solid); ok {
-			solidAdjacent = true
-		}
+		_, solidAdjacent = wo.Block(neighbour).Model().(model.Solid)
 	}, wo.Range())
 	if solidAdjacent {
 		wo.SetBlock(pos, Ice{}, nil)
