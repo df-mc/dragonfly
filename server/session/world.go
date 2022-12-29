@@ -248,8 +248,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	}
 
 	s.writePacket(&packet.SetActorMotion{EntityRuntimeID: id})
-	switch e.(type) {
-	case Controllable:
+	if _, ok := e.(Controllable); ok {
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
 			Position:        vec64To32(position.Add(entityOffset(e))),
@@ -258,14 +257,14 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 			HeadYaw:         float32(yaw),
 			Mode:            packet.MoveModeTeleport,
 		})
-	default:
-		s.writePacket(&packet.MoveActorAbsolute{
-			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-			Flags:           packet.MoveFlagTeleport,
-		})
+		return
 	}
+	s.writePacket(&packet.MoveActorAbsolute{
+		EntityRuntimeID: id,
+		Position:        vec64To32(position.Add(entityOffset(e))),
+		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
+		Flags:           packet.MoveFlagTeleport,
+	})
 }
 
 // ViewEntityItems ...
