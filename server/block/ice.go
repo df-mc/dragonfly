@@ -40,7 +40,6 @@ func (i Ice) BreakInfo() BreakInfo {
 		}
 		w.SetBlock(pos, Water{}, nil)
 	})
-	b.withBlastResistance(0.5)
 	return b
 }
 
