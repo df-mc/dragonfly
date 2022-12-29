@@ -36,7 +36,7 @@ func (i Ice) BreakInfo() BreakInfo {
 			if _, ok := w.Block(pos.Side(cube.FaceDown)).Model().(model.Solid); !ok {
 				return
 			}
-			w.SetBlock(pos, Water{}, nil)
+			w.SetBlock(pos, Water{Depth: 8}, nil)
 		})
 }
 
@@ -49,7 +49,7 @@ func (i Ice) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 		w.SetBlock(pos, nil, nil)
 		return
 	}
-	w.SetBlock(pos, Water{}, nil)
+	w.SetBlock(pos, Water{Depth: 8}, nil)
 }
 
 // Friction ...
