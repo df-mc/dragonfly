@@ -22,8 +22,10 @@ type ProjectileBehaviourConfig struct {
 	// Drag is used to reduce all axes of the velocity every tick. Velocity is
 	// multiplied with (1-Drag) every tick.
 	Drag float64
-	// Damage specifies the damage dealt by the Projectile. If set to a negative
-	// number, entities hit are not hurt at all and are not knocked back.
+	// Damage specifies the base damage dealt by the Projectile. If set to a
+	// negative number, entities hit are not hurt at all and are not knocked
+	// back. The base damage is multiplied with the velocity of the projectile
+	// to calculate the final damage of the projectile.
 	Damage float64
 	// Potion is the potion effect that is applied to an entity when the
 	// projectile hits it.
