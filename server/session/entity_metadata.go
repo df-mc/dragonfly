@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -121,17 +122,15 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	}
 	if p, ok := e.(splash); ok {
 		m[protocol.EntityDataKeyAuxValueData] = int16(p.Potion().Uint8())
+		if tip := p.Potion().Uint8(); tip > 4 {
+			m[protocol.EntityDataKeyCustomDisplay] = tip + 1
+		}
 	}
 	if g, ok := e.Type().(glint); ok && g.Glint() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
 	}
-	if l, ok := e.(lingers); ok && l.Lingers() {
+	if _, ok := e.Type().(entity.LingeringPotionType); ok {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
-	}
-	if t, ok := e.(tipped); ok {
-		if tip := t.Tip().Uint8(); tip > 4 {
-			m[protocol.EntityDataKeyCustomDisplay] = tip + 1
-		}
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		visibleEffects := make([]effect.Effect, 0, len(eff.Effects()))
@@ -223,10 +222,6 @@ type onFire interface {
 
 type effectBearer interface {
 	Effects() []effect.Effect
-}
-
-type tipped interface {
-	Tip() potion.Potion
 }
 
 type using interface {
