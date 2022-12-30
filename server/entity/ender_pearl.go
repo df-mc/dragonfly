@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -11,27 +10,18 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// EnderPearl is a smooth, greenish-blue item used to teleport and to make an eye of ender.
-type EnderPearl struct {
-	transform
-	close bool
-
-	owner world.Entity
-
-	c *ProjectileComputer
+// NewEnderPearl creates an EnderPearl entity. EnderPearl is a smooth, greenish-
+// blue item used to teleport.
+func NewEnderPearl(pos mgl64.Vec3, owner world.Entity) *Ent {
+	return Config{Behaviour: enderPearlConf.New(owner)}.New(EnderPearlType{}, pos)
 }
 
-// NewEnderPearl ...
-func NewEnderPearl(pos mgl64.Vec3, owner world.Entity) *EnderPearl {
-	e := &EnderPearl{c: newProjectileComputer(0.03, 0.01), owner: owner}
-	e.transform = newTransform(e, pos)
-
-	return e
-}
-
-// Type returns EnderPearlType.
-func (e *EnderPearl) Type() world.EntityType {
-	return EnderPearlType{}
+var enderPearlConf = ProjectileBehaviourConfig{
+	Gravity:  0.03,
+	Drag:     0.01,
+	Particle: particle.EndermanTeleport{},
+	Sound:    sound.Teleport{},
+	Hit:      teleport,
 }
 
 // teleporter represents a living entity that can teleport.
@@ -41,65 +31,13 @@ type teleporter interface {
 	Living
 }
 
-// Tick ...
-func (e *EnderPearl) Tick(w *world.World, current int64) {
-	if e.close {
-		_ = e.Close()
-		return
+// teleport teleports the owner of an Ent to a trace.Result's position.
+func teleport(e *Ent, target trace.Result) {
+	if user, ok := e.Owner().(teleporter); ok {
+		e.World().PlaySound(user.Position(), sound.Teleport{})
+		user.Teleport(target.Position())
+		user.Hurt(5, FallDamageSource{})
 	}
-	e.mu.Lock()
-	pastVel := e.vel
-	m, result := e.c.TickMovement(e, e.pos, e.vel, 0, 0)
-	e.pos, e.vel = m.pos, m.vel
-
-	owner := e.owner
-	e.mu.Unlock()
-
-	m.Send()
-
-	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
-		e.close = true
-		return
-	}
-
-	if result != nil {
-		if r, ok := result.(trace.EntityResult); ok {
-			if l, ok := r.Entity().(Living); ok {
-				if _, vulnerable := l.Hurt(0.0, ProjectileDamageSource{Projectile: e, Owner: owner}); vulnerable {
-					horizontalVel := pastVel
-					horizontalVel[1] = 0
-					l.KnockBack(l.Position().Sub(horizontalVel), 0.4, 0.4)
-				}
-			}
-		}
-
-		if owner != nil {
-			if user, ok := owner.(teleporter); ok {
-				w.PlaySound(user.Position(), sound.Teleport{})
-
-				user.Teleport(m.pos)
-
-				w.AddParticle(m.pos, particle.EndermanTeleportParticle{})
-				w.PlaySound(m.pos, sound.Teleport{})
-
-				user.Hurt(5, FallDamageSource{})
-			}
-		}
-
-		e.close = true
-	}
-}
-
-// Explode ...
-func (e *EnderPearl) Explode(explosionPos mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
-	e.mu.Lock()
-	e.vel = e.vel.Add(e.pos.Sub(explosionPos).Normalize().Mul(impact))
-	e.mu.Unlock()
-}
-
-// Owner ...
-func (e *EnderPearl) Owner() world.Entity {
-	return e.owner
 }
 
 // EnderPearlType is a world.EntityType implementation for EnderPearl.
@@ -117,7 +55,7 @@ func (EnderPearlType) DecodeNBT(m map[string]any) world.Entity {
 }
 
 func (EnderPearlType) EncodeNBT(e world.Entity) map[string]any {
-	ep := e.(*EnderPearl)
+	ep := e.(*Ent)
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(ep.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(ep.Velocity()),

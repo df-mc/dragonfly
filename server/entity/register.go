@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -47,11 +48,14 @@ var conf = world.EntityRegistryConfig{
 	},
 	Arrow: func(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) world.Entity {
 		a := NewTippedArrowWithDamage(pos, yaw, pitch, damage, owner, tip.(potion.Potion))
+		b := a.conf.Behaviour.(*ProjectileBehaviour)
+		b.conf.KnockBackAddend = float64(punchLevel) * (enchantment.Punch{}).KnockBackMultiplier()
+		b.conf.DisablePickup = disallowPickup
+		if obtainArrowOnPickup {
+			b.conf.PickupItem = item.NewStack(item.Arrow{Tip: tip.(potion.Potion)}, 1)
+		}
+		b.conf.Critical = critical
 		a.vel = vel
-		a.punchLevel = punchLevel
-		a.disallowPickup = disallowPickup
-		a.obtainArrowOnPickup = obtainArrowOnPickup
-		a.setCritical(critical)
 		return a
 	},
 	Egg: func(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {

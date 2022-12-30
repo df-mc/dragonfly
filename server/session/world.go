@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand"
 	"strings"
@@ -247,8 +248,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	}
 
 	s.writePacket(&packet.SetActorMotion{EntityRuntimeID: id})
-	switch e.(type) {
-	case Controllable:
+	if _, ok := e.(Controllable); ok {
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
 			Position:        vec64To32(position.Add(entityOffset(e))),
@@ -257,14 +257,14 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 			HeadYaw:         float32(yaw),
 			Mode:            packet.MoveModeTeleport,
 		})
-	default:
-		s.writePacket(&packet.MoveActorAbsolute{
-			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(entityOffset(e))),
-			Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-			Flags:           packet.MoveFlagTeleport,
-		})
+		return
 	}
+	s.writePacket(&packet.MoveActorAbsolute{
+		EntityRuntimeID: id,
+		Position:        vec64To32(position.Add(entityOffset(e))),
+		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
+		Flags:           packet.MoveFlagTeleport,
+	})
 }
 
 // ViewEntityItems ...
@@ -382,7 +382,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(world.BlockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
 		})
-	case particle.EndermanTeleportParticle:
+	case particle.EndermanTeleport:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesTeleport,
 			Position:  vec64To32(pos),
@@ -418,6 +418,9 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 		})
 	case particle.Splash:
+		if (pa.Colour == color.RGBA{}) {
+			pa.Colour, _ = effect.ResultingColour(nil)
+		}
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesPotionSplash,
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),

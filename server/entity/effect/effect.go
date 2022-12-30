@@ -121,7 +121,7 @@ func tickDuration(d time.Duration) int {
 // ResultingColour calculates the resulting colour of the effects passed and returns a bool specifying if the
 // effects were ambient effects, which will cause their particles to display less frequently.
 func ResultingColour(effects []Effect) (color.RGBA, bool) {
-	r, g, b, a, l := 0, 0, 0, 0, 0
+	r, g, b, a, n := 0, 0, 0, 0, 0
 	ambient := true
 	for _, e := range effects {
 		if e.particlesHidden {
@@ -134,15 +134,15 @@ func ResultingColour(effects []Effect) (color.RGBA, bool) {
 		g += int(c.G)
 		b += int(c.B)
 		a += int(c.A)
-		l++
+		n++
 		if !e.Ambient() {
 			ambient = false
 		}
 	}
-	if l == 0 {
+	if n == 0 {
 		return color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}, false
 	}
-	return color.RGBA{R: uint8(r / l), G: uint8(g / l), B: uint8(b / l), A: uint8(a / l)}, ambient
+	return color.RGBA{R: uint8(r / n), G: uint8(g / n), B: uint8(b / n), A: uint8(a / n)}, ambient
 }
 
 // living represents a living entity that has health and the ability to move around.

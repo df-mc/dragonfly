@@ -122,7 +122,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	if p, ok := e.(splash); ok {
 		m[protocol.EntityDataKeyAuxValueData] = int16(p.Potion().Uint8())
 	}
-	if g, ok := e.(glint); ok && g.Glint() {
+	if g, ok := e.Type().(glint); ok && g.Glint() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
 	}
 	if l, ok := e.(lingers); ok && l.Lingers() {
