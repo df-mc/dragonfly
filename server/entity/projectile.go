@@ -238,7 +238,13 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
 // it sets the projectile as having collided with the block.
 func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m *Movement) {
 	e.mu.Lock()
-	if mgl64.FloatEqualThreshold(m.dpos.Len(), 0, epsilon) {
+	// Create an epsilon for deciding if the projectile has slowed down enough
+	// for us to consider it as having collided for the final time. We take the
+	// square root because FloatEqualThreshold squares it, which is not what we
+	// want.
+	eps := math.Sqrt(0.1 * (1 - lt.conf.BlockCollisionVelocityMultiplier))
+	if mgl64.FloatEqualThreshold(e.vel.Len(), 0, eps) {
+		e.vel = mgl64.Vec3{}
 		lt.collisionPos, lt.collided = r.BlockPosition(), true
 		e.mu.Unlock()
 
@@ -294,6 +300,9 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
 	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
 		if hit, ok = trace.Perform(pos, end, w, e.Type().BBox(e).Grow(1.0), lt.ignores(e)); ok {
 			if _, ok := hit.(trace.BlockResult); ok {
+				// Undo the gravity because the velocity as a result of gravity
+				// at the point of collision should be 0.
+				vel[1] = (vel[1] + lt.mc.Gravity) / (1 - lt.mc.Drag)
 				x, y, z := vel.Mul(lt.conf.BlockCollisionVelocityMultiplier).Elem()
 				// Calculate multipliers for all coordinates: 1 for the ones that
 				// weren't on the same axis as the one collided with, -1 for the one
