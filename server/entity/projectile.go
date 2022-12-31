@@ -99,6 +99,11 @@ type ProjectileBehaviour struct {
 	collided     bool
 }
 
+// Owner returns the owner of the projectile.
+func (lt *ProjectileBehaviour) Owner() world.Entity {
+	return lt.owner
+}
+
 // Explode adds velocity to a projectile to blast it away from the explosion's
 // source.
 func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
