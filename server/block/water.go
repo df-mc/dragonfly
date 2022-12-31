@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -111,35 +110,6 @@ func (w Water) ScheduledTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 		}
 	}
 	tickLiquid(w, pos, wo)
-}
-
-// RandomTick ...
-func (w Water) RandomTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
-	if w.Depth != 8 {
-		return
-	}
-	if wo.Temperature(pos) > 0.0 {
-		return
-	}
-	if wo.Light(pos) > 12 {
-		return
-	}
-	if _, ok := wo.Block(cube.Pos{pos[0], wo.HighestBlock(pos[0], pos[2]), pos[2]}).Model().(model.Solid); ok {
-		return
-	}
-	solidAdjacent := false
-	pos.Neighbours(func(neighbour cube.Pos) {
-		if solidAdjacent {
-			return
-		}
-		if neighbour[1] != pos[1] {
-			return
-		}
-		_, solidAdjacent = wo.Block(neighbour).Model().(model.Solid)
-	}, wo.Range())
-	if solidAdjacent {
-		wo.SetBlock(pos, Ice{}, nil)
-	}
 }
 
 // NeighbourUpdateTick ...
