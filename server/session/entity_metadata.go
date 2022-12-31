@@ -206,10 +206,6 @@ type glint interface {
 	Glint() bool
 }
 
-type lingers interface {
-	Lingers() bool
-}
-
 type areaEffectCloud interface {
 	effectBearer
 	Duration() time.Duration
