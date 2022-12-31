@@ -79,7 +79,6 @@ const (
 	hashGrindstone
 	hashHayBale
 	hashHoneycomb
-	hashIce
 	hashInvisibleBedrock
 	hashIron
 	hashIronBars
@@ -473,10 +472,6 @@ func (h HayBale) Hash() uint64 {
 
 func (Honeycomb) Hash() uint64 {
 	return hashHoneycomb
-}
-
-func (Ice) Hash() uint64 {
-	return hashIce
 }
 
 func (InvisibleBedrock) Hash() uint64 {
