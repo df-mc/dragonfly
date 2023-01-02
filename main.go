@@ -3,12 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/enchantment"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -30,14 +25,7 @@ func main() {
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(func(p *player.Player) {
-		p.World().SetTime(20000)
-		p.SetGameMode(world.GameModeCreative)
-		p.Inventory().AddItem(item.NewStack(block.FrostedIce{}, 1))
-		i, _ := world.ItemByName("minecraft:diamond_boots", 0)
-		p.Inventory().AddItem(item.NewStack(i, 1).WithEnchantments(item.NewEnchantment(enchantment.FrostWalker{}, 1)))
-		p.Inventory().AddItem(item.NewStack(i, 1).WithEnchantments(item.NewEnchantment(enchantment.FrostWalker{}, 2)))
-	}) {
+	for srv.Accept(nil) {
 	}
 }
 
