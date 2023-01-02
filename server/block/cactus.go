@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -26,14 +25,8 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	if !used {
 		return false
 	}
-	_, ok := w.Block(pos.Side(cube.FaceDown)).(Cactus)
-	if !supportsVegetation(c, w.Block(pos.Side(cube.FaceDown))) && !ok {
+	if !c.canGrowHere(pos, w, true) {
 		return false
-	}
-	for _, face := range cube.HorizontalFaces() {
-		if _, ok := w.Block(pos.Side(face)).(Air); !ok {
-			return false
-		}
 	}
 
 	place(w, pos, c, user, ctx)
@@ -42,17 +35,10 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // NeighbourUpdateTick ...
 func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	for _, face := range cube.HorizontalFaces() {
-		if _, ok := w.Block(pos.Side(face)).(Air); !ok {
-			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
-			return
-		}
-	}
-	_, ok := w.Block(pos.Side(cube.FaceDown)).(Cactus)
-	if !supportsVegetation(c, w.Block(pos.Side(cube.FaceDown))) && !ok {
+	if !c.canGrowHere(pos, w, true) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
+		dropItem(w, item.NewStack(c, 1), pos.Vec3Centre())
 	}
 }
 
@@ -62,7 +48,7 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		c.Age++
 	} else if c.Age == 15 {
 		c.Age = 0
-		if supportsVegetation(c, w.Block(pos.Side(cube.FaceDown))) {
+		if c.canGrowHere(pos.Side(cube.FaceDown), w, false) {
 			for y := 1; y < 3; y++ {
 				if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
 					w.SetBlock(pos.Add(cube.Pos{0, y}), Cactus{Age: 0}, nil)
@@ -73,12 +59,25 @@ func (c Cactus) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			}
 		}
 	}
-	w.SetBlock(pos, Cactus{Age: c.Age}, nil)
+	w.SetBlock(pos, c, nil)
+}
+
+// canGrowHere implements logic to check if cactus can live/grow here.
+func (c Cactus) canGrowHere(pos cube.Pos, w *world.World, recursive bool) bool {
+	for _, face := range cube.HorizontalFaces() {
+		if _, ok := w.Block(pos.Side(face)).(Air); !ok {
+			return false
+		}
+	}
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Cactus); ok && recursive {
+		return c.canGrowHere(pos.Side(cube.FaceDown), w, recursive)
+	}
+	return supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1})))
 }
 
 // EntityInside ...
 func (c Cactus) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+	if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
 		l.Hurt(0.5, damage.SourceBlock{Block: c})
 	}
 }
@@ -86,6 +85,11 @@ func (c Cactus) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 // BreakInfo ...
 func (c Cactus) BreakInfo() BreakInfo {
 	return newBreakInfo(0.4, alwaysHarvestable, nothingEffective, oneOf(c))
+}
+
+// CompostChance ...
+func (Cactus) CompostChance() float64 {
+	return 0.5
 }
 
 // EncodeItem ...

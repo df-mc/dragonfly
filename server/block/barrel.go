@@ -38,7 +38,7 @@ func NewBarrel() Barrel {
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{}, 1)
 	return Barrel{
-		inventory: inventory.New(27, func(slot int, item item.Stack) {
+		inventory: inventory.New(27, func(slot int, _, item item.Stack) {
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {
@@ -124,7 +124,7 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // BreakInfo ...
 func (b Barrel) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(b))
 }
 
 // FlammabilityInfo ...
@@ -176,6 +176,7 @@ func (b Barrel) EncodeItem() (name string, meta int16) {
 	return "minecraft:barrel", 0
 }
 
+// allBarrels ...
 func allBarrels() (b []world.Block) {
 	for i := cube.Face(0); i < 6; i++ {
 		b = append(b, Barrel{Facing: i})

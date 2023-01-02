@@ -3,6 +3,7 @@ package entity
 import (
 	"fmt"
 	"github.com/df-mc/atomic"
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -127,6 +128,17 @@ func (f *FallingBlock) Tick(w *world.World, _ int64) {
 
 		_ = f.Close()
 	}
+}
+
+// New creates and returns an FallingBlock with the world.Block and position provided. It doesn't spawn the FallingBlock
+// by itself.
+func (f *FallingBlock) New(bl world.Block, pos mgl64.Vec3) world.Entity {
+	return NewFallingBlock(bl, pos)
+}
+
+// Explode ...
+func (f *FallingBlock) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
+	_ = f.Close()
 }
 
 // DecodeNBT decodes the relevant data from the entity NBT passed and returns a new FallingBlock entity.

@@ -21,9 +21,6 @@
   QuitMessage = "%v has left the game"
 
 [World]
-  # The name of the world of the server. The name will show up at the top of the player list in the in-game
-  # pause menu. It has no functionality beyond that.
-  Name = "World"
   # The folder that the world files (will) reside in, relative to the working directory. If not currently
   # present, the folder will be made.
   Folder = "world"

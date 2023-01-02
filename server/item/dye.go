@@ -31,15 +31,6 @@ type dyeable interface {
 	Dye(c Colour) (world.Block, bool)
 }
 
-// AllDyes returns all 16 dye items
-func AllDyes() []world.Item {
-	b := make([]world.Item, 0, 16)
-	for _, c := range Colours() {
-		b = append(b, Dye{Colour: c})
-	}
-	return b
-}
-
 // EncodeItem ...
 func (d Dye) EncodeItem() (name string, meta int16) {
 	if d.Colour.String() == "silver" {

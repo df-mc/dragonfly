@@ -32,9 +32,7 @@ func (FireProtection) Rarity() item.EnchantmentRarity {
 
 // Affects ...
 func (FireProtection) Affects(src damage.Source) bool {
-	_, fire := src.(damage.SourceFire)
-	_, fireTick := src.(damage.SourceFireTick)
-	return fire || fireTick
+	return src.Fire()
 }
 
 // Modifier returns the base protection modifier for the enchantment.
@@ -44,10 +42,10 @@ func (FireProtection) Modifier() float64 {
 
 // CompatibleWithEnchantment ...
 func (FireProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	// TODO: Ensure that the armour does not have blast protection.
+	_, blastProtection := t.(BlastProtection)
 	_, projectileProtection := t.(ProjectileProtection)
 	_, protection := t.(Protection)
-	return !projectileProtection && !protection
+	return !blastProtection && !projectileProtection && !protection
 }
 
 // CompatibleWithItem ...

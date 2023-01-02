@@ -72,6 +72,11 @@ func (c Carrot) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
+func (Carrot) CompostChance() float64 {
+	return 0.65
+}
+
 // EncodeItem ...
 func (c Carrot) EncodeItem() (name string, meta int16) {
 	return "minecraft:carrot", 0

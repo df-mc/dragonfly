@@ -47,7 +47,9 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 			// Don't add duplicate entries for aliases.
 			continue
 		}
-		m[alias] = c.Runnables(s.c)
+		if run := c.Runnables(s.c); len(run) > 0 {
+			m[alias] = run
+		}
 
 		params := c.Params(s.c)
 		overloads := make([]protocol.CommandOverload, len(params))
@@ -129,15 +131,26 @@ func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable) (map[st
 
 	for alias, c := range commands {
 		if c.Name() == alias {
-			m[alias] = c.Runnables(s.c)
+			if run := c.Runnables(s.c); len(run) > 0 {
+				m[alias] = run
+			}
 		}
 	}
 	if len(before) != len(m) {
 		return s.sendAvailableCommands(), true
 	}
+	// First check for commands that were newly added.
 	for name, r := range m {
 		for k := range r {
 			if _, ok := before[name][k]; !ok {
+				return s.sendAvailableCommands(), true
+			}
+		}
+	}
+	// Then check for commands that a player could execute before, but no longer can.
+	for name, r := range before {
+		for k := range r {
+			if _, ok := m[name][k]; !ok {
 				return s.sendAvailableCommands(), true
 			}
 		}

@@ -21,7 +21,7 @@ type TallGrass struct {
 
 // FlammabilityInfo ...
 func (g TallGrass) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(30, 100, false)
+	return newFlammabilityInfo(60, 100, false)
 }
 
 // BreakInfo ...
@@ -46,6 +46,14 @@ func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 		return true
 	}
 	return false
+}
+
+// CompostChance ...
+func (g TallGrass) CompostChance() float64 {
+	if g.Type == Fern() {
+		return 0.65
+	}
+	return 0.3
 }
 
 // NeighbourUpdateTick ...

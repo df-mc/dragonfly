@@ -43,10 +43,10 @@ func (ProjectileProtection) Modifier() float64 {
 
 // CompatibleWithEnchantment ...
 func (ProjectileProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	// TODO: Ensure that the armour does not have blast protection.
+	_, blastProtection := t.(BlastProtection)
 	_, fireProtection := t.(FireProtection)
 	_, protection := t.(Protection)
-	return !fireProtection && !protection
+	return !blastProtection && !fireProtection && !protection
 }
 
 // CompatibleWithItem ...

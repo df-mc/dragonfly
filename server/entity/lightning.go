@@ -16,15 +16,32 @@ type Lightning struct {
 
 	state    int
 	liveTime int
+
+	damage     float64
+	blockFire  bool
+	entityFire bool
 }
 
 // NewLightning creates a lightning entity. The lightning entity will be positioned at the position passed.
 func NewLightning(pos mgl64.Vec3) *Lightning {
 	li := &Lightning{
-		pos:      pos,
-		state:    2,
-		liveTime: rand.Intn(3) + 1,
+		pos:        pos,
+		state:      2,
+		liveTime:   rand.Intn(3) + 1,
+		damage:     5,
+		blockFire:  true,
+		entityFire: true,
 	}
+	return li
+}
+
+// NewLightningWithDamage creates a lightning entity but lets you specify damage and whether blocks and
+// entities should be set on fire.
+func NewLightningWithDamage(pos mgl64.Vec3, dmg float64, blockFire, entityFire bool) *Lightning {
+	li := NewLightning(pos)
+	li.damage = dmg
+	li.blockFire = blockFire
+	li.entityFire = entityFire
 	return li
 }
 
@@ -84,13 +101,15 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 		for _, e := range w.EntitiesWithin(bb, nil) {
 			// Only damage entities that weren't already dead.
 			if l, ok := e.(Living); ok && l.Health() > 0 {
-				l.Hurt(5, damage.SourceLightning{})
-				if f, ok := e.(Flammable); ok && f.OnFireDuration() < time.Second*8 {
+				if li.damage > 0 {
+					l.Hurt(li.damage, damage.SourceLightning{})
+				}
+				if f, ok := e.(Flammable); ok && li.entityFire && f.OnFireDuration() < time.Second*8 {
 					f.SetOnFire(time.Second * 8)
 				}
 			}
 		}
-		if w.Difficulty().FireSpreadIncrease() >= 10 {
+		if li.blockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
 			f.Start(w, cube.PosFromVec3(li.pos))
 		}
 	}
@@ -102,7 +121,7 @@ func (li *Lightning) Tick(w *world.World, _ int64) {
 			li.liveTime--
 			li.state = 1
 
-			if w.Difficulty().FireSpreadIncrease() >= 10 {
+			if li.blockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
 				f.Start(w, cube.PosFromVec3(li.pos))
 			}
 		}

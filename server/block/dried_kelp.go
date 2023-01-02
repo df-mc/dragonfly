@@ -17,12 +17,17 @@ func (d DriedKelp) BreakInfo() BreakInfo {
 
 // FlammabilityInfo ...
 func (DriedKelp) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(30, 60, false)
+	return newFlammabilityInfo(30, 5, false)
 }
 
 // FuelInfo ...
 func (DriedKelp) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 200)
+}
+
+// CompostChance ...
+func (DriedKelp) CompostChance() float64 {
+	return 0.5
 }
 
 // EncodeItem ...

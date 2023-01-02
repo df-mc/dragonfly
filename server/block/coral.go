@@ -15,6 +15,7 @@ type Coral struct {
 	empty
 	transparent
 	bassDrum
+	sourceWaterDisplacer
 
 	// Type is the type of coral of the block.
 	Type CoralType
@@ -46,12 +47,6 @@ func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 // HasLiquidDrops ...
 func (c Coral) HasLiquidDrops() bool {
 	return false
-}
-
-// CanDisplace ...
-func (c Coral) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

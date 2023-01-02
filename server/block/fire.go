@@ -4,7 +4,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
@@ -66,10 +65,13 @@ func (f Fire) burn(from, to cube.Pos, w *world.World, r *rand.Rand, chanceBound 
 	if flammable, ok := w.Block(to).(Flammable); ok && r.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
 		if r.Intn(f.Age+10) < 5 && !rainingAround(to, w) {
 			f.spread(from, to, w, r)
-		} else {
-			w.SetBlock(to, nil, nil)
+			return
 		}
-		//TODO: Light TNT
+		if t, ok := flammable.(TNT); ok {
+			t.Ignite(to, w)
+			return
+		}
+		w.SetBlock(to, nil, nil)
 	}
 }
 
@@ -195,8 +197,8 @@ func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
 
 // EntityInside ...
 func (f Fire) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if flammable, ok := e.(entity.Flammable); ok {
-		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
+	if flammable, ok := e.(flammableEntity); ok {
+		if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
 			l.Hurt(f.Type.Damage(), damage.SourceFire{})
 		}
 		if flammable.OnFireDuration() < time.Second*8 {

@@ -51,6 +51,11 @@ func (h HayBale) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, hoeEffective, oneOf(h))
 }
 
+// CompostChance ...
+func (HayBale) CompostChance() float64 {
+	return 0.85
+}
+
 // EncodeItem ...
 func (HayBale) EncodeItem() (name string, meta int16) {
 	return "minecraft:hay_block", 0

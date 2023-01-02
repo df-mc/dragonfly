@@ -27,7 +27,7 @@ type Stack struct {
 
 	data map[string]any
 
-	enchantments map[reflect.Type]Enchantment
+	enchantments map[EnchantmentType]Enchantment
 }
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
@@ -100,12 +100,17 @@ func (s Stack) Damage(d int) Stack {
 		// Not a durable item.
 		return s
 	}
+	durability := s.Durability()
 	info := durable.DurabilityInfo()
-	if s.Durability()-d <= 0 {
+	if durability-d <= 0 {
+		if info.Persistent {
+			// Persistent items can't be broken.
+			return s
+		}
 		// A durability of 0, so the item is broken.
 		return info.BrokenItem()
 	}
-	if s.Durability()-d > info.MaxDurability {
+	if durability-d > info.MaxDurability {
 		// We've passed the maximum durability, so we just need to make sure the final durability of the item
 		// will be equal to the max.
 		s.damage, d = 0, 0
@@ -232,7 +237,7 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 			// Enchantment is not compatible with the item.
 			continue
 		}
-		s.enchantments[reflect.TypeOf(enchant.t)] = enchant
+		s.enchantments[enchant.t] = enchant
 	}
 	return s
 }
@@ -241,7 +246,10 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
 	s.enchantments = copyEnchantments(s.enchantments)
 	for _, enchant := range enchants {
-		delete(s.enchantments, reflect.TypeOf(enchant))
+		delete(s.enchantments, enchant)
+	}
+	if _, ok := s.item.(EnchantedBook); ok && len(s.enchantments) == 0 {
+		s.item = Book{}
 	}
 	return s
 }
@@ -249,7 +257,7 @@ func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
 // Enchantment attempts to return an Enchantment set to the Stack using Stack.WithEnchantment(). If an Enchantment
 // is found by the EnchantmentType, the enchantment and the bool true is returned.
 func (s Stack) Enchantment(enchant EnchantmentType) (Enchantment, bool) {
-	ench, ok := s.enchantments[reflect.TypeOf(enchant)]
+	ench, ok := s.enchantments[enchant]
 	return ench, ok
 }
 
@@ -312,13 +320,14 @@ func (s Stack) AddStack(s2 Stack) (a, b Stack) {
 }
 
 // Equal checks if the two stacks are equal. Equal is equivalent to a Stack.Comparable check while also
-// checking the count.
+// checking the count and durability.
 func (s Stack) Equal(s2 Stack) bool {
-	return s.Comparable(s2) && s.count == s2.count
+	return s.Comparable(s2) && s.count == s2.count && s.damage == s2.damage
 }
 
 // Comparable checks if two stacks can be considered comparable. True is returned if the two stacks have an
 // equal item type and have equal enchantments, lore and custom names, or if one of the stacks is empty.
+// Comparable does not check if the two stacks have the same durability.
 func (s Stack) Comparable(s2 Stack) bool {
 	if s.Empty() || s2.Empty() {
 		return true
@@ -326,7 +335,7 @@ func (s Stack) Comparable(s2 Stack) bool {
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || meta != meta2 || s.damage != s2.damage || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
+	if name != name2 || meta != meta2 || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
 		return false
 	}
 	for !slices.Equal(s.lore, s2.lore) {
@@ -398,8 +407,8 @@ func copyMap(m map[string]any) map[string]any {
 }
 
 // copyEnchantments makes a copy of the enchantments map passed. It does not recursively copy the map.
-func copyEnchantments(m map[reflect.Type]Enchantment) map[reflect.Type]Enchantment {
-	cp := make(map[reflect.Type]Enchantment, len(m))
+func copyEnchantments(m map[EnchantmentType]Enchantment) map[EnchantmentType]Enchantment {
+	cp := make(map[EnchantmentType]Enchantment, len(m))
 	for k, v := range m {
 		cp[k] = v
 	}

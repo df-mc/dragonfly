@@ -9,17 +9,12 @@ import (
 type IronBars struct {
 	transparent
 	thin
+	sourceWaterDisplacer
 }
 
 // BreakInfo ...
 func (i IronBars) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i))
-}
-
-// CanDisplace ...
-func (i IronBars) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i)).withBlastResistance(30)
 }
 
 // SideClosed ...

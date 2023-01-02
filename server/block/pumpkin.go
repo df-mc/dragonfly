@@ -43,6 +43,11 @@ func (p Pumpkin) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(p))
 }
 
+// CompostChance ...
+func (Pumpkin) CompostChance() float64 {
+	return 0.65
+}
+
 // Carve ...
 func (p Pumpkin) Carve(f cube.Face) (world.Block, bool) {
 	return Pumpkin{Facing: f.Direction(), Carved: true}, !p.Carved

@@ -11,12 +11,7 @@ import (
 type MossCarpet struct {
 	carpet
 	transparent
-}
-
-// CanDisplace ...
-func (MossCarpet) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+	sourceWaterDisplacer
 }
 
 // SideClosed ...
@@ -53,6 +48,11 @@ func (m MossCarpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 // BreakInfo ...
 func (m MossCarpet) BreakInfo() BreakInfo {
 	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(m))
+}
+
+// CompostChance ...
+func (MossCarpet) CompostChance() float64 {
+	return 0.3
 }
 
 // EncodeItem ...

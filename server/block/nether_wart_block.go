@@ -13,6 +13,11 @@ func (n NetherWartBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, hoeEffective, oneOf(n))
 }
 
+// CompostChance ...
+func (NetherWartBlock) CompostChance() float64 {
+	return 0.85
+}
+
 // EncodeItem ...
 func (n NetherWartBlock) EncodeItem() (name string, meta int16) {
 	if n.Warped {

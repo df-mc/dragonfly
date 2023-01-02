@@ -2,12 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
 )
 
 // DoubleFlower is a two block high flower consisting of an upper and lower part.
@@ -28,9 +26,7 @@ func (d DoubleFlower) FlammabilityInfo() FlammabilityInfo {
 
 // BoneMeal ...
 func (d DoubleFlower) BoneMeal(pos cube.Pos, w *world.World) bool {
-	itemEntity := entity.NewItem(item.NewStack(d, 1), pos.Vec3Centre())
-	itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-	w.AddEntity(itemEntity)
+	dropItem(w, item.NewStack(d, 1), pos.Vec3Centre())
 	return true
 }
 
@@ -40,6 +36,7 @@ func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		if bottom, ok := w.Block(pos.Side(cube.FaceDown)).(DoubleFlower); !ok || bottom.Type != d.Type || bottom.UpperPart {
 			w.SetBlock(pos, nil, nil)
 			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+			dropItem(w, item.NewStack(d, 1), pos.Vec3Middle())
 		}
 		return
 	}
@@ -75,6 +72,11 @@ func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 // BreakInfo ...
 func (d DoubleFlower) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(d))
+}
+
+// CompostChance ...
+func (DoubleFlower) CompostChance() float64 {
+	return 0.65
 }
 
 // HasLiquidDrops ...

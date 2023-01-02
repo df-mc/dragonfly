@@ -11,6 +11,7 @@ import (
 type Carpet struct {
 	carpet
 	transparent
+	sourceWaterDisplacer
 
 	// Colour is the colour of the carpet.
 	Colour item.Colour
@@ -18,13 +19,7 @@ type Carpet struct {
 
 // FlammabilityInfo ...
 func (c Carpet) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(30, 60, true)
-}
-
-// CanDisplace ...
-func (Carpet) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+	return newFlammabilityInfo(30, 20, true)
 }
 
 // SideClosed ...
@@ -53,9 +48,10 @@ func (Carpet) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (c Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		w.SetBlock(pos, nil, nil)
+		dropItem(w, item.NewStack(c, 1), pos.Vec3Centre())
 	}
 }
 

@@ -21,6 +21,7 @@ type Chest struct {
 	chest
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Facing is the direction that the chest is facing.
 	Facing cube.Direction
@@ -41,7 +42,7 @@ func NewChest() Chest {
 	m := new(sync.RWMutex)
 	v := new([]ContainerViewer)
 	return Chest{
-		inventory: inventory.New(27, func(slot int, item item.Stack) {
+		inventory: inventory.New(27, func(slot int, _, item item.Stack) {
 			m.RLock()
 			defer m.RUnlock()
 			for _, viewer := range *v {
@@ -65,12 +66,6 @@ func (c Chest) PreBreak(pos cube.Pos, w *world.World, _ item.User) world.Block {
 		c.unpair()
 	}
 	return c
-}
-
-// CanDisplace ...
-func (Chest) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

@@ -13,15 +13,10 @@ import (
 // Cake is an edible block.
 type Cake struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Bites is the amount of bites taken out of the cake.
 	Bites int
-}
-
-// CanDisplace ...
-func (c Cake) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

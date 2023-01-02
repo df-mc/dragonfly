@@ -139,7 +139,7 @@ type Handler interface {
 type NopHandler struct{}
 
 // Compile time check to make sure NopHandler implements Handler.
-var _ Handler = (*NopHandler)(nil)
+var _ Handler = NopHandler{}
 
 func (NopHandler) HandleItemDrop(*event.Context, *entity.Item)                                {}
 func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64)                    {}

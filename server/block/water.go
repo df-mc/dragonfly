@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -32,7 +31,7 @@ func (w Water) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
-	if flammable, ok := e.(entity.Flammable); ok {
+	if flammable, ok := e.(flammableEntity); ok {
 		flammable.Extinguish()
 	}
 }
@@ -66,6 +65,11 @@ func (w Water) WithDepth(depth int, falling bool) world.Liquid {
 // LiquidFalling returns Water.Falling.
 func (w Water) LiquidFalling() bool {
 	return w.Falling
+}
+
+// BlastResistance always returns 500.
+func (Water) BlastResistance() float64 {
+	return 500
 }
 
 // HasLiquidDrops ...

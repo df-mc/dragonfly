@@ -18,24 +18,16 @@ func (e EnderPearl) Use(w *world.World, user User, ctx *UseContext) bool {
 	}
 
 	p, ok := pearl.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
+		New(pos, vel mgl64.Vec3, owner world.Entity) world.Entity
 	})
 	if !ok {
 		return false
 	}
 
-	yaw, pitch := user.Rotation()
-	entity := p.New(eyePosition(user), directionVector(user).Mul(1.5), yaw, pitch)
-	if o, ok := entity.(owned); ok {
-		o.Own(user)
-	}
+	w.PlaySound(user.Position(), sound.ItemThrow{})
+	w.AddEntity(p.New(eyePosition(user), directionVector(user).Mul(1.5), user))
 
 	ctx.SubtractFromCount(1)
-
-	w.PlaySound(user.Position(), sound.ItemThrow{})
-
-	w.AddEntity(entity)
-
 	return true
 }
 

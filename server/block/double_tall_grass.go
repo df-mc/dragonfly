@@ -82,6 +82,14 @@ func (d DoubleTallGrass) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
+func (d DoubleTallGrass) CompostChance() float64 {
+	if d.Type == Fern() {
+		return 0.65
+	}
+	return 0.5
+}
+
 // EncodeItem ...
 func (d DoubleTallGrass) EncodeItem() (name string, meta int16) {
 	return "minecraft:double_plant", int16(d.Type.Uint8() + 2)

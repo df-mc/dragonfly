@@ -14,6 +14,7 @@ type DeadBush struct {
 	empty
 	replaceable
 	transparent
+	sourceWaterDisplacer
 }
 
 // NeighbourUpdateTick ...
@@ -21,6 +22,9 @@ func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+		if amount := rand.Intn(3); amount != 0 {
+			dropItem(w, item.NewStack(item.Stick{}, amount), pos.Vec3Centre())
+		}
 	}
 }
 
@@ -36,12 +40,6 @@ func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 
 	place(w, pos, d, user, ctx)
 	return placed(ctx)
-}
-
-// CanDisplace ...
-func (d DeadBush) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

@@ -18,6 +18,7 @@ type Sign struct {
 	transparent
 	empty
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the sign. This field must have one of the values found in the material
 	// package.
@@ -64,12 +65,6 @@ func (s Sign) EncodeItem() (name string, meta int16) {
 // BreakInfo ...
 func (s Sign) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(s))
-}
-
-// CanDisplace ...
-func (s Sign) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // Dye dyes the Sign, changing its base colour to that of the colour passed.
@@ -129,12 +124,14 @@ func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		if _, ok := w.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
 			w.SetBlock(pos, nil, nil)
 			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
+			dropItem(w, item.NewStack(s, 1), pos.Vec3Centre())
 		}
 		return
 	}
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
+		dropItem(w, item.NewStack(s, 1), pos.Vec3Centre())
 	}
 }
 

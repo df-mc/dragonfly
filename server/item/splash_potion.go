@@ -26,24 +26,16 @@ func (s SplashPotion) Use(w *world.World, user User, ctx *UseContext) bool {
 	}
 
 	p, ok := splash.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64, t potion.Potion) world.Entity
+		New(pos, vel mgl64.Vec3, t potion.Potion, owner world.Entity) world.Entity
 	})
 	if !ok {
 		return false
 	}
 
-	yaw, pitch := user.Rotation()
-	e := p.New(eyePosition(user), directionVector(user).Mul(0.5), yaw, pitch, s.Type)
-	if o, ok := e.(owned); ok {
-		o.Own(user)
-	}
+	w.PlaySound(user.Position(), sound.ItemThrow{})
+	w.AddEntity(p.New(eyePosition(user), directionVector(user).Mul(0.5), s.Type, user))
 
 	ctx.SubtractFromCount(1)
-
-	w.PlaySound(user.Position(), sound.ItemThrow{})
-
-	w.AddEntity(e)
-
 	return true
 }
 

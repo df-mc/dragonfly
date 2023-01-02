@@ -24,9 +24,14 @@ func (t *Text) Name() string {
 	return "Text('" + t.text + "')"
 }
 
-// EncodeEntity returns the ID for falling blocks.
+// EncodeEntity returns the ID for text.
 func (t *Text) EncodeEntity() string {
 	return "dragonfly:text"
+}
+
+// NetworkEncodeEntity returns the network ID for falling blocks.
+func (*Text) NetworkEncodeEntity() string {
+	return "minecraft:falling_block"
 }
 
 // BBox returns an empty physics.BBox so that players cannot interact with the entity.

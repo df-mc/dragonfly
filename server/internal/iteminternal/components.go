@@ -8,7 +8,7 @@ import (
 
 // Components returns all the components of the given custom item. If the item has no components, a nil map and false
 // are returned.
-func Components(it world.CustomItem) (map[string]any, bool) {
+func Components(it world.CustomItem) map[string]any {
 	category := it.Category()
 	identifier, _ := it.EncodeItem()
 	name := strings.Split(identifier, ":")[1]
@@ -81,10 +81,39 @@ func Components(it world.CustomItem) (map[string]any, bool) {
 	if x, ok := it.(item.HandEquipped); ok {
 		builder.AddProperty("hand_equipped", x.HandEquipped())
 	}
+	itemScale := calculateItemScale(it)
+	builder.AddComponent("minecraft:render_offsets", map[string]any{
+		"main_hand": map[string]any{
+			"first_person": map[string]any{
+				"scale": itemScale,
+			},
+			"third_person": map[string]any{
+				"scale": itemScale,
+			},
+		},
+		"off_hand": map[string]any{
+			"first_person": map[string]any{
+				"scale": itemScale,
+			},
+			"third_person": map[string]any{
+				"scale": itemScale,
+			},
+		},
+	})
 
-	// If an item has no new components or properties then it should not be considered a component-based item.
-	if builder.Empty() {
-		return nil, false
+	return builder.Construct()
+}
+
+// calculateItemScale calculates the scale of the item to be rendered to the player according to the given size.
+func calculateItemScale(it world.CustomItem) []float32 {
+	width := float32(it.Texture().Bounds().Dx())
+	height := float32(it.Texture().Bounds().Dy())
+	var x, y, z float32 = 0.1, 0.1, 0.1
+	if _, ok := it.(item.HandEquipped); ok {
+		x, y, z = 0.075, 0.125, 0.075
 	}
-	return builder.Construct(), true
+	newX := x / (width / 16)
+	newY := y / (height / 16)
+	newZ := z / (width / 16)
+	return []float32{newX, newY, newZ}
 }
