@@ -17,6 +17,7 @@ func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *Ent {
 	colour, _ := effect.ResultingColour(t.Effects())
 
 	conf := splashPotionConf
+	conf.Potion = t
 	conf.Particle = particle.Splash{Colour: colour}
 	conf.Hit = potionSplash(0.75, t, false)
 	return Config{Behaviour: conf.New(owner)}.New(SplashPotionType{}, pos)
