@@ -1,6 +1,7 @@
 package session
 
 import (
+	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl32"
@@ -126,6 +127,11 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags uint64, s *Session) {
 
 // handleUseItemData handles the protocol.UseItemTransactionData found in a packet.PlayerAuthInput.
 func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransactionData, s *Session) error {
+	if len(data.Actions) > 100 {
+		s.Disconnect("Too many actions in item use transaction")
+		return errors.New("too many actions in item use transaction")
+	}
+
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
 
@@ -148,6 +154,11 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 
 // handleBlockActions handles a slice of protocol.PlayerBlockAction present in a PlayerAuthInput packet.
 func (h PlayerAuthInputHandler) handleBlockActions(a []protocol.PlayerBlockAction, s *Session) error {
+	if len(a) > 100 {
+		s.Disconnect("Too many block actions")
+		return errors.New("too many block actions in PlayerAuthInput packet")
+	}
+
 	for _, action := range a {
 		if err := handlePlayerAction(action.Action, action.Face, action.BlockPos, selfEntityRuntimeID, s); err != nil {
 			return err

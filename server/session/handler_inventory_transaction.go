@@ -1,6 +1,7 @@
 package session
 
 import (
+	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
@@ -58,6 +59,11 @@ func (h *InventoryTransactionHandler) resendInventories(s *Session) {
 
 // handleNormalTransaction ...
 func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.InventoryTransaction, s *Session) error {
+	if len(pk.Actions) > 100 {
+		s.Disconnect("Too many actions in item use transaction")
+		return errors.New("too many actions in item use transaction")
+	}
+
 	for _, action := range pk.Actions {
 		switch action.SourceType {
 		case protocol.InventoryActionSourceWorld:
