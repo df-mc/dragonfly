@@ -1796,16 +1796,13 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 
 	around := w.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3()), nil)
 	for _, e := range around {
-		if _, ok := e.(*entity.Item); ok {
-			// Placing blocks inside item entities is fine.
+		switch e.Type().(type) {
+		case entity.ItemType, entity.ArrowType:
 			continue
-		}
-		if _, ok := e.(*entity.Arrow); ok {
-			// Placing blocks inside arrow entities is fine.
-			continue
-		}
-		if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
-			return true
+		default:
+			if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
+				return true
+			}
 		}
 	}
 	return false
@@ -2286,7 +2283,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
-			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10))
+			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10).WithoutParticles())
 		}
 	}
 
