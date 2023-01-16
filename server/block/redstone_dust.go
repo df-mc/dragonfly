@@ -1,14 +1,11 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"golang.org/x/exp/slices"
 	"sync"
 )
 
@@ -51,14 +48,6 @@ func (r RedstoneDust) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if r.Power != power {
 		r.Power = power
 		w.SetBlock(pos, r, nil)
-		for _, face := range cube.Faces() {
-			sidePos := pos.Side(face)
-			if c, ok := w.Block(sidePos).(world.Conductor); ok {
-				if n, ok := c.(world.NeighbourUpdateTicker); ok {
-					n.NeighbourUpdateTick(sidePos, pos, w)
-				}
-			}
-		}
 	}
 }
 
@@ -66,20 +55,17 @@ func (r RedstoneDust) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 var disabledEmitters sync.Map
 
 // WeakPower ...
-func (r RedstoneDust) WeakPower(pos cube.Pos, side cube.Face, w *world.World) int {
-	if _, ok := disabledEmitters.Load(pos); ok || side == cube.FaceDown {
+func (r RedstoneDust) WeakPower(pos cube.Pos, face cube.Face, w *world.World) int {
+	if _, ok := disabledEmitters.Load(pos.Side(face.Opposite())); ok {
 		return 0
 	}
-	if side == cube.FaceUp {
+	if face == cube.FaceDown {
+		return 0
+	}
+	if face == cube.FaceUp {
 		return r.Power
 	}
-	faces := sliceutil.Filter(cube.HorizontalFaces(), func(face cube.Face) bool {
-		return r.connection(pos, face, w)
-	})
-	if len(faces) == 0 {
-		return r.Power
-	}
-	if slices.Contains(faces, side) && !slices.Contains(faces, side.RotateLeft()) && !slices.Contains(faces, side.RotateRight()) {
+	if r.connection(pos, face, w) && !r.connection(pos, face.RotateLeft(), w) && !r.connection(pos, face.RotateRight(), w) {
 		return r.Power
 	}
 	return 0
@@ -87,9 +73,6 @@ func (r RedstoneDust) WeakPower(pos cube.Pos, side cube.Face, w *world.World) in
 
 // StrongPower ...
 func (r RedstoneDust) StrongPower(pos cube.Pos, face cube.Face, w *world.World) int {
-	if _, ok := disabledEmitters.Load(pos); ok {
-		return 0
-	}
 	return r.WeakPower(pos, face, w)
 }
 
@@ -112,9 +95,6 @@ func (r RedstoneDust) receivedPower(pos cube.Pos, w *world.World) int {
 			}
 		}
 	}
-	fmt.Printf("Received: %v\n", received)
-	fmt.Printf("Power: %v\n", power-1)
-	fmt.Println(max(received, power-1))
 	return max(received, power-1)
 }
 
