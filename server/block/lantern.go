@@ -11,6 +11,7 @@ import (
 // Lantern is a light emitting block.
 type Lantern struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Hanging determines if a lantern is hanging off a block.
 	Hanging bool
@@ -29,11 +30,13 @@ func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		up := pos.Side(cube.FaceUp)
 		if _, ok := w.Block(up).(Chain); !ok && !w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
 			w.SetBlock(pos, nil, nil)
+			dropItem(w, item.NewStack(l, 1), pos.Vec3Centre())
 		}
 	} else {
 		down := pos.Side(cube.FaceDown)
 		if !w.Block(down).Model().FaceSolid(down, cube.FaceUp, w) {
 			w.SetBlock(pos, nil, nil)
+			dropItem(w, item.NewStack(l, 1), pos.Vec3Centre())
 		}
 	}
 }
@@ -67,12 +70,6 @@ func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 	return placed(ctx)
 }
 
-// CanDisplace ...
-func (l Lantern) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed ...
 func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
@@ -80,7 +77,7 @@ func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (l Lantern) BreakInfo() BreakInfo {
-	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
 }
 
 // EncodeItem ...

@@ -3,6 +3,7 @@ package playerdb
 import (
 	"encoding/json"
 	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/google/uuid"
@@ -22,9 +23,7 @@ func NewProvider(path string) (*Provider, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		_ = os.Mkdir(path, 0777)
 	}
-	db, err := leveldb.OpenFile(path, &opt.Options{
-		Compression: opt.SnappyCompression,
-	})
+	db, err := leveldb.OpenFile(path, &opt.Options{Compression: opt.SnappyCompression})
 	if err != nil {
 		return nil, err
 	}
@@ -33,27 +32,25 @@ func NewProvider(path string) (*Provider, error) {
 
 // Save ...
 func (p *Provider) Save(id uuid.UUID, d player.Data) error {
-	data := toJson(d)
-	jData, err := json.Marshal(data)
+	b, err := json.Marshal(p.toJson(d))
 	if err != nil {
 		return err
 	}
-	_ = p.db.Put(id[:], jData, nil)
-	return nil
+	return p.db.Put(id[:], b, nil)
 }
 
 // Load ...
-func (p *Provider) Load(id uuid.UUID) (player.Data, error) {
-	jData, err := p.db.Get(id[:], nil)
+func (p *Provider) Load(id uuid.UUID, world func(world.Dimension) *world.World) (player.Data, error) {
+	b, err := p.db.Get(id[:], nil)
 	if err != nil {
 		return player.Data{}, err
 	}
-	d := jsonData{}
-	err = json.Unmarshal(jData, &d)
+	var d jsonData
+	err = json.Unmarshal(b, &d)
 	if err != nil {
 		return player.Data{}, err
 	}
-	return fromJson(d), nil
+	return p.fromJson(d, world), nil
 }
 
 // Close ...

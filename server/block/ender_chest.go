@@ -22,6 +22,7 @@ type EnderChest struct {
 	chest
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Facing is the direction that the ender chest is facing.
 	Facing cube.Direction
@@ -44,12 +45,6 @@ func (c EnderChest) LightEmissionLevel() uint8 {
 	return 7
 }
 
-// CanDisplace ...
-func (EnderChest) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed ...
 func (EnderChest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
@@ -63,7 +58,7 @@ func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 	}
 	//noinspection GoAssignmentToReceiver
 	c = NewEnderChest()
-	c.Facing = user.Facing().Opposite()
+	c.Facing = user.Rotation().Direction().Opposite()
 
 	place(w, pos, c, user, ctx)
 	return placed(ctx)

@@ -27,17 +27,17 @@ var plantSelection = []world.Block{
 // init adds extra variants of TallGrass to the plant selection.
 func init() {
 	for i := 0; i < 8; i++ {
-		plantSelection = append(plantSelection, TallGrass{Type: Fern()})
+		plantSelection = append(plantSelection, TallGrass{Type: FernTallGrass()})
 	}
 	for i := 0; i < 12; i++ {
-		plantSelection = append(plantSelection, TallGrass{Type: NormalGrass()})
+		plantSelection = append(plantSelection, TallGrass{Type: NormalTallGrass()})
 	}
 }
 
 // SoilFor ...
 func (g Grass) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts:
+	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, SugarCane:
 		return true
 	}
 	return false
@@ -95,6 +95,11 @@ func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
 // BreakInfo ...
 func (g Grass) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g))
+}
+
+// CompostChance ...
+func (Grass) CompostChance() float64 {
+	return 0.3
 }
 
 // EncodeItem ...

@@ -14,6 +14,7 @@ import (
 // the sides of other blocks.
 type Ladder struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Facing is the side of the block the ladder is currently attached to.
 	Facing cube.Direction
@@ -24,6 +25,7 @@ func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, ok := w.Block(pos.Side(l.Facing.Opposite().Face())).(LightDiffuser); ok {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
+		dropItem(w, item.NewStack(l, 1), pos.Vec3Centre())
 	}
 }
 
@@ -60,12 +62,6 @@ func (l Ladder) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
-}
-
-// CanDisplace ...
-func (l Ladder) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

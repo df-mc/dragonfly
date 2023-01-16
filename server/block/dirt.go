@@ -17,7 +17,9 @@ type Dirt struct {
 // SoilFor ...
 func (d Dirt) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case TallGrass, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, DeadBush:
+	case TallGrass, DoubleTallGrass, DeadBush:
+		return !d.Coarse
+	case Flower, DoubleFlower, NetherSprouts, SugarCane:
 		return true
 	}
 	return false

@@ -23,6 +23,9 @@ type ExplosionConfig struct {
 	// SpawnFire will cause the explosion to randomly start fires in 1/3 of all destroyed air blocks that are
 	// above opaque blocks.
 	SpawnFire bool
+	// DisableItemDrops, when set to true, will prevent any item entities from dropping as a result of blocks being
+	// destroyed.
+	DisableItemDrops bool
 
 	// Sound is the sound to play when the explosion is created. If set to nil, this will default to the sound of a
 	// regular explosion.
@@ -73,6 +76,9 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 	if c.Rand == nil {
 		c.Rand = rand.NewSource(time.Now().UnixNano())
 	}
+	if c.Size == 0 {
+		c.Size = 4
+	}
 
 	r, d := rand.New(c.Rand), c.Size*2
 	box := cube.Box(
@@ -86,7 +92,7 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 
 	for _, e := range w.EntitiesWithin(box.Grow(2), nil) {
 		pos := e.Position()
-		if !e.BBox().Translate(pos).IntersectsWith(box) {
+		if !e.Type().BBox(e).Translate(pos).IntersectsWith(box) {
 			continue
 		}
 		dist := pos.Sub(pos).Len()
@@ -104,12 +110,22 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 		pos := explosionPos
 		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			if r, ok := w.Block(current).(Breakable); ok {
-				if blastForce -= (r.BreakInfo().BlastResistance/5 + 0.3) * 0.3; blastForce > 0 {
-					affectedBlocks = append(affectedBlocks, current)
-				}
+			currentBlock := w.Block(current)
+
+			resistance := 0.0
+			if l, ok := w.Liquid(current); ok {
+				resistance = l.BlastResistance()
+			} else if i, ok := currentBlock.(Breakable); ok {
+				resistance = i.BreakInfo().BlastResistance
+			} else if _, ok = currentBlock.(Air); !ok {
+				// Completely stop the ray if the current block is not air and unbreakable.
+				break
 			}
+
 			pos = pos.Add(ray)
+			if blastForce -= (resistance/5 + 0.3) * 0.3; blastForce > 0 {
+				affectedBlocks = append(affectedBlocks, current)
+			}
 		}
 	}
 	for _, pos := range affectedBlocks {
@@ -118,7 +134,7 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 			explodable.Explode(explosionPos, pos, w, c)
 		} else if breakable, ok := bl.(Breakable); ok {
 			w.SetBlock(pos, nil, nil)
-			if 1/c.Size > r.Float64() {
+			if !c.DisableItemDrops && 1/c.Size > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(w, drop, pos.Vec3Centre())
 				}
@@ -143,7 +159,7 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 func exposure(origin mgl64.Vec3, e world.Entity) float64 {
 	w := e.World()
 	pos := e.Position()
-	box := e.BBox().Translate(pos)
+	box := e.Type().BBox(e).Translate(pos)
 
 	boxMin, boxMax := box.Min(), box.Max()
 	diff := boxMax.Sub(boxMin).Mul(2.0).Add(mgl64.Vec3{1, 1, 1})

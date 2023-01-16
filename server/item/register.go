@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-//noinspection SpellCheckingInspection
+// noinspection SpellCheckingInspection
 func init() {
 	world.RegisterItem(AmethystShard{})
 	world.RegisterItem(Apple{})
@@ -20,6 +20,7 @@ func init() {
 	world.RegisterItem(BlazeRod{})
 	world.RegisterItem(BoneMeal{})
 	world.RegisterItem(Bone{})
+	world.RegisterItem(BookAndQuill{})
 	world.RegisterItem(Book{})
 	world.RegisterItem(BottleOfEnchanting{})
 	world.RegisterItem(Bowl{})
@@ -44,12 +45,15 @@ func init() {
 	world.RegisterItem(DragonBreath{})
 	world.RegisterItem(DriedKelp{})
 	world.RegisterItem(EchoShard{})
+	world.RegisterItem(Egg{})
+	world.RegisterItem(Elytra{})
 	world.RegisterItem(Emerald{})
 	world.RegisterItem(EnchantedApple{})
 	world.RegisterItem(EnchantedBook{})
 	world.RegisterItem(EnderPearl{})
 	world.RegisterItem(Feather{})
 	world.RegisterItem(FermentedSpiderEye{})
+	world.RegisterItem(FireCharge{})
 	world.RegisterItem(Firework{})
 	world.RegisterItem(FlintAndSteel{})
 	world.RegisterItem(Flint{})
@@ -99,6 +103,7 @@ func init() {
 	world.RegisterItem(RawCopper{})
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
+	world.RegisterItem(RecoveryCompass{})
 	world.RegisterItem(RottenFlesh{})
 	world.RegisterItem(Salmon{Cooked: true})
 	world.RegisterItem(Salmon{})
@@ -115,11 +120,15 @@ func init() {
 	world.RegisterItem(TurtleShell{})
 	world.RegisterItem(WarpedFungusOnAStick{})
 	world.RegisterItem(Wheat{})
+	world.RegisterItem(WrittenBook{})
 	for _, t := range ArmourTiers() {
 		world.RegisterItem(Helmet{Tier: t})
 		world.RegisterItem(Chestplate{Tier: t})
 		world.RegisterItem(Leggings{Tier: t})
 		world.RegisterItem(Boots{Tier: t})
+	}
+	for _, pattern := range BannerPatterns() {
+		world.RegisterItem(BannerPattern{Type: pattern})
 	}
 	for _, c := range Colours() {
 		world.RegisterItem(Dye{Colour: c})
@@ -132,6 +141,7 @@ func init() {
 		if i > 4 {
 			world.RegisterItem(Arrow{Tip: p})
 		}
+		world.RegisterItem(LingeringPotion{Type: p})
 		world.RegisterItem(SplashPotion{Type: p})
 		world.RegisterItem(Potion{Type: p})
 	}
@@ -141,5 +151,11 @@ func init() {
 		world.RegisterItem(Shovel{Tier: t})
 		world.RegisterItem(Sword{Tier: t})
 		world.RegisterItem(Hoe{Tier: t})
+	}
+	for _, disc := range sound.MusicDiscs() {
+		world.RegisterItem(MusicDisc{DiscType: disc})
+	}
+	for _, stew := range StewTypes() {
+		world.RegisterItem(SuspiciousStew{Type: stew})
 	}
 }

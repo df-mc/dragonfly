@@ -1,10 +1,12 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
+	"math/rand"
 	"time"
 )
 
@@ -83,6 +85,8 @@ type BreakInfo struct {
 	Effective func(t item.Tool) bool
 	// Drops is a function called to get the drops of the block if it is broken using the item passed.
 	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
+	// BreakHandler is called after the block has broken.
+	BreakHandler func(pos cube.Pos, w *world.World, u item.User)
 	// XPDrops is the range of XP a block can drop when broken.
 	XPDrops XPDropRange
 	// BlastResistance is the blast resistance of the block, which influences the block's ability to withstand an
@@ -114,8 +118,21 @@ func (b BreakInfo) withBlastResistance(res float64) BreakInfo {
 	return b
 }
 
+// withBreakHandler sets the BreakHandler field of the BreakInfo struct to the passed value.
+func (b BreakInfo) withBreakHandler(handler func(pos cube.Pos, w *world.World, u item.User)) BreakInfo {
+	b.BreakHandler = handler
+	return b
+}
+
 // XPDropRange holds the min & max XP drop amounts of blocks.
 type XPDropRange [2]int
+
+// RandomValue returns a random XP value that falls within the drop range.
+func (r XPDropRange) RandomValue() int {
+	diff := r[1] - r[0]
+	// Add one because it's a [r[0], r[1]] interval.
+	return rand.Intn(diff+1) + r[0]
+}
 
 // pickaxeEffective is a convenience function for blocks that are effectively mined with a pickaxe.
 var pickaxeEffective = func(t item.Tool) bool {

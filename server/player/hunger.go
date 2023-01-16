@@ -150,3 +150,11 @@ func (m *hungerManager) canSprint() bool {
 func (m *hungerManager) starving() bool {
 	return m.Food() == 0
 }
+
+// StarvationDamageSource is the world.DamageSource passed when a player is
+// dealt damage from an empty food bar.
+type StarvationDamageSource struct{}
+
+func (StarvationDamageSource) ReducedByArmour() bool     { return false }
+func (StarvationDamageSource) ReducedByResistance() bool { return false }
+func (StarvationDamageSource) Fire() bool                { return false }

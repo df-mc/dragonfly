@@ -11,6 +11,7 @@ import (
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
 type Leaves struct {
 	leaves
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the leaves. This field must have one of the values found in the material
 	// package.
@@ -100,6 +101,11 @@ func (l Leaves) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
+func (Leaves) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (l Leaves) EncodeItem() (name string, meta int16) {
 	switch l.Wood {
@@ -115,12 +121,6 @@ func (l Leaves) EncodeItem() (name string, meta int16) {
 // LightDiffusionLevel ...
 func (Leaves) LightDiffusionLevel() uint8 {
 	return 1
-}
-
-// CanDisplace ...
-func (Leaves) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

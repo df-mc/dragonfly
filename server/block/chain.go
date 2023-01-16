@@ -11,15 +11,10 @@ import (
 // Chain is a metallic decoration block.
 type Chain struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Axis is the axis which the chain faces.
 	Axis cube.Axis
-}
-
-// CanDisplace ...
-func (Chain) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

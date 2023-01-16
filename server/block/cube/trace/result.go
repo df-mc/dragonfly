@@ -38,7 +38,7 @@ func Perform(start, end mgl64.Vec3, w *world.World, box cube.BBox, ignored func(
 	dist := math.MaxFloat64
 	bb := box.Translate(start).Extend(end.Sub(start))
 	for _, entity := range w.EntitiesWithin(bb.Grow(8.0), ignored) {
-		if ignored != nil && ignored(entity) || !entity.BBox().Translate(entity.Position()).IntersectsWith(bb) {
+		if ignored != nil && ignored(entity) || !entity.Type().BBox(entity).Translate(entity.Position()).IntersectsWith(bb) {
 			continue
 		}
 		// Check if we collide with the entities bounding box.

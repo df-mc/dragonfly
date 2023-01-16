@@ -13,9 +13,11 @@
 // optional), or a type that implements the cmd.Parameter or cmd.Enum interface. cmd.Enum implementations must be of the
 // type string.
 // Fields in the Runnable struct may have `cmd:` struct tag to specify the name and suffix of a parameter as such:
-//   type T struct {
-//       Param int `cmd:"name,suffix"`
-//   }
+//
+//	type T struct {
+//	    Param int `cmd:"name,suffix"`
+//	}
+//
 // If no name is set, the field name is used. Additionally, the name as specified in the struct tag may be '-' to make
 // the parser ignore the field. In this case, the field does not have to be of one of the types above.
 //

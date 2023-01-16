@@ -2,15 +2,20 @@ package player
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
@@ -30,12 +35,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
-	"math"
-	"math/rand"
-	"net"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -64,10 +63,11 @@ type Player struct {
 	armour                   *inventory.Armour
 	heldSlot                 *atomic.Uint32
 
-	sneaking, sprinting, swimming, flying,
+	sneaking, sprinting, swimming, gliding, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
+	glideTicks   atomic.Int64
 	fireTicks    atomic.Int64
 	fallDistance atomic.Float64
 
@@ -88,9 +88,15 @@ type Player struct {
 	lastXPPickup atomic.Value[time.Time]
 	immunity     atomic.Value[time.Time]
 
+	deathMu        sync.Mutex
+	deathPos       *mgl64.Vec3
+	deathDimension world.Dimension
+
 	enchantSeed atomic.Int64
 
 	mc *entity.MovementComputer
+
+	collidedVertically, collidedHorizontally atomic.Bool
 
 	breaking          atomic.Bool
 	breakingPos       atomic.Value[cube.Pos]
@@ -107,9 +113,9 @@ type Player struct {
 func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
-		inv: inventory.New(36, func(slot int, item item.Stack) {
+		inv: inventory.New(36, func(slot int, before, after item.Stack) {
 			if slot == int(p.heldSlot.Load()) {
-				p.broadcastItems(slot, item)
+				p.broadcastItems(slot, before, after)
 			}
 		}),
 		enderChest:        inventory.New(27, nil),
@@ -136,7 +142,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		immunity:          *atomic.NewValue(time.Now()),
 		pos:               *atomic.NewValue(pos),
 		cooldowns:         make(map[string]time.Time),
-		mc:                &entity.MovementComputer{Gravity: 0.06, Drag: 0.02, DragBeforeGravity: true},
+		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 	}
 	return p
 }
@@ -155,6 +161,11 @@ func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *sessio
 		p.load(*data)
 	}
 	return p
+}
+
+// Type returns the world.EntityType for the Player.
+func (p *Player) Type() world.EntityType {
+	return Type{}
 }
 
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
@@ -179,6 +190,33 @@ func (p *Player) UUID() uuid.UUID {
 // authenticated with XBOX Live.
 func (p *Player) XUID() string {
 	return p.xuid
+}
+
+// DeviceID returns the device ID of the player. If the Player is not connected to a network session, an empty string is
+// returned. Otherwise, the device ID the network session sent in the ClientData is returned.
+func (p *Player) DeviceID() string {
+	if p.session() == session.Nop {
+		return ""
+	}
+	return p.session().ClientData().DeviceID
+}
+
+// DeviceModel returns the device model of the player. If the Player is not connected to a network session, an empty
+// string is returned. Otherwise, the device model the network session sent in the ClientData is returned.
+func (p *Player) DeviceModel() string {
+	if p.session() == session.Nop {
+		return ""
+	}
+	return p.session().ClientData().DeviceModel
+}
+
+// SelfSignedID returns the self-signed ID of the player. If the Player is not connected to a network session, an empty
+// string is returned. Otherwise, the self-signed ID the network session sent in the ClientData is returned.
+func (p *Player) SelfSignedID() string {
+	if p.session() == session.Nop {
+		return ""
+	}
+	return p.session().ClientData().SelfSignedID
 }
 
 // Addr returns the net.Addr of the Player. If the Player is not connected to a network session, nil is returned.
@@ -463,11 +501,12 @@ func (p *Player) addHealth(health float64) {
 	p.session().SendHealth(p.health)
 }
 
-// Heal heals the entity for a given amount of health. The source passed represents the cause of the
-// healing, for example healing.SourceFood if the entity healed by having a full food bar. If the health
-// added to the original health exceeds the entity's max health, Heal will not add the full amount.
-// If the health passed is negative, Heal will not do anything.
-func (p *Player) Heal(health float64, source healing.Source) {
+// Heal heals the entity for a given amount of health. The source passed
+// represents the cause of the healing, for example entity.FoodHealingSource if
+// the entity healed by having a full food bar. If the health added to the
+// original health exceeds the entity's max health, Heal will not add the full
+// amount. If the health passed is negative, Heal will not do anything.
+func (p *Player) Heal(health float64, source world.HealingSource) {
 	if p.Dead() || health < 0 || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
@@ -514,42 +553,37 @@ func (p *Player) fall(distance float64) {
 	if dmg < 0.5 {
 		return
 	}
-	p.Hurt(math.Ceil(dmg), damage.SourceFall{})
+	p.Hurt(math.Ceil(dmg), entity.FallDamageSource{})
 }
 
-// Hurt hurts the player for a given amount of damage. The source passed represents the cause of the damage,
-// for example damage.SourceEntityAttack if the player is attacked by another entity.
-// If the final damage exceeds the health that the player currently has, the player is killed and will have to
+// Hurt hurts the player for a given amount of damage. The source passed
+// represents the cause of the damage, for example entity.AttackDamageSource if
+// the player is attacked by another entity. If the final damage exceeds the
+// health that the player currently has, the player is killed and will have to
 // respawn.
-// If the damage passed is negative, Hurt will not do anything.
-// Hurt returns the final damage dealt to the Player and if the Player was vulnerable to this kind of damage.
-func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
-	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
+// If the damage passed is negative, Hurt will not do anything. Hurt returns the
+// final damage dealt to the Player and if the Player was vulnerable to this
+// kind of damage.
+func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
+	if _, ok := p.Effect(effect.FireResistance{}); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return 0, false
 	}
-
-	fireSource := source == damage.SourceFire{} || source == damage.SourceFireTick{} || source == damage.SourceLava{}
-	if _, ok := p.Effect(effect.FireResistance{}); ok && fireSource {
-		return 0, false
-	}
-
 	immunity := time.Second / 2
 	ctx := event.C()
-	if p.Handler().HandleHurt(ctx, &dmg, &immunity, source); ctx.Cancelled() {
+	if p.Handler().HandleHurt(ctx, &dmg, &immunity, src); ctx.Cancelled() {
 		return 0, false
 	}
 	if dmg < 0 {
 		return 0, true
 	}
 
-	totalDamage := p.FinalDamageFrom(dmg, source)
+	totalDamage := p.FinalDamageFrom(dmg, src)
 	damageLeft := totalDamage
 
 	if a := p.Absorption(); a > 0 {
 		if damageLeft > a {
-			damageLeft -= a
 			p.SetAbsorption(0)
-			p.effects.Remove(effect.Absorption{}, p)
+			damageLeft -= a
 		} else {
 			p.SetAbsorption(a - damageLeft)
 			damageLeft = 0
@@ -557,129 +591,109 @@ func (p *Player) Hurt(dmg float64, source damage.Source) (float64, bool) {
 	}
 	p.addHealth(-damageLeft)
 
-	if source.ReducedByArmour() {
+	if src.ReducedByArmour() {
 		p.Exhaust(0.1)
 
-		var damageToAttacker int
-		damageToArmour := int(math.Max(math.Floor(dmg/4), 1))
-		thornsArmour := map[int]item.Stack{}
+		armourDamage := int(math.Max(math.Floor(dmg/4), 1))
 		for slot, it := range p.armour.Slots() {
-			if _, ok := it.Item().(item.Durable); ok {
-				if e, ok := it.Enchantment(enchantment.Thorns{}); ok && rand.Float64() < float64(e.Level())*0.15 {
-					damageToArmour++
-					thornsArmour[slot] = it
-					if e.Level() > 10 {
-						damageToAttacker += e.Level() - 10
-					} else {
-						damageToAttacker += 1 + rand.Intn(4)
-					}
-				}
-				_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, damageToArmour))
-			}
+			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, armourDamage))
 		}
-
-		if length := len(thornsArmour); length > 0 {
-			slot := maps.Keys(thornsArmour)[rand.Intn(length)]
-			it := thornsArmour[slot]
-
-			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, 2))
-			if damageToAttacker > 0 {
-				var attacker world.Entity
-				if s, ok := source.(damage.SourceEntityAttack); ok {
-					attacker = s.Attacker
-				} else if s, ok := source.(damage.SourceProjectile); ok {
-					attacker = s.Owner
-				}
-				if l, ok := attacker.(entity.Living); ok {
-					l.Hurt(float64(damageToAttacker), damage.SourceThorns{Owner: attacker})
-				}
-			}
-		}
+		p.applyThorns(src)
 	}
 
 	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
-	if fireSource {
+	if src.Fire() {
 		w.PlaySound(pos, sound.Burning{})
-	}
-	if _, ok := source.(damage.SourceDrowning); ok {
+	} else if _, ok := src.(entity.DrowningDamageSource); ok {
 		w.PlaySound(pos, sound.Drowning{})
 	}
 
 	p.immunity.Store(time.Now().Add(immunity))
 	if p.Dead() {
-		p.kill(source)
+		p.kill(src)
 	}
 	return totalDamage, true
+}
+
+// applyThorns applies thorns damage to the attacking entity if the world.DamageSource is either damage.AttackDamageSource or
+// damage.ProjectileDamageSource.
+func (p *Player) applyThorns(src world.DamageSource) {
+	var attacker world.Entity
+	if s, ok := src.(entity.AttackDamageSource); ok {
+		attacker = s.Attacker
+	} else if s, ok := src.(entity.ProjectileDamageSource); ok {
+		attacker = s.Owner
+	}
+	l, ok := attacker.(entity.Living)
+	if !ok {
+		// Not attacked by a living entity.
+		return
+	}
+
+	var (
+		dmg           = 0.0
+		searchHighest = false
+		thornsItems   = make(map[int]item.Stack, 4)
+	)
+	for slot, i := range p.armour.Slots() {
+		if _, ok := i.Enchantment(enchantment.Thorns{}); !ok {
+			continue
+		}
+		thornsItems[slot] = i
+
+		thorns, _ := i.Enchantment(enchantment.Thorns{})
+		level := float64(thorns.Level())
+		if rand.Float64() > float64(level)*0.15 {
+			continue
+		}
+
+		if level > 10 && (level-10 > dmg || !searchHighest) {
+			// When we find an armour piece with thorns XI or above, the logic changes: We have to find the armour piece
+			// with the highest level of thorns and subtract 10 from its level to calculate the final damage.
+			dmg = level - 10
+			searchHighest = true
+		} else if level <= 10 {
+			// Total damage from normal thorns armour (max Thorns III) should never exceed 4.0 in total.
+			dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
+		}
+	}
+	if dmg <= 0 {
+		// No armour with thorns or no thorns activated.
+		return
+	}
+
+	// Deal 2 damage to one random thorns item. Bedrock Edition and Java Edition both have different behaviour here and
+	// neither seem to match the expected behaviour. Java Edition deals 2 damage to a random thorns item for every
+	// thorns armour item worn, while Bedrock Edition deals 1 additional damage for every thorns item and another 2 for
+	// every thorns item when it activates.
+	slot := maps.Keys(thornsItems)[rand.Intn(len(thornsItems))]
+	_ = p.armour.Inventory().SetItem(slot, p.damageItem(thornsItems[slot], 2))
+
+	l.Hurt(dmg, enchantment.ThornsDamageSource{Owner: attacker})
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
 // with the damage passed. FinalDamageFrom takes into account things such as the armour worn and the
 // enchantments on the individual pieces.
 // The damage returned will be at the least 0.
-func (p *Player) FinalDamageFrom(dmg float64, src damage.Source) float64 {
-	if src.ReducedByArmour() {
-		defencePoints := 0.0
-		toughness := 0.0
-		for _, it := range p.armour.Items() {
-			if a, ok := it.Item().(item.Armour); ok {
-				defencePoints += a.DefencePoints()
-				toughness += a.Toughness()
-			}
-		}
+func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
+	dmg = math.Max(dmg, 0)
 
-		// First calculate the enchantment protection factor and cap it at 25. Then, multiply it by a random percent
-		// and round up. Cap that value at 20, and then subtract it from the damage but multiplied by 0.04.
-		f := p.enchantmentProtectionFactor(src)
-		if f > 25 {
-			f = 25
-		}
-		m := math.Ceil(float64(f) * (float64(rand.Intn(100-50)+50) / 100.0))
-		if m > 20 {
-			m = 20
-		}
-		dmg -= dmg * m * 0.04
-
-		// Armour in Bedrock edition reduces the damage taken by 4% for each effective armour point. Effective
-		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defense
-		// reduction is decreased by the toughness armor value. Effective armour points will at minimum be 20% of
-		// armour points.
-		dmg -= dmg * 0.04 * math.Max(defencePoints*0.2, defencePoints-dmg/(2+toughness/4))
-	}
+	dmg -= p.Armour().DamageReduction(dmg, src)
 	if res, ok := p.Effect(effect.Resistance{}); ok {
 		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
 	}
-
-	return math.Max(dmg, 0)
+	return dmg
 }
 
 // Explode ...
 func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
 	diff := p.Position().Sub(explosionPos)
-	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), damage.SourceExplosion{})
+	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), entity.ExplosionDamageSource{})
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
-}
-
-// protectionEnchantment represents an enchantment that can protect the player from damage.
-type protectionEnchantment interface {
-	Affects(damage.Source) bool
-	Modifier() float64
-}
-
-// enchantmentProtectionFactor returns the combined enchantment protection factor the player inhibits spanning each
-// armour piece.
-func (p *Player) enchantmentProtectionFactor(src damage.Source) (f int) {
-	for _, it := range p.armour.Items() {
-		for _, e := range it.Enchantments() {
-			if p, ok := e.Type().(protectionEnchantment); ok && p.Affects(src) {
-				lvl := e.Level()
-				f += int(math.Floor(float64(6+lvl*lvl) * p.Modifier() / 3))
-			}
-		}
-	}
-	return f
 }
 
 // highestArmourEnchantmentLevel returns the highest level of the enchantment passed based spanning each armour piece.
@@ -832,7 +846,7 @@ func (p *Player) Exhaust(points float64) {
 		p.hunger.SetFood(before)
 
 		ctx := event.C()
-		if p.Handler().HandleFoodLoss(ctx, before, after); ctx.Cancelled() {
+		if p.Handler().HandleFoodLoss(ctx, before, &after); ctx.Cancelled() {
 			return
 		}
 		p.hunger.SetFood(after)
@@ -847,27 +861,44 @@ func (p *Player) Exhaust(points float64) {
 // Dead checks if the player is considered dead. True is returned if the health of the player is equal to or
 // lower than 0.
 func (p *Player) Dead() bool {
-	return p.Health() <= 0
+	return p.Health() <= mgl64.Epsilon
+}
+
+// DeathPosition returns the last position the player was at when they died. If the player has never died, the third
+// return value will be false.
+func (p *Player) DeathPosition() (mgl64.Vec3, world.Dimension, bool) {
+	p.deathMu.Lock()
+	defer p.deathMu.Unlock()
+	if p.deathPos == nil {
+		return mgl64.Vec3{}, nil, false
+	}
+	return *p.deathPos, p.deathDimension, true
 }
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
-func (p *Player) kill(src damage.Source) {
+func (p *Player) kill(src world.DamageSource) {
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
 
 	p.addHealth(-p.MaxHealth())
 
-	p.Handler().HandleDeath(src)
+	keepInv := false
+	p.Handler().HandleDeath(src, &keepInv)
 	p.StopSneaking()
 	p.StopSprinting()
 
-	w := p.World()
-	p.dropContents()
-
+	w, pos := p.World(), p.Position()
+	if !keepInv {
+		p.dropContents()
+	}
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
 	}
+
+	p.deathMu.Lock()
+	defer p.deathMu.Unlock()
+	p.deathPos, p.deathDimension = &pos, w.Dimension()
 
 	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
@@ -892,16 +923,18 @@ func (p *Player) dropContents() {
 		orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 		w.AddEntity(orb)
 	}
-	for _, it := range append(p.inv.Items(), append(p.armour.Items(), p.offHand.Items()...)...) {
+	p.experience.Reset()
+	p.session().SendExperience(p.experience)
+
+	p.session().EmptyUIInventory()
+	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
+		if _, ok := it.Enchantment(enchantment.CurseOfVanishing{}); ok {
+			continue
+		}
 		ent := entity.NewItem(it, pos)
 		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
 		w.AddEntity(ent)
 	}
-	p.inv.Clear()
-	p.armour.Clear()
-	p.offHand.Clear()
-	p.experience.Reset()
-	p.session().SendExperience(p.experience)
 }
 
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
@@ -1025,6 +1058,32 @@ func (p *Player) StopSwimming() {
 	if !p.swimming.CAS(true, false) {
 		return
 	}
+	p.updateState()
+}
+
+// StartGliding makes the player start gliding if it is not currently doing so.
+func (p *Player) StartGliding() {
+	if !p.gliding.CAS(false, true) {
+		return
+	}
+	chest := p.Armour().Chestplate()
+	if _, ok := chest.Item().(item.Elytra); !ok || chest.Durability() < 2 {
+		return
+	}
+	p.updateState()
+}
+
+// Gliding checks if the player is currently gliding.
+func (p *Player) Gliding() bool {
+	return p.gliding.Load()
+}
+
+// StopGliding makes the player stop gliding if it is currently doing so.
+func (p *Player) StopGliding() {
+	if !p.gliding.CAS(true, false) {
+		return
+	}
+	p.glideTicks.Store(0)
 	p.updateState()
 }
 
@@ -1190,6 +1249,9 @@ func (p *Player) EnderChestInventory() *inventory.Inventory {
 func (p *Player) SetGameMode(mode world.GameMode) {
 	previous := p.gameMode.Swap(mode)
 	p.session().SendGameMode(mode)
+	for _, v := range p.viewers() {
+		v.ViewEntityGameMode(p)
+	}
 
 	if !mode.AllowsFlying() {
 		p.StopFlying()
@@ -1285,6 +1347,10 @@ func (p *Player) UseItem() {
 		p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 		p.addNewItem(useCtx)
 	case item.Consumable:
+		if c, ok := usable.(interface{ CanConsume() bool }); ok && !c.CanConsume() {
+			p.ReleaseItem()
+			return
+		}
 		if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
 			// The item.Consumable is not always consumable, the player is not in creative mode and the
 			// food bar is filled: The item cannot be consumed.
@@ -1518,7 +1584,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		dmg *= 1.5
 	}
 
-	n, vulnerable := living.Hurt(dmg, damage.SourceEntityAttack{Attacker: p})
+	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
 	i, left := p.HeldItems()
 
 	p.World().PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
@@ -1730,16 +1796,13 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 
 	around := w.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3()), nil)
 	for _, e := range around {
-		if _, ok := e.(*entity.Item); ok {
-			// Placing blocks inside item entities is fine.
+		switch e.Type().(type) {
+		case entity.ItemType, entity.ArrowType:
 			continue
-		}
-		if _, ok := e.(*entity.Arrow); ok {
-			// Placing blocks inside arrow entities is fine.
-			continue
-		}
-		if cube.AnyIntersections(blockBoxes, e.BBox().Translate(e.Position())) {
-			return true
+		default:
+			if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
+				return true
+			}
 		}
 	}
 	return false
@@ -1765,8 +1828,13 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	held, _ := p.HeldItems()
 	drops := p.drops(held, b)
 
+	xp := 0
+	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+		xp = breakable.BreakInfo().XPDrops.RandomValue()
+	}
+
 	ctx := event.C()
-	if p.Handler().HandleBlockBreak(ctx, pos, &drops); ctx.Cancelled() {
+	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
 		p.resendBlocks(pos, w)
 		return
 	}
@@ -1776,14 +1844,14 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	w.SetBlock(pos, nil, nil)
 	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
-	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+	if breakable, ok := b.(block.Breakable); ok {
 		info := breakable.BreakInfo()
-		if diff := (info.XPDrops[1] - info.XPDrops[0]) + 1; diff > 0 {
-			amount := rand.Intn(diff) + info.XPDrops[0]
-			for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), amount) {
-				orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
-				w.AddEntity(orb)
-			}
+		if info.BreakHandler != nil {
+			info.BreakHandler(pos, w, p)
+		}
+		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
+			orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
+			w.AddEntity(orb)
 		}
 	}
 	for _, drop := range drops {
@@ -1814,7 +1882,7 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 		drops = container.Inventory().Items()
 		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 			if breakable.BreakInfo().Harvestable(t) {
-				drops = breakable.BreakInfo().Drops(t, held.Enchantments())
+				drops = append(drops, breakable.BreakInfo().Drops(t, held.Enchantments())...)
 			}
 		}
 		container.Inventory().Clear()
@@ -1899,6 +1967,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 	}
 	p.pos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
+	p.ResetFallDistance()
 }
 
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
@@ -1919,7 +1988,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	var (
 		w                     = p.World()
 		pos                   = p.Position()
-		yaw, pitch            = p.Rotation()
+		yaw, pitch            = p.Rotation().Elem()
 		res, resYaw, resPitch = pos.Add(deltaPos), yaw + deltaYaw, pitch + deltaPitch
 	)
 	ctx := event.C()
@@ -1938,6 +2007,25 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	p.pos.Store(res)
 	p.yaw.Store(resYaw)
 	p.pitch.Store(resPitch)
+	if deltaPos.Len() <= 3 {
+		// Only update velocity if the player is not moving too fast to prevent potential OOMs.
+		p.vel.Store(deltaPos)
+		p.checkBlockCollisions(deltaPos, w)
+	}
+
+	horizontalVel := deltaPos
+	horizontalVel[1] = 0
+	if p.Gliding() {
+		if deltaPos.Y() >= -0.5 {
+			p.fallDistance.Store(1.0)
+		}
+		if p.collidedHorizontally.Load() {
+			if force := horizontalVel.Len()*10.0 - 3.0; force > 0.0 && !p.AttackImmune() {
+				w.PlaySound(p.Position(), sound.Fall{Distance: force})
+				p.Hurt(force, entity.GlideDamageSource{})
+			}
+		}
+	}
 
 	_, submergedBefore := w.Liquid(cube.PosFromVec3(pos.Add(mgl64.Vec3{0, p.EyeHeight()})))
 	_, submergedAfter := w.Liquid(cube.PosFromVec3(res.Add(mgl64.Vec3{0, p.EyeHeight()})))
@@ -1947,23 +2035,14 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		p.session().ViewEntityState(p)
 	}
 
-	p.checkBlockCollisions(w)
 	p.onGround.Store(p.checkOnGround(w))
-
 	p.updateFallState(deltaPos[1])
 
-	// The vertical axis isn't relevant for calculation of exhaustion points.
-	deltaPos[1] = 0
 	if p.Swimming() {
-		p.Exhaust(0.01 * deltaPos.Len())
+		p.Exhaust(0.01 * horizontalVel.Len())
 	} else if p.Sprinting() {
-		p.Exhaust(0.1 * deltaPos.Len())
+		p.Exhaust(0.1 * horizontalVel.Len())
 	}
-}
-
-// Facing returns the horizontal direction that the player is facing.
-func (p *Player) Facing() cube.Direction {
-	return entity.Facing(p)
 }
 
 // World returns the world that the player is currently in.
@@ -1998,8 +2077,8 @@ func (p *Player) SetVelocity(velocity mgl64.Vec3) {
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
 // vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 // when facing forward).
-func (p *Player) Rotation() (float64, float64) {
-	return p.yaw.Load(), p.pitch.Load()
+func (p *Player) Rotation() cube.Rotation {
+	return cube.Rotation{p.yaw.Load(), p.pitch.Load()}
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
@@ -2145,7 +2224,7 @@ func (p *Player) mendItems(xp int) int {
 // or 0 if dropping the item.Stack was cancelled.
 func (p *Player) Drop(s item.Stack) int {
 	e := entity.NewItem(s, p.Position().Add(mgl64.Vec3{0, 1.4}))
-	e.SetVelocity(entity.DirectionVector(p).Mul(0.4))
+	e.SetVelocity(p.Rotation().Vec3().Mul(0.4))
 	e.SetPickupDelay(time.Second * 2)
 
 	ctx := event.C()
@@ -2204,11 +2283,21 @@ func (p *Player) Tick(w *world.World, current int64) {
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
-			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10))
+			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10).WithoutParticles())
 		}
 	}
 
-	p.checkBlockCollisions(w)
+	if _, ok := p.Armour().Chestplate().Item().(item.Elytra); ok && p.Gliding() {
+		if t := p.glideTicks.Inc(); t%20 == 0 {
+			d := p.damageItem(p.Armour().Chestplate(), 1)
+			p.armour.SetChestplate(d)
+			if d.Durability() < 2 {
+				p.StopGliding()
+			}
+		}
+	}
+
+	p.checkBlockCollisions(p.vel.Load(), w)
 	p.onGround.Store(p.checkOnGround(w))
 
 	p.effects.Tick(p)
@@ -2216,10 +2305,10 @@ func (p *Player) Tick(w *world.World, current int64) {
 	p.tickFood(w)
 	p.tickAirSupply(w)
 	if p.Position()[1] < float64(w.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
-		p.Hurt(4, damage.SourceVoid{})
+		p.Hurt(4, entity.VoidDamageSource{})
 	}
 	if !p.AttackImmune() && p.insideOfSolid(w) {
-		p.Hurt(1, damage.SourceSuffocation{})
+		p.Hurt(1, entity.SuffocationDamageSource{})
 	}
 
 	if p.OnFireDuration() > 0 {
@@ -2228,7 +2317,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 			p.Extinguish()
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
-			p.Hurt(1, damage.SourceFireTick{})
+			p.Hurt(1, block.FireDamageSource{})
 		}
 	}
 
@@ -2272,7 +2361,7 @@ func (p *Player) tickAirSupply(w *world.World) {
 		if ticks := p.airSupplyTicks.Dec(); ticks <= -20 {
 			p.airSupplyTicks.Store(0)
 			if !p.AttackImmune() {
-				p.Hurt(2, damage.SourceDrowning{})
+				p.Hurt(2, entity.DrowningDamageSource{})
 			}
 		}
 		p.breathing = false
@@ -2291,29 +2380,40 @@ func (p *Player) tickAirSupply(w *world.World) {
 // is full enough.
 func (p *Player) tickFood(w *world.World) {
 	p.hunger.foodTick++
-	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
+	if p.hunger.foodTick >= 80 {
 		p.hunger.foodTick = 0
-		p.regenerate()
+	}
+
+	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
 		if w.Difficulty().FoodRegenerates() {
 			p.AddFood(1)
 		}
-	} else if p.hunger.foodTick == 80 {
-		p.hunger.foodTick = 0
+		if p.hunger.foodTick%20 == 0 {
+			p.regenerate(false)
+		}
+	}
+	if p.hunger.foodTick == 0 {
 		if p.hunger.canRegenerate() {
-			p.regenerate()
+			p.regenerate(true)
 		} else if p.hunger.starving() {
 			p.starve(w)
 		}
 	}
+
+	if !p.hunger.canSprint() {
+		p.StopSprinting()
+	}
 }
 
 // regenerate attempts to regenerate half a heart of health, typically caused by a full food bar.
-func (p *Player) regenerate() {
+func (p *Player) regenerate(exhaust bool) {
 	if p.Health() == p.MaxHealth() {
 		return
 	}
-	p.Heal(1, healing.SourceFood{})
-	p.Exhaust(6)
+	p.Heal(1, entity.FoodHealingSource{})
+	if exhaust {
+		p.Exhaust(6)
+	}
 }
 
 // starve deals starvation damage to the player if the difficult allows it. In peaceful mode, no damage will
@@ -2322,7 +2422,7 @@ func (p *Player) regenerate() {
 // be dealt.
 func (p *Player) starve(w *world.World) {
 	if p.Health() > w.Difficulty().StarvationHealthLimit() {
-		p.Hurt(1, damage.SourceStarvation{})
+		p.Hurt(1, StarvationDamageSource{})
 	}
 }
 
@@ -2378,7 +2478,7 @@ func (p *Player) insideOfWater(w *world.World) bool {
 // insideOfSolid returns true if the player is inside a solid block.
 func (p *Player) insideOfSolid(w *world.World) bool {
 	pos := cube.PosFromVec3(entity.EyePosition(p))
-	b, box := w.Block(pos), p.BBox().Translate(p.Position())
+	b, box := w.Block(pos), p.Type().BBox(p).Translate(p.Position())
 
 	_, solid := b.Model().(model.Solid)
 	if !solid {
@@ -2399,8 +2499,62 @@ func (p *Player) insideOfSolid(w *world.World) bool {
 }
 
 // checkCollisions checks the player's block collisions.
-func (p *Player) checkBlockCollisions(w *world.World) {
-	box := p.BBox().Translate(p.Position()).Grow(-0.0001)
+func (p *Player) checkBlockCollisions(vel mgl64.Vec3, w *world.World) {
+	entityBBox := p.Type().BBox(p).Translate(p.Position())
+	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
+
+	p.checkEntityInsiders(w, entityBBox)
+
+	grown := entityBBox.Extend(vel).Grow(0.25)
+	min, max := grown.Min(), grown.Max()
+	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+
+	// A prediction of one BBox per block, plus an additional 2, in case
+	blocks := make([]cube.BBox, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ)+2)
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				pos := cube.Pos{x, y, z}
+				boxes := w.Block(pos).Model().BBox(pos, w)
+				for _, box := range boxes {
+					blocks = append(blocks, box.Translate(pos.Vec3()))
+				}
+			}
+		}
+	}
+
+	// epsilon is the epsilon used for thresholds for change used for change in position and velocity.
+	const epsilon = 0.001
+
+	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
+		// First we move the entity BBox on the Y axis.
+		for _, blockBBox := range blocks {
+			deltaY = entityBBox.YOffset(blockBBox, deltaY)
+		}
+		entityBBox = entityBBox.Translate(mgl64.Vec3{0, deltaY})
+	}
+	if !mgl64.FloatEqualThreshold(deltaX, 0, epsilon) {
+		// Then on the X axis.
+		for _, blockBBox := range blocks {
+			deltaX = entityBBox.XOffset(blockBBox, deltaX)
+		}
+		entityBBox = entityBBox.Translate(mgl64.Vec3{deltaX})
+	}
+	if !mgl64.FloatEqualThreshold(deltaZ, 0, epsilon) {
+		// And finally on the Z axis.
+		for _, blockBBox := range blocks {
+			deltaZ = entityBBox.ZOffset(blockBBox, deltaZ)
+		}
+	}
+
+	p.collidedHorizontally.Store(!mgl64.FloatEqual(deltaX, vel[0]) || !mgl64.FloatEqual(deltaZ, vel[2]))
+	p.collidedVertically.Store(!mgl64.FloatEqual(deltaY, vel[1]))
+}
+
+// checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
+func (p *Player) checkEntityInsiders(w *world.World, entityBBox cube.BBox) {
+	box := entityBBox.Grow(-0.0001)
 	min, max := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
 	for y := min[1]; y <= max[1]; y++ {
@@ -2427,7 +2581,7 @@ func (p *Player) checkBlockCollisions(w *world.World) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround(w *world.World) bool {
-	box := p.BBox().Translate(p.Position())
+	box := p.Type().BBox(p).Translate(p.Position())
 
 	b := box.Grow(1)
 
@@ -2446,18 +2600,6 @@ func (p *Player) checkOnGround(w *world.World) bool {
 		}
 	}
 	return false
-}
-
-// BBox returns the axis aligned bounding box of the player.
-func (p *Player) BBox() cube.BBox {
-	s := p.Scale()
-	switch {
-	// TODO: Shrink BBox for sneaking once implemented in Bedrock Edition. This is already a thing in Java Edition.
-	case p.Swimming():
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
-	default:
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
-	}
 }
 
 // Scale returns the scale modifier of the Player. The default value for a normal scale is 1. A scale of 0
@@ -2562,16 +2704,11 @@ func (p *Player) PunchAir() {
 	p.World().PlaySound(p.Position(), sound.Attack{})
 }
 
-// EncodeEntity ...
-func (p *Player) EncodeEntity() string {
-	return "minecraft:player"
-}
-
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
 // broke, a breaking sound is played.
 // If the player is not survival, the original stack is returned.
 func (p *Player) damageItem(s item.Stack, d int) item.Stack {
-	if p.GameMode().CreativeInventory() || d == 0 {
+	if p.GameMode().CreativeInventory() || d == 0 || s.MaxDurability() == -1 {
 		return s
 	}
 	ctx := event.C()
@@ -2683,6 +2820,9 @@ func (p *Player) load(data Data) {
 	p.health.AddHealth(data.Health - p.Health())
 	p.session().SendHealth(p.health)
 
+	p.absorptionHealth.Store(data.AbsorptionLevel)
+	p.session().SendAbsorption(p.absorptionHealth.Load())
+
 	p.hunger.SetFood(data.Hunger)
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
@@ -2721,7 +2861,7 @@ func (p *Player) loadInventory(data InventoryData) {
 // Data returns the player data that needs to be saved. This is used when the player
 // gets disconnected and the player provider needs to save the data.
 func (p *Player) Data() Data {
-	yaw, pitch := p.Rotation()
+	yaw, pitch := p.Rotation().Elem()
 	offHand, _ := p.offHand.Item(0)
 
 	p.hunger.mu.RLock()
@@ -2744,6 +2884,7 @@ func (p *Player) Data() Data {
 		MaxAirSupply:    p.maxAirSupplyTicks.Load(),
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
+		AbsorptionLevel: p.Absorption(),
 		GameMode:        p.GameMode(),
 		Inventory: InventoryData{
 			Items:        p.Inventory().Slots(),
@@ -2758,7 +2899,7 @@ func (p *Player) Data() Data {
 		Effects:             p.Effects(),
 		FireTicks:           p.fireTicks.Load(),
 		FallDistance:        p.fallDistance.Load(),
-		Dimension:           p.World().Dimension().EncodeDimension(),
+		World:               p.World(),
 	}
 }
 
@@ -2796,6 +2937,7 @@ func (p *Player) useContext() *item.UseContext {
 			if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
 				_ = srcInv.SetItem(src, dstIt)
 				_ = dstInv.SetItem(dst, srcIt)
+				p.PlaySound(sound.EquipItem{Item: srcIt.Item()})
 			}
 		},
 		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {
@@ -2816,14 +2958,18 @@ func (p *Player) Handler() Handler {
 }
 
 // broadcastItems broadcasts the items held to viewers.
-func (p *Player) broadcastItems(int, item.Stack) {
+func (p *Player) broadcastItems(int, item.Stack, item.Stack) {
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
 	}
 }
 
 // broadcastArmour broadcasts the armour equipped to viewers.
-func (p *Player) broadcastArmour(int, item.Stack) {
+func (p *Player) broadcastArmour(_ int, before, after item.Stack) {
+	if before.Comparable(after) && before.Empty() == after.Empty() {
+		// Only send armour if the type of the armour changed.
+		return
+	}
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityArmour(p)
 	}

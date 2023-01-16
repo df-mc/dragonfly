@@ -12,6 +12,7 @@ import (
 type Kelp struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// Age is the age of the kelp block which can be 0-25. If age is 25, kelp won't grow any further.
 	Age int
@@ -47,6 +48,11 @@ func (k Kelp) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(k))
 }
 
+// CompostChance ...
+func (Kelp) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (Kelp) EncodeItem() (name string, meta int16) {
 	return "minecraft:kelp", 0
@@ -55,12 +61,6 @@ func (Kelp) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (k Kelp) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:kelp", map[string]any{"kelp_age": int32(k.Age)}
-}
-
-// CanDisplace will return true if the liquid is Water, since kelp can waterlog.
-func (Kelp) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed will always return false since kelp doesn't close any side.

@@ -9,7 +9,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/text/language"
 	"image/color"
-	"math"
 	"time"
 )
 
@@ -89,6 +88,11 @@ type Consumer interface {
 	// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 	// if the effects' levels are equal and the new effect has a longer duration.
 	AddEffect(e effect.Effect)
+	// RemoveEffect removes any effect that might currently be active on the Consumer.
+	RemoveEffect(e effect.Type)
+	// Effects returns any effect currently applied to the Consumer. The returned effects are guaranteed not to have
+	// expired when returned.
+	Effects() []effect.Effect
 }
 
 // DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
@@ -157,8 +161,6 @@ type Releasable interface {
 // which interact with the world using an item.
 type User interface {
 	Carrier
-	// Facing returns the direction that the user is facing.
-	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
 
 	UsingItem() bool
@@ -174,17 +176,16 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
-// owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
-type owned interface {
-	world.Entity
-	Owner() world.Entity
-	Own(owner world.Entity)
-}
-
 // BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast
 // to surrounding players.
 type BeaconPayment interface {
 	PayableForBeacon() bool
+}
+
+// Compostable represents an item that may be used to fill up a composter.
+type Compostable interface {
+	// CompostChance returns the chance the item will produce a layer of compost in the range of 0-1.
+	CompostChance() float64
 }
 
 // nopReleasable represents a releasable item that does nothing.
@@ -219,20 +220,6 @@ func DisplayName(item world.Item, locale language.Tag) string {
 		panic("should never happen")
 	}
 	return name
-}
-
-// directionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
-// returned is always 1.
-func directionVector(e world.Entity) mgl64.Vec3 {
-	yaw, pitch := e.Rotation()
-	yawRad, pitchRad := mgl64.DegToRad(yaw), mgl64.DegToRad(pitch)
-	m := math.Cos(pitchRad)
-
-	return mgl64.Vec3{
-		-m * math.Sin(yawRad),
-		-math.Sin(pitchRad),
-		m * math.Cos(yawRad),
-	}.Normalize()
 }
 
 // eyePosition returns the position of the eyes of the entity if the entity implements entity.Eyed, or the

@@ -58,6 +58,11 @@ func (b BeetrootSeeds) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
+func (BeetrootSeeds) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (b BeetrootSeeds) EncodeItem() (name string, meta int16) {
 	return "minecraft:beetroot_seeds", 0

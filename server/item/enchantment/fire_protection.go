@@ -1,7 +1,6 @@
 package enchantment
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -30,24 +29,17 @@ func (FireProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// Affects ...
-func (FireProtection) Affects(src damage.Source) bool {
-	_, fire := src.(damage.SourceFire)
-	_, fireTick := src.(damage.SourceFireTick)
-	return fire || fireTick
-}
-
 // Modifier returns the base protection modifier for the enchantment.
 func (FireProtection) Modifier() float64 {
-	return 1.25
+	return 0.08
 }
 
 // CompatibleWithEnchantment ...
 func (FireProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	// TODO: Ensure that the armour does not have blast protection.
+	_, blastProtection := t.(BlastProtection)
 	_, projectileProtection := t.(ProjectileProtection)
 	_, protection := t.(Protection)
-	return !projectileProtection && !protection
+	return !blastProtection && !projectileProtection && !protection
 }
 
 // CompatibleWithItem ...

@@ -62,6 +62,26 @@ func (s *Session) closeCurrentContainer() {
 	}
 }
 
+// EmptyUIInventory attempts to move all items in the UI inventory to the player's main inventory. If the main inventory
+// is full, the items are dropped on the ground instead.
+func (s *Session) EmptyUIInventory() {
+	if s == Nop {
+		return
+	}
+	items := s.ui.Clear()
+	leftover := make([]item.Stack, 0, len(items))
+	for _, i := range items {
+		if n, err := s.inv.AddItem(i); err != nil {
+			leftover = append(leftover, i.Grow(i.Count()-n))
+		}
+	}
+	for _, i := range leftover {
+		// We can't put this back in the inventory, so the best option here is to simply get rid of the item if
+		// dropping was cancelled.
+		s.c.Drop(i)
+	}
+}
+
 // SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
 func (s *Session) SendRespawn(pos mgl64.Vec3) {
 	s.writePacket(&packet.Respawn{
@@ -105,32 +125,6 @@ const (
 	craftingResult          = 50
 )
 
-const (
-	containerAnvilInput           = 0
-	containerAnvilMaterial        = 1
-	containerSmithingInput        = 3
-	containerSmithingMaterial     = 4
-	containerArmour               = 6
-	containerChest                = 7
-	containerBeacon               = 8
-	containerFullInventory        = 12
-	containerCraftingGrid         = 13
-	containerEnchantingTableInput = 21
-	containerEnchantingTableLapis = 22
-	containerFurnaceFuel          = 23
-	containerFurnaceResult        = 25
-	containerFurnaceInput         = 24
-	containerHotbar               = 27
-	containerInventory            = 28
-	containerOffHand              = 33
-	containerBlastFurnaceInput    = 44
-	containerSmokerInput          = 45
-	containerStonecutterInput     = 52
-	containerBarrel               = 57
-	containerCursor               = 58
-	containerOutput               = 59
-)
-
 // smelter is an interface representing a block used to smelt items.
 type smelter interface {
 	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
@@ -141,18 +135,18 @@ type smelter interface {
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case containerCraftingGrid, containerOutput, containerCursor:
+	case protocol.ContainerCraftingInput, protocol.ContainerCreatedOutput, protocol.ContainerCursor:
 		// UI inventory.
 		return s.ui, true
-	case containerHotbar, containerInventory, containerFullInventory:
+	case protocol.ContainerHotBar, protocol.ContainerInventory, protocol.ContainerCombinedHotBarAndInventory:
 		// Hotbar 'inventory', rest of inventory, inventory when container is opened.
 		return s.inv, true
-	case containerOffHand:
+	case protocol.ContainerOffhand:
 		return s.offHand, true
-	case containerArmour:
+	case protocol.ContainerArmor:
 		// Armour inventory.
 		return s.armour.Inventory(), true
-	case containerChest:
+	case protocol.ContainerLevelEntity:
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
@@ -161,43 +155,56 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBarrel:
+	case protocol.ContainerBarrel:
 		if s.containerOpened.Load() {
 			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBeacon:
+	case protocol.ContainerBeaconPayment:
 		if s.containerOpened.Load() {
 			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
 		}
-	case containerAnvilInput, containerAnvilMaterial:
+	case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
 		if s.containerOpened.Load() {
 			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
 		}
-	case containerSmithingInput, containerSmithingMaterial:
+	case protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
 		if s.containerOpened.Load() {
 			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true
 			}
 		}
-	case containerStonecutterInput:
+	case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
+		if s.containerOpened.Load() {
+			if _, loom := s.c.World().Block(s.openedPos.Load()).(block.Loom); loom {
+				return s.ui, true
+			}
+		}
+	case protocol.ContainerStonecutterInput:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
 		}
-	case containerEnchantingTableInput, containerEnchantingTableLapis:
+	case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
+		if s.containerOpened.Load() {
+			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); ok {
+				return s.ui, true
+			}
+		}
+	case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
 		if s.containerOpened.Load() {
 			if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}
-	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
+	case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
+		protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
 				return s.openedWindow.Load(), true
@@ -224,10 +231,11 @@ func (s *Session) SendSpeed(speed float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:    "minecraft:movement",
-			Value:   float32(speed),
-			Max:     math.MaxFloat32,
-			Min:     0,
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:movement",
+				Value: float32(speed),
+				Max:   math.MaxFloat32,
+			},
 			Default: 0.1,
 		}},
 	})
@@ -239,19 +247,27 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{
 			{
-				Name:  "minecraft:player.hunger",
-				Value: float32(food),
-				Max:   20, Min: 0, Default: 20,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.hunger",
+					Value: float32(food),
+					Max:   20,
+				},
+				Default: 20,
 			},
 			{
-				Name:  "minecraft:player.saturation",
-				Value: float32(saturation),
-				Max:   20, Min: 0, Default: 20,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.saturation",
+					Value: float32(saturation),
+					Max:   20,
+				},
+				Default: 20,
 			},
 			{
-				Name:  "minecraft:player.exhaustion",
-				Value: float32(exhaustion),
-				Max:   5, Min: 0, Default: 0,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.exhaustion",
+					Value: float32(exhaustion),
+					Max:   5,
+				},
 			},
 		},
 	})
@@ -296,15 +312,7 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	if s == Nop {
 		return
 	}
-
-	id := int32(packet.GameTypeSurvival)
-	if mode.AllowsFlying() && mode.CreativeInventory() {
-		id = packet.GameTypeCreative
-	}
-	if !mode.Visible() && !mode.HasCollision() {
-		id = packet.GameTypeSpectator
-	}
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
+	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(mode)})
 	s.sendAbilities()
 }
 
@@ -336,7 +344,7 @@ func (s *Session) sendAbilities() {
 	if mode.AllowsInteraction() {
 		abilities |= protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
 	}
-	s.writePacket(&packet.UpdateAbilities{
+	s.writePacket(&packet.UpdateAbilities{AbilityData: protocol.AbilityData{
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: packet.CommandPermissionLevelNormal,
@@ -349,7 +357,7 @@ func (s *Session) sendAbilities() {
 				WalkSpeed: protocol.AbilityBaseWalkSpeed,
 			},
 		},
-	})
+	}})
 }
 
 // SendHealth sends the health and max health to the player.
@@ -357,9 +365,11 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:    "minecraft:health",
-			Value:   float32(math.Ceil(health.Health())),
-			Max:     float32(math.Ceil(health.MaxHealth())),
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:health",
+				Value: float32(math.Ceil(health.Health())),
+				Max:   float32(math.Ceil(health.MaxHealth())),
+			},
 			Default: 20,
 		}},
 	})
@@ -367,16 +377,14 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 
 // SendAbsorption sends the absorption value passed to the player.
 func (s *Session) SendAbsorption(value float64) {
-	max := value
-	if math.Mod(value, 2) != 0 {
-		max = value + 1
-	}
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
-			Name:  "minecraft:absorption",
-			Value: float32(math.Ceil(value)),
-			Max:   float32(math.Ceil(max)),
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:absorption",
+				Value: float32(math.Ceil(value)),
+				Max:   float32(math.MaxFloat32),
+			},
 		}},
 	})
 }
@@ -515,7 +523,7 @@ func (s *Session) removeFromPlayerList(session *Session) {
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
 func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
-	s.inv = inventory.New(36, func(slot int, item item.Stack) {
+	s.inv = inventory.New(36, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -528,7 +536,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			s.sendItem(item, slot, protocol.WindowIDInventory)
 		}
 	})
-	s.offHand = inventory.New(1, func(slot int, item item.Stack) {
+	s.offHand = inventory.New(1, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -545,7 +553,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			})
 		}
 	})
-	s.enderChest = inventory.New(27, func(slot int, item item.Stack) {
+	s.enderChest = inventory.New(27, func(slot int, _, item item.Stack) {
 		if s.c == nil {
 			return
 		}
@@ -555,15 +563,19 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			}
 		}
 	})
-	s.armour = inventory.NewArmour(func(slot int, item item.Stack) {
+	s.armour = inventory.NewArmour(func(slot int, before, after item.Stack) {
 		if s.c == nil {
+			return
+		}
+		if !s.inTransaction.Load() {
+			s.sendItem(after, slot, protocol.WindowIDArmour)
+		}
+		if before.Comparable(after) && before.Empty() == after.Empty() {
+			// Only send armour if the item type actually changed.
 			return
 		}
 		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 			viewer.ViewEntityArmour(s.c)
-		}
-		if !s.inTransaction.Load() {
-			s.sendItem(item, slot, protocol.WindowIDArmour)
 		}
 	})
 	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
@@ -599,12 +611,14 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	if slot > 8 {
 		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
-	if s.heldSlot.Swap(uint32(slot)) == uint32(slot) {
+	if s.heldSlot.Load() == uint32(slot) {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}
 	// The user swapped changed held slots so stop using item right away.
 	s.c.ReleaseItem()
+
+	s.heldSlot.Store(uint32(slot))
 
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
@@ -628,14 +642,18 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{
 			{
-				Name:  "minecraft:player.level",
-				Value: float32(level),
-				Max:   float32(math.MaxInt32),
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.level",
+					Value: float32(level),
+					Max:   float32(math.MaxInt32),
+				},
 			},
 			{
-				Name:  "minecraft:player.experience",
-				Value: float32(progress),
-				Max:   1,
+				AttributeValue: protocol.AttributeValue{
+					Name:  "minecraft:player.experience",
+					Value: float32(progress),
+					Max:   1,
+				},
 			},
 		},
 	})
@@ -719,7 +737,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
-	return nbtconv.ReadItem(it.NBTData, &s)
+	return nbtconv.Item(it.NBTData, &s)
 }
 
 // instanceFromItem converts an item.Stack to its network ItemInstance representation.
@@ -740,11 +758,11 @@ func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
 }
 
 // stacksToIngredientItems converts a list of item.Stacks to recipe ingredient items used over the network.
-func stacksToIngredientItems(inputs []item.Stack) []protocol.RecipeIngredientItem {
-	items := make([]protocol.RecipeIngredientItem, 0, len(inputs))
+func stacksToIngredientItems(inputs []item.Stack) []protocol.ItemDescriptorCount {
+	items := make([]protocol.ItemDescriptorCount, 0, len(inputs))
 	for _, i := range inputs {
 		if i.Empty() {
-			items = append(items, protocol.RecipeIngredientItem{})
+			items = append(items, protocol.ItemDescriptorCount{Descriptor: &protocol.InvalidItemDescriptor{}})
 			continue
 		}
 		rid, meta, ok := world.ItemRuntimeID(i.Item())
@@ -754,10 +772,12 @@ func stacksToIngredientItems(inputs []item.Stack) []protocol.RecipeIngredientIte
 		if _, ok = i.Value("variants"); ok {
 			meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
 		}
-		items = append(items, protocol.RecipeIngredientItem{
-			NetworkID:     rid,
-			MetadataValue: int32(meta),
-			Count:         int32(i.Count()),
+		items = append(items, protocol.ItemDescriptorCount{
+			Descriptor: &protocol.DefaultItemDescriptor{
+				NetworkID:     int16(rid),
+				MetadataValue: meta,
+			},
+			Count: int32(i.Count()),
 		})
 	}
 	return items
@@ -827,13 +847,26 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	return
 }
 
+// gameTypeFromMode returns the game type ID from the game mode passed.
+func gameTypeFromMode(mode world.GameMode) int32 {
+	if mode.AllowsFlying() && mode.CreativeInventory() {
+		return packet.GameTypeCreative
+	}
+	if !mode.Visible() && !mode.HasCollision() {
+		return packet.GameTypeSpectator
+	}
+	return packet.GameTypeSurvival
+}
+
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
 
+// noinspection ALL
+//
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
-//noinspection ALL
 func item_id(s item.Stack) int32
 
+// noinspection ALL
+//
 //go:linkname world_add github.com/df-mc/dragonfly/server/world.add
-//noinspection ALL
 func world_add(e world.Entity, w *world.World)

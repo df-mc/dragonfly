@@ -15,6 +15,8 @@ import (
 // available for many blocks and all types connect together as if they were the same type.
 type Wall struct {
 	transparent
+	sourceWaterDisplacer
+
 	// Block is the block to use for the type of wall.
 	Block world.Block
 	// NorthConnection is the type of connection in the north direction of the post.
@@ -72,7 +74,12 @@ func (w Wall) BreakInfo() BreakInfo {
 	if !ok {
 		panic("wall block is not breakable")
 	}
-	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w)).withBlastResistance(breakable.BreakInfo().BlastResistance)
+	blastResistance := breakable.BreakInfo().BlastResistance
+	switch w.Block.(type) {
+	case MudBricks:
+		blastResistance = 30
+	}
+	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w)).withBlastResistance(blastResistance)
 }
 
 // NeighbourUpdateTick ...
@@ -94,12 +101,6 @@ func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.W
 	w, _ = w.calculatePost(wo, pos)
 	place(wo, pos, w, user, ctx)
 	return placed(ctx)
-}
-
-// CanDisplace ...
-func (Wall) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...

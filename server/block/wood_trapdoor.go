@@ -15,6 +15,7 @@ import (
 type WoodTrapdoor struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the trapdoor. This field must have one of the values found in the material
 	// package.
@@ -47,7 +48,7 @@ func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Ve
 	if !used {
 		return false
 	}
-	t.Facing = user.Facing().Opposite()
+	t.Facing = user.Rotation().Direction().Opposite()
 	t.Top = (clickPos.Y() > 0.5 && face != cube.FaceUp) || face == cube.FaceDown
 
 	place(w, pos, t, user, ctx)
@@ -70,12 +71,6 @@ func (t WoodTrapdoor) BreakInfo() BreakInfo {
 // FuelInfo ...
 func (WoodTrapdoor) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
-}
-
-// CanDisplace ...
-func (t WoodTrapdoor) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // SideClosed ...

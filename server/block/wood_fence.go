@@ -13,6 +13,7 @@ import (
 type WoodFence struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the fence. This field must have one of the values found in the wood
 	// package.
@@ -22,12 +23,6 @@ type WoodFence struct {
 // BreakInfo ...
 func (w WoodFence) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w)).withBlastResistance(15)
-}
-
-// CanDisplace ...
-func (WoodFence) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
 }
 
 // SideClosed ...

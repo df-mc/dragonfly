@@ -15,7 +15,7 @@ const beaconInputSlot = 0x1b
 // for those effects.
 func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentStackRequestAction, s *Session) error {
 	slot := protocol.StackRequestSlotInfo{
-		ContainerID: containerBeacon,
+		ContainerID: protocol.ContainerBeaconPayment,
 		Slot:        beaconInputSlot,
 	}
 	// First check if there actually is a beacon opened.

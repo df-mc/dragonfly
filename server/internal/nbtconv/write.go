@@ -11,21 +11,27 @@ import (
 
 // WriteItem encodes an item stack into a map that can be encoded using NBT.
 func WriteItem(s item.Stack, disk bool) map[string]any {
-	m := make(map[string]any)
+	tag := make(map[string]any)
 	if nbt, ok := s.Item().(world.NBTer); ok {
 		for k, v := range nbt.EncodeNBT() {
-			m[k] = v
+			tag[k] = v
 		}
 	}
+	writeAnvilCost(tag, s)
+	writeDamage(tag, s, disk)
+	writeDisplay(tag, s)
+	writeDragonflyData(tag, s)
+	writeEnchantments(tag, s)
+
+	data := make(map[string]any)
 	if disk {
-		writeItemStack(m, s)
+		writeItemStack(data, tag, s)
+	} else {
+		for k, v := range tag {
+			data[k] = v
+		}
 	}
-	writeDamage(m, s, disk)
-	writeAnvilCost(m, s)
-	writeDisplay(m, s)
-	writeEnchantments(m, s)
-	writeDragonflyData(m, s)
-	return m
+	return data
 }
 
 // WriteBlock encodes a world.Block into a map that can be encoded using NBT.
@@ -39,7 +45,7 @@ func WriteBlock(b world.Block) map[string]any {
 }
 
 // writeItemStack writes the name, metadata value, count and NBT of an item to a map ready for NBT encoding.
-func writeItemStack(m map[string]any, s item.Stack) {
+func writeItemStack(m, t map[string]any, s item.Stack) {
 	m["Name"], m["Damage"] = s.Item().EncodeItem()
 	if b, ok := s.Item().(world.Block); ok {
 		v := map[string]any{}
@@ -47,6 +53,9 @@ func writeItemStack(m map[string]any, s item.Stack) {
 		m["Block"] = v
 	}
 	m["Count"] = byte(s.Count())
+	if len(t) > 0 {
+		m["tag"] = t
+	}
 }
 
 // writeBlock writes the name, properties and version of a block to a map ready for NBT encoding.

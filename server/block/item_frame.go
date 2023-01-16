@@ -16,6 +16,7 @@ import (
 type ItemFrame struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// Facing is the direction from the frame to the block.
 	Facing cube.Face
@@ -86,7 +87,7 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 
 // BreakInfo ...
 func (i ItemFrame) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(i))
+	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, oneOf(i))
 }
 
 // EncodeItem ...
@@ -112,8 +113,8 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]any) {
 
 // DecodeNBT ...
 func (i ItemFrame) DecodeNBT(data map[string]any) any {
-	i.DropChance = float64(nbtconv.Map[float32](data, "ItemDropChance"))
-	i.Rotations = int(nbtconv.Map[byte](data, "ItemRotation"))
+	i.DropChance = float64(nbtconv.Float32(data, "ItemDropChance"))
+	i.Rotations = int(nbtconv.Uint8(data, "ItemRotation"))
 	i.Item = nbtconv.MapItem(data, "Item")
 	return i
 }
@@ -142,12 +143,6 @@ func (i ItemFrame) Pick() item.Stack {
 	return item.NewStack(i.Item.Item(), 1)
 }
 
-// CanDisplace ...
-func (ItemFrame) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed ...
 func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
@@ -155,10 +150,14 @@ func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // NeighbourUpdateTick ...
 func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if (w.Block(pos.Side(i.Facing)).Model() == model.Empty{}) {
+	if _, ok := w.Block(pos.Side(i.Facing)).Model().(model.Empty); ok {
 		// TODO: Allow exceptions for pressure plates.
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: i})
+		dropItem(w, item.NewStack(i, 1), pos.Vec3Centre())
+		if !i.Item.Empty() {
+			dropItem(w, i.Item, pos.Vec3Centre())
+		}
 	}
 }
 

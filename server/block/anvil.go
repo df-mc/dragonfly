@@ -45,7 +45,7 @@ func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	if !used {
 		return
 	}
-	a.Facing = user.Facing().RotateRight()
+	a.Facing = user.Rotation().Direction().RotateRight()
 	place(w, pos, a, user, ctx)
 	return placed(ctx)
 }
@@ -81,7 +81,7 @@ func (Anvil) Landed(w *world.World, pos cube.Pos) {
 
 // EncodeItem ...
 func (a Anvil) EncodeItem() (name string, meta int16) {
-	return "minecraft:anvil", int16(a.Type.Uint8())
+	return "minecraft:anvil", int16(a.Type.Uint8() * 4)
 }
 
 // EncodeBlock ...

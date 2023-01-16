@@ -17,6 +17,9 @@ type Viewer interface {
 	// HideEntity stops viewing the entity passed. It is called for every entity that leaves the viewing range
 	// of the viewer, either by its movement or the movement of the viewer using a world.Loader.
 	HideEntity(e Entity)
+	// ViewEntityGameMode views the game mode of the entity passed. This is necessary for game-modes like spectator,
+	// which may update how the entity is viewed for others.
+	ViewEntityGameMode(e Entity)
 	// ViewEntityMovement views the movement of an entity. The entity is moved with a delta position, yaw and
 	// pitch, which, when applied to the respective values of the entity, will result in the final values.
 	ViewEntityMovement(e Entity, pos mgl64.Vec3, yaw, pitch float64, onGround bool)
@@ -74,6 +77,7 @@ var _ Viewer = NopViewer{}
 
 func (NopViewer) ViewEntity(Entity)                                             {}
 func (NopViewer) HideEntity(Entity)                                             {}
+func (NopViewer) ViewEntityGameMode(Entity)                                     {}
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, float64, float64, bool) {}
 func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                         {}
 func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                         {}

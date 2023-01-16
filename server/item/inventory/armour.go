@@ -3,6 +3,9 @@ package inventory
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
+	"github.com/df-mc/dragonfly/server/world"
+	"math"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and
@@ -15,7 +18,7 @@ type Armour struct {
 // NewArmour returns an armour inventory that is ready to be used. The zero value of an inventory.Armour is
 // not valid for usage.
 // The function passed is called when a slot is changed. It may be nil to not call anything.
-func NewArmour(f func(slot int, item item.Stack)) *Armour {
+func NewArmour(f func(slot int, before, after item.Stack)) *Armour {
 	inv := New(4, f)
 	inv.canAdd = canAddArmour
 	return &Armour{inv: inv}
@@ -100,6 +103,35 @@ func (a *Armour) Boots() item.Stack {
 	return i
 }
 
+// DamageReduction returns the amount of damage that is reduced by the Armour for
+// an amount of damage and damage source. The value returned takes into account
+// the armour itself and its enchantments.
+func (a *Armour) DamageReduction(dmg float64, src world.DamageSource) float64 {
+	var (
+		original                 = dmg
+		defencePoints, toughness float64
+		enchantments             []item.Enchantment
+	)
+
+	for _, it := range a.Items() {
+		enchantments = append(enchantments, it.Enchantments()...)
+		if armour, ok := it.Item().(item.Armour); ok {
+			defencePoints += armour.DefencePoints()
+			toughness += armour.Toughness()
+		}
+	}
+
+	dmg -= dmg * enchantment.ProtectionFactor(src, enchantments)
+	if src.ReducedByArmour() {
+		// Armour in Bedrock edition reduces the damage taken by 4% for each effective armour point. Effective
+		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defense
+		// reduction is decreased by the toughness armor value. Effective armour points will at minimum be 20% of
+		// armour points.
+		dmg -= dmg * 0.04 * math.Max(defencePoints*0.2, defencePoints-dmg/(2+toughness/4))
+	}
+	return original - dmg
+}
+
 // Slots returns all items (including) air of the armour inventory in the order of helmet, chestplate, leggings,
 // boots.
 func (a *Armour) Slots() []item.Stack {
@@ -112,13 +144,13 @@ func (a *Armour) Items() []item.Stack {
 }
 
 // Clear clears the armour inventory, removing all items currently present.
-func (a *Armour) Clear() {
-	a.inv.Clear()
+func (a *Armour) Clear() []item.Stack {
+	return a.inv.Clear()
 }
 
 // String converts the armour to a readable string representation.
 func (a *Armour) String() string {
-	return fmt.Sprintf("{helmet: %v, chestplate: %v, leggings: %v, boots: %v}", a.Helmet(), a.Chestplate(), a.Leggings(), a.Boots())
+	return fmt.Sprintf("(helmet: %v, chestplate: %v, leggings: %v, boots: %v)", a.Helmet(), a.Chestplate(), a.Leggings(), a.Boots())
 }
 
 // Inventory returns the underlying Inventory instance.
