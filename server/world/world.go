@@ -1004,27 +1004,27 @@ func (w *World) PortalDestination(dim Dimension) *World {
 }
 
 // EmittedRedstonePower returns the level of redstone power being emitted from a position to the provided face.
-func (w *World) EmittedRedstonePower(pos cube.Pos, face cube.Face, dustPower bool) int {
+func (w *World) EmittedRedstonePower(pos cube.Pos, face cube.Face, includeDust bool) (emitted int) {
 	b := w.Block(pos)
+	if c, ok := b.(Conductor); ok {
+		emitted = c.WeakPower(pos, face, w, includeDust)
+	}
 	for _, f := range cube.Faces() {
 		if !b.Model().FaceSolid(pos, f, w) {
-			if c, ok := w.Block(pos).(Conductor); ok {
-				return c.WeakPower(pos, face, w, dustPower)
-			}
-			return 0
+			return emitted
 		}
 	}
-	return w.ReceivedStrongRedstonePower(pos, dustPower)
+	return max(emitted, w.ReceivedStrongRedstonePower(pos, includeDust))
 }
 
 // ReceivedStrongRedstonePower returns the level of strong redstone power being received at the provided position.
-func (w *World) ReceivedStrongRedstonePower(pos cube.Pos, dustPower bool) (power int) {
+func (w *World) ReceivedStrongRedstonePower(pos cube.Pos, includeDust bool) (power int) {
 	for _, face := range cube.Faces() {
 		c, ok := w.Block(pos.Side(face)).(Conductor)
 		if !ok {
 			continue
 		}
-		power = max(power, c.StrongPower(pos.Side(face), face, w, dustPower))
+		power = max(power, c.StrongPower(pos.Side(face), face, w, includeDust))
 	}
 	return power
 }

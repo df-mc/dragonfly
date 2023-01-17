@@ -18,11 +18,11 @@ func (b RedstoneBlock) EncodeBlock() (string, map[string]any) {
 }
 
 // WeakPower ...
-func (b RedstoneBlock) WeakPower(cube.Pos, cube.Face, *world.World) int {
+func (b RedstoneBlock) WeakPower(cube.Pos, cube.Face, *world.World, bool) int {
 	return 15
 }
 
 // StrongPower ...
-func (b RedstoneBlock) StrongPower(cube.Pos, cube.Face, *world.World) int {
+func (b RedstoneBlock) StrongPower(cube.Pos, cube.Face, *world.World, bool) int {
 	return 0
 }

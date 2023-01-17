@@ -45,15 +45,25 @@ func (l RedstoneLamp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	if !used {
 		return
 	}
-	l.Lit = w.ReceivingRedstonePower(pos)
+	l.Lit = l.receiveRedstonePower(pos, w)
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
 func (l RedstoneLamp) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if l.Lit != w.ReceivingRedstonePower(pos) {
+	if l.Lit != l.receiveRedstonePower(pos, w) {
 		l.Lit = !l.Lit
 		w.SetBlock(pos, l, nil)
 	}
+}
+
+// receiveRedstonePower ...
+func (l RedstoneLamp) receiveRedstonePower(pos cube.Pos, w *world.World) bool {
+	for _, face := range cube.Faces() {
+		if w.EmittedRedstonePower(pos.Side(face), face, true) > 0 {
+			return true
+		}
+	}
+	return false
 }

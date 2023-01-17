@@ -35,7 +35,7 @@ const (
 	wireHeadingWest  = 3
 )
 
-func updateSurroundingRedstone(w *world.World, pos cube.Pos) {
+func updateSurroundingRedstone(pos cube.Pos, w *world.World) {
 	n := &wireNetwork{
 		nodeCache:   make(map[cube.Pos]*wireNode),
 		updateQueue: [3][]*wireNode{},
@@ -117,7 +117,7 @@ func (n *wireNetwork) identifyNeighbours(w *world.World, node *wireNode) {
 	n.orientNeighbours(&neighbourNodes, node, heading)
 }
 
-var reordering = [...][...]uint32{
+var reordering = [][]uint32{
 	{2, 3, 16, 19, 0, 4, 1, 5, 7, 8, 17, 20, 12, 13, 18, 21, 6, 9, 22, 14, 11, 10, 23, 15},
 	{2, 3, 16, 19, 4, 1, 5, 0, 17, 20, 12, 13, 18, 21, 7, 8, 22, 14, 11, 15, 23, 9, 6, 10},
 	{2, 3, 16, 19, 1, 5, 0, 4, 12, 13, 18, 21, 7, 8, 17, 20, 11, 15, 23, 10, 6, 14, 22, 9},

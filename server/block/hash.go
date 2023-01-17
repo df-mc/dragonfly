@@ -686,7 +686,7 @@ func (RedstoneBlock) Hash() uint64 {
 	return hashRedstoneBlock
 }
 
-func (r RedstoneDust) Hash() uint64 {
+func (r RedstoneWire) Hash() uint64 {
 	return hashRedstoneDust | uint64(r.Power)<<8
 }
 

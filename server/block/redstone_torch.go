@@ -93,7 +93,7 @@ func (t RedstoneTorch) EncodeBlock() (name string, properties map[string]any) {
 }
 
 // WeakPower ...
-func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.World) int {
+func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.World, _ bool) int {
 	if t.Lit && face != cube.FaceUp {
 		return 15
 	}
@@ -101,7 +101,7 @@ func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.World) int
 }
 
 // StrongPower ...
-func (t RedstoneTorch) StrongPower(cube.Pos, cube.Face, *world.World) int {
+func (t RedstoneTorch) StrongPower(cube.Pos, cube.Face, *world.World, bool) int {
 	return 0
 }
 

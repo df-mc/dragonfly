@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
@@ -89,14 +88,12 @@ func (h *redstonePlayerHandler) tick() {
 		case <-t.C:
 			w := h.p.World()
 			start := h.p.Position().Add(mgl64.Vec3{0, h.p.EyeHeight()})
-			end := start.Add(entity.DirectionVector(h.p).Mul(50))
+			end := start.Add(h.p.Rotation().Vec3().Mul(50))
 			var hitBlock world.Block
-			var hitPos cube.Pos
 			trace.TraverseBlocks(start, end, func(pos cube.Pos) bool {
 				b := w.Block(pos)
 				if _, ok := b.(block.Air); !ok {
 					hitBlock = b
-					hitPos = pos
 					return false
 				}
 				return true
@@ -104,10 +101,9 @@ func (h *redstonePlayerHandler) tick() {
 			if hitBlock != nil {
 				popup := fmt.Sprintf("%T", hitBlock)
 				switch hitBlock := hitBlock.(type) {
-				case block.RedstoneDust:
+				case block.RedstoneWire:
 					popup += fmt.Sprintf("\nPower: %d", hitBlock.Power)
 				}
-				popup += fmt.Sprintf("\nCalculated Power: %d", w.ReceivedRedstonePower(hitPos))
 				h.p.SendPopup(popup)
 			} else {
 				h.p.SendPopup("You are not looking at a block")
