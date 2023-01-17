@@ -45,7 +45,11 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	}
 	r.Power = r.calculatePower(pos, w)
 	place(w, pos, r, user, ctx)
-	return placed(ctx)
+	if placed(ctx) {
+		updateSurroundingRedstone(pos, w)
+		return true
+	}
+	return false
 }
 
 // NeighbourUpdateTick ...
