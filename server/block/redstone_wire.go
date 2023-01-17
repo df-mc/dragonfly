@@ -14,6 +14,13 @@ type RedstoneWire struct {
 	Power int
 }
 
+// BreakInfo ...
+func (r RedstoneWire) BreakInfo() BreakInfo {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(r)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
+		updateSurroundingRedstone(pos, w)
+	})
+}
+
 // EncodeItem ...
 func (r RedstoneWire) EncodeItem() (name string, meta int16) {
 	return "minecraft:redstone", 0
