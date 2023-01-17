@@ -46,7 +46,7 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	power := r.calculatePower(pos, w)
 	if r.Power != power {
 		r.Power = power
-		w.SetBlock(pos, r, nil)
+		w.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true})
 		updateSurroundingRedstone(pos, w)
 	}
 }
