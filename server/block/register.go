@@ -171,7 +171,7 @@ func init() {
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
-	registerAll(allRedstoneDust())
+	registerAll(allRedstoneWires())
 	registerAll(allRedstoneTorches())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())

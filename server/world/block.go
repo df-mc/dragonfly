@@ -52,6 +52,8 @@ type Liquid interface {
 // Conductor represents a block that can conduct a redstone signal.
 type Conductor interface {
 	Block
+	// Source returns true if the conductor is a signal source.
+	Source() bool
 	// WeakPower returns the power from a partial source and has limited usage.
 	WeakPower(pos cube.Pos, face cube.Face, w *World, includeDust bool) int
 	// StrongPower returns the power from a full source and can be passed to any redstone component.

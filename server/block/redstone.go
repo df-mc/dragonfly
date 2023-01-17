@@ -6,6 +6,23 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
+// RedstoneUpdater represents a block that can be updated through a change in redstone signal.
+type RedstoneUpdater interface {
+	// RedstoneUpdate is called when a change in redstone signal is computed.
+	RedstoneUpdate(pos cube.Pos, w *world.World)
+}
+
+// wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
+// wires in order to more efficiently and compute new redstone wire power levels and determine the order in which other
+// blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo and MCHPRS.
+type wireNetwork struct {
+	nodes            []*wireNode
+	nodeCache        map[cube.Pos]*wireNode
+	updateQueue      [3][]*wireNode
+	currentWalkLayer uint32
+}
+
+// wireNode is a data structure to keep track of redstone wires and neighbours that will receive updates.
 type wireNode struct {
 	visited bool
 
@@ -21,13 +38,6 @@ type wireNode struct {
 	layer uint32
 }
 
-type wireNetwork struct {
-	nodes            []*wireNode
-	nodeCache        map[cube.Pos]*wireNode
-	updateQueue      [3][]*wireNode
-	currentWalkLayer uint32
-}
-
 const (
 	wireHeadingNorth = 0
 	wireHeadingEast  = 1
@@ -35,6 +45,8 @@ const (
 	wireHeadingWest  = 3
 )
 
+// updateSurroundingRedstone sets off the breadth-first walk through all redstone wires connected to the initial
+// position triggered. This is the main entry point for the redstone update algorithm.
 func updateSurroundingRedstone(pos cube.Pos, w *world.World) {
 	n := &wireNetwork{
 		nodeCache:   make(map[cube.Pos]*wireNode),
@@ -53,6 +65,9 @@ func updateSurroundingRedstone(pos cube.Pos, w *world.World) {
 	n.breadthFirstWalk(w)
 }
 
+// identifyNeighbours identifies the neighbouring positions of a given node, determines their types, and links them into
+// the graph. After that, based on what nodes in the graph have been visited, the neighbours are reordered left-to-right
+// relative to the direction of information flow.
 func (n *wireNetwork) identifyNeighbours(w *world.World, node *wireNode) {
 	neighbours := computeRedstoneNeighbours(node.pos)
 	neighboursVisited := make([]bool, 0, 24)
@@ -117,6 +132,8 @@ func (n *wireNetwork) identifyNeighbours(w *world.World, node *wireNode) {
 	n.orientNeighbours(&neighbourNodes, node, heading)
 }
 
+// reordering contains lookup tables that completely remap neighbour positions into a left-to-right ordering, based on
+// the cardinal direction that is determined to be forward.
 var reordering = [][]uint32{
 	{2, 3, 16, 19, 0, 4, 1, 5, 7, 8, 17, 20, 12, 13, 18, 21, 6, 9, 22, 14, 11, 10, 23, 15},
 	{2, 3, 16, 19, 4, 1, 5, 0, 17, 20, 12, 13, 18, 21, 7, 8, 22, 14, 11, 15, 23, 9, 6, 10},
@@ -124,6 +141,7 @@ var reordering = [][]uint32{
 	{2, 3, 16, 19, 5, 0, 4, 1, 18, 21, 7, 8, 17, 20, 12, 13, 23, 10, 6, 9, 22, 15, 11, 14},
 }
 
+// orientNeighbours reorders the neighbours of a node based on the direction that is determined to be forward.
 func (n *wireNetwork) orientNeighbours(src *[]*wireNode, dst *wireNode, heading uint32) {
 	dst.oriented = true
 	dst.neighbours = make([]*wireNode, 0, 24)
@@ -132,6 +150,8 @@ func (n *wireNetwork) orientNeighbours(src *[]*wireNode, dst *wireNode, heading 
 	}
 }
 
+// propagateChanges propagates changes for any redstone wire in layer N, informing the neighbours to recompute their
+// states in layers N + 1 and N + 2.
 func (n *wireNetwork) propagateChanges(w *world.World, node *wireNode, layer uint32) {
 	if !node.oriented {
 		n.identifyNeighbours(w, node)
@@ -154,6 +174,8 @@ func (n *wireNetwork) propagateChanges(w *world.World, node *wireNode, layer uin
 	}
 }
 
+// breadthFirstWalk performs a breadth-first (layer by layer) traversal through redstone wires, propagating value
+// changes to neighbours in the order that they are visited.
 func (n *wireNetwork) breadthFirstWalk(w *world.World) {
 	n.shiftQueue()
 	n.currentWalkLayer = 1
@@ -164,7 +186,9 @@ func (n *wireNetwork) breadthFirstWalk(w *world.World) {
 				n.updateNode(w, node, n.currentWalkLayer)
 				continue
 			}
-			// TODO: Send a regular block update.
+			if t, ok := node.block.(RedstoneUpdater); ok {
+				t.RedstoneUpdate(node.pos, w)
+			}
 		}
 
 		n.shiftQueue()
@@ -174,12 +198,15 @@ func (n *wireNetwork) breadthFirstWalk(w *world.World) {
 	n.currentWalkLayer = 0
 }
 
+// shiftQueue shifts the update queue, moving all nodes from the current layer to the next layer. The last queue is then
+// simply invalidated.
 func (n *wireNetwork) shiftQueue() {
 	n.updateQueue[0] = n.updateQueue[1]
 	n.updateQueue[1] = n.updateQueue[2]
 	n.updateQueue[2] = nil
 }
 
+// updateNode processes a node which has had neighbouring redstone wires that have experienced value changes.
 func (n *wireNetwork) updateNode(w *world.World, node *wireNode, layer uint32) {
 	node.visited = true
 
@@ -198,6 +225,8 @@ var (
 	rsNeighboursDn = [...]uint32{8, 10, 12, 14}
 )
 
+// calculateCurrentChanges computes redstone wire power levels from neighboring blocks. Modifications cut the number of
+// power level changes by about 45% from vanilla, and also synergies well with the breadth-first search implementation.
 func (n *wireNetwork) calculateCurrentChanges(w *world.World, node *wireNode) RedstoneWire {
 	wire := node.block.(RedstoneWire)
 	i := wire.Power
@@ -242,6 +271,7 @@ func (n *wireNetwork) calculateCurrentChanges(w *world.World, node *wireNode) Re
 	return wire
 }
 
+// maxCurrentStrength computes a redstone wire's power level based on a cached state.
 func (n *wireNetwork) maxCurrentStrength(neighbour world.Block, strength int) int {
 	if wire, ok := neighbour.(RedstoneWire); ok {
 		return max(wire.Power, strength)
@@ -249,6 +279,8 @@ func (n *wireNetwork) maxCurrentStrength(neighbour world.Block, strength int) in
 	return strength
 }
 
+// computeRedstoneNeighbours computes the neighbours of a redstone wire node, ignoring neighbours that don't necessarily
+// need to be updated, but are in vanilla.
 func computeRedstoneNeighbours(pos cube.Pos) []cube.Pos {
 	return []cube.Pos{
 		// Immediate neighbours, in the order of west, east, down, up, north, and finally south.
@@ -285,6 +317,8 @@ func computeRedstoneNeighbours(pos cube.Pos) []cube.Pos {
 	}
 }
 
+// computeRedstoneHeading computes the cardinal direction that is "forward" given which redstone wires have been visited
+// and which have not around the position currently being processed.
 func computeRedstoneHeading(rX, rZ int32) uint32 {
 	code := (rX + 1) + 3*(rZ+1)
 	switch code {

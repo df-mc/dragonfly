@@ -131,9 +131,9 @@ const (
 	hashRawGold
 	hashRawIron
 	hashRedstoneBlock
-	hashRedstoneDust
 	hashRedstoneLamp
 	hashRedstoneTorch
+	hashRedstoneWire
 	hashReinforcedDeepslate
 	hashSand
 	hashSandstone
@@ -686,16 +686,16 @@ func (RedstoneBlock) Hash() uint64 {
 	return hashRedstoneBlock
 }
 
-func (r RedstoneWire) Hash() uint64 {
-	return hashRedstoneDust | uint64(r.Power)<<8
-}
-
 func (l RedstoneLamp) Hash() uint64 {
 	return hashRedstoneLamp | uint64(boolByte(l.Lit))<<8
 }
 
 func (t RedstoneTorch) Hash() uint64 {
 	return hashRedstoneTorch | uint64(t.Facing)<<8 | uint64(boolByte(t.Lit))<<11
+}
+
+func (r RedstoneWire) Hash() uint64 {
+	return hashRedstoneWire | uint64(r.Power)<<8
 }
 
 func (ReinforcedDeepslate) Hash() uint64 {

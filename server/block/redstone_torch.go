@@ -20,7 +20,9 @@ type RedstoneTorch struct {
 
 // BreakInfo ...
 func (t RedstoneTorch) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
+		updateSurroundingRedstone(pos, w)
+	})
 }
 
 // LightEmissionLevel ...
@@ -60,7 +62,11 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 	t.Lit = true
 
 	place(w, pos, t, user, ctx)
-	return placed(ctx)
+	if placed(ctx) {
+		updateSurroundingRedstone(pos, w)
+		return true
+	}
+	return false
 }
 
 // NeighbourUpdateTick ...
@@ -90,6 +96,11 @@ func (t RedstoneTorch) EncodeBlock() (name string, properties map[string]any) {
 		return "minecraft:redstone_torch", map[string]any{"torch_facing_direction": face}
 	}
 	return "minecraft:unlit_redstone_torch", map[string]any{"torch_facing_direction": face}
+}
+
+// Source ...
+func (t RedstoneTorch) Source() bool {
+	return true
 }
 
 // WeakPower ...

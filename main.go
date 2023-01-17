@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
@@ -34,6 +35,7 @@ func main() {
 	srv.Listen()
 	for srv.Accept(func(p *player.Player) {
 		p.Handle(newRedstonePlayerHandler(p))
+		p.Inventory().AddItem(item.NewStack(block.RedstoneTorch{}, 1))
 	}) {
 	}
 }

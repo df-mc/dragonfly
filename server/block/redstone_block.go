@@ -17,6 +17,11 @@ func (b RedstoneBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:redstone_block", nil
 }
 
+// Source ...
+func (b RedstoneBlock) Source() bool {
+	return true
+}
+
 // WeakPower ...
 func (b RedstoneBlock) WeakPower(cube.Pos, cube.Face, *world.World, bool) int {
 	return 15

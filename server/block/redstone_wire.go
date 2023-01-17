@@ -8,9 +8,15 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// RedstoneWire is a block that is used to transfer a charge between objects. Charged objects can be used to open doors
+// or activate certain items. This block is the placed form of redstone which can be found by mining Redstone Ore with
+// an Iron Pickaxe or better. Deactivated redstone wire will appear dark red, but activated redstone wire will appear
+// bright red with a sparkling particle effect.
 type RedstoneWire struct {
 	empty
 	transparent
+
+	// Power is the current power level of the redstone wire. It ranges from 0 to 15.
 	Power int
 }
 
@@ -60,6 +66,11 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		w.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true})
 		updateSurroundingRedstone(pos, w)
 	}
+}
+
+// Source ...
+func (r RedstoneWire) Source() bool {
+	return true
 }
 
 // WeakPower ...
@@ -150,8 +161,8 @@ func (r RedstoneWire) canRunOnTop(w *world.World, pos cube.Pos, block world.Bloc
 	return block.Model().FaceSolid(pos, cube.FaceUp, w)
 }
 
-// allRedstoneDust returns a list of all redstone dust states.
-func allRedstoneDust() (all []world.Block) {
+// allRedstoneWires returns a list of all redstone dust states.
+func allRedstoneWires() (all []world.Block) {
 	for i := 0; i < 16; i++ {
 		all = append(all, RedstoneWire{Power: i})
 	}
