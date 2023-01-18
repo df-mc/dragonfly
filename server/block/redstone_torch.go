@@ -10,6 +10,7 @@ import (
 )
 
 // RedstoneTorch is a non-solid blocks that emits little light and also a full-strength redstone signal when lit.
+// TODO: Redstone torches should burn out when used too recently and excessively.
 type RedstoneTorch struct {
 	transparent
 	empty
