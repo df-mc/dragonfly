@@ -132,20 +132,20 @@ func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.World, _ b
 		return 0
 	}
 	if face == cube.FaceDown {
-		if t.Facing != cube.FaceDown {
+		if t.Facing.Opposite() != cube.FaceDown {
 			return 15
 		}
 		return 0
 	}
-	if face != t.Facing {
+	if face != t.Facing.Opposite() {
 		return 15
 	}
 	return 0
 }
 
 // StrongPower ...
-func (t RedstoneTorch) StrongPower(cube.Pos, cube.Face, *world.World, bool) int {
-	if t.Lit && t.Facing == cube.FaceDown {
+func (t RedstoneTorch) StrongPower(_ cube.Pos, face cube.Face, _ *world.World, _ bool) int {
+	if t.Lit && face == cube.FaceUp {
 		return 15
 	}
 	return 0
