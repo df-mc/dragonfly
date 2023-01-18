@@ -83,8 +83,7 @@ func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // RedstoneUpdate ...
 func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, w *world.World) {
-	face := t.Facing.Opposite()
-	if powered := w.EmittedRedstonePower(pos.Side(face), face, true) > 0; powered != t.Lit {
+	if powered := w.EmittedRedstonePower(pos.Side(t.Facing), t.Facing, true) > 0; powered != t.Lit {
 		return
 	}
 	w.ScheduleBlockUpdate(pos, time.Millisecond*100)
