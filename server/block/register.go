@@ -310,6 +310,7 @@ func init() {
 	world.RegisterItem(RedstoneBlock{})
 	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(RedstoneTorch{})
+	world.RegisterItem(RedstoneLamp{})
 	world.RegisterItem(ReinforcedDeepslate{})
 	world.RegisterItem(Sand{Red: true})
 	world.RegisterItem(Sand{})

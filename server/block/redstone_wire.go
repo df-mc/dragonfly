@@ -60,8 +60,12 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 
 // NeighbourUpdateTick ...
 func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	power := r.calculatePower(pos, w)
-	if r.Power != power {
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
+		w.SetBlock(pos, nil, nil)
+		dropItem(w, item.NewStack(r, 1), pos.Vec3Centre())
+		return
+	}
+	if power := r.calculatePower(pos, w); r.Power != power {
 		r.Power = power
 		w.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true})
 		updateSurroundingRedstone(pos, w)
@@ -70,7 +74,7 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // Source ...
 func (r RedstoneWire) Source() bool {
-	return true
+	return false
 }
 
 // WeakPower ...

@@ -5,6 +5,8 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
+	"time"
 )
 
 // RedstoneTorch is a non-solid blocks that emits little light and also a full-strength redstone signal when lit.
@@ -73,7 +75,26 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), w) {
 		w.SetBlock(pos, nil, nil)
+		dropItem(w, item.NewStack(t, 1), pos.Vec3Centre())
+		return
 	}
+	t.RedstoneUpdate(pos, w)
+}
+
+// RedstoneUpdate ...
+func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, w *world.World) {
+	face := t.Facing.Opposite()
+	if powered := w.EmittedRedstonePower(pos.Side(face), face, true) > 0; powered != t.Lit {
+		return
+	}
+	w.ScheduleBlockUpdate(pos, time.Millisecond*100)
+}
+
+// ScheduledTick ...
+func (t RedstoneTorch) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+	t.Lit = !t.Lit
+	w.SetBlock(pos, t, &world.SetOpts{DisableBlockUpdates: true})
+	updateSurroundingRedstone(pos, w)
 }
 
 // HasLiquidDrops ...
@@ -88,9 +109,12 @@ func (t RedstoneTorch) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (t RedstoneTorch) EncodeBlock() (name string, properties map[string]any) {
-	face := t.Facing.String()
-	if t.Facing == cube.FaceDown {
-		face = "top"
+	face := "unknown"
+	if t.Facing != unknownFace {
+		face = t.Facing.String()
+		if t.Facing == cube.FaceDown {
+			face = "top"
+		}
 	}
 	if t.Lit {
 		return "minecraft:redstone_torch", map[string]any{"torch_facing_direction": face}
@@ -100,12 +124,21 @@ func (t RedstoneTorch) EncodeBlock() (name string, properties map[string]any) {
 
 // Source ...
 func (t RedstoneTorch) Source() bool {
-	return true
+	return t.Lit
 }
 
 // WeakPower ...
 func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.World, _ bool) int {
-	if t.Lit && face != cube.FaceUp {
+	if !t.Lit {
+		return 0
+	}
+	if face == cube.FaceDown {
+		if t.Facing != cube.FaceDown {
+			return 15
+		}
+		return 0
+	}
+	if face != t.Facing {
 		return 15
 	}
 	return 0
@@ -113,17 +146,20 @@ func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.World, _ b
 
 // StrongPower ...
 func (t RedstoneTorch) StrongPower(cube.Pos, cube.Face, *world.World, bool) int {
+	if t.Lit && t.Facing == cube.FaceDown {
+		return 15
+	}
 	return 0
 }
 
 // allRedstoneTorches ...
 func allRedstoneTorches() (all []world.Block) {
-	for i := cube.Face(0); i < 6; i++ {
-		if i == cube.FaceUp {
+	for _, f := range append(cube.Faces(), unknownFace) {
+		if f == cube.FaceUp {
 			continue
 		}
-		all = append(all, RedstoneTorch{Facing: i, Lit: true})
-		all = append(all, RedstoneTorch{Facing: i})
+		all = append(all, RedstoneTorch{Facing: f, Lit: true})
+		all = append(all, RedstoneTorch{Facing: f})
 	}
 	return
 }

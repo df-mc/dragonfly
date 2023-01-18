@@ -81,7 +81,6 @@ func init() {
 	for name, rid := range m {
 		itemNamesToRuntimeIDs[name] = rid
 		itemRuntimeIDsToNames[rid] = name
-		fmt.Println(name, rid)
 	}
 }
 

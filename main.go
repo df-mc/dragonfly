@@ -35,7 +35,7 @@ func main() {
 	srv.Listen()
 	for srv.Accept(func(p *player.Player) {
 		p.Handle(newRedstonePlayerHandler(p))
-		p.Inventory().AddItem(item.NewStack(block.RedstoneTorch{}, 1))
+		p.Inventory().AddItem(item.NewStack(block.Torch{}, 1))
 	}) {
 	}
 }

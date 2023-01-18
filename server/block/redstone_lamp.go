@@ -5,10 +5,14 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
+	"time"
 )
 
+// RedstoneLamp is a block that produces light when activated with a redstone signal.
 type RedstoneLamp struct {
 	solid
+
 	// Lit is if the redstone lamp is lit and emitting light.
 	Lit bool
 }
@@ -50,12 +54,31 @@ func (l RedstoneLamp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	return placed(ctx)
 }
 
+// NeighbourUpdateTick ...
+func (l RedstoneLamp) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	l.RedstoneUpdate(pos, w)
+}
+
 // RedstoneUpdate ...
 func (l RedstoneLamp) RedstoneUpdate(pos cube.Pos, w *world.World) {
-	if l.Lit != l.receivedRedstonePower(pos, w) {
-		l.Lit = !l.Lit
-		w.SetBlock(pos, l, nil)
+	if l.Lit == l.receivedRedstonePower(pos, w) {
+		return
 	}
+	if !l.Lit {
+		l.Lit = true
+		w.SetBlock(pos, l, &world.SetOpts{DisableBlockUpdates: true})
+	} else {
+		w.ScheduleBlockUpdate(pos, time.Millisecond*200)
+	}
+}
+
+// ScheduledTick ...
+func (l RedstoneLamp) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+	if l.receivedRedstonePower(pos, w) {
+		return
+	}
+	l.Lit = false
+	w.SetBlock(pos, l, &world.SetOpts{DisableBlockUpdates: true})
 }
 
 // receivedRedstonePower ...
