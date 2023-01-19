@@ -15,7 +15,7 @@ type RedstoneUpdater interface {
 
 // wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
 // wires in order to more efficiently and compute new redstone wire power levels and determine the order in which other
-// blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo, RedstoneCircuit, and MCHPRS.
+// blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo and MCHPRS.
 type wireNetwork struct {
 	nodes            []*wireNode
 	nodeCache        map[cube.Pos]*wireNode
@@ -67,9 +67,16 @@ func updateStrongRedstone(pos cube.Pos, w *world.World) {
 }
 
 // updateAroundRedstone updates redstone components around the given centre position. It will also ignore any faces
-// provided within the ignoredFaces parameter.
+// provided within the ignoredFaces parameter. This implementation is based off of RedstoneCircuit and Java 1.19.
 func updateAroundRedstone(centre cube.Pos, w *world.World, ignoredFaces ...cube.Face) {
-	for _, face := range cube.Faces() {
+	for _, face := range []cube.Face{
+		cube.FaceWest,
+		cube.FaceEast,
+		cube.FaceDown,
+		cube.FaceUp,
+		cube.FaceNorth,
+		cube.FaceSouth,
+	} {
 		if slices.Contains(ignoredFaces, face) {
 			continue
 		}
@@ -81,7 +88,8 @@ func updateAroundRedstone(centre cube.Pos, w *world.World, ignoredFaces ...cube.
 	}
 }
 
-// updateDirectionalRedstone updates redstone components through the given face.
+// updateDirectionalRedstone updates redstone components through the given face. This implementation is based off of
+// RedstoneCircuit and Java 1.19.
 func updateDirectionalRedstone(pos cube.Pos, w *world.World, face cube.Face) {
 	updateAroundRedstone(pos, w)
 	updateAroundRedstone(pos.Side(face), w, face.Opposite())
