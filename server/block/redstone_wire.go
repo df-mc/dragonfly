@@ -20,6 +20,11 @@ type RedstoneWire struct {
 	Power int
 }
 
+// HasLiquidDrops ...
+func (RedstoneWire) HasLiquidDrops() bool {
+	return true
+}
+
 // BreakInfo ...
 func (r RedstoneWire) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(r)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
@@ -28,7 +33,7 @@ func (r RedstoneWire) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (r RedstoneWire) EncodeItem() (name string, meta int16) {
+func (RedstoneWire) EncodeItem() (name string, meta int16) {
 	return "minecraft:redstone", 0
 }
 
@@ -73,7 +78,7 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // Source ...
-func (r RedstoneWire) Source() bool {
+func (RedstoneWire) Source() bool {
 	return false
 }
 
@@ -128,7 +133,7 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, w *world.World) int {
 }
 
 // maxCurrentStrength ...
-func (r RedstoneWire) maxCurrentStrength(power int, pos cube.Pos, w *world.World) int {
+func (RedstoneWire) maxCurrentStrength(power int, pos cube.Pos, w *world.World) int {
 	if wire, ok := w.Block(pos).(RedstoneWire); ok {
 		return max(wire.Power, power)
 	}
@@ -139,28 +144,28 @@ func (r RedstoneWire) maxCurrentStrength(power int, pos cube.Pos, w *world.World
 func (r RedstoneWire) connection(pos cube.Pos, face cube.Face, w *world.World) bool {
 	sidePos := pos.Side(face)
 	sideBlock := w.Block(sidePos)
-	if _, solidAbove := w.Block(pos.Side(cube.FaceUp)).Model().(model.Solid); !solidAbove && r.canRunOnTop(w, sidePos, sideBlock) && r.connectsTo(w.Block(sidePos.Side(cube.FaceUp)), false) {
+	if _, solidAbove := w.Block(pos.Side(cube.FaceUp)).Model().(model.Solid); !solidAbove && r.canRunOnTop(w, sidePos, sideBlock) && r.connectsTo(w.Block(sidePos.Side(cube.FaceUp)), face, false) {
 		return true
 	}
 	_, sideSolid := sideBlock.Model().(model.Solid)
-	return r.connectsTo(sideBlock, true) || !sideSolid && r.connectsTo(w.Block(sidePos.Side(cube.FaceDown)), false)
+	return r.connectsTo(sideBlock, face, true) || !sideSolid && r.connectsTo(w.Block(sidePos.Side(cube.FaceDown)), face, false)
 }
 
 // connectsTo ...
-func (r RedstoneWire) connectsTo(block world.Block, hasFace bool) bool {
-	switch block.(type) {
+func (RedstoneWire) connectsTo(block world.Block, face cube.Face, allowDirectSources bool) bool {
+	switch r := block.(type) {
 	case RedstoneWire:
 		return true
-		// TODO: Repeaters, observers
+	case RedstoneRepeater:
+		return r.Facing.Face() == face || r.Facing.Face().Opposite() == face
 	}
-	if _, ok := block.(world.Conductor); ok {
-		return hasFace
-	}
-	return false
+	// TODO: Account for observers.
+	c, ok := block.(world.Conductor)
+	return ok && allowDirectSources && c.Source()
 }
 
 // canRunOnTop ...
-func (r RedstoneWire) canRunOnTop(w *world.World, pos cube.Pos, block world.Block) bool {
+func (RedstoneWire) canRunOnTop(w *world.World, pos cube.Pos, block world.Block) bool {
 	// TODO: Hoppers.
 	return block.Model().FaceSolid(pos, cube.FaceUp, w)
 }

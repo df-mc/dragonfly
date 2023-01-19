@@ -21,11 +21,9 @@ type RedstoneTorch struct {
 	Lit bool
 }
 
-// BreakInfo ...
-func (t RedstoneTorch) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
-		updateSurroundingRedstone(pos, w)
-	})
+// HasLiquidDrops ...
+func (RedstoneTorch) HasLiquidDrops() bool {
+	return true
 }
 
 // LightEmissionLevel ...
@@ -34,6 +32,13 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 		return 7
 	}
 	return 0
+}
+
+// BreakInfo ...
+func (t RedstoneTorch) BreakInfo() BreakInfo {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
+		updateSurroundingRedstone(pos, w)
+	})
 }
 
 // UseOnBlock ...
@@ -97,13 +102,8 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand)
 	updateSurroundingRedstone(pos, w)
 }
 
-// HasLiquidDrops ...
-func (t RedstoneTorch) HasLiquidDrops() bool {
-	return true
-}
-
 // EncodeItem ...
-func (t RedstoneTorch) EncodeItem() (name string, meta int16) {
+func (RedstoneTorch) EncodeItem() (name string, meta int16) {
 	return "minecraft:redstone_torch", 0
 }
 
