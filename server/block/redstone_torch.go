@@ -37,7 +37,7 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 // BreakInfo ...
 func (t RedstoneTorch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
-		updateRedstoneWires(pos, w)
+		updateDirectionalRedstone(pos, w, cube.FaceUp)
 	})
 }
 
@@ -71,7 +71,7 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 
 	place(w, pos, t, user, ctx)
 	if placed(ctx) {
-		updateRedstoneWires(pos, w)
+		updateDirectionalRedstone(pos, w, cube.FaceUp)
 		return true
 	}
 	return false
@@ -98,8 +98,8 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, w *world.World) {
 // ScheduledTick ...
 func (t RedstoneTorch) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	t.Lit = !t.Lit
-	w.SetBlock(pos, t, &world.SetOpts{DisableBlockUpdates: true})
-	updateRedstoneWires(pos, w)
+	w.SetBlock(pos, t, nil)
+	updateDirectionalRedstone(pos, w, cube.FaceUp)
 }
 
 // EncodeItem ...

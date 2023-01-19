@@ -28,7 +28,7 @@ func (RedstoneWire) HasLiquidDrops() bool {
 // BreakInfo ...
 func (r RedstoneWire) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(r)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
-		updateRedstoneWires(pos, w)
+		updateStrongRedstone(pos, w)
 	})
 }
 
@@ -57,7 +57,7 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	r.Power = r.calculatePower(pos, w)
 	place(w, pos, r, user, ctx)
 	if placed(ctx) {
-		updateRedstoneWires(pos, w)
+		updateStrongRedstone(pos, w)
 		return true
 	}
 	return false
@@ -73,7 +73,7 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if power := r.calculatePower(pos, w); r.Power != power {
 		r.Power = power
 		w.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true})
-		updateRedstoneWires(pos, w)
+		updateStrongRedstone(pos, w)
 	}
 }
 

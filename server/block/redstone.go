@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/world"
+	"golang.org/x/exp/slices"
 )
 
 // RedstoneUpdater represents a block that can be updated through a change in redstone signal.
@@ -14,7 +15,7 @@ type RedstoneUpdater interface {
 
 // wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
 // wires in order to more efficiently and compute new redstone wire power levels and determine the order in which other
-// blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo and MCHPRS.
+// blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo, RedstoneCircuit, and MCHPRS.
 type wireNetwork struct {
 	nodes            []*wireNode
 	nodeCache        map[cube.Pos]*wireNode
@@ -45,9 +46,9 @@ const (
 	wireHeadingWest  = 3
 )
 
-// updateRedstoneWires sets off the breadth-first walk through all redstone wires connected to the initial position
+// updateStrongRedstone sets off the breadth-first walk through all redstone wires connected to the initial position
 // triggered. This is the main entry point for the redstone update algorithm.
-func updateRedstoneWires(pos cube.Pos, w *world.World) {
+func updateStrongRedstone(pos cube.Pos, w *world.World) {
 	n := &wireNetwork{
 		nodeCache:   make(map[cube.Pos]*wireNode),
 		updateQueue: [3][]*wireNode{},
@@ -65,6 +66,27 @@ func updateRedstoneWires(pos cube.Pos, w *world.World) {
 	n.breadthFirstWalk(w)
 }
 
+// updateAroundRedstone updates redstone components around the given centre position. It will also ignore any faces
+// provided within the ignoredFaces parameter.
+func updateAroundRedstone(centre cube.Pos, w *world.World, ignoredFaces ...cube.Face) {
+	for _, face := range cube.Faces() {
+		if slices.Contains(ignoredFaces, face) {
+			continue
+		}
+
+		pos := centre.Side(face)
+		if r, ok := w.Block(pos).(RedstoneUpdater); ok {
+			r.RedstoneUpdate(pos, w)
+		}
+	}
+}
+
+// updateDirectionalRedstone updates redstone components through the given face.
+func updateDirectionalRedstone(pos cube.Pos, w *world.World, face cube.Face) {
+	updateAroundRedstone(pos, w)
+	updateAroundRedstone(pos.Side(face), w, face.Opposite())
+}
+
 // updateGateRedstone is used to update redstone gates on each face of the given offset centre position.
 func updateGateRedstone(centre cube.Pos, w *world.World, face cube.Face) {
 	pos := centre.Side(face)
@@ -72,17 +94,7 @@ func updateGateRedstone(centre cube.Pos, w *world.World, face cube.Face) {
 		r.RedstoneUpdate(pos, w)
 	}
 
-	opposite := face.Opposite()
-	for _, f := range cube.Faces() {
-		if f == opposite {
-			continue
-		}
-
-		sidePos := pos.Side(f)
-		if r, ok := w.Block(sidePos).(RedstoneUpdater); ok {
-			r.RedstoneUpdate(sidePos, w)
-		}
-	}
+	updateAroundRedstone(pos, w, face.Opposite())
 }
 
 // identifyNeighbours identifies the neighbouring positions of a given node, determines their types, and links them into
