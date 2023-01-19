@@ -109,13 +109,13 @@ func (r RedstoneRepeater) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Ra
 		return
 	}
 
-	if !r.Powered && r.inputStrength(pos, w) <= 0 {
-		w.ScheduleBlockUpdate(pos, time.Duration(r.Delay+1)*time.Millisecond*100)
-	}
-
 	r.Powered = !r.Powered
 	w.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true})
 	updateSurroundingRedstone(pos, w)
+
+	if r.Powered && r.inputStrength(pos, w) <= 0 {
+		w.ScheduleBlockUpdate(pos, time.Duration(r.Delay+1)*time.Millisecond*100)
+	}
 }
 
 // Locked ...
