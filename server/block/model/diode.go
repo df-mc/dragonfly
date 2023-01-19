@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Diode is a model used by redstone diodes, such as repeaters and comparators.
+// Diode is a model used by redstone gates, such as repeaters and comparators.
 type Diode struct{}
 
 // BBox ...

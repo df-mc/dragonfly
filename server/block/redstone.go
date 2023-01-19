@@ -45,9 +45,9 @@ const (
 	wireHeadingWest  = 3
 )
 
-// updateSurroundingRedstone sets off the breadth-first walk through all redstone wires connected to the initial
-// position triggered. This is the main entry point for the redstone update algorithm.
-func updateSurroundingRedstone(pos cube.Pos, w *world.World) {
+// updateRedstoneWires sets off the breadth-first walk through all redstone wires connected to the initial position
+// triggered. This is the main entry point for the redstone update algorithm.
+func updateRedstoneWires(pos cube.Pos, w *world.World) {
 	n := &wireNetwork{
 		nodeCache:   make(map[cube.Pos]*wireNode),
 		updateQueue: [3][]*wireNode{},
@@ -63,6 +63,26 @@ func updateSurroundingRedstone(pos cube.Pos, w *world.World) {
 
 	n.propagateChanges(w, root, 0)
 	n.breadthFirstWalk(w)
+}
+
+// updateGateRedstone is used to update redstone gates on each face of the given offset centre position.
+func updateGateRedstone(centre cube.Pos, w *world.World, face cube.Face) {
+	pos := centre.Side(face)
+	if r, ok := w.Block(pos).(RedstoneUpdater); ok {
+		r.RedstoneUpdate(pos, w)
+	}
+
+	opposite := face.Opposite()
+	for _, f := range cube.Faces() {
+		if f == opposite {
+			continue
+		}
+
+		sidePos := pos.Side(f)
+		if r, ok := w.Block(sidePos).(RedstoneUpdater); ok {
+			r.RedstoneUpdate(sidePos, w)
+		}
+	}
 }
 
 // identifyNeighbours identifies the neighbouring positions of a given node, determines their types, and links them into

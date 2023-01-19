@@ -36,7 +36,7 @@ func (RedstoneRepeater) Model() world.BlockModel {
 // BreakInfo ...
 func (r RedstoneRepeater) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(r)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
-		updateSurroundingRedstone(pos, w)
+		updateGateRedstone(pos, w, r.Facing.Face().Opposite())
 	})
 }
 
@@ -83,7 +83,7 @@ func (r RedstoneRepeater) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // Activate ...
-func (r RedstoneRepeater) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
+func (r RedstoneRepeater) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	if r.Delay++; r.Delay > 3 {
 		r.Delay = 0
 	}
@@ -110,8 +110,8 @@ func (r RedstoneRepeater) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Ra
 	}
 
 	r.Powered = !r.Powered
-	w.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true})
-	updateSurroundingRedstone(pos, w)
+	w.SetBlock(pos, r, nil)
+	updateGateRedstone(pos, w, r.Facing.Face().Opposite())
 
 	if r.Powered && r.inputStrength(pos, w) <= 0 {
 		w.ScheduleBlockUpdate(pos, time.Duration(r.Delay+1)*time.Millisecond*100)
