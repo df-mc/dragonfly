@@ -70,6 +70,11 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		dropItem(w, item.NewStack(r, 1), pos.Vec3Centre())
 		return
 	}
+	r.RedstoneUpdate(pos, w)
+}
+
+// RedstoneUpdate ...
+func (r RedstoneWire) RedstoneUpdate(pos cube.Pos, w *world.World) {
 	if power := r.calculatePower(pos, w); r.Power != power {
 		r.Power = power
 		w.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true})
