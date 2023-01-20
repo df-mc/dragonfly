@@ -6,18 +6,26 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 )
 
 func main() {
+	go func() {
+		err := http.ListenAndServe(":6060", nil)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	log := logrus.New()
 	log.Formatter = &logrus.TextFormatter{ForceColors: true}
 	log.Level = logrus.DebugLevel
@@ -35,7 +43,6 @@ func main() {
 	srv.Listen()
 	for srv.Accept(func(p *player.Player) {
 		p.Handle(newRedstonePlayerHandler(p))
-		p.Inventory().AddItem(item.NewStack(block.Torch{}, 1))
 	}) {
 	}
 }
