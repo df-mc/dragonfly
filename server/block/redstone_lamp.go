@@ -54,11 +54,6 @@ func (l RedstoneLamp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
-func (l RedstoneLamp) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	l.RedstoneUpdate(pos, w)
-}
-
 // RedstoneUpdate ...
 func (l RedstoneLamp) RedstoneUpdate(pos cube.Pos, w *world.World) {
 	if l.Lit == l.receivedRedstonePower(pos, w) {

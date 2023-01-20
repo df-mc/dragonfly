@@ -47,10 +47,14 @@ func (RedstoneRepeater) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (r RedstoneRepeater) EncodeBlock() (string, map[string]any) {
+	name := "minecraft:unpowered_repeater"
 	if r.Powered {
-		return "minecraft:powered_repeater", map[string]any{"direction": int32(horizontalDirection(r.Facing)), "repeater_delay": int32(r.Delay)}
+		name = "minecraft:powered_repeater"
 	}
-	return "minecraft:unpowered_repeater", map[string]any{"direction": int32(horizontalDirection(r.Facing)), "repeater_delay": int32(r.Delay)}
+	return name, map[string]any{
+		"direction":      int32(horizontalDirection(r.Facing)),
+		"repeater_delay": int32(r.Delay),
+	}
 }
 
 // UseOnBlock ...
@@ -77,9 +81,7 @@ func (r RedstoneRepeater) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d, ok := w.Block(pos.Side(cube.FaceDown)).(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
 		w.SetBlock(pos, nil, nil)
 		dropItem(w, item.NewStack(r, 1), pos.Vec3Centre())
-		return
 	}
-	r.RedstoneUpdate(pos, w)
 }
 
 // Activate ...

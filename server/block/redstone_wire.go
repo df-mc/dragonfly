@@ -64,7 +64,11 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 }
 
 // NeighbourUpdateTick ...
-func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (r RedstoneWire) NeighbourUpdateTick(pos, neighbour cube.Pos, w *world.World) {
+	if pos == neighbour {
+		// Ignore neighbour updates on ourself.
+		return
+	}
 	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		w.SetBlock(pos, nil, nil)
 		dropItem(w, item.NewStack(r, 1), pos.Vec3Centre())

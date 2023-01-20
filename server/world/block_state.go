@@ -66,7 +66,7 @@ func init() {
 // registerBlockState registers a new blockState to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
 func registerBlockState(s blockState) {
-	if strings.Contains(s.Name, "repeater") {
+	if strings.Contains(s.Name, "comparator") {
 		pretty.Println(s)
 	}
 

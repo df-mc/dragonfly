@@ -71,6 +71,7 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 
 	place(w, pos, t, user, ctx)
 	if placed(ctx) {
+		t.RedstoneUpdate(pos, w)
 		updateDirectionalRedstone(pos, w, t.Facing.Opposite())
 		return true
 	}
@@ -82,14 +83,12 @@ func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), w) {
 		w.SetBlock(pos, nil, nil)
 		dropItem(w, item.NewStack(t, 1), pos.Vec3Centre())
-		return
 	}
-	t.RedstoneUpdate(pos, w)
 }
 
 // RedstoneUpdate ...
 func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, w *world.World) {
-	if w.EmittedRedstonePower(pos.Side(t.Facing), t.Facing, true) > 0 != t.Lit {
+	if t.inputStrength(pos, w) > 0 != t.Lit {
 		return
 	}
 	w.ScheduleBlockUpdate(pos, time.Millisecond*100)
@@ -97,6 +96,9 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, w *world.World) {
 
 // ScheduledTick ...
 func (t RedstoneTorch) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+	if t.inputStrength(pos, w) > 0 != t.Lit {
+		return
+	}
 	t.Lit = !t.Lit
 	w.SetBlock(pos, t, nil)
 	updateDirectionalRedstone(pos, w, t.Facing.Opposite())
@@ -150,6 +152,11 @@ func (t RedstoneTorch) StrongPower(_ cube.Pos, face cube.Face, _ *world.World, _
 		return 15
 	}
 	return 0
+}
+
+// inputStrength ...
+func (t RedstoneTorch) inputStrength(pos cube.Pos, w *world.World) int {
+	return w.EmittedRedstonePower(pos.Side(t.Facing), t.Facing, true)
 }
 
 // allRedstoneTorches ...
