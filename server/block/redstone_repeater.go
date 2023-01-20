@@ -36,7 +36,7 @@ func (RedstoneRepeater) Model() world.BlockModel {
 // BreakInfo ...
 func (r RedstoneRepeater) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(r)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
-		updateGateRedstone(pos, w, r.Facing.Face().Opposite())
+		updateGateRedstone(pos, w, r.Facing.Face())
 	})
 }
 
@@ -112,16 +112,14 @@ func (r RedstoneRepeater) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Ra
 	}
 	if shouldBePowered := r.inputStrength(pos, w) > 0; r.Powered && !shouldBePowered {
 		r.Powered = false
-		w.SetBlock(pos, r, nil)
-		updateGateRedstone(pos, w, r.Facing.Face().Opposite())
 	} else if !r.Powered {
 		r.Powered = true
-		w.SetBlock(pos, r, nil)
-		updateGateRedstone(pos, w, r.Facing.Face().Opposite())
 		if !shouldBePowered {
 			w.ScheduleBlockUpdate(pos, time.Duration(r.Delay+1)*time.Millisecond*100)
 		}
 	}
+	w.SetBlock(pos, r, nil)
+	updateGateRedstone(pos, w, r.Facing.Face())
 }
 
 // Locked ...
