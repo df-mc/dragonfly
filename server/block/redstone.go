@@ -97,12 +97,7 @@ func updateDirectionalRedstone(pos cube.Pos, w *world.World, face cube.Face) {
 
 // updateGateRedstone is used to update redstone gates on each face of the given offset centre position.
 func updateGateRedstone(centre cube.Pos, w *world.World, face cube.Face) {
-	pos := centre.Side(face)
-	if r, ok := w.Block(pos).(RedstoneUpdater); ok {
-		r.RedstoneUpdate(pos, w)
-	}
-
-	updateAroundRedstone(pos, w, face.Opposite())
+	updateAroundRedstone(centre.Side(face), w, face.Opposite())
 }
 
 // identifyNeighbours identifies the neighbouring positions of a given node, determines their types, and links them into
