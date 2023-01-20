@@ -81,8 +81,6 @@ type Frictional interface {
 }
 
 var (
-	// unknownDirection is a direction that is used for certain block items. This should not be exposed in the API.
-	unknownDirection = cube.Direction(len(cube.Directions()))
 	// unknownFace is a face that is used for certain block items. This should not be exposed in the API.
 	unknownFace = cube.Face(len(cube.Faces()))
 )
