@@ -110,13 +110,17 @@ func (r RedstoneRepeater) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Ra
 		// Ignore this tick; the repeater is locked.
 		return
 	}
-
-	r.Powered = !r.Powered
-	w.SetBlock(pos, r, nil)
-	updateGateRedstone(pos, w, r.Facing.Face().Opposite())
-
-	if r.Powered && r.inputStrength(pos, w) <= 0 {
-		w.ScheduleBlockUpdate(pos, time.Duration(r.Delay+1)*time.Millisecond*100)
+	if shouldBePowered := r.inputStrength(pos, w) > 0; r.Powered && !shouldBePowered {
+		r.Powered = false
+		w.SetBlock(pos, r, nil)
+		updateGateRedstone(pos, w, r.Facing.Face().Opposite())
+	} else if !r.Powered {
+		r.Powered = true
+		w.SetBlock(pos, r, nil)
+		updateGateRedstone(pos, w, r.Facing.Face().Opposite())
+		if !shouldBePowered {
+			w.ScheduleBlockUpdate(pos, time.Duration(r.Delay+1)*time.Millisecond*100)
+		}
 	}
 }
 
@@ -146,14 +150,14 @@ func (r RedstoneRepeater) StrongPower(pos cube.Pos, face cube.Face, w *world.Wor
 
 // inputStrength ...
 func (r RedstoneRepeater) inputStrength(pos cube.Pos, w *world.World) int {
-	sidePos := pos.Side(r.Facing.Face())
-	if strength := w.EmittedRedstonePower(sidePos, r.Facing.Face(), true); strength > 0 {
-		return strength
-	}
+	face := r.Facing.Face()
+	sidePos := pos.Side(face)
+
+	strength := w.EmittedRedstonePower(sidePos, face, true)
 	if w, ok := w.Block(sidePos).(RedstoneWire); ok {
-		return w.Power
+		return max(strength, w.Power)
 	}
-	return 0
+	return strength
 }
 
 // allRedstoneRepeaters ...
