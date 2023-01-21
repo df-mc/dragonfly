@@ -16,6 +16,11 @@ type TNT struct {
 	solid
 }
 
+// NeighbourUpdateTick ...
+func (t TNT) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	t.RedstoneUpdate(pos, w)
+}
+
 // RedstoneUpdate ...
 func (t TNT) RedstoneUpdate(pos cube.Pos, w *world.World) {
 	if receivedRedstonePower(pos, w) {
