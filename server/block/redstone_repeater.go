@@ -110,13 +110,13 @@ func (r RedstoneRepeater) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Ra
 		// Ignore this tick; the repeater is locked.
 		return
 	}
-	if shouldBePowered := r.inputStrength(pos, w) > 0; r.Powered && !shouldBePowered {
-		r.Powered = false
-	} else if !r.Powered {
-		r.Powered = true
-		if !shouldBePowered {
-			w.ScheduleBlockUpdate(pos, time.Duration(r.Delay+1)*time.Millisecond*100)
-		}
+
+	r.Powered = !r.Powered
+	w.SetBlock(pos, r, nil)
+	updateGateRedstone(pos, w, r.Facing.Face().Opposite())
+
+	if r.Powered && r.inputStrength(pos, w) <= 0 {
+		w.ScheduleBlockUpdate(pos, time.Duration(r.Delay+1)*time.Millisecond*100)
 	}
 	w.SetBlock(pos, r, nil)
 	updateGateRedstone(pos, w, r.Facing.Face())
