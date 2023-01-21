@@ -16,6 +16,13 @@ type TNT struct {
 	solid
 }
 
+// RedstoneUpdate ...
+func (t TNT) RedstoneUpdate(pos cube.Pos, w *world.World) {
+	if receivedRedstonePower(pos, w) {
+		t.Ignite(pos, w)
+	}
+}
+
 // Activate ...
 func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()

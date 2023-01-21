@@ -105,6 +105,15 @@ func updateGateRedstone(centre cube.Pos, w *world.World, face cube.Face) {
 	updateAroundRedstone(pos, w, face)
 }
 
+func receivedRedstonePower(pos cube.Pos, w *world.World) bool {
+	for _, face := range cube.Faces() {
+		if w.RedstonePower(pos.Side(face), face, true) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // identifyNeighbours identifies the neighbouring positions of a given node, determines their types, and links them into
 // the graph. After that, based on what nodes in the graph have been visited, the neighbours are reordered left-to-right
 // relative to the direction of information flow.

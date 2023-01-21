@@ -49,14 +49,14 @@ func (l RedstoneLamp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 	if !used {
 		return
 	}
-	l.Lit = l.receivedRedstonePower(pos, w)
+	l.Lit = receivedRedstonePower(pos, w)
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
 }
 
 // RedstoneUpdate ...
 func (l RedstoneLamp) RedstoneUpdate(pos cube.Pos, w *world.World) {
-	if l.Lit == l.receivedRedstonePower(pos, w) {
+	if l.Lit == receivedRedstonePower(pos, w) {
 		return
 	}
 	if !l.Lit {
@@ -69,19 +69,9 @@ func (l RedstoneLamp) RedstoneUpdate(pos cube.Pos, w *world.World) {
 
 // ScheduledTick ...
 func (l RedstoneLamp) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
-	if l.receivedRedstonePower(pos, w) {
+	if receivedRedstonePower(pos, w) {
 		return
 	}
 	l.Lit = false
 	w.SetBlock(pos, l, &world.SetOpts{DisableBlockUpdates: true})
-}
-
-// receivedRedstonePower ...
-func (l RedstoneLamp) receivedRedstonePower(pos cube.Pos, w *world.World) bool {
-	for _, face := range cube.Faces() {
-		if w.RedstonePower(pos.Side(face), face, true) > 0 {
-			return true
-		}
-	}
-	return false
 }
