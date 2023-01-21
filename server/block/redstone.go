@@ -278,7 +278,7 @@ func (n *wireNetwork) calculateCurrentChanges(w *world.World, node *wireNode) Re
 
 	var wirePower int
 	for _, face := range cube.Faces() {
-		wirePower = max(wirePower, w.EmittedRedstonePower(node.pos.Side(face), face, false))
+		wirePower = max(wirePower, w.RedstonePower(node.pos.Side(face), face, false))
 	}
 
 	if wirePower < 15 {

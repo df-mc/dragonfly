@@ -142,8 +142,8 @@ func (r RedstoneRepeater) WeakPower(_ cube.Pos, face cube.Face, _ *world.World, 
 }
 
 // StrongPower ...
-func (r RedstoneRepeater) StrongPower(pos cube.Pos, face cube.Face, w *world.World, includeDust bool) int {
-	return r.WeakPower(pos, face, w, includeDust)
+func (r RedstoneRepeater) StrongPower(pos cube.Pos, face cube.Face, w *world.World, accountForDust bool) int {
+	return r.WeakPower(pos, face, w, accountForDust)
 }
 
 // inputStrength ...
@@ -151,7 +151,7 @@ func (r RedstoneRepeater) inputStrength(pos cube.Pos, w *world.World) int {
 	face := r.Facing.Face()
 	sidePos := pos.Side(face)
 
-	strength := w.EmittedRedstonePower(sidePos, face, true)
+	strength := w.RedstonePower(sidePos, face, true)
 	if w, ok := w.Block(sidePos).(RedstoneWire); ok {
 		return max(strength, w.Power)
 	}

@@ -92,8 +92,8 @@ func (RedstoneWire) Source() bool {
 }
 
 // WeakPower ...
-func (r RedstoneWire) WeakPower(pos cube.Pos, face cube.Face, w *world.World, includeDust bool) int {
-	if !includeDust {
+func (r RedstoneWire) WeakPower(pos cube.Pos, face cube.Face, w *world.World, accountForDust bool) int {
+	if !accountForDust {
 		return 0
 	}
 	if face == cube.FaceDown {
@@ -109,8 +109,8 @@ func (r RedstoneWire) WeakPower(pos cube.Pos, face cube.Face, w *world.World, in
 }
 
 // StrongPower ...
-func (r RedstoneWire) StrongPower(pos cube.Pos, face cube.Face, w *world.World, includeDust bool) int {
-	return r.WeakPower(pos, face, w, includeDust)
+func (r RedstoneWire) StrongPower(pos cube.Pos, face cube.Face, w *world.World, accountForDust bool) int {
+	return r.WeakPower(pos, face, w, accountForDust)
 }
 
 // calculatePower returns the highest level of received redstone power at the provided position.
@@ -124,7 +124,7 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, w *world.World) int {
 		neighbour := w.Block(neighbourPos)
 
 		wirePower = r.maxCurrentStrength(wirePower, neighbourPos, w)
-		blockPower = max(blockPower, w.EmittedRedstonePower(neighbourPos, side, false))
+		blockPower = max(blockPower, w.RedstonePower(neighbourPos, side, false))
 
 		if side.Axis() == cube.Y {
 			// Only check horizontal neighbours from here on.

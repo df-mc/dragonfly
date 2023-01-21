@@ -79,7 +79,7 @@ func (l RedstoneLamp) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) 
 // receivedRedstonePower ...
 func (l RedstoneLamp) receivedRedstonePower(pos cube.Pos, w *world.World) bool {
 	for _, face := range cube.Faces() {
-		if w.EmittedRedstonePower(pos.Side(face), face, true) > 0 {
+		if w.RedstonePower(pos.Side(face), face, true) > 0 {
 			return true
 		}
 	}

@@ -77,11 +77,11 @@ func (t ticker) tick() {
 // tickScheduledBlocks executes scheduled block updates in chunks that are currently loaded.
 func (t ticker) tickScheduledBlocks(tick int64) {
 	t.w.updateMu.Lock()
-	positions := make([]cube.Pos, 0, len(t.w.scheduledUpdates)/4)
-	for pos, scheduledTick := range t.w.scheduledUpdates {
-		if scheduledTick <= tick {
-			positions = append(positions, pos)
-			delete(t.w.scheduledUpdates, pos)
+	positions := make([]cube.Pos, 0, t.w.scheduledUpdates.Len()/4)
+	for pair := t.w.scheduledUpdates.Oldest(); pair != nil; pair = pair.Next() {
+		if pair.Value <= tick {
+			positions = append(positions, pair.Key)
+			t.w.scheduledUpdates.Delete(pair.Key)
 		}
 	}
 	t.w.updateMu.Unlock()

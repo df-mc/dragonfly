@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"math/rand"
 	"sync"
 	"time"
@@ -59,7 +60,7 @@ type World struct {
 	// scheduledUpdates is a map of tick time values indexed by the block position at which an update is
 	// scheduled. If the current tick exceeds the tick value passed, the block update will be performed
 	// and the entry will be removed from the map.
-	scheduledUpdates map[cube.Pos]int64
+	scheduledUpdates *orderedmap.OrderedMap[cube.Pos, int64]
 	neighbourUpdates []neighbourUpdate
 
 	viewersMu sync.Mutex
@@ -928,14 +929,14 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	}
 	w.updateMu.Lock()
 	defer w.updateMu.Unlock()
-	if _, exists := w.scheduledUpdates[pos]; exists {
+	if _, exists := w.scheduledUpdates.Get(pos); exists {
 		return
 	}
 	w.set.Lock()
 	t := w.set.CurrentTick
 	w.set.Unlock()
 
-	w.scheduledUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
+	w.scheduledUpdates.Set(pos, t+delay.Nanoseconds()/int64(time.Second/20))
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
@@ -1003,28 +1004,23 @@ func (w *World) PortalDestination(dim Dimension) *World {
 	return w
 }
 
-// EmittedRedstonePower returns the level of redstone power being emitted from a position to the provided face.
-func (w *World) EmittedRedstonePower(pos cube.Pos, face cube.Face, includeDust bool) (emitted int) {
+// RedstonePower returns the level of redstone power being emitted from a position to the provided face.
+func (w *World) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
 	b := w.Block(pos)
 	if c, ok := b.(Conductor); ok {
-		emitted = c.WeakPower(pos, face, w, includeDust)
+		power = c.WeakPower(pos, face, w, accountForDust)
 	}
 	for _, f := range cube.Faces() {
 		if !b.Model().FaceSolid(pos, f, w) {
-			return emitted
+			return power
 		}
 	}
-	return max(emitted, w.ReceivedStrongRedstonePower(pos, includeDust))
-}
-
-// ReceivedStrongRedstonePower returns the level of strong redstone power being received at the provided position.
-func (w *World) ReceivedStrongRedstonePower(pos cube.Pos, includeDust bool) (power int) {
-	for _, face := range cube.Faces() {
-		c, ok := w.Block(pos.Side(face)).(Conductor)
+	for _, f := range cube.Faces() {
+		c, ok := w.Block(pos.Side(f)).(Conductor)
 		if !ok {
 			continue
 		}
-		power = max(power, c.StrongPower(pos.Side(face), face, w, includeDust))
+		power = max(power, c.StrongPower(pos.Side(f), f, w, accountForDust))
 	}
 	return power
 }

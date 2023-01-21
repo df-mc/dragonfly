@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sirupsen/logrus"
+	"github.com/wk8/go-ordered-map/v2"
 	"math/rand"
 	"time"
 )
@@ -71,7 +72,7 @@ func (conf Config) New() *World {
 	}
 	s := conf.Provider.Settings()
 	w := &World{
-		scheduledUpdates: make(map[cube.Pos]int64),
+		scheduledUpdates: orderedmap.New[cube.Pos, int64](),
 		entities:         make(map[Entity]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*chunkData),

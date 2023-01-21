@@ -156,7 +156,7 @@ func (t RedstoneTorch) StrongPower(_ cube.Pos, face cube.Face, _ *world.World, _
 
 // inputStrength ...
 func (t RedstoneTorch) inputStrength(pos cube.Pos, w *world.World) int {
-	return w.EmittedRedstonePower(pos.Side(t.Facing), t.Facing, true)
+	return w.RedstonePower(pos.Side(t.Facing), t.Facing, true)
 }
 
 // allRedstoneTorches ...

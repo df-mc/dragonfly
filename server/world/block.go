@@ -55,9 +55,9 @@ type Conductor interface {
 	// Source returns true if the conductor is a signal source.
 	Source() bool
 	// WeakPower returns the power from a partial source and has limited usage.
-	WeakPower(pos cube.Pos, face cube.Face, w *World, includeDust bool) int
+	WeakPower(pos cube.Pos, face cube.Face, w *World, accountForDust bool) int
 	// StrongPower returns the power from a full source and can be passed to any redstone component.
-	StrongPower(pos cube.Pos, face cube.Face, w *World, includeDust bool) int
+	StrongPower(pos cube.Pos, face cube.Face, w *World, accountForDust bool) int
 }
 
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
