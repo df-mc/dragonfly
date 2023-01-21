@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"math/rand"
 	"sync"
 	"time"
@@ -60,7 +59,7 @@ type World struct {
 	// scheduledUpdates is a map of tick time values indexed by the block position at which an update is
 	// scheduled. If the current tick exceeds the tick value passed, the block update will be performed
 	// and the entry will be removed from the map.
-	scheduledUpdates *orderedmap.OrderedMap[cube.Pos, int64]
+	scheduledUpdates map[cube.Pos]int64
 	neighbourUpdates []neighbourUpdate
 
 	viewersMu sync.Mutex
@@ -929,14 +928,14 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	}
 	w.updateMu.Lock()
 	defer w.updateMu.Unlock()
-	if _, exists := w.scheduledUpdates.Get(pos); exists {
+	if _, exists := w.scheduledUpdates[pos]; exists {
 		return
 	}
 	w.set.Lock()
 	t := w.set.CurrentTick
 	w.set.Unlock()
 
-	w.scheduledUpdates.Set(pos, t+delay.Nanoseconds()/int64(time.Second/20))
+	w.scheduledUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
