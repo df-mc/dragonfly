@@ -90,7 +90,7 @@ func (r RedstoneRepeater) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ 
 		r.Delay = 0
 	}
 	w.SetBlock(pos, r, nil)
-	return false
+	return true
 }
 
 // RedstoneUpdate ...
