@@ -83,6 +83,7 @@ func init() {
 	world.RegisterBiome(TallBirchHills{})
 	world.RegisterBiome(WarmOcean{})
 	world.RegisterBiome(WarpedForest{})
+	world.RegisterBiome(WindsweptForest{})
 	world.RegisterBiome(WindsweptSavanna{})
 	world.RegisterBiome(WoodedBadlandsPlateau{})
 	world.RegisterBiome(WoodedHills{})
