@@ -8,7 +8,7 @@ import (
 // HandlerManager manages a player's handlers.
 type HandlerManager struct {
 	sync.Mutex
-	handlers map[int]atomic.Value[Handler]
+	handlers map[int]*atomic.Value[Handler]
 }
 
 type Handler interface {
@@ -47,19 +47,23 @@ type Handler interface {
 
 func (hm *HandlerManager) AddHandler(h Handler) func(Handler) {
 	hm.Lock()
-	handlerID := findKey[atomic.Value[Handler]](hm.handlers)
-	hm.handlers[handlerID] = *atomic.NewValue[Handler](h)
+	handlerID := findKey[*atomic.Value[Handler]](hm.handlers)
+	hm.handlers[handlerID] = atomic.NewValue[Handler](h)
 	hm.Unlock()
 
 	return func(newHandler Handler) {
+        hm.Lock()
+
 		if newHandler == nil {
 			handler := hm.handlers[handlerID]
 			handler.Store(NopHandler{})
+            hm.Unlock()
 			return
 		}
 
 		handler := hm.handlers[handlerID]
 		handler.Store(newHandler)
+        hm.Unlock()
 	}
 }
 
