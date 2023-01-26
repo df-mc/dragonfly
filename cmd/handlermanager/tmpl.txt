@@ -1,0 +1,61 @@
+package {{ .Package }}
+
+import (
+	"github.com/df-mc/atomic"
+	"sync"
+)
+
+// HandlerManager manages a {{ .Package }}'s handlers.
+type HandlerManager struct {
+    sync.Mutex
+    handlers map[int]atomic.Value[Handler]
+}
+
+type Handler interface {
+	{{ range .Events -}}
+	Handle{{ .Name }}(Event{{ .Name }})
+	{{ end -}}
+}
+
+func (hm *HandlerManager) AddHandler(h Handler) func(Handler) {
+    hm.Lock()
+    handlerID := findKey[atomic.Value[Handler]](hm.handlers)
+    hm.handlers[handlerID] = *atomic.NewValue[Handler](h)
+    hm.Unlock()
+
+    return func(newHandler Handler) {
+		if newHandler == nil {
+           	handler := hm.handlers[handlerID]
+			handler.Store(NopHandler{})
+           	return
+		}
+
+		handler := hm.handlers[handlerID]
+		handler.Store(newHandler)
+    }
+}
+{{ range .Events }}
+func (hm *HandlerManager) Handle{{ .Name }}(e Event{{ .Name }}) {
+	for _, handler := range hm.handlers {
+		handler.Load().Handle{{ .Name }}(e)
+	}
+}
+{{ end }}
+type NopHandler struct{}
+
+{{ range .Events -}}
+func (NopHandler) Handle{{ .Name}}(Event{{ .Name }}) {}
+{{ end }}
+func findKey[T any](m map[int]T) int {
+    key := 0
+
+    for {
+        if _, ok := m[key]; !ok {
+            break
+        }
+
+        key++
+    }
+
+    return key
+}

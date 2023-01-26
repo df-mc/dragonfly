@@ -57,7 +57,7 @@ type Player struct {
 	// Player.session() should be called.
 	s atomic.Value[*session.Session]
 	// h holds the current Handler of the player. It may be changed at any time by calling the Handle method.
-	h atomic.Value[Handler]
+	hm *HandlerManager
 
 	inv, offHand, enderChest *inventory.Inventory
 	armour                   *inventory.Armour
@@ -127,7 +127,10 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		experience:        entity.NewExperienceManager(),
 		effects:           entity.NewEffectManager(),
 		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-		h:                 *atomic.NewValue[Handler](NopHandler{}),
+		hm:                &HandlerManager { 
+            sync.Mutex{},
+            make(map[int]atomic.Value[Handler]),
+        },
 		name:              name,
 		skin:              *atomic.NewValue(skin),
 		speed:             *atomic.NewFloat64(0.1),
@@ -241,7 +244,14 @@ func (p *Player) SetSkin(skin skin.Skin) {
 		return
 	}
 	ctx := event.C()
-	if p.Handler().HandleSkinChange(ctx, &skin); ctx.Cancelled() {
+
+    evt := EventSkinChange {
+        p,
+        &skin,
+        ctx,
+    }
+
+	if p.Handler().HandleSkinChange(evt); ctx.Cancelled() {
 		p.session().ViewSkin(p)
 		return
 	}
@@ -259,12 +269,14 @@ func (p *Player) Locale() language.Tag {
 // Handle changes the current Handler of the player. As a result, events called by the player will call
 // handlers of the Handler passed.
 // Handle sets the player's Handler to NopHandler if nil is passed.
+/*
 func (p *Player) Handle(h Handler) {
 	if h == nil {
 		h = NopHandler{}
 	}
 	p.h.Store(h)
 }
+*/
 
 // Message sends a formatted message to the player. The message is formatted following the rules of
 // fmt.Sprintln, however the newline at the end is not written.
@@ -359,12 +371,21 @@ func (p *Player) RemoveBossBar() {
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
 // player and is formatted following the rules of fmt.Sprintln.
 func (p *Player) Chat(msg ...any) {
+    prefix := p.name + ":"
 	message := format(msg)
 	ctx := event.C()
-	if p.Handler().HandleChat(ctx, &message); ctx.Cancelled() {
+
+    evt := EventChat {
+        p,
+        &prefix,
+        &message,
+        ctx,
+    }
+
+	if p.Handler().HandleChat(evt); evt.Cancelled() {
 		return
 	}
-	_, _ = fmt.Fprintf(chat.Global, "<%v> %v\n", p.name, message)
+	_, _ = fmt.Fprintf(chat.Global, "%v %v\n", prefix, message)
 }
 
 // ExecuteCommand executes a command passed as the player. If the command could not be found, or if the usage
@@ -383,9 +404,18 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		return
 	}
 	ctx := event.C()
-	if p.Handler().HandleCommandExecution(ctx, command, args[1:]); ctx.Cancelled() {
+
+    evt := EventCommandExecution {
+        p,
+        command,
+        args[1:],
+        ctx,
+    }
+
+	if p.Handler().HandleCommandExecution(evt); evt.Cancelled() {
 		return
 	}
+
 	command.Execute(strings.Join(args[1:], " "), p)
 }
 
@@ -398,7 +428,14 @@ func (p *Player) Transfer(address string) error {
 	}
 
 	ctx := event.C()
-	if p.Handler().HandleTransfer(ctx, addr); ctx.Cancelled() {
+
+    evt := EventTransfer {
+        p,
+        addr,
+        ctx,
+    }
+
+	if p.Handler().HandleTransfer(evt); evt.Cancelled() {
 		return nil
 	}
 	p.session().Transfer(addr.IP, addr.Port)
@@ -511,9 +548,18 @@ func (p *Player) Heal(health float64, source world.HealingSource) {
 		return
 	}
 	ctx := event.C()
-	if p.Handler().HandleHeal(ctx, &health, source); ctx.Cancelled() {
+
+    evt := EventHeal {
+        p,
+        &health,
+        source,
+        ctx,
+    }
+
+	if p.Handler().HandleHeal(evt); evt.Cancelled() {
 		return
 	}
+
 	p.addHealth(health)
 }
 
@@ -570,7 +616,16 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	}
 	immunity := time.Second / 2
 	ctx := event.C()
-	if p.Handler().HandleHurt(ctx, &dmg, &immunity, src); ctx.Cancelled() {
+
+    evt := EventHurt {
+        p,
+        &dmg,
+        &immunity,
+        src,
+        ctx,
+    }
+
+	if p.Handler().HandleHurt(evt); evt.Cancelled() {
 		return 0, false
 	}
 	if dmg < 0 {
@@ -846,9 +901,18 @@ func (p *Player) Exhaust(points float64) {
 		p.hunger.SetFood(before)
 
 		ctx := event.C()
-		if p.Handler().HandleFoodLoss(ctx, before, &after); ctx.Cancelled() {
+
+        evt := EventFoodLoss {
+            p,
+            before,
+            &after,
+            ctx,
+        }
+
+		if p.Handler().HandleFoodLoss(evt); evt.Cancelled() {
 			return
 		}
+
 		p.hunger.SetFood(after)
 		if before >= 7 && after <= 6 {
 			// The client will stop sprinting by itself too, but we force it just to be sure.
@@ -884,7 +948,15 @@ func (p *Player) kill(src world.DamageSource) {
 	p.addHealth(-p.MaxHealth())
 
 	keepInv := false
-	p.Handler().HandleDeath(src, &keepInv)
+
+    evt := EventDeath {
+        p,
+        src,
+        &keepInv,
+    }
+
+	p.Handler().HandleDeath(evt)
+
 	p.StopSneaking()
 	p.StopSprinting()
 
@@ -955,7 +1027,13 @@ func (p *Player) Respawn() {
 	w = w.PortalDestination(w.Dimension())
 	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
 
-	p.Handler().HandleRespawn(&pos, &w)
+    evt := EventRespawn {
+        p,
+        &pos,
+        &w,
+    }
+
+	p.Handler().HandleRespawn(evt)
 
 	w.AddEntity(p)
 	p.Teleport(pos)
@@ -972,7 +1050,14 @@ func (p *Player) StartSprinting() {
 		return
 	}
 	ctx := event.C()
-	if p.Handler().HandleToggleSprint(ctx, true); ctx.Cancelled() {
+
+    evt := EventToggleSprint {
+        p,
+        true,
+        ctx,
+    }
+
+	if p.Handler().HandleToggleSprint(evt); evt.Cancelled() {
 		return
 	}
 	if !p.sprinting.CAS(false, true) {
@@ -992,7 +1077,14 @@ func (p *Player) Sprinting() bool {
 // StopSprinting makes a player stop sprinting, setting back the speed of the player to its original value.
 func (p *Player) StopSprinting() {
 	ctx := event.C()
-	if p.Handler().HandleToggleSprint(ctx, false); ctx.Cancelled() {
+
+    evt := EventToggleSprint {
+        p,
+        false,
+        ctx,
+    }
+
+	if p.Handler().HandleToggleSprint(evt); evt.Cancelled() {
 		return
 	}
 	if !p.sprinting.CAS(true, false) {
@@ -1008,7 +1100,14 @@ func (p *Player) StopSprinting() {
 // If the player is sprinting while StartSneaking is called, the sprinting is stopped.
 func (p *Player) StartSneaking() {
 	ctx := event.C()
-	if p.Handler().HandleToggleSneak(ctx, true); ctx.Cancelled() {
+
+    evt := EventToggleSneak {
+        p,
+        true,
+        ctx,
+    }
+
+	if p.Handler().HandleToggleSneak(evt); evt.Cancelled() {
 		return
 	}
 	if !p.sneaking.CAS(false, true) {
@@ -1029,7 +1128,14 @@ func (p *Player) Sneaking() bool {
 // will not do anything.
 func (p *Player) StopSneaking() {
 	ctx := event.C()
-	if p.Handler().HandleToggleSneak(ctx, false); ctx.Cancelled() {
+
+    evt := EventToggleSneak {
+        p,
+        false,
+        ctx,
+    }
+
+	if p.Handler().HandleToggleSneak(evt); evt.Cancelled() {
 		return
 	}
 	if !p.sneaking.CAS(true, false) {
@@ -1116,7 +1222,10 @@ func (p *Player) Jump() {
 		return
 	}
 
-	p.Handler().HandleJump()
+    evt := EventJump { p }
+
+	p.Handler().HandleJump(evt)
+
 	if p.OnGround() {
 		jumpVel := 0.42
 		if e, ok := p.Effect(effect.JumpBoost{}); ok {
@@ -1316,7 +1425,13 @@ func (p *Player) UseItem() {
 	if p.HasCooldown(i.Item()) {
 		return
 	}
-	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
+
+    evt := EventItemUse {
+        p,
+        ctx,
+    }
+
+	if p.Handler().HandleItemUse(evt); evt.Cancelled() {
 		return
 	}
 	i, left = p.HeldItems()
@@ -1372,7 +1487,14 @@ func (p *Player) UseItem() {
 		}
 
 		ctx = event.C()
-		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
+
+        evt := EventItemConsume {
+            p,
+            i,
+            ctx,
+        }
+
+		if p.Handler().HandleItemConsume(evt); evt.Cancelled() {
 			// Consuming was cancelled, but the client will continue consuming the next item.
 			p.usingSince.Store(time.Now().UnixNano())
 			return
@@ -1462,7 +1584,16 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		return
 	}
 	ctx := event.C()
-	if p.Handler().HandleItemUseOnBlock(ctx, pos, face, clickPos); ctx.Cancelled() {
+
+    evt := EventItemUseOnBlock {
+        p,
+        pos,
+        face,
+        clickPos,
+        ctx,
+    }
+
+	if p.Handler().HandleItemUseOnBlock(evt); evt.Cancelled() {
 		p.resendBlocks(pos, w, face)
 		return
 	}
@@ -1521,7 +1652,14 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 		return false
 	}
 	ctx := event.C()
-	if p.Handler().HandleItemUseOnEntity(ctx, e); ctx.Cancelled() {
+
+    evt := EventItemUseOnEntity {
+        p,
+        e,
+        ctx,
+    }
+
+	if p.Handler().HandleItemUseOnEntity(evt); evt.Cancelled() {
 		return false
 	}
 	i, left := p.HeldItems()
@@ -1556,9 +1694,20 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	)
 
 	ctx := event.C()
-	if p.Handler().HandleAttackEntity(ctx, e, &force, &height, &critical); ctx.Cancelled() {
+
+    evt := EventAttackEntity {
+        p,
+        e,
+        &force,
+        &height,
+        &critical,
+        ctx,
+    }
+
+	if p.Handler().HandleAttackEntity(evt); evt.Cancelled() {
 		return false
 	}
+
 	p.SwingArm()
 
 	i, _ := p.HeldItems()
@@ -1647,7 +1796,14 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.breakingPos.Store(pos)
 
 	ctx := event.C()
-	if p.Handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
+
+    evt := EventStartBreak {
+        p,
+        pos,
+        ctx,
+    }
+
+	if p.Handler().HandleStartBreak(evt); evt.Cancelled() {
 		return
 	}
 	if punchable, ok := w.Block(pos).(block.Punchable); ok {
@@ -1775,10 +1931,19 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	}
 
 	ctx := event.C()
-	if p.Handler().HandleBlockPlace(ctx, pos, b); ctx.Cancelled() {
+
+    evt := EventBlockPlace {
+        p,
+        pos,
+        b,
+        ctx,
+    }
+
+	if p.Handler().HandleBlockPlace(evt); evt.Cancelled() {
 		p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
+
 	w.SetBlock(pos, b, nil)
 	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 	p.SwingArm()
@@ -1834,10 +1999,20 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	ctx := event.C()
-	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
+
+    evt := EventBlockBreak {
+        p,
+        pos,
+        &drops,
+        &xp,
+        ctx,
+    }
+
+	if p.Handler().HandleBlockBreak(evt); evt.Cancelled() {
 		p.resendBlocks(pos, w)
 		return
 	}
+
 	held, left := p.HeldItems()
 
 	p.SwingArm()
@@ -1921,9 +2096,18 @@ func (p *Player) PickBlock(pos cube.Pos) {
 	}
 
 	ctx := event.C()
-	if p.Handler().HandleBlockPick(ctx, pos, b); ctx.Cancelled() {
+
+    evt := EventBlockPick {
+        p,
+        pos,
+        b,
+        ctx,
+    }
+
+	if p.Handler().HandleBlockPick(evt); evt.Cancelled() {
 		return
 	}
+
 	_, offhand := p.HeldItems()
 
 	if found {
@@ -1953,7 +2137,14 @@ func (p *Player) PickBlock(pos cube.Pos) {
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
 	ctx := event.C()
-	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
+
+    evt := EventTeleport {
+        p,
+        pos,
+        ctx,
+    }
+
+	if p.Handler().HandleTeleport(evt); evt.Cancelled() {
 		return
 	}
 	p.teleport(pos)
@@ -1992,7 +2183,16 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		res, resYaw, resPitch = pos.Add(deltaPos), yaw + deltaYaw, pitch + deltaPitch
 	)
 	ctx := event.C()
-	if p.Handler().HandleMove(ctx, res, resYaw, resPitch); ctx.Cancelled() {
+
+    evt := EventMove {
+        p,
+        res,
+        resYaw,
+        resPitch,
+        ctx,
+    }
+
+	if p.Handler().HandleMove(evt); evt.Cancelled() {
 		if p.session() != session.Nop && pos.ApproxEqual(p.Position()) {
 			// The position of the player was changed and the event cancelled. This means we still need to notify the
 			// player of this movement change.
@@ -2088,7 +2288,14 @@ func (p *Player) Collect(s item.Stack) int {
 		return 0
 	}
 	ctx := event.C()
-	if p.Handler().HandleItemPickup(ctx, s); ctx.Cancelled() {
+
+    evt := EventItemPickup {
+        p,
+        s,
+        ctx,
+    }
+
+	if p.Handler().HandleItemPickup(evt); evt.Cancelled() {
 		return 0
 	}
 	n, _ := p.Inventory().AddItem(s)
@@ -2113,9 +2320,17 @@ func (p *Player) ResetEnchantmentSeed() {
 // AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) int {
 	ctx := event.C()
-	if p.Handler().HandleExperienceGain(ctx, &amount); ctx.Cancelled() {
+
+    evt := EventExperienceGain {
+        p,
+        &amount,
+        ctx,
+    }
+
+	if p.Handler().HandleExperienceGain(evt); evt.Cancelled() {
 		return 0
 	}
+
 	before := p.experience.Level()
 	level, _ := p.experience.Add(amount)
 	if level/5 > before/5 {
@@ -2228,7 +2443,14 @@ func (p *Player) Drop(s item.Stack) int {
 	e.SetPickupDelay(time.Second * 2)
 
 	ctx := event.C()
-	if p.Handler().HandleItemDrop(ctx, e); ctx.Cancelled() {
+
+    evt := EventItemDrop {
+        p,
+        e,
+        ctx,
+    }
+
+	if p.Handler().HandleItemDrop(evt); evt.Cancelled() {
 		return 0
 	}
 	p.World().AddEntity(e)
@@ -2277,7 +2499,13 @@ func (p *Player) Tick(w *world.World, current int64) {
 		return
 	}
 	if p.lastTickedWorld != w {
-		p.Handler().HandleChangeWorld(p.lastTickedWorld, w)
+        evt := EventChangeWorld {
+            p,
+            p.lastTickedWorld,
+            w,
+        }
+
+		p.Handler().HandleChangeWorld(evt)
 	}
 	p.lastTickedWorld = w
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
@@ -2656,7 +2884,15 @@ func (p *Player) EditSign(pos cube.Pos, text string) error {
 	}
 
 	ctx := event.C()
-	if p.Handler().HandleSignEdit(ctx, sign.Text, text); ctx.Cancelled() {
+
+    evt := EventSignEdit {
+        p,
+        sign,
+        &text,
+        ctx,
+    }
+
+	if p.Handler().HandleSignEdit(evt); evt.Cancelled() {
 		return nil
 	}
 	sign.Text = text
@@ -2697,7 +2933,13 @@ func (p *Player) PunchAir() {
 		return
 	}
 	ctx := event.C()
-	if p.Handler().HandlePunchAir(ctx); ctx.Cancelled() {
+
+    evt := EventPunchAir {
+        p,
+        ctx,
+    }
+
+	if p.Handler().HandlePunchAir(evt); evt.Cancelled() {
 		return
 	}
 	p.SwingArm()
@@ -2712,9 +2954,18 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 		return s
 	}
 	ctx := event.C()
-	if p.Handler().HandleItemDamage(ctx, s, d); ctx.Cancelled() {
+
+    evt := EventItemDamage {
+        p,
+        s,
+        d,
+        ctx,
+    }
+
+	if p.Handler().HandleItemDamage(evt); evt.Cancelled() {
 		return s
 	}
+
 	if e, ok := s.Enchantment(enchantment.Unbreaking{}); ok {
 		d = (enchantment.Unbreaking{}).Reduce(s.Item(), e.Level(), d)
 	}
@@ -2798,7 +3049,11 @@ func (p *Player) close(msg string) {
 	if p.Dead() && p.session() != nil {
 		p.Respawn()
 	}
-	p.h.Swap(NopHandler{}).HandleQuit()
+
+    evt := EventQuit { p }
+
+	p.Handler().HandleQuit(evt)
+    p.hm = &HandlerManager{}
 
 	if s := p.s.Swap(nil); s != nil {
 		s.Disconnect(msg)
@@ -2954,7 +3209,7 @@ func (p *Player) useContext() *item.UseContext {
 
 // Handler returns the Handler of the player.
 func (p *Player) Handler() Handler {
-	return p.h.Load()
+	return p.hm
 }
 
 // broadcastItems broadcasts the items held to viewers.
