@@ -79,7 +79,7 @@ func (conf Config) New() *World {
 		closing:          make(chan struct{}),
 		HandlerManager:   &HandlerManager {
             sync.Mutex{},
-            make([]*atomic.Value[Handler], 0, 64),
+            []*atomic.Value[Handler]{},
         },
 		r:                rand.New(conf.RandSource),
 		advance:          s.ref.Inc() == 1,

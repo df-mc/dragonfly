@@ -129,7 +129,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
 		HandlerManager:    &HandlerManager { 
             sync.Mutex{},
-            make([]*atomic.Value[Handler], 0, 64),
+            []*atomic.Value[Handler]{},
         },
 		name:              name,
 		skin:              *atomic.NewValue(skin),
@@ -3171,18 +3171,37 @@ func (p *Player) session() *session.Session {
 	return session.Nop
 }
 
+func call[T callConstraint](
+    inv *inventory.Inventory, 
+    slot int, it item.Stack, 
+    ctx *event.Context, 
+    f func(T),
+) error {
+	if ctx.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+
+     evt := T {
+        inv,
+        slot,
+        it,
+        ctx,
+    }
+
+	if f(evt); evt.Cancelled() {
+		return fmt.Errorf("action was cancelled")
+	}
+
+	return nil
+}
+
+type callConstraint interface {
+    Cancelled() bool
+    inventory.EventDrop | inventory.EventPlace | inventory.EventTake
+}
+
 // useContext returns an item.UseContext initialised for a Player.
 func (p *Player) useContext() *item.UseContext {
-	call := func(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
-		if ctx.Cancelled() {
-			return fmt.Errorf("action was cancelled")
-		}
-		f(ctx, slot, it)
-		if ctx.Cancelled() {
-			return fmt.Errorf("action was cancelled")
-		}
-		return nil
-	}
 	return &item.UseContext{
 		SwapHeldWithArmour: func(i int) {
 			src, dst, srcInv, dstInv := int(p.heldSlot.Load()), i, p.inv, p.armour.Inventory()
@@ -3190,10 +3209,10 @@ func (p *Player) useContext() *item.UseContext {
 			dstIt, _ := dstInv.Item(dst)
 
 			ctx := event.C()
-			_ = call(ctx, src, srcIt, srcInv.Handler().HandleTake)
-			_ = call(ctx, src, dstIt, srcInv.Handler().HandlePlace)
-			_ = call(ctx, dst, dstIt, dstInv.Handler().HandleTake)
-			if err := call(ctx, dst, srcIt, dstInv.Handler().HandlePlace); err == nil {
+			_ = call(srcInv, src, srcIt, ctx, srcInv.HandleTake)
+			_ = call(srcInv, src, dstIt, ctx, srcInv.HandlePlace)
+			_ = call(dstInv, dst, dstIt, ctx, dstInv.HandleTake)
+			if err := call(dstInv, dst, srcIt, ctx, dstInv.HandlePlace); err == nil {
 				_ = srcInv.SetItem(src, dstIt)
 				_ = dstInv.SetItem(dst, srcIt)
 				p.PlaySound(sound.EquipItem{Item: srcIt.Item()})

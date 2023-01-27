@@ -39,7 +39,9 @@ func main() {
 	case "world": path = ""
         path = "github.com/df-mc/dragonfly/server/world"
         pkgName = "world"
-	case "server": path = ""
+	case "inventory": 
+        path = "github.com/df-mc/dragonfly/server/item/inventory"
+        pkgName = "inventory"
 	}
 
     events := Events{
