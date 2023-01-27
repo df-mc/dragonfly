@@ -7,8 +7,8 @@ import (
 
 // HandlerManager manages a player's handlers.
 type HandlerManager struct {
-	sync.Mutex
-	handlers map[int]atomic.Value[Handler]
+    sync.Mutex
+    handlers map[int]atomic.Value[Handler]
 }
 
 type Handler interface {
@@ -43,24 +43,24 @@ type Handler interface {
 	HandleToggleSneak(EventToggleSneak)
 	HandleToggleSprint(EventToggleSprint)
 	HandleTransfer(EventTransfer)
-}
+	}
 
 func (hm *HandlerManager) AddHandler(h Handler) func(Handler) {
-	hm.Lock()
-	handlerID := findKey[atomic.Value[Handler]](hm.handlers)
-	hm.handlers[handlerID] = *atomic.NewValue[Handler](h)
-	hm.Unlock()
+    hm.Lock()
+    handlerID := findKey[atomic.Value[Handler]](hm.handlers)
+    hm.handlers[handlerID] = *atomic.NewValue[Handler](h)
+    hm.Unlock()
 
-	return func(newHandler Handler) {
+    return func(newHandler Handler) {
 		if newHandler == nil {
-			handler := hm.handlers[handlerID]
+           	handler := hm.handlers[handlerID]
 			handler.Store(NopHandler{})
-			return
+           	return
 		}
 
 		handler := hm.handlers[handlerID]
 		handler.Store(newHandler)
-	}
+    }
 }
 
 func (hm *HandlerManager) HandleAttackEntity(e EventAttackEntity) {
@@ -251,48 +251,48 @@ func (hm *HandlerManager) HandleTransfer(e EventTransfer) {
 
 type NopHandler struct{}
 
-func (NopHandler) HandleAttackEntity(EventAttackEntity)         {}
-func (NopHandler) HandleBlockBreak(EventBlockBreak)             {}
-func (NopHandler) HandleBlockPick(EventBlockPick)               {}
-func (NopHandler) HandleBlockPlace(EventBlockPlace)             {}
-func (NopHandler) HandleChangeWorld(EventChangeWorld)           {}
-func (NopHandler) HandleChat(EventChat)                         {}
+func (NopHandler) HandleAttackEntity(EventAttackEntity) {}
+func (NopHandler) HandleBlockBreak(EventBlockBreak) {}
+func (NopHandler) HandleBlockPick(EventBlockPick) {}
+func (NopHandler) HandleBlockPlace(EventBlockPlace) {}
+func (NopHandler) HandleChangeWorld(EventChangeWorld) {}
+func (NopHandler) HandleChat(EventChat) {}
 func (NopHandler) HandleCommandExecution(EventCommandExecution) {}
-func (NopHandler) HandleDeath(EventDeath)                       {}
-func (NopHandler) HandleExperienceGain(EventExperienceGain)     {}
-func (NopHandler) HandleFoodLoss(EventFoodLoss)                 {}
-func (NopHandler) HandleHeal(EventHeal)                         {}
-func (NopHandler) HandleHurt(EventHurt)                         {}
-func (NopHandler) HandleItemConsume(EventItemConsume)           {}
-func (NopHandler) HandleItemDamage(EventItemDamage)             {}
-func (NopHandler) HandleItemDrop(EventItemDrop)                 {}
-func (NopHandler) HandleItemPickup(EventItemPickup)             {}
-func (NopHandler) HandleItemUse(EventItemUse)                   {}
-func (NopHandler) HandleItemUseOnBlock(EventItemUseOnBlock)     {}
-func (NopHandler) HandleItemUseOnEntity(EventItemUseOnEntity)   {}
-func (NopHandler) HandleJump(EventJump)                         {}
-func (NopHandler) HandleMove(EventMove)                         {}
-func (NopHandler) HandlePunchAir(EventPunchAir)                 {}
-func (NopHandler) HandleQuit(EventQuit)                         {}
-func (NopHandler) HandleRespawn(EventRespawn)                   {}
-func (NopHandler) HandleSignEdit(EventSignEdit)                 {}
-func (NopHandler) HandleSkinChange(EventSkinChange)             {}
-func (NopHandler) HandleStartBreak(EventStartBreak)             {}
-func (NopHandler) HandleTeleport(EventTeleport)                 {}
-func (NopHandler) HandleToggleSneak(EventToggleSneak)           {}
-func (NopHandler) HandleToggleSprint(EventToggleSprint)         {}
-func (NopHandler) HandleTransfer(EventTransfer)                 {}
+func (NopHandler) HandleDeath(EventDeath) {}
+func (NopHandler) HandleExperienceGain(EventExperienceGain) {}
+func (NopHandler) HandleFoodLoss(EventFoodLoss) {}
+func (NopHandler) HandleHeal(EventHeal) {}
+func (NopHandler) HandleHurt(EventHurt) {}
+func (NopHandler) HandleItemConsume(EventItemConsume) {}
+func (NopHandler) HandleItemDamage(EventItemDamage) {}
+func (NopHandler) HandleItemDrop(EventItemDrop) {}
+func (NopHandler) HandleItemPickup(EventItemPickup) {}
+func (NopHandler) HandleItemUse(EventItemUse) {}
+func (NopHandler) HandleItemUseOnBlock(EventItemUseOnBlock) {}
+func (NopHandler) HandleItemUseOnEntity(EventItemUseOnEntity) {}
+func (NopHandler) HandleJump(EventJump) {}
+func (NopHandler) HandleMove(EventMove) {}
+func (NopHandler) HandlePunchAir(EventPunchAir) {}
+func (NopHandler) HandleQuit(EventQuit) {}
+func (NopHandler) HandleRespawn(EventRespawn) {}
+func (NopHandler) HandleSignEdit(EventSignEdit) {}
+func (NopHandler) HandleSkinChange(EventSkinChange) {}
+func (NopHandler) HandleStartBreak(EventStartBreak) {}
+func (NopHandler) HandleTeleport(EventTeleport) {}
+func (NopHandler) HandleToggleSneak(EventToggleSneak) {}
+func (NopHandler) HandleToggleSprint(EventToggleSprint) {}
+func (NopHandler) HandleTransfer(EventTransfer) {}
 
 func findKey[T any](m map[int]T) int {
-	key := 0
+    key := 0
 
-	for {
-		if _, ok := m[key]; !ok {
-			break
-		}
+    for {
+        if _, ok := m[key]; !ok {
+            break
+        }
 
-		key++
-	}
+        key++
+    }
 
-	return key
+    return key
 }

@@ -14,6 +14,18 @@ import (
     "github.com/df-mc/dragonfly/server/block"
 )
 
+// EventAttackEntity occurs when a player is attacking an entity using the item
+// held in its hand. Cancel() may be called to cancel an attack, which will
+// cancel damage dealt to the entity and will stop the entity from being 
+// knocked back. The attacked entity may not be alive
+// (implements entity.Living), in which case no damage will be dealt and the 
+// entity won't be knocked back. The entity attacked may also be immune when
+// this method is called, in which case no damage or knock-back will be dealt.
+// Pointers to the knock back force and height associated with a specific
+// EventAttackEntity event are provided, which can be modified. The attack can
+// be a critical attack, which would increase damage by a factor of 1.5 and
+// spawn critical hit particles around the target entity. These particles will
+// not be displayed if no damage is dealt.
 type EventAttackEntity struct {
     Player *Player
     Entity world.Entity
@@ -23,6 +35,10 @@ type EventAttackEntity struct {
     *event.Context
 }
 
+// EventBlockBreak occurs when a player finishes breaking a block. Cancel() may
+// be called to prevent a block from being broken. A pointer to a slice of the
+// block associated with this event's drops is provided, and may be altered to
+// change what items will be dropped.
 type EventBlockBreak struct {
     Player *Player
     Position cube.Pos
@@ -31,6 +47,8 @@ type EventBlockBreak struct {
     *event.Context
 }
 
+// EventBlockPick occurs when a player is picking a block. Cancel() may be 
+// called to prevent a block from being picked.
 type EventBlockPick struct {
     Player *Player
     Position cube.Pos
@@ -38,6 +56,8 @@ type EventBlockPick struct {
     *event.Context
 }
 
+// EventBlockPlace occurs when a player attempts to place a block. Cancel() may
+// be called to prevent a block being placed.
 type EventBlockPlace struct {
     Player *Player
     Position cube.Pos
@@ -45,12 +65,18 @@ type EventBlockPlace struct {
     *event.Context
 }
 
+// EventChangeWorld occurs when a player is added to a new world. Before may be
+// nil. Before is nil when a player joins a world for the first time since
+// being accepted to the server.
 type EventChangeWorld struct {
     Player *Player
     Before *world.World
     After *world.World
 }
 
+// EventChat occurs when a message is sent by a player. Cancel() may be called 
+// to prevent a message from being sent. Pointers to both the prefix and 
+// message strings that will appear in the chat are provided.
 type EventChat struct {
     Player *Player
     Prefix *string
@@ -58,6 +84,8 @@ type EventChat struct {
     *event.Context
 }
 
+// EventCommandExecution occurs when a player attempts to execute a command. 
+// Cancel() may be called to prevent an execution of a command.
 type EventCommandExecution struct {
     Player *Player
     Command cmd.Command
@@ -65,6 +93,8 @@ type EventCommandExecution struct {
     *event.Context
 }
 
+// EventDeath occurs when a player dies. A pointer to a boolean keepInventory
+// is provided.
 type EventDeath struct {
     Player *Player
     Source world.DamageSource
