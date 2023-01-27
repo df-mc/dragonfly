@@ -35,6 +35,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	_ "unsafe"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and
@@ -274,6 +275,7 @@ func (srv *Server) listen(l Listener) {
 // connections from players.
 func (srv *Server) startListening() {
 	srv.makeItemComponents()
+	recipe_registerVanillaRecipes()
 
 	srv.wg.Add(len(srv.conf.Listeners))
 	for _, lf := range srv.conf.Listeners {
@@ -597,3 +599,7 @@ func init() {
 
 	_ = nbt.Unmarshal(itemRuntimeIDData, &itemRuntimeIDs)
 }
+
+//go:linkname recipe_registerVanillaRecipes github.com/df-mc/dragonfly/server/item/recipe.registerVanillaRecipes
+//noinspection ALL
+func recipe_registerVanillaRecipes()
