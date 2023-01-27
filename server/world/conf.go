@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sirupsen/logrus"
 	"math/rand"
-    "sync"
+	"sync"
 	"time"
 )
 
@@ -77,15 +77,15 @@ func (conf Config) New() *World {
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*chunkData),
 		closing:          make(chan struct{}),
-		HandlerManager:   &HandlerManager {
-            sync.Mutex{},
-            []*atomic.Value[Handler]{},
-        },
-		r:                rand.New(conf.RandSource),
-		advance:          s.ref.Inc() == 1,
-		conf:             conf,
-		ra:               conf.Dim.Range(),
-		set:              s,
+		HandlerManager: &HandlerManager{
+			sync.Mutex{},
+			[]*atomic.Value[Handler]{},
+		},
+		r:       rand.New(conf.RandSource),
+		advance: s.ref.Inc() == 1,
+		conf:    conf,
+		ra:      conf.Dim.Range(),
+		set:     s,
 	}
 	w.weather, w.ticker = weather{w: w}, ticker{w: w}
 

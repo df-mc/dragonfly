@@ -3,8 +3,8 @@ package inventory
 import (
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/atomic"
+	"github.com/df-mc/dragonfly/server/item"
 	"golang.org/x/exp/slices"
 	"math"
 	"strings"
@@ -17,8 +17,8 @@ import (
 // an inventory is invalid. Use New() to obtain a new inventory.
 // Inventory is safe for concurrent usage: Its values are protected by a mutex.
 type Inventory struct {
-	mu    sync.RWMutex
-    *HandlerManager
+	mu sync.RWMutex
+	*HandlerManager
 	slots []item.Stack
 
 	f      func(slot int, before, after item.Stack)
@@ -40,7 +40,7 @@ func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
 	if f == nil {
 		f = func(slot int, before, after item.Stack) {}
 	}
-    return &Inventory{HandlerManager: &HandlerManager{ sync.Mutex{}, []*atomic.Value[Handler]{} }, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+	return &Inventory{HandlerManager: &HandlerManager{sync.Mutex{}, []*atomic.Value[Handler]{}}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,

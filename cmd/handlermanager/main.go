@@ -15,8 +15,8 @@ type Event struct {
 }
 
 type Events struct {
-    Package string
-	Events []Event
+	Package string
+	Events  []Event
 }
 
 const loadMode = packages.NeedName |
@@ -29,24 +29,25 @@ const loadMode = packages.NeedName |
 	packages.NeedTypesInfo
 
 func main() {
-    var path string
-    var pkgName string
+	var path string
+	var pkgName string
 
 	switch os.Args[1] {
 	case "player":
-        path = "github.com/df-mc/dragonfly/server/player"
-        pkgName = "player"
-	case "world": path = ""
-        path = "github.com/df-mc/dragonfly/server/world"
-        pkgName = "world"
-	case "inventory": 
-        path = "github.com/df-mc/dragonfly/server/item/inventory"
-        pkgName = "inventory"
+		path = "github.com/df-mc/dragonfly/server/player"
+		pkgName = "player"
+	case "world":
+		path = ""
+		path = "github.com/df-mc/dragonfly/server/world"
+		pkgName = "world"
+	case "inventory":
+		path = "github.com/df-mc/dragonfly/server/item/inventory"
+		pkgName = "inventory"
 	}
 
-    events := Events{
-        Package: pkgName,
-    }
+	events := Events{
+		Package: pkgName,
+	}
 
 	loadConfig := new(packages.Config)
 	loadConfig.Mode = loadMode
@@ -83,7 +84,7 @@ func main() {
 								".",
 							)[2]
 
-                            s = strings.ReplaceAll(s, "Event", "")
+							s = strings.ReplaceAll(s, "Event", "")
 
 							events.Events = append(
 								events.Events,
@@ -99,6 +100,6 @@ func main() {
 	tmplFile, _ := os.ReadFile("tmpl.txt")
 	tmpl, _ := template.New("handlermanager").Parse(string(tmplFile))
 
-    file, _ := os.Create("handlermanager.go")
+	file, _ := os.Create("handlermanager.go")
 	tmpl.Execute(file, events)
 }

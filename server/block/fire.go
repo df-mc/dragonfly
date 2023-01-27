@@ -185,11 +185,11 @@ func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
 	if _, air := w.Block(to).(Air); !air {
 		ctx := event.C()
 
-        evt := world.EventBlockBurn {
-            w,
-            to,
-            ctx,
-        }
+		evt := world.EventBlockBurn{
+			w,
+			to,
+			ctx,
+		}
 
 		if w.HandleBlockBurn(evt); evt.Cancelled() {
 			return
@@ -197,12 +197,12 @@ func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
 	}
 	ctx := event.C()
 
-    evt := world.EventFireSpread {
-        w,
-        from,
-        to,
-        ctx,
-    }
+	evt := world.EventFireSpread{
+		w,
+		from,
+		to,
+		ctx,
+	}
 
 	if w.HandleFireSpread(evt); evt.Cancelled() {
 		return

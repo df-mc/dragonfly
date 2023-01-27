@@ -501,8 +501,8 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 }
 
 type callConstraint interface {
-    Cancelled() bool
-    inventory.EventDrop | inventory.EventPlace | inventory.EventTake
+	Cancelled() bool
+	inventory.EventDrop | inventory.EventPlace | inventory.EventTake
 }
 
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
@@ -512,12 +512,12 @@ func call[T callConstraint](inv *inventory.Inventory, slot int, it item.Stack, c
 		return fmt.Errorf("action was cancelled")
 	}
 
-    evt := T {
-        inv,
-        slot,
-        it,
-        ctx,
-    }
+	evt := T{
+		inv,
+		slot,
+		it,
+		ctx,
+	}
 
 	if f(evt); evt.Cancelled() {
 		return fmt.Errorf("action was cancelled")

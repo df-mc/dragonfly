@@ -164,14 +164,14 @@ func (l Lava) Harden(pos cube.Pos, w *world.World, flownIntoBy *cube.Pos) bool {
 		if b != nil {
 			ctx := event.C()
 
-            evt := world.EventLiquidHarden {
-                w,
-                pos,
-                l,
-                water,
-                b,
-                ctx,
-            }
+			evt := world.EventLiquidHarden{
+				w,
+				pos,
+				l,
+				water,
+				b,
+				ctx,
+			}
 
 			if w.HandleLiquidHarden(evt); evt.Cancelled() {
 				return false
@@ -194,14 +194,14 @@ func (l Lava) Harden(pos cube.Pos, w *world.World, flownIntoBy *cube.Pos) bool {
 	}
 	ctx := event.C()
 
-    evt := world.EventLiquidHarden {
-        w,
-        pos,
-        l,
-        water,
-        b,
-        ctx,
-    }
+	evt := world.EventLiquidHarden{
+		w,
+		pos,
+		l,
+		water,
+		b,
+		ctx,
+	}
 
 	if w.HandleLiquidHarden(evt); evt.Cancelled() {
 		return false

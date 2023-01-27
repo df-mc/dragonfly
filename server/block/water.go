@@ -103,14 +103,14 @@ func (w Water) ScheduledTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 				res := Water{Depth: 8, Still: true}
 				ctx := event.C()
 
-                evt := world.EventLiquidFlow {
-                    wo,
-                    pos,
-                    pos,
-                    res,
-                    w,
-                    ctx,
-                }
+				evt := world.EventLiquidFlow{
+					wo,
+					pos,
+					pos,
+					res,
+					w,
+					ctx,
+				}
 
 				if wo.HandleLiquidFlow(evt); evt.Cancelled() {
 					return
@@ -145,14 +145,14 @@ func (w Water) Harden(pos cube.Pos, wo *world.World, flownIntoBy *cube.Pos) bool
 	if lava, ok := wo.Block(pos.Side(cube.FaceUp)).(Lava); ok {
 		ctx := event.C()
 
-        evt := world.EventLiquidHarden {
-            wo,
-            pos,
-            w,
-            lava,
-            Stone{},
-            ctx,
-        }
+		evt := world.EventLiquidHarden{
+			wo,
+			pos,
+			w,
+			lava,
+			Stone{},
+			ctx,
+		}
 
 		if wo.HandleLiquidHarden(evt); evt.Cancelled() {
 			return false
@@ -163,14 +163,14 @@ func (w Water) Harden(pos cube.Pos, wo *world.World, flownIntoBy *cube.Pos) bool
 	} else if lava, ok := wo.Block(*flownIntoBy).(Lava); ok {
 		ctx := event.C()
 
-        evt := world.EventLiquidHarden {
-            wo,
-            pos,
-            w,
-            lava,
-            Cobblestone{},
-            ctx,
-        }
+		evt := world.EventLiquidHarden{
+			wo,
+			pos,
+			w,
+			lava,
+			Cobblestone{},
+			ctx,
+		}
 
 		if wo.HandleLiquidHarden(evt); evt.Cancelled() {
 			return false

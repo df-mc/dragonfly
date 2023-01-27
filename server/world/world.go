@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-    "github.com/df-mc/atomic"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -31,7 +31,7 @@ type World struct {
 
 	o sync.Once
 
-	set     *Settings
+	set *Settings
 	*HandlerManager
 
 	weather
@@ -647,12 +647,12 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
 	ctx := event.C()
 
-    evt := EventSound {
-        w,
-        pos,
-        s,
-        ctx,
-    }
+	evt := EventSound{
+		w,
+		pos,
+		s,
+		ctx,
+	}
 
 	if w.HandleSound(evt); evt.Cancelled() {
 		return
@@ -698,10 +698,10 @@ func (w *World) AddEntity(e Entity) {
 		showEntity(e, v)
 	}
 
-    evt := EventEntitySpawn {
-        w,
-        e,
-    }
+	evt := EventEntitySpawn{
+		w,
+		e,
+	}
 
 	w.HandleEntitySpawn(evt)
 }
@@ -731,10 +731,10 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 
-    evt := EventEntityDespawn {
-        w,
-        e,
-    }
+	evt := EventEntityDespawn{
+		w,
+		e,
+	}
 
 	w.HandleEntityDespawn(evt)
 
@@ -1020,14 +1020,14 @@ func (w *World) Close() error {
 // close stops the World from ticking, saves all chunks to the Provider and updates the world's settings.
 func (w *World) close() {
 	// Let user code run anything that needs to be finished before the World is closed.
-    evt := EventClose { w }
+	evt := EventClose{w}
 
 	w.HandleClose(evt)
 
-    w.HandlerManager = &HandlerManager{
-        sync.Mutex{}, 
-        make([]*atomic.Value[Handler], 0, 0),
-    }
+	w.HandlerManager = &HandlerManager{
+		sync.Mutex{},
+		make([]*atomic.Value[Handler], 0, 0),
+	}
 
 	close(w.closing)
 	w.running.Wait()
