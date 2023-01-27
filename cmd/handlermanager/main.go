@@ -1,7 +1,6 @@
 package main
 
 import (
-    "fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -18,7 +17,6 @@ type Event struct {
 type Events struct {
     Package string
 	Events []Event
-    Comments map[string]string
 }
 
 const loadMode = packages.NeedName |
@@ -46,7 +44,6 @@ func main() {
 
     events := Events{
         Package: pkgName,
-        Comments: comments,
     }
 
 	loadConfig := new(packages.Config)

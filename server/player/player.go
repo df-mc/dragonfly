@@ -127,9 +127,9 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		experience:        entity.NewExperienceManager(),
 		effects:           entity.NewEffectManager(),
 		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-		HandlerManager:                &HandlerManager { 
+		HandlerManager:    &HandlerManager { 
             sync.Mutex{},
-            make(map[int]*atomic.Value[Handler]),
+            make([]*atomic.Value[Handler], 0, 64),
         },
 		name:              name,
 		skin:              *atomic.NewValue(skin),
@@ -3053,7 +3053,11 @@ func (p *Player) close(msg string) {
     evt := EventQuit { p }
 
 	p.HandleQuit(evt)
-    p.HandlerManager = &HandlerManager{}
+
+    p.HandlerManager = &HandlerManager{
+        Mutex: sync.Mutex{},
+        handlers: make([]*atomic.Value[Handler], 0, 0),
+    }
 
 	if s := p.s.Swap(nil); s != nil {
 		s.Disconnect(msg)
