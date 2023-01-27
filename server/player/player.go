@@ -2287,6 +2287,9 @@ func (p *Player) Collect(s item.Stack) int {
 	if p.Dead() {
 		return 0
 	}
+	if !p.GameMode().AllowsInteraction() {
+		return 0
+	}
 	ctx := event.C()
 
     evt := EventItemPickup {
