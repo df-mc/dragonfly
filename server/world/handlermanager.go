@@ -1,14 +1,13 @@
 package world
 
 import (
-	"github.com/df-mc/atomic"
 	"sync"
 )
 
 // HandlerManager manages a world's handlers.
 type HandlerManager struct {
 	sync.Mutex
-	handlers []*atomic.Value[Handler]
+	handlers []Handler
 }
 
 type Handler interface {
@@ -27,73 +26,111 @@ func (hm *HandlerManager) AddHandler(h Handler) func(Handler) Handler {
 	hm.Lock()
 	defer hm.Unlock()
 
-	ah := atomic.NewValue[Handler](h)
-	hm.handlers = append(hm.handlers, ah)
+	idx := len(hm.handlers)
+	hm.handlers = append(hm.handlers, h)
 
-	return func(newHandler Handler) Handler {
+	return func(hNew Handler) Handler {
 		hm.Lock()
 		defer hm.Unlock()
 
-		if newHandler == nil {
-			return ah.Swap(NopHandler{})
+		if hNew == nil {
+			hm.handlers[idx] = NopHandler{}
+			return h
 		}
 
-		return ah.Swap(newHandler)
+		hm.handlers[idx] = hNew
+		return h
 	}
 }
 
 func (hm *HandlerManager) HandleBlockBurn(e EventBlockBurn) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleBlockBurn(e)
+		h.HandleBlockBurn(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleClose(e EventClose) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleClose(e)
+		h.HandleClose(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleEntityDespawn(e EventEntityDespawn) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleEntityDespawn(e)
+		h.HandleEntityDespawn(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleEntitySpawn(e EventEntitySpawn) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleEntitySpawn(e)
+		h.HandleEntitySpawn(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleFireSpread(e EventFireSpread) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleFireSpread(e)
+		h.HandleFireSpread(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleLiquidDecay(e EventLiquidDecay) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleLiquidDecay(e)
+		h.HandleLiquidDecay(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleLiquidFlow(e EventLiquidFlow) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleLiquidFlow(e)
+		h.HandleLiquidFlow(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleLiquidHarden(e EventLiquidHarden) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleLiquidHarden(e)
+		h.HandleLiquidHarden(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleSound(e EventSound) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleSound(e)
+		h.HandleSound(e)
 	}
+
+	hm.Unlock()
 }
 
 type NopHandler struct{}

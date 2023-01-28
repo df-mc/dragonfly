@@ -1,14 +1,13 @@
 package player
 
 import (
-	"github.com/df-mc/atomic"
 	"sync"
 )
 
 // HandlerManager manages a player's handlers.
 type HandlerManager struct {
 	sync.Mutex
-	handlers []*atomic.Value[Handler]
+	handlers []Handler
 }
 
 type Handler interface {
@@ -49,205 +48,331 @@ func (hm *HandlerManager) AddHandler(h Handler) func(Handler) Handler {
 	hm.Lock()
 	defer hm.Unlock()
 
-	ah := atomic.NewValue[Handler](h)
-	hm.handlers = append(hm.handlers, ah)
+	idx := len(hm.handlers)
+	hm.handlers = append(hm.handlers, h)
 
-	return func(newHandler Handler) Handler {
+	return func(hNew Handler) Handler {
 		hm.Lock()
 		defer hm.Unlock()
 
-		if newHandler == nil {
-			return ah.Swap(NopHandler{})
+		if hNew == nil {
+			hm.handlers[idx] = NopHandler{}
+			return h
 		}
 
-		return ah.Swap(newHandler)
+		hm.handlers[idx] = hNew
+		return h
 	}
 }
 
 func (hm *HandlerManager) HandleAttackEntity(e EventAttackEntity) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleAttackEntity(e)
+		h.HandleAttackEntity(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleBlockBreak(e EventBlockBreak) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleBlockBreak(e)
+		h.HandleBlockBreak(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleBlockPick(e EventBlockPick) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleBlockPick(e)
+		h.HandleBlockPick(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleBlockPlace(e EventBlockPlace) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleBlockPlace(e)
+		h.HandleBlockPlace(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleChangeWorld(e EventChangeWorld) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleChangeWorld(e)
+		h.HandleChangeWorld(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleChat(e EventChat) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleChat(e)
+		h.HandleChat(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleCommandExecution(e EventCommandExecution) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleCommandExecution(e)
+		h.HandleCommandExecution(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleDeath(e EventDeath) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleDeath(e)
+		h.HandleDeath(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleExperienceGain(e EventExperienceGain) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleExperienceGain(e)
+		h.HandleExperienceGain(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleFoodLoss(e EventFoodLoss) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleFoodLoss(e)
+		h.HandleFoodLoss(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleHeal(e EventHeal) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleHeal(e)
+		h.HandleHeal(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleHurt(e EventHurt) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleHurt(e)
+		h.HandleHurt(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleItemConsume(e EventItemConsume) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleItemConsume(e)
+		h.HandleItemConsume(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleItemDamage(e EventItemDamage) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleItemDamage(e)
+		h.HandleItemDamage(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleItemDrop(e EventItemDrop) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleItemDrop(e)
+		h.HandleItemDrop(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleItemPickup(e EventItemPickup) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleItemPickup(e)
+		h.HandleItemPickup(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleItemUse(e EventItemUse) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleItemUse(e)
+		h.HandleItemUse(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleItemUseOnBlock(e EventItemUseOnBlock) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleItemUseOnBlock(e)
+		h.HandleItemUseOnBlock(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleItemUseOnEntity(e EventItemUseOnEntity) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleItemUseOnEntity(e)
+		h.HandleItemUseOnEntity(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleJump(e EventJump) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleJump(e)
+		h.HandleJump(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleMove(e EventMove) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleMove(e)
+		h.HandleMove(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandlePunchAir(e EventPunchAir) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandlePunchAir(e)
+		h.HandlePunchAir(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleQuit(e EventQuit) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleQuit(e)
+		h.HandleQuit(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleRespawn(e EventRespawn) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleRespawn(e)
+		h.HandleRespawn(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleSignEdit(e EventSignEdit) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleSignEdit(e)
+		h.HandleSignEdit(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleSkinChange(e EventSkinChange) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleSkinChange(e)
+		h.HandleSkinChange(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleStartBreak(e EventStartBreak) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleStartBreak(e)
+		h.HandleStartBreak(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleTeleport(e EventTeleport) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleTeleport(e)
+		h.HandleTeleport(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleToggleSneak(e EventToggleSneak) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleToggleSneak(e)
+		h.HandleToggleSneak(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleToggleSprint(e EventToggleSprint) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleToggleSprint(e)
+		h.HandleToggleSprint(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleTransfer(e EventTransfer) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleTransfer(e)
+		h.HandleTransfer(e)
 	}
+
+	hm.Unlock()
 }
 
 type NopHandler struct{}

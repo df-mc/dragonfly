@@ -38,6 +38,10 @@ func main() {
 	}
 
 	for srv.Accept(func(p *player.Player) {
+		for i := 0; i < 100000; i++ {
+			p.AddHandler(player.NopHandler{})
+		}
+
 		// Add handlers to incoming players.
 		changeHandler1 := p.AddHandler(handler1)
 		changeHandler2 := p.AddHandler(handler2)

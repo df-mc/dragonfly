@@ -3,7 +3,6 @@ package inventory
 import (
 	"errors"
 	"fmt"
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/item"
 	"golang.org/x/exp/slices"
 	"math"
@@ -40,7 +39,7 @@ func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
 	if f == nil {
 		f = func(slot int, before, after item.Stack) {}
 	}
-	return &Inventory{HandlerManager: &HandlerManager{sync.Mutex{}, []*atomic.Value[Handler]{}}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+	return &Inventory{HandlerManager: &HandlerManager{sync.Mutex{}, []Handler{}}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,

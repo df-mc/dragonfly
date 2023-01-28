@@ -1,7 +1,6 @@
 package world
 
 import (
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -79,7 +78,7 @@ func (conf Config) New() *World {
 		closing:          make(chan struct{}),
 		HandlerManager: &HandlerManager{
 			sync.Mutex{},
-			[]*atomic.Value[Handler]{},
+			[]Handler{},
 		},
 		r:       rand.New(conf.RandSource),
 		advance: s.ref.Inc() == 1,

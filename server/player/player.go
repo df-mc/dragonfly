@@ -129,7 +129,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		gameMode:   *atomic.NewValue[world.GameMode](world.GameModeSurvival),
 		HandlerManager: &HandlerManager{
 			sync.Mutex{},
-			[]*atomic.Value[Handler]{},
+			[]Handler{},
 		},
 		name:              name,
 		skin:              *atomic.NewValue(skin),
@@ -3059,7 +3059,7 @@ func (p *Player) close(msg string) {
 
 	p.HandlerManager = &HandlerManager{
 		Mutex:    sync.Mutex{},
-		handlers: make([]*atomic.Value[Handler], 0, 0),
+		handlers: []Handler{},
 	}
 
 	if s := p.s.Swap(nil); s != nil {

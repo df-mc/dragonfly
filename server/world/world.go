@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -1026,7 +1025,7 @@ func (w *World) close() {
 
 	w.HandlerManager = &HandlerManager{
 		sync.Mutex{},
-		make([]*atomic.Value[Handler], 0, 0),
+		[]Handler{},
 	}
 
 	close(w.closing)

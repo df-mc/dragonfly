@@ -1,14 +1,13 @@
 package inventory
 
 import (
-	"github.com/df-mc/atomic"
 	"sync"
 )
 
 // HandlerManager manages a inventory's handlers.
 type HandlerManager struct {
 	sync.Mutex
-	handlers []*atomic.Value[Handler]
+	handlers []Handler
 }
 
 type Handler interface {
@@ -21,37 +20,51 @@ func (hm *HandlerManager) AddHandler(h Handler) func(Handler) Handler {
 	hm.Lock()
 	defer hm.Unlock()
 
-	ah := atomic.NewValue[Handler](h)
-	hm.handlers = append(hm.handlers, ah)
+	idx := len(hm.handlers)
+	hm.handlers = append(hm.handlers, h)
 
-	return func(newHandler Handler) Handler {
+	return func(hNew Handler) Handler {
 		hm.Lock()
 		defer hm.Unlock()
 
-		if newHandler == nil {
-			return ah.Swap(NopHandler{})
+		if hNew == nil {
+			hm.handlers[idx] = NopHandler{}
+			return h
 		}
 
-		return ah.Swap(newHandler)
+		hm.handlers[idx] = hNew
+		return h
 	}
 }
 
 func (hm *HandlerManager) HandleDrop(e EventDrop) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleDrop(e)
+		h.HandleDrop(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandlePlace(e EventPlace) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandlePlace(e)
+		h.HandlePlace(e)
 	}
+
+	hm.Unlock()
 }
 
 func (hm *HandlerManager) HandleTake(e EventTake) {
+	hm.Lock()
+
 	for _, h := range hm.handlers {
-		h.Load().HandleTake(e)
+		h.HandleTake(e)
 	}
+
+	hm.Unlock()
 }
 
 type NopHandler struct{}
