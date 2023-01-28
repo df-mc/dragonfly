@@ -3,13 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"os"
-	"time"
 )
 
 func main() {
@@ -28,53 +25,8 @@ func main() {
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-
-	handler1 := Handler1{
-		player.NopHandler{},
+	for srv.Accept(nil) {
 	}
-
-	handler2 := Handler2{
-		player.NopHandler{},
-	}
-
-	for srv.Accept(func(p *player.Player) {
-		for i := 0; i < 100000; i++ {
-			p.AddHandler(player.NopHandler{})
-		}
-
-		// Add handlers to incoming players.
-		changeHandler1 := p.AddHandler(handler1)
-		changeHandler2 := p.AddHandler(handler2)
-
-		// Remove handler1 5 seconds after joining.
-		go func() {
-			time.Sleep(5 * time.Second)
-			changeHandler1(nil)
-		}()
-
-		// Change handler2 to handler1 10 seconds after joining.
-		go func() {
-			time.Sleep(10 * time.Second)
-			changeHandler2(handler1)
-		}()
-	}) {
-	}
-}
-
-type Handler1 struct {
-	player.NopHandler
-}
-
-func (h Handler1) HandleMove(e player.EventMove) {
-	e.Player.Message(e.Player.Position())
-}
-
-type Handler2 struct {
-	player.NopHandler
-}
-
-func (h Handler2) HandleJump(e player.EventJump) {
-	e.Player.AddEffect(effect.New(effect.Blindness{}, 1, time.Second))
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the
