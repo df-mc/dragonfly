@@ -11,6 +11,7 @@ import (
 
 // RedstoneComparator is a redstone component used to maintain, compare, or subtract signal strength, or to measure
 // certain block states (primarily the fullness of containers).
+// TODO: Implement functionality.
 type RedstoneComparator struct {
 	transparent
 

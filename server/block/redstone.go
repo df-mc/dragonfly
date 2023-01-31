@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
+	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"golang.org/x/exp/slices"
 )
@@ -11,6 +12,27 @@ import (
 type RedstoneUpdater interface {
 	// RedstoneUpdate is called when a change in redstone signal is computed.
 	RedstoneUpdate(pos cube.Pos, w *world.World)
+}
+
+// ComparatorEmitter represents a block that can emit a redstone signal through a comparator.
+type ComparatorEmitter interface {
+	// ComparatorSignal returns the signal strength that is emitted through a comparator.
+	ComparatorSignal(pos cube.Pos, w *world.World) int
+}
+
+// inventoryComparatorOutput calculates the output of a comparator based on the contents of an inventory.
+func inventoryComparatorOutput(inv *inventory.Inventory) int {
+	if inv.Empty() {
+		return 0
+	}
+	var amount int
+	for _, st := range inv.Slots() {
+		if st.Empty() {
+			continue
+		}
+		amount += st.Count() / st.MaxCount()
+	}
+	return (amount/inv.Size())*14 + 1
 }
 
 // wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
@@ -105,8 +127,11 @@ func updateGateRedstone(centre cube.Pos, w *world.World, face cube.Face) {
 	updateAroundRedstone(pos, w, face)
 }
 
-func receivedRedstonePower(pos cube.Pos, w *world.World) bool {
+func receivedRedstonePower(pos cube.Pos, w *world.World, ignoredFaces ...cube.Face) bool {
 	for _, face := range cube.Faces() {
+		if slices.Contains(ignoredFaces, face) {
+			continue
+		}
 		if w.RedstonePower(pos.Side(face), face, true) > 0 {
 			return true
 		}

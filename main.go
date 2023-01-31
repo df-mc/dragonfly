@@ -3,19 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"time"
 )
 
 func main() {
@@ -41,9 +34,7 @@ func main() {
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(func(p *player.Player) {
-		p.Handle(newRedstonePlayerHandler(p))
-	}) {
+	for srv.Accept(nil) {
 	}
 }
 
@@ -70,57 +61,4 @@ func readConfig(log server.Logger) (server.Config, error) {
 		return zero, fmt.Errorf("decode config: %v", err)
 	}
 	return c.Config(log)
-}
-
-type redstonePlayerHandler struct {
-	player.NopHandler
-	p         *player.Player
-	closeChan chan struct{}
-}
-
-func newRedstonePlayerHandler(p *player.Player) *redstonePlayerHandler {
-	h := &redstonePlayerHandler{
-		p:         p,
-		closeChan: make(chan struct{}, 1),
-	}
-	p.ShowCoordinates()
-	go h.tick()
-	return h
-}
-
-func (h *redstonePlayerHandler) tick() {
-	t := time.NewTicker(time.Second / 20)
-	for {
-		select {
-		case <-h.closeChan:
-			return
-		case <-t.C:
-			w := h.p.World()
-			start := h.p.Position().Add(mgl64.Vec3{0, h.p.EyeHeight()})
-			end := start.Add(h.p.Rotation().Vec3().Mul(50))
-			var hitBlock world.Block
-			trace.TraverseBlocks(start, end, func(pos cube.Pos) bool {
-				b := w.Block(pos)
-				if _, ok := b.(block.Air); !ok {
-					hitBlock = b
-					return false
-				}
-				return true
-			})
-			if hitBlock != nil {
-				popup := fmt.Sprintf("%T", hitBlock)
-				switch hitBlock := hitBlock.(type) {
-				case block.RedstoneWire:
-					popup += fmt.Sprintf("\nPower: %d", hitBlock.Power)
-				}
-				h.p.SendPopup(popup)
-			} else {
-				h.p.SendPopup("You are not looking at a block")
-			}
-		}
-	}
-}
-
-func (h *redstonePlayerHandler) HandleQuit() {
-	close(h.closeChan)
 }

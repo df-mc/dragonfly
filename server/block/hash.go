@@ -100,6 +100,7 @@ const (
 	hashMelon
 	hashMelonSeeds
 	hashMossCarpet
+	hashMoving
 	hashMud
 	hashMudBricks
 	hashMuddyMangroveRoots
@@ -116,6 +117,7 @@ const (
 	hashObsidian
 	hashPackedIce
 	hashPackedMud
+	hashPiston
 	hashPlanks
 	hashPodzol
 	hashPolishedBlackstoneBrick
@@ -565,6 +567,10 @@ func (MossCarpet) Hash() uint64 {
 	return hashMossCarpet
 }
 
+func (Moving) Hash() uint64 {
+	return hashMoving
+}
+
 func (Mud) Hash() uint64 {
 	return hashMud
 }
@@ -627,6 +633,10 @@ func (PackedIce) Hash() uint64 {
 
 func (PackedMud) Hash() uint64 {
 	return hashPackedMud
+}
+
+func (p Piston) Hash() uint64 {
+	return hashPiston | uint64(p.Facing)<<8 | uint64(boolByte(p.Sticky))<<11
 }
 
 func (p Planks) Hash() uint64 {
