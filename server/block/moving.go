@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
@@ -52,7 +51,6 @@ func (b Moving) EncodeNBT() map[string]any {
 	if nbt, ok := b.Moving.(world.NBTer); ok {
 		data["movingEntity"] = nbt.EncodeNBT()
 	}
-	fmt.Println(data)
 	return data
 }
 

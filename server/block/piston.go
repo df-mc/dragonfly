@@ -13,6 +13,7 @@ import (
 // Piston is a block capable of pushing blocks, players, and mobs when given a redstone pulse.
 type Piston struct {
 	solid
+	transparent
 
 	// Facing represents the direction the piston is facing.
 	Facing cube.Face
@@ -170,7 +171,7 @@ func (p Piston) push(pos cube.Pos, w *world.World) bool {
 		face := p.armFace()
 		for _, attachedPos := range resolver.attachedPositions {
 			side := attachedPos.Side(face)
-			p.AttachedBlocks = append(p.AttachedBlocks, side)
+			p.AttachedBlocks = append(p.AttachedBlocks, attachedPos)
 
 			w.SetBlock(side, Moving{Piston: pos, Moving: w.Block(attachedPos), Expanding: true}, nil)
 			w.SetBlock(attachedPos, nil, nil)
@@ -193,17 +194,19 @@ func (p Piston) push(pos cube.Pos, w *world.World) bool {
 		}
 
 		if p.State == 2 {
+			face := p.armFace()
 			for _, attachedPos := range p.AttachedBlocks {
-				moving, ok := w.Block(attachedPos).(Moving)
+				side := attachedPos.Side(face)
+				moving, ok := w.Block(side).(Moving)
 				if !ok {
 					continue
 				}
 
-				w.SetBlock(attachedPos, moving.Moving, nil)
+				w.SetBlock(side, moving.Moving, nil)
 				if r, ok := moving.Moving.(RedstoneUpdater); ok {
-					r.RedstoneUpdate(attachedPos, w)
+					r.RedstoneUpdate(side, w)
 				}
-				updateAroundRedstone(attachedPos, w)
+				updateAroundRedstone(side, w)
 			}
 
 			p.AttachedBlocks = nil
@@ -244,7 +247,7 @@ func (p Piston) pull(pos cube.Pos, w *world.World) bool {
 		face = face.Opposite()
 		for _, attachedPos := range resolver.attachedPositions {
 			side := attachedPos.Side(face)
-			p.AttachedBlocks = append(p.AttachedBlocks, side)
+			p.AttachedBlocks = append(p.AttachedBlocks, attachedPos)
 
 			w.SetBlock(side, Moving{Piston: pos, Moving: w.Block(attachedPos)}, nil)
 			w.SetBlock(attachedPos, nil, nil)
@@ -266,17 +269,19 @@ func (p Piston) pull(pos cube.Pos, w *world.World) bool {
 		}
 
 		if p.State == 0 {
+			face := p.armFace()
 			for _, attachedPos := range p.AttachedBlocks {
-				moving, ok := w.Block(attachedPos).(Moving)
+				side := attachedPos.Side(face.Opposite())
+				moving, ok := w.Block(side).(Moving)
 				if !ok {
 					continue
 				}
 
-				w.SetBlock(attachedPos, moving.Moving, nil)
+				w.SetBlock(side, moving.Moving, nil)
 				if r, ok := moving.Moving.(RedstoneUpdater); ok {
-					r.RedstoneUpdate(attachedPos, w)
+					r.RedstoneUpdate(side, w)
 				}
-				updateAroundRedstone(attachedPos, w)
+				updateAroundRedstone(side, w)
 			}
 
 			p.AttachedBlocks = nil
