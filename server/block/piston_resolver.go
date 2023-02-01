@@ -53,7 +53,7 @@ func pistonResolve(w *world.World, pos cube.Pos, piston Piston, push bool) *pist
 			positive = -1
 		}
 
-		offset := posTwo.Sub(posOne)
+		offset := posOne.Sub(posTwo)
 		direction := pushI * positive
 		switch face.Axis() {
 		case cube.Y:
