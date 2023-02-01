@@ -54,6 +54,11 @@ func (Water) SpreadDecay() int {
 	return 1
 }
 
+// PistonBreakable ...
+func (Water) PistonBreakable() bool {
+	return true
+}
+
 // WithDepth returns the water with the depth passed.
 func (w Water) WithDepth(depth int, falling bool) world.Liquid {
 	w.Depth = depth

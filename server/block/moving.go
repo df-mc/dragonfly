@@ -24,6 +24,11 @@ func (Moving) EncodeBlock() (string, map[string]any) {
 	return "minecraft:moving_block", nil
 }
 
+// PistonImmovable ...
+func (Moving) PistonImmovable() bool {
+	return true
+}
+
 // EncodeNBT ...
 func (b Moving) EncodeNBT() map[string]any {
 	return map[string]any{

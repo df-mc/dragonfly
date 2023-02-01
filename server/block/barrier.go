@@ -17,6 +17,11 @@ func (Barrier) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
+// PistonImmovable ...
+func (Barrier) PistonImmovable() bool {
+	return true
+}
+
 // EncodeItem ...
 func (Barrier) EncodeItem() (name string, meta int16) {
 	return "minecraft:barrier", 0

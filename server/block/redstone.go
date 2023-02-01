@@ -20,6 +20,18 @@ type ComparatorEmitter interface {
 	ComparatorSignal(pos cube.Pos, w *world.World) int
 }
 
+// PistonImmovable represents a block that cannot be moved by a piston.
+type PistonImmovable interface {
+	// PistonImmovable returns whether the block is immovable.
+	PistonImmovable() bool
+}
+
+// PistonBreakable represents a block that can be broken by a piston.
+type PistonBreakable interface {
+	// PistonBreakable returns whether the block can be broken by a piston.
+	PistonBreakable() bool
+}
+
 // inventoryComparatorOutput calculates the output of a comparator based on the contents of an inventory.
 func inventoryComparatorOutput(inv *inventory.Inventory) int {
 	if inv.Empty() {

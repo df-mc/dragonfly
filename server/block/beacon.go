@@ -84,6 +84,11 @@ func (Beacon) LightEmissionLevel() uint8 {
 	return 15
 }
 
+// PistonImmovable ...
+func (Beacon) PistonImmovable() bool {
+	return true
+}
+
 // Level returns an integer 0-4 which defines the current pyramid level of the beacon.
 func (b Beacon) Level() int {
 	return b.level

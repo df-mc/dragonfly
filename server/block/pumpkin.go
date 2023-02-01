@@ -73,6 +73,11 @@ func (p Pumpkin) KnockBackResistance() float64 {
 	return 0
 }
 
+// PistonBreakable ...
+func (Pumpkin) PistonBreakable() bool {
+	return true
+}
+
 // EncodeItem ...
 func (p Pumpkin) EncodeItem() (name string, meta int16) {
 	if p.Carved {

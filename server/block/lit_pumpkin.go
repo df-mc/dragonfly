@@ -20,6 +20,11 @@ func (l LitPumpkin) LightEmissionLevel() uint8 {
 	return 15
 }
 
+// PistonBreakable ...
+func (LitPumpkin) PistonBreakable() bool {
+	return true
+}
+
 // UseOnBlock ...
 func (l LitPumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(w, pos, face, l)

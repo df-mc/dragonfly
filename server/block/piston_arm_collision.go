@@ -17,6 +17,16 @@ type PistonArmCollision struct {
 	Sticky bool
 }
 
+// PistonImmovable ...
+func (PistonArmCollision) PistonImmovable() bool {
+	return true
+}
+
+// EncodeBlock ...
+func (c PistonArmCollision) EncodeBlock() (string, map[string]any) {
+	return "minecraft:piston_arm_collision", map[string]any{"facing_direction": int32(c.Facing)}
+}
+
 // BreakInfo ...
 func (c PistonArmCollision) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, alwaysHarvestable, pickaxeEffective, simpleDrops()).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
@@ -26,11 +36,6 @@ func (c PistonArmCollision) BreakInfo() BreakInfo {
 			dropItem(w, item.NewStack(p, 1), pos.Vec3Centre())
 		}
 	})
-}
-
-// EncodeBlock ...
-func (c PistonArmCollision) EncodeBlock() (string, map[string]any) {
-	return "minecraft:piston_arm_collision", map[string]any{"facing_direction": int32(c.Facing)}
 }
 
 // NeighbourUpdateTick ...
