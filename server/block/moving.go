@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
@@ -17,6 +18,8 @@ type Moving struct {
 	Extra world.Block
 	// Piston is the position of the piston that is moving the block.
 	Piston cube.Pos
+	// Expanding is true if the moving block is expanding, false if it is contracting.
+	Expanding bool
 }
 
 // EncodeBlock ...
@@ -38,7 +41,8 @@ func (b Moving) EncodeNBT() map[string]any {
 		b.Extra = Air{}
 	}
 	data := map[string]any{
-		"id":               "Moving",
+		"id":               "MovingBlock",
+		"expanding":        b.Expanding,
 		"movingBlock":      nbtconv.WriteBlock(b.Moving),
 		"movingBlockExtra": nbtconv.WriteBlock(b.Extra),
 		"pistonPosX":       int32(b.Piston.X()),
@@ -48,11 +52,13 @@ func (b Moving) EncodeNBT() map[string]any {
 	if nbt, ok := b.Moving.(world.NBTer); ok {
 		data["movingEntity"] = nbt.EncodeNBT()
 	}
+	fmt.Println(data)
 	return data
 }
 
 // DecodeNBT ...
 func (b Moving) DecodeNBT(m map[string]any) any {
+	b.Expanding = nbtconv.Bool(m, "expanding")
 	b.Moving = nbtconv.Block(m, "movingBlock")
 	b.Extra = nbtconv.Block(m, "movingBlockExtra")
 	b.Piston = cube.Pos{

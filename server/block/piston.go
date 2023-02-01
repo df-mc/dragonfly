@@ -88,7 +88,7 @@ func (p Piston) EncodeNBT() map[string]any {
 		"NewState": uint8(p.NewState),
 		"State":    uint8(p.State),
 
-		"Sticky": boolByte(p.Sticky),
+		"Sticky": p.Sticky,
 
 		"id": "PistonArm",
 	}
@@ -172,7 +172,7 @@ func (p Piston) push(pos cube.Pos, w *world.World) bool {
 			side := attachedPos.Side(face)
 			p.AttachedBlocks = append(p.AttachedBlocks, side)
 
-			w.SetBlock(side, Moving{Piston: pos, Moving: w.Block(attachedPos)}, nil)
+			w.SetBlock(side, Moving{Piston: pos, Moving: w.Block(attachedPos), Expanding: true}, nil)
 			w.SetBlock(attachedPos, nil, nil)
 			updateAroundRedstone(attachedPos, w)
 		}
