@@ -118,6 +118,7 @@ const (
 	hashPackedIce
 	hashPackedMud
 	hashPiston
+	hashPistonArmCollision
 	hashPlanks
 	hashPodzol
 	hashPolishedBlackstoneBrick
@@ -637,6 +638,10 @@ func (PackedMud) Hash() uint64 {
 
 func (p Piston) Hash() uint64 {
 	return hashPiston | uint64(p.Facing)<<8 | uint64(boolByte(p.Sticky))<<11
+}
+
+func (c PistonArmCollision) Hash() uint64 {
+	return hashPistonArmCollision | uint64(c.Facing)<<8
 }
 
 func (p Planks) Hash() uint64 {

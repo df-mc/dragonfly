@@ -15,10 +15,7 @@ type Obsidian struct {
 
 // PistonImmovable ...
 func (o Obsidian) PistonImmovable() bool {
-	if o.Crying {
-		return false
-	}
-	return true
+	return !o.Crying
 }
 
 // LightEmissionLevel ...

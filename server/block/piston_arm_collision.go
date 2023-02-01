@@ -13,8 +13,6 @@ type PistonArmCollision struct {
 
 	// Facing represents the direction the piston is facing.
 	Facing cube.Face
-	// Sticky is true if the piston arm is sticky.
-	Sticky bool
 }
 
 // PistonImmovable ...
@@ -33,7 +31,11 @@ func (c PistonArmCollision) BreakInfo() BreakInfo {
 		pistonPos := pos.Side(c.pistonFace())
 		if p, ok := w.Block(pistonPos).(Piston); ok {
 			w.SetBlock(pistonPos, nil, nil)
-			dropItem(w, item.NewStack(p, 1), pos.Vec3Centre())
+			if g, ok := u.(interface {
+				GameMode() world.GameMode
+			}); !ok || !g.GameMode().CreativeInventory() {
+				dropItem(w, item.NewStack(Piston{Sticky: p.Sticky}, 1), pos.Vec3Centre())
+			}
 		}
 	})
 }
@@ -51,4 +53,12 @@ func (c PistonArmCollision) pistonFace() cube.Face {
 		return c.Facing
 	}
 	return c.Facing.Opposite()
+}
+
+// allPistonArmCollisions ...
+func allPistonArmCollisions() (pistonArmCollisions []world.Block) {
+	for _, f := range cube.Faces() {
+		pistonArmCollisions = append(pistonArmCollisions, PistonArmCollision{Facing: f})
+	}
+	return
 }

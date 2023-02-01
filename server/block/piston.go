@@ -39,7 +39,7 @@ type Piston struct {
 
 // BreakInfo ...
 func (p Piston) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, alwaysHarvestable, pickaxeEffective, oneOf(p))
+	return newBreakInfo(1.5, alwaysHarvestable, pickaxeEffective, oneOf(Piston{Sticky: p.Sticky}))
 }
 
 // EncodeItem ...
@@ -137,8 +137,78 @@ func (p Piston) armFace() cube.Face {
 
 // push ...
 func (p Piston) push(pos cube.Pos, w *world.World) bool {
-	//TODO: Implement.
-	return false
+	if p.State == 0 {
+		resolver := pistonResolve(w, pos, p, true)
+		if !resolver.success {
+			return false
+		}
+
+		for _, breakPos := range resolver.breakPositions {
+			p.BreakBlocks = append(p.BreakBlocks, int32(breakPos.X()), int32(breakPos.Y()), int32(breakPos.Z()))
+			if b, ok := w.Block(breakPos).(Breakable); ok {
+				w.SetBlock(breakPos, nil, nil)
+				for _, drop := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
+					dropItem(w, drop, breakPos.Vec3Centre())
+				}
+			}
+		}
+
+		face := p.armFace()
+		for _, attachedPos := range resolver.attachedPositions {
+			side := attachedPos.Side(face)
+			p.AttachedBlocks = append(p.AttachedBlocks, int32(side.X()), int32(side.Y()), int32(side.Z()))
+
+			w.SetBlock(side, Moving{Piston: pos, Moving: w.Block(attachedPos)}, nil)
+			w.SetBlock(attachedPos, nil, nil)
+			updateAroundRedstone(attachedPos, w)
+		}
+
+		p.State = 1
+		w.SetBlock(pos.Side(face), PistonArmCollision{Facing: p.Facing}, nil)
+	} else if p.State == 1 {
+		if p.Progress == 1 {
+			p.State = 2
+		}
+		p.LastProgress = p.Progress
+
+		if p.State == 1 {
+			p.Progress += 0.5
+			if p.Progress == 0.5 {
+				// TODO: Sound!
+			}
+		}
+
+		if p.State == 2 {
+			for i := 0; i < len(p.AttachedBlocks); i += 3 {
+				x := p.AttachedBlocks[i]
+				y := p.AttachedBlocks[i+1]
+				z := p.AttachedBlocks[i+2]
+
+				attachPos := cube.Pos{int(x), int(y), int(z)}
+				moving, ok := w.Block(attachPos).(Moving)
+				if !ok {
+					continue
+				}
+				w.SetBlock(attachPos, moving.Moving, nil)
+				if r, ok := moving.Moving.(RedstoneUpdater); ok {
+					r.RedstoneUpdate(attachPos, w)
+				}
+				updateAroundRedstone(attachPos, w)
+			}
+
+			p.AttachedBlocks = nil
+			p.BreakBlocks = nil
+		}
+		return false
+	} else if p.State == 3 {
+		return p.pull(pos, w)
+	} else {
+		return false
+	}
+
+	p.NewState = p.State
+	w.SetBlock(pos, p, nil)
+	return true
 }
 
 // pull ...

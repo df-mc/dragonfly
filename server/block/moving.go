@@ -31,7 +31,13 @@ func (Moving) PistonImmovable() bool {
 
 // EncodeNBT ...
 func (b Moving) EncodeNBT() map[string]any {
-	return map[string]any{
+	if b.Moving == nil {
+		b.Moving = Air{}
+	}
+	if b.Extra == nil {
+		b.Extra = Air{}
+	}
+	data := map[string]any{
 		"id":               "Moving",
 		"movingBlock":      nbtconv.WriteBlock(b.Moving),
 		"movingBlockExtra": nbtconv.WriteBlock(b.Extra),
@@ -39,6 +45,10 @@ func (b Moving) EncodeNBT() map[string]any {
 		"pistonPosY":       int32(b.Piston.Y()),
 		"pistonPosZ":       int32(b.Piston.Z()),
 	}
+	if nbt, ok := b.Moving.(world.NBTer); ok {
+		data["movingEntity"] = nbt.EncodeNBT()
+	}
+	return data
 }
 
 // DecodeNBT ...
@@ -49,6 +59,9 @@ func (b Moving) DecodeNBT(m map[string]any) any {
 		int(nbtconv.Int32(m, "pistonPosX")),
 		int(nbtconv.Int32(m, "pistonPosY")),
 		int(nbtconv.Int32(m, "pistonPosZ")),
+	}
+	if nbt, ok := b.Moving.(world.NBTer); ok {
+		b.Moving = nbt.DecodeNBT(m["movingEntity"].(map[string]any)).(world.Block)
 	}
 	return b
 }

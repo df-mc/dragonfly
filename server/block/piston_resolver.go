@@ -11,54 +11,41 @@ type pistonResolver struct {
 	w   *world.World
 	pos cube.Pos
 
-	sticky bool
-	push   bool
+	attachedPositions []cube.Pos
+	breakPositions    []cube.Pos
 
-	attachedBlocks []cube.Pos
-	breakBlocks    []cube.Pos
-
-	checked map[cube.Pos]struct{}
+	history map[cube.Pos]struct{}
 
 	success bool
 }
 
-// newPistonResolver ...
-func newPistonResolver(w *world.World, pos cube.Pos, sticky, push bool) *pistonResolver {
-	return &pistonResolver{
+// pistonResolve ...
+func pistonResolve(w *world.World, pos cube.Pos, piston Piston, push bool) *pistonResolver {
+	r := &pistonResolver{
 		w:   w,
 		pos: pos,
 
-		sticky: sticky,
-		push:   push,
-
-		checked: make(map[cube.Pos]struct{}),
+		history: make(map[cube.Pos]struct{}),
 	}
-}
 
-// resolve ...
-func (r *pistonResolver) resolve() {
-	piston, ok := r.w.Block(r.pos).(Piston)
-	if !ok {
-		return
-	}
 	face := piston.armFace()
-	if r.push {
+	if push {
 		if r.calculateBlocks(r.pos.Side(face), face, face) {
 			r.success = true
 		}
 	} else {
-		if r.sticky {
+		if piston.Sticky {
 			r.calculateBlocks(r.pos.Side(face).Side(face), face, face.Opposite())
 		}
 		r.success = true
 	}
-	sort.SliceStable(r.attachedBlocks, func(i, j int) bool {
-		posOne := r.attachedBlocks[i]
-		posTwo := r.attachedBlocks[j]
+	sort.SliceStable(r.attachedPositions, func(i, j int) bool {
+		posOne := r.attachedPositions[i]
+		posTwo := r.attachedPositions[j]
 
-		push := 1
-		if !r.push {
-			push = -1
+		pushI := 1
+		if !push {
+			pushI = -1
 		}
 
 		positive := 1
@@ -66,25 +53,27 @@ func (r *pistonResolver) resolve() {
 			positive = -1
 		}
 
-		direction := push * positive
+		offset := posTwo.Sub(posOne)
+		direction := pushI * positive
 		switch face.Axis() {
 		case cube.Y:
-			return (posTwo.Y()-posOne.Y())*direction > 0
+			return offset.Y()*direction > 0
 		case cube.Z:
-			return (posTwo.Z()-posOne.Z())*direction > 0
+			return offset.Z()*direction > 0
 		case cube.X:
-			return (posTwo.X()-posOne.X())*direction > 0
+			return offset.X()*direction > 0
 		}
 		panic("should never happen")
 	})
+	return r
 }
 
 // calculateBlocks ...
 func (r *pistonResolver) calculateBlocks(pos cube.Pos, face cube.Face, breakFace cube.Face) bool {
-	if _, ok := r.checked[pos]; ok {
+	if _, ok := r.history[pos]; ok {
 		return true
 	}
-	r.checked[pos] = struct{}{}
+	r.history[pos] = struct{}{}
 
 	block := r.w.Block(pos)
 	if _, ok := block.(Air); ok {
@@ -92,28 +81,28 @@ func (r *pistonResolver) calculateBlocks(pos cube.Pos, face cube.Face, breakFace
 	}
 	if !r.canMove(pos, block) {
 		if face == breakFace {
-			r.breakBlocks = nil
-			r.attachedBlocks = nil
+			r.breakPositions = nil
+			r.attachedPositions = nil
 			return false
 		}
 		return true
 	}
 	if r.canBreak(block) {
 		if face == breakFace {
-			r.breakBlocks = append(r.breakBlocks, pos)
+			r.breakPositions = append(r.breakPositions, pos)
 		}
 		return true
 	}
 	if pos.Side(breakFace).OutOfBounds(r.w.Range()) {
-		r.breakBlocks = nil
-		r.attachedBlocks = nil
+		r.breakPositions = nil
+		r.attachedPositions = nil
 		return false
 	}
 
-	r.attachedBlocks = append(r.attachedBlocks, pos)
-	if len(r.attachedBlocks) >= 13 {
-		r.breakBlocks = nil
-		r.attachedBlocks = nil
+	r.attachedPositions = append(r.attachedPositions, pos)
+	if len(r.attachedPositions) >= 13 {
+		r.breakPositions = nil
+		r.attachedPositions = nil
 		return false
 	}
 	return r.calculateBlocks(pos.Side(breakFace), breakFace, breakFace)

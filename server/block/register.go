@@ -166,6 +166,7 @@ func init() {
 	registerAll(allMuddyMangroveRoots())
 	registerAll(allNetherBricks())
 	registerAll(allNetherWart())
+	registerAll(allPistonArmCollisions())
 	registerAll(allPistons())
 	registerAll(allPlanks())
 	registerAll(allPotato())
