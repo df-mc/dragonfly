@@ -47,13 +47,12 @@ type EventBlockPlace struct {
 
 type EventChangeWorld struct {
 	Player *Player
-	Before *world.World
-	After  *world.World
+	From *world.World
+	To  *world.World
 }
 
 type EventChat struct {
 	Player  *Player
-	Prefix  *string
 	Message *string
 	*event.Context
 }

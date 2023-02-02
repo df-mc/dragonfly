@@ -184,12 +184,27 @@ func (f Fire) tick(pos cube.Pos, w *world.World, r *rand.Rand) {
 func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
 	if _, air := w.Block(to).(Air); !air {
 		ctx := event.C()
-		if w.Handler().HandleBlockBurn(ctx, to); ctx.Cancelled() {
+
+		evt := world.EventBlockBurn{
+			w,
+			to,
+			ctx,
+		}
+
+		if w.Handler().HandleBlockBurn(evt); evt.Cancelled() {
 			return
 		}
 	}
 	ctx := event.C()
-	if w.Handler().HandleFireSpread(ctx, from, to); ctx.Cancelled() {
+
+	evt := world.EventFireSpread{
+		w,
+		from,
+		to,
+		ctx,
+	}
+
+	if w.Handler().HandleFireSpread(evt); evt.Cancelled() {
 		return
 	}
 	w.SetBlock(to, Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)}, nil)

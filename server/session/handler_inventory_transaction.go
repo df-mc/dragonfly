@@ -75,7 +75,7 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 				return fmt.Errorf("tried to throw %v items, but held only %v in slot", thrown.Count(), held.Count())
 			}
 
-			if err := call(event.C(), int(s.heldSlot.Load()), held.Grow(thrown.Count()-held.Count()), s.inv.Handler().HandleDrop); err != nil {
+			if err := call(s.inv, int(s.heldSlot.Load()), held.Grow(thrown.Count()-held.Count()), event.C(), s.inv.Handler().HandleDrop); err != nil {
 				return err
 			}
 
