@@ -151,6 +151,7 @@ const (
 	hashSign
 	hashSkull
 	hashSlab
+	hashSlime
 	hashSmithingTable
 	hashSmoker
 	hashSnow
@@ -772,6 +773,10 @@ func (s Skull) Hash() uint64 {
 
 func (s Slab) Hash() uint64 {
 	return hashSlab | s.Block.Hash()<<8 | uint64(boolByte(s.Top))<<24 | uint64(boolByte(s.Double))<<25
+}
+
+func (Slime) Hash() uint64 {
+	return hashSlime
 }
 
 func (SmithingTable) Hash() uint64 {
