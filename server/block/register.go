@@ -199,6 +199,7 @@ func init() {
 	registerAll(allWater())
 	registerAll(allWheat())
 	registerAll(allWood())
+	registerAll(allButtons())
 	registerAll(allWool())
 }
 
@@ -366,6 +367,9 @@ func init() {
 	}
 	for _, t := range AnvilTypes() {
 		world.RegisterItem(Anvil{Type: t})
+	}
+	for _, t := range ButtonTypes() {
+		world.RegisterItem(Button{Type: t})
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
