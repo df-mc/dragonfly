@@ -96,10 +96,13 @@ func (r RedstoneWire) WeakPower(pos cube.Pos, face cube.Face, w *world.World, ac
 	if !accountForDust {
 		return 0
 	}
+	if face == cube.FaceUp {
+		return r.Power
+	}
 	if face == cube.FaceDown {
 		return 0
 	}
-	if face == cube.FaceUp {
+	if r.connection(pos, face.Opposite(), w) {
 		return r.Power
 	}
 	if r.connection(pos, face, w) && !r.connection(pos, face.RotateLeft(), w) && !r.connection(pos, face.RotateRight(), w) {
@@ -167,6 +170,8 @@ func (RedstoneWire) connectsTo(block world.Block, face cube.Face, allowDirectSou
 		return true
 	case RedstoneRepeater:
 		return r.Facing.Face() == face || r.Facing.Face().Opposite() == face
+	case Piston:
+		return true
 	}
 	// TODO: Account for observers.
 	c, ok := block.(world.Conductor)
