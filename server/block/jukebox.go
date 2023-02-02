@@ -19,6 +19,24 @@ type Jukebox struct {
 	Item item.Stack
 }
 
+// Source ...
+func (j Jukebox) Source() bool {
+	return true
+}
+
+// WeakPower ...
+func (j Jukebox) WeakPower(cube.Pos, cube.Face, *world.World, bool) int {
+	if j.Item.Empty() {
+		return 0
+	}
+	return 15
+}
+
+// StrongPower ...
+func (j Jukebox) StrongPower(cube.Pos, cube.Face, *world.World, bool) int {
+	return 0
+}
+
 // FuelInfo ...
 func (j Jukebox) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
