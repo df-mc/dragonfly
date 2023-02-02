@@ -122,6 +122,12 @@ type ComposterFillLayer struct{ sound }
 // ComposterReady is a sound played when a composter has produced bone meal and is ready to be collected.
 type ComposterReady struct{ sound }
 
+// PistonExtend is a sound played when a piston extends.
+type PistonExtend struct{ sound }
+
+// PistonRetract is a sound played when a piston retracts.
+type PistonRetract struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

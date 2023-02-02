@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
@@ -193,7 +194,7 @@ func (p Piston) push(pos cube.Pos, w *world.World) bool {
 		if p.State == 1 {
 			p.Progress += 0.5
 			if p.Progress == 0.5 {
-				// TODO: Out sound!
+				w.PlaySound(pos.Vec3Centre(), sound.PistonExtend{})
 			}
 		}
 
@@ -268,7 +269,7 @@ func (p Piston) pull(pos cube.Pos, w *world.World) bool {
 		if p.State == 3 {
 			p.Progress -= 0.5
 			if p.Progress == 0.5 {
-				// TODO: In sound!
+				w.PlaySound(pos.Vec3Centre(), sound.PistonRetract{})
 			}
 		}
 
