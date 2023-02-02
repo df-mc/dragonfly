@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-    "github.com/df-mc/atomic"
+	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -31,8 +31,8 @@ type World struct {
 
 	o sync.Once
 
-	set *Settings
-    handler atomic.Value[Handler]
+	set     *Settings
+	handler atomic.Value[Handler]
 
 	weather
 	ticker

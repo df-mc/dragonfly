@@ -19,6 +19,6 @@ var _ Handler = NopHandler{}
 // Handler of an Inventory.
 type NopHandler struct{}
 
-func (NopHandler) HandleTake(EventTake)  {}
+func (NopHandler) HandleTake(EventTake)   {}
 func (NopHandler) HandlePlace(EventPlace) {}
-func (NopHandler) HandleDrop(EventDrop)  {}
+func (NopHandler) HandleDrop(EventDrop)   {}

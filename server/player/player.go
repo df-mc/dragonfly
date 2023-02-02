@@ -57,7 +57,7 @@ type Player struct {
 	// Player.session() should be called.
 	s atomic.Value[*session.Session]
 	// h holds the current Handler of the player. It may be changed at any time by calling the Handle method.
-    handler atomic.Value[Handler]
+	handler atomic.Value[Handler]
 
 	inv, offHand, enderChest *inventory.Inventory
 	armour                   *inventory.Armour
@@ -118,16 +118,16 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, before, after)
 			}
 		}),
-		enderChest: inventory.New(27, nil),
-		uuid:       uuid.New(),
-		offHand:    inventory.New(1, p.broadcastItems),
-		armour:     inventory.NewArmour(p.broadcastArmour),
-		hunger:     newHungerManager(),
-		health:     entity.NewHealthManager(20, 20),
-		experience: entity.NewExperienceManager(),
-		effects:    entity.NewEffectManager(),
-		gameMode:   *atomic.NewValue[world.GameMode](world.GameModeSurvival),
-        handler: *atomic.NewValue[Handler](NopHandler{}),
+		enderChest:        inventory.New(27, nil),
+		uuid:              uuid.New(),
+		offHand:           inventory.New(1, p.broadcastItems),
+		armour:            inventory.NewArmour(p.broadcastArmour),
+		hunger:            newHungerManager(),
+		health:            entity.NewHealthManager(20, 20),
+		experience:        entity.NewExperienceManager(),
+		effects:           entity.NewEffectManager(),
+		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
+		handler:           *atomic.NewValue[Handler](NopHandler{}),
 		name:              name,
 		skin:              *atomic.NewValue(skin),
 		speed:             *atomic.NewFloat64(0.1),
@@ -379,7 +379,7 @@ func (p *Player) Chat(msg ...any) {
 		return
 	}
 
-    _, _ = fmt.Fprintf(chat.Global, "<%v> %v\n", p.name, message)
+	_, _ = fmt.Fprintf(chat.Global, "<%v> %v\n", p.name, message)
 }
 
 // ExecuteCommand executes a command passed as the player. If the command could not be found, or if the usage
@@ -3049,7 +3049,7 @@ func (p *Player) close(msg string) {
 
 	evt := EventQuit{p}
 
-    p.handler.Swap(NopHandler{}).HandleQuit(evt)
+	p.handler.Swap(NopHandler{}).HandleQuit(evt)
 
 	if s := p.s.Swap(nil); s != nil {
 		s.Disconnect(msg)
@@ -3173,7 +3173,7 @@ func call[T callConstraint](
 		return fmt.Errorf("action was cancelled")
 	}
 
-	evt := T {
+	evt := T{
 		inv,
 		slot,
 		it,

@@ -47,8 +47,8 @@ type EventBlockPlace struct {
 
 type EventChangeWorld struct {
 	Player *Player
-	From *world.World
-	To  *world.World
+	From   *world.World
+	To     *world.World
 }
 
 type EventChat struct {

@@ -47,12 +47,12 @@ var _ Handler = (*NopHandler)(nil)
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
-func (NopHandler) HandleLiquidFlow(EventLiquidFlow) {}
-func (NopHandler) HandleLiquidDecay(EventLiquidDecay)         {}
+func (NopHandler) HandleLiquidFlow(EventLiquidFlow)       {}
+func (NopHandler) HandleLiquidDecay(EventLiquidDecay)     {}
 func (NopHandler) HandleLiquidHarden(EventLiquidHarden)   {}
-func (NopHandler) HandleSound(EventSound)                      {}
-func (NopHandler) HandleFireSpread(EventFireSpread)                {}
-func (NopHandler) HandleBlockBurn(EventBlockBurn)                           {}
-func (NopHandler) HandleEntitySpawn(EventEntitySpawn)                                           {}
-func (NopHandler) HandleEntityDespawn(EventEntityDespawn)                                         {}
-func (NopHandler) HandleClose(EventClose)                                                       {}
+func (NopHandler) HandleSound(EventSound)                 {}
+func (NopHandler) HandleFireSpread(EventFireSpread)       {}
+func (NopHandler) HandleBlockBurn(EventBlockBurn)         {}
+func (NopHandler) HandleEntitySpawn(EventEntitySpawn)     {}
+func (NopHandler) HandleEntityDespawn(EventEntityDespawn) {}
+func (NopHandler) HandleClose(EventClose)                 {}

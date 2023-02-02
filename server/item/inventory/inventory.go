@@ -16,9 +16,9 @@ import (
 // an inventory is invalid. Use New() to obtain a new inventory.
 // Inventory is safe for concurrent usage: Its values are protected by a mutex.
 type Inventory struct {
-	mu sync.RWMutex
-    handler Handler
-	slots []item.Stack
+	mu      sync.RWMutex
+	handler Handler
+	slots   []item.Stack
 
 	f      func(slot int, before, after item.Stack)
 	canAdd func(s item.Stack, slot int) bool
@@ -39,7 +39,7 @@ func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
 	if f == nil {
 		f = func(slot int, before, after item.Stack) {}
 	}
-    return &Inventory{handler: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+	return &Inventory{handler: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
