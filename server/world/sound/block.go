@@ -122,6 +122,12 @@ type ComposterFillLayer struct{ sound }
 // ComposterReady is a sound played when a composter has produced bone meal and is ready to be collected.
 type ComposterReady struct{ sound }
 
+// PowerOn is a sound played when a redstone component is powered on.
+type PowerOn struct{ sound }
+
+// PowerOff is a sound played when a redstone component is powered off.
+type PowerOff struct{ sound }
+
 // PistonExtend is a sound played when a piston extends.
 type PistonExtend struct{ sound }
 

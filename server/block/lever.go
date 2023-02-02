@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -20,7 +21,7 @@ type Lever struct {
 	// Direction is the direction the lever is pointing. This is only used for levers that are attached on up or down
 	// faces.
 	// TODO: Better handle lever direction on up or down faces—using a `cube.Axis` results in a default `Lever` with an
-	// axis `Y` and a face `Down` which does not map to an existing block state.
+	//  axis `Y` and a face `Down` which does not map to an existing block state.
 	Direction cube.Direction
 }
 
@@ -82,6 +83,11 @@ func (l Lever) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 func (l Lever) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	l.Powered = !l.Powered
 	w.SetBlock(pos, l, nil)
+	if l.Powered {
+		w.PlaySound(pos.Vec3Centre(), sound.PowerOn{})
+	} else {
+		w.PlaySound(pos.Vec3Centre(), sound.PowerOff{})
+	}
 	updateDirectionalRedstone(pos, w, l.Facing.Opposite())
 	return true
 }
