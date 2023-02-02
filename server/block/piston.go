@@ -66,7 +66,11 @@ func (p Piston) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	p.Facing = calculateAnySidedFace(user, pos, false)
 
 	place(w, pos, p, user, ctx)
-	return placed(ctx)
+	if placed(ctx) {
+		p.RedstoneUpdate(pos, w)
+		return true
+	}
+	return false
 }
 
 // EncodeNBT ...
