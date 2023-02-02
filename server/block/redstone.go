@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
-	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"golang.org/x/exp/slices"
 )
@@ -30,21 +29,6 @@ type PistonImmovable interface {
 type PistonBreakable interface {
 	// PistonBreakable returns whether the block can be broken by a piston.
 	PistonBreakable() bool
-}
-
-// inventoryComparatorOutput calculates the output of a comparator based on the contents of an inventory.
-func inventoryComparatorOutput(inv *inventory.Inventory) int {
-	if inv.Empty() {
-		return 0
-	}
-	var amount int
-	for _, st := range inv.Slots() {
-		if st.Empty() {
-			continue
-		}
-		amount += st.Count() / st.MaxCount()
-	}
-	return (amount/inv.Size())*14 + 1
 }
 
 // wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
