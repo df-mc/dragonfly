@@ -115,6 +115,7 @@ const (
 	hashNetherite
 	hashNetherrack
 	hashNote
+	hashObserver
 	hashObsidian
 	hashPackedIce
 	hashPackedMud
@@ -627,6 +628,10 @@ func (Netherrack) Hash() uint64 {
 
 func (Note) Hash() uint64 {
 	return hashNote
+}
+
+func (d Observer) Hash() uint64 {
+	return hashObserver | uint64(d.Facing)<<8 | uint64(boolByte(d.Powered))<<11
 }
 
 func (o Obsidian) Hash() uint64 {

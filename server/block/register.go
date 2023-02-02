@@ -124,6 +124,7 @@ func init() {
 	registerAll(allBlackstone())
 	registerAll(allBlastFurnaces())
 	registerAll(allBoneBlock())
+	registerAll(allButtons())
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCarpet())
@@ -166,6 +167,7 @@ func init() {
 	registerAll(allMuddyMangroveRoots())
 	registerAll(allNetherBricks())
 	registerAll(allNetherWart())
+	registerAll(allObservers())
 	registerAll(allPistonArmCollisions())
 	registerAll(allPistons())
 	registerAll(allPlanks())
@@ -199,7 +201,6 @@ func init() {
 	registerAll(allWater())
 	registerAll(allWheat())
 	registerAll(allWood())
-	registerAll(allButtons())
 	registerAll(allWool())
 }
 
@@ -295,6 +296,7 @@ func init() {
 	world.RegisterItem(Netherite{})
 	world.RegisterItem(Netherrack{})
 	world.RegisterItem(Note{Pitch: 24})
+	world.RegisterItem(Observer{})
 	world.RegisterItem(Obsidian{Crying: true})
 	world.RegisterItem(Obsidian{})
 	world.RegisterItem(PackedIce{})
