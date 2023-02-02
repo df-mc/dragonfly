@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
@@ -61,7 +62,7 @@ func (b Button) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	}
 	b.Pressed = false
 	w.SetBlock(pos, b, nil)
-	// TODO: Sound
+	w.PlaySound(pos.Vec3Centre(), sound.PowerOff{})
 	updateDirectionalRedstone(pos, w, b.Facing.Opposite())
 }
 
@@ -81,7 +82,7 @@ func (b Button) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User,
 	}
 	b.Pressed = true
 	w.SetBlock(pos, b, nil)
-	// TODO: Sound
+	w.PlaySound(pos.Vec3Centre(), sound.PowerOn{})
 	updateDirectionalRedstone(pos, w, b.Facing.Opposite())
 
 	delay := time.Millisecond * 1500
