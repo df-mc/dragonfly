@@ -5,7 +5,7 @@ type ButtonType struct {
 	button
 
 	// Wood is the type of wood of the button.
-	Wood WoodType
+	wood WoodType
 }
 
 type button uint8
@@ -27,14 +27,14 @@ func PolishedBlackstoneButton() ButtonType {
 
 // Uint8 ...
 func (b ButtonType) Uint8() uint8 {
-	return b.Wood.Uint8() | uint8(b.button)<<4
+	return b.wood.Uint8() | uint8(b.button)<<4
 }
 
 // Name ...
 func (b ButtonType) Name() string {
 	switch b.button {
 	case 0:
-		return b.Wood.Name() + " Button"
+		return b.wood.Name() + " Button"
 	case 1:
 		return "Stone Button"
 	case 2:
@@ -47,10 +47,10 @@ func (b ButtonType) Name() string {
 func (b ButtonType) String() string {
 	switch b.button {
 	case 0:
-		if b.Wood == OakWood() {
+		if b.wood == OakWood() {
 			return "wooden"
 		}
-		return b.Wood.String()
+		return b.wood.String()
 	case 1:
 		return "stone"
 	case 2:
