@@ -70,6 +70,11 @@ func pistonResolve(w *world.World, pos cube.Pos, piston Piston, push bool) *pist
 
 // calculateBlocks ...
 func (r *pistonResolver) calculateBlocks(pos cube.Pos, face cube.Face, breakFace cube.Face) bool {
+	if pos.Side(breakFace).OutOfBounds(r.w.Range()) {
+		r.breakPositions = nil
+		r.attachedPositions = nil
+		return false
+	}
 	if _, ok := r.history[pos]; ok {
 		return true
 	}
@@ -92,11 +97,6 @@ func (r *pistonResolver) calculateBlocks(pos cube.Pos, face cube.Face, breakFace
 			r.breakPositions = append(r.breakPositions, pos)
 		}
 		return true
-	}
-	if pos.Side(breakFace).OutOfBounds(r.w.Range()) {
-		r.breakPositions = nil
-		r.attachedPositions = nil
-		return false
 	}
 
 	r.attachedPositions = append(r.attachedPositions, pos)
