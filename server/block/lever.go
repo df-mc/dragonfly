@@ -10,6 +10,7 @@ import (
 // Lever is a non-solid block that can provide switchable redstone power.
 type Lever struct {
 	empty
+	transparent
 	flowingWaterDisplacer
 
 	// Powered is if the lever is switched on.
@@ -54,6 +55,7 @@ func (l Lever) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !w.Block(pos.Side(l.Facing.Opposite())).Model().FaceSolid(pos.Side(l.Facing.Opposite()), l.Facing, w) {
 		w.SetBlock(pos, nil, nil)
 		dropItem(w, item.NewStack(l, 1), pos.Vec3Centre())
+		updateDirectionalRedstone(pos, w, l.Facing.Opposite())
 	}
 }
 
