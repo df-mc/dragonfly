@@ -42,7 +42,7 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	if face == cube.FaceDown {
 		return false
 	}
-	if _, ok := w.Block(pos).(world.Liquid); ok {
+	if _, ok := w.Liquid(pos); ok {
 		return false
 	}
 	if !w.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, w) {

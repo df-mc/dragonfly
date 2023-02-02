@@ -75,7 +75,7 @@ func (b Beacon) EncodeNBT() map[string]any {
 }
 
 // SideClosed ...
-func (b Beacon) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Beacon) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 

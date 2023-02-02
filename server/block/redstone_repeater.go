@@ -14,6 +14,7 @@ import (
 // signals, prevent signals moving backwards, or to "lock" signals in one state.
 type RedstoneRepeater struct {
 	transparent
+	flowingWaterDisplacer
 
 	// Facing is the direction from the torch to the block.
 	Facing cube.Direction
@@ -23,9 +24,9 @@ type RedstoneRepeater struct {
 	Delay int
 }
 
-// HasLiquidDrops ...
-func (RedstoneRepeater) HasLiquidDrops() bool {
-	return true
+// SideClosed ...
+func (RedstoneRepeater) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
 }
 
 // Model ...
