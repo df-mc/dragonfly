@@ -52,6 +52,7 @@ func (j Jukebox) BreakInfo() BreakInfo {
 		if _, hasDisc := j.Disc(); hasDisc {
 			w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
 		}
+		updateAroundRedstone(pos, w)
 	})
 }
 
