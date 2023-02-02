@@ -15,6 +15,7 @@ import (
 type Piston struct {
 	solid
 	transparent
+	sourceWaterDisplacer
 
 	// Facing represents the direction the piston is facing.
 	Facing cube.Face
@@ -40,6 +41,11 @@ type Piston struct {
 // BreakInfo ...
 func (p Piston) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, alwaysHarvestable, pickaxeEffective, oneOf(Piston{Sticky: p.Sticky}))
+}
+
+// SideClosed ...
+func (Piston) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
 }
 
 // EncodeItem ...

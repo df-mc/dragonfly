@@ -10,6 +10,7 @@ import (
 type PistonArmCollision struct {
 	empty
 	transparent
+	sourceWaterDisplacer
 
 	// Facing represents the direction the piston is facing.
 	Facing cube.Face
@@ -18,6 +19,11 @@ type PistonArmCollision struct {
 // PistonImmovable ...
 func (PistonArmCollision) PistonImmovable() bool {
 	return true
+}
+
+// SideClosed ...
+func (PistonArmCollision) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
 }
 
 // EncodeBlock ...
