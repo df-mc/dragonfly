@@ -66,6 +66,9 @@ func (d Observer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 		return false
 	}
 	d.Facing = calculateAnySidedFace(user, pos, false)
+	if d.Facing.Axis() == cube.Y {
+		d.Facing = d.Facing.Opposite()
+	}
 
 	place(w, pos, d, user, ctx)
 	return placed(ctx)
