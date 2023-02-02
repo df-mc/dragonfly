@@ -1009,6 +1009,9 @@ func (w *World) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool)
 	if c, ok := b.(Conductor); ok {
 		power = c.WeakPower(pos, face, w, accountForDust)
 	}
+	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() == 0 {
+		return power
+	}
 	for _, f := range cube.Faces() {
 		if !b.Model().FaceSolid(pos, f, w) {
 			return power
