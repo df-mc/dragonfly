@@ -1392,10 +1392,6 @@ func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
 		if err := w.provider().SaveEntities(pos, s, w.conf.Dim); err != nil {
 			w.conf.Log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
 		}
-
-		//if err := w.provider().SaveScheduledUpdates(pos, maps.Values(c.s), w.conf.Dim); err != nil {
-		//	w.conf.Log.Errorf("error saving scheduled updates in chunk %v to provider: %v", pos, err)
-		//}
 	}
 	ent := c.entities
 	c.entities = nil
