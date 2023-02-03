@@ -99,6 +99,11 @@ func (r *pistonResolver) calculateBlocks(pos cube.Pos, face cube.Face, breakFace
 		return true
 	}
 
+	if _, ok := block.(GlazedTerracotta); ok && face != breakFace {
+		// Glazed terracotta can't be pushed, but can be pulled.
+		return true
+	}
+
 	r.attachedPositions = append(r.attachedPositions, pos)
 	if len(r.attachedPositions) >= 13 {
 		r.breakPositions = nil
