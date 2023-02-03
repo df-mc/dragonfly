@@ -39,7 +39,7 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 	} else if s := pos.Side(face); w.Block(s) == air() {
 		w.PlaySound(s.Vec3Centre(), sound.Ignite{})
 		w.SetBlock(s, fire(), nil)
-		w.ScheduleBlockUpdate(s, time.Duration(30+rand.Intn(10))*time.Second/20)
+		w.ScheduleBlockUpdate(w.Block(s), s, time.Duration(30+rand.Intn(10))*time.Second/20)
 		return true
 	}
 	return false

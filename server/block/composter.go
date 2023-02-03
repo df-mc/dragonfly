@@ -77,7 +77,7 @@ func (c Composter) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Us
 	w.SetBlock(pos, c, nil)
 	w.PlaySound(pos.Vec3(), sound.ComposterFillLayer{})
 	if c.Level == 7 {
-		w.ScheduleBlockUpdate(pos, time.Second)
+		w.ScheduleBlockUpdate(c, pos, time.Second)
 	}
 	return true
 }

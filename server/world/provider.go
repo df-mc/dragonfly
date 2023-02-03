@@ -42,6 +42,12 @@ type Provider interface {
 	// SaveBlockNBT saves block NBT, or block entities, to a specific chunk position. If the NBT cannot be
 	// stored, SaveBlockNBT returns a non-nil error.
 	SaveBlockNBT(position ChunkPos, data []map[string]any, dim Dimension) error
+	//// LoadScheduledUpdates loads the scheduled block updates for a chunk. If the updates cannot be loaded,
+	//// LoadScheduledUpdates returns a non-nil error.
+	//LoadScheduledUpdates(position ChunkPos, dim Dimension) ([]ScheduledUpdate, error)
+	//// SaveScheduledUpdates saves the scheduled block updates for a chunk. If the updates cannot be stored,
+	//// SaveScheduledUpdates returns a non-nil error.
+	//SaveScheduledUpdates(position ChunkPos, updates []ScheduledUpdate, dim Dimension) error
 }
 
 // Compile time check to make sure NopProvider implements Provider.
@@ -68,8 +74,14 @@ func (NopProvider) LoadEntities(ChunkPos, Dimension, EntityRegistry) ([]Entity, 
 func (NopProvider) SaveEntities(ChunkPos, []Entity, Dimension) error           { return nil }
 func (NopProvider) LoadBlockNBT(ChunkPos, Dimension) ([]map[string]any, error) { return nil, nil }
 func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any, Dimension) error   { return nil }
-func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk, Dimension) error          { return nil }
-func (NopProvider) LoadChunk(ChunkPos, Dimension) (*chunk.Chunk, bool, error)  { return nil, false, nil }
+
+//	func (NopProvider) LoadScheduledUpdates(ChunkPos, Dimension) ([]ScheduledUpdate, error) {
+//		return nil, nil
+//	}
+//
+// func (NopProvider) SaveScheduledUpdates(ChunkPos, []ScheduledUpdate, Dimension) error { return nil }
+func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk, Dimension) error         { return nil }
+func (NopProvider) LoadChunk(ChunkPos, Dimension) (*chunk.Chunk, bool, error) { return nil, false, nil }
 func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (cube.Pos, bool, error) {
 	return cube.Pos{}, false, nil
 }

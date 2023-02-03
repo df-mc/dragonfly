@@ -89,7 +89,7 @@ func (b Button) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User,
 	if b.Type == StoneButton() || b.Type == PolishedBlackstoneButton() {
 		delay = time.Millisecond * 1000
 	}
-	w.ScheduleBlockUpdate(pos, delay)
+	w.ScheduleBlockUpdate(b, pos, delay)
 	return true
 
 }

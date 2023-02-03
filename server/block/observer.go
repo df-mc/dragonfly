@@ -20,75 +20,74 @@ type Observer struct {
 }
 
 // Source ...
-func (d Observer) Source() bool {
+func (o Observer) Source() bool {
 	return true
 }
 
 // WeakPower ...
-func (d Observer) WeakPower(pos cube.Pos, face cube.Face, w *world.World, accountForDust bool) int {
-	return d.StrongPower(pos, face, w, accountForDust)
+func (o Observer) WeakPower(pos cube.Pos, face cube.Face, w *world.World, accountForDust bool) int {
+	return o.StrongPower(pos, face, w, accountForDust)
 }
 
 // StrongPower ...
-func (d Observer) StrongPower(_ cube.Pos, face cube.Face, w *world.World, _ bool) int {
-	if !d.Powered || face != d.Facing {
+func (o Observer) StrongPower(_ cube.Pos, face cube.Face, w *world.World, _ bool) int {
+	if !o.Powered || face != o.Facing {
 		return 0
 	}
 	return 15
 }
 
 // ScheduledTick ...
-func (d Observer) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
-	if !d.Powered {
-		w.ScheduleBlockUpdate(pos, time.Millisecond*100)
+func (o Observer) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+	o.Powered = !o.Powered
+	if o.Powered {
+		w.ScheduleBlockUpdate(o, pos, time.Millisecond*100)
 	}
-	d.Powered = !d.Powered
-	w.SetBlock(pos, d, nil)
-	updateDirectionalRedstone(pos, w, d.Facing.Opposite())
+	w.SetBlock(pos, o, nil)
+	updateDirectionalRedstone(pos, w, o.Facing.Opposite())
 }
 
 // NeighbourUpdateTick ...
-func (d Observer) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
-	if pos.Side(d.Facing) != changedNeighbour {
+func (o Observer) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
+	if pos.Side(o.Facing) != changedNeighbour {
 		return
 	}
-	if d.Powered {
+	if o.Powered {
 		return
 	}
-	w.ScheduleBlockUpdate(pos, time.Millisecond*100)
-	updateDirectionalRedstone(pos, w, d.Facing.Opposite())
+	w.ScheduleBlockUpdate(o, pos, time.Millisecond*100)
 }
 
 // UseOnBlock ...
-func (d Observer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, d)
+func (o Observer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(w, pos, face, o)
 	if !used {
 		return false
 	}
-	d.Facing = calculateAnySidedFace(user, pos, false)
-	if d.Facing.Axis() == cube.Y {
-		d.Facing = d.Facing.Opposite()
+	o.Facing = calculateAnySidedFace(user, pos, false)
+	if o.Facing.Axis() == cube.Y {
+		o.Facing = o.Facing.Opposite()
 	}
 
-	place(w, pos, d, user, ctx)
+	place(w, pos, o, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
-func (d Observer) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
-		updateDirectionalRedstone(pos, w, d.Facing.Opposite())
+func (o Observer) BreakInfo() BreakInfo {
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(o)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
+		updateDirectionalRedstone(pos, w, o.Facing.Opposite())
 	})
 }
 
 // EncodeItem ...
-func (d Observer) EncodeItem() (name string, meta int16) {
+func (o Observer) EncodeItem() (name string, meta int16) {
 	return "minecraft:observer", 0
 }
 
 // EncodeBlock ...
-func (d Observer) EncodeBlock() (string, map[string]any) {
-	return "minecraft:observer", map[string]any{"facing_direction": int32(d.Facing), "powered_bit": d.Powered}
+func (o Observer) EncodeBlock() (string, map[string]any) {
+	return "minecraft:observer", map[string]any{"facing_direction": int32(o.Facing), "powered_bit": o.Powered}
 }
 
 // allObservers ...

@@ -71,7 +71,7 @@ func (conf Config) New() *World {
 	}
 	s := conf.Provider.Settings()
 	w := &World{
-		scheduledUpdates: make(map[cube.Pos]int64),
+		scheduledUpdates: make(map[cube.Pos]scheduledUpdate),
 		entities:         make(map[Entity]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*chunkData),

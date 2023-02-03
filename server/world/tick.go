@@ -77,29 +77,34 @@ func (t ticker) tick() {
 // tickScheduledBlocks executes scheduled block updates in chunks that are currently loaded.
 func (t ticker) tickScheduledBlocks(tick int64) {
 	t.w.updateMu.Lock()
-	positions := make([]cube.Pos, 0, len(t.w.scheduledUpdates)/4)
-	for pos, scheduledTick := range t.w.scheduledUpdates {
-		if scheduledTick <= tick {
-			positions = append(positions, pos)
+	updates := make([]scheduledUpdate, 0, len(t.w.scheduledUpdates)/4)
+	for _, update := range t.w.scheduledUpdates {
+		if update.t <= tick {
+			updates = append(updates, update)
 		}
 	}
 	t.w.updateMu.Unlock()
 
-	for _, pos := range positions {
-		// We need to incrementally delete each scheduled update from the map, as each block update itself might attempt
-		// to schedule another block update, which could conflict with the current update selection.
-		// TODO: Definitely shouldn't lock like this. I need coffee. And sleep.
-		t.w.updateMu.Lock()
-		delete(t.w.scheduledUpdates, pos)
-		t.w.updateMu.Unlock()
+	for _, update := range updates {
+		targetHash := update.b.Hash()
 
-		if ticker, ok := t.w.Block(pos).(ScheduledTicker); ok {
-			ticker.ScheduledTick(pos, t.w, t.w.r)
-		}
-		if liquid, ok := t.w.additionalLiquid(pos); ok {
-			if ticker, ok := liquid.(ScheduledTicker); ok {
-				ticker.ScheduledTick(pos, t.w, t.w.r)
+		mainBlock := t.w.Block(update.p)
+		additionalBlock, _ := t.w.additionalLiquid(update.p)
+		for _, b := range []Block{mainBlock, additionalBlock} {
+			if b == nil {
+				continue
 			}
+			if b.Hash() != targetHash {
+				continue
+			}
+			s, ok := b.(ScheduledTicker)
+			if !ok {
+				continue
+			}
+
+			delete(t.w.scheduledUpdates, update.p)
+
+			s.ScheduledTick(update.p, t.w, t.w.r)
 		}
 	}
 }

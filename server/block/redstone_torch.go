@@ -92,7 +92,7 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, w *world.World) {
 	if t.inputStrength(pos, w) > 0 != t.Lit {
 		return
 	}
-	w.ScheduleBlockUpdate(pos, time.Millisecond*100)
+	w.ScheduleBlockUpdate(t, pos, time.Millisecond*100)
 }
 
 // ScheduledTick ...

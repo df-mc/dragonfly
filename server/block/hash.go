@@ -631,8 +631,8 @@ func (Note) Hash() uint64 {
 	return hashNote
 }
 
-func (d Observer) Hash() uint64 {
-	return hashObserver | uint64(d.Facing)<<8 | uint64(boolByte(d.Powered))<<11
+func (o Observer) Hash() uint64 {
+	return hashObserver | uint64(o.Facing)<<8 | uint64(boolByte(o.Powered))<<11
 }
 
 func (o Obsidian) Hash() uint64 {
