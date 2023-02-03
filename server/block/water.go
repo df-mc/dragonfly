@@ -124,7 +124,7 @@ func (w Water) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
 		wo.SetLiquid(pos, nil)
 		return
 	}
-	wo.ScheduleBlockUpdate(w, pos, time.Second/4)
+	wo.ScheduleBlockUpdate(pos, time.Second/4)
 }
 
 // LiquidType ...

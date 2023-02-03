@@ -23,7 +23,7 @@ func (c CoralBlock) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if c.Dead {
 		return
 	}
-	w.ScheduleBlockUpdate(c, pos, time.Second*5/2)
+	w.ScheduleBlockUpdate(pos, time.Second*5/2)
 }
 
 // ScheduledTick ...

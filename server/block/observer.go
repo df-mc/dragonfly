@@ -46,7 +46,7 @@ func (o Observer) StrongPower(_ cube.Pos, face cube.Face, _ *world.World, _ bool
 func (o Observer) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	o.Powered = !o.Powered
 	if o.Powered {
-		w.ScheduleBlockUpdate(o, pos, time.Millisecond*100)
+		w.ScheduleBlockUpdate(pos, time.Millisecond*100)
 	}
 	w.SetBlock(pos, o, nil)
 	updateDirectionalRedstone(pos, w, o.Facing.Opposite())
@@ -60,12 +60,12 @@ func (o Observer) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.W
 	if o.Powered {
 		return
 	}
-	w.ScheduleBlockUpdate(o, pos, time.Millisecond*100)
+	w.ScheduleBlockUpdate(pos, time.Millisecond*100)
 }
 
 // PistonUpdate ...
 func (o Observer) PistonUpdate(pos cube.Pos, w *world.World) {
-	w.ScheduleBlockUpdate(o, pos, time.Millisecond*100)
+	w.ScheduleBlockUpdate(pos, time.Millisecond*100)
 }
 
 // UseOnBlock ...

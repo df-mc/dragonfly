@@ -28,7 +28,7 @@ func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 		ctx.SubtractFromCount(1)
 		w.PlaySound(s.Vec3Centre(), sound.FireCharge{})
 		w.SetBlock(s, fire(), nil)
-		w.ScheduleBlockUpdate(w.Block(s), s, time.Duration(30+rand.Intn(10))*time.Second/20)
+		w.ScheduleBlockUpdate(s, time.Duration(30+rand.Intn(10))*time.Second/20)
 		return true
 	}
 	return false

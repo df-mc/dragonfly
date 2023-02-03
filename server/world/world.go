@@ -59,7 +59,7 @@ type World struct {
 	// scheduledUpdates is a map of tick time values indexed by the block position at which an update is
 	// scheduled. If the current tick exceeds the tick value passed, the block update will be performed
 	// and the entry will be removed from the map.
-	scheduledUpdates map[cube.Pos]scheduledUpdate
+	scheduledUpdates map[cube.Pos]int64
 	neighbourUpdates []neighbourUpdate
 
 	viewersMu sync.Mutex
@@ -922,7 +922,7 @@ func (w *World) SetDifficulty(d Difficulty) {
 
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
 // that position does not handle block updates, nothing will happen.
-func (w *World) ScheduleBlockUpdate(b Block, pos cube.Pos, delay time.Duration) {
+func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		return
 	}
@@ -935,11 +935,7 @@ func (w *World) ScheduleBlockUpdate(b Block, pos cube.Pos, delay time.Duration) 
 	t := w.set.CurrentTick
 	w.set.Unlock()
 
-	w.scheduledUpdates[pos] = scheduledUpdate{
-		b: b,
-		p: pos,
-		t: t + (delay.Milliseconds() / 50),
-	}
+	w.scheduledUpdates[pos] = t + (delay.Milliseconds() / 50)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
@@ -1450,13 +1446,6 @@ type chunkData struct {
 	v        []Viewer
 	l        []*Loader
 	entities []Entity
-}
-
-// scheduledUpdate represents a scheduled update of a block.
-type scheduledUpdate struct {
-	t int64
-	b Block
-	p cube.Pos
 }
 
 // BlockEntities returns the block entities of the chunk.

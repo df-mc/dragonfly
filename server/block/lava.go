@@ -95,7 +95,7 @@ func (Lava) PistonBreakable() bool {
 // NeighbourUpdateTick ...
 func (l Lava) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if !l.Harden(pos, w, nil) {
-		w.ScheduleBlockUpdate(l, pos, w.Dimension().LavaSpreadDuration())
+		w.ScheduleBlockUpdate(pos, w.Dimension().LavaSpreadDuration())
 	}
 }
 

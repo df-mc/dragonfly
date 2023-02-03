@@ -138,7 +138,7 @@ func (p Piston) DecodeNBT(m map[string]any) any {
 
 // RedstoneUpdate ...
 func (p Piston) RedstoneUpdate(pos cube.Pos, w *world.World) {
-	w.ScheduleBlockUpdate(p, pos, time.Millisecond*50)
+	w.ScheduleBlockUpdate(pos, time.Millisecond*50)
 }
 
 // ScheduledTick ...
@@ -150,7 +150,7 @@ func (p Piston) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 	} else if !p.pull(pos, w) {
 		return
 	}
-	w.ScheduleBlockUpdate(p, pos, time.Millisecond*50)
+	w.ScheduleBlockUpdate(pos, time.Millisecond*50)
 }
 
 // armFace ...
