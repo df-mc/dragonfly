@@ -63,6 +63,11 @@ func (o Observer) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.W
 	w.ScheduleBlockUpdate(o, pos, time.Millisecond*100)
 }
 
+// PistonUpdate ...
+func (o Observer) PistonUpdate(pos cube.Pos, w *world.World) {
+	w.ScheduleBlockUpdate(o, pos, time.Millisecond*100)
+}
+
 // UseOnBlock ...
 func (o Observer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, o)

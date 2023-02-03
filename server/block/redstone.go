@@ -37,6 +37,12 @@ type PistonBreakable interface {
 	PistonBreakable() bool
 }
 
+// PistonUpdater represents a block that can be updated through a piston movement.
+type PistonUpdater interface {
+	// PistonUpdate is called when a piston moves the block.
+	PistonUpdate(pos cube.Pos, w *world.World)
+}
+
 // wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
 // wires in order to more efficiently and compute new redstone wire power levels and determine the order in which other
 // blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo and MCHPRS.

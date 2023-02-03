@@ -214,8 +214,11 @@ func (p Piston) push(pos cube.Pos, w *world.World) bool {
 				}
 
 				w.SetBlock(side, moving.Moving, nil)
-				if r, ok := moving.Moving.(RedstoneUpdater); ok {
-					r.RedstoneUpdate(side, w)
+				if u, ok := moving.Moving.(RedstoneUpdater); ok {
+					u.RedstoneUpdate(side, w)
+				}
+				if u, ok := moving.Moving.(PistonUpdater); ok {
+					u.PistonUpdate(side, w)
 				}
 				updateAroundRedstone(side, w)
 			}
@@ -291,6 +294,9 @@ func (p Piston) pull(pos cube.Pos, w *world.World) bool {
 				w.SetBlock(side, moving.Moving, nil)
 				if r, ok := moving.Moving.(RedstoneUpdater); ok {
 					r.RedstoneUpdate(side, w)
+				}
+				if r, ok := moving.Moving.(PistonUpdater); ok {
+					r.PistonUpdate(side, w)
 				}
 				updateAroundRedstone(side, w)
 			}
