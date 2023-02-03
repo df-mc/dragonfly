@@ -20,7 +20,12 @@ type Observer struct {
 }
 
 // Source ...
-func (o Observer) Source() bool {
+func (Observer) Source() bool {
+	return true
+}
+
+// RedstoneBlocking ...
+func (Observer) RedstoneBlocking() bool {
 	return true
 }
 
@@ -30,7 +35,7 @@ func (o Observer) WeakPower(pos cube.Pos, face cube.Face, w *world.World, accoun
 }
 
 // StrongPower ...
-func (o Observer) StrongPower(_ cube.Pos, face cube.Face, w *world.World, _ bool) int {
+func (o Observer) StrongPower(_ cube.Pos, face cube.Face, _ *world.World, _ bool) int {
 	if !o.Powered || face != o.Facing {
 		return 0
 	}

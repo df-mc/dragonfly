@@ -221,6 +221,11 @@ type lightDiffuser interface {
 	LightDiffusionLevel() uint8
 }
 
+// redstoneBlocking is identical to a block.RedstoneBlocking.
+type redstoneBlocking interface {
+	RedstoneBlocking() bool
+}
+
 // replaceableBlock represents a block that may be replaced by another block automatically. An example is
 // grass, which may be replaced by clicking it with another block.
 type replaceableBlock interface {

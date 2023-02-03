@@ -13,6 +13,12 @@ type RedstoneUpdater interface {
 	RedstoneUpdate(pos cube.Pos, w *world.World)
 }
 
+// RedstoneBlocking represents a block that blocks redstone signals.
+type RedstoneBlocking interface {
+	// RedstoneBlocking returns true if the block blocks redstone signals.
+	RedstoneBlocking() bool
+}
+
 // ComparatorEmitter represents a block that can emit a redstone signal through a comparator.
 type ComparatorEmitter interface {
 	// ComparatorSignal returns the signal strength that is emitted through a comparator.
