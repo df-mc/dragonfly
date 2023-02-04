@@ -125,16 +125,17 @@ func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		return
 	}
 
-	it := items[r.Intn(len(items))]
+	sourceItem := items[r.Intn(len(items))]
+	targetItem := sourceItem.Grow(-sourceItem.Count() + 1)
 	if c, ok := w.Block(pos.Side(d.Facing)).(Container); ok {
-		if _, err := c.Inventory().AddItem(it.Grow(-it.Count() + 1)); err != nil {
+		if _, err := c.Inventory().AddItem(targetItem); err != nil {
 			return
 		}
-		_ = d.Inventory().RemoveItem(it.Grow(-1))
+		_ = d.Inventory().RemoveItem(targetItem)
 		return
 	}
 
-	_ = d.Inventory().RemoveItem(it.Grow(-1))
+	_ = d.Inventory().RemoveItem(targetItem)
 
 	n := r.Float64()/10 + 0.2
 
@@ -152,7 +153,7 @@ func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 	w.PlaySound(pos.Vec3Centre(), sound.Dispense{})
 	w.AddEntity(w.EntityRegistry().Config().Item(
-		it.Grow(-it.Count()+1),
+		targetItem,
 		pos.Vec3Centre().Add(cube.Pos{}.Side(d.Facing).Vec3().Mul(0.7)),
 		mgl64.Vec3{
 			(r.Float64()*2-1)*6*0.0075 + xOffset*xMultiplier*n,
