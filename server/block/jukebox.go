@@ -20,7 +20,7 @@ type Jukebox struct {
 }
 
 // Source ...
-func (j Jukebox) Source() bool {
+func (Jukebox) Source() bool {
 	return true
 }
 
@@ -33,12 +33,12 @@ func (j Jukebox) WeakPower(cube.Pos, cube.Face, *world.World, bool) int {
 }
 
 // StrongPower ...
-func (j Jukebox) StrongPower(cube.Pos, cube.Face, *world.World, bool) int {
+func (Jukebox) StrongPower(cube.Pos, cube.Face, *world.World, bool) int {
 	return 0
 }
 
 // FuelInfo ...
-func (j Jukebox) FuelInfo() item.FuelInfo {
+func (Jukebox) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
