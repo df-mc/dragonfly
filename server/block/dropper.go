@@ -119,22 +119,22 @@ func (d Dropper) RedstoneUpdate(pos cube.Pos, w *world.World) {
 
 // ScheduledTick ...
 func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	slot, ok := d.randomSlotFromInventory(r)
-	if !ok {
+	items := d.inventory.Items()
+	if len(items) == 0 {
 		w.PlaySound(pos.Vec3Centre(), sound.DispenseFail{})
 		return
 	}
 
-	it, _ := d.Inventory().Item(slot)
+	it := items[r.Intn(len(items))]
 	if c, ok := w.Block(pos.Side(d.Facing)).(Container); ok {
 		if _, err := c.Inventory().AddItem(it.Grow(-it.Count() + 1)); err != nil {
 			return
 		}
-		_ = d.Inventory().SetItem(slot, it.Grow(-1))
+		_ = d.Inventory().RemoveItem(it.Grow(-1))
 		return
 	}
 
-	_ = d.Inventory().SetItem(slot, it.Grow(-1))
+	_ = d.Inventory().RemoveItem(it.Grow(-1))
 
 	n := r.Float64()/10 + 0.2
 
@@ -160,21 +160,6 @@ func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			(r.Float64()*2-1)*6*0.0075 + zOffset*zMultiplier*n,
 		},
 	))
-}
-
-// randomSlotFromInventory returns a random slot from the inventory of the dropper. If the inventory is empty, the
-// second return value is false.
-func (d Dropper) randomSlotFromInventory(r *rand.Rand) (int, bool) {
-	slots := make([]int, 0, d.inventory.Size())
-	for slot, it := range d.inventory.Slots() {
-		if !it.Empty() {
-			slots = append(slots, slot)
-		}
-	}
-	if len(slots) == 0 {
-		return 0, false
-	}
-	return slots[r.Intn(len(slots))], true
 }
 
 // EncodeItem ...
