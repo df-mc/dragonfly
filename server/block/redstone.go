@@ -135,6 +135,7 @@ func updateGateRedstone(centre cube.Pos, w *world.World, face cube.Face) {
 	updateAroundRedstone(pos, w, face)
 }
 
+// receivedRedstonePower returns true if the given position is receiving power from any faces that aren't ignored.
 func receivedRedstonePower(pos cube.Pos, w *world.World, ignoredFaces ...cube.Face) bool {
 	for _, face := range cube.Faces() {
 		if slices.Contains(ignoredFaces, face) {

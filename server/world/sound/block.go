@@ -134,6 +134,12 @@ type PistonExtend struct{ sound }
 // PistonRetract is a sound played when a piston retracts.
 type PistonRetract struct{ sound }
 
+// DispenseFail is a sound played when a dispenser fails to dispense an item.
+type DispenseFail struct{ sound }
+
+// Dispense is a sound played when a dispenser dispenses an item.
+type Dispense struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

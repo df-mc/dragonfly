@@ -153,6 +153,8 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			} else if _, enderChest := b.(block.EnderChest); enderChest {
 				return s.openedWindow.Load(), true
+			} else if _, dropper := b.(block.Dropper); dropper {
+				return s.openedWindow.Load(), true
 			}
 		}
 	case protocol.ContainerBarrel:

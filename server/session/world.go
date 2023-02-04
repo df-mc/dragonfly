@@ -755,6 +755,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventPistonOut
 	case sound.PistonRetract:
 		pk.SoundType = packet.SoundEventPistonIn
+	case sound.DispenseFail:
+		pk.SoundType = packet.SoundEventBlockClickFail
+	case sound.Dispense:
+		pk.SoundType = packet.SoundEventBlockClick
 	}
 	s.writePacket(pk)
 }
@@ -972,6 +976,8 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 		containerType = protocol.ContainerTypeBlastFurnace
 	case block.Smoker:
 		containerType = protocol.ContainerTypeSmoker
+	case block.Dropper:
+		containerType = protocol.ContainerTypeDropper
 	}
 
 	s.writePacket(&packet.ContainerOpen{

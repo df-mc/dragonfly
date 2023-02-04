@@ -56,6 +56,7 @@ const (
 	hashDragonEgg
 	hashDriedKelp
 	hashDripstone
+	hashDropper
 	hashEmerald
 	hashEmeraldOre
 	hashEnchantingTable
@@ -393,6 +394,10 @@ func (DriedKelp) Hash() uint64 {
 
 func (Dripstone) Hash() uint64 {
 	return hashDripstone
+}
+
+func (d Dropper) Hash() uint64 {
+	return hashDropper | uint64(d.Facing)<<8 | uint64(boolByte(d.Powered))<<11
 }
 
 func (Emerald) Hash() uint64 {
