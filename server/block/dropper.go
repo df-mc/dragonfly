@@ -119,23 +119,22 @@ func (d Dropper) RedstoneUpdate(pos cube.Pos, w *world.World) {
 
 // ScheduledTick ...
 func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	items := d.inventory.Items()
-	if len(items) == 0 {
+	slot, ok := d.randomSlotFromInventory(r)
+	if !ok {
 		w.PlaySound(pos.Vec3Centre(), sound.DispenseFail{})
 		return
 	}
 
-	sourceItem := items[r.Intn(len(items))]
-	targetItem := sourceItem.Grow(-sourceItem.Count() + 1)
+	it, _ := d.Inventory().Item(slot)
 	if c, ok := w.Block(pos.Side(d.Facing)).(Container); ok {
-		if _, err := c.Inventory().AddItem(targetItem); err != nil {
+		if _, err := c.Inventory().AddItem(it.Grow(-it.Count() + 1)); err != nil {
 			return
 		}
-		_ = d.Inventory().RemoveItem(targetItem)
+		_ = d.Inventory().SetItem(slot, it.Grow(-1))
 		return
 	}
 
-	_ = d.Inventory().RemoveItem(targetItem)
+	_ = d.Inventory().SetItem(slot, it.Grow(-1))
 
 	n := r.Float64()/10 + 0.2
 
@@ -153,7 +152,7 @@ func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 	w.PlaySound(pos.Vec3Centre(), sound.Dispense{})
 	w.AddEntity(w.EntityRegistry().Config().Item(
-		targetItem,
+		it.Grow(-it.Count()+1),
 		pos.Vec3Centre().Add(cube.Pos{}.Side(d.Facing).Vec3().Mul(0.7)),
 		mgl64.Vec3{
 			(r.Float64()*2-1)*6*0.0075 + xOffset*xMultiplier*n,
@@ -161,6 +160,21 @@ func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			(r.Float64()*2-1)*6*0.0075 + zOffset*zMultiplier*n,
 		},
 	))
+}
+
+// randomSlotFromInventory returns a random slot from the inventory of the dropper. If the inventory is empty, the
+// second return value is false.
+func (d Dropper) randomSlotFromInventory(r *rand.Rand) (int, bool) {
+	slots := make([]int, 0, d.inventory.Size())
+	for slot, it := range d.inventory.Slots() {
+		if !it.Empty() {
+			slots = append(slots, slot)
+		}
+	}
+	if len(slots) == 0 {
+		return 0, false
+	}
+	return slots[r.Intn(len(slots))], true
 }
 
 // EncodeItem ...
