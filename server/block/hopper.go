@@ -27,6 +27,11 @@ type Hopper struct {
 	// colour codes.
 	CustomName string
 
+	// LastTick is the last world tick that the hopper was ticked.
+	LastTick int64
+	// TransferCooldown is the duration until the hopper can transfer items again.
+	TransferCooldown int64
+
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
 	viewers   map[ContainerViewer]struct{}
@@ -112,8 +117,87 @@ func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	return placed(ctx)
 }
 
+// Tick ...
+func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
+	h.TransferCooldown--
+	h.LastTick = currentTick
+	if !h.Powered {
+		h.extractItemEntity(pos, w)
+	}
+	if h.TransferCooldown > 0 {
+		w.SetBlock(pos, h, nil)
+		return
+	}
+
+	h.TransferCooldown = 0
+	if h.Powered {
+		w.SetBlock(pos, h, nil)
+		return
+	}
+
+	inserted := h.insertItem(pos, w)
+	extracted := h.extractItem(pos, w)
+	if inserted || extracted {
+		h.TransferCooldown = 8
+		w.SetBlock(pos, h, nil)
+	}
+}
+
+// insertItem ...
+func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
+	// TODO
+	return false
+}
+
+// extractItem ...
+func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
+	origin, ok := w.Block(pos.Side(cube.FaceUp)).(Container)
+	if !ok {
+		return false
+	}
+
+	var (
+		targetSlot  int
+		targetStack item.Stack
+	)
+	switch o := origin.(type) {
+	case BlastFurnace, Furnace, Smoker:
+		fuel, _ := o.Inventory().Item(1)
+		if b, ok := fuel.Item().(item.Bucket); ok && b.Empty() {
+			targetStack, targetSlot = fuel, 1
+		} else if output, _ := o.Inventory().Item(2); !output.Empty() {
+			targetStack, targetSlot = output, 2
+		}
+	default:
+		for slot, stack := range origin.Inventory().Items() {
+			if stack.Empty() {
+				continue
+			}
+			targetStack, targetSlot = stack, slot
+			break
+		}
+	}
+	if targetStack.Empty() {
+		// We don't have any items to extract.
+		return false
+	}
+
+	_, err := h.inventory.AddItem(targetStack.Grow(-targetStack.Count() + 1))
+	if err != nil {
+		// The hopper is full.
+		return false
+	}
+	_ = origin.Inventory().SetItem(targetSlot, targetStack.Grow(-1))
+	return true
+}
+
+// extractItemEntity ...
+func (h Hopper) extractItemEntity(pos cube.Pos, w *world.World) {
+	// TODO
+}
+
 // EncodeItem ...
-func (h Hopper) EncodeItem() (name string, meta int16) {
+func (Hopper) EncodeItem() (name string, meta int16) {
 	return "minecraft:hopper", 0
 }
 
@@ -134,8 +218,9 @@ func (h Hopper) EncodeNBT() map[string]any {
 		h.Facing, h.Powered, h.CustomName = facing, powered, customName
 	}
 	m := map[string]any{
-		"Items": nbtconv.InvToNBT(h.inventory),
-		"id":    "Hopper",
+		"Items":            nbtconv.InvToNBT(h.inventory),
+		"TransferCooldown": int32(h.TransferCooldown),
+		"id":               "Hopper",
 	}
 	if h.CustomName != "" {
 		m["CustomName"] = h.CustomName
@@ -151,6 +236,7 @@ func (h Hopper) DecodeNBT(data map[string]any) any {
 	h.Facing = facing
 	h.Powered = powered
 	h.CustomName = nbtconv.String(data, "CustomName")
+	h.TransferCooldown = int64(nbtconv.Int32(data, "TransferCooldown"))
 	nbtconv.InvFromNBT(h.inventory, nbtconv.Slice(data, "Items"))
 	return h
 }
