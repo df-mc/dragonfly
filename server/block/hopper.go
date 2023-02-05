@@ -18,6 +18,7 @@ import (
 // TODO: Functionality!
 type Hopper struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Facing is the direction the hopper is facing.
 	Facing cube.Face
@@ -58,6 +59,11 @@ func NewHopper() Hopper {
 func (Hopper) Model() world.BlockModel {
 	// TODO: Implement me.
 	return model.Solid{}
+}
+
+// SideClosed ...
+func (Hopper) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
 }
 
 // BreakInfo ...
