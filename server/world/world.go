@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -31,8 +30,8 @@ type World struct {
 
 	o sync.Once
 
-	set     *Settings
-	handler atomic.Value[Handler]
+	set *Settings
+	*HandlerManager
 
 	weather
 	ticker
@@ -646,7 +645,15 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 // the sound if they're close enough.
 func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
 	ctx := event.C()
-	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
+
+	evt := EventSound{
+		w,
+		pos,
+		s,
+		ctx,
+	}
+
+	if w.HandleSound(evt); evt.Cancelled() {
 		return
 	}
 	for _, viewer := range w.Viewers(pos) {
@@ -690,7 +697,12 @@ func (w *World) AddEntity(e Entity) {
 		showEntity(e, v)
 	}
 
-	w.Handler().HandleEntitySpawn(e)
+	evt := EventEntitySpawn{
+		w,
+		e,
+	}
+
+	w.HandleEntitySpawn(evt)
 }
 
 // add maps an Entity to a World in the entityWorlds map.
@@ -718,7 +730,12 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 
-	w.Handler().HandleEntityDespawn(e)
+	evt := EventEntityDespawn{
+		w,
+		e,
+	}
+
+	w.HandleEntityDespawn(evt)
 
 	worldsMu.Lock()
 	delete(entityWorlds, e)
@@ -964,19 +981,6 @@ func (w *World) updateNeighbour(pos, changedNeighbour cube.Pos) {
 	w.neighbourUpdates = append(w.neighbourUpdates, neighbourUpdate{pos: pos, neighbour: changedNeighbour})
 }
 
-// Handle changes the current Handler of the world. As a result, events called by the world will call
-// handlers of the Handler passed.
-// Handle sets the world's Handler to NopHandler if nil is passed.
-func (w *World) Handle(h Handler) {
-	if w == nil {
-		return
-	}
-	if h == nil {
-		h = NopHandler{}
-	}
-	w.handler.Store(h)
-}
-
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
 // if the position is within one of the chunks that the viewer is watching.
 func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
@@ -1015,8 +1019,14 @@ func (w *World) Close() error {
 // close stops the World from ticking, saves all chunks to the Provider and updates the world's settings.
 func (w *World) close() {
 	// Let user code run anything that needs to be finished before the World is closed.
-	w.Handler().HandleClose()
-	w.Handle(NopHandler{})
+	evt := EventClose{w}
+
+	w.HandleClose(evt)
+
+	w.HandlerManager = &HandlerManager{
+		sync.Mutex{},
+		[]Handler{},
+	}
 
 	close(w.closing)
 	w.running.Wait()
@@ -1127,15 +1137,6 @@ func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 // order to provide synchronisation safety.
 func (w *World) provider() Provider {
 	return w.conf.Provider
-}
-
-// Handler returns the Handler of the world. It should always be used, rather than direct field access, in
-// order to provide synchronisation safety.
-func (w *World) Handler() Handler {
-	if w == nil {
-		return NopHandler{}
-	}
-	return w.handler.Load()
 }
 
 // chunkFromCache attempts to fetch a chunk at the chunk position passed from the cache. If not found, the

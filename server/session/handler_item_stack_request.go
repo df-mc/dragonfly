@@ -165,8 +165,8 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	invB, _ := s.invByID(int32(to.ContainerID))
 
 	ctx := event.C()
-	_ = call(ctx, int(from.Slot), i.Grow(int(count)-i.Count()), invA.Handler().HandleTake)
-	err := call(ctx, int(to.Slot), i.Grow(int(count)-i.Count()), invB.Handler().HandlePlace)
+	_ = call(invA, int(from.Slot), i.Grow(int(count)-i.Count()), ctx, invA.HandleTake)
+	err := call(invB, int(to.Slot), i.Grow(int(count)-i.Count()), ctx, invB.HandlePlace)
 	if err != nil {
 		return err
 	}
@@ -189,10 +189,10 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 	invB, _ := s.invByID(int32(a.Destination.ContainerID))
 
 	ctx := event.C()
-	_ = call(ctx, int(a.Source.Slot), i, invA.Handler().HandleTake)
-	_ = call(ctx, int(a.Source.Slot), dest, invA.Handler().HandlePlace)
-	_ = call(ctx, int(a.Destination.Slot), dest, invB.Handler().HandleTake)
-	err := call(ctx, int(a.Destination.Slot), i, invB.Handler().HandlePlace)
+	_ = call(invA, int(a.Source.Slot), i, ctx, invA.HandleTake)
+	_ = call(invA, int(a.Source.Slot), dest, ctx, invA.HandlePlace)
+	_ = call(invB, int(a.Destination.Slot), dest, ctx, invB.HandleTake)
+	err := call(invB, int(a.Destination.Slot), i, ctx, invB.HandlePlace)
 	if err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	}
 
 	inv, _ := s.invByID(int32(a.Source.ContainerID))
-	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
+	if err := call(inv, int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), event.C(), inv.HandleDrop); err != nil {
 		return err
 	}
 
@@ -500,14 +500,26 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session) {
 	h.pendingResults = nil
 }
 
+type callConstraint interface {
+	Cancelled() bool
+	inventory.EventDrop | inventory.EventPlace | inventory.EventTake
+}
+
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
 // the event.Context was cancelled either before or after the call.
-func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+func call[T callConstraint](inv *inventory.Inventory, slot int, it item.Stack, ctx *event.Context, f func(T)) error {
 	if ctx.Cancelled() {
 		return fmt.Errorf("action was cancelled")
 	}
-	f(ctx, slot, it)
-	if ctx.Cancelled() {
+
+	evt := T{
+		inv,
+		slot,
+		it,
+		ctx,
+	}
+
+	if f(evt); evt.Cancelled() {
 		return fmt.Errorf("action was cancelled")
 	}
 	return nil
