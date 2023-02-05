@@ -550,7 +550,7 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 // sent by the client.
 func (s *Session) SetServerSettings(form form.Form) {
 	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
-	h.forms[h.currentID.Add(1)] = form
+	h.forms[h.currentID.Inc()] = form
 	s.shouldSendSettingsResponse = true
 	marshal, _ := form.MarshalJSON()
 	s.serverSettingsResponse = marshal
