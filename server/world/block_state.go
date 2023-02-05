@@ -69,6 +69,7 @@ func registerBlockState(s blockState) {
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
 	}
+
 	rid := uint32(len(blocks))
 	if s.Name == "minecraft:air" {
 		airRID = rid

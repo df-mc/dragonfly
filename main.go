@@ -3,13 +3,23 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 )
 
 func main() {
+	go func() {
+		err := http.ListenAndServe(":6060", nil)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	log := logrus.New()
 	log.Formatter = &logrus.TextFormatter{ForceColors: true}
 	log.Level = logrus.DebugLevel
@@ -25,7 +35,9 @@ func main() {
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		p.ShowCoordinates()
+	}) {
 	}
 }
 

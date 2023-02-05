@@ -30,6 +30,11 @@ func (Banner) MaxCount() int {
 	return 16
 }
 
+// PistonBreakable ...
+func (Banner) PistonBreakable() bool {
+	return true
+}
+
 // BreakInfo ...
 func (b Banner) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(b))

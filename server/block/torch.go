@@ -42,7 +42,7 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	if face == cube.FaceDown {
 		return false
 	}
-	if _, ok := w.Block(pos).(world.Liquid); ok {
+	if _, ok := w.Liquid(pos); ok {
 		return false
 	}
 	if !w.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, w) {
@@ -90,9 +90,12 @@ func (t Torch) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (t Torch) EncodeBlock() (name string, properties map[string]any) {
-	face := t.Facing.String()
-	if t.Facing == cube.FaceDown {
-		face = "top"
+	face := "unknown"
+	if t.Facing != unknownFace {
+		face = t.Facing.String()
+		if t.Facing == cube.FaceDown {
+			face = "top"
+		}
 	}
 	switch t.Type {
 	case NormalFire():
@@ -105,12 +108,12 @@ func (t Torch) EncodeBlock() (name string, properties map[string]any) {
 
 // allTorches ...
 func allTorches() (torch []world.Block) {
-	for i := cube.Face(0); i < 6; i++ {
-		if i == cube.FaceUp {
+	for _, f := range append(cube.Faces(), unknownFace) {
+		if f == cube.FaceUp {
 			continue
 		}
-		torch = append(torch, Torch{Type: NormalFire(), Facing: i})
-		torch = append(torch, Torch{Type: SoulFire(), Facing: i})
+		torch = append(torch, Torch{Type: NormalFire(), Facing: f})
+		torch = append(torch, Torch{Type: SoulFire(), Facing: f})
 	}
 	return
 }

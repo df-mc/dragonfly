@@ -15,6 +15,11 @@ func (Bedrock) EncodeItem() (name string, meta int16) {
 	return "minecraft:bedrock", 0
 }
 
+// PistonImmovable ...
+func (Bedrock) PistonImmovable() bool {
+	return true
+}
+
 // EncodeBlock ...
 func (b Bedrock) EncodeBlock() (name string, properties map[string]any) {
 	//noinspection SpellCheckingInspection

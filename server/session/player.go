@@ -153,6 +153,10 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			} else if _, enderChest := b.(block.EnderChest); enderChest {
 				return s.openedWindow.Load(), true
+			} else if _, dropper := b.(block.Dropper); dropper {
+				return s.openedWindow.Load(), true
+			} else if _, hopper := b.(block.Hopper); hopper {
+				return s.openedWindow.Load(), true
 			}
 		}
 	case protocol.ContainerBarrel:
@@ -724,9 +728,6 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		t = block.Air{}
 	}
 	if it.BlockRuntimeID > 0 {
-		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
-		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
-		// return air anyway.
 		b, _ := world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
 			t = block.Air{}

@@ -19,8 +19,26 @@ type Jukebox struct {
 	Item item.Stack
 }
 
+// Source ...
+func (Jukebox) Source() bool {
+	return true
+}
+
+// WeakPower ...
+func (j Jukebox) WeakPower(cube.Pos, cube.Face, *world.World, bool) int {
+	if j.Item.Empty() {
+		return 0
+	}
+	return 15
+}
+
+// StrongPower ...
+func (Jukebox) StrongPower(cube.Pos, cube.Face, *world.World, bool) int {
+	return 0
+}
+
 // FuelInfo ...
-func (j Jukebox) FuelInfo() item.FuelInfo {
+func (Jukebox) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
@@ -34,6 +52,7 @@ func (j Jukebox) BreakInfo() BreakInfo {
 		if _, hasDisc := j.Disc(); hasDisc {
 			w.PlaySound(pos.Vec3(), sound.MusicDiscEnd{})
 		}
+		updateAroundRedstone(pos, w)
 	})
 }
 

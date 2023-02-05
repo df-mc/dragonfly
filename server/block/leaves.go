@@ -123,6 +123,11 @@ func (Leaves) LightDiffusionLevel() uint8 {
 	return 1
 }
 
+// PistonBreakable ...
+func (Leaves) PistonBreakable() bool {
+	return true
+}
+
 // SideClosed ...
 func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false

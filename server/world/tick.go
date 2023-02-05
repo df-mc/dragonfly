@@ -81,12 +81,18 @@ func (t ticker) tickScheduledBlocks(tick int64) {
 	for pos, scheduledTick := range t.w.scheduledUpdates {
 		if scheduledTick <= tick {
 			positions = append(positions, pos)
-			delete(t.w.scheduledUpdates, pos)
 		}
 	}
 	t.w.updateMu.Unlock()
 
 	for _, pos := range positions {
+		// We need to incrementally delete each scheduled update from the map, as each block update itself might attempt
+		// to schedule another block update, which could conflict with the current update selection.
+		// TODO: Definitely shouldn't lock like this. I need coffee. And sleep.
+		t.w.updateMu.Lock()
+		delete(t.w.scheduledUpdates, pos)
+		t.w.updateMu.Unlock()
+
 		if ticker, ok := t.w.Block(pos).(ScheduledTicker); ok {
 			ticker.ScheduledTick(pos, t.w, t.w.r)
 		}

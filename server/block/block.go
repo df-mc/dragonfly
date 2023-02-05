@@ -80,7 +80,10 @@ type Frictional interface {
 	Friction() float64
 }
 
-func calculateFace(user item.User, placePos cube.Pos) cube.Face {
+// unknownFace is a face that is used for certain block items. This should not be exposed in the API.
+var unknownFace = cube.Face(len(cube.Faces()))
+
+func calculateAnySidedFace(user item.User, placePos cube.Pos, swapHorizontal bool) cube.Face {
 	userPos := user.Position()
 	pos := cube.PosFromVec3(userPos)
 	if abs(pos[0]-placePos[0]) < 2 && abs(pos[2]-placePos[2]) < 2 {
@@ -95,7 +98,11 @@ func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 			return cube.FaceDown
 		}
 	}
-	return user.Rotation().Direction().Opposite().Face()
+	face := user.Rotation().Direction().Face()
+	if swapHorizontal {
+		face = face.Opposite()
+	}
+	return face
 }
 
 func abs(x int) int {

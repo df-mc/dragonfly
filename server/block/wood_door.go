@@ -48,6 +48,11 @@ func (d WoodDoor) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
 }
 
+// PistonBreakable ...
+func (WoodDoor) PistonBreakable() bool {
+	return true
+}
+
 // NeighbourUpdateTick ...
 func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if d.Top {

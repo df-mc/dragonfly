@@ -45,6 +45,11 @@ func (c EnderChest) LightEmissionLevel() uint8 {
 	return 7
 }
 
+// PistonImmovable ...
+func (EnderChest) PistonImmovable() bool {
+	return true
+}
+
 // SideClosed ...
 func (EnderChest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false

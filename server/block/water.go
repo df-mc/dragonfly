@@ -54,6 +54,11 @@ func (Water) SpreadDecay() int {
 	return 1
 }
 
+// PistonBreakable ...
+func (Water) PistonBreakable() bool {
+	return true
+}
+
 // WithDepth returns the water with the depth passed.
 func (w Water) WithDepth(depth int, falling bool) world.Liquid {
 	w.Depth = depth
@@ -113,7 +118,7 @@ func (w Water) ScheduledTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 }
 
 // NeighbourUpdateTick ...
-func (Water) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
+func (w Water) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
 	if wo.Dimension().WaterEvaporates() {
 		// Particles are spawned client-side.
 		wo.SetLiquid(pos, nil)

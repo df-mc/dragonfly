@@ -75,13 +75,18 @@ func (b Beacon) EncodeNBT() map[string]any {
 }
 
 // SideClosed ...
-func (b Beacon) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Beacon) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
 // LightEmissionLevel ...
 func (Beacon) LightEmissionLevel() uint8 {
 	return 15
+}
+
+// PistonImmovable ...
+func (Beacon) PistonImmovable() bool {
+	return true
 }
 
 // Level returns an integer 0-4 which defines the current pyramid level of the beacon.

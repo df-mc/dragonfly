@@ -27,6 +27,11 @@ func (d DragonEgg) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
+// PistonBreakable ...
+func (DragonEgg) PistonBreakable() bool {
+	return true
+}
+
 // teleport ...
 func (d DragonEgg) teleport(pos cube.Pos, w *world.World) {
 	for i := 0; i < 1000; i++ {
