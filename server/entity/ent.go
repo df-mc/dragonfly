@@ -40,6 +40,8 @@ type Ent struct {
 	vel mgl64.Vec3
 	rot cube.Rotation
 
+	name string
+
 	fireDuration time.Duration
 }
 
@@ -87,6 +89,17 @@ func (e *Ent) Potion() potion.Potion {
 		return pot.Potion()
 	}
 	return potion.Potion{}
+}
+
+// Immobile checks if the underlying behaviour of the entity marked the entity
+// as immobile.
+func (e *Ent) Immobile() bool {
+	if imm, ok := e.conf.Behaviour.(interface {
+		Immobile() bool
+	}); ok {
+		return imm.Immobile()
+	}
+	return false
 }
 
 // Position returns the current position of the entity.
@@ -152,6 +165,26 @@ func (e *Ent) SetOnFire(duration time.Duration) {
 // Extinguish ...
 func (e *Ent) Extinguish() {
 	e.SetOnFire(0)
+}
+
+// NameTag returns the name tag of the entity. An empty string is returned if
+// no name tag was set.
+func (e *Ent) NameTag() string {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.name
+}
+
+// SetNameTag changes the name tag of an entity. The name tag is removed if an
+// empty string is passed.
+func (e *Ent) SetNameTag(s string) {
+	e.mu.Lock()
+	e.name = s
+	e.mu.Unlock()
+
+	for _, v := range e.World().Viewers(e.Position()) {
+		v.ViewEntityState(e)
+	}
 }
 
 // Tick ticks Ent, progressing its lifetime and closing the entity if it is

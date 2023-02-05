@@ -282,12 +282,12 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec
 // rotation of the projectile based on its velocity and updates the velocity
 // based on gravity and drag.
 func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
-	w, pos, vel, rot := e.World(), e.pos, e.vel, e.rot
+	w, pos, vel := e.World(), e.pos, e.vel
 	viewers := w.Viewers(pos)
 
 	velBefore := vel
 	vel = lt.mc.applyHorizontalForces(w, pos, lt.mc.applyVerticalForces(vel))
-	rot = cube.Rotation{
+	rot := cube.Rotation{
 		mgl64.RadToDeg(math.Atan2(vel[0], vel[2])),
 		mgl64.RadToDeg(math.Atan2(vel[1], math.Hypot(vel[0], vel[2]))),
 	}
