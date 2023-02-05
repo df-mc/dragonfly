@@ -131,8 +131,10 @@ func (s *Session) ViewEntity(e world.Entity) {
 		return
 	case *entity.FallingBlock:
 		metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(v.Block()))
-	case *entity.Text:
-		metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
+	case *entity.Ent:
+		if _, ok := e.Type().(entity.TextType); ok {
+			metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(block.Air{}))
+		}
 	}
 	if v, ok := e.Type().(NetworkEncodeableEntity); ok {
 		id = v.NetworkEncodeEntity()
