@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -136,7 +137,8 @@ func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 	_ = d.Inventory().SetItem(slot, it.Grow(-1))
 
-	n := r.Float64()/10 + 0.2
+	dist := r.Float64()/10 + 0.2
+	sourcePos := pos.Vec3Centre().Add(cube.Pos{}.Side(d.Facing).Vec3().Mul(0.7))
 
 	xOffset, zOffset := 0.0, 0.0
 	if axis := d.Facing.Axis(); axis == cube.X {
@@ -150,14 +152,15 @@ func (d Dropper) ScheduledTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 		xMultiplier, zMultiplier = 1.0, 1.0
 	}
 
-	w.PlaySound(pos.Vec3Centre(), sound.Dispense{})
+	w.PlaySound(sourcePos, sound.Dispense{})
+	w.AddParticle(sourcePos, particle.Dispense{})
 	w.AddEntity(w.EntityRegistry().Config().Item(
 		it.Grow(-it.Count()+1),
-		pos.Vec3Centre().Add(cube.Pos{}.Side(d.Facing).Vec3().Mul(0.7)),
+		sourcePos,
 		mgl64.Vec3{
-			(r.Float64()*2-1)*6*0.0075 + xOffset*xMultiplier*n,
+			(r.Float64()*2-1)*6*0.0075 + xOffset*xMultiplier*dist,
 			(r.Float64()*2-1)*6*0.0075 + 0.2,
-			(r.Float64()*2-1)*6*0.0075 + zOffset*zMultiplier*n,
+			(r.Float64()*2-1)*6*0.0075 + zOffset*zMultiplier*dist,
 		},
 	))
 }
