@@ -19,30 +19,6 @@ type RedstoneBlocking interface {
 	RedstoneBlocking() bool
 }
 
-// ComparatorEmitter represents a block that can emit a redstone signal through a comparator.
-type ComparatorEmitter interface {
-	// ComparatorSignal returns the signal strength that is emitted through a comparator.
-	ComparatorSignal(pos cube.Pos, w *world.World) int
-}
-
-// PistonImmovable represents a block that cannot be moved by a piston.
-type PistonImmovable interface {
-	// PistonImmovable returns whether the block is immovable.
-	PistonImmovable() bool
-}
-
-// PistonBreakable represents a block that can be broken by a piston.
-type PistonBreakable interface {
-	// PistonBreakable returns whether the block can be broken by a piston.
-	PistonBreakable() bool
-}
-
-// PistonUpdater represents a block that can be updated through a piston movement.
-type PistonUpdater interface {
-	// PistonUpdate is called when a piston moves the block.
-	PistonUpdate(pos cube.Pos, w *world.World)
-}
-
 // wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
 // wires in order to more efficiently and compute new redstone wire power levels and determine the order in which other
 // blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo and MCHPRS.

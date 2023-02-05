@@ -149,6 +149,15 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 	return false
 }
 
+// HopperExtractable represents a block that can have its contents extracted by a hopper.
+type HopperExtractable interface {
+	Container
+
+	// ExtractItem attempts to extract a single item from the container. If the extraction was successful, the item is
+	// returned. If the extraction was unsuccessful, the item stack returned will be empty.
+	ExtractItem() (item.Stack, int)
+}
+
 // extractItem ...
 func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 	origin, ok := w.Block(pos.Side(cube.FaceUp)).(Container)
@@ -160,15 +169,7 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 		targetSlot  int
 		targetStack item.Stack
 	)
-	switch o := origin.(type) {
-	case BlastFurnace, Furnace, Smoker:
-		fuel, _ := o.Inventory().Item(1)
-		if b, ok := fuel.Item().(item.Bucket); ok && b.Empty() {
-			targetStack, targetSlot = fuel, 1
-		} else if output, _ := o.Inventory().Item(2); !output.Empty() {
-			targetStack, targetSlot = output, 2
-		}
-	default:
+	if e, ok := origin.(HopperExtractable); !ok {
 		for slot, stack := range origin.Inventory().Items() {
 			if stack.Empty() {
 				continue
@@ -176,6 +177,8 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 			targetStack, targetSlot = stack, slot
 			break
 		}
+	} else {
+		targetStack, targetSlot = e.ExtractItem()
 	}
 	if targetStack.Empty() {
 		// We don't have any items to extract.

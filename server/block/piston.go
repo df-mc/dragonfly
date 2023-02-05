@@ -38,6 +38,24 @@ type Piston struct {
 	NewState int
 }
 
+// PistonImmovable represents a block that cannot be moved by a piston.
+type PistonImmovable interface {
+	// PistonImmovable returns whether the block is immovable.
+	PistonImmovable() bool
+}
+
+// PistonBreakable represents a block that can be broken by a piston.
+type PistonBreakable interface {
+	// PistonBreakable returns whether the block can be broken by a piston.
+	PistonBreakable() bool
+}
+
+// PistonUpdater represents a block that can be updated through a piston movement.
+type PistonUpdater interface {
+	// PistonUpdate is called when a piston moves the block.
+	PistonUpdate(pos cube.Pos, w *world.World)
+}
+
 // BreakInfo ...
 func (p Piston) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, alwaysHarvestable, pickaxeEffective, oneOf(Piston{Sticky: p.Sticky}))

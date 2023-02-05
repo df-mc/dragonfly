@@ -85,6 +85,17 @@ func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 	delete(s.viewers, v)
 }
 
+// ExtractItem ...
+func (s *smelter) ExtractItem() (item.Stack, int) {
+	fuel, _ := s.Inventory().Item(1)
+	if b, ok := fuel.Item().(item.Bucket); ok && b.Empty() {
+		return fuel, 1
+	} else if output, _ := s.Inventory().Item(2); !output.Empty() {
+		return output, 2
+	}
+	return item.Stack{}, 0
+}
+
 // setExperience sets the collected experience of the smelter to the given value.
 func (s *smelter) setExperience(xp int) {
 	s.mu.Lock()

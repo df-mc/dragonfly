@@ -24,11 +24,6 @@ func (c Cake) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
-// ComparatorSignal ...
-func (c Cake) ComparatorSignal(cube.Pos, *world.World) int {
-	return (7 - c.Bites) * 2
-}
-
 // UseOnBlock ...
 func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(w, pos, face, c)
