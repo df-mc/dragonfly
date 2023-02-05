@@ -46,7 +46,16 @@ func (it *Item) Type() world.EntityType {
 
 // Item returns the item stack that the item entity holds.
 func (it *Item) Item() item.Stack {
+	it.mu.Lock()
+	defer it.mu.Unlock()
 	return it.i
+}
+
+// SetItem sets the item stack that the item entity holds.
+func (it *Item) SetItem(i item.Stack) {
+	it.mu.Lock()
+	defer it.mu.Unlock()
+	it.i = i
 }
 
 // SetPickupDelay sets a delay passed until the item can be picked up. If d is negative or d.Seconds()*20

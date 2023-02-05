@@ -154,7 +154,8 @@ type HopperExtractable interface {
 	Container
 
 	// ExtractItem attempts to extract a single item from the container. If the extraction was successful, the item is
-	// returned. If the extraction was unsuccessful, the item stack returned will be empty.
+	// returned. If the extraction was unsuccessful, the item stack returned will be empty. ExtractItem by itself does
+	// should not remove the item from the container, but instead return the item that would be removed.
 	ExtractItem() (item.Stack, int)
 }
 
@@ -194,9 +195,36 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 	return true
 }
 
+// itemEntity ...
+type itemEntity interface {
+	world.Entity
+
+	Item() item.Stack
+	SetItem(item.Stack)
+}
+
 // extractItemEntity ...
 func (h Hopper) extractItemEntity(pos cube.Pos, w *world.World) {
-	// TODO
+	for _, e := range w.EntitiesWithin(cube.Box(0, 1, 0, 1, 2, 1).Translate(pos.Vec3()), func(entity world.Entity) bool {
+		_, ok := entity.(itemEntity)
+		return !ok
+	}) {
+		i := e.(itemEntity)
+
+		stack := i.Item()
+		count, _ := h.inventory.AddItem(stack)
+		if count == 0 {
+			// We couldn't add any of the item to the inventory, so we continue to the next item entity.
+			continue
+		}
+
+		if stack = stack.Grow(-count); stack.Empty() {
+			_ = i.Close()
+			return
+		}
+		i.SetItem(stack)
+		return
+	}
 }
 
 // EncodeItem ...
