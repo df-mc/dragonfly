@@ -8,13 +8,11 @@ type Button struct {
 	Name string
 	// Activation is the specific method of activation required by the button.
 	Activation ActivationType
-	// Type is the type of button / action it takes.
-	Type ButtonType
 }
 
 // NewButton returns a new Button with the name, activationType, and buttonType passed.
-func NewButton(name string, activationType ActivationType, buttonType ButtonType) Button {
-	return Button{Name: name, Activation: activationType, Type: buttonType}
+func NewButton(name string, activationType ActivationType) Button {
+	return Button{Name: name, Activation: activationType}
 }
 
 // MarshalJSON ...
@@ -23,7 +21,7 @@ func (b Button) MarshalJSON() ([]byte, error) {
 		"button_name": b.Name,
 		"text":        "", // Buttons don't work if this value isn't sent.
 		"mode":        b.Activation.Uint8(),
-		"type":        b.Type.Uint8(),
+		"type":        1,
 	}
 	return json.Marshal(data)
 }

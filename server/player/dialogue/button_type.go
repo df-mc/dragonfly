@@ -25,19 +25,3 @@ func ActivationClose() ActivationType {
 func ActivationEnter() ActivationType {
 	return ActivationType{2}
 }
-
-type button uint8
-
-// ButtonType represents the type of Button. URL, COMMAND, and UNKNOWN are all the button types.
-type ButtonType struct {
-	button
-}
-
-func (b button) Uint8() uint8 {
-	return uint8(b)
-}
-
-// CommandButton is a button meant to execute a command.
-func CommandButton() ButtonType {
-	return ButtonType{1}
-}
