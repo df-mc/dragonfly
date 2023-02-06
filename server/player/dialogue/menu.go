@@ -30,7 +30,7 @@ func NewMenu(npc world.NPC, title ...any) Menu {
 // pass the threshold of 6, it will return an empty Menu and an error.
 func (m Menu) WithButtons(buttons ...Button) (Menu, error) {
 	if len(m.buttons)+len(buttons) > 6 {
-		return Menu{}, fmt.Errorf("menu has %v buttons, an addition of %v will pass the 6 buttons threashold", len(m.buttons), len(buttons))
+		return Menu{}, fmt.Errorf("menu has %v buttons, an addition of %v will pass the 6 buttons threshold", len(m.buttons), len(buttons))
 	}
 	m.buttons = append(m.buttons, buttons...)
 	return m, nil
