@@ -4,24 +4,20 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"sync"
 )
 
 // NpcRequestHandler handles the NpcRequest packet.
 type NpcRequestHandler struct {
-	mu        sync.Mutex
-	dialogues map[string]dialogue.Dialogue
+	dialogues dialogue.Dialogue
 }
 
 // Handle ...
 func (h *NpcRequestHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.NPCRequest)
-	h.mu.Lock()
-	d, ok := h.dialogues[s.c.XUID()]
-	h.mu.Unlock()
-	if !ok {
+	if h.dialogues == nil {
 		return fmt.Errorf("no dialogue menu for player with xuid %v", s.c.XUID())
 	}
+	d := h.dialogues
 	m := d.Menu()
 	switch pk.RequestType {
 	case packet.NPCRequestActionExecuteAction:
@@ -38,9 +34,7 @@ func (h *NpcRequestHandler) Handle(p packet.Packet, s *Session) error {
 		if c, ok := d.(dialogue.Closer); ok {
 			c.Close(s.Controllable())
 		}
-		h.mu.Lock()
-		delete(h.dialogues, s.c.XUID())
-		h.mu.Unlock()
+		h.dialogues = nil
 	}
 	return nil
 }

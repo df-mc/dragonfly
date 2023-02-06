@@ -335,13 +335,9 @@ func (s *Session) SendDialogue(d dialogue.Dialogue) {
 	h := s.handlers[packet.IDNPCRequest].(*NpcRequestHandler)
 
 	m := d.Menu()
-	h.mu.Lock()
-	h.dialogues[s.c.XUID()] = d
-	h.mu.Unlock()
+	h.dialogues = d
 
-	s.entityMutex.Lock()
-	RID := s.entityRuntimeIDs[m.NPC()]
-	s.entityMutex.Unlock()
+	RID := s.entityRuntimeID(m.NPC())
 
 	aj, _ := json.Marshal(m)
 	s.writePacket(&packet.NPCDialogue{
@@ -360,23 +356,14 @@ func (s *Session) CloseDialogue(d dialogue.Dialogue) {
 	h := s.handlers[packet.IDNPCRequest].(*NpcRequestHandler)
 
 	m := d.Menu()
-	s.entityMutex.Lock()
-	RID := s.entityRuntimeIDs[m.NPC()]
-	s.entityMutex.Unlock()
+	RID := s.entityRuntimeID(m.NPC())
 
-	h.mu.Lock()
-	_, ok := h.dialogues[s.c.XUID()]
-	h.mu.Unlock()
-	if !ok {
+	if h.dialogues == nil {
 		return
 	}
 	s.writePacket(&packet.NPCDialogue{
 		EntityUniqueID: RID,
 		ActionType:     packet.NPCDialogueActionClose,
-		Dialogue:       m.Body(),
-		SceneName:      "default",
-		NPCName:        m.Title(),
-		ActionJSON:     "",
 	})
 }
 
