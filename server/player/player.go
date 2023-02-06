@@ -398,7 +398,7 @@ func (p *Player) SendDialogue(d dialogue.Dialogue) {
 	p.session().SendDialogue(d)
 }
 
-// CloseDialogue closes any dialogue that may be open to a user. Note that when this dialogue is closed, if the dialogue
+// CloseDialogue closes any dialogue that may be open to a user. Note that when this method is called, if the dialogue
 // implements dialogue.Closer the Close method will still execute.
 func (p *Player) CloseDialogue(d dialogue.Dialogue) {
 	p.session().CloseDialogue(d)
