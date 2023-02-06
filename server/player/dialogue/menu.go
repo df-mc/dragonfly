@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-// Menu represents a npc dialogue. It contains a title, body, entity, and a number of buttons no more than
-// 6.
+// Menu represents a npc dialogue. It contains a title, body, entity, and a number of buttons no more than 6.
 type Menu struct {
 	title, body string
 	npc         world.NPC
