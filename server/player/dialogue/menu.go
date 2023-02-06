@@ -11,10 +11,8 @@ import (
 // 6.
 type Menu struct {
 	title, body string
-	// action represents the action this menu is executing. This value is either packet.NPCDialogueActionOpen or
-	// packet.NPCDialogueActionClose.
-	npc     world.NPC
-	buttons []Button
+	npc         world.NPC
+	buttons     []Button
 }
 
 // NewMenu creates a new Menu with the Dialogue passed. Title is formatted with accordance to the rules of fmt.Sprintln.
