@@ -6,7 +6,7 @@ import "encoding/json"
 type Button struct {
 	// Name is the name of the button and is displayed to the user.
 	Name string
-	// Activation is the specific method of activation required by the button. CLICK = 0, CLOSE = 1, ENTER = 2.
+	// Activation is the specific method of activation required by the button.
 	Activation ActivationType
 	// Type is the type of button / action it takes.
 	Type ButtonType

@@ -41,8 +41,3 @@ func (b button) Uint8() uint8 {
 func CommandButton() ButtonType {
 	return ButtonType{1}
 }
-
-// UnknownButton has unknown behaviour as of the moment.
-func UnknownButton() ButtonType {
-	return ButtonType{2}
-}
