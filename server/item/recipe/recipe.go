@@ -24,10 +24,26 @@ type Shapeless struct {
 
 // NewShapeless creates a new shapeless recipe and returns it. The recipe can only be crafted on the block passed in the
 // parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
-// player's inventory. If nil is passed, the block will be autofilled as a crafting table.
+// player's inventory.
 func NewShapeless(input []item.Stack, output item.Stack, block string) Shapeless {
 	return Shapeless{recipe: recipe{
 		input:  input,
+		output: []item.Stack{output},
+		block:  block,
+	}}
+}
+
+// Smithing represents a recipe only craftable on a smithing table.
+type Smithing struct {
+	recipe
+}
+
+// NewSmithing creates a new smithing recipe and returns it. The recipe can only be crafted on the block passed in the
+// parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
+// player's inventory.
+func NewSmithing(base, addition, output item.Stack, block string) Smithing {
+	return Smithing{recipe: recipe{
+		input:  []item.Stack{base, addition},
 		output: []item.Stack{output},
 		block:  block,
 	}}
