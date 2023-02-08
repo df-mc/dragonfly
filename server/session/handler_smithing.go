@@ -20,8 +20,8 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
 	}
-	if _, shapeless := craft.(recipe.Shapeless); !shapeless {
-		return fmt.Errorf("recipe with network id %v is not a shapeless recipe", a.RecipeNetworkID)
+	if _, shapeless := craft.(recipe.Smithing); !shapeless {
+		return fmt.Errorf("recipe with network id %v is not a smithing recipe", a.RecipeNetworkID)
 	}
 	if craft.Block() != "smithing_table" {
 		return fmt.Errorf("recipe with network id %v is not a smithing table recipe", a.RecipeNetworkID)

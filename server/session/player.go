@@ -93,7 +93,45 @@ func (s *Session) SendRespawn(pos mgl64.Vec3) {
 
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
-	s.writePacket(&packet.CraftingData{Recipes: s.protocolRecipes(), ClearRecipes: true})
+	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	for index, i := range recipe.Recipes() {
+		networkID := uint32(index) + 1
+		s.recipes[networkID] = i
+
+		switch i := i.(type) {
+		case recipe.Shapeless:
+			recipes = append(recipes, &protocol.ShapelessRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Input:           stacksToIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		case recipe.Shaped:
+			recipes = append(recipes, &protocol.ShapedRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Width:           int32(i.Shape().Width()),
+				Height:          int32(i.Shape().Height()),
+				Input:           stacksToIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		case recipe.Smithing:
+			input, output := stacksToIngredientItems(i.Input()), stacksToRecipeStacks(i.Output())
+			recipes = append(recipes, &protocol.SmithingTransformRecipe{
+				RecipeID:        uuid.New().String(),
+				Base:            input[0],
+				Addition:        input[1],
+				Result:          output[0],
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		}
+	}
+	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
 }
 
 // sendInv sends the inventory passed to the client with the window ID.
@@ -657,39 +695,6 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 			},
 		},
 	})
-}
-
-// protocolRecipes returns all recipes as protocol recipes.
-func (s *Session) protocolRecipes() []protocol.Recipe {
-	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
-	for index, i := range recipe.Recipes() {
-		networkID := uint32(index) + 1
-		s.recipes[networkID] = i
-
-		switch i := i.(type) {
-		case recipe.Shapeless:
-			recipes = append(recipes, &protocol.ShapelessRecipe{
-				RecipeID:        uuid.New().String(),
-				Priority:        int32(i.Priority()),
-				Input:           stacksToIngredientItems(i.Input()),
-				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           i.Block(),
-				RecipeNetworkID: networkID,
-			})
-		case recipe.Shaped:
-			recipes = append(recipes, &protocol.ShapedRecipe{
-				RecipeID:        uuid.New().String(),
-				Priority:        int32(i.Priority()),
-				Width:           int32(i.Shape().Width()),
-				Height:          int32(i.Shape().Height()),
-				Input:           stacksToIngredientItems(i.Input()),
-				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           i.Block(),
-				RecipeNetworkID: networkID,
-			})
-		}
-	}
-	return recipes
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.
