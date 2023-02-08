@@ -623,12 +623,18 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventFallSmall
 	case sound.Burp:
 		pk.SoundType = packet.SoundEventBurp
-	case sound.Door:
-		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventSoundOpenDoor,
-			Position:  vec64To32(pos),
-		})
-		return
+	case sound.DoorOpen:
+		pk.SoundType, pk.ExtraData = packet.SoundEventDoorOpen, int32(world.BlockRuntimeID(so.Block))
+	case sound.DoorClose:
+		pk.SoundType, pk.ExtraData = packet.SoundEventDoorClose, int32(world.BlockRuntimeID(so.Block))
+	case sound.TrapdoorOpen:
+		pk.SoundType, pk.ExtraData = packet.SoundEventTrapdoorOpen, int32(world.BlockRuntimeID(so.Block))
+	case sound.TrapdoorClose:
+		pk.SoundType, pk.ExtraData = packet.SoundEventTrapdoorClose, int32(world.BlockRuntimeID(so.Block))
+	case sound.FenceGateOpen:
+		pk.SoundType, pk.ExtraData = packet.SoundEventFenceGateOpen, int32(world.BlockRuntimeID(so.Block))
+	case sound.FenceGateClose:
+		pk.SoundType, pk.ExtraData = packet.SoundEventFenceGateClose, int32(world.BlockRuntimeID(so.Block))
 	case sound.Deny:
 		pk.SoundType = packet.SoundEventDeny
 	case sound.BlockPlace:
