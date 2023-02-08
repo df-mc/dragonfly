@@ -165,6 +165,8 @@ github.com/sandertv/gophertunnel v1.27.0 h1:8oh7+5FgZBljkUowX4owUurwZsEwMjtx1s9n
 github.com/sandertv/gophertunnel v1.27.0/go.mod h1:hgVpDdaLDP/39Z/YqEU0WFi/DHRDHqvBs3XGqkB4tnU=
 github.com/sandertv/gophertunnel v1.27.1 h1:F1CJcQDC9AxEX/+/KiFWReap/2zURduUp6nxj6WCIMA=
 github.com/sandertv/gophertunnel v1.27.1/go.mod h1:hgVpDdaLDP/39Z/YqEU0WFi/DHRDHqvBs3XGqkB4tnU=
+github.com/sandertv/gophertunnel v1.27.2 h1:oTPNwhRV46TiZerRi8tAmKssmg5T8m2FG6w03MOxWCQ=
+github.com/sandertv/gophertunnel v1.27.2/go.mod h1:hgVpDdaLDP/39Z/YqEU0WFi/DHRDHqvBs3XGqkB4tnU=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=
