@@ -79,9 +79,9 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	shouldSendSettingsResponse bool
-	serverSettingsResponse     []byte
-	serverSettingsFormID       uint32
+	hasSettingsResponse atomic.Bool
+	settingsResponse    atomic.Value[[]byte]
+	settingsFormID      atomic.Uint32
 
 	joinMessage, quitMessage string
 
@@ -152,24 +152,23 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 
 	s := &Session{}
 	*s = Session{
-		openChunkTransactions:      make([]map[uint64]struct{}, 0, 8),
-		closeBackground:            make(chan struct{}),
-		ui:                         inventory.New(53, s.handleInterfaceUpdate),
-		handlers:                   map[uint32]packetHandler{},
-		entityRuntimeIDs:           map[world.Entity]uint64{},
-		entities:                   map[uint64]world.Entity{},
-		hiddenEntities:             map[world.Entity]struct{}{},
-		blobs:                      map[uint64][]byte{},
-		chunkRadius:                int32(r),
-		maxChunkRadius:             int32(maxChunkRadius),
-		conn:                       conn,
-		log:                        log,
-		currentEntityRuntimeID:     1,
-		heldSlot:                   atomic.NewUint32(0),
-		joinMessage:                joinMessage,
-		quitMessage:                quitMessage,
-		openedWindow:               *atomic.NewValue(inventory.New(1, nil)),
-		shouldSendSettingsResponse: false,
+		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
+		closeBackground:        make(chan struct{}),
+		ui:                     inventory.New(53, s.handleInterfaceUpdate),
+		handlers:               map[uint32]packetHandler{},
+		entityRuntimeIDs:       map[world.Entity]uint64{},
+		entities:               map[uint64]world.Entity{},
+		hiddenEntities:         map[world.Entity]struct{}{},
+		blobs:                  map[uint64][]byte{},
+		chunkRadius:            int32(r),
+		maxChunkRadius:         int32(maxChunkRadius),
+		conn:                   conn,
+		log:                    log,
+		currentEntityRuntimeID: 1,
+		heldSlot:               atomic.NewUint32(0),
+		joinMessage:            joinMessage,
+		quitMessage:            quitMessage,
+		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
 	}
 
 	s.registerHandlers()
@@ -545,13 +544,16 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }
 
-// SetServerSettings Sets the server settings data.
-// This will be used when a ServerSettingsRequest packet is
-// sent by the client.
+// SetServerSettings Sets the server settings data. This will be used when a ServerSettingsRequest packet is sent by the client.
 func (s *Session) SetServerSettings(form form.Form) {
 	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
-	h.forms[h.currentID.Inc()] = form
-	s.shouldSendSettingsResponse = true
+	h.mu.Lock()
+	id := h.currentID.Inc()
+	h.forms[id] = form
+	h.mu.Unlock()
+
+	s.settingsFormID.Store(id)
+	s.hasSettingsResponse.Store(true)
 	marshal, _ := form.MarshalJSON()
-	s.serverSettingsResponse = marshal
+	s.settingsResponse.Store(marshal)
 }
