@@ -4,7 +4,8 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
-// ServerSettingsRequest Is send by the client in order to request a ServerSettingsResponse packet
+// ServerSettingsRequest Responds with a ServerSettings packet containing a form.
+// The form sent back will be shown in the settings menu at the top of the settings.
 type ServerSettingsRequest struct{}
 
 // Handle ...
