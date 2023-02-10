@@ -49,7 +49,7 @@ var conf = world.EntityRegistryConfig{
 	Arrow: func(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) world.Entity {
 		a := NewTippedArrowWithDamage(pos, yaw, pitch, damage, owner, tip.(potion.Potion))
 		b := a.conf.Behaviour.(*ProjectileBehaviour)
-		b.conf.KnockBackAddend = float64(punchLevel) * (enchantment.Punch{}).KnockBackMultiplier()
+		b.conf.KnockBackForceAddend = float64(punchLevel) * (enchantment.Punch{}).KnockBackMultiplier()
 		b.conf.DisablePickup = disallowPickup
 		if obtainArrowOnPickup {
 			b.conf.PickupItem = item.NewStack(item.Arrow{Tip: tip.(potion.Potion)}, 1)

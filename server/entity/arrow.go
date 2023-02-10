@@ -74,7 +74,7 @@ func (ArrowType) DecodeNBT(m map[string]any) world.Entity {
 		b.conf.PickupItem = item.NewStack(item.Arrow{Tip: pot}, 1)
 	}
 	arr.fireDuration = time.Duration(nbtconv.Int16(m, "Fire")) * time.Second / 20
-	b.conf.KnockBackAddend = (enchantment.Punch{}).KnockBackMultiplier() * float64(nbtconv.Uint8(m, "enchantPunch"))
+	b.conf.KnockBackForceAddend = (enchantment.Punch{}).KnockBackMultiplier() * float64(nbtconv.Uint8(m, "enchantPunch"))
 	if _, ok := m["StuckToBlockPos"]; ok {
 		b.collisionPos = nbtconv.Pos(m, "StuckToBlockPos")
 		b.collided = true
@@ -93,7 +93,7 @@ func (ArrowType) EncodeNBT(e world.Entity) map[string]any {
 		"Motion":       nbtconv.Vec3ToFloat32Slice(a.Velocity()),
 		"Damage":       float32(b.conf.Damage),
 		"Fire":         int16(a.OnFireDuration() * 20),
-		"enchantPunch": byte(b.conf.KnockBackAddend / (enchantment.Punch{}).KnockBackMultiplier()),
+		"enchantPunch": byte(b.conf.KnockBackForceAddend / (enchantment.Punch{}).KnockBackMultiplier()),
 		"auxValue":     int32(b.conf.Potion.Uint8() + 1),
 		"player":       boolByte(!b.conf.DisablePickup),
 		"isCreative":   boolByte(b.conf.PickupItem.Empty()),
