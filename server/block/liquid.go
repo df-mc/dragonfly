@@ -43,7 +43,16 @@ func tickLiquid(b world.Liquid, pos cube.Pos, w *world.World) {
 			res = b.WithDepth(b.LiquidDepth()-2*b.SpreadDecay(), false)
 		}
 		ctx := event.C()
-		if w.Handler().HandleLiquidDecay(ctx, pos, b, res); ctx.Cancelled() {
+
+		evt := world.EventLiquidDecay{
+			w,
+			pos,
+			b,
+			res,
+			ctx,
+		}
+
+		if w.Handler().HandleLiquidDecay(evt); evt.Cancelled() {
 			return
 		}
 		w.SetLiquid(pos, res)
@@ -139,7 +148,17 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 			return true
 		}
 		ctx := event.C()
-		if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+
+		evt := world.EventLiquidFlow{
+			w,
+			src,
+			pos,
+			b.WithDepth(newDepth, falling),
+			existing,
+			ctx,
+		}
+
+		if w.Handler().HandleLiquidFlow(evt); evt.Cancelled() {
 			return false
 		}
 		w.SetLiquid(pos, b.WithDepth(newDepth, falling))
@@ -161,7 +180,17 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		return false
 	}
 	ctx := event.C()
-	if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+
+	evt := world.EventLiquidFlow{
+		w,
+		src,
+		pos,
+		b.WithDepth(newDepth, falling),
+		existing,
+		ctx,
+	}
+
+	if w.Handler().HandleLiquidFlow(evt); evt.Cancelled() {
 		return false
 	}
 

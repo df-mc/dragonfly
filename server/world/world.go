@@ -646,7 +646,15 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 // the sound if they're close enough.
 func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
 	ctx := event.C()
-	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
+
+	evt := EventSound{
+		w,
+		pos,
+		s,
+		ctx,
+	}
+
+	if w.Handler().HandleSound(evt); evt.Cancelled() {
 		return
 	}
 	for _, viewer := range w.Viewers(pos) {
@@ -690,7 +698,12 @@ func (w *World) AddEntity(e Entity) {
 		showEntity(e, v)
 	}
 
-	w.Handler().HandleEntitySpawn(e)
+	evt := EventEntitySpawn{
+		w,
+		e,
+	}
+
+	w.Handler().HandleEntitySpawn(evt)
 }
 
 // add maps an Entity to a World in the entityWorlds map.
@@ -718,7 +731,12 @@ func (w *World) RemoveEntity(e Entity) {
 		return
 	}
 
-	w.Handler().HandleEntityDespawn(e)
+	evt := EventEntityDespawn{
+		w,
+		e,
+	}
+
+	w.Handler().HandleEntityDespawn(evt)
 
 	worldsMu.Lock()
 	delete(entityWorlds, e)
@@ -1015,8 +1033,9 @@ func (w *World) Close() error {
 // close stops the World from ticking, saves all chunks to the Provider and updates the world's settings.
 func (w *World) close() {
 	// Let user code run anything that needs to be finished before the World is closed.
-	w.Handler().HandleClose()
-	w.Handle(NopHandler{})
+	evt := EventClose{w}
+
+	w.handler.Swap(NopHandler{}).HandleClose(evt)
 
 	close(w.closing)
 	w.running.Wait()
