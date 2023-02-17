@@ -522,21 +522,22 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 	}
 
 	return protocol.Skin{
-		PlayFabID:         s.PlayFabID,
-		SkinID:            uuid.New().String(),
-		SkinResourcePatch: s.ModelConfig.Encode(),
-		SkinImageWidth:    uint32(s.Bounds().Max.X),
-		SkinImageHeight:   uint32(s.Bounds().Max.Y),
-		SkinData:          s.Pix,
-		CapeImageWidth:    uint32(s.Cape.Bounds().Max.X),
-		CapeImageHeight:   uint32(s.Cape.Bounds().Max.Y),
-		CapeData:          s.Cape.Pix,
-		SkinGeometry:      s.Model,
-		PersonaSkin:       s.Persona,
-		CapeID:            uuid.New().String(),
-		FullID:            uuid.New().String(),
-		Animations:        animations,
-		Trusted:           true,
+		PlayFabID:          s.PlayFabID,
+		SkinID:             uuid.New().String(),
+		SkinResourcePatch:  s.ModelConfig.Encode(),
+		SkinImageWidth:     uint32(s.Bounds().Max.X),
+		SkinImageHeight:    uint32(s.Bounds().Max.Y),
+		SkinData:           s.Pix,
+		CapeImageWidth:     uint32(s.Cape.Bounds().Max.X),
+		CapeImageHeight:    uint32(s.Cape.Bounds().Max.Y),
+		CapeData:           s.Cape.Pix,
+		SkinGeometry:       s.Model,
+		PersonaSkin:        s.Persona,
+		CapeID:             uuid.New().String(),
+		FullID:             uuid.New().String(),
+		Animations:         animations,
+		Trusted:            true,
+		OverrideAppearance: true,
 	}
 }
 
