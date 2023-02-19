@@ -38,6 +38,11 @@ type OffsetEntity interface {
 	NetworkOffset() float64
 }
 
+type entityMovement struct {
+	rotation mgl32.Vec3
+	position mgl32.Vec3
+}
+
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
@@ -184,6 +189,7 @@ func (s *Session) HideEntity(e world.Entity) {
 	if _, controllable := e.(Controllable); !controllable {
 		delete(s.entityRuntimeIDs, e)
 		delete(s.entities, id)
+		delete(s.entityMovements, id)
 	}
 	s.entityMutex.Unlock()
 	if !ok {
@@ -200,16 +206,56 @@ func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, yaw, pitch 
 		return
 	}
 
-	flags := byte(0)
+	flags := uint16(0)
 	if onGround {
 		flags |= packet.MoveFlagOnGround
 	}
-	s.writePacket(&packet.MoveActorAbsolute{
-		EntityRuntimeID: id,
-		Position:        vec64To32(pos.Add(entityOffset(e))),
-		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
-		Flags:           flags,
-	})
+
+	position := vec64To32(pos.Add(entityOffset(e)))
+	rotation := vec64To32(mgl64.Vec3{pitch, yaw, yaw})
+
+	s.entityMutex.Lock()
+	defer s.entityMutex.Unlock()
+
+	lastMovement, ok := s.entityMovements[id]
+	if !ok {
+		s.writePacket(&packet.MoveActorAbsolute{
+			EntityRuntimeID: id,
+			Position:        position,
+			Rotation:        rotation,
+			Flags:           byte(flags),
+		})
+	} else {
+		lastPosition := lastMovement.position
+		lastRotation := lastMovement.rotation
+		if lastPosition[0] != position[0] {
+			flags |= packet.MoveActorDeltaFlagHasX
+		}
+		if lastPosition[1] != position[1] {
+			flags |= packet.MoveActorDeltaFlagHasY
+		}
+		if lastPosition[2] != position[2] {
+			flags |= packet.MoveActorDeltaFlagHasZ
+		}
+		if lastRotation[0] != rotation[0] {
+			flags |= packet.MoveActorDeltaFlagHasRotX
+		}
+		if lastRotation[1] != rotation[1] {
+			flags |= packet.MoveActorDeltaFlagHasRotY
+		}
+		if lastRotation[2] != rotation[2] {
+			flags |= packet.MoveActorDeltaFlagHasRotZ
+		}
+
+		s.writePacket(&packet.MoveActorDelta{
+			Flags:           flags,
+			EntityRuntimeID: id,
+			Position:        position,
+			Rotation:        rotation,
+		})
+	}
+
+	s.entityMovements[id] = entityMovement{position: position, rotation: rotation}
 }
 
 // ViewEntityVelocity ...

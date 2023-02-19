@@ -57,6 +57,7 @@ type Session struct {
 	entityRuntimeIDs map[world.Entity]uint64
 	entities         map[uint64]world.Entity
 	hiddenEntities   map[world.Entity]struct{}
+	entityMovements  map[uint64]entityMovement
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot                     *atomic.Uint32
