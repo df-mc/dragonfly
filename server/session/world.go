@@ -38,8 +38,11 @@ type OffsetEntity interface {
 	NetworkOffset() float64
 }
 
+// entityMovement is a struct that contains the position and rotation of an entity.
 type entityMovement struct {
+	// rotation is the pitch, yaw and head yaw of the entity.
 	rotation mgl32.Vec3
+	// position is the x, y and z position of the entity.
 	position mgl32.Vec3
 }
 
