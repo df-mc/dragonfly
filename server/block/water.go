@@ -58,7 +58,8 @@ func (Water) SpreadDecay() int {
 func (w Water) WithDepth(depth int, falling bool) world.Liquid {
 	w.Depth = depth
 	w.Falling = falling
-	w.Still = false
+	w.Still = depth == 8
+
 	return w
 }
 
