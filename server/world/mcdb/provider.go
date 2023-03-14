@@ -500,7 +500,6 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim
 		enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
 		t, ok := e.Type().(world.SaveableEntityType)
 		if !ok {
-			fmt.Printf("Cant Save Entity %s", e.Type().EncodeEntity())
 			continue
 		}
 		x := t.EncodeNBT(e)
