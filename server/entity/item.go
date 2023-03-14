@@ -1,20 +1,23 @@
 package entity
 
 import (
+	"math"
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"time"
 )
 
 // Item represents an item entity which may be added to the world. Players and several humanoid entities such
 // as zombies are able to pick up these entities so that the items are added to their inventory.
 type Item struct {
 	transform
+	uniqueID         int64
 	age, pickupDelay int
 	i                item.Stack
 
@@ -30,7 +33,7 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 	}
 	i = nbtconv.Item(nbtconv.WriteItem(i, true), nil)
 
-	it := &Item{i: i, pickupDelay: 10, c: &MovementComputer{
+	it := &Item{uniqueID: rand.Int63(), i: i, pickupDelay: 10, c: &MovementComputer{
 		Gravity:           0.04,
 		DragBeforeGravity: true,
 		Drag:              0.02,
@@ -192,12 +195,16 @@ func (ItemType) DecodeNBT(m map[string]any) world.Entity {
 	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
 	n.age = int(nbtconv.Int16(m, "Age"))
 	n.pickupDelay = int(nbtconv.Int64(m, "PickupDelay"))
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		n.uniqueID = uniqueID
+	}
 	return n
 }
 
 func (ItemType) EncodeNBT(e world.Entity) map[string]any {
 	it := e.(*Item)
 	return map[string]any{
+		"UniqueID":    it.uniqueID,
 		"Health":      int16(5),
 		"Age":         int16(it.age),
 		"PickupDelay": int64(it.pickupDelay),

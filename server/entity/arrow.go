@@ -1,6 +1,9 @@
 package entity
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -9,7 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // NewArrow creates a new Arrow and returns it. It is equivalent to calling NewTippedArrow with `potion.Potion{}` as
@@ -37,6 +39,7 @@ func NewTippedArrowWithDamage(pos mgl64.Vec3, yaw, pitch, damage float64, owner 
 	conf.Potion = tip
 	a := Config{Behaviour: conf.New(owner)}.New(ArrowType{}, pos)
 	a.rot = cube.Rotation{yaw, pitch}
+	a.uniqueID = rand.Int63()
 	return a
 }
 
@@ -67,6 +70,9 @@ func (ArrowType) BBox(world.Entity) cube.BBox {
 func (ArrowType) DecodeNBT(m map[string]any) world.Entity {
 	pot := potion.From(nbtconv.Int32(m, "auxValue") - 1)
 	arr := NewTippedArrowWithDamage(nbtconv.Vec3(m, "Pos"), float64(nbtconv.Float32(m, "Yaw")), float64(nbtconv.Float32(m, "Pitch")), float64(nbtconv.Float32(m, "Damage")), nil, pot)
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		arr.uniqueID = uniqueID
+	}
 	b := arr.conf.Behaviour.(*ProjectileBehaviour)
 	arr.vel = nbtconv.Vec3(m, "Motion")
 	b.conf.DisablePickup = !nbtconv.Bool(m, "player")

@@ -31,13 +31,17 @@ func (SnowballType) BBox(world.Entity) cube.BBox {
 func (SnowballType) DecodeNBT(m map[string]any) world.Entity {
 	s := NewSnowball(nbtconv.Vec3(m, "Pos"), nil)
 	s.vel = nbtconv.Vec3(m, "Motion")
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		s.uniqueID = uniqueID
+	}
 	return s
 }
 
 func (SnowballType) EncodeNBT(e world.Entity) map[string]any {
 	s := e.(*Ent)
 	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(s.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(s.Velocity()),
+		"UniqueID": s.uniqueID,
+		"Pos":      nbtconv.Vec3ToFloat32Slice(s.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(s.Velocity()),
 	}
 }

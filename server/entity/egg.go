@@ -33,13 +33,17 @@ func (EggType) BBox(world.Entity) cube.BBox {
 func (EggType) DecodeNBT(m map[string]any) world.Entity {
 	egg := NewEgg(nbtconv.Vec3(m, "Pos"), nil)
 	egg.vel = nbtconv.Vec3(m, "Motion")
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		egg.uniqueID = uniqueID
+	}
 	return egg
 }
 
 func (EggType) EncodeNBT(e world.Entity) map[string]any {
 	egg := e.(*Ent)
 	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(egg.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(egg.Velocity()),
+		"UniqueID": egg.uniqueID,
+		"Pos":      nbtconv.Vec3ToFloat32Slice(egg.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(egg.Velocity()),
 	}
 }

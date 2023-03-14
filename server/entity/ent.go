@@ -1,13 +1,15 @@
 package entity
 
 import (
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"sync"
-	"time"
 )
 
 // Behaviour implements the behaviour of an Ent.
@@ -25,15 +27,16 @@ type Config struct {
 
 // New creates a new Ent using conf. The entity has a type and a position.
 func (conf Config) New(t world.EntityType, pos mgl64.Vec3) *Ent {
-	return &Ent{t: t, pos: pos, conf: conf}
+	return &Ent{t: t, pos: pos, conf: conf, uniqueID: rand.Int63()}
 }
 
 // Ent is a world.Entity implementation that allows entity implementations to
 // share a lot of code. It is currently under development and is prone to
 // (breaking) changes.
 type Ent struct {
-	conf Config
-	t    world.EntityType
+	uniqueID int64
+	conf     Config
+	t        world.EntityType
 
 	mu  sync.Mutex
 	pos mgl64.Vec3

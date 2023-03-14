@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -8,7 +10,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
 )
 
 // NewBottleOfEnchanting ...
@@ -52,13 +53,17 @@ func (BottleOfEnchantingType) BBox(world.Entity) cube.BBox {
 func (BottleOfEnchantingType) DecodeNBT(m map[string]any) world.Entity {
 	b := NewBottleOfEnchanting(nbtconv.Vec3(m, "Pos"), nil)
 	b.vel = nbtconv.Vec3(m, "Motion")
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		b.uniqueID = uniqueID
+	}
 	return b
 }
 
 func (BottleOfEnchantingType) EncodeNBT(e world.Entity) map[string]any {
 	b := e.(*Ent)
 	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(b.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(b.Velocity()),
+		"UniqueID": b.uniqueID,
+		"Pos":      nbtconv.Vec3ToFloat32Slice(b.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(b.Velocity()),
 	}
 }
