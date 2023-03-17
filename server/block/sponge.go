@@ -63,7 +63,7 @@ func (s Sponge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	}
 
 	place(w, pos, s, user, ctx)
-	if s.Particles == true && placed(ctx) {
+	if s.Particles && placed(ctx) {
 		w.AddParticle(mgl64.Vec3{pos.Vec3().X() + 0.5, pos.Vec3().Y() + 1, pos.Vec3().Z() + 0.5}, particle.Evaporate{})
 	}
 	return placed(ctx)
