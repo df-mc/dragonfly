@@ -54,6 +54,13 @@ func (s Sponge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return
 	}
 
+	// Check if the Sponge is placed in the Nether and if so, turn it into a normal Sponge instantly.
+	if w.Dimension() == world.Nether && s.Wet {
+		s.Wet = false
+		place(w, pos, s, user, ctx)
+		return placed(ctx)
+	}
+
 	place(w, pos, s, user, ctx)
 	return placed(ctx)
 }
