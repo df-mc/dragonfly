@@ -15,6 +15,8 @@ type Sponge struct {
 
 	// Wet specifies whether the dry or the wet variant of the block is used.
 	Wet bool
+	// Particles specifies whether the block needs particles, only used when a wet sponge is placed in the nether.
+	Particles bool
 }
 
 // BreakInfo ...
@@ -55,13 +57,15 @@ func (s Sponge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	}
 
 	// Check if the Sponge is placed in the Nether and if so, turn it into a normal Sponge instantly.
-	if w.Dimension() == world.Nether && s.Wet {
+	if w.Dimension().WaterEvaporates() && s.Wet {
 		s.Wet = false
-		place(w, pos, s, user, ctx)
-		return placed(ctx)
+		s.Particles = true
 	}
 
 	place(w, pos, s, user, ctx)
+	if s.Particles == true && placed(ctx) {
+		w.AddParticle(mgl64.Vec3{pos.Vec3().X() + 0.5, pos.Vec3().Y() + 1, pos.Vec3().Z() + 0.5}, particle.Evaporate{})
+	}
 	return placed(ctx)
 }
 
