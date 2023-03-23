@@ -48,6 +48,8 @@ github.com/sandertv/go-raknet v1.12.0 h1:olUzZlIJyX/pgj/mrsLCZYjKLNDsYiWdvQ4NIm3
 github.com/sandertv/go-raknet v1.12.0/go.mod h1:Gx+WgZBMQ0V2UoouGoJ8Wj6CDrMBQ4SB2F/ggpl5/+Y=
 github.com/sandertv/gophertunnel v1.27.4 h1:7KAdSmEESLJWQ4CCDI6dlmUvd1NaaTemPG3eN2xH+ww=
 github.com/sandertv/gophertunnel v1.27.4/go.mod h1:ekREo7U9TPHh86kbuPMaWA93NMyWsfVvP/iNT3XhAb8=
+github.com/sandertv/gophertunnel v1.28.1 h1:I2gmAJ3Se+iT0a99rLU3EKLshqFDvCnrT05fUFv9rGk=
+github.com/sandertv/gophertunnel v1.28.1/go.mod h1:ekREo7U9TPHh86kbuPMaWA93NMyWsfVvP/iNT3XhAb8=
 github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=
 github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
