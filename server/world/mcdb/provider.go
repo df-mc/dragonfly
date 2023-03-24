@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"golang.org/x/exp/slices"
 )
 
 // Provider implements a world provider for the Minecraft world format, which is based on a leveldb database.
@@ -457,16 +458,15 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg wor
 	// load actorstorage entities
 	// https://learn.microsoft.com/en-us/minecraft/creator/documents/actorstorage
 	digp, err := p.db.Get(append([]byte("digp"), p.index(pos, dim)...), nil)
-	if err != leveldb.ErrNotFound && err != nil {
-		return nil, err
-	}
-
 	if err == leveldb.ErrNotFound {
 		return a, nil
 	}
+	if err != nil {
+		return nil, err
+	}
 
-	for i := 0; i < len(digp)/8; i++ {
-		key := append([]byte("actorprefix"), digp[i*8:i*8+8]...)
+	for i := 0; i < len(digp); i += 8 {
+		key := append([]byte("actorprefix"), digp[i:i+8]...)
 		data, err := p.db.Get(key, nil)
 		if err != leveldb.ErrNotFound && err != nil {
 			return nil, err
@@ -490,11 +490,21 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg wor
 // SaveEntities saves all entities to the chunk position passed.
 func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim world.Dimension) error {
 	digpKey := append([]byte("digp"), p.index(pos, dim)...)
-	if len(entities) == 0 {
-		return p.db.Delete(digpKey, nil)
-	}
-	digp := make([]byte, 0, 8*len(entities))
 
+	// load the ids of the previous entities
+	var previousUniqueIDs []int64
+	digpPrev, err := p.db.Get(digpKey, nil)
+	if err != leveldb.ErrNotFound && err != nil {
+		return err
+	}
+	if err != leveldb.ErrNotFound {
+		for i := 0; i < len(digpPrev); i += 8 {
+			uniqueID := int64(binary.LittleEndian.Uint64(digpPrev[i : i+8]))
+			previousUniqueIDs = append(previousUniqueIDs, uniqueID)
+		}
+	}
+
+	var uniqueIDs []int64
 	for _, e := range entities {
 		buf := bytes.NewBuffer(nil)
 		enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
@@ -512,19 +522,32 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim
 		if !ok {
 			uniqueID = rand.Int63()
 		}
-
-		uniqueIDbytes := binary.LittleEndian.AppendUint64(nil, uint64(uniqueID))
-		if err := p.db.Put(append([]byte("actorprefix"), uniqueIDbytes...), buf.Bytes(), nil); err != nil {
+		if err := p.db.Put(p.actorIndex(uniqueID), buf.Bytes(), nil); err != nil {
 			return fmt.Errorf("save entities: error Adding to db: %w", err)
 		}
-		digp = append(digp, uniqueIDbytes...)
+		uniqueIDs = append(uniqueIDs, uniqueID)
 	}
 
+	// remove entities that arent referenced anymore.
+	for _, uniqueID := range previousUniqueIDs {
+		if !slices.Contains(uniqueIDs, uniqueID) {
+			p.db.Delete(p.actorIndex(uniqueID), nil)
+		}
+	}
+	if len(entities) == 0 {
+		return p.db.Delete(digpKey, nil)
+	}
+
+	// save the index of entities in the chunk.
+	digp := make([]byte, 0, 8*len(uniqueIDs))
+	for _, uniqueID := range uniqueIDs {
+		digp = binary.LittleEndian.AppendUint64(digp, uint64(uniqueID))
+	}
 	if err := p.db.Put(digpKey, digp, nil); err != nil {
 		return fmt.Errorf("save entities: error Adding to db: %w", err)
 	}
 
-	// remove old
+	// remove old entity data for this chunk.
 	p.db.Delete(append(p.index(pos, dim), keyEntities), nil)
 	return nil
 }
@@ -592,6 +615,10 @@ func (p *Provider) Close() error {
 		return fmt.Errorf("error writing levelname.txt: %w", err)
 	}
 	return p.db.Close()
+}
+
+func (p *Provider) actorIndex(uniqueID int64) []byte {
+	return binary.LittleEndian.AppendUint64([]byte("actorprefix"), uint64(uniqueID))
 }
 
 // index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed to New
