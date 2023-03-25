@@ -6,7 +6,7 @@ require (
 	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
 	github.com/cespare/xxhash v1.1.0
 	github.com/df-mc/atomic v1.10.0
-	github.com/df-mc/blockupgrader v1.0.0
+	github.com/df-mc/blockupgrader v1.0.1
 	github.com/df-mc/goleveldb v1.1.9
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.3.0
