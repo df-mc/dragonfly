@@ -98,7 +98,7 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 
 	v, ok := StateToRuntimeID(upgraded.Name, upgraded.Properties)
 	if !ok {
-		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v} %v", name, state, version)
+		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v} %v", upgraded.Name, upgraded.Properties, upgraded.Version)
 	}
 	return v, nil
 }

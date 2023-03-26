@@ -7,7 +7,7 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/df-mc/atomic v1.10.0
 	github.com/df-mc/goleveldb v1.1.9
-	github.com/df-mc/worldupgrader v1.0.2
+	github.com/df-mc/worldupgrader v1.0.3
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.5
