@@ -498,8 +498,12 @@ func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]any, 
 }
 
 // LoadChunks loads all chunks that exist within the provider.
-func (p *Provider) LoadChunks() (map[world.ChunkPos]*chunk.Chunk, error) {
-	chunks := make(map[world.ChunkPos]*chunk.Chunk)
+func (p *Provider) LoadChunks() (map[world.Dimension]map[world.ChunkPos]*chunk.Chunk, error) {
+	chunks := make(map[world.Dimension]map[world.ChunkPos]*chunk.Chunk)
+	chunks[world.Overworld] = make(map[world.ChunkPos]*chunk.Chunk)
+	chunks[world.Nether] = make(map[world.ChunkPos]*chunk.Chunk)
+	chunks[world.End] = make(map[world.ChunkPos]*chunk.Chunk)
+
 	iter := p.db.NewIterator(nil, nil)
 	for iter.Next() {
 		key := iter.Key()
@@ -507,13 +511,6 @@ func (p *Provider) LoadChunks() (map[world.ChunkPos]*chunk.Chunk, error) {
 			continue
 		}
 		if key[8] != keyVersion && key[8] != keyVersionOld {
-			continue
-		}
-		pos := world.ChunkPos{
-			int32(binary.LittleEndian.Uint32(key[:4])),
-			int32(binary.LittleEndian.Uint32(key[4:8])),
-		}
-		if _, ok := chunks[pos]; ok {
 			continue
 		}
 		dim := world.Dimension(world.Overworld)
@@ -524,11 +521,18 @@ func (p *Provider) LoadChunks() (map[world.ChunkPos]*chunk.Chunk, error) {
 				return nil, fmt.Errorf("error loading dimension: %w", err)
 			}
 		}
+		pos := world.ChunkPos{
+			int32(binary.LittleEndian.Uint32(key[:4])),
+			int32(binary.LittleEndian.Uint32(key[4:8])),
+		}
+		if _, ok := chunks[dim][pos]; ok {
+			continue
+		}
 		ch, _, err := p.LoadChunk(pos, dim)
 		if err != nil {
 			return nil, fmt.Errorf("error loading chunk: %w", err)
 		}
-		chunks[pos] = ch
+		chunks[dim][pos] = ch
 	}
 	iter.Release()
 	return chunks, iter.Error()
