@@ -515,10 +515,10 @@ func (p *Provider) LoadChunks() (map[world.Dimension]map[world.ChunkPos]*chunk.C
 		}
 		dim := world.Dimension(world.Overworld)
 		if len(key) > 9 {
-			var err error
-			dim, err = p.dimByID(int32(binary.LittleEndian.Uint32(key[8:12])))
-			if err != nil {
-				return nil, fmt.Errorf("error loading dimension: %w", err)
+			var ok bool
+			id := int(binary.LittleEndian.Uint32(key[8:12]))
+			if dim, ok = world.DimensionByID(id); !ok {
+				return nil, fmt.Errorf("unknown dimension id %v", id)
 			}
 		}
 		pos := world.ChunkPos{
@@ -580,17 +580,4 @@ func (p *Provider) index(position world.ChunkPos, d world.Dimension) []byte {
 	}
 	binary.LittleEndian.PutUint32(b[8:], dim)
 	return b
-}
-
-// dimByID returns the dimension from the ID passed.
-func (p *Provider) dimByID(id int32) (world.Dimension, error) {
-	switch id {
-	case 0:
-		return world.Overworld, nil
-	case 1:
-		return world.Nether, nil
-	case 2:
-		return world.End, nil
-	}
-	return nil, fmt.Errorf("unknown dimension ID: %d", id)
 }

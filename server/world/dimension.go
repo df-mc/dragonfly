@@ -17,6 +17,27 @@ var (
 	End end
 )
 
+const (
+	idOverworld = iota
+	idNether
+	idEnd
+)
+
+// DimensionByID looks up a Dimension for the ID passed, returning Overworld
+// for 0, Nether for 1 and End for 2. If the ID is unknown, the bool returned
+// is false. In this case the Dimension returned is Overworld.
+func DimensionByID(id int) (Dimension, bool) {
+	switch id {
+	case idOverworld:
+		return Overworld, true
+	case idNether:
+		return Nether, true
+	case idEnd:
+		return End, true
+	}
+	return Overworld, false
+}
+
 type (
 	// Dimension is a dimension of a World. It influences a variety of properties of a World such as the building range,
 	// the sky colour and the behaviour of liquid blocks.
