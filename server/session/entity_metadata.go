@@ -115,8 +115,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	if l, ok := e.(living); ok && s.c == e {
 		deathPos, deathDimension, died := l.DeathPosition()
 		if died {
+			dim, _ := world.DimensionID(deathDimension)
 			m[protocol.EntityDataKeyPlayerLastDeathPosition] = vec64To32(deathPos)
-			m[protocol.EntityDataKeyPlayerLastDeathDimension] = int32(deathDimension.EncodeDimension())
+			m[protocol.EntityDataKeyPlayerLastDeathDimension] = int32(dim)
 		}
 		m[protocol.EntityDataKeyPlayerHasDied] = boolByte(died)
 	}

@@ -42,6 +42,7 @@ func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world
 }
 
 func (p *Provider) toJson(d player.Data) jsonData {
+	dim, _ := world.DimensionID(d.World.Dimension())
 	return jsonData{
 		UUID:                d.UUID.String(),
 		Username:            d.Username,
@@ -66,7 +67,7 @@ func (p *Provider) toJson(d player.Data) jsonData {
 		FallDistance:        d.FallDistance,
 		Inventory:           invToData(d.Inventory),
 		EnderChestInventory: encodeItems(d.EnderChestInventory),
-		Dimension:           uint8(d.World.Dimension().EncodeDimension()),
+		Dimension:           uint8(dim),
 	}
 }
 

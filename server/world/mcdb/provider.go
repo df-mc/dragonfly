@@ -570,7 +570,8 @@ func (p *Provider) Close() error {
 // index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed to New
 // is not world.Overworld, the length of the index returned is 12. It is 8 otherwise.
 func (p *Provider) index(position world.ChunkPos, d world.Dimension) []byte {
-	x, z, dim := uint32(position[0]), uint32(position[1]), uint32(d.EncodeDimension())
+	dim, _ := world.DimensionID(d)
+	x, z := uint32(position[0]), uint32(position[1])
 	b := make([]byte, 12)
 
 	binary.LittleEndian.PutUint32(b, x)
@@ -578,6 +579,6 @@ func (p *Provider) index(position world.ChunkPos, d world.Dimension) []byte {
 	if dim == 0 {
 		return b[:8]
 	}
-	binary.LittleEndian.PutUint32(b[8:], dim)
+	binary.LittleEndian.PutUint32(b[8:], uint32(dim))
 	return b
 }

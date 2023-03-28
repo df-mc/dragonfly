@@ -113,8 +113,9 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.Sub
 		s.openChunkTransactions = append(s.openChunkTransactions, transaction)
 		s.blobMu.Unlock()
 	}
+	dim, _ := world.DimensionID(w.Dimension())
 	s.writePacket(&packet.SubChunk{
-		Dimension:       int32(w.Dimension().EncodeDimension()),
+		Dimension:       int32(dim),
 		Position:        protocol.SubChunkPos(center),
 		CacheEnabled:    s.conn.ClientCacheEnabled(),
 		SubChunkEntries: entries,

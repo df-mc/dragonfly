@@ -14,7 +14,7 @@ func NewText(text string, pos mgl64.Vec3) *Ent {
 	return e
 }
 
-var textConf = StationaryBehaviourConfig{}
+var textConf StationaryBehaviourConfig
 
 // TextType is a world.EntityType implementation for Text.
 type TextType struct{}

@@ -321,7 +321,8 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 			d.World = srv.world
 		}
 		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
-		data.Dimension = int32(d.World.Dimension().EncodeDimension())
+		dim, _ := world.DimensionID(d.World.Dimension())
+		data.Dimension = int32(dim)
 		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
 
 		playerData = &d

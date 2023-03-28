@@ -393,9 +393,10 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
+	dim, _ := world.DimensionID(w.Dimension())
+	same := w.Dimension() == s.chunkLoader.World().Dimension()
 	if !same {
-		s.changeDimension(dim, false)
+		s.changeDimension(int32(dim), false)
 	}
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
