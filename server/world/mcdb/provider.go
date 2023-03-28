@@ -300,7 +300,7 @@ func (p *Provider) LoadChunk(position world.ChunkPos, dim world.Dimension) (c *c
 
 	data.Biomes, err = p.db.Get(append(key, key3DData), nil)
 	if err != nil && err != leveldb.ErrNotFound {
-		return nil, false, fmt.Errorf("error reading 3D data: %w", err)
+		return nil, true, fmt.Errorf("error reading 3D data: %w", err)
 	}
 	if len(data.Biomes) > 512 {
 		// Strip the heightmap from the biomes.
@@ -497,6 +497,43 @@ func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]any, 
 	return p.db.Put(append(p.index(position, dim), keyBlockEntities), buf.Bytes(), nil)
 }
 
+// LoadChunks loads all chunks that exist within the provider.
+func (p *Provider) LoadChunks() (map[world.ChunkPos]*chunk.Chunk, error) {
+	chunks := make(map[world.ChunkPos]*chunk.Chunk)
+	iter := p.db.NewIterator(nil, nil)
+	for iter.Next() {
+		key := iter.Key()
+		if len(key) != 9 && len(key) != 13 {
+			continue
+		}
+		if key[8] != keyVersion && key[8] != keyVersionOld {
+			continue
+		}
+		pos := world.ChunkPos{
+			int32(binary.LittleEndian.Uint32(key[:4])),
+			int32(binary.LittleEndian.Uint32(key[4:8])),
+		}
+		if _, ok := chunks[pos]; ok {
+			continue
+		}
+		dim := world.Dimension(world.Overworld)
+		if len(key) > 9 {
+			var err error
+			dim, err = p.dimByID(int32(binary.LittleEndian.Uint32(key[8:12])))
+			if err != nil {
+				return nil, fmt.Errorf("error loading dimension: %w", err)
+			}
+		}
+		ch, _, err := p.LoadChunk(pos, dim)
+		if err != nil {
+			return nil, fmt.Errorf("error loading chunk: %w", err)
+		}
+		chunks[pos] = ch
+	}
+	iter.Release()
+	return chunks, iter.Error()
+}
+
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.
 func (p *Provider) Close() error {
 	p.d.LastPlayed = time.Now().Unix()
@@ -539,4 +576,17 @@ func (p *Provider) index(position world.ChunkPos, d world.Dimension) []byte {
 	}
 	binary.LittleEndian.PutUint32(b[8:], dim)
 	return b
+}
+
+// dimByID returns the dimension from the ID passed.
+func (p *Provider) dimByID(id int32) (world.Dimension, error) {
+	switch id {
+	case 0:
+		return world.Overworld, nil
+	case 1:
+		return world.Nether, nil
+	case 2:
+		return world.End, nil
+	}
+	return nil, fmt.Errorf("unknown dimension ID: %d", id)
 }
