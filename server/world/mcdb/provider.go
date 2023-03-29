@@ -19,7 +19,8 @@ import (
 	"time"
 )
 
-// Provider implements a world provider for the Minecraft world format, which is based on a leveldb database.
+// Provider implements a world provider for the Minecraft world format, which
+// is based on a leveldb database.
 type Provider struct {
 	db  *leveldb.DB
 	dir string
