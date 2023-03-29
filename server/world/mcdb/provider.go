@@ -497,45 +497,15 @@ func (p *Provider) SaveBlockNBT(position world.ChunkPos, data []map[string]any, 
 	return p.db.Put(append(p.index(position, dim), keyBlockEntities), buf.Bytes(), nil)
 }
 
-// LoadChunks loads all chunks that exist within the provider.
-func (p *Provider) LoadChunks() (map[world.Dimension]map[world.ChunkPos]*chunk.Chunk, error) {
-	chunks := make(map[world.Dimension]map[world.ChunkPos]*chunk.Chunk)
-	chunks[world.Overworld] = make(map[world.ChunkPos]*chunk.Chunk)
-	chunks[world.Nether] = make(map[world.ChunkPos]*chunk.Chunk)
-	chunks[world.End] = make(map[world.ChunkPos]*chunk.Chunk)
-
-	iter := p.db.NewIterator(nil, nil)
-	for iter.Next() {
-		key := iter.Key()
-		if len(key) != 9 && len(key) != 13 {
-			continue
-		}
-		if key[8] != keyVersion && key[8] != keyVersionOld {
-			continue
-		}
-		dim := world.Dimension(world.Overworld)
-		if len(key) > 9 {
-			var ok bool
-			id := int(binary.LittleEndian.Uint32(key[8:12]))
-			if dim, ok = world.DimensionByID(id); !ok {
-				return nil, fmt.Errorf("unknown dimension id %v", id)
-			}
-		}
-		pos := world.ChunkPos{
-			int32(binary.LittleEndian.Uint32(key[:4])),
-			int32(binary.LittleEndian.Uint32(key[4:8])),
-		}
-		if _, ok := chunks[dim][pos]; ok {
-			continue
-		}
-		ch, _, err := p.LoadChunk(pos, dim)
-		if err != nil {
-			return nil, fmt.Errorf("error loading chunk: %w", err)
-		}
-		chunks[dim][pos] = ch
+// NewChunkIterator returns a ChunkIterator that may be used to iterate over all
+// position/chunk pairs in a database.
+// An IteratorRange r may be passed to specify limits in terms of what chunks
+// should be read. r may be set to nil to read all chunks from the Provider.
+func (p *Provider) NewChunkIterator(r *IteratorRange) *ChunkIterator {
+	if r == nil {
+		r = &IteratorRange{}
 	}
-	iter.Release()
-	return chunks, iter.Error()
+	return newChunkIterator(p, r)
 }
 
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.
