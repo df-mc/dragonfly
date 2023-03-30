@@ -33,7 +33,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
 )
 
@@ -593,12 +592,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	if src.ReducedByArmour() {
 		p.Exhaust(0.1)
-
-		armourDamage := int(math.Max(math.Floor(dmg/4), 1))
-		for slot, it := range p.armour.Slots() {
-			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, armourDamage))
-		}
-		p.applyThorns(src)
+		p.Armour().Hurt(dmg, src, p.damageItem)
 	}
 
 	w, pos := p.World(), p.Position()
@@ -616,63 +610,6 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		p.kill(src)
 	}
 	return totalDamage, true
-}
-
-// applyThorns applies thorns damage to the attacking entity if the world.DamageSource is either damage.AttackDamageSource or
-// damage.ProjectileDamageSource.
-func (p *Player) applyThorns(src world.DamageSource) {
-	var attacker world.Entity
-	if s, ok := src.(entity.AttackDamageSource); ok {
-		attacker = s.Attacker
-	} else if s, ok := src.(entity.ProjectileDamageSource); ok {
-		attacker = s.Owner
-	}
-	l, ok := attacker.(entity.Living)
-	if !ok {
-		// Not attacked by a living entity.
-		return
-	}
-
-	var (
-		dmg           = 0.0
-		searchHighest = false
-		thornsItems   = make(map[int]item.Stack, 4)
-	)
-	for slot, i := range p.armour.Slots() {
-		if _, ok := i.Enchantment(enchantment.Thorns{}); !ok {
-			continue
-		}
-		thornsItems[slot] = i
-
-		thorns, _ := i.Enchantment(enchantment.Thorns{})
-		level := float64(thorns.Level())
-		if rand.Float64() > float64(level)*0.15 {
-			continue
-		}
-
-		if level > 10 && (level-10 > dmg || !searchHighest) {
-			// When we find an armour piece with thorns XI or above, the logic changes: We have to find the armour piece
-			// with the highest level of thorns and subtract 10 from its level to calculate the final damage.
-			dmg = level - 10
-			searchHighest = true
-		} else if level <= 10 {
-			// Total damage from normal thorns armour (max Thorns III) should never exceed 4.0 in total.
-			dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
-		}
-	}
-	if dmg <= 0 {
-		// No armour with thorns or no thorns activated.
-		return
-	}
-
-	// Deal 2 damage to one random thorns item. Bedrock Edition and Java Edition both have different behaviour here and
-	// neither seem to match the expected behaviour. Java Edition deals 2 damage to a random thorns item for every
-	// thorns armour item worn, while Bedrock Edition deals 1 additional damage for every thorns item and another 2 for
-	// every thorns item when it activates.
-	slot := maps.Keys(thornsItems)[rand.Intn(len(thornsItems))]
-	_ = p.armour.Inventory().SetItem(slot, p.damageItem(thornsItems[slot], 2))
-
-	l.Hurt(dmg, enchantment.ThornsDamageSource{Owner: attacker})
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
@@ -694,18 +631,6 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 	diff := p.Position().Sub(explosionPos)
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), entity.ExplosionDamageSource{})
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
-}
-
-// highestArmourEnchantmentLevel returns the highest level of the enchantment passed based spanning each armour piece.
-func (p *Player) highestArmourEnchantmentLevel(enchant item.EnchantmentType) (t int) {
-	for _, it := range p.armour.Items() {
-		if e, ok := it.Enchantment(enchant); ok {
-			if e.Level() > t {
-				t = e.Level()
-			}
-		}
-	}
-	return t
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
@@ -741,14 +666,7 @@ func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
 	velocity = velocity.Normalize().Mul(force)
 	velocity[1] = height
 
-	var resistance float64
-	for _, i := range p.armour.Items() {
-		if a, ok := i.Item().(item.Armour); ok {
-			resistance += a.KnockBackResistance()
-		}
-	}
-
-	p.SetVelocity(velocity.Mul(1 - resistance))
+	p.SetVelocity(velocity.Mul(1 - p.Armour().KnockBackResistance()))
 }
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
@@ -1197,7 +1115,7 @@ func (p *Player) OnFireDuration() time.Duration {
 // SetOnFire ...
 func (p *Player) SetOnFire(duration time.Duration) {
 	ticks := int64(duration.Seconds() * 20)
-	if level := p.highestArmourEnchantmentLevel(enchantment.FireProtection{}); level > 0 {
+	if level := p.Armour().HighestEnchantmentLevel(enchantment.FireProtection{}); level > 0 {
 		ticks -= int64(math.Floor(float64(ticks) * float64(level) * 0.15))
 	}
 	p.fireTicks.Store(ticks)

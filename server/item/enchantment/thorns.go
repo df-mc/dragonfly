@@ -41,10 +41,7 @@ func (Thorns) CompatibleWithItem(i world.Item) bool {
 }
 
 // ThornsDamageSource is used for damage caused by thorns.
-type ThornsDamageSource struct {
-	// Owner holds the entity wearing the thorns armour.
-	Owner world.Entity
-}
+type ThornsDamageSource struct{}
 
 func (ThornsDamageSource) ReducedByResistance() bool { return true }
 func (ThornsDamageSource) ReducedByArmour() bool     { return false }
