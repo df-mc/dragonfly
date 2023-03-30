@@ -109,7 +109,6 @@ func (iter *ChunkIterator) Dimension() world.Dimension {
 // and can be called multiple times without causing error.
 func (iter *ChunkIterator) Release() {
 	iter.dbIter.Release()
-	maps.Clear(iter.seen)
 }
 
 // Error returns any accumulated error. Exhausting all the key/value pairs
