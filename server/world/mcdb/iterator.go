@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb/iterator"
-	"golang.org/x/exp/maps"
 )
 
 // ChunkIterator iterates over a Provider's position/chunk pairs in key order.
