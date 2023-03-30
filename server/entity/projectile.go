@@ -30,11 +30,11 @@ type ProjectileBehaviourConfig struct {
 	// Potion is the potion effect that is applied to an entity when the
 	// projectile hits it.
 	Potion potion.Potion
-	// KnockBackForceAddend is the additional horizontal velocity that is applied to an entity
-	// when it is hit by the projectile.
+	// KnockBackForceAddend is the additional horizontal velocity that is
+	// applied to an entity when it is hit by the projectile.
 	KnockBackForceAddend float64
-	// KnockBackHeightAddend is the additional vertical velocity that is applied to an entity
-	// when it is hit by the projectile.
+	// KnockBackHeightAddend is the additional vertical velocity that is applied
+	// to an entity when it is hit by the projectile.
 	KnockBackHeightAddend float64
 	// Particle is a particle that is spawned when the projectile hits a
 	// target, either a block or an entity. No particle is spawned if left nil.
