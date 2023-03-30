@@ -2,7 +2,6 @@ package inventory
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
@@ -152,30 +151,20 @@ func (a *Armour) HighestEnchantmentLevel(t item.EnchantmentType) int {
 // damage may not be dealt at all.
 type DamageFunc func(s item.Stack, d int) item.Stack
 
-// Hurt deals damage (hearts) to Armour. The resulting item damage depends on the
-// dmg passed and the DamageFunc used. If any of the Armour items were
-// enchanted with Thorns and src is entity.AttackDamageSource or
-// entity.ProjectileDamageSource, the origin entity may be damaged.
-func (a *Armour) Hurt(dmg float64, src world.DamageSource, f DamageFunc) {
+// Damage deals damage (hearts) to Armour. The resulting item damage depends on the
+// dmg passed and the DamageFunc used.
+func (a *Armour) Damage(dmg float64, f DamageFunc) {
 	armourDamage := int(math.Max(math.Floor(dmg/4), 1))
 	for slot, it := range a.Slots() {
 		_ = a.inv.SetItem(slot, f(it, armourDamage))
 	}
-
-	var origin world.Entity
-	if s, ok := src.(entity.AttackDamageSource); ok {
-		origin = s.Attacker
-	} else if s, ok := src.(entity.ProjectileDamageSource); ok {
-		origin = s.Owner
-	}
-	if l, ok := origin.(entity.Living); ok {
-		a.applyThorns(l, f)
-	}
 }
 
-// applyThorns checks if any of the Armour items are enchanted with Thorns and
-// hurts l if this is the case.
-func (a *Armour) applyThorns(l entity.Living, f DamageFunc) {
+// ThornsDamage checks if any of the Armour items are enchanted with Thorns. If
+// this is the case and the Thorns enchantment activates (15% chance per level),
+// a random Armour piece is damaged. The damage to be dealt to the attacker is
+// returned.
+func (a *Armour) ThornsDamage(f DamageFunc) float64 {
 	slots := a.Slots()
 	dmg := 0.0
 
@@ -195,21 +184,17 @@ func (a *Armour) applyThorns(l entity.Living, f DamageFunc) {
 		// damage.
 		dmg = float64(highest - 10)
 	}
-	if dmg <= 0 {
-		// No armour with thorns or no thorns activated.
-		return
+	if dmg > 0 {
+		// Deal 2 damage to one random thorns item. Bedrock Edition and Java Edition
+		// both have different behaviour here and neither seem to match the expected
+		// behaviour. Java Edition deals 2 damage to a random thorns item for every
+		// Thorns armour item worn, while Bedrock Edition deals 1 additional damage
+		// for every Thorns item and another 2 for every Thorns item when it
+		// activates.
+		slot := rand.Intn(len(slots))
+		_ = a.Inventory().SetItem(slot, f(slots[slot], 2))
 	}
-
-	// Deal 2 damage to one random thorns item. Bedrock Edition and Java Edition
-	// both have different behaviour here and neither seem to match the expected
-	// behaviour. Java Edition deals 2 damage to a random thorns item for every
-	// Thorns armour item worn, while Bedrock Edition deals 1 additional damage
-	// for every Thorns item and another 2 for every Thorns item when it
-	// activates.
-	slot := rand.Intn(len(slots))
-	_ = a.inv.SetItem(slot, f(slots[slot], 2))
-
-	l.Hurt(dmg, enchantment.ThornsDamageSource{})
+	return dmg
 }
 
 // KnockBackResistance returns the combined knock back resistance of all Armour

@@ -592,7 +592,16 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	if src.ReducedByArmour() {
 		p.Exhaust(0.1)
-		p.Armour().Hurt(dmg, src, p.damageItem)
+		p.Armour().Damage(dmg, p.damageItem)
+		var origin world.Entity
+		if s, ok := src.(entity.AttackDamageSource); ok {
+			origin = s.Attacker
+		} else if s, ok := src.(entity.ProjectileDamageSource); ok {
+			origin = s.Owner
+		}
+		if l, ok := origin.(entity.Living); ok {
+			l.Hurt(p.Armour().ThornsDamage(p.damageItem), enchantment.ThornsDamageSource{Owner: p})
+		}
 	}
 
 	w, pos := p.World(), p.Position()
