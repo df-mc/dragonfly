@@ -42,12 +42,16 @@ func (SplashPotionType) BBox(world.Entity) cube.BBox {
 func (SplashPotionType) DecodeNBT(m map[string]any) world.Entity {
 	pot := NewSplashPotion(nbtconv.Vec3(m, "Pos"), nil, potion.From(nbtconv.Int32(m, "PotionId")))
 	pot.vel = nbtconv.Vec3(m, "Motion")
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		pot.uniqueID = uniqueID
+	}
 	return pot
 }
 
 func (SplashPotionType) EncodeNBT(e world.Entity) map[string]any {
 	pot := e.(*Ent)
 	return map[string]any{
+		"UniqueID": pot.uniqueID,
 		"Pos":      nbtconv.Vec3ToFloat32Slice(pot.Position()),
 		"Motion":   nbtconv.Vec3ToFloat32Slice(pot.Velocity()),
 		"PotionId": int32(pot.conf.Behaviour.(*ProjectileBehaviour).conf.Potion.Uint8()),

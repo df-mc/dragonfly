@@ -51,13 +51,17 @@ func (EnderPearlType) BBox(world.Entity) cube.BBox {
 func (EnderPearlType) DecodeNBT(m map[string]any) world.Entity {
 	ep := NewEnderPearl(nbtconv.Vec3(m, "Pos"), nil)
 	ep.vel = nbtconv.Vec3(m, "Motion")
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		ep.uniqueID = uniqueID
+	}
 	return ep
 }
 
 func (EnderPearlType) EncodeNBT(e world.Entity) map[string]any {
 	ep := e.(*Ent)
 	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(ep.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(ep.Velocity()),
+		"UniqueID": ep.uniqueID,
+		"Pos":      nbtconv.Vec3ToFloat32Slice(ep.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(ep.Velocity()),
 	}
 }

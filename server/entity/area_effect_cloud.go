@@ -1,18 +1,21 @@
 package entity
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // AreaEffectCloud is the cloud that is created when: lingering potions are thrown; creepers with potion effects explode;
 // dragon fireballs hit the ground.
 type AreaEffectCloud struct {
+	uniqueID           int64
 	duration           int64
 	reapplicationDelay int64
 	durationOnUse      int64
@@ -46,6 +49,7 @@ func NewAreaEffectCloud(pos mgl64.Vec3, p potion.Potion) *AreaEffectCloud {
 // NewAreaEffectCloudWith ...
 func NewAreaEffectCloudWith(pos mgl64.Vec3, t potion.Potion, duration, reapplicationDelay, durationOnUse time.Duration, radius, radiusOnUse, radiusGrowth float64) *AreaEffectCloud {
 	a := &AreaEffectCloud{
+		uniqueID:           rand.Int63(),
 		duration:           duration.Milliseconds() / 50,
 		reapplicationDelay: reapplicationDelay.Milliseconds() / 50,
 		durationOnUse:      durationOnUse.Milliseconds() / 50,
@@ -216,7 +220,7 @@ func (AreaEffectCloudType) BBox(e world.Entity) cube.BBox {
 }
 
 func (AreaEffectCloudType) DecodeNBT(m map[string]any) world.Entity {
-	return NewAreaEffectCloudWith(
+	e := NewAreaEffectCloudWith(
 		nbtconv.Vec3(m, "Pos"),
 		potion.From(nbtconv.Int32(m, "PotionId")),
 		nbtconv.TickDuration[int32](m, "Duration"),
@@ -226,11 +230,16 @@ func (AreaEffectCloudType) DecodeNBT(m map[string]any) world.Entity {
 		float64(nbtconv.Float32(m, "RadiusOnUse")),
 		float64(nbtconv.Float32(m, "RadiusPerTick")),
 	)
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		e.uniqueID = uniqueID
+	}
+	return e
 }
 
 func (AreaEffectCloudType) EncodeNBT(e world.Entity) map[string]any {
 	a := e.(*AreaEffectCloud)
 	return map[string]any{
+		"UniqueID":           a.uniqueID,
 		"Pos":                nbtconv.Vec3ToFloat32Slice(a.Position()),
 		"ReapplicationDelay": int32(a.reapplicationDelay),
 		"RadiusPerTick":      float32(a.radiusGrowth),

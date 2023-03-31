@@ -24,13 +24,18 @@ func (TextType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 func (TextType) NetworkEncodeEntity() string { return "minecraft:falling_block" }
 
 func (TextType) DecodeNBT(m map[string]any) world.Entity {
-	return NewText(nbtconv.String(m, "Text"), nbtconv.Vec3(m, "Pos"))
+	t := NewText(nbtconv.String(m, "Text"), nbtconv.Vec3(m, "Pos"))
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		t.uniqueID = uniqueID
+	}
+	return t
 }
 
 func (TextType) EncodeNBT(e world.Entity) map[string]any {
 	t := e.(*Ent)
 	return map[string]any{
-		"Pos":  nbtconv.Vec3ToFloat32Slice(t.Position()),
-		"Text": t.NameTag(),
+		"UniqueID": t.uniqueID,
+		"Pos":      nbtconv.Vec3ToFloat32Slice(t.Position()),
+		"Text":     t.NameTag(),
 	}
 }

@@ -5,6 +5,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -13,10 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
-	"os"
-	"path/filepath"
-	"time"
+	"golang.org/x/exp/slices"
 )
 
 // Provider implements a world provider for the Minecraft world format, which
@@ -404,6 +407,32 @@ func (p *Provider) saveDifficulty(d world.Difficulty) {
 	}
 }
 
+// loadEntity loads a single entity from the map
+func (p *Provider) loadEntity(m map[string]any, pos world.ChunkPos, reg world.EntityRegistry) world.Entity {
+	id, ok := m["identifier"]
+	if !ok {
+		p.log.Errorf("load entities: failed loading %v: entity had data but no identifier (%v)", pos, m)
+		return nil
+	}
+	name, _ := id.(string)
+	t, ok := reg.Lookup(name)
+	if !ok {
+		p.log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
+		return nil
+	}
+	if s, ok := t.(world.SaveableEntityType); ok {
+		// random UniqueID if this entity doesnt have one yet
+		if _, ok := m["UniqueID"]; !ok {
+			m["UniqueID"] = rand.Int63()
+		}
+		if v := s.DecodeNBT(m); v != nil {
+			return v
+		}
+	}
+
+	return nil
+}
+
 // LoadEntities loads all entities from the chunk position passed.
 func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg world.EntityRegistry) ([]world.Entity, error) {
 	data, err := p.db.Get(append(p.index(pos, dim), keyEntities), nil)
@@ -418,23 +447,42 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg wor
 	for buf.Len() != 0 {
 		var m map[string]any
 		if err := dec.Decode(&m); err != nil {
-			return nil, fmt.Errorf("error decoding block NBT: %w", err)
+			return nil, fmt.Errorf("error decoding entity NBT: %w", err)
 		}
-		id, ok := m["identifier"]
-		if !ok {
-			p.log.Errorf("load entities: failed loading %v: entity had data but no identifier (%v)", pos, m)
-			continue
+
+		e := p.loadEntity(m, pos, reg)
+		if e != nil {
+			a = append(a, e)
 		}
-		name, _ := id.(string)
-		t, ok := reg.Lookup(name)
-		if !ok {
-			p.log.Errorf("load entities: failed loading %v: entity %s was not registered (%v)", pos, name, m)
-			continue
+	}
+
+	// load actorstorage entities
+	// https://learn.microsoft.com/en-us/minecraft/creator/documents/actorstorage
+	digp, err := p.db.Get(append([]byte("digp"), p.index(pos, dim)...), nil)
+	if err == leveldb.ErrNotFound {
+		return a, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(digp); i += 8 {
+		key := append([]byte("actorprefix"), digp[i:i+8]...)
+		data, err := p.db.Get(key, nil)
+		if err != leveldb.ErrNotFound && err != nil {
+			return nil, err
 		}
-		if s, ok := t.(world.SaveableEntityType); ok {
-			if v := s.DecodeNBT(m); v != nil {
-				a = append(a, v)
-			}
+		buf := bytes.NewBuffer(data)
+		dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
+
+		var m map[string]any
+		if err := dec.Decode(&m); err != nil {
+			return nil, fmt.Errorf("error decoding entity NBT: %w", err)
+		}
+
+		e := p.loadEntity(m, pos, reg)
+		if e != nil {
+			a = append(a, e)
 		}
 	}
 	return a, nil
@@ -442,13 +490,25 @@ func (p *Provider) LoadEntities(pos world.ChunkPos, dim world.Dimension, reg wor
 
 // SaveEntities saves all entities to the chunk position passed.
 func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim world.Dimension) error {
-	if len(entities) == 0 {
-		return p.db.Delete(append(p.index(pos, dim), keyEntities), nil)
+	digpKey := append([]byte("digp"), p.index(pos, dim)...)
+
+	// load the ids of the previous entities
+	var previousUniqueIDs []int64
+	digpPrev, err := p.db.Get(digpKey, nil)
+	if err != leveldb.ErrNotFound && err != nil {
+		return err
+	}
+	if err != leveldb.ErrNotFound {
+		for i := 0; i < len(digpPrev); i += 8 {
+			uniqueID := int64(binary.LittleEndian.Uint64(digpPrev[i : i+8]))
+			previousUniqueIDs = append(previousUniqueIDs, uniqueID)
+		}
 	}
 
-	buf := bytes.NewBuffer(nil)
-	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
+	var uniqueIDs []int64
 	for _, e := range entities {
+		buf := bytes.NewBuffer(nil)
+		enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
 		t, ok := e.Type().(world.SaveableEntityType)
 		if !ok {
 			continue
@@ -458,8 +518,39 @@ func (p *Provider) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim
 		if err := enc.Encode(x); err != nil {
 			return fmt.Errorf("save entities: error encoding NBT: %w", err)
 		}
+
+		uniqueID, ok := x["UniqueID"].(int64)
+		if !ok {
+			uniqueID = rand.Int63()
+		}
+		if err := p.db.Put(p.actorIndex(uniqueID), buf.Bytes(), nil); err != nil {
+			return fmt.Errorf("save entities: error Adding to db: %w", err)
+		}
+		uniqueIDs = append(uniqueIDs, uniqueID)
 	}
-	return p.db.Put(append(p.index(pos, dim), keyEntities), buf.Bytes(), nil)
+
+	// remove entities that arent referenced anymore.
+	for _, uniqueID := range previousUniqueIDs {
+		if !slices.Contains(uniqueIDs, uniqueID) {
+			p.db.Delete(p.actorIndex(uniqueID), nil)
+		}
+	}
+	if len(entities) == 0 {
+		return p.db.Delete(digpKey, nil)
+	}
+
+	// save the index of entities in the chunk.
+	digp := make([]byte, 0, 8*len(uniqueIDs))
+	for _, uniqueID := range uniqueIDs {
+		digp = binary.LittleEndian.AppendUint64(digp, uint64(uniqueID))
+	}
+	if err := p.db.Put(digpKey, digp, nil); err != nil {
+		return fmt.Errorf("save entities: error Adding to db: %w", err)
+	}
+
+	// remove old entity data for this chunk.
+	p.db.Delete(append(p.index(pos, dim), keyEntities), nil)
+	return nil
 }
 
 // LoadBlockNBT loads all block entities from the chunk position passed.
@@ -536,6 +627,10 @@ func (p *Provider) Close() error {
 		return fmt.Errorf("error writing levelname.txt: %w", err)
 	}
 	return p.db.Close()
+}
+
+func (p *Provider) actorIndex(uniqueID int64) []byte {
+	return binary.LittleEndian.AppendUint64([]byte("actorprefix"), uint64(uniqueID))
 }
 
 // index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed to New

@@ -1,6 +1,9 @@
 package entity
 
 import (
+	"math"
+	"math/rand"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -8,14 +11,13 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand"
 )
 
 // FallingBlock is the entity form of a block that appears when a gravity-affected block loses its support.
 type FallingBlock struct {
 	transform
 
+	uniqueID     int64
 	block        world.Block
 	fallDistance atomic.Float64
 
@@ -25,7 +27,8 @@ type FallingBlock struct {
 // NewFallingBlock creates a new FallingBlock entity.
 func NewFallingBlock(block world.Block, pos mgl64.Vec3) *FallingBlock {
 	b := &FallingBlock{
-		block: block,
+		uniqueID: rand.Int63(),
+		block:    block,
 		c: &MovementComputer{
 			Gravity:           0.04,
 			Drag:              0.02,
@@ -158,13 +161,16 @@ func (FallingBlockType) DecodeNBT(m map[string]any) world.Entity {
 	n := NewFallingBlock(b, nbtconv.Vec3(m, "Pos"))
 	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
 	n.fallDistance.Store(nbtconv.Float64(m, "FallDistance"))
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		n.uniqueID = uniqueID
+	}
 	return n
 }
 
 func (FallingBlockType) EncodeNBT(e world.Entity) map[string]any {
 	f := e.(*FallingBlock)
 	return map[string]any{
-		"UniqueID":     -rand.Int63(),
+		"UniqueID":     f.uniqueID,
 		"FallDistance": f.FallDistance(),
 		"Pos":          nbtconv.Vec3ToFloat32Slice(f.Position()),
 		"Motion":       nbtconv.Vec3ToFloat32Slice(f.Velocity()),

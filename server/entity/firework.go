@@ -1,6 +1,9 @@
 package entity
 
 import (
+	"math"
+	"math/rand"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -8,8 +11,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand"
 )
 
 // Firework is an item (and entity) used for creating decorative explosions, boosting when flying with elytra, and
@@ -17,6 +18,7 @@ import (
 type Firework struct {
 	transform
 
+	uniqueID   int64
 	yaw, pitch float64
 	firework   item.Firework
 
@@ -164,6 +166,9 @@ func (FireworkType) DecodeNBT(m map[string]any) world.Entity {
 		nbtconv.MapItem(m, "Item").Item().(item.Firework),
 	)
 	f.vel = nbtconv.Vec3(m, "Motion")
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		f.uniqueID = uniqueID
+	}
 	return f
 }
 
@@ -171,10 +176,11 @@ func (FireworkType) EncodeNBT(e world.Entity) map[string]any {
 	f := e.(*Firework)
 	yaw, pitch := f.Rotation().Elem()
 	return map[string]any{
-		"Item":   nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(f.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(f.Velocity()),
-		"Yaw":    float32(yaw),
-		"Pitch":  float32(pitch),
+		"UniqueID": f.uniqueID,
+		"Item":     nbtconv.WriteItem(item.NewStack(f.Firework(), 1), true),
+		"Pos":      nbtconv.Vec3ToFloat32Slice(f.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(f.Velocity()),
+		"Yaw":      float32(yaw),
+		"Pitch":    float32(pitch),
 	}
 }

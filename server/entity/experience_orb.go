@@ -1,20 +1,23 @@
 package entity
 
 import (
+	"math"
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/slices"
-	"math"
-	"time"
 )
 
 // ExperienceOrb is an entity that carries a varying amount of experience. These can be collected by nearby players, and
 // are then added to the player's own experience.
 type ExperienceOrb struct {
 	transform
+	uniqueID   int64
 	age, xp    int
 	lastSearch time.Time
 	target     experienceCollector
@@ -41,6 +44,7 @@ func NewExperienceOrbs(pos mgl64.Vec3, amount int) (orbs []*ExperienceOrb) {
 // NewExperienceOrb creates a new experience orb and returns it.
 func NewExperienceOrb(pos mgl64.Vec3, xp int) *ExperienceOrb {
 	o := &ExperienceOrb{
+		uniqueID:   rand.Int63(),
 		xp:         xp,
 		lastSearch: time.Now(),
 		c: &MovementComputer{
@@ -144,15 +148,19 @@ func (ExperienceOrbType) DecodeNBT(m map[string]any) world.Entity {
 	o := NewExperienceOrb(nbtconv.Vec3(m, "Pos"), int(nbtconv.Int32(m, "Value")))
 	o.vel = nbtconv.Vec3(m, "Motion")
 	o.age = int(nbtconv.Int16(m, "Age"))
+	if uniqueID, ok := m["UniqueID"].(int64); ok {
+		o.uniqueID = uniqueID
+	}
 	return o
 }
 
 func (ExperienceOrbType) EncodeNBT(e world.Entity) map[string]any {
 	orb := e.(*ExperienceOrb)
 	return map[string]any{
-		"Age":    int16(orb.age),
-		"Value":  int32(orb.xp),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(orb.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(orb.Velocity()),
+		"UniqueID": orb.uniqueID,
+		"Age":      int16(orb.age),
+		"Value":    int32(orb.xp),
+		"Pos":      nbtconv.Vec3ToFloat32Slice(orb.Position()),
+		"Motion":   nbtconv.Vec3ToFloat32Slice(orb.Velocity()),
 	}
 }
