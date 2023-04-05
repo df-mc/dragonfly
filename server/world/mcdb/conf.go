@@ -47,10 +47,10 @@ func (conf Config) New(dir string) (*DB, error) {
 	}
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
-	p := &DB{conf: conf, dir: dir}
+	db := &DB{conf: conf, dir: dir}
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
 		// A level.dat was not currently present for the world.
-		p.initDefaultLevelDat()
+		db.initDefaultLevelDat()
 	} else {
 		f, err := os.ReadFile(filepath.Join(dir, "level.dat"))
 		if err != nil {
@@ -61,19 +61,18 @@ func (conf Config) New(dir string) (*DB, error) {
 			// The file did not have enough content, meaning it is corrupted. We return an error.
 			return nil, fmt.Errorf("level.dat exists but has no data")
 		}
-		if err := nbt.UnmarshalEncoding(f[8:], &p.ldat, nbt.LittleEndian); err != nil {
+		if err := nbt.UnmarshalEncoding(f[8:], &db.ldat, nbt.LittleEndian); err != nil {
 			return nil, fmt.Errorf("error decoding level.dat NBT: %w", err)
 		}
-		p.ldat.WorldStartCount++
 	}
-	p.loadSettings()
-	db, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
+	db.loadSettings()
+	ldb, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
 		Compression: conf.Compression,
 		BlockSize:   conf.BlockSize,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error opening leveldb database: %w", err)
 	}
-	p.ldb = db
-	return p, nil
+	db.ldb = ldb
+	return db, nil
 }

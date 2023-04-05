@@ -104,7 +104,6 @@ func (db *DB) initDefaultLevelDat() {
 	db.ldat.SpawnY = math.MaxInt16
 	db.ldat.StorageVersion = 9
 	db.ldat.TNTExplodes = true
-	db.ldat.WorldStartCount = 1
 	db.ldat.WorldVersion = 1
 	db.ldat.XBLBroadcastIntent = 3
 }
@@ -117,6 +116,7 @@ func (db *DB) Settings() *world.Settings {
 // loadSettings loads the settings in the level.dat into a world.Settings struct and stores it, so that it can be
 // returned through a call to Settings.
 func (db *DB) loadSettings() {
+	db.ldat.WorldStartCount += 1
 	db.set = &world.Settings{
 		Name:            db.ldat.LevelName,
 		Spawn:           cube.Pos{int(db.ldat.SpawnX), int(db.ldat.SpawnY), int(db.ldat.SpawnZ)},
