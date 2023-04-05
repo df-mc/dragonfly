@@ -8,7 +8,7 @@ import (
 	"github.com/df-mc/goleveldb/leveldb/iterator"
 )
 
-// ChunkIterator iterates over a Provider's position/chunk pairs in key order.
+// ChunkIterator iterates over a DB's position/chunk pairs in key order.
 //
 // When an error is encountered, any call to Next will return false and will
 // yield no position/chunk pairs. The error can be queried by calling the Error
@@ -21,7 +21,7 @@ import (
 // goroutine.
 type ChunkIterator struct {
 	dbIter iterator.Iterator
-	prov   *Provider
+	db     *DB
 	r      *IteratorRange
 
 	err error
@@ -37,9 +37,9 @@ type iterKey struct {
 	dim world.Dimension
 }
 
-func newChunkIterator(prov *Provider, r *IteratorRange) *ChunkIterator {
+func newChunkIterator(db *DB, r *IteratorRange) *ChunkIterator {
 	return &ChunkIterator{
-		dbIter: prov.db.NewIterator(nil, nil),
+		dbIter: db.ldb.NewIterator(nil, nil),
 		seen:   make(map[iterKey]struct{}),
 		r:      r,
 	}
@@ -79,7 +79,7 @@ func (iter *ChunkIterator) Next() bool {
 		// multiple version keys.
 		return iter.Next()
 	}
-	iter.current, _, iter.err = iter.prov.LoadChunk(iter.pos, iter.dim)
+	iter.current, _, iter.err = iter.db.LoadChunk(iter.pos, iter.dim)
 	if iter.err != nil {
 		iter.err = fmt.Errorf("load chunk %v: %w", iter.pos, iter.err)
 		return false

@@ -12,7 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
-	"github.com/df-mc/goleveldb/leveldb/opt"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sirupsen/logrus"
@@ -254,7 +253,7 @@ func (uc UserConfig) Config(log Logger) (Config, error) {
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
 	}
 	if uc.World.SaveData {
-		conf.WorldProvider, err = mcdb.New(log, uc.World.Folder, opt.FlateCompression)
+		conf.WorldProvider, err = mcdb.Config{Log: log}.New(uc.World.Folder)
 		if err != nil {
 			return conf, fmt.Errorf("create world provider: %w", err)
 		}

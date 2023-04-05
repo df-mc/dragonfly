@@ -1,5 +1,12 @@
 package mcdb
 
+import (
+	"encoding/binary"
+	"fmt"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"io"
+)
+
 // data holds a collection of data that specify a range of settings of the world. These settings usually
 // alter the way that players interact with the world.
 // The data held here is usually saved in a level.dat file of the world.
@@ -122,4 +129,16 @@ type data struct {
 	ShowBorderEffect               bool           `nbt:"showbordereffect"`
 	PermissionsLevel               int32          `nbt:"permissionsLevel"`
 	PlayerPermissionsLevel         int32          `nbt:"playerPermissionsLevel"`
+}
+
+// marshal encodes d and writes it to w.
+func (d *data) marshal(w io.Writer) error {
+	_ = binary.Write(w, binary.LittleEndian, int32(3))
+	nbtData, err := nbt.MarshalEncoding(*d, nbt.LittleEndian)
+	if err != nil {
+		return fmt.Errorf("encode level.dat to nbt: %w", err)
+	}
+	_ = binary.Write(w, binary.LittleEndian, int32(len(nbtData)))
+	_, _ = w.Write(nbtData)
+	return nil
 }

@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// chunkVersion is the current version of chunks.
+const chunkVersion = 40
+
 // minimumCompatibleClientVersion is the minimum compatible client version, required by the latest Minecraft data provider.
 var minimumCompatibleClientVersion []int32
 
