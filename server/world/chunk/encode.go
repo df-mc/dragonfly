@@ -35,9 +35,6 @@ type (
 		SubChunks [][]byte
 		// Biomes is the biome data of the chunk, which is composed of a biome storage for each sub-chunk.
 		Biomes []byte
-		// BlockNBT is an encoded NBT array of all blocks that carry additional NBT, such as chests, with all
-		// their contents.
-		BlockNBT []byte
 	}
 	// blockEntry represents a block as found in a disk save of a world.
 	blockEntry struct {

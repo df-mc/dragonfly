@@ -154,12 +154,6 @@ func (db *DB) LoadChunk(position world.ChunkPos, dim world.Dimension) (c *chunk.
 		// Strip the heightmap from the biomes.
 		data.Biomes = data.Biomes[512:]
 	}
-
-	data.BlockNBT, err = db.ldb.Get(append(key, keyBlockEntities), nil)
-	// Block entities aren't present when there aren't any, so it's okay if we can't find the key.
-	if err != nil && err != leveldb.ErrNotFound {
-		return nil, true, fmt.Errorf("error reading block entities: %w", err)
-	}
 	data.SubChunks = make([][]byte, (dim.Range().Height()>>4)+1)
 	for i := range data.SubChunks {
 		data.SubChunks[i], err = db.ldb.Get(append(key, keySubChunkData, uint8(i+(dim.Range()[0]>>4))), nil)
