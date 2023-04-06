@@ -474,21 +474,17 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	// Gophertunnel guarantees the following values are valid data and are of
 	// the correct size.
-	skinData, _ := base64.StdEncoding.DecodeString(data.SkinData)
-	capeData, _ := base64.StdEncoding.DecodeString(data.CapeData)
-	modelData, _ := base64.StdEncoding.DecodeString(data.SkinGeometry)
 	skinResourcePatch, _ := base64.StdEncoding.DecodeString(data.SkinResourcePatch)
-	modelConfig, _ := skin.DecodeModelConfig(skinResourcePatch)
 
 	playerSkin := skin.New(data.SkinImageWidth, data.SkinImageHeight)
 	playerSkin.Persona = data.PersonaSkin
-	playerSkin.Pix = skinData
-	playerSkin.Model = modelData
-	playerSkin.ModelConfig = modelConfig
+	playerSkin.Pix, _ = base64.StdEncoding.DecodeString(data.SkinData)
+	playerSkin.Model, _ = base64.StdEncoding.DecodeString(data.SkinGeometry)
+	playerSkin.ModelConfig, _ = skin.DecodeModelConfig(skinResourcePatch)
 	playerSkin.PlayFabID = data.PlayFabID
 
 	playerSkin.Cape = skin.NewCape(data.CapeImageWidth, data.CapeImageHeight)
-	playerSkin.Cape.Pix = capeData
+	playerSkin.Cape.Pix, _ = base64.StdEncoding.DecodeString(data.CapeData)
 
 	for _, animation := range data.AnimatedImageData {
 		var t skin.AnimationType

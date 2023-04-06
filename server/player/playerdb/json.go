@@ -11,6 +11,7 @@ import (
 
 func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world.World) player.Data {
 	dim, _ := world.DimensionByID(int(d.Dimension))
+	mode, _ := world.GameModeByID(int(d.GameMode))
 	data := player.Data{
 		UUID:                uuid.MustParse(d.UUID),
 		Username:            d.Username,
@@ -29,7 +30,7 @@ func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world
 		AirSupply:           d.AirSupply,
 		MaxAirSupply:        d.MaxAirSupply,
 		EnchantmentSeed:     d.EnchantmentSeed,
-		GameMode:            idToGameMode(d.GameMode),
+		GameMode:            mode,
 		Effects:             dataToEffects(d.Effects),
 		FireTicks:           d.FireTicks,
 		FallDistance:        d.FallDistance,
@@ -43,6 +44,7 @@ func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world
 
 func (p *Provider) toJson(d player.Data) jsonData {
 	dim, _ := world.DimensionID(d.World.Dimension())
+	mode, _ := world.GameModeID(d.GameMode)
 	return jsonData{
 		UUID:                d.UUID.String(),
 		Username:            d.Username,
@@ -61,7 +63,7 @@ func (p *Provider) toJson(d player.Data) jsonData {
 		AirSupply:           d.AirSupply,
 		MaxAirSupply:        d.MaxAirSupply,
 		EnchantmentSeed:     d.EnchantmentSeed,
-		GameMode:            gameModeToID(d.GameMode),
+		GameMode:            uint8(mode),
 		Effects:             effectsToData(d.Effects),
 		FireTicks:           d.FireTicks,
 		FallDistance:        d.FallDistance,

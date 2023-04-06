@@ -118,6 +118,7 @@ func (db *DB) Settings() *world.Settings {
 func (db *DB) loadSettings() {
 	db.ldat.WorldStartCount += 1
 	difficulty, _ := world.DifficultyByID(int(db.ldat.Difficulty))
+	mode, _ := world.GameModeByID(int(db.ldat.GameType))
 	db.set = &world.Settings{
 		Name:            db.ldat.LevelName,
 		Spawn:           cube.Pos{int(db.ldat.SpawnX), int(db.ldat.SpawnY), int(db.ldat.SpawnZ)},
@@ -129,7 +130,7 @@ func (db *DB) loadSettings() {
 		Thundering:      db.ldat.LightningLevel > 0,
 		WeatherCycle:    db.ldat.DoWeatherCycle,
 		CurrentTick:     db.ldat.CurrentTick,
-		DefaultGameMode: db.loadDefaultGameMode(),
+		DefaultGameMode: mode,
 		Difficulty:      difficulty,
 		TickRange:       db.ldat.ServerChunkTickRange,
 	}
@@ -153,7 +154,8 @@ func (db *DB) SaveSettings(s *world.Settings) {
 	}
 	db.ldat.CurrentTick = s.CurrentTick
 	db.ldat.ServerChunkTickRange = s.TickRange
-	db.saveDefaultGameMode(s.DefaultGameMode)
+	mode, _ := world.GameModeID(s.DefaultGameMode)
+	db.ldat.GameType = int32(mode)
 	difficulty, _ := world.DifficultyID(s.Difficulty)
 	db.ldat.Difficulty = int32(difficulty)
 }
@@ -306,34 +308,6 @@ func (db *DB) SaveChunk(position world.ChunkPos, c *chunk.Chunk, dim world.Dimen
 		_ = db.ldb.Put(append(key, keySubChunkData, byte(i+(c.Range()[0]>>4))), sub, nil)
 	}
 	return nil
-}
-
-// loadDefaultGameMode returns the default game mode stored in the level.dat.
-func (db *DB) loadDefaultGameMode() world.GameMode {
-	switch db.ldat.GameType {
-	default:
-		return world.GameModeSurvival
-	case 1:
-		return world.GameModeCreative
-	case 2:
-		return world.GameModeAdventure
-	case 3:
-		return world.GameModeSpectator
-	}
-}
-
-// saveDefaultGameMode changes the default game mode in the level.dat.
-func (db *DB) saveDefaultGameMode(mode world.GameMode) {
-	switch mode {
-	case world.GameModeSurvival:
-		db.ldat.GameType = 0
-	case world.GameModeCreative:
-		db.ldat.GameType = 1
-	case world.GameModeAdventure:
-		db.ldat.GameType = 2
-	case world.GameModeSpectator:
-		db.ldat.GameType = 3
-	}
 }
 
 // LoadEntities loads all entities from the chunk position passed.

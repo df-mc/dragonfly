@@ -49,8 +49,8 @@ func DifficultyByID(id int) (Difficulty, bool) {
 
 // DifficultyID looks up the ID that a Difficulty was registered with. If not
 // found, false is returned.
-func DifficultyID(dim Difficulty) (int, bool) {
-	return difficultyReg.LookupID(dim)
+func DifficultyID(diff Difficulty) (int, bool) {
+	return difficultyReg.LookupID(diff)
 }
 
 type difficultyRegistry struct {
@@ -59,17 +59,18 @@ type difficultyRegistry struct {
 }
 
 // newDifficultyRegistry returns an initialised difficultyRegistry.
-func newDifficultyRegistry(dim map[int]Difficulty) *difficultyRegistry {
-	ids := make(map[Difficulty]int, len(dim))
-	for k, v := range dim {
+func newDifficultyRegistry(diff map[int]Difficulty) *difficultyRegistry {
+	ids := make(map[Difficulty]int, len(diff))
+	for k, v := range diff {
 		ids[v] = k
 	}
-	return &difficultyRegistry{difficulties: dim, ids: ids}
+	return &difficultyRegistry{difficulties: diff, ids: ids}
 }
 
-// Lookup looks up a Difficulty for the ID passed, returning Overworld for 0,
-// Nether for 1 and End for 2. If the ID is unknown, the bool returned is
-// false. In this case the Difficulty returned is Overworld.
+// Lookup looks up a Difficulty for the ID passed, returning DifficultyPeaceful
+// for 0, DifficultyEasy for 1, DifficultyNormal for 2 and DifficultyHard for
+// 3. If the ID is unknown, the bool returned is false. In this case the
+// Difficulty returned is DifficultyNormal.
 func (reg *difficultyRegistry) Lookup(id int) (Difficulty, bool) {
 	dim, ok := reg.difficulties[id]
 	if !ok {
@@ -80,8 +81,8 @@ func (reg *difficultyRegistry) Lookup(id int) (Difficulty, bool) {
 
 // LookupID looks up the ID that a Difficulty was registered with. If not found,
 // false is returned.
-func (reg *difficultyRegistry) LookupID(dim Difficulty) (int, bool) {
-	id, ok := reg.ids[dim]
+func (reg *difficultyRegistry) LookupID(diff Difficulty) (int, bool) {
+	id, ok := reg.ids[diff]
 	return id, ok
 }
 
