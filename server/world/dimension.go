@@ -40,7 +40,7 @@ func DimensionID(dim Dimension) (int, bool) {
 
 type dimensionRegistry struct {
 	dimensions map[int]Dimension
-	IDs        map[Dimension]int
+	ids        map[Dimension]int
 }
 
 // newDimensionRegistry returns an initialised dimensionRegistry.
@@ -49,7 +49,7 @@ func newDimensionRegistry(dim map[int]Dimension) *dimensionRegistry {
 	for k, v := range dim {
 		ids[v] = k
 	}
-	return &dimensionRegistry{dimensions: dim, IDs: ids}
+	return &dimensionRegistry{dimensions: dim, ids: ids}
 }
 
 // Lookup looks up a Dimension for the ID passed, returning Overworld for 0,
@@ -66,7 +66,7 @@ func (reg *dimensionRegistry) Lookup(id int) (Dimension, bool) {
 // LookupID looks up the ID that a Dimension was registered with. If not found,
 // false is returned.
 func (reg *dimensionRegistry) LookupID(dim Dimension) (int, bool) {
-	id, ok := reg.IDs[dim]
+	id, ok := reg.ids[dim]
 	return id, ok
 }
 

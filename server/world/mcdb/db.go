@@ -117,6 +117,7 @@ func (db *DB) Settings() *world.Settings {
 // returned through a call to Settings.
 func (db *DB) loadSettings() {
 	db.ldat.WorldStartCount += 1
+	difficulty, _ := world.DifficultyByID(int(db.ldat.Difficulty))
 	db.set = &world.Settings{
 		Name:            db.ldat.LevelName,
 		Spawn:           cube.Pos{int(db.ldat.SpawnX), int(db.ldat.SpawnY), int(db.ldat.SpawnZ)},
@@ -129,7 +130,7 @@ func (db *DB) loadSettings() {
 		WeatherCycle:    db.ldat.DoWeatherCycle,
 		CurrentTick:     db.ldat.CurrentTick,
 		DefaultGameMode: db.loadDefaultGameMode(),
-		Difficulty:      db.loadDifficulty(),
+		Difficulty:      difficulty,
 		TickRange:       db.ldat.ServerChunkTickRange,
 	}
 }
@@ -153,7 +154,8 @@ func (db *DB) SaveSettings(s *world.Settings) {
 	db.ldat.CurrentTick = s.CurrentTick
 	db.ldat.ServerChunkTickRange = s.TickRange
 	db.saveDefaultGameMode(s.DefaultGameMode)
-	db.saveDifficulty(s.Difficulty)
+	difficulty, _ := world.DifficultyID(s.Difficulty)
+	db.ldat.Difficulty = int32(difficulty)
 }
 
 // playerData holds the fields that indicate where player data is stored for a player with a specific UUID.
@@ -331,34 +333,6 @@ func (db *DB) saveDefaultGameMode(mode world.GameMode) {
 		db.ldat.GameType = 2
 	case world.GameModeSpectator:
 		db.ldat.GameType = 3
-	}
-}
-
-// loadDifficulty loads the difficulty stored in the level.dat.
-func (db *DB) loadDifficulty() world.Difficulty {
-	switch db.ldat.Difficulty {
-	default:
-		return world.DifficultyNormal
-	case 0:
-		return world.DifficultyPeaceful
-	case 1:
-		return world.DifficultyEasy
-	case 3:
-		return world.DifficultyHard
-	}
-}
-
-// saveDifficulty saves the difficulty passed to the level.dat.
-func (db *DB) saveDifficulty(d world.Difficulty) {
-	switch d {
-	case world.DifficultyPeaceful:
-		db.ldat.Difficulty = 0
-	case world.DifficultyEasy:
-		db.ldat.Difficulty = 1
-	case world.DifficultyNormal:
-		db.ldat.Difficulty = 2
-	case world.DifficultyHard:
-		db.ldat.Difficulty = 3
 	}
 }
 

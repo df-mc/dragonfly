@@ -27,6 +27,58 @@ var (
 	DifficultyHard difficultyHard
 )
 
+var difficultyReg = newDifficultyRegistry(map[int]Difficulty{
+	0: DifficultyPeaceful,
+	1: DifficultyEasy,
+	2: DifficultyNormal,
+	3: DifficultyHard,
+})
+
+// DifficultyByID looks up a Difficulty for the ID passed, returning Overworld
+// for 0, Nether for 1 and End for 2. If the ID is unknown, the bool returned
+// is false. In this case the Difficulty returned is Overworld.
+func DifficultyByID(id int) (Difficulty, bool) {
+	return difficultyReg.Lookup(id)
+}
+
+// DifficultyID looks up the ID that a Difficulty was registered with. If not
+// found, false is returned.
+func DifficultyID(dim Difficulty) (int, bool) {
+	return difficultyReg.LookupID(dim)
+}
+
+type difficultyRegistry struct {
+	difficulties map[int]Difficulty
+	ids          map[Difficulty]int
+}
+
+// newDifficultyRegistry returns an initialised difficultyRegistry.
+func newDifficultyRegistry(dim map[int]Difficulty) *difficultyRegistry {
+	ids := make(map[Difficulty]int, len(dim))
+	for k, v := range dim {
+		ids[v] = k
+	}
+	return &difficultyRegistry{difficulties: dim, ids: ids}
+}
+
+// Lookup looks up a Difficulty for the ID passed, returning Overworld for 0,
+// Nether for 1 and End for 2. If the ID is unknown, the bool returned is
+// false. In this case the Difficulty returned is Overworld.
+func (reg *difficultyRegistry) Lookup(id int) (Difficulty, bool) {
+	dim, ok := reg.difficulties[id]
+	if !ok {
+		dim = DifficultyNormal
+	}
+	return dim, ok
+}
+
+// LookupID looks up the ID that a Difficulty was registered with. If not found,
+// false is returned.
+func (reg *difficultyRegistry) LookupID(dim Difficulty) (int, bool) {
+	id, ok := reg.ids[dim]
+	return id, ok
+}
+
 // difficultyPeaceful difficulty prevents most hostile mobs from spawning and makes players rapidly regenerate
 // health and food.
 type difficultyPeaceful struct{}
