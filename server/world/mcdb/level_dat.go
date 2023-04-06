@@ -3,13 +3,18 @@ package mcdb
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"io"
+	"math"
+	"time"
 )
 
-// data holds a collection of data that specify a range of settings of the world. These settings usually
-// alter the way that players interact with the world.
-// The data held here is usually saved in a level.dat file of the world.
+// data holds a collection of data that specify a range of settings of the
+// world. These settings usually alter the way that players interact with the
+// world. The data held here is usually saved in a level.dat file of the world.
 // noinspection SpellCheckingInspection
 type data struct {
 	BaseGameVersion                string `nbt:"baseGameVersion"`
@@ -141,4 +146,121 @@ func (d *data) marshal(w io.Writer) error {
 	_ = binary.Write(w, binary.LittleEndian, int32(len(nbtData)))
 	_, _ = w.Write(nbtData)
 	return nil
+}
+
+// fillDefault fills out d with all the default level.dat values.
+func (d *data) fillDefault() {
+	d.Abilities.AttackMobs = true
+	d.Abilities.AttackPlayers = true
+	d.Abilities.Build = true
+	d.Abilities.DoorsAndSwitches = true
+	d.Abilities.FlySpeed = 0.05
+	d.Abilities.Mine = true
+	d.Abilities.OpenContainers = true
+	d.Abilities.PlayerPermissionsLevel = 1
+	d.Abilities.WalkSpeed = 0.1
+	d.BaseGameVersion = "*"
+	d.CommandBlockOutput = true
+	d.CommandBlocksEnabled = true
+	d.CommandsEnabled = true
+	d.Difficulty = 2
+	d.DoDayLightCycle = true
+	d.DoEntityDrops = true
+	d.DoFireTick = true
+	d.DoInsomnia = true
+	d.DoMobLoot = true
+	d.DoMobSpawning = true
+	d.DoTileDrops = true
+	d.DoWeatherCycle = true
+	d.DrowningDamage = true
+	d.FallDamage = true
+	d.FireDamage = true
+	d.FreezeDamage = true
+	d.FunctionCommandLimit = 10000
+	d.GameType = 1
+	d.Generator = 2
+	d.HasBeenLoadedInCreative = true
+	d.InventoryVersion = protocol.CurrentVersion
+	d.LANBroadcast = true
+	d.LANBroadcastIntent = true
+	d.LastOpenedWithVersion = minimumCompatibleClientVersion
+	d.LevelName = "World"
+	d.LightningLevel = 1.0
+	d.LimitedWorldDepth = 16
+	d.LimitedWorldOriginY = math.MaxInt16
+	d.LimitedWorldWidth = 16
+	d.MaxCommandChainLength = math.MaxUint16
+	d.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
+	d.MobGriefing = true
+	d.MultiPlayerGame = true
+	d.MultiPlayerGameIntent = true
+	d.NaturalRegeneration = true
+	d.NetherScale = 8
+	d.NetworkVersion = protocol.CurrentProtocol
+	d.PVP = true
+	d.Platform = 2
+	d.PlatformBroadcastIntent = 3
+	d.RainLevel = 1.0
+	d.RandomSeed = time.Now().Unix()
+	d.RandomTickSpeed = 1
+	d.RespawnBlocksExplode = true
+	d.SendCommandFeedback = true
+	d.ServerChunkTickRange = 6
+	d.ShowBorderEffect = true
+	d.ShowDeathMessages = true
+	d.ShowTags = true
+	d.SpawnMobs = true
+	d.SpawnRadius = 5
+	d.SpawnRadius = 5
+	d.SpawnY = math.MaxInt16
+	d.StorageVersion = 9
+	d.TNTExplodes = true
+	d.WorldVersion = 1
+	d.XBLBroadcastIntent = 3
+}
+
+// settings returns a world.Settings value based on the properties stored in d.
+func (d *data) settings() *world.Settings {
+	d.WorldStartCount += 1
+	difficulty, _ := world.DifficultyByID(int(d.Difficulty))
+	mode, _ := world.GameModeByID(int(d.GameType))
+	return &world.Settings{
+		Name:            d.LevelName,
+		Spawn:           cube.Pos{int(d.SpawnX), int(d.SpawnY), int(d.SpawnZ)},
+		Time:            d.Time,
+		TimeCycle:       d.DoDayLightCycle,
+		RainTime:        int64(d.RainTime),
+		Raining:         d.RainLevel > 0,
+		ThunderTime:     int64(d.LightningTime),
+		Thundering:      d.LightningLevel > 0,
+		WeatherCycle:    d.DoWeatherCycle,
+		CurrentTick:     d.CurrentTick,
+		DefaultGameMode: mode,
+		Difficulty:      difficulty,
+		TickRange:       d.ServerChunkTickRange,
+	}
+}
+
+// putSettings updates d with the settings stored in s.
+func (d *data) putSettings(s *world.Settings) {
+	d.LevelName = s.Name
+	d.SpawnX, d.SpawnY, d.SpawnZ = int32(s.Spawn.X()), int32(s.Spawn.Y()), int32(s.Spawn.Z())
+	d.LimitedWorldOriginX, d.LimitedWorldOriginY, d.LimitedWorldOriginZ = d.SpawnX, d.SpawnY, d.SpawnZ
+	d.Time = s.Time
+	d.DoDayLightCycle = s.TimeCycle
+	d.DoWeatherCycle = s.WeatherCycle
+	d.RainTime, d.RainLevel = int32(s.RainTime), 0
+	d.LightningTime, d.LightningLevel = int32(s.ThunderTime), 0
+	if s.Raining {
+		d.RainLevel = 1
+	}
+	if s.Thundering {
+		d.LightningLevel = 1
+	}
+	d.CurrentTick = s.CurrentTick
+	d.ServerChunkTickRange = s.TickRange
+	mode, _ := world.GameModeID(s.DefaultGameMode)
+	d.GameType = int32(mode)
+	difficulty, _ := world.DifficultyID(s.Difficulty)
+	d.Difficulty = int32(difficulty)
 }

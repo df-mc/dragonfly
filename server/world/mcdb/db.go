@@ -11,8 +11,6 @@ import (
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
 	"os"
 	"path/filepath"
 	"time"
@@ -24,7 +22,7 @@ type DB struct {
 	conf Config
 	ldb  *leveldb.DB
 	dir  string
-	ldat data
+	ldat *data
 	set  *world.Settings
 }
 
@@ -37,127 +35,14 @@ func New(dir string) (*DB, error) {
 	return conf.New(dir)
 }
 
-// initDefaultLevelDat initialises a default level.dat file.
-func (db *DB) initDefaultLevelDat() {
-	db.ldat.Abilities.AttackMobs = true
-	db.ldat.Abilities.AttackPlayers = true
-	db.ldat.Abilities.Build = true
-	db.ldat.Abilities.DoorsAndSwitches = true
-	db.ldat.Abilities.FlySpeed = 0.05
-	db.ldat.Abilities.Mine = true
-	db.ldat.Abilities.OpenContainers = true
-	db.ldat.Abilities.PlayerPermissionsLevel = 1
-	db.ldat.Abilities.WalkSpeed = 0.1
-	db.ldat.BaseGameVersion = "*"
-	db.ldat.CommandBlockOutput = true
-	db.ldat.CommandBlocksEnabled = true
-	db.ldat.CommandsEnabled = true
-	db.ldat.Difficulty = 2
-	db.ldat.DoDayLightCycle = true
-	db.ldat.DoEntityDrops = true
-	db.ldat.DoFireTick = true
-	db.ldat.DoInsomnia = true
-	db.ldat.DoMobLoot = true
-	db.ldat.DoMobSpawning = true
-	db.ldat.DoTileDrops = true
-	db.ldat.DoWeatherCycle = true
-	db.ldat.DrowningDamage = true
-	db.ldat.FallDamage = true
-	db.ldat.FireDamage = true
-	db.ldat.FreezeDamage = true
-	db.ldat.FunctionCommandLimit = 10000
-	db.ldat.GameType = 1
-	db.ldat.Generator = 2
-	db.ldat.HasBeenLoadedInCreative = true
-	db.ldat.InventoryVersion = protocol.CurrentVersion
-	db.ldat.LANBroadcast = true
-	db.ldat.LANBroadcastIntent = true
-	db.ldat.LastOpenedWithVersion = minimumCompatibleClientVersion
-	db.ldat.LevelName = "World"
-	db.ldat.LightningLevel = 1.0
-	db.ldat.LimitedWorldDepth = 16
-	db.ldat.LimitedWorldOriginY = math.MaxInt16
-	db.ldat.LimitedWorldWidth = 16
-	db.ldat.MaxCommandChainLength = math.MaxUint16
-	db.ldat.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
-	db.ldat.MobGriefing = true
-	db.ldat.MultiPlayerGame = true
-	db.ldat.MultiPlayerGameIntent = true
-	db.ldat.NaturalRegeneration = true
-	db.ldat.NetherScale = 8
-	db.ldat.NetworkVersion = protocol.CurrentProtocol
-	db.ldat.PVP = true
-	db.ldat.Platform = 2
-	db.ldat.PlatformBroadcastIntent = 3
-	db.ldat.RainLevel = 1.0
-	db.ldat.RandomSeed = time.Now().Unix()
-	db.ldat.RandomTickSpeed = 1
-	db.ldat.RespawnBlocksExplode = true
-	db.ldat.SendCommandFeedback = true
-	db.ldat.ServerChunkTickRange = 6
-	db.ldat.ShowBorderEffect = true
-	db.ldat.ShowDeathMessages = true
-	db.ldat.ShowTags = true
-	db.ldat.SpawnMobs = true
-	db.ldat.SpawnRadius = 5
-	db.ldat.SpawnRadius = 5
-	db.ldat.SpawnY = math.MaxInt16
-	db.ldat.StorageVersion = 9
-	db.ldat.TNTExplodes = true
-	db.ldat.WorldVersion = 1
-	db.ldat.XBLBroadcastIntent = 3
-}
-
 // Settings returns the world.Settings of the world loaded by the DB.
 func (db *DB) Settings() *world.Settings {
 	return db.set
 }
 
-// loadSettings loads the settings in the level.dat into a world.Settings struct and stores it, so that it can be
-// returned through a call to Settings.
-func (db *DB) loadSettings() {
-	db.ldat.WorldStartCount += 1
-	difficulty, _ := world.DifficultyByID(int(db.ldat.Difficulty))
-	mode, _ := world.GameModeByID(int(db.ldat.GameType))
-	db.set = &world.Settings{
-		Name:            db.ldat.LevelName,
-		Spawn:           cube.Pos{int(db.ldat.SpawnX), int(db.ldat.SpawnY), int(db.ldat.SpawnZ)},
-		Time:            db.ldat.Time,
-		TimeCycle:       db.ldat.DoDayLightCycle,
-		RainTime:        int64(db.ldat.RainTime),
-		Raining:         db.ldat.RainLevel > 0,
-		ThunderTime:     int64(db.ldat.LightningTime),
-		Thundering:      db.ldat.LightningLevel > 0,
-		WeatherCycle:    db.ldat.DoWeatherCycle,
-		CurrentTick:     db.ldat.CurrentTick,
-		DefaultGameMode: mode,
-		Difficulty:      difficulty,
-		TickRange:       db.ldat.ServerChunkTickRange,
-	}
-}
-
 // SaveSettings saves the world.Settings passed to the level.dat.
 func (db *DB) SaveSettings(s *world.Settings) {
-	db.ldat.LevelName = s.Name
-	db.ldat.SpawnX, db.ldat.SpawnY, db.ldat.SpawnZ = int32(s.Spawn.X()), int32(s.Spawn.Y()), int32(s.Spawn.Z())
-	db.ldat.LimitedWorldOriginX, db.ldat.LimitedWorldOriginY, db.ldat.LimitedWorldOriginZ = db.ldat.SpawnX, db.ldat.SpawnY, db.ldat.SpawnZ
-	db.ldat.Time = s.Time
-	db.ldat.DoDayLightCycle = s.TimeCycle
-	db.ldat.DoWeatherCycle = s.WeatherCycle
-	db.ldat.RainTime, db.ldat.RainLevel = int32(s.RainTime), 0
-	db.ldat.LightningTime, db.ldat.LightningLevel = int32(s.ThunderTime), 0
-	if s.Raining {
-		db.ldat.RainLevel = 1
-	}
-	if s.Thundering {
-		db.ldat.LightningLevel = 1
-	}
-	db.ldat.CurrentTick = s.CurrentTick
-	db.ldat.ServerChunkTickRange = s.TickRange
-	mode, _ := world.GameModeID(s.DefaultGameMode)
-	db.ldat.GameType = int32(mode)
-	difficulty, _ := world.DifficultyID(s.Difficulty)
-	db.ldat.Difficulty = int32(difficulty)
+	db.ldat.putSettings(s)
 }
 
 // playerData holds the fields that indicate where player data is stored for a player with a specific UUID.
