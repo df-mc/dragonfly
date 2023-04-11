@@ -58,7 +58,8 @@ func (s *lightningState) tick(e *Ent) {
 				s.spreadFire(w, cube.PosFromVec3(pos))
 			}
 		}
-	} else if s.state > 0 {
+	}
+	if s.state > 0 {
 		s.dealDamage(e)
 	}
 }
