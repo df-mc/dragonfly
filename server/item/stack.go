@@ -39,9 +39,6 @@ func NewStack(t world.Item, count int) Stack {
 	if t == nil {
 		panic("cannot have a stack with item type nil")
 	}
-	if count == 0 {
-		return Stack{}
-	}
 	return Stack{item: t, count: count, id: newID()}
 }
 
@@ -65,8 +62,8 @@ func (s Stack) MaxCount() int {
 // the returned Stack will never be negative.
 func (s Stack) Grow(n int) Stack {
 	s.count += n
-	if s.count <= 0 {
-		return Stack{}
+	if s.count < 0 {
+		s.count = 0
 	}
 	s.id = newID()
 	return s
