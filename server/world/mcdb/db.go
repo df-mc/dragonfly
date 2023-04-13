@@ -26,13 +26,13 @@ type DB struct {
 	set  *world.Settings
 }
 
-// New creates a new provider reading and writing from/to files under the path
-// passed using default options. If a world is present at the path, New will
+// Open creates a new provider reading and writing from/to files under the path
+// passed using default options. If a world is present at the path, Open will
 // parse its data and initialise the world with it. If the data cannot be
 // parsed, an error is returned.
-func New(dir string) (*DB, error) {
+func Open(dir string) (*DB, error) {
 	var conf Config
-	return conf.New(dir)
+	return conf.Open(dir)
 }
 
 // Settings returns the world.Settings of the world loaded by the DB.
@@ -311,7 +311,7 @@ func (db *DB) Close() error {
 	return db.ldb.Close()
 }
 
-// index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed to New
+// index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed
 // is not world.Overworld, the length of the index returned is 12. It is 8 otherwise.
 func (db *DB) index(position world.ChunkPos, d world.Dimension) []byte {
 	dim, _ := world.DimensionID(d)

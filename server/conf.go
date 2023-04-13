@@ -253,7 +253,7 @@ func (uc UserConfig) Config(log Logger) (Config, error) {
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
 	}
 	if uc.World.SaveData {
-		conf.WorldProvider, err = mcdb.Config{Log: log}.New(uc.World.Folder)
+		conf.WorldProvider, err = mcdb.Config{Log: log}.Open(uc.World.Folder)
 		if err != nil {
 			return conf, fmt.Errorf("create world provider: %w", err)
 		}

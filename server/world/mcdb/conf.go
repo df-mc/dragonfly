@@ -37,11 +37,11 @@ type Config struct {
 	ReadOnly bool
 }
 
-// New creates a new DB reading and writing from/to files under the path
-// passed. If a world is present at the path, New will parse its data and
+// Open creates a new DB reading and writing from/to files under the path
+// passed. If a world is present at the path, Open will parse its data and
 // initialise the world with it. If the data cannot be parsed, an error is
 // returned.
-func (conf Config) New(dir string) (*DB, error) {
+func (conf Config) Open(dir string) (*DB, error) {
 	if conf.Log == nil {
 		conf.Log = logrus.New()
 	}
