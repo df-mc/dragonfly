@@ -32,6 +32,9 @@ type Config struct {
 	// lead to better compression ratios at the expense of slightly higher
 	// memory usage while (de)compressing.
 	BlockSize int
+	// ReadOnly opens the DB in read-only mode. This will leave the data in the
+	// database unedited.
+	ReadOnly bool
 }
 
 // New creates a new DB reading and writing from/to files under the path
@@ -69,6 +72,7 @@ func (conf Config) New(dir string) (*DB, error) {
 	ldb, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
 		Compression: conf.Compression,
 		BlockSize:   conf.BlockSize,
+		ReadOnly:    conf.ReadOnly,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error opening leveldb database: %w", err)
