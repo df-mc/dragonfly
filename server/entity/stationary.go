@@ -27,6 +27,9 @@ func (conf StationaryBehaviourConfig) New() *StationaryBehaviour {
 	if conf.ExistenceDuration == 0 {
 		conf.ExistenceDuration = math.MaxInt64
 	}
+	if conf.Tick == nil {
+		conf.Tick = func(e *Ent) {}
+	}
 	return &StationaryBehaviour{conf: conf}
 }
 
