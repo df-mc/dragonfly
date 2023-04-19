@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -69,6 +70,7 @@ func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw
 	velBefore := vel
 	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
 	dPos, vel := c.checkCollision(e, pos, vel)
+	vel = c.applyLiquidFlow(e, pos, vel)
 
 	return &Movement{v: viewers, e: e,
 		pos: pos.Add(dPos), vel: vel, dpos: dPos, dvel: vel.Sub(velBefore),
@@ -101,9 +103,10 @@ func (c *MovementComputer) applyVerticalForces(vel mgl64.Vec3) mgl64.Vec3 {
 
 // applyHorizontalForces applies friction to the velocity based on the Drag value, reducing it on the X and Z axes.
 func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.Vec3) mgl64.Vec3 {
+	blockPos := cube.PosFromVec3(pos)
 	friction := 1 - c.Drag
 	if c.onGround {
-		if f, ok := w.Block(cube.PosFromVec3(pos).Side(cube.FaceDown)).(interface {
+		if f, ok := w.Block(blockPos.Side(cube.FaceDown)).(interface {
 			Friction() float64
 		}); ok {
 			friction *= f.Friction()
@@ -113,6 +116,38 @@ func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.
 	}
 	vel[0] *= friction
 	vel[2] *= friction
+	return vel
+}
+
+// applyLiquidFlow applies liquid flow to the entity's velocity.
+func (c *MovementComputer) applyLiquidFlow(e world.Entity, pos, vel mgl64.Vec3) mgl64.Vec3 {
+	w := e.World()
+	box := e.Type().BBox(e).Grow(-0.001).Translate(pos)
+
+	min, max := box.Min(), box.Max()
+	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+
+	flow, i := zeroVec3, 0
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			for z := minZ; z <= maxZ; z++ {
+				blockPos := cube.Pos{x, y, z}
+				if _, ok := w.Liquid(blockPos); ok {
+					flow = flow.Add(block.FlowVector(blockPos, w))
+					i++
+				}
+			}
+		}
+	}
+
+	if flow.Len() > 0.0 {
+		flow = flow.Mul(1.0 / float64(i)).Normalize().Mul(0.014)
+		if math.Abs(vel.X()) < 0.003 && math.Abs(vel.Z()) < 0.003 && flow.Len() < 0.0045 {
+			flow = flow.Normalize().Mul(0.0045)
+		}
+		return vel.Add(flow)
+	}
 	return vel
 }
 

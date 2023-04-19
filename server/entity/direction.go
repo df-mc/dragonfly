@@ -17,6 +17,8 @@ func EyePosition(e world.Entity) mgl64.Vec3 {
 	pos := e.Position()
 	if eyed, ok := e.(Eyed); ok {
 		pos[1] += eyed.EyeHeight()
+	} else {
+		pos[1] += e.Type().BBox(e).Height() * 0.85
 	}
 	return pos
 }

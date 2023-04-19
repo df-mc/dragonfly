@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"sync"
 )
@@ -31,6 +32,52 @@ type flowingWaterDisplacer struct{}
 func (s flowingWaterDisplacer) CanDisplace(b world.Liquid) bool {
 	_, ok := b.(Water)
 	return ok
+}
+
+// FlowVector returns the flow vector of the liquid at the given position.
+func FlowVector(pos cube.Pos, w *world.World) (v mgl64.Vec3) {
+	l, decay, ok := effectiveFlowDecay(pos, w)
+	if !ok {
+		return
+	}
+	for _, f := range cube.HorizontalFaces() {
+		sidePos := pos.Side(f)
+		offset := sidePos.Sub(pos).Vec3Middle()
+
+		_, blockDecay, ok := effectiveFlowDecay(sidePos, w)
+		if !ok {
+			if _, ok = w.Block(sidePos).(LiquidRemovable); !ok {
+				continue
+			}
+			if _, blockDecay, ok = effectiveFlowDecay(sidePos.Side(cube.FaceDown), w); !ok {
+				continue
+			}
+			v = v.Sub(offset.Mul(blockDecay - decay - 8))
+			continue
+		}
+		v = v.Sub(offset.Mul(blockDecay - decay))
+	}
+	if l.LiquidFalling() {
+		for _, f := range cube.HorizontalFaces() {
+			p := pos.Side(f)
+			if !canFlowInto(l, w, p, true) || !canFlowInto(l, w, p.Side(cube.FaceUp), true) {
+				v = v.Normalize().Sub(mgl64.Vec3{0, 6})
+			}
+		}
+	}
+	return v.Normalize()
+}
+
+// effectiveFlowDecay ...
+func effectiveFlowDecay(pos cube.Pos, w *world.World) (world.Liquid, float64, bool) {
+	l, ok := w.Liquid(pos)
+	if !ok {
+		return l, 0, false
+	}
+	if l.LiquidFalling() {
+		return l, 0, true
+	}
+	return l, float64(l.LiquidDepth()), true
 }
 
 // tickLiquid ticks the liquid block passed at a specific position in the world. Depending on the surroundings

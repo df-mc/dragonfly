@@ -32,8 +32,8 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
 
 	it := &Item{i: i, pickupDelay: 10, c: &MovementComputer{
 		Gravity:           0.04,
-		DragBeforeGravity: true,
 		Drag:              0.02,
+		DragBeforeGravity: true,
 	}}
 	it.transform = newTransform(it, pos)
 	return it
@@ -77,11 +77,48 @@ func (it *Item) Tick(w *world.World, current int64) {
 		return
 	}
 
+	it.tickLiquid(w, m.vel)
 	if it.pickupDelay == 0 {
 		it.checkNearby(w, m.pos)
 	} else if it.pickupDelay != math.MaxInt16 {
 		it.pickupDelay--
 	}
+}
+
+// tickLiquid ticks the item's liquid velocity and updates it as necessary.
+func (it *Item) tickLiquid(w *world.World, vel mgl64.Vec3) {
+	if l, ok := it.insideLiquid(EyePosition(it), w); ok {
+		vel[1] += it.c.Gravity
+		vel[1] /= 1 - it.c.Drag
+		if vel[1] < 0.06 {
+			vel[1] += 0.0005
+		}
+		switch l.(type) {
+		case block.Water:
+			vel[0] *= 0.99
+			vel[2] *= 0.99
+		case block.Lava:
+			vel[0] *= 0.95
+			vel[2] *= 0.95
+		}
+		it.SetVelocity(vel)
+	}
+}
+
+// liquidLevel is the lowest distance the item can be in liquid.
+const liquidLevel = 0.11111111
+
+// insideLiquid returns true if the item is currently in a liquid.
+func (it *Item) insideLiquid(pos mgl64.Vec3, w *world.World) (world.Liquid, bool) {
+	blockPos := cube.PosFromVec3(pos)
+	if l, ok := w.Liquid(blockPos); ok {
+		d := float64(l.SpreadDecay()) + 1
+		if l.LiquidFalling() {
+			d = 1
+		}
+		return l, pos.Y() < (blockPos.Vec3().Y()+1)-(d/9-liquidLevel)
+	}
+	return nil, false
 }
 
 // checkNearby checks the entities of the chunks around for item collectors and other item stacks. If a
