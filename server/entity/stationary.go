@@ -27,9 +27,6 @@ func (conf StationaryBehaviourConfig) New() *StationaryBehaviour {
 	if conf.ExistenceDuration == 0 {
 		conf.ExistenceDuration = math.MaxInt64
 	}
-	if conf.Tick == nil {
-		conf.Tick = func(e *Ent) {}
-	}
 	return &StationaryBehaviour{conf: conf}
 }
 
@@ -55,7 +52,9 @@ func (s *StationaryBehaviour) Tick(e *Ent) *Movement {
 			e.World().PlaySound(e.Position(), ss)
 		}
 	}
-	s.conf.Tick(e)
+	if s.conf.Tick != nil {
+		s.conf.Tick(e)
+	}
 
 	s.age += time.Second / 20
 	if s.age > s.conf.ExistenceDuration {
