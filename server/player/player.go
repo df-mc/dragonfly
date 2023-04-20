@@ -2153,9 +2153,8 @@ func (p *Player) mendItems(xp int) int {
 // The number of items that was dropped in the end is returned. It is generally the count of the stack passed
 // or 0 if dropping the item.Stack was cancelled.
 func (p *Player) Drop(s item.Stack) int {
-	e := entity.NewItem(s, p.Position().Add(mgl64.Vec3{0, 1.4}))
+	e := entity.NewItemPickupDelay(s, p.Position().Add(mgl64.Vec3{0, 1.4}), time.Second*2)
 	e.SetVelocity(p.Rotation().Vec3().Mul(0.4))
-	e.SetPickupDelay(time.Second * 2)
 
 	ctx := event.C()
 	if p.Handler().HandleItemDrop(ctx, e); ctx.Cancelled() {

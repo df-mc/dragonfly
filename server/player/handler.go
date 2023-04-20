@@ -3,7 +3,6 @@ package player
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -119,7 +118,7 @@ type Handler interface {
 	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
-	HandleItemDrop(ctx *event.Context, e *entity.Item)
+	HandleItemDrop(ctx *event.Context, e world.Entity)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
@@ -139,7 +138,7 @@ type NopHandler struct{}
 // Compile time check to make sure NopHandler implements Handler.
 var _ Handler = NopHandler{}
 
-func (NopHandler) HandleItemDrop(*event.Context, *entity.Item)                                {}
+func (NopHandler) HandleItemDrop(*event.Context, world.Entity)                                {}
 func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64)                    {}
 func (NopHandler) HandleJump()                                                                {}
 func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3)                                  {}
