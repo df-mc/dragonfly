@@ -33,7 +33,7 @@ type teleporter interface {
 
 // teleport teleports the owner of an Ent to a trace.Result's position.
 func teleport(e *Ent, target trace.Result) {
-	if user, ok := e.Owner().(teleporter); ok {
+	if user, ok := e.Behaviour().(*ProjectileBehaviour).Owner().(teleporter); ok {
 		e.World().PlaySound(user.Position(), sound.Teleport{})
 		user.Teleport(target.Position())
 		user.Hurt(5, FallDamageSource{})

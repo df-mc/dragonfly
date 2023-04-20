@@ -61,7 +61,7 @@ func (s *StationaryBehaviour) Tick(e *Ent) *Movement {
 	if s.age > s.conf.ExistenceDuration {
 		s.close = true
 	}
-	// Stationary entities never mode. Always return nil here.
+	// Stationary entities never move. Always return nil here.
 	return nil
 }
 

@@ -3,7 +3,6 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"sync"
@@ -59,47 +58,8 @@ func (e *Ent) Type() world.EntityType {
 	return e.t
 }
 
-// Owner returns the owner of the Ent, or nil if it doesn't have one.
-func (e *Ent) Owner() world.Entity {
-	// TODO: Change this signature to Owner() (world.Entity, bool) once all
-	//  entities use this type.
-	if owned, ok := e.conf.Behaviour.(interface {
-		Owner() world.Entity
-	}); ok {
-		return owned.Owner()
-	}
-	return nil
-}
-
-// Critical returns true if the entity's behaviour marked it as critical.
-func (e *Ent) Critical() bool {
-	if crit, ok := e.conf.Behaviour.(interface {
-		Critical(e *Ent) bool
-	}); ok {
-		return crit.Critical(e)
-	}
-	return false
-}
-
-// Potion propagates the potion.Potion specified by the underlying Behaviour.
-func (e *Ent) Potion() potion.Potion {
-	if pot, ok := e.conf.Behaviour.(interface {
-		Potion() potion.Potion
-	}); ok {
-		return pot.Potion()
-	}
-	return potion.Potion{}
-}
-
-// Immobile checks if the underlying behaviour of the entity marked the entity
-// as immobile.
-func (e *Ent) Immobile() bool {
-	if imm, ok := e.conf.Behaviour.(interface {
-		Immobile() bool
-	}); ok {
-		return imm.Immobile()
-	}
-	return false
+func (e *Ent) Behaviour() Behaviour {
+	return e.conf.Behaviour
 }
 
 // Position returns the current position of the entity.

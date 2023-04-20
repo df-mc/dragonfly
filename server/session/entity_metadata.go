@@ -27,6 +27,20 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 
 	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasGravity)
 	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagClimb)
+	if g, ok := e.Type().(glint); ok && g.Glint() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
+	}
+	if _, ok := e.Type().(entity.LingeringPotionType); ok {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
+	}
+	s.addSpecificMetadata(e, m)
+	if ent, ok := e.(*entity.Ent); ok {
+		s.addSpecificMetadata(ent.Behaviour(), m)
+	}
+	return m
+}
+
+func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSneaking)
 	}
@@ -127,12 +141,6 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 			m[protocol.EntityDataKeyCustomDisplay] = tip + 1
 		}
 	}
-	if g, ok := e.Type().(glint); ok && g.Glint() {
-		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
-	}
-	if _, ok := e.Type().(entity.LingeringPotionType); ok {
-		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
-	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
 		visibleEffects := make([]effect.Effect, 0, len(eff.Effects()))
 		for _, ef := range eff.Effects() {
@@ -150,7 +158,6 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 			}
 		}
 	}
-	return m
 }
 
 type sneaker interface {
@@ -209,7 +216,6 @@ type glint interface {
 
 type areaEffectCloud interface {
 	effectBearer
-	Duration() time.Duration
 	Radius() float64
 }
 

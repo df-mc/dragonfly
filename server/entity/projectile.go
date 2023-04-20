@@ -121,9 +121,7 @@ func (lt *ProjectileBehaviour) Potion() potion.Potion {
 
 // Critical returns true if ProjectileBehaviourConfig.Critical was set to true
 // and if the projectile has not collided.
-func (lt *ProjectileBehaviour) Critical(e *Ent) bool {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+func (lt *ProjectileBehaviour) Critical() bool {
 	return lt.conf.Critical && !lt.collided
 }
 
