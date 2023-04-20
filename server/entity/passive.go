@@ -44,7 +44,8 @@ type PassiveBehaviour struct {
 
 	close bool
 
-	age time.Duration
+	age          time.Duration
+	fallDistance float64
 }
 
 // Explode adds velocity to a passive entity to blast it away from the
@@ -82,6 +83,8 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 
 	m := p.mc.TickMovement(e, e.pos, e.vel, 0, 0)
 	e.pos, e.vel = m.pos, m.vel
+
+	p.fallDistance = math.Max(p.fallDistance-m.dvel[1], 0)
 	e.mu.Unlock()
 
 	w := e.World()
