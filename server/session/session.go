@@ -79,6 +79,10 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
+	hasSettingsResponse atomic.Bool
+	settingsResponse    atomic.Value[[]byte]
+	settingsFormID      atomic.Uint32
+
 	joinMessage, quitMessage string
 
 	closeBackground chan struct{}
@@ -470,6 +474,7 @@ func (s *Session) registerHandlers() {
 		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
 		packet.IDText:                  &TextHandler{},
 		packet.IDTickSync:              nil,
+		packet.IDServerSettingsRequest: &ServerSettingsRequest{},
 	}
 }
 
@@ -538,4 +543,18 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 		panic("should never happen")
 	}
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
+}
+
+// SetServerSettings Sets the server settings data. This will be used when a ServerSettingsRequest packet is sent by the client.
+func (s *Session) SetServerSettings(form form.Form) {
+	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
+	h.mu.Lock()
+	id := h.currentID.Inc()
+	h.forms[id] = form
+	h.mu.Unlock()
+
+	s.settingsFormID.Store(id)
+	s.hasSettingsResponse.Store(true)
+	marshal, _ := form.MarshalJSON()
+	s.settingsResponse.Store(marshal)
 }
