@@ -47,7 +47,7 @@ func (ItemType) DecodeNBT(m map[string]any) world.Entity {
 	}
 	n := NewItem(i, nbtconv.Vec3(m, "Pos"))
 	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
-	n.Behaviour().(*ItemBehaviour).passive.age = time.Duration(nbtconv.Int16(m, "Age")) * (time.Second / 20)
+	n.age = time.Duration(nbtconv.Int16(m, "Age")) * (time.Second / 20)
 	n.Behaviour().(*ItemBehaviour).pickupDelay = time.Duration(nbtconv.Int64(m, "PickupDelay")) * (time.Second / 20)
 	return n
 }
@@ -57,7 +57,7 @@ func (ItemType) EncodeNBT(e world.Entity) map[string]any {
 	b := it.Behaviour().(*ItemBehaviour)
 	return map[string]any{
 		"Health":      int16(5),
-		"Age":         int16(b.passive.age / (time.Second * 20)),
+		"Age":         int16(it.Age() / (time.Second * 20)),
 		"PickupDelay": int64(b.pickupDelay / (time.Second * 20)),
 		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
 		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),

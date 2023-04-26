@@ -23,10 +23,13 @@ type FallingBlockBehaviourConfig struct {
 // New creates a FallingBlockBehaviour using the optional parameters in conf and
 // a block type.
 func (conf FallingBlockBehaviourConfig) New(b world.Block) *FallingBlockBehaviour {
-	return &FallingBlockBehaviour{block: b, passive: PassiveBehaviourConfig{
+	behaviour := &FallingBlockBehaviour{block: b}
+	behaviour.passive = PassiveBehaviourConfig{
 		Gravity: conf.Gravity,
 		Drag:    conf.Drag,
-	}.New()}
+		Tick:    behaviour.tick,
+	}.New()
+	return behaviour
 }
 
 // FallingBlockBehaviour implements the behaviour for falling block entities.
@@ -42,17 +45,16 @@ func (f *FallingBlockBehaviour) Block() world.Block {
 
 // Tick implements the movement and solidification behaviour of falling blocks.
 func (f *FallingBlockBehaviour) Tick(e *Ent) *Movement {
-	m := f.passive.Tick(e)
-	if f.passive.close {
-		return m
-	}
+	return f.passive.Tick(e)
+}
 
+// tick checks if the falling block should solidify.
+func (f *FallingBlockBehaviour) tick(e *Ent) {
 	pos := e.Position()
-	bpos, w := cube.PosFromVec3(e.Position()), e.World()
+	bpos, w := cube.PosFromVec3(pos), e.World()
 	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(bpos, w)) || f.passive.mc.OnGround() {
 		f.solidify(e, pos, w)
 	}
-	return m
 }
 
 // solidify attempts to solidify the falling block at the position passed. It

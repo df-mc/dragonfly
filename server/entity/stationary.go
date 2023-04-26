@@ -47,7 +47,7 @@ func (s *StationaryBehaviour) Tick(e *Ent) *Movement {
 		return nil
 	}
 
-	if s.age == 0 {
+	if e.Age() == 0 {
 		for _, ss := range s.conf.SpawnSounds {
 			e.World().PlaySound(e.Position(), ss)
 		}
@@ -56,8 +56,7 @@ func (s *StationaryBehaviour) Tick(e *Ent) *Movement {
 		s.conf.Tick(e)
 	}
 
-	s.age += time.Second / 20
-	if s.age > s.conf.ExistenceDuration {
+	if e.Age() > s.conf.ExistenceDuration {
 		s.close = true
 	}
 	// Stationary entities never move. Always return nil here.

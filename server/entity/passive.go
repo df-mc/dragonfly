@@ -21,6 +21,9 @@ type PassiveBehaviourConfig struct {
 	// Expire is called when the entity expires due to its age reaching the
 	// ExistenceDuration.
 	Expire func(e *Ent)
+	// Tick is called for every tick that the entity is alive. Tick is called
+	// after the entity moves on a tick.
+	Tick func(e *Ent)
 }
 
 // New creates a PassiveBehaviour using the parameters in conf.
@@ -42,10 +45,9 @@ type PassiveBehaviour struct {
 	conf PassiveBehaviourConfig
 	mc   *MovementComputer
 
-	close bool
-
-	age          time.Duration
+	close        bool
 	fallDistance float64
+	fuse         time.Duration
 }
 
 // Explode adds velocity to a passive entity to blast it away from the
@@ -58,7 +60,7 @@ func (p *PassiveBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ blo
 // or -1 if this function is not set.
 func (p *PassiveBehaviour) Fuse() time.Duration {
 	if p.conf.Expire != nil {
-		return p.conf.ExistenceDuration - p.age
+		return p.fuse
 	}
 	return -1
 }
@@ -71,7 +73,7 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 		return nil
 	}
 
-	if p.age > p.conf.ExistenceDuration {
+	if e.Age() > p.conf.ExistenceDuration {
 		p.close = true
 
 		if p.conf.Expire != nil {
@@ -79,13 +81,18 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 		}
 	}
 	e.mu.Lock()
-	p.age += time.Second / 20
 
 	m := p.mc.TickMovement(e, e.pos, e.vel, 0, 0)
 	e.pos, e.vel = m.pos, m.vel
 
 	p.fallDistance = math.Max(p.fallDistance-m.dvel[1], 0)
 	e.mu.Unlock()
+
+	p.fuse = p.conf.ExistenceDuration - e.age
+
+	if p.conf.Tick != nil {
+		p.conf.Tick(e)
+	}
 
 	w := e.World()
 	if p.Fuse()%5 == 0 {

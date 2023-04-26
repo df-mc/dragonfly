@@ -42,6 +42,7 @@ type Ent struct {
 	name string
 
 	fireDuration time.Duration
+	age          time.Duration
 }
 
 // Explode propagates the explosion behaviour of the underlying Behaviour.
@@ -85,8 +86,10 @@ func (e *Ent) SetVelocity(v mgl64.Vec3) {
 	e.vel = v
 }
 
-// Rotation always returns an empty cube.Rotation.
+// Rotation returns the rotation of the entity.
 func (e *Ent) Rotation() cube.Rotation {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	return e.rot
 }
 
@@ -94,6 +97,14 @@ func (e *Ent) Rotation() cube.Rotation {
 func (e *Ent) World() *world.World {
 	w, _ := world.OfEntity(e)
 	return w
+}
+
+// Age returns the total time lived of this entity. It increases by
+// time.Second/20 for every time Tick is called.
+func (e *Ent) Age() time.Duration {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.age
 }
 
 // OnFireDuration ...
@@ -162,6 +173,9 @@ func (e *Ent) Tick(w *world.World, current int64) {
 	if m := e.conf.Behaviour.Tick(e); m != nil {
 		m.Send()
 	}
+	e.mu.Lock()
+	e.age += time.Second / 20
+	e.mu.Unlock()
 }
 
 // Close closes the Ent and removes the associated entity from the world.

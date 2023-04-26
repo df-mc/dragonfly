@@ -92,11 +92,11 @@ func (conf ProjectileBehaviourConfig) New(owner world.Entity) *ProjectileBehavio
 // ProjectileBehaviour implements the behaviour of projectiles. Its specifics
 // may be configured using ProjectileBehaviourConfig.
 type ProjectileBehaviour struct {
-	conf             ProjectileBehaviourConfig
-	owner            world.Entity
-	mc               *MovementComputer
-	age, ageCollided int
-	close            bool
+	conf        ProjectileBehaviourConfig
+	owner       world.Entity
+	mc          *MovementComputer
+	ageCollided int
+	close       bool
 
 	collisionPos cube.Pos
 	collided     bool
@@ -317,8 +317,6 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
 			end = hit.Position()
 		}
 	}
-	lt.age++
-
 	return &Movement{v: viewers, e: e, pos: end, vel: vel, dpos: end.Sub(pos), dvel: vel.Sub(velBefore), rot: rot}, hit
 }
 
@@ -329,6 +327,6 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) func(other world.Entity) bool {
 	return func(other world.Entity) (ignored bool) {
 		g, ok := other.(interface{ GameMode() world.GameMode })
 		_, living := other.(Living)
-		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (lt.age < 5 && lt.owner == other)
+		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.Age() < time.Second/4 && lt.owner == other)
 	}
 }

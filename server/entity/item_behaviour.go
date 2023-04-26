@@ -37,16 +37,15 @@ func (conf ItemBehaviourConfig) New(i item.Stack) *ItemBehaviour {
 	if conf.ExistenceDuration == 0 {
 		conf.ExistenceDuration = time.Minute * 5
 	}
-	return &ItemBehaviour{
-		conf: conf,
-		passive: PassiveBehaviourConfig{
-			Gravity:           conf.Gravity,
-			Drag:              conf.Drag,
-			ExistenceDuration: conf.ExistenceDuration,
-		}.New(),
-		i:           i,
-		pickupDelay: conf.PickupDelay,
-	}
+
+	b := &ItemBehaviour{conf: conf, i: i, pickupDelay: conf.PickupDelay}
+	b.passive = PassiveBehaviourConfig{
+		Gravity:           conf.Gravity,
+		Drag:              conf.Drag,
+		ExistenceDuration: conf.ExistenceDuration,
+		Tick:              b.tick,
+	}.New()
+	return b
 }
 
 // ItemBehaviour implements the behaviour of item entities.
@@ -66,17 +65,16 @@ func (i *ItemBehaviour) Item() item.Stack {
 // Tick moves the entity, checks if it should be picked up by a nearby collector
 // or if it should merge with nearby item entities.
 func (i *ItemBehaviour) Tick(e *Ent) *Movement {
-	m := i.passive.Tick(e)
-	if i.passive.close {
-		return m
-	}
+	return i.passive.Tick(e)
+}
 
+// tick checks if the item can be picked up or merged with nearby item stacks.
+func (i *ItemBehaviour) tick(e *Ent) {
 	if i.pickupDelay == 0 {
 		i.checkNearby(e)
 	} else if i.pickupDelay < math.MaxInt16*(time.Second/20) {
 		i.pickupDelay -= time.Second / 20
 	}
-	return m
 }
 
 // checkNearby checks the nearby entities for item collectors and other item
