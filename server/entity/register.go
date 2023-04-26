@@ -69,10 +69,7 @@ var conf = world.EntityRegistryConfig{
 		return e
 	},
 	Firework: func(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework world.Item, owner world.Entity) world.Entity {
-		f := NewFirework(pos, yaw, pitch, firework.(item.Firework))
-		f.owner = owner
-		f.attached = attached
-		return f
+		return NewFireworkAttached(pos, yaw, pitch, firework.(item.Firework), owner, attached)
 	},
 	LingeringPotion: func(pos, vel mgl64.Vec3, t any, owner world.Entity) world.Entity {
 		p := NewLingeringPotion(pos, owner, t.(potion.Potion))
