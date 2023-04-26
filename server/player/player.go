@@ -600,7 +600,10 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 			origin = s.Owner
 		}
 		if l, ok := origin.(entity.Living); ok {
-			l.Hurt(p.Armour().ThornsDamage(p.damageItem), enchantment.ThornsDamageSource{Owner: p})
+			thornsDmg := p.Armour().ThornsDamage(p.damageItem)
+			if thornsDmg > 0 {
+				l.Hurt(thornsDmg, enchantment.ThornsDamageSource{Owner: p})
+			}
 		}
 	}
 
