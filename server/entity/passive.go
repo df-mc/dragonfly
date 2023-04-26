@@ -95,7 +95,7 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 	}
 
 	w := e.World()
-	if p.Fuse()%5 == 0 {
+	if p.Fuse()%time.Second/4 == 0 {
 		for _, v := range w.Viewers(m.pos) {
 			v.ViewEntityState(e)
 		}
