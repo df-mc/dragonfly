@@ -4,11 +4,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb/iterator"
 )
 
-// ChunkIterator iterates over a DB's position/chunk pairs in key order.
+// ColumnIterator iterates over a DB's position/column pairs in key order.
 //
 // When an error is encountered, any call to Next will return false and will
 // yield no position/chunk pairs. The error can be queried by calling the Error
@@ -19,35 +18,31 @@ import (
 // Also, an iterator is not necessarily safe for concurrent use, but it is
 // safe to use multiple iterators concurrently, with each in a dedicated
 // goroutine.
-type ChunkIterator struct {
+type ColumnIterator struct {
 	dbIter iterator.Iterator
 	db     *DB
 	r      *IteratorRange
 
 	err error
 
-	current *chunk.Chunk
+	current *world.Column
 	pos     world.ChunkPos
 	dim     world.Dimension
-	seen    map[iterKey]struct{}
+	seen    map[dbKey]struct{}
 }
 
-type iterKey struct {
-	pos world.ChunkPos
-	dim world.Dimension
-}
-
-func newChunkIterator(db *DB, r *IteratorRange) *ChunkIterator {
-	return &ChunkIterator{
+func newColumnIterator(db *DB, r *IteratorRange) *ColumnIterator {
+	return &ColumnIterator{
+		db:     db,
 		dbIter: db.ldb.NewIterator(nil, nil),
-		seen:   make(map[iterKey]struct{}),
+		seen:   make(map[dbKey]struct{}),
 		r:      r,
 	}
 }
 
 // Next moves the iterator to the next key/value pair.
 // It returns false if the iterator is exhausted.
-func (iter *ChunkIterator) Next() bool {
+func (iter *ColumnIterator) Next() bool {
 	if iter.err != nil || !iter.dbIter.Next() {
 		iter.current = nil
 		iter.dim = nil
@@ -73,13 +68,13 @@ func (iter *ChunkIterator) Next() bool {
 	if !iter.r.within(iter.pos, iter.dim) {
 		return iter.Next()
 	}
-	key := iterKey{dim: iter.dim, pos: iter.pos}
+	key := dbKey{dim: iter.dim, pos: iter.pos}
 	if _, ok := iter.seen[key]; ok {
 		// Already encountered this chunk. This might happen if there are
 		// multiple version keys.
 		return iter.Next()
 	}
-	iter.current, _, iter.err = iter.db.LoadChunk(iter.pos, iter.dim)
+	iter.current, iter.err = iter.db.LoadColumn(iter.pos, iter.dim)
 	if iter.err != nil {
 		iter.err = fmt.Errorf("load chunk %v: %w", iter.pos, iter.err)
 		return false
@@ -88,38 +83,38 @@ func (iter *ChunkIterator) Next() bool {
 	return true
 }
 
-// Chunk returns the value of the current position/chunk pair, or nil if done.
-func (iter *ChunkIterator) Chunk() *chunk.Chunk {
+// Column returns the value of the current position/column pair, or nil if none.
+func (iter *ColumnIterator) Column() *world.Column {
 	return iter.current
 }
 
-// Position returns the position of the current position/chunk pair.
-func (iter *ChunkIterator) Position() world.ChunkPos {
+// Position returns the position of the current position/column pair.
+func (iter *ColumnIterator) Position() world.ChunkPos {
 	return iter.pos
 }
 
-// Dimension returns the dimension of the current position/chunk pair, or nil
-// if done.
-func (iter *ChunkIterator) Dimension() world.Dimension {
+// Dimension returns the dimension of the current position/column pair, or nil
+// if none.
+func (iter *ColumnIterator) Dimension() world.Dimension {
 	return iter.dim
 }
 
 // Release releases associated resources. Release should always success
 // and can be called multiple times without causing error.
-func (iter *ChunkIterator) Release() {
+func (iter *ColumnIterator) Release() {
 	iter.dbIter.Release()
 }
 
 // Error returns any accumulated error. Exhausting all the key/value pairs
 // is not considered to be an error.
-func (iter *ChunkIterator) Error() error {
+func (iter *ColumnIterator) Error() error {
 	return iter.err
 }
 
-// IteratorRange is a range used to limit what chunks are accumulated by a
-// ChunkIterator.
+// IteratorRange is a range used to limit what columns are accumulated by a
+// ColumnIterator.
 type IteratorRange struct {
-	// Min and Max limit what chunk positions are returned by a ChunkIterator.
+	// Min and Max limit what chunk positions are returned by a ColumnIterator.
 	// A zero value for both Min and Max causes all positions to be within the
 	// range.
 	Min, Max world.ChunkPos

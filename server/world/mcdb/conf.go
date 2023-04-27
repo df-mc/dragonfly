@@ -2,9 +2,11 @@ package mcdb
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/mcdb/leveldat"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/df-mc/goleveldb/leveldb/opt"
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
@@ -35,6 +37,10 @@ type Config struct {
 	// ReadOnly opens the DB in read-only mode. This will leave the data in the
 	// database unedited.
 	ReadOnly bool
+
+	// Entities is an EntityRegistry with all entity types registered that may
+	// be read from the DB. Entities will default to entity.DefaultRegistry.
+	Entities world.EntityRegistry
 }
 
 // Open creates a new DB reading and writing from/to files under the path
@@ -48,27 +54,33 @@ func (conf Config) Open(dir string) (*DB, error) {
 	if conf.BlockSize == 0 {
 		conf.BlockSize = 16 * opt.KiB
 	}
+	if len(conf.Entities.Types()) == 0 {
+		conf.Entities = entity.DefaultRegistry
+	}
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
-	db := &DB{conf: conf, dir: dir, ldat: &data{}}
+	db := &DB{conf: conf, dir: dir, ldat: &leveldat.Data{}}
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
 		// A level.dat was not currently present for the world.
-		db.ldat.fillDefault()
+		db.ldat.FillDefault()
 	} else {
-		f, err := os.ReadFile(filepath.Join(dir, "level.dat"))
+		ldat, err := leveldat.ReadFile(filepath.Join(dir, "level.dat"))
 		if err != nil {
-			return nil, fmt.Errorf("error opening level.dat file: %w", err)
+			return nil, fmt.Errorf("open db: %w", err)
 		}
-		// The first 8 bytes are a useless header (version and length): We don't need it.
-		if len(f) < 8 {
-			// The file did not have enough content, meaning it is corrupted. We return an error.
-			return nil, fmt.Errorf("level.dat exists but has no data")
+
+		// TODO: Perform proper conversion here. Dragonfly stored 3 for a long
+		//  time even though the fields were up to date, so we have to accept
+		//  older ones no matter what.
+		ver := ldat.Ver()
+		if ver != leveldat.Version && ver >= 10 {
+			return nil, fmt.Errorf("open db: level.dat version %v is unsupported", ver)
 		}
-		if err := nbt.UnmarshalEncoding(f[8:], db.ldat, nbt.LittleEndian); err != nil {
-			return nil, fmt.Errorf("error decoding level.dat NBT: %w", err)
+		if err = ldat.Unmarshal(db.ldat); err != nil {
+			return nil, fmt.Errorf("open db: %w", err)
 		}
 	}
-	db.set = db.ldat.settings()
+	db.set = db.ldat.Settings()
 	ldb, err := leveldb.OpenFile(filepath.Join(dir, "db"), &opt.Options{
 		Compression: conf.Compression,
 		BlockSize:   conf.BlockSize,

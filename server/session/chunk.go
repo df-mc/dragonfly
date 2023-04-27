@@ -32,7 +32,12 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.Sub
 	entries := make([]protocol.SubChunkEntry, 0, len(offsets))
 	transaction := make(map[uint64]struct{})
 	for _, offset := range offsets {
-		ch, ok := s.chunkLoader.Chunk(world.ChunkPos{
+		ind := int16(center.Y()) + int16(offset[1]) - int16(r[0])>>4
+		if ind < 0 || ind >= int16(r.Height()>>4) {
+			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
+			continue
+		}
+		col, ok := s.chunkLoader.Chunk(world.ChunkPos{
 			center.X() + int32(offset[0]),
 			center.Z() + int32(offset[2]),
 		})
@@ -40,73 +45,9 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.Sub
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
 			continue
 		}
-
-		ind := int16(center.Y()) + int16(offset[1]) - int16(r[0])>>4
-		if ind < 0 || ind >= int16(len(ch.Sub())) {
-			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
-			continue
-		}
-
-		chunkMap := ch.HeightMap()
-		subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]int8, 256)
-		higher, lower := true, true
-		for x := uint8(0); x < 16; x++ {
-			for z := uint8(0); z < 16; z++ {
-				y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
-				otherInd := ch.SubIndex(y)
-				if otherInd > ind {
-					subMap[i], lower = 16, false
-				} else if otherInd < ind {
-					subMap[i], higher = -1, false
-				} else {
-					subMap[i], lower, higher = int8(y-ch.SubY(otherInd)), false, false
-				}
-			}
-		}
-		if higher {
-			subMapType, subMap = protocol.HeightMapDataTooHigh, nil
-		} else if lower {
-			subMapType, subMap = protocol.HeightMapDataTooLow, nil
-		}
-
-		sub := ch.Sub()[ind]
-		if sub.Empty() {
-			entries = append(entries, protocol.SubChunkEntry{
-				Result:        protocol.SubChunkResultSuccessAllAir,
-				HeightMapType: subMapType,
-				HeightMapData: subMap,
-				Offset:        offset,
-			})
-			continue
-		}
-
-		serialisedSubChunk := chunk.EncodeSubChunk(ch.Chunk, chunk.NetworkEncoding, int(ind))
-		blockEntityBuf := bytes.NewBuffer(nil)
-		enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
-		for pos, b := range ch.BlockEntities() {
-			if n, ok := b.(world.NBTer); ok && ch.SubIndex(int16(pos.Y())) == ind {
-				d := n.EncodeNBT()
-				d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-				_ = enc.Encode(d)
-			}
-		}
-
-		entry := protocol.SubChunkEntry{
-			Result:        protocol.SubChunkResultSuccess,
-			RawPayload:    append(serialisedSubChunk, blockEntityBuf.Bytes()...),
-			HeightMapType: subMapType,
-			HeightMapData: subMap,
-			Offset:        offset,
-		}
-		if s.conn.ClientCacheEnabled() {
-			if hash := xxhash.Sum64(serialisedSubChunk); s.trackBlob(hash, serialisedSubChunk) {
-				transaction[hash] = struct{}{}
-
-				entry.BlobHash = hash
-				entry.RawPayload = blockEntityBuf.Bytes()
-			}
-		}
-		entries = append(entries, entry)
+		col.Lock()
+		entries = append(entries, s.subChunkEntry(offset, ind, col, transaction))
+		col.Unlock()
 	}
 	if s.conn.ClientCacheEnabled() && len(transaction) > 0 {
 		s.blobMu.Lock()
@@ -120,6 +61,68 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.Sub
 		CacheEnabled:    s.conn.ClientCacheEnabled(),
 		SubChunkEntries: entries,
 	})
+}
+
+func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *world.Column, transaction map[uint64]struct{}) protocol.SubChunkEntry {
+	chunkMap := col.Chunk.HeightMap()
+	subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]int8, 256)
+	higher, lower := true, true
+	for x := uint8(0); x < 16; x++ {
+		for z := uint8(0); z < 16; z++ {
+			y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
+			otherInd := col.Chunk.SubIndex(y)
+			if otherInd > ind {
+				subMap[i], lower = 16, false
+			} else if otherInd < ind {
+				subMap[i], higher = -1, false
+			} else {
+				subMap[i], lower, higher = int8(y-col.Chunk.SubY(otherInd)), false, false
+			}
+		}
+	}
+	if higher {
+		subMapType, subMap = protocol.HeightMapDataTooHigh, nil
+	} else if lower {
+		subMapType, subMap = protocol.HeightMapDataTooLow, nil
+	}
+
+	sub := col.Chunk.Sub()[ind]
+	if sub.Empty() {
+		return protocol.SubChunkEntry{
+			Result:        protocol.SubChunkResultSuccessAllAir,
+			HeightMapType: subMapType,
+			HeightMapData: subMap,
+			Offset:        offset,
+		}
+	}
+
+	serialisedSubChunk := chunk.EncodeSubChunk(col.Chunk, chunk.NetworkEncoding, int(ind))
+	blockEntityBuf := bytes.NewBuffer(nil)
+	enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
+	for pos, b := range col.BlockEntities {
+		if n, ok := b.(world.NBTer); ok && col.Chunk.SubIndex(int16(pos.Y())) == ind {
+			d := n.EncodeNBT()
+			d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+			_ = enc.Encode(d)
+		}
+	}
+
+	entry := protocol.SubChunkEntry{
+		Result:        protocol.SubChunkResultSuccess,
+		RawPayload:    append(serialisedSubChunk, blockEntityBuf.Bytes()...),
+		HeightMapType: subMapType,
+		HeightMapData: subMap,
+		Offset:        offset,
+	}
+	if s.conn.ClientCacheEnabled() {
+		if hash := xxhash.Sum64(serialisedSubChunk); s.trackBlob(hash, serialisedSubChunk) {
+			transaction[hash] = struct{}{}
+
+			entry.BlobHash = hash
+			entry.RawPayload = blockEntityBuf.Bytes()
+		}
+	}
+	return entry
 }
 
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
