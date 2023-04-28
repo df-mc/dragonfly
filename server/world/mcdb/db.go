@@ -130,6 +130,9 @@ func (db *DB) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 	return nil
 }
 
+// LoadColumn reads a world.Column from the DB at a position and dimension in
+// the DB. If no column at that position exists, errors.Is(err,
+// leveldb.ErrNotFound) equals true.
 func (db *DB) LoadColumn(pos world.ChunkPos, dim world.Dimension) (*world.Column, error) {
 	k := dbKey{pos: pos, dim: dim}
 	col, err := db.column(k)
@@ -299,39 +302,57 @@ func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, 
 	return blockEntities, nil
 }
 
-type dbKey struct {
-	pos world.ChunkPos
-	dim world.Dimension
-}
-
-func (k dbKey) Sum(p ...byte) []byte {
-	return append(index(k.pos, k.dim), p...)
-}
-
-// SaveChunk saves a chunk at the position passed to the leveldb database. Its version is written as the
-// version in the chunkVersion constant.
-func (db *DB) SaveChunk(position world.ChunkPos, c *chunk.Chunk, dim world.Dimension) error {
-	data := chunk.Encode(c, chunk.DiskEncoding)
-
-	key := index(position, dim)
-	_ = db.ldb.Put(append(key, keyVersion), []byte{chunkVersion}, nil)
-	// Write the heightmap by just writing 512 empty bytes.
-	_ = db.ldb.Put(append(key, key3DData), append(make([]byte, 512), data.Biomes...), nil)
-
-	finalisation := make([]byte, 4)
-	binary.LittleEndian.PutUint32(finalisation, 2)
-	_ = db.ldb.Put(append(key, keyFinalisation), finalisation, nil)
-
-	for i, sub := range data.SubChunks {
-		_ = db.ldb.Put(append(key, keySubChunkData, byte(i+(c.Range()[0]>>4))), sub, nil)
+// StoreColumn stores a world.Column at a position and dimension in the DB. An
+// error is returned if storing was unsuccessful.
+func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *world.Column) error {
+	k := dbKey{pos: pos, dim: dim}
+	if err := db.storeColumn(k, col); err != nil {
+		return fmt.Errorf("store column %v (%v): %w", pos, dim, err)
 	}
 	return nil
 }
 
-// SaveEntities saves all entities to the chunk position passed.
-func (db *DB) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim world.Dimension) error {
+func (db *DB) storeColumn(k dbKey, col *world.Column) error {
+	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
+	n := 5 + len(data.SubChunks)
+	batch := leveldb.MakeBatch(n)
+
+	db.storeVersion(batch, k, chunkVersion)
+	db.storeBiomes(batch, k, data.Biomes)
+	db.storeSubChunks(batch, k, data.SubChunks, col.Chunk.Range())
+	db.storeFinalisation(batch, k, finalisationPopulated)
+	db.storeEntities(batch, k, col.Entities)
+	db.storeBlockEntities(batch, k, col.BlockEntities)
+
+	return db.ldb.Write(batch, nil)
+}
+
+func (db *DB) storeVersion(batch *leveldb.Batch, k dbKey, ver uint8) {
+	batch.Put(k.Sum(keyVersion), []byte{ver})
+}
+
+var emptyHeightmap = make([]byte, 512)
+
+func (db *DB) storeBiomes(batch *leveldb.Batch, k dbKey, biomes []byte) {
+	batch.Put(k.Sum(key3DData), append(emptyHeightmap, biomes...))
+}
+
+func (db *DB) storeSubChunks(batch *leveldb.Batch, k dbKey, subChunks [][]byte, r cube.Range) {
+	for i, sub := range subChunks {
+		batch.Put(k.Sum(keySubChunkData, byte(i+(r[0]>>4))), sub)
+	}
+}
+
+func (db *DB) storeFinalisation(batch *leveldb.Batch, k dbKey, finalisation uint32) {
+	p := make([]byte, 4)
+	binary.LittleEndian.PutUint32(p, finalisation)
+	batch.Put(k.Sum(keyFinalisation), p)
+}
+
+func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []world.Entity) {
 	if len(entities) == 0 {
-		return db.ldb.Delete(append(index(pos, dim), keyEntities), nil)
+		batch.Delete(k.Sum(keyEntities))
+		return
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -344,25 +365,32 @@ func (db *DB) SaveEntities(pos world.ChunkPos, entities []world.Entity, dim worl
 		x := t.EncodeNBT(e)
 		x["identifier"] = t.EncodeEntity()
 		if err := enc.Encode(x); err != nil {
-			return fmt.Errorf("save entities: error encoding NBT: %w", err)
+			db.conf.Log.Errorf("store entities: error encoding NBT: %w", err)
 		}
 	}
-	return db.ldb.Put(append(index(pos, dim), keyEntities), buf.Bytes(), nil)
+	batch.Put(k.Sum(keyEntities), buf.Bytes())
 }
 
-// SaveBlockNBT saves all block NBT data to the chunk position passed.
-func (db *DB) SaveBlockNBT(position world.ChunkPos, data []map[string]any, dim world.Dimension) error {
-	if len(data) == 0 {
-		return db.ldb.Delete(append(index(position, dim), keyBlockEntities), nil)
+func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities map[cube.Pos]world.Block) {
+	if len(blockEntities) == 0 {
+		batch.Delete(k.Sum(keyBlockEntities))
+		return
 	}
+
 	buf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
-	for _, d := range data {
-		if err := enc.Encode(d); err != nil {
-			return fmt.Errorf("error encoding block NBT: %w", err)
+	for pos, b := range blockEntities {
+		n, ok := b.(world.NBTer)
+		if !ok {
+			continue
+		}
+		data := n.EncodeNBT()
+		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
+		if err := enc.Encode(data); err != nil {
+			db.conf.Log.Errorf("store block entities: error encoding NBT: %w", err)
 		}
 	}
-	return db.ldb.Put(append(index(position, dim), keyBlockEntities), buf.Bytes(), nil)
+	batch.Put(k.Sum(keyBlockEntities), buf.Bytes())
 }
 
 // NewColumnIterator returns a ColumnIterator that may be used to iterate over all
@@ -391,6 +419,17 @@ func (db *DB) Close() error {
 		return fmt.Errorf("close: write levelname.txt: %w", err)
 	}
 	return db.ldb.Close()
+}
+
+// dbKey holds a position and dimension.
+type dbKey struct {
+	pos world.ChunkPos
+	dim world.Dimension
+}
+
+// Sum converts k to its []byte representation and appends p.
+func (k dbKey) Sum(p ...byte) []byte {
+	return append(index(k.pos, k.dim), p...)
 }
 
 // index returns a byte buffer holding the written index of the chunk position passed. If the dimension passed

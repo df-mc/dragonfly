@@ -11,7 +11,7 @@ import (
 
 // LevelDat implements the encoding and decoding of level.dat files. An empty
 // LevelDat is a valid value and may be used to Marshal and Write to a writer or
-// file afterwards.
+// file afterward.
 type LevelDat struct {
 	hdr  header
 	data []byte

@@ -1298,34 +1298,10 @@ func (w *World) spreadLight(pos ChunkPos) {
 // the provider.
 func (w *World) saveChunk(pos ChunkPos, c *Column) {
 	c.Lock()
-	if !w.conf.ReadOnly {
-		if len(c.BlockEntities) > 0 || c.modified {
-			c.Compact()
-			if err := w.provider().SaveChunk(pos, c.Chunk, w.conf.Dim); err != nil {
-				w.conf.Log.Errorf("error saving chunk %v to provider: %v", pos, err)
-			}
-
-			m := make([]map[string]any, 0, len(c.BlockEntities))
-			for pos, b := range c.BlockEntities {
-				if n, ok := b.(NBTer); ok {
-					data := n.EncodeNBT()
-					data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-					m = append(m, data)
-				}
-			}
-			if err := w.provider().SaveBlockNBT(pos, m, w.conf.Dim); err != nil {
-				w.conf.Log.Errorf("error saving block NBT in chunk %v to provider: %v", pos, err)
-			}
-		}
-
-		s := make([]Entity, 0, len(c.Entities))
-		for _, e := range c.Entities {
-			if _, ok := e.Type().(SaveableEntityType); ok {
-				s = append(s, e)
-			}
-		}
-		if err := w.provider().SaveEntities(pos, s, w.conf.Dim); err != nil {
-			w.conf.Log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
+	if !w.conf.ReadOnly && (len(c.BlockEntities) > 0 || len(c.Entities) > 0 || c.modified) {
+		c.Compact()
+		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
+			w.conf.Log.Errorf("save chunk: %w", err)
 		}
 	}
 	ent := c.Entities

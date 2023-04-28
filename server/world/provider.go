@@ -2,7 +2,6 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/google/uuid"
 	"io"
@@ -22,17 +21,13 @@ type Provider interface {
 	// SavePlayerSpawnPosition saves the player spawn point. In vanilla, this can be done with beds in the overworld
 	// or respawn anchors in the nether.
 	SavePlayerSpawnPosition(uuid uuid.UUID, pos cube.Pos) error
-
+	// LoadColumn reads a world.Column from the DB at a position and dimension
+	// in the DB. If no column at that position exists, errors.Is(err,
+	// leveldb.ErrNotFound) equals true.
 	LoadColumn(pos ChunkPos, dim Dimension) (*Column, error)
-	// SaveChunk saves a chunk at a specific position in the provider. If writing was not successful, an error
-	// is returned.
-	SaveChunk(position ChunkPos, c *chunk.Chunk, dim Dimension) error
-	// SaveEntities saves a list of entities in a chunk position. If writing is not successful, an error is
-	// returned.
-	SaveEntities(position ChunkPos, entities []Entity, dim Dimension) error
-	// SaveBlockNBT saves block NBT, or block entities, to a specific chunk position. If the NBT cannot be
-	// stored, SaveBlockNBT returns a non-nil error.
-	SaveBlockNBT(position ChunkPos, data []map[string]any, dim Dimension) error
+	// StoreColumn stores a world.Column at a position and dimension in the DB.
+	// An error is returned if storing was unsuccessful.
+	StoreColumn(pos ChunkPos, dim Dimension, col *Column) error
 }
 
 // Compile time check to make sure NopProvider implements Provider.
@@ -52,11 +47,9 @@ func (n NopProvider) Settings() *Settings {
 	}
 	return n.Set
 }
-func (NopProvider) SaveSettings(*Settings)                                   {}
-func (NopProvider) LoadColumn(ChunkPos, Dimension) (*Column, error)          { return nil, leveldb.ErrNotFound }
-func (NopProvider) SaveEntities(ChunkPos, []Entity, Dimension) error         { return nil }
-func (NopProvider) SaveBlockNBT(ChunkPos, []map[string]any, Dimension) error { return nil }
-func (NopProvider) SaveChunk(ChunkPos, *chunk.Chunk, Dimension) error        { return nil }
+func (NopProvider) SaveSettings(*Settings)                          {}
+func (NopProvider) LoadColumn(ChunkPos, Dimension) (*Column, error) { return nil, leveldb.ErrNotFound }
+func (NopProvider) StoreColumn(ChunkPos, Dimension, *Column) error  { return nil }
 func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (cube.Pos, bool, error) {
 	return cube.Pos{}, false, nil
 }
