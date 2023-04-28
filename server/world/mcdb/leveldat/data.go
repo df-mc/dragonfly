@@ -1,22 +1,18 @@
-package mcdb
+package leveldat
 
 import (
-	"encoding/binary"
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"io"
 	"math"
 	"time"
 )
 
-// data holds a collection of data that specify a range of settings of the
-// world. These settings usually alter the way that players interact with the
+// Data holds a collection of data that specify a range of Settings of the
+// world. These Settings usually alter the way that players interact with the
 // world. The data held here is usually saved in a level.dat file of the world.
-// noinspection SpellCheckingInspection
-type data struct {
+// Data may be used in LevelDat.Unmarshal to collect the data of the level.dat.
+type Data struct {
 	BaseGameVersion                string `nbt:"baseGameVersion"`
 	BiomeOverride                  string
 	ConfirmedPlatformLockedContent bool
@@ -136,20 +132,8 @@ type data struct {
 	PlayerPermissionsLevel         int32          `nbt:"playerPermissionsLevel"`
 }
 
-// marshal encodes d and writes it to w.
-func (d *data) marshal(w io.Writer) error {
-	_ = binary.Write(w, binary.LittleEndian, int32(3))
-	nbtData, err := nbt.MarshalEncoding(*d, nbt.LittleEndian)
-	if err != nil {
-		return fmt.Errorf("encode level.dat to nbt: %w", err)
-	}
-	_ = binary.Write(w, binary.LittleEndian, int32(len(nbtData)))
-	_, _ = w.Write(nbtData)
-	return nil
-}
-
-// fillDefault fills out d with all the default level.dat values.
-func (d *data) fillDefault() {
+// FillDefault fills out d with all the default level.dat values.
+func (d *Data) FillDefault() {
 	d.Abilities.AttackMobs = true
 	d.Abilities.AttackPlayers = true
 	d.Abilities.Build = true
@@ -219,8 +203,8 @@ func (d *data) fillDefault() {
 	d.XBLBroadcastIntent = 3
 }
 
-// settings returns a world.Settings value based on the properties stored in d.
-func (d *data) settings() *world.Settings {
+// Settings returns a world.Settings value based on the properties stored in d.
+func (d *Data) Settings() *world.Settings {
 	d.WorldStartCount += 1
 	difficulty, _ := world.DifficultyByID(int(d.Difficulty))
 	mode, _ := world.GameModeByID(int(d.GameType))
@@ -241,8 +225,8 @@ func (d *data) settings() *world.Settings {
 	}
 }
 
-// putSettings updates d with the settings stored in s.
-func (d *data) putSettings(s *world.Settings) {
+// PutSettings updates d with the Settings stored in s.
+func (d *Data) PutSettings(s *world.Settings) {
 	d.LevelName = s.Name
 	d.SpawnX, d.SpawnY, d.SpawnZ = int32(s.Spawn.X()), int32(s.Spawn.Y()), int32(s.Spawn.Z())
 	d.LimitedWorldOriginX, d.LimitedWorldOriginY, d.LimitedWorldOriginZ = d.SpawnX, d.SpawnY, d.SpawnZ

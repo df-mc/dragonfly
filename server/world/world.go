@@ -1,7 +1,8 @@
 package world
 
 import (
-	"fmt"
+	"errors"
+	"github.com/df-mc/goleveldb/leveldb"
 	"math/rand"
 	"sync"
 	"time"
@@ -38,7 +39,7 @@ type World struct {
 	ticker
 
 	lastPos   ChunkPos
-	lastChunk *chunkData
+	lastChunk *Column
 
 	closing chan struct{}
 	running sync.WaitGroup
@@ -46,7 +47,7 @@ type World struct {
 	chunkMu sync.Mutex
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared from this map after some time
 	// of not being used.
-	chunks map[ChunkPos]*chunkData
+	chunks map[ChunkPos]*Column
 
 	entityMu sync.RWMutex
 	// entities holds a map of entities currently loaded and the last ChunkPos that the Entity was in.
@@ -120,7 +121,7 @@ func (w *World) Block(pos cube.Pos) Block {
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
-		if nbtB, ok := c.e[pos]; ok {
+		if nbtB, ok := c.BlockEntities[pos]; ok {
 			return nbtB
 		}
 	}
@@ -149,7 +150,7 @@ func (w *World) Biome(pos cube.Pos) Biome {
 
 // blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
 // passed, which is also assumed to be locked already or otherwise not yet accessible.
-func (w *World) blockInChunk(c *chunkData, pos cube.Pos) Block {
+func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return air()
@@ -157,7 +158,7 @@ func (w *World) blockInChunk(c *chunkData, pos cube.Pos) Block {
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
-		if b, ok := c.e[pos]; ok {
+		if b, ok := c.BlockEntities[pos]; ok {
 			return b
 		}
 	}
@@ -245,15 +246,15 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		before = c.Block(x, y, z, 0)
 	}
 
-	c.m = true
+	c.modified = true
 	c.SetBlock(x, y, z, 0, rid)
 	if nbtBlocks[rid] {
-		c.e[pos] = b
+		c.BlockEntities[pos] = b
 	} else {
-		delete(c.e, pos)
+		delete(c.BlockEntities, pos)
 	}
 
-	viewers := slices.Clone(c.v)
+	viewers := slices.Clone(c.viewers)
 
 	if !opts.DisableLiquidDisplacement {
 		var secondLayer Block
@@ -302,7 +303,7 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 	c := w.chunk(chunkPosFromBlockPos(pos))
 	defer c.Unlock()
 
-	c.m = true
+	c.modified = true
 	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
 }
 
@@ -371,9 +372,9 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 
 								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
 								if nbtBlocks[rid] {
-									c.e[nbtPos] = b
+									c.BlockEntities[nbtPos] = b
 								} else {
-									delete(c.e, nbtPos)
+									delete(c.BlockEntities, nbtPos)
 								}
 							}
 							if liq != nil {
@@ -386,12 +387,12 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 				}
 			}
 			c.SetBlock(0, 0, 0, 0, c.Block(0, 0, 0, 0)) // Make sure the heightmap is recalculated.
-			c.m = true
+			c.modified = true
 
 			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
 			// viewers once, and unlock it.
-			for _, viewer := range c.v {
-				viewer.ViewChunk(chunkPos, c.Chunk, c.e)
+			for _, viewer := range c.viewers {
+				viewer.ViewChunk(chunkPos, c.Chunk, c.BlockEntities)
 			}
 			c.Unlock()
 		}
@@ -457,16 +458,16 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 	rid := BlockRuntimeID(b)
 	if w.removeLiquids(c, pos) {
 		c.SetBlock(x, y, z, 0, rid)
-		for _, v := range c.v {
+		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, b, 0)
 		}
 	} else {
 		c.SetBlock(x, y, z, 1, rid)
-		for _, v := range c.v {
+		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, b, 1)
 		}
 	}
-	c.m = true
+	c.modified = true
 	c.Unlock()
 
 	w.doBlockUpdatesAround(pos)
@@ -475,20 +476,20 @@ func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
 // removeLiquids removes any liquid blocks that may be present at a specific block position in the chunk
 // passed.
 // The bool returned specifies if no blocks were left on the foreground layer.
-func (w *World) removeLiquids(c *chunkData, pos cube.Pos) bool {
+func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 
 	noneLeft := false
 	if noLeft, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
 		if changed {
-			for _, v := range c.v {
+			for _, v := range c.viewers {
 				v.ViewBlockUpdate(pos, air(), 0)
 			}
 		}
 		noneLeft = true
 	}
 	if _, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); changed {
-		for _, v := range c.v {
+		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, air(), 1)
 		}
 	}
@@ -681,8 +682,8 @@ func (w *World) AddEntity(e Entity) {
 	w.entityMu.Unlock()
 
 	c := w.chunk(chunkPos)
-	c.entities = append(c.entities, e)
-	viewers := slices.Clone(c.v)
+	c.Entities = append(c.Entities, e)
+	viewers := slices.Clone(c.viewers)
 	c.Unlock()
 
 	for _, v := range viewers {
@@ -729,8 +730,8 @@ func (w *World) RemoveEntity(e Entity) {
 		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
 		return
 	}
-	c.entities = sliceutil.DeleteVal(c.entities, e)
-	viewers := slices.Clone(c.v)
+	c.Entities = sliceutil.DeleteVal(c.Entities, e)
+	viewers := slices.Clone(c.viewers)
 	c.Unlock()
 
 	w.entityMu.Lock()
@@ -760,7 +761,7 @@ func (w *World) EntitiesWithin(box cube.BBox, ignored func(Entity) bool) []Entit
 				// The chunk wasn't loaded, so there are no entities here.
 				continue
 			}
-			entities := slices.Clone(c.entities)
+			entities := slices.Clone(c.Entities)
 			c.Unlock()
 
 			for _, entity := range entities {
@@ -988,7 +989,7 @@ func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
 		return nil
 	}
 	defer c.Unlock()
-	return slices.Clone(c.v)
+	return slices.Clone(c.viewers)
 }
 
 // PortalDestination returns the destination world for a portal of a specific Dimension. If no destination World could
@@ -1085,14 +1086,14 @@ func (w *World) removeWorldViewer(l *Loader) {
 
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
-func (w *World) addViewer(c *chunkData, loader *Loader) {
+func (w *World) addViewer(c *Column, loader *Loader) {
 	if w == nil {
 		return
 	}
-	c.v = append(c.v, loader.viewer)
-	c.l = append(c.l, loader)
+	c.viewers = append(c.viewers, loader.viewer)
+	c.loaders = append(c.loaders, loader)
 
-	entities := slices.Clone(c.entities)
+	entities := slices.Clone(c.Entities)
 	c.Unlock()
 
 	for _, entity := range entities {
@@ -1110,11 +1111,11 @@ func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 	if !ok {
 		return
 	}
-	if i := slices.Index(c.l, loader); i != -1 {
-		c.v = slices.Delete(c.v, i, i+1)
-		c.l = slices.Delete(c.l, i, i+1)
+	if i := slices.Index(c.loaders, loader); i != -1 {
+		c.viewers = slices.Delete(c.viewers, i, i+1)
+		c.loaders = slices.Delete(c.loaders, i, i+1)
 	}
-	e := slices.Clone(c.entities)
+	e := slices.Clone(c.Entities)
 	c.Unlock()
 
 	// After removing the loader from the chunk, we also need to hide all entities from the viewer.
@@ -1140,7 +1141,7 @@ func (w *World) Handler() Handler {
 
 // chunkFromCache attempts to fetch a chunk at the chunk position passed from the cache. If not found, the
 // chunk returned is nil and false is returned.
-func (w *World) chunkFromCache(pos ChunkPos) (*chunkData, bool) {
+func (w *World) chunkFromCache(pos ChunkPos) (*Column, bool) {
 	w.chunkMu.Lock()
 	c, ok := w.chunks[pos]
 	w.chunkMu.Unlock()
@@ -1164,7 +1165,7 @@ func showEntity(e Entity, viewer Viewer) {
 // An error is returned if the chunk could not be loaded successfully.
 // chunk locks the chunk returned, meaning that any call to chunk made at the same time has to wait until the
 // user calls Chunk.Unlock() on the chunk returned.
-func (w *World) chunk(pos ChunkPos) *chunkData {
+func (w *World) chunk(pos ChunkPos) *Column {
 	w.chunkMu.Lock()
 	if pos == w.lastPos && w.lastChunk != nil {
 		c := w.lastChunk
@@ -1202,72 +1203,54 @@ func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
 	if w == nil {
 		return
 	}
-	if e == nil {
-		e = map[cube.Pos]Block{}
-	}
 	w.chunkMu.Lock()
 	defer w.chunkMu.Unlock()
 
-	data := newChunkData(c)
-	data.e = e
+	col := newColumn(c)
+	maps.Copy(col.BlockEntities, e)
 	if o, ok := w.chunks[pos]; ok {
-		data.v = o.v
+		col.viewers = o.viewers
 	}
-	w.chunks[pos] = data
+	w.chunks[pos] = col
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
-func (w *World) loadChunk(pos ChunkPos) (*chunkData, error) {
-	c, found, err := w.provider().LoadChunk(pos, w.conf.Dim)
-	if err != nil {
-		ch := newChunkData(chunk.New(airRID, w.Range()))
-		ch.Lock()
-		return ch, err
-	}
+func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
+	col, err := w.provider().LoadColumn(pos, w.conf.Dim)
+	switch {
+	case err == nil:
+		// Iterate through the entities twice and make sure they're added to all relevant maps. Note that this iteration
+		// happens twice to avoid having to lock both worldsMu and entityMu. This is intentional, to avoid deadlocks.
+		worldsMu.Lock()
+		for _, e := range col.Entities {
+			entityWorlds[e] = w
+		}
+		worldsMu.Unlock()
 
-	if !found {
+		w.entityMu.Lock()
+		for _, e := range col.Entities {
+			w.entities[e] = pos
+		}
+		w.entityMu.Unlock()
+
+		col.Lock()
+		w.chunkMu.Unlock()
+		return col, nil
+	case errors.Is(err, leveldb.ErrNotFound):
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		data := newChunkData(chunk.New(airRID, w.Range()))
-		w.chunks[pos] = data
-		data.Lock()
+		col = newColumn(chunk.New(airRID, w.Range()))
+		w.chunks[pos] = col
+
+		col.Lock()
 		w.chunkMu.Unlock()
 
-		w.conf.Generator.GenerateChunk(pos, data.Chunk)
-		return data, nil
+		w.conf.Generator.GenerateChunk(pos, col.Chunk)
+		return col, nil
+	default:
+		col = newColumn(chunk.New(airRID, w.Range()))
+		col.Lock()
+		return col, err
 	}
-	data := newChunkData(c)
-	w.chunks[pos] = data
-
-	ent, err := w.provider().LoadEntities(pos, w.conf.Dim, w.conf.Entities)
-	if err != nil {
-		return nil, fmt.Errorf("error loading entities of chunk %v: %w", pos, err)
-	}
-	data.entities = make([]Entity, 0, len(ent))
-
-	// Iterate through the entities twice and make sure they're added to all relevant maps. Note that this iteration
-	// happens twice to avoid having to lock both worldsMu and entityMu. This is intentional, to avoid deadlocks.
-	worldsMu.Lock()
-	for _, e := range ent {
-		data.entities = append(data.entities, e)
-		entityWorlds[e] = w
-	}
-	worldsMu.Unlock()
-
-	w.entityMu.Lock()
-	for _, e := range ent {
-		w.entities[e] = pos
-	}
-	w.entityMu.Unlock()
-
-	blockEntities, err := w.provider().LoadBlockNBT(pos, w.conf.Dim)
-	if err != nil {
-		return nil, fmt.Errorf("error loading block entities of chunk %v: %w", pos, err)
-	}
-	w.loadIntoBlocks(data, blockEntities)
-
-	data.Lock()
-	w.chunkMu.Unlock()
-	return data, nil
 }
 
 // calculateLight calculates the light in the chunk passed and spreads the light of any of the surrounding
@@ -1311,62 +1294,18 @@ func (w *World) spreadLight(pos ChunkPos) {
 	}
 }
 
-// loadIntoBlocks loads the block entity data passed into blocks located in a specific chunk. The blocks that
-// have NBT will then be stored into memory.
-func (w *World) loadIntoBlocks(c *chunkData, blockEntityData []map[string]any) {
-	c.e = make(map[cube.Pos]Block, len(blockEntityData))
-	for _, data := range blockEntityData {
-		pos := blockPosFromNBT(data)
-
-		id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-		b, ok := BlockByRuntimeID(id)
-		if !ok {
-			w.conf.Log.Errorf("error loading block entity data: could not find block state by runtime ID %v", id)
-			continue
-		}
-		if nbt, ok := b.(NBTer); ok {
-			b = nbt.DecodeNBT(data).(Block)
-		}
-		c.e[pos] = b
-	}
-}
-
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
-func (w *World) saveChunk(pos ChunkPos, c *chunkData) {
+func (w *World) saveChunk(pos ChunkPos, c *Column) {
 	c.Lock()
-	if !w.conf.ReadOnly {
-		if len(c.e) > 0 || c.m {
-			c.Compact()
-			if err := w.provider().SaveChunk(pos, c.Chunk, w.conf.Dim); err != nil {
-				w.conf.Log.Errorf("error saving chunk %v to provider: %v", pos, err)
-			}
-
-			m := make([]map[string]any, 0, len(c.e))
-			for pos, b := range c.e {
-				if n, ok := b.(NBTer); ok {
-					data := n.EncodeNBT()
-					data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-					m = append(m, data)
-				}
-			}
-			if err := w.provider().SaveBlockNBT(pos, m, w.conf.Dim); err != nil {
-				w.conf.Log.Errorf("error saving block NBT in chunk %v to provider: %v", pos, err)
-			}
-		}
-
-		s := make([]Entity, 0, len(c.entities))
-		for _, e := range c.entities {
-			if _, ok := e.Type().(SaveableEntityType); ok {
-				s = append(s, e)
-			}
-		}
-		if err := w.provider().SaveEntities(pos, s, w.conf.Dim); err != nil {
-			w.conf.Log.Errorf("error saving entities in chunk %v to provider: %v", pos, err)
+	if !w.conf.ReadOnly && (len(c.BlockEntities) > 0 || len(c.Entities) > 0 || c.modified) {
+		c.Compact()
+		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
+			w.conf.Log.Errorf("save chunk: %w", err)
 		}
 	}
-	ent := c.entities
-	c.entities = nil
+	ent := c.Entities
+	c.Entities = nil
 	c.Unlock()
 
 	for _, e := range ent {
@@ -1380,14 +1319,14 @@ func (w *World) chunkCacheJanitor() {
 	defer t.Stop()
 
 	w.running.Add(1)
-	chunksToRemove := map[ChunkPos]*chunkData{}
+	chunksToRemove := map[ChunkPos]*Column{}
 	for {
 		select {
 		case <-t.C:
 			w.chunkMu.Lock()
 			for pos, c := range w.chunks {
 				c.Lock()
-				v := len(c.v)
+				v := len(c.viewers)
 				c.Unlock()
 				if v == 0 {
 					chunksToRemove[pos] = c
@@ -1410,39 +1349,20 @@ func (w *World) chunkCacheJanitor() {
 	}
 }
 
-// chunkData represents the data of a chunk including the block entities and loaders. This data is protected
+// Column represents the data of a chunk including the block entities and loaders. This data is protected
 // by the mutex present in the chunk.Chunk held.
-type chunkData struct {
+type Column struct {
+	modified bool
+
 	*chunk.Chunk
-	m        bool
-	e        map[cube.Pos]Block
-	v        []Viewer
-	l        []*Loader
-	entities []Entity
+	Entities      []Entity
+	BlockEntities map[cube.Pos]Block
+
+	viewers []Viewer
+	loaders []*Loader
 }
 
-// BlockEntities returns the block entities of the chunk.
-func (c *chunkData) BlockEntities() map[cube.Pos]Block {
-	c.Lock()
-	defer c.Unlock()
-	return maps.Clone(c.e)
-}
-
-// Viewers returns the viewers of the chunk.
-func (c *chunkData) Viewers() []Viewer {
-	c.Lock()
-	defer c.Unlock()
-	return slices.Clone(c.v)
-}
-
-// Entities returns the entities of the chunk.
-func (c *chunkData) Entities() []Entity {
-	c.Lock()
-	defer c.Unlock()
-	return slices.Clone(c.entities)
-}
-
-// newChunkData returns a new chunkData wrapper around the chunk.Chunk passed.
-func newChunkData(c *chunk.Chunk) *chunkData {
-	return &chunkData{Chunk: c, e: map[cube.Pos]Block{}}
+// newColumn returns a new Column wrapper around the chunk.Chunk passed.
+func newColumn(c *chunk.Chunk) *Column {
+	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}}
 }

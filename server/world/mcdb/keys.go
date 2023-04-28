@@ -43,3 +43,8 @@ const (
 	keyScoreboard         = "scoreboard"
 	keyLocalPlayer        = "~local_player"
 )
+
+const (
+	finalisationGenerated = iota + 1
+	finalisationPopulated
+)
