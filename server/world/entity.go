@@ -103,10 +103,10 @@ type EntityRegistryConfig struct {
 	FallingBlock       func(bl Block, pos mgl64.Vec3) Entity
 	TNT                func(pos mgl64.Vec3, fuse time.Duration) Entity
 	BottleOfEnchanting func(pos, vel mgl64.Vec3, owner Entity) Entity
-	Arrow              func(pos, vel mgl64.Vec3, yaw, pitch, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) Entity
+	Arrow              func(pos, vel mgl64.Vec3, rot cube.Rotation, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) Entity
 	Egg                func(pos, vel mgl64.Vec3, owner Entity) Entity
 	EnderPearl         func(pos, vel mgl64.Vec3, owner Entity) Entity
-	Firework           func(pos mgl64.Vec3, yaw, pitch float64, attached bool, firework Item, owner Entity) Entity
+	Firework           func(pos mgl64.Vec3, rot cube.Rotation, attached bool, firework Item, owner Entity) Entity
 	LingeringPotion    func(pos, vel mgl64.Vec3, t any, owner Entity) Entity
 	Snowball           func(pos, vel mgl64.Vec3, owner Entity) Entity
 	SplashPotion       func(pos, vel mgl64.Vec3, t any, owner Entity) Entity

@@ -82,7 +82,7 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 	}
 	e.mu.Lock()
 
-	m := p.mc.TickMovement(e, e.pos, e.vel, 0, 0)
+	m := p.mc.TickMovement(e, e.pos, e.vel, e.rot)
 	e.pos, e.vel = m.pos, m.vel
 
 	p.fallDistance = math.Max(p.fallDistance-m.dvel[1], 0)

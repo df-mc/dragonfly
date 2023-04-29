@@ -11,20 +11,20 @@ import (
 // NewFirework creates a firework entity. Firework is an item (and entity) used
 // for creating decorative explosions, boosting when flying with elytra, and
 // loading into a crossbow as ammunition.
-func NewFirework(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework) *Ent {
-	return NewFireworkAttached(pos, yaw, pitch, firework, nil, false)
+func NewFirework(pos mgl64.Vec3, rot cube.Rotation, firework item.Firework) *Ent {
+	return NewFireworkAttached(pos, rot, firework, nil, false)
 }
 
 // NewFireworkAttached creates a firework entity with an owner that the firework
 // may be attached to.
-func NewFireworkAttached(pos mgl64.Vec3, yaw, pitch float64, firework item.Firework, owner world.Entity, attached bool) *Ent {
+func NewFireworkAttached(pos mgl64.Vec3, rot cube.Rotation, firework item.Firework, owner world.Entity, attached bool) *Ent {
 	e := Config{Behaviour: FireworkBehaviourConfig{
 		ExistenceDuration:          firework.RandomisedDuration(),
 		SidewaysVelocityMultiplier: 1.15,
 		UpwardsAcceleration:        0.04,
 		Attached:                   attached,
 	}.New(firework, owner)}.New(FireworkType{}, pos)
-	e.rot = cube.Rotation{yaw, pitch}
+	e.rot = rot
 	return e
 }
 
@@ -37,8 +37,7 @@ func (FireworkType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 func (FireworkType) DecodeNBT(m map[string]any) world.Entity {
 	f := NewFirework(
 		nbtconv.Vec3(m, "Pos"),
-		float64(nbtconv.Float32(m, "Pitch")),
-		float64(nbtconv.Float32(m, "Yaw")),
+		nbtconv.Rotation(m),
 		nbtconv.MapItem(m, "Item").Item().(item.Firework),
 	)
 	f.vel = nbtconv.Vec3(m, "Motion")

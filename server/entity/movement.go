@@ -35,7 +35,7 @@ func (m *Movement) Send() {
 
 	for _, v := range m.v {
 		if posChanged {
-			v.ViewEntityMovement(m.e, m.pos, m.rot.Yaw(), m.rot.Pitch(), m.onGround)
+			v.ViewEntityMovement(m.e, m.pos, m.rot, m.onGround)
 		}
 		if velChanged {
 			v.ViewEntityVelocity(m.e, m.vel)
@@ -62,7 +62,7 @@ func (m *Movement) Rotation() cube.Rotation {
 // of its Drag and Gravity.
 // The new position of the entity after movement is returned.
 // The resulting Movement can be sent to viewers by calling Movement.Send.
-func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw, pitch float64) *Movement {
+func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, rot cube.Rotation) *Movement {
 	w := e.World()
 	viewers := w.Viewers(pos)
 
@@ -72,7 +72,7 @@ func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, yaw
 
 	return &Movement{v: viewers, e: e,
 		pos: pos.Add(dPos), vel: vel, dpos: dPos, dvel: vel.Sub(velBefore),
-		rot: cube.Rotation{yaw, pitch}, onGround: c.onGround,
+		rot: rot, onGround: c.onGround,
 	}
 }
 

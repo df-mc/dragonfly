@@ -1931,7 +1931,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		return
 	}
 	for _, v := range p.viewers() {
-		v.ViewEntityMovement(p, res, resYaw, resPitch, p.OnGround())
+		v.ViewEntityMovement(p, res, cube.Rotation{resYaw, resPitch}, p.OnGround())
 	}
 
 	p.pos.Store(res)
@@ -2272,7 +2272,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 	p.cooldownMu.Unlock()
 
 	if p.session() == session.Nop && !p.Immobile() {
-		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), cube.Rotation{p.yaw.Load(), p.pitch.Load()})
 		m.Send()
 
 		p.vel.Store(m.Velocity())
