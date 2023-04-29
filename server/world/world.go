@@ -1219,6 +1219,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 	col, err := w.provider().LoadColumn(pos, w.conf.Dim)
 	switch {
 	case err == nil:
+		w.chunks[pos] = col
 		// Iterate through the entities twice and make sure they're added to all relevant maps. Note that this iteration
 		// happens twice to avoid having to lock both worldsMu and entityMu. This is intentional, to avoid deadlocks.
 		worldsMu.Lock()
@@ -1272,7 +1273,7 @@ func (w *World) calculateLight(centre ChunkPos) {
 // spreadLight spreads the light from the chunk passed at the position passed to all neighbours if each of
 // them is loaded.
 func (w *World) spreadLight(pos ChunkPos) {
-	chunks := make([]*chunk.Chunk, 0, 9)
+	chunks := make([]*Column, 0, 9)
 	for z := int32(-1); z <= 1; z++ {
 		for x := int32(-1); x <= 1; x++ {
 			neighbour, ok := w.chunks[ChunkPos{pos[0] + x, pos[1] + z}]
@@ -1280,7 +1281,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 				// Not all surrounding chunks existed: Stop spreading light as we can't do it completely yet.
 				return
 			}
-			chunks = append(chunks, neighbour.Chunk)
+			chunks = append(chunks, neighbour)
 		}
 	}
 	for _, neighbour := range chunks {
@@ -1288,7 +1289,11 @@ func (w *World) spreadLight(pos ChunkPos) {
 	}
 	// All chunks of the current one are present, so we can spread the light from this chunk
 	// to all chunks.
-	chunk.LightArea(chunks, int(pos[0])-1, int(pos[1])-1).Spread()
+	c := make([]*chunk.Chunk, 9)
+	for i := range chunks {
+		c[i] = chunks[i].Chunk
+	}
+	chunk.LightArea(c, int(pos[0])-1, int(pos[1])-1).Spread()
 	for _, neighbour := range chunks {
 		neighbour.Unlock()
 	}
@@ -1352,6 +1357,7 @@ func (w *World) chunkCacheJanitor() {
 // Column represents the data of a chunk including the block entities and loaders. This data is protected
 // by the mutex present in the chunk.Chunk held.
 type Column struct {
+	sync.Mutex
 	modified bool
 
 	*chunk.Chunk
