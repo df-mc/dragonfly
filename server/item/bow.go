@@ -56,8 +56,8 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 
 	rot := releaser.Rotation()
 	rot = cube.Rotation{-rot[0], -rot[1]}
-	if rot[1] > 180 {
-		rot[1] = 360 - rot[1]
+	if rot[0] > 180 {
+		rot[0] = 360 - rot[0]
 	}
 	var tip potion.Potion
 	if !arrow.Empty() {
