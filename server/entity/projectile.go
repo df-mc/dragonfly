@@ -327,6 +327,6 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) func(other world.Entity) bool {
 	return func(other world.Entity) (ignored bool) {
 		g, ok := other.(interface{ GameMode() world.GameMode })
 		_, living := other.(Living)
-		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.Age() < time.Second/4 && lt.owner == other)
+		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.age < time.Second/4 && lt.owner == other)
 	}
 }
