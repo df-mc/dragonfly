@@ -156,7 +156,9 @@ func (db *DB) column(k dbKey) (*world.Column, error) {
 		return nil, fmt.Errorf("unsupported chunk version %v", ver)
 	}
 	cdata.Biomes, err = db.biomes(k)
-	if err != nil {
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
+		// Some chunks still use 2D chunk data and might not have this field, in
+		// which case we can just move on.
 		return nil, fmt.Errorf("read biomes: %w", err)
 	}
 	cdata.SubChunks, err = db.subChunks(k)
