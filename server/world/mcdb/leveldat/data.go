@@ -17,6 +17,8 @@ type Data struct {
 	BiomeOverride                  string
 	ConfirmedPlatformLockedContent bool
 	CenterMapsToOrigin             bool
+	CheatsEnabled                  bool  `nbt:"cheatsEnabled"`
+	DaylightCycle                  int32 `nbt:"daylightCycle"`
 	Difficulty                     int32
 	EduOffer                       int32 `nbt:"eduOffer"`
 	FlatWorldLayers                string
@@ -95,6 +97,8 @@ type Data struct {
 	HasLockedBehaviourPack         bool           `nbt:"hasLockedBehaviorPack"`
 	HasLockedResourcePack          bool           `nbt:"hasLockedResourcePack"`
 	ImmutableWorld                 bool           `nbt:"immutableWorld"`
+	IsCreatedInEditor              bool           `nbt:"isCreatedInEditor"`
+	IsExportedFromEditor           bool           `nbt:"isExportedFromEditor"`
 	IsFromLockedTemplate           bool           `nbt:"isFromLockedTemplate"`
 	IsFromWorldTemplate            bool           `nbt:"isFromWorldTemplate"`
 	IsWorldTemplateOptionLocked    bool           `nbt:"isWorldTemplateOptionLocked"`
