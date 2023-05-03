@@ -125,6 +125,7 @@ func (s *Session) sendRecipes() {
 				RecipeID:        uuid.New().String(),
 				Base:            input[0],
 				Addition:        input[1],
+				Template:        input[2],
 				Result:          output[0],
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
