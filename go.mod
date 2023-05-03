@@ -7,7 +7,7 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/df-mc/atomic v1.10.0
 	github.com/df-mc/goleveldb v1.1.9
-	github.com/df-mc/worldupgrader v1.0.3
+	github.com/df-mc/worldupgrader v1.0.6
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/pelletier/go-toml v1.9.5
@@ -34,5 +34,4 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
