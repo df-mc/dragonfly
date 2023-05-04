@@ -51,11 +51,11 @@ func (f Furnace) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (f Furnace) EncodeBlock() (name string, properties map[string]any) {
+func (f Furnace) EncodeBlock() (name string, properties map[string]interface{}) {
 	if f.Lit {
-		return "minecraft:lit_furnace", map[string]any{"facing_direction": int32(f.Facing)}
+		return "minecraft:lit_furnace", map[string]interface{}{"facing_direction": int32(f.Facing)}
 	}
-	return "minecraft:furnace", map[string]any{"facing_direction": int32(f.Facing)}
+	return "minecraft:furnace", map[string]interface{}{"facing_direction": int32(f.Facing)}
 }
 
 // UseOnBlock ...
@@ -65,7 +65,7 @@ func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 		return false
 	}
 
-	place(w, pos, NewFurnace(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
@@ -85,29 +85,29 @@ func (f Furnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User
 }
 
 // EncodeNBT ...
-func (f Furnace) EncodeNBT(cube.Pos, *world.World) map[string]any {
+func (f Furnace) EncodeNBT() map[string]interface{} {
 	if f.smelter == nil {
 		//noinspection GoAssignmentToReceiver
 		f = NewFurnace(f.Facing)
 	}
 	remaining, maximum, cook := f.Durations()
-	return map[string]any{
+	return map[string]interface{}{
 		"BurnTime":     int16(remaining.Milliseconds() / 50),
 		"CookTime":     int16(cook.Milliseconds() / 50),
 		"BurnDuration": int16(maximum.Milliseconds() / 50),
 		"StoredXPInt":  int16(f.Experience()),
-		"Items":        nbtconv.InvToNBT(f.inventory),
+		"Items":        nbtconv.InvToNBT(f.Inventory()),
 		"id":           "Furnace",
 	}
 }
 
 // DecodeNBT ...
-func (f Furnace) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
-	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
-	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
-	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
+func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
+	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
+	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
+	cook := nbtconv.TickDuration[int16](data, "CookTime")
 
-	xp := int(nbtconv.Map[int16](data, "StoredXPInt"))
+	xp := int(nbtconv.Int16(data, "StoredXPInt"))
 	lit := f.Lit
 
 	//noinspection GoAssignmentToReceiver
@@ -115,7 +115,7 @@ func (f Furnace) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any 
 	f.Lit = lit
 	f.setExperience(xp)
 	f.setDurations(remaining, maximum, cook)
-	nbtconv.InvFromNBT(f.inventory, nbtconv.Map[[]any](data, "Items"))
+	nbtconv.InvFromNBT(f.Inventory(), nbtconv.Slice(data, "Items"))
 	return f
 }
 

@@ -126,5 +126,3 @@ func (m Modal) verify() {
 		panic("modal form must have exactly two exported fields of the type form.Button")
 	}
 }
-
-func (Modal) __() {}

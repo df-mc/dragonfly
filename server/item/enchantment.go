@@ -2,6 +2,7 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
+	"golang.org/x/exp/maps"
 )
 
 // Enchantment is an enchantment that can be applied to a Stack. It holds an EnchantmentType and level that influences
@@ -62,11 +63,9 @@ type Enchantable interface {
 func RegisterEnchantment(id int, enchantment EnchantmentType) {
 	enchantmentsMap[id] = enchantment
 	enchantmentIDs[enchantment] = id
-	enchantments = append(enchantments, enchantment)
 }
 
 var (
-	enchantments    []EnchantmentType
 	enchantmentsMap = map[int]EnchantmentType{}
 	enchantmentIDs  = map[EnchantmentType]int{}
 )
@@ -87,5 +86,5 @@ func EnchantmentID(e EnchantmentType) (int, bool) {
 
 // Enchantments returns a slice of all registered enchantments.
 func Enchantments() []EnchantmentType {
-	return enchantments
+	return maps.Values(enchantmentsMap)
 }

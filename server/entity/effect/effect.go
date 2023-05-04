@@ -1,8 +1,6 @@
 package effect
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
-	"github.com/df-mc/dragonfly/server/entity/healing"
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
 	"time"
@@ -123,7 +121,7 @@ func tickDuration(d time.Duration) int {
 // ResultingColour calculates the resulting colour of the effects passed and returns a bool specifying if the
 // effects were ambient effects, which will cause their particles to display less frequently.
 func ResultingColour(effects []Effect) (color.RGBA, bool) {
-	r, g, b, a, l := 0, 0, 0, 0, 0
+	r, g, b, a, n := 0, 0, 0, 0, 0
 	ambient := true
 	for _, e := range effects {
 		if e.particlesHidden {
@@ -136,15 +134,15 @@ func ResultingColour(effects []Effect) (color.RGBA, bool) {
 		g += int(c.G)
 		b += int(c.B)
 		a += int(c.A)
-		l++
+		n++
 		if !e.Ambient() {
 			ambient = false
 		}
 	}
-	if l == 0 {
+	if n == 0 {
 		return color.RGBA{R: 0x38, G: 0x5d, B: 0xc6, A: 0xff}, false
 	}
-	return color.RGBA{R: uint8(r / l), G: uint8(g / l), B: uint8(b / l), A: uint8(a / l)}, ambient
+	return color.RGBA{R: uint8(r / n), G: uint8(g / n), B: uint8(b / n), A: uint8(a / n)}, ambient
 }
 
 // living represents a living entity that has health and the ability to move around.
@@ -157,13 +155,13 @@ type living interface {
 	// SetMaxHealth changes the maximum health of the entity to the value passed.
 	SetMaxHealth(v float64)
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
-	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
+	// damage, for example entity.AttackDamageSource if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the player currently has, the entity is killed.
-	Hurt(damage float64, source damage.Source) (n float64, vulnerable bool)
+	Hurt(damage float64, source world.DamageSource) (n float64, vulnerable bool)
 	// Heal heals the entity for a given amount of health. The source passed represents the cause of the
-	// healing, for example healing.SourceFood if the entity healed by having a full food bar. If the health
+	// healing, for example entity.FoodHealingSource if the entity healed by having a full food bar. If the health
 	// added to the original health exceeds the entity's max health, Heal may not add the full amount.
-	Heal(health float64, source healing.Source)
+	Heal(health float64, source world.HealingSource)
 	// Speed returns the current speed of the living entity. The default value is different for each entity.
 	Speed() float64
 	// SetSpeed sets the speed of an entity to a new value.

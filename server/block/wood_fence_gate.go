@@ -51,7 +51,7 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 	if !used {
 		return false
 	}
-	f.Facing = user.Facing()
+	f.Facing = user.Rotation().Direction()
 	f.Lowered = f.shouldBeLowered(pos, w)
 
 	place(w, pos, f, user, ctx)
@@ -77,11 +77,15 @@ func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, w *world.World) bool {
 // Activate ...
 func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	f.Open = !f.Open
-	if f.Open && f.Facing.Opposite() == u.Facing() {
-		f.Facing = u.Facing()
+	if f.Open && f.Facing.Opposite() == u.Rotation().Direction() {
+		f.Facing = f.Facing.Opposite()
 	}
 	w.SetBlock(pos, f, nil)
-	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	if f.Open {
+		w.PlaySound(pos.Vec3Centre(), sound.FenceGateOpen{Block: f})
+		return true
+	}
+	w.PlaySound(pos.Vec3Centre(), sound.FenceGateClose{Block: f})
 	return true
 }
 

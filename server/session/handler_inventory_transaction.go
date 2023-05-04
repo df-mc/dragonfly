@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -58,36 +59,52 @@ func (h *InventoryTransactionHandler) resendInventories(s *Session) {
 
 // handleNormalTransaction ...
 func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.InventoryTransaction, s *Session) error {
+	if len(pk.Actions) != 2 {
+		return fmt.Errorf("expected two actions for dropping an item, got %d", len(pk.Actions))
+	}
+
+	var (
+		slot     int
+		count    int
+		expected item.Stack
+	)
 	for _, action := range pk.Actions {
-		switch action.SourceType {
-		case protocol.InventoryActionSourceWorld:
-			// Item dropping using Q in the hotbar still uses the old inventory transaction system, so we need
-			// to account for that.
-			if action.OldItem.Stack.Count != 0 || action.OldItem.Stack.NetworkID != 0 || action.OldItem.Stack.MetadataValue != 0 {
-				return fmt.Errorf("unexpected non-zero old item in transaction action: %#v", action.OldItem)
+		if action.SourceType == protocol.InventoryActionSourceWorld && action.InventorySlot == 0 {
+			if old := stackToItem(action.OldItem.Stack); !old.Empty() {
+				return fmt.Errorf("unexpected non-empty old item in transaction action: %#v", action.OldItem)
 			}
-			thrown := stackToItem(action.NewItem.Stack)
-			held, off := s.c.HeldItems()
-			if !thrown.Comparable(held) {
-				return fmt.Errorf("different item thrown than held in slot: %#v was thrown but held %#v", thrown, held)
+			count = int(action.NewItem.Stack.Count)
+		} else if action.SourceType == protocol.InventoryActionSourceContainer && action.WindowID == protocol.WindowIDInventory {
+			if expected = stackToItem(action.OldItem.Stack); expected.Empty() {
+				return fmt.Errorf("unexpected empty old item in transaction action: %#v", action.OldItem)
 			}
-			if thrown.Count() > held.Count() {
-				return fmt.Errorf("tried to throw %v items, but held only %v in slot", thrown.Count(), held.Count())
-			}
-
-			if err := call(event.C(), int(s.heldSlot.Load()), held.Grow(thrown.Count()-held.Count()), s.inv.Handler().HandleDrop); err != nil {
-				return err
-			}
-
-			// Explicitly don't re-use the thrown variable. This item was supplied by the user, and if some
-			// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
-			// Only grow or shrink the held item to prevent any such issues.
-			n := s.c.Drop(held.Grow(thrown.Count() - held.Count()))
-			s.c.SetHeldItems(held.Grow(-n), off)
-		default:
-			// Ignore inventory actions we don't explicitly handle.
+			slot = int(action.InventorySlot)
+		} else {
+			return fmt.Errorf("unexpected action type in drop item transaction")
 		}
 	}
+
+	actual, _ := s.inv.Item(slot)
+	if count < 1 {
+		return fmt.Errorf("expected at least one item to be dropped, got %d", count)
+	}
+	if count > actual.Count() {
+		return fmt.Errorf("tried to throw %v items, but held only %v in slot", count, actual.Count())
+	}
+	if !expected.Equal(actual) {
+		return fmt.Errorf("different item thrown than held in slot: %#v was thrown but held %#v", expected, actual)
+	}
+
+	// Explicitly don't re-use the thrown variable. This item was supplied by the user, and if some
+	// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
+	// Only grow or shrink the held item to prevent any such issues.
+	res := actual.Grow(count - actual.Count())
+	if err := call(event.C(), int(s.heldSlot.Load()), res, s.inv.Handler().HandleDrop); err != nil {
+		return err
+	}
+
+	n := s.c.Drop(res)
+	_ = s.inv.SetItem(slot, actual.Grow(-n))
 	return nil
 }
 

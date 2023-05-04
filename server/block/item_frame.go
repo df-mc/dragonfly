@@ -112,15 +112,15 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]any) {
 }
 
 // DecodeNBT ...
-func (i ItemFrame) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
-	i.DropChance = float64(nbtconv.Map[float32](data, "ItemDropChance"))
-	i.Rotations = int(nbtconv.Map[byte](data, "ItemRotation"))
+func (i ItemFrame) DecodeNBT(data map[string]any) any {
+	i.DropChance = float64(nbtconv.Float32(data, "ItemDropChance"))
+	i.Rotations = int(nbtconv.Uint8(data, "ItemRotation"))
 	i.Item = nbtconv.MapItem(data, "Item")
 	return i
 }
 
 // EncodeNBT ...
-func (i ItemFrame) EncodeNBT(cube.Pos, *world.World) map[string]any {
+func (i ItemFrame) EncodeNBT() map[string]any {
 	m := map[string]any{
 		"ItemDropChance": float32(i.DropChance),
 		"ItemRotation":   uint8(i.Rotations),

@@ -187,7 +187,7 @@ func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
-	s.sendAvailableEntities()
+	s.sendAvailableEntities(w)
 
 	s.initPlayerList()
 
@@ -355,6 +355,13 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks() {
+	pos := s.c.Position()
+	s.chunkLoader.Move(pos)
+	s.writePacket(&packet.NetworkChunkPublisherUpdate{
+		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		Radius:   uint32(s.chunkRadius) << 4,
+	})
+
 	const maxChunkTransactions = 8
 
 	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
@@ -386,9 +393,10 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
+	dim, _ := world.DimensionID(w.Dimension())
+	same := w.Dimension() == s.chunkLoader.World().Dimension()
 	if !same {
-		s.changeDimension(dim, false)
+		s.changeDimension(int32(dim), false)
 	}
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
@@ -400,6 +408,13 @@ func (s *Session) changeDimension(dim int32, silent bool) {
 	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
 	s.writePacket(&packet.StopSound{StopAll: silent})
 	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+
+	// As of v1.19.50, the dimension ack that is meant to be sent by the client is now sent by the server. The client
+	// still sends the ack, but after the server has sent it. Thanks to Mojang for another groundbreaking change.
+	s.writePacket(&packet.PlayerAction{
+		EntityRuntimeID: selfEntityRuntimeID,
+		ActionType:      protocol.PlayerActionDimensionChangeDone,
+	})
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -513,10 +528,10 @@ type actorIdentifier struct {
 }
 
 // sendAvailableEntities sends all registered entities to the player.
-func (s *Session) sendAvailableEntities() {
+func (s *Session) sendAvailableEntities(w *world.World) {
 	var identifiers []actorIdentifier
-	for _, entity := range world.Entities() {
-		identifiers = append(identifiers, actorIdentifier{ID: entity.EncodeEntity()})
+	for _, t := range w.EntityRegistry().Types() {
+		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
 	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {

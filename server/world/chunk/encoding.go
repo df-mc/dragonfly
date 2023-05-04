@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/df-mc/worldupgrader/blockupgrader"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -78,23 +79,26 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 			return 0, fmt.Errorf("cannot find mapping for legacy block entry: %v, %v", name, meta)
 		}
 
-		// Update the state.
+		// Update the name, state, and version.
+		name = state.Name
 		stateI = state.State
+		version = state.Version
 	}
 	state, ok := stateI.(map[string]any)
 	if !ok {
 		return 0, fmt.Errorf("invalid state in block entry")
 	}
 
-	// If the entry is an alias, then we need to resolve it.
-	entry := blockEntry{Name: name, State: state, Version: version}
-	if updatedEntry, ok := upgradeAliasEntry(entry); ok {
-		entry = updatedEntry
-	}
+	// Upgrade the block state if necessary.
+	upgraded := blockupgrader.Upgrade(blockupgrader.BlockState{
+		Name:       name,
+		Properties: state,
+		Version:    version,
+	})
 
-	v, ok := StateToRuntimeID(entry.Name, entry.State)
+	v, ok := StateToRuntimeID(upgraded.Name, upgraded.Properties)
 	if !ok {
-		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", name, state)
+		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v} %v", upgraded.Name, upgraded.Properties, upgraded.Version)
 	}
 	return v, nil
 }
@@ -126,6 +130,9 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 		if err != nil {
 			return nil, err
 		}
+	}
+	if paletteCount == 0 {
+		return palette, fmt.Errorf("invalid palette entry count: found 0, but palette with %v bits per block must have at least 1 value", blockSize)
 	}
 	return palette, nil
 }

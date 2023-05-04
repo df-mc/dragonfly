@@ -58,8 +58,7 @@ func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	}
 
 	if face == cube.FaceUp {
-		yaw, _ := user.Rotation()
-		s.Attach = StandingAttachment(cube.OrientationFromYaw(yaw))
+		s.Attach = StandingAttachment(user.Rotation().Orientation())
 	} else {
 		s.Attach = WallAttachment(face.Direction())
 	}
@@ -88,9 +87,9 @@ func (s Skull) EncodeItem() (name string, meta int16) {
 }
 
 // DecodeNBT ...
-func (s Skull) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
-	s.Type = SkullType{skull(nbtconv.Map[byte](data, "SkullType"))}
-	s.Attach.o = cube.Orientation(nbtconv.Map[byte](data, "Rot"))
+func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
+	s.Type = SkullType{skull(nbtconv.Uint8(data, "SkullType"))}
+	s.Attach.o = cube.Orientation(nbtconv.Uint8(data, "Rot"))
 	if s.Attach.facing >= 0 {
 		s.Attach.hanging = true
 	}
@@ -98,16 +97,16 @@ func (s Skull) DecodeNBT(_ cube.Pos, _ *world.World, data map[string]any) any {
 }
 
 // EncodeNBT ...
-func (s Skull) EncodeNBT(cube.Pos, *world.World) map[string]any {
-	return map[string]any{"id": "Skull", "SkullType": s.Type.Uint8(), "Rot": byte(s.Attach.o)}
+func (s Skull) EncodeNBT() map[string]interface{} {
+	return map[string]interface{}{"id": "Skull", "SkullType": s.Type.Uint8(), "Rot": byte(s.Attach.o)}
 }
 
 // EncodeBlock ...
-func (s Skull) EncodeBlock() (string, map[string]any) {
+func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 	if s.Attach.hanging {
-		return "minecraft:skull", map[string]any{"facing_direction": int32(s.Attach.facing) + 2}
+		return "minecraft:skull", map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}
 	}
-	return "minecraft:skull", map[string]any{"facing_direction": int32(1)}
+	return "minecraft:skull", map[string]interface{}{"facing_direction": int32(1)}
 }
 
 // allSkulls ...

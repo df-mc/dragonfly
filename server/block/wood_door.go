@@ -80,7 +80,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
 		return false
 	}
-	d.Facing = user.Facing()
+	d.Facing = user.Rotation().Direction()
 	left := w.Block(pos.Side(d.Facing.RotateLeft().Face()))
 	right := w.Block(pos.Side(d.Facing.RotateRight().Face()))
 	if door, ok := left.(WoodDoor); ok {
@@ -115,8 +115,11 @@ func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Use
 		door.Open = d.Open
 		w.SetBlock(otherPos, door, nil)
 	}
-
-	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	if d.Open {
+		w.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+		return true
+	}
+	w.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
 	return true
 }
 

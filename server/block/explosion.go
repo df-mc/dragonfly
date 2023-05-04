@@ -92,7 +92,7 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 
 	for _, e := range w.EntitiesWithin(box.Grow(2), nil) {
 		pos := e.Position()
-		if !e.BBox().Translate(pos).IntersectsWith(box) {
+		if !e.Type().BBox(e).Translate(pos).IntersectsWith(box) {
 			continue
 		}
 		dist := pos.Sub(pos).Len()
@@ -159,7 +159,7 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 func exposure(origin mgl64.Vec3, e world.Entity) float64 {
 	w := e.World()
 	pos := e.Position()
-	box := e.BBox().Translate(pos)
+	box := e.Type().BBox(e).Translate(pos)
 
 	boxMin, boxMax := box.Min(), box.Max()
 	diff := boxMax.Sub(boxMin).Mul(2.0).Add(mgl64.Vec3{1, 1, 1})

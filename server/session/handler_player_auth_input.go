@@ -24,7 +24,7 @@ func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session) error {
 
 // handleMovement handles the movement part of the packet.PlayerAuthInput.
 func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Session) error {
-	yaw, pitch := s.c.Rotation()
+	yaw, pitch := s.c.Rotation().Elem()
 	pos := s.c.Position()
 
 	reference := []float64{pitch, yaw, yaw, pos[0], pos[1], pos[2]}
@@ -61,14 +61,6 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	}
 
 	s.c.Move(deltaPos, deltaYaw, deltaPitch)
-
-	if !mgl64.FloatEqual(deltaPos.Len(), 0) {
-		s.chunkLoader.Move(newPos)
-		s.writePacket(&packet.NetworkChunkPublisherUpdate{
-			Position: protocol.BlockPos{int32(pk.Position[0]), int32(pk.Position[1]), int32(pk.Position[2])},
-			Radius:   uint32(s.chunkRadius) << 4,
-		})
-	}
 	return nil
 }
 

@@ -93,7 +93,46 @@ func (s *Session) SendRespawn(pos mgl64.Vec3) {
 
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
-	s.writePacket(&packet.CraftingData{Recipes: s.protocolRecipes(), ClearRecipes: true})
+	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	for index, i := range recipe.Recipes() {
+		networkID := uint32(index) + 1
+		s.recipes[networkID] = i
+
+		switch i := i.(type) {
+		case recipe.Shapeless:
+			recipes = append(recipes, &protocol.ShapelessRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Input:           stacksToIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		case recipe.Shaped:
+			recipes = append(recipes, &protocol.ShapedRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Width:           int32(i.Shape().Width()),
+				Height:          int32(i.Shape().Height()),
+				Input:           stacksToIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		case recipe.Smithing:
+			input, output := stacksToIngredientItems(i.Input()), stacksToRecipeStacks(i.Output())
+			recipes = append(recipes, &protocol.SmithingTransformRecipe{
+				RecipeID:        uuid.New().String(),
+				Base:            input[0],
+				Addition:        input[1],
+				Template:        input[2],
+				Result:          output[0],
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		}
+	}
+	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
 }
 
 // sendInv sends the inventory passed to the client with the window ID.
@@ -125,37 +164,6 @@ const (
 	craftingResult          = 50
 )
 
-const (
-	containerAnvilInput            = 0
-	containerAnvilMaterial         = 1
-	containerSmithingInput         = 3
-	containerSmithingMaterial      = 4
-	containerArmour                = 6
-	containerChest                 = 7
-	containerBeacon                = 8
-	containerFullInventory         = 12
-	containerCraftingGrid          = 13
-	containerEnchantingTableInput  = 21
-	containerEnchantingTableLapis  = 22
-	containerFurnaceFuel           = 23
-	containerFurnaceResult         = 25
-	containerFurnaceInput          = 24
-	containerHotbar                = 27
-	containerInventory             = 28
-	containerOffHand               = 33
-	containerLoomInput             = 40
-	containerLoomDye               = 41
-	containerLoomPattern           = 42
-	containerBlastFurnaceInput     = 44
-	containerSmokerInput           = 45
-	containerGrindstoneFirstInput  = 49
-	containerGrindstoneSecondInput = 50
-	containerStonecutterInput      = 52
-	containerBarrel                = 57
-	containerCursor                = 58
-	containerOutput                = 59
-)
-
 // smelter is an interface representing a block used to smelt items.
 type smelter interface {
 	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
@@ -166,18 +174,18 @@ type smelter interface {
 // returned is true.
 func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	switch id {
-	case containerCraftingGrid, containerOutput, containerCursor:
+	case protocol.ContainerCraftingInput, protocol.ContainerCreatedOutput, protocol.ContainerCursor:
 		// UI inventory.
 		return s.ui, true
-	case containerHotbar, containerInventory, containerFullInventory:
+	case protocol.ContainerHotBar, protocol.ContainerInventory, protocol.ContainerCombinedHotBarAndInventory:
 		// Hotbar 'inventory', rest of inventory, inventory when container is opened.
 		return s.inv, true
-	case containerOffHand:
+	case protocol.ContainerOffhand:
 		return s.offHand, true
-	case containerArmour:
+	case protocol.ContainerArmor:
 		// Armour inventory.
 		return s.armour.Inventory(), true
-	case containerChest:
+	case protocol.ContainerLevelEntity:
 		if s.containerOpened.Load() {
 			b := s.c.World().Block(s.openedPos.Load())
 			if _, chest := b.(block.Chest); chest {
@@ -186,55 +194,56 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBarrel:
+	case protocol.ContainerBarrel:
 		if s.containerOpened.Load() {
 			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
 		}
-	case containerBeacon:
+	case protocol.ContainerBeaconPayment:
 		if s.containerOpened.Load() {
 			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
 		}
-	case containerAnvilInput, containerAnvilMaterial:
+	case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
 		if s.containerOpened.Load() {
 			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
 		}
-	case containerSmithingInput, containerSmithingMaterial:
+	case protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
 		if s.containerOpened.Load() {
 			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true
 			}
 		}
-	case containerLoomInput, containerLoomDye, containerLoomPattern:
+	case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
 		if s.containerOpened.Load() {
 			if _, loom := s.c.World().Block(s.openedPos.Load()).(block.Loom); loom {
 				return s.ui, true
 			}
 		}
-	case containerStonecutterInput:
+	case protocol.ContainerStonecutterInput:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
 		}
-	case containerGrindstoneFirstInput, containerGrindstoneSecondInput:
+	case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); ok {
 				return s.ui, true
 			}
 		}
-	case containerEnchantingTableInput, containerEnchantingTableLapis:
+	case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
 		if s.containerOpened.Load() {
 			if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}
-	case containerFurnaceInput, containerFurnaceFuel, containerFurnaceResult, containerBlastFurnaceInput, containerSmokerInput:
+	case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
+		protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
 				return s.openedWindow.Load(), true
@@ -342,15 +351,7 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 	if s == Nop {
 		return
 	}
-
-	id := int32(packet.GameTypeSurvival)
-	if mode.AllowsFlying() && mode.CreativeInventory() {
-		id = packet.GameTypeCreative
-	}
-	if !mode.Visible() && !mode.HasCollision() {
-		id = packet.GameTypeSpectator
-	}
-	s.writePacket(&packet.SetPlayerGameType{GameType: id})
+	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(mode)})
 	s.sendAbilities()
 }
 
@@ -415,17 +416,13 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 
 // SendAbsorption sends the absorption value passed to the player.
 func (s *Session) SendAbsorption(value float64) {
-	maximum := value
-	if math.Mod(value, 2) != 0 {
-		maximum = value + 1
-	}
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			AttributeValue: protocol.AttributeValue{
 				Name:  "minecraft:absorption",
 				Value: float32(math.Ceil(value)),
-				Max:   float32(math.Ceil(maximum)),
+				Max:   float32(math.MaxFloat32),
 			},
 		}},
 	})
@@ -526,21 +523,22 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 	}
 
 	return protocol.Skin{
-		PlayFabID:         s.PlayFabID,
-		SkinID:            uuid.New().String(),
-		SkinResourcePatch: s.ModelConfig.Encode(),
-		SkinImageWidth:    uint32(s.Bounds().Max.X),
-		SkinImageHeight:   uint32(s.Bounds().Max.Y),
-		SkinData:          s.Pix,
-		CapeImageWidth:    uint32(s.Cape.Bounds().Max.X),
-		CapeImageHeight:   uint32(s.Cape.Bounds().Max.Y),
-		CapeData:          s.Cape.Pix,
-		SkinGeometry:      s.Model,
-		PersonaSkin:       s.Persona,
-		CapeID:            uuid.New().String(),
-		FullID:            uuid.New().String(),
-		Animations:        animations,
-		Trusted:           true,
+		PlayFabID:          s.PlayFabID,
+		SkinID:             uuid.New().String(),
+		SkinResourcePatch:  s.ModelConfig.Encode(),
+		SkinImageWidth:     uint32(s.Bounds().Max.X),
+		SkinImageHeight:    uint32(s.Bounds().Max.Y),
+		SkinData:           s.Pix,
+		CapeImageWidth:     uint32(s.Cape.Bounds().Max.X),
+		CapeImageHeight:    uint32(s.Cape.Bounds().Max.Y),
+		CapeData:           s.Cape.Pix,
+		SkinGeometry:       s.Model,
+		PersonaSkin:        s.Persona,
+		CapeID:             uuid.New().String(),
+		FullID:             uuid.New().String(),
+		Animations:         animations,
+		Trusted:            true,
+		OverrideAppearance: true,
 	}
 }
 
@@ -701,39 +699,6 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 	})
 }
 
-// protocolRecipes returns all recipes as protocol recipes.
-func (s *Session) protocolRecipes() []protocol.Recipe {
-	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
-	for index, i := range recipe.Recipes() {
-		networkID := uint32(index) + 1
-		s.recipes[networkID] = i
-
-		switch i := i.(type) {
-		case recipe.Shapeless:
-			recipes = append(recipes, &protocol.ShapelessRecipe{
-				RecipeID:        uuid.New().String(),
-				Priority:        int32(i.Priority()),
-				Input:           stacksToIngredientItems(i.Input()),
-				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           i.Block(),
-				RecipeNetworkID: networkID,
-			})
-		case recipe.Shaped:
-			recipes = append(recipes, &protocol.ShapedRecipe{
-				RecipeID:        uuid.New().String(),
-				Priority:        int32(i.Priority()),
-				Width:           int32(i.Shape().Width()),
-				Height:          int32(i.Shape().Height()),
-				Input:           stacksToIngredientItems(i.Input()),
-				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           i.Block(),
-				RecipeNetworkID: networkID,
-			})
-		}
-	}
-	return recipes
-}
-
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
@@ -779,7 +744,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
-	return nbtconv.ReadItem(it.NBTData, &s)
+	return nbtconv.Item(it.NBTData, &s)
 }
 
 // instanceFromItem converts an item.Stack to its network ItemInstance representation.
@@ -889,13 +854,26 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	return
 }
 
+// gameTypeFromMode returns the game type ID from the game mode passed.
+func gameTypeFromMode(mode world.GameMode) int32 {
+	if mode.AllowsFlying() && mode.CreativeInventory() {
+		return packet.GameTypeCreative
+	}
+	if !mode.Visible() && !mode.HasCollision() {
+		return packet.GameTypeSpectator
+	}
+	return packet.GameTypeSurvival
+}
+
 // The following functions use the go:linkname directive in order to make sure the item.byID and item.toID
 // functions do not need to be exported.
 
+// noinspection ALL
+//
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
-//noinspection ALL
 func item_id(s item.Stack) int32
 
+// noinspection ALL
+//
 //go:linkname world_add github.com/df-mc/dragonfly/server/world.add
-//noinspection ALL
 func world_add(e world.Entity, w *world.World)

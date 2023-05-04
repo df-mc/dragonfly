@@ -20,8 +20,8 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
 	}
-	if _, shapeless := craft.(recipe.Shapeless); !shapeless {
-		return fmt.Errorf("recipe with network id %v is not a shapeless recipe", a.RecipeNetworkID)
+	if _, shapeless := craft.(recipe.Smithing); !shapeless {
+		return fmt.Errorf("recipe with network id %v is not a smithing recipe", a.RecipeNetworkID)
 	}
 	if craft.Block() != "smithing_table" {
 		return fmt.Errorf("recipe with network id %v is not a smithing table recipe", a.RecipeNetworkID)
@@ -30,14 +30,14 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 	// Check if the input item and material item match what the recipe requires.
 	expectedInputs := craft.Input()
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerSmithingInput,
+		ContainerID: protocol.ContainerSmithingTableInput,
 		Slot:        smithingInputSlot,
 	}, s)
 	if !matchingStacks(input, expectedInputs[0]) {
 		return fmt.Errorf("input item is not the same as expected input")
 	}
 	material, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerSmithingMaterial,
+		ContainerID: protocol.ContainerSmithingTableMaterial,
 		Slot:        smithingMaterialSlot,
 	}, s)
 	if !matchingStacks(material, expectedInputs[1]) {
@@ -46,11 +46,11 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 
 	// Create the output using the input stack as reference and the recipe's output item type.
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerSmithingInput,
+		ContainerID: protocol.ContainerSmithingTableInput,
 		Slot:        smithingInputSlot,
 	}, input.Grow(-1), s)
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerSmithingMaterial,
+		ContainerID: protocol.ContainerSmithingTableMaterial,
 		Slot:        smithingMaterialSlot,
 	}, material.Grow(-1), s)
 	return h.createResults(s, duplicateStack(input, craft.Output()[0].Item()))

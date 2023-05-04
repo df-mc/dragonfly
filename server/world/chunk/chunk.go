@@ -2,14 +2,12 @@ package chunk
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"sync"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
-	sync.Mutex
 	// r holds the (vertical) range of the Chunk. It includes both the minimum and maximum coordinates.
 	r cube.Range
 	// air is the runtime ID of air.

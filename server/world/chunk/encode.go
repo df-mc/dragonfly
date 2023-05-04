@@ -12,7 +12,7 @@ const (
 	// CurrentBlockVersion is the current version of blocks (states) of the game. This version is composed
 	// of 4 bytes indicating a version, interpreted as a big endian int. The current version represents
 	// 1.16.0.14 {1, 16, 0, 14}.
-	CurrentBlockVersion int32 = 17825806
+	CurrentBlockVersion int32 = 18040335
 )
 
 var (
@@ -35,9 +35,6 @@ type (
 		SubChunks [][]byte
 		// Biomes is the biome data of the chunk, which is composed of a biome storage for each sub-chunk.
 		Biomes []byte
-		// BlockNBT is an encoded NBT array of all blocks that carry additional NBT, such as chests, with all
-		// their contents.
-		BlockNBT []byte
 	}
 	// blockEntry represents a block as found in a disk save of a world.
 	blockEntry struct {
