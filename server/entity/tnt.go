@@ -15,7 +15,7 @@ import (
 func NewTNT(pos mgl64.Vec3, fuse time.Duration) *Ent {
 	config := tntConf
 	config.ExistenceDuration = fuse
-	ent := Config{Behaviour: tntConf.New()}.New(TNTType{}, pos)
+	ent := Config{Behaviour: config.New()}.New(TNTType{}, pos)
 
 	angle := rand.Float64() * math.Pi * 2
 	ent.vel = mgl64.Vec3{-math.Sin(angle) * 0.02, 0.1, -math.Cos(angle) * 0.02}
