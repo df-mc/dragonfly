@@ -175,12 +175,9 @@ func (db *DB) column(k dbKey) (*world.Column, error) {
 		return nil, fmt.Errorf("read entities: %w", err)
 	}
 	col.BlockEntities, err = db.blockEntities(k, col.Chunk)
-	if err != nil {
-		if !errors.Is(err, leveldb.ErrNotFound) {
-			// Same as with entities, an ErrNotFound is fine here.
-			return nil, fmt.Errorf("read block entities: %w", err)
-		}
-		col.BlockEntities = make(map[cube.Pos]world.Block)
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
+		// Same as with entities, an ErrNotFound is fine here.
+		return nil, fmt.Errorf("read block entities: %w", err)
 	}
 	return col, nil
 }
@@ -274,11 +271,12 @@ func (db *DB) entities(k dbKey) ([]world.Entity, error) {
 }
 
 func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, error) {
+	blockEntities := make(map[cube.Pos]world.Block)
+
 	data, err := db.ldb.Get(k.Sum(keyBlockEntities), nil)
 	if err != nil {
-		return nil, err
+		return blockEntities, err
 	}
-	blockEntities := make(map[cube.Pos]world.Block)
 
 	buf := bytes.NewBuffer(data)
 	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
@@ -287,7 +285,7 @@ func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, 
 	for buf.Len() != 0 {
 		maps.Clear(m)
 		if err := dec.Decode(&m); err != nil {
-			return nil, fmt.Errorf("decode nbt: %w", err)
+			return blockEntities, fmt.Errorf("decode nbt: %w", err)
 		}
 		pos := blockPosFromNBT(m)
 
