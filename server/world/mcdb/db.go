@@ -175,9 +175,12 @@ func (db *DB) column(k dbKey) (*world.Column, error) {
 		return nil, fmt.Errorf("read entities: %w", err)
 	}
 	col.BlockEntities, err = db.blockEntities(k, col.Chunk)
-	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
-		// Same as with entities, an ErrNotFound is fine here.
-		return nil, fmt.Errorf("read block entities: %w", err)
+	if err != nil {
+		if !errors.Is(err, leveldb.ErrNotFound) {
+			// Same as with entities, an ErrNotFound is fine here.
+			return nil, fmt.Errorf("read block entities: %w", err)
+		}
+		col.BlockEntities = make(map[cube.Pos]world.Block)
 	}
 	return col, nil
 }
