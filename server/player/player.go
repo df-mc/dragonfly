@@ -2623,6 +2623,16 @@ func (p *Player) SwingArm() {
 	}
 }
 
+// SetEntityNameTag sets the name tag of the given entity to the name tag passed, specific to this player.
+func (p *Player) SetEntityNameTag(e world.Entity, nameTag string) {
+	p.session().SetEntityNameTag(e, nameTag)
+}
+
+// RemoveEntityNameTag removes the name tag of the given entity, specific to this player.
+func (p *Player) RemoveEntityNameTag(e world.Entity) {
+	p.session().RemoveEntityNameTag(e)
+}
+
 // PunchAir makes the player punch the air and plays the sound for attacking with no damage.
 func (p *Player) PunchAir() {
 	if p.Dead() {
