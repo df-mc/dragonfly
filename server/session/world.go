@@ -895,16 +895,18 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 
 // SetEntityNameTag sets the name tag of the entity passed. specific to the session.
 func (s *Session) SetEntityNameTag(e world.Entity, nameTag string) {
+	runtimeID := s.entityRuntimeID(e)
 	s.entityMutex.Lock()
-	s.entitySpecificNameTags[s.entityRuntimeID(e)] = nameTag
+	s.entitySpecificNameTags[runtimeID] = nameTag
 	s.entityMutex.Unlock()
 	s.ViewEntityState(e)
 }
 
 // RemoveEntityNameTag removes the name tag of the entity passed. specific to the session.
 func (s *Session) RemoveEntityNameTag(e world.Entity) {
+	runtimeID := s.entityRuntimeID(e)
 	s.entityMutex.Lock()
-	delete(s.entitySpecificNameTags, s.entityRuntimeID(e))
+	delete(s.entitySpecificNameTags, runtimeID)
 	s.entityMutex.Unlock()
 	s.ViewEntityState(e)
 }
@@ -912,8 +914,9 @@ func (s *Session) RemoveEntityNameTag(e world.Entity) {
 // ViewEntityState ...
 func (s *Session) ViewEntityState(e world.Entity) {
 	metadata := s.parseEntityMetadata(e)
+	runtimeID := s.entityRuntimeID(e)
 	s.entityMutex.Lock()
-	if tag, ok := s.entitySpecificNameTags[s.entityRuntimeID(e)]; ok {
+	if tag, ok := s.entitySpecificNameTags[runtimeID]; ok {
 		metadata[protocol.EntityDataKeyName] = tag
 	}
 	s.entityMutex.Unlock()

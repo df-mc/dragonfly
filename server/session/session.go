@@ -259,7 +259,7 @@ func (s *Session) close() {
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
 	s.entityMutex.Lock()
-	s.entityRuntimeIDs, s.entities = map[world.Entity]uint64{}, map[uint64]world.Entity{}
+	s.entityRuntimeIDs, s.entities, s.entitySpecificNameTags = map[world.Entity]uint64{}, map[uint64]world.Entity{}, map[uint64]string{}
 	s.entityMutex.Unlock()
 
 	if s.quitMessage != "" {
