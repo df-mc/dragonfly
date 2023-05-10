@@ -54,7 +54,7 @@ type Session struct {
 	// entity spawned to the session.
 	currentEntityRuntimeID uint64
 	// entitySpecificNameTags holds a list of all entities that have a name tag specific to the session.
-	entitySpecificNameTags map[world.Entity]string
+	entitySpecificNameTags map[uint64]string
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
 	entityRuntimeIDs map[world.Entity]uint64
 	entities         map[uint64]world.Entity
@@ -154,7 +154,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 		closeBackground:        make(chan struct{}),
 		ui:                     inventory.New(53, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
-		entitySpecificNameTags: map[world.Entity]string{},
+		entitySpecificNameTags: map[uint64]string{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
 		hiddenEntities:         map[world.Entity]struct{}{},
