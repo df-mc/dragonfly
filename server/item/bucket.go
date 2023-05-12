@@ -30,6 +30,11 @@ func (b BucketContent) Liquid() (world.Liquid, bool) {
 	return b.liquid, b.liquid != nil
 }
 
+// Milk returns true if the bucket contains milk.
+func (b BucketContent) Milk() bool {
+	return b.milk
+}
+
 // String converts the BucketContent to a string.
 func (b BucketContent) String() string {
 	if b.milk {
