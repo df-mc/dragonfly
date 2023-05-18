@@ -17,12 +17,6 @@ type Breakable interface {
 	BreakInfo() BreakInfo
 }
 
-// PreBreakable represents a block that has an action(s) processed before the block is broken.
-type PreBreakable interface {
-	// PreBreak is called before the block has broken.
-	PreBreak(pos cube.Pos, w *world.World, u item.User) world.Block
-}
-
 // BreakDuration returns the base duration that breaking the block passed takes when being broken using the
 // item passed.
 func BreakDuration(b world.Block, i item.Stack) time.Duration {
