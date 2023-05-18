@@ -774,6 +774,15 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	s.playSound(pos, soundType, false)
 }
 
+// OpenSign ...
+func (s *Session) OpenSign(pos cube.Pos, frontSide bool) {
+	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	s.writePacket(&packet.OpenSign{
+		Position:  blockPos,
+		FrontSide: frontSide,
+	})
+}
+
 // ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
 func (s *Session) ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration) {
 	if prevCookTime != cookTime {

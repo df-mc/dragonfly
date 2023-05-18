@@ -83,7 +83,8 @@ type Controllable interface {
 
 	Exhaust(points float64)
 
-	EditSign(pos cube.Pos, text string) error
+	OpenSign(pos cube.Pos, frontSide bool)
+	EditSign(pos cube.Pos, frontText, backText string) error
 
 	EnderChestInventory() *inventory.Inventory
 
