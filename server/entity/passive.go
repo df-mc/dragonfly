@@ -31,7 +31,7 @@ func (conf PassiveBehaviourConfig) New() *PassiveBehaviour {
 	if conf.ExistenceDuration == 0 {
 		conf.ExistenceDuration = math.MaxInt64
 	}
-	return &PassiveBehaviour{conf: conf, mc: &MovementComputer{
+	return &PassiveBehaviour{conf: conf, fuse: conf.ExistenceDuration, mc: &MovementComputer{
 		Gravity:           conf.Gravity,
 		Drag:              conf.Drag,
 		DragBeforeGravity: true,
@@ -72,14 +72,6 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 		_ = e.Close()
 		return nil
 	}
-
-	if e.Age() > p.conf.ExistenceDuration {
-		p.close = true
-
-		if p.conf.Expire != nil {
-			p.conf.Expire(e)
-		}
-	}
 	e.mu.Lock()
 
 	m := p.mc.TickMovement(e, e.pos, e.vel, e.rot)
@@ -88,16 +80,23 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 	p.fallDistance = math.Max(p.fallDistance-m.dvel[1], 0)
 	e.mu.Unlock()
 
-	p.fuse = p.conf.ExistenceDuration - e.age
+	p.fuse = p.conf.ExistenceDuration - e.Age()
 
 	if p.conf.Tick != nil {
 		p.conf.Tick(e)
 	}
 
 	w := e.World()
-	if p.Fuse()%time.Second/4 == 0 {
+	if p.Fuse()%(time.Second/4) == 0 {
 		for _, v := range w.Viewers(m.pos) {
 			v.ViewEntityState(e)
+		}
+	}
+
+	if e.Age() > p.conf.ExistenceDuration {
+		p.close = true
+		if p.conf.Expire != nil {
+			p.conf.Expire(e)
 		}
 	}
 	return m
