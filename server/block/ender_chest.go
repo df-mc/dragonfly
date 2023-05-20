@@ -107,12 +107,12 @@ func (c EnderChest) close(w *world.World, pos cube.Pos) {
 }
 
 // EncodeNBT ...
-func (c EnderChest) EncodeNBT(cube.Pos, *world.World) map[string]any {
+func (c EnderChest) EncodeNBT() map[string]any {
 	return map[string]any{"id": "EnderChest"}
 }
 
 // DecodeNBT ...
-func (c EnderChest) DecodeNBT(cube.Pos, *world.World, map[string]any) any {
+func (c EnderChest) DecodeNBT(map[string]any) any {
 	return NewEnderChest()
 }
 
