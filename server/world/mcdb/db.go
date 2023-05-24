@@ -153,7 +153,7 @@ func (db *DB) column(k dbKey) (*world.Column, error) {
 		return nil, fmt.Errorf("read version: %w", err)
 	}
 	if ver != chunkVersion {
-		db.conf.Log.Errorf("column %v (%v): unsupported chunk version %v, trying to load anyway", k.pos, k.dim, ver)
+		db.conf.Log.Debugf("column %v (%v): unsupported chunk version %v, trying to load anyway", k.pos, k.dim, ver)
 	}
 	cdata.Biomes, err = db.biomes(k)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
