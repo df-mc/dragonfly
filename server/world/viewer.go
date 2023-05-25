@@ -47,7 +47,7 @@ type Viewer interface {
 	// ViewEntityState views the current state of an entity. It is called whenever an entity changes its
 	// physical appearance, for example when sprinting.
 	ViewEntityState(e Entity)
-	// ViewEntityAnimation views an animation performed by an entity.
+	// ViewEntityAnimation starts viewing an animation performed by an entity from the resource pack.
 	ViewEntityAnimation(e Entity, animationName string)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
