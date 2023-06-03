@@ -27,12 +27,12 @@ func NewViewLayer() *ViewLayer {
 
 // Viewers returns all viewers of the view layer.
 func (v *ViewLayer) Viewers() []LayerViewer {
-	v.viewerMu.RLock()
+	v.viewerMu.Lock()
 	viewers := make([]LayerViewer, 0, len(v.viewers))
 	for viewer := range v.viewers {
 		viewers = append(viewers, viewer)
 	}
-	v.viewerMu.RUnlock()
+	v.viewerMu.Unlock()
 	return viewers
 }
 
