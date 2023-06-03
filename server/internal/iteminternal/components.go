@@ -23,16 +23,16 @@ func Components(it world.CustomItem) map[string]any {
 			"protection": float32(x.KnockBackResistance()),
 		})
 
-		var slot int32
+		var slot string
 		switch it.(type) {
 		case item.HelmetType:
-			slot = 2
+			slot = "slot.armor.head"
 		case item.ChestplateType:
-			slot = 3
+			slot = "slot.armor.chest"
 		case item.LeggingsType:
-			slot = 4
+			slot = "slot.armor.legs"
 		case item.BootsType:
-			slot = 5
+			slot = "slot.armor.feet"
 		}
 		builder.AddComponent("minecraft:wearable", map[string]any{
 			"slot": slot,

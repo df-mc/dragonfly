@@ -158,6 +158,12 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 			}
 		}
 	}
+	if v, ok := e.(variable); ok {
+		m[protocol.EntityDataKeyVariant] = v.Variant()
+	}
+	if mv, ok := e.(markVariable); ok {
+		m[protocol.EntityDataKeyMarkVariant] = mv.MarkVariant()
+	}
 }
 
 type sneaker interface {
@@ -254,4 +260,12 @@ type tnt interface {
 
 type living interface {
 	DeathPosition() (mgl64.Vec3, world.Dimension, bool)
+}
+
+type variable interface {
+	Variant() int32
+}
+
+type markVariable interface {
+	MarkVariant() int32
 }
