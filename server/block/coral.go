@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -96,17 +95,17 @@ func (c Coral) BreakInfo() BreakInfo {
 // EncodeBlock ...
 func (c Coral) EncodeBlock() (name string, properties map[string]any) {
 	if c.Dead {
-		return fmt.Sprintf("minecraft:dead_%s_coral", c.Type), nil
+		return "minecraft:dead_" + c.Type.String() + "_coral", nil
 	}
-	return fmt.Sprintf("minecraft:%s_coral", c.Type), nil
+	return "minecraft:" + c.Type.String() + "_coral", nil
 }
 
 // EncodeItem ...
 func (c Coral) EncodeItem() (name string, meta int16) {
 	if c.Dead {
-		return fmt.Sprintf("minecraft:dead_%s_coral", c.Type.String()), 0
+		return "minecraft:dead_" + c.Type.String() + "_coral", 0
 	}
-	return fmt.Sprintf("minecraft:%s_coral", c.Type.String()), 0
+	return "minecraft:" + c.Type.String() + "_coral", 0
 }
 
 // allCoral returns a list of all coral block variants
