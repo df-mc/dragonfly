@@ -2,6 +2,7 @@ package creative
 
 import (
 	_ "embed"
+	"fmt"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	// The following three imports are essential for this package: They make sure this package is loaded after
 	// all these imports. This ensures that all items are registered before the creative items are registered
@@ -50,6 +51,7 @@ func init() {
 			it world.Item
 			ok bool
 		)
+		fmt.Println(data)
 		if len(data.BlockProperties) > 0 {
 			// Item with a block, try parsing the block, then try asserting that to an item. Blocks no longer
 			// have their metadata sent, but we still need to get that metadata in order to be able to register

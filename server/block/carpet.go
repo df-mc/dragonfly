@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -34,12 +35,12 @@ func (c Carpet) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (c Carpet) EncodeItem() (name string, meta int16) {
-	return "minecraft:carpet", int16(c.Colour.Uint8())
+	return fmt.Sprintf("minecraft:%s_carpet", c.Colour.String()), 0
 }
 
 // EncodeBlock ...
 func (c Carpet) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:carpet", map[string]any{"color": c.Colour.String()}
+	return fmt.Sprintf("minecraft:%s_carpet", c.Colour.String()), nil
 }
 
 // HasLiquidDrops ...

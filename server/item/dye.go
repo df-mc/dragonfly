@@ -33,8 +33,8 @@ type dyeable interface {
 
 // EncodeItem ...
 func (d Dye) EncodeItem() (name string, meta int16) {
-	if d.Colour.String() == "silver" {
+	if d.Colour.SilverString() == "silver" {
 		return "minecraft:light_gray_dye", 0
 	}
-	return "minecraft:" + d.Colour.String() + "_dye", 0
+	return "minecraft:" + d.Colour.SilverString() + "_dye", 0
 }
