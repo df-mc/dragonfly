@@ -36,9 +36,6 @@ func (w Wool) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (w Wool) EncodeBlock() (name string, properties map[string]any) {
-	if w.Colour.String() == "silver" {
-		return "minecraft:light_gray_wool", nil
-	}
 	return "minecraft:" + w.Colour.String() + "_wool", nil
 }
 

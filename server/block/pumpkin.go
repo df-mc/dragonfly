@@ -84,9 +84,9 @@ func (p Pumpkin) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (p Pumpkin) EncodeBlock() (name string, properties map[string]any) {
 	if p.Carved {
-		return "minecraft:carved_pumpkin", map[string]any{"direction": int32(horizontalDirection(p.Facing))}
+		return "minecraft:carved_pumpkin", map[string]any{"minecraft:cardinal_direction": p.Facing.String()}
 	}
-	return "minecraft:pumpkin", map[string]any{"direction": int32(horizontalDirection(p.Facing))}
+	return "minecraft:pumpkin", map[string]any{"minecraft:cardinal_direction": p.Facing.String()}
 }
 
 func allPumpkins() (pumpkins []world.Block) {
