@@ -675,7 +675,9 @@ func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
 
-	velocity = velocity.Normalize().Mul(force)
+	if velocity.Len() != 0 {
+		velocity = velocity.Normalize().Mul(force)
+	}
 	velocity[1] = height
 
 	p.SetVelocity(velocity.Mul(1 - p.Armour().KnockBackResistance()))
