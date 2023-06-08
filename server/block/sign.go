@@ -27,14 +27,14 @@ type Sign struct {
 	// Waxed specifies if the Sign has been waxed by a player. If set to true, the Sign can no longer be edited by
 	// anyone and must be destroyed if the text needs to be changed.
 	Waxed bool
-	// Front is the data of the front side of the sign. Anyone can edit this unless the sign is Waxed.
-	Front SignData
-	// Back is the data of the back side of the sign. Anyone can edit this unless the sign is Waxed.
-	Back SignData
+	// Front is the text of the front side of the sign. Anyone can edit this unless the sign is Waxed.
+	Front SignText
+	// Back is the text of the back side of the sign. Anyone can edit this unless the sign is Waxed.
+	Back SignText
 }
 
-// SignData represents the data for a single side of a sign. The sign can be edited on the front and back side.
-type SignData struct {
+// SignText represents the data for a single side of a sign. The sign can be edited on the front and back side.
+type SignText struct {
 	// Text is the text displayed on this side of the sign. The text is automatically wrapped if it does not fit on a line.
 	Text string
 	// BaseColour is the base colour of the text on this side of the sign, changed when using a dye on the sign. The default
@@ -78,23 +78,58 @@ func (s Sign) BreakInfo() BreakInfo {
 }
 
 // Dye dyes the Sign, changing its base colour to that of the colour passed.
-func (s Sign) Dye(c item.Colour, face cube.Face) (world.Block, bool) {
-	// TODO: Dye for back side of the sign
-	if s.Front.BaseColour == c.RGBA() {
-		return s, false
+func (s Sign) Dye(pos cube.Pos, userPos mgl64.Vec3, c item.Colour) (world.Block, bool) {
+	if s.EditingFrontSide(pos, userPos) {
+		if s.Front.BaseColour == c.RGBA() {
+			return s, false
+		}
+		s.Front.BaseColour = c.RGBA()
+	} else {
+		if s.Back.BaseColour == c.RGBA() {
+			return s, false
+		}
+		s.Back.BaseColour = c.RGBA()
 	}
-	s.Front.BaseColour = c.RGBA()
 	return s, true
 }
 
 // Ink inks the sign either glowing or non-glowing.
-func (s Sign) Ink(glowing bool) (world.Block, bool) {
-	// TODO: Ink for back side of the sign
-	if s.Front.Glowing == glowing {
+func (s Sign) Ink(pos cube.Pos, userPos mgl64.Vec3, glowing bool) (world.Block, bool) {
+	if s.EditingFrontSide(pos, userPos) {
+		if s.Front.Glowing == glowing {
+			return s, false
+		}
+		s.Front.Glowing = glowing
+	} else {
+		if s.Back.Glowing == glowing {
+			return s, false
+		}
+		s.Back.Glowing = glowing
+	}
+	return s, true
+}
+
+// Wax waxes a sign to prevent it from further editing.
+func (s Sign) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
+	if s.Waxed {
 		return s, false
 	}
-	s.Front.Glowing = glowing
+	s.Waxed = true
 	return s, true
+}
+
+// Activate ...
+func (s Sign) Activate(pos cube.Pos, _ cube.Face, _ *world.World, user item.User, _ *item.UseContext) bool {
+	if editor, ok := user.(SignEditor); ok && !s.Waxed {
+		editor.OpenSign(pos, s.EditingFrontSide(pos, user.Position()))
+	}
+	return true
+}
+
+// EditingFrontSide returns if the user is editing the front side of the sign based on their position relative to the
+// position and direction of the sign.
+func (s Sign) EditingFrontSide(pos cube.Pos, userPos mgl64.Vec3) bool {
+	return userPos.Sub(pos.Vec3Centre()).Dot(s.Attach.Rotation().Vec3()) > 0
 }
 
 // SignEditor represents something that can edit a sign, typically players.

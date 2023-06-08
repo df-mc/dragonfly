@@ -13,9 +13,9 @@ type Dye struct {
 }
 
 // UseOnBlock implements the colouring behaviour of signs.
-func (d Dye) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (d Dye) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
 	if dy, ok := w.Block(pos).(dyeable); ok {
-		if res, ok := dy.Dye(d.Colour); ok {
+		if res, ok := dy.Dye(pos, user.Position(), d.Colour); ok {
 			w.SetBlock(pos, res, nil)
 			ctx.SubtractFromCount(1)
 			return true
@@ -28,7 +28,7 @@ func (d Dye) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World,
 type dyeable interface {
 	// Dye uses a dye with the Colour passed on the block. The resulting block is returned. A bool is returned to
 	// indicate if dyeing the block was successful.
-	Dye(c Colour) (world.Block, bool)
+	Dye(pos cube.Pos, userPos mgl64.Vec3, c Colour) (world.Block, bool)
 }
 
 // EncodeItem ...
