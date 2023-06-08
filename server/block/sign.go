@@ -129,19 +129,7 @@ func (s Sign) Activate(pos cube.Pos, _ cube.Face, _ *world.World, user item.User
 // EditingFrontSide returns if the user is editing the front side of the sign based on their position relative to the
 // position and direction of the sign.
 func (s Sign) EditingFrontSide(pos cube.Pos, userPos mgl64.Vec3) bool {
-	yaw := s.Attach.o.Yaw()
-	if s.Attach.hanging {
-		switch s.Attach.facing {
-		case cube.West:
-			yaw = 90
-		case cube.East:
-			yaw = -90
-		case cube.North:
-			yaw = 180
-		}
-	}
-	dir := cube.Rotation{yaw}.Vec3()
-	return userPos.Sub(pos.Vec3Centre()).Dot(dir) > 0
+	return userPos.Sub(pos.Vec3Centre()).Dot(s.Attach.Rotation().Vec3()) > 0
 }
 
 // SignEditor represents something that can edit a sign, typically players.

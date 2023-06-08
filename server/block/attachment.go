@@ -45,3 +45,20 @@ func (a Attachment) RotateLeft() Attachment {
 func (a Attachment) RotateRight() Attachment {
 	return Attachment{hanging: a.hanging, facing: a.facing.RotateLeft(), o: a.o.RotateLeft()}
 }
+
+// Rotation returns the rotation of the Attachment, based on the orientation if it's a StandingAttachment, or the
+// facing direction if it is a WallAttachment.
+func (a Attachment) Rotation() cube.Rotation {
+	yaw := a.o.Yaw()
+	if a.hanging {
+		switch a.facing {
+		case cube.West:
+			yaw = 90
+		case cube.East:
+			yaw = -90
+		case cube.North:
+			yaw = 180
+		}
+	}
+	return cube.Rotation{yaw}
+}
