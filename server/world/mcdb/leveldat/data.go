@@ -134,6 +134,7 @@ type Data struct {
 	ShowBorderEffect               bool           `nbt:"showbordereffect"`
 	PermissionsLevel               int32          `nbt:"permissionsLevel"`
 	PlayerPermissionsLevel         int32          `nbt:"playerPermissionsLevel"`
+	IsRandomSeedAllowed            bool           `nbt:"isRandomSeedAllowed"`
 }
 
 // FillDefault fills out d with all the default level.dat values.
