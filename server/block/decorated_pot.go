@@ -93,9 +93,9 @@ func (p DecoratedPot) DecodeNBT(data map[string]any) any {
 }
 
 // allDecoratedPots ...
-func allDecoratedPots() (cocoa []world.Block) {
-	for i := cube.Direction(0); i <= 3; i++ {
-		cocoa = append(cocoa, DecoratedPot{Facing: i})
+func allDecoratedPots() (pots []world.Block) {
+	for _, f := range cube.Directions() {
+		pots = append(pots, DecoratedPot{Facing: f})
 	}
 	return
 }
