@@ -33,7 +33,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.Sub
 	transaction := make(map[uint64]struct{})
 	for _, offset := range offsets {
 		ind := int16(center.Y()) + int16(offset[1]) - int16(r[0])>>4
-		if ind < 0 || ind >= int16(r.Height()>>4) {
+		if ind < 0 || ind > int16(r.Height()>>4) {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
 			continue
 		}
