@@ -739,6 +739,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = packet.SoundEventRecordPigstep
 		case sound.Disc5():
 			pk.SoundType = packet.SoundEventRecord5
+		case sound.DiscRelic():
+			pk.SoundType = packet.SoundEventRecordRelic
 		}
 	case sound.MusicDiscEnd:
 		pk.SoundType = packet.SoundEventRecordNull
