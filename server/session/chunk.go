@@ -69,7 +69,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	higher, lower := true, true
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			y, i := chunkMap.At(x, z)+1, (uint16(z)<<4)|uint16(x)
+			y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
 			otherInd := col.Chunk.SubIndex(y)
 			if otherInd > ind {
 				subMap[i], lower = 16, false
@@ -97,6 +97,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	}
 
 	serialisedSubChunk := chunk.EncodeSubChunk(col.Chunk, chunk.NetworkEncoding, int(ind))
+
 	blockEntityBuf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
 	for pos, b := range col.BlockEntities {
@@ -131,16 +132,10 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	if subChunkRequests {
 		biomes := chunk.EncodeBiomes(c, chunk.NetworkEncoding)
 		if hash := xxhash.Sum64(biomes); s.trackBlob(hash, biomes) {
-			highest := uint16(0)
-			for highest = uint16(len(c.Sub()) - 1); highest > 0; highest-- {
-				if !c.Sub()[highest].Empty() {
-					break
-				}
-			}
 			s.writePacket(&packet.LevelChunk{
 				SubChunkCount:   protocol.SubChunkRequestModeLimited,
 				Position:        protocol.ChunkPos(pos),
-				HighestSubChunk: highest, // This is always going to be the highest sub-chunk, anyway.
+				HighestSubChunk: c.HighestFilledSubChunk(),
 				BlobHashes:      []uint64{hash},
 				RawPayload:      []byte{0},
 				CacheEnabled:    true,
@@ -200,7 +195,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, c *chunk.Chunk, blockEnti
 		s.writePacket(&packet.LevelChunk{
 			SubChunkCount:   protocol.SubChunkRequestModeLimited,
 			Position:        protocol.ChunkPos(pos),
-			HighestSubChunk: uint16(len(c.Sub())), // This is always going to be the highest sub-chunk, anyway.
+			HighestSubChunk: c.HighestFilledSubChunk(),
 			RawPayload:      append(chunk.EncodeBiomes(c, chunk.NetworkEncoding), 0),
 		})
 		return
