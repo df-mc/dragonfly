@@ -88,8 +88,8 @@ func (storage *PalettedStorage) Equal(other *PalettedStorage) bool {
 	if storage == nil || other == nil {
 		return false
 	}
-	if len(storage.indices) == 0 && len(other.indices) == 0 && storage.palette.values[0] == other.palette.values[0] {
-		return true
+	if len(storage.indices) == 0 || len(other.indices) == 0 || storage.palette.values[0] == 0 || other.palette.values[0] == 0 {
+		return false
 	}
 	indicesA := unsafe.Slice((*byte)(unsafe.Pointer(&storage.indices[0])), len(storage.indices)*4)
 	indicesB := unsafe.Slice((*byte)(unsafe.Pointer(&other.indices[0])), len(other.indices)*4)
