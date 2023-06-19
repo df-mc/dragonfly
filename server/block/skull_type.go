@@ -35,9 +35,14 @@ func DragonHead() SkullType {
 	return SkullType{5}
 }
 
+// PiglinHead returns the skull variant for piglins.
+func PiglinHead() SkullType {
+	return SkullType{6}
+}
+
 // SkullTypes returns all variants of skulls.
 func SkullTypes() []SkullType {
-	return []SkullType{SkeletonSkull(), WitherSkeletonSkull(), ZombieHead(), PlayerHead(), CreeperHead(), DragonHead()}
+	return []SkullType{SkeletonSkull(), WitherSkeletonSkull(), ZombieHead(), PlayerHead(), CreeperHead(), DragonHead(), PiglinHead()}
 }
 
 type skull uint8
@@ -62,6 +67,8 @@ func (s skull) Name() string {
 		return "Creeper Head"
 	case 5:
 		return "Dragon Head"
+	case 6:
+		return "Piglin Head"
 	}
 	panic("unknown skull type")
 }
@@ -81,6 +88,8 @@ func (s skull) String() string {
 		return "creeper"
 	case 5:
 		return "dragon"
+	case 6:
+		return "piglin"
 	}
 	panic("unknown skull type")
 }
