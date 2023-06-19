@@ -694,7 +694,7 @@ func (p *Player) AttackImmunity() time.Duration {
 
 // SetAttackImmunity sets the duration the player is immune to entity attacks.
 func (p *Player) SetAttackImmunity(d time.Duration) {
-	p.immunityTicks.Store(d.Milliseconds()/50)
+	p.immunityTicks.Store(d.Milliseconds() / 50)
 }
 
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
