@@ -2286,6 +2286,11 @@ func (p *Player) Tick(w *world.World, current int64) {
 	}
 }
 
+// ViewLayer ...
+func (p *Player) ViewLayer() *world.ViewLayer {
+	return p.session().ViewLayer()
+}
+
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
 func (p *Player) tickAirSupply(w *world.World) {
 	if !p.canBreathe(w) {
