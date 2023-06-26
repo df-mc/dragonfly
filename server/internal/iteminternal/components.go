@@ -19,9 +19,6 @@ func Components(it world.CustomItem) map[string]any {
 		builder.AddComponent("minecraft:armor", map[string]any{
 			"protection": int32(x.DefencePoints()),
 		})
-		builder.AddComponent("minecraft:knockback_resistance", map[string]any{
-			"protection": float32(x.KnockBackResistance()),
-		})
 
 		var slot string
 		switch it.(type) {
