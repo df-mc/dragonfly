@@ -12,6 +12,7 @@ func init() {
 	world.RegisterBiome(Beach{})
 	world.RegisterBiome(BirchForestHills{})
 	world.RegisterBiome(BirchForest{})
+	world.RegisterBiome(CherryGrove{})
 	world.RegisterBiome(ColdOcean{})
 	world.RegisterBiome(CrimsonForest{})
 	world.RegisterBiome(DarkForestHills{})
