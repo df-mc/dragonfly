@@ -32,14 +32,10 @@ var (
 
 // creativeItemEntry holds data of a creative item as present in the creative inventory.
 type creativeItemEntry struct {
-	Name  string         `nbt:"name"`
-	Meta  int16          `nbt:"meta"`
-	NBT   map[string]any `nbt:"nbt,omitempty"`
-	Block struct {
-		Name       string         `nbt:"name"`
-		Properties map[string]any `nbt:"states"`
-		Version    int32          `nbt:"version"`
-	} `nbt:"block,omitempty"`
+	Name            string         `nbt:"name"`
+	Meta            int16          `nbt:"meta"`
+	NBT             map[string]any `nbt:"nbt,omitempty"`
+	BlockProperties map[string]any `nbt:"block_properties,omitempty"`
 }
 
 // init initialises the creative items, registering all creative items that have also been registered as
@@ -54,11 +50,11 @@ func init() {
 			it world.Item
 			ok bool
 		)
-		if data.Block.Version > 0 {
+		if len(data.BlockProperties) > 0 {
 			// Item with a block, try parsing the block, then try asserting that to an item. Blocks no longer
 			// have their metadata sent, but we still need to get that metadata in order to be able to register
 			// different block states as different items.
-			if b, ok := world.BlockByName(data.Block.Name, data.Block.Properties); ok {
+			if b, ok := world.BlockByName(data.Name, data.BlockProperties); ok {
 				if it, ok = b.(world.Item); !ok {
 					continue
 				}

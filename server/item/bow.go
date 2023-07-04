@@ -1,6 +1,8 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"math"
 	"time"
@@ -52,12 +54,16 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 		return
 	}
 
-	rYaw, rPitch := releaser.Rotation().Elem()
-	yaw, pitch := -rYaw, -rPitch
-	if rYaw > 180 {
-		yaw = 360 - rYaw
+	rot := releaser.Rotation()
+	rot = cube.Rotation{-rot[0], -rot[1]}
+	if rot[0] > 180 {
+		rot[0] = 360 - rot[0]
 	}
-	tip := arrow.Item().(Arrow).Tip
+	var tip potion.Potion
+	if !arrow.Empty() {
+		// Arrow is empty if not found in the creative inventory.
+		tip = arrow.Item().(Arrow).Tip
+	}
 
 	held, _ := releaser.HeldItems()
 	damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), !creative
@@ -77,7 +83,7 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	}
 
 	create := releaser.World().EntityRegistry().Config().Arrow
-	projectile := create(eyePosition(releaser), releaser.Rotation().Vec3().Mul(force*5), yaw, pitch, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
+	projectile := create(eyePosition(releaser), releaser.Rotation().Vec3().Mul(force*5), rot, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip)
 	if f, ok := projectile.(interface{ SetOnFire(duration time.Duration) }); ok {
 		f.SetOnFire(burnDuration)
 	}

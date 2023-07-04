@@ -81,7 +81,11 @@ func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u ite
 		f.Facing = f.Facing.Opposite()
 	}
 	w.SetBlock(pos, f, nil)
-	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	if f.Open {
+		w.PlaySound(pos.Vec3Centre(), sound.FenceGateOpen{Block: f})
+		return true
+	}
+	w.PlaySound(pos.Vec3Centre(), sound.FenceGateClose{Block: f})
 	return true
 }
 

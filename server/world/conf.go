@@ -74,7 +74,7 @@ func (conf Config) New() *World {
 		scheduledUpdates: make(map[cube.Pos]int64),
 		entities:         make(map[Entity]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
-		chunks:           make(map[ChunkPos]*chunkData),
+		chunks:           make(map[ChunkPos]*Column),
 		closing:          make(chan struct{}),
 		handler:          *atomic.NewValue[Handler](NopHandler{}),
 		r:                rand.New(conf.RandSource),

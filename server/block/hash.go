@@ -42,6 +42,7 @@ const (
 	hashCoralBlock
 	hashCraftingTable
 	hashDeadBush
+	hashDecoratedPot
 	hashDeepslate
 	hashDeepslateBricks
 	hashDeepslateTiles
@@ -325,6 +326,10 @@ func (CraftingTable) Hash() uint64 {
 
 func (DeadBush) Hash() uint64 {
 	return hashDeadBush
+}
+
+func (p DecoratedPot) Hash() uint64 {
+	return hashDecoratedPot | uint64(p.Facing)<<8
 }
 
 func (d Deepslate) Hash() uint64 {

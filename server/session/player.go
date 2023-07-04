@@ -93,7 +93,46 @@ func (s *Session) SendRespawn(pos mgl64.Vec3) {
 
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
-	s.writePacket(&packet.CraftingData{Recipes: s.protocolRecipes(), ClearRecipes: true})
+	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	for index, i := range recipe.Recipes() {
+		networkID := uint32(index) + 1
+		s.recipes[networkID] = i
+
+		switch i := i.(type) {
+		case recipe.Shapeless:
+			recipes = append(recipes, &protocol.ShapelessRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Input:           stacksToIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		case recipe.Shaped:
+			recipes = append(recipes, &protocol.ShapedRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Width:           int32(i.Shape().Width()),
+				Height:          int32(i.Shape().Height()),
+				Input:           stacksToIngredientItems(i.Input()),
+				Output:          stacksToRecipeStacks(i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		case recipe.Smithing:
+			input, output := stacksToIngredientItems(i.Input()), stacksToRecipeStacks(i.Output())
+			recipes = append(recipes, &protocol.SmithingTransformRecipe{
+				RecipeID:        uuid.New().String(),
+				Base:            input[0],
+				Addition:        input[1],
+				Template:        input[2],
+				Result:          output[0],
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		}
+	}
+	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
 }
 
 // sendInv sends the inventory passed to the client with the window ID.
@@ -377,17 +416,13 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 
 // SendAbsorption sends the absorption value passed to the player.
 func (s *Session) SendAbsorption(value float64) {
-	maximum := value
-	if math.Mod(value, 2) != 0 {
-		maximum = value + 1
-	}
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			AttributeValue: protocol.AttributeValue{
 				Name:  "minecraft:absorption",
 				Value: float32(math.Ceil(value)),
-				Max:   float32(math.Ceil(maximum)),
+				Max:   float32(math.MaxFloat32),
 			},
 		}},
 	})
@@ -488,21 +523,22 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 	}
 
 	return protocol.Skin{
-		PlayFabID:         s.PlayFabID,
-		SkinID:            uuid.New().String(),
-		SkinResourcePatch: s.ModelConfig.Encode(),
-		SkinImageWidth:    uint32(s.Bounds().Max.X),
-		SkinImageHeight:   uint32(s.Bounds().Max.Y),
-		SkinData:          s.Pix,
-		CapeImageWidth:    uint32(s.Cape.Bounds().Max.X),
-		CapeImageHeight:   uint32(s.Cape.Bounds().Max.Y),
-		CapeData:          s.Cape.Pix,
-		SkinGeometry:      s.Model,
-		PersonaSkin:       s.Persona,
-		CapeID:            uuid.New().String(),
-		FullID:            uuid.New().String(),
-		Animations:        animations,
-		Trusted:           true,
+		PlayFabID:          s.PlayFabID,
+		SkinID:             uuid.New().String(),
+		SkinResourcePatch:  s.ModelConfig.Encode(),
+		SkinImageWidth:     uint32(s.Bounds().Max.X),
+		SkinImageHeight:    uint32(s.Bounds().Max.Y),
+		SkinData:           s.Pix,
+		CapeImageWidth:     uint32(s.Cape.Bounds().Max.X),
+		CapeImageHeight:    uint32(s.Cape.Bounds().Max.Y),
+		CapeData:           s.Cape.Pix,
+		SkinGeometry:       s.Model,
+		PersonaSkin:        s.Persona,
+		CapeID:             uuid.New().String(),
+		FullID:             uuid.New().String(),
+		Animations:         animations,
+		Trusted:            true,
+		OverrideAppearance: true,
 	}
 }
 
@@ -661,39 +697,6 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 			},
 		},
 	})
-}
-
-// protocolRecipes returns all recipes as protocol recipes.
-func (s *Session) protocolRecipes() []protocol.Recipe {
-	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
-	for index, i := range recipe.Recipes() {
-		networkID := uint32(index) + 1
-		s.recipes[networkID] = i
-
-		switch i := i.(type) {
-		case recipe.Shapeless:
-			recipes = append(recipes, &protocol.ShapelessRecipe{
-				RecipeID:        uuid.New().String(),
-				Priority:        int32(i.Priority()),
-				Input:           stacksToIngredientItems(i.Input()),
-				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           i.Block(),
-				RecipeNetworkID: networkID,
-			})
-		case recipe.Shaped:
-			recipes = append(recipes, &protocol.ShapedRecipe{
-				RecipeID:        uuid.New().String(),
-				Priority:        int32(i.Priority()),
-				Width:           int32(i.Shape().Width()),
-				Height:          int32(i.Shape().Height()),
-				Input:           stacksToIngredientItems(i.Input()),
-				Output:          stacksToRecipeStacks(i.Output()),
-				Block:           i.Block(),
-				RecipeNetworkID: networkID,
-			})
-		}
-	}
-	return recipes
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.

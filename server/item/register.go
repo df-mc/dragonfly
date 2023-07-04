@@ -158,4 +158,7 @@ func init() {
 	for _, stew := range StewTypes() {
 		world.RegisterItem(SuspiciousStew{Type: stew})
 	}
+	for _, sherd := range SherdTypes() {
+		world.RegisterItem(PotterySherd{Type: sherd})
+	}
 }

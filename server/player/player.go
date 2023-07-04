@@ -33,7 +33,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
 )
 
@@ -85,8 +84,8 @@ type Player struct {
 	experience *entity.ExperienceManager
 	effects    *entity.EffectManager
 
-	lastXPPickup atomic.Value[time.Time]
-	immunity     atomic.Value[time.Time]
+	lastXPPickup  atomic.Value[time.Time]
+	immunityTicks atomic.Int64
 
 	deathMu        sync.Mutex
 	deathPos       *mgl64.Vec3
@@ -139,7 +138,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		maxAirSupplyTicks: *atomic.NewInt64(300),
 		enchantSeed:       *atomic.NewInt64(rand.Int63()),
 		scale:             *atomic.NewFloat64(1),
-		immunity:          *atomic.NewValue(time.Now()),
 		pos:               *atomic.NewValue(pos),
 		cooldowns:         make(map[string]time.Time),
 		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
@@ -582,9 +580,8 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	if a := p.Absorption(); a > 0 {
 		if damageLeft > a {
-			damageLeft -= a
 			p.SetAbsorption(0)
-			p.effects.Remove(effect.Absorption{}, p)
+			damageLeft -= a
 		} else {
 			p.SetAbsorption(a - damageLeft)
 			damageLeft = 0
@@ -594,12 +591,19 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	if src.ReducedByArmour() {
 		p.Exhaust(0.1)
-
-		armourDamage := int(math.Max(math.Floor(dmg/4), 1))
-		for slot, it := range p.armour.Slots() {
-			_ = p.armour.Inventory().SetItem(slot, p.damageItem(it, armourDamage))
+		p.Armour().Damage(dmg, p.damageItem)
+		var origin world.Entity
+		if s, ok := src.(entity.AttackDamageSource); ok {
+			origin = s.Attacker
+		} else if s, ok := src.(entity.ProjectileDamageSource); ok {
+			origin = s.Owner
 		}
-		p.applyThorns(src)
+		if l, ok := origin.(entity.Living); ok {
+			thornsDmg := p.Armour().ThornsDamage(p.damageItem)
+			if thornsDmg > 0 {
+				l.Hurt(thornsDmg, enchantment.ThornsDamageSource{Owner: p})
+			}
+		}
 	}
 
 	w, pos := p.World(), p.Position()
@@ -612,68 +616,11 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		w.PlaySound(pos, sound.Drowning{})
 	}
 
-	p.immunity.Store(time.Now().Add(immunity))
+	p.SetAttackImmunity(immunity)
 	if p.Dead() {
 		p.kill(src)
 	}
 	return totalDamage, true
-}
-
-// applyThorns applies thorns damage to the attacking entity if the world.DamageSource is either damage.AttackDamageSource or
-// damage.ProjectileDamageSource.
-func (p *Player) applyThorns(src world.DamageSource) {
-	var attacker world.Entity
-	if s, ok := src.(entity.AttackDamageSource); ok {
-		attacker = s.Attacker
-	} else if s, ok := src.(entity.ProjectileDamageSource); ok {
-		attacker = s.Owner
-	}
-	l, ok := attacker.(entity.Living)
-	if !ok {
-		// Not attacked by a living entity.
-		return
-	}
-
-	var (
-		dmg           = 0.0
-		searchHighest = false
-		thornsItems   = make(map[int]item.Stack, 4)
-	)
-	for slot, i := range p.armour.Slots() {
-		if _, ok := i.Enchantment(enchantment.Thorns{}); !ok {
-			continue
-		}
-		thornsItems[slot] = i
-
-		thorns, _ := i.Enchantment(enchantment.Thorns{})
-		level := float64(thorns.Level())
-		if rand.Float64() > float64(level)*0.15 {
-			continue
-		}
-
-		if level > 10 && (level-10 > dmg || !searchHighest) {
-			// When we find an armour piece with thorns XI or above, the logic changes: We have to find the armour piece
-			// with the highest level of thorns and subtract 10 from its level to calculate the final damage.
-			dmg = level - 10
-			searchHighest = true
-		} else if level <= 10 {
-			// Total damage from normal thorns armour (max Thorns III) should never exceed 4.0 in total.
-			dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
-		}
-	}
-	if dmg <= 0 {
-		// No armour with thorns or no thorns activated.
-		return
-	}
-
-	// Deal 2 damage to one random thorns item. Bedrock Edition and Java Edition both have different behaviour here and
-	// neither seem to match the expected behaviour. Java Edition deals 2 damage to a random thorns item for every
-	// thorns armour item worn, while Bedrock Edition deals 1 additional damage for every thorns item and another 2 for
-	// every thorns item when it activates.
-	slot := maps.Keys(thornsItems)[rand.Intn(len(thornsItems))]
-	_ = p.armour.Inventory().SetItem(slot, p.damageItem(thornsItems[slot], 2))
-
-	l.Hurt(dmg, enchantment.ThornsDamageSource{Owner: attacker})
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
@@ -695,18 +642,6 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 	diff := p.Position().Sub(explosionPos)
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), entity.ExplosionDamageSource{})
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
-}
-
-// highestArmourEnchantmentLevel returns the highest level of the enchantment passed based spanning each armour piece.
-func (p *Player) highestArmourEnchantmentLevel(enchant item.EnchantmentType) (t int) {
-	for _, it := range p.armour.Items() {
-		if e, ok := it.Enchantment(enchant); ok {
-			if e.Level() > t {
-				t = e.Level()
-			}
-		}
-	}
-	return t
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
@@ -739,32 +674,27 @@ func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
 
-	velocity = velocity.Normalize().Mul(force)
+	if velocity.Len() != 0 {
+		velocity = velocity.Normalize().Mul(force)
+	}
 	velocity[1] = height
 
-	var resistance float64
-	for _, i := range p.armour.Items() {
-		if a, ok := i.Item().(item.Armour); ok {
-			resistance += a.KnockBackResistance()
-		}
-	}
-
-	p.SetVelocity(velocity.Mul(1 - resistance))
+	p.SetVelocity(velocity.Mul(1 - p.Armour().KnockBackResistance()))
 }
 
 // AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
 func (p *Player) AttackImmune() bool {
-	return p.immunity.Load().After(time.Now())
+	return p.immunityTicks.Load() > 0
 }
 
 // AttackImmunity returns the duration the player is immune to entity attacks.
 func (p *Player) AttackImmunity() time.Duration {
-	return time.Until(p.immunity.Load())
+	return time.Duration(p.immunityTicks.Load()) * time.Second / 20
 }
 
 // SetAttackImmunity sets the duration the player is immune to entity attacks.
 func (p *Player) SetAttackImmunity(d time.Duration) {
-	p.immunity.Store(time.Now().Add(d))
+	p.immunityTicks.Store(d.Milliseconds() / 50)
 }
 
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
@@ -1198,7 +1128,7 @@ func (p *Player) OnFireDuration() time.Duration {
 // SetOnFire ...
 func (p *Player) SetOnFire(duration time.Duration) {
 	ticks := int64(duration.Seconds() * 20)
-	if level := p.highestArmourEnchantmentLevel(enchantment.FireProtection{}); level > 0 {
+	if level := p.Armour().HighestEnchantmentLevel(enchantment.FireProtection{}); level > 0 {
 		ticks -= int64(math.Floor(float64(ticks) * float64(level) * 0.15))
 	}
 	p.fireTicks.Store(ticks)
@@ -1797,16 +1727,13 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 
 	around := w.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3()), nil)
 	for _, e := range around {
-		if _, ok := e.(*entity.Item); ok {
-			// Placing blocks inside item entities is fine.
+		switch e.Type().(type) {
+		case entity.ItemType, entity.ArrowType:
 			continue
-		}
-		if _, ok := e.(*entity.Arrow); ok {
-			// Placing blocks inside arrow entities is fine.
-			continue
-		}
-		if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
-			return true
+		default:
+			if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
+				return true
+			}
 		}
 	}
 	return false
@@ -2005,7 +1932,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		return
 	}
 	for _, v := range p.viewers() {
-		v.ViewEntityMovement(p, res, resYaw, resPitch, p.OnGround())
+		v.ViewEntityMovement(p, res, cube.Rotation{resYaw, resPitch}, p.OnGround())
 	}
 
 	p.pos.Store(res)
@@ -2091,8 +2018,11 @@ func (p *Player) Collect(s item.Stack) int {
 	if p.Dead() {
 		return 0
 	}
+	if !p.GameMode().AllowsInteraction() {
+		return 0
+	}
 	ctx := event.C()
-	if p.Handler().HandleItemPickup(ctx, s); ctx.Cancelled() {
+	if p.Handler().HandleItemPickup(ctx, &s); ctx.Cancelled() {
 		return 0
 	}
 	n, _ := p.Inventory().AddItem(s)
@@ -2227,9 +2157,8 @@ func (p *Player) mendItems(xp int) int {
 // The number of items that was dropped in the end is returned. It is generally the count of the stack passed
 // or 0 if dropping the item.Stack was cancelled.
 func (p *Player) Drop(s item.Stack) int {
-	e := entity.NewItem(s, p.Position().Add(mgl64.Vec3{0, 1.4}))
+	e := entity.NewItemPickupDelay(s, p.Position().Add(mgl64.Vec3{0, 1.4}), time.Second*2)
 	e.SetVelocity(p.Rotation().Vec3().Mul(0.4))
-	e.SetPickupDelay(time.Second * 2)
 
 	ctx := event.C()
 	if p.Handler().HandleItemDrop(ctx, e); ctx.Cancelled() {
@@ -2287,7 +2216,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
-			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10))
+			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10).WithoutParticles())
 		}
 	}
 
@@ -2308,6 +2237,9 @@ func (p *Player) Tick(w *world.World, current int64) {
 
 	p.tickFood(w)
 	p.tickAirSupply(w)
+	if p.immunityTicks.Load() > 0 {
+		p.immunityTicks.Dec()
+	}
 	if p.Position()[1] < float64(w.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, entity.VoidDamageSource{})
 	}
@@ -2344,7 +2276,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 	p.cooldownMu.Unlock()
 
 	if p.session() == session.Nop && !p.Immobile() {
-		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.yaw.Load(), p.pitch.Load())
+		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), cube.Rotation{p.yaw.Load(), p.pitch.Load()})
 		m.Send()
 
 		p.vel.Store(m.Velocity())
@@ -2384,29 +2316,40 @@ func (p *Player) tickAirSupply(w *world.World) {
 // is full enough.
 func (p *Player) tickFood(w *world.World) {
 	p.hunger.foodTick++
-	if p.hunger.foodTick == 10 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
+	if p.hunger.foodTick >= 80 {
 		p.hunger.foodTick = 0
-		p.regenerate()
+	}
+
+	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
 		if w.Difficulty().FoodRegenerates() {
 			p.AddFood(1)
 		}
-	} else if p.hunger.foodTick == 80 {
-		p.hunger.foodTick = 0
+		if p.hunger.foodTick%20 == 0 {
+			p.regenerate(false)
+		}
+	}
+	if p.hunger.foodTick == 0 {
 		if p.hunger.canRegenerate() {
-			p.regenerate()
+			p.regenerate(true)
 		} else if p.hunger.starving() {
 			p.starve(w)
 		}
 	}
+
+	if !p.hunger.canSprint() {
+		p.StopSprinting()
+	}
 }
 
 // regenerate attempts to regenerate half a heart of health, typically caused by a full food bar.
-func (p *Player) regenerate() {
+func (p *Player) regenerate(exhaust bool) {
 	if p.Health() == p.MaxHealth() {
 		return
 	}
 	p.Heal(1, entity.FoodHealingSource{})
-	p.Exhaust(6)
+	if exhaust {
+		p.Exhaust(6)
+	}
 }
 
 // starve deals starvation damage to the player if the difficult allows it. In peaceful mode, no damage will
@@ -2636,24 +2579,41 @@ func (p *Player) ShowParticle(pos mgl64.Vec3, particle world.Particle) {
 	p.session().ViewParticle(pos, particle)
 }
 
+// OpenSign makes the player open the sign at the cube.Pos passed, with the specific side provided. The client will not
+// show the interface if it is not aware of a sign at the position.
+func (p *Player) OpenSign(pos cube.Pos, frontSide bool) {
+	p.session().OpenSign(pos, frontSide)
+}
+
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
 // present or if the Player cannot edit it, an error is returned
-func (p *Player) EditSign(pos cube.Pos, text string) error {
+func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
 	w := p.World()
 	sign, ok := w.Block(pos).(block.Sign)
 	if !ok {
 		return fmt.Errorf("edit sign: no sign at position %v", pos)
 	}
-	if !sign.EditableBy(p) {
-		return fmt.Errorf("edit sign: sign text was already finalized")
-	}
 
-	ctx := event.C()
-	if p.Handler().HandleSignEdit(ctx, pos, sign.Text, text); ctx.Cancelled() {
+	if sign.Waxed {
+		return nil
+	} else if frontText == sign.Front.Text && backText == sign.Back.Text {
 		return nil
 	}
 
-	sign.Text = text
+	ctx := event.C()
+	if frontText != sign.Front.Text {
+		if p.Handler().HandleSignEdit(ctx, true, sign.Front.Text, frontText); ctx.Cancelled() {
+			return nil
+		}
+		sign.Front.Text = frontText
+		sign.Front.Owner = p.XUID()
+	} else {
+		if p.Handler().HandleSignEdit(ctx, false, sign.Back.Text, backText); ctx.Cancelled() {
+			return nil
+		}
+		sign.Back.Text = backText
+		sign.Back.Owner = p.XUID()
+	}
 	w.SetBlock(pos, sign, nil)
 	return nil
 }
@@ -2833,6 +2793,9 @@ func (p *Player) load(data Data) {
 	p.health.AddHealth(data.Health - p.Health())
 	p.session().SendHealth(p.health)
 
+	p.absorptionHealth.Store(data.AbsorptionLevel)
+	p.session().SendAbsorption(p.absorptionHealth.Load())
+
 	p.hunger.SetFood(data.Hunger)
 	p.hunger.foodTick = data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
@@ -2894,6 +2857,7 @@ func (p *Player) Data() Data {
 		MaxAirSupply:    p.maxAirSupplyTicks.Load(),
 		ExhaustionLevel: p.hunger.exhaustionLevel,
 		SaturationLevel: p.hunger.saturationLevel,
+		AbsorptionLevel: p.Absorption(),
 		GameMode:        p.GameMode(),
 		Inventory: InventoryData{
 			Items:        p.Inventory().Slots(),

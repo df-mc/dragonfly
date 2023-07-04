@@ -160,6 +160,44 @@ func (c colour) String() string {
 	case 7:
 		return "gray"
 	case 8:
+		return "light_gray"
+	case 9:
+		return "cyan"
+	case 10:
+		return "purple"
+	case 11:
+		return "blue"
+	case 12:
+		return "brown"
+	case 13:
+		return "green"
+	case 14:
+		return "red"
+	case 15:
+		return "black"
+	}
+}
+
+// SilverString returns the name of the colour, with light_gray being replaced by silver.
+func (c colour) SilverString() string {
+	switch c {
+	default:
+		return "white"
+	case 1:
+		return "orange"
+	case 2:
+		return "magenta"
+	case 3:
+		return "light_blue"
+	case 4:
+		return "yellow"
+	case 5:
+		return "lime"
+	case 6:
+		return "pink"
+	case 7:
+		return "gray"
+	case 8:
 		return "silver"
 	case 9:
 		return "cyan"

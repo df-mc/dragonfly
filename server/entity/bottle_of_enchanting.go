@@ -2,7 +2,7 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity/effect"
+	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -11,73 +11,37 @@ import (
 	"math/rand"
 )
 
-// BottleOfEnchanting is a bottle that releases experience orbs when thrown.
-type BottleOfEnchanting struct {
-	transform
-	close bool
-
-	owner world.Entity
-
-	c *ProjectileComputer
-}
-
 // NewBottleOfEnchanting ...
-func NewBottleOfEnchanting(pos mgl64.Vec3, owner world.Entity) *BottleOfEnchanting {
-	b := &BottleOfEnchanting{owner: owner, c: newProjectileComputer(0.07, 0.01)}
-	b.transform = newTransform(b, pos)
-	return b
+func NewBottleOfEnchanting(pos mgl64.Vec3, owner world.Entity) *Ent {
+	return Config{Behaviour: bottleOfEnchantingConf.New(owner)}.New(BottleOfEnchantingType{}, pos)
 }
 
-// Type returns BottleOfEnchantingType.
-func (b *BottleOfEnchanting) Type() world.EntityType {
-	return BottleOfEnchantingType{}
+var bottleOfEnchantingConf = ProjectileBehaviourConfig{
+	Gravity:  0.07,
+	Drag:     0.01,
+	Particle: particle.Splash{},
+	Sound:    sound.GlassBreak{},
+	Hit:      spawnExperience,
+	Damage:   -1,
 }
 
-// Glint returns true if the bottle should render with glint. It always returns true.
-func (b *BottleOfEnchanting) Glint() bool {
-	return true
-}
-
-// Tick ...
-func (b *BottleOfEnchanting) Tick(w *world.World, current int64) {
-	if b.close {
-		_ = b.Close()
-		return
+// spawnExperience spawns experience orbs with a value of 3-11 at the target of
+// a trace.Result.
+func spawnExperience(e *Ent, target trace.Result) {
+	for _, orb := range NewExperienceOrbs(target.Position(), rand.Intn(9)+3) {
+		orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
+		e.World().AddEntity(orb)
 	}
-	b.mu.Lock()
-	m, result := b.c.TickMovement(b, b.pos, b.vel, 0, 0)
-	b.pos, b.vel = m.pos, m.vel
-	b.mu.Unlock()
-
-	m.Send()
-
-	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
-		b.close = true
-		return
-	}
-
-	if result != nil {
-		colour, _ := effect.ResultingColour(nil)
-		w.AddParticle(m.pos, particle.Splash{Colour: colour})
-		w.PlaySound(m.pos, sound.GlassBreak{})
-
-		for _, orb := range NewExperienceOrbs(m.pos, rand.Intn(9)+3) {
-			orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
-			w.AddEntity(orb)
-		}
-
-		b.close = true
-	}
-}
-
-// Owner ...
-func (b *BottleOfEnchanting) Owner() world.Entity {
-	return b.owner
 }
 
 // BottleOfEnchantingType is a world.EntityType for BottleOfEnchanting.
 type BottleOfEnchantingType struct{}
 
+// Glint returns true if the bottle should render with glint. It always returns
+// true for bottles of enchanting.
+func (BottleOfEnchantingType) Glint() bool {
+	return true
+}
 func (BottleOfEnchantingType) EncodeEntity() string {
 	return "minecraft:xp_bottle"
 }
@@ -92,7 +56,7 @@ func (BottleOfEnchantingType) DecodeNBT(m map[string]any) world.Entity {
 }
 
 func (BottleOfEnchantingType) EncodeNBT(e world.Entity) map[string]any {
-	b := e.(*BottleOfEnchanting)
+	b := e.(*Ent)
 	return map[string]any{
 		"Pos":    nbtconv.Vec3ToFloat32Slice(b.Position()),
 		"Motion": nbtconv.Vec3ToFloat32Slice(b.Velocity()),
