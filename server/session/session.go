@@ -355,6 +355,13 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks() {
+	pos := s.c.Position()
+	s.chunkLoader.Move(pos)
+	s.writePacket(&packet.NetworkChunkPublisherUpdate{
+		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		Radius:   uint32(s.chunkRadius) << 4,
+	})
+
 	const maxChunkTransactions = 8
 
 	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
@@ -386,9 +393,10 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
+	dim, _ := world.DimensionID(w.Dimension())
+	same := w.Dimension() == s.chunkLoader.World().Dimension()
 	if !same {
-		s.changeDimension(dim, false)
+		s.changeDimension(int32(dim), false)
 	}
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)

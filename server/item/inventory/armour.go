@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
+	"math/rand"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and
@@ -130,6 +131,83 @@ func (a *Armour) DamageReduction(dmg float64, src world.DamageSource) float64 {
 		dmg -= dmg * 0.04 * math.Max(defencePoints*0.2, defencePoints-dmg/(2+toughness/4))
 	}
 	return original - dmg
+}
+
+// HighestEnchantmentLevel looks up the highest level of an item.EnchantmentType
+// that any of the Armour items have and returns it, or 0 if none of the items
+// have the enchantment.
+func (a *Armour) HighestEnchantmentLevel(t item.EnchantmentType) int {
+	lvl := 0
+	for _, it := range a.Items() {
+		if e, ok := it.Enchantment(t); ok && e.Level() > lvl {
+			lvl = e.Level()
+		}
+	}
+	return lvl
+}
+
+// DamageFunc is a function that deals d damage points to an item stack s. The
+// resulting item.Stack is returned. Depending on the game mode of a player,
+// damage may not be dealt at all.
+type DamageFunc func(s item.Stack, d int) item.Stack
+
+// Damage deals damage (hearts) to Armour. The resulting item damage depends on the
+// dmg passed and the DamageFunc used.
+func (a *Armour) Damage(dmg float64, f DamageFunc) {
+	armourDamage := int(math.Max(math.Floor(dmg/4), 1))
+	for slot, it := range a.Slots() {
+		_ = a.inv.SetItem(slot, f(it, armourDamage))
+	}
+}
+
+// ThornsDamage checks if any of the Armour items are enchanted with Thorns. If
+// this is the case and the Thorns enchantment activates (15% chance per level),
+// a random Armour piece is damaged. The damage to be dealt to the attacker is
+// returned.
+func (a *Armour) ThornsDamage(f DamageFunc) float64 {
+	slots := a.Slots()
+	dmg := 0.0
+
+	for _, i := range slots {
+		thorns, _ := i.Enchantment(enchantment.Thorns{})
+		if level := float64(thorns.Level()); rand.Float64() < level*0.15 {
+			// 15%/level chance of Thorns activation per item. Total damage from
+			// normal thorns armour (max Thorns III) should never exceed 4.0 in
+			// total.
+			dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
+		}
+	}
+	if highest := a.HighestEnchantmentLevel(enchantment.Thorns{}); highest > 10 {
+		// When we find an armour piece with thorns XI or above, the logic
+		// changes: We have to find the armour piece with the highest level
+		// of thorns and subtract 10 from its level to calculate the final
+		// damage.
+		dmg = float64(highest - 10)
+	}
+	if dmg > 0 {
+		// Deal 2 damage to one random thorns item. Bedrock Edition and Java Edition
+		// both have different behaviour here and neither seem to match the expected
+		// behaviour. Java Edition deals 2 damage to a random thorns item for every
+		// Thorns armour item worn, while Bedrock Edition deals 1 additional damage
+		// for every Thorns item and another 2 for every Thorns item when it
+		// activates.
+		slot := rand.Intn(len(slots))
+		_ = a.Inventory().SetItem(slot, f(slots[slot], 2))
+	}
+	return dmg
+}
+
+// KnockBackResistance returns the combined knock back resistance of all Armour
+// items. A value of 0 means normal knock back force, while a value of 1 means
+// all knock back is ignored.
+func (a *Armour) KnockBackResistance() float64 {
+	resistance := 0.0
+	for _, i := range a.Items() {
+		if a, ok := i.Item().(item.Armour); ok {
+			resistance += a.KnockBackResistance()
+		}
+	}
+	return resistance
 }
 
 // Slots returns all items (including) air of the armour inventory in the order of helmet, chestplate, leggings,

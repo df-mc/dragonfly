@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -11,6 +12,7 @@ type InteractHandler struct{}
 // Handle ...
 func (h *InteractHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.Interact)
+	pos := s.c.Position()
 
 	switch pk.ActionType {
 	case packet.InteractActionMouseOverEntity:
@@ -23,8 +25,14 @@ func (h *InteractHandler) Handle(p packet.Packet, s *Session) error {
 		}
 		s.invOpened = true
 		s.writePacket(&packet.ContainerOpen{
-			WindowID:      0,
-			ContainerType: 0xff,
+			WindowID:                0,
+			ContainerType:           0xff,
+			ContainerEntityUniqueID: -1,
+			ContainerPosition: protocol.BlockPos{
+				int32(pos[0]),
+				int32(pos[1]),
+				int32(pos[2]),
+			},
 		})
 	default:
 		return fmt.Errorf("unexpected interact packet action %v", pk.ActionType)

@@ -15,6 +15,8 @@ import (
 var (
 	//go:embed block_states.nbt
 	blockStateData []byte
+
+	blockProperties = map[string]map[string]any{}
 	// blocks holds a list of all registered Blocks indexed by their runtime ID. Blocks that were not explicitly
 	// registered are of the type unknownBlock.
 	blocks []Block
@@ -57,7 +59,10 @@ func init() {
 		return name, properties, true
 	}
 	chunk.StateToRuntimeID = func(name string, properties map[string]any) (runtimeID uint32, found bool) {
-		rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
+		if rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]; ok {
+			return rid, true
+		}
+		rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(blockProperties[name])}]
 		return rid, ok
 	}
 }
@@ -68,6 +73,9 @@ func registerBlockState(s blockState) {
 	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
+	}
+	if _, ok := blockProperties[s.Name]; !ok {
+		blockProperties[s.Name] = s.Properties
 	}
 	rid := uint32(len(blocks))
 	if s.Name == "minecraft:air" {

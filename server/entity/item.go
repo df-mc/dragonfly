@@ -1,62 +1,34 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
 	"time"
 )
 
-// Item represents an item entity which may be added to the world. Players and several humanoid entities such
-// as zombies are able to pick up these entities so that the items are added to their inventory.
-type Item struct {
-	transform
-	age, pickupDelay int
-	i                item.Stack
-
-	c *MovementComputer
+// NewItem creates a new item entity using the item stack passed. The item
+// entity will be positioned at the position passed. If the stack's count
+// exceeds its max count, the count of the stack will be changed to the
+// maximum.
+func NewItem(i item.Stack, pos mgl64.Vec3) *Ent {
+	return Config{Behaviour: itemConf.New(i)}.New(ItemType{}, pos)
 }
 
-// NewItem creates a new item entity using the item stack passed. The item entity will be positioned at the
-// position passed.
-// If the stack's count exceeds its max count, the count of the stack will be changed to the maximum.
-func NewItem(i item.Stack, pos mgl64.Vec3) *Item {
-	if i.Count() > i.MaxCount() {
-		i = i.Grow(i.MaxCount() - i.Count())
-	}
-	i = nbtconv.Item(nbtconv.WriteItem(i, true), nil)
-
-	it := &Item{i: i, pickupDelay: 10, c: &MovementComputer{
-		Gravity:           0.04,
-		DragBeforeGravity: true,
-		Drag:              0.02,
-	}}
-	it.transform = newTransform(it, pos)
-	return it
+// NewItemPickupDelay creates a new item entity containing item stack i. A
+// delay may be specified which defines for how long the item stack cannot be
+// picked up from the ground.
+func NewItemPickupDelay(i item.Stack, pos mgl64.Vec3, delay time.Duration) *Ent {
+	config := itemConf
+	config.PickupDelay = delay
+	return Config{Behaviour: config.New(i)}.New(ItemType{}, pos)
 }
 
-// Type returns ItemType.
-func (it *Item) Type() world.EntityType {
-	return ItemType{}
-}
-
-// Item returns the item stack that the item entity holds.
-func (it *Item) Item() item.Stack {
-	return it.i
-}
-
-// SetPickupDelay sets a delay passed until the item can be picked up. If d is negative or d.Seconds()*20
-// higher than math.MaxInt16, the item will never be able to be picked up.
-func (it *Item) SetPickupDelay(d time.Duration) {
-	ticks := int(d.Seconds() * 20)
-	if ticks < 0 || ticks >= math.MaxInt16 {
-		ticks = math.MaxInt16
-	}
-	it.pickupDelay = ticks
+var itemConf = ItemBehaviourConfig{
+	Gravity: 0.04,
+	Drag:    0.02,
 }
 
 // EntityEject ejects the item entity from the block it is currently on. This is called when items are dropped on bells,
@@ -233,19 +205,20 @@ func (ItemType) DecodeNBT(m map[string]any) world.Entity {
 	}
 	n := NewItem(i, nbtconv.Vec3(m, "Pos"))
 	n.SetVelocity(nbtconv.Vec3(m, "Motion"))
-	n.age = int(nbtconv.Int16(m, "Age"))
-	n.pickupDelay = int(nbtconv.Int64(m, "PickupDelay"))
+	n.age = time.Duration(nbtconv.Int16(m, "Age")) * (time.Second / 20)
+	n.Behaviour().(*ItemBehaviour).pickupDelay = time.Duration(nbtconv.Int64(m, "PickupDelay")) * (time.Second / 20)
 	return n
 }
 
 func (ItemType) EncodeNBT(e world.Entity) map[string]any {
-	it := e.(*Item)
+	it := e.(*Ent)
+	b := it.Behaviour().(*ItemBehaviour)
 	return map[string]any{
 		"Health":      int16(5),
-		"Age":         int16(it.age),
-		"PickupDelay": int64(it.pickupDelay),
+		"Age":         int16(it.Age() / (time.Second * 20)),
+		"PickupDelay": int64(b.pickupDelay / (time.Second * 20)),
 		"Pos":         nbtconv.Vec3ToFloat32Slice(it.Position()),
 		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
-		"Item":        nbtconv.WriteItem(it.Item(), true),
+		"Item":        nbtconv.WriteItem(b.Item(), true),
 	}
 }

@@ -80,11 +80,16 @@ func Disc5() DiscType {
 	return DiscType{14}
 }
 
+// DiscRelic returns the music disc "Relic".
+func DiscRelic() DiscType {
+	return DiscType{15}
+}
+
 // MusicDiscs returns a list of all existing music discs.
 func MusicDiscs() []DiscType {
 	return []DiscType{
 		Disc13(), DiscCat(), DiscBlocks(), DiscChirp(), DiscFar(), DiscMall(), DiscMellohi(), DiscStal(),
-		DiscStrad(), DiscWard(), Disc11(), DiscWait(), DiscOtherside(), DiscPigstep(), Disc5(),
+		DiscStrad(), DiscWard(), Disc11(), DiscWait(), DiscOtherside(), DiscPigstep(), Disc5(), DiscRelic(),
 	}
 }
 
@@ -129,14 +134,19 @@ func (d disc) String() string {
 		return "pigstep"
 	case 14:
 		return "5"
+	case 15:
+		return "relic"
 	}
 	panic("unknown record type")
 }
 
 // DisplayName ...
 func (d disc) DisplayName() string {
-	if d == 13 {
+	switch d {
+	case 13:
 		return "Pigstep"
+	case 15:
+		return "Relic"
 	}
 	return d.String()
 }
@@ -151,6 +161,8 @@ func (d disc) Author() string {
 		return "Lena Raine"
 	case 14:
 		return "Samuel Åberg"
+	case 15:
+		return "Aaron Cherof"
 	}
 	panic("unknown record type")
 }

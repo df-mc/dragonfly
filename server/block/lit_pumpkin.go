@@ -44,17 +44,7 @@ func (l LitPumpkin) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (l LitPumpkin) EncodeBlock() (name string, properties map[string]any) {
-	direction := 2
-	switch l.Facing {
-	case cube.South:
-		direction = 0
-	case cube.West:
-		direction = 1
-	case cube.East:
-		direction = 3
-	}
-
-	return "minecraft:lit_pumpkin", map[string]any{"direction": int32(direction)}
+	return "minecraft:lit_pumpkin", map[string]any{"minecraft:cardinal_direction": l.Facing.String()}
 }
 
 func allLitPumpkins() (pumpkins []world.Block) {
