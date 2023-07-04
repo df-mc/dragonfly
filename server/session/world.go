@@ -912,6 +912,16 @@ func (s *Session) ViewEntityState(e world.Entity) {
 	})
 }
 
+// ViewEntityAnimation ...
+func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
+	s.writePacket(&packet.AnimateEntity{
+		Animation: animationName,
+		EntityRuntimeIDs: []uint64{
+			s.entityRuntimeID(e),
+		},
+	})
+}
+
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	if s.containerOpened.Load() && s.openedPos.Load() == pos {
