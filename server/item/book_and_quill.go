@@ -9,8 +9,13 @@ type BookAndQuill struct {
 }
 
 // MaxCount always returns 1.
-func (b BookAndQuill) MaxCount() int {
+func (BookAndQuill) MaxCount() int {
 	return 1
+}
+
+// TotalPages returns the total number of pages in the book.
+func (b BookAndQuill) TotalPages() int {
+	return len(b.Pages)
 }
 
 // Page returns a specific page from the book and true when the page exists. It will otherwise return an empty string
@@ -105,7 +110,7 @@ func (b BookAndQuill) EncodeNBT() map[string]any {
 }
 
 // EncodeItem ...
-func (b BookAndQuill) EncodeItem() (name string, meta int16) {
+func (BookAndQuill) EncodeItem() (name string, meta int16) {
 	return "minecraft:writable_book", 0
 }
 

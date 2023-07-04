@@ -67,7 +67,7 @@ func (c Composter) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Us
 	if !ok {
 		return false
 	}
-	ctx.CountSub = 1
+	ctx.SubtractFromCount(1)
 	w.AddParticle(pos.Vec3(), particle.BoneMeal{})
 	if rand.Float64() > compostable.CompostChance() {
 		w.PlaySound(pos.Vec3(), sound.ComposterFill{})

@@ -2586,7 +2586,7 @@ func (p *Player) OpenSign(pos cube.Pos, frontSide bool) {
 }
 
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
-// present or if the Player cannot edit it, an error is returned
+// present, an error is returned.
 func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
 	w := p.World()
 	sign, ok := w.Block(pos).(block.Sign)
@@ -2615,6 +2615,25 @@ func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
 		sign.Back.Owner = p.XUID()
 	}
 	w.SetBlock(pos, sign, nil)
+	return nil
+}
+
+// TurnLecternPage edits the lectern at the cube.Pos passed by turning the page to the page passed. If no lectern is
+// present, an error is returned.
+func (p *Player) TurnLecternPage(pos cube.Pos, page int) error {
+	w := p.World()
+	lectern, ok := w.Block(pos).(block.Lectern)
+	if !ok {
+		return fmt.Errorf("edit lectern: no lectern at position %v", pos)
+	}
+
+	ctx := event.C()
+	if p.Handler().HandleLecternPageTurn(ctx, pos, lectern.Page, &page); ctx.Cancelled() {
+		return nil
+	}
+
+	lectern.Page = page
+	w.SetBlock(pos, lectern, nil)
 	return nil
 }
 

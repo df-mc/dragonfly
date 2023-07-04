@@ -85,6 +85,7 @@ type Controllable interface {
 
 	OpenSign(pos cube.Pos, frontSide bool)
 	EditSign(pos cube.Pos, frontText, backText string) error
+	TurnLecternPage(pos cube.Pos, page int) error
 
 	EnderChestInventory() *inventory.Inventory
 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"strings"
 	"unicode/utf8"
@@ -17,7 +19,10 @@ type BlockActorDataHandler struct{}
 func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.BlockActorData)
 	if id, ok := pk.NBTData["id"]; ok {
-		pos := cube.Pos{int(pk.Position.X()), int(pk.Position.Y()), int(pk.Position.Z())}
+		pos := blockPosFromProtocol(pk.Position)
+		if !canReach(s.c, pos.Vec3Middle()) {
+			return fmt.Errorf("block at %v is not within reach", pos)
+		}
 		switch id {
 		case "Sign":
 			return b.handleSign(pk, pos, s)
@@ -85,4 +90,22 @@ func (b BlockActorDataHandler) textFromNBTData(data map[string]any, frontSide bo
 		return "", fmt.Errorf("sign block actor data text was not valid UTF8 for side %s", side)
 	}
 	return text, nil
+}
+
+// canReach checks if a player can reach a position with its current range. The range depends on if the player
+// is either survival or creative mode.
+func canReach(c Controllable, pos mgl64.Vec3) bool {
+	const (
+		creativeRange = 14.0
+		survivalRange = 8.0
+	)
+	if !c.GameMode().AllowsInteraction() {
+		return false
+	}
+
+	eyes := entity.EyePosition(c)
+	if c.GameMode().CreativeInventory() {
+		return eyes.Sub(pos).Len() <= creativeRange && !c.Dead()
+	}
+	return eyes.Sub(pos).Len() <= survivalRange && !c.Dead()
 }

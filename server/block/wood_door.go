@@ -100,7 +100,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	ctx.IgnoreBBox = true
 	place(w, pos, d, user, ctx)
 	place(w, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
-	ctx.CountSub = 1
+	ctx.SubtractFromCount(1)
 	return placed(ctx)
 }
 
