@@ -1174,7 +1174,8 @@ func (p *Player) OnFireDuration() time.Duration {
 	return time.Duration(p.fireTicks.Load()) * time.Second / 20
 }
 
-// BlockingDelay ...
+// BlockingDelay returns the remaining duration of the player's shield blocking delay. If this value is larger than 0,
+// they should not be able to use their shield.
 func (p *Player) BlockingDelay() time.Duration {
 	return time.Duration(p.blockingDelayTicks.Load()) * time.Second / 20
 }
@@ -1189,7 +1190,8 @@ func (p *Player) SetOnFire(duration time.Duration) {
 	p.updateState()
 }
 
-// SetBlockingDelay ...
+// SetBlockingDelay updates the current blocking delay to the new duration provided. If the player is currently blocking
+// with a shield, they will no longer be blocking and cannot do so until the duration is over.
 func (p *Player) SetBlockingDelay(duration time.Duration) {
 	blocking, _ := p.Blocking()
 	p.blockingDelayTicks.Store(int64(duration.Seconds() * 20))
