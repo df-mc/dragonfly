@@ -69,6 +69,11 @@ func Float32(m map[string]any, k string) float32 {
 	return v
 }
 
+// Rotation reads a cube.Rotation from the map passed.
+func Rotation(m map[string]any) cube.Rotation {
+	return cube.Rotation{float64(Float32(m, "Yaw")), float64(Float32(m, "Pitch"))}
+}
+
 // Float64 reads a float64 value from a map at key k.
 func Float64(m map[string]any, k string) float64 {
 	v, _ := m[k].(float64)

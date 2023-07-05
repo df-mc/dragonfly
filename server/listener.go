@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sirupsen/logrus"
 	"io"
+	"log"
 )
 
 // Listener is a source for connections that may be listened on by a Server using Server.listen. Proxies can use this to
@@ -28,6 +30,10 @@ func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 		ResourcePacks:          conf.Resources,
 		Biomes:                 biomes(),
 		TexturePacksRequired:   conf.ResourcesRequired,
+	}
+	if l, ok := conf.Log.(*logrus.Logger); ok {
+		cfg.ErrorLog = log.Default()
+		log.SetOutput(l.WithField("src", "gophertunnel").WriterLevel(logrus.DebugLevel))
 	}
 	l, err := cfg.Listen("raknet", uc.Network.Address)
 	if err != nil {

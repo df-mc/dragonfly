@@ -53,7 +53,7 @@ func (c CoralBlock) BreakInfo() BreakInfo {
 
 // EncodeBlock ...
 func (c CoralBlock) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:coral_block", map[string]any{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
+	return "minecraft:coral_block", map[string]any{"coral_color": c.Type.Colour().SilverString(), "dead_bit": c.Dead}
 }
 
 // EncodeItem ...

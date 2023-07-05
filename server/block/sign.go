@@ -7,13 +7,12 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"image/color"
 	"strings"
 	"time"
 )
 
-// Sign is a non-solid block that can display text.
+// Sign is a non-solid block that can display text on the front and back of the block.
 type Sign struct {
 	transparent
 	empty
@@ -25,16 +24,27 @@ type Sign struct {
 	Wood WoodType
 	// Attach is the attachment of the Sign. It is either of the type WallAttachment or StandingAttachment.
 	Attach Attachment
-	// Text is the text displayed on the sign. The text is automatically wrapped if it does not fit on a line.
+	// Waxed specifies if the Sign has been waxed by a player. If set to true, the Sign can no longer be edited by
+	// anyone and must be destroyed if the text needs to be changed.
+	Waxed bool
+	// Front is the text of the front side of the sign. Anyone can edit this unless the sign is Waxed.
+	Front SignText
+	// Back is the text of the back side of the sign. Anyone can edit this unless the sign is Waxed.
+	Back SignText
+}
+
+// SignText represents the data for a single side of a sign. The sign can be edited on the front and back side.
+type SignText struct {
+	// Text is the text displayed on this side of the sign. The text is automatically wrapped if it does not fit on a line.
 	Text string
-	// BaseColour is the base colour of the text on the sign, changed when using a dye on the sign. The default colour
-	// is black.
+	// BaseColour is the base colour of the text on this side of the sign, changed when using a dye on the sign. The default
+	// colour is black.
 	BaseColour color.RGBA
-	// Glowing specifies if the Sign has glowing text. If set to true, the text will be visible even in the dark, and it
-	// will have an outline to improve visibility.
+	// Glowing specifies if the Sign has glowing text on the current side. If set to true, the text will be visible even
+	// in the dark, and it will have an outline to improve visibility.
 	Glowing bool
-	// owner holds the UUID of the player that initially placed the sign.
-	owner uuid.UUID
+	// Owner holds the XUID of the player that most recently edited this side of the sign.
+	Owner string
 }
 
 // SideClosed ...
@@ -68,32 +78,63 @@ func (s Sign) BreakInfo() BreakInfo {
 }
 
 // Dye dyes the Sign, changing its base colour to that of the colour passed.
-func (s Sign) Dye(c item.Colour) (world.Block, bool) {
-	if s.BaseColour == c.RGBA() {
-		return s, false
+func (s Sign) Dye(pos cube.Pos, userPos mgl64.Vec3, c item.Colour) (world.Block, bool) {
+	if s.EditingFrontSide(pos, userPos) {
+		if s.Front.BaseColour == c.RGBA() {
+			return s, false
+		}
+		s.Front.BaseColour = c.RGBA()
+	} else {
+		if s.Back.BaseColour == c.RGBA() {
+			return s, false
+		}
+		s.Back.BaseColour = c.RGBA()
 	}
-	s.BaseColour = c.RGBA()
 	return s, true
 }
 
 // Ink inks the sign either glowing or non-glowing.
-func (s Sign) Ink(glowing bool) (world.Block, bool) {
-	if s.Glowing == glowing {
+func (s Sign) Ink(pos cube.Pos, userPos mgl64.Vec3, glowing bool) (world.Block, bool) {
+	if s.EditingFrontSide(pos, userPos) {
+		if s.Front.Glowing == glowing {
+			return s, false
+		}
+		s.Front.Glowing = glowing
+	} else {
+		if s.Back.Glowing == glowing {
+			return s, false
+		}
+		s.Back.Glowing = glowing
+	}
+	return s, true
+}
+
+// Wax waxes a sign to prevent it from further editing.
+func (s Sign) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
+	if s.Waxed {
 		return s, false
 	}
-	s.Glowing = glowing
+	s.Waxed = true
 	return s, true
+}
+
+// Activate ...
+func (s Sign) Activate(pos cube.Pos, _ cube.Face, _ *world.World, user item.User, _ *item.UseContext) bool {
+	if editor, ok := user.(SignEditor); ok && !s.Waxed {
+		editor.OpenSign(pos, s.EditingFrontSide(pos, user.Position()))
+	}
+	return true
+}
+
+// EditingFrontSide returns if the user is editing the front side of the sign based on their position relative to the
+// position and direction of the sign.
+func (s Sign) EditingFrontSide(pos cube.Pos, userPos mgl64.Vec3) bool {
+	return userPos.Sub(pos.Vec3Centre()).Dot(s.Attach.Rotation().Vec3()) > 0
 }
 
 // SignEditor represents something that can edit a sign, typically players.
 type SignEditor interface {
-	UUID() uuid.UUID
-}
-
-// EditableBy returns whether a SignEditor can edit the sign or not. This is based on whether the SignEditor
-// placed the sign and the sign's chunk has yet to be unloaded.
-func (s Sign) EditableBy(editor SignEditor) bool {
-	return editor.UUID() == s.owner
+	OpenSign(pos cube.Pos, frontSide bool)
 }
 
 // UseOnBlock ...
@@ -103,17 +144,15 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 		return false
 	}
 
-	if editor, ok := user.(SignEditor); ok {
-		s.owner = editor.UUID()
-	}
-
 	if face == cube.FaceUp {
 		s.Attach = StandingAttachment(user.Rotation().Orientation().Opposite())
-		place(w, pos, s, user, ctx)
-		return
+	} else {
+		s.Attach = WallAttachment(face.Direction())
 	}
-	s.Attach = WallAttachment(face.Direction())
 	place(w, pos, s, user, ctx)
+	if editor, ok := user.(SignEditor); ok {
+		editor.OpenSign(pos, true)
+	}
 	return placed(ctx)
 }
 
@@ -148,9 +187,30 @@ func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 
 // DecodeNBT ...
 func (s Sign) DecodeNBT(data map[string]any) any {
-	s.Text = nbtconv.String(data, "Text")
-	s.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(data, "SignTextColor"))
-	s.Glowing = nbtconv.Bool(data, "IgnoreLighting") && nbtconv.Bool(data, "TextIgnoreLegacyBugResolved")
+	if nbtconv.String(data, "Text") != "" {
+		// The NBT format changed in 1.19.80 to have separate data for each side of the sign. The old format must still
+		// be supported for backwards compatibility.
+		s.Front.Text = nbtconv.String(data, "Text")
+		s.Front.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(data, "SignTextColor"))
+		s.Front.Glowing = nbtconv.Bool(data, "IgnoreLighting") && nbtconv.Bool(data, "TextIgnoreLegacyBugResolved")
+		return s
+	}
+
+	front, ok := data["FrontText"].(map[string]any)
+	if ok {
+		s.Front.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(front, "Color"))
+		s.Front.Glowing = nbtconv.Bool(front, "GlowingText")
+		s.Front.Text = nbtconv.String(front, "Text")
+		s.Front.Owner = nbtconv.String(front, "Owner")
+	}
+
+	back, ok := data["BackText"].(map[string]any)
+	if ok {
+		s.Back.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(back, "Color"))
+		s.Back.Glowing = nbtconv.Bool(back, "GlowingText")
+		s.Back.Text = nbtconv.String(back, "Text")
+		s.Back.Owner = nbtconv.String(back, "Owner")
+	}
 
 	return s
 }
@@ -158,17 +218,20 @@ func (s Sign) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (s Sign) EncodeNBT() map[string]any {
 	m := map[string]any{
-		"id":             "Sign",
-		"SignTextColor":  nbtconv.Int32FromRGBA(s.BaseColour),
-		"IgnoreLighting": boolByte(s.Glowing),
-		// This is some top class Mojang garbage. The client needs it to render the glowing text. Omitting this field
-		// will just result in normal text being displayed.
-		"TextIgnoreLegacyBugResolved": boolByte(s.Glowing),
-	}
-	if s.Text != "" {
-		// The client does not display the editing GUI if this tag is already set when no text is present, so just don't
-		// send it while the text is empty.
-		m["Text"] = s.Text
+		"id":      "Sign",
+		"IsWaxed": boolByte(s.Waxed),
+		"FrontText": map[string]any{
+			"SignTextColor":  nbtconv.Int32FromRGBA(s.Front.BaseColour),
+			"IgnoreLighting": boolByte(s.Front.Glowing),
+			"Text":           s.Front.Text,
+			"TextOwner":      s.Front.Owner,
+		},
+		"BackText": map[string]any{
+			"SignTextColor":  nbtconv.Int32FromRGBA(s.Back.BaseColour),
+			"IgnoreLighting": boolByte(s.Back.Glowing),
+			"Text":           s.Back.Text,
+			"TextOwner":      s.Back.Owner,
+		},
 	}
 	return m
 }

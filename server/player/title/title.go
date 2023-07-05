@@ -95,7 +95,7 @@ func (title Title) WithFadeOutDuration(d time.Duration) Title {
 
 // FadeOutDuration returns the duration that the fade-out of the title takes.By default, this is a quarter of
 // a second.
-func (title *Title) FadeOutDuration() time.Duration {
+func (title Title) FadeOutDuration() time.Duration {
 	return title.fadeOutDuration
 }
 

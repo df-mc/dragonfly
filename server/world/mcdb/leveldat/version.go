@@ -1,4 +1,4 @@
-package mcdb
+package leveldat
 
 import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -6,7 +6,11 @@ import (
 	"strings"
 )
 
-// minimumCompatibleClientVersion is the minimum compatible client version, required by the latest Minecraft data provider.
+// Version is the current version stored in level.dat files.
+const Version = 10
+
+// minimumCompatibleClientVersion is the minimum compatible client version,
+// required by the latest Minecraft data provider.
 var minimumCompatibleClientVersion []int32
 
 // init initializes the minimum compatible client version.
