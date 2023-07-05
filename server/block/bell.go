@@ -108,8 +108,8 @@ func (b Bell) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _
 
 // EntityInside ...
 func (b Bell) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
-	if e, ok := e.(EntityEjector); ok {
-		e.EntityEject(pos)
+	if ejector, ok := e.Type().(EntityEjector); ok {
+		ejector.EntityEject(e, pos)
 
 		// BDS always rings the bell on it's facing direction, even if the entity is ejected in a different direction.
 		b.Ring(pos, b.Facing.Face(), w)

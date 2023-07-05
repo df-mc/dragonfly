@@ -23,7 +23,8 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Ent {
 func NewItemPickupDelay(i item.Stack, pos mgl64.Vec3, delay time.Duration) *Ent {
 	config := itemConf
 	config.PickupDelay = delay
-	return Config{Behaviour: config.New(i)}.New(ItemType{}, pos)
+	behaviour := config.New(i)
+	return Config{Behaviour: behaviour}.New(ItemType{Behaviour: behaviour}, pos)
 }
 
 var itemConf = ItemBehaviourConfig{
@@ -31,166 +32,10 @@ var itemConf = ItemBehaviourConfig{
 	Drag:    0.02,
 }
 
-// EntityEject ejects the item entity from the block it is currently on. This is called when items are dropped on bells,
-// for example, to make the item entity pop off the bell.
-func (it *Item) EntityEject(pos cube.Pos) {
-	it.mu.Lock()
-	defer it.mu.Unlock()
-
-	delta := it.pos.Sub(pos.Vec3Centre())
-	if delta.Len() <= epsilon {
-		// There is no delta between the item entity and the block, so we can't eject it.
-		return
-	}
-
-	it.vel = it.vel.Add(delta.Normalize())
-}
-
-// Tick ticks the entity, performing movement.
-func (it *Item) Tick(w *world.World, current int64) {
-	it.mu.Lock()
-	m := it.c.TickMovement(it, it.pos, it.vel, 0, 0)
-	it.pos, it.vel = m.pos, m.vel
-	it.mu.Unlock()
-
-	m.Send()
-
-	if m.pos[1] < float64(w.Range()[0]) && current%10 == 0 {
-		_ = it.Close()
-		return
-	}
-	if it.age++; it.age > 6000 {
-		_ = it.Close()
-		return
-	}
-
-	it.checkEntityInsiders(w, m.pos)
-	if it.pickupDelay == 0 {
-		it.checkNearby(w, m.pos)
-	} else if it.pickupDelay != math.MaxInt16 {
-		it.pickupDelay--
-	}
-}
-
-// checkNearby checks the entities of the chunks around for item collectors and other item stacks. If a
-// collector is found in range, the item will be picked up. If another item stack with the same item type is
-// found in range, the item stacks will merge.
-func (it *Item) checkNearby(w *world.World, pos mgl64.Vec3) {
-	bbox := it.Type().BBox(it)
-	grown := bbox.GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	for _, e := range w.EntitiesWithin(bbox.Translate(pos).Grow(2), nil) {
-		if e == it {
-			// Skip the item entity itself.
-			continue
-		}
-		if e.Type().BBox(e).Translate(e.Position()).IntersectsWith(grown) {
-			if collector, ok := e.(Collector); ok {
-				// A collector was within range to pick up the entity.
-				it.collect(w, collector, pos)
-				return
-			} else if other, ok := e.(*Item); ok {
-				// Another item entity was in range to merge with.
-				if it.merge(w, other, pos) {
-					return
-				}
-			}
-		}
-	}
-}
-
-// merge merges the item entity with another item entity.
-func (it *Item) merge(w *world.World, other *Item, pos mgl64.Vec3) bool {
-	if other.i.Count() == other.i.MaxCount() || it.i.Count() == it.i.MaxCount() {
-		// Either stack is already filled up to the maximum, meaning we can't change anything any way.
-		return false
-	}
-	if !it.i.Comparable(other.i) {
-		return false
-	}
-
-	a, b := other.i.AddStack(it.i)
-
-	newA := NewItem(a, other.Position())
-	newA.SetVelocity(other.Velocity())
-	w.AddEntity(newA)
-
-	if !b.Empty() {
-		newB := NewItem(b, pos)
-		newB.SetVelocity(it.vel)
-		w.AddEntity(newB)
-	}
-	_ = it.Close()
-	_ = other.Close()
-	return true
-}
-
-// collect makes a collector collect the item (or at least part of it).
-func (it *Item) collect(w *world.World, collector Collector, pos mgl64.Vec3) {
-	n := collector.Collect(it.i)
-	if n == 0 {
-		return
-	}
-	for _, viewer := range w.Viewers(pos) {
-		viewer.ViewEntityAction(it, PickedUpAction{Collector: collector})
-	}
-
-	if n == it.i.Count() {
-		// The collector picked up the entire stack.
-		_ = it.Close()
-		return
-	}
-	// Create a new item entity and shrink it by the amount of items that the collector collected.
-	w.AddEntity(NewItem(it.i.Grow(-n), pos))
-
-	_ = it.Close()
-}
-
-// checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
-func (it *Item) checkEntityInsiders(w *world.World, pos mgl64.Vec3) {
-	box := it.Type().BBox(it).Translate(pos).Grow(-0.0001)
-	min, max := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
-
-	for y := min[1]; y <= max[1]; y++ {
-		for x := min[0]; x <= max[0]; x++ {
-			for z := min[2]; z <= max[2]; z++ {
-				blockPos := cube.Pos{x, y, z}
-				b := w.Block(blockPos)
-				if collide, ok := b.(block.EntityInsider); ok {
-					collide.EntityInside(blockPos, w, it)
-					if _, liquid := b.(world.Liquid); liquid {
-						continue
-					}
-				}
-
-				if l, ok := w.Liquid(blockPos); ok {
-					if collide, ok := l.(block.EntityInsider); ok {
-						collide.EntityInside(blockPos, w, it)
-					}
-				}
-			}
-		}
-	}
-}
-
-// Explode ...
-func (it *Item) Explode(mgl64.Vec3, float64, block.ExplosionConfig) {
-	_ = it.Close()
-}
-
-// Collector represents an entity in the world that is able to collect an item, typically an entity such as
-// a player or a zombie.
-type Collector interface {
-	world.Entity
-	// Collect collects the stack passed. It is called if the Collector is standing near an item entity that
-	// may be picked up.
-	// The count of items collected from the stack n is returned.
-	Collect(stack item.Stack) (n int)
-	// GameMode returns the gamemode of the collector.
-	GameMode() world.GameMode
-}
-
 // ItemType is a world.EntityType implementation for Item.
-type ItemType struct{}
+type ItemType struct {
+	Behaviour *ItemBehaviour
+}
 
 func (ItemType) EncodeEntity() string   { return "minecraft:item" }
 func (ItemType) NetworkOffset() float64 { return 0.125 }
@@ -221,4 +66,8 @@ func (ItemType) EncodeNBT(e world.Entity) map[string]any {
 		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
 		"Item":        nbtconv.WriteItem(b.Item(), true),
 	}
+}
+
+func (t ItemType) EntityEject(e world.Entity, pos cube.Pos) {
+	t.Behaviour.EntityEject(e, pos)
 }
