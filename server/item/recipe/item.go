@@ -47,12 +47,12 @@ type outputItems []struct {
 	Count int16 `nbt:"count"`
 	// State is included if the output is a block. If it's not included, the meta can be discarded and the output item can be incorrect.
 	State struct {
-		Name       string                 `nbt:"name"`
-		Properties map[string]interface{} `nbt:"states"`
-		Version    int32                  `nbt:"version"`
+		Name       string         `nbt:"name"`
+		Properties map[string]any `nbt:"states"`
+		Version    int32          `nbt:"version"`
 	} `nbt:"block"`
 	// NBTData contains extra NBTData which may modify the item in other, more discreet ways.
-	NBTData map[string]interface{} `nbt:"data"`
+	NBTData map[string]any `nbt:"data"`
 }
 
 // Stacks converts output items to item stacks.

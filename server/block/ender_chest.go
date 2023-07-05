@@ -107,12 +107,12 @@ func (c EnderChest) close(w *world.World, pos cube.Pos) {
 }
 
 // EncodeNBT ...
-func (c EnderChest) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{"id": "EnderChest"}
+func (c EnderChest) EncodeNBT() map[string]any {
+	return map[string]any{"id": "EnderChest"}
 }
 
 // DecodeNBT ...
-func (c EnderChest) DecodeNBT(map[string]interface{}) interface{} {
+func (c EnderChest) DecodeNBT(map[string]any) any {
 	return NewEnderChest()
 }
 
@@ -122,8 +122,8 @@ func (EnderChest) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (c EnderChest) EncodeBlock() (name string, properties map[string]interface{}) {
-	return "minecraft:ender_chest", map[string]interface{}{"facing_direction": 2 + int32(c.Facing)}
+func (c EnderChest) EncodeBlock() (name string, properties map[string]any) {
+	return "minecraft:ender_chest", map[string]any{"facing_direction": 2 + int32(c.Facing)}
 }
 
 // allEnderChests ...

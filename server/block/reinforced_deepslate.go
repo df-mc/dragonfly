@@ -17,6 +17,6 @@ func (ReinforcedDeepslate) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (ReinforcedDeepslate) EncodeBlock() (string, map[string]interface{}) {
+func (ReinforcedDeepslate) EncodeBlock() (string, map[string]any) {
 	return "minecraft:reinforced_deepslate", nil
 }
