@@ -1079,13 +1079,13 @@ func (p *Player) StopFlying() {
 
 // Blocking returns true if the player is currently blocking with a shield. The first boolean is true if the player was
 // holding a shield. The second boolean is true if the player was performing the necessary actions in order to block.
-func (p *Player) Blocking() (bool, bool) {
-	if p.BlockingDelay() > 0 || !p.sneaking.Load() || p.usingItem.Load() {
-		return false, false
-	}
+func (p *Player) Blocking() (holding bool, using bool) {
 	held, other := p.HeldItems()
 	_, heldShield := held.Item().(item.Shield)
 	_, otherShield := other.Item().(item.Shield)
+	if p.BlockingDelay() > 0 || !p.sneaking.Load() || p.usingItem.Load() {
+		return heldShield || otherShield, false
+	}
 	return heldShield || otherShield, true
 }
 

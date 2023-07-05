@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"math/rand"
@@ -125,6 +126,13 @@ func (lt *ProjectileBehaviour) Critical() bool {
 	return lt.conf.Critical && !lt.collided
 }
 
+// blocker represents an entity that can block attacks with a shield.
+type blocker interface {
+	// Blocking returns two different booleans, the first being if the entity is holding a shield in either hand, and the
+	// second being if the entity is using the shield.
+	Blocking() (holding bool, using bool)
+}
+
 // Tick runs the tick-based behaviour of a ProjectileBehaviour and returns the
 // Movement within the tick. Tick handles the movement, collision and hitting
 // of a projectile.
@@ -164,8 +172,19 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 
 	switch r := result.(type) {
 	case trace.EntityResult:
-		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
-			lt.hitEntity(l, e, before, vel)
+		if l, ok := r.Entity().(Living); ok {
+			if blocker, ok := l.(blocker); ok {
+				if blocking, _ := blocker.Blocking(); blocking {
+					w.PlaySound(l.Position(), sound.ShieldBlock{})
+					m.vel = vel.Mul(-0.25)
+					m.dvel = m.vel.Sub(vel)
+					lt.close = false
+					return m
+				}
+			}
+			if lt.conf.Damage >= 0 {
+				lt.hitEntity(l, e, before, vel)
+			}
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()

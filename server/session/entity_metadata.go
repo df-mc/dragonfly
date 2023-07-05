@@ -45,7 +45,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSneaking)
 		if b, ok := e.(blocker); ok {
 			if _, ok = b.Blocking(); ok {
-				m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagBlocking)
+				m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagBlocking%64)
 			}
 		}
 	}
