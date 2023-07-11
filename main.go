@@ -2,11 +2,19 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/biome"
+	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 func main() {
@@ -25,8 +33,31 @@ func main() {
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(nil) {
+
+	w, err := srv.LoadWorldFromFolder("world2", world.Overworld, "nether", "end", generator.NewFlat(biome.Plains{}, []world.Block{}))
+
+	if err != nil {
+		panic(err)
 	}
+
+	w.SetBlock(cube.Pos{0, 0, 0}, block.Obsidian{}, nil)
+
+	for srv.Accept(func(p *player.Player) {
+		p.Handle(&PlayerHandler{p: p, srv: srv})
+	}) {
+	}
+}
+
+type PlayerHandler struct {
+	srv *server.Server
+	player.NopHandler
+	p *player.Player
+}
+
+func (h *PlayerHandler) HandleChat(ctx *event.Context, message *string) {
+	ctx.Cancel()
+	h.p.World().RemoveEntity(h.p)
+	h.srv.Worlds()[*message].AddEntity(h.p)
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the

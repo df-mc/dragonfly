@@ -6,6 +6,16 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"math/rand"
+	"os"
+	"os/exec"
+	"os/signal"
+	"runtime"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
@@ -15,6 +25,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -26,15 +37,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/maps"
-	"math/rand"
-	"os"
-	"os/exec"
-	"os/signal"
-	"runtime"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and
@@ -45,7 +47,9 @@ type Server struct {
 	once    sync.Once
 	started atomic.Bool
 
-	world, nether, end *world.World
+	worlds map[string]*world.World
+	// overworld, nether and end are keys in the worlds map
+	overworld, nether, end string
 
 	customItems []protocol.ItemComponentEntry
 
@@ -114,23 +118,28 @@ func (srv *Server) Accept(f HandleFunc) bool {
 	return true
 }
 
-// World returns the overworld of the server. Players will be spawned in this
+// Worlds returns the map of the all the worlds in the server.
+func (srv *Server) Worlds() map[string]*world.World {
+	return srv.worlds
+}
+
+// Overworld returns the overworld of the server. Players will be spawned in this
 // world and this world will be read from and written to when the world is
 // edited.
-func (srv *Server) World() *world.World {
-	return srv.world
+func (srv *Server) Overworld() *world.World {
+	return srv.worlds[srv.overworld]
 }
 
 // Nether returns the nether world of the server. Players are transported to it
 // when entering a nether portal in the world returned by the World method.
 func (srv *Server) Nether() *world.World {
-	return srv.nether
+	return srv.worlds[srv.nether]
 }
 
 // End returns the end world of the server. Players are transported to it when
 // entering an end portal in the world returned by the World method.
 func (srv *Server) End() *world.World {
-	return srv.end
+	return srv.worlds[srv.end]
 }
 
 // MaxPlayerCount returns the maximum amount of players that are allowed to
@@ -221,7 +230,7 @@ func (srv *Server) close() {
 	}
 
 	srv.conf.Log.Debugf("Closing worlds...")
-	for _, w := range []*world.World{srv.end, srv.nether, srv.world} {
+	for _, w := range srv.worlds {
 		if err := w.Close(); err != nil {
 			srv.conf.Log.Errorf("Error closing %v: %v", w.Dimension(), err)
 		}
@@ -318,7 +327,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	var playerData *player.Data
 	if d, err := srv.conf.PlayerProvider.Load(id, srv.dimension); err == nil {
 		if d.World == nil {
-			d.World = srv.world
+			d.World = srv.worlds[srv.overworld]
 		}
 		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
 		dim, _ := world.DimensionID(d.World.Dimension())
@@ -353,12 +362,12 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		WorldName:       srv.conf.Name,
 		BaseGameVersion: protocol.CurrentVersion,
 
-		Time:       int64(srv.world.Time()),
+		Time:       int64(srv.worlds[srv.overworld].Time()),
 		Difficulty: 2,
 
 		PlayerGameMode:    packet.GameTypeCreative,
 		PlayerPermissions: packet.PermissionLevelMember,
-		PlayerPosition:    vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
+		PlayerPosition:    vec64To32(srv.worlds[srv.overworld].Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 
 		Items:     srv.itemEntries(),
 		GameRules: []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
@@ -375,11 +384,11 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 func (srv *Server) dimension(dimension world.Dimension) *world.World {
 	switch dimension {
 	default:
-		return srv.world
+		return srv.worlds[srv.overworld]
 	case world.Nether:
-		return srv.nether
+		return srv.worlds[srv.nether]
 	case world.End:
-		return srv.end
+		return srv.worlds[srv.end]
 	}
 }
 
@@ -421,7 +430,7 @@ func (srv *Server) handleSessionClose(c session.Controllable) {
 // createPlayer creates a new player instance using the UUID and connection
 // passed.
 func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *session.Session {
-	w, gm, pos := srv.world, srv.world.DefaultGameMode(), srv.world.Spawn().Vec3Middle()
+	w, gm, pos := srv.worlds[srv.overworld], srv.worlds[srv.overworld].DefaultGameMode(), srv.worlds[srv.overworld].Spawn().Vec3Middle()
 	if data != nil {
 		w, gm, pos = data.World, data.GameMode, data.Position
 	}
@@ -436,7 +445,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 // createWorld loads a world of the server with a specific dimension, ending
 // the program if the world could not be loaded. The layers passed are used to
 // create a generator.Flat that is used as generator for the world.
-func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *world.World {
+func (srv *Server) createWorld(dim world.Dimension, nether, end string, provider world.Provider, generator world.Generator) *world.World {
 	logger := srv.conf.Log
 	if v, ok := logger.(interface {
 		WithField(key string, field any) *logrus.Entry
@@ -452,15 +461,15 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		Log:             logger,
 		Dim:             dim,
 		Provider:        srv.conf.WorldProvider,
-		Generator:       srv.conf.Generator(dim),
+		Generator:       generator,
 		RandomTickSpeed: srv.conf.RandomTickSpeed,
 		ReadOnly:        srv.conf.ReadOnlyWorld,
 		Entities:        srv.conf.Entities,
 		PortalDestination: func(dim world.Dimension) *world.World {
 			if dim == world.Nether {
-				return *nether
+				return srv.worlds[nether]
 			} else if dim == world.End {
-				return *end
+				return srv.worlds[end]
 			}
 			return nil
 		},
@@ -468,6 +477,28 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	w := conf.New()
 	logger.Infof(`Opened world "%v".`, w.Name())
 	return w
+}
+
+type WorldAlreadyLoadedError struct {
+	folder string
+}
+
+func (err WorldAlreadyLoadedError) Error() string {
+	return "Tried to load world with ID '" + err.folder + "' but another world with the same ID was already loaded"
+}
+
+func (srv *Server) LoadWorldFromFolder(folder string, dim world.Dimension, nether, end string, generator world.Generator) (*world.World, error) {
+	_, exists := srv.worlds[folder]
+	if exists {
+		return nil, WorldAlreadyLoadedError{folder: folder}
+	}
+	provider, err := mcdb.Config{Log: srv.conf.Log}.Open(folder)
+	if err != nil {
+		panic(err)
+	}
+	w := srv.createWorld(dim, nether, end, provider, generator)
+	srv.worlds[folder] = w
+	return w, nil
 }
 
 // parseSkin parses a skin from the login.ClientData  and returns it.

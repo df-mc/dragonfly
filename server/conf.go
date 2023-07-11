@@ -2,6 +2,9 @@ package server
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
@@ -16,8 +19,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
-	"os"
-	"path/filepath"
 )
 
 // Config contains options for starting a Minecraft server.
@@ -151,11 +152,14 @@ func (conf Config) New() *Server {
 		conf:     conf,
 		incoming: make(chan *session.Session),
 		p:        make(map[uuid.UUID]*player.Player),
-		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
+		worlds:   map[string]*world.World{},
 	}
-	srv.world = srv.createWorld(world.Overworld, &srv.nether, &srv.end)
-	srv.nether = srv.createWorld(world.Nether, &srv.world, &srv.end)
-	srv.end = srv.createWorld(world.End, &srv.nether, &srv.world)
+	srv.worlds["overworld"] = srv.createWorld(world.Overworld, "nether", "end", conf.WorldProvider, srv.conf.Generator(world.Overworld))
+	srv.overworld = "overworld"
+	srv.worlds["nether"] = srv.createWorld(world.Nether, "overworld", "end", conf.WorldProvider, srv.conf.Generator(world.Nether))
+	srv.nether = "nether"
+	srv.worlds["end"] = srv.createWorld(world.End, "nether", "overworld", conf.WorldProvider, srv.conf.Generator(world.End))
+	srv.end = "end"
 
 	srv.registerTargetFunc()
 	srv.checkNetIsolation()
