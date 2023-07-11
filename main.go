@@ -57,7 +57,7 @@ type PlayerHandler struct {
 func (h *PlayerHandler) HandleChat(ctx *event.Context, message *string) {
 	ctx.Cancel()
 	h.p.World().RemoveEntity(h.p)
-	h.srv.Worlds()[*message].AddEntity(h.p)
+	h.srv.GetWorld(*message).AddEntity(h.p)
 }
 
 // readConfig reads the configuration from the config.toml file, or creates the

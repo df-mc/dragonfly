@@ -118,9 +118,15 @@ func (srv *Server) Accept(f HandleFunc) bool {
 	return true
 }
 
-// Worlds returns the map of the all the worlds in the server.
-func (srv *Server) Worlds() map[string]*world.World {
-	return srv.worlds
+// GetWorld returns a world by ID
+func (srv *Server) GetWorld(id string) *world.World {
+	return srv.worlds[id]
+}
+
+// UnloadWorld unloads a world so that it doesn't use any more resources
+func (srv *Server) UnloadWorld(id string) {
+	srv.worlds[id].Close()
+	delete(srv.worlds, id)
 }
 
 // Overworld returns the overworld of the server. Players will be spawned in this
