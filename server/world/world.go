@@ -1306,7 +1306,7 @@ func (w *World) saveChunk(pos ChunkPos, c *Column) {
 	if !w.conf.ReadOnly && (len(c.BlockEntities) > 0 || len(c.Entities) > 0 || c.modified) {
 		c.Compact()
 		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
-			w.conf.Log.Errorf("save chunk: %w", err)
+			w.conf.Log.Errorf("save chunk: %v", err)
 		}
 	}
 	ent := c.Entities
