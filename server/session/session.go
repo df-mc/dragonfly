@@ -458,7 +458,6 @@ func (s *Session) registerHandlers() {
 		packet.IDItemFrameDropItem:     nil,
 		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: map[byte]map[byte]changeInfo{}, responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
 		packet.IDLecternUpdate:         &LecternUpdateHandler{},
-		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:            nil,

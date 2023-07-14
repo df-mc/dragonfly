@@ -62,7 +62,11 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
-		// Don't do anything for this action.
+	// Don't do anything for this action.
+	case protocol.PlayerActionMissedSwing:
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
+		s.c.PunchAir()
 	default:
 		return fmt.Errorf("unhandled ActionType %v", action)
 	}
