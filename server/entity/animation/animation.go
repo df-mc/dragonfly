@@ -9,9 +9,9 @@ type Animation struct {
 
 // New returns a new animation that can be attached to an entity. By default no controller or state is sent to the viewer.
 // To add a state and controller use WithController and WithState respectively.
-func New(animation string) Animation {
+func New(animationName string) Animation {
 	return Animation{
-		name:          animation,
+		name:          animationName,
 		state:         "",
 		controller:    "",
 		stopCondition: "",
