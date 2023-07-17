@@ -919,11 +919,10 @@ func (s *Session) ViewEntityState(e world.Entity) {
 // ViewEntityAnimation ...
 func (s *Session) ViewEntityAnimation(e world.Entity, animation animation.Animation) {
 	s.writePacket(&packet.AnimateEntity{
-		Animation:            animation.Name(),
-		NextState:            animation.State(),
-		StopCondition:        animation.StopCondition(),
-		StopConditionVersion: 0, // It doesn't seem like this affects anything
-		Controller:           animation.Controller(),
+		Animation:     animation.Name(),
+		NextState:     animation.State(),
+		StopCondition: animation.StopCondition(),
+		Controller:    animation.Controller(),
 		EntityRuntimeIDs: []uint64{
 			s.entityRuntimeID(e),
 		},
