@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/df-mc/dragonfly/server/entity/animation"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 
 	"github.com/df-mc/dragonfly/server/block"
@@ -916,13 +917,13 @@ func (s *Session) ViewEntityState(e world.Entity) {
 }
 
 // ViewEntityAnimation ...
-func (s *Session) ViewEntityAnimation(e world.Entity, animationName, state, stopCondition, controller string, stopConditionVersion int32) {
+func (s *Session) ViewEntityAnimation(e world.Entity, animation animation.Animation) {
 	s.writePacket(&packet.AnimateEntity{
-		Animation:            animationName,
-		NextState:            state,
-		StopCondition:        stopCondition,
-		StopConditionVersion: stopConditionVersion,
-		Controller:           controller,
+		Animation:            animation.Name(),
+		NextState:            animation.State(),
+		StopCondition:        animation.StopCondition(),
+		StopConditionVersion: 0, // It doesn't seem like this affects anything
+		Controller:           animation.Controller(),
 		EntityRuntimeIDs: []uint64{
 			s.entityRuntimeID(e),
 		},
