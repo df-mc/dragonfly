@@ -1,11 +1,12 @@
 package world
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"time"
 )
 
 // Viewer is a viewer in the world. It can view changes that are made in the world, such as the addition of
@@ -48,7 +49,7 @@ type Viewer interface {
 	// physical appearance, for example when sprinting.
 	ViewEntityState(e Entity)
 	// ViewEntityAnimation starts viewing an animation performed by an entity. The animation has to be from a resource pack.
-	ViewEntityAnimation(e Entity, animationName string)
+	ViewEntityAnimation(e Entity, animationName, nextState, controller string)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
 	ViewParticle(pos mgl64.Vec3, p Particle)
@@ -89,7 +90,7 @@ func (NopViewer) ViewEntityItems(Entity)                                     {}
 func (NopViewer) ViewEntityArmour(Entity)                                    {}
 func (NopViewer) ViewEntityAction(Entity, EntityAction)                      {}
 func (NopViewer) ViewEntityState(Entity)                                     {}
-func (NopViewer) ViewEntityAnimation(Entity, string)                         {}
+func (NopViewer) ViewEntityAnimation(Entity, string, string, string)         {}
 func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                          {}
 func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                {}
 func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                       {}

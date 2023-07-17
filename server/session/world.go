@@ -1,11 +1,12 @@
 package session
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/entity/effect"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -915,9 +916,11 @@ func (s *Session) ViewEntityState(e world.Entity) {
 }
 
 // ViewEntityAnimation ...
-func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
+func (s *Session) ViewEntityAnimation(e world.Entity, animationName, state, controller string) {
 	s.writePacket(&packet.AnimateEntity{
-		Animation: animationName,
+		Animation:  animationName,
+		NextState:  state,
+		Controller: controller,
 		EntityRuntimeIDs: []uint64{
 			s.entityRuntimeID(e),
 		},
