@@ -48,11 +48,14 @@ func (a Animation) State() string {
 	return a.state
 }
 
+// WithStopCondition takes the molang expression and stops the animation if the query passes.
 func (a Animation) WithStopCondition(condition string) Animation {
 	a.stopCondition = condition
 	return a
 }
 
+// StopCondition returns the stop condition. StopCondition returns an empty string if
+// no molang expression was set
 func (a Animation) StopCondition() string {
 	return a.stopCondition
 }
