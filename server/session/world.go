@@ -916,11 +916,13 @@ func (s *Session) ViewEntityState(e world.Entity) {
 }
 
 // ViewEntityAnimation ...
-func (s *Session) ViewEntityAnimation(e world.Entity, animationName, state, controller string) {
+func (s *Session) ViewEntityAnimation(e world.Entity, animationName, state, stopCondition, controller string, stopConditionVersion int32) {
 	s.writePacket(&packet.AnimateEntity{
-		Animation:  animationName,
-		NextState:  state,
-		Controller: controller,
+		Animation:            animationName,
+		NextState:            state,
+		StopCondition:        stopCondition,
+		StopConditionVersion: stopConditionVersion,
+		Controller:           controller,
 		EntityRuntimeIDs: []uint64{
 			s.entityRuntimeID(e),
 		},

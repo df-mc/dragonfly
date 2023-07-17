@@ -654,7 +654,7 @@ func (w *World) PlayAnimation(e Entity, animation animation.Animation) {
 	}
 
 	for _, v := range w.Viewers(e.Position()) {
-		v.ViewEntityAnimation(e, animation.Name(), animation.State(), animation.Controller())
+		v.ViewEntityAnimation(e, animation.Name(), animation.State(), animation.StopCondition(), animation.Controller())
 	}
 }
 

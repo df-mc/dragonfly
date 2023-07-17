@@ -47,3 +47,12 @@ func (a Animation) WithState(state string) Animation {
 func (a Animation) State() string {
 	return a.state
 }
+
+func (a Animation) WithStopCondition(condition string) Animation {
+	a.stopCondition = condition
+	return a
+}
+
+func (a Animation) StopCondition() string {
+	return a.stopCondition
+}
