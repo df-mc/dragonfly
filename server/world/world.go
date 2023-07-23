@@ -645,9 +645,9 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 	}
 }
 
-// PlayAnimation will start an animation for the specified entity. Viewers that are viewing the entity will be
+// AnimateEntity will start an animation for the specified entity. Viewers that are viewing the entity will be
 // played the animation.
-func (w *World) PlayAnimation(e Entity, animation animation.Animation) {
+func (w *World) AnimateEntity(e Entity, animation animation.Animation) {
 	// Ignore if no animation name has been given
 	if animation.Name() == "" {
 		return
