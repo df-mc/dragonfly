@@ -1701,7 +1701,8 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 		return false
 	}
 	if !ignoreBBox && p.obstructedPos(pos, b) {
-		p.resendBlocks(pos, w, cube.Faces()...)
+		// HACK: Removed resending for block lag issues
+		// p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
 
