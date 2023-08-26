@@ -129,7 +129,7 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 	}
 
 	enumValueIndices := make(map[string]uint32, len(enums)*3)
-	pk.EnumValues = make([]string, len(enumValueIndices))
+	pk.EnumValues = make([]string, 0, len(enumValueIndices))
 
 	pk.Enums = make([]protocol.CommandEnum, 0, len(enums))
 	for _, enum := range enums {
