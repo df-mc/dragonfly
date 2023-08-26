@@ -80,7 +80,7 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 				if _, ok := paramInfo.Value.(bool); ok {
 					opt |= protocol.ParamOptionCollapseEnum
 				}
-				if len(enum.Options) > 0 {
+				if len(enum.Options) > 0 || enum.Type != "" {
 					if !enum.Dynamic {
 						index, ok := enumIndices[enum.Type]
 						if !ok {
