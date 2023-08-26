@@ -116,14 +116,12 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 				})
 			}
 		}
-		if len(params) > 0 {
-			pk.Commands = append(pk.Commands, protocol.Command{
-				Name:          c.Name(),
-				Description:   c.Description(),
-				AliasesOffset: aliasesIndex,
-				Overloads:     overloads,
-			})
-		}
+		pk.Commands = append(pk.Commands, protocol.Command{
+			Name:          c.Name(),
+			Description:   c.Description(),
+			AliasesOffset: aliasesIndex,
+			Overloads:     overloads,
+		})
 	}
 	pk.DynamicEnums = make([]protocol.DynamicEnum, 0, len(dynamicEnums))
 	for _, e := range dynamicEnums {
