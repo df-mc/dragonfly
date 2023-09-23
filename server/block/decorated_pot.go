@@ -30,6 +30,11 @@ func (p DecoratedPot) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p))
 }
 
+// MaxCount ...
+func (DecoratedPot) MaxCount() int {
+	return 1
+}
+
 // EncodeItem ...
 func (p DecoratedPot) EncodeItem() (name string, meta int16) {
 	return "minecraft:decorated_pot", 0
