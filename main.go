@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
+	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sirupsen/logrus"
 	"os"
 )
@@ -20,6 +21,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	conf.Resources = append(conf.Resources, resource.MustReadURL("http://dev.galaxite.net:8082/pack/ef37266a-bb27-48c2-bc52-07f972381a4a"))
 
 	srv := conf.New()
 	srv.CloseOnProgramEnd()

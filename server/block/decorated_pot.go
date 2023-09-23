@@ -76,18 +76,19 @@ func (p DecoratedPot) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (p DecoratedPot) DecodeNBT(data map[string]any) any {
-	sherds := data["sherds"].([]any)
 	p.Decorations = [4]PotDecoration{}
-	for i, name := range sherds {
-		it, ok := world.ItemByName(name.(string), 0)
-		if !ok {
-			panic(fmt.Errorf("unknown item %s", name))
+	if sherds, ok := data["sherds"]; ok {
+		for i, name := range sherds.([]any) {
+			it, ok := world.ItemByName(name.(string), 0)
+			if !ok {
+				panic(fmt.Errorf("unknown item %s", name))
+			}
+			decoration, ok := it.(PotDecoration)
+			if !ok {
+				panic(fmt.Errorf("item %s is not a pot decoration", name))
+			}
+			p.Decorations[i] = decoration
 		}
-		decoration, ok := it.(PotDecoration)
-		if !ok {
-			panic(fmt.Errorf("item %s is not a pot decoration", name))
-		}
-		p.Decorations[i] = decoration
 	}
 	return p
 }
