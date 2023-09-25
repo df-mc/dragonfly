@@ -33,12 +33,12 @@ func (t StainedTerracotta) SmeltInfo() item.SmeltInfo {
 
 // EncodeItem ...
 func (t StainedTerracotta) EncodeItem() (name string, meta int16) {
-	return "minecraft:stained_hardened_clay", int16(t.Colour.Uint8())
+	return "minecraft:" + t.Colour.String() + "_terracotta", 0
 }
 
 // EncodeBlock ...
 func (t StainedTerracotta) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:stained_hardened_clay", map[string]any{"color": t.Colour.SilverString()}
+	return "minecraft:" + t.Colour.String() + "_terracotta", nil
 }
 
 // allStainedTerracotta returns stained terracotta blocks with all possible colours.

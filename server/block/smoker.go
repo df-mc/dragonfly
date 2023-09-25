@@ -54,9 +54,9 @@ func (s Smoker) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (s Smoker) EncodeBlock() (name string, properties map[string]interface{}) {
 	if s.Lit {
-		return "minecraft:lit_smoker", map[string]interface{}{"facing_direction": int32(s.Facing)}
+		return "minecraft:lit_smoker", map[string]interface{}{"minecraft:cardinal_direction": s.Facing.String()}
 	}
-	return "minecraft:smoker", map[string]interface{}{"facing_direction": int32(s.Facing)}
+	return "minecraft:smoker", map[string]interface{}{"minecraft:cardinal_direction": s.Facing.String()}
 }
 
 // UseOnBlock ...
@@ -122,7 +122,7 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 
 // allSmokers ...
 func allSmokers() (smokers []world.Block) {
-	for _, face := range cube.Faces() {
+	for _, face := range cube.HorizontalFaces() {
 		smokers = append(smokers, Smoker{Facing: face})
 		smokers = append(smokers, Smoker{Facing: face, Lit: true})
 	}
