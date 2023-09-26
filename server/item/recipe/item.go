@@ -14,19 +14,26 @@ type inputItems []struct {
 	Meta int32 `nbt:"meta"`
 	// Count is the amount of the item.
 	Count int32 `nbt:"count"`
+	// State is included if the output is a block. If it's not included, the meta can be discarded and the output item can be incorrect.
+	State struct {
+		Name       string                 `nbt:"name"`
+		Properties map[string]interface{} `nbt:"states"`
+		Version    int32                  `nbt:"version"`
+	} `nbt:"block"`
 }
 
 // Stacks converts input items to item stacks.
 func (d inputItems) Stacks() ([]item.Stack, bool) {
 	s := make([]item.Stack, 0, len(d))
 	for _, i := range d {
-		if len(i.Name) == 0 {
-			s = append(s, item.Stack{})
-			continue
-		}
 		it, ok := world.ItemByName(i.Name, int16(i.Meta))
 		if !ok {
 			return nil, false
+		}
+		if b, ok := world.BlockByName(i.State.Name, i.State.Properties); ok {
+			if it, ok = b.(world.Item); !ok {
+				return nil, false
+			}
 		}
 		st := item.NewStack(it, int(i.Count))
 		if i.Meta == math.MaxInt16 {

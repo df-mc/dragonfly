@@ -53,9 +53,9 @@ func (f Furnace) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (f Furnace) EncodeBlock() (name string, properties map[string]interface{}) {
 	if f.Lit {
-		return "minecraft:lit_furnace", map[string]interface{}{"facing_direction": int32(f.Facing)}
+		return "minecraft:lit_furnace", map[string]interface{}{"minecraft:cardinal_direction": f.Facing.String()}
 	}
-	return "minecraft:furnace", map[string]interface{}{"facing_direction": int32(f.Facing)}
+	return "minecraft:furnace", map[string]interface{}{"minecraft:cardinal_direction": f.Facing.String()}
 }
 
 // UseOnBlock ...
@@ -121,7 +121,7 @@ func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
 
 // allFurnaces ...
 func allFurnaces() (furnaces []world.Block) {
-	for _, face := range cube.Faces() {
+	for _, face := range cube.HorizontalFaces() {
 		furnaces = append(furnaces, Furnace{Facing: face})
 		furnaces = append(furnaces, Furnace{Facing: face, Lit: true})
 	}
