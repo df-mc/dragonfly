@@ -56,7 +56,7 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 			// Don't add duplicate entries for aliases.
 			continue
 		}
-		if run := c.Runnables(s.c); len(run) > 0 || c.AlwaysVisible() {
+		if run := c.Runnables(s.c); len(run) > 0 {
 			m[alias] = run
 		} else {
 			continue
@@ -203,7 +203,7 @@ func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable) (map[st
 
 	for alias, c := range commands {
 		if c.Name() == alias {
-			if run := c.Runnables(s.c); len(run) > 0 || c.AlwaysVisible() {
+			if run := c.Runnables(s.c); len(run) > 0 {
 				m[alias] = run
 			}
 		}
