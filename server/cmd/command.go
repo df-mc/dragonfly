@@ -48,6 +48,7 @@ type Command struct {
 	description string
 	usage       string
 	aliases     []string
+	visible     bool
 }
 
 // New returns a new Command using the name and description passed. The Runnable passed must be a
@@ -91,6 +92,12 @@ func New(name, description string, aliases []string, r ...Runnable) Command {
 	return Command{name: name, description: description, aliases: aliases, v: runnableValues, usage: strings.Join(usages, "\n")}
 }
 
+// WithAlwaysVisible sets the visible field of the Command struct to the passed value.
+func (cmd Command) WithAlwaysVisible(alwaysVisible bool) Command {
+	cmd.visible = alwaysVisible
+	return cmd
+}
+
 // Name returns the name of the command. The name is guaranteed to be lowercase and will never have spaces in
 // it. This name is used to call the command, and is shown in the /help list.
 func (cmd Command) Name() string {
@@ -113,6 +120,11 @@ func (cmd Command) Usage() string {
 // be called using one of these aliases.
 func (cmd Command) Aliases() []string {
 	return cmd.aliases
+}
+
+// AlwaysVisible specifies if a command should still be visible even if Allower returned false
+func (cmd Command) AlwaysVisible() bool {
+	return cmd.visible
 }
 
 // Execute executes the Command as a source with the args passed. The args are parsed assuming they do not
