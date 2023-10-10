@@ -64,7 +64,13 @@ func (d Deepslate) EncodeBlock() (string, map[string]any) {
 // allDeepslate returns a list of all deepslate block variants.
 func allDeepslate() (s []world.Block) {
 	for _, t := range DeepslateTypes() {
-		s = append(s, Deepslate{Type: t})
+		axes := []cube.Axis{0}
+		if t == NormalDeepslate() {
+			axes = cube.Axes()
+		}
+		for _, axis := range axes {
+			s = append(s, Deepslate{Type: t, Axis: axis})
+		}
 	}
 	return
 }
