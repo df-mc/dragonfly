@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -82,8 +83,8 @@ func (p DecoratedPot) EncodeNBT() map[string]any {
 // DecodeNBT ...
 func (p DecoratedPot) DecodeNBT(data map[string]any) any {
 	p.Decorations = [4]PotDecoration{}
-	if sherds, ok := data["sherds"]; ok {
-		for i, name := range sherds.([]any) {
+	if sherds := nbtconv.Slice(data, "sherds"); sherds != nil {
+		for i, name := range sherds {
 			it, ok := world.ItemByName(name.(string), 0)
 			if !ok {
 				panic(fmt.Errorf("unknown item %s", name))
