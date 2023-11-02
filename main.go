@@ -3,16 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/creative"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
 	"os"
 )
 
@@ -23,48 +16,40 @@ func main() {
 
 	chat.Global.Subscribe(chat.StdoutSubscriber{})
 
-	config, err := readConfig()
+	conf, err := readConfig(log)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	for _, direction := range cube.Directions() {
-		world.RegisterBlock(block.Pig{Facing: direction})
-	}
-	world.RegisterItem(block.Pig{})
-	creative.RegisterItem(item.NewStack(block.Pig{}, 1))
-
-	srv := server.New(&config, log)
+	srv := conf.New()
 	srv.CloseOnProgramEnd()
-	if err := srv.Start(); err != nil {
-		log.Fatalln(err)
-	}
 
-	for srv.Accept(func(p *player.Player) {
-		p.Inventory().AddItem(item.NewStack(block.Pig{}, 32))
-	}) {
+	srv.Listen()
+	for srv.Accept(nil) {
 	}
 }
 
-// readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.
-func readConfig() (server.Config, error) {
+// readConfig reads the configuration from the config.toml file, or creates the
+// file if it does not yet exist.
+func readConfig(log server.Logger) (server.Config, error) {
 	c := server.DefaultConfig()
+	var zero server.Config
 	if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
 		data, err := toml.Marshal(c)
 		if err != nil {
-			return c, fmt.Errorf("failed encoding default config: %v", err)
+			return zero, fmt.Errorf("encode default config: %v", err)
 		}
-		if err := ioutil.WriteFile("config.toml", data, 0644); err != nil {
-			return c, fmt.Errorf("failed creating config: %v", err)
+		if err := os.WriteFile("config.toml", data, 0644); err != nil {
+			return zero, fmt.Errorf("create default config: %v", err)
 		}
-		return c, nil
+		return c.Config(log)
 	}
-	data, err := ioutil.ReadFile("config.toml")
+	data, err := os.ReadFile("config.toml")
 	if err != nil {
-		return c, fmt.Errorf("error reading config: %v", err)
+		return zero, fmt.Errorf("read config: %v", err)
 	}
 	if err := toml.Unmarshal(data, &c); err != nil {
-		return c, fmt.Errorf("error decoding config: %v", err)
+		return zero, fmt.Errorf("decode config: %v", err)
 	}
-	return c, nil
+	return c.Config(log)
 }

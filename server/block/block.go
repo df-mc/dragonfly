@@ -2,11 +2,12 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"time"
 )
 
@@ -16,7 +17,7 @@ type Activatable interface {
 	// Activate activates the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was activated and the viewer that activated it.
 	// Activate returns a bool indicating if activating the block was used successfully.
-	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User) bool
+	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool
 }
 
 // Pickable represents a block that may give a different item then the block itself when picked.
@@ -117,7 +118,7 @@ func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 	pos := cube.PosFromVec3(userPos)
 	if abs(pos[0]-placePos[0]) < 2 && abs(pos[2]-placePos[2]) < 2 {
 		y := userPos[1]
-		if eyed, ok := user.(entity.Eyed); ok {
+		if eyed, ok := user.(interface{ EyeHeight() float64 }); ok {
 			y += eyed.EyeHeight()
 		}
 
@@ -127,7 +128,7 @@ func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 			return cube.FaceDown
 		}
 	}
-	return user.Facing().Opposite().Face()
+	return user.Rotation().Direction().Opposite().Face()
 }
 
 func abs(x int) int {
@@ -232,11 +233,11 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.World) bool {
 
 // fall spawns a falling block entity at the given position.
 func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
-	_, air := w.Block(pos.Side(cube.FaceDown)).(Air)
+	_, air := w.Block(pos.Side(cube.FaceDown)).Model().(model.Empty)
 	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
 		w.SetBlock(pos, nil, nil)
-		w.AddEntity(entity.NewFallingBlock(b, pos.Vec3Middle()))
+		w.AddEntity(w.EntityRegistry().Config().FallingBlock(b, pos.Vec3Centre()))
 	}
 }
 
@@ -269,6 +270,35 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 		Flammability:  flammability,
 		LavaFlammable: lavaFlammable,
 	}
+}
+
+// livingEntity ...
+type livingEntity interface {
+	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
+	// immune for half a second after being attacked.
+	AttackImmune() bool
+	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
+	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
+	// If the final damage exceeds the health that the entity currently has, the entity is killed.
+	// Hurt returns the final amount of damage dealt to the Living entity and returns whether the Living entity
+	// was vulnerable to the damage at all.
+	Hurt(damage float64, src world.DamageSource) (n float64, vulnerable bool)
+}
+
+// flammableEntity ...
+type flammableEntity interface {
+	// OnFireDuration returns duration of fire in ticks.
+	OnFireDuration() time.Duration
+	// SetOnFire sets the entity on fire for the specified duration.
+	SetOnFire(duration time.Duration)
+	// Extinguish extinguishes the entity.
+	Extinguish()
+}
+
+// dropItem ...
+func dropItem(w *world.World, it item.Stack, pos mgl64.Vec3) {
+	create := w.EntityRegistry().Config().Item
+	w.AddEntity(create(it, pos, mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}))
 }
 
 // bass is a struct that may be embedded for blocks that create a bass sound.

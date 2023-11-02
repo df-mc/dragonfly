@@ -15,6 +15,7 @@ import (
 type WoodDoor struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the door. This field must have one of the values found in the material
 	// package.
@@ -79,7 +80,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
 		return false
 	}
-	d.Facing = user.Facing()
+	d.Facing = user.Rotation().Direction()
 	left := w.Block(pos.Side(d.Facing.RotateLeft().Face()))
 	right := w.Block(pos.Side(d.Facing.RotateRight().Face()))
 	if door, ok := left.(WoodDoor); ok {
@@ -99,12 +100,12 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	ctx.IgnoreBBox = true
 	place(w, pos, d, user, ctx)
 	place(w, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
-	ctx.CountSub = 1
+	ctx.SubtractFromCount(1)
 	return placed(ctx)
 }
 
 // Activate ...
-func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
+func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	d.Open = !d.Open
 	w.SetBlock(pos, d, nil)
 
@@ -114,20 +115,17 @@ func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.Use
 		door.Open = d.Open
 		w.SetBlock(otherPos, door, nil)
 	}
-
-	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	if d.Open {
+		w.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+		return true
+	}
+	w.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
 	return true
 }
 
 // BreakInfo ...
 func (d WoodDoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(d))
-}
-
-// CanDisplace ...
-func (d WoodDoor) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
 }
 
 // SideClosed ...

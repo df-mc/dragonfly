@@ -36,6 +36,9 @@ type Config struct {
 	// tick or when deciding where to strike lightning. If set to nil, `rand.NewSource(time.Now().Unix())` will be used
 	// to generate a new source.
 	RandSource rand.Source
+	// Entities is an EntityRegistry with all entity types registered that may
+	// be added to the World.
+	Entities EntityRegistry
 }
 
 // Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug
@@ -71,12 +74,13 @@ func (conf Config) New() *World {
 		scheduledUpdates: make(map[cube.Pos]int64),
 		entities:         make(map[Entity]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
-		chunks:           make(map[ChunkPos]*chunkData),
+		chunks:           make(map[ChunkPos]*Column),
 		closing:          make(chan struct{}),
 		handler:          *atomic.NewValue[Handler](NopHandler{}),
 		r:                rand.New(conf.RandSource),
 		advance:          s.ref.Inc() == 1,
 		conf:             conf,
+		ra:               conf.Dim.Range(),
 		set:              s,
 	}
 	w.weather, w.ticker = weather{w: w}, ticker{w: w}

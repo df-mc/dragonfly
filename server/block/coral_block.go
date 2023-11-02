@@ -48,12 +48,12 @@ func (c CoralBlock) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 
 // BreakInfo ...
 func (c CoralBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(7, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(CoralBlock{Type: c.Type, Dead: true}, c))
+	return newBreakInfo(7, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(CoralBlock{Type: c.Type, Dead: true}, c)).withBlastResistance(4.5)
 }
 
 // EncodeBlock ...
 func (c CoralBlock) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:coral_block", map[string]any{"coral_color": c.Type.Colour().String(), "dead_bit": c.Dead}
+	return "minecraft:coral_block", map[string]any{"coral_color": c.Type.Colour().SilverString(), "dead_bit": c.Dead}
 }
 
 // EncodeItem ...

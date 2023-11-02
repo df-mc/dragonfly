@@ -14,17 +14,12 @@ type DragonEgg struct {
 	solid
 	transparent
 	gravityAffected
+	sourceWaterDisplacer
 }
 
 // NeighbourUpdateTick ...
 func (d DragonEgg) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	d.fall(d, pos, w)
-}
-
-// CanDisplace ...
-func (d DragonEgg) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
 }
 
 // SideClosed ...
@@ -60,7 +55,7 @@ func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 }
 
 // Activate ...
-func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
+func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	d.teleport(pos, w)
 	return true
 }

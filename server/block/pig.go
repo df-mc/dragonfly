@@ -84,7 +84,7 @@ func (p Pig) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 		return
 	}
 
-	p.Facing = user.Facing()
+	p.Facing = user.Rotation().Direction().RotateRight()
 	place(w, pos, p, user, ctx)
 	return placed(ctx)
 }

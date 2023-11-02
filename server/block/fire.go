@@ -4,9 +4,9 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 	"time"
@@ -52,7 +52,7 @@ func max(a, b int) int {
 // infinitelyBurning returns true if fire can infinitely burn at the specified position.
 func infinitelyBurning(pos cube.Pos, w *world.World) bool {
 	switch block := w.Block(pos.Side(cube.FaceDown)).(type) {
-	//TODO: Magma Block
+	// TODO: Magma Block
 	case Netherrack:
 		return true
 	case Bedrock:
@@ -66,10 +66,13 @@ func (f Fire) burn(from, to cube.Pos, w *world.World, r *rand.Rand, chanceBound 
 	if flammable, ok := w.Block(to).(Flammable); ok && r.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
 		if r.Intn(f.Age+10) < 5 && !rainingAround(to, w) {
 			f.spread(from, to, w, r)
-		} else {
-			w.SetBlock(to, nil, nil)
+			return
 		}
-		//TODO: Light TNT
+		if t, ok := flammable.(TNT); ok {
+			t.Ignite(to, w)
+			return
+		}
+		w.SetBlock(to, nil, nil)
 	}
 }
 
@@ -195,9 +198,9 @@ func (f Fire) spread(from, to cube.Pos, w *world.World, r *rand.Rand) {
 
 // EntityInside ...
 func (f Fire) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if flammable, ok := e.(entity.Flammable); ok {
-		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
-			l.Hurt(f.Type.Damage(), damage.SourceFire{})
+	if flammable, ok := e.(flammableEntity); ok {
+		if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+			l.Hurt(f.Type.Damage(), FireDamageSource{})
 		}
 		if flammable.OnFireDuration() < time.Second*8 {
 			flammable.SetOnFire(8 * time.Second)
@@ -280,4 +283,15 @@ func allFire() (b []world.Block) {
 		b = append(b, Fire{Age: i, Type: SoulFire()})
 	}
 	return
+}
+
+// FireDamageSource is used for damage caused by being in fire.
+type FireDamageSource struct{}
+
+func (FireDamageSource) ReducedByResistance() bool { return true }
+func (FireDamageSource) ReducedByArmour() bool     { return true }
+func (FireDamageSource) Fire() bool                { return true }
+func (FireDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
+	_, prot := e.(enchantment.FireProtection)
+	return prot
 }

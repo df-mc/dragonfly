@@ -3,7 +3,6 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 	"time"
 )
 
@@ -12,30 +11,11 @@ type EnderPearl struct{}
 
 // Use ...
 func (e EnderPearl) Use(w *world.World, user User, ctx *UseContext) bool {
-	pearl, ok := world.EntityByName("minecraft:ender_pearl")
-	if !ok {
-		return false
-	}
-
-	p, ok := pearl.(interface {
-		New(pos, vel mgl64.Vec3, yaw, pitch float64) world.Entity
-	})
-	if !ok {
-		return false
-	}
-
-	yaw, pitch := user.Rotation()
-	entity := p.New(eyePosition(user), directionVector(user).Mul(1.5), yaw, pitch)
-	if o, ok := entity.(owned); ok {
-		o.Own(user)
-	}
-
-	ctx.SubtractFromCount(1)
-
+	create := w.EntityRegistry().Config().EnderPearl
+	w.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(1.5), user))
 	w.PlaySound(user.Position(), sound.ItemThrow{})
 
-	w.AddEntity(entity)
-
+	ctx.SubtractFromCount(1)
 	return true
 }
 

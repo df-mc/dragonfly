@@ -79,9 +79,7 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	joinMessage, quitMessage *atomic.Value[string]
-
-	switchingWorld atomic.Bool
+	joinMessage, quitMessage string
 
 	closeBackground chan struct{}
 }
@@ -141,7 +139,7 @@ var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Spawn().
-func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *atomic.Value[string]) *Session {
+func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage string) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -175,7 +173,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage *at
 
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
-func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
+func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
 	s.onStop = onStop
 	s.c = c
 	s.recipes = make(map[uint32]recipe.Recipe)
@@ -183,14 +181,13 @@ func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onSto
 	s.entities[selfEntityRuntimeID] = c
 
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
-	spawn := w.Spawn()
-	s.chunkLoader.Move(spawn.Vec3Middle())
+	s.chunkLoader.Move(pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(spawn[0]), int32(spawn[1]), int32(spawn[2])},
+		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
-	s.sendAvailableEntities()
+	s.sendAvailableEntities(w)
 
 	s.initPlayerList()
 
@@ -202,8 +199,8 @@ func (s *Session) Spawn(c Controllable, w *world.World, gm world.GameMode, onSto
 	}
 
 	chat.Global.Subscribe(c)
-	if j := s.joinMessage.Load(); j != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+	if s.joinMessage != "" {
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
 	}
 
 	s.sendInv(s.inv, protocol.WindowIDInventory)
@@ -262,8 +259,8 @@ func (s *Session) close() {
 	s.entityRuntimeIDs, s.entities = map[world.Entity]uint64{}, map[uint64]world.Entity{}
 	s.entityMutex.Unlock()
 
-	if j := s.quitMessage.Load(); j != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(j, s.conn.IdentityData().DisplayName)))
+	if s.quitMessage != "" {
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
 	}
 	chat.Global.Unsubscribe(s.c)
 }
@@ -321,22 +318,6 @@ func (s *Session) handlePackets() {
 	}
 }
 
-// craftingSize gets the crafting size based on the opened container ID.
-func (s *Session) craftingSize() uint32 {
-	if s.openedContainerID.Load() == 1 {
-		return craftingGridSizeLarge
-	}
-	return craftingGridSizeSmall
-}
-
-// craftingOffset gets the crafting offset based on the opened container ID.
-func (s *Session) craftingOffset() uint32 {
-	if s.openedContainerID.Load() == 1 {
-		return craftingGridLargeOffset
-	}
-	return craftingGridSmallOffset
-}
-
 // background performs background tasks of the Session. This includes chunk sending and automatic command updating.
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {
@@ -374,6 +355,13 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks() {
+	pos := s.c.Position()
+	s.chunkLoader.Move(pos)
+	s.writePacket(&packet.NetworkChunkPublisherUpdate{
+		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		Radius:   uint32(s.chunkRadius) << 4,
+	})
+
 	const maxChunkTransactions = 8
 
 	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
@@ -405,12 +393,11 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 		s.blobMu.Unlock()
 	}
 
-	same, dim := w.Dimension() == s.chunkLoader.World().Dimension(), int32(w.Dimension().EncodeDimension())
-	if same {
-		dim = (dim + 1) % 3
-		s.switchingWorld.Store(true)
+	dim, _ := world.DimensionID(w.Dimension())
+	same := w.Dimension() == s.chunkLoader.World().Dimension()
+	if !same {
+		s.changeDimension(int32(dim), false)
 	}
-	s.changeDimension(dim, same)
 	s.ViewEntityTeleport(s.c, s.c.Position())
 	s.chunkLoader.ChangeWorld(w)
 }
@@ -421,6 +408,13 @@ func (s *Session) changeDimension(dim int32, silent bool) {
 	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
 	s.writePacket(&packet.StopSound{StopAll: silent})
 	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
+
+	// As of v1.19.50, the dimension ack that is meant to be sent by the client is now sent by the server. The client
+	// still sends the ack, but after the server has sent it. Thanks to Mojang for another groundbreaking change.
+	s.writePacket(&packet.PlayerAction{
+		EntityRuntimeID: selfEntityRuntimeID,
+		ActionType:      protocol.PlayerActionDimensionChangeDone,
+	})
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -450,6 +444,7 @@ func (s *Session) registerHandlers() {
 		packet.IDAnvilDamage:           nil,
 		packet.IDBlockActorData:        &BlockActorDataHandler{},
 		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
+		packet.IDBookEdit:              &BookEditHandler{},
 		packet.IDBossEvent:             nil,
 		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
 		packet.IDCommandRequest:        &CommandRequestHandler{},
@@ -461,8 +456,8 @@ func (s *Session) registerHandlers() {
 		packet.IDInteract:              &InteractHandler{},
 		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
 		packet.IDItemFrameDropItem:     nil,
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: make(map[byte]map[byte]changeInfo), responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
-		packet.IDLevelSoundEvent:       &LevelSoundEventHandler{},
+		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: map[byte]map[byte]changeInfo{}, responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
+		packet.IDLecternUpdate:         &LecternUpdateHandler{},
 		packet.IDMobEquipment:          &MobEquipmentHandler{},
 		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:            nil,
@@ -480,7 +475,7 @@ func (s *Session) registerHandlers() {
 
 // handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
 // in the future.
-func (s *Session) handleInterfaceUpdate(slot int, item item.Stack) {
+func (s *Session) handleInterfaceUpdate(slot int, _, item item.Stack) {
 	if slot == enchantingInputSlot && s.containerOpened.Load() {
 		pos := s.openedPos.Load()
 		b := s.c.World().Block(pos)
@@ -526,23 +521,21 @@ func (s *Session) closePlayerList() {
 	sessionMu.Unlock()
 }
 
-// sendAvailableEntities sends all registered entities to the player.
-func (s *Session) sendAvailableEntities() {
-	// actorIdentifier represents the structure of an actor identifier sent over the network.
-	type actorIdentifier struct {
-		// Unique namespaced identifier for an entity.
-		ID string `nbt:"id"`
-	}
+// actorIdentifier represents the structure of an actor identifier sent over the network.
+type actorIdentifier struct {
+	// ID is a unique namespaced identifier for the entity.
+	ID string `nbt:"id"`
+}
 
-	entities := world.Entities()
-	var entityData []actorIdentifier
-	for _, entity := range entities {
-		id := entity.EncodeEntity()
-		entityData = append(entityData, actorIdentifier{ID: id})
+// sendAvailableEntities sends all registered entities to the player.
+func (s *Session) sendAvailableEntities(w *world.World) {
+	var identifiers []actorIdentifier
+	for _, t := range w.EntityRegistry().Types() {
+		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
-	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": entityData})
+	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {
-		panic(fmt.Errorf("failed to serialize entity data: %v", err))
+		panic("should never happen")
 	}
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }

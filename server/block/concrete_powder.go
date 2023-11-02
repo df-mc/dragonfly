@@ -41,12 +41,12 @@ func (c ConcretePowder) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (c ConcretePowder) EncodeItem() (name string, meta int16) {
-	return "minecraft:concrete_powder", int16(c.Colour.Uint8())
+	return "minecraft:" + c.Colour.String() + "_concrete_powder", 0
 }
 
 // EncodeBlock ...
 func (c ConcretePowder) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:concrete_powder", map[string]any{"color": c.Colour.String()}
+	return "minecraft:" + c.Colour.String() + "_concrete_powder", nil
 }
 
 // allConcretePowder returns concrete powder with all possible colours.

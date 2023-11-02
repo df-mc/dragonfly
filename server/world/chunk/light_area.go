@@ -134,8 +134,9 @@ func (a *lightArea) iterEdges(filter func(a, b *SubChunk) bool, f func(a, b cube
 
 // iterHeightmap iterates over the height map of the lightArea and calls the function f with the height map value, the
 // height map value of the highest neighbour and the Y value of the highest non-empty SubChunk.
-func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
+func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY, lowestY int)) {
 	m, highestY := a.c[0].HeightMap(), a.c[0].Range().Min()
+	lowestY := highestY
 	for index := range a.c[0].sub {
 		if a.c[0].sub[index].Empty() {
 			continue
@@ -144,7 +145,7 @@ func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, hig
 	}
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.At(x, z)), int(m.HighestNeighbour(x, z)), highestY)
+			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.At(x, z)), int(m.HighestNeighbour(x, z)), highestY, lowestY)
 		}
 	}
 }

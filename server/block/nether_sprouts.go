@@ -52,6 +52,11 @@ func (n NetherSprouts) BreakInfo() BreakInfo {
 	}, nothingEffective, oneOf(n))
 }
 
+// CompostChance ...
+func (NetherSprouts) CompostChance() float64 {
+	return 0.5
+}
+
 // EncodeItem ...
 func (n NetherSprouts) EncodeItem() (name string, meta int16) {
 	return "minecraft:nether_sprouts", 0

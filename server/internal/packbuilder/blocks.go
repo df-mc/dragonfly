@@ -15,6 +15,8 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
+var formatVersion = "1.12.0" // TODO: This should be set by the user
+
 // buildBlocks builds all of the block-related files for the resource pack. This includes textures, geometries, language
 // entries and terrain texture atlas.
 func buildBlocks(dir string) (count int, lang []string) {

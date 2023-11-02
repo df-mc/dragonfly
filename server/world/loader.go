@@ -17,7 +17,7 @@ type Loader struct {
 	mu        sync.RWMutex
 	pos       ChunkPos
 	loadQueue []ChunkPos
-	loaded    map[ChunkPos]*chunkData
+	loaded    map[ChunkPos]*Column
 
 	closed bool
 }
@@ -27,7 +27,7 @@ type Loader struct {
 // The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
-	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*chunkData), viewer: v}
+	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*Column), viewer: v}
 	l.world(world)
 	return l
 }
@@ -74,14 +74,13 @@ func (l *Loader) Move(pos mgl64.Vec3) {
 }
 
 // Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
-// every chunk loaded, the function f is called.
-// The function f must not hold the chunk beyond the function scope.
-// An error is returned if one of the chunks could not be loaded.
+// every chunk loaded, the Viewer passed through construction in New has its ViewChunk method called.
+// Load does nothing for n <= 0.
 func (l *Loader) Load(n int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if n == 0 || l.closed || l.w == nil {
+	if l.closed || l.w == nil {
 		return
 	}
 	for i := 0; i < n; i++ {
@@ -92,7 +91,7 @@ func (l *Loader) Load(n int) {
 		pos := l.loadQueue[0]
 		c := l.w.chunk(pos)
 
-		l.viewer.ViewChunk(pos, c.Chunk, c.e)
+		l.viewer.ViewChunk(pos, c.Chunk, c.BlockEntities)
 		l.w.addViewer(c, l)
 
 		l.loaded[pos] = c
@@ -105,7 +104,7 @@ func (l *Loader) Load(n int) {
 
 // Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
 // be false.
-func (l *Loader) Chunk(pos ChunkPos) (*chunkData, bool) {
+func (l *Loader) Chunk(pos ChunkPos) (*Column, bool) {
 	l.mu.RLock()
 	c, ok := l.loaded[pos]
 	l.mu.RUnlock()
@@ -130,6 +129,7 @@ func (l *Loader) Reset() {
 	defer l.mu.Unlock()
 
 	l.reset()
+	l.w.addWorldViewer(l)
 	l.populateLoadQueue()
 }
 
@@ -138,7 +138,7 @@ func (l *Loader) reset() {
 	for pos := range l.loaded {
 		l.w.removeViewer(pos, l)
 	}
-	l.loaded = map[ChunkPos]*chunkData{}
+	l.loaded = map[ChunkPos]*Column{}
 	l.w.removeWorldViewer(l)
 }
 

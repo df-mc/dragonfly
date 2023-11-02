@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -32,7 +31,7 @@ func (w Water) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
-	if flammable, ok := e.(entity.Flammable); ok {
+	if flammable, ok := e.(flammableEntity); ok {
 		flammable.Extinguish()
 	}
 }
@@ -68,6 +67,11 @@ func (w Water) LiquidFalling() bool {
 	return w.Falling
 }
 
+// BlastResistance always returns 500.
+func (Water) BlastResistance() float64 {
+	return 500
+}
+
 // HasLiquidDrops ...
 func (Water) HasLiquidDrops() bool {
 	return false
@@ -96,7 +100,12 @@ func (w Water) ScheduledTick(pos cube.Pos, wo *world.World, _ *rand.Rand) {
 			if !canFlowInto(w, wo, pos.Side(cube.FaceDown), true) {
 				// Only form a new source block if there either is no water below this block, or if the water
 				// below this is not falling (full source block).
-				wo.SetLiquid(pos, Water{Depth: 8, Still: true})
+				res := Water{Depth: 8, Still: true}
+				ctx := event.C()
+				if wo.Handler().HandleLiquidFlow(ctx, pos, pos, res, w); ctx.Cancelled() {
+					return
+				}
+				wo.SetLiquid(pos, res)
 			}
 		}
 	}

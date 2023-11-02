@@ -32,7 +32,7 @@ func (p Pumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 	if !used {
 		return
 	}
-	p.Facing = user.Facing().Opposite()
+	p.Facing = user.Rotation().Direction().Opposite()
 
 	place(w, pos, p, user, ctx)
 	return placed(ctx)
@@ -41,6 +41,11 @@ func (p Pumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 // BreakInfo ...
 func (p Pumpkin) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(p))
+}
+
+// CompostChance ...
+func (Pumpkin) CompostChance() float64 {
+	return 0.65
 }
 
 // Carve ...
@@ -79,9 +84,9 @@ func (p Pumpkin) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (p Pumpkin) EncodeBlock() (name string, properties map[string]any) {
 	if p.Carved {
-		return "minecraft:carved_pumpkin", map[string]any{"direction": int32(horizontalDirection(p.Facing))}
+		return "minecraft:carved_pumpkin", map[string]any{"minecraft:cardinal_direction": p.Facing.String()}
 	}
-	return "minecraft:pumpkin", map[string]any{"direction": int32(horizontalDirection(p.Facing))}
+	return "minecraft:pumpkin", map[string]any{"minecraft:cardinal_direction": p.Facing.String()}
 }
 
 func allPumpkins() (pumpkins []world.Block) {

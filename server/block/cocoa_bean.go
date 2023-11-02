@@ -92,7 +92,12 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(c, rand.Intn(2)+2)}
 		}
 		return []item.Stack{item.NewStack(c, 1)}
-	})
+	}).withBlastResistance(15)
+}
+
+// CompostChance ...
+func (CocoaBean) CompostChance() float64 {
+	return 0.65
 }
 
 // EncodeItem ...

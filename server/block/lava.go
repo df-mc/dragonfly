@@ -2,8 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -42,9 +40,9 @@ func (l Lava) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
-	if flammable, ok := e.(entity.Flammable); ok {
-		if l, ok := e.(entity.Living); ok && !l.AttackImmune() {
-			l.Hurt(4, damage.SourceLava{})
+	if flammable, ok := e.(flammableEntity); ok {
+		if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+			l.Hurt(4, LavaDamageSource{})
 		}
 		flammable.SetOnFire(15 * time.Second)
 	}
@@ -124,6 +122,11 @@ func (l Lava) WithDepth(depth int, falling bool) world.Liquid {
 // LiquidFalling checks if the lava is falling.
 func (l Lava) LiquidFalling() bool {
 	return l.Falling
+}
+
+// BlastResistance always returns 500.
+func (Lava) BlastResistance() float64 {
+	return 500
 }
 
 // LiquidType returns 10 as a unique identifier for the lava liquid.
@@ -221,3 +224,10 @@ func allLava() (b []world.Block) {
 	f(false, true)
 	return
 }
+
+// LavaDamageSource is used for damage caused by being in lava.
+type LavaDamageSource struct{}
+
+func (LavaDamageSource) ReducedByResistance() bool { return true }
+func (LavaDamageSource) ReducedByArmour() bool     { return true }
+func (LavaDamageSource) Fire() bool                { return true }

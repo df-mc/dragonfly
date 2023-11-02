@@ -54,9 +54,9 @@ func (s Smoker) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (s Smoker) EncodeBlock() (name string, properties map[string]interface{}) {
 	if s.Lit {
-		return "minecraft:lit_smoker", map[string]interface{}{"facing_direction": int32(s.Facing)}
+		return "minecraft:lit_smoker", map[string]interface{}{"minecraft:cardinal_direction": s.Facing.String()}
 	}
-	return "minecraft:smoker", map[string]interface{}{"facing_direction": int32(s.Facing)}
+	return "minecraft:smoker", map[string]interface{}{"minecraft:cardinal_direction": s.Facing.String()}
 }
 
 // UseOnBlock ...
@@ -66,18 +66,18 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 
-	place(w, pos, NewSmoker(user.Facing().Face().Opposite()), user, ctx)
+	place(w, pos, NewSmoker(user.Rotation().Direction().Face().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (s Smoker) BreakInfo() BreakInfo {
 	xp := s.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, simpleDrops(append(s.inventory.Items(), item.NewStack(s, 1))...)).withXPDropRange(xp, xp)
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(s)).withXPDropRange(xp, xp)
 }
 
 // Activate ...
-func (s Smoker) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (s Smoker) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
@@ -104,11 +104,11 @@ func (s Smoker) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
-	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
-	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
-	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
+	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
+	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
+	cook := nbtconv.TickDuration[int16](data, "CookTime")
 
-	xp := int(nbtconv.Map[int16](data, "StoredXPInt"))
+	xp := int(nbtconv.Int16(data, "StoredXPInt"))
 	lit := s.Lit
 
 	//noinspection GoAssignmentToReceiver
@@ -116,13 +116,13 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 	s.Lit = lit
 	s.setExperience(xp)
 	s.setDurations(remaining, maximum, cook)
-	nbtconv.InvFromNBT(s.Inventory(), nbtconv.Map[[]any](data, "Items"))
+	nbtconv.InvFromNBT(s.Inventory(), nbtconv.Slice(data, "Items"))
 	return s
 }
 
 // allSmokers ...
 func allSmokers() (smokers []world.Block) {
-	for _, face := range cube.Faces() {
+	for _, face := range cube.HorizontalFaces() {
 		smokers = append(smokers, Smoker{Facing: face})
 		smokers = append(smokers, Smoker{Facing: face, Lit: true})
 	}

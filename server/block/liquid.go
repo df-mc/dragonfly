@@ -2,13 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
 	"sync"
 )
 
@@ -18,16 +15,38 @@ type LiquidRemovable interface {
 	HasLiquidDrops() bool
 }
 
+// sourceWaterDisplacer may be embedded to allow displacing water source blocks.
+type sourceWaterDisplacer struct{}
+
+// CanDisplace returns true if the world.Liquid passed is of the type Water, not falling and has a depth of 8.
+func (s sourceWaterDisplacer) CanDisplace(b world.Liquid) bool {
+	w, ok := b.(Water)
+	return ok && !w.Falling && w.Depth == 8
+}
+
+// flowingWaterDisplacer may be embedded to allow displacing water source blocks or flowing water.
+type flowingWaterDisplacer struct{}
+
+// CanDisplace returns true if the world.Liquid passed is of the type Water.
+func (s flowingWaterDisplacer) CanDisplace(b world.Liquid) bool {
+	_, ok := b.(Water)
+	return ok
+}
+
 // tickLiquid ticks the liquid block passed at a specific position in the world. Depending on the surroundings
 // and the liquid block, the liquid will either spread or decrease in depth. Additionally, the liquid might
 // be turned into a solid block if a different liquid is next to it.
 func tickLiquid(b world.Liquid, pos cube.Pos, w *world.World) {
 	if !source(b) && !sourceAround(b, pos, w) {
-		if b.LiquidDepth()-4 <= 0 {
-			w.SetLiquid(pos, nil)
+		var res world.Liquid
+		if b.LiquidDepth()-4 > 0 {
+			res = b.WithDepth(b.LiquidDepth()-2*b.SpreadDecay(), false)
+		}
+		ctx := event.C()
+		if w.Handler().HandleLiquidDecay(ctx, pos, b, res); ctx.Cancelled() {
 			return
 		}
-		w.SetLiquid(pos, b.WithDepth(b.LiquidDepth()-2*b.SpreadDecay(), false))
+		w.SetLiquid(pos, res)
 		return
 	}
 	displacer, _ := w.Block(pos).(world.LiquidDisplacer)
@@ -129,34 +148,36 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		existingLiquid.Harden(pos, w, &src)
 		return false
 	}
-	if _, ok := existing.(world.LiquidDisplacer); ok {
+	displacer, isDisplacer := existing.(world.LiquidDisplacer)
+	if isDisplacer {
 		if _, ok := w.Liquid(pos); ok {
-			// We've got a liquid displacer and it's got a liquid within it, so we can't flow into this.
+			// We've got a liquid displacer, and it's got a liquid within it, so we can't flow into this.
 			return false
 		}
 	}
-	removable, ok := existing.(LiquidRemovable)
-	if !ok {
+	removable, isRemovable := existing.(LiquidRemovable)
+	if !isRemovable && (!isDisplacer || !displacer.CanDisplace(b.WithDepth(newDepth, falling))) {
 		// Can't flow into this block.
 		return false
-	}
-	if _, air := existing.(Air); !air {
-		w.SetBlock(pos, nil, nil)
-	}
-	if removable.HasLiquidDrops() {
-		if b, ok := existing.(Breakable); ok {
-			for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
-				itemEntity := entity.NewItem(d, pos.Vec3Centre())
-				itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-				w.AddEntity(itemEntity)
-			}
-		} else {
-			panic("liquid drops should always implement breakable")
-		}
 	}
 	ctx := event.C()
 	if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
 		return false
+	}
+
+	if isRemovable {
+		if _, air := existing.(Air); !air {
+			w.SetBlock(pos, nil, nil)
+		}
+		if removable.HasLiquidDrops() {
+			if b, ok := existing.(Breakable); ok {
+				for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
+					dropItem(w, d, pos.Vec3Centre())
+				}
+			} else {
+				panic("liquid drops should always implement breakable")
+			}
+		}
 	}
 	w.SetLiquid(pos, b.WithDepth(newDepth, falling))
 	return true
@@ -255,6 +276,12 @@ func canFlowInto(b world.Liquid, w *world.World, pos cube.Pos, sideways bool) bo
 			}
 		}
 		return true
+	}
+	if dis, ok := bl.(world.LiquidDisplacer); ok {
+		res := b.WithDepth(b.LiquidDepth()-b.SpreadDecay(), !sideways)
+		if dis.CanDisplace(res) {
+			return true
+		}
 	}
 	return false
 }

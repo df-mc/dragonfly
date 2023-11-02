@@ -130,8 +130,8 @@ func Components(identifier string, group []world.CustomBlock) (map[string]any, e
 	if c, ok := base.(world.CustomItem); ok {
 		category := c.Category()
 		builder.AddComponent("minecraft:creative_category", map[string]any{
-			"category": category.Name(),
-			"group":    category.String(),
+			"category": category.String(),
+			"group":    category.Group(),
 		})
 	}
 	return builder.Construct(), nil

@@ -15,7 +15,7 @@ type Prismarine struct {
 
 // BreakInfo ...
 func (p Prismarine) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p))
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p)).withBlastResistance(30)
 }
 
 // EncodeItem ...
@@ -33,6 +33,5 @@ func allPrismarine() (c []world.Block) {
 	for _, t := range PrismarineTypes() {
 		c = append(c, Prismarine{Type: t})
 	}
-
 	return
 }

@@ -134,7 +134,11 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 
 	loaded := make([]ChunkPos, 0, len(loaders))
 	for _, loader := range loaders {
-		loaded = append(loaded, loader.pos)
+		loader.mu.RLock()
+		pos := loader.pos
+		loader.mu.RUnlock()
+
+		loaded = append(loaded, pos)
 	}
 
 	t.w.chunkMu.Lock()
@@ -144,7 +148,7 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 			continue
 		}
 		c.Lock()
-		blockEntities = append(blockEntities, maps.Keys(c.e)...)
+		blockEntities = append(blockEntities, maps.Keys(c.BlockEntities)...)
 
 		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
 
@@ -204,7 +208,7 @@ func (t ticker) anyWithinDistance(pos ChunkPos, loaded []ChunkPos, r int32) bool
 func (t ticker) tickEntities(tick int64) {
 	type entityToMove struct {
 		e             Entity
-		after         *chunkData
+		after         *Column
 		viewersBefore []Viewer
 	}
 	var (
@@ -223,7 +227,7 @@ func (t ticker) tickEntities(tick int64) {
 		}
 
 		c.Lock()
-		v := len(c.v)
+		v := len(c.viewers)
 		c.Unlock()
 
 		if v > 0 {
@@ -243,8 +247,8 @@ func (t ticker) tickEntities(tick int64) {
 			// the loaders from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := t.w.chunks[lastPos]; ok {
 				old.Lock()
-				old.entities = sliceutil.DeleteVal(old.entities, e)
-				viewers = slices.Clone(old.v)
+				old.Entities = sliceutil.DeleteVal(old.Entities, e)
+				viewers = slices.Clone(old.viewers)
 				old.Unlock()
 			}
 			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
@@ -255,8 +259,8 @@ func (t ticker) tickEntities(tick int64) {
 
 	for _, move := range entitiesToMove {
 		move.after.Lock()
-		move.after.entities = append(move.after.entities, move.e)
-		viewersAfter := move.after.v
+		move.after.Entities = append(move.after.Entities, move.e)
+		viewersAfter := move.after.viewers
 		move.after.Unlock()
 
 		for _, viewer := range move.viewersBefore {
@@ -275,9 +279,12 @@ func (t ticker) tickEntities(tick int64) {
 		}
 	}
 	for _, ticker := range entitiesToTick {
-		// We gather entities to ticker and ticker them later, so that the lock on the entity mutex is no longer
-		// active.
-		ticker.Tick(t.w, tick)
+		// Make sure the entity is still in world and has not been closed.
+		if ticker.World() == t.w {
+			// We gather entities to ticker and ticker them later, so that the lock on the entity mutex is no longer
+			// active.
+			ticker.Tick(t.w, tick)
+		}
 	}
 }
 

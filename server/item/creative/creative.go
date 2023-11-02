@@ -1,7 +1,6 @@
 package creative
 
 import (
-	"bytes"
 	_ "embed"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	// The following three imports are essential for this package: They make sure this package is loaded after
@@ -33,36 +32,29 @@ var (
 
 // creativeItemEntry holds data of a creative item as present in the creative inventory.
 type creativeItemEntry struct {
-	Name  string         `nbt:"name"`
-	Meta  int16          `nbt:"meta"`
-	NBT   map[string]any `nbt:"nbt,omitempty"`
-	Block struct {
-		Name       string         `nbt:"name"`
-		Properties map[string]any `nbt:"states"`
-		Version    int32          `nbt:"version"`
-	} `nbt:"block,omitempty"`
+	Name            string         `nbt:"name"`
+	Meta            int16          `nbt:"meta"`
+	NBT             map[string]any `nbt:"nbt,omitempty"`
+	BlockProperties map[string]any `nbt:"block_properties,omitempty"`
 }
 
 // init initialises the creative items, registering all creative items that have also been registered as
 // normal items and are present in vanilla.
 func init() {
-	dec := nbt.NewDecoder(bytes.NewBuffer(creativeItemData))
-
-	// Register all creative items present in the creative_items.nbt file.
-	for {
-		var data creativeItemEntry
-		if err := dec.Decode(&data); err != nil {
-			break
-		}
+	var m []creativeItemEntry
+	if err := nbt.Unmarshal(creativeItemData, &m); err != nil {
+		panic(err)
+	}
+	for _, data := range m {
 		var (
 			it world.Item
 			ok bool
 		)
-		if data.Block.Version > 0 {
+		if len(data.BlockProperties) > 0 {
 			// Item with a block, try parsing the block, then try asserting that to an item. Blocks no longer
 			// have their metadata sent, but we still need to get that metadata in order to be able to register
 			// different block states as different items.
-			if b, ok := world.BlockByName(data.Block.Name, data.Block.Properties); ok {
+			if b, ok := world.BlockByName(data.Name, data.BlockProperties); ok {
 				if it, ok = b.(world.Item); !ok {
 					continue
 				}
@@ -88,14 +80,14 @@ func init() {
 		st := item.NewStack(it, 1)
 		if len(data.NBT) > 0 {
 			var invalid bool
-			for _, e := range nbtconv.Map[[]any](data.NBT, "ench") {
+			for _, e := range nbtconv.Slice(data.NBT, "ench") {
 				if v, ok := e.(map[string]any); ok {
-					t, ok := item.EnchantmentByID(int(nbtconv.Map[int16](v, "id")))
+					t, ok := item.EnchantmentByID(int(nbtconv.Int16(v, "id")))
 					if !ok {
 						invalid = true
 						break
 					}
-					st = st.WithEnchantments(item.NewEnchantment(t, int(nbtconv.Map[int16](v, "lvl"))))
+					st = st.WithEnchantments(item.NewEnchantment(t, int(nbtconv.Int16(v, "lvl"))))
 				}
 			}
 			if invalid {

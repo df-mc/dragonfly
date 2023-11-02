@@ -27,11 +27,11 @@ func (a Anvil) Model() world.BlockModel {
 
 // BreakInfo ...
 func (a Anvil) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a)).withBlastResistance(6000)
 }
 
 // Activate ...
-func (Anvil) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (Anvil) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
@@ -45,7 +45,7 @@ func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	if !used {
 		return
 	}
-	a.Facing = user.Facing().RotateRight()
+	a.Facing = user.Rotation().Direction().RotateRight()
 	place(w, pos, a, user, ctx)
 	return placed(ctx)
 }
@@ -81,14 +81,14 @@ func (Anvil) Landed(w *world.World, pos cube.Pos) {
 
 // EncodeItem ...
 func (a Anvil) EncodeItem() (name string, meta int16) {
-	return "minecraft:anvil", int16(a.Type.Uint8())
+	return "minecraft:anvil", int16(a.Type.Uint8() * 4)
 }
 
 // EncodeBlock ...
 func (a Anvil) EncodeBlock() (string, map[string]any) {
 	return "minecraft:anvil", map[string]any{
-		"damage":    a.Type.String(),
-		"direction": int32(horizontalDirection(a.Facing)),
+		"damage":                       a.Type.String(),
+		"minecraft:cardinal_direction": a.Facing.String(),
 	}
 }
 

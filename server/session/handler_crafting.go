@@ -2,13 +2,14 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"golang.org/x/exp/slices"
+	"math"
 )
 
 // handleCraft handles the CraftRecipe request action.
@@ -22,7 +23,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
-	if _, ok := craft.Block().(block.CraftingTable); !ok {
+	if craft.Block() != "crafting_table" {
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
@@ -48,7 +49,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
-				ContainerID: containerCraftingGrid,
+				ContainerID: protocol.ContainerCraftingInput,
 				Slot:        byte(slot),
 			}, st, s)
 			break
@@ -57,13 +58,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
-
-	output := craft.Output()
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, craft.Output()...)
 }
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
@@ -77,30 +72,37 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
-
-	input := make([]item.Stack, 0, len(craft.Input()))
-	for _, i := range craft.Input() {
-		input = append(input, i.Grow(i.Count()*(int(a.TimesCrafted)-1)))
+	if craft.Block() != "crafting_table" {
+		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
-	expectancies := make([]item.Stack, 0, len(input))
+	repetitions := int(a.TimesCrafted)
+	input := make([]item.Stack, 0, len(craft.Input()))
+	for _, i := range craft.Input() {
+		input = append(input, i.Grow(i.Count()*(repetitions-1)))
+	}
+
+	flattenedInputs := make([]item.Stack, 0, len(input))
 	for _, i := range input {
 		if i.Empty() {
-			// We don't actually need this item - it's empty, so avoid putting it in our expectancies.
+			// We don't actually need this item - it's empty, so avoid putting it in our flattened inputs.
 			continue
 		}
 
-		if ind := slices.IndexFunc(expectancies, func(st item.Stack) bool {
+		if ind := slices.IndexFunc(flattenedInputs, func(st item.Stack) bool {
 			return matchingStacks(st, i)
 		}); ind >= 0 {
-			i = i.Grow(expectancies[ind].Count())
-			expectancies = slices.Delete(expectancies, ind, ind+1)
+			i = i.Grow(flattenedInputs[ind].Count())
+			flattenedInputs = slices.Delete(flattenedInputs, ind, ind+1)
 		}
-		expectancies = append(expectancies, i)
+		flattenedInputs = append(flattenedInputs, i)
 	}
 
-	for _, expected := range expectancies {
-		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
+	for _, expected := range flattenedInputs {
+		for id, inv := range map[byte]*inventory.Inventory{
+			protocol.ContainerCraftingInput:              s.ui,
+			protocol.ContainerCombinedHotBarAndInventory: s.inv,
+		} {
 			for slot, has := range inv.Slots() {
 				if has.Empty() {
 					// We don't have this item, skip it.
@@ -138,13 +140,18 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 
 	output := make([]item.Stack, 0, len(craft.Output()))
 	for _, o := range craft.Output() {
-		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
+		count, maxCount := o.Count(), o.MaxCount()
+		total := count * repetitions
+
+		stacks := int(math.Ceil(float64(total) / float64(maxCount)))
+		for i := 0; i < stacks; i++ {
+			inc := min(total, maxCount)
+			total -= inc
+
+			output = append(output, o.Grow(inc-count))
+		}
 	}
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, output...)
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -158,12 +165,37 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	}
 	it := creative.Items()[index]
 	it = it.Grow(it.MaxCount() - 1)
+	return h.createResults(s, it)
+}
 
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, it, s)
-	return nil
+// craftingSize gets the crafting size based on the opened container ID.
+func (s *Session) craftingSize() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridSizeLarge
+	}
+	return craftingGridSizeSmall
+}
+
+// craftingOffset gets the crafting offset based on the opened container ID.
+func (s *Session) craftingOffset() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridLargeOffset
+	}
+	return craftingGridSmallOffset
+}
+
+// duplicateStack duplicates an item.Stack with the new item type given.
+func duplicateStack(input item.Stack, newType world.Item) item.Stack {
+	outputStack := item.NewStack(newType, input.Count()).
+		Damage(input.MaxDurability() - input.Durability()).
+		WithCustomName(input.CustomName()).
+		WithLore(input.Lore()...).
+		WithEnchantments(input.Enchantments()...).
+		WithAnvilCost(input.AnvilCost())
+	for k, v := range input.Values() {
+		outputStack = outputStack.WithValue(k, v)
+	}
+	return outputStack
 }
 
 // matchingStacks returns true if the two stacks are the same in a crafting scenario.

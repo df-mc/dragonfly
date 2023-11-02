@@ -54,8 +54,59 @@ type BarrelClose struct{ sound }
 // Deny is a sound played when a block is placed or broken above a 'Deny' block from Education edition.
 type Deny struct{ sound }
 
-// Door is a sound played when a (trap)door is opened or closed.
-type Door struct{ sound }
+// DoorOpen is a sound played when a door is opened.
+type DoorOpen struct {
+	// Block is the block which is being opened, for which a sound should be played. The sound played depends on the
+	// block type.
+	Block world.Block
+
+	sound
+}
+
+// DoorClose is a sound played when a door is closed.
+type DoorClose struct {
+	// Block is the block which is being closed, for which a sound should be played. The sound played depends on the
+	// block type.
+	Block world.Block
+
+	sound
+}
+
+// TrapdoorOpen is a sound played when a trapdoor is opened.
+type TrapdoorOpen struct {
+	// Block is the block which is being opened, for which a sound should be played. The sound played depends on the
+	// block type.
+	Block world.Block
+
+	sound
+}
+
+// TrapdoorClose is a sound played when a trapdoor is closed.
+type TrapdoorClose struct {
+	// Block is the block which is being closed, for which a sound should be played. The sound played depends on the
+	// block type.
+	Block world.Block
+
+	sound
+}
+
+// FenceGateOpen is a sound played when a fence gate is opened.
+type FenceGateOpen struct {
+	// Block is the block which is being opened, for which a sound should be played. The sound played depends on the
+	// block type.
+	Block world.Block
+
+	sound
+}
+
+// FenceGateClose is a sound played when a fence gate is closed.
+type FenceGateClose struct {
+	// Block is the block which is being closed, for which a sound should be played. The sound played depends on the
+	// block type.
+	Block world.Block
+
+	sound
+}
 
 // DoorCrash is a sound played when a door is forced open.
 type DoorCrash struct{ sound }
@@ -65,6 +116,9 @@ type Click struct{ sound }
 
 // Ignite is a sound played when using a flint & steel.
 type Ignite struct{ sound }
+
+// TNT is a sound played when TNT is ignited.
+type TNT struct{ sound }
 
 // FireExtinguish is a sound played when a fire is extinguished.
 type FireExtinguish struct{ sound }
@@ -77,6 +131,17 @@ type Note struct {
 	// Pitch is the pitch of the note.
 	Pitch int
 }
+
+// MusicDiscPlay is a sound played when a music disc has started playing in a jukebox.
+type MusicDiscPlay struct {
+	sound
+
+	// DiscType is the disc type of the music disc.
+	DiscType DiscType
+}
+
+// MusicDiscEnd is a sound played when a music disc has stopped playing in a jukebox.
+type MusicDiscEnd struct{ sound }
 
 // ItemFrameAdd is a sound played when an item is added to an item frame.
 type ItemFrameAdd struct{ sound }
@@ -95,6 +160,21 @@ type BlastFurnaceCrackle struct{ sound }
 
 // SmokerCrackle is a sound played every one to five seconds from a smoker.
 type SmokerCrackle struct{ sound }
+
+// ComposterEmpty is a sound played when a composter has been emptied.
+type ComposterEmpty struct{ sound }
+
+// ComposterFill is a sound played when a composter has been filled, but not gone up a layer.
+type ComposterFill struct{ sound }
+
+// ComposterFillLayer is a sound played when a composter has been filled and gone up a layer.
+type ComposterFillLayer struct{ sound }
+
+// ComposterReady is a sound played when a composter has produced bone meal and is ready to be collected.
+type ComposterReady struct{ sound }
+
+// LecternBookPlace is a sound played when a book is placed in a lectern.
+type LecternBookPlace struct{ sound }
 
 // sound implements the world.Sound interface.
 type sound struct{}

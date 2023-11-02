@@ -54,15 +54,6 @@ func (p SubChunkPos) Z() int32 {
 	return p[2]
 }
 
-// blockPosFromNBT returns a position from the X, Y and Z components stored in the NBT data map passed. The
-// map is assumed to have an 'x', 'y' and 'z' key.
-func blockPosFromNBT(data map[string]any) cube.Pos {
-	x, _ := data["x"].(int32)
-	y, _ := data["y"].(int32)
-	z, _ := data["z"].(int32)
-	return cube.Pos{int(x), int(y), int(z)}
-}
-
 // chunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are
 // those of the Vec3 divided by 16, then rounded down.
 func chunkPosFromVec3(vec3 mgl64.Vec3) ChunkPos {

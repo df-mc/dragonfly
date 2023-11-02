@@ -14,6 +14,7 @@ import (
 type WoodFenceGate struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the fence gate. This field must have one of the values found in the material
 	// package.
@@ -28,7 +29,7 @@ type WoodFenceGate struct {
 
 // BreakInfo ...
 func (f WoodFenceGate) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f))
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f)).withBlastResistance(15)
 }
 
 // FlammabilityInfo ...
@@ -50,28 +51,42 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 	if !used {
 		return false
 	}
-	f.Facing = user.Facing()
-	// TODO: Set Lowered if placed next to wall block.
+	f.Facing = user.Rotation().Direction()
+	f.Lowered = f.shouldBeLowered(pos, w)
 
 	place(w, pos, f, user, ctx)
 	return placed(ctx)
 }
 
-// Activate ...
-func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User) bool {
-	f.Open = !f.Open
-	if f.Open && f.Facing.Opposite() == u.Facing() {
-		f.Facing = u.Facing()
+// NeighbourUpdateTick ...
+func (f WoodFenceGate) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+	if f.shouldBeLowered(pos, w) != f.Lowered {
+		f.Lowered = !f.Lowered
+		w.SetBlock(pos, f, nil)
 	}
-	w.SetBlock(pos, f, nil)
-	w.PlaySound(pos.Vec3Centre(), sound.Door{})
-	return true
 }
 
-// CanDisplace ...
-func (f WoodFenceGate) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+// shouldBeLowered returns if the fence gate should be lowered or not, based on the neighbouring walls.
+func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, w *world.World) bool {
+	leftSide := f.Facing.RotateLeft().Face()
+	_, left := w.Block(pos.Side(leftSide)).(Wall)
+	_, right := w.Block(pos.Side(leftSide.Opposite())).(Wall)
+	return left || right
+}
+
+// Activate ...
+func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
+	f.Open = !f.Open
+	if f.Open && f.Facing.Opposite() == u.Rotation().Direction() {
+		f.Facing = f.Facing.Opposite()
+	}
+	w.SetBlock(pos, f, nil)
+	if f.Open {
+		w.PlaySound(pos.Vec3Centre(), sound.FenceGateOpen{Block: f})
+		return true
+	}
+	w.PlaySound(pos.Vec3Centre(), sound.FenceGateClose{Block: f})
+	return true
 }
 
 // SideClosed ...

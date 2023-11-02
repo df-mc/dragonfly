@@ -37,7 +37,7 @@ func (n Note) instrument(pos cube.Pos, w *world.World) sound.Instrument {
 
 // DecodeNBT ...
 func (n Note) DecodeNBT(data map[string]any) any {
-	n.Pitch = int(nbtconv.Map[byte](data, "note"))
+	n.Pitch = int(nbtconv.Uint8(data, "note"))
 	return n
 }
 
@@ -55,7 +55,7 @@ func (n Note) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
 }
 
 // Activate ...
-func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
+func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}

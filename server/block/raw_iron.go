@@ -14,7 +14,7 @@ type RawIron struct {
 func (r RawIron) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
-	}, pickaxeEffective, oneOf(r))
+	}, pickaxeEffective, oneOf(r)).withBlastResistance(30)
 }
 
 // EncodeItem ...

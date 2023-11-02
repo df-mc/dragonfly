@@ -55,6 +55,9 @@ type Liquid interface {
 	WithDepth(depth int, falling bool) Liquid
 	// LiquidFalling checks if the liquid is currently considered falling down.
 	LiquidFalling() bool
+	// BlastResistance is the blast resistance of the liquid, which influences the liquid's ability to withstand an
+	// explosive blast.
+	BlastResistance() float64
 	// LiquidType returns an int unique for the liquid, used to check if two liquids are considered to be
 	// of the same type.
 	LiquidType() string
@@ -244,7 +247,7 @@ type replaceableBlock interface {
 }
 
 // replaceable checks if the block at the position passed is replaceable with the block passed.
-func replaceable(w *World, c *chunkData, pos cube.Pos, with Block) bool {
+func replaceable(w *World, c *Column, pos cube.Pos, with Block) bool {
 	if r, ok := w.blockInChunk(c, pos).(replaceableBlock); ok {
 		return r.ReplaceableBy(with)
 	}

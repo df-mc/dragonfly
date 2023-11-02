@@ -24,6 +24,11 @@ func (DriedKelp) Consume(_ *world.World, c Consumer) Stack {
 	return Stack{}
 }
 
+// CompostChance ...
+func (DriedKelp) CompostChance() float64 {
+	return 0.3
+}
+
 // EncodeItem ...
 func (DriedKelp) EncodeItem() (name string, meta int16) {
 	return "minecraft:dried_kelp", 0
