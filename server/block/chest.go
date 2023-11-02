@@ -184,7 +184,7 @@ func (Chest) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c Chest) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:chest", map[string]any{"facing_direction": 2 + int32(c.Facing)}
+	return "minecraft:chest", map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
 }
 
 // allChests ...
