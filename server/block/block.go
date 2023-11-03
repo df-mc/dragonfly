@@ -81,8 +81,14 @@ type Frictional interface {
 	Friction() float64
 }
 
+// Permutable represents a custom block that can have more permutations than its default state.
 type Permutable interface {
+	// States returns a map of all the different properties for the block. The key is the property name, and the value
+	// is a slice of all the possible values for that property. It is important that a block is registered in dragonfly
+	// for each of the possible combinations of properties and values.
 	States() map[string][]any
+	// Permutations returns a slice of all the different permutations for the block. Multiple permutations can be
+	// applied at once if their conditions are met.
 	Permutations() []customblock.Permutation
 }
 

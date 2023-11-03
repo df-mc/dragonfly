@@ -113,7 +113,7 @@ func (b *hashBuilder) writeConstants(w io.Writer) (bitSize int) {
 		i++
 	}
 
-	if _, err := fmt.Fprintln(w, "\thashBase\n)"); err != nil {
+	if _, err := fmt.Fprintln(w, "\thashCustomBlockBase\n)"); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -121,16 +121,16 @@ func (b *hashBuilder) writeConstants(w io.Writer) (bitSize int) {
 }
 
 func (b *hashBuilder) writeNextHash(w io.Writer) {
-	if _, err := fmt.Fprintln(w, "\n// base represents the base hash for all custom blocks."); err != nil {
+	if _, err := fmt.Fprintln(w, "\n// customBlockBase represents the base hash for all custom blocks."); err != nil {
 		log.Fatalln(err)
 	}
-	if _, err := fmt.Fprintln(w, "var base = uint64(hashBase - 1)"); err != nil {
+	if _, err := fmt.Fprintln(w, "var customBlockBase = uint64(hashCustomBlockBase - 1)"); err != nil {
 		log.Fatalln(err)
 	}
 	if _, err := fmt.Fprintln(w, "\n// NextHash returns the next free hash for custom blocks."); err != nil {
 		log.Fatalln(err)
 	}
-	if _, err := fmt.Fprintln(w, "func NextHash() uint64 {\n\tbase++\n\treturn base\n}"); err != nil {
+	if _, err := fmt.Fprintln(w, "func NextHash() uint64 {\n\tcustomBlockBase++\n\treturn customBlockBase\n}"); err != nil {
 		log.Fatalln(err)
 	}
 }

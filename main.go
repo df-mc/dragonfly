@@ -3,13 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/creative"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -27,19 +21,11 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for _, direction := range cube.Directions() {
-		world.RegisterBlock(block.Pig{Facing: direction})
-	}
-	world.RegisterItem(block.Pig{})
-	creative.RegisterItem(item.NewStack(block.Pig{}, 1))
-
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(func(p *player.Player) {
-		p.Inventory().AddItem(item.NewStack(block.Pig{}, 64))
-	}) {
+	for srv.Accept(nil) {
 	}
 }
 

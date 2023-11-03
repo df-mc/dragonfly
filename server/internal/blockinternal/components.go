@@ -8,8 +8,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Components returns all the components of the given custom block group. If the group has no components, a nil map
-// and false are returned.
+// Components returns all the components for the custom block, including permutations and properties.
 func Components(identifier string, b world.CustomBlock) map[string]any {
 	components := componentsFromProperties(b.Properties())
 	builder := NewComponentBuilder(identifier, components)
@@ -51,6 +50,8 @@ func Components(identifier string, b world.CustomBlock) map[string]any {
 	return builder.Construct()
 }
 
+// componentsFromProperties builds a base components map that includes all the common data between a regular block and
+// a custom permutation.
 func componentsFromProperties(props customblock.Properties) map[string]any {
 	components := make(map[string]any)
 	if props.CollisionBox != (cube.BBox{}) {
@@ -103,6 +104,8 @@ func componentsFromProperties(props customblock.Properties) map[string]any {
 	return components
 }
 
+// bboxComponent returns the component data for a bounding box. It translates the coordinates to the origin and size
+// format that the client expects.
 func bboxComponent(box cube.BBox) map[string]any {
 	min, max := box.Min(), box.Max()
 	originX, originY, originZ := min.X()*16, min.Y()*16, min.Z()*16

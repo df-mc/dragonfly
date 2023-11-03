@@ -16,7 +16,8 @@ type ComponentBuilder struct {
 	menuCategory category.Category
 }
 
-// NewComponentBuilder returns a new component builder with the provided block data.
+// NewComponentBuilder returns a new component builder with the provided block data, using the provided components map
+// as a base.
 func NewComponentBuilder(identifier string, components map[string]any) *ComponentBuilder {
 	if components == nil {
 		components = map[string]any{}
@@ -30,7 +31,7 @@ func NewComponentBuilder(identifier string, components map[string]any) *Componen
 	}
 }
 
-// AddProperty adds the provided property to the builder.
+// AddProperty adds the provided block property to the builder.
 func (builder *ComponentBuilder) AddProperty(name string, values []any) {
 	builder.properties = append(builder.properties, map[string]any{
 		"name": name,
@@ -38,12 +39,13 @@ func (builder *ComponentBuilder) AddProperty(name string, values []any) {
 	})
 }
 
-// AddComponent adds the provided component to the builder.
+// AddComponent adds the provided component to the builder. If the component already exists, it will be overwritten.
 func (builder *ComponentBuilder) AddComponent(name string, value any) {
 	builder.components[name] = value
 }
 
-// AddPermutation adds a permutation to the builder.
+// AddPermutation adds a permutation to the builder. If there is already an existing permutation for the provided
+// condition, the new components will be added to the existing permutation.
 func (builder *ComponentBuilder) AddPermutation(condition string, components map[string]any) {
 	if len(builder.permutations) == 0 {
 		// This trigger really does not matter at all, the component just needs to be set for custom block placements to
@@ -60,13 +62,12 @@ func (builder *ComponentBuilder) AddPermutation(condition string, components map
 	}
 }
 
-// SetMenuCategory sets the menu category for the block.
+// SetMenuCategory sets the creative category for the current block.
 func (builder *ComponentBuilder) SetMenuCategory(category category.Category) {
 	builder.menuCategory = category
 }
 
-// Construct constructs the final block components map and returns it. It also applies the default properties required
-// for the block to work without modifying the original maps in the builder.
+// Construct constructs the final block components map that is ready to be sent to the client.
 func (builder *ComponentBuilder) Construct() map[string]any {
 	properties := slices.Clone(builder.properties)
 	components := maps.Clone(builder.components)

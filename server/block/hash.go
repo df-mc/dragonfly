@@ -118,7 +118,6 @@ const (
 	hashObsidian
 	hashPackedIce
 	hashPackedMud
-	hashPig
 	hashPlanks
 	hashPodzol
 	hashPolishedBlackstoneBrick
@@ -172,16 +171,16 @@ const (
 	hashWoodFenceGate
 	hashWoodTrapdoor
 	hashWool
-	hashBase
+	hashCustomBlockBase
 )
 
-// base represents the base hash for all custom blocks.
-var base = uint64(hashBase - 1)
+// customBlockBase represents the base hash for all custom blocks.
+var customBlockBase = uint64(hashCustomBlockBase - 1)
 
 // NextHash returns the next free hash for custom blocks.
 func NextHash() uint64 {
-	base++
-	return base
+	customBlockBase++
+	return customBlockBase
 }
 
 // Hash ...

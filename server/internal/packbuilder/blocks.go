@@ -12,7 +12,7 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 )
 
-// buildBlocks builds all of the block-related files for the resource pack. This includes textures, geometries, language
+// buildBlocks builds all the block-related files for the resource pack. This includes textures, geometries, language
 // entries and terrain texture atlas.
 func buildBlocks(dir string) (count int, lang []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "models/blocks"), os.ModePerm); err != nil {

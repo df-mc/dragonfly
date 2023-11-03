@@ -47,7 +47,7 @@ func (m Material) WithoutAmbientOcclusion() Material {
 	return m
 }
 
-// Encode returns the material encoded as a map[string]any.
+// Encode returns the material encoded as a map that can be sent over the network to the client.
 func (m Material) Encode() map[string]any {
 	return map[string]any{
 		"texture":           m.texture,

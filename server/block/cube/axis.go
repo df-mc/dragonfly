@@ -37,7 +37,7 @@ func (a Axis) RotateLeft() Axis {
 
 // RotateRight rotates an Axis from X to Z or from Z to X.
 func (a Axis) RotateRight() Axis {
-	// No difference in rotating left or right for an Facing.
+	// No difference in rotating left or right for an Axis.
 	return a.RotateLeft()
 }
 

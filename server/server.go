@@ -5,7 +5,6 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/cmd"
@@ -303,9 +302,6 @@ func (srv *Server) makeBlockEntries() {
 			Properties: blockinternal.Components(name, b),
 		}
 	}
-
-	data, _ := json.Marshal(srv.customBlocks)
-	os.WriteFile("custom_blocks.json", data, 0644)
 }
 
 // makeItemComponents initializes the server's item components map using the
