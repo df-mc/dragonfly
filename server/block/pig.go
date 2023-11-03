@@ -1,7 +1,6 @@
 package block
 
 import (
-	"encoding/json"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
@@ -43,10 +42,10 @@ func (p Pig) BreakInfo() BreakInfo {
 }
 
 // Textures ...
-func (p Pig) Textures() (map[customblock.Target]image.Image, map[string]map[customblock.Target]image.Image, customblock.Method) {
-	return map[customblock.Target]image.Image{
-		customblock.MaterialTargetAll(): p.Texture(),
-	}, nil, customblock.AlphaTestRenderMethod()
+func (p Pig) Textures() map[string]image.Image {
+	return map[string]image.Image{
+		"pig": p.Texture(),
+	}
 }
 
 // Texture ...
@@ -63,18 +62,13 @@ func (p Pig) Texture() image.Image {
 	return img
 }
 
-// Geometries ...
-func (p Pig) Geometries() (customblock.Geometry, map[string]customblock.Geometry, bool) {
-	b, err := os.ReadFile("skull.geo.json")
+// Geometry ...
+func (p Pig) Geometry() []byte {
+	data, err := os.ReadFile("skull.geo.json")
 	if err != nil {
 		panic(err)
 	}
-	var geometry customblock.Geometries
-	err = json.Unmarshal(b, &geometry)
-	if err != nil {
-		panic(err)
-	}
-	return geometry.Geometry[0], nil, true
+	return data
 }
 
 // UseOnBlock ...
@@ -84,18 +78,9 @@ func (p Pig) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 		return
 	}
 
-	p.Facing = user.Rotation().Direction().RotateRight()
+	p.Facing = user.Rotation().Direction()
 	place(w, pos, p, user, ctx)
 	return placed(ctx)
-}
-
-// Rotation ...
-func (p Pig) Rotation() (mgl64.Vec3, bool, map[string]mgl64.Vec3) {
-	return mgl64.Vec3{}, false, map[string]mgl64.Vec3{
-		"query.block_property('direction') == 1": {0, 180, 0},
-		"query.block_property('direction') == 2": {0, 90, 0},
-		"query.block_property('direction') == 3": {0, 270, 0},
-	}
 }
 
 // EncodeItem ...
@@ -105,7 +90,7 @@ func (p Pig) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (p Pig) EncodeBlock() (string, map[string]any) {
-	return "dragonfly:pig", map[string]any{"direction": int32(p.Facing)}
+	return "dragonfly:pig", map[string]any{"rotation": int32(p.Facing)}
 }
 
 // pigHash ...
@@ -113,5 +98,45 @@ var pigHash = NextHash()
 
 // Hash ...
 func (p Pig) Hash() uint64 {
-	return pigHash | uint64(p.Facing)<<8
+	return pigHash | (uint64(p.Facing) << 8)
+}
+
+func (p Pig) Properties() customblock.Properties {
+	return customblock.Properties{
+		CollisionBox: cube.Box(0.25, 0, 0.25, 0.75, 0.5, 0.75),
+		SelectionBox: cube.Box(0.25, 0, 0.25, 0.75, 0.5, 0.75),
+		Geometry:     "geometry.skull",
+		Textures: map[string]customblock.Material{
+			"*": customblock.NewMaterial("pig", customblock.OpaqueRenderMethod()),
+		},
+	}
+}
+
+func (p Pig) States() map[string][]any {
+	return map[string][]any{
+		"rotation": {int32(0), int32(1), int32(2), int32(3)},
+	}
+}
+
+func (p Pig) Permutations() []customblock.Permutation {
+	return []customblock.Permutation{
+		{
+			Condition: "query.block_state('rotation') == 1",
+			Properties: customblock.Properties{
+				Rotation: cube.Pos{0, 3, 0},
+			},
+		},
+		{
+			Condition: "query.block_state('rotation') == 2",
+			Properties: customblock.Properties{
+				Rotation: cube.Pos{0, 2, 0},
+			},
+		},
+		{
+			Condition: "query.block_state('rotation') == 3",
+			Properties: customblock.Properties{
+				Rotation: cube.Pos{0, 1, 0},
+			},
+		},
+	}
 }

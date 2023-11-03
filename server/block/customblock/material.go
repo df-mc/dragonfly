@@ -16,9 +16,9 @@ type Material struct {
 // occlusion based on the render method given.
 func NewMaterial(texture string, method Method) Material {
 	return Material{
-		faceDimming:      true,
 		texture:          texture,
 		renderMethod:     method,
+		faceDimming:      true,
 		ambientOcclusion: method.AmbientOcclusion(),
 	}
 }
@@ -52,15 +52,7 @@ func (m Material) Encode() map[string]any {
 	return map[string]any{
 		"texture":           m.texture,
 		"render_method":     m.renderMethod.String(),
-		"face_dimming":      boolByte(m.faceDimming),
-		"ambient_occlusion": boolByte(m.ambientOcclusion),
+		"face_dimming":      m.faceDimming,
+		"ambient_occlusion": m.ambientOcclusion,
 	}
-}
-
-// boolByte returns 1 if the bool passed is true, or 0 if it is false.
-func boolByte(b bool) uint8 {
-	if b {
-		return 1
-	}
-	return 0
 }

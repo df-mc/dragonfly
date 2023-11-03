@@ -61,5 +61,5 @@ func (c Category) Group() string {
 	if len(c.group) > 0 {
 		return "itemGroup.name." + c.group
 	}
-	return "none"
+	return ""
 }

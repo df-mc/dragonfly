@@ -23,7 +23,7 @@ var (
 	// registered are of the type unknownBlock.
 	blocks []Block
 	// customBlocks maps a custom block's identifier to a slice of custom blocks.
-	customBlocks = map[string][]CustomBlock{}
+	customBlocks = map[string]CustomBlock{}
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
@@ -87,7 +87,7 @@ func registerBlockState(s blockState, order bool) {
 		sort.SliceStable(blocks, func(i, j int) bool {
 			nameOne, _ := blocks[i].EncodeBlock()
 			nameTwo, _ := blocks[j].EncodeBlock()
-			return nameOne == nameTwo && fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
+			return nameOne != nameTwo && fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
 		})
 
 		for id, b := range blocks {

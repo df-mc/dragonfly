@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/cmd"
@@ -19,7 +20,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -49,9 +49,8 @@ type Server struct {
 
 	world, nether, end *world.World
 
-	customItems     []protocol.ItemComponentEntry
-	itemComponents  map[string]map[string]any
-	blockComponents map[string]map[string]any
+	customBlocks []protocol.BlockEntry
+	customItems  []protocol.ItemComponentEntry
 
 	listeners []Listener
 	incoming  chan *session.Session
@@ -277,6 +276,7 @@ func (srv *Server) listen(l Listener) {
 // startListening starts making the EncodeBlock listener listen, accepting new
 // connections from players.
 func (srv *Server) startListening() {
+	srv.makeBlockEntries()
 	srv.makeItemComponents()
 
 	srv.wg.Add(len(srv.conf.Listeners))
@@ -288,6 +288,24 @@ func (srv *Server) startListening() {
 		srv.listeners = append(srv.listeners, l)
 		go srv.listen(l)
 	}
+}
+
+// makeBlockEntries initializes the server's block components map using the registered custom blocks. It allows block
+// components to be created only once at startup.
+func (srv *Server) makeBlockEntries() {
+	custom := maps.Values(world.CustomBlocks())
+	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
+
+	for i, b := range custom {
+		name, _ := b.EncodeBlock()
+		srv.customBlocks[i] = protocol.BlockEntry{
+			Name:       name,
+			Properties: blockinternal.Components(name, b),
+		}
+	}
+
+	data, _ := json.Marshal(srv.customBlocks)
+	os.WriteFile("custom_blocks.json", data, 0644)
 }
 
 // makeItemComponents initializes the server's item components map using the
@@ -303,19 +321,6 @@ func (srv *Server) makeItemComponents() {
 			Name: name,
 			Data: iteminternal.Components(it),
 		})
-	}
-}
-
-// makeBlockComponents initializes the server's block components map using the registered custom blocks. It allows block
-// components to be created only once at startup.
-func (srv *Server) makeBlockComponents() {
-	srv.blockComponents = make(map[string]map[string]any)
-	for identifier, group := range world.CustomBlocks() {
-		data, err := blockinternal.Components(identifier, group)
-		if err != nil {
-			srv.conf.Log.Fatalf("error creating block components: %v", err)
-		}
-		srv.blockComponents[identifier] = data
 	}
 }
 
@@ -378,7 +383,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		PlayerPosition:    vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 
 		Items:        srv.itemEntries(),
-		CustomBlocks: srv.blockEntries(),
+		CustomBlocks: srv.customBlocks,
 		GameRules:    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
 
 		ServerAuthoritativeInventory: true,
@@ -559,37 +564,6 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 		})
 	}
 	return entries
-}
-
-// itemComponentEntries returns a list of all custom item component entries of the server, ready to be sent in the
-// ItemComponent packet. If the list does not exist, it will be created and stored for future use.
-func (srv *Server) itemComponentEntries() (entries []protocol.ItemComponentEntry) {
-	if srv.itemComponents == nil {
-		srv.makeItemComponents()
-	}
-	for name, entry := range srv.itemComponents {
-		entries = append(entries, protocol.ItemComponentEntry{
-			Name: name,
-			Data: entry,
-		})
-	}
-	return
-}
-
-// blockEntries loads a list of all custom block entries of the server, ready to be sent in the StartGame packet. If the
-// list does not exist, it will be created and stored for future use.
-func (srv *Server) blockEntries() (entries []protocol.BlockEntry) {
-	if srv.blockComponents == nil {
-		srv.makeBlockComponents()
-	}
-	for name, properties := range srv.blockComponents {
-		pretty.Println(properties)
-		entries = append(entries, protocol.BlockEntry{
-			Name:       name,
-			Properties: properties,
-		})
-	}
-	return
 }
 
 // ashyBiome represents a biome that has any form of ash.
