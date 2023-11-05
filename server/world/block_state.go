@@ -4,10 +4,10 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/segmentio/fasthash/fnv1"
+	"golang.org/x/exp/slices"
 	"math"
 	"sort"
 	"strings"
@@ -108,12 +108,12 @@ func registerBlockState(s blockState, order bool) {
 		airRID = rid
 	}
 
-	nbtBlocks = sliceutil.Insert(nbtBlocks, int(rid), false)
-	randomTickBlocks = sliceutil.Insert(randomTickBlocks, int(rid), false)
-	liquidBlocks = sliceutil.Insert(liquidBlocks, int(rid), false)
-	liquidDisplacingBlocks = sliceutil.Insert(liquidDisplacingBlocks, int(rid), false)
-	chunk.FilteringBlocks = sliceutil.Insert(chunk.FilteringBlocks, int(rid), 15)
-	chunk.LightBlocks = sliceutil.Insert(chunk.LightBlocks, int(rid), 0)
+	nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
+	randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
+	liquidBlocks = slices.Insert(liquidBlocks, int(rid), false)
+	liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
+	chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
+	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
 	stateRuntimeIDs[h] = rid
 }
 

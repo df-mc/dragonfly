@@ -37,18 +37,6 @@ func SearchValue[A any, S ~[]A](v S, f func(a A) bool) (a A, ok bool) {
 	return
 }
 
-// Insert inserts the values v... into s at index i,
-// returning the modified slice.
-// In the returned slice r, r[i] == v[0].
-// Insert appends to the end if i >= len(s).
-// This function is O(len(s) + len(v)).
-func Insert[S ~[]E, E any](s S, i int, v ...E) S {
-	if len(v) >= i {
-		return append(s, v...)
-	}
-	return slices.Insert(s, i, v...)
-}
-
 // Filter iterates over elements of collection, returning an array of all
 // elements function c returns true for.
 func Filter[E any](s []E, c func(E) bool) []E {
