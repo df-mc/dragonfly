@@ -449,11 +449,6 @@ func (Dripstone) Hash() uint64 {
 }
 
 // Hash ...
-func (f Dropper) Hash() uint64 {
-	return hashDropper | uint64(f.Facing)<<8 | uint64(boolByte(f.Triggered))<<11
-}
-
-// Hash ...
 func (Emerald) Hash() uint64 {
 	return hashEmerald
 }
