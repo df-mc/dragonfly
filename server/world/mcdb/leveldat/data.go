@@ -139,6 +139,7 @@ type Data struct {
 	EditorWorldType                int32          `nbt:"editorWorldType"`
 	PlayersSleepingPercentage      int32          `nbt:"playerssleepingpercentage"`
 	RecipesUnlock                  bool           `nbt:"recipesunlock"`
+	NaturalGeneration              bool           `nbt:"naturalgeneration"`
 }
 
 // FillDefault fills out d with all the default level.dat values.
