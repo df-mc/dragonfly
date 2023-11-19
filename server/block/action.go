@@ -1,6 +1,9 @@
 package block
 
-import "time"
+import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"time"
+)
 
 // OpenAction is a world.BlockAction to open a block at a position. It is sent for blocks such as chests.
 type OpenAction struct{ action }
@@ -8,10 +11,20 @@ type OpenAction struct{ action }
 // CloseAction is a world.BlockAction to close a block at a position, complementary to the OpenAction action.
 type CloseAction struct{ action }
 
+// BellRing is a world.BlockAction to ring a bell at a position.
+type BellRing struct {
+	action
+
+	// Face is the face at which the bell was rung from.
+	Face cube.Face
+}
+
 // StartCrackAction is a world.BlockAction to make the cracks in a block start forming, following the break time set in
 // the action.
 type StartCrackAction struct {
 	action
+
+	// BreakTime ...
 	BreakTime time.Duration
 }
 
@@ -20,6 +33,8 @@ type StartCrackAction struct {
 // ground, submerged or is using a different item than at first.
 type ContinueCrackAction struct {
 	action
+
+	// BreakTime ...
 	BreakTime time.Duration
 }
 

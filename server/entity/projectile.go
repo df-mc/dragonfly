@@ -300,7 +300,7 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
 	)
 	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
 		if hit, ok = trace.Perform(pos, end, w, e.Type().BBox(e).Grow(1.0), lt.ignores(e)); ok {
-			if _, ok := hit.(trace.BlockResult); ok {
+			if r, ok := hit.(trace.BlockResult); ok {
 				// Undo the gravity because the velocity as a result of gravity
 				// at the point of collision should be 0.
 				vel[1] = (vel[1] + lt.mc.Gravity) / (1 - lt.mc.Drag)
@@ -311,6 +311,10 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
 				mx, my, mz := hit.Face().Axis().Vec3().Mul(-2).Add(mgl64.Vec3{1, 1, 1}).Elem()
 
 				vel = mgl64.Vec3{x * mx, y * my, z * mz}
+
+				if h, ok := w.Block(r.BlockPosition()).(block.ProjectileHitter); ok {
+					h.ProjectileHit(w, e, r.BlockPosition(), r.Face())
+				}
 			} else {
 				vel = zeroVec3
 			}

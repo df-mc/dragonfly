@@ -23,7 +23,8 @@ func NewItem(i item.Stack, pos mgl64.Vec3) *Ent {
 func NewItemPickupDelay(i item.Stack, pos mgl64.Vec3, delay time.Duration) *Ent {
 	config := itemConf
 	config.PickupDelay = delay
-	return Config{Behaviour: config.New(i)}.New(ItemType{}, pos)
+	behaviour := config.New(i)
+	return Config{Behaviour: behaviour}.New(ItemType{Behaviour: behaviour}, pos)
 }
 
 var itemConf = ItemBehaviourConfig{
@@ -32,7 +33,9 @@ var itemConf = ItemBehaviourConfig{
 }
 
 // ItemType is a world.EntityType implementation for Item.
-type ItemType struct{}
+type ItemType struct {
+	Behaviour *ItemBehaviour
+}
 
 func (ItemType) EncodeEntity() string   { return "minecraft:item" }
 func (ItemType) NetworkOffset() float64 { return 0.125 }
@@ -63,4 +66,8 @@ func (ItemType) EncodeNBT(e world.Entity) map[string]any {
 		"Motion":      nbtconv.Vec3ToFloat32Slice(it.Velocity()),
 		"Item":        nbtconv.WriteItem(b.Item(), true),
 	}
+}
+
+func (t ItemType) EntityEject(e world.Entity, pos cube.Pos) {
+	t.Behaviour.EntityEject(e, pos)
 }

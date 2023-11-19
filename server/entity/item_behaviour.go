@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -62,9 +64,26 @@ func (i *ItemBehaviour) Item() item.Stack {
 	return i.i
 }
 
-// Tick moves the entity, checks if it should be picked up by a nearby collector
-// or if it should merge with nearby item entities.
+// EntityEject ejects the item entity from the block it is currently on. This is called when items are dropped on bells,
+// for example, to make the item entity pop off the bell.
+func (i *ItemBehaviour) EntityEject(e world.Entity, pos cube.Pos) {
+	ent, ok := e.(*Ent)
+	if !ok {
+		return
+	}
+	delta := e.Position().Sub(pos.Vec3Centre())
+	if delta.Len() <= epsilon {
+		// There is no delta between the item entity and the block, so we can't eject it.
+		return
+	}
+	vel := delta.Normalize().Mul(0.4)
+	vel[1] = math.Max(0.15, vel[1])
+	ent.SetVelocity(vel)
+}
+
+// Tick ticks the entity, performing movement.
 func (i *ItemBehaviour) Tick(e *Ent) *Movement {
+	i.checkEntityInsiders(e)
 	return i.passive.Tick(e)
 }
 
@@ -152,6 +171,34 @@ func (i *ItemBehaviour) collect(e *Ent, collector Collector) {
 	_ = e.Close()
 }
 
+// checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
+func (i *ItemBehaviour) checkEntityInsiders(e *Ent) {
+	w := e.World()
+	box := e.Type().BBox(e).Translate(e.Position()).Grow(-0.0001)
+	min, max := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+
+	for y := min[1]; y <= max[1]; y++ {
+		for x := min[0]; x <= max[0]; x++ {
+			for z := min[2]; z <= max[2]; z++ {
+				blockPos := cube.Pos{x, y, z}
+				b := w.Block(blockPos)
+				if collide, ok := b.(block.EntityInsider); ok {
+					collide.EntityInside(blockPos, w, e)
+					if _, liquid := b.(world.Liquid); liquid {
+						continue
+					}
+				}
+
+				if l, ok := w.Liquid(blockPos); ok {
+					if collide, ok := l.(block.EntityInsider); ok {
+						collide.EntityInside(blockPos, w, e)
+					}
+				}
+			}
+		}
+	}
+}
+
 // Collector represents an entity in the world that is able to collect an item, typically an entity such as
 // a player or a zombie.
 type Collector interface {
@@ -160,4 +207,6 @@ type Collector interface {
 	// may be picked up.
 	// The count of items collected from the stack n is returned.
 	Collect(stack item.Stack) (n int)
+	// GameMode returns the gamemode of the collector.
+	GameMode() world.GameMode
 }
