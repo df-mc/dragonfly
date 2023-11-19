@@ -58,6 +58,8 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 		}
 		if run := c.Runnables(s.c); len(run) > 0 {
 			m[alias] = run
+		} else {
+			continue
 		}
 
 		params := c.Params(s.c)
