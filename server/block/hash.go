@@ -33,6 +33,7 @@ const (
 	hashCoal
 	hashCoalOre
 	hashCobblestone
+	hashCobweb
 	hashCocoaBean
 	hashComposter
 	hashConcrete
@@ -160,6 +161,7 @@ const (
 	hashTallGrass
 	hashTerracotta
 	hashTorch
+	hashTripwire
 	hashTuff
 	hashWall
 	hashWater
@@ -290,6 +292,10 @@ func (c CoalOre) Hash() uint64 {
 
 func (c Cobblestone) Hash() uint64 {
 	return hashCobblestone | uint64(boolByte(c.Mossy))<<8
+}
+
+func (Cobweb) Hash() uint64 {
+	return hashCobweb
 }
 
 func (c CocoaBean) Hash() uint64 {
@@ -798,6 +804,10 @@ func (Terracotta) Hash() uint64 {
 
 func (t Torch) Hash() uint64 {
 	return hashTorch | uint64(t.Facing)<<8 | uint64(t.Type.Uint8())<<11
+}
+
+func (String) Hash() uint64 {
+	return hashTripwire
 }
 
 func (Tuff) Hash() uint64 {
