@@ -119,13 +119,17 @@ func (f *FireworkBehaviour) explode(e *Ent) {
 		return
 	}
 
+	if f.conf.Attached {
+		pos[1] -= 0.01
+	}
+
 	force := float64(len(explosions)*2) + 5.0
 	targets := w.EntitiesWithin(e.Type().BBox(e).Translate(pos).Grow(5.25), func(e world.Entity) bool {
 		l, living := e.(Living)
 		return !living || l.AttackImmune()
 	})
-	for _, e := range targets {
-		tpos := e.Position()
+	for _, t := range targets {
+		tpos := t.Position()
 		dist := pos.Sub(tpos).Len()
 		if dist > 5.0 {
 			// The maximum distance allowed is 5.0 blocks.
@@ -135,7 +139,7 @@ func (f *FireworkBehaviour) explode(e *Ent) {
 			return true
 		}); ok {
 			dmg := force * math.Sqrt((5.0-dist)/5.0)
-			e.(Living).Hurt(dmg, ProjectileDamageSource{Owner: f.owner, Projectile: e})
+			t.(Living).Hurt(dmg, ProjectileDamageSource{Owner: f.owner, Projectile: e})
 		}
 	}
 }
