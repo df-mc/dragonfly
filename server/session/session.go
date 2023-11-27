@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -36,6 +37,7 @@ type Session struct {
 	c        Controllable
 	conn     Conn
 	handlers map[uint32]packetHandler
+	h        atomic.Value[Handler]
 
 	// onStop is called when the session is stopped. The controllable passed is the controllable that the
 	// session controls.
@@ -165,10 +167,26 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
 		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
+		h:                      *atomic.NewValue[Handler](NopHandler{}),
 	}
 
 	s.registerHandlers()
 	return s
+}
+
+// Handler returns the Handler of the session.
+func (s *Session) Handler() Handler {
+	return s.h.Load()
+}
+
+// Handle changes the current Handler of the session. As a result, events called by the session will call
+// handlers of the Handler passed.
+// Handle sets the session's Handler to NopHandler if nil is passed.
+func (s *Session) Handle(h Handler) {
+	if h == nil {
+		h = NopHandler{}
+	}
+	s.h.Store(h)
 }
 
 // Spawn makes the Controllable passed spawn in the world.World.
@@ -309,6 +327,11 @@ func (s *Session) handlePackets() {
 		if err != nil {
 			return
 		}
+		ctx := event.C()
+		if s.Handler().HandleClientPacket(ctx, pk); ctx.Cancelled() {
+			continue
+		}
+
 		if err := s.handlePacket(pk); err != nil {
 			// An error occurred during the handling of a packet. Print the error and stop handling any more
 			// packets.
@@ -485,9 +508,18 @@ func (s *Session) handleInterfaceUpdate(slot int, _, item item.Stack) {
 	}
 }
 
+// WritePacket ...
+func (s *Session) WritePacket(pk packet.Packet) {
+	s.writePacket(pk)
+}
+
 // writePacket writes a packet to the session's connection if it is not Nop.
 func (s *Session) writePacket(pk packet.Packet) {
 	if s == Nop {
+		return
+	}
+	ctx := event.C()
+	if s.Handler().HandleServerPacket(ctx, pk); ctx.Cancelled() {
 		return
 	}
 	_ = s.conn.WritePacket(pk)

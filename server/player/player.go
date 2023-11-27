@@ -1891,6 +1891,19 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	p.teleport(pos)
 }
 
+// SetRotation sets the rotation of the player
+func (p *Player) SetRotation(yaw, pitch float64) {
+	ctx := event.C()
+	if p.Handler().HandleMove(ctx, p.Position(), yaw, pitch); ctx.Cancelled() {
+		return
+	}
+	for _, v := range p.viewers() {
+		v.ViewEntityMovement(p, p.Position(), cube.Rotation{yaw, pitch}, p.OnGround())
+	}
+	p.yaw.Store(yaw)
+	p.pitch.Store(pitch)
+}
+
 // teleport teleports the player to a target position in the world. It does not call the Handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
@@ -2884,6 +2897,11 @@ func (p *Player) session() *session.Session {
 		return s
 	}
 	return session.Nop
+}
+
+// Session ...
+func (p *Player) Session() *session.Session {
+	return p.session()
 }
 
 // useContext returns an item.UseContext initialised for a Player.

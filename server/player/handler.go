@@ -131,6 +131,7 @@ type Handler interface {
 	// HandleQuit handles the closing of a player. It is always called when the player is disconnected,
 	// regardless of the reason.
 	HandleQuit()
+	// HandleCommandOutput to intercept command output.
 	HandleCommandOutput(output **cmd.Output)
 }
 
