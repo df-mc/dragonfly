@@ -405,6 +405,7 @@ func (p *Player) Transfer(address string) error {
 
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
+	p.Handler().HandleCommandOutput(&output)
 	p.session().SendCommandOutput(output)
 }
 

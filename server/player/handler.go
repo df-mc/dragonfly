@@ -131,6 +131,7 @@ type Handler interface {
 	// HandleQuit handles the closing of a player. It is always called when the player is disconnected,
 	// regardless of the reason.
 	HandleQuit()
+	HandleCommandOutput(output **cmd.Output)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -173,3 +174,4 @@ func (NopHandler) HandleFoodLoss(*event.Context, int, *int)                     
 func (NopHandler) HandleDeath(world.DamageSource, *bool)                                      {}
 func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                                   {}
 func (NopHandler) HandleQuit()                                                                {}
+func (NopHandler) HandleCommandOutput(**cmd.Output)                                           {}
