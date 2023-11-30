@@ -1021,20 +1021,22 @@ func (w *World) close() {
 
 	close(w.closing)
 	w.running.Wait()
-	w.Save()
+	w.Save(true)
 	w.conf.Log.Debugf("Closing provider...")
 	if err := w.provider().Close(); err != nil {
 		w.conf.Log.Errorf("error closing world provider: %v", err)
 	}
 }
 
-func (w *World) Save() {
+func (w *World) Save(clear bool) {
 	w.conf.Log.Debugf("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
 	w.lastChunk = nil
 	toSave := maps.Clone(w.chunks)
-	maps.Clear(w.chunks)
+	if clear {
+		maps.Clear(w.chunks)
+	}
 	w.chunkMu.Unlock()
 
 	for pos, c := range toSave {
