@@ -1021,7 +1021,14 @@ func (w *World) close() {
 
 	close(w.closing)
 	w.running.Wait()
+	w.Save()
+	w.conf.Log.Debugf("Closing provider...")
+	if err := w.provider().Close(); err != nil {
+		w.conf.Log.Errorf("error closing world provider: %v", err)
+	}
+}
 
+func (w *World) Save() {
 	w.conf.Log.Debugf("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
@@ -1043,11 +1050,6 @@ func (w *World) close() {
 		w.conf.Log.Debugf("Updating level.dat values...")
 
 		w.provider().SaveSettings(w.set)
-	}
-
-	w.conf.Log.Debugf("Closing provider...")
-	if err := w.provider().Close(); err != nil {
-		w.conf.Log.Errorf("error closing world provider: %v", err)
 	}
 }
 
