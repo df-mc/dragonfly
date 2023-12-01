@@ -1029,8 +1029,6 @@ func (w *World) close() {
 }
 
 func (w *World) Save(clear bool) {
-	w.conf.Log.Debugf("Saving chunks in memory to disk...")
-
 	w.chunkMu.Lock()
 	w.lastChunk = nil
 	toSave := maps.Clone(w.chunks)
@@ -1049,8 +1047,6 @@ func (w *World) Save(clear bool) {
 	}
 
 	if !w.conf.ReadOnly {
-		w.conf.Log.Debugf("Updating level.dat values...")
-
 		w.provider().SaveSettings(w.set)
 	}
 }
