@@ -1038,7 +1038,8 @@ func (w *World) Save(clear bool) {
 	w.chunkMu.Unlock()
 
 	for pos, c := range toSave {
-		w.saveChunk(pos, c)
+		w.saveChunk(pos, c, clear)
+		break
 	}
 
 	w.set.ref.Dec()
@@ -1301,7 +1302,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
-func (w *World) saveChunk(pos ChunkPos, c *Column) {
+func (w *World) saveChunk(pos ChunkPos, c *Column, clearEntities bool) {
 	c.Lock()
 	if !w.conf.ReadOnly && (len(c.BlockEntities) > 0 || len(c.Entities) > 0 || c.modified) {
 		c.Compact()
@@ -1310,11 +1311,16 @@ func (w *World) saveChunk(pos ChunkPos, c *Column) {
 		}
 	}
 	ent := c.Entities
-	c.Entities = nil
+	if clearEntities {
+		c.Entities = nil
+	}
+
 	c.Unlock()
 
-	for _, e := range ent {
-		_ = e.Close()
+	if clearEntities {
+		for _, e := range ent {
+			_ = e.Close()
+		}
 	}
 }
 
@@ -1344,7 +1350,7 @@ func (w *World) chunkCacheJanitor() {
 			w.chunkMu.Unlock()
 
 			for pos, c := range chunksToRemove {
-				w.saveChunk(pos, c)
+				w.saveChunk(pos, c, true)
 				delete(chunksToRemove, pos)
 			}
 		case <-w.closing:
