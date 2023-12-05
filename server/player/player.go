@@ -1946,15 +1946,17 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 
 	horizontalVel := deltaPos
 	horizontalVel[1] = 0
+
 	if p.Gliding() {
 		if deltaPos.Y() >= -0.5 {
 			p.fallDistance.Store(1.0)
 		}
-		if p.collidedHorizontally.Load() {
-			if force := horizontalVel.Len()*10.0 - 3.0; force > 0.0 && !p.AttackImmune() {
+		if p.collidedVertically.Load() {
+			if force := deltaPos.Y()*10.0 - 3.0; force > 0.0 && !p.AttackImmune() {
 				w.PlaySound(p.Position(), sound.Fall{Distance: force})
 				p.Hurt(force, entity.GlideDamageSource{})
 			}
+			p.StopGliding()
 		}
 	}
 
