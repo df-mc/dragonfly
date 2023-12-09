@@ -1,7 +1,7 @@
 package recipe
 
 import (
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 // recipes is a list of each recipe.
