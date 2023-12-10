@@ -27,7 +27,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/maps"
-	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -35,7 +34,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and
@@ -608,8 +606,5 @@ var (
 // values in the runtime ID maps. init also seeds the global `rand` with the
 // current time.
 func init() {
-	// Seeding the random for things like lightning that need to use RNG.
-	rand.Seed(time.Now().UnixNano())
-
 	_ = nbt.Unmarshal(itemRuntimeIDData, &itemRuntimeIDs)
 }
