@@ -31,10 +31,9 @@ jobs:
         run: test -z $(go fmt ./...)
 
       - name: Staticcheck
-        run: |
-          go get honnef.co/go/tools/cmd/staticcheck@v0.3
-          GOBIN=$PWD/bin go install honnef.co/go/tools/cmd/staticcheck@v0.3
-          ./bin/staticcheck ./...
+        uses: dominikh/staticcheck-action@v1.3.0
+        with:
+          install-go: false
 
   deploy:
     name: Deploy
