@@ -8,7 +8,7 @@ type Calcite struct {
 
 // BreakInfo ...
 func (c Calcite) BreakInfo() BreakInfo {
-	return newBreakInfo(0.75, pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	return NewBreakInfo(0.75, PickaxeHarvestable, PickaxeEffective, OneOf(c))
 }
 
 // EncodeItem ...

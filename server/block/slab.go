@@ -105,7 +105,7 @@ func (s Slab) LightDiffusionLevel() uint8 {
 
 // BreakInfo ...
 func (s Slab) BreakInfo() BreakInfo {
-	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
+	hardness, blastResistance, harvestable, effective := 2.0, 30.0, PickaxeHarvestable, PickaxeEffective
 
 	switch block := s.Block.(type) {
 	// TODO: Copper
@@ -132,11 +132,11 @@ func (s Slab) BreakInfo() BreakInfo {
 	case Prismarine:
 		hardness = 1.5
 	case Planks:
-		harvestable = alwaysHarvestable
-		effective = axeEffective
+		harvestable = AlwaysHarvestable
+		effective = AxeEffective
 		blastResistance = 15.0
 	}
-	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return NewBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if s.Double {
 			return []item.Stack{item.NewStack(s, 2)}
 		}

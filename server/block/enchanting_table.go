@@ -22,7 +22,7 @@ func (e EnchantingTable) Model() world.BlockModel {
 
 // BreakInfo ...
 func (e EnchantingTable) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(e)).withBlastResistance(6000)
+	return NewBreakInfo(5, PickaxeHarvestable, PickaxeEffective, OneOf(e)).withBlastResistance(6000)
 }
 
 // SideClosed ...

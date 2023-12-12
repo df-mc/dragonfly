@@ -24,7 +24,7 @@ func (Stonecutter) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s Stonecutter) BreakInfo() BreakInfo {
-	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	return NewBreakInfo(3.5, PickaxeHarvestable, PickaxeEffective, OneOf(s))
 }
 
 // Activate ...

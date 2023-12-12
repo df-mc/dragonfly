@@ -47,9 +47,9 @@ func (n NetherSprouts) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (n NetherSprouts) BreakInfo() BreakInfo {
-	return newBreakInfo(0, func(t item.Tool) bool {
+	return NewBreakInfo(0, func(t item.Tool) bool {
 		return t.ToolType() == item.TypeShears
-	}, nothingEffective, oneOf(n))
+	}, NothingEffective, OneOf(n))
 }
 
 // CompostChance ...

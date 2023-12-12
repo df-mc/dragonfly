@@ -20,7 +20,7 @@ type GlazedTerracotta struct {
 
 // BreakInfo ...
 func (t GlazedTerracotta) BreakInfo() BreakInfo {
-	return newBreakInfo(1.4, pickaxeHarvestable, pickaxeEffective, oneOf(t))
+	return NewBreakInfo(1.4, PickaxeHarvestable, PickaxeEffective, OneOf(t))
 }
 
 // EncodeItem ...

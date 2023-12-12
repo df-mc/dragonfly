@@ -15,7 +15,7 @@ func (s SoulSoil) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (s SoulSoil) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, shovelEffective, oneOf(s))
+	return NewBreakInfo(1, AlwaysHarvestable, ShovelEffective, OneOf(s))
 }
 
 // EncodeItem ...

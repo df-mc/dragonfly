@@ -48,7 +48,7 @@ func (HayBale) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (h HayBale) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, hoeEffective, oneOf(h))
+	return NewBreakInfo(0.5, AlwaysHarvestable, HoeEffective, OneOf(h))
 }
 
 // CompostChance ...

@@ -29,7 +29,7 @@ type WoodFenceGate struct {
 
 // BreakInfo ...
 func (f WoodFenceGate) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f)).withBlastResistance(15)
+	return NewBreakInfo(2, AlwaysHarvestable, AxeEffective, OneOf(f)).withBlastResistance(15)
 }
 
 // FlammabilityInfo ...

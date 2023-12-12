@@ -32,7 +32,7 @@ func (s Sand) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // BreakInfo ...
 func (s Sand) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(s))
+	return NewBreakInfo(0.5, AlwaysHarvestable, ShovelEffective, OneOf(s))
 }
 
 // SmeltInfo ...

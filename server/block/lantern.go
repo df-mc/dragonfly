@@ -77,7 +77,7 @@ func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (l Lantern) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
+	return NewBreakInfo(5, PickaxeHarvestable, PickaxeEffective, OneOf(l))
 }
 
 // EncodeItem ...

@@ -17,7 +17,7 @@ func (c Clay) Instrument() sound.Instrument {
 
 // BreakInfo ...
 func (c Clay) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchDrop(item.NewStack(item.ClayBall{}, 4), item.NewStack(c, 1)))
+	return NewBreakInfo(0.6, AlwaysHarvestable, ShovelEffective, SilkTouchDrop(item.NewStack(item.ClayBall{}, 4), item.NewStack(c, 1)))
 }
 
 // SmeltInfo ...

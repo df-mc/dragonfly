@@ -14,7 +14,7 @@ type Cobblestone struct {
 
 // BreakInfo ...
 func (c Cobblestone) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
+	return NewBreakInfo(2, PickaxeHarvestable, PickaxeEffective, OneOf(c)).withBlastResistance(30)
 }
 
 // SmeltInfo ...

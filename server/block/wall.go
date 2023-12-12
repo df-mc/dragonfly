@@ -79,7 +79,7 @@ func (w Wall) BreakInfo() BreakInfo {
 	case MudBricks:
 		blastResistance = 30
 	}
-	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w)).withBlastResistance(blastResistance)
+	return NewBreakInfo(breakable.BreakInfo().Hardness, PickaxeHarvestable, PickaxeEffective, OneOf(w)).withBlastResistance(blastResistance)
 }
 
 // NeighbourUpdateTick ...

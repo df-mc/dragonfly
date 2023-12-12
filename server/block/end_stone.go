@@ -8,7 +8,7 @@ type EndStone struct {
 
 // BreakInfo ...
 func (e EndStone) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(e)).withBlastResistance(45)
+	return NewBreakInfo(3, PickaxeHarvestable, PickaxeEffective, OneOf(e)).withBlastResistance(45)
 }
 
 // EncodeItem ...

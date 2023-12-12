@@ -71,8 +71,8 @@ func (d DoubleTallGrass) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (d DoubleTallGrass) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
+	return NewBreakInfo(0, AlwaysHarvestable, NothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == item.TypeShears || HasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(d, 1)}
 		}
 		if rand.Float32() > 0.57 {

@@ -12,9 +12,9 @@ type RawCopper struct {
 
 // BreakInfo ...
 func (r RawCopper) BreakInfo() BreakInfo {
-	return newBreakInfo(5, func(t item.Tool) bool {
+	return NewBreakInfo(5, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
-	}, pickaxeEffective, oneOf(r)).withBlastResistance(30)
+	}, PickaxeEffective, OneOf(r)).withBlastResistance(30)
 }
 
 // EncodeItem ...

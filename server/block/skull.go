@@ -78,7 +78,7 @@ func (Skull) HasLiquidDrops() bool {
 
 // BreakInfo ...
 func (s Skull) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, nothingEffective, oneOf(Skull{Type: s.Type}))
+	return NewBreakInfo(1, AlwaysHarvestable, NothingEffective, OneOf(Skull{Type: s.Type}))
 }
 
 // EncodeItem ...

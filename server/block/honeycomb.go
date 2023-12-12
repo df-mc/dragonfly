@@ -16,7 +16,7 @@ func (h Honeycomb) Instrument() sound.Instrument {
 
 // BreakInfo ...
 func (h Honeycomb) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, nothingEffective, oneOf(h))
+	return NewBreakInfo(0.6, AlwaysHarvestable, NothingEffective, OneOf(h))
 }
 
 // EncodeItem ...

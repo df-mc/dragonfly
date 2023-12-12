@@ -32,24 +32,24 @@ type (
 // BreakInfo ...
 func (s Stone) BreakInfo() BreakInfo {
 	if s.Smooth {
-		return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
+		return NewBreakInfo(1.5, PickaxeHarvestable, PickaxeEffective, OneOf(s)).withBlastResistance(30)
 	}
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Cobblestone{}, Stone{})).withBlastResistance(30)
+	return NewBreakInfo(1.5, PickaxeHarvestable, PickaxeEffective, SilkTouchOneOf(Cobblestone{}, Stone{})).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (g Granite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(g)).withBlastResistance(30)
+	return NewBreakInfo(1.5, PickaxeHarvestable, PickaxeEffective, OneOf(g)).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (d Diorite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(30)
+	return NewBreakInfo(1.5, PickaxeHarvestable, PickaxeEffective, OneOf(d)).withBlastResistance(30)
 }
 
 // BreakInfo ...
 func (a Andesite) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(a)).withBlastResistance(30)
+	return NewBreakInfo(1.5, PickaxeHarvestable, PickaxeEffective, OneOf(a)).withBlastResistance(30)
 }
 
 // SmeltInfo ...

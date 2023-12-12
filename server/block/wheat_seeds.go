@@ -47,7 +47,7 @@ func (s WheatSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 
 // BreakInfo ...
 func (s WheatSeeds) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
+	return NewBreakInfo(0, AlwaysHarvestable, NothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if s.Growth < 7 {
 			return []item.Stack{item.NewStack(s, 1)}
 		}

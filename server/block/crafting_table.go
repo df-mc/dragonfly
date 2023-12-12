@@ -25,7 +25,7 @@ func (c CraftingTable) EncodeBlock() (name string, properties map[string]interfa
 
 // BreakInfo ...
 func (c CraftingTable) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
+	return NewBreakInfo(2.5, AlwaysHarvestable, AxeEffective, OneOf(c))
 }
 
 // FuelInfo ...

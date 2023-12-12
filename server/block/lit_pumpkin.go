@@ -34,7 +34,7 @@ func (l LitPumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 
 // BreakInfo ...
 func (l LitPumpkin) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(l))
+	return NewBreakInfo(1, AlwaysHarvestable, AxeEffective, OneOf(l))
 }
 
 // EncodeItem ...

@@ -86,10 +86,10 @@ func (l Leaves) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (l Leaves) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, func(t item.Tool) bool {
+	return NewBreakInfo(0.2, AlwaysHarvestable, func(t item.Tool) bool {
 		return t.ToolType() == item.TypeShears || t.ToolType() == item.TypeHoe
 	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
+		if t.ToolType() == item.TypeShears || HasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(l, 1)}
 		}
 		var drops []item.Stack

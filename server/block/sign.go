@@ -74,7 +74,7 @@ func (s Sign) EncodeItem() (name string, meta int16) {
 
 // BreakInfo ...
 func (s Sign) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(Sign{Wood: s.Wood}))
+	return NewBreakInfo(1, AlwaysHarvestable, AxeEffective, OneOf(Sign{Wood: s.Wood}))
 }
 
 // Dye dyes the Sign, changing its base colour to that of the colour passed.

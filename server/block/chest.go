@@ -135,7 +135,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
+	return NewBreakInfo(2.5, AlwaysHarvestable, AxeEffective, OneOf(c))
 }
 
 // FuelInfo ...

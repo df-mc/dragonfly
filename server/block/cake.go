@@ -67,7 +67,7 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _
 
 // BreakInfo ...
 func (c Cake) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, neverHarvestable, nothingEffective, simpleDrops())
+	return NewBreakInfo(0.5, NeverHarvestable, NothingEffective, SimpleDrops())
 }
 
 // EncodeItem ...

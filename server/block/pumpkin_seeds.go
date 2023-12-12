@@ -90,7 +90,7 @@ func (p PumpkinSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 
 // BreakInfo ...
 func (p PumpkinSeeds) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p))
+	return NewBreakInfo(0, AlwaysHarvestable, NothingEffective, OneOf(p))
 }
 
 // CompostChance ...

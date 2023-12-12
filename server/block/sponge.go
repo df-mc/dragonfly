@@ -19,7 +19,7 @@ type Sponge struct {
 
 // BreakInfo ...
 func (s Sponge) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, nothingEffective, oneOf(s))
+	return NewBreakInfo(0.6, AlwaysHarvestable, NothingEffective, OneOf(s))
 }
 
 // SmeltInfo ...

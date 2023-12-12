@@ -13,7 +13,7 @@ type DeepslateTiles struct {
 
 // BreakInfo ...
 func (d DeepslateTiles) BreakInfo() BreakInfo {
-	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(18)
+	return NewBreakInfo(3.5, PickaxeHarvestable, PickaxeEffective, OneOf(d)).withBlastResistance(18)
 }
 
 // SmeltInfo ...

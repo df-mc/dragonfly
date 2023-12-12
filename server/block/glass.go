@@ -9,7 +9,7 @@ type Glass struct {
 
 // BreakInfo ...
 func (g Glass) BreakInfo() BreakInfo {
-	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(g))
+	return NewBreakInfo(0.3, AlwaysHarvestable, NothingEffective, SilkTouchOnlyDrop(g))
 }
 
 // EncodeItem ...

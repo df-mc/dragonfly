@@ -12,7 +12,7 @@ type DriedKelp struct {
 
 // BreakInfo ...
 func (d DriedKelp) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, hoeEffective, oneOf(d))
+	return NewBreakInfo(0.5, AlwaysHarvestable, HoeEffective, OneOf(d))
 }
 
 // FlammabilityInfo ...

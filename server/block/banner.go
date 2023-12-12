@@ -32,7 +32,7 @@ func (Banner) MaxCount() int {
 
 // BreakInfo ...
 func (b Banner) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(b))
+	return NewBreakInfo(1, AlwaysHarvestable, AxeEffective, OneOf(b))
 }
 
 // FuelInfo ...

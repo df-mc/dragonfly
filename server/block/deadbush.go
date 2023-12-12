@@ -59,7 +59,7 @@ func (d DeadBush) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (d DeadBush) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return NewBreakInfo(0, AlwaysHarvestable, NothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if t.ToolType() == item.TypeShears {
 			return []item.Stack{item.NewStack(d, 1)}
 		}
