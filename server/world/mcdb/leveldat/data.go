@@ -140,6 +140,8 @@ type Data struct {
 	PlayersSleepingPercentage      int32          `nbt:"playerssleepingpercentage"`
 	RecipesUnlock                  bool           `nbt:"recipesunlock"`
 	NaturalGeneration              bool           `nbt:"naturalgeneration"`
+	ProjectilesCanBreakBlocks      bool           `nbt:"projectilescanbreakblocks"`
+	ShowRecipeMessages             bool           `nbt:"showrecipemessages"`
 }
 
 // FillDefault fills out d with all the default level.dat values.

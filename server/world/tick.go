@@ -4,8 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"math/rand"
+	"slices"
 	"time"
 )
 

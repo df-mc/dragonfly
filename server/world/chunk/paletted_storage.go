@@ -2,7 +2,6 @@ package chunk
 
 import (
 	"bytes"
-	"reflect"
 	"unsafe"
 )
 
@@ -46,7 +45,7 @@ func newPalettedStorage(indices []uint32, palette *Palette) *PalettedStorage {
 	var (
 		bitsPerIndex       = uint16(len(indices) / uint32BitSize / uint32ByteSize)
 		indexMask          = (uint32(1) << bitsPerIndex) - 1
-		indicesStart       = (unsafe.Pointer)((*reflect.SliceHeader)(unsafe.Pointer(&indices)).Data)
+		indicesStart       = (unsafe.Pointer)(unsafe.SliceData(indices))
 		filledBitsPerIndex uint16
 	)
 	if bitsPerIndex != 0 {
