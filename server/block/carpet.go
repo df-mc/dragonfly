@@ -57,7 +57,7 @@ func (c Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock handles not placing carpets on top of air blocks.
 func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+	pos, _, used = FirstReplaceable(w, pos, face, c)
 	if !used {
 		return
 	}
@@ -66,8 +66,8 @@ func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return
 	}
 
-	place(w, pos, c, user, ctx)
-	return placed(ctx)
+	Place(w, pos, c, user, ctx)
+	return Placed(ctx)
 }
 
 // allCarpet ...

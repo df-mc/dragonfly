@@ -74,7 +74,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	}
 	below := pos
 	pos = pos.Side(cube.FaceUp)
-	if !replaceableWith(w, pos, d) || !replaceableWith(w, pos.Side(cube.FaceUp), d) {
+	if !ReplaceableWith(w, pos, d) || !ReplaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
 	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
@@ -98,10 +98,10 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	}
 
 	ctx.IgnoreBBox = true
-	place(w, pos, d, user, ctx)
-	place(w, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
+	Place(w, pos, d, user, ctx)
+	Place(w, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
 	ctx.SubtractFromCount(1)
-	return placed(ctx)
+	return Placed(ctx)
 }
 
 // Activate ...

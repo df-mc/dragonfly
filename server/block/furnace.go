@@ -60,13 +60,13 @@ func (f Furnace) EncodeBlock() (name string, properties map[string]interface{}) 
 
 // UseOnBlock ...
 func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, f)
+	pos, _, used := FirstReplaceable(w, pos, face, f)
 	if !used {
 		return false
 	}
 
-	place(w, pos, NewFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
-	return placed(ctx)
+	Place(w, pos, NewFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

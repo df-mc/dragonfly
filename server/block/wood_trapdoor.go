@@ -44,15 +44,15 @@ func (t WoodTrapdoor) Model() world.BlockModel {
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
 // when needed.
 func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, t)
+	pos, face, used := FirstReplaceable(w, pos, face, t)
 	if !used {
 		return false
 	}
 	t.Facing = user.Rotation().Direction().Opposite()
 	t.Top = (clickPos.Y() > 0.5 && face != cube.FaceUp) || face == cube.FaceDown
 
-	place(w, pos, t, user, ctx)
-	return placed(ctx)
+	Place(w, pos, t, user, ctx)
+	return Placed(ctx)
 }
 
 // Activate ...

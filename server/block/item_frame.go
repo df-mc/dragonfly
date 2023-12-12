@@ -70,7 +70,7 @@ func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User)
 
 // UseOnBlock ...
 func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, i)
+	pos, face, used := FirstReplaceable(w, pos, face, i)
 	if !used {
 		return false
 	}
@@ -81,8 +81,8 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 	i.Facing = face.Opposite()
 	i.DropChance = 1.0
 
-	place(w, pos, i, user, ctx)
-	return placed(ctx)
+	Place(w, pos, i, user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

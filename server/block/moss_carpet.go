@@ -33,7 +33,7 @@ func (MossCarpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock ...
 func (m MossCarpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, m)
+	pos, _, used = FirstReplaceable(w, pos, face, m)
 	if !used {
 		return
 	}
@@ -41,8 +41,8 @@ func (m MossCarpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 		return
 	}
 
-	place(w, pos, m, user, ctx)
-	return placed(ctx)
+	Place(w, pos, m, user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

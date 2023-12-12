@@ -40,14 +40,14 @@ func (p Purpur) EncodeBlock() (name string, properties map[string]interface{}) {
 
 // UseOnBlock ...
 func (p PurpurPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, p)
+	pos, face, used = FirstReplaceable(w, pos, face, p)
 	if !used {
 		return
 	}
 	p.Axis = face.Axis()
 
-	place(w, pos, p, user, ctx)
-	return placed(ctx)
+	Place(w, pos, p, user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

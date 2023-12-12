@@ -42,19 +42,19 @@ func (Banner) FuelInfo() item.FuelInfo {
 
 // UseOnBlock ...
 func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, b)
+	pos, face, used = FirstReplaceable(w, pos, face, b)
 	if !used || face == cube.FaceDown {
 		return false
 	}
 
 	if face == cube.FaceUp {
 		b.Attach = StandingAttachment(user.Rotation().Orientation().Opposite())
-		place(w, pos, b, user, ctx)
+		Place(w, pos, b, user, ctx)
 		return
 	}
 	b.Attach = WallAttachment(face.Direction())
-	place(w, pos, b, user, ctx)
-	return placed(ctx)
+	Place(w, pos, b, user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

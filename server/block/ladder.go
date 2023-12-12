@@ -31,7 +31,7 @@ func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock ...
 func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, l)
+	pos, face, used := FirstReplaceable(w, pos, face, l)
 	if !used {
 		return false
 	}
@@ -53,8 +53,8 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	}
 	l.Facing = face.Direction()
 
-	place(w, pos, l, user, ctx)
-	return placed(ctx)
+	Place(w, pos, l, user, ctx)
+	return Placed(ctx)
 }
 
 // EntityInside ...

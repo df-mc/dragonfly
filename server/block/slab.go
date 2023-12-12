@@ -32,22 +32,22 @@ func (s Slab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *w
 			// A half slab of the same type was clicked at the top, so we can make it full.
 			clickedSlab.Double = true
 
-			place(w, pos, clickedSlab, user, ctx)
-			return placed(ctx)
+			Place(w, pos, clickedSlab, user, ctx)
+			return Placed(ctx)
 		}
 	}
-	if sideSlab, ok := w.Block(pos.Side(face)).(Slab); ok && !replaceableWith(w, pos, s) && !s.Double {
+	if sideSlab, ok := w.Block(pos.Side(face)).(Slab); ok && !ReplaceableWith(w, pos, s) && !s.Double {
 		sideId, sideMeta := sideSlab.EncodeItem()
-		// The block on the side of the one clicked was a slab and the block clicked was not replaceableWith, so
+		// The block on the side of the one clicked was a slab and the block clicked was not ReplaceableWith, so
 		// the slab on the side must've been half and may now be filled if the wood types are the same.
 		if !sideSlab.Double && id == sideId && meta == sideMeta {
 			sideSlab.Double = true
 
-			place(w, pos.Side(face), sideSlab, user, ctx)
-			return placed(ctx)
+			Place(w, pos.Side(face), sideSlab, user, ctx)
+			return Placed(ctx)
 		}
 	}
-	pos, face, used = firstReplaceable(w, pos, face, s)
+	pos, face, used = FirstReplaceable(w, pos, face, s)
 	if !used {
 		return
 	}
@@ -55,8 +55,8 @@ func (s Slab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *w
 		s.Top = true
 	}
 
-	place(w, pos, s, user, ctx)
-	return placed(ctx)
+	Place(w, pos, s, user, ctx)
+	return Placed(ctx)
 }
 
 // Instrument ...

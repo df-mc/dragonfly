@@ -93,14 +93,14 @@ func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
 
 // UseOnBlock ...
 func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(wo, pos, face, w)
+	pos, _, used = FirstReplaceable(wo, pos, face, w)
 	if !used {
 		return
 	}
 	w, _ = w.calculateConnections(wo, pos)
 	w, _ = w.calculatePost(wo, pos)
-	place(wo, pos, w, user, ctx)
-	return placed(ctx)
+	Place(wo, pos, w, user, ctx)
+	return Placed(ctx)
 }
 
 // SideClosed ...

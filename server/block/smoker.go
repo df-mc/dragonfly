@@ -61,13 +61,13 @@ func (s Smoker) EncodeBlock() (name string, properties map[string]interface{}) {
 
 // UseOnBlock ...
 func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, s)
+	pos, _, used := FirstReplaceable(w, pos, face, s)
 	if !used {
 		return false
 	}
 
-	place(w, pos, NewSmoker(user.Rotation().Direction().Face().Opposite()), user, ctx)
-	return placed(ctx)
+	Place(w, pos, NewSmoker(user.Rotation().Direction().Face().Opposite()), user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

@@ -20,14 +20,14 @@ type Basalt struct {
 
 // UseOnBlock ...
 func (b Basalt) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, b)
+	pos, face, used = FirstReplaceable(w, pos, face, b)
 	if !used {
 		return
 	}
 	b.Axis = face.Axis()
 
-	place(w, pos, b, user, ctx)
-	return placed(ctx)
+	Place(w, pos, b, user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

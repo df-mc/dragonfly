@@ -26,7 +26,7 @@ func (c Cake) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // UseOnBlock ...
 func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, c)
+	pos, _, used := FirstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
@@ -35,8 +35,8 @@ func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 		return false
 	}
 
-	place(w, pos, c, user, ctx)
-	return placed(ctx)
+	Place(w, pos, c, user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

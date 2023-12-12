@@ -75,7 +75,7 @@ func (p PumpkinSeeds) BoneMeal(pos cube.Pos, w *world.World) bool {
 
 // UseOnBlock ...
 func (p PumpkinSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, p)
+	pos, _, used := FirstReplaceable(w, pos, face, p)
 	if !used {
 		return false
 	}
@@ -84,8 +84,8 @@ func (p PumpkinSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 		return false
 	}
 
-	place(w, pos, p, user, ctx)
-	return placed(ctx)
+	Place(w, pos, p, user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

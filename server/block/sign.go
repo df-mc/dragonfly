@@ -139,7 +139,7 @@ type SignEditor interface {
 
 // UseOnBlock ...
 func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, s)
+	pos, face, used = FirstReplaceable(w, pos, face, s)
 	if !used || face == cube.FaceDown {
 		return false
 	}
@@ -149,11 +149,11 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 	} else {
 		s.Attach = WallAttachment(face.Direction())
 	}
-	place(w, pos, s, user, ctx)
+	Place(w, pos, s, user, ctx)
 	if editor, ok := user.(SignEditor); ok {
 		editor.OpenSign(pos, true)
 	}
-	return placed(ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

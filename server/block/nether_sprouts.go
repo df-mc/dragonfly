@@ -23,7 +23,7 @@ func (n NetherSprouts) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock ...
 func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, n)
+	pos, _, used := FirstReplaceable(w, pos, face, n)
 	if !used {
 		return false
 	}
@@ -31,8 +31,8 @@ func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w 
 		return false //TODO: Nylium & mycelium
 	}
 
-	place(w, pos, n, user, ctx)
-	return placed(ctx)
+	Place(w, pos, n, user, ctx)
+	return Placed(ctx)
 }
 
 // HasLiquidDrops ...

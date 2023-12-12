@@ -48,20 +48,20 @@ func (d DoubleTallGrass) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock ...
 func (d DoubleTallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, d)
+	pos, _, used := FirstReplaceable(w, pos, face, d)
 	if !used {
 		return false
 	}
-	if !replaceableWith(w, pos.Side(cube.FaceUp), d) {
+	if !ReplaceableWith(w, pos.Side(cube.FaceUp), d) {
 		return false
 	}
 	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
-	place(w, pos, d, user, ctx)
-	place(w, pos.Side(cube.FaceUp), DoubleTallGrass{Type: d.Type, UpperPart: true}, user, ctx)
-	return placed(ctx)
+	Place(w, pos, d, user, ctx)
+	Place(w, pos.Side(cube.FaceUp), DoubleTallGrass{Type: d.Type, UpperPart: true}, user, ctx)
+	return Placed(ctx)
 }
 
 // FlammabilityInfo ...

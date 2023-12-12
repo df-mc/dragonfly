@@ -30,7 +30,7 @@ func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock ...
 func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, d)
+	pos, _, used := FirstReplaceable(w, pos, face, d)
 	if !used {
 		return false
 	}
@@ -38,8 +38,8 @@ func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 		return false
 	}
 
-	place(w, pos, d, user, ctx)
-	return placed(ctx)
+	Place(w, pos, d, user, ctx)
+	return Placed(ctx)
 }
 
 // SideClosed ...

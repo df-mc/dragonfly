@@ -31,14 +31,14 @@ func (h HayBale) EntityLand(_ cube.Pos, _ *world.World, e world.Entity, distance
 
 // UseOnBlock ...
 func (h HayBale) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, h)
+	pos, face, used = FirstReplaceable(w, pos, face, h)
 	if !used {
 		return
 	}
 	h.Axis = face.Axis()
 
-	place(w, pos, h, user, ctx)
-	return placed(ctx)
+	Place(w, pos, h, user, ctx)
+	return Placed(ctx)
 }
 
 // FlammabilityInfo ...

@@ -47,15 +47,15 @@ func (WoodFenceGate) FuelInfo() item.FuelInfo {
 
 // UseOnBlock ...
 func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, f)
+	pos, _, used := FirstReplaceable(w, pos, face, f)
 	if !used {
 		return false
 	}
 	f.Facing = user.Rotation().Direction()
 	f.Lowered = f.shouldBeLowered(pos, w)
 
-	place(w, pos, f, user, ctx)
-	return placed(ctx)
+	Place(w, pos, f, user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

@@ -50,7 +50,7 @@ func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock ...
 func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, c)
+	pos, _, used := FirstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
@@ -70,8 +70,8 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		c.Facing = face.Opposite().Direction()
 		ctx.IgnoreBBox = true
 
-		place(w, pos, c, user, ctx)
-		return placed(ctx)
+		Place(w, pos, c, user, ctx)
+		return Placed(ctx)
 	}
 
 	return false

@@ -40,7 +40,7 @@ func (g TallGrass) BreakInfo() BreakInfo {
 // BoneMeal attempts to affect the block using a bone meal item.
 func (g TallGrass) BoneMeal(pos cube.Pos, w *world.World) bool {
 	upper := DoubleTallGrass{Type: g.Type.Double(), UpperPart: true}
-	if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
+	if ReplaceableWith(w, pos.Side(cube.FaceUp), upper) {
 		w.SetBlock(pos, DoubleTallGrass{Type: g.Type.Double()}, nil)
 		w.SetBlock(pos.Side(cube.FaceUp), upper, nil)
 		return true
@@ -71,7 +71,7 @@ func (g TallGrass) HasLiquidDrops() bool {
 
 // UseOnBlock ...
 func (g TallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, g)
+	pos, _, used := FirstReplaceable(w, pos, face, g)
 	if !used {
 		return false
 	}
@@ -79,8 +79,8 @@ func (g TallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		return false
 	}
 
-	place(w, pos, g, user, ctx)
-	return placed(ctx)
+	Place(w, pos, g, user, ctx)
+	return Placed(ctx)
 }
 
 // EncodeItem ...

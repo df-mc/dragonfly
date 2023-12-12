@@ -36,7 +36,7 @@ func (g Grindstone) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.U
 
 // UseOnBlock ...
 func (g Grindstone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, g)
+	pos, face, used = FirstReplaceable(w, pos, face, g)
 	if !used {
 		return false
 	}
@@ -47,8 +47,8 @@ func (g Grindstone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 		g.Attach = WallGrindstoneAttachment()
 		g.Facing = face.Direction()
 	}
-	place(w, pos, g, user, ctx)
-	return placed(ctx)
+	Place(w, pos, g, user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

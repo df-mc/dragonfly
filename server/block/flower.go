@@ -71,7 +71,7 @@ func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock ...
 func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, f)
+	pos, _, used := FirstReplaceable(w, pos, face, f)
 	if !used {
 		return false
 	}
@@ -79,8 +79,8 @@ func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 
-	place(w, pos, f, user, ctx)
-	return placed(ctx)
+	Place(w, pos, f, user, ctx)
+	return Placed(ctx)
 }
 
 // HasLiquidDrops ...

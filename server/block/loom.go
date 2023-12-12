@@ -39,13 +39,13 @@ func (Loom) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *
 
 // UseOnBlock ...
 func (l Loom) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, l)
+	pos, _, used = FirstReplaceable(w, pos, face, l)
 	if !used {
 		return
 	}
 	l.Facing = user.Rotation().Direction().Opposite()
-	place(w, pos, l, user, ctx)
-	return placed(ctx)
+	Place(w, pos, l, user, ctx)
+	return Placed(ctx)
 }
 
 // EncodeItem ...

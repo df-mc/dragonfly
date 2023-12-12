@@ -20,7 +20,7 @@ type SugarCane struct {
 
 // UseOnBlock ensures the placement of the block is OK.
 func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+	pos, _, used = FirstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
@@ -28,8 +28,8 @@ func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		return false
 	}
 
-	place(w, pos, c, user, ctx)
-	return placed(ctx)
+	Place(w, pos, c, user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

@@ -28,14 +28,14 @@ func (p Pumpkin) Instrument() sound.Instrument {
 
 // UseOnBlock ...
 func (p Pumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, p)
+	pos, _, used = FirstReplaceable(w, pos, face, p)
 	if !used {
 		return
 	}
 	p.Facing = user.Rotation().Direction().Opposite()
 
-	place(w, pos, p, user, ctx)
-	return placed(ctx)
+	Place(w, pos, p, user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

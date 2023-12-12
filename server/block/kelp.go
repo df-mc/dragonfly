@@ -76,7 +76,7 @@ func (k Kelp) withRandomAge() Kelp {
 
 // UseOnBlock ...
 func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, k)
+	pos, _, used = FirstReplaceable(w, pos, face, k)
 	if !used {
 		return
 	}
@@ -97,8 +97,8 @@ func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 	}
 
 	// When first placed, kelp gets a random age between 0 and 24.
-	place(w, pos, k.withRandomAge(), user, ctx)
-	return placed(ctx)
+	Place(w, pos, k.withRandomAge(), user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

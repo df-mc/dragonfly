@@ -81,11 +81,11 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		}
 
 		existing.AdditionalCount++
-		place(w, pos, existing, user, ctx)
-		return placed(ctx)
+		Place(w, pos, existing, user, ctx)
+		return Placed(ctx)
 	}
 
-	pos, _, used := firstReplaceable(w, pos, face, s)
+	pos, _, used := FirstReplaceable(w, pos, face, s)
 	if !used {
 		return false
 	}
@@ -99,8 +99,8 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		s.Dead = !ok
 	}
 
-	place(w, pos, s, user, ctx)
-	return placed(ctx)
+	Place(w, pos, s, user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

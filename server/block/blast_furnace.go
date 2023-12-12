@@ -61,13 +61,13 @@ func (b BlastFurnace) EncodeBlock() (name string, properties map[string]interfac
 
 // UseOnBlock ...
 func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, b)
+	pos, _, used := FirstReplaceable(w, pos, face, b)
 	if !used {
 		return false
 	}
 
-	place(w, pos, NewBlastFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
-	return placed(ctx)
+	Place(w, pos, NewBlastFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

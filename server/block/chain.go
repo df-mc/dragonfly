@@ -24,14 +24,14 @@ func (Chain) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // UseOnBlock ...
 func (c Chain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, c)
+	pos, face, used = FirstReplaceable(w, pos, face, c)
 	if !used {
 		return
 	}
 	c.Axis = face.Axis()
 
-	place(w, pos, c, user, ctx)
-	return placed(ctx)
+	Place(w, pos, c, user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

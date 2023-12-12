@@ -41,13 +41,13 @@ func (Anvil) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ 
 
 // UseOnBlock ...
 func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, a)
+	pos, _, used = FirstReplaceable(w, pos, face, a)
 	if !used {
 		return
 	}
 	a.Facing = user.Rotation().Direction().RotateRight()
-	place(w, pos, a, user, ctx)
-	return placed(ctx)
+	Place(w, pos, a, user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

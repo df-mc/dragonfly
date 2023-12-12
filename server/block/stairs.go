@@ -27,7 +27,7 @@ type Stairs struct {
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down
 // when needed.
 func (s Stairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, s)
+	pos, face, used = FirstReplaceable(w, pos, face, s)
 	if !used {
 		return
 	}
@@ -36,8 +36,8 @@ func (s Stairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w 
 		s.UpsideDown = true
 	}
 
-	place(w, pos, s, user, ctx)
-	return placed(ctx)
+	Place(w, pos, s, user, ctx)
+	return Placed(ctx)
 }
 
 // Model ...

@@ -121,7 +121,7 @@ func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, 
 
 // UseOnBlock ...
 func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+	pos, _, used = FirstReplaceable(w, pos, face, c)
 	if !used {
 		return
 	}
@@ -129,8 +129,8 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	c = NewChest()
 	c.Facing = user.Rotation().Direction().Opposite()
 
-	place(w, pos, c, user, ctx)
-	return placed(ctx)
+	Place(w, pos, c, user, ctx)
+	return Placed(ctx)
 }
 
 // BreakInfo ...

@@ -53,14 +53,14 @@ func (Log) FuelInfo() item.FuelInfo {
 
 // UseOnBlock handles the rotational placing of logs.
 func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, l)
+	pos, face, used = FirstReplaceable(w, pos, face, l)
 	if !used {
 		return
 	}
 	l.Axis = face.Axis()
 
-	place(w, pos, l, user, ctx)
-	return placed(ctx)
+	Place(w, pos, l, user, ctx)
+	return Placed(ctx)
 }
 
 // Strip ...

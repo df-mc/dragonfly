@@ -36,7 +36,7 @@ func (d Deepslate) SmeltInfo() item.SmeltInfo {
 
 // UseOnBlock ...
 func (d Deepslate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, d)
+	pos, face, used = FirstReplaceable(w, pos, face, d)
 	if !used {
 		return
 	}
@@ -44,8 +44,8 @@ func (d Deepslate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 		d.Axis = face.Axis()
 	}
 
-	place(w, pos, d, user, ctx)
-	return placed(ctx)
+	Place(w, pos, d, user, ctx)
+	return Placed(ctx)
 }
 
 // EncodeItem ...

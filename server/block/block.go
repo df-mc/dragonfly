@@ -57,7 +57,7 @@ type LightDiffuser interface {
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,
 // which may be replaced by clicking it with another block.
 type Replaceable interface {
-	// ReplaceableBy returns a bool which indicates if the block is replaceableWith by another block.
+	// ReplaceableBy returns a bool which indicates if the block is ReplaceableWith by another block.
 	ReplaceableBy(b world.Block) bool
 }
 
@@ -117,8 +117,8 @@ func abs(x int) int {
 	return -x
 }
 
-// replaceableWith checks if the block at the position passed is replaceable with the block passed.
-func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
+// ReplaceableWith checks if the block at the position passed is replaceable with the block passed.
+func ReplaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
 	if pos.OutOfBounds(w.Range()) {
 		return false
 	}
@@ -129,25 +129,25 @@ func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
 	return false
 }
 
-// firstReplaceable finds the first replaceable block position eligible to have a block placed on it after
+// FirstReplaceable finds the first replaceable block position eligible to have a block placed on it after
 // clicking on the position and face passed.
 // If none can be found, the bool returned is false.
-func firstReplaceable(w *world.World, pos cube.Pos, face cube.Face, with world.Block) (cube.Pos, cube.Face, bool) {
-	if replaceableWith(w, pos, with) {
-		// A replaceableWith block was clicked, so we can replace it. This will then be assumed to be placed on
+func FirstReplaceable(w *world.World, pos cube.Pos, face cube.Face, with world.Block) (cube.Pos, cube.Face, bool) {
+	if ReplaceableWith(w, pos, with) {
+		// A ReplaceableWith block was clicked, so we can replace it. This will then be assumed to be placed on
 		// the top face. (Torches, for example, will get attached to the floor when clicking tall grass.)
 		return pos, cube.FaceUp, true
 	}
 	side := pos.Side(face)
-	if replaceableWith(w, side, with) {
+	if ReplaceableWith(w, side, with) {
 		return side, face, true
 	}
 	return pos, face, false
 }
 
-// place places the block passed at the position passed. If the user implements the block.Placer interface, it
+// Place places the block passed at the position passed. If the user implements the block.Placer interface, it
 // will use its PlaceBlock method. If not, the block is placed without interaction from the user.
-func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *item.UseContext) {
+func Place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *item.UseContext) {
 	if placer, ok := user.(Placer); ok {
 		placer.PlaceBlock(pos, b, ctx)
 		return
@@ -172,8 +172,8 @@ func horizontalDirection(d cube.Direction) cube.Direction {
 	panic("invalid direction")
 }
 
-// placed checks if an item was placed with the use context passed.
-func placed(ctx *item.UseContext) bool {
+// Placed checks if an item was placed with the use context passed.
+func Placed(ctx *item.UseContext) bool {
 	return ctx.CountSub > 0
 }
 

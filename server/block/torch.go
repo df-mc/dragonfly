@@ -35,7 +35,7 @@ func (t Torch) LightEmissionLevel() uint8 {
 
 // UseOnBlock ...
 func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, t)
+	pos, face, used := FirstReplaceable(w, pos, face, t)
 	if !used {
 		return false
 	}
@@ -60,8 +60,8 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	}
 	t.Facing = face.Opposite()
 
-	place(w, pos, t, user, ctx)
-	return placed(ctx)
+	Place(w, pos, t, user, ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick ...

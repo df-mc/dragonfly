@@ -52,7 +52,7 @@ func (EnderChest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // UseOnBlock ...
 func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+	pos, _, used = FirstReplaceable(w, pos, face, c)
 	if !used {
 		return
 	}
@@ -60,8 +60,8 @@ func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 	c = NewEnderChest()
 	c.Facing = user.Rotation().Direction().Opposite()
 
-	place(w, pos, c, user, ctx)
-	return placed(ctx)
+	Place(w, pos, c, user, ctx)
+	return Placed(ctx)
 }
 
 // Activate ...

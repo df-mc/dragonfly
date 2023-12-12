@@ -25,7 +25,7 @@ type Coral struct {
 
 // UseOnBlock ...
 func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, c)
+	pos, _, used := FirstReplaceable(w, pos, face, c)
 	if !used {
 		return false
 	}
@@ -40,8 +40,8 @@ func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 		}
 	}
 
-	place(w, pos, c, user, ctx)
-	return placed(ctx)
+	Place(w, pos, c, user, ctx)
+	return Placed(ctx)
 }
 
 // HasLiquidDrops ...

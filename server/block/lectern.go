@@ -53,13 +53,13 @@ func (l Lectern) BreakInfo() BreakInfo {
 
 // UseOnBlock ...
 func (l Lectern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, l)
+	pos, _, used = FirstReplaceable(w, pos, face, l)
 	if !used {
 		return false
 	}
 	l.Facing = user.Rotation().Direction().Face().Opposite()
-	place(w, pos, l, user, ctx)
-	return placed(ctx)
+	Place(w, pos, l, user, ctx)
+	return Placed(ctx)
 }
 
 // readableBook represents a book that can be read through a lectern.

@@ -50,7 +50,7 @@ func (s Sponge) EncodeBlock() (string, map[string]any) {
 // absorbed.
 func (s Sponge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
 	var particles = false
-	pos, _, used = firstReplaceable(w, pos, face, s)
+	pos, _, used = FirstReplaceable(w, pos, face, s)
 	if !used {
 		return
 	}
@@ -61,11 +61,11 @@ func (s Sponge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		particles = true
 	}
 
-	place(w, pos, s, user, ctx)
-	if particles && placed(ctx) {
+	Place(w, pos, s, user, ctx)
+	if particles && Placed(ctx) {
 		w.AddParticle(pos.Side(cube.FaceUp).Vec3(), particle.Evaporate{})
 	}
-	return placed(ctx)
+	return Placed(ctx)
 }
 
 // NeighbourUpdateTick checks for nearby water flow. If water could be found and the sponge is dry, it will absorb the
