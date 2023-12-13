@@ -1956,7 +1956,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 				w.PlaySound(p.Position(), sound.Fall{Distance: force})
 				p.Hurt(force, entity.GlideDamageSource{})
 			}
-			p.StopGliding()
 		}
 	}
 
