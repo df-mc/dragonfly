@@ -3,8 +3,8 @@ package item
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
-	"golang.org/x/exp/slices"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"sync/atomic"

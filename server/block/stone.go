@@ -73,53 +73,53 @@ func (s Stone) EncodeBlock() (string, map[string]any) {
 	if s.Smooth {
 		return "minecraft:smooth_stone", nil
 	}
-	return "minecraft:stone", map[string]any{"stone_type": "stone"}
+	return "minecraft:stone", nil
 }
 
 // EncodeItem ...
 func (a Andesite) EncodeItem() (name string, meta int16) {
 	if a.Polished {
-		return "minecraft:stone", 6
+		return "minecraft:polished_andesite", 0
 	}
-	return "minecraft:stone", 5
+	return "minecraft:andesite", 0
 }
 
 // EncodeBlock ...
 func (a Andesite) EncodeBlock() (string, map[string]any) {
 	if a.Polished {
-		return "minecraft:stone", map[string]any{"stone_type": "andesite_smooth"}
+		return "minecraft:polished_andesite", nil
 	}
-	return "minecraft:stone", map[string]any{"stone_type": "andesite"}
+	return "minecraft:andesite", nil
 }
 
 // EncodeItem ...
 func (d Diorite) EncodeItem() (name string, meta int16) {
 	if d.Polished {
-		return "minecraft:stone", 4
+		return "minecraft:polished_diorite", 0
 	}
-	return "minecraft:stone", 3
+	return "minecraft:diorite", 0
 }
 
 // EncodeBlock ...
 func (d Diorite) EncodeBlock() (string, map[string]any) {
 	if d.Polished {
-		return "minecraft:stone", map[string]any{"stone_type": "diorite_smooth"}
+		return "minecraft:polished_diorite", nil
 	}
-	return "minecraft:stone", map[string]any{"stone_type": "diorite"}
+	return "minecraft:diorite", nil
 }
 
 // EncodeItem ...
 func (g Granite) EncodeItem() (name string, meta int16) {
 	if g.Polished {
-		return "minecraft:stone", 2
+		return "minecraft:polished_granite", 0
 	}
-	return "minecraft:stone", 1
+	return "minecraft:granite", 0
 }
 
 // EncodeBlock ...
 func (g Granite) EncodeBlock() (string, map[string]any) {
 	if g.Polished {
-		return "minecraft:stone", map[string]any{"stone_type": "granite_smooth"}
+		return "minecraft:polished_granite", nil
 	}
-	return "minecraft:stone", map[string]any{"stone_type": "granite"}
+	return "minecraft:granite", nil
 }
