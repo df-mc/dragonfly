@@ -15,9 +15,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/exp/slices"
 	"os"
 	"path/filepath"
+	"slices"
 )
 
 // Config contains options for starting a Minecraft server.

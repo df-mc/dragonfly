@@ -1,6 +1,6 @@
 package item
 
-import "golang.org/x/exp/slices"
+import "slices"
 
 // BookAndQuill is an item used to write WrittenBook(s).
 type BookAndQuill struct {

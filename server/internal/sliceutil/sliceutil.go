@@ -1,6 +1,6 @@
 package sliceutil
 
-import "golang.org/x/exp/slices"
+import "slices"
 
 // Convert converts a slice of type B to a slice of type A. Convert panics if B
 // cannot be type asserted to type A.

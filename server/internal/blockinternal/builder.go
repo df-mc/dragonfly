@@ -3,7 +3,7 @@ package blockinternal
 import (
 	"github.com/df-mc/dragonfly/server/item/category"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 // ComponentBuilder represents a builder that can be used to construct a block components map to be sent to a client.

@@ -8,8 +8,8 @@ import (
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"golang.org/x/exp/slices"
 	"math"
+	"slices"
 )
 
 // handleCraft handles the CraftRecipe request action.
