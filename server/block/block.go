@@ -117,10 +117,10 @@ func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
 	return false
 }
 
-// firstReplaceable finds the first replaceable block position eligible to have a block placed on it after
+// FirstReplaceable finds the first replaceable block position eligible to have a block placed on it after
 // clicking on the position and face passed.
 // If none can be found, the bool returned is false.
-func firstReplaceable(w *world.World, pos cube.Pos, face cube.Face, with world.Block) (cube.Pos, cube.Face, bool) {
+func FirstReplaceable(w *world.World, pos cube.Pos, face cube.Face, with world.Block) (cube.Pos, cube.Face, bool) {
 	if replaceableWith(w, pos, with) {
 		// A replaceableWith block was clicked, so we can replace it. This will then be assumed to be placed on
 		// the top face. (Torches, for example, will get attached to the floor when clicking tall grass.)
@@ -133,9 +133,9 @@ func firstReplaceable(w *world.World, pos cube.Pos, face cube.Face, with world.B
 	return pos, face, false
 }
 
-// place places the block passed at the position passed. If the user implements the block.Placer interface, it
+// Place places the block passed at the position passed. If the user implements the block.Placer interface, it
 // will use its PlaceBlock method. If not, the block is placed without interaction from the user.
-func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *item.UseContext) {
+func Place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *item.UseContext) {
 	if placer, ok := user.(Placer); ok {
 		placer.PlaceBlock(pos, b, ctx)
 		return
