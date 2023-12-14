@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
-	"golang.org/x/exp/slices"
 	"math"
+	"slices"
 	"strings"
 	"sync"
 )

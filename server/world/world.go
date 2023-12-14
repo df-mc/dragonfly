@@ -15,7 +15,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
