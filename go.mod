@@ -1,6 +1,6 @@
 module github.com/df-mc/dragonfly
 
-go 1.21
+go 1.19
 
 require (
 	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
@@ -13,7 +13,6 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rogpeppe/go-internal v1.9.0
 	github.com/sandertv/gophertunnel v1.33.0
-	github.com/segmentio/fasthash v1.0.3
 	github.com/sirupsen/logrus v1.9.0
 	go.uber.org/atomic v1.10.0
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
