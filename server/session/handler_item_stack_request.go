@@ -234,6 +234,10 @@ func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestA
 		return fmt.Errorf("client attempted to destroy %v items, but only %v present", a.Count, i.Count())
 	}
 
+	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), s.inv.Handler().HandleDestroy); err != nil {
+		return err
+	}
+
 	h.setItemInSlot(a.Source, i.Grow(-int(a.Count)), s)
 	return nil
 }
