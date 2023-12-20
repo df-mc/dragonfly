@@ -233,8 +233,14 @@ func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestA
 	if i.Count() < int(a.Count) {
 		return fmt.Errorf("client attempted to destroy %v items, but only %v present", a.Count, i.Count())
 	}
+	slot := func() int {
+		if a.Source.ContainerID == protocol.ContainerCursor {
+			return -1
+		}
 
-	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), s.inv.Handler().HandleDestroy); err != nil {
+		return int(a.Source.Slot)
+	}
+	if err := call(event.C(), slot(), i.Grow(int(a.Count)-i.Count()), s.inv.Handler().HandleDestroy); err != nil {
 		return err
 	}
 
