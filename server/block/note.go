@@ -60,7 +60,6 @@ func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _
 		return false
 	}
 	n.Pitch = (n.Pitch + 1) % 25
-	n.playNote(pos, w)
 	w.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
 	return true
 }
