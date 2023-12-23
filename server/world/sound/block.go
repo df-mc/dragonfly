@@ -176,6 +176,12 @@ type ComposterReady struct{ sound }
 // LecternBookPlace is a sound played when a book is placed in a lectern.
 type LecternBookPlace struct{ sound }
 
+// WaxOn is a sound played when a sign is waxed.
+type WaxOn struct{ sound }
+
+// WaxedInteractFail is a sound played when a player tries to interact with a waxed sign.
+type WaxedInteractFail struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 
