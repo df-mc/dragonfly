@@ -1,10 +1,14 @@
 package packbuilder
 
 import (
+	_ "embed"
 	"github.com/rogpeppe/go-internal/dirhash"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"os"
 )
+
+//go:embed pack_icon.png
+var packIcon []byte
 
 // BuildResourcePack builds a resource pack based on custom features that have been registered to the server.
 // It creates a UUID based on the hash of the directory so the client will only be prompted to download it
@@ -23,8 +27,15 @@ func BuildResourcePack() (*resource.Pack, bool) {
 	assets += itemCount
 	lang = append(lang, itemLang...)
 
+	blockCount, blockLang := buildBlocks(dir)
+	assets += blockCount
+	lang = append(lang, blockLang...)
+
 	if assets > 0 {
 		buildLanguageFile(dir, lang)
+		if err := os.WriteFile(dir+"/pack_icon.png", packIcon, 0666); err != nil {
+			panic(err)
+		}
 		hash, err := dirhash.HashDir(dir, "", dirhash.Hash1)
 		if err != nil {
 			panic(err)

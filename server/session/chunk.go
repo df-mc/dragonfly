@@ -2,7 +2,7 @@ package session
 
 import (
 	"bytes"
-	"github.com/cespare/xxhash"
+	"github.com/cespare/xxhash/v2"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"

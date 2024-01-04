@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"github.com/segmentio/fasthash/fnv1"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"unsafe"
@@ -20,6 +22,8 @@ var (
 	// blocks holds a list of all registered Blocks indexed by their runtime ID. Blocks that were not explicitly
 	// registered are of the type unknownBlock.
 	blocks []Block
+	// customBlocks maps a custom block's identifier to a slice of custom blocks.
+	customBlocks = map[string]CustomBlock{}
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
@@ -48,7 +52,7 @@ func init() {
 		if err := dec.Decode(&s); err != nil {
 			break
 		}
-		registerBlockState(s)
+		registerBlockState(s, false)
 	}
 
 	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]any, found bool) {
@@ -69,7 +73,7 @@ func init() {
 
 // registerBlockState registers a new blockState to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
-func registerBlockState(s blockState) {
+func registerBlockState(s blockState, order bool) {
 	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
@@ -78,18 +82,39 @@ func registerBlockState(s blockState) {
 		blockProperties[s.Name] = s.Properties
 	}
 	rid := uint32(len(blocks))
+	blocks = append(blocks, unknownBlock{s})
+	if order {
+		sort.SliceStable(blocks, func(i, j int) bool {
+			nameOne, _ := blocks[i].EncodeBlock()
+			nameTwo, _ := blocks[j].EncodeBlock()
+			return nameOne != nameTwo && fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
+		})
+
+		for id, b := range blocks {
+			name, properties := b.EncodeBlock()
+			i := stateHash{name: name, properties: hashProperties(properties)}
+			if name == "minecraft:air" {
+				airRID = uint32(id)
+			}
+			if i == h {
+				rid = uint32(id)
+			}
+			stateRuntimeIDs[i] = uint32(id)
+			hashes.Put(int64(b.Hash()), int64(id))
+		}
+	}
+
 	if s.Name == "minecraft:air" {
 		airRID = rid
 	}
-	stateRuntimeIDs[h] = rid
-	blocks = append(blocks, unknownBlock{s})
 
-	nbtBlocks = append(nbtBlocks, false)
-	randomTickBlocks = append(randomTickBlocks, false)
-	liquidBlocks = append(liquidBlocks, false)
-	liquidDisplacingBlocks = append(liquidDisplacingBlocks, false)
-	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
-	chunk.LightBlocks = append(chunk.LightBlocks, 0)
+	nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
+	randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
+	liquidBlocks = slices.Insert(liquidBlocks, int(rid), false)
+	liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
+	chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
+	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
+	stateRuntimeIDs[h] = rid
 }
 
 // unknownBlock represents a block that has not yet been implemented. It is used for registering block
