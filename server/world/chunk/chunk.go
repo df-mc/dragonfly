@@ -1,6 +1,8 @@
 package chunk
 
 import (
+	"slices"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
@@ -40,6 +42,40 @@ func New(air uint32, r cube.Range) *Chunk {
 		recalculateHeightMap: true,
 		heightMap:            make(HeightMap, 256),
 	}
+}
+
+// Equals returns if the chunk passed is equal to the current one
+func (chunk *Chunk) Equals(c *Chunk) bool {
+	if c.r != chunk.r {
+		return false
+	}
+
+	if c.air != chunk.air {
+		return false
+	}
+
+	if c.recalculateHeightMap != chunk.recalculateHeightMap {
+		return false
+	}
+
+	if !slices.Equal(c.heightMap, chunk.heightMap) {
+		return false
+	}
+
+	if len(c.sub) != len(chunk.sub) {
+		return false
+	}
+
+	for i := 0; i < len(c.sub); i++ {
+		c1 := c.sub[i]
+		c2 := chunk.sub[i]
+
+		if !c1.Equals(c2) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Range returns the cube.Range of the Chunk as passed to New.

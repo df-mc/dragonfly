@@ -1,5 +1,7 @@
 package chunk
 
+import "slices"
+
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
 type SubChunk struct {
@@ -12,6 +14,36 @@ type SubChunk struct {
 // NewSubChunk creates a new sub chunk. All sub chunks should be created through this function
 func NewSubChunk(air uint32) *SubChunk {
 	return &SubChunk{air: air}
+}
+
+// Equals returns if the sub chunk passed is equal to the current one.
+func (sub *SubChunk) Equals(s *SubChunk) bool {
+	if s.air != sub.air {
+		return false
+	}
+
+	if !slices.Equal(s.blockLight, sub.blockLight) {
+		return false
+	}
+
+	if !slices.Equal(s.skyLight, sub.skyLight) {
+		return false
+	}
+
+	if len(s.storages) != len(sub.storages) {
+		return false
+	}
+
+	for i := 0; i < len(s.storages); i++ {
+		s1 := s.storages[i]
+		s2 := sub.storages[i]
+
+		if !s1.Equal(s2) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Empty checks if the SubChunk is considered empty. This is the case if the SubChunk has 0 block storages or if it has
