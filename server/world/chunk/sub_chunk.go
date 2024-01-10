@@ -18,19 +18,8 @@ func NewSubChunk(air uint32) *SubChunk {
 
 // Equals returns if the sub chunk passed is equal to the current one.
 func (sub *SubChunk) Equals(s *SubChunk) bool {
-	if s.air != sub.air {
-		return false
-	}
-
-	if !slices.Equal(s.blockLight, sub.blockLight) {
-		return false
-	}
-
-	if !slices.Equal(s.skyLight, sub.skyLight) {
-		return false
-	}
-
-	if len(s.storages) != len(sub.storages) {
+	if s.air != sub.air || !slices.Equal(s.blockLight, sub.blockLight) ||
+		!slices.Equal(s.skyLight, sub.skyLight) || len(s.storages) != len(sub.storages) {
 		return false
 	}
 
