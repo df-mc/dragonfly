@@ -17,8 +17,6 @@ type Note struct {
 
 	// Pitch is the current pitch the note block is set to. Value ranges from 0-24.
 	Pitch int
-
-	GameMode world.GameMode
 }
 
 // playNote ...
