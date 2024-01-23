@@ -908,9 +908,19 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 
 // ViewEntityState ...
 func (s *Session) ViewEntityState(e world.Entity) {
+	metadata := s.parseEntityMetadata(e)
+	if v, ok := e.(LayerViewer); ok {
+		if nt := s.viewLayer.NameTag(v); len(nt) > 0 {
+			metadata[protocol.EntityDataKeyName] = nt
+		}
+		invisFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		if invis := s.viewLayer.Invisible(v); !invisFlag && invis {
+			metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		}
+	}
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
-		EntityMetadata:  s.parseEntityMetadata(e),
+		EntityMetadata:  metadata,
 	})
 }
 
