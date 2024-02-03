@@ -538,3 +538,23 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 	}
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
 }
+
+// updateOpenedPos updates the session's openedPos field.
+func (s *Session) updateOpenedPos(pos cube.Pos) {
+	s.openedPos.Store(pos)
+}
+
+// updateOpenedWindow updates the session's openedWindow field.
+func (s *Session) updateOpenedWindow(inv *inventory.Inventory) {
+	s.openedWindow.Store(inv)
+}
+
+// updateContainerOpenedState updates the session's containerOpened field.
+func (s *Session) updateContainerOpenedState(opened bool) {
+	s.containerOpened.Store(opened)
+}
+
+// updateOpenedContainerID updates the session's openedContainerID field.
+func (s *Session) updateOpenedContainerID(id uint32) {
+	s.openedContainerID.Store(id)
+}
