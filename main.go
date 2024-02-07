@@ -3,7 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -25,7 +29,11 @@ func main() {
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		p.SetGameMode(world.GameModeSurvival)
+		p.Inventory().AddItem(item.NewStack(block.CraftingTable{}, 64))
+		p.Inventory().AddItem(item.NewStack(block.Planks{}, 64))
+	}) {
 	}
 }
 
