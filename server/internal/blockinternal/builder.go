@@ -11,6 +11,7 @@ type ComponentBuilder struct {
 	permutations map[string]map[string]any
 	properties   []map[string]any
 	components   map[string]any
+	blockID      int32
 
 	identifier   string
 	menuCategory category.Category
@@ -18,13 +19,14 @@ type ComponentBuilder struct {
 
 // NewComponentBuilder returns a new component builder with the provided block data, using the provided components map
 // as a base.
-func NewComponentBuilder(identifier string, components map[string]any) *ComponentBuilder {
+func NewComponentBuilder(identifier string, components map[string]any, blockID int32) *ComponentBuilder {
 	if components == nil {
 		components = map[string]any{}
 	}
 	return &ComponentBuilder{
 		permutations: make(map[string]map[string]any),
 		components:   components,
+		blockID:      blockID,
 
 		identifier:   identifier,
 		menuCategory: category.Construction(),
@@ -78,6 +80,9 @@ func (builder *ComponentBuilder) Construct() map[string]any {
 		"menu_category": map[string]any{
 			"category": builder.menuCategory.String(),
 			"group":    builder.menuCategory.Group(),
+		},
+		"vanilla_block_data": map[string]any{
+			"block_id": builder.blockID,
 		},
 	}
 	if len(properties) > 0 {
