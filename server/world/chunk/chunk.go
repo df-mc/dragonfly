@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"slices"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
@@ -40,6 +41,25 @@ func New(air uint32, r cube.Range) *Chunk {
 		recalculateHeightMap: true,
 		heightMap:            make(HeightMap, 256),
 	}
+}
+
+// Equals returns if the chunk passed is equal to the current one
+func (chunk *Chunk) Equals(c *Chunk) bool {
+	if c.r != chunk.r || c.air != chunk.air ||
+		!slices.Equal(c.heightMap, chunk.heightMap) || len(c.sub) != len(chunk.sub) {
+		return false
+	}
+
+	for i := 0; i < len(c.sub); i++ {
+		c1 := c.sub[i]
+		c2 := chunk.sub[i]
+
+		if !c1.Equals(c2) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Range returns the cube.Range of the Chunk as passed to New.
