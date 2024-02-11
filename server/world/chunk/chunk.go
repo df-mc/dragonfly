@@ -49,7 +49,7 @@ func (chunk *Chunk) Equals(c *Chunk) bool {
 	if chunk.recalculateHeightMap || c.recalculateHeightMap {
 		return false
 	}
-	
+
 	if c.r != chunk.r || c.air != chunk.air ||
 		!slices.Equal(c.heightMap, chunk.heightMap) || len(c.sub) != len(chunk.sub) {
 		return false
