@@ -46,10 +46,6 @@ func New(air uint32, r cube.Range) *Chunk {
 
 // Equals returns if the chunk passed is equal to the current one
 func (chunk *Chunk) Equals(c *Chunk) bool {
-	if chunk.recalculateHeightMap || c.recalculateHeightMap {
-		return false
-	}
-
 	if c.r != chunk.r || c.air != chunk.air ||
 		!slices.Equal(c.heightMap, chunk.heightMap) || len(c.sub) != len(chunk.sub) {
 		return false
