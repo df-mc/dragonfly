@@ -46,14 +46,6 @@ func (n Note) EncodeNBT() map[string]any {
 	return map[string]any{"note": byte(n.Pitch)}
 }
 
-// Punch ...
-func (n Note) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
-	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
-		return
-	}
-	n.playNote(pos, w)
-}
-
 // Activate ...
 func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
 	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
