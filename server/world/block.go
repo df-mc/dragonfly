@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"image"
 	"math"
+	"math/bits"
 	"math/rand"
 )
 
@@ -18,6 +19,7 @@ type Block interface {
 	// EncodeBlock encodes the block to a string ID such as 'minecraft:grass' and properties associated
 	// with the block.
 	EncodeBlock() (string, map[string]any)
+	BaseHash() uint64
 	// Hash returns a unique identifier of the block including the block states. This function is used internally to
 	// convert a block to a single integer which can be used in map lookups. The hash produced therefore does not need
 	// to match anything in the game, but it must be unique among all registered blocks.
@@ -73,11 +75,17 @@ type Liquid interface {
 
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
 // runtime IDs. It is used to look up a block's runtime ID quickly.
-var hashes = intintmap.New(7000, 0.999)
+var (
+	bitSize int
+	hashes  = intintmap.New(7000, 0.999)
+)
 
 // RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
 // block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
 func RegisterBlock(b Block) {
+	if bitSize > 0 {
+		panic(fmt.Errorf("tried to register a block after the block registry was finalised"))
+	}
 	name, properties := b.EncodeBlock()
 	if _, ok := b.(CustomBlock); ok {
 		registerBlockState(blockState{Name: name, Properties: properties}, true)
@@ -91,12 +99,7 @@ func RegisterBlock(b Block) {
 	if _, ok := blocks[rid].(unknownBlock); !ok {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
 	}
-	hash := int64(b.Hash())
-	if other, ok := hashes.Get(hash); ok {
-		panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, hash, blocks[other]))
-	}
 	blocks[rid] = b
-	hashes.Put(hash, int64(rid))
 
 	if diffuser, ok := b.(lightDiffuser); ok {
 		chunk.FilteringBlocks[rid] = diffuser.LightDiffusionLevel()
@@ -123,13 +126,33 @@ func RegisterBlock(b Block) {
 	}
 }
 
+func finaliseBlockRegistry() {
+	if bitSize > 0 {
+		return
+	}
+	bitSize = bits.Len64(uint64(len(blocks)))
+	for rid, b := range blocks {
+		if b.Hash() != math.MaxUint64 {
+			h := int64(BlockHash(b))
+			if other, ok := hashes.Get(h); ok {
+				panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, h, blocks[other]))
+			}
+			hashes.Put(h, int64(rid))
+		}
+	}
+}
+
+func BlockHash(b Block) uint64 {
+	return b.BaseHash() | (b.Hash() << bitSize)
+}
+
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
 // If the runtime ID cannot be found because the Block wasn't registered, BlockRuntimeID will panic.
 func BlockRuntimeID(b Block) uint32 {
 	if b == nil {
 		return airRID
 	}
-	if h := b.Hash(); h != math.MaxUint64 {
+	if h := BlockHash(b); h != math.MaxUint64 {
 		if rid, ok := hashes.Get(int64(h)); ok {
 			return uint32(rid)
 		}

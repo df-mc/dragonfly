@@ -100,7 +100,6 @@ func registerBlockState(s blockState, order bool) {
 				rid = uint32(id)
 			}
 			stateRuntimeIDs[i] = uint32(id)
-			hashes.Put(int64(b.Hash()), int64(id))
 		}
 	}
 
@@ -131,6 +130,11 @@ func (b unknownBlock) EncodeBlock() (string, map[string]any) {
 // Model ...
 func (unknownBlock) Model() BlockModel {
 	return unknownModel{}
+}
+
+// BaseHash ...
+func (b unknownBlock) BaseHash() uint64 {
+	return 0
 }
 
 // Hash ...
