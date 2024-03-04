@@ -297,7 +297,7 @@ func (srv *Server) makeBlockEntries() {
 		name, _ := b.EncodeBlock()
 		srv.customBlocks[i] = protocol.BlockEntry{
 			Name:       name,
-			Properties: blockinternal.Components(name, b),
+			Properties: blockinternal.Components(name, b, 10000+int32(i)),
 		}
 	}
 }
