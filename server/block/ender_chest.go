@@ -113,10 +113,6 @@ func (c EnderChest) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (c EnderChest) DecodeNBT(map[string]interface{}) interface{} {
-	facing := c.Facing
-	//noinspection GoAssignmentToReceiver
-	c = NewEnderChest()
-	c.Facing = facing
 	return c
 }
 
