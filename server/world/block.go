@@ -6,10 +6,12 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/segmentio/fasthash/fnv1"
 	"image"
 	"math"
 	"math/bits"
 	"math/rand"
+	"sort"
 )
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
@@ -88,7 +90,7 @@ func RegisterBlock(b Block) {
 	}
 	name, properties := b.EncodeBlock()
 	if _, ok := b.(CustomBlock); ok {
-		registerBlockState(blockState{Name: name, Properties: properties}, true)
+		registerBlockState(blockState{Name: name, Properties: properties})
 	}
 	rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 	if !ok {
@@ -100,6 +102,42 @@ func RegisterBlock(b Block) {
 		panic(fmt.Sprintf("block with name and properties %v {%#v} already registered", name, properties))
 	}
 	blocks[rid] = b
+	if c, ok := b.(CustomBlock); ok {
+		if _, ok := customBlocks[name]; !ok {
+			customBlocks[name] = c
+		}
+	}
+}
+
+func finaliseBlockRegistry() {
+	if bitSize > 0 {
+		return
+	}
+	bitSize = bits.Len64(uint64(len(blocks)))
+	sort.SliceStable(blocks, func(i, j int) bool {
+		nameOne, _ := blocks[i].EncodeBlock()
+		nameTwo, _ := blocks[j].EncodeBlock()
+		return nameOne != nameTwo && fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
+	})
+	for rid, b := range blocks {
+		finaliseBlock(uint32(rid), b)
+		if b.Hash() != math.MaxUint64 {
+			h := int64(BlockHash(b))
+			if other, ok := hashes.Get(h); ok {
+				panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, h, blocks[other]))
+			}
+			hashes.Put(h, int64(rid))
+		}
+	}
+}
+
+func finaliseBlock(rid uint32, b Block) {
+	name, properties := b.EncodeBlock()
+	i := stateHash{name: name, properties: hashProperties(properties)}
+	if name == "minecraft:air" {
+		airRID = rid
+	}
+	stateRuntimeIDs[i] = rid
 
 	if diffuser, ok := b.(lightDiffuser); ok {
 		chunk.FilteringBlocks[rid] = diffuser.LightDiffusionLevel()
@@ -118,27 +156,6 @@ func RegisterBlock(b Block) {
 	}
 	if _, ok := b.(LiquidDisplacer); ok {
 		liquidDisplacingBlocks[rid] = true
-	}
-	if c, ok := b.(CustomBlock); ok {
-		if _, ok := customBlocks[name]; !ok {
-			customBlocks[name] = c
-		}
-	}
-}
-
-func finaliseBlockRegistry() {
-	if bitSize > 0 {
-		return
-	}
-	bitSize = bits.Len64(uint64(len(blocks)))
-	for rid, b := range blocks {
-		if b.Hash() != math.MaxUint64 {
-			h := int64(BlockHash(b))
-			if other, ok := hashes.Get(h); ok {
-				panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, h, blocks[other]))
-			}
-			hashes.Put(h, int64(rid))
-		}
 	}
 }
 

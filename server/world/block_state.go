@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"github.com/segmentio/fasthash/fnv1"
 	"math"
 	"slices"
 	"sort"
@@ -52,7 +51,7 @@ func init() {
 		if err := dec.Decode(&s); err != nil {
 			break
 		}
-		registerBlockState(s, false)
+		registerBlockState(s)
 	}
 
 	chunk.RuntimeIDToState = func(runtimeID uint32) (name string, properties map[string]any, found bool) {
@@ -73,7 +72,7 @@ func init() {
 
 // registerBlockState registers a new blockState to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
-func registerBlockState(s blockState, order bool) {
+func registerBlockState(s blockState) {
 	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
@@ -83,25 +82,6 @@ func registerBlockState(s blockState, order bool) {
 	}
 	rid := uint32(len(blocks))
 	blocks = append(blocks, unknownBlock{s})
-	if order {
-		sort.SliceStable(blocks, func(i, j int) bool {
-			nameOne, _ := blocks[i].EncodeBlock()
-			nameTwo, _ := blocks[j].EncodeBlock()
-			return nameOne != nameTwo && fnv1.HashString64(nameOne) < fnv1.HashString64(nameTwo)
-		})
-
-		for id, b := range blocks {
-			name, properties := b.EncodeBlock()
-			i := stateHash{name: name, properties: hashProperties(properties)}
-			if name == "minecraft:air" {
-				airRID = uint32(id)
-			}
-			if i == h {
-				rid = uint32(id)
-			}
-			stateRuntimeIDs[i] = uint32(id)
-		}
-	}
 
 	if s.Name == "minecraft:air" {
 		airRID = rid
