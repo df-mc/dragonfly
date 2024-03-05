@@ -39,6 +39,8 @@ type TNTType struct {
 	igniter world.Entity
 }
 
+func (t TNTType) Igniter() world.Entity { return t.igniter }
+
 func (TNTType) EncodeEntity() string   { return "minecraft:tnt" }
 func (TNTType) NetworkOffset() float64 { return 0.49 }
 func (TNTType) BBox(world.Entity) cube.BBox {
