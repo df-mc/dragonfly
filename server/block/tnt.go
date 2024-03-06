@@ -14,14 +14,13 @@ import (
 // TNT is an explosive block that can be primed to generate an explosion.
 type TNT struct {
 	solid
-	igniter world.Entity
 }
 
 // Activate ...
 func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if _, ok := held.Enchantment(enchantment.FireAspect{}); ok {
-		t.Ignite(pos, w, u)
+		t.Ignite(pos, w)
 		ctx.DamageItem(1)
 		return true
 	}
@@ -29,20 +28,14 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ct
 }
 
 // Ignite ...
-func (t TNT) Ignite(pos cube.Pos, w *world.World, igniter world.Entity) bool {
-	t.igniter = igniter
-	spawnTnt(pos, w, time.Second*4, t.igniter)
+func (t TNT) Ignite(pos cube.Pos, w *world.World) bool {
+	spawnTnt(pos, w, time.Second*4)
 	return true
-}
-
-// Igniter returns the entity that ignited the TNT.
-func (t TNT) Igniter() world.Entity {
-	return t.igniter
 }
 
 // Explode ...
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, w *world.World, _ ExplosionConfig) {
-	spawnTnt(pos, w, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))), t.igniter)
+	spawnTnt(pos, w, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))))
 }
 
 // BreakInfo ...
@@ -66,8 +59,8 @@ func (t TNT) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // spawnTnt creates a new TNT entity at the given position with the given fuse duration.
-func spawnTnt(pos cube.Pos, w *world.World, fuse time.Duration, igniter world.Entity) {
+func spawnTnt(pos cube.Pos, w *world.World, fuse time.Duration) {
 	w.PlaySound(pos.Vec3Centre(), sound.TNT{})
 	w.SetBlock(pos, nil, nil)
-	w.AddEntity(w.EntityRegistry().Config().TNT(pos.Vec3Centre(), fuse, igniter))
+	w.AddEntity(w.EntityRegistry().Config().TNT(pos.Vec3Centre(), fuse))
 }

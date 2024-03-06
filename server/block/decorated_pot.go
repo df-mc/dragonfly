@@ -33,7 +33,7 @@ func (p DecoratedPot) BreakInfo() BreakInfo {
 
 // MaxCount ...
 func (DecoratedPot) MaxCount() int {
-	return 64
+	return 1
 }
 
 // EncodeItem ...
