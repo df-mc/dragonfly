@@ -101,7 +101,7 @@ type EntityRegistry struct {
 type EntityRegistryConfig struct {
 	Item               func(it any, pos, vel mgl64.Vec3) Entity
 	FallingBlock       func(bl Block, pos mgl64.Vec3) Entity
-	TNT                func(pos mgl64.Vec3, fuse time.Duration) Entity
+	TNT                func(pos mgl64.Vec3, fuse time.Duration, igniter Entity) Entity
 	BottleOfEnchanting func(pos, vel mgl64.Vec3, owner Entity) Entity
 	Arrow              func(pos, vel mgl64.Vec3, rot cube.Rotation, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) Entity
 	Egg                func(pos, vel mgl64.Vec3, owner Entity) Entity
