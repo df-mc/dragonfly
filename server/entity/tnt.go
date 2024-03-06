@@ -39,6 +39,8 @@ type TNTType struct {
 	igniter world.Entity
 }
 
+// Igniter returns the entity that ignited the TNT.
+// It is nil if ignited by a world source like fire.
 func (t TNTType) Igniter() world.Entity { return t.igniter }
 
 func (TNTType) EncodeEntity() string   { return "minecraft:tnt" }

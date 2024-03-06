@@ -36,6 +36,7 @@ func (t TNT) Ignite(pos cube.Pos, w *world.World, igniter world.Entity) bool {
 }
 
 // Igniter returns the entity that ignited the TNT.
+// It is nil if ignited by a world source like fire.
 func (t TNT) Igniter() world.Entity {
 	return t.igniter
 }
