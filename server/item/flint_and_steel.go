@@ -28,13 +28,13 @@ func (f FlintAndSteel) DurabilityInfo() DurabilityInfo {
 // ignitable represents a block that can be lit by a fire emitter, such as flint and steel.
 type ignitable interface {
 	// Ignite is called when the block is lit by flint and steel.
-	Ignite(pos cube.Pos, w *world.World) bool
+	Ignite(pos cube.Pos, w *world.World, igniter world.Entity) bool
 }
 
 // UseOnBlock ...
-func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, u User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
-	if l, ok := w.Block(pos).(ignitable); ok && l.Ignite(pos, w) {
+	if l, ok := w.Block(pos).(ignitable); ok && l.Ignite(pos, w, u) {
 		return true
 	} else if s := pos.Side(face); w.Block(s) == air() {
 		w.PlaySound(s.Vec3Centre(), sound.Ignite{})

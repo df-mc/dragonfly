@@ -9,9 +9,9 @@ import (
 )
 
 // Components returns all the components for the custom block, including permutations and properties.
-func Components(identifier string, b world.CustomBlock) map[string]any {
+func Components(identifier string, b world.CustomBlock, blockID int32) map[string]any {
 	components := componentsFromProperties(b.Properties())
-	builder := NewComponentBuilder(identifier, components)
+	builder := NewComponentBuilder(identifier, components, blockID)
 	if emitter, ok := b.(block.LightEmitter); ok {
 		builder.AddComponent("minecraft:block_light_emission", map[string]any{
 			"emission": float32(emitter.LightEmissionLevel() / 15),
