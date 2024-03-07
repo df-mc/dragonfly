@@ -113,7 +113,9 @@ func (c EnderChest) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (c EnderChest) DecodeNBT(map[string]interface{}) interface{} {
-	return c
+	ec := NewEnderChest()
+	ec.Facing = c.Facing
+	return ec
 }
 
 // EncodeItem ...
