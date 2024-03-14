@@ -50,7 +50,7 @@ func init() {
 	}
 
 	for _, s := range append(craftingRecipes.Shapeless, stonecutterRecipes...) {
-		input, ok := s.Input.Stacks()
+		input, ok := s.Input.Items()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
 			// This can be expected to happen, as some recipes contain blocks or items that aren't currently implemented.
@@ -65,7 +65,7 @@ func init() {
 	}
 
 	for _, s := range craftingRecipes.Shaped {
-		input, ok := s.Input.Stacks()
+		input, ok := s.Input.Items()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
 			// This can be expected to happen - refer to the comment above.
@@ -88,7 +88,7 @@ func init() {
 	}
 
 	for _, s := range smithingRecipes {
-		input, ok := s.Input.Stacks()
+		input, ok := s.Input.Items()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
 			// This can be expected to happen - refer to the comment above.

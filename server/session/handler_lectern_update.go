@@ -12,11 +12,6 @@ type LecternUpdateHandler struct{}
 // Handle ...
 func (LecternUpdateHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.LecternUpdate)
-	if pk.DropBook {
-		// This is completely redundant, so ignore this packet.
-		return nil
-	}
-
 	pos := blockPosFromProtocol(pk.Position)
 	if !canReach(s.c, pos.Vec3Middle()) {
 		return fmt.Errorf("block at %v is not within reach", pos)

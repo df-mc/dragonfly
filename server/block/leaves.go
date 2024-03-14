@@ -108,14 +108,7 @@ func (Leaves) CompostChance() float64 {
 
 // EncodeItem ...
 func (l Leaves) EncodeItem() (name string, meta int16) {
-	switch l.Wood {
-	case OakWood(), SpruceWood(), BirchWood(), JungleWood():
-		return "minecraft:leaves", int16(l.Wood.Uint8())
-	case AcaciaWood(), DarkOakWood():
-		return "minecraft:leaves2", int16(l.Wood.Uint8() - 4)
-	default:
-		return "minecraft:" + l.Wood.String() + "_leaves", 0
-	}
+	return "minecraft:" + l.Wood.String() + "_leaves", 0
 }
 
 // LightDiffusionLevel ...
@@ -130,14 +123,7 @@ func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // EncodeBlock ...
 func (l Leaves) EncodeBlock() (name string, properties map[string]any) {
-	switch l.Wood {
-	case OakWood(), SpruceWood(), BirchWood(), JungleWood():
-		return "minecraft:leaves", map[string]any{"old_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
-	case AcaciaWood(), DarkOakWood():
-		return "minecraft:leaves2", map[string]any{"new_leaf_type": l.Wood.String(), "persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
-	default:
-		return "minecraft:" + l.Wood.String() + "_leaves", map[string]any{"persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
-	}
+	return "minecraft:" + l.Wood.String() + "_leaves", map[string]any{"persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 }
 
 // allLogs returns a list of all possible leaves states.
