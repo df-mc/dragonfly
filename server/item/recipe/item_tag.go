@@ -31,8 +31,7 @@ func NewItemTag(tag string, count int) ItemTag {
 	if count < 0 {
 		count = 0
 	}
-	items, _ := itemTags[tag]
-	return ItemTag{tag: tag, count: count, items: items}
+	return ItemTag{tag: tag, count: count, items: itemTags[tag]}
 }
 
 // Count ...
