@@ -60,12 +60,7 @@ func encodeSlabBlock(block world.Block) (id, slabType string, meta int16) {
 		}
 		return "red_nether_brick", "stone_slab_type_2", 7
 	case Planks:
-		switch block.Wood {
-		case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-			return block.Wood.String(), "wood_type", int16(block.Wood.Uint8())
-		default:
-			return block.Wood.String(), "", 0
-		}
+		return block.Wood.String(), "", 0
 	case PolishedBlackstoneBrick:
 		if !block.Cracked {
 			return "polished_blackstone_brick", "", 0
