@@ -15,11 +15,8 @@ func (sub *SubChunk) Equals(s *SubChunk) bool {
 		return false
 	}
 
-	for i := 0; i < len(s.storages); i++ {
-		s1 := s.storages[i]
-		s2 := sub.storages[i]
-
-		if !s1.Equal(s2) {
+	for i, st := range s.storages {
+		if !st.Equal(sub.storages[i]) {
 			return false
 		}
 	}
