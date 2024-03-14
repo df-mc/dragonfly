@@ -9,6 +9,24 @@ type SubChunk struct {
 	skyLight   []uint8
 }
 
+// Equals returns if the sub chunk passed is equal to the current one.
+func (sub *SubChunk) Equals(s *SubChunk) bool {
+	if s.air != sub.air || len(s.storages) != len(sub.storages) {
+		return false
+	}
+
+	for i := 0; i < len(s.storages); i++ {
+		s1 := s.storages[i]
+		s2 := sub.storages[i]
+
+		if !s1.Equal(s2) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // NewSubChunk creates a new sub chunk. All sub chunks should be created through this function
 func NewSubChunk(air uint32) *SubChunk {
 	return &SubChunk{air: air}
