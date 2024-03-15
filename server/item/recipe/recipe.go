@@ -1,13 +1,11 @@
 package recipe
 
-import (
-	"github.com/df-mc/dragonfly/server/item"
-)
+import "github.com/df-mc/dragonfly/server/item"
 
 // Recipe is implemented by all recipe types.
 type Recipe interface {
 	// Input returns the items required to craft the recipe.
-	Input() []item.Stack
+	Input() []Item
 	// Output returns the items that are produced when the recipe is crafted.
 	Output() []item.Stack
 	// Block returns the block that is used to craft the recipe.
@@ -25,7 +23,7 @@ type Shapeless struct {
 // NewShapeless creates a new shapeless recipe and returns it. The recipe can only be crafted on the block passed in the
 // parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
 // player's inventory.
-func NewShapeless(input []item.Stack, output item.Stack, block string) Shapeless {
+func NewShapeless(input []Item, output item.Stack, block string) Shapeless {
 	return Shapeless{recipe: recipe{
 		input:  input,
 		output: []item.Stack{output},
@@ -41,9 +39,9 @@ type Smithing struct {
 // NewSmithing creates a new smithing recipe and returns it. The recipe can only be crafted on the block passed in the
 // parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
 // player's inventory.
-func NewSmithing(base, addition, template, output item.Stack, block string) Smithing {
+func NewSmithing(base, addition, template Item, output item.Stack, block string) Smithing {
 	return Smithing{recipe: recipe{
-		input:  []item.Stack{base, addition, template},
+		input:  []Item{base, addition, template},
 		output: []item.Stack{output},
 		block:  block,
 	}}
@@ -60,7 +58,7 @@ type Shaped struct {
 // parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in the
 // player's inventory. If nil is passed, the block will be autofilled as a crafting table. The inputs must always match
 // the width*height of the shape.
-func NewShaped(input []item.Stack, output item.Stack, shape Shape, block string) Shaped {
+func NewShaped(input []Item, output item.Stack, shape Shape, block string) Shaped {
 	return Shaped{
 		shape: shape,
 		recipe: recipe{
@@ -81,7 +79,7 @@ func (r Shaped) Shape() Shape {
 type recipe struct {
 	// input is a list of items that serve as the input of the shaped recipe. These items are the items
 	// required to craft the output. The amount of input items must be exactly equal to Width * Height.
-	input []item.Stack
+	input []Item
 	// output contains items that are created as a result of crafting the recipe.
 	output []item.Stack
 	// block is the block that is used to craft the recipe.
@@ -91,7 +89,7 @@ type recipe struct {
 }
 
 // Input ...
-func (r recipe) Input() []item.Stack {
+func (r recipe) Input() []Item {
 	return r.input
 }
 

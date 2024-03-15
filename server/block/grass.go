@@ -104,12 +104,12 @@ func (Grass) CompostChance() float64 {
 
 // EncodeItem ...
 func (Grass) EncodeItem() (name string, meta int16) {
-	return "minecraft:grass", 0
+	return "minecraft:grass_block", 0
 }
 
 // EncodeBlock ...
 func (Grass) EncodeBlock() (string, map[string]any) {
-	return "minecraft:grass", nil
+	return "minecraft:grass_block", nil
 }
 
 // Till ...
