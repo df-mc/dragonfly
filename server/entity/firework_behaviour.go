@@ -126,6 +126,9 @@ func (f *FireworkBehaviour) explode(e *Ent) {
 	})
 	for _, e := range targets {
 		tpos := e.Position()
+		if pos == tpos {
+			continue
+		}
 		dist := pos.Sub(tpos).Len()
 		if dist > 5.0 {
 			// The maximum distance allowed is 5.0 blocks.
