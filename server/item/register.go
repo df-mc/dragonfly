@@ -109,6 +109,7 @@ func init() {
 	world.RegisterItem(Salmon{})
 	world.RegisterItem(Scute{})
 	world.RegisterItem(Shears{})
+	world.RegisterItem(Shield{})
 	world.RegisterItem(ShulkerShell{})
 	world.RegisterItem(Slimeball{})
 	world.RegisterItem(Snowball{})
