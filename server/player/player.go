@@ -1719,15 +1719,16 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 }
 
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
-// The function returns true if there is an entity in the way that could prevent the block from being placed.
-func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (bool, bool) {
+// The first bool indicates if there is an entity in the way that could prevent the block from being placed.
+// The second bool is used to check if the block should be updated.
+func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed bool, resend bool) {
 	w := p.World()
 	blockBoxes := b.Model().BBox(pos, w)
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
-	resend := true
+	resend = true
 	around := w.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		switch e.Type().(type) {
@@ -1737,7 +1738,6 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (bool, bool) {
 			if e == p {
 				resend = false
 			}
-
 			if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
 				return true, resend
 			}
