@@ -588,7 +588,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		}
 	}
 
-	if p.Health()-damageLeft < 0 {
+	if p.Health()-damageLeft <= mgl64.Epsilon {
 		hand, offHand := p.HeldItems()
 		if _, ok := hand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
