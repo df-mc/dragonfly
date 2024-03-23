@@ -588,8 +588,6 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		}
 	}
 
-	w, pos := p.World(), p.Position()
-
 	if p.Health()-damageLeft < 0 {
 		hand, offHand := p.HeldItems()
 		if _, ok := hand.Item().(item.Totem); ok {
@@ -622,6 +620,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		}
 	}
 
+	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
