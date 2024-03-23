@@ -212,7 +212,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.ui, true
 			}
 		}
-	case protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
+	case protocol.ContainerSmithingTableTemplate, protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
 		if s.containerOpened.Load() {
 			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true

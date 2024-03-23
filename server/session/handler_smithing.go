@@ -11,6 +11,8 @@ const (
 	smithingInputSlot = 0x33
 	// smithingMaterialSlot is the slot index of the material in the smithing table.
 	smithingMaterialSlot = 0x34
+	// smithingTemplateSlot is the slot index of the template item in the smithing table
+	smithingTemplateSlot = 0x35
 )
 
 // handleSmithing handles a CraftRecipe stack request action made using a smithing table.
@@ -43,6 +45,13 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 	if !matchingStacks(material, expectedInputs[1]) {
 		return fmt.Errorf("material item is not the same as expected material")
 	}
+	template, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: protocol.ContainerSmithingTableTemplate,
+		Slot:        smithingTemplateSlot,
+	}, s)
+	if !matchingStacks(template, expectedInputs[2]) {
+		return fmt.Errorf("template item is not the same as expected template")
+	}
 
 	// Create the output using the input stack as reference and the recipe's output item type.
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
@@ -53,5 +62,9 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		ContainerID: protocol.ContainerSmithingTableMaterial,
 		Slot:        smithingMaterialSlot,
 	}, material.Grow(-1), s)
+	h.setItemInSlot(protocol.StackRequestSlotInfo{
+		ContainerID: protocol.ContainerSmithingTableTemplate,
+		Slot:        smithingTemplateSlot,
+	}, template.Grow(-1), s)
 	return h.createResults(s, duplicateStack(input, craft.Output()[0].Item()))
 }

@@ -145,6 +145,9 @@ func init() {
 		world.RegisterItem(SplashPotion{Type: p})
 		world.RegisterItem(Potion{Type: p})
 	}
+	for _, t := range Templates() {
+		world.RegisterItem(Template{Template: t})
+	}
 	for _, t := range ToolTiers() {
 		world.RegisterItem(Pickaxe{Tier: t})
 		world.RegisterItem(Axe{Tier: t})
