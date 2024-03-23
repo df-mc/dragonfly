@@ -587,6 +587,22 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 			damageLeft = 0
 		}
 	}
+
+	w, pos := p.World(), p.Position()
+
+	if p.Health()-damageLeft < 0 {
+		hand, offHand := p.HeldItems()
+		if _, ok := hand.Item().(item.Totem); ok {
+			p.applyTotemEffects()
+			p.SetHeldItems(hand.Grow(-1), offHand)
+			return damageLeft, true
+		} else if _, ok := offHand.Item().(item.Totem); ok {
+			p.applyTotemEffects()
+			p.SetHeldItems(hand, offHand.Grow(-1))
+			return damageLeft, true
+		}
+	}
+
 	p.addHealth(-damageLeft)
 
 	if src.ReducedByArmour() {
@@ -606,7 +622,6 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		}
 	}
 
-	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
@@ -621,6 +636,25 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		p.kill(src)
 	}
 	return totalDamage, true
+}
+
+// applyTotemEffects is an unexported function that is used to handle totem effects.
+func (p *Player) applyTotemEffects() {
+	p.addHealth(1 - p.Health())
+
+	for _, e := range p.Effects() {
+		p.RemoveEffect(e.Type())
+	}
+
+	p.AddEffect(effect.New(effect.Regeneration{}, 2, time.Second*40))
+	p.AddEffect(effect.New(effect.FireResistance{}, 1, time.Second*40))
+	p.AddEffect(effect.New(effect.Absorption{}, 1, time.Second*5))
+
+	p.World().PlaySound(p.Position(), sound.Totem{})
+
+	for _, viewer := range p.viewers() {
+		viewer.ViewEntityAction(p, entity.TotemUseAction{})
+	}
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed

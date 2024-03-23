@@ -116,6 +116,7 @@ func init() {
 	world.RegisterItem(Spyglass{})
 	world.RegisterItem(Stick{})
 	world.RegisterItem(Sugar{})
+	world.RegisterItem(Totem{})
 	world.RegisterItem(TropicalFish{})
 	world.RegisterItem(TurtleShell{})
 	world.RegisterItem(WarpedFungusOnAStick{})
