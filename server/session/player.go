@@ -765,26 +765,33 @@ func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
 }
 
 // stacksToIngredientItems converts a list of item.Stacks to recipe ingredient items used over the network.
-func stacksToIngredientItems(inputs []item.Stack) []protocol.ItemDescriptorCount {
+func stacksToIngredientItems(inputs []recipe.Item) []protocol.ItemDescriptorCount {
 	items := make([]protocol.ItemDescriptorCount, 0, len(inputs))
 	for _, i := range inputs {
-		if i.Empty() {
-			items = append(items, protocol.ItemDescriptorCount{Descriptor: &protocol.InvalidItemDescriptor{}})
-			continue
-		}
-		rid, meta, ok := world.ItemRuntimeID(i.Item())
-		if !ok {
-			panic("should never happen")
-		}
-		if _, ok = i.Value("variants"); ok {
-			meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
-		}
-		items = append(items, protocol.ItemDescriptorCount{
-			Descriptor: &protocol.DefaultItemDescriptor{
+		var d protocol.ItemDescriptor = &protocol.InvalidItemDescriptor{}
+		switch i := i.(type) {
+		case item.Stack:
+			if i.Empty() {
+				items = append(items, protocol.ItemDescriptorCount{Descriptor: &protocol.InvalidItemDescriptor{}})
+				continue
+			}
+			rid, meta, ok := world.ItemRuntimeID(i.Item())
+			if !ok {
+				panic("should never happen")
+			}
+			if _, ok = i.Value("variants"); ok {
+				meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
+			}
+			d = &protocol.DefaultItemDescriptor{
 				NetworkID:     int16(rid),
 				MetadataValue: meta,
-			},
-			Count: int32(i.Count()),
+			}
+		case recipe.ItemTag:
+			d = &protocol.ItemTagItemDescriptor{Tag: i.Tag()}
+		}
+		items = append(items, protocol.ItemDescriptorCount{
+			Descriptor: d,
+			Count:      int32(i.Count()),
 		})
 	}
 	return items

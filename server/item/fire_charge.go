@@ -19,8 +19,8 @@ func (f FireCharge) EncodeItem() (name string, meta int16) {
 }
 
 // UseOnBlock ...
-func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if l, ok := w.Block(pos).(ignitable); ok && l.Ignite(pos, w) {
+func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, u User, ctx *UseContext) bool {
+	if l, ok := w.Block(pos).(ignitable); ok && l.Ignite(pos, w, u) {
 		ctx.SubtractFromCount(1)
 		w.PlaySound(pos.Vec3Centre(), sound.FireCharge{})
 		return true

@@ -662,6 +662,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventChestClosed
 	case sound.ChestOpen:
 		pk.SoundType = packet.SoundEventChestOpen
+	case sound.EnderChestClose:
+		pk.SoundType = packet.SoundEventEnderChestClosed
+	case sound.EnderChestOpen:
+		pk.SoundType = packet.SoundEventEnderChestOpen
 	case sound.BarrelClose:
 		pk.SoundType = packet.SoundEventBarrelClose
 	case sound.BarrelOpen:

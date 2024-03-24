@@ -39,8 +39,8 @@ var conf = world.EntityRegistryConfig{
 	FallingBlock: func(bl world.Block, pos mgl64.Vec3) world.Entity {
 		return NewFallingBlock(bl, pos)
 	},
-	TNT: func(pos mgl64.Vec3, fuse time.Duration) world.Entity {
-		return NewTNT(pos, fuse)
+	TNT: func(pos mgl64.Vec3, fuse time.Duration, igniter world.Entity) world.Entity {
+		return NewTNT(pos, fuse, igniter)
 	},
 	BottleOfEnchanting: func(pos, vel mgl64.Vec3, owner world.Entity) world.Entity {
 		b := NewBottleOfEnchanting(pos, owner)

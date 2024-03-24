@@ -70,11 +70,6 @@ func (w Wood) Strip() (world.Block, bool) {
 // EncodeItem ...
 func (w Wood) EncodeItem() (name string, meta int16) {
 	switch w.Wood {
-	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		if w.Stripped {
-			return "minecraft:wood", int16(8 + w.Wood.Uint8())
-		}
-		return "minecraft:wood", int16(w.Wood.Uint8())
 	case CrimsonWood(), WarpedWood():
 		if w.Stripped {
 			return "minecraft:stripped_" + w.Wood.String() + "_hyphae", 0
@@ -92,7 +87,10 @@ func (w Wood) EncodeItem() (name string, meta int16) {
 func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 	switch w.Wood {
 	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		return "minecraft:wood", map[string]any{"wood_type": w.Wood.String(), "pillar_axis": w.Axis.String(), "stripped_bit": boolByte(w.Stripped)}
+		if w.Stripped {
+			return "minecraft:stripped_" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String()}
+		}
+		return "minecraft:" + w.Wood.String() + "_wood", map[string]any{"pillar_axis": w.Axis.String()}
 	case CrimsonWood(), WarpedWood():
 		if w.Stripped {
 			return "minecraft:stripped_" + w.Wood.String() + "_hyphae", map[string]any{"pillar_axis": w.Axis.String()}

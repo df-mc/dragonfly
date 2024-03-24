@@ -170,7 +170,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
 		if t, ok := w.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
-			t.Ignite(bpos, w)
+			t.Ignite(bpos, w, e)
 		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m)

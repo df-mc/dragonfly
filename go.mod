@@ -7,12 +7,12 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/df-mc/atomic v1.10.0
 	github.com/df-mc/goleveldb v1.1.9
-	github.com/df-mc/worldupgrader v1.0.11
+	github.com/df-mc/worldupgrader v1.0.13
 	github.com/go-gl/mathgl v1.1.0
 	github.com/google/uuid v1.4.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rogpeppe/go-internal v1.11.0
-	github.com/sandertv/gophertunnel v1.34.1
+	github.com/sandertv/gophertunnel v1.36.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
