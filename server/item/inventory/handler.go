@@ -16,6 +16,7 @@ type Handler interface {
 	// HandleDrop handles the dropping of an item.Stack in a slot out of the inventory.
 	HandleDrop(ctx *event.Context, slot int, it item.Stack)
 	// HandleDestroy handles the destroying of an item.Stack in a creative inventory.
+	// slot will return -1 when it comes from the cursor inventory otherwise the correct inventory slot.
 	HandleDestroy(ctx *event.Context, slot int, it item.Stack)
 }
 
