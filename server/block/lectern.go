@@ -20,7 +20,7 @@ type Lectern struct {
 	sourceWaterDisplacer
 
 	// Facing represents the direction the Lectern is facing.
-	Facing cube.Face
+	Facing cube.Direction
 	// Book is the book currently held by the Lectern.
 	Book item.Stack
 	// Page is the page the Lectern is currently on in the book.
@@ -57,7 +57,7 @@ func (l Lectern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 	if !used {
 		return false
 	}
-	l.Facing = user.Rotation().Direction().Face().Opposite()
+	l.Facing = user.Rotation().Direction().Opposite()
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
 }
@@ -159,7 +159,7 @@ func (l Lectern) EncodeBlock() (string, map[string]any) {
 
 // allLecterns ...
 func allLecterns() (lecterns []world.Block) {
-	for _, f := range cube.HorizontalFaces() {
+	for _, f := range cube.Directions() {
 		lecterns = append(lecterns, Lectern{Facing: f})
 	}
 	return

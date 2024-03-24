@@ -20,13 +20,13 @@ type Smoker struct {
 	*smelter
 
 	// Facing is the direction the smoker is facing.
-	Facing cube.Face
+	Facing cube.Direction
 	// Lit is true if the smoker is lit.
 	Lit bool
 }
 
 // NewSmoker creates a new initialised smoker. The smelter is properly initialised.
-func NewSmoker(face cube.Face) Smoker {
+func NewSmoker(face cube.Direction) Smoker {
 	return Smoker{
 		Facing:  face,
 		smelter: newSmelter(),
@@ -66,7 +66,7 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		return false
 	}
 
-	place(w, pos, NewSmoker(user.Rotation().Direction().Face().Opposite()), user, ctx)
+	place(w, pos, NewSmoker(user.Rotation().Direction().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
@@ -122,7 +122,7 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 
 // allSmokers ...
 func allSmokers() (smokers []world.Block) {
-	for _, face := range cube.HorizontalFaces() {
+	for _, face := range cube.Directions() {
 		smokers = append(smokers, Smoker{Facing: face})
 		smokers = append(smokers, Smoker{Facing: face, Lit: true})
 	}
