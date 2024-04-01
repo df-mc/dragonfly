@@ -125,7 +125,7 @@ func (s Sign) Activate(pos cube.Pos, _ cube.Face, w *world.World, user item.User
 		editor.OpenSign(pos, s.EditingFrontSide(pos, user.Position()))
 	}
 	if s.Waxed {
-		w.PlaySound(pos.Vec3(), sound.WaxedInteractFail{})
+		w.PlaySound(pos.Vec3(), sound.WaxedSignFailedInteraction{})
 	}
 	return true
 }
