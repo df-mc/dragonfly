@@ -123,8 +123,7 @@ func (s Sign) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
 func (s Sign) Activate(pos cube.Pos, _ cube.Face, w *world.World, user item.User, _ *item.UseContext) bool {
 	if editor, ok := user.(SignEditor); ok && !s.Waxed {
 		editor.OpenSign(pos, s.EditingFrontSide(pos, user.Position()))
-	}
-	if s.Waxed {
+	} else if s.Waxed {
 		w.PlaySound(pos.Vec3(), sound.WaxedSignFailedInteraction{})
 	}
 	return true
