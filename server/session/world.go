@@ -393,7 +393,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	case particle.Flame:
 		if pa.Colour != (color.RGBA{}) {
 			s.writePacket(&packet.LevelEvent{
-				EventType: packet.LevelEventParticleLegacyEvent | 56,
+				EventType: packet.LevelEventParticleLegacyEvent | 57,
 				Position:  vec64To32(pos),
 				EventData: nbtconv.Int32FromRGBA(pa.Colour),
 			})
@@ -437,23 +437,23 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		})
 	case particle.EntityFlame:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 18,
+			EventType: packet.LevelEventParticleLegacyEvent | 19,
 			Position:  vec64To32(pos),
 		})
 	case particle.Dust:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 32,
+			EventType: packet.LevelEventParticleLegacyEvent | 33,
 			Position:  vec64To32(pos),
 			EventData: nbtconv.Int32FromRGBA(pa.Colour),
 		})
 	case particle.WaterDrip:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 27,
+			EventType: packet.LevelEventParticleLegacyEvent | 28,
 			Position:  vec64To32(pos),
 		})
 	case particle.LavaDrip:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 28,
+			EventType: packet.LevelEventParticleLegacyEvent | 29,
 			Position:  vec64To32(pos),
 		})
 	case particle.Lava:
