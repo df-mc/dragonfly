@@ -95,7 +95,7 @@ func (c EnderChest) open(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, OpenAction{})
 	}
-	w.PlaySound(pos.Vec3Centre(), sound.ChestOpen{})
+	w.PlaySound(pos.Vec3Centre(), sound.EnderChestOpen{})
 }
 
 // close closes the ender chest, displaying the animation and playing a sound.
@@ -103,7 +103,7 @@ func (c EnderChest) close(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, CloseAction{})
 	}
-	w.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
+	w.PlaySound(pos.Vec3Centre(), sound.EnderChestClose{})
 }
 
 // EncodeNBT ...
@@ -113,7 +113,9 @@ func (c EnderChest) EncodeNBT() map[string]interface{} {
 
 // DecodeNBT ...
 func (c EnderChest) DecodeNBT(map[string]interface{}) interface{} {
-	return NewEnderChest()
+	ec := NewEnderChest()
+	ec.Facing = c.Facing
+	return ec
 }
 
 // EncodeItem ...

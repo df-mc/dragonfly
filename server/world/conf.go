@@ -23,7 +23,7 @@ type Config struct {
 	// Provider is the Provider implementation used to read and write World data. If set to nil, the Provider used will
 	// be NopProvider, which does not store any data to disk.
 	Provider Provider
-	// Generator is the Generator implementation used to generate new areas of the World. If set to nil, the Provider
+	// Generator is the Generator implementation used to generate new areas of the World. If set to nil, the Generator
 	// used will be NopGenerator, which generates completely empty chunks.
 	Generator Generator
 	// ReadOnly specifies if the World should be read-only, meaning no new data will be written to the Provider.

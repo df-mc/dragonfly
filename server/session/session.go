@@ -381,13 +381,6 @@ func (s *Session) sendChunks() {
 func (s *Session) handleWorldSwitch(w *world.World) {
 	if s.conn.ClientCacheEnabled() {
 		s.blobMu.Lock()
-		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
-		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
-		for h, blob := range s.blobs {
-			resp.Blobs = append(resp.Blobs, protocol.CacheBlob{Hash: h, Payload: blob})
-		}
-		s.writePacket(resp)
-
 		s.blobs = map[uint64][]byte{}
 		s.openChunkTransactions = nil
 		s.blobMu.Unlock()
@@ -438,37 +431,37 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 // registerHandlers registers all packet handlers found in the packetHandler package.
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
-		packet.IDActorEvent:            nil,
-		packet.IDAdventureSettings:     nil, // Deprecated, the client still sends this though.
-		packet.IDAnimate:               nil,
-		packet.IDAnvilDamage:           nil,
-		packet.IDBlockActorData:        &BlockActorDataHandler{},
-		packet.IDBlockPickRequest:      &BlockPickRequestHandler{},
-		packet.IDBookEdit:              &BookEditHandler{},
-		packet.IDBossEvent:             nil,
-		packet.IDClientCacheBlobStatus: &ClientCacheBlobStatusHandler{},
-		packet.IDCommandRequest:        &CommandRequestHandler{},
-		packet.IDContainerClose:        &ContainerCloseHandler{},
-		packet.IDEmote:                 &EmoteHandler{},
-		packet.IDEmoteList:             nil,
-		packet.IDFilterText:            nil,
-		packet.IDInteract:              &InteractHandler{},
-		packet.IDInventoryTransaction:  &InventoryTransactionHandler{},
-		packet.IDItemFrameDropItem:     nil,
-		packet.IDItemStackRequest:      &ItemStackRequestHandler{changes: map[byte]map[byte]changeInfo{}, responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
-		packet.IDLecternUpdate:         &LecternUpdateHandler{},
-		packet.IDMobEquipment:          &MobEquipmentHandler{},
-		packet.IDModalFormResponse:     &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
-		packet.IDMovePlayer:            nil,
-		packet.IDPlayerAction:          &PlayerActionHandler{},
-		packet.IDPlayerAuthInput:       &PlayerAuthInputHandler{},
-		packet.IDPlayerSkin:            &PlayerSkinHandler{},
-		packet.IDRequestAbility:        &RequestAbilityHandler{},
-		packet.IDRequestChunkRadius:    &RequestChunkRadiusHandler{},
-		packet.IDRespawn:               &RespawnHandler{},
-		packet.IDSubChunkRequest:       &SubChunkRequestHandler{},
-		packet.IDText:                  &TextHandler{},
-		packet.IDTickSync:              nil,
+		packet.IDActorEvent:                nil,
+		packet.IDAdventureSettings:         nil, // Deprecated, the client still sends this though.
+		packet.IDAnimate:                   nil,
+		packet.IDAnvilDamage:               nil,
+		packet.IDBlockActorData:            &BlockActorDataHandler{},
+		packet.IDBlockPickRequest:          &BlockPickRequestHandler{},
+		packet.IDBookEdit:                  &BookEditHandler{},
+		packet.IDBossEvent:                 nil,
+		packet.IDClientCacheBlobStatus:     &ClientCacheBlobStatusHandler{},
+		packet.IDCommandRequest:            &CommandRequestHandler{},
+		packet.IDContainerClose:            &ContainerCloseHandler{},
+		packet.IDEmote:                     &EmoteHandler{},
+		packet.IDEmoteList:                 nil,
+		packet.IDFilterText:                nil,
+		packet.IDInteract:                  &InteractHandler{},
+		packet.IDInventoryTransaction:      &InventoryTransactionHandler{},
+		packet.IDItemStackRequest:          &ItemStackRequestHandler{changes: map[byte]map[byte]changeInfo{}, responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
+		packet.IDLecternUpdate:             &LecternUpdateHandler{},
+		packet.IDMobEquipment:              &MobEquipmentHandler{},
+		packet.IDModalFormResponse:         &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
+		packet.IDMovePlayer:                nil,
+		packet.IDPlayerAction:              &PlayerActionHandler{},
+		packet.IDPlayerAuthInput:           &PlayerAuthInputHandler{},
+		packet.IDPlayerSkin:                &PlayerSkinHandler{},
+		packet.IDRequestAbility:            &RequestAbilityHandler{},
+		packet.IDRequestChunkRadius:        &RequestChunkRadiusHandler{},
+		packet.IDRespawn:                   &RespawnHandler{},
+		packet.IDSetPlayerInventoryOptions: nil,
+		packet.IDSubChunkRequest:           &SubChunkRequestHandler{},
+		packet.IDText:                      &TextHandler{},
+		packet.IDTickSync:                  nil,
 	}
 }
 
