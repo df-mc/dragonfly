@@ -913,9 +913,12 @@ func (s *Session) ViewEntityState(e world.Entity) {
 		if nt := s.viewLayer.NameTag(v); len(nt) > 0 {
 			metadata[protocol.EntityDataKeyName] = nt
 		}
-		invisFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
-		if invis := s.viewLayer.Invisible(v); !invisFlag && invis {
-			metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		if visibility := s.viewLayer.Visibility(v); visibility.EnforceVisibility() {
+			invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+			if (visibility == world.EnforceVisible() && invisibleFlag) ||
+				visibility == world.EnforceInvisible() && !invisibleFlag {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+			}
 		}
 	}
 	s.writePacket(&packet.SetActorData{

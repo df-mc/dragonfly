@@ -9,8 +9,8 @@ type LayerViewer interface {
 }
 
 type Layer struct {
-	nameTag   string
-	invisible bool
+	nameTag    string
+	visibility VisibilityLevel
 }
 
 // ViewLayer is a view layer that can be used to add a layer to the view of a player.
@@ -37,7 +37,8 @@ func (v *ViewLayer) Viewers() []LayerViewer {
 	return viewers
 }
 
-// ViewNameTag adds a name tag to a viewer.
+// ViewNameTag overwrites the public name tag of the viewer and allows this ViewLayer to view a different name tag.
+// Leaving the name tag empty reverts this behaviour.
 func (v *ViewLayer) ViewNameTag(viewer LayerViewer, nameTag string) {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
@@ -47,38 +48,29 @@ func (v *ViewLayer) ViewNameTag(viewer LayerViewer, nameTag string) {
 	v.viewers[viewer] = l
 }
 
-// NameTag returns the name tag of a viewer.
+// NameTag returns the overwritten name tag of the viewer.
 func (v *ViewLayer) NameTag(viewer LayerViewer) string {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 	return v.viewers[viewer].nameTag
 }
 
-// ViewVisible makes a viewer be visible.
-func (v *ViewLayer) ViewVisible(viewer LayerViewer) {
+// ViewVisibility overwrites the public visibility of the viewer and allows this ViewLayer to view
+// this viewer as (in)visible depending on the VisibilityLevel.
+func (v *ViewLayer) ViewVisibility(viewer LayerViewer, level VisibilityLevel) {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 
 	l := v.viewers[viewer]
-	l.invisible = false
+	l.visibility = level
 	v.viewers[viewer] = l
 }
 
-// ViewInvisible makes a viewer be invisible.
-func (v *ViewLayer) ViewInvisible(viewer LayerViewer) {
+// Visibility returns the visibility of the viewer.
+func (v *ViewLayer) Visibility(viewer LayerViewer) VisibilityLevel {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
-
-	l := v.viewers[viewer]
-	l.invisible = true
-	v.viewers[viewer] = l
-}
-
-// Invisible returns the invisibility of a viewer.
-func (v *ViewLayer) Invisible(viewer LayerViewer) bool {
-	v.viewerMu.Lock()
-	defer v.viewerMu.Unlock()
-	return v.viewers[viewer].invisible
+	return v.viewers[viewer].visibility
 }
 
 // Close closes the view layer.
