@@ -56,6 +56,7 @@ const (
 	hashDragonEgg
 	hashDriedKelp
 	hashDripstone
+	hashDropper
 	hashEmerald
 	hashEmeraldOre
 	hashEnchantingTable
