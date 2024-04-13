@@ -7,3 +7,13 @@ type AmethystShard struct{}
 func (AmethystShard) EncodeItem() (name string, meta int16) {
 	return "minecraft:amethyst_shard", 0
 }
+
+// TrimMaterial ...
+func (AmethystShard) TrimMaterial() string {
+	return "amethyst"
+}
+
+// MaterialColor ...
+func (AmethystShard) MaterialColor() string {
+	return "u"
+}

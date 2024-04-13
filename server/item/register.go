@@ -145,6 +145,7 @@ func init() {
 		world.RegisterItem(SplashPotion{Type: p})
 		world.RegisterItem(Potion{Type: p})
 	}
+	world.RegisterItem(Template{TemplateNetheriteUpgrade()})
 	for _, t := range Templates() {
 		world.RegisterItem(Template{Template: t})
 	}

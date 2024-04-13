@@ -209,6 +209,7 @@ func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 	s.sendRecipes()
+	s.sendArmourTrimData()
 }
 
 // Start makes the session start handling incoming packets from the client.

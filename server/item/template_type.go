@@ -1,95 +1,133 @@
 package item
 
-type TemplateType struct {
+type ArmourTrimTemplate struct {
 	Name string
 }
 
 // TemplateNetheriteUpgrade returns the Netherrite Upgrade Template
-func TemplateNetheriteUpgrade() TemplateType {
-	return TemplateType{Name: "netherite_upgrade"}
+func TemplateNetheriteUpgrade() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"netherite_upgrade"}
 }
 
 // TemplateSentry returns the Sentry Template.
-func TemplateSentry() TemplateType {
-	return TemplateType{"sentry"}
+func TemplateSentry() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"sentry"}
 }
 
 // TemplateVex returns the Vex Template.
-func TemplateVex() TemplateType {
-	return TemplateType{"vex"}
+func TemplateVex() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"vex"}
 }
 
 // TemplateWild returns the Wild Template.
-func TemplateWild() TemplateType {
-	return TemplateType{"wild"}
+func TemplateWild() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"wild"}
 }
 
 // TemplateCoast returns the Coast Template.
-func TemplateCoast() TemplateType {
-	return TemplateType{"coast"}
+func TemplateCoast() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"coast"}
 }
 
 // TemplateDune returns the Dune Template.
-func TemplateDune() TemplateType {
-	return TemplateType{"dune"}
+func TemplateDune() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"dune"}
 }
 
 // TemplateWayFinder returns the WayFinder Template.
-func TemplateWayFinder() TemplateType {
-	return TemplateType{"wayfinder"}
+func TemplateWayFinder() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"wayfinder"}
 }
 
 // TemplateRaiser returns the Raiser Template.
-func TemplateRaiser() TemplateType {
-	return TemplateType{"raiser"}
+func TemplateRaiser() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"raiser"}
 }
 
 // TemplateShaper returns the Raiser Template.
-func TemplateShaper() TemplateType {
-	return TemplateType{"shaper"}
+func TemplateShaper() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"shaper"}
 }
 
 // TemplateHost returns the Host Template.
-func TemplateHost() TemplateType {
-	return TemplateType{"host"}
+func TemplateHost() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"host"}
 }
 
 // TemplateWard returns the Ward Template.
-func TemplateWard() TemplateType {
-	return TemplateType{"ward"}
+func TemplateWard() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"ward"}
 }
 
 // TemplateSilence returns the Silence Template.
-func TemplateSilence() TemplateType {
-	return TemplateType{"silence"}
+func TemplateSilence() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"silence"}
 }
 
 // TemplateTide returns the Tide Template.
-func TemplateTide() TemplateType {
-	return TemplateType{"tide"}
+func TemplateTide() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"tide"}
 }
 
 // TemplateSnout returns the Snout Template.
-func TemplateSnout() TemplateType {
-	return TemplateType{"snout"}
+func TemplateSnout() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"snout"}
 }
 
 // TemplateRib returns the Rib Template.
-func TemplateRib() TemplateType {
-	return TemplateType{"rib"}
+func TemplateRib() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"rib"}
 }
 
 // TemplateEye returns the Eye Template.
-func TemplateEye() TemplateType {
-	return TemplateType{"eye"}
+func TemplateEye() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"eye"}
 }
 
 // TemplateSpire returns the Spire Template.
-func TemplateSpire() TemplateType {
-	return TemplateType{"spire"}
+func TemplateSpire() ArmourTrimTemplate {
+	return ArmourTrimTemplate{"spire"}
 }
 
 // Templates returns all the Templates
-func Templates() []TemplateType {
-	return []TemplateType{TemplateNetheriteUpgrade(), TemplateSentry(), TemplateVex(), TemplateWild(), TemplateCoast(), TemplateDune(), TemplateWayFinder(), TemplateRaiser(), TemplateShaper(), TemplateHost(), TemplateWard(), TemplateSilence(), TemplateTide(), TemplateSnout(), TemplateRib(), TemplateEye(), TemplateSpire()}
+func Templates() []ArmourTrimTemplate {
+	return []ArmourTrimTemplate{TemplateSentry(), TemplateVex(), TemplateWild(), TemplateCoast(), TemplateDune(), TemplateWayFinder(), TemplateRaiser(), TemplateShaper(), TemplateHost(), TemplateWard(), TemplateSilence(), TemplateTide(), TemplateSnout(), TemplateRib(), TemplateEye(), TemplateSpire()}
+}
+
+// TemplateFromString returns a template based on a string.
+func TemplateFromString(name string) ArmourTrimTemplate {
+	switch name {
+	case "netherite_upgrade":
+		return TemplateNetheriteUpgrade()
+	case "sentry":
+		return TemplateSentry()
+	case "vex":
+		return TemplateVex()
+	case "wild":
+		return TemplateWild()
+	case "coast":
+		return TemplateCoast()
+	case "dune":
+		return TemplateDune()
+	case "wayfinder":
+		return TemplateWayFinder()
+	case "raiser":
+		return TemplateRaiser()
+	case "shaper":
+		return TemplateShaper()
+	case "host":
+		return TemplateHost()
+	case "ward":
+		return TemplateWard()
+	case "silence":
+		return TemplateSilence()
+	case "tide":
+		return TemplateTide()
+	case "eye":
+		return TemplateEye()
+	case "spire":
+		return TemplateSpire()
+	}
+
+	panic("unknown template type")
 }

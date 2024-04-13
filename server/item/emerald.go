@@ -8,6 +8,16 @@ func (Emerald) EncodeItem() (name string, meta int16) {
 	return "minecraft:emerald", 0
 }
 
+// TrimMaterial ...
+func (Emerald) TrimMaterial() string {
+	return "emerald"
+}
+
+// MaterialColor ...
+func (Emerald) MaterialColor() string {
+	return "q"
+}
+
 // PayableForBeacon ...
 func (Emerald) PayableForBeacon() bool {
 	return true

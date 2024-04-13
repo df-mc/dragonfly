@@ -135,6 +135,34 @@ func (s *Session) sendRecipes() {
 	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
 }
 
+// sendArmourTrimData sends the armour trim data.
+func (s *Session) sendArmourTrimData() {
+	var trimPatters []protocol.TrimPattern
+	var trimMaterials []protocol.TrimMaterial
+
+	for _, t := range item.Templates() {
+		name, _ := item.Template{Template: t}.EncodeItem()
+		trimPatters = append(trimPatters, protocol.TrimPattern{
+			ItemName:  name,
+			PatternID: t.Name,
+		})
+	}
+
+	for _, i := range item.TrimMaterials() {
+		if material, ok := i.(item.TrimMaterial); ok {
+			name, _ := i.EncodeItem()
+
+			trimMaterials = append(trimMaterials, protocol.TrimMaterial{
+				MaterialID: material.TrimMaterial(),
+				Colour:     "§" + material.MaterialColor(),
+				ItemName:   name,
+			})
+		}
+	}
+
+	s.writePacket(&packet.TrimData{Patterns: trimPatters, Materials: trimMaterials})
+}
+
 // sendInv sends the inventory passed to the client with the window ID.
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{

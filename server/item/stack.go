@@ -28,6 +28,8 @@ type Stack struct {
 	data map[string]any
 
 	enchantments map[EnchantmentType]Enchantment
+
+	armorTrim *ArmourTrim
 }
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
@@ -40,6 +42,23 @@ func NewStack(t world.Item, count int) Stack {
 		panic("cannot have a stack with item type nil")
 	}
 	return Stack{item: t, count: count, id: newID()}
+}
+
+// WithArmourTrim returns a new stack with the ArmorTrim passed.
+// This only applies if the stack is type Armour.
+func (s Stack) WithArmourTrim(trim ArmourTrim) Stack {
+	if _, ok := s.item.(Armour); !ok {
+		return s
+	}
+
+	s.armorTrim = &trim
+	return s
+}
+
+// ArmourTrim returns the ArmourTrim.
+// if this returns nil it does not have an armor trim, or it is not an armour
+func (s Stack) ArmourTrim() *ArmourTrim {
+	return s.armorTrim
 }
 
 // Count returns the amount of items that is present on the stack. The count is guaranteed never to be

@@ -7,3 +7,13 @@ type CopperIngot struct{}
 func (c CopperIngot) EncodeItem() (name string, meta int16) {
 	return "minecraft:copper_ingot", 0
 }
+
+// TrimMaterial ...
+func (CopperIngot) TrimMaterial() string {
+	return "copper"
+}
+
+// MaterialColor ...
+func (CopperIngot) MaterialColor() string {
+	return "n"
+}

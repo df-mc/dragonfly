@@ -7,3 +7,13 @@ type NetherQuartz struct{}
 func (NetherQuartz) EncodeItem() (name string, meta int16) {
 	return "minecraft:quartz", 0
 }
+
+// TrimMaterial ...
+func (NetherQuartz) TrimMaterial() string {
+	return "quartz"
+}
+
+// MaterialColor ...
+func (NetherQuartz) MaterialColor() string {
+	return "h"
+}

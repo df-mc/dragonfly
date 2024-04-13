@@ -8,6 +8,16 @@ func (NetheriteIngot) EncodeItem() (name string, meta int16) {
 	return "minecraft:netherite_ingot", 0
 }
 
+// TrimMaterial ...
+func (NetheriteIngot) TrimMaterial() string {
+	return "netherite"
+}
+
+// MaterialColor ...
+func (NetheriteIngot) MaterialColor() string {
+	return "j"
+}
+
 // PayableForBeacon ...
 func (NetheriteIngot) PayableForBeacon() bool {
 	return true

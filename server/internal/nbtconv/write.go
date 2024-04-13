@@ -17,6 +17,7 @@ func WriteItem(s item.Stack, disk bool) map[string]any {
 			tag[k] = v
 		}
 	}
+	writeArmourTrim(tag, s)
 	writeAnvilCost(tag, s)
 	writeDamage(tag, s, disk)
 	writeDisplay(tag, s)
@@ -108,6 +109,16 @@ func writeEnchantments(m map[string]any, s item.Stack) {
 			}
 		}
 		m["ench"] = enchantments
+	}
+}
+
+// writeArmourTrim writes the
+func writeArmourTrim(m map[string]any, s item.Stack) {
+	if t := s.ArmourTrim(); t != nil {
+		m["Trim"] = map[string]any{
+			"Material": t.Material.TrimMaterial(),
+			"Pattern":  t.Template.Name,
+		}
 	}
 }
 
