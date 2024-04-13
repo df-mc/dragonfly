@@ -382,13 +382,6 @@ func (s *Session) sendChunks() {
 func (s *Session) handleWorldSwitch(w *world.World) {
 	if s.conn.ClientCacheEnabled() {
 		s.blobMu.Lock()
-		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
-		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
-		for h, blob := range s.blobs {
-			resp.Blobs = append(resp.Blobs, protocol.CacheBlob{Hash: h, Payload: blob})
-		}
-		s.writePacket(resp)
-
 		s.blobs = map[uint64][]byte{}
 		s.openChunkTransactions = nil
 		s.blobMu.Unlock()

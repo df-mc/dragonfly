@@ -20,13 +20,13 @@ type BlastFurnace struct {
 	*smelter
 
 	// Facing is the direction the blast furnace is facing.
-	Facing cube.Face
+	Facing cube.Direction
 	// Lit is true if the blast furnace is lit.
 	Lit bool
 }
 
 // NewBlastFurnace creates a new initialised blast furnace. The smelter is properly initialised.
-func NewBlastFurnace(face cube.Face) BlastFurnace {
+func NewBlastFurnace(face cube.Direction) BlastFurnace {
 	return BlastFurnace{
 		Facing:  face,
 		smelter: newSmelter(),
@@ -66,7 +66,7 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 		return false
 	}
 
-	place(w, pos, NewBlastFurnace(user.Rotation().Direction().Face().Opposite()), user, ctx)
+	place(w, pos, NewBlastFurnace(user.Rotation().Direction().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
@@ -122,7 +122,7 @@ func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
 
 // allBlastFurnaces ...
 func allBlastFurnaces() (furnaces []world.Block) {
-	for _, face := range cube.HorizontalFaces() {
+	for _, face := range cube.Directions() {
 		furnaces = append(furnaces, BlastFurnace{Facing: face})
 		furnaces = append(furnaces, BlastFurnace{Facing: face, Lit: true})
 	}
