@@ -13,6 +13,8 @@ var (
 	vanillaCraftingData []byte
 	//go:embed smithing_data.nbt
 	vanillaSmithingData []byte
+	//go:embed smithing_trim_data.nbt
+	vanillaSmithingTrimData []byte
 	//go:embed stonecutter_data.nbt
 	vanillaStonecutterData []byte
 )
@@ -94,9 +96,27 @@ func init() {
 			// This can be expected to happen - refer to the comment above.
 			continue
 		}
-		Register(Smithing{recipe{
+		Register(SmithingTransform{recipe{
 			input:    input,
 			output:   output,
+			block:    s.Block,
+			priority: uint32(s.Priority),
+		}})
+	}
+
+	var smithingTrimRecipes []shapelessRecipe
+	if err := nbt.Unmarshal(vanillaSmithingTrimData, &smithingTrimRecipes); err != nil {
+		panic(err)
+	}
+
+	for _, s := range smithingTrimRecipes {
+		input, ok := s.Input.Items()
+		if !ok {
+			// This can be expected to happen - refer to the comment above.
+			continue
+		}
+		Register(SmithingTransform{recipe{
+			input:    input,
 			block:    s.Block,
 			priority: uint32(s.Priority),
 		}})

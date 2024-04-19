@@ -119,7 +119,7 @@ func (s *Session) sendRecipes() {
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
-		case recipe.Smithing:
+		case recipe.SmithingTransform:
 			input, output := stacksToIngredientItems(i.Input()), stacksToRecipeStacks(i.Output())
 			recipes = append(recipes, &protocol.SmithingTransformRecipe{
 				RecipeID:        uuid.New().String(),
@@ -127,6 +127,16 @@ func (s *Session) sendRecipes() {
 				Addition:        input[1],
 				Template:        input[2],
 				Result:          output[0],
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
+		case recipe.SmithingTrim:
+			input := stacksToIngredientItems(i.Input())
+			recipes = append(recipes, &protocol.SmithingTrimRecipe{
+				RecipeID:        uuid.New().String(),
+				Base:            input[0],
+				Addition:        input[1],
+				Template:        input[2],
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
