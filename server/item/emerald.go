@@ -1,5 +1,7 @@
 package item
 
+import "github.com/sandertv/gophertunnel/minecraft/text"
+
 // Emerald is a rare mineral obtained from emerald ore or from villagers.
 type Emerald struct{}
 
@@ -13,9 +15,9 @@ func (Emerald) TrimMaterial() string {
 	return "emerald"
 }
 
-// MaterialColor ...
-func (Emerald) MaterialColor() string {
-	return "q"
+// MaterialColour ...
+func (Emerald) MaterialColour() string {
+	return text.Emerald
 }
 
 // PayableForBeacon ...

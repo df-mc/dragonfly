@@ -127,6 +127,9 @@ func init() {
 		world.RegisterItem(Leggings{Tier: t})
 		world.RegisterItem(Boots{Tier: t})
 	}
+	for _, t := range SmithingTemplates() {
+		world.RegisterItem(SmithingTemplate{Template: t})
+	}
 	for _, pattern := range BannerPatterns() {
 		world.RegisterItem(BannerPattern{Type: pattern})
 	}
@@ -144,10 +147,6 @@ func init() {
 		world.RegisterItem(LingeringPotion{Type: p})
 		world.RegisterItem(SplashPotion{Type: p})
 		world.RegisterItem(Potion{Type: p})
-	}
-	world.RegisterItem(Template{TemplateNetheriteUpgrade()})
-	for _, t := range Templates() {
-		world.RegisterItem(Template{Template: t})
 	}
 	for _, t := range ToolTiers() {
 		world.RegisterItem(Pickaxe{Tier: t})

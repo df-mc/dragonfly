@@ -1,5 +1,7 @@
 package item
 
+import "github.com/sandertv/gophertunnel/minecraft/text"
+
 // CopperIngot is a metal ingot melted from copper ore.
 type CopperIngot struct{}
 
@@ -13,7 +15,7 @@ func (CopperIngot) TrimMaterial() string {
 	return "copper"
 }
 
-// MaterialColor ...
-func (CopperIngot) MaterialColor() string {
-	return "n"
+// MaterialColour ...
+func (CopperIngot) MaterialColour() string {
+	return text.Copper
 }

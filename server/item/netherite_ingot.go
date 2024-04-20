@@ -1,5 +1,7 @@
 package item
 
+import "github.com/sandertv/gophertunnel/minecraft/text"
+
 // NetheriteIngot is a rare mineral crafted with 4 pieces of netherite scrap and 4 gold ingots.
 type NetheriteIngot struct{}
 
@@ -13,9 +15,9 @@ func (NetheriteIngot) TrimMaterial() string {
 	return "netherite"
 }
 
-// MaterialColor ...
-func (NetheriteIngot) MaterialColor() string {
-	return "j"
+// MaterialColour ...
+func (NetheriteIngot) MaterialColour() string {
+	return text.Netherite
 }
 
 // PayableForBeacon ...

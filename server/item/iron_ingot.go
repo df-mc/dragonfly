@@ -1,5 +1,7 @@
 package item
 
+import "github.com/sandertv/gophertunnel/minecraft/text"
+
 // IronIngot is a metal ingot melted from raw iron or obtained from loot chests.
 type IronIngot struct{}
 
@@ -13,9 +15,9 @@ func (IronIngot) TrimMaterial() string {
 	return "iron"
 }
 
-// MaterialColor ...
-func (IronIngot) MaterialColor() string {
-	return "i"
+// MaterialColour ...
+func (IronIngot) MaterialColour() string {
+	return text.Iron
 }
 
 // PayableForBeacon ...

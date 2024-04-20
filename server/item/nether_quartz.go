@@ -1,5 +1,7 @@
 package item
 
+import "github.com/sandertv/gophertunnel/minecraft/text"
+
 // NetherQuartz is a smooth, white mineral found in the Nether.
 type NetherQuartz struct{}
 
@@ -13,7 +15,7 @@ func (NetherQuartz) TrimMaterial() string {
 	return "quartz"
 }
 
-// MaterialColor ...
-func (NetherQuartz) MaterialColor() string {
-	return "h"
+// MaterialColour ...
+func (NetherQuartz) MaterialColour() string {
+	return text.Quartz
 }

@@ -29,7 +29,7 @@ type Stack struct {
 
 	enchantments map[EnchantmentType]Enchantment
 
-	armorTrim *ArmourTrim
+	armourTrim *ArmourTrim
 }
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
@@ -51,14 +51,17 @@ func (s Stack) WithArmourTrim(trim ArmourTrim) Stack {
 		return s
 	}
 
-	s.armorTrim = &trim
+	s.armourTrim = &trim
 	return s
 }
 
 // ArmourTrim returns the ArmourTrim.
-// if this returns nil it does not have an armor trim, or it is not an armour
-func (s Stack) ArmourTrim() *ArmourTrim {
-	return s.armorTrim
+// if this returns false it does not have an armor trim, or it is not an armour
+func (s Stack) ArmourTrim() (ArmourTrim, bool) {
+	if s.armourTrim != nil {
+		return *s.armourTrim, true
+	}
+	return ArmourTrim{}, false
 }
 
 // Count returns the amount of items that is present on the stack. The count is guaranteed never to be

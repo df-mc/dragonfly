@@ -231,8 +231,8 @@ func readArmourTrim(m map[string]any, s *item.Stack) {
 		pattern, ok2 := trim["Pattern"].(string)
 		if ok && ok2 {
 			*s = s.WithArmourTrim(item.ArmourTrim{
-				Template: item.TemplateFromString(pattern),
-				Material: item.MaterialFromString(material),
+				Template: item.ArmourSmithingTemplateFromString(pattern),
+				Material: item.ArmourTrimMaterialFromString(material),
 			})
 		}
 	}

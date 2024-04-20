@@ -1,5 +1,7 @@
 package item
 
+import "github.com/sandertv/gophertunnel/minecraft/text"
+
 // GoldIngot is a metal ingot melted from raw gold or obtained from loot chests.
 type GoldIngot struct{}
 
@@ -13,9 +15,9 @@ func (GoldIngot) TrimMaterial() string {
 	return "gold"
 }
 
-// MaterialColor ...
-func (GoldIngot) MaterialColor() string {
-	return "p"
+// MaterialColour ...
+func (GoldIngot) MaterialColour() string {
+	return text.Gold
 }
 
 // PayableForBeacon ...

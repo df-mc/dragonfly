@@ -3,19 +3,19 @@ package item
 import "github.com/df-mc/dragonfly/server/world"
 
 type ArmourTrim struct {
-	Template ArmourTrimTemplate
-	Material TrimMaterial
+	Template ArmourSmithingTemplate
+	Material ArmourTrimMaterial
 }
 
-type TrimMaterial interface {
+type ArmourTrimMaterial interface {
 	// TrimMaterial returns the material name used for reading and writing trim data.
 	TrimMaterial() string
-	// MaterialColor returns the color code used for internal text formatting. Use text.Colourf for proper formatting.
-	MaterialColor() string
+	// MaterialColour returns the color code used for internal text formatting. Use text.Colourf for proper formatting.
+	MaterialColour() string
 }
 
-// MaterialFromString returns a TrimMaterial from a string.
-func MaterialFromString(name string) TrimMaterial {
+// ArmourTrimMaterialFromString returns a TrimMaterial from a string.
+func ArmourTrimMaterialFromString(name string) ArmourTrimMaterial {
 	switch name {
 	case "amethyst":
 		return AmethystShard{}
@@ -42,7 +42,17 @@ func MaterialFromString(name string) TrimMaterial {
 	panic("should not happen")
 }
 
-// TrimMaterials returns all the items that can be trim materials.
-func TrimMaterials() []world.Item {
-	return []world.Item{AmethystShard{}, CopperIngot{}, Diamond{}, Emerald{}, GoldIngot{}, IronIngot{}, LapisLazuli{}, NetheriteIngot{}, NetherQuartz{}}
+// ArmourTrimMaterials returns all the items that can be trim materials.
+func ArmourTrimMaterials() []world.Item {
+	return []world.Item{
+		AmethystShard{},
+		CopperIngot{},
+		Diamond{},
+		Emerald{},
+		GoldIngot{},
+		IronIngot{},
+		LapisLazuli{},
+		NetheriteIngot{},
+		NetherQuartz{},
+	}
 }

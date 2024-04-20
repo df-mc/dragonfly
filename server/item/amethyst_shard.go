@@ -1,5 +1,7 @@
 package item
 
+import "github.com/sandertv/gophertunnel/minecraft/text"
+
 // AmethystShard is a crystalline mineral obtained from mining a fully grown amethyst cluster.
 type AmethystShard struct{}
 
@@ -13,7 +15,7 @@ func (AmethystShard) TrimMaterial() string {
 	return "amethyst"
 }
 
-// MaterialColor ...
-func (AmethystShard) MaterialColor() string {
-	return "u"
+// MaterialColour ...
+func (AmethystShard) MaterialColour() string {
+	return text.Amethyst
 }

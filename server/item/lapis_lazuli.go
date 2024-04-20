@@ -1,5 +1,7 @@
 package item
 
+import "github.com/sandertv/gophertunnel/minecraft/text"
+
 // LapisLazuli is a mineral used for enchanting and decoration.
 type LapisLazuli struct{}
 
@@ -13,7 +15,7 @@ func (LapisLazuli) TrimMaterial() string {
 	return "lapis"
 }
 
-// MaterialColor ...
-func (LapisLazuli) MaterialColor() string {
-	return "t"
+// MaterialColour ...
+func (LapisLazuli) MaterialColour() string {
+	return text.Lapis
 }

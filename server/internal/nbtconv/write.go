@@ -114,10 +114,10 @@ func writeEnchantments(m map[string]any, s item.Stack) {
 
 // writeArmourTrim writes the
 func writeArmourTrim(m map[string]any, s item.Stack) {
-	if t := s.ArmourTrim(); t != nil {
+	if t, ok := s.ArmourTrim(); ok {
 		m["Trim"] = map[string]any{
 			"Material": t.Material.TrimMaterial(),
-			"Pattern":  t.Template.Name,
+			"Pattern":  t.Template.String(),
 		}
 	}
 }

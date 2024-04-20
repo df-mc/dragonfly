@@ -150,21 +150,21 @@ func (s *Session) sendArmourTrimData() {
 	var trimPatters []protocol.TrimPattern
 	var trimMaterials []protocol.TrimMaterial
 
-	for _, t := range item.Templates() {
-		name, _ := item.Template{Template: t}.EncodeItem()
+	for _, t := range item.SmithingTemplates() {
+		name, _ := item.SmithingTemplate{Template: t}.EncodeItem()
 		trimPatters = append(trimPatters, protocol.TrimPattern{
 			ItemName:  name,
-			PatternID: t.Name,
+			PatternID: t.String(),
 		})
 	}
 
-	for _, i := range item.TrimMaterials() {
-		if material, ok := i.(item.TrimMaterial); ok {
+	for _, i := range item.ArmourTrimMaterials() {
+		if material, ok := i.(item.ArmourTrimMaterial); ok {
 			name, _ := i.EncodeItem()
 
 			trimMaterials = append(trimMaterials, protocol.TrimMaterial{
 				MaterialID: material.TrimMaterial(),
-				Colour:     "§" + material.MaterialColor(),
+				Colour:     material.MaterialColour(),
 				ItemName:   name,
 			})
 		}
