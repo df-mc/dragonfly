@@ -147,12 +147,12 @@ func (s *Session) sendRecipes() {
 
 // sendArmourTrimData sends the armour trim data.
 func (s *Session) sendArmourTrimData() {
-	var trimPatters []protocol.TrimPattern
+	var trimPatterns []protocol.TrimPattern
 	var trimMaterials []protocol.TrimMaterial
 
 	for _, t := range item.SmithingTemplates() {
 		name, _ := item.SmithingTemplate{Template: t}.EncodeItem()
-		trimPatters = append(trimPatters, protocol.TrimPattern{
+		trimPatterns = append(trimPatterns, protocol.TrimPattern{
 			ItemName:  name,
 			PatternID: t.String(),
 		})
@@ -170,7 +170,7 @@ func (s *Session) sendArmourTrimData() {
 		}
 	}
 
-	s.writePacket(&packet.TrimData{Patterns: trimPatters, Materials: trimMaterials})
+	s.writePacket(&packet.TrimData{Patterns: trimPatterns, Materials: trimMaterials})
 }
 
 // sendInv sends the inventory passed to the client with the window ID.

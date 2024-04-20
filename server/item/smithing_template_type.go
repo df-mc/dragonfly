@@ -44,7 +44,7 @@ func TemplateRaiser() ArmourSmithingTemplate {
 	return ArmourSmithingTemplate{7}
 }
 
-// TemplateShaper returns the Raiser Template.
+// TemplateShaper returns the Shaper Template.
 func TemplateShaper() ArmourSmithingTemplate {
 	return ArmourSmithingTemplate{8}
 }

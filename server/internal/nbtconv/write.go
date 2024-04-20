@@ -112,7 +112,7 @@ func writeEnchantments(m map[string]any, s item.Stack) {
 	}
 }
 
-// writeArmourTrim writes the
+// writeArmourTrim writes the armour trim of an item to a map for NBT encoding.
 func writeArmourTrim(m map[string]any, s item.Stack) {
 	if t, ok := s.ArmourTrim(); ok {
 		m["Trim"] = map[string]any{
