@@ -115,7 +115,7 @@ func init() {
 			// This can be expected to happen - refer to the comment above.
 			continue
 		}
-		Register(SmithingTransform{recipe{
+		Register(SmithingTrim{recipe{
 			input:    input,
 			block:    s.Block,
 			priority: uint32(s.Priority),

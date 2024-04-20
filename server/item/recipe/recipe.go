@@ -55,8 +55,8 @@ type SmithingTrim struct {
 // NewSmithingTrim creates a new smithing trim recipe and returns it. The recipe can only be crafted on the block passed
 // in the parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in
 // the player's inventory. This is almost identical to SmithingTransform except there is no output item.
-func NewSmithingTrim(base, addition, template Item, block string) SmithingTransform {
-	return SmithingTransform{recipe: recipe{
+func NewSmithingTrim(base, addition, template Item, block string) SmithingTrim {
+	return SmithingTrim{recipe: recipe{
 		input: []Item{base, addition, template},
 		block: block,
 	}}
