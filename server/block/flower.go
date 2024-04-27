@@ -105,22 +105,12 @@ func (Flower) CompostChance() float64 {
 
 // EncodeItem ...
 func (f Flower) EncodeItem() (name string, meta int16) {
-	if f.Type == Dandelion() {
-		return "minecraft:yellow_flower", 0
-	} else if f.Type == WitherRose() {
-		return "minecraft:wither_rose", 0
-	}
-	return "minecraft:red_flower", int16(f.Type.Uint8() - 1)
+	return "minecraft:" + f.Type.String(), 0
 }
 
 // EncodeBlock ...
 func (f Flower) EncodeBlock() (string, map[string]any) {
-	if f.Type == Dandelion() {
-		return "minecraft:yellow_flower", nil
-	} else if f.Type == WitherRose() {
-		return "minecraft:wither_rose", nil
-	}
-	return "minecraft:red_flower", map[string]any{"flower_type": f.Type.String()}
+	return "minecraft:" + f.Type.String(), nil
 }
 
 // allFlowers ...
