@@ -142,6 +142,7 @@ type Data struct {
 	NaturalGeneration              bool           `nbt:"naturalgeneration"`
 	ProjectilesCanBreakBlocks      bool           `nbt:"projectilescanbreakblocks"`
 	ShowRecipeMessages             bool           `nbt:"showrecipemessages"`
+	IsHardcore                     bool           `nbt:"IsHardcore"`
 }
 
 // FillDefault fills out d with all the default level.dat values.
