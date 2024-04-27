@@ -584,6 +584,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 			damageLeft -= a
 		} else {
 			p.SetAbsorption(a - damageLeft)
+
 			damageLeft = 0
 		}
 	}
@@ -639,7 +640,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 // applyTotemEffects is an unexported function that is used to handle totem effects.
 func (p *Player) applyTotemEffects() {
-	p.addHealth(1 - p.Health())
+	p.addHealth(2 - p.Health())
 
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
