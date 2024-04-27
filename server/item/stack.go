@@ -44,7 +44,7 @@ func NewStack(t world.Item, count int) Stack {
 	return Stack{item: t, count: count, id: newID()}
 }
 
-// WithArmourTrim returns a new stack with the ArmorTrim passed.
+// WithArmourTrim returns a new stack with the ArmourTrim passed.
 // This only applies if the stack is type Armour.
 func (s Stack) WithArmourTrim(trim ArmourTrim) Stack {
 	if _, ok := s.item.(Armour); !ok {
@@ -55,8 +55,7 @@ func (s Stack) WithArmourTrim(trim ArmourTrim) Stack {
 	return s
 }
 
-// ArmourTrim returns the ArmourTrim.
-// if this returns false it does not have an armor trim, or it is not an armour
+// ArmourTrim returns the ArmourTrim and true if present, otherwise false is returned.
 func (s Stack) ArmourTrim() (ArmourTrim, bool) {
 	if s.armourTrim != nil {
 		return *s.armourTrim, true

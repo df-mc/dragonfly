@@ -36,9 +36,7 @@ type SmithingTransform struct {
 	recipe
 }
 
-// NewSmithingTransform creates a new smithing recipe and returns it. The recipe can only be crafted on the block
-// passed in the parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting
-// grid in the player's inventory.
+// NewSmithingTransform creates a new smithing recipe and returns it.
 func NewSmithingTransform(base, addition, template Item, output item.Stack, block string) SmithingTransform {
 	return SmithingTransform{recipe: recipe{
 		input:  []Item{base, addition, template},
@@ -52,9 +50,8 @@ type SmithingTrim struct {
 	recipe
 }
 
-// NewSmithingTrim creates a new smithing trim recipe and returns it. The recipe can only be crafted on the block passed
-// in the parameters. If the block given a crafting table, the recipe can also be crafted in the 2x2 crafting grid in
-// the player's inventory. This is almost identical to SmithingTransform except there is no output item.
+// NewSmithingTrim creates a new smithing trim recipe and returns it. This is
+// almost identical to SmithingTransform except there is no output item.
 func NewSmithingTrim(base, addition, template Item, block string) SmithingTrim {
 	return SmithingTrim{recipe: recipe{
 		input: []Item{base, addition, template},

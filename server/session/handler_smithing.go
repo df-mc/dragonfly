@@ -11,7 +11,7 @@ const (
 	smithingInputSlot = 0x33
 	// smithingMaterialSlot is the slot index of the material in the smithing table.
 	smithingMaterialSlot = 0x34
-	// smithingTemplateSlot is the slot index of the template item in the smithing table
+	// smithingTemplateSlot is the slot index of the template item in the smithing table.
 	smithingTemplateSlot = 0x35
 )
 

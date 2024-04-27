@@ -10,7 +10,7 @@ type ArmourTrim struct {
 type ArmourTrimMaterial interface {
 	// TrimMaterial returns the material name used for reading and writing trim data.
 	TrimMaterial() string
-	// MaterialColour returns the color code used for internal text formatting. Use text.Colourf for proper formatting.
+	// MaterialColour returns the colour code used for internal text formatting.
 	MaterialColour() string
 }
 
