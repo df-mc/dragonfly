@@ -647,7 +647,7 @@ func (p *Player) applyTotemEffects() {
 
 	p.AddEffect(effect.New(effect.Regeneration{}, 2, time.Second*40))
 	p.AddEffect(effect.New(effect.FireResistance{}, 1, time.Second*40))
-	p.AddEffect(effect.New(effect.Absorption{}, 1, time.Second*5))
+	p.AddEffect(effect.New(effect.Absorption{}, 2, time.Second*5))
 
 	p.World().PlaySound(p.Position(), sound.Totem{})
 

@@ -1,5 +1,6 @@
 package item
 
+// Totem is an uncommon combat item that can save holders from death.
 type Totem struct{}
 
 // MaxCount always returns 1.
