@@ -114,25 +114,25 @@ func (f flower) Name() string {
 func (f flower) String() string {
 	switch f {
 	case 0:
-		return "dandelion"
+		return "yellow_flower"
 	case 1:
 		return "poppy"
 	case 2:
-		return "orchid"
+		return "blue_orchid"
 	case 3:
 		return "allium"
 	case 4:
-		return "houstonia"
+		return "azure_bluet"
 	case 5:
-		return "tulip_red"
+		return "red_tulip"
 	case 6:
-		return "tulip_orange"
+		return "orange_tulip"
 	case 7:
-		return "tulip_white"
+		return "white_tulip"
 	case 8:
-		return "tulip_pink"
+		return "pink_tulip"
 	case 9:
-		return "oxeye"
+		return "oxeye_daisy"
 	case 10:
 		return "cornflower"
 	case 11:
