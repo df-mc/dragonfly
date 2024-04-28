@@ -633,41 +633,38 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 // attack was not blocked, false is returned.
 func (p *Player) tryShieldBlock(dmg float64, totalDamage float64, src world.DamageSource) (affected bool) {
 	w, pos := p.World(), p.Position()
-	affected = true
 
 	if src, ok := src.(entity.AttackDamageSource); ok {
 		diff := p.Position().Sub(src.Attacker.Position())
 		diff[1] = 0
 		if diff.Dot(p.Rotation().Vec3()) >= 0.0 {
-			affected = false
+			return false
 		}
 	}
-	if affected {
-		w.PlaySound(pos, sound.ShieldBlock{})
-		p.SetBlockingDelay(time.Millisecond * 250)
+	w.PlaySound(pos, sound.ShieldBlock{})
+	p.SetBlockingDelay(time.Millisecond * 250)
 
-		if src, ok := src.(entity.AttackDamageSource); ok {
-			if l, ok := src.Attacker.(entity.Living); ok {
-				l.KnockBack(pos, 0.5, 0.4)
-			}
-			if a, ok := src.Attacker.(*Player); ok {
-				held, _ := a.HeldItems()
-				if _, ok := held.Item().(item.Axe); ok {
-					p.SetBlockingDelay(time.Second * 5)
-				}
-			}
+	if src, ok := src.(entity.AttackDamageSource); ok {
+		if l, ok := src.Attacker.(entity.Living); ok {
+			l.KnockBack(pos, 0.5, 0.4)
 		}
-		if dmg >= 3.0 {
-			i := int(math.Ceil(totalDamage))
-			held, other := p.HeldItems()
-			if _, ok := held.Item().(item.Shield); ok {
-				p.SetHeldItems(p.damageItem(held, i), other)
-			} else {
-				p.SetHeldItems(held, p.damageItem(other, i))
+		if a, ok := src.Attacker.(*Player); ok {
+			held, _ := a.HeldItems()
+			if _, ok := held.Item().(item.Axe); ok {
+				p.SetBlockingDelay(time.Second * 5)
 			}
 		}
 	}
-	return affected
+	if dmg >= 3.0 {
+		i := int(math.Ceil(totalDamage))
+		held, other := p.HeldItems()
+		if _, ok := held.Item().(item.Shield); ok {
+			p.SetHeldItems(p.damageItem(held, i), other)
+		} else {
+			p.SetHeldItems(held, p.damageItem(other, i))
+		}
+	}
+	return true
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
