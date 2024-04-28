@@ -70,3 +70,6 @@ type GoatHorn struct {
 // FireCharge is a sound played when a player lights a block on fire with a fire charge, or when a dispenser or a
 // blaze shoots a fireball.
 type FireCharge struct{ sound }
+
+// ShieldBlock is a sound played when a player blocks an attack using a shield.
+type ShieldBlock struct{ sound }
