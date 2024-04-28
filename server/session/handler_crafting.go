@@ -203,6 +203,9 @@ func matchingStacks(has, expected recipe.Item) bool {
 	switch expected := expected.(type) {
 	case item.Stack:
 		switch has := has.(type) {
+		case recipe.ItemTag:
+			name, _ := expected.Item().EncodeItem()
+			return has.Contains(name)
 		case item.Stack:
 			_, variants := expected.Value("variants")
 			if !variants {

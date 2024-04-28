@@ -13,8 +13,6 @@ var (
 	vanillaCraftingData []byte
 	//go:embed smithing_data.nbt
 	vanillaSmithingData []byte
-	//go:embed stonecutter_data.nbt
-	vanillaStonecutterData []byte
 )
 
 // shapedRecipe is a recipe that must be crafted in a specific shape.
@@ -44,12 +42,7 @@ func init() {
 		panic(err)
 	}
 
-	var stonecutterRecipes []shapelessRecipe
-	if err := nbt.Unmarshal(vanillaStonecutterData, &stonecutterRecipes); err != nil {
-		panic(err)
-	}
-
-	for _, s := range append(craftingRecipes.Shapeless, stonecutterRecipes...) {
+	for _, s := range append(craftingRecipes.Shapeless) {
 		input, ok := s.Input.Items()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
