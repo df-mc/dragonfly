@@ -44,7 +44,7 @@ func init() {
 		panic(err)
 	}
 
-	for _, s := range append(craftingRecipes.Shapeless) {
+	for _, s := range craftingRecipes.Shapeless {
 		input, ok := s.Input.Items()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
