@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -22,11 +23,13 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
 	}
-	if _, shapeless := craft.(recipe.SmithingTransform); !shapeless {
-		return fmt.Errorf("recipe with network id %v is not a smithing recipe", a.RecipeNetworkID)
-	}
 	if craft.Block() != "smithing_table" {
 		return fmt.Errorf("recipe with network id %v is not a smithing table recipe", a.RecipeNetworkID)
+	}
+	switch craft.(type) {
+	case recipe.SmithingTransform, recipe.SmithingTrim:
+	default:
+		return fmt.Errorf("recipe with network id %v is not a smithing recipe", a.RecipeNetworkID)
 	}
 
 	// Check if the input item and material item match what the recipe requires.
@@ -66,5 +69,18 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		ContainerID: protocol.ContainerSmithingTableTemplate,
 		Slot:        smithingTemplateSlot,
 	}, template.Grow(-1), s)
+
+	if _, ok = craft.(recipe.SmithingTrim); ok {
+		var trim item.ArmourTrim
+		if t, ok := template.Item().(item.SmithingTemplate); ok {
+			trim.Template = t.Template
+		} else {
+			return fmt.Errorf("template item is not a smithing template")
+		}
+		if trim.Material, ok = material.Item().(item.ArmourTrimMaterial); !ok {
+			return fmt.Errorf("material item is not an armour trim material")
+		}
+		return h.createResults(s, duplicateStack(input.WithArmourTrim(trim), input.Item()))
+	}
 	return h.createResults(s, duplicateStack(input, craft.Output()[0].Item()))
 }

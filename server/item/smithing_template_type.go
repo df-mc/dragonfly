@@ -4,7 +4,7 @@ type ArmourSmithingTemplate struct {
 	smithingTemplateType
 }
 
-// TemplateNetheriteUpgrade returns the Netherrite Upgrade Template
+// TemplateNetheriteUpgrade returns the Netherite Upgrade Template
 func TemplateNetheriteUpgrade() ArmourSmithingTemplate {
 	return ArmourSmithingTemplate{0}
 }
@@ -89,6 +89,16 @@ func TemplateSpire() ArmourSmithingTemplate {
 	return ArmourSmithingTemplate{16}
 }
 
+// TemplateFlow returns the Flow Template.
+func TemplateFlow() ArmourSmithingTemplate {
+	return ArmourSmithingTemplate{17}
+}
+
+// TemplateBolt returns the Bolt Template.
+func TemplateBolt() ArmourSmithingTemplate {
+	return ArmourSmithingTemplate{18}
+}
+
 // SmithingTemplates returns all the ArmourSmithingTemplates
 func SmithingTemplates() []ArmourSmithingTemplate {
 	return []ArmourSmithingTemplate{
@@ -109,6 +119,8 @@ func SmithingTemplates() []ArmourSmithingTemplate {
 		TemplateRib(),
 		TemplateEye(),
 		TemplateSpire(),
+		TemplateFlow(),
+		TemplateBolt(),
 	}
 }
 
@@ -123,7 +135,7 @@ func (s smithingTemplateType) Uint8() uint8 {
 func (s smithingTemplateType) String() string {
 	switch s {
 	case 0:
-		return "netherrite_upgrade"
+		return "netherite_upgrade"
 	case 1:
 		return "sentry"
 	case 2:
@@ -156,6 +168,10 @@ func (s smithingTemplateType) String() string {
 		return "eye"
 	case 16:
 		return "spire"
+	case 17:
+		return "flow"
+	case 18:
+		return "bolt"
 	}
 
 	panic("should never happen")
@@ -196,6 +212,10 @@ func ArmourSmithingTemplateFromString(name string) ArmourSmithingTemplate {
 		return TemplateEye()
 	case "spire":
 		return TemplateSpire()
+	case "flow":
+		return TemplateFlow()
+	case "bolt":
+		return TemplateBolt()
 	}
 
 	panic("unknown template type")

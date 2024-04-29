@@ -151,6 +151,9 @@ func (s *Session) sendArmourTrimData() {
 	var trimMaterials []protocol.TrimMaterial
 
 	for _, t := range item.SmithingTemplates() {
+		if t == item.TemplateNetheriteUpgrade() {
+			continue
+		}
 		name, _ := item.SmithingTemplate{Template: t}.EncodeItem()
 		trimPatterns = append(trimPatterns, protocol.TrimPattern{
 			ItemName:  name,
