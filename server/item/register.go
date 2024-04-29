@@ -128,6 +128,9 @@ func init() {
 		world.RegisterItem(Leggings{Tier: t})
 		world.RegisterItem(Boots{Tier: t})
 	}
+	for _, t := range SmithingTemplates() {
+		world.RegisterItem(SmithingTemplate{Template: t})
+	}
 	for _, pattern := range BannerPatterns() {
 		world.RegisterItem(BannerPattern{Type: pattern})
 	}
