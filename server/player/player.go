@@ -542,7 +542,14 @@ func (p *Player) fall(distance float64) {
 		b = w.Block(pos)
 	}
 	if h, ok := b.(block.EntityLander); ok {
-		h.EntityLand(pos, w, p, &distance)
+		if _, ok := b.(block.Farmland); ok {
+			ctx := event.C()
+			if p.Handler().HandleTrampleCrop(ctx); !ctx.Cancelled() {
+				h.EntityLand(pos, w, p, &distance)
+			}
+		} else {
+			h.EntityLand(pos, w, p, &distance)
+		}
 	}
 	dmg := distance - 3
 	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
