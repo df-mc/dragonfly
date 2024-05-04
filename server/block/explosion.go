@@ -96,7 +96,7 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 			continue
 		}
 		dist := pos.Sub(explosionPos).Len()
-		if dist/d > 1 || dist != 0 {
+		if dist > d || dist == 0 {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
