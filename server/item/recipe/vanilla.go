@@ -13,6 +13,8 @@ var (
 	vanillaCraftingData []byte
 	//go:embed smithing_data.nbt
 	vanillaSmithingData []byte
+	//go:embed smithing_trim_data.nbt
+	vanillaSmithingTrimData []byte
 )
 
 // shapedRecipe is a recipe that must be crafted in a specific shape.
@@ -42,7 +44,7 @@ func init() {
 		panic(err)
 	}
 
-	for _, s := range append(craftingRecipes.Shapeless) {
+	for _, s := range craftingRecipes.Shapeless {
 		input, ok := s.Input.Items()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
@@ -87,9 +89,27 @@ func init() {
 			// This can be expected to happen - refer to the comment above.
 			continue
 		}
-		Register(Smithing{recipe{
+		Register(SmithingTransform{recipe{
 			input:    input,
 			output:   output,
+			block:    s.Block,
+			priority: uint32(s.Priority),
+		}})
+	}
+
+	var smithingTrimRecipes []shapelessRecipe
+	if err := nbt.Unmarshal(vanillaSmithingTrimData, &smithingTrimRecipes); err != nil {
+		panic(err)
+	}
+
+	for _, s := range smithingTrimRecipes {
+		input, ok := s.Input.Items()
+		if !ok {
+			// This can be expected to happen - refer to the comment above.
+			continue
+		}
+		Register(SmithingTrim{recipe{
+			input:    input,
 			block:    s.Block,
 			priority: uint32(s.Priority),
 		}})

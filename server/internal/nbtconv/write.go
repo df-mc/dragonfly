@@ -17,6 +17,7 @@ func WriteItem(s item.Stack, disk bool) map[string]any {
 			tag[k] = v
 		}
 	}
+	writeArmourTrim(tag, s)
 	writeAnvilCost(tag, s)
 	writeDamage(tag, s, disk)
 	writeDisplay(tag, s)
@@ -108,6 +109,16 @@ func writeEnchantments(m map[string]any, s item.Stack) {
 			}
 		}
 		m["ench"] = enchantments
+	}
+}
+
+// writeArmourTrim writes the armour trim of an item to a map for NBT encoding.
+func writeArmourTrim(m map[string]any, s item.Stack) {
+	if t, ok := s.ArmourTrim(); ok {
+		m["Trim"] = map[string]any{
+			"Material": t.Material.TrimMaterial(),
+			"Pattern":  t.Template.String(),
+		}
 	}
 }
 
