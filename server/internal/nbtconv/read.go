@@ -148,6 +148,7 @@ func MapItem(x map[string]any, k string) item.Stack {
 		}
 
 		s := readItemStack(m, tag)
+		readArmourTrim(tag, &s)
 		readDamage(tag, &s, true)
 		readEnchantments(tag, &s)
 		readDisplay(tag, &s)
@@ -171,6 +172,7 @@ func Item(data map[string]any, s *item.Stack) item.Stack {
 		s = &a
 	}
 
+	readArmourTrim(tag, s)
 	readAnvilCost(tag, s)
 	readDamage(tag, s, disk)
 	readDisplay(tag, s)
@@ -220,6 +222,20 @@ func readDamage(m map[string]any, s *item.Stack, disk bool) {
 // readAnvilCost ...
 func readAnvilCost(m map[string]any, s *item.Stack) {
 	*s = s.WithAnvilCost(int(Int32(m, "RepairCost")))
+}
+
+// readArmourTrim reads the armour trim stored in the NBT and saves it to the item.Stack passed.
+func readArmourTrim(m map[string]any, s *item.Stack) {
+	if trim, ok := m["Trim"].(map[string]any); ok {
+		material, ok := trim["Material"].(string)
+		pattern, ok2 := trim["Pattern"].(string)
+		if ok && ok2 {
+			*s = s.WithArmourTrim(item.ArmourTrim{
+				Template: item.ArmourSmithingTemplateFromString(pattern),
+				Material: item.ArmourTrimMaterialFromString(material),
+			})
+		}
+	}
 }
 
 // readEnchantments reads the enchantments stored in the ench tag of the NBT passed and stores it into an item.Stack.
