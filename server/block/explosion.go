@@ -100,7 +100,7 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - dist/d) * exposure(pos, e)
+			impact := (1 - dist/d) * exposure(explosionPos, e)
 			explodable.Explode(explosionPos, impact, c)
 		}
 	}
