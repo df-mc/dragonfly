@@ -257,6 +257,19 @@ func (inv *Inventory) ContainsItemFunc(n int, comparable func(stack item.Stack) 
 	return n <= 0
 }
 
+// Merge merges two inventorys
+func (inv *Inventory) Merge(inv2 *Inventory, f func(int, item.Stack, item.Stack)) *Inventory {
+	// note, this is most likely a temporary method
+	inv.mu.RLock()
+	defer inv.mu.RUnlock()
+	inv2.mu.RLock()
+	defer inv2.mu.RUnlock()
+
+	n := New(len(inv.slots)+len(inv2.slots), f)
+	n.slots = append(inv.slots, inv2.slots...)
+	return n
+}
+
 // Empty checks if the inventory is fully empty: It iterates over the inventory and makes sure every stack in
 // it is empty.
 func (inv *Inventory) Empty() bool {
