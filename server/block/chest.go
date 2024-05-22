@@ -273,7 +273,10 @@ func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
 	}
-	c.close(w, pos)
+
+	if len(c.viewers) != 0 {
+		c.close(w, pos)
+	}
 
 	c.paired, pair.paired = false, false
 	c.viewerMu, pair.viewerMu = new(sync.RWMutex), new(sync.RWMutex)
