@@ -83,7 +83,7 @@ func (Chest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 func (c Chest) open(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		if c.paired {
-			v.ViewBlockAction(c.pairPos(pos), OpenAction{})
+			v.ViewBlockAction(c.PairPos(pos), OpenAction{})
 		}
 		v.ViewBlockAction(pos, OpenAction{})
 	}
@@ -94,7 +94,7 @@ func (c Chest) open(w *world.World, pos cube.Pos) {
 func (c Chest) close(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		if c.paired {
-			v.ViewBlockAction(c.pairPos(pos), CloseAction{})
+			v.ViewBlockAction(c.PairPos(pos), CloseAction{})
 		}
 		v.ViewBlockAction(pos, CloseAction{})
 	}
@@ -129,9 +129,9 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		if c.paired && c.pairInv == nil {
-			if ch, pair, ok := c.pair(w, pos, c.pairPos(pos)); ok {
+			if ch, pair, ok := c.pair(w, pos, c.PairPos(pos)); ok {
 				w.SetBlock(pos, ch, nil)
-				w.SetBlock(c.pairPos(pos), pair, nil)
+				w.SetBlock(c.PairPos(pos), pair, nil)
 			}
 		}
 		if d, ok := w.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() <= 2 {
@@ -156,7 +156,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 		sidePos := pos.Side(dir.Face())
 		if ch, pair, ok := c.pair(w, pos, sidePos); ok {
 			place(w, pos, ch, user, ctx)
-			w.SetBlock(ch.pairPos(pos), pair, nil)
+			w.SetBlock(ch.PairPos(pos), pair, nil)
 			return placed(ctx)
 		}
 	}
@@ -169,7 +169,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 func (c Chest) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
 		if c.paired {
-			pairPos := c.pairPos(pos)
+			pairPos := c.PairPos(pos)
 			if _, pair, ok := c.unpair(w, pos); ok {
 				w.SetBlock(pairPos, pair, nil)
 			}
@@ -268,10 +268,12 @@ func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
 	if !c.paired {
 		return c, Chest{}, false
 	}
-	pair, ok = w.Block(c.pairPos(pos)).(Chest)
+
+	pair, ok = w.Block(c.PairPos(pos)).(Chest)
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
 	}
+	c.close(w, pos)
 
 	c.paired, pair.paired = false, false
 	c.viewerMu, pair.viewerMu = new(sync.RWMutex), new(sync.RWMutex)
@@ -280,9 +282,14 @@ func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
 	return c, pair, true
 }
 
-// pairPos ...
-func (c Chest) pairPos(pos cube.Pos) cube.Pos {
+// PairPos ...
+func (c Chest) PairPos(pos cube.Pos) cube.Pos {
 	return cube.Pos{c.pairX, pos[1], c.pairZ}
+}
+
+// Paired returns whether
+func (c Chest) Paired() bool {
+	return c.paired
 }
 
 // EncodeItem ...
