@@ -42,6 +42,19 @@ func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
 	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
+// Merge merges two inventories
+func (inv *Inventory) Merge(inv2 *Inventory, f func(int, item.Stack, item.Stack)) *Inventory {
+	// note, this is most likely a temporary method
+	inv.mu.RLock()
+	defer inv.mu.RUnlock()
+	inv2.mu.RLock()
+	defer inv2.mu.RUnlock()
+
+	n := New(len(inv.slots)+len(inv2.slots), f)
+	n.slots = append(inv.slots, inv2.slots...)
+	return n
+}
+
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
 // the item is returned and the error is nil. If no item was present in the slot, a Stack with air as its item
 // and a count of 0 is returned. Stack.Empty() may be called to check if this is the case.
