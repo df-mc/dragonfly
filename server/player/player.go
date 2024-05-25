@@ -1864,12 +1864,12 @@ func (p *Player) drops(held item.Stack, b world.Block, pos cube.Pos) []item.Stac
 			// If the block is a container, it should drop its inventory contents regardless whether the
 			// player is in creative mode or not.
 			drops = container.Inventory().Items()
-			if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
-				if breakable.BreakInfo().Harvestable(t) {
-					drops = append(drops, breakable.BreakInfo().Drops(t, held.Enchantments())...)
-				}
-			}
 			container.Inventory().Clear()
+		}
+		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+			if breakable.BreakInfo().Harvestable(t) {
+				drops = append(drops, breakable.BreakInfo().Drops(t, held.Enchantments())...)
+			}
 		}
 	} else if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
