@@ -55,7 +55,6 @@ func NewChest() Chest {
 			viewer.ViewSlotChange(slot, item)
 		}
 	})
-
 	return c
 }
 
@@ -201,6 +200,15 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 		c.paired = true
 		// TODO: type assertion checks
 		c.pairX, c.pairZ = int(pairX.(int32)), int(pairZ.(int32))
+		c.pairInv = inventory.New(54, func(slot int, _, item item.Stack) {
+			c.viewerMu.RLock()
+			defer c.viewerMu.RUnlock()
+			for viewer := range c.viewers {
+				viewer.ViewSlotChange(slot, item)
+			}
+		})
+
+		nbtconv.InvFromNBT(c.pairInv, nbtconv.Slice(data, "Items"))
 	}
 
 	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
