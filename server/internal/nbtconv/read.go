@@ -85,7 +85,7 @@ func Slice(m map[string]any, k string) []any {
 	v, ok := m[k]
 
 	if !ok {
-		return []any{}
+		return nil
 	}
 
 	var r []any
