@@ -257,9 +257,8 @@ func (inv *Inventory) ContainsItemFunc(n int, comparable func(stack item.Stack) 
 	return n <= 0
 }
 
-// Merge merges two inventorys
+// Merge merges two inventories into one. The function passed is called for every slot change in the new inventory.
 func (inv *Inventory) Merge(inv2 *Inventory, f func(int, item.Stack, item.Stack)) *Inventory {
-	// note, this is most likely a temporary method
 	inv.mu.RLock()
 	defer inv.mu.RUnlock()
 	inv2.mu.RLock()

@@ -271,7 +271,7 @@ func (c Chest) pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok b
 	return c, pair, true
 }
 
-// unpair ...
+// unpair unpairs this chest from the chest it is currently paired with.
 func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
 	if !c.paired {
 		return c, Chest{}, false
@@ -293,12 +293,12 @@ func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
 	return c, pair, true
 }
 
-// PairPos ...
+// PairPos returns the position of the chest that this chest is paired with.
 func (c Chest) PairPos(pos cube.Pos) cube.Pos {
 	return cube.Pos{c.pairX, pos[1], c.pairZ}
 }
 
-// Paired returns whether
+// Paired returns whether the chest is paired with another chest.
 func (c Chest) Paired() bool {
 	return c.paired
 }
