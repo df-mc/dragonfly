@@ -130,7 +130,6 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 func (s *Session) dimensionID() int32 {
 	d, _ := world.DimensionID(s.c.World().Dimension())
 	return int32(d)
-
 }
 
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
