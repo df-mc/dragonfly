@@ -222,8 +222,7 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
 			continue
 		}
 
-		c := collector.Collect(lt.conf.PickupItem)
-		if c == 0 {
+		if collector.Collect(lt.conf.PickupItem) == 0 {
 			continue
 		}
 
