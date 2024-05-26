@@ -92,7 +92,6 @@ func Slice(m map[string]any, k string) []any {
 	switch v := v.(type) {
 	default:
 		r, _ = m[k].([]any)
-		break
 	case []string:
 		r = make([]any, len(v))
 		for i, s := range v {
