@@ -414,6 +414,9 @@ func (s *Session) changeDimension(dim int32, silent bool) {
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
 func (s *Session) handlePacket(pk packet.Packet) error {
+	if pk == nil {
+		return nil
+	}
 	handler, ok := s.handlers[pk.ID()]
 	if !ok {
 		s.log.Debugf("unhandled packet %T%v from %v\n", pk, fmt.Sprintf("%+v", pk)[1:], s.conn.RemoteAddr())
