@@ -8,8 +8,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/constraints"
-	"time"
 	"reflect"
+	"time"
 )
 
 // Bool reads a uint8 value from a map at key k and returns true if it equals 1.
