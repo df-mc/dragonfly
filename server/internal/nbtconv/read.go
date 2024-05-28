@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/constraints"
 	"time"
+	"reflect"
 )
 
 // Bool reads a uint8 value from a map at key k and returns true if it equals 1.
@@ -83,20 +84,18 @@ func Float64(m map[string]any, k string) float64 {
 // Slice reads a []any value from a map at key k.
 func Slice(m map[string]any, k string) []any {
 	v, ok := m[k]
-
 	if !ok {
 		return nil
 	}
 
-	var r []any
-	switch v := v.(type) {
-	default:
-		r, _ = m[k].([]any)
-	case []string:
-		r = make([]any, len(v))
-		for i, s := range v {
-			r[i] = s
-		}
+	t := reflect.ValueOf(v)
+	if t.Kind() != reflect.Slice {
+		return nil
+	}
+
+	r := make([]any, t.Len())
+	for i := 0; i < t.Len(); i++ {
+		r[i] = t.Index(i).Interface()
 	}
 
 	return r
