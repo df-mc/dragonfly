@@ -76,25 +76,6 @@ func (s *Session) ViewEntity(e world.Entity) {
 	id := e.Type().EncodeEntity()
 	switch v := e.(type) {
 	case Controllable:
-		actualPlayer := false
-
-		sessionMu.Lock()
-		for _, s := range sessions {
-			if s.c.UUID() == v.UUID() {
-				actualPlayer = true
-				break
-			}
-		}
-		sessionMu.Unlock()
-		if !actualPlayer {
-			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionAdd, Entries: []protocol.PlayerListEntry{{
-				UUID:           v.UUID(),
-				EntityUniqueID: int64(runtimeID),
-				Username:       v.Name(),
-				Skin:           skinToProtocol(v.Skin()),
-			}}})
-		}
-
 		s.writePacket(&packet.AddPlayer{
 			EntityMetadata:  metadata,
 			EntityRuntimeID: runtimeID,
@@ -113,11 +94,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 				}},
 			},
 		})
-		if !actualPlayer {
-			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
-				UUID: v.UUID(),
-			}}})
-		}
+
+		s.ViewSkin(e)
 		return
 	case *entity.Ent:
 		switch e.Type().(type) {
