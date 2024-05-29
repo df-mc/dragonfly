@@ -152,7 +152,7 @@ type HopperInsertable interface {
 	// InsertItem attempts to insert a single item into the container. If the insertion was successful, the item is
 	// returned. If the insertion was unsuccessful, the item stack returned will be empty. InsertItem by itself does
 	// should not add the item to the container, but instead return the item that would be added.
-	InsertItem(item.Stack) (item.Stack, int)
+	InsertItem(item.Stack, cube.Face) (bool, int)
 }
 
 // insertItem ...
@@ -187,12 +187,18 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 			return false
 		}
 	} else {
-		targetStack, targetSlot := e.InsertItem(sourceStack)
-		if targetStack.Empty() {
-			// The destination is full.
+		stack := sourceStack.Grow(-sourceStack.Count() + 1)
+		allowed, targetSlot := e.InsertItem(stack, h.Facing)
+		it, _ := e.Inventory().Item(targetSlot)
+		if !allowed || !sourceStack.Comparable(it) {
+			// The items are not the same.
 			return false
 		}
-		_ = dest.Inventory().SetItem(targetSlot, targetStack)
+		if !it.Empty() {
+			stack = it.Grow(1)
+		}
+
+		_ = dest.Inventory().SetItem(targetSlot, stack)
 	}
 
 	_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))

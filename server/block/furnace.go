@@ -45,6 +45,26 @@ func (f Furnace) Tick(_ int64, pos cube.Pos, w *world.World) {
 	}
 }
 
+// InsertItem ...
+func (f Furnace) InsertItem(it item.Stack, face cube.Face) (bool, int) {
+	if face != cube.FaceDown {
+		_, ok := it.Item().(item.Fuel)
+		return ok, 1
+	}
+
+	return true, 0
+}
+
+// ExtractItem ...
+func (f Furnace) ExtractItem() (item.Stack, int) {
+	cooked, _ := f.inventory.Item(2)
+	if cooked.Empty() {
+		return item.Stack{}, 0
+	}
+
+	return cooked, 2
+}
+
 // EncodeItem ...
 func (f Furnace) EncodeItem() (name string, meta int16) {
 	return "minecraft:furnace", 0
