@@ -208,10 +208,10 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 			}
 		})
 
-		nbtconv.InvFromNBT(c.pairInv, nbtconv.Slice(data, "Items"))
+		nbtconv.InvFromNBT(c.pairInv, nbtconv.Slice[any](data, "Items"))
 	}
 
-	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
+		nbtconv.InvFromNBT(c.inventory, nbtconv.Slice[any](data, "Items"))
 	return c
 }
 

@@ -29,7 +29,6 @@ type LingeringPotionType struct{}
 func (LingeringPotionType) EncodeEntity() string {
 	return "minecraft:lingering_potion"
 }
-func (LingeringPotionType) Glint() bool { return true }
 func (LingeringPotionType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
