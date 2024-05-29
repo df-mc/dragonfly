@@ -159,7 +159,7 @@ func (i *ItemBehaviour) collect(e *Ent, collector Collector) {
 // a player or a zombie.
 type Collector interface {
 	world.Entity
-	// CanCollect returns whenever the Collector is able to pick up an item or not
+	// CanCollect returns whether the Collector is able to pick up an item or not.
 	CanCollect() bool
 	// Collect collects the stack passed. It is called if the Collector is standing near an item entity that
 	// may be picked up.

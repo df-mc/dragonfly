@@ -2046,6 +2046,7 @@ func (p *Player) Rotation() cube.Rotation {
 	return cube.Rotation{p.yaw.Load(), p.pitch.Load()}
 }
 
+// CanCollect returns whether the player is able to pick up an item stack or not.
 func (p *Player) CanCollect() bool {
 	if p.Dead() {
 		return false
