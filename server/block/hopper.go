@@ -175,7 +175,6 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 		if stack.Empty() {
 			continue
 		}
-		fmt.Println(stack, slot)
 		sourceStack, sourceSlot = stack, slot
 		break
 	}
@@ -226,7 +225,7 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 		targetStack item.Stack
 	)
 	if e, ok := origin.(HopperExtractable); !ok {
-		for slot, stack := range origin.Inventory().Items() {
+		for slot, stack := range origin.Inventory().Slots() {
 			if stack.Empty() {
 				continue
 			}
