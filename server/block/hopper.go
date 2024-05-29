@@ -169,15 +169,13 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 	var (
 		sourceSlot  int
 		sourceStack item.Stack
-
-		//targetStack item.Stack
-		//targetSlot  int
 	)
 
-	for slot, stack := range h.inventory.Slots() {
+	for slot, stack := range h.inventory.Items() {
 		if stack.Empty() {
 			continue
 		}
+		fmt.Println(stack, slot)
 		sourceStack, sourceSlot = stack, slot
 		break
 	}
@@ -187,11 +185,21 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 		return false
 	}
 
-	_, err := dest.Inventory().AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
-	if err != nil {
-		// The destination is full.
-		return false
+	if e, ok := dest.(HopperInsertable); !ok {
+		_, err := dest.Inventory().AddItem(sourceStack)
+		if err != nil {
+			// The destination is full.
+			return false
+		}
+	} else {
+		targetStack, targetSlot := e.InsertItem(sourceStack)
+		if targetStack.Empty() {
+			// The destination is full.
+			return false
+		}
+		_ = dest.Inventory().SetItem(targetSlot, targetStack)
 	}
+
 	_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
 	return true
 }
