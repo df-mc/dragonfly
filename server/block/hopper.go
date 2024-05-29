@@ -162,47 +162,36 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 		return false
 	}
 
-	var (
-		sourceSlot  int
-		sourceStack item.Stack
-	)
-
-	for slot, stack := range h.inventory.Slots() {
-		if stack.Empty() {
+	for sourceSlot, sourceStack := range h.inventory.Slots() {
+		if sourceStack.Empty() {
 			continue
 		}
-		sourceStack, sourceSlot = stack, slot
-		break
-	}
 
-	if sourceStack.Empty() {
-		// We don't have any items to insert.
-		return false
-	}
+		if e, ok := dest.(HopperInsertable); !ok {
+			_, err := dest.Inventory().AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
+			if err != nil {
+				// The destination is full.
+				continue
+			}
+		} else {
+			stack := sourceStack.Grow(-sourceStack.Count() + 1)
+			allowed, targetSlot := e.InsertItem(stack, h.Facing)
+			it, _ := e.Inventory().Item(targetSlot)
+			if !allowed || !sourceStack.Comparable(it) {
+				// The items are not the same.
+				continue
+			}
+			if !it.Empty() {
+				stack = it.Grow(1)
+			}
 
-	if e, ok := dest.(HopperInsertable); !ok {
-		_, err := dest.Inventory().AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
-		if err != nil {
-			// The destination is full.
-			return false
-		}
-	} else {
-		stack := sourceStack.Grow(-sourceStack.Count() + 1)
-		allowed, targetSlot := e.InsertItem(stack, h.Facing)
-		it, _ := e.Inventory().Item(targetSlot)
-		if !allowed || !sourceStack.Comparable(it) {
-			// The items are not the same.
-			return false
-		}
-		if !it.Empty() {
-			stack = it.Grow(1)
+			_ = dest.Inventory().SetItem(targetSlot, stack)
 		}
 
-		_ = dest.Inventory().SetItem(targetSlot, stack)
+		_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+		return true
 	}
-
-	_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
-	return true
+	return false
 }
 
 // HopperExtractable represents a block that can have its contents extracted by a hopper.
