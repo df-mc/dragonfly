@@ -127,9 +127,6 @@ func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	h.TransferCooldown--
 	h.LastTick = currentTick
-	if !h.Powered {
-		h.extractItemEntity(pos, w)
-	}
 	if h.TransferCooldown > 0 {
 		w.SetBlock(pos, h, nil)
 		return
@@ -185,7 +182,7 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 	}
 
 	if e, ok := dest.(HopperInsertable); !ok {
-		_, err := dest.Inventory().AddItem(sourceStack)
+		_, err := dest.Inventory().AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
 		if err != nil {
 			// The destination is full.
 			return false
@@ -247,38 +244,6 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 	}
 	_ = origin.Inventory().SetItem(targetSlot, targetStack.Grow(-1))
 	return true
-}
-
-// itemEntity ...
-type itemEntity interface {
-	world.Entity
-
-	Item() item.Stack
-	SetItem(item.Stack)
-}
-
-// extractItemEntity ...
-func (h Hopper) extractItemEntity(pos cube.Pos, w *world.World) {
-	for _, e := range w.EntitiesWithin(cube.Box(0, 1, 0, 1, 2, 1).Translate(pos.Vec3()), func(entity world.Entity) bool {
-		_, ok := entity.(itemEntity)
-		return !ok
-	}) {
-		i := e.(itemEntity)
-
-		stack := i.Item()
-		count, _ := h.inventory.AddItem(stack)
-		if count == 0 {
-			// We couldn't add any of the item to the inventory, so we continue to the next item entity.
-			continue
-		}
-
-		if stack = stack.Grow(-count); stack.Empty() {
-			_ = i.Close()
-			return
-		}
-		i.SetItem(stack)
-		return
-	}
 }
 
 // EncodeItem ...
