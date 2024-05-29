@@ -57,6 +57,11 @@ type ItemBehaviour struct {
 	pickupDelay time.Duration
 }
 
+// SetItem sets the item stack held by the entity to i.
+func (i *ItemBehaviour) SetItem(stack item.Stack) {
+	i.i = stack
+}
+
 // Item returns the item.Stack held by the entity.
 func (i *ItemBehaviour) Item() item.Stack {
 	return i.i
