@@ -1017,6 +1017,8 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 		containerType = protocol.ContainerTypeBlastFurnace
 	case block.Smoker:
 		containerType = protocol.ContainerTypeSmoker
+	case block.Hopper:
+		containerType = protocol.ContainerTypeHopper
 	}
 
 	s.writePacket(&packet.ContainerOpen{

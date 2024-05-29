@@ -148,6 +148,17 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
+// ExtractItem ...
+func (c Chest) ExtractItem() (item.Stack, int) {
+	for i, it := range c.inventory.Slots() {
+		if it.Empty() {
+			continue
+		}
+		return it, i
+	}
+	return item.Stack{}, 0
+}
+
 // DecodeNBT ...
 func (c Chest) DecodeNBT(data map[string]any) any {
 	facing := c.Facing
