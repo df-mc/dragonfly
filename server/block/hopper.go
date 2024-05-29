@@ -57,8 +57,7 @@ func NewHopper() Hopper {
 
 // Model ...
 func (Hopper) Model() world.BlockModel {
-	// TODO: Implement me.
-	return model.Solid{}
+	return model.Hopper{}
 }
 
 // SideClosed ...
