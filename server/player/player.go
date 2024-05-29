@@ -584,9 +584,24 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 			damageLeft -= a
 		} else {
 			p.SetAbsorption(a - damageLeft)
+
 			damageLeft = 0
 		}
 	}
+
+	if p.Health()-damageLeft <= mgl64.Epsilon {
+		hand, offHand := p.HeldItems()
+		if _, ok := offHand.Item().(item.Totem); ok {
+			p.applyTotemEffects()
+			p.SetHeldItems(hand, offHand.Grow(-1))
+			return 0, false
+		} else if _, ok := hand.Item().(item.Totem); ok {
+			p.applyTotemEffects()
+			p.SetHeldItems(hand.Grow(-1), offHand)
+			return 0, false
+		}
+	}
+
 	p.addHealth(-damageLeft)
 
 	if src.ReducedByArmour() {
@@ -621,6 +636,25 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		p.kill(src)
 	}
 	return totalDamage, true
+}
+
+// applyTotemEffects is an unexported function that is used to handle totem effects.
+func (p *Player) applyTotemEffects() {
+	p.addHealth(2 - p.Health())
+
+	for _, e := range p.Effects() {
+		p.RemoveEffect(e.Type())
+	}
+
+	p.AddEffect(effect.New(effect.Regeneration{}, 2, time.Second*40))
+	p.AddEffect(effect.New(effect.FireResistance{}, 1, time.Second*40))
+	p.AddEffect(effect.New(effect.Absorption{}, 2, time.Second*5))
+
+	p.World().PlaySound(p.Position(), sound.Totem{})
+
+	for _, viewer := range p.viewers() {
+		viewer.ViewEntityAction(p, entity.TotemUseAction{})
+	}
 }
 
 // FinalDamageFrom resolves the final damage received by the player if it is attacked by the source passed
@@ -2603,12 +2637,14 @@ func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
 	ctx := event.C()
 	if frontText != sign.Front.Text {
 		if p.Handler().HandleSignEdit(ctx, true, sign.Front.Text, frontText); ctx.Cancelled() {
+			p.resendBlock(pos, w)
 			return nil
 		}
 		sign.Front.Text = frontText
 		sign.Front.Owner = p.XUID()
 	} else {
 		if p.Handler().HandleSignEdit(ctx, false, sign.Back.Text, backText); ctx.Cancelled() {
+			p.resendBlock(pos, w)
 			return nil
 		}
 		sign.Back.Text = backText

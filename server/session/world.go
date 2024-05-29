@@ -771,6 +771,11 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventComposterReady
 	case sound.LecternBookPlace:
 		pk.SoundType = packet.SoundEventLecternBookPlace
+	case sound.Totem:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundTotemUsed,
+			Position:  vec64To32(pos),
+		})
 	}
 	s.writePacket(pk)
 }
@@ -914,6 +919,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 				EventData: (rid << 16) | int32(meta),
 			})
 		}
+	case entity.TotemUseAction:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventTalismanActivate,
+		})
 	}
 }
 
