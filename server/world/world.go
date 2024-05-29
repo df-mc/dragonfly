@@ -121,6 +121,7 @@ func (w *World) Block(pos cube.Pos) Block {
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.BlockEntities[pos]; ok {
+			c.Unlock()
 			return nbtB
 		}
 		b, _ := BlockByRuntimeID(rid)
