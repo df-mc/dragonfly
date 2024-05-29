@@ -149,10 +149,51 @@ func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	}
 }
 
+// HopperInsertable represents a block that can have its contents inserted into by a hopper.
+type HopperInsertable interface {
+	Container
+
+	// InsertItem attempts to insert a single item into the container. If the insertion was successful, the item is
+	// returned. If the insertion was unsuccessful, the item stack returned will be empty. InsertItem by itself does
+	// should not add the item to the container, but instead return the item that would be added.
+	InsertItem(item.Stack) (item.Stack, int)
+}
+
 // insertItem ...
 func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
-	// TODO
-	return false
+	dest, ok := w.Block(pos.Side(h.Facing)).(Container)
+	if !ok {
+		return false
+	}
+
+	var (
+		sourceSlot  int
+		sourceStack item.Stack
+
+		//targetStack item.Stack
+		//targetSlot  int
+	)
+
+	for slot, stack := range h.inventory.Slots() {
+		if stack.Empty() {
+			continue
+		}
+		sourceStack, sourceSlot = stack, slot
+		break
+	}
+
+	if sourceStack.Empty() {
+		// We don't have any items to insert.
+		return false
+	}
+
+	_, err := dest.Inventory().AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
+	if err != nil {
+		// The destination is full.
+		return false
+	}
+	_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+	return true
 }
 
 // HopperExtractable represents a block that can have its contents extracted by a hopper.
