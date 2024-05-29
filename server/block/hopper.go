@@ -171,7 +171,7 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 		sourceStack item.Stack
 	)
 
-	for slot, stack := range h.inventory.Items() {
+	for slot, stack := range h.inventory.Slots() {
 		if stack.Empty() {
 			continue
 		}
