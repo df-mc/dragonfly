@@ -125,8 +125,8 @@ func (w *World) Block(pos cube.Pos) Block {
 		}
 		b, _ := BlockByRuntimeID(rid)
 		nbtB := b.(NBTer).DecodeNBT(map[string]any{}).(Block)
-		c.e[pos] = nbtB
-		viewers := slices.Clone(c.v)
+		c.BlockEntities[pos] = nbtB
+		viewers := slices.Clone(c.viewers)
 		c.Unlock()
 		for _, v := range viewers {
 			v.ViewBlockUpdate(pos, nbtB, 0)
