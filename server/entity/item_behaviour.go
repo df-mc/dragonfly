@@ -74,7 +74,7 @@ func (i *ItemBehaviour) Tick(e *Ent) *Movement {
 	if ok && !bl.Powered {
 		_, err := bl.Inventory().AddItem(i.i.Grow(-i.i.Count() + 1))
 		if err != nil {
-			// We couldn't add any of the item to the inventory, so we continue to the next item entity.
+			// We couldn't add any of the item to the inventory, so we ignore it.
 			return i.passive.Tick(e)
 		}
 
