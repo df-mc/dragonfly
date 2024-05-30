@@ -1,11 +1,12 @@
 package entity
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"time"
 )
 
 // ExperienceOrbBehaviourConfig holds optional parameters for the creation of
@@ -33,10 +34,11 @@ func (conf ExperienceOrbBehaviourConfig) New() *ExperienceOrbBehaviour {
 	}
 	b := &ExperienceOrbBehaviour{conf: conf, lastSearch: time.Now()}
 	b.passive = PassiveBehaviourConfig{
-		Gravity:           conf.Gravity,
-		Drag:              conf.Drag,
-		ExistenceDuration: conf.ExistenceDuration,
-		Tick:              b.tick,
+		Gravity:            conf.Gravity,
+		Drag:               conf.Drag,
+		UnderwaterMovement: 0.02,
+		ExistenceDuration:  conf.ExistenceDuration,
+		Tick:               b.tick,
 	}.New()
 	return b
 }

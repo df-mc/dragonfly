@@ -1,10 +1,11 @@
 package entity
 
 import (
+	"math"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
 )
 
 // MovementComputer is used to compute movement of an entity. When constructed, the Gravity of the entity
@@ -12,6 +13,9 @@ import (
 type MovementComputer struct {
 	Gravity, Drag     float64
 	DragBeforeGravity bool
+
+	//	UnderwaterMovement is 0.02 for most entities if 0 entity will not be affected by waterflow
+	UnderwaterMovement float64
 
 	onGround bool
 }
@@ -111,6 +115,11 @@ func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.
 			friction *= 0.6
 		}
 	}
+
+	if c.UnderwaterMovement > 0 {
+		vel = vel.Add(liquidVel(w, cube.PosFromVec3(pos), c.UnderwaterMovement))
+	}
+
 	vel[0] *= friction
 	vel[2] *= friction
 	return vel
@@ -192,4 +201,39 @@ func blockBBoxsAround(e world.Entity, box cube.BBox) []cube.BBox {
 		}
 	}
 	return blockBBoxs
+}
+
+// liquidVel returns a velocity offset by liquid flow for position
+func liquidVel(w *world.World, pos cube.Pos, mul float64) mgl64.Vec3 {
+	var x int8
+	var z int8
+	if liq, ok := w.Liquid(pos); ok {
+		depth := liq.LiquidDepth()
+		for _, face := range cube.HorizontalFaces() {
+			bl, ok := w.Liquid(pos.Side(face))
+			if ok {
+				if bl.LiquidDepth() == depth {
+					continue
+				}
+				var smaller bool = depth > bl.LiquidDepth()
+				val := booleanToByte(smaller == face.Positive())
+				switch face.Axis() {
+				case cube.X:
+					x += val
+				case cube.Z:
+					z += val
+				default:
+					panic("should never happen")
+				}
+			}
+		}
+	}
+	return mgl64.Vec3{mul * float64(x), 0, mul * float64(z)}
+}
+
+func booleanToByte(val bool) int8 {
+	if val {
+		return 1
+	}
+	return -1
 }

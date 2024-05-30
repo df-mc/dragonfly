@@ -105,6 +105,15 @@ func (f Face) String() string {
 	panic("invalid face")
 }
 
+// Positive returns whether the face is the positive of its axis. For example, FaceEast is positive, FaceWest is not.
+func (f Face) Positive() bool {
+	switch f {
+	case FaceUp, FaceSouth, FaceEast:
+		return true
+	}
+	return false
+}
+
 // Faces returns a list of all faces, starting with down, then up, then north to west.
 func Faces() []Face {
 	return faces[:]
