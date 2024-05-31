@@ -38,8 +38,8 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 	if !ok {
 		return fmt.Errorf("input item is not a banner")
 	}
-	if b.Pillager {
-		return fmt.Errorf("input item is a pillager banner")
+	if b.Illager {
+		return fmt.Errorf("input item is an illager banner")
 	}
 
 	// Do the same with the input dye.
