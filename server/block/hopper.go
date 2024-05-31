@@ -15,7 +15,6 @@ import (
 
 // Hopper is a low-capacity storage block that can be used to collect item entities directly above it, as well as to
 // transfer items into and out of other containers.
-// TODO: Functionality!
 type Hopper struct {
 	transparent
 	sourceWaterDisplacer
