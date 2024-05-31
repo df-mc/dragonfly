@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
+// Hopper is a model used by hoppers.
 type Hopper struct{}
 
 // BBox returns a physics.BBox that spans a full block.
