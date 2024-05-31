@@ -95,7 +95,7 @@ func (f Flower) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (f Flower) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(f))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(f), nil)
 }
 
 // CompostChance ...

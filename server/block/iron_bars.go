@@ -14,7 +14,7 @@ type IronBars struct {
 
 // BreakInfo ...
 func (i IronBars) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i)).withBlastResistance(30)
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i), nil).withBlastResistance(30)
 }
 
 // SideClosed ...

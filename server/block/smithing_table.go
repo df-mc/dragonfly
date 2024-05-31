@@ -25,7 +25,7 @@ func (SmithingTable) EncodeBlock() (name string, properties map[string]interface
 
 // BreakInfo ...
 func (s SmithingTable) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(s))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(s), nil)
 }
 
 // Activate ...

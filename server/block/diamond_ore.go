@@ -17,7 +17,7 @@ type DiamondOre struct {
 func (d DiamondOre) BreakInfo() BreakInfo {
 	i := newBreakInfo(d.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d)).withXPDropRange(3, 7)
+	}, pickaxeEffective, silkTouchOneOf(item.Diamond{}, d), nil).withXPDropRange(3, 7)
 	if d.Type == DeepslateOre() {
 		i = i.withBlastResistance(9)
 	}

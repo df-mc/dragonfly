@@ -25,7 +25,7 @@ func (Loom) FuelInfo() item.FuelInfo {
 
 // BreakInfo ...
 func (l Loom) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(l))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(l), nil)
 }
 
 // Activate ...

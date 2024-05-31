@@ -13,7 +13,7 @@ type FletchingTable struct {
 
 // BreakInfo ...
 func (f FletchingTable) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(f))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(f), nil)
 }
 
 // FuelInfo ...

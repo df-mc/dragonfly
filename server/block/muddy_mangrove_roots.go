@@ -17,7 +17,7 @@ type MuddyMangroveRoots struct {
 
 // BreakInfo ...
 func (m MuddyMangroveRoots) BreakInfo() BreakInfo {
-	return newBreakInfo(0.7, alwaysHarvestable, shovelEffective, oneOf(m))
+	return newBreakInfo(0.7, alwaysHarvestable, shovelEffective, oneOf(m), nil)
 }
 
 // SoilFor ...

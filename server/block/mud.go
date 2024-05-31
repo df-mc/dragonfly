@@ -18,7 +18,7 @@ func (Mud) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (m Mud) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(m))
+	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(m), nil)
 }
 
 // EncodeItem ...

@@ -71,7 +71,7 @@ func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 
 // BreakInfo ...
 func (d DoubleFlower) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(d))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(d), nil)
 }
 
 // CompostChance ...

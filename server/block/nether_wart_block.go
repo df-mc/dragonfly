@@ -10,7 +10,7 @@ type NetherWartBlock struct {
 
 // BreakInfo ...
 func (n NetherWartBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, hoeEffective, oneOf(n))
+	return newBreakInfo(1, alwaysHarvestable, hoeEffective, oneOf(n), nil)
 }
 
 // CompostChance ...
