@@ -72,16 +72,13 @@ func (i *ItemBehaviour) Tick(e *Ent) *Movement {
 
 	bl, ok := w.Block(pos.Side(cube.FaceDown)).(block.Hopper)
 	if ok && !bl.Powered {
-		_, err := bl.Inventory().AddItem(i.i.Grow(-i.i.Count() + 1))
+		_, err := bl.Inventory().AddItem(i.i)
 		if err != nil {
 			// We couldn't add any of the item to the inventory, so we ignore it.
 			return i.passive.Tick(e)
 		}
 
-		if i.i = i.i.Grow(-1); i.i.Empty() {
-			_ = e.Close()
-			return nil
-		}
+		_ = e.Close()
 	}
 	return i.passive.Tick(e)
 }
