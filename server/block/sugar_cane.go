@@ -102,7 +102,7 @@ func (c SugarCane) HasLiquidDrops() bool {
 
 // BreakInfo ...
 func (c SugarCane) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(c), nil)
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(c))
 }
 
 // EncodeItem ...

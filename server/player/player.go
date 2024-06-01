@@ -1840,11 +1840,38 @@ func (p *Player) drops(held item.Stack, b world.Block, pos cube.Pos) []item.Stac
 	if !ok {
 		t = item.ToolNone{}
 	}
-
-	//TODO: handle alwaysDrops drops
-
 	var drops []item.Stack
-	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+	if container, ok := b.(block.Container); ok {
+		if c, ok := b.(block.Chest); ok && c.Paired() {
+			pairPos := c.PairPos(pos)
+			left, right := pos, pairPos
+			if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
+				left, right = right, left
+			}
+
+			for slot, i := range c.Inventory().Slots() {
+				if i.Empty() {
+					continue
+				}
+
+				if slot < 27 && pos == left {
+					drops = append(drops, i)
+				} else if slot > 26 && pos == right {
+					drops = append(drops, i)
+				}
+			}
+		} else {
+			// If the block is a container, it should drop its inventory contents regardless whether the
+			// player is in creative mode or not.
+			drops = container.Inventory().Items()
+			container.Inventory().Clear()
+		}
+		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+			if breakable.BreakInfo().Harvestable(t) {
+				drops = append(drops, breakable.BreakInfo().Drops(t, held.Enchantments())...)
+			}
+		}
+	} else if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
 			drops = breakable.BreakInfo().Drops(t, held.Enchantments())
 		}

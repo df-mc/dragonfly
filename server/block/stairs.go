@@ -76,7 +76,7 @@ func (s Stairs) BreakInfo() BreakInfo {
 			hardness = 1.5
 		}
 	}
-	return newBreakInfo(hardness, harvestable, effective, oneOf(s), nil).withBlastResistance(blastResistance)
+	return newBreakInfo(hardness, harvestable, effective, oneOf(s)).withBlastResistance(blastResistance)
 }
 
 // Instrument ...

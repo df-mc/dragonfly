@@ -28,7 +28,7 @@ type DecoratedPot struct {
 
 // BreakInfo ...
 func (p DecoratedPot) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p), nil)
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p))
 }
 
 // MaxCount ...

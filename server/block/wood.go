@@ -37,7 +37,7 @@ func (w Wood) BreakInfo() BreakInfo {
 	if w.Wood == CrimsonWood() || w.Wood == WarpedWood() {
 		hardness = 0.3
 	}
-	return newBreakInfo(hardness, alwaysHarvestable, axeEffective, oneOf(w), nil)
+	return newBreakInfo(hardness, alwaysHarvestable, axeEffective, oneOf(w))
 }
 
 // SmeltInfo ...

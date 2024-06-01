@@ -74,7 +74,7 @@ func (p Potato) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(p, rand.Intn(5)+1), item.NewStack(item.PoisonousPotato{}, 1)}
 		}
 		return []item.Stack{item.NewStack(p, rand.Intn(5)+1)}
-	}, nil)
+	})
 }
 
 // CompostChance ...

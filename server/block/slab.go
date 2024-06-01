@@ -141,7 +141,7 @@ func (s Slab) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(s, 2)}
 		}
 		return []item.Stack{item.NewStack(s, 1)}
-	}, nil).withBlastResistance(blastResistance)
+	}).withBlastResistance(blastResistance)
 }
 
 // Model ...

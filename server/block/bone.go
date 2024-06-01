@@ -35,7 +35,7 @@ func (b Bone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 
 // BreakInfo ...
 func (b Bone) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b), nil)
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b))
 }
 
 // EncodeItem ...

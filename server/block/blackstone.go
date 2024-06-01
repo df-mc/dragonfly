@@ -27,7 +27,7 @@ func (b Blackstone) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(b, 1)}
 		}
 	}
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, drops, nil).withBlastResistance(30)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, drops).withBlastResistance(30)
 }
 
 // EncodeItem ...

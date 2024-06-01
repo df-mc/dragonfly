@@ -48,7 +48,7 @@ func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, w *world.World, _ ExplosionConf
 
 // BreakInfo ...
 func (t TNT) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t), nil)
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t))
 }
 
 // FlammabilityInfo ...

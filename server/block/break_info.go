@@ -84,11 +84,7 @@ type BreakInfo struct {
 	// than with an empty hand.
 	Effective func(t item.Tool) bool
 	// Drops is a function called to get the drops of the block if it is broken using the item passed.
-	// this is only called when the player is in Survival mode.
 	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
-	// AlwaysDrops is a function called to get the drops of a block that will drop regardless of the tool or gamemode
-	// the player is in.
-	AlwaysDrops func() []item.Stack
 	// BreakHandler is called after the block has broken.
 	BreakHandler func(pos cube.Pos, w *world.World, u item.User)
 	// XPDrops is the range of XP a block can drop when broken.
@@ -100,14 +96,13 @@ type BreakInfo struct {
 
 // newBreakInfo creates a BreakInfo struct with the properties passed. The XPDrops field is 0 by default. The blast
 // resistance is set to the block's hardness*5 by default.
-func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective func(item.Tool) bool, drops func(item.Tool, []item.Enchantment) []item.Stack, alwaysDrops func() []item.Stack) BreakInfo {
+func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective func(item.Tool) bool, drops func(item.Tool, []item.Enchantment) []item.Stack) BreakInfo {
 	return BreakInfo{
 		Hardness:        hardness,
 		BlastResistance: hardness * 5,
 		Harvestable:     harvestable,
 		Effective:       effective,
 		Drops:           drops,
-		AlwaysDrops:     alwaysDrops,
 	}
 }
 
@@ -186,16 +181,6 @@ var pickaxeHarvestable = pickaxeEffective
 func simpleDrops(s ...item.Stack) func(item.Tool, []item.Enchantment) []item.Stack {
 	return func(item.Tool, []item.Enchantment) []item.Stack {
 		return s
-	}
-}
-
-// containerDrops returns the drop from the container passed.
-func containerDrops(container Container) func() []item.Stack {
-	return func() []item.Stack {
-		var drops []item.Stack
-		drops = container.Inventory().Items()
-		container.Inventory().Clear()
-		return drops
 	}
 }
 

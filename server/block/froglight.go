@@ -36,7 +36,7 @@ func (f Froglight) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wor
 
 // BreakInfo ...
 func (f Froglight) BreakInfo() BreakInfo {
-	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, oneOf(f), nil)
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, oneOf(f))
 }
 
 // EncodeItem ...

@@ -20,7 +20,7 @@ func (p GlassPane) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (p GlassPane) BreakInfo() BreakInfo {
-	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(p), nil)
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(p))
 }
 
 // EncodeItem ...

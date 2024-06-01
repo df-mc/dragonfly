@@ -7,7 +7,7 @@ type Amethyst struct {
 
 // BreakInfo ...
 func (a Amethyst) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeHarvestable, oneOf(a), nil)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeHarvestable, oneOf(a))
 }
 
 // EncodeItem ...

@@ -8,7 +8,7 @@ type MudBricks struct {
 
 // BreakInfo ...
 func (m MudBricks) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, nothingEffective, oneOf(m), nil)
+	return newBreakInfo(2, alwaysHarvestable, nothingEffective, oneOf(m))
 }
 
 // EncodeItem ...

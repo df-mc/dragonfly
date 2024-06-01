@@ -73,7 +73,7 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 // BreakInfo ...
 func (b BlastFurnace) BreakInfo() BreakInfo {
 	xp := b.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(b), nil).withXPDropRange(xp, xp)
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withXPDropRange(xp, xp)
 }
 
 // Activate ...

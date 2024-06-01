@@ -47,7 +47,7 @@ func (m MossCarpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 
 // BreakInfo ...
 func (m MossCarpet) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(m), nil)
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(m))
 }
 
 // CompostChance ...

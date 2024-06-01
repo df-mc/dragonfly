@@ -27,7 +27,7 @@ func (d Dirt) SoilFor(block world.Block) bool {
 
 // BreakInfo ...
 func (d Dirt) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(d), nil)
+	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(d))
 }
 
 // Till ...

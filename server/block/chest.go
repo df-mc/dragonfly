@@ -166,15 +166,13 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c), nil).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
 		if c.paired {
 			pairPos := c.PairPos(pos)
 			if _, pair, ok := c.unpair(w, pos); ok {
 				w.SetBlock(pairPos, pair, nil)
 			}
 		}
-
-		//TODO: handle drops here instead of alwaysDrops since the pos is passed here.
 	})
 }
 
@@ -202,10 +200,18 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 		c.paired = true
 		// TODO: type assertion checks
 		c.pairX, c.pairZ = int(pairX.(int32)), int(pairZ.(int32))
-		//TODO: handle c.pairInv
+		c.pairInv = inventory.New(54, func(slot int, _, item item.Stack) {
+			c.viewerMu.RLock()
+			defer c.viewerMu.RUnlock()
+			for viewer := range c.viewers {
+				viewer.ViewSlotChange(slot, item)
+			}
+		})
+
+		nbtconv.InvFromNBT(c.pairInv, nbtconv.Slice[any](data, "Items"))
 	}
 
-	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice[any](data, "Items"))
+		nbtconv.InvFromNBT(c.inventory, nbtconv.Slice[any](data, "Items"))
 	return c
 }
 

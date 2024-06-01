@@ -20,7 +20,7 @@ type Torch struct {
 
 // BreakInfo ...
 func (t Torch) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t), nil)
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t))
 }
 
 // LightEmissionLevel ...

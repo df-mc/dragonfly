@@ -67,7 +67,7 @@ func (d DeadBush) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(item.Stick{}, amount)}
 		}
 		return nil
-	}, nil)
+	})
 }
 
 // EncodeItem ...

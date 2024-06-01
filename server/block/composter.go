@@ -44,7 +44,7 @@ func (c Composter) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (c Composter) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(c), nil).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
 		if c.Level == 8 {
 			dropItem(w, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
 		}
