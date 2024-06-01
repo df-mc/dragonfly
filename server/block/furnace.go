@@ -72,7 +72,16 @@ func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world
 // BreakInfo ...
 func (f Furnace) BreakInfo() BreakInfo {
 	xp := f.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(f)).withXPDropRange(xp, xp)
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(f)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		var drops []item.Stack
+
+		drops = f.Inventory().Items()
+		f.Inventory().Clear()
+
+		for _, i := range drops {
+			dropItem(w, i, pos.Vec3())
+		}
+	})
 }
 
 // Activate ...

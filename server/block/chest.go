@@ -82,7 +82,7 @@ func (Chest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 func (c Chest) open(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		if c.paired {
-			v.ViewBlockAction(c.PairPos(pos), OpenAction{})
+			v.ViewBlockAction(c.pairPos(pos), OpenAction{})
 		}
 		v.ViewBlockAction(pos, OpenAction{})
 	}
@@ -93,7 +93,7 @@ func (c Chest) open(w *world.World, pos cube.Pos) {
 func (c Chest) close(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
 		if c.paired {
-			v.ViewBlockAction(c.PairPos(pos), CloseAction{})
+			v.ViewBlockAction(c.pairPos(pos), CloseAction{})
 		}
 		v.ViewBlockAction(pos, CloseAction{})
 	}
@@ -128,9 +128,9 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		if c.paired && c.pairInv == nil {
-			if ch, pair, ok := c.pair(w, pos, c.PairPos(pos)); ok {
+			if ch, pair, ok := c.pair(w, pos, c.pairPos(pos)); ok {
 				w.SetBlock(pos, ch, nil)
-				w.SetBlock(c.PairPos(pos), pair, nil)
+				w.SetBlock(c.pairPos(pos), pair, nil)
 			}
 		}
 		if d, ok := w.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() <= 2 {
@@ -155,7 +155,7 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 		sidePos := pos.Side(dir.Face())
 		if ch, pair, ok := c.pair(w, pos, sidePos); ok {
 			place(w, pos, ch, user, ctx)
-			w.SetBlock(ch.PairPos(pos), pair, nil)
+			w.SetBlock(ch.pairPos(pos), pair, nil)
 			return placed(ctx)
 		}
 	}
@@ -167,11 +167,36 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		var drops []item.Stack
 		if c.paired {
-			pairPos := c.PairPos(pos)
+			pairPos := c.pairPos(pos)
+			left, right := pos, pairPos
+			if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
+				left, right = right, left
+			}
+
+			for slot, i := range c.Inventory().Slots() {
+				if i.Empty() {
+					continue
+				}
+
+				if slot < 27 && pos == left {
+					drops = append(drops, i)
+				} else if slot > 26 && pos == right {
+					drops = append(drops, i)
+				}
+			}
+
 			if _, pair, ok := c.unpair(w, pos); ok {
 				w.SetBlock(pairPos, pair, nil)
 			}
+		} else {
+			drops = c.Inventory().Items()
+			c.Inventory().Clear()
+		}
+
+		for _, i := range drops {
+			dropItem(w, i, pos.Vec3())
 		}
 	})
 }
@@ -200,18 +225,10 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 		c.paired = true
 		// TODO: type assertion checks
 		c.pairX, c.pairZ = int(pairX.(int32)), int(pairZ.(int32))
-		c.pairInv = inventory.New(54, func(slot int, _, item item.Stack) {
-			c.viewerMu.RLock()
-			defer c.viewerMu.RUnlock()
-			for viewer := range c.viewers {
-				viewer.ViewSlotChange(slot, item)
-			}
-		})
-
-		nbtconv.InvFromNBT(c.pairInv, nbtconv.Slice[any](data, "Items"))
+		//TODO: pairInv initializing
 	}
 
-		nbtconv.InvFromNBT(c.inventory, nbtconv.Slice[any](data, "Items"))
+	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice[any](data, "Items"))
 	return c
 }
 
@@ -277,7 +294,7 @@ func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
 		return c, Chest{}, false
 	}
 
-	pair, ok = w.Block(c.PairPos(pos)).(Chest)
+	pair, ok = w.Block(c.pairPos(pos)).(Chest)
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
 	}
@@ -293,8 +310,8 @@ func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
 	return c, pair, true
 }
 
-// PairPos returns the position of the chest that this chest is paired with.
-func (c Chest) PairPos(pos cube.Pos) cube.Pos {
+// pairPos returns the position of the chest that this chest is paired with.
+func (c Chest) pairPos(pos cube.Pos) cube.Pos {
 	return cube.Pos{c.pairX, pos[1], c.pairZ}
 }
 
