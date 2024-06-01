@@ -31,6 +31,8 @@ type Hopper struct {
 	LastTick int64
 	// TransferCooldown is the duration until the hopper can transfer items again.
 	TransferCooldown int64
+	// CollectCooldown is the duration until the hopper can collect items again.
+	CollectCooldown int64
 
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
@@ -124,13 +126,16 @@ func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 // Tick ...
 func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	h.TransferCooldown--
+	h.CollectCooldown--
 	h.LastTick = currentTick
-	if h.TransferCooldown > 0 {
+
+	if h.TransferCooldown > 0 || h.CollectCooldown >= 0 {
 		w.SetBlock(pos, h, nil)
 		return
 	}
 
 	h.TransferCooldown = 0
+	h.CollectCooldown = 0
 	if h.Powered {
 		w.SetBlock(pos, h, nil)
 		return

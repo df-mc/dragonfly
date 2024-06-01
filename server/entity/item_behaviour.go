@@ -69,9 +69,10 @@ func (i *ItemBehaviour) Item() item.Stack {
 func (i *ItemBehaviour) Tick(e *Ent) *Movement {
 	w := e.World()
 	pos := cube.PosFromVec3(e.Position())
+	blockPos := pos.Side(cube.FaceDown)
 
-	bl, ok := w.Block(pos.Side(cube.FaceDown)).(block.Hopper)
-	if ok && !bl.Powered {
+	bl, ok := w.Block(blockPos).(block.Hopper)
+	if ok && !bl.Powered && bl.CollectCooldown <= 0 {
 		_, err := bl.Inventory().AddItem(i.i)
 		if err != nil {
 			// We couldn't add any of the item to the inventory, so we ignore it.
@@ -79,6 +80,8 @@ func (i *ItemBehaviour) Tick(e *Ent) *Movement {
 		}
 
 		_ = e.Close()
+		bl.CollectCooldown = 4
+		w.SetBlock(blockPos, bl, nil)
 	}
 	return i.passive.Tick(e)
 }
