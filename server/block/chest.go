@@ -167,35 +167,14 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		var drops []item.Stack
 		if c.paired {
 			pairPos := c.pairPos(pos)
-			left, right := pos, pairPos
-			if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
-				left, right = right, left
-			}
-
-			for slot, i := range c.Inventory().Slots() {
-				if i.Empty() {
-					continue
-				}
-
-				if slot < 27 && pos == left {
-					drops = append(drops, i)
-				} else if slot > 26 && pos == right {
-					drops = append(drops, i)
-				}
-			}
-
 			if _, pair, ok := c.unpair(w, pos); ok {
 				w.SetBlock(pairPos, pair, nil)
 			}
-		} else {
-			drops = c.Inventory().Items()
-			c.Inventory().Clear()
 		}
 
-		for _, i := range drops {
+		for _, i := range c.Inventory().Clear() {
 			dropItem(w, i, pos.Vec3())
 		}
 	})
