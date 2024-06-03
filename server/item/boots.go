@@ -86,7 +86,7 @@ func (b Boots) EncodeItem() (name string, meta int16) {
 }
 
 // DecodeNBT ...
-func (b Boots) DecodeNBT(data map[string]any) any {
+func (b Boots) DecodeNBT(data map[string]any) world.Item {
 	if t, ok := b.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
 			t.Colour = rgbaFromInt32(v)

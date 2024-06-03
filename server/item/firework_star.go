@@ -1,5 +1,7 @@
 package item
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // FireworkStar is an item used to determine the color, effect, and shape of firework rockets.
 type FireworkStar struct {
 	FireworkExplosion
@@ -14,9 +16,9 @@ func (f FireworkStar) EncodeNBT() map[string]any {
 }
 
 // DecodeNBT ...
-func (f FireworkStar) DecodeNBT(data map[string]any) any {
+func (f FireworkStar) DecodeNBT(data map[string]any) world.Item {
 	if i, ok := data["FireworksItem"].(map[string]any); ok {
-		f.FireworkExplosion = f.FireworkExplosion.DecodeNBT(i).(FireworkExplosion)
+		f.FireworkExplosion = f.FireworkExplosion.DecodeNBT(i)
 	}
 	return f
 }

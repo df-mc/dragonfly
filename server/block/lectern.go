@@ -138,7 +138,7 @@ func (l Lectern) EncodeNBT() map[string]any {
 }
 
 // DecodeNBT ...
-func (l Lectern) DecodeNBT(m map[string]any) any {
+func (l Lectern) DecodeNBT(m map[string]any) world.Block {
 	l.Page = int(nbtconv.Int32(m, "page"))
 	l.Book = nbtconv.MapItem(m, "book")
 	return l

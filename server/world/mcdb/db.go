@@ -295,12 +295,12 @@ func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, 
 			db.conf.Log.Errorf("no block registered with runtime id %v", id)
 			continue
 		}
-		nbter, ok := b.(world.NBTer)
+		nbter, ok := b.(world.BlockNBTer)
 		if !ok {
 			db.conf.Log.Errorf("block %#v has nbt but does not implement world.nbter", b)
 			continue
 		}
-		blockEntities[pos] = nbter.DecodeNBT(m).(world.Block)
+		blockEntities[pos] = nbter.DecodeNBT(m)
 	}
 	return blockEntities, nil
 }
@@ -383,7 +383,7 @@ func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities ma
 	buf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
 	for pos, b := range blockEntities {
-		n, ok := b.(world.NBTer)
+		n, ok := b.(world.BlockNBTer)
 		if !ok {
 			continue
 		}

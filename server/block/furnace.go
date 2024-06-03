@@ -102,7 +102,7 @@ func (f Furnace) EncodeNBT() map[string]interface{} {
 }
 
 // DecodeNBT ...
-func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
+func (f Furnace) DecodeNBT(data map[string]any) world.Block {
 	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
 	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
 	cook := nbtconv.TickDuration[int16](data, "CookTime")

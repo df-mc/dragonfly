@@ -91,8 +91,8 @@ func (d outputItems) Stacks() ([]item.Stack, bool) {
 				return nil, false
 			}
 		}
-		if n, ok := it.(world.NBTer); ok {
-			it = n.DecodeNBT(o.NBTData).(world.Item)
+		if n, ok := it.(world.ItemNBTer); ok {
+			it = n.DecodeNBT(o.NBTData)
 		}
 		s = append(s, item.NewStack(it, int(o.Count)))
 	}

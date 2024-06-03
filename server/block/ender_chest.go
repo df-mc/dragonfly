@@ -112,7 +112,7 @@ func (c EnderChest) EncodeNBT() map[string]interface{} {
 }
 
 // DecodeNBT ...
-func (c EnderChest) DecodeNBT(map[string]interface{}) interface{} {
+func (c EnderChest) DecodeNBT(map[string]any) world.Block {
 	ec := NewEnderChest()
 	ec.Facing = c.Facing
 	return ec

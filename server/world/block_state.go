@@ -26,8 +26,8 @@ var (
 	customBlocks = map[string]CustomBlock{}
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
-	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
-	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a false value in this slice.
+	// nbtBlocks holds a list of BlockNBTer implementations for blocks registered that implement the BlockNBTer interface.
+	// These are indexed by their runtime IDs. Blocks that do not implement BlockNBTer have a false value in this slice.
 	nbtBlocks []bool
 	// randomTickBlocks holds a list of RandomTicker implementations for blocks registered that implement the RandomTicker interface.
 	// These are indexed by their runtime IDs. Blocks that do not implement RandomTicker have a false value in this slice.

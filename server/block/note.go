@@ -36,7 +36,7 @@ func (n Note) instrument(pos cube.Pos, w *world.World) sound.Instrument {
 }
 
 // DecodeNBT ...
-func (n Note) DecodeNBT(data map[string]any) any {
+func (n Note) DecodeNBT(data map[string]any) world.Block {
 	n.Pitch = int(nbtconv.Uint8(data, "note"))
 	return n
 }

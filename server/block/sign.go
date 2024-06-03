@@ -189,7 +189,7 @@ func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 }
 
 // DecodeNBT ...
-func (s Sign) DecodeNBT(data map[string]any) any {
+func (s Sign) DecodeNBT(data map[string]any) world.Block {
 	if nbtconv.String(data, "Text") != "" {
 		// The NBT format changed in 1.19.80 to have separate data for each side of the sign. The old format must still
 		// be supported for backwards compatibility.

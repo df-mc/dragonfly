@@ -102,13 +102,13 @@ func (b Banner) EncodeNBT() map[string]any {
 }
 
 // DecodeNBT ...
-func (b Banner) DecodeNBT(m map[string]any) any {
+func (b Banner) DecodeNBT(m map[string]any) world.Block {
 	b.Colour = invertColourID(int16(nbtconv.Int32(m, "Base")))
 	b.Illager = nbtconv.Int32(m, "Type") == 1
 	if patterns := nbtconv.Slice[any](m, "Patterns"); patterns != nil {
 		b.Patterns = make([]BannerPatternLayer, len(patterns))
 		for i, p := range b.Patterns {
-			b.Patterns[i] = p.DecodeNBT(patterns[i].(map[string]any)).(BannerPatternLayer)
+			b.Patterns[i] = p.DecodeNBT(patterns[i].(map[string]any))
 		}
 	}
 	return b

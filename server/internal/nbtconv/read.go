@@ -204,8 +204,8 @@ func readItemStack(m, t map[string]any) item.Stack {
 	if it == nil {
 		return item.Stack{}
 	}
-	if n, ok := it.(world.NBTer); ok {
-		it = n.DecodeNBT(t).(world.Item)
+	if n, ok := it.(world.ItemNBTer); ok {
+		it = n.DecodeNBT(t)
 	}
 	return item.NewStack(it, int(Uint8(m, "Count")))
 }

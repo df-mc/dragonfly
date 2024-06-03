@@ -138,7 +138,7 @@ func (Barrel) FuelInfo() item.FuelInfo {
 }
 
 // DecodeNBT ...
-func (b Barrel) DecodeNBT(data map[string]any) any {
+func (b Barrel) DecodeNBT(data map[string]any) world.Block {
 	facing := b.Facing
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()

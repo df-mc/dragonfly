@@ -60,7 +60,7 @@ func (e EnchantingTable) EncodeNBT() map[string]any {
 	return map[string]any{"id": "EnchantTable"}
 }
 
-// DecodeNBT is used to implement world.NBTer.
-func (e EnchantingTable) DecodeNBT(map[string]any) any {
+// DecodeNBT is used to implement world.BlockNBTer.
+func (e EnchantingTable) DecodeNBT(map[string]any) world.Block {
 	return e
 }

@@ -1,6 +1,9 @@
 package item
 
-import "slices"
+import (
+	"github.com/df-mc/dragonfly/server/world"
+	"slices"
+)
 
 // BookAndQuill is an item used to write WrittenBook(s).
 type BookAndQuill struct {
@@ -88,7 +91,7 @@ func (b BookAndQuill) SwapPages(pageOne, pageTwo int) BookAndQuill {
 }
 
 // DecodeNBT ...
-func (b BookAndQuill) DecodeNBT(data map[string]any) any {
+func (b BookAndQuill) DecodeNBT(data map[string]any) world.Item {
 	pages, _ := data["pages"].([]any)
 	for _, page := range pages {
 		if pageData, ok := page.(map[string]any); ok {

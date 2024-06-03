@@ -81,7 +81,7 @@ func (p DecoratedPot) EncodeNBT() map[string]any {
 }
 
 // DecodeNBT ...
-func (p DecoratedPot) DecodeNBT(data map[string]any) any {
+func (p DecoratedPot) DecodeNBT(data map[string]any) world.Block {
 	p.Decorations = [4]PotDecoration{}
 	if sherds := nbtconv.Slice[string](data, "sherds"); sherds != nil {
 		for i, name := range sherds {

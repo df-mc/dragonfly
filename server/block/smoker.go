@@ -103,7 +103,7 @@ func (s Smoker) EncodeNBT() map[string]interface{} {
 }
 
 // DecodeNBT ...
-func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
+func (s Smoker) DecodeNBT(data map[string]any) world.Block {
 	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
 	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
 	cook := nbtconv.TickDuration[int16](data, "CookTime")

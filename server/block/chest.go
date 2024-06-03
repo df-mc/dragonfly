@@ -149,7 +149,7 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 }
 
 // DecodeNBT ...
-func (c Chest) DecodeNBT(data map[string]any) any {
+func (c Chest) DecodeNBT(data map[string]any) world.Block {
 	facing := c.Facing
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()

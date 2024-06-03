@@ -125,7 +125,7 @@ func (w *World) Block(pos cube.Pos) Block {
 			return nbtB
 		}
 		b, _ := BlockByRuntimeID(rid)
-		nbtB := b.(NBTer).DecodeNBT(map[string]any{}).(Block)
+		nbtB := b.(BlockNBTer).DecodeNBT(map[string]any{})
 		c.BlockEntities[pos] = nbtB
 		viewers := slices.Clone(c.viewers)
 		c.Unlock()

@@ -87,7 +87,7 @@ func (s Skull) EncodeItem() (name string, meta int16) {
 }
 
 // DecodeNBT ...
-func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
+func (s Skull) DecodeNBT(data map[string]any) world.Block {
 	s.Type = SkullType{skull(nbtconv.Uint8(data, "SkullType"))}
 	s.Attach.o = cube.Orientation(nbtconv.Uint8(data, "Rot"))
 	if s.Attach.facing >= 0 {

@@ -16,6 +16,16 @@ type Item interface {
 	EncodeItem() (name string, meta int16)
 }
 
+// ItemNBTer represents an item which may decode NBT data and encode to NBT data. Typically, this is done
+// to store additional data.
+type ItemNBTer interface {
+	Item
+	// DecodeNBT returns the (new) item with the NBT data decoded into it.
+	DecodeNBT(data map[string]any) Item
+	// EncodeNBT encodes the item into a map which can then be encoded as NBT to be written.
+	EncodeNBT() map[string]any
+}
+
 // CustomItem represents an item that is non-vanilla and requires a resource pack and extra steps to show it
 // to the client.
 type CustomItem interface {

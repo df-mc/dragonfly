@@ -1,5 +1,7 @@
 package item
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // WrittenBook is the item created after a book and quill is signed. It appears the same as a regular book, but
 // without the quill, and has an enchanted-looking glint.
 type WrittenBook struct {
@@ -34,7 +36,7 @@ func (w WrittenBook) Page(page int) (string, bool) {
 }
 
 // DecodeNBT ...
-func (w WrittenBook) DecodeNBT(data map[string]any) any {
+func (w WrittenBook) DecodeNBT(data map[string]any) world.Item {
 	if pages, ok := data["pages"].([]any); ok {
 		w.Pages = make([]string, len(pages))
 		for i, page := range pages {

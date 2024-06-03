@@ -89,7 +89,7 @@ func (j Jukebox) EncodeNBT() map[string]any {
 }
 
 // DecodeNBT ...
-func (j Jukebox) DecodeNBT(data map[string]any) any {
+func (j Jukebox) DecodeNBT(data map[string]any) world.Block {
 	s := nbtconv.MapItem(data, "RecordItem")
 	if _, ok := s.Item().(item.MusicDisc); ok {
 		j.Item = s
