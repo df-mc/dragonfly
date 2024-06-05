@@ -292,9 +292,8 @@ func (h Hopper) DecodeNBT(data map[string]any) any {
 // allHoppers ...
 func allHoppers() (hoppers []world.Block) {
 	for _, f := range cube.Faces() {
-		for _, p := range []bool{false, true} {
-			hoppers = append(hoppers, Hopper{Facing: f, Powered: p})
-		}
+		hoppers = append(hoppers, Hopper{Facing: f})
+		hoppers = append(hoppers, Hopper{Facing: f, Powered: true})
 	}
 	return hoppers
 }
