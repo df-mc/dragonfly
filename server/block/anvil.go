@@ -45,7 +45,7 @@ func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	if !used {
 		return
 	}
-	a.Facing = user.Rotation().Direction().RotateRight()
+	a.Facing = user.Rotation().Direction().RotateLeft()
 	place(w, pos, a, user, ctx)
 	return placed(ctx)
 }
