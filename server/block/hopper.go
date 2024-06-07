@@ -129,7 +129,7 @@ func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	h.CollectCooldown--
 	h.LastTick = currentTick
 
-	if h.TransferCooldown > 0 || h.CollectCooldown >= 0 {
+	if h.TransferCooldown >= 0 || h.CollectCooldown >= 0 {
 		w.SetBlock(pos, h, nil)
 		return
 	}
