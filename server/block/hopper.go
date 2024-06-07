@@ -162,7 +162,7 @@ type HopperInsertable interface {
 // insertItem inserts an item into a container from the hopper.
 func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 	dest, ok := w.Block(pos.Side(h.Facing)).(Container)
-	if !ok {
+	if !ok || dest.Inventory() == nil {
 		return false
 	}
 
@@ -211,7 +211,7 @@ type HopperExtractable interface {
 // extractItem extracts an item from a container into the hopper.
 func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 	origin, ok := w.Block(pos.Side(cube.FaceUp)).(Container)
-	if !ok {
+	if !ok || origin.Inventory() == nil {
 		return false
 	}
 
