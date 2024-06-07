@@ -74,7 +74,7 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 func (b BlastFurnace) BreakInfo() BreakInfo {
 	xp := b.Experience()
 	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		for _, i := range b.Inventory().Clear() {
+		for _, i := range b.Inventory(w, pos).Clear() {
 			dropItem(w, i, pos.Vec3())
 		}
 	})
@@ -101,7 +101,7 @@ func (b BlastFurnace) EncodeNBT() map[string]interface{} {
 		"CookTime":     int16(cook.Milliseconds() / 50),
 		"BurnDuration": int16(maximum.Milliseconds() / 50),
 		"StoredXPInt":  int16(b.Experience()),
-		"Items":        nbtconv.InvToNBT(b.Inventory()),
+		"Items":        nbtconv.InvToNBT(b.inventory),
 		"id":           "BlastFurnace",
 	}
 }
@@ -120,7 +120,7 @@ func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
 	b.Lit = lit
 	b.setExperience(xp)
 	b.setDurations(remaining, maximum, cook)
-	nbtconv.InvFromNBT(b.Inventory(), nbtconv.Slice[any](data, "Items"))
+	nbtconv.InvFromNBT(b.inventory, nbtconv.Slice[any](data, "Items"))
 	return b
 }
 

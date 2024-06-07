@@ -42,6 +42,13 @@ func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
 	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
+func (inv *Inventory) Clone(f func(slot int, before, after item.Stack)) *Inventory {
+	if f == nil {
+		f = func(slot int, before, after item.Stack) {}
+	}
+	return &Inventory{h: NopHandler{}, slots: inv.Slots(), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+}
+
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
 // the item is returned and the error is nil. If no item was present in the slot, a Stack with air as its item
 // and a count of 0 is returned. Stack.Empty() may be called to check if this is the case.
