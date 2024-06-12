@@ -2,10 +2,13 @@ package world
 
 import (
 	"errors"
-	"github.com/df-mc/goleveldb/leveldb"
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/df-mc/goleveldb/leveldb"
+
+	"slices"
 
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -15,7 +18,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
-	"slices"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
@@ -116,25 +118,15 @@ func (w *World) Block(pos cube.Pos) Block {
 		return air()
 	}
 	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
 
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.BlockEntities[pos]; ok {
-			c.Unlock()
 			return nbtB
 		}
-		b, _ := BlockByRuntimeID(rid)
-		nbtB := b.(NBTer).DecodeNBT(map[string]any{}).(Block)
-		c.BlockEntities[pos] = nbtB
-		viewers := slices.Clone(c.viewers)
-		c.Unlock()
-		for _, v := range viewers {
-			v.ViewBlockUpdate(pos, nbtB, 0)
-		}
-		return nbtB
 	}
-	c.Unlock()
 	b, _ := BlockByRuntimeID(rid)
 	return b
 }
@@ -946,7 +938,7 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	t := w.set.CurrentTick
 	w.set.Unlock()
 
-	w.scheduledUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
+	w.scheduledUpdates[pos] = t + (delay.Milliseconds() / 50)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
@@ -1012,6 +1004,33 @@ func (w *World) PortalDestination(dim Dimension) *World {
 		return res
 	}
 	return w
+}
+
+// RedstonePower returns the level of redstone power being emitted from a position to the provided face.
+func (w *World) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
+	b := w.Block(pos)
+	if c, ok := b.(Conductor); ok {
+		power = c.WeakPower(pos, face, w, accountForDust)
+	}
+	if b, ok := b.(redstoneBlocking); ok && b.RedstoneBlocking() {
+		return power
+	}
+	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() == 0 {
+		return power
+	}
+	for _, f := range cube.Faces() {
+		if !b.Model().FaceSolid(pos, f, w) {
+			return power
+		}
+	}
+	for _, f := range cube.Faces() {
+		c, ok := w.Block(pos.Side(f)).(Conductor)
+		if !ok {
+			continue
+		}
+		power = max(power, c.StrongPower(pos.Side(f), f, w, accountForDust))
+	}
+	return power
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -1381,4 +1400,12 @@ type Column struct {
 // newColumn returns a new Column wrapper around the chunk.Chunk passed.
 func newColumn(c *chunk.Chunk) *Column {
 	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}}
+}
+
+// max returns the max of two integers.
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
 }
