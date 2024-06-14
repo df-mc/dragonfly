@@ -742,6 +742,7 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	c.Entities = sliceutil.DeleteVal(c.Entities, e)
 	viewers := slices.Clone(c.viewers)
+	c.modified = true
 	c.Unlock()
 
 	w.entityMu.Lock()
