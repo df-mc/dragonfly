@@ -267,8 +267,9 @@ func (f Fire) EncodeBlock() (name string, properties map[string]any) {
 func (f Fire) Start(w *world.World, pos cube.Pos) {
 	b := w.Block(pos)
 	_, air := b.(Air)
-	_, tallGrass := b.(TallGrass)
-	if air || tallGrass {
+	_, shortGrass := b.(ShortGrass)
+	_, fern := b.(Fern)
+	if air || shortGrass || fern {
 		below := w.Block(pos.Side(cube.FaceDown))
 		if below.Model().FaceSolid(pos, cube.FaceUp, w) || neighboursFlammable(pos, w) {
 			w.SetBlock(pos, Fire{}, nil)
