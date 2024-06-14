@@ -113,6 +113,8 @@ func encodeSlabBlock(block world.Block) (id, slabType string, meta int16, halfFl
 			return "mossy_stone_brick", "stone_slab_type_4", 0, false
 		}
 		return "stone_brick", "stone_slab_type", 5, true
+	case Tuff:
+		return "tuff", "", 0, false
 	}
 	panic("invalid block used for slab")
 }
@@ -165,6 +167,7 @@ func SlabBlocks() []world.Block {
 		StoneBricks{},
 		Stone{Smooth: true},
 		Stone{},
+		Tuff{},
 	}
 	for _, p := range PrismarineTypes() {
 		b = append(b, Prismarine{Type: p})
