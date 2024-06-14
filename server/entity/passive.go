@@ -1,10 +1,11 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // PassiveBehaviourConfig holds optional parameters for a PassiveBehaviour.
@@ -14,6 +15,9 @@ type PassiveBehaviourConfig struct {
 	// Drag is used to reduce all axes of the velocity every tick. Velocity is
 	// multiplied with (1-Drag) every tick.
 	Drag float64
+
+	// UnderwaterMovement is 0.02 for most entities if 0 entity will not be affected by waterflow
+	UnderwaterMovement float64
 	// ExistenceDuration is the duration that an entity with this behaviour
 	// should last. Once this time expires, the entity is closed. If
 	// ExistenceDuration is 0, the entity will never expire automatically.
@@ -32,9 +36,10 @@ func (conf PassiveBehaviourConfig) New() *PassiveBehaviour {
 		conf.ExistenceDuration = math.MaxInt64
 	}
 	return &PassiveBehaviour{conf: conf, fuse: conf.ExistenceDuration, mc: &MovementComputer{
-		Gravity:           conf.Gravity,
-		Drag:              conf.Drag,
-		DragBeforeGravity: true,
+		Gravity:            conf.Gravity,
+		Drag:               conf.Drag,
+		DragBeforeGravity:  true,
+		UnderwaterMovement: conf.UnderwaterMovement,
 	}}
 }
 

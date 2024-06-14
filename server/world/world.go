@@ -2,10 +2,13 @@ package world
 
 import (
 	"errors"
-	"github.com/df-mc/goleveldb/leveldb"
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/df-mc/goleveldb/leveldb"
+
+	"slices"
 
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -15,7 +18,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
-	"slices"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
@@ -1044,10 +1046,7 @@ func (w *World) close() {
 		w.saveChunk(pos, c)
 	}
 
-	w.set.ref.Dec()
-	if !w.advance {
-		return
-	}
+	w.set.WorldCounter.Dec()
 
 	if !w.conf.ReadOnly {
 		w.conf.Log.Debugf("Updating level.dat values...")

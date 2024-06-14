@@ -1,17 +1,19 @@
 package world
 
 import (
+	"sync"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"sync"
 )
 
 // Settings holds the settings of a World. These are typically saved to a level.dat file. It is safe to pass the same
 // Settings to multiple worlds created using New, in which case the Settings are synchronised between the worlds.
 type Settings struct {
 	sync.Mutex
-	ref atomic.Int32
 
+	// WorldCounter...
+	WorldCounter atomic.Int32
 	// Name is the display name of the World.
 	Name string
 	// Spawn is the spawn position of the World. New players that join the world will be spawned here.

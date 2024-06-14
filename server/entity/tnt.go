@@ -1,14 +1,15 @@
 package entity
 
 import (
+	"math"
+	"math/rand"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand"
-	"time"
 )
 
 // NewTNT creates a new primed TNT entity.
@@ -23,9 +24,10 @@ func NewTNT(pos mgl64.Vec3, fuse time.Duration, igniter world.Entity) *Ent {
 }
 
 var tntConf = PassiveBehaviourConfig{
-	Gravity: 0.04,
-	Drag:    0.02,
-	Expire:  explodeTNT,
+	Gravity:            0.04,
+	Drag:               0.02,
+	UnderwaterMovement: 0.02,
+	Expire:             explodeTNT,
 }
 
 // explodeTNT creates an explosion at the position of e.
