@@ -45,6 +45,16 @@ func GlobeBannerPattern() BannerPatternType {
 	return BannerPatternType{7}
 }
 
+// FlowBannerPattern represents the 'Flow' banner pattern type.
+func FlowBannerPattern() BannerPatternType {
+	return BannerPatternType{8}
+}
+
+// GusterBannerPattern represents the 'Guster' banner pattern type.
+func GusterBannerPattern() BannerPatternType {
+	return BannerPatternType{9}
+}
+
 // BannerPatterns returns all possible banner patterns.
 func BannerPatterns() []BannerPatternType {
 	return []BannerPatternType{
@@ -56,6 +66,8 @@ func BannerPatterns() []BannerPatternType {
 		BordureIndentedBannerPattern(),
 		PiglinBannerPattern(),
 		GlobeBannerPattern(),
+		FlowBannerPattern(),
+		GusterBannerPattern(),
 	}
 }
 
@@ -85,6 +97,10 @@ func (b bannerPatternType) String() string {
 		return "piglin"
 	case 7:
 		return "globe"
+	case 8:
+		return "flow"
+	case 9:
+		return "guster"
 	}
 	panic("should never happen")
 }
