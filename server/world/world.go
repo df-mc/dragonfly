@@ -694,6 +694,7 @@ func (w *World) AddEntity(e Entity) {
 	c := w.chunk(chunkPos)
 	c.Entities = append(c.Entities, e)
 	viewers := slices.Clone(c.viewers)
+	c.modified = true
 	c.Unlock()
 
 	for _, v := range viewers {
