@@ -1315,7 +1315,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 // the provider.
 func (w *World) saveChunk(pos ChunkPos, c *Column) {
 	c.Lock()
-	if !w.conf.ReadOnly && (len(c.BlockEntities) > 0 || len(c.Entities) > 0 || c.modified) {
+	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
 		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
 			w.conf.Log.Errorf("save chunk: %v", err)
