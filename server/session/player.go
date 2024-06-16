@@ -393,7 +393,9 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		return
 	}
 	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(mode)})
-	s.sendAbilities()
+	time.AfterFunc(time.Millisecond*50, func() {
+		s.sendAbilities() // TODO: HACK: For some reason, if the ability settings are sent at the same time as the game mode change, it won't work.
+	})
 }
 
 // sendAbilities sends the abilities of the Controllable entity of the session to the client.
