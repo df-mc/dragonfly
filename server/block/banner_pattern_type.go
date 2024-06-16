@@ -207,6 +207,16 @@ func PiglinBannerPattern() BannerPatternType {
 	return BannerPatternType{39}
 }
 
+// FlowBannerPattern represents the 'Flow' banner pattern type.
+func FlowBannerPattern() BannerPatternType {
+	return BannerPatternType{40}
+}
+
+// GusterBannerPattern represents the 'Guster' banner pattern type.
+func GusterBannerPattern() BannerPatternType {
+	return BannerPatternType{41}
+}
+
 // BannerPatternTypes returns all the available banner pattern types.
 func BannerPatternTypes() []BannerPatternType {
 	return []BannerPatternType{
@@ -250,6 +260,8 @@ func BannerPatternTypes() []BannerPatternType {
 		TrianglesTopBannerPattern(),
 		GlobeBannerPattern(),
 		PiglinBannerPattern(),
+		FlowBannerPattern(),
+		GusterBannerPattern(),
 	}
 }
 
@@ -343,6 +355,10 @@ func (b bannerPatternType) String() string {
 		return "globe"
 	case 39:
 		return "piglin"
+	case 40:
+		return "flow"
+	case 41:
+		return "guster"
 	}
 	panic("should never happen")
 }
@@ -366,6 +382,10 @@ func (b bannerPatternType) Item() (item.BannerPatternType, bool) {
 		return item.GlobeBannerPattern(), true
 	case 39:
 		return item.PiglinBannerPattern(), true
+	case 40:
+		return item.FlowBannerPattern(), true
+	case 41:
+		return item.GusterBannerPattern(), true
 	}
 	return item.BannerPatternType{}, false
 }

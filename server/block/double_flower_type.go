@@ -53,11 +53,11 @@ func (d doubleFlower) String() string {
 	case 0:
 		return "sunflower"
 	case 1:
-		return "syringa"
+		return "lilac"
 	case 4:
-		return "rose"
+		return "rose_bush"
 	case 5:
-		return "paeonia"
+		return "peony"
 	}
 	panic("unknown double plant type")
 }

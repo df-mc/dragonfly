@@ -17,7 +17,7 @@ type Dirt struct {
 // SoilFor ...
 func (d Dirt) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case TallGrass, DoubleTallGrass, DeadBush:
+	case ShortGrass, Fern, DoubleTallGrass, DeadBush:
 		return !d.Coarse
 	case Flower, DoubleFlower, NetherSprouts, SugarCane:
 		return true
@@ -57,4 +57,16 @@ func (d Dirt) EncodeBlock() (string, map[string]any) {
 		return "minecraft:dirt", map[string]any{"dirt_type": "coarse"}
 	}
 	return "minecraft:dirt", map[string]any{"dirt_type": "normal"}
+}
+
+// supportsVegetation checks if the vegetation can exist on the block.
+func supportsVegetation(vegetation, block world.Block) bool {
+	soil, ok := block.(Soil)
+	return ok && soil.SoilFor(vegetation)
+}
+
+// Soil represents a block that can support vegetation.
+type Soil interface {
+	// SoilFor returns whether the vegetation can exist on the block.
+	SoilFor(world.Block) bool
 }
