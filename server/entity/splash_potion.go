@@ -19,7 +19,7 @@ func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *Ent {
 	conf := splashPotionConf
 	conf.Potion = t
 	conf.Particle = particle.Splash{Colour: colour}
-	conf.Hit = potionSplash(0.75, t, false)
+	conf.Hit = potionSplash(1, t, false)
 	return Config{Behaviour: conf.New(owner)}.New(SplashPotionType{}, pos)
 }
 
@@ -34,7 +34,6 @@ var splashPotionConf = ProjectileBehaviourConfig{
 type SplashPotionType struct{}
 
 func (SplashPotionType) EncodeEntity() string { return "minecraft:splash_potion" }
-func (SplashPotionType) Glint() bool          { return true }
 func (SplashPotionType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }

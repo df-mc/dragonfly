@@ -105,13 +105,28 @@ func SherdTypeSnort() SherdType {
 	return SherdType{19}
 }
 
+// SherdTypeFlow returns the flow sherd type.
+func SherdTypeFlow() SherdType {
+	return SherdType{20}
+}
+
+// SherdTypeGuster returns the guster sherd type.
+func SherdTypeGuster() SherdType {
+	return SherdType{21}
+}
+
+// SherdTypeScrape returns the scrape sherd type.
+func SherdTypeScrape() SherdType {
+	return SherdType{22}
+}
+
 // SherdTypes returns a list of all existing sherd types.
 func SherdTypes() []SherdType {
 	return []SherdType{
 		SherdTypeAngler(), SherdTypeArcher(), SherdTypeArmsUp(), SherdTypeBlade(), SherdTypeBrewer(), SherdTypeBurn(),
 		SherdTypeDanger(), SherdTypeExplorer(), SherdTypeFriend(), SherdTypeHeart(), SherdTypeHeartbreak(), SherdTypeHowl(),
 		SherdTypeMiner(), SherdTypeMourner(), SherdTypePlenty(), SherdTypePrize(), SherdTypeSheaf(), SherdTypeShelter(),
-		SherdTypeSkull(), SherdTypeSnort(),
+		SherdTypeSkull(), SherdTypeSnort(), SherdTypeFlow(), SherdTypeGuster(), SherdTypeScrape(),
 	}
 }
 
@@ -161,6 +176,12 @@ func (c sherdType) String() string {
 		return "skull"
 	case 19:
 		return "snort"
+	case 20:
+		return "flow"
+	case 21:
+		return "guster"
+	case 22:
+		return "scrape"
 	}
 	panic("unknown sherd type")
 }

@@ -2,12 +2,13 @@ package item
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 	"slices"
 	"sort"
 	"strings"
 	"sync/atomic"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Stack represents a stack of items. The stack shares the same item type and has a count which specifies the
@@ -52,6 +53,12 @@ func (s Stack) WithArmourTrim(trim ArmourTrim) Stack {
 	}
 
 	s.armourTrim = &trim
+	return s
+}
+
+// WithoutArmourTrim returns the current stack but with the armour trim removed.
+func (s Stack) WithoutArmourTrim() Stack {
+	s.armourTrim = nil
 	return s
 }
 
