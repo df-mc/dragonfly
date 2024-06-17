@@ -17,7 +17,6 @@ const (
 	hashRedstoneTorch
 	hashRedstoneWire
 	hashSlime
-	hashTallGrass
 	hashIronDoor
 )
 
@@ -83,10 +82,6 @@ func (r RedstoneWire) Hash() uint64 {
 
 func (Slime) Hash() uint64 {
 	return hashSlime
-}
-
-func (g TallGrass) Hash() uint64 {
-	return hashTallGrass | uint64(g.Type.Uint8())<<8
 }
 
 func (p PressurePlate) Hash() uint64 {
