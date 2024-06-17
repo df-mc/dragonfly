@@ -24,33 +24,33 @@ type PressurePlate struct {
 }
 
 // FaceSolid ...
-func (u PressurePlate) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (p PressurePlate) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
 	return true
 }
 
 // Source ...
-func (l PressurePlate) Source() bool {
+func (p PressurePlate) Source() bool {
 	return true
 }
 
 // WeakPower ...
-func (l PressurePlate) WeakPower(cube.Pos, cube.Face, *world.World, bool) int {
-	if l.Powered {
+func (p PressurePlate) WeakPower(cube.Pos, cube.Face, *world.World, bool) int {
+	if p.Powered {
 		return 15
 	}
 	return 0
 }
 
 // StrongPower ...
-func (l PressurePlate) StrongPower(_ cube.Pos, face cube.Face, _ *world.World, _ bool) int {
-	if l.Powered {
+func (p PressurePlate) StrongPower(_ cube.Pos, face cube.Face, _ *world.World, _ bool) int {
+	if p.Powered {
 		return 15
 	}
 	return 0
 }
 
 // NeighbourUpdateTick ...
-func (l PressurePlate) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (p PressurePlate) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if _, air := w.Block(pos.Side(cube.FaceDown)).(Air); air {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: Stone{}})
@@ -58,57 +58,48 @@ func (l PressurePlate) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 }
 
 // UseOnBlock ...
-func (l PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	return true
+func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(w, pos, face, p)
+	if !used {
+		return false
+	}
+
+	place(w, pos, p, user, ctx)
+	return placed(ctx)
 }
 
-// Activate ...
-func (l PressurePlate) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
-	fmt.Println("ACTIVATE?")
-	return false
-}
-
-func (l PressurePlate) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
-	fmt.Println("TEST")
-	l.Powered = true
-	w.SetBlock(pos, l, nil)
+func (p PressurePlate) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 	w.ScheduleBlockUpdate(pos, time.Millisecond*200)
+}
+
+func (p PressurePlate) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+	bbox := cube.Box(0, 0, 0, 1, 1, 1).Stretch(cube.X, float64(1)/float64(8)).Stretch(cube.Z, float64(1)/float64(8)).ExtendTowards(cube.FaceDown, float64(-3)/float64(4)).Translate(pos.Vec3())
+	ent := w.EntitiesWithin(bbox, func(entity world.Entity) bool { return false })
+
+	// NOTE: DO NOT PLAY SOUND HERE
+	// I want to implement this on our core-side, so that we can have a "silent-plates" setting.
+	p.Powered = false
+	if len(ent) >= 1 {
+		p.Powered = true
+	}
+
+	w.SetBlock(pos, p, nil)
 	updateAroundRedstone(pos, w)
 }
 
-func (l PressurePlate) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
-	fmt.Println("TEST")
-	bbox := cube.Box(0, 0, 0, 1, 1, 1).Stretch(cube.X, float64(1)/float64(8)).Stretch(cube.Z, float64(1)/float64(8)).ExtendTowards(cube.FaceUp, float64(-3)/float64(4)).Translate(pos.Vec3())
-	ent := w.EntitiesWithin(bbox, nil)
-	fmt.Println(ent)
-	// for _, e := range w.Entities() {
-	// 	// What the bullshit
-	// 	// TODO: make this by bbox
-	// 	p := e.Position()
-	// 	if pos.X() == int(math.Floor(p.X())) && pos.Y() == int(math.Floor(p.Y())) && pos.Z() == int(math.Floor(p.Z())) {
-	// 		inside = true
-	// 	}
-	// }
-	if len(ent) < 1 {
-		l.Powered = false
-	}
-	w.SetBlock(pos, l, nil)
-	//updateAroundRedstone(pos, w)
-}
-
 // BreakInfo ...
-func (l PressurePlate) BreakInfo() BreakInfo {
+func (p PressurePlate) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, nil)
 
 }
 
 // EncodeItem ...
-func (l PressurePlate) EncodeItem() (name string, meta int16) {
+func (p PressurePlate) EncodeItem() (name string, meta int16) {
 	return "minecraft:stone_pressure_plate", 0
-	// if !l.Wooden {
+	// if !p.Wooden {
 	// 	return "minecraft:stone_pressure_plate", 0
 	// } else {
-	// 	w := l.Wood.String()
+	// 	w := p.Wood.String()
 	// 	if w == "oak" {
 	// 		w = "wooden"
 	// 	}
@@ -117,21 +108,21 @@ func (l PressurePlate) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (l PressurePlate) EncodeBlock() (string, map[string]any) {
+func (p PressurePlate) EncodeBlock() (string, map[string]any) {
 	return "minecraft:stone_pressure_plate", map[string]any{
-		"redstone_signal": int32(boolByte(l.Powered)),
+		"redstone_signal": int32(boolByte(p.Powered)),
 	}
-	// if !l.Wooden {
+	// if !p.Wooden {
 	// 	return "minecraft:stone_pressure_plate", map[string]any{
-	// 		"redstone_signal": int32(boolByte(l.Powered)),
+	// 		"redstone_signal": int32(boolByte(p.Powered)),
 	// 	}
 	// } else {
-	// 	w := l.Wood.String()
+	// 	w := p.Wood.String()
 	// 	if w == "oak" {
 	// 		w = "wooden"
 	// 	}
 	// 	return "minecraft:" + w + "_pressure_plate", map[string]any{
-	// 		"redstone_signal": int32(boolByte(l.Powered)),
+	// 		"redstone_signal": int32(boolByte(p.Powered)),
 	// 	}
 	// }
 }
