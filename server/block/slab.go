@@ -151,7 +151,7 @@ func (s Slab) Model() world.BlockModel {
 
 // EncodeItem ...
 func (s Slab) EncodeItem() (string, int16) {
-	id, slabType, meta := encodeSlabBlock(s.Block)
+	id, slabType, meta, _ := encodeSlabBlock(s.Block)
 	if slabType != "" {
 		return "minecraft:" + encodeLegacySlabId(slabType), meta
 	}
@@ -160,20 +160,25 @@ func (s Slab) EncodeItem() (string, int16) {
 
 // EncodeBlock ...
 func (s Slab) EncodeBlock() (string, map[string]any) {
-	id, slabType, _ := encodeSlabBlock(s.Block)
+	id, slabType, _, halfFlattened := encodeSlabBlock(s.Block)
 	side := "bottom"
 	if s.Top {
 		side = "top"
 	}
 	properties := map[string]any{"minecraft:vertical_half": side}
-	if slabType != "" {
+	if slabType != "" && !halfFlattened {
 		properties[slabType] = id
 		id = encodeLegacySlabId(slabType)
 		if s.Double {
 			id = "double_" + id
 		}
 	} else if s.Double {
-		id = id + "_double_slab"
+		if halfFlattened {
+			properties[slabType] = id
+			id = "double_" + encodeLegacySlabId(slabType)
+		} else {
+			id = id + "_double_slab"
+		}
 	} else {
 		id = id + "_slab"
 	}
