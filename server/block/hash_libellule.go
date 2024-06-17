@@ -9,7 +9,7 @@ const (
 	hashObserver
 	hashPiston
 	hashPistonArmCollision
-	hashPressurePlate
+	hashStonePressurePlate
 	hashRedstoneBlock
 	hashRedstoneComparator
 	hashRedstoneLamp
@@ -17,6 +17,7 @@ const (
 	hashRedstoneTorch
 	hashRedstoneWire
 	hashSlime
+	hashWoodPressurePlate
 	hashIronDoor
 )
 
@@ -84,6 +85,10 @@ func (Slime) Hash() uint64 {
 	return hashSlime
 }
 
-func (p PressurePlate) Hash() uint64 {
-	return hashPressurePlate | uint64(boolByte(p.Powered))<<8
+func (p StonePressurePlate) Hash() uint64 {
+	return hashStonePressurePlate | uint64(boolByte(p.Powered))<<8
+}
+
+func (p WoodPressurePlate) Hash() uint64 {
+	return hashWoodPressurePlate | uint64(p.Wood.Uint8())<<8 | uint64(boolByte(p.Powered))<<17
 }
