@@ -38,6 +38,26 @@ func newSmelter() *smelter {
 	return s
 }
 
+// InsertItem ...
+func (s *smelter) InsertItem(it item.Stack, face cube.Face) (bool, int) {
+	if face != cube.FaceDown {
+		_, ok := it.Item().(item.Fuel)
+		return ok, 1
+	}
+
+	return true, 0
+}
+
+// ExtractItem ...
+func (s *smelter) ExtractItem() (item.Stack, int) {
+	cooked, _ := s.inventory.Item(2)
+	if cooked.Empty() {
+		return item.Stack{}, 0
+	}
+
+	return cooked, 2
+}
+
 // Durations returns the remaining, maximum, and cook durations of the smelter.
 func (s *smelter) Durations() (remaining time.Duration, max time.Duration, cook time.Duration) {
 	s.mu.Lock()
