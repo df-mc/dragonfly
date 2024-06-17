@@ -1,7 +1,7 @@
 package block
 
 const (
-	hashButton = iota + 500
+	hashButton = iota + 200
 	hashDropper
 	hashHopper
 	hashLever
