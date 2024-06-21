@@ -116,25 +116,15 @@ func (w *World) Block(pos cube.Pos) Block {
 		return air()
 	}
 	c := w.chunk(chunkPosFromBlockPos(pos))
+	defer c.Unlock()
 
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.BlockEntities[pos]; ok {
-			c.Unlock()
 			return nbtB
 		}
-		b, _ := BlockByRuntimeID(rid)
-		nbtB := b.(NBTer).DecodeNBT(map[string]any{}).(Block)
-		c.BlockEntities[pos] = nbtB
-		viewers := slices.Clone(c.viewers)
-		c.Unlock()
-		for _, v := range viewers {
-			v.ViewBlockUpdate(pos, nbtB, 0)
-		}
-		return nbtB
 	}
-	c.Unlock()
 	b, _ := BlockByRuntimeID(rid)
 	return b
 }
