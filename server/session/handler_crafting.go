@@ -192,6 +192,9 @@ func duplicateStack(input item.Stack, newType world.Item) item.Stack {
 		WithLore(input.Lore()...).
 		WithEnchantments(input.Enchantments()...).
 		WithAnvilCost(input.AnvilCost())
+	if trim, ok := input.ArmourTrim(); ok {
+		outputStack = outputStack.WithArmourTrim(trim)
+	}
 	for k, v := range input.Values() {
 		outputStack = outputStack.WithValue(k, v)
 	}
@@ -203,6 +206,9 @@ func matchingStacks(has, expected recipe.Item) bool {
 	switch expected := expected.(type) {
 	case item.Stack:
 		switch has := has.(type) {
+		case recipe.ItemTag:
+			name, _ := expected.Item().EncodeItem()
+			return has.Contains(name)
 		case item.Stack:
 			_, variants := expected.Value("variants")
 			if !variants {

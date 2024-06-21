@@ -131,11 +131,17 @@ func (f *FireworkBehaviour) explode(e *Ent) {
 			// The maximum distance allowed is 5.0 blocks.
 			continue
 		}
+		dmg := force * math.Sqrt((5.0-dist)/5.0)
+		src := ProjectileDamageSource{Owner: f.owner, Projectile: e}
+
+		if pos == tpos {
+			e.(Living).Hurt(dmg, src)
+			continue
+		}
 		if _, ok := trace.Perform(pos, tpos, w, e.Type().BBox(e).Grow(0.3), func(world.Entity) bool {
 			return true
 		}); ok {
-			dmg := force * math.Sqrt((5.0-dist)/5.0)
-			e.(Living).Hurt(dmg, ProjectileDamageSource{Owner: f.owner, Projectile: e})
+			e.(Living).Hurt(dmg, src)
 		}
 	}
 }

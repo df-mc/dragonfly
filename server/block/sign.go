@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
 	"strings"
@@ -119,9 +120,11 @@ func (s Sign) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
 }
 
 // Activate ...
-func (s Sign) Activate(pos cube.Pos, _ cube.Face, _ *world.World, user item.User, _ *item.UseContext) bool {
+func (s Sign) Activate(pos cube.Pos, _ cube.Face, w *world.World, user item.User, _ *item.UseContext) bool {
 	if editor, ok := user.(SignEditor); ok && !s.Waxed {
 		editor.OpenSign(pos, s.EditingFrontSide(pos, user.Position()))
+	} else if s.Waxed {
+		w.PlaySound(pos.Vec3(), sound.WaxedSignFailedInteraction{})
 	}
 	return true
 }

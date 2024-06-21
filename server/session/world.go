@@ -526,6 +526,13 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.SignWaxed:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventWaxOn,
+			Position:  vec64To32(pos),
+		})
+	case sound.WaxedSignFailedInteraction:
+		pk.SoundType = packet.SoundEventWaxedSignInteractFail
 	case sound.Pop:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundInfinityArrowPickup,
@@ -745,6 +752,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = packet.SoundEventRecord5
 		case sound.DiscRelic():
 			pk.SoundType = packet.SoundEventRecordRelic
+		case sound.DiscCreator():
+			pk.SoundType = packet.SoundEventRecordCreator
+		case sound.DiscCreatorMusicBox():
+			pk.SoundType = packet.SoundEventRecordCreatorMusicBox
+		case sound.DiscPrecipice():
+			pk.SoundType = packet.SoundEventRecordPrecipice
 		}
 	case sound.MusicDiscEnd:
 		pk.SoundType = packet.SoundEventRecordNull
@@ -764,6 +777,11 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventComposterReady
 	case sound.LecternBookPlace:
 		pk.SoundType = packet.SoundEventLecternBookPlace
+	case sound.Totem:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundTotemUsed,
+			Position:  vec64To32(pos),
+		})
 	}
 	s.writePacket(pk)
 }
@@ -907,6 +925,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 				EventData: (rid << 16) | int32(meta),
 			})
 		}
+	case entity.TotemUseAction:
+		s.writePacket(&packet.ActorEvent{
+			EntityRuntimeID: s.entityRuntimeID(e),
+			EventType:       packet.ActorEventTalismanActivate,
+		})
 	}
 }
 

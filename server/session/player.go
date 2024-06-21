@@ -119,7 +119,7 @@ func (s *Session) sendRecipes() {
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
-		case recipe.Smithing:
+		case recipe.SmithingTransform:
 			input, output := stacksToIngredientItems(i.Input()), stacksToRecipeStacks(i.Output())
 			recipes = append(recipes, &protocol.SmithingTransformRecipe{
 				RecipeID:        uuid.New().String(),
@@ -130,9 +130,50 @@ func (s *Session) sendRecipes() {
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
+		case recipe.SmithingTrim:
+			input := stacksToIngredientItems(i.Input())
+			recipes = append(recipes, &protocol.SmithingTrimRecipe{
+				RecipeID:        uuid.New().String(),
+				Base:            input[0],
+				Addition:        input[1],
+				Template:        input[2],
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			})
 		}
 	}
 	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
+}
+
+// sendArmourTrimData sends the armour trim data.
+func (s *Session) sendArmourTrimData() {
+	var trimPatterns []protocol.TrimPattern
+	var trimMaterials []protocol.TrimMaterial
+
+	for _, t := range item.SmithingTemplates() {
+		if t == item.TemplateNetheriteUpgrade() {
+			continue
+		}
+		name, _ := item.SmithingTemplate{Template: t}.EncodeItem()
+		trimPatterns = append(trimPatterns, protocol.TrimPattern{
+			ItemName:  name,
+			PatternID: t.String(),
+		})
+	}
+
+	for _, i := range item.ArmourTrimMaterials() {
+		if material, ok := i.(item.ArmourTrimMaterial); ok {
+			name, _ := i.EncodeItem()
+
+			trimMaterials = append(trimMaterials, protocol.TrimMaterial{
+				MaterialID: material.TrimMaterial(),
+				Colour:     material.MaterialColour(),
+				ItemName:   name,
+			})
+		}
+	}
+
+	s.writePacket(&packet.TrimData{Patterns: trimPatterns, Materials: trimMaterials})
 }
 
 // sendInv sends the inventory passed to the client with the window ID.
@@ -212,7 +253,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 				return s.ui, true
 			}
 		}
-	case protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
+	case protocol.ContainerSmithingTableTemplate, protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
 		if s.containerOpened.Load() {
 			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true

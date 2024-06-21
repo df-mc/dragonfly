@@ -150,7 +150,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(53, s.handleInterfaceUpdate),
+		ui:                     inventory.New(54, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[world.Entity]uint64{},
 		entities:               map[uint64]world.Entity{},
@@ -209,6 +209,7 @@ func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 	s.sendRecipes()
+	s.sendArmourTrimData()
 }
 
 // Start makes the session start handling incoming packets from the client.
@@ -381,13 +382,6 @@ func (s *Session) sendChunks() {
 func (s *Session) handleWorldSwitch(w *world.World) {
 	if s.conn.ClientCacheEnabled() {
 		s.blobMu.Lock()
-		// Force out all blobs before changing worlds. This ensures no outdated chunk loading in the new world.
-		resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(s.blobs))}
-		for h, blob := range s.blobs {
-			resp.Blobs = append(resp.Blobs, protocol.CacheBlob{Hash: h, Payload: blob})
-		}
-		s.writePacket(resp)
-
 		s.blobs = map[uint64][]byte{}
 		s.openChunkTransactions = nil
 		s.blobMu.Unlock()

@@ -2,12 +2,13 @@ package item
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 	"slices"
 	"sort"
 	"strings"
 	"sync/atomic"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Stack represents a stack of items. The stack shares the same item type and has a count which specifies the
@@ -28,6 +29,8 @@ type Stack struct {
 	data map[string]any
 
 	enchantments map[EnchantmentType]Enchantment
+
+	armourTrim *ArmourTrim
 }
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
@@ -40,6 +43,31 @@ func NewStack(t world.Item, count int) Stack {
 		panic("cannot have a stack with item type nil")
 	}
 	return Stack{item: t, count: count, id: newID()}
+}
+
+// WithArmourTrim returns a new stack with the ArmourTrim passed.
+// This only applies if the stack is type Armour.
+func (s Stack) WithArmourTrim(trim ArmourTrim) Stack {
+	if _, ok := s.item.(Armour); !ok {
+		return s
+	}
+
+	s.armourTrim = &trim
+	return s
+}
+
+// WithoutArmourTrim returns the current stack but with the armour trim removed.
+func (s Stack) WithoutArmourTrim() Stack {
+	s.armourTrim = nil
+	return s
+}
+
+// ArmourTrim returns the ArmourTrim and true if present, otherwise false is returned.
+func (s Stack) ArmourTrim() (ArmourTrim, bool) {
+	if s.armourTrim != nil {
+		return *s.armourTrim, true
+	}
+	return ArmourTrim{}, false
 }
 
 // Count returns the amount of items that is present on the stack. The count is guaranteed never to be
