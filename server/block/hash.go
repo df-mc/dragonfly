@@ -65,6 +65,7 @@ const (
 	hashEndStone
 	hashEnderChest
 	hashFarmland
+	hashFern
 	hashFire
 	hashFletchingTable
 	hashFlower
@@ -139,6 +140,7 @@ const (
 	hashSandstone
 	hashSeaLantern
 	hashSeaPickle
+	hashShortGrass
 	hashShroomlight
 	hashSign
 	hashSkull
@@ -159,7 +161,6 @@ const (
 	hashStonecutter
 	hashSugarCane
 	hashTNT
-	hashTallGrass
 	hashTerracotta
 	hashTorch
 	hashTuff
@@ -422,6 +423,10 @@ func (EnderChest) BaseHash() uint64 {
 
 func (Farmland) BaseHash() uint64 {
 	return hashFarmland
+}
+
+func (Fern) BaseHash() uint64 {
+	return hashFern
 }
 
 func (Fire) BaseHash() uint64 {
@@ -720,6 +725,10 @@ func (SeaPickle) BaseHash() uint64 {
 	return hashSeaPickle
 }
 
+func (ShortGrass) BaseHash() uint64 {
+	return hashShortGrass
+}
+
 func (Shroomlight) BaseHash() uint64 {
 	return hashShroomlight
 }
@@ -798,10 +807,6 @@ func (SugarCane) BaseHash() uint64 {
 
 func (TNT) BaseHash() uint64 {
 	return hashTNT
-}
-
-func (TallGrass) BaseHash() uint64 {
-	return hashTallGrass
 }
 
 func (Terracotta) BaseHash() uint64 {
@@ -905,7 +910,7 @@ func (b Blackstone) Hash() uint64 {
 }
 
 func (b BlastFurnace) Hash() uint64 {
-	return uint64(b.Facing) | uint64(boolByte(b.Lit))<<3
+	return uint64(b.Facing) | uint64(boolByte(b.Lit))<<2
 }
 
 func (BlueIce) Hash() uint64 {
@@ -1092,6 +1097,10 @@ func (f Farmland) Hash() uint64 {
 	return uint64(f.Hydration)
 }
 
+func (Fern) Hash() uint64 {
+	return 0
+}
+
 func (f Fire) Hash() uint64 {
 	return uint64(f.Type.Uint8()) | uint64(f.Age)<<1
 }
@@ -1109,7 +1118,7 @@ func (f Froglight) Hash() uint64 {
 }
 
 func (f Furnace) Hash() uint64 {
-	return uint64(f.Facing) | uint64(boolByte(f.Lit))<<3
+	return uint64(f.Facing) | uint64(boolByte(f.Lit))<<2
 }
 
 func (Glass) Hash() uint64 {
@@ -1388,6 +1397,10 @@ func (s SeaPickle) Hash() uint64 {
 	return uint64(s.AdditionalCount) | uint64(boolByte(s.Dead))<<8
 }
 
+func (ShortGrass) Hash() uint64 {
+	return 0
+}
+
 func (Shroomlight) Hash() uint64 {
 	return 0
 }
@@ -1409,7 +1422,7 @@ func (SmithingTable) Hash() uint64 {
 }
 
 func (s Smoker) Hash() uint64 {
-	return uint64(s.Facing) | uint64(boolByte(s.Lit))<<3
+	return uint64(s.Facing) | uint64(boolByte(s.Lit))<<2
 }
 
 func (Snow) Hash() uint64 {
@@ -1466,10 +1479,6 @@ func (c SugarCane) Hash() uint64 {
 
 func (TNT) Hash() uint64 {
 	return 0
-}
-
-func (g TallGrass) Hash() uint64 {
-	return uint64(g.Type.Uint8())
 }
 
 func (Terracotta) Hash() uint64 {
