@@ -48,7 +48,7 @@ func (s *Session) StartShowingEntity(e world.Entity) {
 		delete(s.hiddenEntities, e)
 	}
 	s.entityMutex.Unlock()
-	
+
 	if ok {
 		s.ViewEntity(e)
 		s.ViewEntityState(e)
