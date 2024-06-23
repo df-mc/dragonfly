@@ -857,6 +857,10 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 
 // ViewEntityAction ...
 func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
+	if s.entityHidden(e) {
+		return
+	}
+
 	switch act := a.(type) {
 	case entity.SwingArmAction:
 		if _, ok := e.(Controllable); ok {
@@ -935,6 +939,10 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 
 // ViewEntityState ...
 func (s *Session) ViewEntityState(e world.Entity) {
+	if s.entityHidden(e) {
+		return
+	}
+
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
 		EntityMetadata:  s.parseEntityMetadata(e),
@@ -943,6 +951,10 @@ func (s *Session) ViewEntityState(e world.Entity) {
 
 // ViewEntityAnimation ...
 func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
+	if s.entityHidden(e) {
+		return
+	}
+
 	s.writePacket(&packet.AnimateEntity{
 		Animation: animationName,
 		EntityRuntimeIDs: []uint64{
