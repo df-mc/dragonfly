@@ -128,7 +128,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		health:            entity.NewHealthManager(20, 20),
 		experience:        entity.NewExperienceManager(),
 		effects:           entity.NewEffectManager(),
-		lastPos:    *atomic.NewValue(pos),
+		lastPos:           *atomic.NewValue(pos),
 		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
 		h:                 *atomic.NewValue[Handler](NopHandler{}),
 		name:              name,
