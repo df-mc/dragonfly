@@ -261,10 +261,6 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	}
 	s.enchantments = copyEnchantments(s.enchantments)
 	for _, enchant := range enchants {
-		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWithItem(s.item) {
-			// Enchantment is not compatible with the item.
-			continue
-		}
 		s.enchantments[enchant.t] = enchant
 	}
 	return s
