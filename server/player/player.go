@@ -49,6 +49,9 @@ type Player struct {
 	yaw, pitch, absorptionHealth, scale atomic.Float64
 	once                                sync.Once
 
+	lastPos            atomic.Value[mgl64.Vec3]
+	lastYaw, lastPitch atomic.Float64
+
 	gameMode atomic.Value[world.GameMode]
 
 	skin atomic.Value[skin.Skin]
@@ -125,6 +128,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		health:            entity.NewHealthManager(20, 20),
 		experience:        entity.NewExperienceManager(),
 		effects:           entity.NewEffectManager(),
+		lastPos:    *atomic.NewValue(pos),
 		gameMode:          *atomic.NewValue[world.GameMode](world.GameModeSurvival),
 		h:                 *atomic.NewValue[Handler](NopHandler{}),
 		name:              name,
@@ -1931,6 +1935,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 		v.ViewEntityTeleport(p, pos)
 	}
 	p.pos.Store(pos)
+	p.lastPos.Store(pos)
 	p.vel.Store(mgl64.Vec3{})
 	p.ResetFallDistance()
 }
@@ -1965,9 +1970,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 		return
 	}
-	for _, v := range p.viewers() {
-		v.ViewEntityMovement(p, res, cube.Rotation{resYaw, resPitch}, p.OnGround())
-	}
 
 	p.pos.Store(res)
 	p.yaw.Store(resYaw)
@@ -2001,13 +2003,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 
 	p.onGround.Store(p.checkOnGround(w))
-	p.updateFallState(deltaPos[1])
-
-	if p.Swimming() {
-		p.Exhaust(0.01 * horizontalVel.Len())
-	} else if p.Sprinting() {
-		p.Exhaust(0.1 * horizontalVel.Len())
-	}
 }
 
 // World returns the world that the player is currently in.
@@ -2247,7 +2242,8 @@ func (p *Player) Tick(w *world.World, current int64) {
 		p.Handler().HandleChangeWorld(p.lastTickedWorld, w)
 	}
 	p.lastTickedWorld = w
-	if _, ok := w.Liquid(cube.PosFromVec3(p.Position())); !ok {
+	pos := p.Position()
+	if _, ok := w.Liquid(cube.PosFromVec3(pos)); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
 			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10).WithoutParticles())
@@ -2283,7 +2279,7 @@ func (p *Player) Tick(w *world.World, current int64) {
 
 	if p.OnFireDuration() > 0 {
 		p.fireTicks.Sub(1)
-		if !p.GameMode().AllowsTakingDamage() || p.OnFireDuration() <= 0 || w.RainingAt(cube.PosFromVec3(p.Position())) {
+		if !p.GameMode().AllowsTakingDamage() || p.OnFireDuration() <= 0 || w.RainingAt(cube.PosFromVec3(pos)) {
 			p.Extinguish()
 		}
 		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
@@ -2314,9 +2310,28 @@ func (p *Player) Tick(w *world.World, current int64) {
 		m.Send()
 
 		p.vel.Store(m.Velocity())
-		p.Move(m.Position().Sub(p.Position()), 0, 0)
+		p.Move(m.Position().Sub(pos), 0, 0)
 	} else {
-		p.vel.Store(mgl64.Vec3{})
+		lastPos, lastYaw, lastPitch := p.lastPos.Load(), p.lastYaw.Load(), p.lastPitch.Load()
+
+		rt := p.Rotation()
+		yaw, pitch := rt[0], rt[1]
+		deltaPos := pos.Sub(lastPos)
+		if !deltaPos.ApproxEqualThreshold(mgl64.Vec3{}, 0.001) || math.Abs(lastYaw-yaw)+math.Abs(lastPitch-pitch) > 1.0 {
+			p.lastPos.Store(pos)
+			p.lastYaw.Store(yaw)
+			p.lastPitch.Store(pitch)
+			for _, v := range p.viewers() {
+				v.ViewEntityMovement(p, pos,rt, p.OnGround())
+			}
+			// The vertical axis isn't relevant for calculation of exhaustion points.
+			deltaPos[1] = 0
+			if p.Swimming() {
+				p.Exhaust(0.01 * deltaPos.Len())
+			} else if p.Sprinting() {
+				p.Exhaust(0.1 * deltaPos.Len())
+			}
+		}
 	}
 }
 
@@ -2823,6 +2838,8 @@ func (p *Player) close(msg string) {
 // returns false.
 func (p *Player) load(data Data) {
 	p.yaw.Store(data.Yaw)
+	p.lastYaw.Store(data.Yaw)
+	p.pitch.Store(data.Pitch)
 	p.pitch.Store(data.Pitch)
 
 	p.health.SetMaxHealth(data.MaxHealth)
