@@ -13,7 +13,7 @@ import (
 
 // subChunkRequests is set to true to enable the sub-chunk request system. This can (likely) cause unexpected issues,
 // but also solves issues with block entities such as item frames and lecterns as of v1.19.10.
-const subChunkRequests = true
+const subChunkRequests = false
 
 // ViewChunk ...
 func (s *Session) ViewChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {

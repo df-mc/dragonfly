@@ -2322,8 +2322,10 @@ func (p *Player) Tick(w *world.World, current int64) {
 			p.lastYaw.Store(yaw)
 			p.lastPitch.Store(pitch)
 			for _, v := range p.viewers() {
-				v.ViewEntityMovement(p, pos,rt, p.OnGround())
+				v.ViewEntityMovement(p, pos, rt, p.OnGround())
 			}
+
+			p.updateFallState(deltaPos[1])
 			// The vertical axis isn't relevant for calculation of exhaustion points.
 			deltaPos[1] = 0
 			if p.Swimming() {
