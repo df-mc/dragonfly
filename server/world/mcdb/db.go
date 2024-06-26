@@ -297,7 +297,7 @@ func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, 
 		}
 		nbter, ok := b.(world.NBTer)
 		if !ok {
-			db.conf.Log.Errorf("block %#v has nbt but does not implement world.nbter", b)
+			db.conf.Log.Debugf("block %#v has nbt but does not implement world.nbter", b)
 			continue
 		}
 		blockEntities[pos] = nbter.DecodeNBT(m).(world.Block)

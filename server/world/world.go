@@ -1190,7 +1190,7 @@ func (w *World) chunk(pos ChunkPos) *Column {
 		chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 		if err != nil {
 			w.chunkMu.Unlock()
-			w.conf.Log.Errorf("load chunk: failed loading %v: %v\n", pos, err)
+			w.conf.Log.Debugf("load chunk: failed loading %v: %v\n", pos, err)
 			return c
 		}
 		c.Unlock()
