@@ -50,6 +50,12 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		return nil
 	}
 
+	if deltaPos.Len() > 225 {
+		// The player tried to move a really long distance (around 16 blocks), this is not an anti-cheat
+		revertMovement(s)
+		return nil
+	}
+
 	if expected := s.teleportPos.Load(); expected != nil {
 		if newPos.Sub(*expected).Len() > 1 {
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
@@ -61,17 +67,10 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 
 		if pos.ApproxEqual(newPos) {
 			// The player didn't try to move yet, so we keep it locked
-			revertMovement(s)
 			return nil
 		}
 
 		s.teleportPos.Store(nil)
-	}
-
-	if deltaPos.Len() > 225 {
-		// The player tried to move a really long distance (around 16 blocks), this is not an anti-cheat
-		revertMovement(s)
-		return nil
 	}
 
 	s.c.Move(deltaPos, deltaYaw, deltaPitch)
@@ -111,7 +110,7 @@ func revertMovement(s *Session) {
 	s.writePacket(&packet.MovePlayer{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
-		Mode:            packet.MoveModeNormal,
+		Mode:            packet.MoveModeReset,
 	})
 }
 
