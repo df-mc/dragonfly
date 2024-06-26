@@ -50,6 +50,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		return nil
 	}
 
+	revert := false
 	if expected := s.teleportPos.Load(); expected != nil {
 		if newPos.Sub(*expected).Len() > 1 {
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
@@ -57,7 +58,30 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 			// enough to the teleport position, we'll allow the player to move around again.
 			return nil
 		}
-		s.teleportPos.Store(nil)
+
+		if !pos.ApproxEqual(newPos) {
+			s.teleportPos.Store(nil)
+		} else {
+			revert = true
+		}
+	}
+
+	if deltaPos.Len() > 225 {
+		revert = true
+	}
+
+	if revert {
+		rt := s.c.Rotation()
+		s.writePacket(&packet.MovePlayer{
+			EntityRuntimeID: selfEntityRuntimeID,
+			Position:        vec64To32(pos.Add(entityOffset(s.c))),
+			Pitch:           float32(rt[1]),
+			Yaw:             float32(rt[0]),
+			HeadYaw:         float32(rt[0]),
+			Mode:            packet.MoveModeReset,
+		})
+
+		return nil
 	}
 
 	s.c.Move(deltaPos, deltaYaw, deltaPitch)
