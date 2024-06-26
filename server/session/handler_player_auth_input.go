@@ -112,6 +112,16 @@ func revertMovement(s *Session) {
 		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
 		Mode:            packet.MoveModeReset,
 	})
+
+	rt := s.c.Rotation()
+	s.writePacket(&packet.MovePlayer{
+		EntityRuntimeID: selfEntityRuntimeID,
+		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		Yaw:             float32(rt[0]),
+		HeadYaw:         float32(rt[0]),
+		Pitch:           float32(rt[1]),
+		Mode:            packet.MoveModeRotation,
+	})
 }
 
 // handleInputFlags handles the toggleable input flags set in a PlayerAuthInput packet.
