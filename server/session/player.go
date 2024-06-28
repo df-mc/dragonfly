@@ -50,10 +50,13 @@ func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Unlock()
 
 	if ok {
-		s.ViewEntity(e)
-		s.ViewEntityState(e)
-		s.ViewEntityItems(e)
-		s.ViewEntityArmour(e)
+		w, ok := world.OfEntity(e)
+		if ok && w == s.c.World() {
+			s.ViewEntity(e)
+			s.ViewEntityState(e)
+			s.ViewEntityItems(e)
+			s.ViewEntityArmour(e)
+		}
 	}
 }
 

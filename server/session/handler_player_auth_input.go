@@ -50,7 +50,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		return nil
 	}
 
-	if deltaPos.Len() > 225 {
+	if deltaPos.Len() > 16 {
 		// The player tried to move a really long distance (around 16 blocks), this is not an anti-cheat
 		revertMovement(s)
 		return nil
