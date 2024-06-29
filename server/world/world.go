@@ -2,13 +2,15 @@ package world
 
 import (
 	"errors"
-	"github.com/df-mc/goleveldb/leveldb"
 	"math/rand"
 	"sync"
 	"time"
 
+	"github.com/df-mc/goleveldb/leveldb"
+
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity/animation"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -650,6 +652,19 @@ func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
 	p.Spawn(w, pos)
 	for _, viewer := range w.Viewers(pos) {
 		viewer.ViewParticle(pos, p)
+	}
+}
+
+// AnimateEntity will start an animation for the specified entity. Viewers that are viewing the entity will be
+// played the animation.
+func (w *World) AnimateEntity(e Entity, animation animation.Animation) {
+	// Ignore if no animation name has been given
+	if animation.Name() == "" {
+		return
+	}
+
+	for _, v := range w.Viewers(e.Position()) {
+		v.ViewEntityAnimation(e, animation)
 	}
 }
 
