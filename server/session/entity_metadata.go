@@ -42,6 +42,11 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 
 func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
+		if b, ok := e.(blocker); ok {
+			if _, ok = b.Blocking(); ok {
+				m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagBlocking%64)
+			}
+		}
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSneaking)
 	}
 	if sp, ok := e.(sprinter); ok && sp.Sprinting() {
@@ -180,6 +185,10 @@ type swimmer interface {
 
 type glider interface {
 	Gliding() bool
+}
+
+type blocker interface {
+	Blocking() (bool, bool)
 }
 
 type breather interface {
