@@ -51,7 +51,7 @@ func NewBarrel() Barrel {
 }
 
 // Inventory returns the inventory of the barrel. The size of the inventory will be 27.
-func (b Barrel) Inventory() *inventory.Inventory {
+func (b Barrel) Inventory(*world.World, cube.Pos) *inventory.Inventory {
 	return b.inventory
 }
 
@@ -124,7 +124,11 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 
 // BreakInfo ...
 func (b Barrel) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(b))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		for _, i := range b.Inventory(w, pos).Clear() {
+			dropItem(w, i, pos.Vec3())
+		}
+	})
 }
 
 // FlammabilityInfo ...

@@ -42,6 +42,13 @@ func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
 	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
+func (inv *Inventory) Clone(f func(slot int, before, after item.Stack)) *Inventory {
+	if f == nil {
+		f = func(slot int, before, after item.Stack) {}
+	}
+	return &Inventory{h: NopHandler{}, slots: inv.Slots(), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+}
+
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
 // the item is returned and the error is nil. If no item was present in the slot, a Stack with air as its item
 // and a count of 0 is returned. Stack.Empty() may be called to check if this is the case.
@@ -263,6 +270,18 @@ func (inv *Inventory) ContainsItemFunc(n int, comparable func(stack item.Stack) 
 		}
 	}
 	return n <= 0
+}
+
+// Merge merges two inventories into one. The function passed is called for every slot change in the new inventory.
+func (inv *Inventory) Merge(inv2 *Inventory, f func(int, item.Stack, item.Stack)) *Inventory {
+	inv.mu.RLock()
+	defer inv.mu.RUnlock()
+	inv2.mu.RLock()
+	defer inv2.mu.RUnlock()
+
+	n := New(len(inv.slots)+len(inv2.slots), f)
+	n.slots = append(inv.slots, inv2.slots...)
+	return n
 }
 
 // Empty checks if the inventory is fully empty: It iterates over the inventory and makes sure every stack in
