@@ -28,21 +28,33 @@ import (
 // StopShowingEntity stops showing a world.Entity to the Session. It will be completely invisible until a call to
 // StartShowingEntity is made.
 func (s *Session) StopShowingEntity(e world.Entity) {
-	s.HideEntity(e)
 	s.entityMutex.Lock()
-	s.hiddenEntities[e] = struct{}{}
+	_, ok := s.hiddenEntities[e]
+	if !ok {
+		s.hiddenEntities[e] = struct{}{}
+	}
 	s.entityMutex.Unlock()
+
+	if !ok {
+		s.HideEntity(e)
+	}
 }
 
 // StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
 func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	delete(s.hiddenEntities, e)
+	_, ok := s.hiddenEntities[e]
+	if ok {
+		delete(s.hiddenEntities, e)
+	}
 	s.entityMutex.Unlock()
-	s.ViewEntity(e)
-	s.ViewEntityState(e)
-	s.ViewEntityItems(e)
-	s.ViewEntityArmour(e)
+
+	if ok {
+		s.ViewEntity(e)
+		s.ViewEntityState(e)
+		s.ViewEntityItems(e)
+		s.ViewEntityArmour(e)
+	}
 }
 
 // closeCurrentContainer closes the container the player might currently have open.
