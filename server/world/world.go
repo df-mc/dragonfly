@@ -1080,6 +1080,21 @@ func (w *World) close() {
 	}
 }
 
+// Save saves the World to the provider.
+func (w *World) Save() {
+	w.conf.Log.Debugf("Saving chunks in memory to disk...")
+
+	w.chunkMu.Lock()
+	w.lastChunk = nil
+	toSave := maps.Clone(w.chunks)
+	maps.Clear(w.chunks)
+	w.chunkMu.Unlock()
+
+	for pos, c := range toSave {
+		w.saveChunk(pos, c)
+	}
+}
+
 // allViewers returns a list of all loaders of the world, regardless of where in the world they are viewing.
 func (w *World) allViewers() ([]Viewer, []*Loader) {
 	w.viewersMu.Lock()
