@@ -378,6 +378,12 @@ func (s *Session) SendForm(f form.Form) {
 	})
 }
 
+// CloseForm closes any forms that the player currently has open. If the player has no forms open, nothing
+// happens.
+func (s *Session) CloseForm() {
+	s.writePacket(&packet.ClientBoundCloseForm{})
+}
+
 // Transfer transfers the player to a server with the IP and port passed.
 func (s *Session) Transfer(ip net.IP, port int) {
 	s.writePacket(&packet.Transfer{

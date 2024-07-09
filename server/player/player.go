@@ -417,6 +417,12 @@ func (p *Player) SendForm(f form.Form) {
 	p.session().SendForm(f)
 }
 
+// CloseForm closes any forms that the player currently has open. If the player has no forms open, nothing
+// happens.
+func (p *Player) CloseForm() {
+	p.session().CloseForm()
+}
+
 // ShowCoordinates enables the vanilla coordinates for the player.
 func (p *Player) ShowCoordinates() {
 	p.session().EnableCoordinates(true)
