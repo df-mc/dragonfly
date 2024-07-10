@@ -1023,9 +1023,7 @@ func (w *World) Save() {
 	w.conf.Log.Debugf("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
-	w.lastChunk = nil
 	toSave := maps.Clone(w.chunks)
-	maps.Clear(w.chunks)
 	w.chunkMu.Unlock()
 
 	for pos, c := range toSave {
