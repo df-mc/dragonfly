@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"maps"
 	"math"
 	"slices"
 	"sort"
@@ -81,7 +82,7 @@ func registerBlockState(s blockState) {
 		blockProperties[s.Name] = s.Properties
 	}
 	rid := uint32(len(blocks))
-	blocks = append(blocks, unknownBlock{s})
+	blocks = append(blocks, unknownBlock{blockState: s})
 
 	if s.Name == "minecraft:air" {
 		airRID = rid
@@ -100,6 +101,7 @@ func registerBlockState(s blockState) {
 // states that haven't yet been added.
 type unknownBlock struct {
 	blockState
+	data map[string]any
 }
 
 // EncodeBlock ...
@@ -120,6 +122,17 @@ func (b unknownBlock) BaseHash() uint64 {
 // Hash ...
 func (b unknownBlock) Hash() uint64 {
 	return math.MaxUint64
+}
+
+// EncodeNBT ...
+func (b unknownBlock) EncodeNBT() map[string]any {
+	return b.data
+}
+
+// DecodeNBT ...
+func (b unknownBlock) DecodeNBT(data map[string]any) any {
+	b.data = maps.Clone(data)
+	return b
 }
 
 // blockState holds a combination of a name and properties, together with a version.

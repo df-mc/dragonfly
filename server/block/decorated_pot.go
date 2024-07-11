@@ -65,7 +65,7 @@ func (p DecoratedPot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 
 // EncodeNBT ...
 func (p DecoratedPot) EncodeNBT() map[string]any {
-	var sherds []string
+	var sherds []any
 	for _, decoration := range p.Decorations {
 		if decoration == nil {
 			sherds = append(sherds, "minecraft:brick")
@@ -83,9 +83,9 @@ func (p DecoratedPot) EncodeNBT() map[string]any {
 // DecodeNBT ...
 func (p DecoratedPot) DecodeNBT(data map[string]any) any {
 	p.Decorations = [4]PotDecoration{}
-	if sherds := nbtconv.Slice[string](data, "sherds"); sherds != nil {
+	if sherds := nbtconv.Slice(data, "sherds"); sherds != nil {
 		for i, name := range sherds {
-			it, ok := world.ItemByName(name, 0)
+			it, ok := world.ItemByName(name.(string), 0)
 			if !ok {
 				panic(fmt.Errorf("unknown item %s", name))
 			}
