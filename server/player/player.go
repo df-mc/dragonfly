@@ -2642,14 +2642,14 @@ func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
 
 	ctx := event.C()
 	if frontText != sign.Front.Text {
-		if p.Handler().HandleSignEdit(ctx, true, sign.Front.Text, frontText); ctx.Cancelled() {
+		if p.Handler().HandleSignEdit(ctx, pos, true, sign.Front.Text, frontText); ctx.Cancelled() {
 			p.resendBlock(pos, w)
 			return nil
 		}
 		sign.Front.Text = frontText
 		sign.Front.Owner = p.XUID()
 	} else {
-		if p.Handler().HandleSignEdit(ctx, false, sign.Back.Text, backText); ctx.Cancelled() {
+		if p.Handler().HandleSignEdit(ctx, pos, false, sign.Back.Text, backText); ctx.Cancelled() {
 			p.resendBlock(pos, w)
 			return nil
 		}
