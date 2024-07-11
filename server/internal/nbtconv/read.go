@@ -242,7 +242,7 @@ func readArmourTrim(m map[string]any, s *item.Stack) {
 func readEnchantments(m map[string]any, s *item.Stack) {
 	enchantments, ok := m["ench"].([]map[string]any)
 	if !ok {
-		for _, e := range Slice[any](m, "ench") {
+		for _, e := range Slice(m, "ench") {
 			if v, ok := e.(map[string]any); ok {
 				enchantments = append(enchantments, v)
 			}
