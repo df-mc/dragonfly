@@ -89,7 +89,7 @@ func (s Skull) EncodeItem() (name string, meta int16) {
 // DecodeNBT ...
 func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
 	s.Type = SkullType{skull(nbtconv.Uint8(data, "SkullType"))}
-	s.Attach.o = cube.Orientation(nbtconv.Uint8(data, "Rot"))
+	s.Attach.o = cube.OrientationFromYaw(float64(nbtconv.Float32(data, "Rotation")))
 	if s.Attach.facing >= 0 {
 		s.Attach.hanging = true
 	}
@@ -98,7 +98,7 @@ func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
 
 // EncodeNBT ...
 func (s Skull) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{"id": "Skull", "SkullType": s.Type.Uint8(), "Rot": byte(s.Attach.o)}
+	return map[string]interface{}{"id": "Skull", "SkullType": s.Type.Uint8(), "Rotation": float32(s.Attach.o.Yaw())}
 }
 
 // EncodeBlock ...
