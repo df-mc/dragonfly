@@ -80,9 +80,9 @@ func Float64(m map[string]any, k string) float64 {
 	return v
 }
 
-// Slice reads a []T value from a map at key k.
-func Slice[T any](m map[string]any, k string) []T {
-	v, _ := m[k].([]T)
+// Slice reads a []any value from a map at key k.
+func Slice(m map[string]any, k string) []any {
+	v, _ := m[k].([]any)
 	return v
 }
 
@@ -242,7 +242,7 @@ func readArmourTrim(m map[string]any, s *item.Stack) {
 func readEnchantments(m map[string]any, s *item.Stack) {
 	enchantments, ok := m["ench"].([]map[string]any)
 	if !ok {
-		for _, e := range Slice[any](m, "ench") {
+		for _, e := range Slice(m, "ench") {
 			if v, ok := e.(map[string]any); ok {
 				enchantments = append(enchantments, v)
 			}

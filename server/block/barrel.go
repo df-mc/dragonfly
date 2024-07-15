@@ -145,7 +145,7 @@ func (b Barrel) DecodeNBT(data map[string]any) any {
 	b = NewBarrel()
 	b.Facing = facing
 	b.CustomName = nbtconv.String(data, "CustomName")
-	nbtconv.InvFromNBT(b.inventory, nbtconv.Slice[any](data, "Items"))
+	nbtconv.InvFromNBT(b.inventory, nbtconv.Slice(data, "Items"))
 	return b
 }
 
