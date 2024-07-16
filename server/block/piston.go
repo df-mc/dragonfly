@@ -127,7 +127,7 @@ func (p Piston) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (p Piston) DecodeNBT(m map[string]any) any {
-	if attached := nbtconv.Slice[any](m, "AttachedBlocks"); attached != nil {
+	if attached := nbtconv.Slice(m, "AttachedBlocks"); attached != nil {
 		p.AttachedBlocks = make([]cube.Pos, 0, len(attached)/3)
 		for i := 0; i < len(attached); i += 3 {
 			p.AttachedBlocks = append(p.AttachedBlocks, cube.Pos{
@@ -137,7 +137,7 @@ func (p Piston) DecodeNBT(m map[string]any) any {
 			})
 		}
 	}
-	if breakBlocks := nbtconv.Slice[any](m, "BreakBlocks"); breakBlocks != nil {
+	if breakBlocks := nbtconv.Slice(m, "BreakBlocks"); breakBlocks != nil {
 		p.BreakBlocks = make([]cube.Pos, 0, len(breakBlocks)/3)
 		for i := 0; i < len(breakBlocks); i += 3 {
 			p.BreakBlocks = append(p.BreakBlocks, cube.Pos{

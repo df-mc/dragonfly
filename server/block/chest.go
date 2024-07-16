@@ -2,6 +2,10 @@ package block
 
 import (
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -9,9 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Chest is a container block which may be used to store items. Chests may also be paired to create a bigger
@@ -203,7 +204,7 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 		c.pairX, c.pairZ = int(pairX.(int32)), int(pairZ.(int32))
 	}
 
-	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice[any](data, "Items"))
+	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
 	return c
 }
 

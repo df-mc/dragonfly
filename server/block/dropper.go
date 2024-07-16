@@ -220,7 +220,7 @@ func (d Dropper) DecodeNBT(data map[string]any) any {
 	d.Facing = facing
 	d.Powered = powered
 	d.CustomName = nbtconv.String(data, "CustomName")
-	nbtconv.InvFromNBT(d.inventory, nbtconv.Slice[any](data, "Items"))
+	nbtconv.InvFromNBT(d.inventory, nbtconv.Slice(data, "Items"))
 	return d
 }
 

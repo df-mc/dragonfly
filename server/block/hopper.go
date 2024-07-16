@@ -2,6 +2,9 @@ package block
 
 import (
 	"fmt"
+	"strings"
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -9,8 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"strings"
-	"sync"
 )
 
 // Hopper is a low-capacity storage block that can be used to collect item entities directly above it, as well as to
@@ -285,7 +286,7 @@ func (h Hopper) DecodeNBT(data map[string]any) any {
 	h.Powered = powered
 	h.CustomName = nbtconv.String(data, "CustomName")
 	h.TransferCooldown = int64(nbtconv.Int32(data, "TransferCooldown"))
-	nbtconv.InvFromNBT(h.inventory, nbtconv.Slice[any](data, "Items"))
+	nbtconv.InvFromNBT(h.inventory, nbtconv.Slice(data, "Items"))
 	return h
 }
 
