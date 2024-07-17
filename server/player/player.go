@@ -1602,7 +1602,13 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	if _, ok := w.Block(pos.Side(face)).(block.Fire); ok {
-		// TODO: Add a way to cancel fire extinguishing. This is currently not possible to handle.
+		ctx := event.C()
+		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
+			// Resend the block because on client side that was extinguished
+			p.resendBlocks(pos, w, face)
+			return
+		}
+
 		w.SetBlock(pos.Side(face), nil, nil)
 		w.PlaySound(pos.Vec3(), sound.FireExtinguish{})
 		return
