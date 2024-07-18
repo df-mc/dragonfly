@@ -57,6 +57,7 @@ type Handler interface {
 	HandleSkinChange(ctx *event.Context, skin *skin.Skin)
 	// HandleFireExtinguish handles the player extinguishing a fire at a specific position. ctx.Cancel() may
 	// be called to cancel the fire being extinguished.
+	// cube.Pos can be used to see where was the fire extinguished, may be used to cancel this on specific positions.
 	HandleFireExtinguish(ctx *event.Context, pos cube.Pos)
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
