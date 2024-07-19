@@ -847,6 +847,9 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	})
 	if v, ok := b.(world.NBTer); ok {
 		NBTData := v.EncodeNBT()
+		if NBTData == nil {
+			return
+		}
 		NBTData["x"], NBTData["y"], NBTData["z"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
 		s.writePacket(&packet.BlockActorData{
 			Position: blockPos,
