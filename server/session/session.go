@@ -82,6 +82,8 @@ type Session struct {
 	joinMessage, quitMessage string
 
 	closeBackground chan struct{}
+
+	bossBarChannelRuntimeIDs map[int]uint64
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -148,23 +150,24 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 
 	s := &Session{}
 	*s = Session{
-		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
-		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(54, s.handleInterfaceUpdate),
-		handlers:               map[uint32]packetHandler{},
-		entityRuntimeIDs:       map[world.Entity]uint64{},
-		entities:               map[uint64]world.Entity{},
-		hiddenEntities:         map[world.Entity]struct{}{},
-		blobs:                  map[uint64][]byte{},
-		chunkRadius:            int32(r),
-		maxChunkRadius:         int32(maxChunkRadius),
-		conn:                   conn,
-		log:                    log,
-		currentEntityRuntimeID: 1,
-		heldSlot:               atomic.NewUint32(0),
-		joinMessage:            joinMessage,
-		quitMessage:            quitMessage,
-		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
+		openChunkTransactions:    make([]map[uint64]struct{}, 0, 8),
+		closeBackground:          make(chan struct{}),
+		ui:                       inventory.New(54, s.handleInterfaceUpdate),
+		handlers:                 map[uint32]packetHandler{},
+		entityRuntimeIDs:         map[world.Entity]uint64{},
+		entities:                 map[uint64]world.Entity{},
+		hiddenEntities:           map[world.Entity]struct{}{},
+		blobs:                    map[uint64][]byte{},
+		chunkRadius:              int32(r),
+		maxChunkRadius:           int32(maxChunkRadius),
+		conn:                     conn,
+		log:                      log,
+		currentEntityRuntimeID:   1,
+		heldSlot:                 atomic.NewUint32(0),
+		joinMessage:              joinMessage,
+		quitMessage:              quitMessage,
+		openedWindow:             *atomic.NewValue(inventory.New(1, nil)),
+		bossBarChannelRuntimeIDs: map[int]uint64{},
 	}
 
 	s.registerHandlers()
@@ -526,6 +529,9 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 	for _, t := range w.EntityRegistry().Types() {
 		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
+	// TODO: "minecraft:slime" is used to send the boss bar. This should not be hardcoded.
+	// Remove this when slime is supported.
+	identifiers = append(identifiers, actorIdentifier{ID: "minecraft:slime"})
 	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {
 		panic("should never happen")

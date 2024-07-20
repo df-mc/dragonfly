@@ -116,10 +116,31 @@ func (s *Session) RemoveScoreboard() {
 
 // SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.
 // SendBossBar removes any boss bar that might be active before sending the new one.
-func (s *Session) SendBossBar(text string, colour uint8, healthPercentage float64) {
-	s.RemoveBossBar()
+func (s *Session) SendBossBar(channel int, text string, colour uint8, healthPercentage float64) {
+	s.RemoveBossBar(channel)
+	s.currentEntityRuntimeID += 1
+	runtimeID := s.currentEntityRuntimeID
+	s.bossBarChannelRuntimeIDs[channel] = runtimeID
+
+	m := protocol.EntityMetadata{}
+	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSilent)
+	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagNoAI)
+	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagFireImmune)
+	m[protocol.EntityDataKeyName] = ""
+	m[protocol.EntityDataKeyScale] = float32(0)
+	m[protocol.EntityDataKeyWidth] = float32(0)
+	m[protocol.EntityDataKeyHeight] = float32(0)
+	m[protocol.EntityDataKeyLeashHolder] = int64(-1)
+
+	s.writePacket(&packet.AddActor{
+		EntityUniqueID:  int64(runtimeID),
+		EntityRuntimeID: runtimeID,
+		EntityType:      "minecraft:slime", // TODO: Do not hardcode
+		EntityMetadata:  m,
+	})
 	s.writePacket(&packet.BossEvent{
-		BossEntityUniqueID: selfEntityRuntimeID,
+		BossEntityUniqueID: int64(runtimeID),
 		EventType:          packet.BossEventShow,
 		BossBarTitle:       text,
 		HealthPercentage:   float32(healthPercentage),
@@ -128,11 +149,25 @@ func (s *Session) SendBossBar(text string, colour uint8, healthPercentage float6
 }
 
 // RemoveBossBar removes any boss bar currently active on the player's screen.
-func (s *Session) RemoveBossBar() {
+func (s *Session) RemoveBossBar(channel int) {
+	runtimeID, ok := s.bossBarChannelRuntimeIDs[channel]
+	if !ok {
+		return
+	}
 	s.writePacket(&packet.BossEvent{
-		BossEntityUniqueID: selfEntityRuntimeID,
+		BossEntityUniqueID: int64(runtimeID),
 		EventType:          packet.BossEventHide,
 	})
+	s.writePacket(&packet.RemoveActor{EntityUniqueID: int64(runtimeID)})
+}
+
+// BossBarChannelIDs returns a list of all boss bar channel IDs that are currently active on the player's screen.
+func (s *Session) BossBarChannelIDs() []int {
+	var ids []int
+	for id := range s.bossBarChannelRuntimeIDs {
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 const tickLength = time.Second / 20
