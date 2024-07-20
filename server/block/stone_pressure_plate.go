@@ -87,8 +87,7 @@ func (p StonePressurePlate) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.
 
 // BreakInfo ...
 func (p StonePressurePlate) BreakInfo() BreakInfo {
-	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, nil)
-
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(p))
 }
 
 // EncodeItem ...
