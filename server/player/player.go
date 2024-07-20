@@ -341,15 +341,15 @@ func (p *Player) RemoveScoreboard() {
 	p.session().RemoveScoreboard()
 }
 
-// SendBossBar sends a boss bar to the player, so that it will be shown indefinitely at the top of the
-// player's screen.
-// The boss bar may be removed by calling Player.RemoveBossBar().
+// SendBossBar sends a boss bar to the player on the specified channel, so that it will be shown indefinitely at the top of the
+// player's screen. The boss bar can support multiple channels.
+// The boss bar may be removed by calling Player.RemoveBossBar(channel).
 func (p *Player) SendBossBar(channel int, bar bossbar.BossBar) {
 	p.session().SendBossBar(channel, bar.Text(), bar.Colour().Uint8(), bar.HealthPercentage())
 }
 
-// RemoveBossBar removes any boss bar currently active on the player's screen. If no boss bar is currently
-// present, nothing happens.
+// RemoveBossBar removes the boss bar currently active on the specified channel on the player's screen.
+// If no boss bar is currently active on the given channel, nothing happens.
 func (p *Player) RemoveBossBar(channel int) {
 	p.session().RemoveBossBar(channel)
 }

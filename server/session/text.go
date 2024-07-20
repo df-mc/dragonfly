@@ -114,8 +114,8 @@ func (s *Session) RemoveScoreboard() {
 	s.currentLines.Store([]string{})
 }
 
-// SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.
-// SendBossBar removes any boss bar that might be active before sending the new one.
+// SendBossBar sends a boss bar to the player on the specified channel with the provided text and health percentage.
+// If a boss bar is already active on the given channel, it is removed before the new one is sent.
 func (s *Session) SendBossBar(channel int, text string, colour uint8, healthPercentage float64) {
 	s.RemoveBossBar(channel)
 	s.currentEntityRuntimeID += 1
@@ -136,7 +136,7 @@ func (s *Session) SendBossBar(channel int, text string, colour uint8, healthPerc
 	s.writePacket(&packet.AddActor{
 		EntityUniqueID:  int64(runtimeID),
 		EntityRuntimeID: runtimeID,
-		EntityType:      "minecraft:slime", // TODO: Do not hardcode
+		EntityType:      "minecraft:slime", // TODO: o not hardcode
 		EntityMetadata:  m,
 	})
 	s.writePacket(&packet.BossEvent{
@@ -148,7 +148,7 @@ func (s *Session) SendBossBar(channel int, text string, colour uint8, healthPerc
 	})
 }
 
-// RemoveBossBar removes any boss bar currently active on the player's screen.
+// RemoveBossBar removes the boss bar currently active on the specified channel on the player's screen.
 func (s *Session) RemoveBossBar(channel int) {
 	runtimeID, ok := s.bossBarChannelRuntimeIDs[channel]
 	if !ok {
