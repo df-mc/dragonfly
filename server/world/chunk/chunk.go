@@ -1,9 +1,8 @@
 package chunk
 
 import (
-	"slices"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"slices"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
@@ -194,9 +193,6 @@ func (chunk *Chunk) Compact() {
 
 // SubChunk finds the correct SubChunk in the Chunk by a Y value.
 func (chunk *Chunk) SubChunk(y int16) *SubChunk {
-	if chunk.SubIndex(y) >= int16(len(chunk.sub)) {
-		y = int16(chunk.Range()[1])
-	}
 	return chunk.sub[chunk.SubIndex(y)]
 }
 

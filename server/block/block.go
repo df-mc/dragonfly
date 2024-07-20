@@ -1,9 +1,6 @@
 package block
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/block/model"
@@ -11,6 +8,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
+	"time"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -82,10 +81,18 @@ type Frictional interface {
 	Friction() float64
 }
 
-// unknownFace is a face that is used for certain block items. This should not be exposed in the API.
-var unknownFace = cube.Face(len(cube.Faces()))
+// Permutable represents a custom block that can have more permutations than its default state.
+type Permutable interface {
+	// States returns a map of all the different properties for the block. The key is the property name, and the value
+	// is a slice of all the possible values for that property. It is important that a block is registered in dragonfly
+	// for each of the possible combinations of properties and values.
+	States() map[string][]any
+	// Permutations returns a slice of all the different permutations for the block. Multiple permutations can be
+	// applied at once if their conditions are met.
+	Permutations() []customblock.Permutation
+}
 
-func calculateAnySidedFace(user item.User, placePos cube.Pos, swapHorizontal bool) cube.Face {
+func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 	userPos := user.Position()
 	pos := cube.PosFromVec3(userPos)
 	if abs(pos[0]-placePos[0]) < 2 && abs(pos[2]-placePos[2]) < 2 {
@@ -100,22 +107,7 @@ func calculateAnySidedFace(user item.User, placePos cube.Pos, swapHorizontal boo
 			return cube.FaceDown
 		}
 	}
-	face := user.Rotation().Direction().Face()
-	if swapHorizontal {
-		face = face.Opposite()
-	}
-	return face
-}
-
-// Permutable represents a custom block that can have more permutations than its default state.
-type Permutable interface {
-	// States returns a map of all the different properties for the block. The key is the property name, and the value
-	// is a slice of all the possible values for that property. It is important that a block is registered in dragonfly
-	// for each of the possible combinations of properties and values.
-	States() map[string][]any
-	// Permutations returns a slice of all the different permutations for the block. Multiple permutations can be
-	// applied at once if their conditions are met.
-	Permutations() []customblock.Permutation
+	return user.Rotation().Direction().Opposite().Face()
 }
 
 func abs(x int) int {

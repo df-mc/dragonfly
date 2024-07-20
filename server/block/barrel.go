@@ -2,10 +2,6 @@ package block
 
 import (
 	"fmt"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -13,6 +9,9 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"strings"
+	"sync"
+	"time"
 )
 
 // Barrel is a fisherman's job site block, used to store items. It functions like a single chest, although
@@ -117,7 +116,7 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	}
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
-	b.Facing = calculateAnySidedFace(user, pos, true)
+	b.Facing = calculateFace(user, pos)
 
 	place(w, pos, b, user, ctx)
 	return placed(ctx)

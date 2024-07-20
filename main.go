@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 func main() {

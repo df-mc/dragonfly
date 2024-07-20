@@ -1797,7 +1797,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		return
 	}
 	held, _ := p.HeldItems()
-	drops := p.drops(held, b, pos)
+	drops := p.drops(held, b)
 
 	xp := 0
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
@@ -1841,13 +1841,12 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 }
 
 // drops returns the drops that the player can get from the block passed using the item held.
-func (p *Player) drops(held item.Stack, b world.Block, pos cube.Pos) []item.Stack {
+func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 	t, ok := held.Item().(item.Tool)
 	if !ok {
 		t = item.ToolNone{}
 	}
 	var drops []item.Stack
-
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
 			drops = breakable.BreakInfo().Drops(t, held.Enchantments())

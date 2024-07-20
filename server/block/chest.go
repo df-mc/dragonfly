@@ -2,10 +2,6 @@ package block
 
 import (
 	"fmt"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -13,6 +9,9 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"strings"
+	"sync"
+	"time"
 )
 
 // Chest is a container block which may be used to store items. Chests may also be paired to create a bigger
@@ -300,6 +299,7 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 			c.pairX, c.pairZ = int(pairX), int(pairZ)
 		}
 	}
+  
 	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
 	return c
 }
@@ -325,71 +325,6 @@ func (c Chest) EncodeNBT() map[string]any {
 		m["pairz"] = int32(c.pairZ)
 	}
 	return m
-}
-
-// Pair pairs this chest with the given chest position.
-func (c Chest) Pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok bool) {
-	pair, ok = w.Block(pairPos).(Chest)
-	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
-		return c, pair, false
-	}
-	m := new(sync.RWMutex)
-	v := make(map[ContainerViewer]struct{})
-	left, right := c.inventory, pair.inventory
-	if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
-		left, right = right, left
-	}
-	double := left.Merge(right, func(slot int, _, item item.Stack) {
-		if slot < 27 {
-			_ = left.SetItem(slot, item)
-		} else {
-			_ = right.SetItem(slot-27, item)
-		}
-		m.RLock()
-		defer m.RUnlock()
-		for viewer := range v {
-			viewer.ViewSlotChange(slot, item)
-		}
-	})
-
-	c.pairX, c.pairZ, c.paired = pairPos[0], pairPos[2], true
-	pair.pairX, pair.pairZ, pair.paired = pos[0], pos[2], true
-	c.viewerMu, pair.viewerMu = m, m
-	c.viewers, pair.viewers = v, v
-	c.pairInv, pair.pairInv = double, double
-	return c, pair, true
-}
-
-// unpair ...
-func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
-	if !c.paired {
-		return c, Chest{}, false
-	}
-
-	pair, ok = w.Block(c.PairPos(pos)).(Chest)
-	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
-		return c, pair, false
-	}
-
-	if len(c.viewers) != 0 {
-		c.close(w, pos)
-	}
-
-	c.paired, pair.paired = false, false
-	c.viewerMu, pair.viewerMu = new(sync.RWMutex), new(sync.RWMutex)
-	c.viewers, pair.viewers = make(map[ContainerViewer]struct{}, 1), make(map[ContainerViewer]struct{}, 1)
-	c.pairInv, pair.pairInv = nil, nil
-	return c, pair, true
-}
-
-// PairPos ...
-func (c Chest) PairPos(pos cube.Pos) cube.Pos {
-	return cube.Pos{c.pairX, pos[1], c.pairZ}
-}
-
-// Paired returns whether
-func (c Chest) Paired() bool {
-	return c.paired
 }
 
 // EncodeItem ...

@@ -1,12 +1,11 @@
 package particle
 
 import (
-	"image/color"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"image/color"
 )
 
 // Flame is a particle shown around torches. It can have any colour specified with the Colour field.
@@ -81,9 +80,6 @@ type LavaDrip struct{ particle }
 
 // Lava is a particle that shows up randomly above lava.
 type Lava struct{ particle }
-
-// Dispense is a particle that shows up when a dispenser or dropper dispenses an item.
-type Dispense struct{ particle }
 
 // particle serves as a base for all particles in this package.
 type particle struct{}
