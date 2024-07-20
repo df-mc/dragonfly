@@ -694,6 +694,7 @@ func (w *World) AddEntity(e Entity) {
 	c := w.chunk(chunkPos)
 	c.Entities = append(c.Entities, e)
 	viewers := slices.Clone(c.viewers)
+	c.modified = true
 	c.Unlock()
 
 	for _, v := range viewers {
@@ -742,6 +743,7 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	c.Entities = sliceutil.DeleteVal(c.Entities, e)
 	viewers := slices.Clone(c.viewers)
+	c.modified = true
 	c.Unlock()
 
 	w.entityMu.Lock()
@@ -1313,7 +1315,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 // the provider.
 func (w *World) saveChunk(pos ChunkPos, c *Column) {
 	c.Lock()
-	if !w.conf.ReadOnly && (len(c.BlockEntities) > 0 || len(c.Entities) > 0 || c.modified) {
+	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
 		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
 			w.conf.Log.Errorf("save chunk: %v", err)

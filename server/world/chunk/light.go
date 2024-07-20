@@ -31,14 +31,17 @@ func anyLightBlocks(sub *SubChunk) bool {
 // chunk. In addition, any skylight above those nodes will be set to 15.
 func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 	a.iterHeightmap(func(x, z int, height, highestNeighbour, highestY, lowestY int) {
-		// If we hit a block like water or leaves (something that diffuses but does not block light), we
-		// need a node above this block regardless of the neighbours.
 		pos := cube.Pos{x, height, z}
-		a.setLight(pos, SkyLight, 15)
+		if height <= a.r.Max() {
+			// Only set light if we're not at the top of the world.
+			a.setLight(pos, SkyLight, 15)
 
-		if pos[1] > lowestY {
-			if level := a.highest(pos.Sub(cube.Pos{0, 1}), FilteringBlocks); level != 15 && level != 0 {
-				queue.PushBack(node(pos, 15, SkyLight))
+			if pos[1] > lowestY {
+				if level := a.highest(pos.Sub(cube.Pos{0, 1}), FilteringBlocks); level != 15 && level != 0 {
+					// If we hit a block like water or leaves (something that diffuses but does not block light), we
+					// need a node above this block regardless of the neighbours.
+					queue.PushBack(node(pos, 15, SkyLight))
+				}
 			}
 		}
 		for y := pos[1]; y < highestY; y++ {
