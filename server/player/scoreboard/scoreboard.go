@@ -42,18 +42,18 @@ func (board *Scoreboard) WriteString(s string) (n int, err error) {
 	board.lines = append(board.lines, lines...)
 
 	// Scoreboards can have up to 15 lines. (16 including the title.)
-	if len(board.lines) >= 15 {
-		return len(lines), fmt.Errorf("write scoreboard: maximum of 15 lines of text exceeded")
-	}
+	// if len(board.lines) >= 15 {
+	// 	return len(lines), fmt.Errorf("write scoreboard: maximum of 15 lines of text exceeded")
+	// }
 	return len(lines), nil
 }
 
 // Set changes a specific line in the scoreboard and adds empty lines until this index is reached. Set panics if the
 // index passed is negative or 15+.
 func (board *Scoreboard) Set(index int, s string) {
-	if index < 0 || index >= 15 {
-		panic(fmt.Sprintf("index out of range %v", index))
-	}
+	// if index < 0 || index >= 15 {
+	// 	panic(fmt.Sprintf("index out of range %v", index))
+	// }
 	if diff := index - (len(board.lines) - 1); diff > 0 {
 		board.lines = append(board.lines, make([]string, diff)...)
 	}
@@ -63,9 +63,9 @@ func (board *Scoreboard) Set(index int, s string) {
 
 // Remove removes a specific line from the scoreboard. Remove panics if the index passed is negative or 15+.
 func (board *Scoreboard) Remove(index int) {
-	if index < 0 || index >= 15 {
-		panic(fmt.Sprintf("index out of range %v", index))
-	}
+	// if index < 0 || index >= 15 {
+	// 	panic(fmt.Sprintf("index out of range %v", index))
+	// }
 	board.lines = append(board.lines[:index], board.lines[index+1:]...)
 }
 

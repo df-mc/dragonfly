@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+
 	"github.com/cespare/xxhash/v2"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -84,6 +85,10 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		subMapType, subMap = protocol.HeightMapDataTooHigh, nil
 	} else if lower {
 		subMapType, subMap = protocol.HeightMapDataTooLow, nil
+	}
+
+	if ind > int16(len(col.Chunk.Sub())) {
+		ind = int16(len(col.Chunk.Sub()) - 1)
 	}
 
 	sub := col.Chunk.Sub()[ind]

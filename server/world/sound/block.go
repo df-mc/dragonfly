@@ -188,6 +188,24 @@ type SignWaxed struct{ sound }
 // WaxedSignFailedInteraction is a sound played when a player tries to interact with a waxed sign.
 type WaxedSignFailedInteraction struct{ sound }
 
+// PowerOn is a sound played when a redstone component is powered on.
+type PowerOn struct{ sound }
+
+// PowerOff is a sound played when a redstone component is powered off.
+type PowerOff struct{ sound }
+
+// PistonExtend is a sound played when a piston extends.
+type PistonExtend struct{ sound }
+
+// PistonRetract is a sound played when a piston retracts.
+type PistonRetract struct{ sound }
+
+// DispenseFail is a sound played when a dispenser fails to dispense an item.
+type DispenseFail struct{ sound }
+
+// Dispense is a sound played when a dispenser dispenses an item.
+type Dispense struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 
