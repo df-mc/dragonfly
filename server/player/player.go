@@ -818,6 +818,12 @@ func (p *Player) Exhaust(points float64) {
 
 		ctx := event.C()
 		if p.Handler().HandleFoodLoss(ctx, before, &after); ctx.Cancelled() {
+			// Reset the exhaustion level if the event was cancelled.
+			// Because if we cancel this on some moments, and after a time we don't cancel it,
+			// the first food level going to decrease a bit faster than expected.
+			// An example is if we cancelled that on a world, and we change of world, our food decrease very fast on the next tick
+			p.hunger.ResetExhaustion()
+
 			return
 		}
 		p.hunger.SetFood(after)

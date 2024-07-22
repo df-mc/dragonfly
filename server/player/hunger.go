@@ -65,6 +65,14 @@ func (m *hungerManager) Reset() {
 	m.mu.Unlock()
 }
 
+// ResetExhaustion resets the exhaustion level of the player to 0.
+// Prevents the player food level decrease after non cancelling the food loss
+func (m *hungerManager) ResetExhaustion() {
+	m.exhaustionLevel = 0
+	m.saturationLevel = 0
+	m.foodTick = 0
+}
+
 // exhaust exhausts the player by the amount of points passed. If the total exhaustion level exceeds 4, a
 // saturation point, or food point, if saturation is 0, will be subtracted.
 func (m *hungerManager) exhaust(points float64) {
