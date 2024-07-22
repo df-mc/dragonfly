@@ -822,7 +822,7 @@ func (p *Player) Exhaust(points float64) {
 			// Because if we cancel this on some moments, and after a time we don't cancel it,
 			// the first food level going to decrease a bit faster than expected.
 			// An example is if we cancelled that on a world, and we change of world, our food decrease very fast on the next tick
-			p.hunger.ResetExhaustion()
+			p.hunger.resetExhaustion()
 
 			return
 		}
