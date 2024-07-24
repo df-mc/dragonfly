@@ -3,12 +3,16 @@ package world
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Handler handles events that are called by a world. Implementations of Handler may be used to listen to
 // specific events such as when an entity is added to the world.
 type Handler interface {
+	// HandleLeavesDecay handles the decaying of a Leaves block at a position. Leaves decaying happens when
+	// there is no wood block neighbouring it. The position of the Leaves block is passed to the handler.
+	HandleLeavesDecay(pos cube.Pos, drops *[]item.Stack)
 	// HandleLiquidFlow handles the flowing of a liquid from one block position from into another block
 	// position into. The liquid that will replace the block is also passed. This replaced block might
 	// also be a Liquid. The Liquid's depth and falling state can be checked to see if the resulting
@@ -53,6 +57,7 @@ var _ Handler = (*NopHandler)(nil)
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
+func (NopHandler) HandleLeavesDecay(cube.Pos, *[]item.Stack)                         {}
 func (NopHandler) HandleLiquidFlow(*event.Context, cube.Pos, cube.Pos, Liquid, Block) {}
 func (NopHandler) HandleLiquidDecay(*event.Context, cube.Pos, Liquid, Liquid)         {}
 func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Block)   {}
