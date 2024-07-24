@@ -32,7 +32,7 @@ func (m *hungerManager) Food() int {
 func (m *hungerManager) SetFood(level int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	if level < 0 {
 		level = 0
 	} else if level > 20 {
@@ -60,7 +60,7 @@ func (m *hungerManager) AddFood(points int) {
 func (m *hungerManager) Reset() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	m.foodLevel = 20
 	m.saturationLevel = 5
 	m.exhaustionLevel = 0
