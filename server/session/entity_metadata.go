@@ -141,7 +141,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 			m[protocol.EntityDataKeyCustomDisplay] = tip + 1
 		}
 	}
-	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
+	if eff, ok := e.(effectBearer); ok {
 		var packedEffects int64
 
 		for i, ef := range eff.Effects() {
