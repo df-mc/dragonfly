@@ -142,21 +142,18 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		}
 	}
 	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
-		visibleEffects := make([]effect.Effect, 0, len(eff.Effects()))
-		for _, ef := range eff.Effects() {
+		var packedEffects int64
+
+		for i, ef := range eff.Effects() {
 			if !ef.ParticlesHidden() {
-				visibleEffects = append(visibleEffects, ef)
+				id, found := effect.ID(ef.Type())
+				if !found {
+					continue
+				}
+				packedEffects = (packedEffects << (i * 7)) | int64(id<<1)
 			}
 		}
-		if len(visibleEffects) > 0 {
-			colour, am := effect.ResultingColour(visibleEffects)
-			m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
-			if am {
-				m[protocol.EntityDataKeyEffectAmbience] = byte(1)
-			} else {
-				m[protocol.EntityDataKeyEffectAmbience] = byte(0)
-			}
-		}
+		m[131] = packedEffects // TODO: This should be protocol.EntityDataKeyVisibleMobEffects.
 	}
 	if v, ok := e.(variable); ok {
 		m[protocol.EntityDataKeyVariant] = v.Variant()
