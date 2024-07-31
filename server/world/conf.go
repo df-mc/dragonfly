@@ -1,12 +1,11 @@
 package world
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sirupsen/logrus"
+	"math/rand"
+	"time"
 )
 
 // Config may be used to create a new World. It holds a variety of fields that influence the World.
@@ -79,7 +78,7 @@ func (conf Config) New() *World {
 		closing:          make(chan struct{}),
 		handler:          *atomic.NewValue[Handler](NopHandler{}),
 		r:                rand.New(conf.RandSource),
-		advance:          s.WorldCounter.Inc() == 1,
+		advance:          s.ref.Inc() == 1,
 		conf:             conf,
 		ra:               conf.Dim.Range(),
 		set:              s,

@@ -1,13 +1,12 @@
 package world
 
 import (
-	"math/rand"
-	"slices"
-	"time"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"golang.org/x/exp/maps"
+	"math/rand"
+	"slices"
+	"time"
 )
 
 // ticker implements World ticking methods. World embeds this struct, so any exported methods on ticker are exported
@@ -42,10 +41,8 @@ func (t ticker) tick() {
 		t.w.set.Unlock()
 		return
 	}
-
-	t.w.set.CurrentTick++
-
 	if t.w.advance {
+		t.w.set.CurrentTick++
 		if t.w.set.TimeCycle {
 			t.w.set.Time++
 		}

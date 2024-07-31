@@ -5,10 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"time"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -17,6 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"golang.org/x/exp/maps"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 // DB implements a world provider for the Minecraft world format, which
@@ -46,7 +45,6 @@ func (db *DB) Settings() *world.Settings {
 // SaveSettings saves the world.Settings passed to the level.dat.
 func (db *DB) SaveSettings(s *world.Settings) {
 	db.ldat.PutSettings(s)
-	db.set = s
 }
 
 // playerData holds the fields that indicate where player data is stored for a player with a specific UUID.
@@ -412,10 +410,6 @@ func (db *DB) NewColumnIterator(r *IteratorRange) *ColumnIterator {
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.
 func (db *DB) Close() error {
 	db.ldat.LastPlayed = time.Now().Unix()
-
-	if db.set.WorldCounter.Load() != 0 {
-		return nil
-	}
 
 	var ldat leveldat.LevelDat
 	if err := ldat.Marshal(*db.ldat); err != nil {
