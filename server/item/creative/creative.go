@@ -80,7 +80,7 @@ func init() {
 		st := item.NewStack(it, 1)
 		if len(data.NBT) > 0 {
 			var invalid bool
-			for _, e := range nbtconv.Slice[any](data.NBT, "ench") {
+			for _, e := range nbtconv.Slice(data.NBT, "ench") {
 				if v, ok := e.(map[string]any); ok {
 					t, ok := item.EnchantmentByID(int(nbtconv.Int16(v, "id")))
 					if !ok {

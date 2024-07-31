@@ -37,7 +37,8 @@ type Closer interface {
 }
 
 // Submitter is an entity that is able to submit a form sent to it. It is able to fill out fields in the form
-// which will then be present when handled.
+// which will then be present when handled. The Submitter is also able to close the form.
 type Submitter interface {
 	SendForm(form Form)
+	CloseForm()
 }
