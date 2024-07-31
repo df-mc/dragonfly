@@ -1,13 +1,12 @@
 package entity
 
 import (
-	"math"
-	"time"
-
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
+	"time"
 )
 
 // ItemBehaviourConfig holds optional parameters for an ItemBehaviour.
@@ -41,11 +40,10 @@ func (conf ItemBehaviourConfig) New(i item.Stack) *ItemBehaviour {
 
 	b := &ItemBehaviour{conf: conf, i: i, pickupDelay: conf.PickupDelay}
 	b.passive = PassiveBehaviourConfig{
-		Gravity:            conf.Gravity,
-		Drag:               conf.Drag,
-		UnderwaterMovement: 0.02,
-		ExistenceDuration:  conf.ExistenceDuration,
-		Tick:               b.tick,
+		Gravity:           conf.Gravity,
+		Drag:              conf.Drag,
+		ExistenceDuration: conf.ExistenceDuration,
+		Tick:              b.tick,
 	}.New()
 	return b
 }
