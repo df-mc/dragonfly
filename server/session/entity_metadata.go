@@ -153,7 +153,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 				packedEffects = (packedEffects << (i * 7)) | int64(id<<1)
 			}
 		}
-		m[131] = packedEffects // TODO: This should be protocol.EntityDataKeyVisibleMobEffects.
+		m[protocol.EntityDataKeyVisibleMobEffects] = packedEffects
 	}
 	if v, ok := e.(variable); ok {
 		m[protocol.EntityDataKeyVariant] = v.Variant()
