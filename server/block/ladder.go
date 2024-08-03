@@ -17,12 +17,12 @@ type Ladder struct {
 	sourceWaterDisplacer
 
 	// Facing is the side of the block the ladder is currently attached to.
-	Facing cube.Direction
+	Facing cube.Face
 }
 
 // NeighbourUpdateTick ...
 func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if _, ok := w.Block(pos.Side(l.Facing.Opposite().Face())).(LightDiffuser); ok {
+	if _, ok := w.Block(pos.Side(l.Facing.Opposite())).(LightDiffuser); ok {
 		w.SetBlock(pos, nil, nil)
 		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
 		dropItem(w, item.NewStack(l, 1), pos.Vec3Centre())
@@ -51,7 +51,7 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 			return false
 		}
 	}
-	l.Facing = face.Direction()
+	l.Facing = face
 
 	place(w, pos, l, user, ctx)
 	return placed(ctx)
@@ -86,17 +86,17 @@ func (l Ladder) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (l Ladder) EncodeBlock() (string, map[string]any) {
-	return "minecraft:ladder", map[string]any{"facing_direction": int32(l.Facing + 2)}
+	return "minecraft:ladder", map[string]any{"facing_direction": int32(l.Facing)}
 }
 
 // Model ...
 func (l Ladder) Model() world.BlockModel {
-	return model.Ladder{Facing: l.Facing}
+	return model.Ladder{Facing: cube.Direction(l.Facing)}
 }
 
 // allLadders ...
 func allLadders() (b []world.Block) {
-	for i := cube.Direction(0); i <= 3; i++ {
+	for i := cube.Face(0); i <= 5; i++ {
 		b = append(b, Ladder{Facing: i})
 	}
 	return
