@@ -16,7 +16,7 @@ type Ladder struct {
 	transparent
 	sourceWaterDisplacer
 
-	// Facing is the side of the block the ladder is currently attached to.
+	// Facing is the side of the block the ladder is currently attached to. It shouldn't be either FaceDown or FaceUp
 	Facing cube.Face
 }
 
@@ -96,8 +96,8 @@ func (l Ladder) Model() world.BlockModel {
 
 // allLadders ...
 func allLadders() (b []world.Block) {
-	for i := cube.Face(0); i <= 5; i++ {
-		b = append(b, Ladder{Facing: i})
+	for _, f := range cube.Faces() {
+		b = append(b, Ladder{Facing: f})
 	}
 	return
 }
