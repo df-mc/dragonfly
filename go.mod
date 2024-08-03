@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rogpeppe/go-internal v1.11.0
-	github.com/sandertv/gophertunnel v1.39.0
+	github.com/sandertv/gophertunnel v1.39.3
 	github.com/segmentio/fasthash v1.0.3
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771
