@@ -150,7 +150,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 				if !found {
 					continue
 				}
-				packedEffects = (packedEffects << 7) | int64(id << 1)
+				packedEffects = (packedEffects << 7) | int64(id<<1)
 				if ef.Ambient() {
 					packedEffects |= 1
 				}
