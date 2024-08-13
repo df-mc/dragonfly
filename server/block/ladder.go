@@ -16,7 +16,8 @@ type Ladder struct {
 	transparent
 	sourceWaterDisplacer
 
-	// Facing is the side of the block the ladder is currently attached to. It shouldn't be either FaceDown or FaceUp
+	// Facing is the side of the block the ladder is currently attached to. cube.FaceDown and cube.FaceUp
+	// do not do anything in game but they are still valid states.
 	Facing cube.Face
 }
 
@@ -91,7 +92,7 @@ func (l Ladder) EncodeBlock() (string, map[string]any) {
 
 // Model ...
 func (l Ladder) Model() world.BlockModel {
-	return model.Ladder{Facing: cube.Direction(l.Facing)}
+	return model.Ladder{Facing: l.Facing}
 }
 
 // allLadders ...
