@@ -33,10 +33,15 @@ func (s Sandstone) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (s Sandstone) EncodeBlock() (string, map[string]any) {
-	if s.Red {
-		return "minecraft:red_sandstone", map[string]any{"sand_stone_type": s.Type.String()}
+	var prefix string
+	if s.Type != NormalSandstone() {
+		prefix = s.Type.String() + "_"
 	}
-	return "minecraft:sandstone", map[string]any{"sand_stone_type": s.Type.String()}
+	suffix := "sandstone"
+	if s.Red {
+		suffix = "red_sandstone"
+	}
+	return "minecraft:" + prefix + suffix, nil
 }
 
 // SmeltInfo ...
