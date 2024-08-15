@@ -10,7 +10,6 @@ import (
 	"log"
 	"math/bits"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ func main() {
 		log.Fatalln("Must pass one package to produce block hashes for.")
 	}
 	cfg := &packages.Config{
-		Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedFiles,
+		Mode: packages.NeedName | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedFiles,
 	}
 	pkgs, err := packages.Load(cfg, flag.Args()[0])
 	if err != nil {
@@ -89,7 +88,7 @@ func (b *hashBuilder) sortNames() {
 
 // writePackage writes the package at the top of the file.
 func (b *hashBuilder) writePackage(w io.Writer) {
-	if _, err := fmt.Fprintf(w, packageFormat, filepath.Base(b.pkg.ID)); err != nil {
+	if _, err := fmt.Fprintf(w, packageFormat, b.pkg.Name); err != nil {
 		log.Fatalln(err)
 	}
 }
