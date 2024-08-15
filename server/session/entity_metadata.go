@@ -144,13 +144,16 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if eff, ok := e.(effectBearer); ok {
 		var packedEffects int64
 
-		for i, ef := range eff.Effects() {
+		for _, ef := range eff.Effects() {
 			if !ef.ParticlesHidden() {
 				id, found := effect.ID(ef.Type())
 				if !found {
 					continue
 				}
-				packedEffects = (packedEffects << (i * 7)) | int64(id<<1)
+				packedEffects = (packedEffects << 7) | int64(id<<1)
+				if ef.Ambient() {
+					packedEffects |= 1
+				}
 			}
 		}
 		m[protocol.EntityDataKeyVisibleMobEffects] = packedEffects
