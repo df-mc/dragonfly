@@ -299,7 +299,7 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 			c.pairX, c.pairZ = int(pairX), int(pairZ)
 		}
 	}
-  
+
 	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
 	return c
 }
