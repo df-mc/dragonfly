@@ -35,15 +35,15 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: protocol.ContainerAnvilInput,
-		Slot:        anvilInputSlot,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilInput},
+		Slot:      anvilInputSlot,
 	}, s)
 	if input.Empty() {
 		return fmt.Errorf("no item in input input slot")
 	}
 	material, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: protocol.ContainerAnvilMaterial,
-		Slot:        anvilMaterialSlot,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
+		Slot:      anvilMaterialSlot,
 	}, s)
 	result := input
 
@@ -150,18 +150,18 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: protocol.ContainerAnvilInput,
-		Slot:        anvilInputSlot,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilInput},
+		Slot:      anvilInputSlot,
 	}, item.Stack{}, s)
 	if repairCount > 0 {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID: protocol.ContainerAnvilMaterial,
-			Slot:        anvilMaterialSlot,
+			Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
+			Slot:      anvilMaterialSlot,
 		}, material.Grow(-repairCount), s)
 	} else {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID: protocol.ContainerAnvilMaterial,
-			Slot:        anvilMaterialSlot,
+			Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
+			Slot:      anvilMaterialSlot,
 		}, item.Stack{}, s)
 	}
 	return h.createResults(s, result)

@@ -46,17 +46,17 @@ func (d Dirt) Shovel() (world.Block, bool) {
 // EncodeItem ...
 func (d Dirt) EncodeItem() (name string, meta int16) {
 	if d.Coarse {
-		meta = 1
+		return "minecraft:coarse_dirt", 0
 	}
-	return "minecraft:dirt", meta
+	return "minecraft:dirt", 0
 }
 
 // EncodeBlock ...
 func (d Dirt) EncodeBlock() (string, map[string]any) {
 	if d.Coarse {
-		return "minecraft:dirt", map[string]any{"dirt_type": "coarse"}
+		return "minecraft:coarse_dirt", nil
 	}
-	return "minecraft:dirt", map[string]any{"dirt_type": "normal"}
+	return "minecraft:dirt", nil
 }
 
 // supportsVegetation checks if the vegetation can exist on the block.

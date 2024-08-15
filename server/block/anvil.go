@@ -81,13 +81,12 @@ func (Anvil) Landed(w *world.World, pos cube.Pos) {
 
 // EncodeItem ...
 func (a Anvil) EncodeItem() (name string, meta int16) {
-	return "minecraft:anvil", int16(a.Type.Uint8() * 4)
+	return "minecraft:" + a.Type.String(), 0
 }
 
 // EncodeBlock ...
 func (a Anvil) EncodeBlock() (string, map[string]any) {
-	return "minecraft:anvil", map[string]any{
-		"damage":                       a.Type.String(),
+	return "minecraft:" + a.Type.String(), map[string]any{
 		"minecraft:cardinal_direction": a.Facing.String(),
 	}
 }

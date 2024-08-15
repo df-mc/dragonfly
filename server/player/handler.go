@@ -55,6 +55,10 @@ type Handler interface {
 	// HandleSkinChange handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
 	// change.
 	HandleSkinChange(ctx *event.Context, skin *skin.Skin)
+	// HandleFireExtinguish handles the player extinguishing a fire at a specific position. ctx.Cancel() may
+	// be called to cancel the fire being extinguished.
+	// cube.Pos can be used to see where was the fire extinguished, may be used to cancel this on specific positions.
+	HandleFireExtinguish(ctx *event.Context, pos cube.Pos)
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos cube.Pos)
@@ -152,6 +156,7 @@ func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string) 
 func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr)                                {}
 func (NopHandler) HandleChat(*event.Context, *string)                                         {}
 func (NopHandler) HandleSkinChange(*event.Context, *skin.Skin)                                {}
+func (NopHandler) HandleFireExtinguish(*event.Context, cube.Pos)                              {}
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos)                                  {}
 func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack, *int)             {}
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
