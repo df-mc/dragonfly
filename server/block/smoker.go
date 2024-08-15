@@ -73,7 +73,11 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 // BreakInfo ...
 func (s Smoker) BreakInfo() BreakInfo {
 	xp := s.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(s)).withXPDropRange(xp, xp)
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(s)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		for _, i := range s.Inventory(w, pos).Clear() {
+			dropItem(w, i, pos.Vec3())
+		}
+	})
 }
 
 // Activate ...
@@ -97,7 +101,7 @@ func (s Smoker) EncodeNBT() map[string]interface{} {
 		"CookTime":     int16(cook.Milliseconds() / 50),
 		"BurnDuration": int16(maximum.Milliseconds() / 50),
 		"StoredXPInt":  int16(s.Experience()),
-		"Items":        nbtconv.InvToNBT(s.Inventory()),
+		"Items":        nbtconv.InvToNBT(s.inventory),
 		"id":           "Smoker",
 	}
 }
@@ -116,7 +120,7 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 	s.Lit = lit
 	s.setExperience(xp)
 	s.setDurations(remaining, maximum, cook)
-	nbtconv.InvFromNBT(s.Inventory(), nbtconv.Slice(data, "Items"))
+	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
 	return s
 }
 
