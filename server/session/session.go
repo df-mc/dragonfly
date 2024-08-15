@@ -82,6 +82,8 @@ type Session struct {
 
 	joinMessage, quitMessage string
 
+	viewLayer *world.ViewLayer
+
 	closeBackground chan struct{}
 }
 
@@ -165,6 +167,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 		heldSlot:               atomic.NewUint32(0),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
+		viewLayer:              world.NewViewLayer(),
 		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
 	}
 
@@ -234,6 +237,7 @@ func (s *Session) Close() error {
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) close() {
+	_ = s.viewLayer.Close()
 	_ = s.c.Close()
 
 	// Move UI inventory items to the main inventory.
