@@ -16,12 +16,9 @@ type ServerBoundLoadingScreenHandler struct {
 // Handle ...
 func (h *ServerBoundLoadingScreenHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.ServerBoundLoadingScreen)
-	if h.expectedID.Load() == 0 {
-		return fmt.Errorf("unexpected loading screen packet")
-	}
 	v, ok := pk.LoadingScreenID.Value()
-	if !ok {
-		return fmt.Errorf("expected loading screen ID %d, got nothing", h.expectedID.Load())
+	if !ok || h.expectedID.Load() == 0 {
+		return nil
 	} else if v != h.expectedID.Load() {
 		return fmt.Errorf("expected loading screen ID %d, got %d", h.expectedID.Load(), v)
 	} else if pk.Type == packet.LoadingScreenTypeEnd {
