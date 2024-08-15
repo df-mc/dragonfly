@@ -56,7 +56,6 @@ const (
 	hashDragonEgg
 	hashDriedKelp
 	hashDripstone
-	hashDropper
 	hashEmerald
 	hashEmeraldOre
 	hashEnchantingTable
@@ -64,6 +63,7 @@ const (
 	hashEndStone
 	hashEnderChest
 	hashFarmland
+	hashFern
 	hashFire
 	hashFletchingTable
 	hashFlower
@@ -138,6 +138,7 @@ const (
 	hashSandstone
 	hashSeaLantern
 	hashSeaPickle
+	hashShortGrass
 	hashShroomlight
 	hashSign
 	hashSkull
@@ -158,7 +159,6 @@ const (
 	hashStonecutter
 	hashSugarCane
 	hashTNT
-	hashTallGrass
 	hashTerracotta
 	hashTorch
 	hashTuff
@@ -250,7 +250,7 @@ func (b Blackstone) Hash() uint64 {
 
 // Hash ...
 func (b BlastFurnace) Hash() uint64 {
-	return hashBlastFurnace | uint64(b.Facing)<<8 | uint64(boolByte(b.Lit))<<11
+	return hashBlastFurnace | uint64(b.Facing)<<8 | uint64(boolByte(b.Lit))<<10
 }
 
 // Hash ...
@@ -484,6 +484,11 @@ func (f Farmland) Hash() uint64 {
 }
 
 // Hash ...
+func (Fern) Hash() uint64 {
+	return hashFern
+}
+
+// Hash ...
 func (f Fire) Hash() uint64 {
 	return hashFire | uint64(f.Type.Uint8())<<8 | uint64(f.Age)<<9
 }
@@ -505,7 +510,7 @@ func (f Froglight) Hash() uint64 {
 
 // Hash ...
 func (f Furnace) Hash() uint64 {
-	return hashFurnace | uint64(f.Facing)<<8 | uint64(boolByte(f.Lit))<<11
+	return hashFurnace | uint64(f.Facing)<<8 | uint64(boolByte(f.Lit))<<10
 }
 
 // Hash ...
@@ -854,6 +859,11 @@ func (s SeaPickle) Hash() uint64 {
 }
 
 // Hash ...
+func (ShortGrass) Hash() uint64 {
+	return hashShortGrass
+}
+
+// Hash ...
 func (Shroomlight) Hash() uint64 {
 	return hashShroomlight
 }
@@ -880,7 +890,7 @@ func (SmithingTable) Hash() uint64 {
 
 // Hash ...
 func (s Smoker) Hash() uint64 {
-	return hashSmoker | uint64(s.Facing)<<8 | uint64(boolByte(s.Lit))<<11
+	return hashSmoker | uint64(s.Facing)<<8 | uint64(boolByte(s.Lit))<<10
 }
 
 // Hash ...
@@ -951,11 +961,6 @@ func (c SugarCane) Hash() uint64 {
 // Hash ...
 func (TNT) Hash() uint64 {
 	return hashTNT
-}
-
-// Hash ...
-func (g TallGrass) Hash() uint64 {
-	return hashTallGrass | uint64(g.Type.Uint8())<<8
 }
 
 // Hash ...

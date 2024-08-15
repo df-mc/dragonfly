@@ -143,6 +143,9 @@ type Data struct {
 	ProjectilesCanBreakBlocks      bool           `nbt:"projectilescanbreakblocks"`
 	ShowRecipeMessages             bool           `nbt:"showrecipemessages"`
 	IsHardcore                     bool           `nbt:"IsHardcore"`
+	ShowDaysPlayed                 bool           `nbt:"showdaysplayed"`
+	TNTExplosionDropDecay          bool           `nbt:"tntexplosiondropdecay"`
+	HasUncompleteWorldFileOnDisk   bool           `nbt:"HasUncompleteWorldFileOnDisk"`
 }
 
 // FillDefault fills out d with all the default level.dat values.

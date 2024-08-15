@@ -2,10 +2,13 @@ package world
 
 import (
 	"errors"
-	"github.com/df-mc/goleveldb/leveldb"
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/df-mc/goleveldb/leveldb"
+
+	"slices"
 
 	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -15,7 +18,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
-	"slices"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
@@ -694,6 +696,7 @@ func (w *World) AddEntity(e Entity) {
 	c := w.chunk(chunkPos)
 	c.Entities = append(c.Entities, e)
 	viewers := slices.Clone(c.viewers)
+	c.modified = true
 	c.Unlock()
 
 	for _, v := range viewers {
@@ -742,6 +745,7 @@ func (w *World) RemoveEntity(e Entity) {
 	}
 	c.Entities = sliceutil.DeleteVal(c.Entities, e)
 	viewers := slices.Clone(c.viewers)
+	c.modified = true
 	c.Unlock()
 
 	w.entityMu.Lock()
@@ -1014,6 +1018,19 @@ func (w *World) PortalDestination(dim Dimension) *World {
 	return w
 }
 
+// Save saves the World to the provider.
+func (w *World) Save() {
+	w.conf.Log.Debugf("Saving chunks in memory to disk...")
+
+	w.chunkMu.Lock()
+	toSave := maps.Clone(w.chunks)
+	w.chunkMu.Unlock()
+
+	for pos, c := range toSave {
+		w.saveChunk(pos, c, false)
+	}
+}
+
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
 	if w == nil {
@@ -1041,7 +1058,7 @@ func (w *World) close() {
 	w.chunkMu.Unlock()
 
 	for pos, c := range toSave {
-		w.saveChunk(pos, c)
+		w.saveChunk(pos, c, true)
 	}
 
 	w.set.ref.Dec()
@@ -1311,20 +1328,24 @@ func (w *World) spreadLight(pos ChunkPos) {
 
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
-func (w *World) saveChunk(pos ChunkPos, c *Column) {
+func (w *World) saveChunk(pos ChunkPos, c *Column, closeEntities bool) {
 	c.Lock()
-	if !w.conf.ReadOnly && (len(c.BlockEntities) > 0 || len(c.Entities) > 0 || c.modified) {
+	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
 		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
 			w.conf.Log.Errorf("save chunk: %v", err)
 		}
 	}
-	ent := c.Entities
-	c.Entities = nil
-	c.Unlock()
+	if closeEntities {
+		ent := c.Entities
+		c.Entities = nil
+		c.Unlock()
 
-	for _, e := range ent {
-		_ = e.Close()
+		for _, e := range ent {
+			_ = e.Close()
+		}
+	} else {
+		c.Unlock()
 	}
 }
 
@@ -1354,7 +1375,7 @@ func (w *World) chunkCacheJanitor() {
 			w.chunkMu.Unlock()
 
 			for pos, c := range chunksToRemove {
-				w.saveChunk(pos, c)
+				w.saveChunk(pos, c, true)
 				delete(chunksToRemove, pos)
 			}
 		case <-w.closing:
