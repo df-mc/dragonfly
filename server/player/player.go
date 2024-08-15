@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/diagnostics"
 	"math"
 	"math/rand"
 	"net"
@@ -2048,6 +2049,11 @@ func (p *Player) Rotation() cube.Rotation {
 	return cube.Rotation{p.yaw.Load(), p.pitch.Load()}
 }
 
+// ChangingDimension returns whether the player is currently changing dimension or not.
+func (p *Player) ChangingDimension() bool {
+	return p.session().ChangingDimension()
+}
+
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
 // be added is returned.
 func (p *Player) Collect(s item.Stack) int {
@@ -2713,6 +2719,11 @@ func (p *Player) PunchAir() {
 	}
 	p.SwingArm()
 	p.World().PlaySound(p.Position(), sound.Attack{})
+}
+
+// UpdateDiagnostics updates the diagnostics of the player.
+func (p *Player) UpdateDiagnostics(d diagnostics.Diagnostics) {
+	p.Handler().HandleDiagnostics(d)
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
