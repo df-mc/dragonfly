@@ -119,23 +119,6 @@ func encodeSlabBlock(block world.Block) (id string) {
 	panic("invalid block used for slab")
 }
 
-// encodeLegacySlabId encodes a legacy slab type to its identifier.
-func encodeLegacySlabId(slabType string) string {
-	switch slabType {
-	case "wood_type":
-		return "wooden_slab"
-	case "stone_slab_type":
-		return "stone_block_slab"
-	case "stone_slab_type_2":
-		return "stone_block_slab2"
-	case "stone_slab_type_3":
-		return "stone_block_slab3"
-	case "stone_slab_type_4":
-		return "stone_block_slab4"
-	}
-	panic("invalid slab type")
-}
-
 // SlabBlocks returns a list of all possible blocks for a slab.
 func SlabBlocks() []world.Block {
 	b := []world.Block{
