@@ -117,6 +117,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
 				UUID: v.UUID(),
 			}}})
+		} else {
+			s.ViewSkin(e)
 		}
 		return
 	case *entity.Ent:
