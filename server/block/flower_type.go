@@ -114,7 +114,7 @@ func (f flower) Name() string {
 func (f flower) String() string {
 	switch f {
 	case 0:
-		return "yellow_flower"
+		return "dandelion"
 	case 1:
 		return "poppy"
 	case 2:

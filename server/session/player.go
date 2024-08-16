@@ -50,13 +50,7 @@ func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Unlock()
 
 	if ok {
-		w, ok := world.OfEntity(e)
-		if ok && w == s.c.World() {
-			s.ViewEntity(e)
-			s.ViewEntityState(e)
-			s.ViewEntityItems(e)
-			s.ViewEntityArmour(e)
-		}
+
 	}
 }
 
@@ -243,12 +237,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.armour.Inventory(), true
 	case protocol.ContainerLevelEntity:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, chest := b.(block.Chest); chest {
-				return s.openedWindow.Load(), true
-			} else if _, enderChest := b.(block.EnderChest); enderChest {
-				return s.openedWindow.Load(), true
-			}
+			return s.openedWindow.Load(), true
 		}
 	case protocol.ContainerBarrel:
 		if s.containerOpened.Load() {

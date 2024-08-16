@@ -36,11 +36,11 @@ func (a anvil) Uint8() uint8 {
 func (a anvil) String() string {
 	switch a {
 	case 0:
-		return "undamaged"
+		return "anvil"
 	case 1:
-		return "slightly_damaged"
+		return "chipped_anvil"
 	case 2:
-		return "very_damaged"
+		return "damaged_anvil"
 	}
 	panic("should never happen")
 }

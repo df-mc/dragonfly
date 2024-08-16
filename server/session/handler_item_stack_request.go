@@ -161,8 +161,8 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 		dest = i.Grow(-math.MaxInt32)
 	}
 
-	invA, _ := s.invByID(int32(from.ContainerID))
-	invB, _ := s.invByID(int32(to.ContainerID))
+	invA, _ := s.invByID(int32(from.Container.ContainerID))
+	invB, _ := s.invByID(int32(to.Container.ContainerID))
 
 	ctx := event.C()
 	_ = call(ctx, int(from.Slot), i.Grow(int(count)-i.Count()), invA.Handler().HandleTake)
@@ -185,8 +185,8 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 	i, _ := h.itemInSlot(a.Source, s)
 	dest, _ := h.itemInSlot(a.Destination, s)
 
-	invA, _ := s.invByID(int32(a.Source.ContainerID))
-	invB, _ := s.invByID(int32(a.Destination.ContainerID))
+	invA, _ := s.invByID(int32(a.Source.Container.ContainerID))
+	invB, _ := s.invByID(int32(a.Destination.Container.ContainerID))
 
 	ctx := event.C()
 	_ = call(ctx, int(a.Source.Slot), i, invA.Handler().HandleTake)
@@ -249,7 +249,7 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 		return fmt.Errorf("client attempted to drop %v items, but only %v present", a.Count, i.Count())
 	}
 
-	inv, _ := s.invByID(int32(a.Source.ContainerID))
+	inv, _ := s.invByID(int32(a.Source.Container.ContainerID))
 	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
 		return err
 	}
@@ -263,7 +263,7 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 // by Mojang to deal with the durability changes client-side.
 func (h *ItemStackRequestHandler) handleMineBlock(a *protocol.MineBlockStackRequestAction, s *Session) error {
 	slot := protocol.StackRequestSlotInfo{
-		ContainerID:    protocol.ContainerInventory,
+		Container:      protocol.FullContainerName{ContainerID: protocol.ContainerInventory},
 		Slot:           byte(a.HotbarSlot),
 		StackNetworkID: a.StackNetworkID,
 	}
@@ -293,8 +293,8 @@ func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAct
 	h.pendingResults[slot] = item.Stack{}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: protocol.ContainerCreatedOutput,
-		Slot:        craftingResult,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerCreatedOutput},
+		Slot:      craftingResult,
 	}, res, s)
 	return nil
 }
@@ -330,7 +330,7 @@ func (h *ItemStackRequestHandler) verifySlot(slot protocol.StackRequestSlotInfo,
 	if len(h.responseChanges) > 256 {
 		return fmt.Errorf("too many unacknowledged request slot changes")
 	}
-	inv, _ := s.invByID(int32(slot.ContainerID))
+	inv, _ := s.invByID(int32(slot.Container.ContainerID))
 
 	i, err := h.itemInSlot(slot, s)
 	if err != nil {
@@ -361,11 +361,11 @@ func (h *ItemStackRequestHandler) resolveID(inv *inventory.Inventory, slot proto
 	}
 	changes, ok := containerChanges[inv]
 	if !ok {
-		return 0, fmt.Errorf("slot pointed to stack request %v with container %v, but that container was not changed in the request", slot.StackNetworkID, slot.ContainerID)
+		return 0, fmt.Errorf("slot pointed to stack request %v with container %v, but that container was not changed in the request", slot.StackNetworkID, slot.Container.ContainerID)
 	}
 	actual, ok := changes[slot.Slot]
 	if !ok {
-		return 0, fmt.Errorf("slot pointed to stack request %v with container %v and slot %v, but that slot was not changed in the request", slot.StackNetworkID, slot.ContainerID, slot.Slot)
+		return 0, fmt.Errorf("slot pointed to stack request %v with container %v and slot %v, but that slot was not changed in the request", slot.StackNetworkID, slot.Container.ContainerID, slot.Slot)
 	}
 	return actual.id, nil
 }
@@ -374,9 +374,9 @@ func (h *ItemStackRequestHandler) resolveID(inv *inventory.Inventory, slot proto
 // info passed from the client has the right stack network ID in any of the stored slots. If this is the case,
 // that entry is removed, so that the maps are cleaned up eventually.
 func (h *ItemStackRequestHandler) tryAcknowledgeChanges(s *Session, slot protocol.StackRequestSlotInfo) error {
-	inv, ok := s.invByID(int32(slot.ContainerID))
+	inv, ok := s.invByID(int32(slot.Container.ContainerID))
 	if !ok {
-		return fmt.Errorf("could not find container with id %v", slot.ContainerID)
+		return fmt.Errorf("could not find container with id %v", slot.Container.ContainerID)
 	}
 
 	for requestID, containerChanges := range h.responseChanges {
@@ -399,9 +399,9 @@ func (h *ItemStackRequestHandler) tryAcknowledgeChanges(s *Session, slot protoco
 
 // itemInSlot looks for the item in the slot as indicated by the slot info passed.
 func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo, s *Session) (item.Stack, error) {
-	inv, ok := s.invByID(int32(slot.ContainerID))
+	inv, ok := s.invByID(int32(slot.Container.ContainerID))
 	if !ok {
-		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.ContainerID)
+		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.Container.ContainerID)
 	}
 
 	sl := int(slot.Slot)
@@ -418,7 +418,7 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 
 // setItemInSlot sets an item stack in the slot of a container present in the slot info.
 func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session) {
-	inv, _ := s.invByID(int32(slot.ContainerID))
+	inv, _ := s.invByID(int32(slot.Container.ContainerID))
 
 	sl := int(slot.Slot)
 	if inv == s.offHand {
@@ -436,10 +436,10 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 		DurabilityCorrection: int32(i.MaxDurability() - i.Durability()),
 	}
 
-	if h.changes[slot.ContainerID] == nil {
-		h.changes[slot.ContainerID] = map[byte]changeInfo{}
+	if h.changes[slot.Container.ContainerID] == nil {
+		h.changes[slot.Container.ContainerID] = map[byte]changeInfo{}
 	}
-	h.changes[slot.ContainerID][slot.Slot] = changeInfo{
+	h.changes[slot.Container.ContainerID][slot.Slot] = changeInfo{
 		after:  respSlot,
 		before: before,
 	}
@@ -465,8 +465,8 @@ func (h *ItemStackRequestHandler) resolve(id int32, s *Session) {
 			slots = append(slots, slot.after)
 		}
 		info = append(info, protocol.StackResponseContainerInfo{
-			ContainerID: container,
-			SlotInfo:    slots,
+			Container: protocol.FullContainerName{ContainerID: container},
+			SlotInfo:  slots,
 		})
 	}
 	s.writePacket(&packet.ItemStackResponse{Responses: []protocol.ItemStackResponse{{
