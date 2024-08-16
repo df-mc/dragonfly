@@ -152,11 +152,11 @@ func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 
 // HopperInsertable represents a block that can have its contents inserted into by a hopper.
 type HopperInsertable interface {
-	// InsertItem ...
+	// InsertItem handles the insert logic for that block.
 	InsertItem(h Hopper, pos cube.Pos, w *world.World) bool
 }
 
-// insertItem inserts an item into a container from the hopper.
+// insertItem inserts an item into a block that can receive contents from the hopper.
 func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 	dest := w.Block(pos.Side(h.Facing))
 	if e, ok := dest.(HopperInsertable); ok {
@@ -184,6 +184,7 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 
 // HopperExtractable represents a block that can have its contents extracted by a hopper.
 type HopperExtractable interface {
+	// ExtractItem handles the extract logic for that block.
 	ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool
 }
 
