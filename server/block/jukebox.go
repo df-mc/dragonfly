@@ -19,6 +19,29 @@ type Jukebox struct {
 	Item item.Stack
 }
 
+// InsertItem ...
+func (j Jukebox) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
+	if !j.Item.Empty() {
+		return false
+	}
+
+	for sourceSlot, sourceStack := range h.inventory.Slots() {
+		if sourceStack.Empty() {
+			continue
+		}
+
+		if m, ok := sourceStack.Item().(item.MusicDisc); ok {
+			j.Item = sourceStack
+			w.SetBlock(pos.Side(h.Facing), j, nil)
+			_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+			w.PlaySound(pos.Vec3Centre(), sound.MusicDiscPlay{DiscType: m.DiscType})
+			return true
+		}
+	}
+
+	return false
+}
+
 // FuelInfo ...
 func (j Jukebox) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)

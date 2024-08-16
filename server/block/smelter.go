@@ -38,6 +38,66 @@ func newSmelter() *smelter {
 	return s
 }
 
+// InsertItem ...
+func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
+	for sourceSlot, sourceStack := range h.inventory.Slots() {
+		var slot int
+
+		if sourceStack.Empty() {
+			continue
+		}
+
+		if h.Facing != cube.FaceDown {
+			slot = 1
+		} else {
+			slot = 0
+		}
+
+		stack := sourceStack.Grow(-sourceStack.Count() + 1)
+		it, _ := s.Inventory(w, pos).Item(slot)
+		if slot == 1 {
+			if _, ok := sourceStack.Item().(item.Fuel); !ok {
+				// The item is not fuel.
+				return false
+			}
+		}
+		if !sourceStack.Comparable(it) {
+			// The items are not the same.
+			return false
+		}
+		if it.Count() == it.MaxCount() {
+			// The item has the maximum count that the stack is able to hold.
+			return false
+		}
+		if !it.Empty() {
+			stack = it.Grow(1)
+		}
+
+		_ = s.Inventory(w, pos).SetItem(slot, stack)
+		_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+		return true
+	}
+
+	return false
+}
+
+// ExtractItem ...
+func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
+	cooked, _ := s.inventory.Item(2)
+	if cooked.Empty() {
+		// There is no items.
+		return false
+	}
+
+	_, err := h.inventory.AddItem(cooked.Grow(-cooked.Count() + 1))
+	if err != nil {
+		// The hopper is full.
+		return false
+	}
+	_ = s.Inventory(w, pos).SetItem(2, cooked.Grow(-1))
+	return true
+}
+
 // Durations returns the remaining, maximum, and cook durations of the smelter.
 func (s *smelter) Durations() (remaining time.Duration, max time.Duration, cook time.Duration) {
 	s.mu.Lock()
