@@ -130,20 +130,14 @@ func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	h.CollectCooldown--
 	h.LastTick = currentTick
 
-	if h.TransferCooldown >= 0 || h.Powered {
-		w.SetBlock(pos, h, nil)
-	} else {
+	if !h.Powered && h.TransferCooldown < 0 {
 		inserted := h.insertItem(pos, w)
 		extracted := h.extractItem(pos, w)
 		if inserted || extracted {
 			h.TransferCooldown = 8
-			w.SetBlock(pos, h, nil)
 		}
 	}
-
-	if h.CollectCooldown >= 0 {
-		w.SetBlock(pos, h, nil)
-	}
+	w.SetBlock(pos, h, nil)
 }
 
 // HopperInsertable represents a block that can have its contents inserted into by a hopper.
