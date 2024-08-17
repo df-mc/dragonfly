@@ -75,16 +75,12 @@ func (i *ItemBehaviour) Tick(e *Ent) *Movement {
 	if ok && !bl.Powered && bl.CollectCooldown <= 0 {
 		addedCount, err := bl.Inventory(w, pos).AddItem(i.i)
 		if err != nil {
-			// Check the added count is equal to the stack count, if not we create a new item entity
-			// with the updated stack count.
-			if addedCount != 0 {
-				w.AddEntity(NewItem(i.Item().Grow(addedCount-i.i.Count()), pos.Vec3Centre()))
-
-				_ = e.Close()
-				bl.CollectCooldown = 8
-				w.SetBlock(blockPos, bl, nil)
+			if addedCount == 0 {
+				return i.passive.Tick(e)
 			}
-			return i.passive.Tick(e)
+
+			// This is only reached if part of the item stack was collected into the hopper.
+			w.AddEntity(NewItem(i.Item().Grow(addedCount-i.i.Count()), pos.Vec3Centre()))
 		}
 
 		_ = e.Close()

@@ -130,12 +130,7 @@ func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	h.CollectCooldown--
 	h.LastTick = currentTick
 
-	if h.Powered {
-		w.SetBlock(pos, h, nil)
-		return
-	}
-
-	if h.TransferCooldown >= 0 {
+	if h.TransferCooldown >= 0 || h.Powered {
 		w.SetBlock(pos, h, nil)
 	} else {
 		inserted := h.insertItem(pos, w)
