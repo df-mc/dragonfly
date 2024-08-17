@@ -33,7 +33,7 @@ func (c Composter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 			continue
 		}
 
-		if c.fill(sourceStack, pos.Side(h.Facing), w) {
+		if c.fill(sourceStack, pos, w) {
 			_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
 			return true
 		}

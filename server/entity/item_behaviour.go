@@ -73,14 +73,22 @@ func (i *ItemBehaviour) Tick(e *Ent) *Movement {
 
 	bl, ok := w.Block(blockPos).(block.Hopper)
 	if ok && !bl.Powered && bl.CollectCooldown <= 0 {
-		_, err := bl.Inventory(w, pos).AddItem(i.i)
+		addedCount, err := bl.Inventory(w, pos).AddItem(i.i)
 		if err != nil {
-			// We couldn't add any of the item to the inventory, so we ignore it.
+			// Check the added count is equal to the stack count, if not we create a new item entity
+			// with the updated stack count.
+			if addedCount != 0 {
+				w.AddEntity(NewItem(i.Item().Grow(addedCount-i.i.Count()), pos.Vec3Centre()))
+
+				_ = e.Close()
+				bl.CollectCooldown = 8
+				w.SetBlock(blockPos, bl, nil)
+			}
 			return i.passive.Tick(e)
 		}
 
 		_ = e.Close()
-		bl.CollectCooldown = 4
+		bl.CollectCooldown = 8
 		w.SetBlock(blockPos, bl, nil)
 	}
 	return i.passive.Tick(e)

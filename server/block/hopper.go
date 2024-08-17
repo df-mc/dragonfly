@@ -130,22 +130,23 @@ func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	h.CollectCooldown--
 	h.LastTick = currentTick
 
-	if h.TransferCooldown >= 0 || h.CollectCooldown >= 0 {
-		w.SetBlock(pos, h, nil)
-		return
-	}
-
-	h.TransferCooldown = 0
-	h.CollectCooldown = 0
 	if h.Powered {
 		w.SetBlock(pos, h, nil)
 		return
 	}
 
-	inserted := h.insertItem(pos, w)
-	extracted := h.extractItem(pos, w)
-	if inserted || extracted {
-		h.TransferCooldown = 8
+	if h.TransferCooldown >= 0 {
+		w.SetBlock(pos, h, nil)
+	} else {
+		inserted := h.insertItem(pos, w)
+		extracted := h.extractItem(pos, w)
+		if inserted || extracted {
+			h.TransferCooldown = 8
+			w.SetBlock(pos, h, nil)
+		}
+	}
+
+	if h.CollectCooldown >= 0 {
 		w.SetBlock(pos, h, nil)
 	}
 }
@@ -160,7 +161,7 @@ type HopperInsertable interface {
 func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 	dest := w.Block(pos.Side(h.Facing))
 	if e, ok := dest.(HopperInsertable); ok {
-		return e.InsertItem(h, pos, w)
+		return e.InsertItem(h, pos.Side(h.Facing), w)
 	}
 
 	if container, ok := dest.(Container); ok {
@@ -190,13 +191,15 @@ type HopperExtractable interface {
 
 // extractItem extracts an item from a container into the hopper.
 func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
-	origin := w.Block(pos.Side(cube.FaceUp))
+	originPos := pos.Side(cube.FaceUp)
+	origin := w.Block(originPos)
+
 	if e, ok := origin.(HopperExtractable); ok {
 		return e.ExtractItem(h, pos, w)
 	}
 
 	if containerOrigin, ok := origin.(Container); ok {
-		for slot, stack := range containerOrigin.Inventory(w, pos).Slots() {
+		for slot, stack := range containerOrigin.Inventory(w, originPos).Slots() {
 			if stack.Empty() {
 				// We don't have any items to extract.
 				continue
@@ -207,7 +210,7 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 				// The hopper is full.
 				return false
 			}
-			_ = containerOrigin.Inventory(w, pos).SetItem(slot, stack.Grow(-1))
+			_ = containerOrigin.Inventory(w, originPos).SetItem(slot, stack.Grow(-1))
 			return true
 		}
 	}

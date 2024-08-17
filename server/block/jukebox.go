@@ -32,13 +32,19 @@ func (j Jukebox) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 
 		if m, ok := sourceStack.Item().(item.MusicDisc); ok {
 			j.Item = sourceStack
-			w.SetBlock(pos.Side(h.Facing), j, nil)
+			w.SetBlock(pos, j, nil)
 			_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
 			w.PlaySound(pos.Vec3Centre(), sound.MusicDiscPlay{DiscType: m.DiscType})
 			return true
 		}
 	}
 
+	return false
+}
+
+// ExtractItem ...
+func (j Jukebox) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
+	//TODO: This functionality requires redstone to be implemented.
 	return false
 }
 
