@@ -9,8 +9,12 @@ import (
 type Hopper struct{}
 
 // BBox returns a physics.BBox that spans a full block.
-func (Hopper) BBox(cube.Pos, *world.World) []cube.BBox {
-	return []cube.BBox{full}
+func (h Hopper) BBox(cube.Pos, *world.World) []cube.BBox {
+	bbox := []cube.BBox{full.ExtendTowards(cube.FaceUp, -0.375)}
+	for _, f := range cube.HorizontalFaces() {
+		bbox = append(bbox, full.ExtendTowards(f, -0.875))
+	}
+	return bbox
 }
 
 // FaceSolid only returns true for the top face of the hopper.
