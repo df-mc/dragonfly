@@ -58,16 +58,16 @@ func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 		if slot == 1 {
 			if _, ok := sourceStack.Item().(item.Fuel); !ok {
 				// The item is not fuel.
-				return false
+				continue
 			}
 		}
 		if !sourceStack.Comparable(it) {
 			// The items are not the same.
-			return false
+			continue
 		}
 		if it.Count() == it.MaxCount() {
 			// The item has the maximum count that the stack is able to hold.
-			return false
+			continue
 		}
 		if !it.Empty() {
 			stack = it.Grow(1)
@@ -84,35 +84,28 @@ func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 // ExtractItem ...
 func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
 	for sourceSlot, sourceStack := range s.inventory.Slots() {
-		var slot int
-		var stack item.Stack
-
 		if sourceStack.Empty() {
+			continue
+		}
+
+		if sourceSlot == 0 {
 			continue
 		}
 
 		if sourceSlot == 1 {
 			fuel, ok := sourceStack.Item().(item.Fuel)
-			if !ok || fuel.FuelInfo().Duration.Seconds() == 0 {
-				slot = sourceSlot
-				stack = sourceStack
+			if !ok || fuel.FuelInfo().Duration.Seconds() != 0 {
+				continue
 			}
 		}
 
-		if sourceSlot == 2 {
-			slot = sourceSlot
-			stack = sourceStack
+		_, err := h.inventory.AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
+		if err != nil {
+			// The hopper is full.
+			continue
 		}
-
-		if slot != 0 {
-			_, err := h.inventory.AddItem(stack.Grow(-stack.Count() + 1))
-			if err != nil {
-				// The hopper is full.
-				return false
-			}
-			_ = s.Inventory(w, pos).SetItem(slot, stack.Grow(-1))
-			return true
-		}
+		_ = s.Inventory(w, pos).SetItem(sourceSlot, sourceStack.Grow(-1))
+		return true
 	}
 
 	return false
