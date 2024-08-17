@@ -83,19 +83,39 @@ func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 
 // ExtractItem ...
 func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
-	cooked, _ := s.inventory.Item(2)
-	if cooked.Empty() {
-		// There is no items.
-		return false
+	for sourceSlot, sourceStack := range s.inventory.Slots() {
+		var slot int
+		var stack item.Stack
+
+		if sourceStack.Empty() {
+			continue
+		}
+
+		if sourceSlot == 1 {
+			fuel, ok := sourceStack.Item().(item.Fuel)
+			if !ok || fuel.FuelInfo().Duration.Seconds() == 0 {
+				slot = sourceSlot
+				stack = sourceStack
+			}
+		}
+
+		if sourceSlot == 2 {
+			slot = sourceSlot
+			stack = sourceStack
+		}
+
+		if slot != 0 {
+			_, err := h.inventory.AddItem(stack.Grow(-stack.Count() + 1))
+			if err != nil {
+				// The hopper is full.
+				return false
+			}
+			_ = s.Inventory(w, pos).SetItem(slot, stack.Grow(-1))
+			return true
+		}
 	}
 
-	_, err := h.inventory.AddItem(cooked.Grow(-cooked.Count() + 1))
-	if err != nil {
-		// The hopper is full.
-		return false
-	}
-	_ = s.Inventory(w, pos).SetItem(2, cooked.Grow(-1))
-	return true
+	return false
 }
 
 // Durations returns the remaining, maximum, and cook durations of the smelter.
