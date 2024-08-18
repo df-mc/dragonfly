@@ -1,15 +1,12 @@
 package session
 
 import (
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/player/diagnostics"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
 // ServerBoundDiagnosticsHandler handles diagnostic updates from the client.
-type ServerBoundDiagnosticsHandler struct {
-	currentID atomic.Uint32
-}
+type ServerBoundDiagnosticsHandler struct{}
 
 // Handle ...
 func (h *ServerBoundDiagnosticsHandler) Handle(p packet.Packet, s *Session) error {
