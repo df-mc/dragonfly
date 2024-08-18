@@ -153,16 +153,11 @@ type HopperInsertable interface {
 
 // insertItem inserts an item into a block that can receive contents from the hopper.
 func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
-	dest := w.Block(pos.Side(h.Facing))
+	destPos := pos.Side(h.Facing)
+	dest := w.Block(destPos)
+
 	if e, ok := dest.(HopperInsertable); ok {
 		return e.InsertItem(h, pos.Side(h.Facing), w)
-	}
-
-	if h.Facing == cube.FaceDown {
-		if hopper, ok := w.Block(pos.Side(h.Facing)).(Hopper); ok {
-			hopper.TransferCooldown = 8
-			w.SetBlock(pos.Side(h.Facing), hopper, nil)
-		}
 	}
 
 	if container, ok := dest.(Container); ok {
@@ -178,6 +173,12 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 			}
 
 			_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+
+			if hopper, ok := dest.(Hopper); ok {
+				hopper.TransferCooldown = 8
+				w.SetBlock(destPos, hopper, nil)
+			}
+
 			return true
 		}
 	}
@@ -199,13 +200,6 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 		return e.ExtractItem(h, pos, w)
 	}
 
-	if h.Facing == cube.FaceDown {
-		if hopper, ok := w.Block(originPos).(Hopper); ok {
-			hopper.TransferCooldown = 8
-			w.SetBlock(originPos, hopper, nil)
-		}
-	}
-
 	if containerOrigin, ok := origin.(Container); ok {
 		for slot, stack := range containerOrigin.Inventory(w, originPos).Slots() {
 			if stack.Empty() {
@@ -220,6 +214,12 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 			}
 
 			_ = containerOrigin.Inventory(w, originPos).SetItem(slot, stack.Grow(-1))
+
+			if hopper, ok := origin.(Hopper); ok {
+				hopper.TransferCooldown = 8
+				w.SetBlock(originPos, hopper, nil)
+			}
+
 			return true
 		}
 	}
