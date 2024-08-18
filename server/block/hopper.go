@@ -138,16 +138,10 @@ func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 		inserted := h.insertItem(pos, w)
 		extracted := h.extractItem(pos, w)
 		if inserted || extracted {
-			if h.Facing == cube.FaceDown {
-				if hopper, ok := w.Block(pos.Side(h.Facing)).(Hopper); ok {
-					hopper.TransferCooldown = 8
-					w.SetBlock(pos.Side(h.Facing), hopper, nil)
-				}
-			}
-
 			h.TransferCooldown = 8
 		}
 	}
+
 	w.SetBlock(pos, h, nil)
 }
 
@@ -164,9 +158,10 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 		return e.InsertItem(h, pos.Side(h.Facing), w)
 	}
 
-	if hopper, ok := dest.(Hopper); ok {
-		if hopper.TransferCooldown > 0 {
-			return false
+	if h.Facing == cube.FaceDown {
+		if hopper, ok := w.Block(pos.Side(h.Facing)).(Hopper); ok {
+			hopper.TransferCooldown = 8
+			w.SetBlock(pos.Side(h.Facing), hopper, nil)
 		}
 	}
 
@@ -204,9 +199,10 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 		return e.ExtractItem(h, pos, w)
 	}
 
-	if hopper, ok := origin.(Hopper); ok {
-		if hopper.TransferCooldown > 0 {
-			return false
+	if h.Facing == cube.FaceDown {
+		if hopper, ok := w.Block(originPos).(Hopper); ok {
+			hopper.TransferCooldown = 8
+			w.SetBlock(originPos, hopper, nil)
 		}
 	}
 
