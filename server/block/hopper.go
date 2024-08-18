@@ -30,9 +30,9 @@ type Hopper struct {
 
 	// LastTick is the last world tick that the hopper was ticked.
 	LastTick int64
-	// TransferCooldown is the duration until the hopper can transfer items again.
+	// TransferCooldown is the duration in ticks until the hopper can transfer items again.
 	TransferCooldown int64
-	// CollectCooldown is the duration until the hopper can collect items again.
+	// CollectCooldown is the duration in ticks until the hopper can collect items again.
 	CollectCooldown int64
 
 	inventory *inventory.Inventory
@@ -77,7 +77,7 @@ func (h Hopper) BreakInfo() BreakInfo {
 }
 
 // Inventory returns the inventory of the hopper.
-func (h Hopper) Inventory(w *world.World, pos cube.Pos) *inventory.Inventory {
+func (h Hopper) Inventory(*world.World, cube.Pos) *inventory.Inventory {
 	return h.inventory
 }
 
@@ -134,10 +134,17 @@ func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
 	h.CollectCooldown--
 	h.LastTick = currentTick
 
-	if !h.Powered && h.TransferCooldown < 0 {
+	if !h.Powered && h.TransferCooldown <= 0 {
 		inserted := h.insertItem(pos, w)
 		extracted := h.extractItem(pos, w)
 		if inserted || extracted {
+			if h.Facing == cube.FaceDown {
+				if hopper, ok := w.Block(pos.Side(h.Facing)).(Hopper); ok {
+					hopper.TransferCooldown = 8
+					w.SetBlock(pos.Side(h.Facing), hopper, nil)
+				}
+			}
+
 			h.TransferCooldown = 8
 		}
 	}
@@ -155,6 +162,12 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 	dest := w.Block(pos.Side(h.Facing))
 	if e, ok := dest.(HopperInsertable); ok {
 		return e.InsertItem(h, pos.Side(h.Facing), w)
+	}
+
+	if hopper, ok := dest.(Hopper); ok {
+		if hopper.TransferCooldown > 0 {
+			return false
+		}
 	}
 
 	if container, ok := dest.(Container); ok {
@@ -191,6 +204,12 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 		return e.ExtractItem(h, pos, w)
 	}
 
+	if hopper, ok := origin.(Hopper); ok {
+		if hopper.TransferCooldown > 0 {
+			return false
+		}
+	}
+
 	if containerOrigin, ok := origin.(Container); ok {
 		for slot, stack := range containerOrigin.Inventory(w, originPos).Slots() {
 			if stack.Empty() {
@@ -201,8 +220,9 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 			_, err := h.inventory.AddItem(stack.Grow(-stack.Count() + 1))
 			if err != nil {
 				// The hopper is full.
-				return false
+				continue
 			}
+
 			_ = containerOrigin.Inventory(w, originPos).SetItem(slot, stack.Grow(-1))
 			return true
 		}

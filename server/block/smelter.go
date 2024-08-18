@@ -94,7 +94,7 @@ func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
 
 		if sourceSlot == 1 {
 			fuel, ok := sourceStack.Item().(item.Fuel)
-			if !ok || fuel.FuelInfo().Duration.Seconds() != 0 {
+			if ok && fuel.FuelInfo().Duration.Seconds() != 0 {
 				continue
 			}
 		}
@@ -104,6 +104,7 @@ func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
 			// The hopper is full.
 			continue
 		}
+
 		_ = s.Inventory(w, pos).SetItem(sourceSlot, sourceStack.Grow(-1))
 		return true
 	}
