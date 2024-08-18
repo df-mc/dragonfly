@@ -24,7 +24,7 @@ type Composter struct {
 
 // InsertItem ...
 func (c Composter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
-	if c.Level == 8 {
+	if c.Level >= 7 {
 		return false
 	}
 
