@@ -16,6 +16,51 @@ type Item interface {
 	Empty() bool
 }
 
+// inputItems ...
+type inputItem struct {
+	// Name is the name of the item being inputted.
+	Name string `nbt:"name"`
+	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
+	Meta int32 `nbt:"meta"`
+	// Count is the amount of the item.
+	Count int32 `nbt:"count"`
+	// State is included if the output is a block. If it's not included, the meta can be discarded and the output item can be incorrect.
+	State struct {
+		Name       string                 `nbt:"name"`
+		Properties map[string]interface{} `nbt:"states"`
+		Version    int32                  `nbt:"version"`
+	} `nbt:"block"`
+	// Tag is included if the input item is defined by a tag instead of a specific item.
+	Tag string `nbt:"tag"`
+}
+
+// Item ..
+func (i inputItem) Item() (Item, bool) {
+	var d Item
+
+	if i.Tag != "" {
+		d = NewItemTag(i.Tag, int(i.Count))
+	} else {
+		it, ok := world.ItemByName(i.Name, int16(i.Meta))
+		if !ok {
+			return nil, false
+		}
+		if b, ok := world.BlockByName(i.State.Name, i.State.Properties); ok {
+			if it, ok = b.(world.Item); !ok {
+				return nil, false
+			}
+		}
+		st := item.NewStack(it, int(i.Count))
+		if i.Meta == math.MaxInt16 {
+			st = st.WithValue("variants", true)
+		}
+
+		d = st
+	}
+
+	return d, true
+}
+
 // inputItems is a type representing a list of input items, with helper functions to convert them to
 type inputItems []struct {
 	// Name is the name of the item being inputted.
@@ -58,6 +103,45 @@ func (d inputItems) Items() ([]Item, bool) {
 		}
 	}
 	return s, true
+}
+
+// outputItem ...
+type outputItem struct {
+	// Name is the name of the item being output.
+	Name string `nbt:"name"`
+	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
+	Meta int32 `nbt:"meta"`
+	// Count is the amount of the item.
+	Count int16 `nbt:"count"`
+	// State is included if the output is a block. If it's not included, the meta can be discarded and the output item can be incorrect.
+	State struct {
+		Name       string                 `nbt:"name"`
+		Properties map[string]interface{} `nbt:"states"`
+		Version    int32                  `nbt:"version"`
+	} `nbt:"block"`
+	// NBTData contains extra NBTData which may modify the item in other, more discreet ways.
+	NBTData map[string]interface{} `nbt:"data"`
+}
+
+// Stack ...
+func (o outputItem) Stack() (item.Stack, bool) {
+	var stack item.Stack
+
+	it, ok := world.ItemByName(o.Name, int16(o.Meta))
+	if !ok {
+		return item.Stack{}, false
+	}
+	if b, ok := world.BlockByName(o.State.Name, o.State.Properties); ok {
+		if it, ok = b.(world.Item); !ok {
+			return item.Stack{}, false
+		}
+	}
+	if n, ok := it.(world.NBTer); ok {
+		it = n.DecodeNBT(o.NBTData).(world.Item)
+	}
+
+	stack = item.NewStack(it, int(o.Count))
+	return stack, true
 }
 
 // outputItems is an array of output items.
