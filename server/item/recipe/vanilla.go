@@ -2,11 +2,10 @@ package recipe
 
 import (
 	_ "embed"
-	"github.com/df-mc/dragonfly/server/item"
 
 	// Ensure all blocks and items are registered before trying to load vanilla recipes.
 	_ "github.com/df-mc/dragonfly/server/block"
-	_ "github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
@@ -139,7 +138,7 @@ func init() {
 			continue
 		}
 
-		Register(FurnaceTransform{recipe{
+		Register(Furnace{recipe{
 			input:  []Item{input},
 			output: []item.Stack{output},
 			block:  s.Block,

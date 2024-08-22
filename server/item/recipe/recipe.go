@@ -59,14 +59,14 @@ func NewSmithingTrim(base, addition, template Item, block string) SmithingTrim {
 	}}
 }
 
-// FurnaceTransform represents a recipe only craftable in a furnace.
-type FurnaceTransform struct {
+// Furnace represents a recipe only craftable in a furnace.
+type Furnace struct {
 	recipe
 }
 
-// NewFurnaceRecipe creates a new furnace recipe and returns it.
-func NewFurnaceRecipe(input Item, output item.Stack, block string) FurnaceTransform {
-	return FurnaceTransform{recipe: recipe{
+// NewFurnace creates a new furnace recipe and returns it.
+func NewFurnace(input Item, output item.Stack, block string) Furnace {
+	return Furnace{recipe: recipe{
 		input:  []Item{input},
 		output: []item.Stack{output},
 		block:  block,

@@ -39,18 +39,18 @@ type CampfireItem struct {
 }
 
 // Model ...
-func (c Campfire) Model() world.BlockModel {
+func (Campfire) Model() world.BlockModel {
 	return model.Campfire{}
 }
 
 // SideClosed ...
-func (c Campfire) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Campfire) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
 // BreakInfo ...
 func (c Campfire) BreakInfo() BreakInfo {
-	return newBreakInfo(5, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		var drops []item.Stack
 		if hasSilkTouch(enchantments) {
 			drops = append(drops, item.NewStack(c, 1))
@@ -82,10 +82,10 @@ func (c Campfire) LightEmissionLevel() uint8 {
 // Ignite ...
 func (c Campfire) Ignite(pos cube.Pos, w *world.World) bool {
 	w.PlaySound(pos.Vec3(), sound.Ignite{})
-	if _, ok := w.Liquid(pos); ok {
+	if !c.Extinguished {
 		return false
 	}
-	if !c.Extinguished {
+	if _, ok := w.Liquid(pos); ok {
 		return false
 	}
 
@@ -162,17 +162,18 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 	for i, it := range c.Items {
 		if it.Item.Empty() {
 			continue
-		} else if it.Time <= 0 {
-			if food, ok := it.Item.Item().(item.Smeltable); ok {
-				dropItem(w, food.SmeltInfo().Product, pos.Vec3Middle())
-			}
+		}
 
-			c.Items[i].Item = item.Stack{}
-			updated = true
+		updated = true
+		if it.Time > 0 {
+			c.Items[i].Time = it.Time - time.Millisecond*50
 			continue
 		}
-		c.Items[i].Time = it.Time - time.Millisecond*50
-		updated = true
+
+		if food, ok := it.Item.Item().(item.Smeltable); ok {
+			dropItem(w, food.SmeltInfo().Product, pos.Vec3Middle())
+		}
+		c.Items[i].Item = item.Stack{}
 	}
 	if updated {
 		w.SetBlock(pos, c, nil)
@@ -257,9 +258,9 @@ func (c Campfire) EncodeBlock() (name string, properties map[string]any) {
 // allCampfires ...
 func allCampfires() (campfires []world.Block) {
 	for _, d := range cube.Directions() {
-		for _, e := range []bool{true, false} {
-			campfires = append(campfires, Campfire{Facing: d, Extinguished: e, Type: NormalFire()})
-			campfires = append(campfires, Campfire{Facing: d, Extinguished: e, Type: SoulFire()})
+		for _, f := range FireTypes() {
+			campfires = append(campfires, Campfire{Facing: d, Type: f, Extinguished: true})
+			campfires = append(campfires, Campfire{Facing: d, Type: f})
 		}
 	}
 	return campfires
