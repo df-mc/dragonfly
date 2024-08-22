@@ -106,11 +106,6 @@ func (s *Session) SendRespawn(pos mgl64.Vec3) {
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
-
-	//temporary solution until I find a better way to handle potion recipes and potion container change recipes.
-	potionRecipes := make([]protocol.PotionRecipe, 0)
-	potionContainerChange := make([]protocol.PotionContainerChangeRecipe, 0)
-
 	for index, i := range recipe.Recipes() {
 		networkID := uint32(index) + 1
 		s.recipes[networkID] = i
@@ -157,34 +152,9 @@ func (s *Session) sendRecipes() {
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
-		case recipe.Potion:
-			inputRuntimeID, inputMeta, _ := world.ItemRuntimeID(i.Input()[0].(item.Stack).Item())
-			reagentRuntimeID, reagentMeta, _ := world.ItemRuntimeID(i.Input()[1].(item.Stack).Item())
-			outputRuntimeID, outputMeta, _ := world.ItemRuntimeID(i.Output()[0].Item())
-
-			potionRecipes = append(potionRecipes, protocol.PotionRecipe{
-				InputPotionID:        inputRuntimeID,
-				InputPotionMetadata:  int32(inputMeta),
-				ReagentItemID:        reagentRuntimeID,
-				ReagentItemMetadata:  int32(reagentMeta),
-				OutputPotionID:       outputRuntimeID,
-				OutputPotionMetadata: int32(outputMeta),
-			})
-
-		case recipe.PotionContainerChange:
-			inputRuntimeID, _, _ := world.ItemRuntimeID(i.Input()[0].(item.Stack).Item())
-			reagentRuntimeID, _, _ := world.ItemRuntimeID(i.Input()[1].(item.Stack).Item())
-			outputRuntimeID, _, _ := world.ItemRuntimeID(i.Output()[0].Item())
-
-			potionContainerChange = append(potionContainerChange, protocol.PotionContainerChangeRecipe{
-				InputItemID:   inputRuntimeID,
-				ReagentItemID: reagentRuntimeID,
-				OutputItemID:  outputRuntimeID,
-			})
 		}
 	}
-
-	s.writePacket(&packet.CraftingData{Recipes: recipes, PotionRecipes: potionRecipes, PotionContainerChangeRecipes: potionContainerChange, ClearRecipes: true})
+	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
 }
 
 // sendArmourTrimData sends the armour trim data.
