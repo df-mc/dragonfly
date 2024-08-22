@@ -16,8 +16,8 @@ type Item interface {
 	Empty() bool
 }
 
-// inputItems is a type representing a list of input items, with helper functions to convert them to
-type inputItems []struct {
+// inputItem is a type representing an input item, with helper function to convert it to
+type inputItem struct {
 	// Name is the name of the item being inputted.
 	Name string `nbt:"name"`
 	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
@@ -34,34 +34,51 @@ type inputItems []struct {
 	Tag string `nbt:"tag"`
 }
 
+// Item converts input item to recipe item.
+func (i inputItem) Item() (Item, bool) {
+	var d Item
+
+	if i.Tag != "" {
+		d = NewItemTag(i.Tag, int(i.Count))
+	} else {
+		it, ok := world.ItemByName(i.Name, int16(i.Meta))
+		if !ok {
+			return nil, false
+		}
+		if b, ok := world.BlockByName(i.State.Name, i.State.Properties); ok {
+			if it, ok = b.(world.Item); !ok {
+				return nil, false
+			}
+		}
+		st := item.NewStack(it, int(i.Count))
+		if i.Meta == math.MaxInt16 {
+			st = st.WithValue("variants", true)
+		}
+
+		d = st
+	}
+
+	return d, true
+}
+
+// inputItems is a type representing a list of input items, with helper functions to convert them to
+type inputItems []inputItem
+
 // Items converts input items to recipe items.
 func (d inputItems) Items() ([]Item, bool) {
 	s := make([]Item, 0, len(d))
 	for _, i := range d {
-		if i.Tag != "" {
-			s = append(s, NewItemTag(i.Tag, int(i.Count)))
-		} else {
-			it, ok := world.ItemByName(i.Name, int16(i.Meta))
-			if !ok {
-				return nil, false
-			}
-			if b, ok := world.BlockByName(i.State.Name, i.State.Properties); ok {
-				if it, ok = b.(world.Item); !ok {
-					return nil, false
-				}
-			}
-			st := item.NewStack(it, int(i.Count))
-			if i.Meta == math.MaxInt16 {
-				st = st.WithValue("variants", true)
-			}
-			s = append(s, st)
+		itemInput, ok := i.Item()
+		if !ok {
+			return nil, false
 		}
+		s = append(s, itemInput)
 	}
 	return s, true
 }
 
-// outputItems is an array of output items.
-type outputItems []struct {
+// outputItem is an output item.
+type outputItem struct {
 	// Name is the name of the item being output.
 	Name string `nbt:"name"`
 	// Meta is the meta of the item. This can change the item almost completely, or act as durability.
@@ -78,23 +95,39 @@ type outputItems []struct {
 	NBTData map[string]interface{} `nbt:"data"`
 }
 
+// Stack converts output item to item stack.
+func (o outputItem) Stack() (item.Stack, bool) {
+	var stack item.Stack
+
+	it, ok := world.ItemByName(o.Name, int16(o.Meta))
+	if !ok {
+		return item.Stack{}, false
+	}
+	if b, ok := world.BlockByName(o.State.Name, o.State.Properties); ok {
+		if it, ok = b.(world.Item); !ok {
+			return item.Stack{}, false
+		}
+	}
+	if n, ok := it.(world.NBTer); ok {
+		it = n.DecodeNBT(o.NBTData).(world.Item)
+	}
+
+	stack = item.NewStack(it, int(o.Count))
+	return stack, true
+}
+
+// outputItems is an array of output items.
+type outputItems []outputItem
+
 // Stacks converts output items to item stacks.
 func (d outputItems) Stacks() ([]item.Stack, bool) {
 	s := make([]item.Stack, 0, len(d))
 	for _, o := range d {
-		it, ok := world.ItemByName(o.Name, int16(o.Meta))
+		itemOutput, ok := o.Stack()
 		if !ok {
 			return nil, false
 		}
-		if b, ok := world.BlockByName(o.State.Name, o.State.Properties); ok {
-			if it, ok = b.(world.Item); !ok {
-				return nil, false
-			}
-		}
-		if n, ok := it.(world.NBTer); ok {
-			it = n.DecodeNBT(o.NBTData).(world.Item)
-		}
-		s = append(s, item.NewStack(it, int(o.Count)))
+		s = append(s, itemOutput)
 	}
 	return s, true
 }
