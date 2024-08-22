@@ -80,11 +80,10 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 					if h := blockPos.Side(f); w.Block(h) == fire() {
 						w.SetBlock(h, nil, nil)
 					}
-				}
 
-				if b, ok := w.Block(blockPos).(SplashableBlock); ok {
-					b.Splash(w, blockPos, pot)
-					break
+					if b, ok := w.Block(blockPos.Side(f)).(SplashableBlock); ok {
+						b.Splash(w, blockPos.Side(f), pot)
+					}
 				}
 
 				resultPos := result.BlockPosition()
