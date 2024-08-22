@@ -80,7 +80,7 @@ func (c Campfire) LightEmissionLevel() uint8 {
 }
 
 // Ignite ...
-func (c Campfire) Ignite(pos cube.Pos, w *world.World) bool {
+func (c Campfire) Ignite(pos cube.Pos, w *world.World, _ world.Entity) bool {
 	w.PlaySound(pos.Vec3(), sound.Ignite{})
 	if !c.Extinguished {
 		return false
