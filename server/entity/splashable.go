@@ -10,20 +10,6 @@ import (
 	"time"
 )
 
-// SplashableBlock is a block that can be splashed with a splash bottle.
-type SplashableBlock interface {
-	world.Block
-	// Splash is called when a type that implements splashable splashes onto a block.
-	Splash(w *world.World, pos cube.Pos, p potion.Potion)
-}
-
-// SplashableEntity is an entity that can be splashed with a splash bottle.
-type SplashableEntity interface {
-	world.Entity
-	// Splash is called when a type that implements splashable splashes onto an entity.
-	Splash(w *world.World, pos mgl64.Vec3, p potion.Potion)
-}
-
 // potionSplash returns a function that creates a potion splash with a specific
 // duration multiplier and potion type.
 func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, res trace.Result) {
@@ -81,21 +67,7 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 						w.SetBlock(h, nil, nil)
 					}
 				}
-
-				if b, ok := w.Block(blockPos).(SplashableBlock); ok {
-					b.Splash(w, blockPos, pot)
-					break
-				}
-
-				resultPos := result.BlockPosition()
-				if b, ok := w.Block(resultPos).(SplashableBlock); ok {
-					b.Splash(w, resultPos, pot)
-				}
 			case trace.EntityResult:
-				if e, ok := result.Entity().(SplashableEntity); ok {
-					e.Splash(w, pos, pot)
-				}
-
 				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
 			}
 		}
