@@ -16,7 +16,7 @@ type Item interface {
 	Empty() bool
 }
 
-// inputItem is a type representing an input item, with helper function to convert it to
+// inputItem is a type representing an input item, with helper function to convert it to an Item.
 type inputItem struct {
 	// Name is the name of the item being inputted.
 	Name string `nbt:"name"`
@@ -34,7 +34,7 @@ type inputItem struct {
 	Tag string `nbt:"tag"`
 }
 
-// Item converts input item to recipe item.
+// Item converts an input item to a recipe item.
 func (i inputItem) Item() (Item, bool) {
 	var d Item
 
@@ -61,7 +61,7 @@ func (i inputItem) Item() (Item, bool) {
 	return d, true
 }
 
-// inputItems is a type representing a list of input items, with helper functions to convert them to
+// inputItems is a type representing a list of input items, with helper function to convert it to an Item.
 type inputItems []inputItem
 
 // Items converts input items to recipe items.
@@ -95,7 +95,7 @@ type outputItem struct {
 	NBTData map[string]interface{} `nbt:"data"`
 }
 
-// Stack converts output item to item stack.
+// Stack converts an output item to an item stack.
 func (o outputItem) Stack() (item.Stack, bool) {
 	var stack item.Stack
 
