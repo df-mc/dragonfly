@@ -36,29 +36,25 @@ type inputItem struct {
 
 // Item converts an input item to a recipe item.
 func (i inputItem) Item() (Item, bool) {
-	var d Item
-
 	if i.Tag != "" {
-		d = NewItemTag(i.Tag, int(i.Count))
-	} else {
-		it, ok := world.ItemByName(i.Name, int16(i.Meta))
-		if !ok {
-			return nil, false
-		}
-		if b, ok := world.BlockByName(i.State.Name, i.State.Properties); ok {
-			if it, ok = b.(world.Item); !ok {
-				return nil, false
-			}
-		}
-		st := item.NewStack(it, int(i.Count))
-		if i.Meta == math.MaxInt16 {
-			st = st.WithValue("variants", true)
-		}
-
-		d = st
+		return NewItemTag(i.Tag, int(i.Count)), true
 	}
 
-	return d, true
+	it, ok := world.ItemByName(i.Name, int16(i.Meta))
+	if !ok {
+		return nil, false
+	}
+	if b, ok := world.BlockByName(i.State.Name, i.State.Properties); ok {
+		if it, ok = b.(world.Item); !ok {
+			return nil, false
+		}
+	}
+	st := item.NewStack(it, int(i.Count))
+	if i.Meta == math.MaxInt16 {
+		st = st.WithValue("variants", true)
+	}
+
+	return st, true
 }
 
 // inputItems is a type representing a list of input items, with helper function to convert it to an Item.

@@ -112,6 +112,14 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 	if held.Empty() {
 		return false
 	}
+
+	if _, ok := held.Item().(item.Shovel); ok {
+		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+		c.Extinguished = true
+		w.SetBlock(pos, c, nil)
+		return true
+	}
+
 	rawFood, ok := held.Item().(item.Smeltable)
 	if !ok || !rawFood.SmeltInfo().Food {
 		return false
@@ -182,7 +190,9 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 
 // NeighbourUpdateTick ...
 func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if _, ok := w.Liquid(pos); ok && !c.Extinguished {
+	_, ok := w.Liquid(pos)
+	_, okTwo := w.Liquid(pos.Side(cube.FaceUp))
+	if ok || okTwo && !c.Extinguished {
 		c.Extinguished = true
 		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 		w.SetBlock(pos, c, nil)
@@ -197,9 +207,15 @@ func (c Campfire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 			w.PlaySound(pos.Vec3(), sound.Ignite{})
 			w.SetBlock(pos, c, nil)
 		}
-		if !c.Extinguished && !w.RainingAt(pos) {
-			if flammable.OnFireDuration() < time.Second*8 {
-				flammable.SetOnFire(8 * time.Second)
+
+		if !c.Extinguished {
+			if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+				if c.Type == SoulFire() {
+					l.Hurt(SoulFire().Damage(), FireDamageSource{})
+					return
+				}
+
+				l.Hurt(NormalFire().Damage(), FireDamageSource{})
 			}
 		}
 	}
