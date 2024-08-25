@@ -5,8 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/parser"
-	"go/token"
+	"golang.org/x/tools/go/packages"
 	"io"
 	"log"
 	"math/bits"
@@ -23,8 +22,10 @@ func main() {
 	if len(flag.Args()) != 1 {
 		log.Fatalln("Must pass one package to produce block hashes for.")
 	}
-	fs := token.NewFileSet()
-	packages, err := parser.ParseDir(fs, flag.Args()[0], nil, parser.ParseComments)
+	cfg := &packages.Config{
+		Mode: packages.NeedName | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedFiles,
+	}
+	pkgs, err := packages.Load(cfg, flag.Args()[0])
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -32,15 +33,14 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	for _, pkg := range packages {
-		procPackage(pkg, fs, f)
+	for _, pkg := range pkgs {
+		procPackage(pkg, f)
 	}
 	_ = f.Close()
 }
 
-func procPackage(pkg *ast.Package, fs *token.FileSet, w io.Writer) {
+func procPackage(pkg *packages.Package, w io.Writer) {
 	b := &hashBuilder{
-		fs:          fs,
 		pkg:         pkg,
 		fields:      make(map[string][]*ast.Field),
 		aliases:     make(map[string]string),
@@ -66,8 +66,7 @@ var (
 )
 
 type hashBuilder struct {
-	fs          *token.FileSet
-	pkg         *ast.Package
+	pkg         *packages.Package
 	fields      map[string][]*ast.Field
 	funcs       map[string]*ast.FuncDecl
 	aliases     map[string]string
@@ -147,7 +146,7 @@ func (b *hashBuilder) writeMethods(w io.Writer, baseBits int) {
 		for _, n := range fun.Recv.List[0].Names {
 			recvName = n.Name
 		}
-		pos := b.fs.Position(fun.Body.Pos())
+		pos := b.pkg.Fset.Position(fun.Body.Pos())
 		f, err := os.Open(pos.Filename)
 		if err != nil {
 			log.Fatalln(err)
@@ -264,8 +263,8 @@ func (b *hashBuilder) resolveBlocks() {
 	}
 }
 
-func (b *hashBuilder) readFuncs(pkg *ast.Package) {
-	for _, f := range pkg.Files {
+func (b *hashBuilder) readFuncs(pkg *packages.Package) {
+	for _, f := range pkg.Syntax {
 		ast.Inspect(f, b.readFuncDecls)
 	}
 }
@@ -281,8 +280,8 @@ func (b *hashBuilder) readFuncDecls(node ast.Node) bool {
 	return true
 }
 
-func (b *hashBuilder) readStructFields(pkg *ast.Package) {
-	for _, f := range pkg.Files {
+func (b *hashBuilder) readStructFields(pkg *packages.Package) {
+	for _, f := range pkg.Syntax {
 		ast.Inspect(f, b.readStructs)
 	}
 	b.resolveEmbedded()

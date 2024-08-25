@@ -55,7 +55,7 @@ func (s sandstone) String() string {
 	case 1:
 		return "cut"
 	case 2:
-		return "heiroglyphs"
+		return "chiseled"
 	case 3:
 		return "smooth"
 	}

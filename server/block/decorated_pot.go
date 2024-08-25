@@ -65,7 +65,7 @@ func (p DecoratedPot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *
 
 // EncodeNBT ...
 func (p DecoratedPot) EncodeNBT() map[string]any {
-	var sherds []string
+	var sherds []any
 	for _, decoration := range p.Decorations {
 		if decoration == nil {
 			sherds = append(sherds, "minecraft:brick")

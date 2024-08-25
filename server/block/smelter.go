@@ -38,6 +38,80 @@ func newSmelter() *smelter {
 	return s
 }
 
+// InsertItem ...
+func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
+	for sourceSlot, sourceStack := range h.inventory.Slots() {
+		var slot int
+
+		if sourceStack.Empty() {
+			continue
+		}
+
+		if h.Facing != cube.FaceDown {
+			slot = 1
+		} else {
+			slot = 0
+		}
+
+		stack := sourceStack.Grow(-sourceStack.Count() + 1)
+		it, _ := s.Inventory(w, pos).Item(slot)
+		if slot == 1 {
+			if _, ok := sourceStack.Item().(item.Fuel); !ok {
+				// The item is not fuel.
+				continue
+			}
+		}
+		if !sourceStack.Comparable(it) {
+			// The items are not the same.
+			continue
+		}
+		if it.Count() == it.MaxCount() {
+			// The item has the maximum count that the stack is able to hold.
+			continue
+		}
+		if !it.Empty() {
+			stack = it.Grow(1)
+		}
+
+		_ = s.Inventory(w, pos).SetItem(slot, stack)
+		_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+		return true
+	}
+
+	return false
+}
+
+// ExtractItem ...
+func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
+	for sourceSlot, sourceStack := range s.inventory.Slots() {
+		if sourceStack.Empty() {
+			continue
+		}
+
+		if sourceSlot == 0 {
+			continue
+		}
+
+		if sourceSlot == 1 {
+			fuel, ok := sourceStack.Item().(item.Fuel)
+			if ok && fuel.FuelInfo().Duration.Seconds() != 0 {
+				continue
+			}
+		}
+
+		_, err := h.inventory.AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
+		if err != nil {
+			// The hopper is full.
+			continue
+		}
+
+		_ = s.Inventory(w, pos).SetItem(sourceSlot, sourceStack.Grow(-1))
+		return true
+	}
+
+	return false
+}
+
 // Durations returns the remaining, maximum, and cook durations of the smelter.
 func (s *smelter) Durations() (remaining time.Duration, max time.Duration, cook time.Duration) {
 	s.mu.Lock()
@@ -62,7 +136,7 @@ func (s *smelter) ResetExperience() int {
 }
 
 // Inventory returns the inventory of the furnace.
-func (s *smelter) Inventory() *inventory.Inventory {
+func (s *smelter) Inventory(*world.World, cube.Pos) *inventory.Inventory {
 	return s.inventory
 }
 

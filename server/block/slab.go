@@ -151,33 +151,20 @@ func (s Slab) Model() world.BlockModel {
 
 // EncodeItem ...
 func (s Slab) EncodeItem() (string, int16) {
-	id, slabType, meta := encodeSlabBlock(s.Block)
-	if slabType != "" {
-		return "minecraft:" + encodeLegacySlabId(slabType), meta
-	}
-	return "minecraft:" + id + "_slab", meta
+	return "minecraft:" + encodeSlabBlock(s.Block) + "_slab", 0
 }
 
 // EncodeBlock ...
 func (s Slab) EncodeBlock() (string, map[string]any) {
-	id, slabType, _ := encodeSlabBlock(s.Block)
 	side := "bottom"
 	if s.Top {
 		side = "top"
 	}
-	properties := map[string]any{"minecraft:vertical_half": side}
-	if slabType != "" {
-		properties[slabType] = id
-		id = encodeLegacySlabId(slabType)
-		if s.Double {
-			id = "double_" + id
-		}
-	} else if s.Double {
-		id = id + "_double_slab"
-	} else {
-		id = id + "_slab"
+	suffix := "_slab"
+	if s.Double {
+		suffix = "_double_slab"
 	}
-	return "minecraft:" + id, properties
+	return "minecraft:" + encodeSlabBlock(s.Block) + suffix, map[string]any{"minecraft:vertical_half": side}
 }
 
 // allSlabs ...

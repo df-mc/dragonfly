@@ -101,6 +101,8 @@ func init() {
 	world.RegisterBlock(TNT{})
 	world.RegisterBlock(Terracotta{})
 	world.RegisterBlock(Tuff{})
+	world.RegisterBlock(ShortGrass{})
+	world.RegisterBlock(Fern{})
 
 	for _, ore := range OreTypes() {
 		world.RegisterBlock(CoalOre{Type: ore})
@@ -147,6 +149,7 @@ func init() {
 	registerAll(allGlazedTerracotta())
 	registerAll(allGrindstones())
 	registerAll(allHayBales())
+	registerAll(allHoppers())
 	registerAll(allItemFrames())
 	registerAll(allKelp())
 	registerAll(allLadders())
@@ -182,7 +185,6 @@ func init() {
 	registerAll(allStoneBricks())
 	registerAll(allStonecutters())
 	registerAll(allSugarCane())
-	registerAll(allTallGrass())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
 	registerAll(allWalls())
@@ -257,6 +259,7 @@ func init() {
 	world.RegisterItem(Grindstone{})
 	world.RegisterItem(HayBale{})
 	world.RegisterItem(Honeycomb{})
+	world.RegisterItem(Hopper{})
 	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(IronBars{})
 	world.RegisterItem(Iron{})
@@ -328,6 +331,8 @@ func init() {
 	world.RegisterItem(Tuff{})
 	world.RegisterItem(WheatSeeds{})
 	world.RegisterItem(DecoratedPot{})
+	world.RegisterItem(ShortGrass{})
+	world.RegisterItem(Fern{})
 	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Lava{})})
 	world.RegisterItem(item.Bucket{Content: item.LiquidBucketContent(Water{})})
 	world.RegisterItem(item.Bucket{Content: item.MilkBucketContent()})
@@ -395,9 +400,6 @@ func init() {
 	}
 	for _, f := range DoubleFlowerTypes() {
 		world.RegisterItem(DoubleFlower{Type: f})
-	}
-	for _, g := range TallGrassTypes() {
-		world.RegisterItem(TallGrass{Type: g})
 	}
 	for _, g := range DoubleTallGrassTypes() {
 		world.RegisterItem(DoubleTallGrass{Type: g})

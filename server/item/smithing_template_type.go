@@ -208,6 +208,8 @@ func ArmourSmithingTemplateFromString(name string) ArmourSmithingTemplate {
 		return TemplateTide()
 	case "snout":
 		return TemplateSnout()
+	case "rib":
+		return TemplateRib()
 	case "eye":
 		return TemplateEye()
 	case "spire":

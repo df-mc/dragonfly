@@ -92,12 +92,12 @@ func (d DoubleTallGrass) CompostChance() float64 {
 
 // EncodeItem ...
 func (d DoubleTallGrass) EncodeItem() (name string, meta int16) {
-	return "minecraft:double_plant", int16(d.Type.Uint8() + 2)
+	return "minecraft:" + d.Type.String(), 0
 }
 
 // EncodeBlock ...
 func (d DoubleTallGrass) EncodeBlock() (string, map[string]any) {
-	return "minecraft:double_plant", map[string]any{"double_plant_type": d.Type.String(), "upper_block_bit": d.UpperPart}
+	return "minecraft:" + d.Type.String(), map[string]any{"upper_block_bit": d.UpperPart}
 }
 
 // allDoubleTallGrass ...

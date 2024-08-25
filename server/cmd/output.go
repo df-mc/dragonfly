@@ -1,6 +1,9 @@
 package cmd
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Output holds the output of a command execution. It holds success messages and error messages, which the
 // source of a command execution gets sent.
@@ -16,7 +19,7 @@ func (o *Output) Errorf(format string, a ...any) {
 
 // Error formats an error message and adds it to the command output.
 func (o *Output) Error(a ...any) {
-	o.errors = append(o.errors, fmt.Errorf(fmt.Sprint(a...)))
+	o.errors = append(o.errors, errors.New(fmt.Sprint(a...)))
 }
 
 // Printf formats a (success) message and adds it to the command output.

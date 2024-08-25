@@ -5,131 +5,118 @@ import (
 )
 
 // encodeSlabBlock encodes the provided block in to an identifier and meta value that can be used to encode the slab.
-func encodeSlabBlock(block world.Block) (id, slabType string, meta int16) {
+// halfFlattened is a temporary hack for a stone_block_slab which has been flattened but double_stone_block_slab
+// has not. This can be removed in 1.21.10 where they have flattened all slab types.
+func encodeSlabBlock(block world.Block) (id string) {
 	switch block := block.(type) {
 	// TODO: Copper
 	case Andesite:
 		if block.Polished {
-			return "polished_andesite", "stone_slab_type_3", 2
+			return "polished_andesite"
 		}
-		return "andesite", "stone_slab_type_3", 3
+		return "andesite"
 	case Blackstone:
 		if block.Type == NormalBlackstone() {
-			return "blackstone", "", 0
+			return "blackstone"
 		} else if block.Type == PolishedBlackstone() {
-			return "polished_blackstone", "", 0
+			return "polished_blackstone"
 		}
 	case Bricks:
-		return "brick", "stone_slab_type", 4
+		return "brick"
 	case Cobblestone:
 		if block.Mossy {
-			return "mossy_cobblestone", "stone_slab_type_2", 5
+			return "mossy_cobblestone"
 		}
-		return "cobblestone", "stone_slab_type", 3
+		return "cobblestone"
 	case Deepslate:
 		if block.Type == CobbledDeepslate() {
-			return "cobbled_deepslate", "", 0
+			return "cobbled_deepslate"
 		} else if block.Type == PolishedDeepslate() {
-			return "polished_deepslate", "", 0
+			return "polished_deepslate"
 		}
 	case DeepslateBricks:
 		if !block.Cracked {
-			return "deepslate_brick", "", 0
+			return "deepslate_brick"
 		}
 	case DeepslateTiles:
 		if !block.Cracked {
-			return "deepslate_tile", "", 0
+			return "deepslate_tile"
 		}
 	case Diorite:
 		if block.Polished {
-			return "polished_diorite", "stone_slab_type_3", 5
+			return "polished_diorite"
 		}
-		return "diorite", "stone_slab_type_3", 4
+		return "diorite"
 	case EndBricks:
-		return "end_stone_brick", "stone_slab_type_3", 0
+		return "end_stone_brick"
 	case Granite:
 		if block.Polished {
-			return "polished_granite", "stone_slab_type_3", 7
+			return "polished_granite"
 		}
-		return "granite", "stone_slab_type_3", 6
+		return "granite"
 	case MudBricks:
-		return "mud_brick", "", 0
+		return "mud_brick"
 	case NetherBricks:
 		if block.Type == RedNetherBricks() {
-			return "nether_brick", "stone_slab_type", 7
+			return "nether_brick"
 		}
-		return "red_nether_brick", "stone_slab_type_2", 7
+		return "red_nether_brick"
 	case Planks:
-		return block.Wood.String(), "", 0
+		return block.Wood.String()
 	case PolishedBlackstoneBrick:
 		if !block.Cracked {
-			return "polished_blackstone_brick", "", 0
+			return "polished_blackstone_brick"
 		}
 	case Prismarine:
 		switch block.Type {
 		case NormalPrismarine():
-			return "prismarine_rough", "stone_slab_type_2", 2
+			return "prismarine"
 		case DarkPrismarine():
-			return "prismarine_dark", "stone_slab_type_2", 3
+			return "dark_prismarine"
 		case BrickPrismarine():
-			return "prismarine_brick", "stone_slab_type_2", 4
+			return "prismarine_brick"
 		}
 		panic("invalid prismarine type")
 	case Purpur:
-		return "purpur", "stone_slab_type_2", 1
+		return "purpur"
 	case Quartz:
 		if block.Smooth {
-			return "smooth_quartz", "stone_slab_type_4", 1
+			return "smooth_quartz"
 		}
-		return "quartz", "stone_slab_type", 6
+		return "quartz"
 	case Sandstone:
 		switch block.Type {
 		case NormalSandstone():
 			if block.Red {
-				return "red_sandstone", "stone_slab_type_2", 0
+				return "red_sandstone"
 			}
-			return "sandstone", "stone_slab_type", 1
+			return "sandstone"
 		case CutSandstone():
 			if block.Red {
-				return "cut_red_sandstone", "stone_slab_type_4", 4
+				return "cut_red_sandstone"
 			}
-			return "cut_sandstone", "stone_slab_type_4", 3
+			return "cut_sandstone"
 		case SmoothSandstone():
 			if block.Red {
-				return "smooth_red_sandstone", "stone_slab_type_3", 1
+				return "smooth_red_sandstone"
 			}
-			return "smooth_sandstone", "stone_slab_type_2", 6
+			return "smooth_sandstone"
 		}
 		panic("invalid sandstone type")
 	case Stone:
 		if block.Smooth {
-			return "smooth_stone", "stone_slab_type", 0
+			return "smooth_stone"
 		}
-		return "stone", "stone_slab_type_4", 2
+		return "normal_stone"
 	case StoneBricks:
 		if block.Type == MossyStoneBricks() {
-			return "mossy_stone_brick", "stone_slab_type_4", 0
+			return "mossy_stone_brick"
 		}
-		return "stone_brick", "stone_slab_type", 5
+		return "stone_brick"
+	case Tuff:
+		return "tuff"
 	}
 	panic("invalid block used for slab")
-}
-
-// encodeLegacySlabId encodes a legacy slab type to its identifier.
-func encodeLegacySlabId(slabType string) string {
-	switch slabType {
-	case "wood_type":
-		return "wooden_slab"
-	case "stone_slab_type":
-		return "stone_block_slab"
-	case "stone_slab_type_2":
-		return "stone_block_slab2"
-	case "stone_slab_type_3":
-		return "stone_block_slab3"
-	case "stone_slab_type_4":
-		return "stone_block_slab4"
-	}
-	panic("invalid slab type")
 }
 
 // SlabBlocks returns a list of all possible blocks for a slab.
@@ -163,6 +150,7 @@ func SlabBlocks() []world.Block {
 		StoneBricks{},
 		Stone{Smooth: true},
 		Stone{},
+		Tuff{},
 	}
 	for _, p := range PrismarineTypes() {
 		b = append(b, Prismarine{Type: p})
