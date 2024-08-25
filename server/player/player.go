@@ -551,7 +551,7 @@ func (p *Player) fall(distance float64) {
 	if h, ok := b.(block.EntityLander); ok {
 		if _, ok := b.(block.Farmland); ok {
 			ctx := event.C()
-			if p.Handler().HandleTrampleCrop(ctx); !ctx.Cancelled() {
+			if p.Handler().HandleCropTrample(ctx); !ctx.Cancelled() {
 				h.EntityLand(pos, w, p, &distance)
 			}
 		} else {

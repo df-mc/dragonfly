@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player/diagnostics"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -55,6 +56,10 @@ type Handler interface {
 	// HandleSkinChange handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
 	// change.
 	HandleSkinChange(ctx *event.Context, skin *skin.Skin)
+	// HandleFireExtinguish handles the player extinguishing a fire at a specific position. ctx.Cancel() may
+	// be called to cancel the fire being extinguished.
+	// cube.Pos can be used to see where was the fire extinguished, may be used to cancel this on specific positions.
+	HandleFireExtinguish(ctx *event.Context, pos cube.Pos)
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *event.Context, pos cube.Pos)
@@ -68,6 +73,8 @@ type Handler interface {
 	// HandleBlockPick handles the player picking a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being picked.
 	HandleBlockPick(ctx *event.Context, pos cube.Pos, b world.Block)
+	// HandleCropTrample handles the player trampling a crop.
+	HandleCropTrample(ctx *event.Context)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is not called if the player is holding no item.
@@ -106,7 +113,7 @@ type Handler interface {
 	HandlePunchAir(ctx *event.Context)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
-	HandleSignEdit(ctx *event.Context, frontSide bool, oldText, newText string)
+	HandleSignEdit(ctx *event.Context, pos cube.Pos, frontSide bool, oldText, newText string)
 	// HandleLecternPageTurn handles the player turning a page in a lectern. ctx.Cancel() may be called to cancel the
 	// page turn. The page number may be changed by assigning to *page.
 	HandleLecternPageTurn(ctx *event.Context, pos cube.Pos, oldPage int, newPage *int)
@@ -131,6 +138,10 @@ type Handler interface {
 	// HandleQuit handles the closing of a player. It is always called when the player is disconnected,
 	// regardless of the reason.
 	HandleQuit()
+	// HandleDiagnostics handles the latest diagnostics data that the player has sent to the server. This is
+	// not sent by every client however, only those with the "Creator > Enable Client Diagnostics" setting
+	// enabled.
+	HandleDiagnostics(d diagnostics.Diagnostics)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -152,11 +163,13 @@ func (NopHandler) HandleCommandExecution(*event.Context, cmd.Command, []string) 
 func (NopHandler) HandleTransfer(*event.Context, *net.UDPAddr)                                {}
 func (NopHandler) HandleChat(*event.Context, *string)                                         {}
 func (NopHandler) HandleSkinChange(*event.Context, *skin.Skin)                                {}
+func (NopHandler) HandleFireExtinguish(*event.Context, cube.Pos)                              {}
 func (NopHandler) HandleStartBreak(*event.Context, cube.Pos)                                  {}
 func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack, *int)             {}
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
 func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block)                      {}
-func (NopHandler) HandleSignEdit(*event.Context, bool, string, string)                        {}
+func (NopHandler) HandleSignEdit(*event.Context, cube.Pos, bool, string, string)              {}
+func (NopHandler) HandleCropTrample(*event.Context)                                           {}
 func (NopHandler) HandleLecternPageTurn(*event.Context, cube.Pos, int, *int)                  {}
 func (NopHandler) HandleItemPickup(*event.Context, *item.Stack)                               {}
 func (NopHandler) HandleItemUse(*event.Context)                                               {}
@@ -173,3 +186,4 @@ func (NopHandler) HandleFoodLoss(*event.Context, int, *int)                     
 func (NopHandler) HandleDeath(world.DamageSource, *bool)                                      {}
 func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                                   {}
 func (NopHandler) HandleQuit()                                                                {}
+func (NopHandler) HandleDiagnostics(d diagnostics.Diagnostics)                                {}
