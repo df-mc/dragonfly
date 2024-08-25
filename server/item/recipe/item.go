@@ -93,8 +93,6 @@ type outputItem struct {
 
 // Stack converts an output item to an item stack.
 func (o outputItem) Stack() (item.Stack, bool) {
-	var stack item.Stack
-
 	it, ok := world.ItemByName(o.Name, int16(o.Meta))
 	if !ok {
 		return item.Stack{}, false
@@ -108,8 +106,7 @@ func (o outputItem) Stack() (item.Stack, bool) {
 		it = n.DecodeNBT(o.NBTData).(world.Item)
 	}
 
-	stack = item.NewStack(it, int(o.Count))
-	return stack, true
+	return item.NewStack(it, int(o.Count)), true
 }
 
 // outputItems is an array of output items.

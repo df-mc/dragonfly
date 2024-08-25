@@ -207,15 +207,13 @@ func (c Campfire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 			w.PlaySound(pos.Vec3(), sound.Ignite{})
 			w.SetBlock(pos, c, nil)
 		}
-
 		if !c.Extinguished {
 			if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
-				if c.Type == SoulFire() {
-					l.Hurt(SoulFire().Damage(), FireDamageSource{})
-					return
+				for _, t := range FireTypes() {
+					if c.Type == t {
+						l.Hurt(t.Damage(), FireDamageSource{})
+					}
 				}
-
-				l.Hurt(NormalFire().Damage(), FireDamageSource{})
 			}
 		}
 	}
