@@ -74,7 +74,7 @@ type Handler interface {
 	// may be called to cancel the block being picked.
 	HandleBlockPick(ctx *event.Context, pos cube.Pos, b world.Block)
 	// HandleCropTrample handles the player trampling a crop.
-	HandleCropTrample(ctx *event.Context)
+	HandleCropTrample(ctx *event.Context, pos cube.Pos)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is not called if the player is holding no item.
@@ -169,7 +169,7 @@ func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack, *int
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
 func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block)                      {}
 func (NopHandler) HandleSignEdit(*event.Context, cube.Pos, bool, string, string)              {}
-func (NopHandler) HandleCropTrample(*event.Context)                                           {}
+func (NopHandler) HandleCropTrample(*event.Context, cube.Pos)                                 {}
 func (NopHandler) HandleLecternPageTurn(*event.Context, cube.Pos, int, *int)                  {}
 func (NopHandler) HandleItemPickup(*event.Context, *item.Stack)                               {}
 func (NopHandler) HandleItemUse(*event.Context)                                               {}
