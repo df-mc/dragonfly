@@ -113,13 +113,6 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 		return false
 	}
 
-	if _, ok := held.Item().(item.Shovel); ok {
-		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
-		c.Extinguished = true
-		w.SetBlock(pos, c, nil)
-		return true
-	}
-
 	rawFood, ok := held.Item().(item.Smeltable)
 	if !ok || !rawFood.SmeltInfo().Food {
 		return false
@@ -140,6 +133,16 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 		}
 	}
 	return false
+}
+
+// Shovel ...
+func (c Campfire) Shovel() (world.Block, bool) {
+	if c.Extinguished {
+		return c, false
+	}
+
+	c.Extinguished = true
+	return c, true
 }
 
 // UseOnBlock ...
@@ -191,8 +194,8 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 // NeighbourUpdateTick ...
 func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	_, ok := w.Liquid(pos)
-	_, okTwo := w.Liquid(pos.Side(cube.FaceUp))
-	if ok || okTwo && !c.Extinguished {
+	liquid, okTwo := w.Liquid(pos.Side(cube.FaceUp))
+	if ok || okTwo && liquid.LiquidType() == "water" && !c.Extinguished {
 		c.Extinguished = true
 		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 		w.SetBlock(pos, c, nil)
@@ -209,11 +212,7 @@ func (c Campfire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
 		}
 		if !c.Extinguished {
 			if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
-				for _, t := range FireTypes() {
-					if c.Type == t {
-						l.Hurt(t.Damage(), FireDamageSource{})
-					}
-				}
+				l.Hurt(c.Type.Damage(), FireDamageSource{})
 			}
 		}
 	}
