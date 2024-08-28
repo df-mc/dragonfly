@@ -71,6 +71,7 @@ type Session struct {
 	openedWindow                   atomic.Value[*inventory.Inventory]
 	openedPos                      atomic.Value[cube.Pos]
 	swingingArm                    atomic.Bool
+	changingDimension              atomic.Bool
 
 	recipes map[uint32]recipe.Recipe
 
@@ -399,7 +400,16 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 // changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
 // immediately.
 func (s *Session) changeDimension(dim int32, silent bool) {
-	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	s.changingDimension.Store(true)
+	h := s.handlers[packet.IDServerBoundLoadingScreen].(*ServerBoundLoadingScreenHandler)
+	id := h.currentID.Add(1)
+	h.expectedID.Store(id)
+
+	s.writePacket(&packet.ChangeDimension{
+		Dimension:       dim,
+		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		LoadingScreenID: protocol.Option(id),
+	})
 	s.writePacket(&packet.StopSound{StopAll: silent})
 	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 
@@ -409,6 +419,11 @@ func (s *Session) changeDimension(dim int32, silent bool) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		ActionType:      protocol.PlayerActionDimensionChangeDone,
 	})
+}
+
+// ChangingDimension returns whether the session is currently changing dimension or not.
+func (s *Session) ChangingDimension() bool {
+	return s.changingDimension.Load()
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -463,6 +478,8 @@ func (s *Session) registerHandlers() {
 		packet.IDSubChunkRequest:           &SubChunkRequestHandler{},
 		packet.IDText:                      &TextHandler{},
 		packet.IDTickSync:                  nil,
+		packet.IDServerBoundLoadingScreen:  &ServerBoundLoadingScreenHandler{},
+		packet.IDServerBoundDiagnostics:    &ServerBoundDiagnosticsHandler{},
 	}
 }
 

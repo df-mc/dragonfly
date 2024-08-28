@@ -22,6 +22,44 @@ type Composter struct {
 	Level int
 }
 
+// InsertItem ...
+func (c Composter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
+	if c.Level >= 7 || h.Facing != cube.FaceDown {
+		return false
+	}
+
+	for sourceSlot, sourceStack := range h.inventory.Slots() {
+		if sourceStack.Empty() {
+			continue
+		}
+
+		if c.fill(sourceStack, pos, w) {
+			_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+			return true
+		}
+	}
+
+	return false
+}
+
+// ExtractItem ...
+func (c Composter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
+	if c.Level == 8 {
+		_, err := h.inventory.AddItem(item.NewStack(item.BoneMeal{}, 1))
+		if err != nil {
+			// The hopper is full.
+			return false
+		}
+
+		c.Level = 0
+		w.SetBlock(pos.Side(cube.FaceUp), c, nil)
+		w.PlaySound(pos.Side(cube.FaceUp).Vec3(), sound.ComposterEmpty{})
+		return true
+	}
+
+	return false
+}
+
 // Model ...
 func (c Composter) Model() world.BlockModel {
 	return model.Composter{Level: c.Level}
@@ -63,11 +101,19 @@ func (c Composter) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Us
 		return false
 	}
 	it, _ := u.HeldItems()
+	if c.fill(it, pos, w) {
+		ctx.SubtractFromCount(1)
+		return true
+	}
+	return false
+}
+
+// Fill fills up the composter.
+func (c Composter) fill(it item.Stack, pos cube.Pos, w *world.World) bool {
 	compostable, ok := it.Item().(item.Compostable)
 	if !ok {
 		return false
 	}
-	ctx.SubtractFromCount(1)
 	w.AddParticle(pos.Vec3(), particle.BoneMeal{})
 	if rand.Float64() > compostable.CompostChance() {
 		w.PlaySound(pos.Vec3(), sound.ComposterFill{})
@@ -79,6 +125,7 @@ func (c Composter) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Us
 	if c.Level == 7 {
 		w.ScheduleBlockUpdate(pos, time.Second)
 	}
+
 	return true
 }
 

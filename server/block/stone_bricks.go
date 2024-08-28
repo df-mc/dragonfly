@@ -30,12 +30,12 @@ func (s StoneBricks) SmeltInfo() item.SmeltInfo {
 
 // EncodeItem ...
 func (s StoneBricks) EncodeItem() (name string, meta int16) {
-	return "minecraft:stonebrick", int16(s.Type.Uint8())
+	return "minecraft:" + s.Type.String(), 0
 }
 
 // EncodeBlock ...
 func (s StoneBricks) EncodeBlock() (string, map[string]any) {
-	return "minecraft:stonebrick", map[string]any{"stone_brick_type": s.Type.String()}
+	return "minecraft:" + s.Type.String(), nil
 }
 
 // allStoneBricks returns a list of all stoneBricks block variants.
