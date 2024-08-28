@@ -83,6 +83,7 @@ const (
 	hashGrindstone
 	hashHayBale
 	hashHoneycomb
+	hashHopper
 	hashInvisibleBedrock
 	hashIron
 	hashIronBars
@@ -495,6 +496,10 @@ func (HayBale) BaseHash() uint64 {
 
 func (Honeycomb) BaseHash() uint64 {
 	return hashHoneycomb
+}
+
+func (Hopper) BaseHash() uint64 {
+	return hashHopper
 }
 
 func (InvisibleBedrock) BaseHash() uint64 {
@@ -1167,6 +1172,10 @@ func (h HayBale) Hash() uint64 {
 
 func (Honeycomb) Hash() uint64 {
 	return 0
+}
+
+func (h Hopper) Hash() uint64 {
+	return uint64(h.Facing) | uint64(boolByte(h.Powered))<<3
 }
 
 func (InvisibleBedrock) Hash() uint64 {
