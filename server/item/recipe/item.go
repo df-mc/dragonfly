@@ -16,7 +16,7 @@ type Item interface {
 	Empty() bool
 }
 
-// inputItem is a type representing an input item, with helper function to convert it to an Item.
+// inputItem is a type representing an input item, with a helper function to convert it to an Item.
 type inputItem struct {
 	// Name is the name of the item being inputted.
 	Name string `nbt:"name"`
@@ -57,7 +57,7 @@ func (i inputItem) Item() (Item, bool) {
 	return st, true
 }
 
-// inputItems is a type representing a list of input items, with helper function to convert it to an Item.
+// inputItems is a type representing a list of input items, with a helper function to convert it to an Item.
 type inputItems []inputItem
 
 // Items converts input items to recipe items.
