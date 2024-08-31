@@ -37,6 +37,7 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 			_, living := entity.(Living)
 			return !living || entity == e
 		}
+
 		if len(effects) > 0 {
 			for _, otherE := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignores) {
 				otherPos := otherE.Position()
@@ -90,12 +91,12 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 				if b, ok := w.Block(resultPos).(SplashableBlock); ok {
 					b.Splash(w, resultPos, pot)
 				}
-			case trace.EntityResult:
-				if e, ok := result.Entity().(SplashableEntity); ok {
-					e.Splash(w, pos, pot)
-				}
+			}
 
-				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
+			for _, otherE := range w.EntitiesWithin(box.Grow(3), ignores) {
+				if splashE, ok := otherE.(SplashableEntity); ok {
+					splashE.Splash(w, otherE.Position(), pot)
+				}
 			}
 		}
 		if linger {
