@@ -37,7 +37,6 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 			_, living := entity.(Living)
 			return !living || entity == e
 		}
-
 		if len(effects) > 0 {
 			for _, otherE := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignores) {
 				otherPos := otherE.Position()
