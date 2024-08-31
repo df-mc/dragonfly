@@ -117,8 +117,12 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 	if _, ok := held.Item().(item.Shovel); ok && !c.Extinguished {
 		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 		c.Extinguished = true
-		w.SetBlock(pos, c, nil)
 
+		for i := range c.Items {
+			c.Items[i].Time = time.Second * 30
+		}
+
+		w.SetBlock(pos, c, nil)
 		ctx.DamageItem(1)
 		return true
 	}
@@ -147,12 +151,12 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 
 // UseOnBlock ...
 func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	if _, ok := w.Block(pos).(Campfire); ok && face == cube.FaceUp {
-		return false
-	}
 	pos, _, used = firstReplaceable(w, pos, face, c)
 	if !used {
 		return
+	}
+	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Campfire); ok {
+		return false
 	}
 	c.Facing = user.Rotation().Direction().Opposite()
 	place(w, pos, c, user, ctx)
@@ -198,6 +202,11 @@ func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	if (ok || (okTwo && liquid.LiquidType() == "water")) && !c.Extinguished {
 		c.Extinguished = true
 		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+
+		for i := range c.Items {
+			c.Items[i].Time = time.Second * 30
+		}
+
 		w.SetBlock(pos, c, nil)
 	}
 }
