@@ -17,6 +17,7 @@ import (
 // Campfire is a block that can be used to cook food, pacify bees, act as a spread-proof light source, smoke signal or
 // damaging trap block.
 type Campfire struct {
+	transparent
 	bass
 	sourceWaterDisplacer
 
