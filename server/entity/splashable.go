@@ -90,6 +90,8 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 				if b, ok := w.Block(resultPos).(SplashableBlock); ok {
 					b.Splash(w, resultPos, pot)
 				}
+			case trace.EntityResult:
+				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
 			}
 
 			for _, otherE := range w.EntitiesWithin(box.Grow(3), ignores) {
