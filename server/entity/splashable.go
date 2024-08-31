@@ -21,7 +21,7 @@ type SplashableBlock interface {
 type SplashableEntity interface {
 	world.Entity
 	// Splash is called when a type that implements splashable splashes onto an entity.
-	Splash(w *world.World, pos mgl64.Vec3, p potion.Potion)
+	Splash(w *world.World, pos mgl64.Vec3)
 }
 
 // potionSplash returns a function that creates a potion splash with a specific
@@ -96,7 +96,7 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 
 			for _, otherE := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignores) {
 				if splashE, ok := otherE.(SplashableEntity); ok {
-					splashE.Splash(w, otherE.Position(), pot)
+					splashE.Splash(w, otherE.Position())
 				}
 			}
 		}
