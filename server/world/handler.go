@@ -35,6 +35,8 @@ type Handler interface {
 	// wood, that can be broken by fire. HandleBlockBurn is often succeeded by HandleFireSpread, when fire spreads to
 	// the position of the original block and the event.Context is not cancelled in HandleBlockBurn.
 	HandleBlockBurn(ctx *event.Context, pos cube.Pos)
+	// HandleCropTrample handles an entity trampling a crop.
+	HandleCropTrample(ctx *event.Context, pos cube.Pos)
 	// HandleEntitySpawn handles an entity being spawned into a World through a call to World.AddEntity.
 	HandleEntitySpawn(e Entity)
 	// HandleEntityDespawn handles an entity being despawned from a World through a call to World.RemoveEntity.
@@ -59,6 +61,7 @@ func (NopHandler) HandleLiquidHarden(*event.Context, cube.Pos, Block, Block, Blo
 func (NopHandler) HandleSound(*event.Context, Sound, mgl64.Vec3)                      {}
 func (NopHandler) HandleFireSpread(*event.Context, cube.Pos, cube.Pos)                {}
 func (NopHandler) HandleBlockBurn(*event.Context, cube.Pos)                           {}
+func (NopHandler) HandleCropTrample(*event.Context, cube.Pos)                         {}
 func (NopHandler) HandleEntitySpawn(Entity)                                           {}
 func (NopHandler) HandleEntityDespawn(Entity)                                         {}
 func (NopHandler) HandleClose()                                                       {}
