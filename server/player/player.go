@@ -132,12 +132,14 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		cooldowns:  make(map[string]time.Time),
 		mc:         &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 	}
+	var scoreTag string
 	var gm world.GameMode = world.GameModeSurvival
 	p.gameMode.Store(&gm)
 	p.Handle(nil)
 	p.skin.Store(&skin)
 	p.speed.Store(math.Float64bits(0.1))
 	p.nameTag.Store(&name)
+	p.scoreTag.Store(&scoreTag)
 	p.airSupplyTicks.Store(300)
 	p.maxAirSupplyTicks.Store(300)
 	p.enchantSeed.Store(rand.Int63())
@@ -2144,7 +2146,8 @@ func (p *Player) CollectExperience(value int) bool {
 	if p.Dead() || !p.GameMode().AllowsInteraction() {
 		return false
 	}
-	if time.Since(*p.lastXPPickup.Load()) < time.Millisecond*100 {
+	last := p.lastXPPickup.Load()
+	if last == nil || time.Since(*last) < time.Millisecond*100 {
 		return false
 	}
 	value = p.mendItems(value)

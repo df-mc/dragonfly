@@ -169,6 +169,11 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 	inv := inventory.New(1, nil)
 	s.openedWindow.Store(&inv)
 
+	var scoreboardName string
+	var scoreboardLines []string
+	s.currentScoreboard.Store(&scoreboardName)
+	s.currentLines.Store(&scoreboardLines)
+
 	s.registerHandlers()
 	return s
 }
