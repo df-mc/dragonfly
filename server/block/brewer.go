@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -100,8 +99,6 @@ func (b *brewer) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
 		if sourceSlot == 0 || sourceSlot == 4 {
 			continue
 		}
-
-		fmt.Println(sourceSlot)
 
 		_, err := h.inventory.AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
 		if err != nil {
