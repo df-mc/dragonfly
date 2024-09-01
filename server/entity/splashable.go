@@ -10,6 +10,20 @@ import (
 	"time"
 )
 
+// SplashableBlock is a block that can be splashed with a splash bottle.
+type SplashableBlock interface {
+	world.Block
+	// Splash is called when a water bottle splashes onto a block.
+	Splash(w *world.World, pos cube.Pos)
+}
+
+// SplashableEntity is an entity that can be splashed with a splash bottle.
+type SplashableEntity interface {
+	world.Entity
+	// Splash is called when a water bottle splashes onto an entity.
+	Splash(w *world.World, pos mgl64.Vec3)
+}
+
 // potionSplash returns a function that creates a potion splash with a specific
 // duration multiplier and potion type.
 func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, res trace.Result) {
@@ -66,9 +80,24 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 					if h := blockPos.Side(f); w.Block(h) == fire() {
 						w.SetBlock(h, nil, nil)
 					}
+
+					if b, ok := w.Block(blockPos.Side(f)).(SplashableBlock); ok {
+						b.Splash(w, blockPos.Side(f))
+					}
+				}
+
+				resultPos := result.BlockPosition()
+				if b, ok := w.Block(resultPos).(SplashableBlock); ok {
+					b.Splash(w, resultPos)
 				}
 			case trace.EntityResult:
 				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.
+			}
+
+			for _, otherE := range w.EntitiesWithin(box.GrowVec3(mgl64.Vec3{8.25, 4.25, 8.25}), ignores) {
+				if splashE, ok := otherE.(SplashableEntity); ok {
+					splashE.Splash(w, otherE.Position())
+				}
 			}
 		}
 		if linger {

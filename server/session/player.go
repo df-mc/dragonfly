@@ -152,6 +152,12 @@ func (s *Session) sendRecipes() {
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
+		case recipe.Furnace:
+			recipes = append(recipes, &protocol.FurnaceRecipe{
+				InputType: stackFromItem(i.Input()[0].(item.Stack)).ItemType,
+				Output:    stackFromItem(i.Output()[0]),
+				Block:     i.Block(),
+			})
 		}
 	}
 	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
