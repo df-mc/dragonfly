@@ -13,14 +13,14 @@ import (
 // SplashableBlock is a block that can be splashed with a splash bottle.
 type SplashableBlock interface {
 	world.Block
-	// Splash is called when a type that implements splashable splashes onto a block.
-	Splash(w *world.World, pos cube.Pos, p potion.Potion)
+	// Splash is called when a water bottle splashes onto a block.
+	Splash(w *world.World, pos cube.Pos)
 }
 
 // SplashableEntity is an entity that can be splashed with a splash bottle.
 type SplashableEntity interface {
 	world.Entity
-	// Splash is called when a type that implements splashable splashes onto an entity.
+	// Splash is called when a water bottle splashes onto an entity.
 	Splash(w *world.World, pos mgl64.Vec3)
 }
 
@@ -82,13 +82,13 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, r
 					}
 
 					if b, ok := w.Block(blockPos.Side(f)).(SplashableBlock); ok {
-						b.Splash(w, blockPos.Side(f), pot)
+						b.Splash(w, blockPos.Side(f))
 					}
 				}
 
 				resultPos := result.BlockPosition()
 				if b, ok := w.Block(resultPos).(SplashableBlock); ok {
-					b.Splash(w, resultPos, pot)
+					b.Splash(w, resultPos)
 				}
 			case trace.EntityResult:
 				// TODO: Damage endermen, blazes, striders and snow golems when implemented and rehydrate axolotls.

@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -96,14 +95,23 @@ func (c Campfire) Ignite(pos cube.Pos, w *world.World, _ world.Entity) bool {
 }
 
 // Splash ...
-func (c Campfire) Splash(w *world.World, pos cube.Pos, p potion.Potion) {
-	if p != potion.Water() || c.Extinguished {
-		// Water is the only potion that can extinguish a lit campfire.
+func (c Campfire) Splash(w *world.World, pos cube.Pos) {
+	if c.Extinguished {
 		return
 	}
 
+	c.extinguish(pos, w)
+}
+
+// extinguish extinguishes the campfire.
+func (c Campfire) extinguish(pos cube.Pos, w *world.World) {
 	w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 	c.Extinguished = true
+
+	for i := range c.Items {
+		c.Items[i].Time = time.Second * 30
+	}
+
 	w.SetBlock(pos, c, nil)
 }
 
@@ -115,14 +123,7 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 	}
 
 	if _, ok := held.Item().(item.Shovel); ok && !c.Extinguished {
-		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
-		c.Extinguished = true
-
-		for i := range c.Items {
-			c.Items[i].Time = time.Second * 30
-		}
-
-		w.SetBlock(pos, c, nil)
+		c.extinguish(pos, w)
 		ctx.DamageItem(1)
 		return true
 	}
@@ -200,14 +201,7 @@ func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 	_, ok := w.Liquid(pos)
 	liquid, okTwo := w.Liquid(pos.Side(cube.FaceUp))
 	if (ok || (okTwo && liquid.LiquidType() == "water")) && !c.Extinguished {
-		c.Extinguished = true
-		w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
-
-		for i := range c.Items {
-			c.Items[i].Time = time.Second * 30
-		}
-
-		w.SetBlock(pos, c, nil)
+		c.extinguish(pos, w)
 	}
 }
 
