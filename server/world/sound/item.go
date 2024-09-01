@@ -71,5 +71,8 @@ type GoatHorn struct {
 // blaze shoots a fireball.
 type FireCharge struct{ sound }
 
+// ShieldBlock is a sound played when a player blocks an attack using a shield.
+type ShieldBlock struct{ sound }
+
 // Totem is a sound played when a player uses a totem.
 type Totem struct{ sound }

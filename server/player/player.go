@@ -67,8 +67,10 @@ type Player struct {
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
-	glideTicks   atomic.Int64
-	fireTicks    atomic.Int64
+	blockingDelayTicks atomic.Int64
+	glideTicks         atomic.Int64
+	fireTicks          atomic.Int64
+
 	fallDistance atomic.Float64
 
 	breathing         bool
@@ -581,8 +583,14 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	if dmg < 0 {
 		return 0, true
 	}
+	w, pos := p.World(), p.Position()
 
 	totalDamage := p.FinalDamageFrom(dmg, src)
+	if ok, _ := p.Blocking(); ok && src.ReducedByArmour() {
+		if p.tryShieldBlock(dmg, totalDamage, src) {
+			return 0, false
+		}
+	}
 	damageLeft := totalDamage
 
 	if a := p.Absorption(); a > 0 {
@@ -628,7 +636,6 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		}
 	}
 
-	w, pos := p.World(), p.Position()
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.HurtAction{})
 	}
@@ -643,6 +650,44 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		p.kill(src)
 	}
 	return totalDamage, true
+}
+
+// tryShieldBlock tries to block an attack with a shield. If the attack was blocked, true is returned. If the
+// attack was not blocked, false is returned.
+func (p *Player) tryShieldBlock(dmg float64, totalDamage float64, src world.DamageSource) (affected bool) {
+	w, pos := p.World(), p.Position()
+
+	if src, ok := src.(entity.AttackDamageSource); ok {
+		diff := p.Position().Sub(src.Attacker.Position())
+		diff[1] = 0
+		if diff.Dot(p.Rotation().Vec3()) >= 0.0 {
+			return false
+		}
+	}
+	w.PlaySound(pos, sound.ShieldBlock{})
+	p.SetBlockingDelay(time.Millisecond * 250)
+
+	if src, ok := src.(entity.AttackDamageSource); ok {
+		if l, ok := src.Attacker.(entity.Living); ok {
+			l.KnockBack(pos, 0.5, 0.4)
+		}
+		if a, ok := src.Attacker.(*Player); ok {
+			held, _ := a.HeldItems()
+			if _, ok := held.Item().(item.Axe); ok {
+				p.SetBlockingDelay(time.Second * 5)
+			}
+		}
+	}
+	if dmg >= 3.0 {
+		i := int(math.Ceil(totalDamage))
+		held, other := p.HeldItems()
+		if _, ok := held.Item().(item.Shield); ok {
+			p.SetHeldItems(p.damageItem(held, i), other)
+		} else {
+			p.SetHeldItems(held, p.damageItem(other, i))
+		}
+	}
+	return true
 }
 
 // applyTotemEffects is an unexported function that is used to handle totem effects.
@@ -1081,6 +1126,34 @@ func (p *Player) StopFlying() {
 	p.session().SendGameMode(p.GameMode())
 }
 
+// Blocking returns true if the player is currently blocking with a shield. The first boolean is true if the player was
+// holding a shield. The second boolean is true if the player was performing the necessary actions in order to block.
+func (p *Player) Blocking() (holding bool, using bool) {
+	held, other := p.HeldItems()
+	_, heldShield := held.Item().(item.Shield)
+	_, otherShield := other.Item().(item.Shield)
+	if p.BlockingDelay() > 0 || !p.sneaking.Load() || p.usingItem.Load() {
+		return heldShield || otherShield, false
+	}
+	return heldShield || otherShield, true
+}
+
+// BlockingDelay returns the remaining duration of the player's shield blocking delay. If this value is larger than 0,
+// they should not be able to use their shield.
+func (p *Player) BlockingDelay() time.Duration {
+	return time.Duration(p.blockingDelayTicks.Load()) * time.Second / 20
+}
+
+// SetBlockingDelay updates the current blocking delay to the new duration provided. If the player is currently blocking
+// with a shield, they will no longer be blocking and cannot do so until the duration is over.
+func (p *Player) SetBlockingDelay(duration time.Duration) {
+	blocking, _ := p.Blocking()
+	p.blockingDelayTicks.Store(int64(duration.Seconds() * 20))
+	if blocking {
+		p.updateState()
+	}
+}
+
 // Jump makes the player jump if they are on ground. It exhausts the player by 0.05 food points, an additional 0.15
 // is exhausted if the player is sprint jumping.
 func (p *Player) Jump() {
@@ -1365,6 +1438,7 @@ func (p *Player) UseItem() {
 // the item started being used.
 func (p *Player) ReleaseItem() {
 	if !p.usingItem.CAS(true, false) || !p.canRelease() || !p.GameMode().AllowsInteraction() {
+		p.updateState()
 		return
 	}
 	ctx := p.useContext()
@@ -2298,6 +2372,12 @@ func (p *Player) Tick(w *world.World, current int64) {
 			p.Hurt(1, block.FireDamageSource{})
 		}
 	}
+	if p.BlockingDelay() > 0 {
+		p.blockingDelayTicks.Sub(1)
+		if p.BlockingDelay() <= 0 {
+			p.SetBlockingDelay(0)
+		}
+	}
 
 	if current%4 == 0 && p.usingItem.Load() {
 		held, _ := p.HeldItems()
@@ -2703,6 +2783,17 @@ func (p *Player) SwingArm() {
 	if p.Dead() {
 		return
 	}
+
+	duration := time.Millisecond * 300
+	if e, ok := p.Effect(effect.Haste{}); ok {
+		duration -= time.Duration(e.Level()) * time.Millisecond * 50
+	} else if e, ok = p.Effect(effect.MiningFatigue{}); ok {
+		duration += time.Duration(e.Level()*2) * time.Millisecond * 50
+	}
+	if duration > 0 {
+		p.SetBlockingDelay(duration)
+	}
+
 	for _, v := range p.viewers() {
 		v.ViewEntityAction(p, entity.SwingArmAction{})
 	}
