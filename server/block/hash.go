@@ -24,6 +24,7 @@ const (
 	hashCactus
 	hashCake
 	hashCalcite
+	hashCampfire
 	hashCarpet
 	hashCarrot
 	hashChain
@@ -287,6 +288,11 @@ func (c Cake) Hash() uint64 {
 // Hash ...
 func (Calcite) Hash() uint64 {
 	return hashCalcite
+}
+
+// Hash ...
+func (c Campfire) Hash() uint64 {
+	return hashCampfire | uint64(c.Facing)<<8 | uint64(boolByte(c.Extinguished))<<10 | uint64(c.Type.Uint8())<<11
 }
 
 // Hash ...
