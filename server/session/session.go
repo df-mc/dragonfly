@@ -59,7 +59,7 @@ type Session struct {
 	hiddenEntities   map[world.Entity]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot                     atomic.Uint32
+	heldSlot                     *atomic.Uint32
 	inv, offHand, enderChest, ui *inventory.Inventory
 	armour                       *inventory.Armour
 
@@ -162,6 +162,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 		conn:                   conn,
 		log:                    log,
 		currentEntityRuntimeID: 1,
+		heldSlot:               new(atomic.Uint32),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
 	}

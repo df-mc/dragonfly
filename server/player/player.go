@@ -61,7 +61,7 @@ type Player struct {
 
 	inv, offHand, enderChest *inventory.Inventory
 	armour                   *inventory.Armour
-	heldSlot                 atomic.Uint32
+	heldSlot                 *atomic.Uint32
 
 	sneaking, sprinting, swimming, gliding, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
