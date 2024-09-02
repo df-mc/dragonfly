@@ -452,7 +452,7 @@ func (s *Session) SendAbilities() {
 				Type:      protocol.AbilityLayerTypeBase,
 				Abilities: protocol.AbilityCount - 1,
 				Values:    abilities,
-				FlySpeed:  s.c.FlightSpeed(),
+				FlySpeed:  float32(s.c.FlightSpeed()),
 				WalkSpeed: protocol.AbilityBaseWalkSpeed,
 			},
 		},

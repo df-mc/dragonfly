@@ -34,7 +34,7 @@ type Controllable interface {
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 
 	Speed() float64
-	FlightSpeed() float32
+	FlightSpeed() float64
 
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
