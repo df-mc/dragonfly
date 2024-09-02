@@ -1,9 +1,9 @@
 package world
 
 import (
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"sync"
+	"sync/atomic"
 )
 
 // Settings holds the settings of a World. These are typically saved to a level.dat file. It is safe to pass the same

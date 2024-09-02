@@ -1,13 +1,13 @@
 package block
 
 import (
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"sync/atomic"
 )
 
 // enderChestOwner represents an entity that has an ender chest inventory.
@@ -32,7 +32,7 @@ type EnderChest struct {
 
 // NewEnderChest creates a new initialised ender chest.
 func NewEnderChest() EnderChest {
-	return EnderChest{viewers: atomic.NewInt64(0)}
+	return EnderChest{}
 }
 
 // BreakInfo ...
@@ -75,7 +75,7 @@ func (c EnderChest) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.U
 
 // AddViewer ...
 func (c EnderChest) AddViewer(w *world.World, pos cube.Pos) {
-	if c.viewers.Inc() == 1 {
+	if c.viewers.Add(1) == 1 {
 		c.open(w, pos)
 	}
 }
@@ -85,7 +85,7 @@ func (c EnderChest) RemoveViewer(w *world.World, pos cube.Pos) {
 	if c.viewers.Load() == 0 {
 		return
 	}
-	if c.viewers.Dec() == 0 {
+	if c.viewers.Add(-1) == 0 {
 		c.close(w, pos)
 	}
 }

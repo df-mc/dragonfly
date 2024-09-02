@@ -2,10 +2,10 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync"
+	"sync/atomic"
 )
 
 // ModalFormResponseHandler handles the ModalFormResponse packet.

@@ -60,7 +60,7 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 	if s == Nop {
 		return
 	}
-	currentName, currentLines := s.currentScoreboard.Load(), s.currentLines.Load()
+	currentName, currentLines := *s.currentScoreboard.Load(), *s.currentLines.Load()
 
 	if currentName != sb.Name() {
 		s.RemoveScoreboard()
@@ -70,8 +70,9 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 			DisplayName:   sb.Name(),
 			CriteriaName:  "dummy",
 		})
-		s.currentScoreboard.Store(sb.Name())
-		s.currentLines.Store(append([]string(nil), sb.Lines()...))
+		name, lines := sb.Name(), append([]string(nil), sb.Lines()...)
+		s.currentScoreboard.Store(&name)
+		s.currentLines.Store(&lines)
 	} else {
 		// Remove all current lines from the scoreboard. We can't replace them without removing them.
 		pk := &packet.SetScore{ActionType: packet.ScoreboardActionRemove}
@@ -109,9 +110,11 @@ var colours = [15]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", 
 
 // RemoveScoreboard ...
 func (s *Session) RemoveScoreboard() {
-	s.writePacket(&packet.RemoveObjective{ObjectiveName: s.currentScoreboard.Load()})
-	s.currentScoreboard.Store("")
-	s.currentLines.Store([]string{})
+	s.writePacket(&packet.RemoveObjective{ObjectiveName: *s.currentScoreboard.Load()})
+	var name string
+	var lines []string
+	s.currentScoreboard.Store(&name)
+	s.currentLines.Store(&lines)
 }
 
 // SendBossBar sends a boss bar to the player with the text passed and the health percentage of the bar.

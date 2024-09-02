@@ -22,7 +22,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no loom container opened")
 	}
-	if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Loom); !ok {
+	if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Loom); !ok {
 		return fmt.Errorf("no loom container opened")
 	}
 

@@ -249,7 +249,8 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	yaw, pitch := e.Rotation().Elem()
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
-		s.teleportPos.Store(&position)
+		pos := &position
+		s.teleportPos.Store(&pos)
 	}
 
 	s.writePacket(&packet.SetActorMotion{EntityRuntimeID: id})
@@ -957,7 +958,7 @@ func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
 
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos) {
-	if s.containerOpened.Load() && s.openedPos.Load() == pos {
+	if s.containerOpened.Load() && *s.openedPos.Load() == pos {
 		return
 	}
 	s.closeCurrentContainer()
@@ -971,8 +972,9 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	// We hit a special kind of window like beacons, which are not actually opened server-side.
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
-	s.openedWindow.Store(inventory.New(1, nil))
-	s.openedPos.Store(pos)
+	inv := inventory.New(1, nil)
+	s.openedWindow.Store(&inv)
+	s.openedPos.Store(&pos)
 
 	var containerType byte
 	switch b := b.(type) {
@@ -996,7 +998,7 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		b.AddViewer(w, pos)
 
 		inv := s.c.EnderChestInventory()
-		s.openedWindow.Store(inv)
+		s.openedWindow.Store(&inv)
 
 		defer s.sendInv(inv, uint32(nextID))
 	}
@@ -1016,8 +1018,9 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
-	s.openedWindow.Store(b.Inventory(s.c.World(), pos))
-	s.openedPos.Store(pos)
+	inv := b.Inventory(s.c.World(), pos)
+	s.openedWindow.Store(&inv)
+	s.openedPos.Store(&pos)
 
 	var containerType byte
 	switch b.(type) {
@@ -1144,7 +1147,7 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
 func (s *Session) nextWindowID() byte {
-	if s.openedWindowID.CAS(99, 1) {
+	if s.openedWindowID.CompareAndSwap(99, 1) {
 		return 1
 	}
 	return byte(s.openedWindowID.Add(1))
@@ -1153,11 +1156,12 @@ func (s *Session) nextWindowID() byte {
 // closeWindow closes the container window currently opened. If no window is open, closeWindow will do
 // nothing.
 func (s *Session) closeWindow() {
-	if !s.containerOpened.CAS(true, false) {
+	if !s.containerOpened.CompareAndSwap(true, false) {
 		return
 	}
 	s.openedContainerID.Store(0)
-	s.openedWindow.Store(inventory.New(1, nil))
+	inv := inventory.New(1, nil)
+	s.openedWindow.Store(&inv)
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
 }
 
