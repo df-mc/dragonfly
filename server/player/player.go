@@ -489,15 +489,15 @@ func (p *Player) Speed() float64 {
 	return math.Float64frombits(p.speed.Load())
 }
 
-// SetFlightSpeed sets the flight speed of the player. The value passed represents the base speed, which is 
+// SetFlightSpeed sets the flight speed of the player. The value passed represents the base speed, which is
 // multiplied by 10 to obtain the actual blocks/tick speed that the player will then obtain while flying.
 func (p *Player) SetFlightSpeed(flightSpeed float32) {
 	p.flightSpeed.Store(math.Float32bits(flightSpeed))
 	p.session().SendAbilities()
 }
 
-// FlightSpeed returns the flight speed of the player, with the value representing the base speed. The actual 
-// blocks/tick speed is this value multiplied by 10. The default flight speed of a player is 0.05, which 
+// FlightSpeed returns the flight speed of the player, with the value representing the base speed. The actual
+// blocks/tick speed is this value multiplied by 10. The default flight speed of a player is 0.05, which
 // corresponds to 0.5 blocks/tick.
 func (p *Player) FlightSpeed() float32 {
 	return math.Float32frombits(p.flightSpeed.Load())
