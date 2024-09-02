@@ -80,7 +80,9 @@ type Player struct {
 	// lastTickedWorld holds the world that the player was in, in the last tick.
 	lastTickedWorld *world.World
 
-	speed      atomic.Uint64
+	speed       atomic.Uint64
+	flightSpeed atomic.Uint64
+
 	health     *entity.HealthManager
 	experience *entity.ExperienceManager
 	effects    *entity.EffectManager
@@ -141,6 +143,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.Handle(nil)
 	p.skin.Store(&skin)
 	p.speed.Store(math.Float64bits(0.1))
+	p.flightSpeed.Store(math.Float64bits(0.05))
 	p.nameTag.Store(&name)
 	p.scoreTag.Store(&scoreTag)
 	p.airSupplyTicks.Store(300)
@@ -489,6 +492,20 @@ func (p *Player) SetSpeed(speed float64) {
 // speed of a player is 0.1.
 func (p *Player) Speed() float64 {
 	return math.Float64frombits(p.speed.Load())
+}
+
+// SetFlightSpeed sets the flight speed of the player. The value passed represents the base speed, which is
+// multiplied by 10 to obtain the actual blocks/tick speed that the player will then obtain while flying.
+func (p *Player) SetFlightSpeed(flightSpeed float64) {
+	p.flightSpeed.Store(math.Float64bits(flightSpeed))
+	p.session().SendAbilities()
+}
+
+// FlightSpeed returns the flight speed of the player, with the value representing the base speed. The actual
+// blocks/tick speed is this value multiplied by 10. The default flight speed of a player is 0.05, which
+// corresponds to 0.5 blocks/tick.
+func (p *Player) FlightSpeed() float64 {
+	return math.Float64frombits(p.flightSpeed.Load())
 }
 
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().

@@ -449,11 +449,11 @@ func (s *Session) SendGameMode(mode world.GameMode) {
 		return
 	}
 	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(mode)})
-	s.sendAbilities()
+	s.SendAbilities()
 }
 
-// sendAbilities sends the abilities of the Controllable entity of the session to the client.
-func (s *Session) sendAbilities() {
+// SendAbilities sends the abilities of the Controllable entity of the session to the client.
+func (s *Session) SendAbilities() {
 	mode, abilities := s.c.GameMode(), uint32(0)
 	if mode.AllowsFlying() {
 		abilities |= protocol.AbilityMayFly
@@ -484,13 +484,13 @@ func (s *Session) sendAbilities() {
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: packet.CommandPermissionLevelNormal,
-		Layers: []protocol.AbilityLayer{ // TODO: Support customization of fly and walk speeds.
+		Layers: []protocol.AbilityLayer{
 			{
 				Type:      protocol.AbilityLayerTypeBase,
 				Abilities: protocol.AbilityCount - 1,
 				Values:    abilities,
-				FlySpeed:  protocol.AbilityBaseFlySpeed,
-				WalkSpeed: protocol.AbilityBaseWalkSpeed,
+				FlySpeed:  float32(s.c.FlightSpeed()),
+				WalkSpeed: float32(s.c.Speed()),
 			},
 		},
 	}})
