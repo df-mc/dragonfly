@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	_ "unsafe"
 )
 
 // Config contains options for starting a Minecraft server.
@@ -153,13 +154,13 @@ func (conf Config) New() *Server {
 		p:        make(map[uuid.UUID]*player.Player),
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
+	world_finaliseBlockRegistry()
 	srv.world = srv.createWorld(world.Overworld, &srv.nether, &srv.end)
 	srv.nether = srv.createWorld(world.Nether, &srv.world, &srv.end)
 	srv.end = srv.createWorld(world.End, &srv.nether, &srv.world)
 
 	srv.registerTargetFunc()
 	srv.checkNetIsolation()
-	world_finaliseBlockRegistry()
 
 	return srv
 }
