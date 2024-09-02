@@ -46,7 +46,7 @@ func (f Froglight) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (f Froglight) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + f.Type.String() + "_froglight", map[string]any{"axis": f.Axis.String()}
+	return "minecraft:" + f.Type.String() + "_froglight", map[string]any{"pillar_axis": f.Axis.String()}
 }
 
 // allFrogLight ...
