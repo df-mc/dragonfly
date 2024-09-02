@@ -447,13 +447,13 @@ func (s *Session) SendAbilities() {
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: packet.CommandPermissionLevelNormal,
-		Layers: []protocol.AbilityLayer{ // TODO: Support customization of walk speed.
+		Layers: []protocol.AbilityLayer{
 			{
 				Type:      protocol.AbilityLayerTypeBase,
 				Abilities: protocol.AbilityCount - 1,
 				Values:    abilities,
 				FlySpeed:  float32(s.c.FlightSpeed()),
-				WalkSpeed: protocol.AbilityBaseWalkSpeed,
+				WalkSpeed: float32(s.c.Speed()),
 			},
 		},
 	}})
