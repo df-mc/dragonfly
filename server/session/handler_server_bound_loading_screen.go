@@ -2,8 +2,8 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/atomic"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"sync/atomic"
 )
 
 // ServerBoundLoadingScreenHandler handles loading screen updates from the clients. It is used to ensure that

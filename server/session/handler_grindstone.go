@@ -25,7 +25,7 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no grindstone container opened")
 	}
-	if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); !ok {
+	if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Grindstone); !ok {
 		return fmt.Errorf("no grindstone container opened")
 	}
 

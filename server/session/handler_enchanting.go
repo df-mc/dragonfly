@@ -38,7 +38,7 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 	}
 
 	// Determine the available enchantments using the session's enchantment seed.
-	allCosts, allEnchants := s.determineAvailableEnchantments(s.c.World(), s.openedPos.Load(), input)
+	allCosts, allEnchants := s.determineAvailableEnchantments(s.c.World(), *s.openedPos.Load(), input)
 	if len(allEnchants) == 0 {
 		return fmt.Errorf("can't enchant non-enchantable item")
 	}

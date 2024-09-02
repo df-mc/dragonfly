@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
 	"math/rand"
 )
@@ -72,7 +73,10 @@ func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64) {
 	if living, ok := e.(livingEntity); ok {
 		if fall, ok := living.(fallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
-			w.SetBlock(pos, Dirt{}, nil)
+			ctx := event.C()
+			if w.Handler().HandleCropTrample(ctx, pos); !ctx.Cancelled() {
+				w.SetBlock(pos, Dirt{}, nil)
+			}
 		}
 	}
 }
