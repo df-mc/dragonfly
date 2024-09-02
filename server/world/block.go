@@ -21,11 +21,12 @@ type Block interface {
 	// EncodeBlock encodes the block to a string ID such as 'minecraft:grass' and properties associated
 	// with the block.
 	EncodeBlock() (string, map[string]any)
+	// BaseHash is a unique identifier for each type of block at runtime. For vanilla blocks, this is an auto-
+	// incrementing constant. For custom blocks, you can call block.NextHash() to get a unique identifier.
 	BaseHash() uint64
-	// Hash returns a unique identifier of the block including the block states. This function is used internally to
-	// convert a block to a single integer which can be used in map lookups. The hash produced therefore does not need
-	// to match anything in the game, but it must be unique among all registered blocks.
-	// The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
+	// Hash returns a unique identifier for the block's own state and does not need to worry about colliding
+	// with other types of blocks. This is later combined with BaseHash to create a unique identifier for the
+	// full block.
 	Hash() uint64
 	// Model returns the BlockModel of the Block.
 	Model() BlockModel
@@ -109,6 +110,11 @@ func RegisterBlock(b Block) {
 	}
 }
 
+// finaliseBlockRegistry is called after blocks have finished registering and the palette can be sorted and
+// hashed, which also calls finaliseBlock for each block that has been registered up to this point.
+// noinspection GoUnusedFunction
+//
+//lint:ignore U1000 Function is used through compiler directives.
 func finaliseBlockRegistry() {
 	if bitSize > 0 {
 		return
@@ -131,6 +137,7 @@ func finaliseBlockRegistry() {
 	}
 }
 
+// finaliseBlock stores the necessary information for the provided block to be quickly accessed at runtime.
 func finaliseBlock(rid uint32, b Block) {
 	name, properties := b.EncodeBlock()
 	i := stateHash{name: name, properties: hashProperties(properties)}
@@ -159,6 +166,10 @@ func finaliseBlock(rid uint32, b Block) {
 	}
 }
 
+// BlockHash returns a unique identifier of the block including the block states. This function is used internally
+// to convert a block to a single integer which can be used in map lookups. The hash produced therefore does not
+// need to match anything in the game, but it must be unique among all registered blocks.
+// The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
 func BlockHash(b Block) uint64 {
 	return b.BaseHash() | (b.Hash() << bitSize)
 }
