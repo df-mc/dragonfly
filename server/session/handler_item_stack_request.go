@@ -90,7 +90,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 		case *protocol.CraftRecipeStackRequestAction:
 			if s.containerOpened.Load() {
 				var special bool
-				switch s.c.World().Block(s.openedPos.Load()).(type) {
+				switch s.c.World().Block(*s.openedPos.Load()).(type) {
 				case block.SmithingTable:
 					err, special = h.handleSmithing(a, s), true
 				case block.Stonecutter:
@@ -208,8 +208,8 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 // smelting. If it does, it will drop the rewards at the player's location.
 func (h *ItemStackRequestHandler) collectRewards(s *Session, inv *inventory.Inventory, slot int) {
 	w := s.c.World()
-	if inv == s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
-		if f, ok := w.Block(s.openedPos.Load()).(smelter); ok {
+	if inv == *s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
+		if f, ok := w.Block(*s.openedPos.Load()).(smelter); ok {
 			for _, o := range entity.NewExperienceOrbs(entity.EyePosition(s.c), f.ResetExperience()) {
 				o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 				w.AddEntity(o)

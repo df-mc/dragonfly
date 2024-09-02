@@ -25,7 +25,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	w := s.c.World()
-	pos := s.openedPos.Load()
+	pos := *s.openedPos.Load()
 	anvil, ok := w.Block(pos).(block.Anvil)
 	if !ok {
 		return fmt.Errorf("no anvil container opened")

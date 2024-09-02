@@ -3,7 +3,6 @@ package session
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -21,6 +20,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
+	"sync/atomic"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -64,7 +64,7 @@ func (s *Session) closeCurrentContainer() {
 	}
 	s.closeWindow()
 
-	pos := s.openedPos.Load()
+	pos := *s.openedPos.Load()
 	w := s.c.World()
 	b := w.Block(pos)
 	if container, ok := b.(block.Container); ok {
@@ -246,61 +246,61 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.armour.Inventory(), true
 	case protocol.ContainerLevelEntity:
 		if s.containerOpened.Load() {
-			return s.openedWindow.Load(), true
+			return *s.openedWindow.Load(), true
 		}
 	case protocol.ContainerBarrel:
 		if s.containerOpened.Load() {
-			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
-				return s.openedWindow.Load(), true
+			if _, barrel := s.c.World().Block(*s.openedPos.Load()).(block.Barrel); barrel {
+				return *s.openedWindow.Load(), true
 			}
 		}
 	case protocol.ContainerBeaconPayment:
 		if s.containerOpened.Load() {
-			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
+			if _, beacon := s.c.World().Block(*s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
 		if s.containerOpened.Load() {
-			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
+			if _, anvil := s.c.World().Block(*s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerSmithingTableTemplate, protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
 		if s.containerOpened.Load() {
-			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
+			if _, smithing := s.c.World().Block(*s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
 		if s.containerOpened.Load() {
-			if _, loom := s.c.World().Block(s.openedPos.Load()).(block.Loom); loom {
+			if _, loom := s.c.World().Block(*s.openedPos.Load()).(block.Loom); loom {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerStonecutterInput:
 		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Stonecutter); ok {
+			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
 		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); ok {
+			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Grindstone); ok {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
 		if s.containerOpened.Load() {
-			if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
+			if _, enchanting := s.c.World().Block(*s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
 		protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
 		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
-				return s.openedWindow.Load(), true
+			if _, ok := s.c.World().Block(*s.openedPos.Load()).(smelter); ok {
+				return *s.openedWindow.Load(), true
 			}
 		}
 	}
@@ -658,7 +658,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			return
 		}
 		if !s.inTransaction.Load() {
-			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.EnderChest); ok {
+			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.EnderChest); ok {
 				s.ViewSlotChange(slot, item)
 			}
 		}
