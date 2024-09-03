@@ -128,6 +128,7 @@ func finaliseBlockRegistry() {
 	for rid, b := range blocks {
 		finaliseBlock(uint32(rid), b)
 		if b.Hash() != math.MaxUint64 {
+			// b is not an unknownBlock.
 			h := int64(BlockHash(b))
 			if other, ok := hashes.Get(h); ok {
 				panic(fmt.Sprintf("block %#v with hash %v already registered by %#v", b, h, blocks[other]))
@@ -181,6 +182,7 @@ func BlockRuntimeID(b Block) uint32 {
 		return airRID
 	}
 	if h := BlockHash(b); h != math.MaxUint64 {
+		// b is not an unknownBlock.
 		if rid, ok := hashes.Get(int64(h)); ok {
 			return uint32(rid)
 		}
