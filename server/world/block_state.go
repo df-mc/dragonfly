@@ -114,14 +114,9 @@ func (unknownBlock) Model() BlockModel {
 	return unknownModel{}
 }
 
-// BaseHash ...
-func (b unknownBlock) BaseHash() uint64 {
-	return 0
-}
-
 // Hash ...
-func (b unknownBlock) Hash() uint64 {
-	return math.MaxUint64
+func (b unknownBlock) Hash() (uint64, uint64) {
+	return 0, math.MaxUint64
 }
 
 // EncodeNBT ...

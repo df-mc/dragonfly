@@ -21,13 +21,12 @@ type Block interface {
 	// EncodeBlock encodes the block to a string ID such as 'minecraft:grass' and properties associated
 	// with the block.
 	EncodeBlock() (string, map[string]any)
-	// BaseHash is a unique identifier for each type of block at runtime. For vanilla blocks, this is an auto-
-	// incrementing constant. For custom blocks, you can call block.NextHash() to get a unique identifier.
-	BaseHash() uint64
-	// Hash returns a unique identifier for the block's own state and does not need to worry about colliding
-	// with other types of blocks. This is later combined with BaseHash to create a unique identifier for the
-	// full block.
-	Hash() uint64
+	// Hash returns two different identifiers for the block. The first is the base hash which is unique for
+	// each type of block at runtime. For vanilla blocks, this is an auto-incrementing constant and for custom
+	// blocks, you can call block.NextHash() to get a unique identifier. The second is the hash of the block's
+	// own state and does not need to worry about colliding with other types of blocks. This is later combined
+	// with the base hash to create a unique identifier for the full block.
+	Hash() (uint64, uint64)
 	// Model returns the BlockModel of the Block.
 	Model() BlockModel
 }
@@ -127,7 +126,7 @@ func finaliseBlockRegistry() {
 	})
 	for rid, b := range blocks {
 		finaliseBlock(uint32(rid), b)
-		if b.Hash() != math.MaxUint64 {
+		if _, hash := b.Hash(); hash != math.MaxUint64 {
 			// b is not an unknownBlock.
 			h := int64(BlockHash(b))
 			if other, ok := hashes.Get(h); ok {
@@ -172,7 +171,8 @@ func finaliseBlock(rid uint32, b Block) {
 // need to match anything in the game, but it must be unique among all registered blocks.
 // The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
 func BlockHash(b Block) uint64 {
-	return b.BaseHash() | (b.Hash() << bitSize)
+	base, hash := b.Hash()
+	return base | (hash << bitSize)
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
