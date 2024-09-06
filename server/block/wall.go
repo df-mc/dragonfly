@@ -257,7 +257,7 @@ func (w Wall) calculatePost(wo *world.World, pos cube.Pos) (Wall, bool) {
 // allWalls returns a list of all wall types.
 func allWalls() (walls []world.Block) {
 	for _, block := range WallBlocks() {
-		if block.Hash() > math.MaxUint16 {
+		if _, hash := block.Hash(); hash > math.MaxUint16 {
 			name, _ := block.EncodeBlock()
 			panic(fmt.Errorf("hash of block %s exceeds 16 bytes", name))
 		}
