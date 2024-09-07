@@ -68,9 +68,9 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	version, _ := m["version"].(int32)
 
 	// Now check for a state field.
-	stateI, ok := m["states"]
-	if !ok {
-		// If it doesn't exist, this is likely a pre-1.13 block state, so decode the meta value instead.
+	stateI, _ := m["states"]
+	if version < 17694723 {
+		// This entry is a pre-1.13 block state, so decode the meta value instead.
 		meta, _ := m["val"].(int16)
 
 		// Upgrade the pre-1.13 state into a post-1.13 state.
@@ -83,6 +83,10 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 		name = state.Name
 		stateI = state.State
 		version = state.Version
+	} else if stateI == nil {
+		// The state is a post-1.13 block state, but the states field is missing, likely due to a broken world
+		// conversion.
+		stateI = make(map[string]any)
 	}
 	state, ok := stateI.(map[string]any)
 	if !ok {
