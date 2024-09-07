@@ -157,6 +157,8 @@ func (conf Config) New() *Server {
 	}
 	world_finaliseBlockRegistry()
 
+	// this is not a solution this is just for me to be able to test without having an import cycle.
+	// note: everything works but creative inventory is not showing up properly content wise.
 	recipe.RegisterVanilla()
 
 	srv.world = srv.createWorld(world.Overworld, &srv.nether, &srv.end)
