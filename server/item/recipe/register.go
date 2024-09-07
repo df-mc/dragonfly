@@ -15,6 +15,8 @@ var (
 	recipes []Recipe
 	// index maps an input hash to output stacks for each PotionContainerChange and Potion recipe.
 	index = make(map[string]map[string]Recipe)
+	// reagent maps the item name and an item.Stack.
+	reagent = make(map[string]item.Stack)
 )
 
 // Recipes returns each recipe in a slice.
@@ -27,7 +29,14 @@ func Register(recipe Recipe) {
 	recipes = append(recipes, recipe)
 
 	_, ok := recipe.(PotionContainerChange)
-	_, okTwo := recipe.(Potion)
+	p, okTwo := recipe.(Potion)
+
+	if okTwo {
+		stack := p.Input()[1].(item.Stack)
+		name, _ := stack.Item().EncodeItem()
+		reagent[name] = stack
+	}
+
 	if ok || okTwo {
 		_, containerChange := recipe.(PotionContainerChange)
 		inputItems2 := make([]world.Item, len(recipe.Input()))
@@ -99,4 +108,10 @@ func hashItems(items []world.Item, useMeta bool) string {
 		}
 	}
 	return b.String()
+}
+
+// ValidBrewingReagent checks if the world.Item is a brewing reagent.
+func ValidBrewingReagent(itemName string) bool {
+	_, exists := reagent[itemName]
+	return exists
 }

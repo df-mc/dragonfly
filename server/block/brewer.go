@@ -47,20 +47,13 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 
 		if h.Facing == cube.FaceDown {
 			slot = 0
+		} else if _, ok := sourceStack.Item().(item.BlazePowder); ok {
+			slot = 4
 		} else {
-			if _, ok := sourceStack.Item().(item.BlazePowder); ok {
-				slot = 4
-			}
-
 			for brewingSlot, brewingStack := range b.inventory.Slots() {
-				if brewingSlot == 0 || brewingSlot == 4 {
+				if brewingSlot == 0 || brewingSlot == 4 || !brewingStack.Empty() {
 					continue
 				}
-
-				if !brewingStack.Empty() {
-					continue
-				}
-
 				slot = brewingSlot
 				break
 			}
@@ -69,7 +62,11 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 		stack := sourceStack.Grow(-sourceStack.Count() + 1)
 		it, _ := b.Inventory(w, pos).Item(slot)
 		if slot == 0 {
-			//TODO: check if the item is a brewing ingredient.
+			itemName, _ := sourceStack.Item().EncodeItem()
+			if !recipe.ValidBrewingReagent(itemName) {
+				// This item is not a valid brewing reagent.
+				continue
+			}
 		}
 		if !sourceStack.Comparable(it) {
 			// The items are not the same.
