@@ -22,7 +22,7 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no beacon container opened")
 	}
-	pos := s.openedPos.Load()
+	pos := *s.openedPos.Load()
 	beacon, ok := s.c.World().Block(pos).(block.Beacon)
 	if !ok {
 		return fmt.Errorf("no beacon container opened")

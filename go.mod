@@ -7,7 +7,6 @@ toolchain go1.22.1
 require (
 	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
 	github.com/cespare/xxhash/v2 v2.2.0
-	github.com/df-mc/atomic v1.10.0
 	github.com/df-mc/goleveldb v1.1.9
 	github.com/df-mc/worldupgrader v1.0.16
 	github.com/go-gl/mathgl v1.1.0

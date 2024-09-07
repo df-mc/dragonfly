@@ -10,7 +10,6 @@ import (
 
 	"slices"
 
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -18,6 +17,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
+	"sync/atomic"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players can see, such as blocks,
@@ -35,7 +35,7 @@ type World struct {
 	o sync.Once
 
 	set     *Settings
-	handler atomic.Value[Handler]
+	handler atomic.Pointer[Handler]
 
 	weather
 	ticker
@@ -989,7 +989,7 @@ func (w *World) Handle(h Handler) {
 	if h == nil {
 		h = NopHandler{}
 	}
-	w.handler.Store(h)
+	w.handler.Store(&h)
 }
 
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
@@ -1061,7 +1061,7 @@ func (w *World) close() {
 		w.saveChunk(pos, c, true)
 	}
 
-	w.set.ref.Dec()
+	w.set.ref.Add(-1)
 	if !w.advance {
 		return
 	}
@@ -1163,7 +1163,7 @@ func (w *World) Handler() Handler {
 	if w == nil {
 		return NopHandler{}
 	}
-	return w.handler.Load()
+	return *w.handler.Load()
 }
 
 // chunkFromCache attempts to fetch a chunk at the chunk position passed from the cache. If not found, the

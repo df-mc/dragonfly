@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal/blockinternal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
@@ -33,6 +32,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 )
 
@@ -81,7 +81,7 @@ func New() *Server {
 // are closed using a call to Close. Once started, players may be accepted
 // using Server.Accept().
 func (srv *Server) Listen() {
-	if !srv.started.CAS(false, true) {
+	if !srv.started.CompareAndSwap(false, true) {
 		panic("start server: already started")
 	}
 
