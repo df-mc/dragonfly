@@ -4,7 +4,9 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"sync"
 	"time"
 )
@@ -165,6 +167,11 @@ func (b *brewer) setFuel(fuel, maxFuel int32) {
 func (b *brewer) tickBrewing(block string, pos cube.Pos, w *world.World) {
 	b.mu.Lock()
 
+	// Get each item in the brewer. We don't need to validate errors here since we know the bounds of the brewer.
+	left, _ := b.inventory.Item(1)
+	middle, _ := b.inventory.Item(2)
+	right, _ := b.inventory.Item(3)
+
 	// Keep track of our past durations, since if any of them change, we need to be able to tell they did and then
 	// update the viewers on the change.
 	prevDuration := b.duration
@@ -177,6 +184,54 @@ func (b *brewer) tickBrewing(block string, pos cube.Pos, w *world.World) {
 	if _, ok := fuel.Item().(item.BlazePowder); ok && b.fuelAmount <= 0 {
 		defer b.inventory.SetItem(4, fuel.Grow(-1))
 		b.fuelAmount, b.fuelTotal = 20, 20
+	}
+
+	// Now get the ingredient item.
+	ingredient, _ := b.inventory.Item(0)
+
+	// Check each input and see if it is affected by the ingredient.
+	leftOutput, leftAffected := recipe.Perform(block, left.Item(), ingredient.Item())
+	middleOutput, middleAffected := recipe.Perform(block, middle.Item(), ingredient.Item())
+	rightOutput, rightAffected := recipe.Perform(block, right.Item(), ingredient.Item())
+
+	// Ensure that we have enough fuel to continue.
+	if b.fuelAmount > 0 {
+		// Now make sure that we have at least one potion that is affected by the ingredient.
+		if leftAffected || middleAffected || rightAffected {
+			// Tick our duration. If we have no brew duration, set it to the default of twenty seconds.
+			if b.duration == 0 {
+				b.duration = time.Second * 20
+			}
+			b.duration -= time.Millisecond * 50
+
+			// If we have no duration, we are done.
+			if b.duration <= 0 {
+				// Create the output items.
+				if leftAffected {
+					defer b.inventory.SetItem(1, leftOutput[0])
+				}
+				if middleAffected {
+					defer b.inventory.SetItem(2, middleOutput[0])
+				}
+				if rightAffected {
+					defer b.inventory.SetItem(3, rightOutput[0])
+				}
+
+				// Reduce the ingredient by one.
+				defer b.inventory.SetItem(0, ingredient.Grow(-1))
+				w.PlaySound(pos.Vec3Centre(), sound.PotionBrewed{})
+
+				// Decrement the fuel, and reset the duration.
+				b.fuelAmount--
+				b.duration = 0
+			}
+		} else {
+			// None of the potions are affected by the ingredient, so reset the duration.
+			b.duration = 0
+		}
+	} else {
+		// We don't have enough fuel, so reset our progress.
+		b.duration, b.fuelAmount, b.fuelTotal = 0, 0, 0
 	}
 
 	// Update the viewers on the new durations.

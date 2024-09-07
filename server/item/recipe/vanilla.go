@@ -2,11 +2,9 @@ package recipe
 
 import (
 	_ "embed"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 
-	// Ensure all blocks and items are registered before trying to load vanilla recipes.
-	_ "github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
@@ -62,7 +60,7 @@ type potionContainerChangeRecipe struct {
 	Output  string    `nbt:"output"`
 }
 
-func init() {
+func RegisterVanilla() {
 	var craftingRecipes struct {
 		Shaped    []shapedRecipe    `nbt:"shaped"`
 		Shapeless []shapelessRecipe `nbt:"shapeless"`
