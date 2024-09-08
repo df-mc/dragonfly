@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/sirupsen/logrus"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -80,6 +81,7 @@ func (conf Config) New() *World {
 		conf:             conf,
 		ra:               conf.Dim.Range(),
 		set:              s,
+		cond:             *sync.NewCond(&sync.Mutex{}),
 	}
 	w.weather, w.ticker = weather{w: w}, ticker{w: w}
 	var h Handler = NopHandler{}

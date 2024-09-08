@@ -23,6 +23,8 @@ func (t ticker) tickLoop() {
 	for {
 		select {
 		case <-tc.C:
+			t.w.cond.Broadcast()
+
 			t.tick()
 		case <-t.w.closing:
 			// World is being closed: Stop ticking and get rid of a task.

@@ -313,15 +313,23 @@ func (s *Session) handlePackets() {
 		_ = s.Close()
 	}()
 	for {
-		pk, err := s.conn.ReadPacket()
-		if err != nil {
-			return
-		}
-		if err := s.handlePacket(pk); err != nil {
-			// An error occurred during the handling of a packet. Print the error and stop handling any more
-			// packets.
-			s.log.Debugf("failed processing packet from %v (%v): %v\n", s.conn.RemoteAddr(), s.c.Name(), err)
-			return
+		s.c.World().Wait()
+
+		for {
+			pk, err := s.conn.ReadPacket()
+			if err != nil {
+				return
+			}
+			if pk == nil {
+				break
+			}
+
+			if err := s.handlePacket(pk); err != nil {
+				// An error occurred during the handling of a packet. Print the error and stop handling any more
+				// packets.
+				s.log.Debugf("failed processing packet from %v (%v): %v\n", s.conn.RemoteAddr(), s.c.Name(), err)
+				return
+			}
 		}
 	}
 }

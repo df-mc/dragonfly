@@ -46,6 +46,8 @@ type World struct {
 	closing chan struct{}
 	running sync.WaitGroup
 
+	cond sync.Cond
+
 	chunkMu sync.Mutex
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared from this map after some time
 	// of not being used.
@@ -951,6 +953,16 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	w.set.Unlock()
 
 	w.scheduledUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
+}
+
+// Wait waits for broadcast from w.cond, used for packet processing.
+func (w *World) Wait() {
+	if w == nil {
+		return
+	}
+	w.cond.L.Lock()
+	w.cond.Wait()
+	w.cond.L.Unlock()
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
