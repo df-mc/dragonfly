@@ -145,8 +145,6 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.enchantSeed.Store(rand.Int63())
 	p.scale.Store(math.Float64bits(1))
 	p.pos.Store(&pos)
-	now := time.Now()
-	p.lastXPPickup.Store(&now)
 	return p
 }
 
@@ -2149,7 +2147,7 @@ func (p *Player) CollectExperience(value int) bool {
 		return false
 	}
 	last := p.lastXPPickup.Load()
-	if time.Since(*last) < time.Millisecond*100 {
+	if last != nil && time.Since(*last) < time.Millisecond*100 {
 		return false
 	}
 	value = p.mendItems(value)
