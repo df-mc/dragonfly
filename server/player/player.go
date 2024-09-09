@@ -2147,7 +2147,7 @@ func (p *Player) CollectExperience(value int) bool {
 		return false
 	}
 	last := p.lastXPPickup.Load()
-	if last == nil || time.Since(*last) < time.Millisecond*100 {
+	if last != nil && time.Since(*last) < time.Millisecond*100 {
 		return false
 	}
 	value = p.mendItems(value)
