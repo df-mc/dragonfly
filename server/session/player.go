@@ -246,12 +246,12 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.armour.Inventory(), true
 	case protocol.ContainerLevelEntity:
 		if s.containerOpened.Load() {
-			return *s.openedWindow.Load(), true
+			return s.openedWindow.Load(), true
 		}
 	case protocol.ContainerBarrel:
 		if s.containerOpened.Load() {
 			if _, barrel := s.c.World().Block(*s.openedPos.Load()).(block.Barrel); barrel {
-				return *s.openedWindow.Load(), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	case protocol.ContainerBeaconPayment:
@@ -300,7 +300,7 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
 		if s.containerOpened.Load() {
 			if _, ok := s.c.World().Block(*s.openedPos.Load()).(smelter); ok {
-				return *s.openedWindow.Load(), true
+				return s.openedWindow.Load(), true
 			}
 		}
 	}

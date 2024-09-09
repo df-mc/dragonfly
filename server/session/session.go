@@ -47,7 +47,7 @@ type Session struct {
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
-	teleportPos atomic.Pointer[*mgl64.Vec3]
+	teleportPos atomic.Pointer[mgl64.Vec3]
 
 	entityMutex sync.RWMutex
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
@@ -68,7 +68,7 @@ type Session struct {
 	inTransaction, containerOpened atomic.Bool
 	openedWindowID                 atomic.Uint32
 	openedContainerID              atomic.Uint32
-	openedWindow                   atomic.Pointer[*inventory.Inventory]
+	openedWindow                   atomic.Pointer[inventory.Inventory]
 	openedPos                      atomic.Pointer[cube.Pos]
 	swingingArm                    atomic.Bool
 	changingDimension              atomic.Bool
@@ -167,7 +167,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 		quitMessage:            quitMessage,
 	}
 	inv := inventory.New(1, nil)
-	s.openedWindow.Store(&inv)
+	s.openedWindow.Store(inv)
 
 	var scoreboardName string
 	var scoreboardLines []string
