@@ -249,8 +249,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	yaw, pitch := e.Rotation().Elem()
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
-		pos := &position
-		s.teleportPos.Store(&pos)
+		s.teleportPos.Store(&position)
 	}
 
 	s.writePacket(&packet.SetActorMotion{EntityRuntimeID: id})
@@ -974,7 +973,7 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
 	inv := inventory.New(1, nil)
-	s.openedWindow.Store(&inv)
+	s.openedWindow.Store(inv)
 	s.openedPos.Store(&pos)
 
 	var containerType byte
@@ -999,7 +998,7 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		b.AddViewer(w, pos)
 
 		inv := s.c.EnderChestInventory()
-		s.openedWindow.Store(&inv)
+		s.openedWindow.Store(inv)
 
 		defer s.sendInv(inv, uint32(nextID))
 	}
@@ -1020,7 +1019,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
 	inv := b.Inventory(s.c.World(), pos)
-	s.openedWindow.Store(&inv)
+	s.openedWindow.Store(inv)
 	s.openedPos.Store(&pos)
 
 	var containerType byte
@@ -1162,7 +1161,7 @@ func (s *Session) closeWindow() {
 	}
 	s.openedContainerID.Store(0)
 	inv := inventory.New(1, nil)
-	s.openedWindow.Store(&inv)
+	s.openedWindow.Store(inv)
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
 }
 

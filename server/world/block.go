@@ -181,9 +181,9 @@ func BlockRuntimeID(b Block) uint32 {
 	if b == nil {
 		return airRID
 	}
-	if h := BlockHash(b); h != math.MaxUint64 {
+	if _, h := b.Hash(); h != math.MaxUint64 {
 		// b is not an unknownBlock.
-		if rid, ok := hashes.Get(int64(h)); ok {
+		if rid, ok := hashes.Get(int64(BlockHash(b))); ok {
 			return uint32(rid)
 		}
 		panic(fmt.Sprintf("cannot find block by non-0 hash of block %#v", b))
