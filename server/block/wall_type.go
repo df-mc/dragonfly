@@ -3,77 +3,77 @@ package block
 import "github.com/df-mc/dragonfly/server/world"
 
 // encodeWallBlock encodes the provided block in to an identifier and meta value that can be used to encode the wall.
-func encodeWallBlock(block world.Block) (string, int16) {
+func encodeWallBlock(block world.Block) string {
 	switch block := block.(type) {
 	case Andesite:
 		if !block.Polished {
-			return "andesite", 4
+			return "andesite"
 		}
 	case Blackstone:
 		if block.Type == NormalBlackstone() {
-			return "blackstone", 0
+			return "blackstone"
 		} else if block.Type == PolishedBlackstone() {
-			return "polished_blackstone", 0
+			return "polished_blackstone"
 		}
 	case Bricks:
-		return "brick", 6
+		return "brick"
 	case Cobblestone:
 		if block.Mossy {
-			return "mossy_cobblestone", 1
+			return "mossy_cobblestone"
 		}
-		return "cobblestone", 0
+		return "cobblestone"
 	case Deepslate:
 		if block.Type == CobbledDeepslate() {
-			return "cobbled_deepslate", 0
+			return "cobbled_deepslate"
 		} else if block.Type == PolishedDeepslate() {
-			return "polished_deepslate", 0
+			return "polished_deepslate"
 		}
 	case DeepslateBricks:
 		if !block.Cracked {
-			return "deepslate_brick", 0
+			return "deepslate_brick"
 		}
 	case DeepslateTiles:
 		if !block.Cracked {
-			return "deepslate_tile", 0
+			return "deepslate_tile"
 		}
 	case Diorite:
 		if !block.Polished {
-			return "diorite", 3
+			return "diorite"
 		}
 	case EndBricks:
-		return "end_brick", 10
+		return "end_stone_brick"
 	case Granite:
 		if !block.Polished {
-			return "granite", 2
+			return "granite"
 		}
 	case MudBricks:
-		return "mud_brick", 0
+		return "mud_brick"
 	case NetherBricks:
 		if block.Type == NormalNetherBricks() {
-			return "nether_brick", 9
+			return "nether_brick"
 		} else if block.Type == RedNetherBricks() {
-			return "red_nether_brick", 13
+			return "red_nether_brick"
 		}
 	case PolishedBlackstoneBrick:
 		if !block.Cracked {
-			return "polished_blackstone_brick", 0
+			return "polished_blackstone_brick"
 		}
 	case Prismarine:
 		if block.Type == NormalPrismarine() {
-			return "prismarine", 11
+			return "prismarine"
 		}
 	case Sandstone:
 		if block.Type == NormalSandstone() {
 			if block.Red {
-				return "red_sandstone", 12
+				return "red_sandstone"
 			}
-			return "sandstone", 5
+			return "sandstone"
 		}
 	case StoneBricks:
 		if block.Type == NormalStoneBricks() {
-			return "stone_brick", 7
+			return "stone_brick"
 		} else if block.Type == MossyStoneBricks() {
-			return "mossy_stone_brick", 8
+			return "mossy_stone_brick"
 		}
 	}
 	panic("invalid block used for wall")

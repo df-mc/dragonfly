@@ -329,7 +329,8 @@ func (s *Session) SendSpeed(speed float64) {
 				Value: float32(speed),
 				Max:   math.MaxFloat32,
 			},
-			Default: 0.1,
+			DefaultMax: math.MaxFloat32,
+			Default:    0.1,
 		}},
 	})
 }
@@ -345,7 +346,8 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 					Value: float32(food),
 					Max:   20,
 				},
-				Default: 20,
+				DefaultMax: 20,
+				Default:    20,
 			},
 			{
 				AttributeValue: protocol.AttributeValue{
@@ -353,7 +355,8 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 					Value: float32(saturation),
 					Max:   20,
 				},
-				Default: 20,
+				DefaultMax: 20,
+				Default:    20,
 			},
 			{
 				AttributeValue: protocol.AttributeValue{
@@ -361,6 +364,7 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 					Value: float32(exhaustion),
 					Max:   5,
 				},
+				DefaultMax: 5,
 			},
 		},
 	})
@@ -469,7 +473,8 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 				Value: float32(math.Ceil(health.Health())),
 				Max:   float32(math.Ceil(health.MaxHealth())),
 			},
-			Default: 20,
+			DefaultMax: 20,
+			Default:    20,
 		}},
 	})
 }
@@ -484,6 +489,7 @@ func (s *Session) SendAbsorption(value float64) {
 				Value: float32(math.Ceil(value)),
 				Max:   float32(math.MaxFloat32),
 			},
+			DefaultMax: float32(math.MaxFloat32),
 		}},
 	})
 }
@@ -747,6 +753,7 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 					Value: float32(level),
 					Max:   float32(math.MaxInt32),
 				},
+				DefaultMax: float32(math.MaxInt32),
 			},
 			{
 				AttributeValue: protocol.AttributeValue{
@@ -754,6 +761,7 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 					Value: float32(progress),
 					Max:   1,
 				},
+				DefaultMax: 1,
 			},
 		},
 	})

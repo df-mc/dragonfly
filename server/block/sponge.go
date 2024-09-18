@@ -33,17 +33,17 @@ func (s Sponge) SmeltInfo() item.SmeltInfo {
 // EncodeItem ...
 func (s Sponge) EncodeItem() (name string, meta int16) {
 	if s.Wet {
-		meta = 1
+		return "minecraft:wet_sponge", 0
 	}
-	return "minecraft:sponge", meta
+	return "minecraft:sponge", 0
 }
 
 // EncodeBlock ...
 func (s Sponge) EncodeBlock() (string, map[string]any) {
 	if s.Wet {
-		return "minecraft:sponge", map[string]any{"sponge_type": "wet"}
+		return "minecraft:wet_sponge", nil
 	}
-	return "minecraft:sponge", map[string]any{"sponge_type": "dry"}
+	return "minecraft:sponge", nil
 }
 
 // UseOnBlock places the sponge, absorbs nearby water if it's still dry and flags it as wet if any water has been
