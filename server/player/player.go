@@ -133,6 +133,8 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		mc:         &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 	}
 	var scoreTag string
+	var heldSlot uint32
+	var vel mgl64.Vec3
 	var gm world.GameMode = world.GameModeSurvival
 	p.gameMode.Store(&gm)
 	p.Handle(nil)
@@ -145,6 +147,8 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.enchantSeed.Store(rand.Int63())
 	p.scale.Store(math.Float64bits(1))
 	p.pos.Store(&pos)
+	p.vel.Store(&vel)
+	p.heldSlot.Store(heldSlot)
 	return p
 }
 
