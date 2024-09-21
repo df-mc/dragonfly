@@ -131,6 +131,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		breathing:  true,
 		cooldowns:  make(map[string]time.Time),
 		mc:         &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
+		heldSlot:   &atomic.Uint32{},
 	}
 	var scoreTag string
 	var heldSlot uint32
