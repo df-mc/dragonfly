@@ -95,12 +95,12 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 		if !e.Type().BBox(e).Translate(pos).IntersectsWith(box) {
 			continue
 		}
-		dist := pos.Sub(pos).Len()
-		if dist >= d {
+		dist := pos.Sub(explosionPos).Len()
+		if dist > d || dist == 0 {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - dist/d) * exposure(pos, e)
+			impact := (1 - dist/d) * exposure(explosionPos, e)
 			explodable.Explode(explosionPos, impact, c)
 		}
 	}
