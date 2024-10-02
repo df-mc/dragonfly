@@ -10,11 +10,11 @@ import (
 type Leaves struct{}
 
 // BBox returns a physics.BBox that spans a full block.
-func (Leaves) BBox(cube.Pos, *world.World) []cube.BBox {
+func (Leaves) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{full}
 }
 
 // FaceSolid always returns false.
-func (Leaves) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (Leaves) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }
