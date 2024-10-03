@@ -154,6 +154,9 @@ func (i *ItemBehaviour) merge(e *Ent, other *Ent) bool {
 
 // collect makes a collector collect the item (or at least part of it).
 func (i *ItemBehaviour) collect(e *Ent, collector Collector) {
+	if !collector.CanCollect() {
+		return
+	}
 	w, pos := e.World(), e.Position()
 	n := collector.Collect(i.i)
 	if n == 0 {
@@ -178,6 +181,8 @@ func (i *ItemBehaviour) collect(e *Ent, collector Collector) {
 // a player or a zombie.
 type Collector interface {
 	world.Entity
+	// CanCollect returns whether the Collector is able to pick up an item or not.
+	CanCollect() bool
 	// Collect collects the stack passed. It is called if the Collector is standing near an item entity that
 	// may be picked up.
 	// The count of items collected from the stack n is returned.
