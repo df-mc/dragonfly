@@ -12,11 +12,11 @@ type Grindstone struct {
 }
 
 // BBox ...
-func (g Grindstone) BBox(cube.Pos, *world.World) []cube.BBox {
+func (g Grindstone) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{cube.Box(0.125, 0.125, 0.125, 0.825, 0.825, 0.825).Stretch(g.Axis, 0.125)}
 }
 
 // FaceSolid always returns false.
-func (g Grindstone) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (g Grindstone) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

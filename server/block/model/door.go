@@ -18,7 +18,7 @@ type Door struct {
 
 // BBox returns a physics.BBox that depends on if the Door is open, what direction it is facing and whether it is
 // attached to the right/left side of a block.
-func (d Door) BBox(cube.Pos, *world.World) []cube.BBox {
+func (d Door) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	if d.Open {
 		if d.Right {
 			return []cube.BBox{full.ExtendTowards(d.Facing.RotateLeft().Face(), -0.8125)}
@@ -29,6 +29,6 @@ func (d Door) BBox(cube.Pos, *world.World) []cube.BBox {
 }
 
 // FaceSolid always returns false.
-func (d Door) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (d Door) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

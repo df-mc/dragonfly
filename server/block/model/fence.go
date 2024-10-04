@@ -14,7 +14,7 @@ type Fence struct {
 }
 
 // BBox returns multiple physics.BBox depending on how many connections it has with the surrounding blocks.
-func (f Fence) BBox(pos cube.Pos, w *world.World) []cube.BBox {
+func (f Fence) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
 	const offset = 0.375
 
 	boxes := make([]cube.BBox, 0, 5)
@@ -22,9 +22,9 @@ func (f Fence) BBox(pos cube.Pos, w *world.World) []cube.BBox {
 
 	for i := cube.Face(2); i < 6; i++ {
 		pos := pos.Side(i)
-		block := w.Block(pos)
+		block := s.Block(pos)
 
-		if fence, ok := block.Model().(Fence); (ok && fence.Wood == f.Wood) || block.Model().FaceSolid(pos, i, w) {
+		if fence, ok := block.Model().(Fence); (ok && fence.Wood == f.Wood) || block.Model().FaceSolid(pos, i, s) {
 			boxes = append(boxes, mainBox.ExtendTowards(i, offset))
 		} else if _, ok := block.Model().(FenceGate); ok {
 			boxes = append(boxes, mainBox.ExtendTowards(i, offset))
@@ -34,6 +34,6 @@ func (f Fence) BBox(pos cube.Pos, w *world.World) []cube.BBox {
 }
 
 // FaceSolid returns true if the face is cube.FaceDown or cube.FaceUp.
-func (f Fence) FaceSolid(_ cube.Pos, face cube.Face, _ *world.World) bool {
+func (f Fence) FaceSolid(_ cube.Pos, face cube.Face, _ world.BlockSource) bool {
 	return face == cube.FaceDown || face == cube.FaceUp
 }

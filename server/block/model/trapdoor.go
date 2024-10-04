@@ -17,7 +17,7 @@ type Trapdoor struct {
 
 // BBox returns a physics.BBox that depends on the facing direction of the Trapdoor and whether it is open and in the
 // top part of the block.
-func (t Trapdoor) BBox(cube.Pos, *world.World) []cube.BBox {
+func (t Trapdoor) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	if t.Open {
 		return []cube.BBox{full.ExtendTowards(t.Facing.Face(), -0.8125)}
 	} else if t.Top {
@@ -27,7 +27,7 @@ func (t Trapdoor) BBox(cube.Pos, *world.World) []cube.BBox {
 }
 
 // FaceSolid returns true if the face is completely filled with the trapdoor.
-func (t Trapdoor) FaceSolid(pos cube.Pos, face cube.Face, w *world.World) bool {
+func (t Trapdoor) FaceSolid(_ cube.Pos, face cube.Face, _ world.BlockSource) bool {
 	if t.Open {
 		return t.Facing.Face().Opposite() == face
 	} else if t.Top {

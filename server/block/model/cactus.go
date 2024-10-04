@@ -9,11 +9,11 @@ import (
 type Cactus struct{}
 
 // BBox returns a physics.BBox that is slightly smaller than a full block.
-func (Cactus) BBox(cube.Pos, *world.World) []cube.BBox {
+func (Cactus) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{cube.Box(0.025, 0, 0.025, 0.975, 1, 0.975)}
 }
 
 // FaceSolid always returns false.
-func (Cactus) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (Cactus) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

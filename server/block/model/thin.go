@@ -11,7 +11,7 @@ type Thin struct{}
 
 // BBox returns a slice of physics.BBox that depends on the blocks surrounding the Thin block. Thin blocks can connect
 // to any other Thin block, wall or solid faces of other blocks.
-func (t Thin) BBox(pos cube.Pos, w *world.World) []cube.BBox {
+func (t Thin) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
 	const offset = 0.4375
 
 	boxes := make([]cube.BBox, 0, 5)
@@ -19,11 +19,11 @@ func (t Thin) BBox(pos cube.Pos, w *world.World) []cube.BBox {
 
 	for _, f := range cube.HorizontalFaces() {
 		pos := pos.Side(f)
-		block := w.Block(pos)
+		block := s.Block(pos)
 
 		_, thin := block.Model().(Thin)
 		_, wall := block.Model().(Wall)
-		if thin || wall || block.Model().FaceSolid(pos, f.Opposite(), w) {
+		if thin || wall || block.Model().FaceSolid(pos, f.Opposite(), s) {
 			boxes = append(boxes, mainBox.ExtendTowards(f, offset))
 		}
 	}
@@ -31,6 +31,6 @@ func (t Thin) BBox(pos cube.Pos, w *world.World) []cube.BBox {
 }
 
 // FaceSolid returns true if the face passed is cube.FaceDown.
-func (t Thin) FaceSolid(_ cube.Pos, face cube.Face, _ *world.World) bool {
+func (t Thin) FaceSolid(_ cube.Pos, face cube.Face, _ world.BlockSource) bool {
 	return face == cube.FaceDown
 }

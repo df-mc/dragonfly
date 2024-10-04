@@ -13,12 +13,12 @@ type Cake struct {
 }
 
 // BBox returns an BBox with a size that depends on the amount of bites taken.
-func (c Cake) BBox(cube.Pos, *world.World) []cube.BBox {
+func (c Cake) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{cube.Box(0.0625, 0, 0.0625, 0.9375, 0.5, 0.9375).
 		ExtendTowards(cube.FaceWest, -(float64(c.Bites) / 8))}
 }
 
 // FaceSolid always returns false.
-func (c Cake) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (c Cake) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }
