@@ -139,6 +139,26 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 					dropItem(w, drop, pos.Vec3Centre())
 				}
 			}
+
+			if container, ok := bl.(Container); ok {
+				if cb, ok := bl.(Chest); ok {
+					if cb.Paired() {
+						pairPos := cb.pairPos(pos)
+						if _, pair, ok := cb.unpair(w, pos); ok {
+							cb.paired = false
+							w.SetBlock(pairPos, pair, nil)
+						}
+					}
+
+					for _, i := range cb.Inventory(w, pos).Clear() {
+						dropItem(w, i, pos.Vec3())
+					}
+				} else {
+					for _, i := range container.Inventory(w, pos).Clear() {
+						dropItem(w, i, pos.Vec3())
+					}
+				}
+			}
 		}
 	}
 	if c.SpawnFire {

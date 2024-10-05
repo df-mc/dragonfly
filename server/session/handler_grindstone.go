@@ -25,18 +25,18 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no grindstone container opened")
 	}
-	if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); !ok {
+	if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Grindstone); !ok {
 		return fmt.Errorf("no grindstone container opened")
 	}
 
 	// Next, get both input items and ensure they are comparable.
 	firstInput, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: protocol.ContainerGrindstoneInput,
-		Slot:        grindstoneFirstInputSlot,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneInput},
+		Slot:      grindstoneFirstInputSlot,
 	}, s)
 	secondInput, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: protocol.ContainerGrindstoneAdditional,
-		Slot:        grindstoneSecondInputSlot,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneAdditional},
+		Slot:      grindstoneSecondInputSlot,
 	}, s)
 	if firstInput.Empty() && secondInput.Empty() {
 		return fmt.Errorf("input item(s) are empty")
@@ -65,12 +65,12 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: protocol.ContainerGrindstoneInput,
-		Slot:        grindstoneFirstInputSlot,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneInput},
+		Slot:      grindstoneFirstInputSlot,
 	}, item.Stack{}, s)
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: protocol.ContainerGrindstoneAdditional,
-		Slot:        grindstoneSecondInputSlot,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneAdditional},
+		Slot:      grindstoneSecondInputSlot,
 	}, item.Stack{}, s)
 	return h.createResults(s, stripPossibleEnchantments(resultStack))
 }

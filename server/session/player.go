@@ -3,7 +3,6 @@ package session
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -21,6 +20,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
+	"sync/atomic"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -28,21 +28,33 @@ import (
 // StopShowingEntity stops showing a world.Entity to the Session. It will be completely invisible until a call to
 // StartShowingEntity is made.
 func (s *Session) StopShowingEntity(e world.Entity) {
-	s.HideEntity(e)
 	s.entityMutex.Lock()
-	s.hiddenEntities[e] = struct{}{}
+	_, ok := s.hiddenEntities[e]
+	if !ok {
+		s.hiddenEntities[e] = struct{}{}
+	}
 	s.entityMutex.Unlock()
+
+	if !ok {
+		s.HideEntity(e)
+	}
 }
 
 // StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
 func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	delete(s.hiddenEntities, e)
+	_, ok := s.hiddenEntities[e]
+	if ok {
+		delete(s.hiddenEntities, e)
+	}
 	s.entityMutex.Unlock()
-	s.ViewEntity(e)
-	s.ViewEntityState(e)
-	s.ViewEntityItems(e)
-	s.ViewEntityArmour(e)
+
+	if ok {
+		s.ViewEntity(e)
+		s.ViewEntityState(e)
+		s.ViewEntityItems(e)
+		s.ViewEntityArmour(e)
+	}
 }
 
 // closeCurrentContainer closes the container the player might currently have open.
@@ -52,7 +64,7 @@ func (s *Session) closeCurrentContainer() {
 	}
 	s.closeWindow()
 
-	pos := s.openedPos.Load()
+	pos := *s.openedPos.Load()
 	w := s.c.World()
 	b := w.Block(pos)
 	if container, ok := b.(block.Container); ok {
@@ -139,6 +151,12 @@ func (s *Session) sendRecipes() {
 				Template:        input[2],
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
+			})
+		case recipe.Furnace:
+			recipes = append(recipes, &protocol.FurnaceRecipe{
+				InputType: stackFromItem(i.Input()[0].(item.Stack)).ItemType,
+				Output:    stackFromItem(i.Output()[0]),
+				Block:     i.Block(),
 			})
 		}
 	}
@@ -228,65 +246,60 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 		return s.armour.Inventory(), true
 	case protocol.ContainerLevelEntity:
 		if s.containerOpened.Load() {
-			b := s.c.World().Block(s.openedPos.Load())
-			if _, chest := b.(block.Chest); chest {
-				return s.openedWindow.Load(), true
-			} else if _, enderChest := b.(block.EnderChest); enderChest {
-				return s.openedWindow.Load(), true
-			}
+			return s.openedWindow.Load(), true
 		}
 	case protocol.ContainerBarrel:
 		if s.containerOpened.Load() {
-			if _, barrel := s.c.World().Block(s.openedPos.Load()).(block.Barrel); barrel {
+			if _, barrel := s.c.World().Block(*s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
 		}
 	case protocol.ContainerBeaconPayment:
 		if s.containerOpened.Load() {
-			if _, beacon := s.c.World().Block(s.openedPos.Load()).(block.Beacon); beacon {
+			if _, beacon := s.c.World().Block(*s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
 		if s.containerOpened.Load() {
-			if _, anvil := s.c.World().Block(s.openedPos.Load()).(block.Anvil); anvil {
+			if _, anvil := s.c.World().Block(*s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerSmithingTableTemplate, protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
 		if s.containerOpened.Load() {
-			if _, smithing := s.c.World().Block(s.openedPos.Load()).(block.SmithingTable); smithing {
+			if _, smithing := s.c.World().Block(*s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
 		if s.containerOpened.Load() {
-			if _, loom := s.c.World().Block(s.openedPos.Load()).(block.Loom); loom {
+			if _, loom := s.c.World().Block(*s.openedPos.Load()).(block.Loom); loom {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerStonecutterInput:
 		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Stonecutter); ok {
+			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
 		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.Grindstone); ok {
+			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Grindstone); ok {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
 		if s.containerOpened.Load() {
-			if _, enchanting := s.c.World().Block(s.openedPos.Load()).(block.EnchantingTable); enchanting {
+			if _, enchanting := s.c.World().Block(*s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
 		}
 	case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
 		protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
 		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(s.openedPos.Load()).(smelter); ok {
+			if _, ok := s.c.World().Block(*s.openedPos.Load()).(smelter); ok {
 				return s.openedWindow.Load(), true
 			}
 		}
@@ -316,7 +329,8 @@ func (s *Session) SendSpeed(speed float64) {
 				Value: float32(speed),
 				Max:   math.MaxFloat32,
 			},
-			Default: 0.1,
+			DefaultMax: math.MaxFloat32,
+			Default:    0.1,
 		}},
 	})
 }
@@ -332,7 +346,8 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 					Value: float32(food),
 					Max:   20,
 				},
-				Default: 20,
+				DefaultMax: 20,
+				Default:    20,
 			},
 			{
 				AttributeValue: protocol.AttributeValue{
@@ -340,7 +355,8 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 					Value: float32(saturation),
 					Max:   20,
 				},
-				Default: 20,
+				DefaultMax: 20,
+				Default:    20,
 			},
 			{
 				AttributeValue: protocol.AttributeValue{
@@ -348,6 +364,7 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 					Value: float32(exhaustion),
 					Max:   5,
 				},
+				DefaultMax: 5,
 			},
 		},
 	})
@@ -456,7 +473,8 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 				Value: float32(math.Ceil(health.Health())),
 				Max:   float32(math.Ceil(health.MaxHealth())),
 			},
-			Default: 20,
+			DefaultMax: 20,
+			Default:    20,
 		}},
 	})
 }
@@ -471,6 +489,7 @@ func (s *Session) SendAbsorption(value float64) {
 				Value: float32(math.Ceil(value)),
 				Max:   float32(math.MaxFloat32),
 			},
+			DefaultMax: float32(math.MaxFloat32),
 		}},
 	})
 }
@@ -645,7 +664,7 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			return
 		}
 		if !s.inTransaction.Load() {
-			if _, ok := s.c.World().Block(s.openedPos.Load()).(block.EnderChest); ok {
+			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.EnderChest); ok {
 				s.ViewSlotChange(slot, item)
 			}
 		}
@@ -734,6 +753,7 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 					Value: float32(level),
 					Max:   float32(math.MaxInt32),
 				},
+				DefaultMax: float32(math.MaxInt32),
 			},
 			{
 				AttributeValue: protocol.AttributeValue{
@@ -741,6 +761,7 @@ func (s *Session) SendExperience(e *entity.ExperienceManager) {
 					Value: float32(progress),
 					Max:   1,
 				},
+				DefaultMax: 1,
 			},
 		},
 	})

@@ -2,9 +2,10 @@ package recipe
 
 import (
 	_ "embed"
+
 	// Ensure all blocks and items are registered before trying to load vanilla recipes.
 	_ "github.com/df-mc/dragonfly/server/block"
-	_ "github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
@@ -15,6 +16,8 @@ var (
 	vanillaSmithingData []byte
 	//go:embed smithing_trim_data.nbt
 	vanillaSmithingTrimData []byte
+	//go:embed furnace_data.nbt
+	furnaceData []byte
 )
 
 // shapedRecipe is a recipe that must be crafted in a specific shape.
@@ -33,6 +36,13 @@ type shapelessRecipe struct {
 	Output   outputItems `nbt:"output"`
 	Block    string      `nbt:"block"`
 	Priority int32       `nbt:"priority"`
+}
+
+// furnaceRecipe is a recipe that may be crafted in a furnace.
+type furnaceRecipe struct {
+	Input  inputItem  `nbt:"input"`
+	Output outputItem `nbt:"output"`
+	Block  string     `nbt:"block"`
 }
 
 func init() {
@@ -112,6 +122,26 @@ func init() {
 			input:    input,
 			block:    s.Block,
 			priority: uint32(s.Priority),
+		}})
+	}
+
+	var furnaceRecipes []furnaceRecipe
+	if err := nbt.Unmarshal(furnaceData, &furnaceRecipes); err != nil {
+		panic(err)
+	}
+
+	for _, s := range furnaceRecipes {
+		input, ok := s.Input.Item()
+		output, okTwo := s.Output.Stack()
+		if !ok || !okTwo {
+			// This can be expected to happen - refer to the comment above.
+			continue
+		}
+
+		Register(Furnace{recipe{
+			input:  []Item{input},
+			output: []item.Stack{output},
+			block:  s.Block,
 		}})
 	}
 }

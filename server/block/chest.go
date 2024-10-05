@@ -29,6 +29,10 @@ type Chest struct {
 	// include colour codes.
 	CustomName string
 
+	paired       bool
+	pairX, pairZ int
+	pairInv      *inventory.Inventory
+
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
 	viewers   map[ContainerViewer]struct{}
@@ -36,24 +40,38 @@ type Chest struct {
 
 // NewChest creates a new initialised chest. The inventory is properly initialised.
 func NewChest() Chest {
-	m := new(sync.RWMutex)
-	v := make(map[ContainerViewer]struct{}, 1)
-	return Chest{
-		inventory: inventory.New(27, func(slot int, _, item item.Stack) {
-			m.RLock()
-			defer m.RUnlock()
-			for viewer := range v {
-				viewer.ViewSlotChange(slot, item)
-			}
-		}),
-		viewerMu: m,
-		viewers:  v,
+	c := Chest{
+		viewerMu: new(sync.RWMutex),
+		viewers:  make(map[ContainerViewer]struct{}, 1),
 	}
+
+	c.inventory = inventory.New(27, func(slot int, _, after item.Stack) {
+		c.viewerMu.RLock()
+		defer c.viewerMu.RUnlock()
+		for viewer := range c.viewers {
+			viewer.ViewSlotChange(slot, after)
+		}
+	})
+	return c
 }
 
 // Inventory returns the inventory of the chest. The size of the inventory will be 27 or 54, depending on
 // whether the chest is single or double.
-func (c Chest) Inventory() *inventory.Inventory {
+func (c Chest) Inventory(w *world.World, pos cube.Pos) *inventory.Inventory {
+	if c.paired {
+		if c.pairInv == nil {
+			if ch, pair, ok := c.pair(w, pos, c.pairPos(pos)); ok {
+				c = ch
+				w.SetBlock(pos, ch, nil)
+				w.SetBlock(c.pairPos(pos), pair, nil)
+			} else {
+				c.paired = false
+				w.SetBlock(pos, c, nil)
+				return c.inventory
+			}
+		}
+		return c.pairInv
+	}
 	return c.inventory
 }
 
@@ -71,6 +89,9 @@ func (Chest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 // open opens the chest, displaying the animation and playing a sound.
 func (c Chest) open(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
+		if c.paired {
+			v.ViewBlockAction(c.pairPos(pos), OpenAction{})
+		}
 		v.ViewBlockAction(pos, OpenAction{})
 	}
 	w.PlaySound(pos.Vec3Centre(), sound.ChestOpen{})
@@ -79,6 +100,9 @@ func (c Chest) open(w *world.World, pos cube.Pos) {
 // close closes the chest, displaying the animation and playing a sound.
 func (c Chest) close(w *world.World, pos cube.Pos) {
 	for _, v := range w.Viewers(pos.Vec3()) {
+		if c.paired {
+			v.ViewBlockAction(c.pairPos(pos), CloseAction{})
+		}
 		v.ViewBlockAction(pos, CloseAction{})
 	}
 	w.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
@@ -111,6 +135,11 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 // Activate ...
 func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
+		if c.paired {
+			if d, ok := w.Block(c.pairPos(pos).Side(cube.FaceUp)).(LightDiffuser); !ok || d.LightDiffusionLevel() > 2 {
+				return false
+			}
+		}
 		if d, ok := w.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() <= 2 {
 			opener.OpenBlockContainer(pos)
 		}
@@ -129,13 +158,34 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	c = NewChest()
 	c.Facing = user.Rotation().Direction().Opposite()
 
+	// Check both sides of the chest to see if it is possible to pair with another chest.
+	for _, dir := range []cube.Direction{c.Facing.RotateLeft(), c.Facing.RotateRight()} {
+		if ch, pair, ok := c.pair(w, pos, pos.Side(dir.Face())); ok {
+			place(w, pos, ch, user, ctx)
+			w.SetBlock(ch.pairPos(pos), pair, nil)
+			return placed(ctx)
+		}
+	}
+
 	place(w, pos, c, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		if c.paired {
+			pairPos := c.pairPos(pos)
+			if _, pair, ok := c.unpair(w, pos); ok {
+				c.paired = false
+				w.SetBlock(pairPos, pair, nil)
+			}
+		}
+
+		for _, i := range c.Inventory(w, pos).Clear() {
+			dropItem(w, i, pos.Vec3Centre())
+		}
+	})
 }
 
 // FuelInfo ...
@@ -148,6 +198,89 @@ func (c Chest) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
+// Paired returns whether the chest is paired with another chest.
+func (c Chest) Paired() bool {
+	return c.paired
+}
+
+// pair pairs this chest with the given chest position.
+func (c Chest) pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok bool) {
+	pair, ok = w.Block(pairPos).(Chest)
+	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
+		return c, pair, false
+	}
+	m := new(sync.RWMutex)
+	v := make(map[ContainerViewer]struct{})
+	left, right := c.inventory.Clone(nil), pair.inventory.Clone(nil)
+	if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
+		left, right = right, left
+	}
+	double := left.Merge(right, func(slot int, _, item item.Stack) {
+		if slot < 27 {
+			_ = left.SetItem(slot, item)
+		} else {
+			_ = right.SetItem(slot-27, item)
+		}
+		m.RLock()
+		defer m.RUnlock()
+		for viewer := range v {
+			viewer.ViewSlotChange(slot, item)
+		}
+	})
+
+	c.inventory, pair.inventory = left, right
+	if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
+		c.inventory, pair.inventory = right, left
+	}
+	c.pairX, c.pairZ, c.paired = pairPos[0], pairPos[2], true
+	pair.pairX, pair.pairZ, pair.paired = pos[0], pos[2], true
+	c.viewerMu, pair.viewerMu = m, m
+	c.viewers, pair.viewers = v, v
+	c.pairInv, pair.pairInv = double, double
+	return c, pair, true
+}
+
+// unpair unpairs this chest from the chest it is currently paired with.
+func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
+	if !c.paired {
+		return c, Chest{}, false
+	}
+
+	pair, ok = w.Block(c.pairPos(pos)).(Chest)
+	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
+		return c, pair, false
+	}
+
+	if len(c.viewers) != 0 {
+		c.close(w, pos)
+	}
+
+	c.inventory = c.inventory.Clone(func(slot int, _, after item.Stack) {
+		c.viewerMu.RLock()
+		defer c.viewerMu.RUnlock()
+		for viewer := range c.viewers {
+			viewer.ViewSlotChange(slot, after)
+		}
+	})
+	pair.inventory = pair.inventory.Clone(func(slot int, _, after item.Stack) {
+		pair.viewerMu.RLock()
+		defer pair.viewerMu.RUnlock()
+		for viewer := range pair.viewers {
+			viewer.ViewSlotChange(slot, after)
+		}
+	})
+	c.paired, pair.paired = false, false
+	c.viewerMu, pair.viewerMu = new(sync.RWMutex), new(sync.RWMutex)
+	c.viewers, pair.viewers = make(map[ContainerViewer]struct{}, 1), make(map[ContainerViewer]struct{}, 1)
+	c.pairInv, pair.pairInv = nil, nil
+	return c, pair, true
+}
+
+// pairPos returns the position of the chest that this chest is paired with.
+func (c Chest) pairPos(pos cube.Pos) cube.Pos {
+	return cube.Pos{c.pairX, pos[1], c.pairZ}
+}
+
 // DecodeNBT ...
 func (c Chest) DecodeNBT(data map[string]any) any {
 	facing := c.Facing
@@ -155,6 +288,18 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 	c = NewChest()
 	c.Facing = facing
 	c.CustomName = nbtconv.String(data, "CustomName")
+
+	pairX, ok := data["pairx"]
+	pairZ, ok2 := data["pairz"]
+	if ok && ok2 {
+		pairX, ok := pairX.(int32)
+		pairZ, ok2 := pairZ.(int32)
+		if ok && ok2 {
+			c.paired = true
+			c.pairX, c.pairZ = int(pairX), int(pairZ)
+		}
+	}
+
 	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
 	return c
 }
@@ -173,6 +318,11 @@ func (c Chest) EncodeNBT() map[string]any {
 	}
 	if c.CustomName != "" {
 		m["CustomName"] = c.CustomName
+	}
+
+	if c.paired {
+		m["pairx"] = int32(c.pairX)
+		m["pairz"] = int32(c.pairZ)
 	}
 	return m
 }

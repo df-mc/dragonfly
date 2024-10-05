@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -65,6 +67,26 @@ func (i *ItemBehaviour) Item() item.Stack {
 // Tick moves the entity, checks if it should be picked up by a nearby collector
 // or if it should merge with nearby item entities.
 func (i *ItemBehaviour) Tick(e *Ent) *Movement {
+	w := e.World()
+	pos := cube.PosFromVec3(e.Position())
+	blockPos := pos.Side(cube.FaceDown)
+
+	bl, ok := w.Block(blockPos).(block.Hopper)
+	if ok && !bl.Powered && bl.CollectCooldown <= 0 {
+		addedCount, err := bl.Inventory(w, blockPos).AddItem(i.i)
+		if err != nil {
+			if addedCount == 0 {
+				return i.passive.Tick(e)
+			}
+
+			// This is only reached if part of the item stack was collected into the hopper.
+			w.AddEntity(NewItem(i.Item().Grow(-addedCount), pos.Vec3Centre()))
+		}
+
+		_ = e.Close()
+		bl.CollectCooldown = 8
+		w.SetBlock(blockPos, bl, nil)
+	}
 	return i.passive.Tick(e)
 }
 

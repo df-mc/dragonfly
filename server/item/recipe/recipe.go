@@ -59,6 +59,20 @@ func NewSmithingTrim(base, addition, template Item, block string) SmithingTrim {
 	}}
 }
 
+// Furnace represents a recipe only craftable in a furnace.
+type Furnace struct {
+	recipe
+}
+
+// NewFurnace creates a new furnace recipe and returns it.
+func NewFurnace(input Item, output item.Stack, block string) Furnace {
+	return Furnace{recipe: recipe{
+		input:  []Item{input},
+		output: []item.Stack{output},
+		block:  block,
+	}}
+}
+
 // Shaped is a recipe that has a specific shape that must be used to craft the output of the recipe.
 type Shaped struct {
 	recipe

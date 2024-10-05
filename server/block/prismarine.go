@@ -20,12 +20,12 @@ func (p Prismarine) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (p Prismarine) EncodeItem() (id string, meta int16) {
-	return "minecraft:prismarine", int16(p.Type.Uint8())
+	return "minecraft:" + p.Type.String(), 0
 }
 
 // EncodeBlock ...
 func (p Prismarine) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:prismarine", map[string]any{"prismarine_block_type": p.Type.String()}
+	return "minecraft:" + p.Type.String(), nil
 }
 
 // allPrismarine returns a list of all prismarine block variants.

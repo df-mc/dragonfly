@@ -49,8 +49,8 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
-				ContainerID: protocol.ContainerCraftingInput,
-				Slot:        byte(slot),
+				Container: protocol.FullContainerName{ContainerID: protocol.ContainerCraftingInput},
+				Slot:      byte(slot),
 			}, st, s)
 			break
 		}
@@ -120,8 +120,8 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 
 				expected, has = grow(expected, -removal), has.Grow(-removal)
 				h.setItemInSlot(protocol.StackRequestSlotInfo{
-					ContainerID: id,
-					Slot:        byte(slot),
+					Container: protocol.FullContainerName{ContainerID: id},
+					Slot:      byte(slot),
 				}, has, s)
 				if expected.Empty() {
 					// Consumed this item, so go to the next one.

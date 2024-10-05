@@ -141,22 +141,22 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 			m[protocol.EntityDataKeyCustomDisplay] = tip + 1
 		}
 	}
-	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
-		visibleEffects := make([]effect.Effect, 0, len(eff.Effects()))
+	if eff, ok := e.(effectBearer); ok {
+		var packedEffects int64
+
 		for _, ef := range eff.Effects() {
 			if !ef.ParticlesHidden() {
-				visibleEffects = append(visibleEffects, ef)
+				id, found := effect.ID(ef.Type())
+				if !found {
+					continue
+				}
+				packedEffects = (packedEffects << 7) | int64(id<<1)
+				if ef.Ambient() {
+					packedEffects |= 1
+				}
 			}
 		}
-		if len(visibleEffects) > 0 {
-			colour, am := effect.ResultingColour(visibleEffects)
-			m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
-			if am {
-				m[protocol.EntityDataKeyEffectAmbience] = byte(1)
-			} else {
-				m[protocol.EntityDataKeyEffectAmbience] = byte(0)
-			}
-		}
+		m[protocol.EntityDataKeyVisibleMobEffects] = packedEffects
 	}
 	if v, ok := e.(variable); ok {
 		m[protocol.EntityDataKeyVariant] = v.Variant()

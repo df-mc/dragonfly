@@ -117,6 +117,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
 				UUID: v.UUID(),
 			}}})
+		} else {
+			s.ViewSkin(e)
 		}
 		return
 	case *entity.Ent:
@@ -541,7 +543,7 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		return
 	case sound.Teleport:
 		pk.SoundType = packet.SoundEventTeleport
-	case sound.ItemFrameAdd:
+	case sound.ItemAdd:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundAddItem,
 			Position:  vec64To32(pos),
@@ -587,6 +589,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventTwinkle
 	case sound.FurnaceCrackle:
 		pk.SoundType = packet.SoundEventFurnaceUse
+	case sound.CampfireCrackle:
+		pk.SoundType = packet.SoundEventCampfireCrackle
 	case sound.BlastFurnaceCrackle:
 		pk.SoundType = packet.SoundEventBlastFurnaceUse
 	case sound.SmokerCrackle:
@@ -846,12 +850,13 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 		Layer:             uint32(layer),
 	})
 	if v, ok := b.(world.NBTer); ok {
-		NBTData := v.EncodeNBT()
-		NBTData["x"], NBTData["y"], NBTData["z"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
-		s.writePacket(&packet.BlockActorData{
-			Position: blockPos,
-			NBTData:  NBTData,
-		})
+		if nbtData := v.EncodeNBT(); nbtData != nil {
+			nbtData["x"], nbtData["y"], nbtData["z"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
+			s.writePacket(&packet.BlockActorData{
+				Position: blockPos,
+				NBTData:  nbtData,
+			})
+		}
 	}
 }
 
@@ -953,7 +958,7 @@ func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
 
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos) {
-	if s.containerOpened.Load() && s.openedPos.Load() == pos {
+	if s.containerOpened.Load() && *s.openedPos.Load() == pos {
 		return
 	}
 	s.closeCurrentContainer()
@@ -967,8 +972,9 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	// We hit a special kind of window like beacons, which are not actually opened server-side.
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
-	s.openedWindow.Store(inventory.New(1, nil))
-	s.openedPos.Store(pos)
+	inv := inventory.New(1, nil)
+	s.openedWindow.Store(inv)
+	s.openedPos.Store(&pos)
 
 	var containerType byte
 	switch b := b.(type) {
@@ -1012,8 +1018,9 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
-	s.openedWindow.Store(b.Inventory())
-	s.openedPos.Store(pos)
+	inv := b.Inventory(s.c.World(), pos)
+	s.openedWindow.Store(inv)
+	s.openedPos.Store(&pos)
 
 	var containerType byte
 	switch b.(type) {
@@ -1023,6 +1030,8 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 		containerType = protocol.ContainerTypeBlastFurnace
 	case block.Smoker:
 		containerType = protocol.ContainerTypeSmoker
+	case block.Hopper:
+		containerType = protocol.ContainerTypeHopper
 	}
 
 	s.writePacket(&packet.ContainerOpen{
@@ -1031,7 +1040,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		ContainerEntityUniqueID: -1,
 	})
-	s.sendInv(b.Inventory(), uint32(nextID))
+	s.sendInv(b.Inventory(s.c.World(), pos), uint32(nextID))
 }
 
 // ViewSlotChange ...
@@ -1138,7 +1147,7 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
 func (s *Session) nextWindowID() byte {
-	if s.openedWindowID.CAS(99, 1) {
+	if s.openedWindowID.CompareAndSwap(99, 1) {
 		return 1
 	}
 	return byte(s.openedWindowID.Add(1))
@@ -1147,11 +1156,12 @@ func (s *Session) nextWindowID() byte {
 // closeWindow closes the container window currently opened. If no window is open, closeWindow will do
 // nothing.
 func (s *Session) closeWindow() {
-	if !s.containerOpened.CAS(true, false) {
+	if !s.containerOpened.CompareAndSwap(true, false) {
 		return
 	}
 	s.openedContainerID.Store(0)
-	s.openedWindow.Store(inventory.New(1, nil))
+	inv := inventory.New(1, nil)
+	s.openedWindow.Store(inv)
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
 }
 

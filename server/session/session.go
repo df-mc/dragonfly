@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -24,6 +23,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -41,13 +41,13 @@ type Session struct {
 	// session controls.
 	onStop func(controllable Controllable)
 
-	currentScoreboard atomic.Value[string]
-	currentLines      atomic.Value[[]string]
+	currentScoreboard atomic.Pointer[string]
+	currentLines      atomic.Pointer[[]string]
 
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
-	teleportPos atomic.Value[*mgl64.Vec3]
+	teleportPos atomic.Pointer[mgl64.Vec3]
 
 	entityMutex sync.RWMutex
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
@@ -68,9 +68,10 @@ type Session struct {
 	inTransaction, containerOpened atomic.Bool
 	openedWindowID                 atomic.Uint32
 	openedContainerID              atomic.Uint32
-	openedWindow                   atomic.Value[*inventory.Inventory]
-	openedPos                      atomic.Value[cube.Pos]
+	openedWindow                   atomic.Pointer[inventory.Inventory]
+	openedPos                      atomic.Pointer[cube.Pos]
 	swingingArm                    atomic.Bool
+	changingDimension              atomic.Bool
 
 	recipes map[uint32]recipe.Recipe
 
@@ -161,11 +162,17 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 		conn:                   conn,
 		log:                    log,
 		currentEntityRuntimeID: 1,
-		heldSlot:               atomic.NewUint32(0),
+		heldSlot:               new(atomic.Uint32),
 		joinMessage:            joinMessage,
 		quitMessage:            quitMessage,
-		openedWindow:           *atomic.NewValue(inventory.New(1, nil)),
 	}
+	inv := inventory.New(1, nil)
+	s.openedWindow.Store(inv)
+
+	var scoreboardName string
+	var scoreboardLines []string
+	s.currentScoreboard.Store(&scoreboardName)
+	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
 	return s
@@ -399,7 +406,16 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 // changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
 // immediately.
 func (s *Session) changeDimension(dim int32, silent bool) {
-	s.writePacket(&packet.ChangeDimension{Dimension: dim, Position: vec64To32(s.c.Position().Add(entityOffset(s.c)))})
+	s.changingDimension.Store(true)
+	h := s.handlers[packet.IDServerBoundLoadingScreen].(*ServerBoundLoadingScreenHandler)
+	id := h.currentID.Add(1)
+	h.expectedID.Store(id)
+
+	s.writePacket(&packet.ChangeDimension{
+		Dimension:       dim,
+		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		LoadingScreenID: protocol.Option(id),
+	})
 	s.writePacket(&packet.StopSound{StopAll: silent})
 	s.writePacket(&packet.PlayStatus{Status: packet.PlayStatusPlayerSpawn})
 
@@ -409,6 +425,11 @@ func (s *Session) changeDimension(dim int32, silent bool) {
 		EntityRuntimeID: selfEntityRuntimeID,
 		ActionType:      protocol.PlayerActionDimensionChangeDone,
 	})
+}
+
+// ChangingDimension returns whether the session is currently changing dimension or not.
+func (s *Session) ChangingDimension() bool {
+	return s.changingDimension.Load()
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -463,6 +484,8 @@ func (s *Session) registerHandlers() {
 		packet.IDSubChunkRequest:           &SubChunkRequestHandler{},
 		packet.IDText:                      &TextHandler{},
 		packet.IDTickSync:                  nil,
+		packet.IDServerBoundLoadingScreen:  &ServerBoundLoadingScreenHandler{},
+		packet.IDServerBoundDiagnostics:    &ServerBoundDiagnosticsHandler{},
 	}
 }
 
@@ -470,7 +493,7 @@ func (s *Session) registerHandlers() {
 // in the future.
 func (s *Session) handleInterfaceUpdate(slot int, _, item item.Stack) {
 	if slot == enchantingInputSlot && s.containerOpened.Load() {
-		pos := s.openedPos.Load()
+		pos := *s.openedPos.Load()
 		b := s.c.World().Block(pos)
 		if _, enchanting := b.(block.EnchantingTable); enchanting {
 			s.sendEnchantmentOptions(s.c.World(), pos, item)
