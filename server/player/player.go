@@ -1758,8 +1758,10 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 		p.resendBlocks(pos, w, cube.Faces()...)
 		return false
 	}
-	if !ignoreBBox && p.obstructedPos(pos, b) {
-		p.resendBlocks(pos, w, cube.Faces()...)
+	if ok, resend := p.obstructedPos(pos, b); !ignoreBBox && ok {
+		if resend {
+			p.resendBlocks(pos, w, cube.Faces()...)
+		}
 		return false
 	}
 
@@ -1775,26 +1777,31 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 }
 
 // obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
-// The function returns true if there is an entity in the way that could prevent the block from being placed.
-func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
+// The first bool indicates if there is an entity in the way that could prevent the block from being placed.
+// The second bool is used to check if the block should be updated.
+func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed bool, resend bool) {
 	w := p.World()
 	blockBoxes := b.Model().BBox(pos, w)
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
+	resend = true
 	around := w.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3()), nil)
 	for _, e := range around {
 		switch e.Type().(type) {
 		case entity.ItemType, entity.ArrowType:
 			continue
 		default:
+			if e == p {
+				resend = false
+			}
 			if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
-				return true
+				return true, resend
 			}
 		}
 	}
-	return false
+	return false, resend
 }
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
