@@ -14,7 +14,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
-	"github.com/sirupsen/logrus"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -23,11 +23,10 @@ import (
 
 // Config contains options for starting a Minecraft server.
 type Config struct {
-	// Log is the Logger to use for logging information. If the Logger is a
-	// logrus.Logger, additional fields may be added to it for individual worlds
-	// to provide additional context. If left empty, Log will be set to a logger
-	// created with logrus.New().
-	Log Logger
+	// Log is the Logger to use for logging information. If nil, Log is set to
+	// slog.Default(). Errors reported by the underlying network are only logged
+	// if Log has at least debug level.
+	Log *slog.Logger
 	// Listeners is a list of functions to create a Listener using a Config, one
 	// for each Listener to be added to the Server. If left empty, no players
 	// will be able to connect to the Server.
@@ -99,25 +98,15 @@ type Config struct {
 	Entities world.EntityRegistry
 }
 
-// Logger is used to report information and errors from a dragonfly Server. Any
-// Logger implementation may be used by passing it to the Log field in Config.
-type Logger interface {
-	world.Logger
-	session.Logger
-	Infof(format string, v ...any)
-	Fatalf(format string, v ...any)
-	Warnf(format string, v ...any)
-}
-
 // New creates a Server using fields of conf. The Server's worlds are created
 // and connections from the Server's listeners may be accepted by calling
 // Server.Listen() and Server.Accept() afterwards.
 func (conf Config) New() *Server {
 	if conf.Log == nil {
-		conf.Log = logrus.New()
+		conf.Log = slog.Default()
 	}
 	if len(conf.Listeners) == 0 {
-		conf.Log.Warnf("config: no listeners set, no connections will be accepted")
+		conf.Log.Warn("config: no listeners set, no connections will be accepted")
 	}
 	if conf.Name == "" {
 		conf.Name = "Dragonfly Server"
@@ -240,7 +229,7 @@ type UserConfig struct {
 // Config converts a UserConfig to a Config, so that it may be used for creating
 // a Server. An error is returned if creating data providers or loading
 // resources failed.
-func (uc UserConfig) Config(log Logger) (Config, error) {
+func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 	var err error
 	conf := Config{
 		Log:                     log,

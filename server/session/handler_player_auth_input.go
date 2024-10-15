@@ -35,7 +35,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 			// world), see #425. For this reason, we don't actually return an error if this happens, because this will
 			// result in the player being kicked. Just log it and replace the NaN value with the one we have tracked
 			// server-side.
-			s.log.Debugf("failed processing packet from %v (%v): %T: must not have nan/inf values, but got %v (%v, %v, %v). assuming server-side values\n", s.conn.RemoteAddr(), s.c.Name(), pk, pk.Position, pk.Pitch, pk.Yaw, pk.HeadYaw)
+			s.log.Debug("process packet: PlayerAuthInput: found nan/inf values. assuming server-side values", "pos", fmt.Sprint(pk.Position), "yaw", pk.Yaw, "head-yaw", pk.HeadYaw, "pitch", pk.Pitch)
 			*v = float32(reference[i])
 		}
 	}
@@ -87,7 +87,7 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 		if err := sh.handleRequest(pk.ItemStackRequest, s); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
-			s.log.Debugf("failed processing packet from %v (%v): PlayerAuthInput: error resolving item stack request: %v", s.conn.RemoteAddr(), s.c.Name(), err)
+			s.log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
 		}
 	}
 	return nil
@@ -136,7 +136,7 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 
 	held, _ := s.c.HeldItems()
 	if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-		s.log.Debugf("failed processing item interaction from %v (%v): PlayerAuthInput: actual held and client held item mismatch", s.conn.RemoteAddr(), s.c.Name())
+		s.log.Debug("process packet: PlayerAuthInput: UseItemTransaction: mismatch between actual held item and client held item")
 		return nil
 	}
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}

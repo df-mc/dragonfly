@@ -380,7 +380,7 @@ func (s *Session) SendForm(f form.Form) {
 
 	h.mu.Lock()
 	if len(h.forms) > 10 {
-		s.log.Debugf("SendForm %v: more than 10 active forms: dropping an existing one.", s.c.Name())
+		s.log.Debug("SendForm: more than 10 active forms: dropping an existing one")
 		for k := range h.forms {
 			delete(h.forms, k)
 			break
@@ -733,7 +733,7 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	if !clientSideItem.Equal(actual) {
 		// Only ever debug these as they are frequent and expected to happen whenever client and server get
 		// out of sync.
-		s.log.Debugf("failed processing packet from %v (%v): failed changing held slot: client-side item must be identical to server-side item, but got differences: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSideItem, actual)
+		s.log.Debug("update held slot: client-side item must be identical to server-side item, but got differences", "client-held", clientSideItem.String(), "server-held", actual.String())
 	}
 	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
 		viewer.ViewEntityItems(s.c)

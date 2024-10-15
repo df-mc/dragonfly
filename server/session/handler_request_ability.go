@@ -12,7 +12,7 @@ func (a RequestAbilityHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.RequestAbility)
 	if pk.Ability == packet.AbilityFlying {
 		if !s.c.GameMode().AllowsFlying() {
-			s.log.Debugf("failed processing packet from %v (%v): RequestAbility: flying flag enabled while not being able to fly\n", s.conn.RemoteAddr(), s.c.Name())
+			s.log.Debug("process packet: RequestAbility: flying flag enabled while unable to fly")
 			s.sendAbilities()
 			return nil
 		}

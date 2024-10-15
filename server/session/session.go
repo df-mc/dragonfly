@@ -21,6 +21,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"io"
+	"log/slog"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -30,7 +31,7 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log            Logger
+	log            *slog.Logger
 	once, connOnce sync.Once
 
 	c        Controllable
@@ -115,12 +116,6 @@ type Conn interface {
 	StartGameContext(ctx context.Context, data minecraft.GameData) error
 }
 
-// Logger is used to write debug messages to. These messages are sent whenever handling of a packet of a client fails.
-type Logger interface {
-	Errorf(format string, a ...any)
-	Debugf(format string, a ...any)
-}
-
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
@@ -140,7 +135,7 @@ var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for sel
 // packets that it receives.
 // New takes the connection from which to accept packets. It will start handling these packets after a call to
 // Session.Spawn().
-func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage string) *Session {
+func New(conn Conn, maxChunkRadius int, log *slog.Logger, joinMessage, quitMessage string) *Session {
 	r := conn.ChunkRadius()
 	if r > maxChunkRadius {
 		r = maxChunkRadius
@@ -160,7 +155,7 @@ func New(conn Conn, maxChunkRadius int, log Logger, joinMessage, quitMessage str
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(maxChunkRadius),
 		conn:                   conn,
-		log:                    log,
+		log:                    log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String()),
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(atomic.Uint32),
 		joinMessage:            joinMessage,
@@ -318,9 +313,9 @@ func (s *Session) handlePackets() {
 			return
 		}
 		if err := s.handlePacket(pk); err != nil {
-			// An error occurred during the handling of a packet. Print the error and stop handling any more
-			// packets.
-			s.log.Debugf("failed processing packet from %v (%v): %v\n", s.conn.RemoteAddr(), s.c.Name(), err)
+			// An error occurred during the handling of a packet.
+			// Print the error and stop handling any more packets.
+			s.log.Debug("process packet: " + err.Error())
 			return
 		}
 	}
@@ -437,7 +432,7 @@ func (s *Session) ChangingDimension() bool {
 func (s *Session) handlePacket(pk packet.Packet) error {
 	handler, ok := s.handlers[pk.ID()]
 	if !ok {
-		s.log.Debugf("unhandled packet %T%v from %v\n", pk, fmt.Sprintf("%+v", pk)[1:], s.conn.RemoteAddr())
+		s.log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
 		return nil
 	}
 	if handler == nil {
