@@ -40,8 +40,8 @@ func (r BlockResult) BlockPosition() cube.Pos {
 // that the ray collided with.
 // BlockIntercept returns a BlockResult with the block collided with and with the colliding vector closest to the start position,
 // if no colliding point was found, a zero BlockResult is returned and ok is false.
-func BlockIntercept(pos cube.Pos, w *world.World, b world.Block, start, end mgl64.Vec3) (result BlockResult, ok bool) {
-	bbs := b.Model().BBox(pos, w)
+func BlockIntercept(pos cube.Pos, tx *world.Tx, b world.Block, start, end mgl64.Vec3) (result BlockResult, ok bool) {
+	bbs := b.Model().BBox(pos, tx)
 	if len(bbs) == 0 {
 		return
 	}

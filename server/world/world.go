@@ -142,7 +142,7 @@ func (w *World) EntityRegistry() EntityRegistry {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) block(pos cube.Pos) Block {
-	if w == nil || pos.OutOfBounds(w.Range()) {
+	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return air()
 	}
@@ -152,20 +152,16 @@ func (w *World) block(pos cube.Pos) Block {
 	if nbtBlocks[rid] {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if nbtB, ok := c.BlockEntities[pos]; ok {
-			c.Unlock()
 			return nbtB
 		}
 		b, _ := BlockByRuntimeID(rid)
 		nbtB := b.(NBTer).DecodeNBT(map[string]any{}).(Block)
 		c.BlockEntities[pos] = nbtB
-		viewers := slices.Clone(c.viewers)
-		c.Unlock()
-		for _, v := range viewers {
+		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, nbtB, 0)
 		}
 		return nbtB
 	}
-	c.Unlock()
 	b, _ := BlockByRuntimeID(rid)
 	return b
 }
@@ -223,7 +219,8 @@ func (w *World) highestObstructingBlock(x, z int) int {
 	for y := yHigh; y >= w.Range()[0]; y-- {
 		pos := cube.Pos{x, y, z}
 		m := w.block(pos).Model()
-		if m.FaceSolid(pos, cube.FaceUp, w) || m.FaceSolid(pos, cube.FaceDown, w) {
+		// TODO: Work out how to pass a proper BlockSource here.
+		if m.FaceSolid(pos, cube.FaceUp, nil) || m.FaceSolid(pos, cube.FaceDown, nil) {
 			return y
 		}
 	}
@@ -952,9 +949,13 @@ func (w *World) PortalDestination(dim Dimension) *World {
 
 // Save saves the World to the provider.
 func (w *World) Save() {
+	w.Exec(w.save)
+}
+
+func (w *World) save(tx *Tx) {
 	w.conf.Log.Debug("Saving chunks in memory to disk...")
 	for pos, c := range w.chunks {
-		w.saveChunk(pos, c, false)
+		w.saveChunk(tx, pos, c, false)
 	}
 }
 
@@ -1019,7 +1020,7 @@ func (w *World) addWorldViewer(l *Loader) {
 
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
-func (w *World) addViewer(c *Column, loader *Loader) {
+func (w *World) addViewer(tx *Tx, c *Column, loader *Loader) {
 	if w == nil {
 		return
 	}
@@ -1027,13 +1028,13 @@ func (w *World) addViewer(c *Column, loader *Loader) {
 	c.loaders = append(c.loaders, loader)
 
 	for _, entity := range c.Entities {
-		showEntity(entity, loader.viewer)
+		showEntity(entity.Entity(tx), loader.viewer)
 	}
 }
 
 // removeViewer removes a viewer from the world at a given position. All entities will be hidden from the
 // viewer and no more calls will be made when events in the chunk happen.
-func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
+func (w *World) removeViewer(tx *Tx, pos ChunkPos, loader *Loader) {
 	if w == nil {
 		return
 	}
@@ -1048,7 +1049,7 @@ func (w *World) removeViewer(pos ChunkPos, loader *Loader) {
 
 	// After removing the loader from the chunk, we also need to hide all entities from the viewer.
 	for _, entity := range c.Entities {
-		loader.viewer.HideEntity(entity)
+		loader.viewer.HideEntity(entity.Entity(tx))
 	}
 }
 
@@ -1172,7 +1173,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 
 // saveChunk is called when a chunk is removed from the cache. We first compact the chunk, then we write it to
 // the provider.
-func (w *World) saveChunk(pos ChunkPos, c *Column, closeEntities bool) {
+func (w *World) saveChunk(tx *Tx, pos ChunkPos, c *Column, closeEntities bool) {
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
 		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
@@ -1181,7 +1182,7 @@ func (w *World) saveChunk(pos ChunkPos, c *Column, closeEntities bool) {
 	}
 	if closeEntities {
 		for _, e := range c.Entities {
-			_ = e.Close()
+			_ = e.Entity(tx).Close()
 		}
 		clear(c.Entities)
 	}
@@ -1193,27 +1194,22 @@ func (w *World) chunkCacheJanitor() {
 	defer t.Stop()
 
 	w.running.Add(1)
-	chunksToRemove := map[ChunkPos]*Column{}
 	for {
 		select {
 		case <-t.C:
-			for pos, c := range w.chunks {
-				v := len(c.viewers)
-				if v == 0 {
-					chunksToRemove[pos] = c
-					delete(w.chunks, pos)
-					if w.lastPos == pos {
-						w.lastChunk = nil
-					}
-				}
-			}
-			for pos, c := range chunksToRemove {
-				w.saveChunk(pos, c, true)
-				delete(chunksToRemove, pos)
-			}
+			w.Exec(w.saveUnusedChunks)
 		case <-w.closing:
 			w.running.Done()
 			return
+		}
+	}
+}
+
+func (w *World) saveUnusedChunks(tx *Tx) {
+	for pos, c := range w.chunks {
+		if len(c.viewers) == 0 {
+			delete(w.chunks, pos)
+			w.saveChunk(tx, pos, c, true)
 		}
 	}
 }

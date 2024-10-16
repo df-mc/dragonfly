@@ -75,11 +75,11 @@ func (conf Config) New() *World {
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
-	w.weather, w.ticker = weather{w: w}, ticker{w: w}
+	w.weather, w.ticker = weather{w: w}, ticker{}
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
-	go w.tickLoop()          // TODO: Put this in a transaction.
+	go w.tickLoop(w)         // TODO: Put this in a transaction.
 	go w.chunkCacheJanitor() // TODO: Put this in a transaction.
 
 	go w.handleTransactions()

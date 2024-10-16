@@ -9,10 +9,10 @@ import (
 type BottleOfEnchanting struct{}
 
 // Use ...
-func (b BottleOfEnchanting) Use(w *world.World, user User, ctx *UseContext) bool {
-	create := w.EntityRegistry().Config().BottleOfEnchanting
-	w.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(0.7), user))
-	w.PlaySound(user.Position(), sound.ItemThrow{})
+func (b BottleOfEnchanting) Use(tx *world.Tx, user User, ctx *UseContext) bool {
+	create := tx.World().EntityRegistry().Config().BottleOfEnchanting
+	tx.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(0.7), user))
+	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
 	ctx.SubtractFromCount(1)
 	return true

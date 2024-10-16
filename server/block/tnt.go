@@ -18,10 +18,10 @@ type TNT struct {
 }
 
 // Activate ...
-func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
+func (t TNT) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if _, ok := held.Enchantment(enchantment.FireAspect{}); ok {
-		t.Ignite(pos, w, u)
+		t.Ignite(pos, tx, u)
 		ctx.DamageItem(1)
 		return true
 	}
@@ -29,9 +29,9 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ct
 }
 
 // Ignite ...
-func (t TNT) Ignite(pos cube.Pos, w *world.World, igniter world.Entity) bool {
+func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, igniter world.Entity) bool {
 	t.igniter = igniter
-	spawnTnt(pos, w, time.Second*4, t.igniter)
+	spawnTnt(pos, tx, time.Second*4, t.igniter)
 	return true
 }
 
@@ -42,8 +42,8 @@ func (t TNT) Igniter() world.Entity {
 }
 
 // Explode ...
-func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, w *world.World, _ ExplosionConfig) {
-	spawnTnt(pos, w, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))), t.igniter)
+func (t TNT) Explode(explosionPos mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig) {
+	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))), t.igniter)
 }
 
 // BreakInfo ...
@@ -67,8 +67,8 @@ func (t TNT) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // spawnTnt creates a new TNT entity at the given position with the given fuse duration.
-func spawnTnt(pos cube.Pos, w *world.World, fuse time.Duration, igniter world.Entity) {
-	w.PlaySound(pos.Vec3Centre(), sound.TNT{})
-	w.SetBlock(pos, nil, nil)
-	w.AddEntity(w.EntityRegistry().Config().TNT(pos.Vec3Centre(), fuse, igniter))
+func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration, igniter world.Entity) {
+	tx.PlaySound(pos.Vec3Centre(), sound.TNT{})
+	tx.SetBlock(pos, nil, nil)
+	tx.AddEntity(tx.World().EntityRegistry().Config().TNT(pos.Vec3Centre(), fuse, igniter))
 }

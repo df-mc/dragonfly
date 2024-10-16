@@ -55,7 +55,7 @@ func (l *Loader) ChangeRadius(new int) {
 	defer l.mu.Unlock()
 
 	l.r = new
-	l.evictUnused()
+	l.w.Exec(l.evictUnused)
 	l.populateLoadQueue()
 }
 
@@ -69,7 +69,7 @@ func (l *Loader) Move(pos mgl64.Vec3) {
 		return
 	}
 	l.pos = chunkPos
-	l.evictUnused()
+	l.w.Exec(l.evictUnused)
 	l.populateLoadQueue()
 }
 
@@ -83,23 +83,26 @@ func (l *Loader) Load(n int) {
 	if l.closed || l.w == nil {
 		return
 	}
-	for i := 0; i < n; i++ {
-		if len(l.loadQueue) == 0 {
-			break
+
+	l.w.Exec(func(tx *Tx) {
+		for i := 0; i < n; i++ {
+			if len(l.loadQueue) == 0 {
+				break
+			}
+
+			pos := l.loadQueue[0]
+			c := l.w.chunk(pos)
+
+			l.viewer.ViewChunk(pos, c.Chunk, c.BlockEntities)
+			l.w.addViewer(tx, c, l)
+
+			l.loaded[pos] = c
+
+			// Shift the first element from the load queue off so that we can take a new one during the next
+			// iteration.
+			l.loadQueue = l.loadQueue[1:]
 		}
-
-		pos := l.loadQueue[0]
-		c := l.w.chunk(pos)
-
-		l.viewer.ViewChunk(pos, c.Chunk, c.BlockEntities)
-		l.w.addViewer(c, l)
-
-		l.loaded[pos] = c
-
-		// Shift the first element from the load queue off so that we can take a new one during the next
-		// iteration.
-		l.loadQueue = l.loadQueue[1:]
-	}
+	})
 }
 
 // Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
@@ -135,9 +138,11 @@ func (l *Loader) Reset() {
 
 // reset clears the Loader so that it may be used as if it was created again with NewLoader.
 func (l *Loader) reset() {
-	for pos := range l.loaded {
-		l.w.removeViewer(pos, l)
-	}
+	l.w.Exec(func(tx *Tx) {
+		for pos := range l.loaded {
+			l.w.removeViewer(tx, pos, l)
+		}
+	})
 	l.loaded = map[ChunkPos]*Column{}
 	delete(l.w.viewers, l)
 }
@@ -152,13 +157,13 @@ func (l *Loader) world(new *World) {
 
 // evictUnused gets rid of chunks in the loaded map which are no longer within the chunk radius of the loader,
 // and should therefore be removed.
-func (l *Loader) evictUnused() {
+func (l *Loader) evictUnused(tx *Tx) {
 	for pos := range l.loaded {
 		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
 		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
 		if int(dist) > l.r {
 			delete(l.loaded, pos)
-			l.w.removeViewer(pos, l)
+			l.w.removeViewer(tx, pos, l)
 		}
 	}
 }

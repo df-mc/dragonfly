@@ -52,14 +52,14 @@ func (p DecoratedPot) Model() world.BlockModel {
 }
 
 // UseOnBlock ...
-func (p DecoratedPot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, p)
+func (p DecoratedPot) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, p)
 	if !used {
 		return
 	}
 	p.Facing = user.Rotation().Direction().Opposite()
 
-	place(w, pos, p, user, ctx)
+	place(tx, pos, p, user, ctx)
 	return placed(ctx)
 }
 

@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item/potion"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"math"
 	"time"
@@ -30,7 +31,7 @@ func (Bow) FuelInfo() FuelInfo {
 }
 
 // Release ...
-func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
+func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
 	creative := releaser.GameMode().CreativeInventory()
 	ticks := duration.Milliseconds() / 50
 	if ticks < 3 {
@@ -94,7 +95,7 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 	}
 
 	releaser.PlaySound(sound.BowShoot{})
-	releaser.World().AddEntity(projectile)
+	tx.AddEntity(projectile)
 }
 
 // EnchantmentValue ...

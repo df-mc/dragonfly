@@ -23,31 +23,31 @@ type Slab struct {
 
 // UseOnBlock handles the placement of slabs with relation to them being upside down or not and handles slabs
 // being turned into double slabs.
-func (s Slab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s Slab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	id, meta := s.EncodeItem()
-	clickedBlock := w.Block(pos)
+	clickedBlock := tx.Block(pos)
 	if clickedSlab, ok := clickedBlock.(Slab); ok && !s.Double {
 		clickedId, clickedMeta := clickedSlab.EncodeItem()
 		if !clickedSlab.Double && id == clickedId && meta == clickedMeta && ((face == cube.FaceUp && !clickedSlab.Top) || (face == cube.FaceDown && clickedSlab.Top)) {
 			// A half slab of the same type was clicked at the top, so we can make it full.
 			clickedSlab.Double = true
 
-			place(w, pos, clickedSlab, user, ctx)
+			place(tx, pos, clickedSlab, user, ctx)
 			return placed(ctx)
 		}
 	}
-	if sideSlab, ok := w.Block(pos.Side(face)).(Slab); ok && !replaceableWith(w, pos, s) && !s.Double {
+	if sideSlab, ok := tx.Block(pos.Side(face)).(Slab); ok && !replaceableWith(tx, pos, s) && !s.Double {
 		sideId, sideMeta := sideSlab.EncodeItem()
 		// The block on the side of the one clicked was a slab and the block clicked was not replaceableWith, so
 		// the slab on the side must've been half and may now be filled if the wood types are the same.
 		if !sideSlab.Double && id == sideId && meta == sideMeta {
 			sideSlab.Double = true
 
-			place(w, pos.Side(face), sideSlab, user, ctx)
+			place(tx, pos.Side(face), sideSlab, user, ctx)
 			return placed(ctx)
 		}
 	}
-	pos, face, used = firstReplaceable(w, pos, face, s)
+	pos, face, used = firstReplaceable(tx, pos, face, s)
 	if !used {
 		return
 	}
@@ -55,7 +55,7 @@ func (s Slab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *w
 		s.Top = true
 	}
 
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
@@ -90,7 +90,7 @@ func (s Slab) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s Slab) SideClosed(pos, side cube.Pos, _ *world.World) bool {
+func (s Slab) SideClosed(pos, side cube.Pos, tx *world.Tx) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.Top && side[1] == pos[1]-1
 }

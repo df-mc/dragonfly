@@ -51,7 +51,7 @@ func NewBarrel() Barrel {
 }
 
 // Inventory returns the inventory of the barrel. The size of the inventory will be 27.
-func (b Barrel) Inventory(*world.World, cube.Pos) *inventory.Inventory {
+func (b Barrel) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return b.inventory
 }
 
@@ -62,32 +62,32 @@ func (b Barrel) WithName(a ...any) world.Item {
 }
 
 // open opens the barrel, displaying the animation and playing a sound.
-func (b Barrel) open(w *world.World, pos cube.Pos) {
+func (b Barrel) open(tx *world.Tx, pos cube.Pos) {
 	b.Open = true
-	w.PlaySound(pos.Vec3Centre(), sound.BarrelOpen{})
-	w.SetBlock(pos, b, nil)
+	tx.PlaySound(pos.Vec3Centre(), sound.BarrelOpen{})
+	tx.SetBlock(pos, b, nil)
 }
 
 // close closes the barrel, displaying the animation and playing a sound.
-func (b Barrel) close(w *world.World, pos cube.Pos) {
+func (b Barrel) close(tx *world.Tx, pos cube.Pos) {
 	b.Open = false
-	w.PlaySound(pos.Vec3Centre(), sound.BarrelClose{})
-	w.SetBlock(pos, b, nil)
+	tx.PlaySound(pos.Vec3Centre(), sound.BarrelClose{})
+	tx.SetBlock(pos, b, nil)
 }
 
 // AddViewer adds a viewer to the barrel, so that it is updated whenever the inventory of the barrel is changed.
-func (b Barrel) AddViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
+func (b Barrel) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
 	if len(b.viewers) == 0 {
-		b.open(w, pos)
+		b.open(tx, pos)
 	}
 	b.viewers[v] = struct{}{}
 }
 
 // RemoveViewer removes a viewer from the barrel, so that slot updates in the inventory are no longer sent to
 // it.
-func (b Barrel) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
+func (b Barrel) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
 	if len(b.viewers) == 0 {
@@ -95,12 +95,12 @@ func (b Barrel) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 	}
 	delete(b.viewers, v)
 	if len(b.viewers) == 0 {
-		b.close(w, pos)
+		b.close(tx, pos)
 	}
 }
 
 // Activate ...
-func (b Barrel) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
+func (b Barrel) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
@@ -109,8 +109,8 @@ func (b Barrel) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User,
 }
 
 // UseOnBlock ...
-func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, b)
+func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, b)
 	if !used {
 		return
 	}
@@ -118,15 +118,15 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	b = NewBarrel()
 	b.Facing = calculateFace(user, pos)
 
-	place(w, pos, b, user, ctx)
+	place(tx, pos, b, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (b Barrel) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		for _, i := range b.Inventory(w, pos).Clear() {
-			dropItem(w, i, pos.Vec3())
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		for _, i := range b.Inventory(tx, pos).Clear() {
+			dropItem(tx, i, pos.Vec3())
 		}
 	})
 }

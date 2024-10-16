@@ -155,7 +155,7 @@ func (w weather) enableWeatherCycle(v bool) {
 }
 
 // tickLightning iterates over all loaded chunks in the World, striking lightning in each one with a 1/100,000 chance.
-func (w weather) tickLightning() {
+func (w weather) tickLightning(tx *Tx) {
 	positions := make([]ChunkPos, 0, len(w.w.chunks)/100000)
 	for pos := range w.w.chunks {
 		// Wiki: For each loaded chunk, every tick there is a 1⁄100,000 chance of an attempted lightning strike
@@ -166,27 +166,27 @@ func (w weather) tickLightning() {
 	}
 
 	for _, pos := range positions {
-		w.w.strikeLightning(pos)
+		w.w.strikeLightning(tx, pos)
 	}
 }
 
 // strikeLightning attempts to strike lightning in the world at a specific ChunkPos. The final position is influenced by
 // living entities that might be near the lightning strike. If there is no rain at the final position selected, the
 // lightning strike will fail.
-func (w weather) strikeLightning(c ChunkPos) {
-	if pos := w.lightningPosition(c); w.ThunderingAt(cube.PosFromVec3(pos)) {
-		w.w.AddEntity(w.w.conf.Entities.conf.Lightning(pos))
+func (w weather) strikeLightning(tx *Tx, c ChunkPos) {
+	if pos := w.lightningPosition(tx, c); tx.ThunderingAt(cube.PosFromVec3(pos)) {
+		tx.AddEntity(w.w.conf.Entities.conf.Lightning(pos))
 	}
 }
 
 // lightningPosition finds a random position in the ChunkPos to strike lightning and adjusts the position to any of the
 // living entities found in or above the position if any are found.
-func (w weather) lightningPosition(c ChunkPos) mgl64.Vec3 {
+func (w weather) lightningPosition(tx *Tx, c ChunkPos) mgl64.Vec3 {
 	v := w.w.r.Int31()
 	x, z := float64(c[0]<<4+(v&0xf)), float64(c[1]<<4+((v>>8)&0xf))
 
-	vec := w.adjustPositionToEntities(mgl64.Vec3{x, float64(w.w.HighestBlock(int(x), int(z)) + 1), z})
-	if pos := cube.PosFromVec3(vec); len(w.w.Block(pos).Model().BBox(pos, w.w)) != 0 {
+	vec := w.adjustPositionToEntities(tx, mgl64.Vec3{x, float64(tx.HighestBlock(int(x), int(z)) + 1), z})
+	if pos := cube.PosFromVec3(vec); len(tx.Block(pos).Model().BBox(pos, tx)) != 0 {
 		// If lightning is about to strike inside a block that is not fully transparent. In this case, move the
 		// lightning up by one block so that it strikes above the block.
 		return vec.Add(mgl64.Vec3{0, 1})
@@ -196,9 +196,9 @@ func (w weather) lightningPosition(c ChunkPos) mgl64.Vec3 {
 
 // adjustPositionToEntities adjusts the mgl64.Vec3 passed to the position of any entity found in the 3x3 column upwards
 // from the mgl64.Vec3. If multiple entities are found, the position of one of the entities is selected randomly.
-func (w weather) adjustPositionToEntities(vec mgl64.Vec3) mgl64.Vec3 {
+func (w weather) adjustPositionToEntities(tx *Tx, vec mgl64.Vec3) mgl64.Vec3 {
 	max := vec.Add(mgl64.Vec3{0, float64(w.w.Range().Max())})
-	ent := w.w.entitiesWithin(cube.Box(vec[0], vec[1], vec[2], max[0], max[1], max[2]).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
+	ent := tx.EntitiesWithin(cube.Box(vec[0], vec[1], vec[2], max[0], max[1], max[2]).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
 
 	list := make([]mgl64.Vec3, 0, len(ent)/3)
 	for _, e := range ent {
@@ -206,7 +206,7 @@ func (w weather) adjustPositionToEntities(vec mgl64.Vec3) mgl64.Vec3 {
 			// Any (living) entity that is positioned higher than the highest block at its position is eligible to be
 			// struck by lightning. We first save all entity positions where this is the case.
 			pos := cube.PosFromVec3(e.Position())
-			if w.w.highestBlock(pos[0], pos[1]) < pos[2] {
+			if tx.HighestBlock(pos[0], pos[1]) < pos[2] {
 				list = append(list, e.Position())
 			}
 		}

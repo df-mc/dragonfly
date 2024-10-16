@@ -18,7 +18,7 @@ type Activatable interface {
 	// Activate activates the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was activated and the viewer that activated it.
 	// Activate returns a bool indicating if activating the block was used successfully.
-	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool
+	Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool
 }
 
 // Pickable represents a block that may give a different item then the block itself when picked.
@@ -32,7 +32,7 @@ type Pickable interface {
 type Punchable interface {
 	// Punch punches the block at a specific block position. The face clicked is passed, as well as the
 	// world in which the block was punched and the viewer that punched it.
-	Punch(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User)
+	Punch(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User)
 }
 
 // LightEmitter represents a block that emits light when placed. Blocks such as torches or lanterns implement
@@ -64,14 +64,14 @@ type Replaceable interface {
 // EntityLander represents a block that reacts to an entity landing on it after falling.
 type EntityLander interface {
 	// EntityLand is called when an entity lands on the block.
-	EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64)
+	EntityLand(pos cube.Pos, tx *world.Tx, e world.Entity, distance *float64)
 }
 
 // EntityInsider represents a block that reacts to an entity going inside its 1x1x1 axis
 // aligned bounding box.
 type EntityInsider interface {
 	// EntityInside is called when an entity goes inside the block's 1x1x1 axis aligned bounding box.
-	EntityInside(pos cube.Pos, w *world.World, e world.Entity)
+	EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity)
 }
 
 // Frictional represents a block that may have a custom friction value. Friction is used for entity drag when the
@@ -118,11 +118,11 @@ func abs(x int) int {
 }
 
 // replaceableWith checks if the block at the position passed is replaceable with the block passed.
-func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
-	if pos.OutOfBounds(w.Range()) {
+func replaceableWith(tx *world.Tx, pos cube.Pos, with world.Block) bool {
+	if pos.OutOfBounds(tx.Range()) {
 		return false
 	}
-	b := w.Block(pos)
+	b := tx.Block(pos)
 	if replaceable, ok := b.(Replaceable); ok {
 		return replaceable.ReplaceableBy(with) && b != with
 	}
@@ -132,14 +132,14 @@ func replaceableWith(w *world.World, pos cube.Pos, with world.Block) bool {
 // firstReplaceable finds the first replaceable block position eligible to have a block placed on it after
 // clicking on the position and face passed.
 // If none can be found, the bool returned is false.
-func firstReplaceable(w *world.World, pos cube.Pos, face cube.Face, with world.Block) (cube.Pos, cube.Face, bool) {
-	if replaceableWith(w, pos, with) {
+func firstReplaceable(tx *world.Tx, pos cube.Pos, face cube.Face, with world.Block) (cube.Pos, cube.Face, bool) {
+	if replaceableWith(tx, pos, with) {
 		// A replaceableWith block was clicked, so we can replace it. This will then be assumed to be placed on
 		// the top face. (Torches, for example, will get attached to the floor when clicking tall grass.)
 		return pos, cube.FaceUp, true
 	}
 	side := pos.Side(face)
-	if replaceableWith(w, side, with) {
+	if replaceableWith(tx, side, with) {
 		return side, face, true
 	}
 	return pos, face, false
@@ -147,13 +147,13 @@ func firstReplaceable(w *world.World, pos cube.Pos, face cube.Face, with world.B
 
 // place places the block passed at the position passed. If the user implements the block.Placer interface, it
 // will use its PlaceBlock method. If not, the block is placed without interaction from the user.
-func place(w *world.World, pos cube.Pos, b world.Block, user item.User, ctx *item.UseContext) {
+func place(tx *world.Tx, pos cube.Pos, b world.Block, user item.User, ctx *item.UseContext) {
 	if placer, ok := user.(Placer); ok {
 		placer.PlaceBlock(pos, b, ctx)
 		return
 	}
-	w.SetBlock(pos, b, nil)
-	w.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
+	tx.SetBlock(pos, b, nil)
+	tx.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 }
 
 // horizontalDirection returns the horizontal direction of the given direction. This is a legacy type still used in
@@ -206,17 +206,17 @@ func (transparent) LightDiffusionLevel() uint8 {
 type gravityAffected struct{}
 
 // Solidifies ...
-func (g gravityAffected) Solidifies(cube.Pos, *world.World) bool {
+func (g gravityAffected) Solidifies(cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // fall spawns a falling block entity at the given position.
-func (g gravityAffected) fall(b world.Block, pos cube.Pos, w *world.World) {
-	_, air := w.Block(pos.Side(cube.FaceDown)).Model().(model.Empty)
-	_, liquid := w.Liquid(pos.Side(cube.FaceDown))
+func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
+	_, air := tx.Block(pos.Side(cube.FaceDown)).Model().(model.Empty)
+	_, liquid := tx.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
-		w.SetBlock(pos, nil, nil)
-		w.AddEntity(w.EntityRegistry().Config().FallingBlock(b, pos.Vec3Centre()))
+		tx.SetBlock(pos, nil, nil)
+		tx.AddEntity(tx.World().EntityRegistry().Config().FallingBlock(b, pos.Vec3Centre()))
 	}
 }
 
@@ -269,9 +269,9 @@ type flammableEntity interface {
 }
 
 // dropItem ...
-func dropItem(w *world.World, it item.Stack, pos mgl64.Vec3) {
-	create := w.EntityRegistry().Config().Item
-	w.AddEntity(create(it, pos, mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}))
+func dropItem(tx *world.Tx, it item.Stack, pos mgl64.Vec3) {
+	create := tx.World().EntityRegistry().Config().Item
+	tx.AddEntity(create(it, pos, mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}))
 }
 
 // bass is a struct that may be embedded for blocks that create a bass sound.

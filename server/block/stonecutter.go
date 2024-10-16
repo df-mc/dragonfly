@@ -28,7 +28,7 @@ func (s Stonecutter) BreakInfo() BreakInfo {
 }
 
 // Activate ...
-func (Stonecutter) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
+func (Stonecutter) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos)
 		return true
@@ -37,13 +37,13 @@ func (Stonecutter) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.Us
 }
 
 // UseOnBlock ...
-func (s Stonecutter) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, s)
+func (s Stonecutter) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, s)
 	if !used {
 		return
 	}
 	s.Facing = user.Rotation().Direction().Opposite()
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 

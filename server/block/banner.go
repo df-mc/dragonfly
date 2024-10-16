@@ -41,36 +41,36 @@ func (Banner) FuelInfo() item.FuelInfo {
 }
 
 // UseOnBlock ...
-func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, b)
+func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, b)
 	if !used || face == cube.FaceDown {
 		return false
 	}
 
 	if face == cube.FaceUp {
 		b.Attach = StandingAttachment(user.Rotation().Orientation().Opposite())
-		place(w, pos, b, user, ctx)
+		place(tx, pos, b, user, ctx)
 		return
 	}
 	b.Attach = WallAttachment(face.Direction())
-	place(w, pos, b, user, ctx)
+	place(tx, pos, b, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (b Banner) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (b Banner) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
 	if b.Attach.hanging {
-		if _, ok := w.Block(pos.Side(b.Attach.facing.Opposite().Face())).(Air); ok {
-			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-			dropItem(w, item.NewStack(b, 1), pos.Vec3Centre())
+		if _, ok := tx.Block(pos.Side(b.Attach.facing.Opposite().Face())).(Air); ok {
+			tx.SetBlock(pos, nil, nil)
+			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+			dropItem(tx, item.NewStack(b, 1), pos.Vec3Centre())
 		}
 		return
 	}
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-		dropItem(w, item.NewStack(b, 1), pos.Vec3Centre())
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+		dropItem(tx, item.NewStack(b, 1), pos.Vec3Centre())
 	}
 }
 

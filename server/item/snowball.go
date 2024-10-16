@@ -14,10 +14,10 @@ func (s Snowball) MaxCount() int {
 }
 
 // Use ...
-func (s Snowball) Use(w *world.World, user User, ctx *UseContext) bool {
-	create := w.EntityRegistry().Config().Snowball
-	w.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(1.5), user))
-	w.PlaySound(user.Position(), sound.ItemThrow{})
+func (s Snowball) Use(tx *world.Tx, user User, ctx *UseContext) bool {
+	create := tx.World().EntityRegistry().Config().Snowball
+	tx.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(1.5), user))
+	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
 	ctx.SubtractFromCount(1)
 	return true

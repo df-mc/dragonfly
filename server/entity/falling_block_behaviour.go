@@ -61,34 +61,34 @@ func (f *FallingBlockBehaviour) tick(e *Ent) {
 // also deals damage to any entities standing at that position. If the block at
 // the position could not be replaced by the falling block, the block will drop
 // as an item.
-func (f *FallingBlockBehaviour) solidify(e *Ent, pos mgl64.Vec3, w *world.World) {
+func (f *FallingBlockBehaviour) solidify(e *Ent, pos mgl64.Vec3, tx *world.Tx) {
 	bpos := cube.PosFromVec3(pos)
 
 	if d, ok := f.block.(damager); ok {
-		f.damageEntities(e, d, pos, w)
+		f.damageEntities(e, d, pos, tx)
 	}
 	if l, ok := f.block.(landable); ok {
-		l.Landed(w, bpos)
+		l.Landed(tx, bpos)
 	}
 	f.passive.close = true
 
-	if r, ok := w.Block(bpos).(replaceable); ok && r.ReplaceableBy(f.block) {
-		w.SetBlock(bpos, f.block, nil)
+	if r, ok := tx.Block(bpos).(replaceable); ok && r.ReplaceableBy(f.block) {
+		tx.SetBlock(bpos, f.block, nil)
 	} else if i, ok := f.block.(world.Item); ok {
-		w.AddEntity(NewItem(item.NewStack(i, 1), bpos.Vec3Middle()))
+		tx.AddEntity(NewItem(item.NewStack(i, 1), bpos.Vec3Middle()))
 	}
 }
 
 // damageEntities attempts to damage any entities standing below the falling
 // block. This functionality is used by falling anvils.
-func (f *FallingBlockBehaviour) damageEntities(e *Ent, d damager, pos mgl64.Vec3, w *world.World) {
+func (f *FallingBlockBehaviour) damageEntities(e *Ent, d damager, pos mgl64.Vec3, tx *world.Tx) {
 	damagePerBlock, maxDamage := d.Damage()
 	dist := math.Ceil(f.passive.fallDistance - 1.0)
 	if dist <= 0 {
 		return
 	}
 	dmg := math.Min(math.Floor(dist*damagePerBlock), maxDamage)
-	targets := w.EntitiesWithin(e.Type().BBox(e).Translate(pos).Grow(0.05), func(entity world.Entity) bool {
+	targets := tx.EntitiesWithin(e.Type().BBox(e).Translate(pos).Grow(0.05), func(entity world.Entity) bool {
 		_, ok := entity.(Living)
 		return !ok || entity == e
 	})
@@ -107,7 +107,7 @@ func (f *FallingBlockBehaviour) damageEntities(e *Ent, d damager, pos mgl64.Vec3
 type Solidifiable interface {
 	// Solidifies returns whether the falling block can solidify at the position it is currently in. If so,
 	// the block will immediately stop falling.
-	Solidifies(pos cube.Pos, w *world.World) bool
+	Solidifies(pos cube.Pos, tx *world.Tx) bool
 }
 
 type replaceable interface {
@@ -126,5 +126,5 @@ type breakable interface {
 
 // landable ...
 type landable interface {
-	Landed(w *world.World, pos cube.Pos)
+	Landed(tx *world.Tx, pos cube.Pos)
 }

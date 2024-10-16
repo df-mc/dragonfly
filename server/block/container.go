@@ -24,7 +24,7 @@ type ContainerOpener interface {
 // Container represents a container of items, typically a block such as a chest. Containers may have their
 // inventory opened by viewers.
 type Container interface {
-	AddViewer(v ContainerViewer, w *world.World, pos cube.Pos)
-	RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos)
-	Inventory(w *world.World, pos cube.Pos) *inventory.Inventory
+	AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos)
+	RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos)
+	Inventory(tx *world.Tx, pos cube.Pos) *inventory.Inventory
 }

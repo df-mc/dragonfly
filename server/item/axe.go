@@ -16,11 +16,11 @@ type Axe struct {
 }
 
 // UseOnBlock handles the stripping of logs when a player clicks a log with an axe.
-func (a Axe) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if s, ok := w.Block(pos).(strippable); ok {
+func (a Axe) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+	if s, ok := tx.Block(pos).(strippable); ok {
 		if res, ok := s.Strip(); ok {
-			w.SetBlock(pos, res, nil)
-			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
+			tx.SetBlock(pos, res, nil)
+			tx.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 
 			ctx.DamageItem(1)
 			return true

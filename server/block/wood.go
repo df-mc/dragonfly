@@ -51,14 +51,14 @@ func (Wood) FuelInfo() item.FuelInfo {
 }
 
 // UseOnBlock ...
-func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(wo, pos, face, w)
+func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, w)
 	if !used {
 		return
 	}
 	w.Axis = face.Axis()
 
-	place(wo, pos, w, user, ctx)
+	place(tx, pos, w, user, ctx)
 	return placed(ctx)
 }
 

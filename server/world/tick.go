@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"golang.org/x/exp/maps"
 	"math/rand"
-	"slices"
 	"time"
 )
 
@@ -65,7 +64,7 @@ func (t ticker) tick(tx *Tx) {
 		}
 	}
 	if thunder {
-		tx.World().tickLightning()
+		tx.World().tickLightning(tx)
 	}
 
 	t.tickEntities(tx, tick)
@@ -75,22 +74,22 @@ func (t ticker) tick(tx *Tx) {
 }
 
 // tickScheduledBlocks executes scheduled block updates in chunks that are currently loaded.
-func (t ticker) tickScheduledBlocks(tick int64) {
-	positions := make([]cube.Pos, 0, len(tx.scheduledUpdates)/4)
-	for pos, scheduledTick := range tx.scheduledUpdates {
+func (t ticker) tickScheduledBlocks(tx *Tx, tick int64) {
+	positions := make([]cube.Pos, 0, len(tx.World().scheduledUpdates)/4)
+	for pos, scheduledTick := range tx.World().scheduledUpdates {
 		if scheduledTick <= tick {
 			positions = append(positions, pos)
-			delete(tx.scheduledUpdates, pos)
+			delete(tx.World().scheduledUpdates, pos)
 		}
 	}
 
 	for _, pos := range positions {
 		if ticker, ok := tx.Block(pos).(ScheduledTicker); ok {
-			ticker.ScheduledTick(pos, t.w, tx.r)
+			ticker.ScheduledTick(pos, tx, tx.World().r)
 		}
-		if liquid, ok := tx.additionalLiquid(pos); ok {
+		if liquid, ok := tx.World().additionalLiquid(pos); ok {
 			if ticker, ok := liquid.(ScheduledTicker); ok {
-				ticker.ScheduledTick(pos, t.w, tx.r)
+				ticker.ScheduledTick(pos, tx, tx.World().r)
 			}
 		}
 	}
@@ -98,9 +97,6 @@ func (t ticker) tickScheduledBlocks(tick int64) {
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
 func (t ticker) performNeighbourUpdates(tx *Tx) {
-	positions := slices.Clone(tx.World().neighbourUpdates)
-	tx.World().neighbourUpdates = tx.World().neighbourUpdates[:0]
-
 	for _, update := range tx.World().neighbourUpdates {
 		pos, changedNeighbour := update.pos, update.neighbour
 		if ticker, ok := tx.Block(pos).(NeighbourUpdateTicker); ok {
@@ -112,6 +108,8 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 			}
 		}
 	}
+	clear(tx.World().neighbourUpdates)
+	tx.World().neighbourUpdates = tx.World().neighbourUpdates[:0]
 }
 
 // tickBlocksRandomly executes random block ticks in each sub chunk in the world that has at least one viewer
@@ -164,7 +162,7 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 
 					// Only generate new coordinates if a tickable block was actually found. If not, we can just re-use
 					// the coordinates for the next sub chunk.
-					x, y, z = g.uint4(tx.r), g.uint4(tx.r), g.uint4(tx.r)
+					x, y, z = g.uint4(tx.World().r), g.uint4(tx.World().r), g.uint4(tx.World().r)
 				}
 			}
 		}
@@ -172,7 +170,7 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 
 	for _, pos := range randomBlocks {
 		if rb, ok := tx.Block(pos).(RandomTicker); ok {
-			rb.RandomTick(pos, tx, tx.r)
+			rb.RandomTick(pos, tx, tx.World().r)
 		}
 	}
 	for _, pos := range blockEntities {
@@ -219,7 +217,7 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
 			// the loaders from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := tx.World().chunks[lastPos]; ok {
-				old.Entities = sliceutil.DeleteVal(old.Entities, e)
+				old.Entities = sliceutil.DeleteVal(old.Entities, handle)
 				viewers = old.viewers
 			}
 

@@ -15,7 +15,7 @@ func (BeetrootSoup) MaxCount() int {
 }
 
 // Consume ...
-func (BeetrootSoup) Consume(_ *world.World, c Consumer) Stack {
+func (BeetrootSoup) Consume(tx *world.Tx, c Consumer) Stack {
 	c.Saturate(6, 7.2)
 	return NewStack(Bowl{}, 1)
 }

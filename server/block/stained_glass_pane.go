@@ -18,7 +18,7 @@ type StainedGlassPane struct {
 }
 
 // SideClosed ...
-func (p StainedGlassPane) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (p StainedGlassPane) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

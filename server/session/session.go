@@ -197,6 +197,14 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.entityRuntimeIDs[ent] = selfEntityRuntimeID
 	s.entities[selfEntityRuntimeID] = ent
 
+	pos := c.Position()
+	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx, s)
+	s.chunkLoader.Move(pos)
+	s.writePacket(&packet.NetworkChunkPublisherUpdate{
+		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		Radius:   uint32(s.chunkRadius) << 4,
+	})
+
 	s.initPlayerList()
 
 	c.SetGameMode(c.GameMode())

@@ -44,11 +44,11 @@ func (g Grass) SoilFor(block world.Block) bool {
 }
 
 // RandomTick handles the ticking of grass, which may or may not result in the spreading of grass onto dirt.
-func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	aboveLight := w.Light(pos.Side(cube.FaceUp))
+func (g Grass) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	aboveLight := tx.Light(pos.Side(cube.FaceUp))
 	if aboveLight < 4 {
 		// The light above the block is too low: The grass turns to dirt.
-		w.SetBlock(pos, Dirt{}, nil)
+		tx.SetBlock(pos, Dirt{}, nil)
 		return
 	}
 	if aboveLight < 9 {
@@ -66,26 +66,26 @@ func (g Grass) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 		spreadPos := pos.Add(cube.Pos{x - 1, y - 3, z - 1})
 		// Don't spread grass to locations where dirt is exposed to hardly any light.
-		if w.Light(spreadPos.Side(cube.FaceUp)) < 4 {
+		if tx.Light(spreadPos.Side(cube.FaceUp)) < 4 {
 			continue
 		}
-		b := w.Block(spreadPos)
+		b := tx.Block(spreadPos)
 		if dirt, ok := b.(Dirt); !ok || dirt.Coarse {
 			continue
 		}
-		w.SetBlock(spreadPos, g, nil)
+		tx.SetBlock(spreadPos, g, nil)
 	}
 }
 
 // BoneMeal ...
-func (g Grass) BoneMeal(pos cube.Pos, w *world.World) bool {
+func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	for i := 0; i < 14; i++ {
 		c := pos.Add(cube.Pos{rand.Intn(6) - 3, 0, rand.Intn(6) - 3})
 		above := c.Side(cube.FaceUp)
-		_, air := w.Block(above).(Air)
-		_, grass := w.Block(c).(Grass)
+		_, air := tx.Block(above).(Air)
+		_, grass := tx.Block(c).(Grass)
 		if air && grass {
-			w.SetBlock(above, plantSelection[rand.Intn(len(plantSelection))], nil)
+			tx.SetBlock(above, plantSelection[rand.Intn(len(plantSelection))], nil)
 		}
 	}
 

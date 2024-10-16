@@ -54,7 +54,7 @@ type ProjectileBehaviourConfig struct {
 	// (the trace.Result). The target is either of the type trace.EntityResult
 	// or trace.BlockResult. Hit may be set to run additional behaviour when a
 	// projectile hits a target.
-	Hit func(e *Ent, target trace.Result)
+	Hit func(e *Ent, tx *world.Tx, target trace.Result)
 	// SurviveBlockCollision specifies if a projectile with this
 	// ProjectileBehaviour should survive collision with a block. If set to
 	// false, the projectile will break when hitting a block (like a snowball).

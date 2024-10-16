@@ -1309,7 +1309,7 @@ func (p *Player) ReleaseItem() {
 	p.usingItem = false
 	ctx := p.useContext()
 	i, _ := p.HeldItems()
-	i.Item().(item.Releasable).Release(p, p.useDuration(), ctx)
+	i.Item().(item.Releasable).Release(p, p.useDuration(), nil, ctx)
 
 	p.handleUseContext(ctx)
 	p.updateState()
