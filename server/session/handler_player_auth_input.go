@@ -20,7 +20,7 @@ func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session, tx *world.Tx
 	if err := h.handleMovement(pk, s, c); err != nil {
 		return err
 	}
-	return h.handleActions(pk, s, c)
+	return h.handleActions(pk, s, tx, c)
 }
 
 // handleMovement handles the movement part of the packet.PlayerAuthInput.
@@ -66,7 +66,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 }
 
 // handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session, c Controllable) error {
+func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session, tx *world.Tx, c Controllable) error {
 	if pk.InputData&packet.InputFlagPerformItemInteraction != 0 {
 		if err := h.handleUseItemData(pk.ItemInteractionData, s, c); err != nil {
 			return err
@@ -85,7 +85,7 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 
 		// As of 1.18 this is now used for sending item stack requests such as when mining a block.
 		sh := s.handlers[packet.IDItemStackRequest].(*ItemStackRequestHandler)
-		if err := sh.handleRequest(pk.ItemStackRequest, s); err != nil {
+		if err := sh.handleRequest(pk.ItemStackRequest, s, tx, c); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
 			s.log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())

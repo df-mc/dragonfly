@@ -55,7 +55,7 @@ type Server struct {
 	pmu sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they
 	// leave, they are removed from the map.
-	p map[uuid.UUID]*player.Player
+	p map[uuid.UUID]*world.EntityHandle
 	// pwg is a sync.WaitGroup used to wait for all players to be disconnected
 	// before server shutdown, so that their data is saved properly.
 	pwg sync.WaitGroup
@@ -112,16 +112,19 @@ func (srv *Server) Accept(f HandleFunc) bool {
 	if !ok {
 		return false
 	}
-	p := s.Controllable().(*player.Player)
-	if f != nil {
-		f(p)
-	}
-
+	handle := s.EntityHandle()
 	srv.pmu.Lock()
-	srv.p[p.UUID()] = p
+	srv.p[handle.UUID()] = handle
 	srv.pmu.Unlock()
 
-	s.Start()
+	<-handle.World().Exec(func(tx *world.Tx) {
+		p := handle.Entity(tx).(*player.Player)
+		s.Spawn(p)
+
+		if f != nil {
+			f(p)
+		}
+	})
 	return true
 }
 
@@ -158,7 +161,7 @@ func (srv *Server) MaxPlayerCount() int {
 // Players returns a list of all players currently connected to the server.
 // Note that the slice returned is not updated when new players join or leave,
 // so it is only valid for as long as no new players join or players leave.
-func (srv *Server) Players() []*player.Player {
+func (srv *Server) Players() []*world.EntityHandle {
 	srv.pmu.RLock()
 	defer srv.pmu.RUnlock()
 	return maps.Values(srv.p)
@@ -167,7 +170,7 @@ func (srv *Server) Players() []*player.Player {
 // Player looks for a player on the server with the UUID passed. If found, the
 // player is returned and the bool returns holds a true value. If not, the bool
 // returned is false and the player is nil.
-func (srv *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
+func (srv *Server) Player(uuid uuid.UUID) (*world.EntityHandle, bool) {
 	srv.pmu.RLock()
 	defer srv.pmu.RUnlock()
 	p, ok := srv.p[uuid]
@@ -177,8 +180,8 @@ func (srv *Server) Player(uuid uuid.UUID) (*player.Player, bool) {
 // PlayerByName looks for a player on the server with the name passed. If
 // found, the player is returned and the bool returns holds a true value. If
 // not, the bool is false and the player is nil
-func (srv *Server) PlayerByName(name string) (*player.Player, bool) {
-	return sliceutil.SearchValue(srv.Players(), func(p *player.Player) bool {
+func (srv *Server) PlayerByName(name string) (*world.EntityHandle, bool) {
+	return sliceutil.SearchValue(srv.Players(), func(p *world.EntityHandle) bool {
 		return p.Name() == name
 	})
 }
@@ -186,8 +189,8 @@ func (srv *Server) PlayerByName(name string) (*player.Player, bool) {
 // PlayerByXUID looks for a player on the server with the XUID passed. If found,
 // the player is returned and the bool returned is true. If no player with the
 // XUID was found, nil and false are returned.
-func (srv *Server) PlayerByXUID(xuid string) (*player.Player, bool) {
-	return sliceutil.SearchValue(srv.Players(), func(p *player.Player) bool {
+func (srv *Server) PlayerByXUID(xuid string) (*world.EntityHandle, bool) {
+	return sliceutil.SearchValue(srv.Players(), func(p *world.EntityHandle) bool {
 		return p.XUID() == xuid
 	})
 }
@@ -454,7 +457,14 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 	if data != nil {
 		w, gm, pos = data.World, data.GameMode, data.Position
 	}
-	s := session.New(conn, srv.conf.MaxChunkRadius, srv.conf.Log, srv.conf.JoinMessage, srv.conf.QuitMessage)
+	s := session.Config{
+		Log:            srv.conf.Log,
+		MaxChunkRadius: srv.conf.MaxChunkRadius,
+		JoinMessage:    srv.conf.JoinMessage,
+		QuitMessage:    srv.conf.QuitMessage,
+		HandleStop:     srv.handleSessionClose,
+	}.New(conn, w)
+
 	p := world.NewEntity(player.Type{}, player.Config{
 		Name:    conn.IdentityData().DisplayName,
 		XUID:    conn.IdentityData().XUID,
@@ -465,8 +475,6 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		Pos:     pos,
 		Session: s,
 	})
-
-	s.Spawn(p, pos, w, gm, srv.handleSessionClose)
 	srv.pwg.Add(1)
 	return s
 }

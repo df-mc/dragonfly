@@ -139,7 +139,7 @@ func (l *Loader) reset() {
 		l.w.removeViewer(pos, l)
 	}
 	l.loaded = map[ChunkPos]*Column{}
-	l.w.removeWorldViewer(l)
+	delete(l.w.viewers, l)
 }
 
 // world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.

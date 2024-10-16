@@ -41,7 +41,7 @@ type OffsetEntity interface {
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
-	_, ok := s.hiddenEntities[e]
+	_, ok := s.hiddenEntities[e.Handle()]
 	s.entityMutex.RUnlock()
 	return ok
 }
@@ -65,8 +65,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 	} else {
 		s.currentEntityRuntimeID += 1
 		runtimeID = s.currentEntityRuntimeID
-		s.entityRuntimeIDs[e] = runtimeID
-		s.entities[runtimeID] = e
+		s.entityRuntimeIDs[e.Handle()] = runtimeID
+		s.entities[runtimeID] = e.Handle()
 	}
 	s.entityMutex.Unlock()
 
@@ -1177,7 +1177,7 @@ func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 
 // entityFromRuntimeID attempts to return an entity by its runtime ID. False is returned if no entity with the
 // ID could be found.
-func (s *Session) entityFromRuntimeID(id uint64) (world.Entity, bool) {
+func (s *Session) entityFromRuntimeID(id uint64) (*world.EntityHandle, bool) {
 	s.entityMutex.RLock()
 	e, ok := s.entities[id]
 	s.entityMutex.RUnlock()

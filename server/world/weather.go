@@ -156,7 +156,6 @@ func (w weather) enableWeatherCycle(v bool) {
 
 // tickLightning iterates over all loaded chunks in the World, striking lightning in each one with a 1/100,000 chance.
 func (w weather) tickLightning() {
-	w.w.chunkMu.Lock()
 	positions := make([]ChunkPos, 0, len(w.w.chunks)/100000)
 	for pos := range w.w.chunks {
 		// Wiki: For each loaded chunk, every tick there is a 1⁄100,000 chance of an attempted lightning strike
@@ -165,7 +164,6 @@ func (w weather) tickLightning() {
 			positions = append(positions, pos)
 		}
 	}
-	w.w.chunkMu.Unlock()
 
 	for _, pos := range positions {
 		w.w.strikeLightning(pos)

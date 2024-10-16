@@ -521,22 +521,20 @@ func (s *Session) EnableInstantRespawn(enable bool) {
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the
 // in-game pause menu screen.
 func (s *Session) addToPlayerList(session *Session) {
-	c := session.c
-
 	runtimeID := uint64(1)
 	s.entityMutex.Lock()
 	if session != s {
 		s.currentEntityRuntimeID += 1
 		runtimeID = s.currentEntityRuntimeID
 	}
-	s.entityRuntimeIDs[c] = runtimeID
-	s.entities[runtimeID] = c
+	s.entityRuntimeIDs[session.ent] = runtimeID
+	s.entities[runtimeID] = session.ent
 	s.entityMutex.Unlock()
 
 	s.writePacket(&packet.PlayerList{
 		ActionType: packet.PlayerListActionAdd,
 		Entries: []protocol.PlayerListEntry{{
-			UUID:           c.UUID(),
+			UUID:           session.ent.UUID(),
 			EntityUniqueID: int64(runtimeID),
 			Username:       c.Name(),
 			XUID:           c.XUID(),
@@ -590,16 +588,14 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 // removeFromPlayerList removes the player of a session from the player list of this session. It will no
 // longer be shown in the in-game pause menu screen.
 func (s *Session) removeFromPlayerList(session *Session) {
-	c := session.ent
-
 	s.entityMutex.Lock()
-	delete(s.entities, s.entityRuntimeIDs[c])
-	delete(s.entityRuntimeIDs, c)
+	delete(s.entities, s.entityRuntimeIDs[session.ent])
+	delete(s.entityRuntimeIDs, session.ent)
 	s.entityMutex.Unlock()
 
 	s.writePacket(&packet.PlayerList{
 		ActionType: packet.PlayerListActionRemove,
-		Entries:    []protocol.PlayerListEntry{{UUID: c.UUID()}},
+		Entries:    []protocol.PlayerListEntry{{UUID: session.ent.UUID()}},
 	})
 }
 

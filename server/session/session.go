@@ -55,9 +55,9 @@ type Session struct {
 	// entity spawned to the session.
 	currentEntityRuntimeID uint64
 	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
-	entityRuntimeIDs map[world.Entity]uint64
-	entities         map[uint64]world.Entity
-	hiddenEntities   map[world.Entity]struct{}
+	entityRuntimeIDs map[*world.EntityHandle]uint64
+	entities         map[uint64]*world.EntityHandle
+	hiddenEntities   map[*world.EntityHandle]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot                     *uint32
@@ -131,14 +131,20 @@ const selfEntityRuntimeID = 1
 // must therefore always be 1.
 var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
 
-// New returns a new session using a controllable entity. The session will control this entity using the
-// packets that it receives.
-// New takes the connection from which to accept packets. It will start handling these packets after a call to
-// Session.Spawn().
-func New(conn Conn, maxChunkRadius int, log *slog.Logger, joinMessage, quitMessage string) *Session {
+type Config struct {
+	Log *slog.Logger
+
+	MaxChunkRadius int
+
+	JoinMessage, QuitMessage string
+
+	HandleStop func(Controllable)
+}
+
+func (conf Config) New(conn Conn, w *world.World) *Session {
 	r := conn.ChunkRadius()
-	if r > maxChunkRadius {
-		r = maxChunkRadius
+	if r > conf.MaxChunkRadius {
+		r = conf.MaxChunkRadius
 		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
 	}
 
@@ -148,18 +154,19 @@ func New(conn Conn, maxChunkRadius int, log *slog.Logger, joinMessage, quitMessa
 		closeBackground:        make(chan struct{}),
 		ui:                     inventory.New(54, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
-		entityRuntimeIDs:       map[world.Entity]uint64{},
-		entities:               map[uint64]world.Entity{},
-		hiddenEntities:         map[world.Entity]struct{}{},
+		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
+		entities:               map[uint64]*world.EntityHandle{},
+		hiddenEntities:         map[*world.EntityHandle]struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
-		maxChunkRadius:         int32(maxChunkRadius),
+		maxChunkRadius:         int32(conf.MaxChunkRadius),
 		conn:                   conn,
-		log:                    log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String()),
+		log:                    conf.Log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String()),
 		currentEntityRuntimeID: 1,
-		heldSlot:               new(atomic.Uint32),
-		joinMessage:            joinMessage,
-		quitMessage:            quitMessage,
+		heldSlot:               new(uint32),
+		joinMessage:            conf.JoinMessage,
+		quitMessage:            conf.QuitMessage,
+		recipes:                make(map[uint32]recipe.Recipe),
 	}
 	inv := inventory.New(1, nil)
 	s.openedWindow.Store(inv)
@@ -170,59 +177,46 @@ func New(conn Conn, maxChunkRadius int, log *slog.Logger, joinMessage, quitMessa
 	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
+	s.sendAvailableEntities(w)
+	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+	s.sendRecipes()
+	s.sendArmourTrimData()
+	s.SendSpeed(0.1)
 	return s
+}
+
+func (s *Session) EntityHandle() *world.EntityHandle {
+	return s.ent
 }
 
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
-func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
-	s.onStop = onStop
-	s.c = c
-	s.recipes = make(map[uint32]recipe.Recipe)
-	s.entityRuntimeIDs[c] = selfEntityRuntimeID
-	s.entities[selfEntityRuntimeID] = c
-
-	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
-	s.chunkLoader.Move(pos)
-	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
-		Radius:   uint32(s.chunkRadius) << 4,
-	})
-
-	s.sendAvailableEntities(w)
+func (s *Session) Spawn(c Controllable, tx *world.Tx) {
+	ent := c.Handle()
+	s.ent = ent
+	s.entityRuntimeIDs[ent] = selfEntityRuntimeID
+	s.entities[selfEntityRuntimeID] = ent
 
 	s.initPlayerList()
 
-	world_add(c, w)
-	s.c.SetGameMode(gm)
-	s.SendSpeed(0.1)
-	for _, e := range s.c.Effects() {
+	c.SetGameMode(c.GameMode())
+	for _, e := range c.Effects() {
 		s.SendEffect(e)
-	}
-
-	chat.Global.Subscribe(c)
-	if s.joinMessage != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
 	}
 
 	s.sendInv(s.inv, protocol.WindowIDInventory)
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
-	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
-	s.sendRecipes()
-	s.sendArmourTrimData()
-}
 
-// Start makes the session start handling incoming packets from the client.
-func (s *Session) Start() {
-	s.c.World().AddEntity(s.c)
+	tx.AddEntity(c)
+
+	chat.Global.Subscribe(c)
+	if s.joinMessage != "" {
+		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
+	}
+
 	go s.handlePackets()
-}
-
-// Controllable returns the Controllable entity that the Session controls.
-func (s *Session) Controllable() Controllable {
-	return s.c
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
@@ -253,7 +247,8 @@ func (s *Session) close() {
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
 	s.entityMutex.Lock()
-	s.entityRuntimeIDs, s.entities = map[world.Entity]uint64{}, map[uint64]world.Entity{}
+	clear(s.entityRuntimeIDs)
+	clear(s.entities)
 	s.entityMutex.Unlock()
 
 	if s.quitMessage != "" {
@@ -306,9 +301,8 @@ func (s *Session) handlePackets() {
 		if err != nil {
 			return
 		}
-		s.ent.World().Query(func(tx *world.Tx) {
-			c := s.ent.Entity(tx)
-			err = s.handlePacket(pk, tx, c)
+		<-s.ent.World().Exec(func(tx *world.Tx) {
+			err = s.handlePacket(pk, tx, s.ent.Entity(tx).(Controllable))
 		})
 		if err != nil {
 			s.log.Debug("process packet: " + err.Error())

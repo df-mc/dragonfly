@@ -45,7 +45,7 @@ type EntityData struct {
 }
 
 func (e *EntityHandle) Entity(tx *Tx) Entity {
-	if e.World() != tx.World() {
+	if e.w.Load() != tx.World() {
 		panic("can't load entity with Tx of different world")
 	}
 	return e.t.From(tx, e, &e.data)

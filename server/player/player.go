@@ -94,9 +94,9 @@ type playerData struct {
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
 // need to play in the world.
 type Player struct {
-	tx *world.Tx
-	*world.EntityHandle
-	data *world.EntityData
+	tx     *world.Tx
+	handle *world.EntityHandle
+	data   *world.EntityData
 	*playerData
 }
 
@@ -127,6 +127,10 @@ func (p *Player) Type() world.EntityType {
 // the client. (Typically the XBOX Live name)
 func (p *Player) Name() string {
 	return p.data.Name
+}
+
+func (p *Player) UUID() uuid.UUID {
+	return p.handle.UUID()
 }
 
 // XUID returns the XBOX Live user ID of the player. It will remain consistent with the XBOX Live account,
@@ -485,17 +489,15 @@ func (p *Player) updateFallState(distanceThisTick float64) {
 
 // fall is called when a falling entity hits the ground.
 func (p *Player) fall(distance float64) {
-	var (
-		w   = p.World()
-		pos = cube.PosFromVec3(p.Position())
-		b   = p.tx.Block(pos)
-	)
-	if len(b.Model().BBox(pos, w)) == 0 {
+	pos := cube.PosFromVec3(p.Position())
+	b := p.tx.Block(pos)
+
+	if len(b.Model().BBox(pos, p.tx)) == 0 {
 		pos = pos.Sub(cube.Pos{0, 1})
 		b = p.tx.Block(pos)
 	}
 	if h, ok := b.(block.EntityLander); ok {
-		h.EntityLand(pos, w, p, &distance)
+		h.EntityLand(pos, p.tx, p, &distance)
 	}
 	dmg := distance - 3
 	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
@@ -751,7 +753,7 @@ func (*Player) BeaconAffected() bool {
 // Exhaust exhausts the player by the amount of points passed if the player is in survival mode. If the total
 // exhaustion level exceeds 4, a saturation point, or food point, if saturation is 0, will be subtracted.
 func (p *Player) Exhaust(points float64) {
-	if !p.GameMode().AllowsTakingDamage() || p.World().Difficulty().FoodRegenerates() {
+	if !p.GameMode().AllowsTakingDamage() || p.tx.World().Difficulty().FoodRegenerates() {
 		return
 	}
 	before := p.hunger.Food()
@@ -801,7 +803,7 @@ func (p *Player) kill(src world.DamageSource) {
 	p.StopSneaking()
 	p.StopSprinting()
 
-	w, pos := p.World(), p.Position()
+	pos := p.Position()
 	if !keepInv {
 		p.dropContents()
 	}
@@ -809,7 +811,7 @@ func (p *Player) kill(src world.DamageSource) {
 		p.RemoveEffect(e.Type())
 	}
 
-	p.deathPos, p.deathDimension = &pos, w.Dimension()
+	p.deathPos, p.deathDimension = &pos, p.tx.World().Dimension()
 
 	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
@@ -822,7 +824,7 @@ func (p *Player) kill(src world.DamageSource) {
 			// We have an actual client connected to this player: We change its position server side so that in
 			// the future, the client won't respawn on the death location when disconnecting. The client should
 			// not see the movement itself yet, though.
-			p.data.Pos = w.Spawn().Vec3()
+			p.data.Pos = p.tx.World().Spawn().Vec3()
 		}
 	})
 }
@@ -851,8 +853,7 @@ func (p *Player) dropContents() {
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
 // again. Nothing will happen if the player does not have a session connected to it.
 func (p *Player) Respawn() {
-	w := p.World()
-	if !p.Dead() || w == nil || p.session() == session.Nop {
+	if !p.Dead() || p.session() == session.Nop {
 		return
 	}
 	p.addHealth(p.MaxHealth())
@@ -863,11 +864,12 @@ func (p *Player) Respawn() {
 
 	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
 	// always bring us back to the overworld.
-	w = w.PortalDestination(p.tx.World().Dimension())
+	w := p.tx.World().PortalDestination(p.tx.World().Dimension())
 	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
 
 	p.Handler().HandleRespawn(&pos, &w)
 
+	// TODO: This respawns in the main world. That won't work with transactions.
 	p.tx.AddEntity(p)
 	p.Teleport(pos)
 	p.session().SendRespawn(pos)
@@ -1439,7 +1441,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 		return true
 	}
 	useCtx := p.useContext()
-	if !usable.UseOnEntity(e, e.World(), p, useCtx) {
+	if !usable.UseOnEntity(e, p.tx.World(), p, useCtx) {
 		return true
 	}
 	p.SwingArm()
@@ -1938,12 +1940,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	} else if p.Sprinting() {
 		p.Exhaust(0.1 * horizontalVel.Len())
 	}
-}
-
-// World returns the world that the player is currently in.
-func (p *Player) World() *world.World {
-	w, _ := world.OfEntity(p)
-	return w
 }
 
 // Position returns the current position of the player. It may be changed as the player moves or is moved

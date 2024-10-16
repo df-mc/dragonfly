@@ -64,7 +64,7 @@ func (t Type) From(tx *world.Tx, handle *world.EntityHandle, data *world.EntityD
 	pd := data.Data.(*playerData)
 
 	// With session:
-	//	p := New(name, skin, pos)
+	//	p := createSession(name, skin, pos)
 	//	p.s.Store(s)
 	//	p.skin.Store(&skin)
 	//	p.uuid, p.xuid = uuid, xuid

@@ -14,7 +14,7 @@ func (a RequestAbilityHandler) Handle(p packet.Packet, s *Session, tx *world.Tx,
 	if pk.Ability == packet.AbilityFlying {
 		if !c.GameMode().AllowsFlying() {
 			s.log.Debug("process packet: RequestAbility: flying flag enabled while unable to fly")
-			s.sendAbilities()
+			s.sendAbilities(c)
 			return nil
 		}
 		c.StartFlying()

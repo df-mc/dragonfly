@@ -64,10 +64,11 @@ func (conf Config) New() *World {
 	s := conf.Provider.Settings()
 	w := &World{
 		scheduledUpdates: make(map[cube.Pos]int64),
-		entities:         make(map[Entity]ChunkPos),
+		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		closing:          make(chan struct{}),
+		queue:            make(chan transaction, 128),
 		r:                rand.New(conf.RandSource),
 		advance:          s.ref.Add(1) == 1,
 		conf:             conf,
@@ -78,7 +79,9 @@ func (conf Config) New() *World {
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
-	go w.tickLoop()
-	go w.chunkCacheJanitor()
+	go w.tickLoop()          // TODO: Put this in a transaction.
+	go w.chunkCacheJanitor() // TODO: Put this in a transaction.
+
+	go w.handleTransactions()
 	return w
 }

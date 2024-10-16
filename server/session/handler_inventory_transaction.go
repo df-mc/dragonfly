@@ -35,7 +35,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), tx, c); err != nil {
 			return err
 		}
-		return h.handleUseItemOnEntityTransaction(data, s, c)
+		return h.handleUseItemOnEntityTransaction(data, s, tx, c)
 	case *protocol.UseItemTransactionData:
 		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), tx, c); err != nil {
 			return err
@@ -110,11 +110,11 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 }
 
 // handleUseItemOnEntityTransaction ...
-func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *protocol.UseItemOnEntityTransactionData, s *Session, c Controllable) error {
+func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *protocol.UseItemOnEntityTransactionData, s *Session, tx *world.Tx, c Controllable) error {
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
 
-	e, ok := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
+	handle, ok := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
 	if !ok {
 		// In some cases, for example when a falling block entity solidifies, latency may allow attacking an entity that
 		// no longer exists server side. This is expected, so we shouldn't kick the player.
@@ -128,9 +128,9 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	var valid bool
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
-		valid = c.UseItemOnEntity(e)
+		valid = c.UseItemOnEntity(handle.Entity(tx))
 	case protocol.UseItemOnEntityActionAttack:
-		valid = c.AttackEntity(e)
+		valid = c.AttackEntity(handle.Entity(tx))
 	default:
 		return fmt.Errorf("unhandled UseItemOnEntity ActionType %v", data.ActionType)
 	}
