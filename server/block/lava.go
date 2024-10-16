@@ -44,7 +44,7 @@ func (l Lava) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 		if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
 			l.Hurt(4, LavaDamageSource{})
 		}
-		flammable.SetOnFire(15 * time.Second)
+		flammable.SetOnFire(8 * time.Second)
 	}
 }
 
