@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"time"
@@ -12,7 +13,7 @@ type EmoteHandler struct {
 }
 
 // Handle ...
-func (h *EmoteHandler) Handle(p packet.Packet, s *Session) error {
+func (h *EmoteHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.Emote)
 
 	if pk.EntityRuntimeID != selfEntityRuntimeID {

@@ -22,11 +22,11 @@ func (w weather) StartWeatherCycle() {
 
 // SnowingAt checks if it is snowing at a specific cube.Pos in the World. True is returned if the temperature in the
 // biome at that position is sufficiently low, if it is raining and if it's above the top-most obstructing block.
-func (w weather) SnowingAt(pos cube.Pos) bool {
+func (w weather) snowingAt(pos cube.Pos) bool {
 	if w.w == nil || !w.w.Dimension().WeatherCycle() {
 		return false
 	}
-	if b := w.w.Biome(pos); b.Rainfall() == 0 || w.w.Temperature(pos) > 0.15 {
+	if b := w.w.biome(pos); b.Rainfall() == 0 || w.w.temperature(pos) > 0.15 {
 		return false
 	}
 	w.w.set.Lock()
@@ -38,11 +38,11 @@ func (w weather) SnowingAt(pos cube.Pos) bool {
 // RainingAt checks if it is raining at a specific cube.Pos in the World. True is returned if it is raining, if the
 // temperature is high enough in the biome for it not to be snow and if the block is above the top-most obstructing
 // block.
-func (w weather) RainingAt(pos cube.Pos) bool {
+func (w weather) rainingAt(pos cube.Pos) bool {
 	if w.w == nil || !w.w.Dimension().WeatherCycle() {
 		return false
 	}
-	if b := w.w.Biome(pos); b.Rainfall() == 0 || w.w.Temperature(pos) <= 0.15 {
+	if b := w.w.biome(pos); b.Rainfall() == 0 || w.w.temperature(pos) <= 0.15 {
 		return false
 	}
 	w.w.set.Lock()
@@ -53,8 +53,8 @@ func (w weather) RainingAt(pos cube.Pos) bool {
 
 // ThunderingAt checks if it is thundering at a specific cube.Pos in the World. True is returned if RainingAt returns
 // true and if it is thundering in the world.
-func (w weather) ThunderingAt(pos cube.Pos) bool {
-	raining := w.RainingAt(pos)
+func (w weather) thunderingAt(pos cube.Pos) bool {
+	raining := w.rainingAt(pos)
 	w.w.set.Lock()
 	a := w.w.set.Thundering && raining
 	w.w.set.Unlock()
@@ -200,7 +200,7 @@ func (w weather) lightningPosition(c ChunkPos) mgl64.Vec3 {
 // from the mgl64.Vec3. If multiple entities are found, the position of one of the entities is selected randomly.
 func (w weather) adjustPositionToEntities(vec mgl64.Vec3) mgl64.Vec3 {
 	max := vec.Add(mgl64.Vec3{0, float64(w.w.Range().Max())})
-	ent := w.w.EntitiesWithin(cube.Box(vec[0], vec[1], vec[2], max[0], max[1], max[2]).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
+	ent := w.w.entitiesWithin(cube.Box(vec[0], vec[1], vec[2], max[0], max[1], max[2]).GrowVec3(mgl64.Vec3{3, 3, 3}), nil)
 
 	list := make([]mgl64.Vec3, 0, len(ent)/3)
 	for _, e := range ent {
@@ -208,7 +208,7 @@ func (w weather) adjustPositionToEntities(vec mgl64.Vec3) mgl64.Vec3 {
 			// Any (living) entity that is positioned higher than the highest block at its position is eligible to be
 			// struck by lightning. We first save all entity positions where this is the case.
 			pos := cube.PosFromVec3(e.Position())
-			if w.w.HighestBlock(pos[0], pos[1]) < pos[2] {
+			if w.w.highestBlock(pos[0], pos[1]) < pos[2] {
 				list = append(list, e.Position())
 			}
 		}

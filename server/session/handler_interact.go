@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -10,7 +11,7 @@ import (
 type InteractHandler struct{}
 
 // Handle ...
-func (h *InteractHandler) Handle(p packet.Packet, s *Session) error {
+func (h *InteractHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.Interact)
 	pos := s.c.Position()
 

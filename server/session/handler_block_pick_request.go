@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -9,7 +10,7 @@ import (
 type BlockPickRequestHandler struct{}
 
 // Handle ...
-func (b BlockPickRequestHandler) Handle(p packet.Packet, s *Session) error {
+func (b BlockPickRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.BlockPickRequest)
 	s.c.PickBlock(cube.Pos{int(pk.Position.X()), int(pk.Position.Y()), int(pk.Position.Z())})
 	return nil

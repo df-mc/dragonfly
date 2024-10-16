@@ -3,16 +3,72 @@ package world
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"io"
+	"sync/atomic"
 	"time"
 )
+
+type AdvancedEntityType interface {
+	EntityType
+
+	Init(conf any, data *EntityData)
+	From(tx *Tx, handle *EntityHandle, data *EntityData) Entity
+}
+
+type EntityHandle struct {
+	id uuid.UUID
+	t  AdvancedEntityType
+
+	w atomic.Pointer[World]
+
+	data EntityData
+
+	// HANDLER?? HANDLE WORLD CHANGE HERE
+}
+
+func NewEntity(t AdvancedEntityType, conf any) *EntityHandle {
+	handle := &EntityHandle{id: uuid.New(), t: t}
+	t.Init(conf, &handle.data)
+	return handle
+}
+
+type EntityData struct {
+	Pos, Vel     mgl64.Vec3
+	Rot          cube.Rotation
+	Name         string
+	FireDuration time.Duration
+	Age          time.Duration
+
+	Data any
+}
+
+func (e *EntityHandle) Entity(tx *Tx) Entity {
+	if e.World() != tx.World() {
+		panic("can't load entity with Tx of different world")
+	}
+	return e.t.From(tx, e, &e.data)
+}
+
+func (e *EntityHandle) UUID() uuid.UUID {
+	return e.id
+}
+
+func (e *EntityHandle) World() *World {
+	return e.w.Load()
+}
+
+func (e *EntityHandle) Handle() *EntityHandle {
+	return e
+}
 
 // Entity represents an entity in the world, typically an object that may be moved around and can be
 // interacted with by other entities.
 // Viewers of a world may view an entity when near it.
 type Entity interface {
 	io.Closer
+	Handle() *EntityHandle
 
 	// Type returns the EntityType of the Entity.
 	Type() EntityType

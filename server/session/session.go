@@ -34,7 +34,7 @@ type Session struct {
 	log            *slog.Logger
 	once, connOnce sync.Once
 
-	c        Controllable
+	ent      *world.EntityHandle
 	conn     Conn
 	handlers map[uint32]packetHandler
 
@@ -60,7 +60,7 @@ type Session struct {
 	hiddenEntities   map[world.Entity]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot                     *atomic.Uint32
+	heldSlot                     *uint32
 	inv, offHand, enderChest, ui *inventory.Inventory
 	armour                       *inventory.Armour
 
@@ -237,13 +237,7 @@ func (s *Session) Close() error {
 func (s *Session) close() {
 	_ = s.c.Close()
 
-	// Move UI inventory items to the main inventory.
-	for _, it := range s.ui.Items() {
-		if _, err := s.inv.AddItem(it); err != nil {
-			// We couldn't add the item to the main inventory (probably because it was full), so we drop it instead.
-			s.c.Drop(it)
-		}
-	}
+	s.EmptyUIInventory()
 
 	s.onStop(s.c)
 
@@ -312,9 +306,11 @@ func (s *Session) handlePackets() {
 		if err != nil {
 			return
 		}
-		if err := s.handlePacket(pk); err != nil {
-			// An error occurred during the handling of a packet.
-			// Print the error and stop handling any more packets.
+		s.ent.World().Query(func(tx *world.Tx) {
+			c := s.ent.Entity(tx)
+			err = s.handlePacket(pk, tx, c)
+		})
+		if err != nil {
 			s.log.Debug("process packet: " + err.Error())
 			return
 		}
@@ -429,7 +425,7 @@ func (s *Session) ChangingDimension() bool {
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
-func (s *Session) handlePacket(pk packet.Packet) error {
+func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
 	handler, ok := s.handlers[pk.ID()]
 	if !ok {
 		s.log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
@@ -439,7 +435,7 @@ func (s *Session) handlePacket(pk packet.Packet) error {
 		// A nil handler means it was explicitly unhandled.
 		return nil
 	}
-	if err := handler.Handle(pk, s); err != nil {
+	if err := handler.Handle(pk, s, tx, c); err != nil {
 		return fmt.Errorf("%T: %w", pk, err)
 	}
 	return nil

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
@@ -17,12 +18,12 @@ const (
 )
 
 // handleLoomCraft handles a CraftLoomRecipe stack request action made using a loom table.
-func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeStackRequestAction, s *Session) error {
+func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeStackRequestAction, s *Session, tx *world.Tx, c Controllable) error {
 	// First check if there actually is a loom opened.
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no loom container opened")
 	}
-	if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Loom); !ok {
+	if _, ok := tx.Block(*s.openedPos.Load()).(block.Loom); !ok {
 		return fmt.Errorf("no loom container opened")
 	}
 

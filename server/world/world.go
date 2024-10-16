@@ -46,27 +46,23 @@ type World struct {
 	closing chan struct{}
 	running sync.WaitGroup
 
-	chunkMu sync.Mutex
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared from this map after some time
 	// of not being used.
 	chunks map[ChunkPos]*Column
 
-	entityMu sync.RWMutex
 	// entities holds a map of entities currently loaded and the last ChunkPos that the Entity was in.
 	// These are tracked so that a call to RemoveEntity can find the correct entity.
-	entities map[Entity]ChunkPos
+	entities map[*EntityHandle]ChunkPos
 
 	r *rand.Rand
 
-	updateMu sync.Mutex
 	// scheduledUpdates is a map of tick time values indexed by the block position at which an update is
 	// scheduled. If the current tick exceeds the tick value passed, the block update will be performed
 	// and the entry will be removed from the map.
 	scheduledUpdates map[cube.Pos]int64
 	neighbourUpdates []neighbourUpdate
 
-	viewersMu sync.Mutex
-	viewers   map[*Loader]Viewer
+	viewers map[*Loader]Viewer
 }
 
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
@@ -103,6 +99,12 @@ func (w *World) Range() cube.Range {
 	return w.ra
 }
 
+func (w *World) Query(func(tx *Tx)) {
+	if w == nil {
+		return
+	}
+}
+
 // EntityRegistry returns the EntityRegistry that was passed to the World's
 // Config upon construction.
 func (w *World) EntityRegistry() EntityRegistry {
@@ -112,7 +114,7 @@ func (w *World) EntityRegistry() EntityRegistry {
 // Block reads a block from the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
-func (w *World) Block(pos cube.Pos) Block {
+func (w *World) block(pos cube.Pos) Block {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return air()
@@ -144,7 +146,7 @@ func (w *World) Block(pos cube.Pos) Block {
 // Biome reads the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
 // loaded, or generated if it could not be found in the world save, and the biome returned. Chunks will be
 // loaded synchronously.
-func (w *World) Biome(pos cube.Pos) Biome {
+func (w *World) biome(pos cube.Pos) Biome {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return ocean()
@@ -180,7 +182,7 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 
 // HighestLightBlocker gets the Y value of the highest fully light blocking block at the x and z values
 // passed in the world.
-func (w *World) HighestLightBlocker(x, z int) int {
+func (w *World) highestLightBlocker(x, z int) int {
 	if w == nil {
 		return w.Range()[0]
 	}
@@ -191,7 +193,7 @@ func (w *World) HighestLightBlocker(x, z int) int {
 
 // HighestBlock looks up the highest non-air block in the world at a specific x and z in the world. The y
 // value of the highest block is returned, or 0 if no blocks were present in the column.
-func (w *World) HighestBlock(x, z int) int {
+func (w *World) highestBlock(x, z int) int {
 	if w == nil {
 		return w.Range()[0]
 	}
@@ -206,10 +208,10 @@ func (w *World) highestObstructingBlock(x, z int) int {
 	if w == nil {
 		return 0
 	}
-	yHigh := w.HighestBlock(x, z)
+	yHigh := w.highestBlock(x, z)
 	for y := yHigh; y >= w.Range()[0]; y-- {
 		pos := cube.Pos{x, y, z}
-		m := w.Block(pos).Model()
+		m := w.block(pos).Model()
 		if m.FaceSolid(pos, cube.FaceUp, w) || m.FaceSolid(pos, cube.FaceDown, w) {
 			return y
 		}
@@ -239,7 +241,7 @@ type SetOpts struct {
 //
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
-func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
+func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
@@ -307,7 +309,7 @@ func (w *World) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 // SetBiome sets the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
 // first loaded or generated if it could not be found in the world save.
-func (w *World) SetBiome(pos cube.Pos, b Biome) {
+func (w *World) setBiome(pos cube.Pos, b Biome) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
@@ -325,7 +327,7 @@ func (w *World) SetBiome(pos cube.Pos, b Biome) {
 // will do so within much less time than separate SetBlock calls would.
 // The method operates on a per-chunk basis, setting all blocks within a single chunk part of the structure
 // before moving on to the next chunk.
-func (w *World) BuildStructure(pos cube.Pos, s Structure) {
+func (w *World) buildStructure(pos cube.Pos, s Structure) {
 	if w == nil {
 		return
 	}
@@ -345,7 +347,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 				if actual[0]>>4 == chunkX && actual[2]>>4 == chunkZ {
 					return w.blockInChunk(c, actual)
 				}
-				return w.Block(actual)
+				return w.block(actual)
 			}
 			baseX, baseZ := chunkX<<4, chunkZ<<4
 			subs := c.Sub()
@@ -414,7 +416,7 @@ func (w *World) BuildStructure(pos cube.Pos, s Structure) {
 // Liquid attempts to return any liquid block at the position passed. This liquid may be in the foreground or
 // in any other layer.
 // If found, the liquid is returned. If not, the bool returned is false and the liquid is nil.
-func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
+func (w *World) liquid(pos cube.Pos) (Liquid, bool) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return nil, false
@@ -447,7 +449,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 // overwrite any existing blocks. It will instead be in the same position as a block currently there, unless
 // there already is a liquid at that position, in which case it will be overwritten.
 // If nil is passed for the liquid, any liquid currently present will be removed.
-func (w *World) SetLiquid(pos cube.Pos, b Liquid) {
+func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
@@ -547,7 +549,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // Light returns the light level at the position passed. This is the highest of the sky and block light.
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
-func (w *World) Light(pos cube.Pos) uint8 {
+func (w *World) light(pos cube.Pos) uint8 {
 	if w == nil || pos[1] < w.Range()[0] {
 		// Fast way out.
 		return 0
@@ -564,7 +566,7 @@ func (w *World) Light(pos cube.Pos) uint8 {
 // SkyLight returns the skylight level at the position passed. This light level is not influenced by blocks
 // that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
 // range 0-15, where 0 means no light is present.
-func (w *World) SkyLight(pos cube.Pos) uint8 {
+func (w *World) skyLight(pos cube.Pos) uint8 {
 	if w == nil || pos[1] < w.Range()[0] {
 		// Fast way out.
 		return 0
@@ -580,7 +582,7 @@ func (w *World) SkyLight(pos cube.Pos) uint8 {
 
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
 // World.StopTime() is called.
-func (w *World) Time() int {
+func (w *World) time() int {
 	if w == nil {
 		return 0
 	}
@@ -591,7 +593,7 @@ func (w *World) Time() int {
 
 // SetTime sets the new time of the world. SetTime will always work, regardless of whether the time is stopped
 // or not.
-func (w *World) SetTime(new int) {
+func (w *World) setTime(new int) {
 	if w == nil {
 		return
 	}
@@ -608,14 +610,14 @@ func (w *World) SetTime(new int) {
 // StopTime stops the time in the world. When called, the time will no longer cycle and the world will remain
 // at the time when StopTime is called. The time may be restarted by calling World.StartTime().
 // StopTime will not do anything if the time is already stopped.
-func (w *World) StopTime() {
+func (w *World) stopTime() {
 	w.enableTimeCycle(false)
 }
 
 // StartTime restarts the time in the world. When called, the time will start cycling again and the day/night
 // cycle will continue. The time may be stopped again by calling World.StopTime().
 // StartTime will not do anything if the time is already started.
-func (w *World) StartTime() {
+func (w *World) startTime() {
 	w.enableTimeCycle(true)
 }
 
@@ -631,7 +633,7 @@ func (w *World) enableTimeCycle(v bool) {
 
 // Temperature returns the temperature in the World at a specific position. Higher altitudes and different biomes
 // influence the temperature returned.
-func (w *World) Temperature(pos cube.Pos) float64 {
+func (w *World) temperature(pos cube.Pos) float64 {
 	const (
 		tempDrop = 1.0 / 600
 		seaLevel = 64
@@ -640,29 +642,29 @@ func (w *World) Temperature(pos cube.Pos) float64 {
 	if diff < 0 {
 		diff = 0
 	}
-	return w.Biome(pos).Temperature() - float64(diff)*tempDrop
+	return w.biome(pos).Temperature() - float64(diff)*tempDrop
 }
 
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
 // shown the particle.
-func (w *World) AddParticle(pos mgl64.Vec3, p Particle) {
+func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
 	if w == nil {
 		return
 	}
 	p.Spawn(w, pos)
-	for _, viewer := range w.Viewers(pos) {
+	for _, viewer := range w.viewersOf(pos) {
 		viewer.ViewParticle(pos, p)
 	}
 }
 
 // PlaySound plays a sound at a specific position in the world. Viewers of that position will be able to hear
 // the sound if they're close enough.
-func (w *World) PlaySound(pos mgl64.Vec3, s Sound) {
+func (w *World) playSound(pos mgl64.Vec3, s Sound) {
 	ctx := event.C()
 	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
 		return
 	}
-	for _, viewer := range w.Viewers(pos) {
+	for _, viewer := range w.viewersOf(pos) {
 		viewer.ViewSound(pos, s)
 	}
 }
@@ -678,40 +680,21 @@ var (
 // all viewers of the world that have the chunk of the entity loaded.
 // If the chunk that the entity is in is not yet loaded, it will first be loaded.
 // If the entity passed to AddEntity is currently in a world, it is first removed from that world.
-func (w *World) AddEntity(e Entity) {
-	if w == nil {
-		return
-	}
+func (w *World) addEntity(ent Entity) {
+	e := ent.Handle()
+	e.w.Store(w)
 
-	// Remove the Entity from any previous World it might be in.
-	e.World().RemoveEntity(e)
+	pos := chunkPosFromVec3(e.data.Pos)
+	w.entities[e] = pos
 
-	add(e, w)
+	c := w.chunk(pos)
+	c.Entities, c.modified = append(c.Entities, e), true
 
-	chunkPos := chunkPosFromVec3(e.Position())
-	w.entityMu.Lock()
-	w.entities[e] = chunkPos
-	w.entityMu.Unlock()
-
-	c := w.chunk(chunkPos)
-	c.Entities = append(c.Entities, e)
-	viewers := slices.Clone(c.viewers)
-	c.modified = true
-	c.Unlock()
-
-	for _, v := range viewers {
+	for _, v := range c.viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
-		showEntity(e, v)
+		showEntity(ent, v)
 	}
-
-	w.Handler().HandleEntitySpawn(e)
-}
-
-// add maps an Entity to a World in the entityWorlds map.
-func add(e Entity, w *World) {
-	worldsMu.Lock()
-	entityWorlds[e] = w
-	worldsMu.Unlock()
+	w.Handler().HandleEntitySpawn(ent)
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -720,49 +703,33 @@ func add(e Entity, w *World) {
 // world. If it can not find it there, it will loop through all entities and try to find it.
 // RemoveEntity assumes the entity is currently loaded and in a loaded chunk. If not, the function will not do
 // anything.
-func (w *World) RemoveEntity(e Entity) {
-	if w == nil {
-		return
-	}
-	w.entityMu.Lock()
-	chunkPos, found := w.entities[e]
-	w.entityMu.Unlock()
+func (w *World) removeEntity(ent Entity) {
+	e := ent.Handle()
+	pos, found := w.entities[e]
 	if !found {
 		// The entity currently isn't in this world.
 		return
 	}
 
-	w.Handler().HandleEntityDespawn(e)
-
-	worldsMu.Lock()
-	delete(entityWorlds, e)
-	worldsMu.Unlock()
-
-	c, ok := w.chunkFromCache(chunkPos)
+	w.Handler().HandleEntityDespawn(ent)
+	c, ok := w.chunkFromCache(pos)
 	if !ok {
 		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
 		return
 	}
-	c.Entities = sliceutil.DeleteVal(c.Entities, e)
-	viewers := slices.Clone(c.viewers)
-	c.modified = true
-	c.Unlock()
+	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, e), true
 
-	w.entityMu.Lock()
-	delete(w.entities, e)
-	w.entityMu.Unlock()
-
-	for _, v := range viewers {
-		v.HideEntity(e)
+	for _, v := range c.viewers {
+		v.HideEntity(ent)
 	}
+
+	e.w.Store(nil)
+	delete(w.entities, e)
 }
 
 // EntitiesWithin does a lookup through the entities in the chunks touched by the BBox passed, returning all
 // those which are contained within the BBox when it comes to their position.
-func (w *World) EntitiesWithin(box cube.BBox, ignored func(Entity) bool) []Entity {
-	if w == nil {
-		return nil
-	}
+func (w *World) entitiesWithin(tx *Tx, box cube.BBox, ignored func(Entity) bool) []Entity {
 	// Make an estimate of 16 entities on average.
 	m := make([]Entity, 0, 16)
 
@@ -775,14 +742,12 @@ func (w *World) EntitiesWithin(box cube.BBox, ignored func(Entity) bool) []Entit
 				// The chunk wasn't loaded, so there are no entities here.
 				continue
 			}
-			entities := slices.Clone(c.Entities)
-			c.Unlock()
-
-			for _, entity := range entities {
+			for _, handle := range c.Entities {
+				entity := handle.Entity(tx)
 				if ignored != nil && ignored(entity) {
 					continue
 				}
-				if box.Vec3Within(entity.Position()) {
+				if box.Vec3Within(handle.data.Pos) {
 					// The entity position was within the BBox, so we add it to the slice to return.
 					m = append(m, entity)
 				}
@@ -793,15 +758,10 @@ func (w *World) EntitiesWithin(box cube.BBox, ignored func(Entity) bool) []Entit
 }
 
 // Entities returns a list of all entities currently added to the World.
-func (w *World) Entities() []Entity {
-	if w == nil {
-		return nil
-	}
-	w.entityMu.RLock()
-	defer w.entityMu.RUnlock()
+func (w *World) allEntities(tx *Tx) []Entity {
 	m := make([]Entity, 0, len(w.entities))
 	for e := range w.entities {
-		m = append(m, e)
+		m = append(m, e.Entity(tx))
 	}
 	return m
 }
@@ -847,13 +807,13 @@ func (w *World) SetSpawn(pos cube.Pos) {
 }
 
 // PlayerSpawn returns the spawn position of a player with a UUID in this World.
-func (w *World) PlayerSpawn(uuid uuid.UUID) cube.Pos {
+func (w *World) PlayerSpawn(id uuid.UUID) cube.Pos {
 	if w == nil {
 		return cube.Pos{}
 	}
-	pos, exist, err := w.conf.Provider.LoadPlayerSpawnPosition(uuid)
+	pos, exist, err := w.conf.Provider.LoadPlayerSpawnPosition(id)
 	if err != nil {
-		w.conf.Log.Error("load player spawn: " + err.Error())
+		w.conf.Log.Error("load player spawn: "+err.Error(), "ID", id)
 		return w.Spawn()
 	}
 	if !exist {
@@ -864,12 +824,12 @@ func (w *World) PlayerSpawn(uuid uuid.UUID) cube.Pos {
 
 // SetPlayerSpawn sets the spawn position of a player with a UUID in this World. If the player has a spawn in the world,
 // the player will be teleported to this location on respawn.
-func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
+func (w *World) SetPlayerSpawn(id uuid.UUID, pos cube.Pos) {
 	if w == nil {
 		return
 	}
-	if err := w.conf.Provider.SavePlayerSpawnPosition(uuid, pos); err != nil {
-		w.conf.Log.Error("set player spawn: " + err.Error())
+	if err := w.conf.Provider.SavePlayerSpawnPosition(id, pos); err != nil {
+		w.conf.Log.Error("save player spawn: "+err.Error(), "ID", id)
 	}
 }
 
@@ -937,7 +897,7 @@ func (w *World) SetDifficulty(d Difficulty) {
 
 // ScheduleBlockUpdate schedules a block update at the position passed after a specific delay. If the block at
 // that position does not handle block updates, nothing will happen.
-func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
+func (w *World) scheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		return
 	}
@@ -994,7 +954,7 @@ func (w *World) Handle(h Handler) {
 
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
 // if the position is within one of the chunks that the viewer is watching.
-func (w *World) Viewers(pos mgl64.Vec3) (viewers []Viewer) {
+func (w *World) viewersOf(pos mgl64.Vec3) (viewers []Viewer) {
 	if w == nil {
 		return nil
 	}
@@ -1096,7 +1056,7 @@ func (w *World) addWorldViewer(l *Loader) {
 	w.viewersMu.Lock()
 	w.viewers[l] = l.viewer
 	w.viewersMu.Unlock()
-	l.viewer.ViewTime(w.Time())
+	l.viewer.ViewTime(w.time())
 	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
 	w.set.Unlock()
@@ -1388,11 +1348,10 @@ func (w *World) chunkCacheJanitor() {
 // Column represents the data of a chunk including the block entities and loaders. This data is protected
 // by the mutex present in the chunk.Chunk held.
 type Column struct {
-	sync.Mutex
 	modified bool
 
 	*chunk.Chunk
-	Entities      []Entity
+	Entities      []*EntityHandle
 	BlockEntities map[cube.Pos]Block
 
 	viewers []Viewer

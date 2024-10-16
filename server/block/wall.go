@@ -155,7 +155,7 @@ func (w Wall) calculateConnections(wo *world.World, pos cube.Pos) (Wall, bool) {
 		var connectionType WallConnectionType
 		if connected {
 			// If the wall is connected to the side, it has the possibility of having a tall connection. This is
-			//calculated by checking for any overlapping blocks in the area of the connection.
+			// calculated by checking for any overlapping blocks in the area of the connection.
 			connectionType = ShortWallConnection()
 			boxes := above.Model().BBox(abovePos, wo)
 			for _, bb := range boxes {

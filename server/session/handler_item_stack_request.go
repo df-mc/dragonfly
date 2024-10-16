@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -44,7 +45,7 @@ type changeInfo struct {
 }
 
 // Handle ...
-func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
+func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ItemStackRequest)
 	h.current = time.Now()
 
@@ -62,7 +63,7 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 }
 
 // handleRequest resolves a single item stack request from the client.
-func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s *Session) (err error) {
+func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s *Session, tx *world.Tx, c Controllable) (err error) {
 	h.currentRequest = req.RequestID
 	defer func() {
 		if err != nil {
@@ -90,7 +91,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 		case *protocol.CraftRecipeStackRequestAction:
 			if s.containerOpened.Load() {
 				var special bool
-				switch s.c.World().Block(*s.openedPos.Load()).(type) {
+				switch tx.Block(*s.openedPos.Load()).(type) {
 				case block.SmithingTable:
 					err, special = h.handleSmithing(a, s), true
 				case block.Stonecutter:
@@ -109,7 +110,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 		case *protocol.CraftRecipeOptionalStackRequestAction:
 			err = h.handleCraftRecipeOptional(a, s, req.FilterStrings)
 		case *protocol.CraftLoomRecipeStackRequestAction:
-			err = h.handleLoomCraft(a, s)
+			err = h.handleLoomCraft(a, s, tx, c)
 		case *protocol.CraftGrindstoneRecipeStackRequestAction:
 			err = h.handleGrindstoneCraft(s)
 		case *protocol.CraftCreativeStackRequestAction:

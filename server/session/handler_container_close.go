@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -9,7 +10,7 @@ import (
 type ContainerCloseHandler struct{}
 
 // Handle ...
-func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session) error {
+func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ContainerClose)
 
 	s.EmptyUIInventory()

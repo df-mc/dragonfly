@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -12,7 +13,7 @@ type CommandRequestHandler struct {
 }
 
 // Handle ...
-func (h *CommandRequestHandler) Handle(p packet.Packet, s *Session) error {
+func (h *CommandRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.CommandRequest)
 	if pk.Internal {
 		return fmt.Errorf("command request packet must never have the internal field set to true")

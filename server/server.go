@@ -455,7 +455,16 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		w, gm, pos = data.World, data.GameMode, data.Position
 	}
 	s := session.New(conn, srv.conf.MaxChunkRadius, srv.conf.Log, srv.conf.JoinMessage, srv.conf.QuitMessage)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.parseSkin(conn.ClientData()), s, pos, data)
+	p := world.NewEntity(player.Type{}, player.Config{
+		Name:    conn.IdentityData().DisplayName,
+		XUID:    conn.IdentityData().XUID,
+		UUID:    id,
+		Locale:  conn.ClientData().LanguageCode,
+		Skin:    srv.parseSkin(conn.ClientData()),
+		Data:    data,
+		Pos:     pos,
+		Session: s,
+	})
 
 	s.Spawn(p, pos, w, gm, srv.handleSessionClose)
 	srv.pwg.Add(1)

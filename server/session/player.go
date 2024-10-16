@@ -20,7 +20,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
-	"sync/atomic"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -58,19 +57,18 @@ func (s *Session) StartShowingEntity(e world.Entity) {
 }
 
 // closeCurrentContainer closes the container the player might currently have open.
-func (s *Session) closeCurrentContainer() {
+func (s *Session) closeCurrentContainer(tx *world.Tx) {
 	if !s.containerOpened.Load() {
 		return
 	}
 	s.closeWindow()
 
 	pos := *s.openedPos.Load()
-	w := s.c.World()
-	b := w.Block(pos)
+	b := tx.Block(pos)
 	if container, ok := b.(block.Container); ok {
-		container.RemoveViewer(s, w, pos)
+		container.RemoveViewer(s, tx, pos)
 	} else if enderChest, ok := b.(block.EnderChest); ok {
-		enderChest.RemoveViewer(w, pos)
+		enderChest.RemoveViewer(tx, pos)
 	}
 }
 
@@ -80,17 +78,12 @@ func (s *Session) EmptyUIInventory() {
 	if s == Nop {
 		return
 	}
-	items := s.ui.Clear()
-	leftover := make([]item.Stack, 0, len(items))
-	for _, i := range items {
+	for _, i := range s.ui.Clear() {
 		if n, err := s.inv.AddItem(i); err != nil {
-			leftover = append(leftover, i.Grow(i.Count()-n))
+			// We couldn't add the item to the main inventory (probably because
+			// it was full), so we drop it instead.
+			s.c.Drop(i.Grow(i.Count() - n))
 		}
-	}
-	for _, i := range leftover {
-		// We can't put this back in the inventory, so the best option here is to simply get rid of the item if
-		// dropping was cancelled.
-		s.c.Drop(i)
 	}
 }
 
@@ -231,7 +224,7 @@ type smelter interface {
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
-func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
+func (s *Session) invByID(id int32, tx *world.Tx) (*inventory.Inventory, bool) {
 	switch id {
 	case protocol.ContainerCraftingInput, protocol.ContainerCreatedOutput, protocol.ContainerCursor:
 		// UI inventory.
@@ -244,62 +237,48 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case protocol.ContainerArmor:
 		// Armour inventory.
 		return s.armour.Inventory(), true
-	case protocol.ContainerLevelEntity:
-		if s.containerOpened.Load() {
-			return s.openedWindow.Load(), true
+	default:
+		if !s.containerOpened.Load() {
+			return nil, false
 		}
-	case protocol.ContainerBarrel:
-		if s.containerOpened.Load() {
-			if _, barrel := s.c.World().Block(*s.openedPos.Load()).(block.Barrel); barrel {
+		switch id {
+		case protocol.ContainerLevelEntity:
+			return s.openedWindow.Load(), true
+		case protocol.ContainerBarrel:
+			if _, barrel := tx.Block(*s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
-		}
-	case protocol.ContainerBeaconPayment:
-		if s.containerOpened.Load() {
-			if _, beacon := s.c.World().Block(*s.openedPos.Load()).(block.Beacon); beacon {
+		case protocol.ContainerBeaconPayment:
+			if _, beacon := tx.Block(*s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
-		if s.containerOpened.Load() {
-			if _, anvil := s.c.World().Block(*s.openedPos.Load()).(block.Anvil); anvil {
+		case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
+			if _, anvil := tx.Block(*s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerSmithingTableTemplate, protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
-		if s.containerOpened.Load() {
-			if _, smithing := s.c.World().Block(*s.openedPos.Load()).(block.SmithingTable); smithing {
+		case protocol.ContainerSmithingTableTemplate, protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
+			if _, smithing := tx.Block(*s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
-		if s.containerOpened.Load() {
-			if _, loom := s.c.World().Block(*s.openedPos.Load()).(block.Loom); loom {
+		case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
+			if _, loom := tx.Block(*s.openedPos.Load()).(block.Loom); loom {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerStonecutterInput:
-		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Stonecutter); ok {
+		case protocol.ContainerStonecutterInput:
+			if _, ok := tx.Block(*s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
-		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Grindstone); ok {
+		case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
+			if _, ok := tx.Block(*s.openedPos.Load()).(block.Grindstone); ok {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
-		if s.containerOpened.Load() {
-			if _, enchanting := s.c.World().Block(*s.openedPos.Load()).(block.EnchantingTable); enchanting {
+		case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
+			if _, enchanting := tx.Block(*s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
-		protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
-		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(*s.openedPos.Load()).(smelter); ok {
+		case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
+			protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
+			if _, ok := tx.Block(*s.openedPos.Load()).(smelter); ok {
 				return s.openedWindow.Load(), true
 			}
 		}
@@ -411,29 +390,29 @@ func (s *Session) Transfer(ip net.IP, port int) {
 
 // SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
-func (s *Session) SendGameMode(mode world.GameMode) {
+func (s *Session) SendGameMode(c Controllable) {
 	if s == Nop {
 		return
 	}
-	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(mode)})
-	s.sendAbilities()
+	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(c.GameMode())})
+	s.sendAbilities(c)
 }
 
 // sendAbilities sends the abilities of the Controllable entity of the session to the client.
-func (s *Session) sendAbilities() {
-	mode, abilities := s.c.GameMode(), uint32(0)
+func (s *Session) sendAbilities(c Controllable) {
+	mode, abilities := c.GameMode(), uint32(0)
 	if mode.AllowsFlying() {
 		abilities |= protocol.AbilityMayFly
-		if s.c.Flying() {
+		if c.Flying() {
 			abilities |= protocol.AbilityFlying
 		}
 	}
 	if !mode.HasCollision() {
 		abilities |= protocol.AbilityNoClip
-		defer s.c.StartFlying()
+		defer c.StartFlying()
 		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
 		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
-		s.ViewEntityTeleport(s.c, s.c.Position())
+		s.ViewEntityTeleport(c, c.Position())
 	}
 	if !mode.AllowsTakingDamage() {
 		abilities |= protocol.AbilityInvulnerable
@@ -611,7 +590,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 // removeFromPlayerList removes the player of a session from the player list of this session. It will no
 // longer be shown in the in-game pause menu screen.
 func (s *Session) removeFromPlayerList(session *Session) {
-	c := session.c
+	c := session.ent
 
 	s.entityMutex.Lock()
 	delete(s.entities, s.entityRuntimeIDs[c])
@@ -620,59 +599,60 @@ func (s *Session) removeFromPlayerList(session *Session) {
 
 	s.writePacket(&packet.PlayerList{
 		ActionType: packet.PlayerListActionRemove,
-		Entries: []protocol.PlayerListEntry{{
-			UUID: c.UUID(),
-		}},
+		Entries:    []protocol.PlayerListEntry{{UUID: c.UUID()}},
 	})
 }
 
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
-	s.inv = inventory.New(36, func(slot int, _, item item.Stack) {
-		if s.c == nil {
-			return
-		}
-		if slot == int(s.heldSlot.Load()) {
-			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-				viewer.ViewEntityItems(s.c)
+func (s *Session) HandleInventories(tx *world.Tx, c Controllable) (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
+	s.inv = inventory.New(36, s.broadcastInvFunc(tx, c))
+	s.offHand = inventory.New(1, s.broadcastOffHandFunc(tx, c))
+	s.enderChest = inventory.New(27, s.broadcastEnderChestFunc(tx, c))
+	s.armour = inventory.NewArmour(s.broadcastArmourFunc(tx, c))
+	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
+}
+
+func (s *Session) broadcastInvFunc(tx *world.Tx, c Controllable) func(slot int, before, after item.Stack) {
+	return func(slot int, _, after item.Stack) {
+		if slot == int(*s.heldSlot) {
+			for _, viewer := range tx.Viewers(c.Position()) {
+				viewer.ViewEntityItems(c)
 			}
 		}
 		if !s.inTransaction.Load() {
-			s.sendItem(item, slot, protocol.WindowIDInventory)
+			s.sendItem(after, slot, protocol.WindowIDInventory)
 		}
-	})
-	s.offHand = inventory.New(1, func(slot int, _, item item.Stack) {
-		if s.c == nil {
-			return
+	}
+}
+
+func (s *Session) broadcastEnderChestFunc(tx *world.Tx, _ Controllable) func(slot int, before, after item.Stack) {
+	return func(slot int, _, after item.Stack) {
+		if !s.inTransaction.Load() {
+			if _, ok := tx.Block(*s.openedPos.Load()).(block.EnderChest); ok {
+				s.ViewSlotChange(slot, after)
+			}
 		}
-		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-			viewer.ViewEntityItems(s.c)
+	}
+}
+
+func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) func(slot int, before, after item.Stack) {
+	return func(slot int, _, after item.Stack) {
+		for _, viewer := range tx.Viewers(c.Position()) {
+			viewer.ViewEntityItems(c)
 		}
 		if !s.inTransaction.Load() {
 			i, _ := s.offHand.Item(0)
 			s.writePacket(&packet.InventoryContent{
 				WindowID: protocol.WindowIDOffHand,
-				Content: []protocol.ItemInstance{
-					instanceFromItem(i),
-				},
+				Content:  []protocol.ItemInstance{instanceFromItem(i)},
 			})
 		}
-	})
-	s.enderChest = inventory.New(27, func(slot int, _, item item.Stack) {
-		if s.c == nil {
-			return
-		}
-		if !s.inTransaction.Load() {
-			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.EnderChest); ok {
-				s.ViewSlotChange(slot, item)
-			}
-		}
-	})
-	s.armour = inventory.NewArmour(func(slot int, before, after item.Stack) {
-		if s.c == nil {
-			return
-		}
+	}
+}
+
+func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) func(slot int, before, after item.Stack) {
+	return func(slot int, before, after item.Stack) {
 		if !s.inTransaction.Load() {
 			s.sendItem(after, slot, protocol.WindowIDArmour)
 		}
@@ -680,11 +660,10 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			// Only send armour if the item type actually changed.
 			return
 		}
-		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-			viewer.ViewEntityArmour(s.c)
+		for _, viewer := range tx.Viewers(c.Position()) {
+			viewer.ViewEntityArmour(c)
 		}
-	})
-	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
+	}
 }
 
 // SetHeldSlot sets the currently held hotbar slot.
@@ -711,20 +690,20 @@ func (s *Session) SetHeldSlot(slot int) error {
 
 // UpdateHeldSlot updates the held slot of the Session to the slot passed. It also verifies that the item in that slot
 // matches an expected item stack.
-func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
+func (s *Session) UpdateHeldSlot(slot int, expected item.Stack, tx *world.Tx, c Controllable) error {
 	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
 	// different place in the inventory.
 	if slot > 8 {
 		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
-	if s.heldSlot.Load() == uint32(slot) {
+	if *s.heldSlot == uint32(slot) {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}
 	// The user swapped changed held slots so stop using item right away.
-	s.c.ReleaseItem()
+	c.ReleaseItem()
 
-	s.heldSlot.Store(uint32(slot))
+	*s.heldSlot = uint32(slot)
 
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
@@ -735,8 +714,8 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 		// out of sync.
 		s.log.Debug("update held slot: client-side item must be identical to server-side item, but got differences", "client-held", clientSideItem.String(), "server-held", actual.String())
 	}
-	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-		viewer.ViewEntityItems(s.c)
+	for _, viewer := range tx.Viewers(c.Position()) {
+		viewer.ViewEntityItems(c)
 	}
 	return nil
 }
