@@ -12,6 +12,6 @@ type BlockPickRequestHandler struct{}
 // Handle ...
 func (b BlockPickRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.BlockPickRequest)
-	s.c.PickBlock(cube.Pos{int(pk.Position.X()), int(pk.Position.Y()), int(pk.Position.Z())})
+	c.PickBlock(cube.Pos{int(pk.Position.X()), int(pk.Position.Y()), int(pk.Position.Z())})
 	return nil
 }

@@ -2195,7 +2195,7 @@ func (p *Player) Tick(_ *world.World, current int64) {
 	p.checkBlockCollisions(p.data.Vel)
 	p.onGround = p.checkOnGround()
 
-	p.effects.Tick(p)
+	p.effects.Tick(p, p.tx)
 
 	p.tickFood()
 	p.tickAirSupply()
@@ -2267,14 +2267,14 @@ func (p *Player) tickAirSupply() {
 
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
 // is full enough.
-func (p *Player) tickFood(w *world.World) {
+func (p *Player) tickFood() {
 	p.hunger.foodTick++
 	if p.hunger.foodTick >= 80 {
 		p.hunger.foodTick = 0
 	}
 
-	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || w.Difficulty().FoodRegenerates()) {
-		if w.Difficulty().FoodRegenerates() {
+	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || p.tx.World().Difficulty().FoodRegenerates()) {
+		if p.tx.World().Difficulty().FoodRegenerates() {
 			p.AddFood(1)
 		}
 		if p.hunger.foodTick%20 == 0 {
@@ -2285,7 +2285,7 @@ func (p *Player) tickFood(w *world.World) {
 		if p.hunger.canRegenerate() {
 			p.regenerate(true)
 		} else if p.hunger.starving() {
-			p.starve(w)
+			p.starve()
 		}
 	}
 
@@ -2309,8 +2309,8 @@ func (p *Player) regenerate(exhaust bool) {
 // ever be dealt. In easy mode, damage will only be dealt if the player has more than 10 health. In normal
 // mode, damage will only be dealt if the player has more than 2 health and in hard mode, damage will always
 // be dealt.
-func (p *Player) starve(w *world.World) {
-	if p.Health() > w.Difficulty().StarvationHealthLimit() {
+func (p *Player) starve() {
+	if p.Health() > p.tx.World().Difficulty().StarvationHealthLimit() {
 		p.Hurt(1, StarvationDamageSource{})
 	}
 }

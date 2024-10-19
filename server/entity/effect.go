@@ -3,6 +3,7 @@ package entity
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 	"sync"
 )
@@ -99,7 +100,7 @@ func (m *EffectManager) Effects() []effect.Effect {
 
 // Tick ticks the EffectManager, applying all of its effects to the Living entity passed when applicable and
 // removing expired effects.
-func (m *EffectManager) Tick(entity Living) {
+func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 	m.mu.Lock()
 	e := make([]effect.Effect, 0, len(m.effects))
 	var toEnd []effect.Effect
@@ -124,7 +125,7 @@ func (m *EffectManager) Tick(entity Living) {
 	}
 
 	if len(toEnd) > 0 {
-		for _, v := range entity.World().Viewers(entity.Position()) {
+		for _, v := range tx.Viewers(entity.Position()) {
 			v.ViewEntityState(entity)
 		}
 	}

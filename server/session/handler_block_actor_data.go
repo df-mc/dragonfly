@@ -21,12 +21,12 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session, tx *world.Tx,
 	pk := p.(*packet.BlockActorData)
 	if id, ok := pk.NBTData["id"]; ok {
 		pos := blockPosFromProtocol(pk.Position)
-		if !canReach(s.c, pos.Vec3Middle()) {
+		if !canReach(c, pos.Vec3Middle()) {
 			return fmt.Errorf("block at %v is not within reach", pos)
 		}
 		switch id {
 		case "Sign":
-			return b.handleSign(pk, pos, s)
+			return b.handleSign(pk, pos, s, tx, c)
 		}
 		return fmt.Errorf("unhandled block actor data ID %v", id)
 	}
@@ -34,8 +34,8 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session, tx *world.Tx,
 }
 
 // handleSign handles the BlockActorData packet sent when editing a sign.
-func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Pos, s *Session) error {
-	if _, ok := s.c.World().Block(pos).(block.Sign); !ok {
+func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Pos, s *Session, tx *world.Tx, co Controllable) error {
+	if _, ok := tx.Block(pos).(block.Sign); !ok {
 		s.log.Debug("no sign at position of sign block actor data", "pos", pos.String())
 		return nil
 	}
@@ -48,7 +48,7 @@ func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Po
 	if err != nil {
 		return err
 	}
-	if err := s.c.EditSign(pos, frontText, backText); err != nil {
+	if err := co.EditSign(pos, frontText, backText); err != nil {
 		return err
 	}
 	return nil

@@ -29,9 +29,9 @@ var tntConf = PassiveBehaviourConfig{
 }
 
 // explodeTNT creates an explosion at the position of e.
-func explodeTNT(e *Ent) {
+func explodeTNT(e *Ent, tx *world.Tx) {
 	var config block.ExplosionConfig
-	config.Explode(e.World(), e.Position())
+	config.Explode(tx, e.Position())
 }
 
 // TNTType is a world.EntityType implementation for TNT.

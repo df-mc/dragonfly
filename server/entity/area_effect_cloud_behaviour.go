@@ -75,17 +75,17 @@ func (a *AreaEffectCloudBehaviour) Effects() []effect.Effect {
 }
 
 // Tick ...
-func (a *AreaEffectCloudBehaviour) Tick(e *Ent) *Movement {
-	a.stationary.Tick(e)
+func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
+	a.stationary.Tick(e, tx)
 	if a.stationary.close || a.stationary.age < 10 {
 		// The cloud lives for at least half a second before it may begin
 		// spreading effects and growing/shrinking.
 		return nil
 	}
 
-	pos, w := e.Position(), e.World()
+	pos := e.Position()
 	if a.subtractTickRadius(e) {
-		for _, v := range w.Viewers(pos) {
+		for _, v := range tx.Viewers(pos) {
 			v.ViewEntityState(e)
 		}
 	}
@@ -101,13 +101,13 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent) *Movement {
 		}
 	}
 
-	entities := w.EntitiesWithin(e.Type().BBox(e).Translate(pos), func(entity world.Entity) bool {
+	entities := tx.EntitiesWithin(e.Type().BBox(e).Translate(pos), func(entity world.Entity) bool {
 		_, target := a.targets[entity]
 		_, living := entity.(Living)
 		return !living || target || entity == e
 	})
 	if a.applyEffects(pos, e, entities) {
-		for _, v := range w.Viewers(pos) {
+		for _, v := range tx.Viewers(pos) {
 			v.ViewEntityState(e)
 		}
 	}

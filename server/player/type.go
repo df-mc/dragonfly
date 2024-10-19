@@ -75,10 +75,10 @@ func (t Type) From(tx *world.Tx, handle *world.EntityHandle, data *world.EntityD
 	//	}
 	//	return p
 	p := &Player{
-		tx:           tx,
-		EntityHandle: handle,
-		data:         data,
-		playerData:   pd,
+		tx:         tx,
+		handle:     handle,
+		data:       data,
+		playerData: pd,
 	}
 
 	// TODO: Make sure inventories don't get recreated everytime.

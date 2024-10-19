@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
@@ -20,10 +21,10 @@ type PassiveBehaviourConfig struct {
 	ExistenceDuration time.Duration
 	// Expire is called when the entity expires due to its age reaching the
 	// ExistenceDuration.
-	Expire func(e *Ent)
+	Expire func(e *Ent, tx *world.Tx)
 	// Tick is called for every tick that the entity is alive. Tick is called
 	// after the entity moves on a tick.
-	Tick func(e *Ent)
+	Tick func(e *Ent, tx *world.Tx)
 }
 
 // New creates a PassiveBehaviour using the parameters in conf.
@@ -67,14 +68,14 @@ func (p *PassiveBehaviour) Fuse() time.Duration {
 
 // Tick implements the behaviour for a passive entity. It performs movement and
 // updates its state.
-func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
+func (p *PassiveBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	if p.close {
 		_ = e.Close()
 		return nil
 	}
 	e.mu.Lock()
 
-	m := p.mc.TickMovement(e, e.pos, e.vel, e.rot)
+	m := p.mc.TickMovement(e, e.pos, e.vel, e.rot, tx)
 	e.pos, e.vel = m.pos, m.vel
 
 	p.fallDistance = math.Max(p.fallDistance-m.dvel[1], 0)
@@ -83,12 +84,11 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 	p.fuse = p.conf.ExistenceDuration - e.Age()
 
 	if p.conf.Tick != nil {
-		p.conf.Tick(e)
+		p.conf.Tick(e, tx)
 	}
 
-	w := e.World()
 	if p.Fuse()%(time.Second/4) == 0 {
-		for _, v := range w.Viewers(m.pos) {
+		for _, v := range tx.Viewers(m.pos) {
 			v.ViewEntityState(e)
 		}
 	}
@@ -96,7 +96,7 @@ func (p *PassiveBehaviour) Tick(e *Ent) *Movement {
 	if e.Age() > p.conf.ExistenceDuration {
 		p.close = true
 		if p.conf.Expire != nil {
-			p.conf.Expire(e)
+			p.conf.Expire(e, tx)
 		}
 	}
 	return m

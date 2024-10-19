@@ -20,7 +20,7 @@ func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx
 		s.writePacket(&packet.ContainerClose{WindowID: 0})
 		s.invOpened = false
 	case byte(s.openedWindowID.Load()):
-		s.closeCurrentContainer()
+		s.closeCurrentContainer(tx)
 	case 0xff:
 		// TODO: Handle closing the crafting grid.
 	default:

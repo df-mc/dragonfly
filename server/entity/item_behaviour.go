@@ -66,34 +66,33 @@ func (i *ItemBehaviour) Item() item.Stack {
 
 // Tick moves the entity, checks if it should be picked up by a nearby collector
 // or if it should merge with nearby item entities.
-func (i *ItemBehaviour) Tick(e *Ent) *Movement {
-	w := e.World()
+func (i *ItemBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	pos := cube.PosFromVec3(e.Position())
 	blockPos := pos.Side(cube.FaceDown)
 
-	bl, ok := w.Block(blockPos).(block.Hopper)
+	bl, ok := tx.Block(blockPos).(block.Hopper)
 	if ok && !bl.Powered && bl.CollectCooldown <= 0 {
-		addedCount, err := bl.Inventory(w, blockPos).AddItem(i.i)
+		addedCount, err := bl.Inventory(tx, blockPos).AddItem(i.i)
 		if err != nil {
 			if addedCount == 0 {
-				return i.passive.Tick(e)
+				return i.passive.Tick(e, tx)
 			}
 
 			// This is only reached if part of the item stack was collected into the hopper.
-			w.AddEntity(NewItem(i.Item().Grow(-addedCount), pos.Vec3Centre()))
+			tx.AddEntity(NewItem(i.Item().Grow(-addedCount), pos.Vec3Centre()))
 		}
 
 		_ = e.Close()
 		bl.CollectCooldown = 8
-		w.SetBlock(blockPos, bl, nil)
+		tx.SetBlock(blockPos, bl, nil)
 	}
-	return i.passive.Tick(e)
+	return i.passive.Tick(e, tx)
 }
 
 // tick checks if the item can be picked up or merged with nearby item stacks.
-func (i *ItemBehaviour) tick(e *Ent) {
+func (i *ItemBehaviour) tick(e *Ent, tx *world.Tx) {
 	if i.pickupDelay == 0 {
-		i.checkNearby(e)
+		i.checkNearby(e, tx)
 	} else if i.pickupDelay < math.MaxInt16*(time.Second/20) {
 		i.pickupDelay -= time.Second / 20
 	}
@@ -103,11 +102,11 @@ func (i *ItemBehaviour) tick(e *Ent) {
 // stacks. If a collector is found in range, the item will be picked up. If
 // another item stack with the same item type is found in range, the item
 // stacks will merge.
-func (i *ItemBehaviour) checkNearby(e *Ent) {
-	w, pos := e.World(), e.Position()
+func (i *ItemBehaviour) checkNearby(e *Ent, tx *world.Tx) {
+	pos := e.Position()
 	bbox := e.Type().BBox(e)
 	grown := bbox.GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	nearby := w.EntitiesWithin(bbox.Translate(pos).Grow(2), func(entity world.Entity) bool {
+	nearby := tx.EntitiesWithin(bbox.Translate(pos).Grow(2), func(entity world.Entity) bool {
 		return entity == e
 	})
 	for _, other := range nearby {
@@ -116,11 +115,11 @@ func (i *ItemBehaviour) checkNearby(e *Ent) {
 		}
 		if collector, ok := other.(Collector); ok {
 			// A collector was within range to pick up the entity.
-			i.collect(e, collector)
+			i.collect(e, collector, tx)
 			return
 		} else if _, ok := other.Type().(ItemType); ok {
 			// Another item entity was in range to merge with.
-			if i.merge(e, other.(*Ent)) {
+			if i.merge(e, other.(*Ent), tx) {
 				return
 			}
 		}
@@ -128,8 +127,8 @@ func (i *ItemBehaviour) checkNearby(e *Ent) {
 }
 
 // merge merges the item entity with another item entity.
-func (i *ItemBehaviour) merge(e *Ent, other *Ent) bool {
-	w, pos := e.World(), e.Position()
+func (i *ItemBehaviour) merge(e *Ent, other *Ent, tx *world.Tx) bool {
+	pos := e.Position()
 	otherBehaviour := other.Behaviour().(*ItemBehaviour)
 	if otherBehaviour.i.Count() == otherBehaviour.i.MaxCount() || i.i.Count() == i.i.MaxCount() || !i.i.Comparable(otherBehaviour.i) {
 		// Either stack is already filled up to the maximum, meaning we can't
@@ -140,12 +139,12 @@ func (i *ItemBehaviour) merge(e *Ent, other *Ent) bool {
 
 	newA := NewItem(a, other.Position())
 	newA.SetVelocity(other.Velocity())
-	w.AddEntity(newA)
+	tx.AddEntity(newA)
 
 	if !b.Empty() {
 		newB := NewItem(b, pos)
 		newB.SetVelocity(e.Velocity())
-		w.AddEntity(newB)
+		tx.AddEntity(newB)
 	}
 	_ = e.Close()
 	_ = other.Close()
@@ -153,13 +152,13 @@ func (i *ItemBehaviour) merge(e *Ent, other *Ent) bool {
 }
 
 // collect makes a collector collect the item (or at least part of it).
-func (i *ItemBehaviour) collect(e *Ent, collector Collector) {
-	w, pos := e.World(), e.Position()
+func (i *ItemBehaviour) collect(e *Ent, collector Collector, tx *world.Tx) {
+	pos := e.Position()
 	n := collector.Collect(i.i)
 	if n == 0 {
 		return
 	}
-	for _, viewer := range w.Viewers(pos) {
+	for _, viewer := range tx.Viewers(pos) {
 		viewer.ViewEntityAction(e, PickedUpAction{Collector: collector})
 	}
 
@@ -170,7 +169,7 @@ func (i *ItemBehaviour) collect(e *Ent, collector Collector) {
 	}
 	// Create a new item entity and shrink it by the amount of items that the
 	// collector collected.
-	w.AddEntity(NewItem(i.i.Grow(-n), pos))
+	tx.AddEntity(NewItem(i.i.Grow(-n), pos))
 	_ = e.Close()
 }
 

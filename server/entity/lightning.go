@@ -44,8 +44,8 @@ type lightningState struct {
 
 // tick carries out lightning logic, dealing damage and setting blocks/entities
 // on fire when appropriate.
-func (s *lightningState) tick(e *Ent) {
-	w, pos := e.World(), e.Position()
+func (s *lightningState) tick(e *Ent, tx *world.Tx) {
+	pos := e.Position()
 
 	if s.state--; s.state < 0 {
 		if s.lifetime == 0 {
@@ -54,22 +54,22 @@ func (s *lightningState) tick(e *Ent) {
 			s.lifetime--
 			s.state = 1
 
-			if s.BlockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
-				s.spreadFire(w, cube.PosFromVec3(pos))
+			if s.BlockFire && tx.World().Difficulty().FireSpreadIncrease() >= 10 {
+				s.spreadFire(tx, cube.PosFromVec3(pos))
 			}
 		}
 	}
 	if s.state > 0 {
-		s.dealDamage(e)
+		s.dealDamage(e, tx)
 	}
 }
 
 // dealDamage deals damage to all entities around the lightning and sets them
 // on fire.
-func (s *lightningState) dealDamage(e *Ent) {
-	w, pos := e.World(), e.Position()
+func (s *lightningState) dealDamage(e *Ent, tx *world.Tx) {
+	pos := e.Position()
 	bb := e.Type().BBox(e).GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
-	for _, e := range w.EntitiesWithin(bb, nil) {
+	for _, e := range tx.EntitiesWithin(bb, nil) {
 		// Only damage entities that weren't already dead.
 		if l, ok := e.(Living); ok && l.Health() > 0 {
 			if s.Damage > 0 {
@@ -84,20 +84,20 @@ func (s *lightningState) dealDamage(e *Ent) {
 
 // spreadFire attempts to place fire at the position of the lightning and does
 // 4 additional attempts to spread it around that position.
-func (s *lightningState) spreadFire(w *world.World, pos cube.Pos) {
-	s.fire().Start(w, pos)
+func (s *lightningState) spreadFire(tx *world.Tx, pos cube.Pos) {
+	s.fire().Start(tx, pos)
 	for i := 0; i < 4; i++ {
 		pos.Add(cube.Pos{rand.Intn(3) - 1, rand.Intn(3) - 1, rand.Intn(3) - 1})
-		s.fire().Start(w, pos)
+		s.fire().Start(tx, pos)
 	}
 }
 
 // fire returns a fire block.
 func (s *lightningState) fire() interface {
-	Start(w *world.World, pos cube.Pos)
+	Start(tx *world.Tx, pos cube.Pos)
 } {
 	return fire().(interface {
-		Start(w *world.World, pos cube.Pos)
+		Start(tx *world.Tx, pos cube.Pos)
 	})
 }
 

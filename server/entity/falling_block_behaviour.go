@@ -44,16 +44,16 @@ func (f *FallingBlockBehaviour) Block() world.Block {
 }
 
 // Tick implements the movement and solidification behaviour of falling blocks.
-func (f *FallingBlockBehaviour) Tick(e *Ent) *Movement {
-	return f.passive.Tick(e)
+func (f *FallingBlockBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
+	return f.passive.Tick(e, tx)
 }
 
 // tick checks if the falling block should solidify.
-func (f *FallingBlockBehaviour) tick(e *Ent) {
+func (f *FallingBlockBehaviour) tick(e *Ent, tx *world.Tx) {
 	pos := e.Position()
-	bpos, w := cube.PosFromVec3(pos), e.World()
-	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(bpos, w)) || f.passive.mc.OnGround() {
-		f.solidify(e, pos, w)
+	bpos := cube.PosFromVec3(pos)
+	if a, ok := f.block.(Solidifiable); (ok && a.Solidifies(bpos, tx)) || f.passive.mc.OnGround() {
+		f.solidify(e, pos, tx)
 	}
 }
 

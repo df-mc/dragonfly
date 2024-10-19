@@ -57,22 +57,22 @@ func (exp *ExperienceOrbBehaviour) Experience() int {
 }
 
 // Tick finds a target for the experience orb and moves the orb towards it.
-func (exp *ExperienceOrbBehaviour) Tick(e *Ent) *Movement {
-	return exp.passive.Tick(e)
+func (exp *ExperienceOrbBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
+	return exp.passive.Tick(e, tx)
 }
 
 // followBox is the bounding box used to search for collectors to follow for experience orbs.
 var followBox = cube.Box(-8, -8, -8, 8, 8, 8)
 
 // tick finds a target for the experience orb and moves the orb towards it.
-func (exp *ExperienceOrbBehaviour) tick(e *Ent) {
-	w, pos := e.World(), e.Position()
-	if exp.target != nil && (exp.target.Dead() || exp.target.World() != w || pos.Sub(exp.target.Position()).Len() > 8) {
+func (exp *ExperienceOrbBehaviour) tick(e *Ent, tx *world.Tx) {
+	pos := e.Position()
+	if exp.target != nil && (exp.target.Dead() || exp.target.World() != tx.World() || pos.Sub(exp.target.Position()).Len() > 8) {
 		exp.target = nil
 	}
 
 	if time.Since(exp.lastSearch) >= time.Second {
-		exp.findTarget(w, pos)
+		exp.findTarget(tx, pos)
 	}
 	if exp.target != nil {
 		exp.moveToTarget(e)
@@ -80,9 +80,9 @@ func (exp *ExperienceOrbBehaviour) tick(e *Ent) {
 }
 
 // findTarget attempts to find a target for an experience orb in w around pos.
-func (exp *ExperienceOrbBehaviour) findTarget(w *world.World, pos mgl64.Vec3) {
+func (exp *ExperienceOrbBehaviour) findTarget(tx *world.Tx, pos mgl64.Vec3) {
 	if exp.target == nil {
-		collectors := w.EntitiesWithin(followBox.Translate(pos), func(o world.Entity) bool {
+		collectors := tx.EntitiesWithin(followBox.Translate(pos), func(o world.Entity) bool {
 			_, ok := o.(experienceCollector)
 			return !ok
 		})

@@ -14,7 +14,7 @@ type Behaviour interface {
 	// Tick ticks the Ent using the Behaviour. A Movement is returned that
 	// specifies the movement of the entity over the tick. Nil may be returned
 	// if the entity did not move.
-	Tick(e *Ent) *Movement
+	Tick(e *Ent, tx *world.Tx) *Movement
 }
 
 // Config allows specifying options that influence the way an Ent behaves.
@@ -31,6 +31,10 @@ func (conf Config) New(t world.EntityType, pos mgl64.Vec3) *Ent {
 // share a lot of code. It is currently under development and is prone to
 // (breaking) changes.
 type Ent struct {
+	tx     *world.Tx
+	handle *world.EntityHandle
+	data   *world.EntityData
+
 	conf Config
 	t    world.EntityType
 
@@ -43,6 +47,11 @@ type Ent struct {
 
 	fireDuration time.Duration
 	age          time.Duration
+}
+
+func (e *Ent) Handle() *world.EntityHandle {
+	// TODO: Move this over to world.EntityHandle.
+	return nil
 }
 
 // Explode propagates the explosion behaviour of the underlying Behaviour.
@@ -95,8 +104,8 @@ func (e *Ent) Rotation() cube.Rotation {
 
 // World returns the world of the entity.
 func (e *Ent) World() *world.World {
-	w, _ := world.OfEntity(e)
-	return w
+	// TODO: Fix this
+	return nil
 }
 
 // Age returns the total time lived of this entity. It increases by
@@ -128,7 +137,7 @@ func (e *Ent) SetOnFire(duration time.Duration) {
 	if before == after {
 		return
 	}
-	for _, v := range e.World().Viewers(pos) {
+	for _, v := range e.tx.Viewers(pos) {
 		v.ViewEntityState(e)
 	}
 }
@@ -153,24 +162,24 @@ func (e *Ent) SetNameTag(s string) {
 	e.name = s
 	e.mu.Unlock()
 
-	for _, v := range e.World().Viewers(e.Position()) {
+	for _, v := range e.tx.Viewers(e.Position()) {
 		v.ViewEntityState(e)
 	}
 }
 
 // Tick ticks Ent, progressing its lifetime and closing the entity if it is
 // in the void.
-func (e *Ent) Tick(w *world.World, current int64) {
+func (e *Ent) Tick(tx *world.Tx, current int64) {
 	e.mu.Lock()
 	y := e.pos[1]
 	e.mu.Unlock()
-	if y < float64(w.Range()[0]) && current%10 == 0 {
+	if y < float64(tx.Range()[0]) && current%10 == 0 {
 		_ = e.Close()
 		return
 	}
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
-	if m := e.conf.Behaviour.Tick(e); m != nil {
+	if m := e.conf.Behaviour.Tick(e, tx); m != nil {
 		m.Send()
 	}
 	e.mu.Lock()
@@ -180,6 +189,6 @@ func (e *Ent) Tick(w *world.World, current int64) {
 
 // Close closes the Ent and removes the associated entity from the world.
 func (e *Ent) Close() error {
-	e.World().RemoveEntity(e)
+	e.tx.RemoveEntity(e)
 	return nil
 }

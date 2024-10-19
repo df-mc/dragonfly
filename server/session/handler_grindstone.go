@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"math"
 	"math/rand"
 
@@ -20,12 +21,12 @@ const (
 )
 
 // handleGrindstoneCraft handles a CraftGrindstoneRecipe stack request action made using a grindstone.
-func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
+func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session, tx *world.Tx, c Controllable) error {
 	// First check if there actually is a grindstone opened.
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no grindstone container opened")
 	}
-	if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Grindstone); !ok {
+	if _, ok := tx.Block(*s.openedPos.Load()).(block.Grindstone); !ok {
 		return fmt.Errorf("no grindstone container opened")
 	}
 
@@ -33,11 +34,11 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 	firstInput, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneInput},
 		Slot:      grindstoneFirstInputSlot,
-	}, s)
+	}, s, tx)
 	secondInput, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneAdditional},
 		Slot:      grindstoneSecondInputSlot,
-	}, s)
+	}, s, tx)
 	if firstInput.Empty() && secondInput.Empty() {
 		return fmt.Errorf("input item(s) are empty")
 	}
@@ -58,21 +59,20 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session) error {
 		resultStack = resultStack.WithDurability(firstDurability + secondDurability + maxDurability*5/100)
 	}
 
-	w := s.c.World()
-	for _, o := range entity.NewExperienceOrbs(entity.EyePosition(s.c), experienceFromEnchantments(resultStack)) {
+	for _, o := range entity.NewExperienceOrbs(entity.EyePosition(c), experienceFromEnchantments(resultStack)) {
 		o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
-		w.AddEntity(o)
+		tx.AddEntity(o)
 	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneInput},
 		Slot:      grindstoneFirstInputSlot,
-	}, item.Stack{}, s)
+	}, item.Stack{}, s, tx)
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneAdditional},
 		Slot:      grindstoneSecondInputSlot,
-	}, item.Stack{}, s)
-	return h.createResults(s, stripPossibleEnchantments(resultStack))
+	}, item.Stack{}, s, tx)
+	return h.createResults(s, tx, stripPossibleEnchantments(resultStack))
 }
 
 // curseEnchantment represents an enchantment that may be a curse enchantment.

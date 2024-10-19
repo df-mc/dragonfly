@@ -128,15 +128,14 @@ func (lt *ProjectileBehaviour) Critical() bool {
 // Tick runs the tick-based behaviour of a ProjectileBehaviour and returns the
 // Movement within the tick. Tick handles the movement, collision and hitting
 // of a projectile.
-func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
+func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	if lt.close {
 		_ = e.Close()
 		return nil
 	}
-	w := e.World()
 
 	e.mu.Lock()
-	if lt.collided && lt.tickAttached(e) {
+	if lt.collided && lt.tickAttached(e, tx) {
 		e.mu.Unlock()
 
 		if lt.ageCollided > 1200 {
@@ -145,7 +144,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 		return nil
 	}
 	before, vel := e.pos, e.vel
-	m, result := lt.tickMovement(e)
+	m, result := lt.tickMovement(e, tx)
 	e.pos, e.vel = m.pos, m.vel
 
 	lt.collisionPos, lt.collided, lt.ageCollided = cube.Pos{}, false, 0
@@ -156,10 +155,10 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 	}
 
 	for i := 0; i < lt.conf.ParticleCount; i++ {
-		w.AddParticle(result.Position(), lt.conf.Particle)
+		tx.AddParticle(result.Position(), lt.conf.Particle)
 	}
 	if lt.conf.Sound != nil {
-		w.PlaySound(result.Position(), lt.conf.Sound)
+		tx.PlaySound(result.Position(), lt.conf.Sound)
 	}
 
 	switch r := result.(type) {
@@ -169,16 +168,16 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
-		if t, ok := w.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
-			t.Ignite(bpos, w, e)
+		if t, ok := tx.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
+			t.Ignite(bpos, tx, e)
 		}
 		if lt.conf.SurviveBlockCollision {
-			lt.hitBlockSurviving(e, r, m)
+			lt.hitBlockSurviving(e, r, m, tx)
 			return m
 		}
 	}
 	if lt.conf.Hit != nil {
-		lt.conf.Hit(e, result)
+		lt.conf.Hit(e, tx, result)
 	}
 
 	lt.close = true
@@ -187,15 +186,14 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 
 // tickAttached performs the attached logic for a projectile. It checks if the
 // projectile is still attached to a block and if it can be picked up.
-func (lt *ProjectileBehaviour) tickAttached(e *Ent) bool {
-	w := e.World()
-	boxes := w.Block(lt.collisionPos).Model().BBox(lt.collisionPos, w)
+func (lt *ProjectileBehaviour) tickAttached(e *Ent, tx *world.Tx) bool {
+	boxes := tx.Block(lt.collisionPos).Model().BBox(lt.collisionPos, tx)
 	box := e.Type().BBox(e).Translate(e.pos)
 
 	for _, bb := range boxes {
 		if box.IntersectsWith(bb.Translate(lt.collisionPos.Vec3()).Grow(0.05)) {
 			if lt.ageCollided > 5 && !lt.conf.DisablePickup {
-				lt.tryPickup(e)
+				lt.tryPickup(e, tx)
 			}
 			lt.ageCollided++
 			return true
@@ -206,14 +204,13 @@ func (lt *ProjectileBehaviour) tickAttached(e *Ent) bool {
 
 // tryPickup checks for nearby projectile collectors and closes the entity if
 // one was found.
-func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
-	w := e.World()
+func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 	translated := e.Type().BBox(e).Translate(e.pos)
 	grown := translated.GrowVec3(mgl64.Vec3{1, 0.5, 1})
 	ignore := func(other world.Entity) bool {
 		return e == other
 	}
-	for _, other := range w.EntitiesWithin(translated.Grow(2), ignore) {
+	for _, other := range tx.EntitiesWithin(translated.Grow(2), ignore) {
 		if !other.Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
 			continue
 		}
@@ -223,7 +220,7 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
 		}
 		// A collector was within range to pick up the entity.
 		lt.close = true
-		for _, viewer := range w.Viewers(e.pos) {
+		for _, viewer := range tx.Viewers(e.pos) {
 			viewer.ViewEntityAction(e, PickedUpAction{Collector: collector})
 		}
 		if lt.conf.PickupItem.Empty() {
@@ -237,7 +234,7 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
 // ProjectileBehaviourConfig.SurviveBlockCollision is set to true and the
 // projectile collides with a block. If the resulting velocity is roughly 0,
 // it sets the projectile as having collided with the block.
-func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m *Movement) {
+func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m *Movement, tx *world.Tx) {
 	e.mu.Lock()
 	// Create an epsilon for deciding if the projectile has slowed down enough
 	// for us to consider it as having collided for the final time. We take the
@@ -249,7 +246,7 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 		lt.collisionPos, lt.collided = r.BlockPosition(), true
 		e.mu.Unlock()
 
-		for _, v := range e.World().Viewers(m.pos) {
+		for _, v := range tx.Viewers(m.pos) {
 			v.ViewEntityAction(e, ArrowShakeAction{Duration: time.Millisecond * 350})
 			v.ViewEntityState(e)
 		}
@@ -282,12 +279,12 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec
 // tickMovement ticks the movement of a projectile. It updates the position and
 // rotation of the projectile based on its velocity and updates the velocity
 // based on gravity and drag.
-func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
-	w, pos, vel := e.World(), e.pos, e.vel
-	viewers := w.Viewers(pos)
+func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, trace.Result) {
+	pos, vel := e.pos, e.vel
+	viewers := tx.Viewers(pos)
 
 	velBefore := vel
-	vel = lt.mc.applyHorizontalForces(w, pos, lt.mc.applyVerticalForces(vel))
+	vel = lt.mc.applyHorizontalForces(tx, pos, lt.mc.applyVerticalForces(vel))
 	rot := cube.Rotation{
 		mgl64.RadToDeg(math.Atan2(vel[0], vel[2])),
 		mgl64.RadToDeg(math.Atan2(vel[1], math.Hypot(vel[0], vel[2]))),
@@ -299,7 +296,7 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent) (*Movement, trace.Result) {
 		ok  bool
 	)
 	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
-		if hit, ok = trace.Perform(pos, end, w, e.Type().BBox(e).Grow(1.0), lt.ignores(e)); ok {
+		if hit, ok = trace.Perform(pos, end, tx, e.Type().BBox(e).Grow(1.0), lt.ignores(e)); ok {
 			if _, ok := hit.(trace.BlockResult); ok {
 				// Undo the gravity because the velocity as a result of gravity
 				// at the point of collision should be 0.

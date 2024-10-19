@@ -13,7 +13,7 @@ type InteractHandler struct{}
 // Handle ...
 func (h *InteractHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.Interact)
-	pos := s.c.Position()
+	pos := c.Position()
 
 	switch pk.ActionType {
 	case packet.InteractActionMouseOverEntity:

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -323,30 +324,41 @@ func (s *Session) handlePackets() {
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {
 	var (
-		t                 = time.NewTicker(time.Second / 20)
-		r                 = s.sendAvailableCommands()
-		enums, enumValues = s.enums()
-		ok                bool
-		i                 int
+		r          map[string]map[int]cmd.Runnable
+		enums      map[string]cmd.Enum
+		enumValues map[string][]string
+		ok         bool
+		i          int
 	)
-	defer t.Stop()
 
+	<-s.ent.World().Exec(func(tx *world.Tx) {
+		co := s.ent.Entity(tx).(Controllable)
+		r = s.sendAvailableCommands(co)
+		enums, enumValues = s.enums(co)
+	})
+
+	t := time.NewTicker(time.Second / 20)
+	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
+			s.ent.World().Exec(func(tx *world.Tx) {
+				c := s.ent.Entity(tx).(Controllable)
+
+				if i++; i%20 == 0 {
+					// Enum resending happens relatively often and frequent updates are more important than with full
+					// command changes. Those are generally only related to permission changes, which doesn't happen often.
+					s.resendEnums(enums, enumValues, c)
+				}
+				if i%100 == 0 {
+					// Try to resend commands only every 5 seconds.
+					if r, ok = s.resendCommands(r, c); ok {
+						enums, enumValues = s.enums(c)
+					}
+				}
+			})
 			s.sendChunks()
 
-			if i++; i%20 == 0 {
-				// Enum resending happens relatively often and frequent updates are more important than with full
-				// command changes. Those are generally only related to permission changes, which doesn't happen often.
-				s.resendEnums(enums, enumValues)
-			}
-			if i%100 == 0 {
-				// Try to resend commands only every 5 seconds.
-				if r, ok = s.resendCommands(r); ok {
-					enums, enumValues = s.enums()
-				}
-			}
 		case <-s.closeBackground:
 			return
 		}

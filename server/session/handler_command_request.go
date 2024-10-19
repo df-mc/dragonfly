@@ -20,6 +20,6 @@ func (h *CommandRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx
 	}
 
 	h.origin = pk.CommandOrigin
-	s.c.ExecuteCommand(pk.CommandLine)
+	c.ExecuteCommand(pk.CommandLine)
 	return nil
 }

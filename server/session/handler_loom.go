@@ -31,7 +31,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomInput},
 		Slot:      loomInputSlot,
-	}, s)
+	}, s, tx)
 	if input.Empty() {
 		return fmt.Errorf("input item is empty")
 	}
@@ -47,7 +47,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 	dye, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomDye},
 		Slot:      loomDyeSlot,
-	}, s)
+	}, s, tx)
 	if dye.Empty() {
 		return fmt.Errorf("dye item is empty")
 	}
@@ -65,7 +65,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 	pattern, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomMaterial},
 		Slot:      loomPatternSlot,
-	}, s)
+	}, s, tx)
 	if expectedPatternItem, hasPatternItem := expectedPattern.Item(); hasPatternItem {
 		if pattern.Empty() {
 			return fmt.Errorf("pattern item is empty but the pattern is required")
@@ -87,10 +87,10 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomInput},
 		Slot:      loomInputSlot,
-	}, input.Grow(-1), s)
+	}, input.Grow(-1), s, tx)
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomDye},
 		Slot:      loomDyeSlot,
-	}, dye.Grow(-1), s)
-	return h.createResults(s, duplicateStack(input, b))
+	}, dye.Grow(-1), s, tx)
+	return h.createResults(s, tx, duplicateStack(input, b))
 }
