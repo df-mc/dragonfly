@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -66,6 +67,14 @@ func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
 			l.ShouldUpdate = false
 			w.SetBlock(pos, l, nil)
 		} else {
+			ctx := event.C()
+			if w.Handler().HandleLeavesDecay(ctx, pos); !ctx.Cancelled() {
+				drops := l.BreakInfo().Drops(nil, nil)
+				for _, drop := range drops {
+					dropItem(w, drop, pos.Vec3Centre())
+				}
+			}
+
 			w.SetBlock(pos, nil, nil)
 		}
 	}
