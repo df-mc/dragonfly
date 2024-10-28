@@ -13,7 +13,7 @@ type ContainerCloseHandler struct{}
 func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ContainerClose)
 
-	s.EmptyUIInventory()
+	s.EmptyUIInventory(c)
 	switch pk.WindowID {
 	case 0:
 		// Closing of the normal inventory.

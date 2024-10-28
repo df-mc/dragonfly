@@ -1827,7 +1827,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 
 	if found {
 		if slot < 9 {
-			_ = p.session().SetHeldSlot(slot)
+			_ = p.session().SetHeldSlot(slot, p.tx, p)
 			return
 		}
 		_ = p.Inventory().Swap(slot, int(*p.heldSlot))
@@ -1840,7 +1840,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		return
 	}
 	if firstEmpty < 8 {
-		_ = p.session().SetHeldSlot(firstEmpty)
+		_ = p.session().SetHeldSlot(firstEmpty, p.tx, p)
 		_ = p.Inventory().SetItem(firstEmpty, pickedItem)
 		return
 	}

@@ -12,9 +12,10 @@ import (
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"golang.org/x/exp/maps"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 )
 
@@ -101,31 +102,24 @@ func (db *DB) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 	k := "player_server_" + id.String()
 
 	if errors.Is(err, leveldb.ErrNotFound) {
-		data, err := nbt.MarshalEncoding(playerData{
-			UUID:     id.String(),
-			ServerID: k,
-		}, nbt.LittleEndian)
+		data, err := nbt.MarshalEncoding(playerData{UUID: id.String(), ServerID: k}, nbt.LittleEndian)
 		if err != nil {
 			panic(err)
 		}
 		if err := db.ldb.Put([]byte("player_"+id.String()), data, nil); err != nil {
-			return fmt.Errorf("error writing player data for id %v: %w", id, err)
+			return fmt.Errorf("write player data (uuid=%v): %w", id, err)
 		}
-	} else {
-		if d, k, _, err = db.loadPlayerData(id); err != nil {
-			return err
-		}
+	} else if d, k, _, err = db.loadPlayerData(id); err != nil {
+		return err
 	}
-	d["SpawnX"] = int32(pos.X())
-	d["SpawnY"] = int32(pos.Y())
-	d["SpawnZ"] = int32(pos.Z())
+	d["SpawnX"], d["SpawnY"], d["SpawnZ"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
 
 	data, err := nbt.MarshalEncoding(d, nbt.LittleEndian)
 	if err != nil {
 		panic(err)
 	}
 	if err = db.ldb.Put([]byte(k), data, nil); err != nil {
-		return fmt.Errorf("error writing server data for player %v: %w", id, err)
+		return fmt.Errorf("write server data for player %v: %w", id, err)
 	}
 	return nil
 }
@@ -133,7 +127,7 @@ func (db *DB) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 // LoadColumn reads a world.Column from the DB at a position and dimension in
 // the DB. If no column at that position exists, errors.Is(err,
 // leveldb.ErrNotFound) equals true.
-func (db *DB) LoadColumn(pos world.ChunkPos, dim world.Dimension) (*world.Column, error) {
+func (db *DB) LoadColumn(pos world.ChunkPos, dim world.Dimension) (*chunk.Column, error) {
 	k := dbKey{pos: pos, dim: dim}
 	col, err := db.column(k)
 	if err != nil {
@@ -144,9 +138,9 @@ func (db *DB) LoadColumn(pos world.ChunkPos, dim world.Dimension) (*world.Column
 
 const chunkVersion = 40
 
-func (db *DB) column(k dbKey) (*world.Column, error) {
+func (db *DB) column(k dbKey) (*chunk.Column, error) {
 	var cdata chunk.SerialisedData
-	col := new(world.Column)
+	col := new(chunk.Column)
 
 	ver, err := db.version(k)
 	if err != nil {
@@ -174,7 +168,7 @@ func (db *DB) column(k dbKey) (*world.Column, error) {
 		// Not all chunks need to have entities, so an ErrNotFound is fine here.
 		return nil, fmt.Errorf("read entities: %w", err)
 	}
-	col.BlockEntities, err = db.blockEntities(k, col.Chunk)
+	col.BlockEntities, err = db.blockEntities(k)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		// Same as with entities, an ErrNotFound is fine here.
 		return nil, fmt.Errorf("read block entities: %w", err)
@@ -184,22 +178,20 @@ func (db *DB) column(k dbKey) (*world.Column, error) {
 
 func (db *DB) version(k dbKey) (byte, error) {
 	p, err := db.ldb.Get(k.Sum(keyVersion), nil)
-	switch err {
-	default:
-		return 0, err
-	case leveldb.ErrNotFound:
+	if errors.Is(err, leveldb.ErrNotFound) {
 		// Although the version at `keyVersion` may not be found, there is
 		// another `keyVersionOld` where the version may be found.
 		if p, err = db.ldb.Get(k.Sum(keyVersionOld), nil); err != nil {
 			return 0, err
 		}
-		fallthrough
-	case nil:
-		if n := len(p); n != 1 {
-			return 0, fmt.Errorf("expected 1 version byte, found %v", n)
-		}
-		return p[0], nil
 	}
+	if err != nil {
+		return 0, err
+	}
+	if n := len(p); n != 1 {
+		return 0, fmt.Errorf("expected 1 version byte, got %v", n)
+	}
+	return p[0], nil
 }
 
 func (db *DB) biomes(k dbKey) ([]byte, error) {
@@ -208,7 +200,7 @@ func (db *DB) biomes(k dbKey) ([]byte, error) {
 		return nil, err
 	}
 	// The first 512 bytes is a heightmap (16*16 int16s), the biomes follow. We
-	// calculate a heightmap on startup so the heightmap is discarded.
+	// calculate a heightmap on startup so the heightmap can be discarded.
 	if n := len(biomes); n <= 512 {
 		return nil, fmt.Errorf("expected at least 513 bytes for 3D data, got %v", n)
 	}
@@ -223,7 +215,7 @@ func (db *DB) subChunks(k dbKey) ([][]byte, error) {
 	for i := range sub {
 		y := uint8(i + (r[0] >> 4))
 		sub[i], err = db.ldb.Get(k.Sum(keySubChunkData, y), nil)
-		if err == leveldb.ErrNotFound {
+		if errors.Is(err, leveldb.ErrNotFound) {
 			// No sub chunk present at this Y level. We skip this one and move
 			// to the next, which might still be present.
 			continue
@@ -234,44 +226,57 @@ func (db *DB) subChunks(k dbKey) ([][]byte, error) {
 	return sub, nil
 }
 
-func (db *DB) entities(k dbKey) ([]world.Entity, error) {
-	data, err := db.ldb.Get(k.Sum(keyEntities), nil)
+func (db *DB) entities(k dbKey) ([]chunk.Entity, error) {
+	// https://learn.microsoft.com/en-us/minecraft/creator/documents/actorstorage
+	ids, err := db.ldb.Get(append([]byte(keyEntityIdentifiers), index(k.pos, k.dim)...), nil)
 	if err != nil {
-		return nil, err
+		// Key not found, try old method of loading entities.
+		return db.entitiesOld(k)
 	}
-	var entities []world.Entity
-
-	buf := bytes.NewBuffer(data)
-	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
-
-	var m map[string]any
-	for buf.Len() != 0 {
-		maps.Clear(m)
-		if err := dec.Decode(&m); err != nil {
-			return nil, fmt.Errorf("decode nbt: %w", err)
+	entities := make([]chunk.Entity, 0, len(ids)/8)
+	for i := 0; i < len(ids); i += 8 {
+		id := int64(binary.LittleEndian.Uint64(ids[i : i+8]))
+		data, err := db.ldb.Get(entityIndex(id), nil)
+		if err != nil {
+			db.conf.Log.Error("read entity: "+err.Error(), "ID", id)
+			return nil, err
 		}
-		id, ok := m["identifier"]
-		if !ok {
-			db.conf.Log.Error("missing identifier field", "data", fmt.Sprint(m))
-			continue
+		ent := chunk.Entity{ID: id, Data: make(map[string]any)}
+		if err = nbt.UnmarshalEncoding(data, &ent.Data, nbt.LittleEndian); err != nil {
+			db.conf.Log.Error("decode entity nbt: "+err.Error(), "ID", id)
 		}
-		name, _ := id.(string)
-		t, ok := db.conf.Entities.Lookup(name)
-		if !ok {
-			db.conf.Log.Error("no entity with ID", "id", name, "data", fmt.Sprint(m))
-			continue
-		}
-		if s, ok := t.(world.SaveableEntityType); ok {
-			if v := s.DecodeNBT(m); v != nil {
-				entities = append(entities, v)
-			}
-		}
+		entities = append(entities, ent)
 	}
 	return entities, nil
 }
 
-func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, error) {
-	blockEntities := make(map[cube.Pos]world.Block)
+func (db *DB) entitiesOld(k dbKey) ([]chunk.Entity, error) {
+	data, err := db.ldb.Get(k.Sum(keyEntitiesOld), nil)
+	if err != nil {
+		return nil, err
+	}
+	var entities []chunk.Entity
+
+	buf := bytes.NewBuffer(data)
+	dec, ok := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian), false
+
+	for buf.Len() != 0 {
+		ent := chunk.Entity{Data: make(map[string]any)}
+		if err := dec.Decode(&ent.Data); err != nil {
+			return nil, fmt.Errorf("decode entity nbt: %w", err)
+		}
+		ent.ID, ok = ent.Data["UniqueID"].(int64)
+		if !ok {
+			db.conf.Log.Error("missing unique ID field, generating random", "data", fmt.Sprint(ent.Data))
+			ent.ID = rand.Int63()
+		}
+		entities = append(entities, ent)
+	}
+	return entities, nil
+}
+
+func (db *DB) blockEntities(k dbKey) ([]chunk.BlockEntity, error) {
+	var blockEntities []chunk.BlockEntity
 
 	data, err := db.ldb.Get(k.Sum(keyBlockEntities), nil)
 	if err != nil {
@@ -281,33 +286,20 @@ func (db *DB) blockEntities(k dbKey, c *chunk.Chunk) (map[cube.Pos]world.Block, 
 	buf := bytes.NewBuffer(data)
 	dec := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian)
 
-	var m map[string]any
 	for buf.Len() != 0 {
-		maps.Clear(m)
-		if err := dec.Decode(&m); err != nil {
+		be := chunk.BlockEntity{Data: make(map[string]any)}
+		if err := dec.Decode(&be.Data); err != nil {
 			return blockEntities, fmt.Errorf("decode nbt: %w", err)
 		}
-		pos := blockPosFromNBT(m)
-
-		id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-		b, ok := world.BlockByRuntimeID(id)
-		if !ok {
-			db.conf.Log.Error("no block with runtime ID", "ID", id)
-			continue
-		}
-		nbter, ok := b.(world.NBTer)
-		if !ok {
-			db.conf.Log.Error("block with nbt does not implement world.NBTer", "block", fmt.Sprintf("%#v", b))
-			continue
-		}
-		blockEntities[pos] = nbter.DecodeNBT(m).(world.Block)
+		be.Pos = blockPosFromNBT(be.Data)
+		blockEntities = append(blockEntities, be)
 	}
 	return blockEntities, nil
 }
 
 // StoreColumn stores a world.Column at a position and dimension in the DB. An
 // error is returned if storing was unsuccessful.
-func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *world.Column) error {
+func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *chunk.Column) error {
 	k := dbKey{pos: pos, dim: dim}
 	if err := db.storeColumn(k, col); err != nil {
 		return fmt.Errorf("store column %v (%v): %w", pos, dim, err)
@@ -315,9 +307,9 @@ func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *world.Co
 	return nil
 }
 
-func (db *DB) storeColumn(k dbKey, col *world.Column) error {
+func (db *DB) storeColumn(k dbKey, col *chunk.Column) error {
 	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
-	n := 5 + len(data.SubChunks)
+	n := 6 + len(data.SubChunks) + len(col.Entities)
 	batch := leveldb.MakeBatch(n)
 
 	db.storeVersion(batch, k, chunkVersion)
@@ -352,29 +344,59 @@ func (db *DB) storeFinalisation(batch *leveldb.Batch, k dbKey, finalisation uint
 	batch.Put(k.Sum(keyFinalisation), p)
 }
 
-func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []world.Entity) {
-	if len(entities) == 0 {
-		batch.Delete(k.Sum(keyEntities))
-		return
+func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []chunk.Entity) {
+	idsKey := append([]byte(keyEntityIdentifiers), index(k.pos, k.dim)...)
+
+	// load the ids of the previous entities
+	var previousIDs []int64
+	digpPrev, err := db.ldb.Get(idsKey, nil)
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
+		db.conf.Log.Error("store entities: read chunk entity IDs: " + err.Error())
+	}
+	if err == nil {
+		for i := 0; i < len(digpPrev); i += 8 {
+			previousIDs = append(previousIDs, int64(binary.LittleEndian.Uint64(digpPrev[i:])))
+		}
 	}
 
-	buf := bytes.NewBuffer(nil)
-	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
+	newIDs := make([]int64, 0, len(entities))
 	for _, e := range entities {
-		t, ok := e.Type().(world.SaveableEntityType)
-		if !ok {
+		e.Data["UniqueID"] = e.ID
+		b, err := nbt.MarshalEncoding(e.Data, nbt.LittleEndian)
+		if err != nil {
+			db.conf.Log.Error("store entities: encode NBT: " + err.Error())
 			continue
 		}
-		x := t.EncodeNBT(e)
-		x["identifier"] = t.EncodeEntity()
-		if err := enc.Encode(x); err != nil {
-			db.conf.Log.Error("store entities: encode NBT: " + err.Error())
+		batch.Put(entityIndex(e.ID), b)
+		newIDs = append(newIDs, e.ID)
+	}
+
+	// Remove entities that are no longer referenced.
+	for _, uniqueID := range previousIDs {
+		if !slices.Contains(newIDs, uniqueID) {
+			batch.Delete(entityIndex(uniqueID))
 		}
 	}
-	batch.Put(k.Sum(keyEntities), buf.Bytes())
+	if len(entities) == 0 {
+		batch.Delete(idsKey)
+	} else {
+		// Save the index of entities in the chunk.
+		ids := make([]byte, 0, 8*len(newIDs))
+		for _, uniqueID := range newIDs {
+			ids = binary.LittleEndian.AppendUint64(ids, uint64(uniqueID))
+		}
+		batch.Put(idsKey, ids)
+	}
+
+	// Remove old entity data for this chunk.
+	batch.Delete(append(index(k.pos, k.dim), keyEntitiesOld))
 }
 
-func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities map[cube.Pos]world.Block) {
+func entityIndex(id int64) []byte {
+	return binary.LittleEndian.AppendUint64([]byte(keyEntity), uint64(id))
+}
+
+func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities []chunk.BlockEntity) {
 	if len(blockEntities) == 0 {
 		batch.Delete(k.Sum(keyBlockEntities))
 		return
@@ -382,14 +404,9 @@ func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities ma
 
 	buf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian)
-	for pos, b := range blockEntities {
-		n, ok := b.(world.NBTer)
-		if !ok {
-			continue
-		}
-		data := n.EncodeNBT()
-		data["x"], data["y"], data["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
-		if err := enc.Encode(data); err != nil {
+	for _, b := range blockEntities {
+		b.Data["x"], b.Data["y"], b.Data["z"] = int32(b.Pos[0]), int32(b.Pos[1]), int32(b.Pos[2])
+		if err := enc.Encode(b.Data); err != nil {
 			db.conf.Log.Error("store block entities: encode NBT: " + err.Error())
 		}
 	}

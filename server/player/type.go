@@ -28,14 +28,13 @@ type Config struct {
 	Session            *session.Session
 }
 
-func (t Type) Init(conf any, data *world.EntityData) {
-	cfg, _ := conf.(Config)
-	locale, err := language.Parse(strings.Replace(cfg.Locale, "_", "-", 1))
+func (conf Config) Apply(data *world.EntityData) {
+	locale, err := language.Parse(strings.Replace(conf.Locale, "_", "-", 1))
 	if err != nil {
 		locale = language.BritishEnglish
 	}
-	data.Name = cfg.Name
-	data.Pos = cfg.Pos
+	data.Name = conf.Name
+	data.Pos = conf.Pos
 	data.Data = &playerData{
 		inv:               inventory.New(36, nil),
 		enderChest:        inventory.New(27, nil),
@@ -51,12 +50,12 @@ func (t Type) Init(conf any, data *world.EntityData) {
 		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 		heldSlot:          new(uint32),
 		gameMode:          world.GameModeSurvival,
-		skin:              cfg.Skin,
+		skin:              conf.Skin,
 		airSupplyTicks:    300,
 		maxAirSupplyTicks: 300,
 		enchantSeed:       rand.Int63(),
 		scale:             1.0,
-		s:                 cfg.Session,
+		s:                 conf.Session,
 	}
 }
 

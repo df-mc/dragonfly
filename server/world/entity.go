@@ -13,7 +13,6 @@ import (
 type AdvancedEntityType interface {
 	EntityType
 
-	Init(conf any, data *EntityData)
 	From(tx *Tx, handle *EntityHandle, data *EntityData) Entity
 }
 
@@ -28,9 +27,13 @@ type EntityHandle struct {
 	// HANDLER?? HANDLE WORLD CHANGE HERE
 }
 
-func NewEntity(t AdvancedEntityType, conf any) *EntityHandle {
+type EntityConfig interface {
+	Apply(data *EntityData)
+}
+
+func NewEntity(t AdvancedEntityType, conf EntityConfig) *EntityHandle {
 	handle := &EntityHandle{id: uuid.New(), t: t}
-	t.Init(conf, &handle.data)
+	conf.Apply(&handle.data)
 	return handle
 }
 

@@ -1,7 +1,9 @@
 package world
 
 import (
+	"encoding/binary"
 	"errors"
+	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -124,7 +126,7 @@ func (w *World) handleTransactions() {
 		case queuedTx := <-w.queue:
 			tx := &Tx{w: w}
 			queuedTx.f(tx)
-			queuedTx.c <- struct{}{}
+			close(queuedTx.c)
 		case <-w.closing:
 			w.running.Done()
 			return
@@ -403,8 +405,8 @@ func (w *World) buildStructure(pos cube.Pos, s Structure) {
 			c.SetBlock(0, 0, 0, 0, c.Block(0, 0, 0, 0)) // Make sure the heightmap is recalculated.
 			c.modified = true
 
-			// After setting all blocks of the structure within a single chunk, we show the new chunk to all
-			// viewers once, and unlock it.
+			// After setting all blocks of the structure within a single chunk,
+			// we show the new chunk to all viewers once.
 			for _, viewer := range c.viewers {
 				viewer.ViewChunk(chunkPos, c.Chunk, c.BlockEntities)
 			}
@@ -545,26 +547,27 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // The light value returned is a value in the range 0-15, where 0 means there is no light present, whereas
 // 15 means the block is fully lit.
 func (w *World) light(pos cube.Pos) uint8 {
-	if pos[1] < w.Range()[0] {
+	if pos[1] < w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > w.Range()[1] {
+	if pos[1] > w.ra[1] {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
 	return w.chunk(chunkPosFromBlockPos(pos)).Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 }
 
-// SkyLight returns the skylight level at the position passed. This light level is not influenced by blocks
-// that emit light, such as torches or glowstone. The light value, similarly to Light, is a value in the
-// range 0-15, where 0 means no light is present.
+// SkyLight returns the skylight level at the position passed. This light level
+// is not influenced by blocks that emit light, such as torches. The light
+// value, similarly to Light, is a value in the range 0-15, where 0 means no
+// light is present.
 func (w *World) skyLight(pos cube.Pos) uint8 {
-	if w == nil || pos[1] < w.Range()[0] {
+	if pos[1] < w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > w.Range()[1] {
+	if pos[1] > w.ra[1] {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
@@ -629,19 +632,13 @@ func (w *World) temperature(pos cube.Pos) float64 {
 		tempDrop = 1.0 / 600
 		seaLevel = 64
 	)
-	diff := pos[1] - seaLevel
-	if diff < 0 {
-		diff = 0
-	}
+	diff := max(pos[1]-seaLevel, 0)
 	return w.biome(pos).Temperature() - float64(diff)*tempDrop
 }
 
 // AddParticle spawns a particle at a given position in the world. Viewers that are viewing the chunk will be
 // shown the particle.
 func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
-	if w == nil {
-		return
-	}
 	p.Spawn(w, pos)
 	for _, viewer := range w.viewersOf(pos) {
 		viewer.ViewParticle(pos, p)
@@ -1097,25 +1094,10 @@ func (w *World) chunk(pos ChunkPos) *Column {
 	return c
 }
 
-// setChunk sets the chunk.Chunk passed at a specific ChunkPos without replacing any entities at that
-// position.
-//
-//lint:ignore U1000 This method is explicitly present to be used using compiler directives.
-func (w *World) setChunk(pos ChunkPos, c *chunk.Chunk, e map[cube.Pos]Block) {
-	if w == nil {
-		return
-	}
-	col := newColumn(c)
-	maps.Copy(col.BlockEntities, e)
-	if o, ok := w.chunks[pos]; ok {
-		col.viewers = o.viewers
-	}
-	w.chunks[pos] = col
-}
-
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
-	col, err := w.provider().LoadColumn(pos, w.conf.Dim)
+	column, err := w.provider().LoadColumn(pos, w.conf.Dim)
+	col := columnFrom(column, w)
 	switch {
 	case err == nil:
 		w.chunks[pos] = col
@@ -1136,16 +1118,18 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 	}
 }
 
-// calculateLight calculates the light in the chunk passed and spreads the light of any of the surrounding
-// neighbours if they have all chunks loaded around it as a result of the one passed.
+// calculateLight calculates the light in the chunk passed and spreads the
+// light of any surrounding neighbours if they have all chunks loaded around it
+// as a result of the one passed.
 func (w *World) calculateLight(centre ChunkPos) {
 	for x := int32(-1); x <= 1; x++ {
 		for z := int32(-1); z <= 1; z++ {
-			// For all the neighbours of this chunk, if they exist, check if all neighbours of that chunk
-			// now exist because of this one.
+			// For all the neighbours of this chunk, if they exist, check if all
+			// neighbours of that chunk now exist because of this one.
 			pos := ChunkPos{centre[0] + x, centre[1] + z}
 			if _, ok := w.chunks[pos]; ok {
-				// Attempt to spread the light of all neighbours into the ones surrounding them.
+				// Attempt to spread the light of all neighbours into the
+				// surrounding ones.
 				w.spreadLight(pos)
 			}
 		}
@@ -1176,7 +1160,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 func (w *World) saveChunk(tx *Tx, pos ChunkPos, c *Column, closeEntities bool) {
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
-		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
+		if err := w.provider().StoreColumn(pos, w.conf.Dim, columnTo(c, tx)); err != nil {
 			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 		}
 	}
@@ -1230,4 +1214,62 @@ type Column struct {
 // newColumn returns a new Column wrapper around the chunk.Chunk passed.
 func newColumn(c *chunk.Chunk) *Column {
 	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}}
+}
+
+func columnTo(col *Column, tx *Tx) *chunk.Column {
+	c := &chunk.Column{
+		Chunk:         col.Chunk,
+		Entities:      make([]chunk.Entity, 0, len(col.Entities)),
+		BlockEntities: make([]chunk.BlockEntity, 0, len(col.BlockEntities)),
+	}
+	for _, e := range col.Entities {
+		st := e.t.(SaveableEntityType)
+		data := st.EncodeNBT(e.Entity(tx))
+		data["identifier"] = st.EncodeEntity()
+		c.Entities = append(c.Entities, chunk.Entity{ID: int64(binary.LittleEndian.Uint64(e.id[8:])), Data: data})
+	}
+	for pos, be := range col.BlockEntities {
+		c.BlockEntities = append(c.BlockEntities, chunk.BlockEntity{Pos: pos, Data: be.(NBTer).EncodeNBT()})
+	}
+	return c
+}
+
+func columnFrom(c *chunk.Column, w *World) *Column {
+	col := &Column{
+		Chunk:         c.Chunk,
+		Entities:      make([]*EntityHandle, 0, len(c.Entities)),
+		BlockEntities: make(map[cube.Pos]Block, len(c.BlockEntities)),
+	}
+	for _, e := range c.Entities {
+		eid, ok := e.Data["identifier"].(string)
+		if !ok {
+			w.conf.Log.Error("read column: entity without identifier field", "ID", e.ID)
+			continue
+		}
+		t, ok := w.conf.Entities.Lookup(eid)
+		if !ok {
+			w.conf.Log.Error("read column: unknown entity type", "ID", e.ID, "type", eid)
+			continue
+		}
+		ent := NewEntity(t, t.(SaveableEntityType).DecodeNBT(e.Data)) // TODO: Figure out what to do with this.
+		ent.id = uuid.UUID{}
+		binary.LittleEndian.PutUint64(ent.id[8:], uint64(e.ID))
+		col.Entities = append(col.Entities, ent)
+	}
+	for _, be := range c.BlockEntities {
+		rid := c.Chunk.Block(uint8(be.Pos[0]), int16(be.Pos[1]), uint8(be.Pos[2]), 0)
+		b, ok := BlockByRuntimeID(rid)
+		if !ok {
+			w.conf.Log.Error("read column: no block with runtime ID", "ID", rid)
+			continue
+		}
+		nb, ok := b.(NBTer)
+		if !ok {
+			w.conf.Log.Error("read column: block with nbt does not implement NBTer", "block", fmt.Sprintf("%#v", b))
+			continue
+		}
+		col.BlockEntities[be.Pos] = nb.DecodeNBT(be.Data).(Block)
+	}
+
+	return col
 }

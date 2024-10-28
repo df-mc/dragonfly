@@ -74,7 +74,7 @@ func (s *Session) closeCurrentContainer(tx *world.Tx) {
 
 // EmptyUIInventory attempts to move all items in the UI inventory to the player's main inventory. If the main inventory
 // is full, the items are dropped on the ground instead.
-func (s *Session) EmptyUIInventory() {
+func (s *Session) EmptyUIInventory(c Controllable) {
 	if s == Nop {
 		return
 	}
@@ -82,15 +82,15 @@ func (s *Session) EmptyUIInventory() {
 		if n, err := s.inv.AddItem(i); err != nil {
 			// We couldn't add the item to the main inventory (probably because
 			// it was full), so we drop it instead.
-			s.c.Drop(i.Grow(i.Count() - n))
+			c.Drop(i.Grow(i.Count() - n))
 		}
 	}
 }
 
 // SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
-func (s *Session) SendRespawn(pos mgl64.Vec3) {
+func (s *Session) SendRespawn(pos mgl64.Vec3, c Controllable) {
 	s.writePacket(&packet.Respawn{
-		Position:        vec64To32(pos.Add(entityOffset(s.c))),
+		Position:        vec64To32(pos.Add(entityOffset(c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
@@ -520,7 +520,7 @@ func (s *Session) EnableInstantRespawn(enable bool) {
 
 // addToPlayerList adds the player of a session to the player list of this session. It will be shown in the
 // in-game pause menu screen.
-func (s *Session) addToPlayerList(session *Session) {
+func (s *Session) addToPlayerList(session *Session, c Controllable) {
 	runtimeID := uint64(1)
 	s.entityMutex.Lock()
 	if session != s {
@@ -663,18 +663,18 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) func(slot in
 }
 
 // SetHeldSlot sets the currently held hotbar slot.
-func (s *Session) SetHeldSlot(slot int) error {
+func (s *Session) SetHeldSlot(slot int, tx *world.Tx, c Controllable) error {
 	if slot > 8 {
 		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
 
-	s.heldSlot.Store(uint32(slot))
+	*s.heldSlot = uint32(slot)
 
-	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-		viewer.ViewEntityItems(s.c)
+	for _, viewer := range tx.Viewers(c.Position()) {
+		viewer.ViewEntityItems(c)
 	}
 
-	mainHand, _ := s.c.HeldItems()
+	mainHand, _ := c.HeldItems()
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: selfEntityRuntimeID,
 		NewItem:         instanceFromItem(mainHand),
