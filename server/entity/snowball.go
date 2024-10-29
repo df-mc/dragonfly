@@ -10,7 +10,7 @@ import (
 
 // NewSnowball creates a snowball entity at a position with an owner entity.
 func NewSnowball(pos mgl64.Vec3, owner world.Entity) *Ent {
-	return Config{Behaviour: snowballConf.New(owner)}.New(SnowballType{}, pos)
+	return Config{Behaviour: snowballConf.New()}.New(SnowballType{}, pos)
 }
 
 var snowballConf = ProjectileBehaviourConfig{

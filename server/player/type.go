@@ -33,8 +33,7 @@ func (conf Config) Apply(data *world.EntityData) {
 	if err != nil {
 		locale = language.BritishEnglish
 	}
-	data.Name = conf.Name
-	data.Pos = conf.Pos
+	data.Name, data.Pos = conf.Name, conf.Pos
 	data.Data = &playerData{
 		inv:               inventory.New(36, nil),
 		enderChest:        inventory.New(27, nil),
@@ -59,7 +58,7 @@ func (conf Config) Apply(data *world.EntityData) {
 	}
 }
 
-func (t Type) From(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+func (t Type) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	pd := data.Data.(*playerData)
 
 	// With session:
@@ -111,3 +110,5 @@ func (Type) BBox(e world.Entity) cube.BBox {
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
 	}
 }
+func (t Type) DecodeNBT(map[string]any, *world.EntityData) {}
+func (t Type) EncodeNBT(*world.EntityData) map[string]any  { return nil }

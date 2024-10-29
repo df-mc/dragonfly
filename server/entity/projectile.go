@@ -17,6 +17,7 @@ import (
 // ProjectileBehaviourConfig.New() creates a ProjectileBehaviour using these
 // settings.
 type ProjectileBehaviourConfig struct {
+	Owner world.Entity
 	// Gravity is the amount of Y velocity subtracted every tick.
 	Gravity float64
 	// Drag is used to reduce all axes of the velocity every tick. Velocity is
@@ -74,15 +75,22 @@ type ProjectileBehaviourConfig struct {
 	// PickupItem is the item that is given to a player when it picks up this
 	// projectile. If left as an empty item.Stack, no item is given upon pickup.
 	PickupItem item.Stack
+	// CollisionPosition specifies the position that the projectile is stuck
+	// in. If non-empty, the entity will not move.
+	CollisionPosition cube.Pos
+}
+
+func (conf ProjectileBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
 }
 
 // New creates a new ProjectileBehaviour using conf. The owner passed may be nil
 // if the projectile does not have one.
-func (conf ProjectileBehaviourConfig) New(owner world.Entity) *ProjectileBehaviour {
+func (conf ProjectileBehaviourConfig) New() *ProjectileBehaviour {
 	if conf.ParticleCount == 0 && conf.Particle != nil {
 		conf.ParticleCount = 1
 	}
-	return &ProjectileBehaviour{conf: conf, owner: owner, mc: &MovementComputer{
+	return &ProjectileBehaviour{conf: conf, collided: conf.CollisionPosition != cube.Pos{}, collisionPos: conf.CollisionPosition, mc: &MovementComputer{
 		Gravity:           conf.Gravity,
 		Drag:              conf.Drag,
 		DragBeforeGravity: true,
@@ -93,7 +101,6 @@ func (conf ProjectileBehaviourConfig) New(owner world.Entity) *ProjectileBehavio
 // may be configured using ProjectileBehaviourConfig.
 type ProjectileBehaviour struct {
 	conf        ProjectileBehaviourConfig
-	owner       world.Entity
 	mc          *MovementComputer
 	ageCollided int
 	close       bool
@@ -104,7 +111,7 @@ type ProjectileBehaviour struct {
 
 // Owner returns the owner of the projectile.
 func (lt *ProjectileBehaviour) Owner() world.Entity {
-	return lt.owner
+	return lt.conf.Owner
 }
 
 // Explode adds velocity to a projectile to blast it away from the explosion's
@@ -259,7 +266,7 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 // entity and knocks it back. Additionally, it applies any potion effects and
 // fire if applicable.
 func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec3) {
-	src := ProjectileDamageSource{Projectile: e, Owner: lt.owner}
+	src := ProjectileDamageSource{Projectile: e, Owner: lt.conf.Owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
@@ -324,6 +331,6 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) func(other world.Entity) bool {
 	return func(other world.Entity) (ignored bool) {
 		g, ok := other.(interface{ GameMode() world.GameMode })
 		_, living := other.(Living)
-		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.age < time.Second/4 && lt.owner == other)
+		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other)
 	}
 }

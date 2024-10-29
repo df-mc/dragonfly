@@ -13,7 +13,7 @@ import (
 
 // NewBottleOfEnchanting ...
 func NewBottleOfEnchanting(pos mgl64.Vec3, owner world.Entity) *Ent {
-	return Config{Behaviour: bottleOfEnchantingConf.New(owner)}.New(BottleOfEnchantingType{}, pos)
+	return Config{Behaviour: bottleOfEnchantingConf.New()}.New(BottleOfEnchantingType{}, pos)
 }
 
 var bottleOfEnchantingConf = ProjectileBehaviourConfig{

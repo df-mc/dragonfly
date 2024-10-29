@@ -22,6 +22,10 @@ type StationaryBehaviourConfig struct {
 	Tick func(e *Ent, tx *world.Tx)
 }
 
+func (conf StationaryBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
+}
+
 // New creates a StationaryBehaviour using the settings provided in conf.
 func (conf StationaryBehaviourConfig) New() *StationaryBehaviour {
 	if conf.ExistenceDuration == 0 {

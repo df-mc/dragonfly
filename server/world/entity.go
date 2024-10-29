@@ -1,6 +1,7 @@
 package world
 
 import (
+	"encoding/binary"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -10,15 +11,32 @@ import (
 	"time"
 )
 
-type AdvancedEntityType interface {
-	EntityType
+// EntityType is the type of Entity. It specifies the name, encoded entity
+// ID and bounding box of an Entity.
+type EntityType interface {
+	Open(tx *Tx, handle *EntityHandle, data *EntityData) Entity
 
-	From(tx *Tx, handle *EntityHandle, data *EntityData) Entity
+	// EncodeEntity converts the entity to its encoded representation: It
+	// returns the type of the Minecraft entity, for example
+	// 'minecraft:falling_block'.
+	EncodeEntity() string
+	// BBox returns the bounding box of an Entity with this EntityType.
+	BBox(e Entity) cube.BBox
+	// DecodeNBT reads the fields from the NBT data map passed and converts it
+	// to an Entity of the same EntityType.
+	DecodeNBT(m map[string]any, data *EntityData)
+	// EncodeNBT encodes the Entity of the same EntityType passed to a map of
+	// properties that can be encoded to NBT.
+	EncodeNBT(data *EntityData) map[string]any
+}
+
+type EntityConfig interface {
+	Apply(data *EntityData)
 }
 
 type EntityHandle struct {
 	id uuid.UUID
-	t  AdvancedEntityType
+	t  EntityType
 
 	w atomic.Pointer[World]
 
@@ -27,13 +45,39 @@ type EntityHandle struct {
 	// HANDLER?? HANDLE WORLD CHANGE HERE
 }
 
-type EntityConfig interface {
-	Apply(data *EntityData)
+type EntitySpawnOpts struct {
+	Position mgl64.Vec3
+
+	Rotation cube.Rotation
+
+	Velocity mgl64.Vec3
+
+	ID uuid.UUID
 }
 
-func NewEntity(t AdvancedEntityType, conf EntityConfig) *EntityHandle {
-	handle := &EntityHandle{id: uuid.New(), t: t}
+func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
+	if opts.ID == uuid.Nil {
+		// Generate a new UUID with only the upper 8 bytes filled. This UUID
+		// needs to be translatable to an int64.
+		opts.ID = uuid.New()
+		clear(opts.ID[:8])
+	}
+	handle := &EntityHandle{id: opts.ID, t: t}
+	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	conf.Apply(&handle.data)
+	return handle
+}
+
+func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
+	var opts EntitySpawnOpts
+	return opts.New(t, conf)
+}
+
+func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
+	handle := &EntityHandle{t: t}
+	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
+	handle.decodeNBT(data)
+	t.DecodeNBT(data, &handle.data)
 	return handle
 }
 
@@ -47,11 +91,15 @@ type EntityData struct {
 	Data any
 }
 
+func (e *EntityHandle) Type() EntityType {
+	return e.t
+}
+
 func (e *EntityHandle) Entity(tx *Tx) Entity {
 	if e.w.Load() != tx.World() {
 		panic("can't load entity with Tx of different world")
 	}
-	return e.t.From(tx, e, &e.data)
+	return e.t.Open(tx, e, &e.data)
 }
 
 func (e *EntityHandle) UUID() uuid.UUID {
@@ -64,6 +112,23 @@ func (e *EntityHandle) World() *World {
 
 func (e *EntityHandle) Handle() *EntityHandle {
 	return e
+}
+
+func (e *EntityHandle) decodeNBT(m map[string]any) {
+	e.data.Pos = readVec3(m, "Pos")
+	e.data.Vel = readVec3(m, "Motion")
+	e.data.Rot = readRotation(m)
+	e.data.FireDuration = time.Duration(readInt16(m, "Fire")) * time.Second / 20
+}
+
+func (e *EntityHandle) encodeNBT(_ *Tx) map[string]any {
+	return map[string]any{
+		"Pos":    []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
+		"Motion": []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
+		"Yaw":    float32(e.data.Rot[0]),
+		"Pitch":  float32(e.data.Rot[1]),
+		"Fire":   int16(e.data.FireDuration.Seconds() * 20),
+	}
 }
 
 // Entity represents an entity in the world, typically an object that may be moved around and can be
@@ -85,29 +150,6 @@ type Entity interface {
 	// World returns the current world of the entity. This is always the world that the entity can actually be
 	// found in.
 	World() *World
-}
-
-// EntityType is the type of Entity. It specifies the name, encoded entity
-// ID and bounding box of an Entity.
-type EntityType interface {
-	// EncodeEntity converts the entity to its encoded representation: It
-	// returns the type of the Minecraft entity, for example
-	// 'minecraft:falling_block'.
-	EncodeEntity() string
-	// BBox returns the bounding box of an Entity with this EntityType.
-	BBox(e Entity) cube.BBox
-}
-
-// SaveableEntityType is an EntityType that may be saved to disk by decoding
-// and encoding from/to NBT.
-type SaveableEntityType interface {
-	EntityType
-	// DecodeNBT reads the fields from the NBT data map passed and converts it
-	// to an Entity of the same EntityType.
-	DecodeNBT(m map[string]any) Entity
-	// EncodeNBT encodes the Entity of the same EntityType passed to a map of
-	// properties that can be encoded to NBT.
-	EncodeNBT(e Entity) map[string]any
 }
 
 // TickerEntity represents an entity that has a Tick method which should be called every time the entity is
@@ -158,18 +200,18 @@ type EntityRegistry struct {
 // EntityRegistryConfig must be filled out for the behaviour of these blocks and
 // items not to fail.
 type EntityRegistryConfig struct {
-	Item               func(it any, pos, vel mgl64.Vec3) Entity
-	FallingBlock       func(bl Block, pos mgl64.Vec3) Entity
-	TNT                func(pos mgl64.Vec3, fuse time.Duration, igniter Entity) Entity
-	BottleOfEnchanting func(pos, vel mgl64.Vec3, owner Entity) Entity
-	Arrow              func(pos, vel mgl64.Vec3, rot cube.Rotation, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) Entity
-	Egg                func(pos, vel mgl64.Vec3, owner Entity) Entity
-	EnderPearl         func(pos, vel mgl64.Vec3, owner Entity) Entity
-	Firework           func(pos mgl64.Vec3, rot cube.Rotation, attached bool, firework Item, owner Entity) Entity
-	LingeringPotion    func(pos, vel mgl64.Vec3, t any, owner Entity) Entity
-	Snowball           func(pos, vel mgl64.Vec3, owner Entity) Entity
-	SplashPotion       func(pos, vel mgl64.Vec3, t any, owner Entity) Entity
-	Lightning          func(pos mgl64.Vec3) Entity
+	Item               func(opts EntitySpawnOpts, it any) *EntityHandle
+	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
+	TNT                func(opts EntitySpawnOpts, fuse time.Duration, igniter Entity) *EntityHandle
+	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
+	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
+	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
+	EnderPearl         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
+	Firework           func(opts EntitySpawnOpts, attached bool, firework Item, owner Entity) *EntityHandle
+	LingeringPotion    func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
+	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
+	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
+	Lightning          func(opts EntitySpawnOpts) *EntityHandle
 }
 
 // New creates an EntityRegistry using conf and the EntityTypes passed.
@@ -201,4 +243,38 @@ func (reg EntityRegistry) Lookup(name string) (EntityType, bool) {
 // Types returns all EntityTypes passed upon construction of the EntityRegistry.
 func (reg EntityRegistry) Types() []EntityType {
 	return maps.Values(reg.ent)
+}
+
+func readVec3(x map[string]any, k string) mgl64.Vec3 {
+	if i, ok := x[k].([]any); ok {
+		if len(i) != 3 {
+			return mgl64.Vec3{}
+		}
+		var v mgl64.Vec3
+		for index, f := range i {
+			f32, _ := f.(float32)
+			v[index] = float64(f32)
+		}
+		return v
+	} else if i, ok := x[k].([]float32); ok {
+		if len(i) != 3 {
+			return mgl64.Vec3{}
+		}
+		return mgl64.Vec3{float64(i[0]), float64(i[1]), float64(i[2])}
+	}
+	return mgl64.Vec3{}
+}
+
+func readFloat32(m map[string]any, k string) float32 {
+	v, _ := m[k].(float32)
+	return v
+}
+
+func readRotation(m map[string]any) cube.Rotation {
+	return cube.Rotation{float64(readFloat32(m, "Yaw")), float64(readFloat32(m, "Pitch"))}
+}
+
+func readInt16(m map[string]any, k string) int16 {
+	v, _ := m[k].(int16)
+	return v
 }

@@ -212,6 +212,11 @@ func BlockByRuntimeID(rid uint32) (Block, bool) {
 	return blocks[rid], true
 }
 
+func blockByRuntimeIDOrAir(rid uint32) Block {
+	bl, _ := BlockByRuntimeID(rid)
+	return bl
+}
+
 // BlockByName attempts to return a Block by its name and properties. If not found, the bool returned is
 // false.
 func BlockByName(name string, properties map[string]any) (Block, bool) {
@@ -229,8 +234,7 @@ func CustomBlocks() map[string]CustomBlock {
 
 // air returns an air block.
 func air() Block {
-	b, _ := BlockByRuntimeID(airRID)
-	return b
+	return blocks[airRID]
 }
 
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,

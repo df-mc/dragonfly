@@ -20,7 +20,7 @@ func NewSplashPotion(pos mgl64.Vec3, owner world.Entity, t potion.Potion) *Ent {
 	conf.Potion = t
 	conf.Particle = particle.Splash{Colour: colour}
 	conf.Hit = potionSplash(1, t, false)
-	return Config{Behaviour: conf.New(owner)}.New(SplashPotionType{}, pos)
+	return Config{Behaviour: conf.New()}.New(SplashPotionType{}, pos)
 }
 
 var splashPotionConf = ProjectileBehaviourConfig{
@@ -49,6 +49,6 @@ func (SplashPotionType) EncodeNBT(e world.Entity) map[string]any {
 	return map[string]any{
 		"Pos":      nbtconv.Vec3ToFloat32Slice(pot.Position()),
 		"Motion":   nbtconv.Vec3ToFloat32Slice(pot.Velocity()),
-		"PotionId": int32(pot.conf.Behaviour.(*ProjectileBehaviour).conf.Potion.Uint8()),
+		"PotionId": int32(pot.Behaviour().(*ProjectileBehaviour).conf.Potion.Uint8()),
 	}
 }

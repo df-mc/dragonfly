@@ -13,23 +13,22 @@ import (
 // positioned at the position passed. Lightning is a lethal element to
 // thunderstorms. Lightning momentarily increases the skylight's brightness to
 // slightly greater than full daylight.
-func NewLightning(pos mgl64.Vec3) *Ent {
-	return NewLightningWithDamage(pos, 5, true, time.Second*8)
+func NewLightning(opts world.EntitySpawnOpts) *world.EntityHandle {
+	return NewLightningWithDamage(opts, 5, true, time.Second*8)
 }
 
 // NewLightningWithDamage creates a new lightning entities using the damage and
 // fire properties passed.
-func NewLightningWithDamage(pos mgl64.Vec3, dmg float64, blockFire bool, entityFireDuration time.Duration) *Ent {
-	state := &lightningState{
+func NewLightningWithDamage(opts world.EntitySpawnOpts, dmg float64, blockFire bool, entityFireDuration time.Duration) *world.EntityHandle {
+	conf := lightningConf
+	conf.Tick = (&lightningState{
 		Damage:             dmg,
 		EntityFireDuration: entityFireDuration,
 		BlockFire:          blockFire,
 		state:              2,
 		lifetime:           rand.Intn(4) + 1,
-	}
-	conf := lightningConf
-	conf.Tick = state.tick
-	return Config{Behaviour: conf.New()}.New(LightningType{}, pos)
+	}).tick
+	return opts.New(LightningType{}, conf)
 }
 
 var lightningConf = StationaryBehaviourConfig{SpawnSounds: []world.Sound{sound.Explosion{}, sound.Thunder{}}}
@@ -113,9 +112,10 @@ func fire() world.Block {
 // LightningType is a world.EntityType implementation for Lightning.
 type LightningType struct{}
 
-func (LightningType) EncodeEntity() string                  { return "minecraft:lightning_bolt" }
-func (LightningType) BBox(world.Entity) cube.BBox           { return cube.BBox{} }
-func (LightningType) DecodeNBT(map[string]any) world.Entity { return nil }
-func (LightningType) EncodeNBT(world.Entity) map[string]any {
-	return map[string]any{}
+func (t LightningType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+	return &Ent{tx: tx, handle: handle, data: data}
 }
+func (t LightningType) DecodeNBT(map[string]any, *world.EntityData) {}
+func (t LightningType) EncodeNBT(*world.EntityData) map[string]any  { return nil }
+func (LightningType) EncodeEntity() string                          { return "minecraft:lightning_bolt" }
+func (LightningType) BBox(world.Entity) cube.BBox                   { return cube.BBox{} }

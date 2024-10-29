@@ -465,7 +465,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		HandleStop:     srv.handleSessionClose,
 	}.New(conn, w)
 
-	p := world.NewEntity(player.Type{}, player.Config{
+	p := world.EntitySpawnOpts{Position: pos, ID: id}.New(player.Type{}, player.Config{
 		Name:    conn.IdentityData().DisplayName,
 		XUID:    conn.IdentityData().XUID,
 		UUID:    id,
@@ -475,6 +475,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		Pos:     pos,
 		Session: s,
 	})
+	// TODO: Set player to session here.
 	srv.pwg.Add(1)
 	return s
 }

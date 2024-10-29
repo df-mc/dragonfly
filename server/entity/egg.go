@@ -11,7 +11,7 @@ import (
 // NewEgg creates an Egg entity. Egg is as a throwable entity that can be used
 // to spawn chicks.
 func NewEgg(pos mgl64.Vec3, owner world.Entity) *Ent {
-	return Config{Behaviour: eggConf.New(owner)}.New(EggType{}, pos)
+	return Config{Behaviour: eggConf.New()}.New(EggType{}, pos)
 }
 
 // TODO: Spawn chicken(e) 12.5% of the time.

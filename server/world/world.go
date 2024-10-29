@@ -144,28 +144,33 @@ func (w *World) EntityRegistry() EntityRegistry {
 // loaded, or generated if it could not be found in the world save, and the block returned. Chunks will be
 // loaded synchronously.
 func (w *World) block(pos cube.Pos) Block {
-	if pos.OutOfBounds(w.Range()) {
+	return w.blockInChunk(w.chunk(chunkPosFromBlockPos(pos)), pos)
+}
+
+// blockInChunk reads a block from the world at the position passed. The block
+// is assumed to be in the chunk passed, which is also assumed to be locked
+// already or otherwise not yet accessible.
+func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
+	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
 		return air()
 	}
-	c := w.chunk(chunkPosFromBlockPos(pos))
-
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
-		// The block was also a block entity, so we look it up in the block entity map.
-		if nbtB, ok := c.BlockEntities[pos]; ok {
-			return nbtB
+		// The block was also a block entity, so we look it up in the map.
+		if b, ok := c.BlockEntities[pos]; ok {
+			return b
 		}
-		b, _ := BlockByRuntimeID(rid)
-		nbtB := b.(NBTer).DecodeNBT(map[string]any{}).(Block)
+		// Despite being a block with NBT, the block didn't actually have any
+		// stored NBT yet. We add it here and update the block.
+		nbtB := blockByRuntimeIDOrAir(rid).(NBTer).DecodeNBT(map[string]any{}).(Block)
 		c.BlockEntities[pos] = nbtB
 		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, nbtB, 0)
 		}
 		return nbtB
 	}
-	b, _ := BlockByRuntimeID(rid)
-	return b
+	return blockByRuntimeIDOrAir(rid)
 }
 
 // Biome reads the biome at the position passed. If a chunk is not yet loaded at that position, the chunk is
@@ -181,24 +186,6 @@ func (w *World) biome(pos cube.Pos) Biome {
 	if !ok {
 		w.conf.Log.Error("biome not found by ID", "ID", id)
 	}
-	return b
-}
-
-// blockInChunk reads a block from the world at the position passed. The block is assumed to be in the chunk
-// passed, which is also assumed to be locked already or otherwise not yet accessible.
-func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
-	if pos.OutOfBounds(w.Range()) {
-		// Fast way out.
-		return air()
-	}
-	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	if nbtBlocks[rid] {
-		// The block was also a block entity, so we look it up in the block entity map.
-		if b, ok := c.BlockEntities[pos]; ok {
-			return b
-		}
-	}
-	b, _ := BlockByRuntimeID(rid)
 	return b
 }
 
@@ -252,7 +239,7 @@ type SetOpts struct {
 // SetBlock should be avoided in situations where performance is critical when needing to set a lot of blocks
 // to the world. BuildStructure may be used instead.
 func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
-	if w == nil || pos.OutOfBounds(w.Range()) {
+	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
 	}
@@ -288,10 +275,10 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 				c.SetBlock(x, y, z, 0, li)
 				c.SetBlock(x, y, z, 1, airRID)
 				secondLayer = air()
-				b, _ = BlockByRuntimeID(li)
+				b = blockByRuntimeIDOrAir(li)
 			}
 		} else if liquidDisplacingBlocks[rid] && liquidBlocks[before] {
-			l, _ := BlockByRuntimeID(before)
+			l := blockByRuntimeIDOrAir(before)
 			if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
 				c.SetBlock(x, y, z, 1, before)
 				secondLayer = l
@@ -1223,9 +1210,9 @@ func columnTo(col *Column, tx *Tx) *chunk.Column {
 		BlockEntities: make([]chunk.BlockEntity, 0, len(col.BlockEntities)),
 	}
 	for _, e := range col.Entities {
-		st := e.t.(SaveableEntityType)
-		data := st.EncodeNBT(e.Entity(tx))
-		data["identifier"] = st.EncodeEntity()
+		data := e.encodeNBT(tx)
+		maps.Copy(data, e.t.EncodeNBT(&e.data))
+		data["identifier"] = e.t.EncodeEntity()
 		c.Entities = append(c.Entities, chunk.Entity{ID: int64(binary.LittleEndian.Uint64(e.id[8:])), Data: data})
 	}
 	for pos, be := range col.BlockEntities {
@@ -1251,10 +1238,7 @@ func columnFrom(c *chunk.Column, w *World) *Column {
 			w.conf.Log.Error("read column: unknown entity type", "ID", e.ID, "type", eid)
 			continue
 		}
-		ent := NewEntity(t, t.(SaveableEntityType).DecodeNBT(e.Data)) // TODO: Figure out what to do with this.
-		ent.id = uuid.UUID{}
-		binary.LittleEndian.PutUint64(ent.id[8:], uint64(e.ID))
-		col.Entities = append(col.Entities, ent)
+		col.Entities = append(col.Entities, entityFromData(t, e.ID, e.Data))
 	}
 	for _, be := range c.BlockEntities {
 		rid := c.Chunk.Block(uint8(be.Pos[0]), int16(be.Pos[1]), uint8(be.Pos[2]), 0)

@@ -13,7 +13,7 @@ import (
 // NewEnderPearl creates an EnderPearl entity. EnderPearl is a smooth, greenish-
 // blue item used to teleport.
 func NewEnderPearl(pos mgl64.Vec3, owner world.Entity) *Ent {
-	return Config{Behaviour: enderPearlConf.New(owner)}.New(EnderPearlType{}, pos)
+	return Config{Behaviour: enderPearlConf.New()}.New(EnderPearlType{}, pos)
 }
 
 var enderPearlConf = ProjectileBehaviourConfig{
