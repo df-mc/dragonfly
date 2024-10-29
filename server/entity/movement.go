@@ -124,7 +124,7 @@ func (c *MovementComputer) checkCollision(tx *world.Tx, e world.Entity, pos, vel
 
 	// Entities only ever have a single bounding box.
 	entityBBox := e.Type().BBox(e).Translate(pos)
-	blocks := blockBBoxsAround(tx, e, entityBBox.Extend(vel))
+	blocks := blockBBoxsAround(tx, entityBBox.Extend(vel))
 
 	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
 		// First we move the entity BBox on the Y axis.
@@ -170,7 +170,7 @@ func (c *MovementComputer) checkCollision(tx *world.Tx, e world.Entity, pos, vel
 
 // blockBBoxsAround returns all blocks around the entity passed, using the BBox passed to make a prediction of
 // what blocks need to have their BBox returned.
-func blockBBoxsAround(tx *world.Tx, e world.Entity, box cube.BBox) []cube.BBox {
+func blockBBoxsAround(tx *world.Tx, box cube.BBox) []cube.BBox {
 	grown := box.Grow(0.25)
 	min, max := grown.Min(), grown.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))

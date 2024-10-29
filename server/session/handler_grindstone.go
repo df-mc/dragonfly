@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
@@ -60,7 +59,6 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session, tx *world.Tx
 	}
 
 	for _, o := range entity.NewExperienceOrbs(entity.EyePosition(c), experienceFromEnchantments(resultStack)) {
-		o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 		tx.AddEntity(o)
 	}
 

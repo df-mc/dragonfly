@@ -648,8 +648,7 @@ func (w *World) playSound(pos mgl64.Vec3, s Sound) {
 // all viewers of the world that have the chunk of the entity loaded.
 // If the chunk that the entity is in is not yet loaded, it will first be loaded.
 // If the entity passed to AddEntity is currently in a world, it is first removed from that world.
-func (w *World) addEntity(ent Entity) {
-	e := ent.Handle()
+func (w *World) addEntity(tx *Tx, e *EntityHandle) Entity {
 	e.w.Store(w)
 
 	pos := chunkPosFromVec3(e.data.Pos)
@@ -658,11 +657,13 @@ func (w *World) addEntity(ent Entity) {
 	c := w.chunk(pos)
 	c.Entities, c.modified = append(c.Entities, e), true
 
+	ent := e.Entity(tx)
 	for _, v := range c.viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(ent, v)
 	}
 	w.Handler().HandleEntitySpawn(ent)
+	return ent
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity

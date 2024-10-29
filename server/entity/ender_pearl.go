@@ -3,7 +3,6 @@ package entity
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -12,8 +11,10 @@ import (
 
 // NewEnderPearl creates an EnderPearl entity. EnderPearl is a smooth, greenish-
 // blue item used to teleport.
-func NewEnderPearl(pos mgl64.Vec3, owner world.Entity) *Ent {
-	return Config{Behaviour: enderPearlConf.New()}.New(EnderPearlType{}, pos)
+func NewEnderPearl(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
+	conf := enderPearlConf
+	conf.Owner = owner
+	return opts.New(EnderPearlType{}, conf)
 }
 
 var enderPearlConf = ProjectileBehaviourConfig{
@@ -43,21 +44,15 @@ func teleport(e *Ent, tx *world.Tx, target trace.Result) {
 // EnderPearlType is a world.EntityType implementation for EnderPearl.
 type EnderPearlType struct{}
 
+func (t EnderPearlType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+	return &Ent{tx: tx, handle: handle, data: data}
+}
+
 func (EnderPearlType) EncodeEntity() string { return "minecraft:ender_pearl" }
 func (EnderPearlType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
-
-func (EnderPearlType) DecodeNBT(m map[string]any) world.Entity {
-	ep := NewEnderPearl(nbtconv.Vec3(m, "Pos"), nil)
-	ep.vel = nbtconv.Vec3(m, "Motion")
-	return ep
+func (EnderPearlType) DecodeNBT(_ map[string]any, data *world.EntityData) {
+	data.Data = enderPearlConf.New()
 }
-
-func (EnderPearlType) EncodeNBT(e world.Entity) map[string]any {
-	ep := e.(*Ent)
-	return map[string]any{
-		"Pos":    nbtconv.Vec3ToFloat32Slice(ep.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(ep.Velocity()),
-	}
-}
+func (EnderPearlType) EncodeNBT(*world.EntityData) map[string]any { return nil }

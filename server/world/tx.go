@@ -90,8 +90,8 @@ func (tx *Tx) PlaySound(pos mgl64.Vec3, s Sound) {
 	tx.World().playSound(pos, s)
 }
 
-func (tx *Tx) AddEntity(e Entity) {
-	tx.World().addEntity(e)
+func (tx *Tx) AddEntity(e *EntityHandle) Entity {
+	return tx.World().addEntity(tx, e)
 }
 
 func (tx *Tx) RemoveEntity(e Entity) {

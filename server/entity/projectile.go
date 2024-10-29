@@ -117,7 +117,7 @@ func (lt *ProjectileBehaviour) Owner() world.Entity {
 // Explode adds velocity to a projectile to blast it away from the explosion's
 // source.
 func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
-	e.vel = e.vel.Add(e.pos.Sub(src).Normalize().Mul(impact))
+	e.data.Vel = e.Velocity().Add(e.Position().Sub(src).Normalize().Mul(impact))
 }
 
 // Potion returns the potion.Potion that is applied to an entity if hit by the
@@ -141,21 +141,17 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		return nil
 	}
 
-	e.mu.Lock()
 	if lt.collided && lt.tickAttached(e, tx) {
-		e.mu.Unlock()
-
 		if lt.ageCollided > 1200 {
 			lt.close = true
 		}
 		return nil
 	}
-	before, vel := e.pos, e.vel
+	before, vel := e.Position(), e.Velocity()
 	m, result := lt.tickMovement(e, tx)
-	e.pos, e.vel = m.pos, m.vel
+	e.data.Pos, e.data.Vel = m.pos, m.vel
 
 	lt.collisionPos, lt.collided, lt.ageCollided = cube.Pos{}, false, 0
-	e.mu.Unlock()
 
 	if result == nil {
 		return m
@@ -176,7 +172,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
 		if t, ok := tx.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
-			t.Ignite(bpos, tx, e)
+			t.Ignite(bpos, tx)
 		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m, tx)
@@ -195,7 +191,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 // projectile is still attached to a block and if it can be picked up.
 func (lt *ProjectileBehaviour) tickAttached(e *Ent, tx *world.Tx) bool {
 	boxes := tx.Block(lt.collisionPos).Model().BBox(lt.collisionPos, tx)
-	box := e.Type().BBox(e).Translate(e.pos)
+	box := e.Type().BBox(e).Translate(e.Position())
 
 	for _, bb := range boxes {
 		if box.IntersectsWith(bb.Translate(lt.collisionPos.Vec3()).Grow(0.05)) {
@@ -212,7 +208,7 @@ func (lt *ProjectileBehaviour) tickAttached(e *Ent, tx *world.Tx) bool {
 // tryPickup checks for nearby projectile collectors and closes the entity if
 // one was found.
 func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
-	translated := e.Type().BBox(e).Translate(e.pos)
+	translated := e.Type().BBox(e).Translate(e.Position())
 	grown := translated.GrowVec3(mgl64.Vec3{1, 0.5, 1})
 	ignore := func(other world.Entity) bool {
 		return e == other
@@ -227,7 +223,7 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 		}
 		// A collector was within range to pick up the entity.
 		lt.close = true
-		for _, viewer := range tx.Viewers(e.pos) {
+		for _, viewer := range tx.Viewers(e.Position()) {
 			viewer.ViewEntityAction(e, PickedUpAction{Collector: collector})
 		}
 		if lt.conf.PickupItem.Empty() {
@@ -242,16 +238,14 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 // projectile collides with a block. If the resulting velocity is roughly 0,
 // it sets the projectile as having collided with the block.
 func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m *Movement, tx *world.Tx) {
-	e.mu.Lock()
 	// Create an epsilon for deciding if the projectile has slowed down enough
 	// for us to consider it as having collided for the final time. We take the
 	// square root because FloatEqualThreshold squares it, which is not what we
 	// want.
 	eps := math.Sqrt(0.1 * (1 - lt.conf.BlockCollisionVelocityMultiplier))
-	if mgl64.FloatEqualThreshold(e.vel.Len(), 0, eps) {
-		e.vel = mgl64.Vec3{}
+	if mgl64.FloatEqualThreshold(e.Velocity().Len(), 0, eps) {
+		e.SetVelocity(mgl64.Vec3{})
 		lt.collisionPos, lt.collided = r.BlockPosition(), true
-		e.mu.Unlock()
 
 		for _, v := range tx.Viewers(m.pos) {
 			v.ViewEntityAction(e, ArrowShakeAction{Duration: time.Millisecond * 350})
@@ -259,7 +253,6 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 		}
 		return
 	}
-	e.mu.Unlock()
 }
 
 // hitEntity is called when a projectile hits a Living. It deals damage to the
@@ -287,7 +280,7 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec
 // rotation of the projectile based on its velocity and updates the velocity
 // based on gravity and drag.
 func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, trace.Result) {
-	pos, vel := e.pos, e.vel
+	pos, vel := e.Position(), e.Velocity()
 	viewers := tx.Viewers(pos)
 
 	velBefore := vel

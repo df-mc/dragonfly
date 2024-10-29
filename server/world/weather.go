@@ -175,7 +175,7 @@ func (w weather) tickLightning(tx *Tx) {
 // lightning strike will fail.
 func (w weather) strikeLightning(tx *Tx, c ChunkPos) {
 	if pos := w.lightningPosition(tx, c); tx.ThunderingAt(cube.PosFromVec3(pos)) {
-		tx.AddEntity(w.w.conf.Entities.conf.Lightning(pos))
+		tx.AddEntity(w.w.conf.Entities.conf.Lightning(EntitySpawnOpts{Position: pos}))
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 // AreaEffectCloudBehaviourConfig contains optional parameters for an area
 // effect cloud entity.
 type AreaEffectCloudBehaviourConfig struct {
+	Potion potion.Potion
 	// Radius specifies the initial radius of the cloud. Defaults to 3.0.
 	Radius float64
 	// RadiusUseGrowth is the value that is added to the radius every time the
@@ -29,24 +30,25 @@ type AreaEffectCloudBehaviourConfig struct {
 	ReapplicationDelay time.Duration
 }
 
+func (conf AreaEffectCloudBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
+}
+
 // New creates an AreaEffectCloudBehaviour using the parameter in conf and t.
-func (conf AreaEffectCloudBehaviourConfig) New(t potion.Potion) *AreaEffectCloudBehaviour {
+func (conf AreaEffectCloudBehaviourConfig) New() *AreaEffectCloudBehaviour {
 	if conf.Radius == 0 {
 		conf.Radius = 3.0
 	}
 	if conf.Duration == 0 {
 		conf.Duration = time.Second * 30
 	}
-	stationary := StationaryBehaviourConfig{
-		ExistenceDuration: conf.Duration,
-	}
+	stationary := StationaryBehaviourConfig{ExistenceDuration: conf.Duration}
 	return &AreaEffectCloudBehaviour{
 		conf:       conf,
 		stationary: stationary.New(),
 		duration:   conf.Duration,
 		radius:     conf.Radius,
 		targets:    make(map[world.Entity]time.Duration),
-		t:          t,
 	}
 }
 
@@ -55,7 +57,6 @@ func (conf AreaEffectCloudBehaviourConfig) New(t potion.Potion) *AreaEffectCloud
 // hit the ground.
 type AreaEffectCloudBehaviour struct {
 	conf AreaEffectCloudBehaviourConfig
-	t    potion.Potion
 
 	stationary *StationaryBehaviour
 
@@ -71,13 +72,13 @@ func (a *AreaEffectCloudBehaviour) Radius() float64 {
 
 // Effects returns the effects the area effect cloud provides.
 func (a *AreaEffectCloudBehaviour) Effects() []effect.Effect {
-	return a.t.Effects()
+	return a.conf.Potion.Effects()
 }
 
 // Tick ...
 func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	a.stationary.Tick(e, tx)
-	if a.stationary.close || a.stationary.age < 10 {
+	if a.stationary.close || e.Age() < time.Second/2 {
 		// The cloud lives for at least half a second before it may begin
 		// spreading effects and growing/shrinking.
 		return nil
@@ -90,13 +91,13 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		}
 	}
 
-	if a.stationary.age%10 != 0 {
+	if int16(e.Age()/(time.Second*20))%10 != 0 {
 		// Area effect clouds only trigger updates every ten ticks.
 		return nil
 	}
 
 	for target, expiration := range a.targets {
-		if a.stationary.age >= expiration {
+		if e.Age() >= expiration {
 			delete(a.targets, target)
 		}
 	}
@@ -117,17 +118,14 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 // applyEffects applies the effects of an area effect cloud at pos to all
 // entities passed if they were within the radius and don't have an active
 // cooldown period.
-func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, e *Ent, entities []world.Entity) bool {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
+func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, ent *Ent, entities []world.Entity) bool {
 	var update bool
 	for _, e := range entities {
 		delta := e.Position().Sub(pos)
 		delta[1] = 0
 		if delta.Len() <= a.radius {
 			l := e.(Living)
-			for _, eff := range a.t.Effects() {
+			for _, eff := range a.Effects() {
 				if lasting, ok := eff.Type().(effect.LastingType); ok {
 					l.AddEffect(effect.New(lasting, eff.Level(), eff.Duration()/4))
 					continue
@@ -135,7 +133,7 @@ func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, e *Ent, entities
 				l.AddEffect(eff)
 			}
 
-			a.targets[e] = a.stationary.age + a.conf.ReapplicationDelay
+			a.targets[e] = ent.Age() + a.conf.ReapplicationDelay
 			a.subtractUseDuration()
 			a.subtractUseRadius()
 
@@ -148,9 +146,6 @@ func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, e *Ent, entities
 // subtractTickRadius grows the cloud's radius by the radiusTickGrowth value. If the
 // radius goes under 1/2, it will close the entity.
 func (a *AreaEffectCloudBehaviour) subtractTickRadius(e *Ent) bool {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	a.radius += a.conf.RadiusTickGrowth
 	if a.radius < 0.5 {
 		a.stationary.close = true

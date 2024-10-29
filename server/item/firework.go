@@ -30,7 +30,8 @@ func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 
 	tx.PlaySound(pos, sound.FireworkLaunch{})
 	create := tx.World().EntityRegistry().Config().Firework
-	tx.AddEntity(create(pos, user.Rotation(), true, f, user))
+	opts := world.EntitySpawnOpts{Position: pos, Rotation: user.Rotation()}
+	tx.AddEntity(create(opts, f, user, true))
 
 	ctx.SubtractFromCount(1)
 	return true
@@ -40,7 +41,8 @@ func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 func (f Firework) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
 	fpos := pos.Vec3().Add(clickPos)
 	create := tx.World().EntityRegistry().Config().Firework
-	tx.AddEntity(create(fpos, cube.Rotation{rand.Float64() * 360, 90}, false, f, user))
+	opts := world.EntitySpawnOpts{Position: fpos, Rotation: cube.Rotation{rand.Float64() * 360, 90}}
+	tx.AddEntity(create(opts, f, user, false))
 	tx.PlaySound(fpos, sound.FireworkLaunch{})
 
 	ctx.SubtractFromCount(1)

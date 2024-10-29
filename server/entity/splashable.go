@@ -101,7 +101,7 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, t
 			}
 		}
 		if linger {
-			tx.AddEntity(NewAreaEffectCloud(pos, pot))
+			tx.AddEntity(NewAreaEffectCloud(world.EntitySpawnOpts{Position: pos}, pot))
 		}
 	}
 }

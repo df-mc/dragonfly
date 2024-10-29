@@ -31,7 +31,7 @@ func NewLightningWithDamage(opts world.EntitySpawnOpts, dmg float64, blockFire b
 	return opts.New(LightningType{}, conf)
 }
 
-var lightningConf = StationaryBehaviourConfig{SpawnSounds: []world.Sound{sound.Explosion{}, sound.Thunder{}}}
+var lightningConf = StationaryBehaviourConfig{SpawnSounds: []world.Sound{sound.Explosion{}, sound.Thunder{}}, ExistenceDuration: time.Second}
 
 // lightningState holds the state of a lightning entity.
 type lightningState struct {
@@ -115,7 +115,9 @@ type LightningType struct{}
 func (t LightningType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
-func (t LightningType) DecodeNBT(map[string]any, *world.EntityData) {}
-func (t LightningType) EncodeNBT(*world.EntityData) map[string]any  { return nil }
-func (LightningType) EncodeEntity() string                          { return "minecraft:lightning_bolt" }
-func (LightningType) BBox(world.Entity) cube.BBox                   { return cube.BBox{} }
+func (t LightningType) DecodeNBT(_ map[string]any, data *world.EntityData) {
+	data.Data = lightningConf.New()
+}
+func (t LightningType) EncodeNBT(*world.EntityData) map[string]any { return nil }
+func (LightningType) EncodeEntity() string                         { return "minecraft:lightning_bolt" }
+func (LightningType) BBox(world.Entity) cube.BBox                  { return cube.BBox{} }

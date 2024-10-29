@@ -13,22 +13,32 @@ import (
 // FallingBlockBehaviourConfig holds optional parameters for
 // FallingBlockBehaviour.
 type FallingBlockBehaviourConfig struct {
+	Block world.Block
 	// Gravity is the amount of Y velocity subtracted every tick.
 	Gravity float64
 	// Drag is used to reduce all axes of the velocity every tick. Velocity is
 	// multiplied with (1-Drag) every tick.
 	Drag float64
+	// DistanceFallen specifies how far the falling block has already fallen.
+	// Blocks that damage entities on impact, like anvils, deal increased damage
+	// based on the distance fallen.
+	DistanceFallen float64
+}
+
+func (conf FallingBlockBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
 }
 
 // New creates a FallingBlockBehaviour using the optional parameters in conf and
 // a block type.
-func (conf FallingBlockBehaviourConfig) New(b world.Block) *FallingBlockBehaviour {
-	behaviour := &FallingBlockBehaviour{block: b}
+func (conf FallingBlockBehaviourConfig) New() *FallingBlockBehaviour {
+	behaviour := &FallingBlockBehaviour{block: conf.Block}
 	behaviour.passive = PassiveBehaviourConfig{
 		Gravity: conf.Gravity,
 		Drag:    conf.Drag,
 		Tick:    behaviour.tick,
 	}.New()
+	behaviour.passive.fallDistance = conf.DistanceFallen
 	return behaviour
 }
 
@@ -75,7 +85,8 @@ func (f *FallingBlockBehaviour) solidify(e *Ent, pos mgl64.Vec3, tx *world.Tx) {
 	if r, ok := tx.Block(bpos).(replaceable); ok && r.ReplaceableBy(f.block) {
 		tx.SetBlock(bpos, f.block, nil)
 	} else if i, ok := f.block.(world.Item); ok {
-		tx.AddEntity(NewItem(item.NewStack(i, 1), bpos.Vec3Middle()))
+		opts := world.EntitySpawnOpts{Position: bpos.Vec3Middle()}
+		tx.AddEntity(NewItem(opts, item.NewStack(i, 1)))
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 
 // ItemBehaviourConfig holds optional parameters for an ItemBehaviour.
 type ItemBehaviourConfig struct {
+	Item item.Stack
 	// Gravity is the amount of Y velocity subtracted every tick.
 	Gravity float64
 	// Drag is used to reduce all axes of the velocity every tick. Velocity is
@@ -26,8 +27,13 @@ type ItemBehaviourConfig struct {
 	PickupDelay time.Duration
 }
 
+func (conf ItemBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
+}
+
 // New creates an ItemBehaviour using i and the optional parameters in conf.
-func (conf ItemBehaviourConfig) New(i item.Stack) *ItemBehaviour {
+func (conf ItemBehaviourConfig) New() *ItemBehaviour {
+	i := conf.Item
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.MaxCount() - i.Count())
 	}
@@ -79,7 +85,8 @@ func (i *ItemBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 			}
 
 			// This is only reached if part of the item stack was collected into the hopper.
-			tx.AddEntity(NewItem(i.Item().Grow(-addedCount), pos.Vec3Centre()))
+			opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
+			tx.AddEntity(NewItem(opts, i.Item().Grow(-addedCount)))
 		}
 
 		_ = e.Close()
@@ -137,14 +144,9 @@ func (i *ItemBehaviour) merge(e *Ent, other *Ent, tx *world.Tx) bool {
 	}
 	a, b := otherBehaviour.i.AddStack(i.i)
 
-	newA := NewItem(a, other.Position())
-	newA.SetVelocity(other.Velocity())
-	tx.AddEntity(newA)
-
+	tx.AddEntity(NewItem(world.EntitySpawnOpts{Position: other.Position(), Velocity: other.Velocity()}, a))
 	if !b.Empty() {
-		newB := NewItem(b, pos)
-		newB.SetVelocity(e.Velocity())
-		tx.AddEntity(newB)
+		tx.AddEntity(NewItem(world.EntitySpawnOpts{Position: pos, Velocity: e.Velocity()}, b))
 	}
 	_ = e.Close()
 	_ = other.Close()
@@ -169,7 +171,7 @@ func (i *ItemBehaviour) collect(e *Ent, collector Collector, tx *world.Tx) {
 	}
 	// Create a new item entity and shrink it by the amount of items that the
 	// collector collected.
-	tx.AddEntity(NewItem(i.i.Grow(-n), pos))
+	tx.AddEntity(NewItem(world.EntitySpawnOpts{Position: pos}, i.i.Grow(-n)))
 	_ = e.Close()
 }
 

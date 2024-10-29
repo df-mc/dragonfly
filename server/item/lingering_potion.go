@@ -21,7 +21,8 @@ func (l LingeringPotion) MaxCount() int {
 // Use ...
 func (l LingeringPotion) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().LingeringPotion
-	tx.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(0.5), l.Type, user))
+	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: user.Rotation().Vec3().Mul(0.5)}
+	tx.AddEntity(create(opts, l.Type, user))
 	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
 	ctx.SubtractFromCount(1)

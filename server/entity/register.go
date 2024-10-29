@@ -1,14 +1,10 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
-	"golang.org/x/tools/go/cfg"
-	"time"
 )
 
 // DefaultRegistry is a world.EntityRegistry that registers all default entities
@@ -32,60 +28,34 @@ var DefaultRegistry = conf.New([]world.EntityType{
 })
 
 var conf = world.EntityRegistryConfig{
+	TNT:                NewTNT,
+	Egg:                NewEgg,
+	Snowball:           NewSnowball,
+	BottleOfEnchanting: NewBottleOfEnchanting,
+	EnderPearl:         NewEnderPearl,
+	FallingBlock:       NewFallingBlock,
+	Lightning:          NewLightning,
+	Firework: func(opts world.EntitySpawnOpts, firework world.Item, owner world.Entity, attached bool) *world.EntityHandle {
+		return NewFireworkAttached(opts, firework.(item.Firework), owner, attached)
+	},
 	Item: func(opts world.EntitySpawnOpts, it any) *world.EntityHandle {
-		i := NewItem(it.(item.Stack), pos)
-		i.vel = vel
-		return i
+		return NewItem(opts, it.(item.Stack))
 	},
-	FallingBlock: func(bl world.Block, pos mgl64.Vec3) *world.EntityHandle {
-		return NewFallingBlock(bl, pos)
+	LingeringPotion: func(opts world.EntitySpawnOpts, t any, owner world.Entity) *world.EntityHandle {
+		return NewLingeringPotion(opts, t.(potion.Potion), owner)
 	},
-	TNT: func(pos mgl64.Vec3, fuse time.Duration, igniter world.Entity) *world.EntityHandle {
-		return NewTNT(pos, fuse, igniter)
-	},
-	BottleOfEnchanting: func(pos, vel mgl64.Vec3, owner world.Entity) *world.EntityHandle {
-		b := NewBottleOfEnchanting(pos, owner)
-		b.vel = vel
-		return b
+	SplashPotion: func(opts world.EntitySpawnOpts, t any, owner world.Entity) *world.EntityHandle {
+		return NewSplashPotion(opts, t.(potion.Potion), owner)
 	},
 	Arrow: func(opts world.EntitySpawnOpts, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *world.EntityHandle {
 		conf := arrowConf
-		conf.Damage = damage
-		conf.Potion = tip.(potion.Potion)
-		conf.Owner = owner
+		conf.Damage, conf.Potion, conf.Owner = damage, tip.(potion.Potion), owner
 		conf.KnockBackForceAddend = float64(punchLevel) * (enchantment.Punch{}).KnockBackMultiplier()
 		conf.DisablePickup = disallowPickup
 		if obtainArrowOnPickup {
 			conf.PickupItem = item.NewStack(item.Arrow{Tip: tip.(potion.Potion)}, 1)
 		}
 		conf.Critical = critical
-		return cfg.New(ArrowType{}, conf)
+		return opts.New(ArrowType{}, conf)
 	},
-	Egg: func(pos, vel mgl64.Vec3, owner world.Entity) *world.EntityHandle {
-		e := NewEgg(pos, owner)
-		e.vel = vel
-		return e
-	},
-	EnderPearl: func(pos, vel mgl64.Vec3, owner world.Entity) *world.EntityHandle {
-		e := NewEnderPearl(pos, owner)
-		e.vel = vel
-		return e
-	},
-	Firework: func(pos mgl64.Vec3, rot cube.Rotation, attached bool, firework world.Item, owner world.Entity) *world.EntityHandle {
-		return NewFireworkAttached(pos, rot, firework.(item.Firework), owner, attached)
-	},
-	LingeringPotion: func(opts world.EntitySpawnOpts, t any, owner world.Entity) *world.EntityHandle {
-		return NewLingeringPotion(opts, t.(potion.Potion), owner)
-	},
-	Snowball: func(pos, vel mgl64.Vec3, owner world.Entity) *world.EntityHandle {
-		s := NewSnowball(pos, owner)
-		s.vel = vel
-		return s
-	},
-	SplashPotion: func(pos, vel mgl64.Vec3, t any, owner world.Entity) *world.EntityHandle {
-		p := NewSplashPotion(pos, owner, t.(potion.Potion))
-		p.vel = vel
-		return p
-	},
-	Lightning: NewLightning,
 }

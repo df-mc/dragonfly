@@ -23,6 +23,10 @@ type ExperienceOrbBehaviourConfig struct {
 	Experience int
 }
 
+func (conf ExperienceOrbBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
+}
+
 // New creates an ExperienceOrbBehaviour using the parameters in conf.
 func (conf ExperienceOrbBehaviourConfig) New() *ExperienceOrbBehaviour {
 	if conf.Experience == 0 {

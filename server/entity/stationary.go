@@ -39,7 +39,6 @@ func (conf StationaryBehaviourConfig) New() *StationaryBehaviour {
 // such entities will not move them.
 type StationaryBehaviour struct {
 	conf  StationaryBehaviourConfig
-	age   time.Duration
 	close bool
 }
 

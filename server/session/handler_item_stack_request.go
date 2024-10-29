@@ -8,11 +8,9 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
-	"math/rand"
 	"time"
 )
 
@@ -211,7 +209,6 @@ func (h *ItemStackRequestHandler) collectRewards(s *Session, inv *inventory.Inve
 	if inv == s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
 		if f, ok := tx.Block(*s.openedPos.Load()).(smelter); ok {
 			for _, o := range entity.NewExperienceOrbs(entity.EyePosition(c), f.ResetExperience()) {
-				o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 				tx.AddEntity(o)
 			}
 		}

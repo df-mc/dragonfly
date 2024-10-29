@@ -53,6 +53,8 @@ type EntitySpawnOpts struct {
 	Velocity mgl64.Vec3
 
 	ID uuid.UUID
+
+	NameTag string
 }
 
 func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
@@ -64,6 +66,7 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 	}
 	handle := &EntityHandle{id: opts.ID, t: t}
 	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
+	handle.data.Name = opts.NameTag
 	conf.Apply(&handle.data)
 	return handle
 }
@@ -118,16 +121,20 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Pos = readVec3(m, "Pos")
 	e.data.Vel = readVec3(m, "Motion")
 	e.data.Rot = readRotation(m)
+	e.data.Age = time.Duration(readInt16(m, "Age")) * (time.Second / 20)
 	e.data.FireDuration = time.Duration(readInt16(m, "Fire")) * time.Second / 20
+	e.data.Name, _ = m["NameTag"].(string)
 }
 
 func (e *EntityHandle) encodeNBT(_ *Tx) map[string]any {
 	return map[string]any{
-		"Pos":    []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
-		"Motion": []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
-		"Yaw":    float32(e.data.Rot[0]),
-		"Pitch":  float32(e.data.Rot[1]),
-		"Fire":   int16(e.data.FireDuration.Seconds() * 20),
+		"Pos":     []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
+		"Motion":  []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
+		"Yaw":     float32(e.data.Rot[0]),
+		"Pitch":   float32(e.data.Rot[1]),
+		"Fire":    int16(e.data.FireDuration.Seconds() * 20),
+		"Age":     int16(e.data.Age / (time.Second * 20)),
+		"NameTag": e.data.Name,
 	}
 }
 
@@ -202,12 +209,12 @@ type EntityRegistry struct {
 type EntityRegistryConfig struct {
 	Item               func(opts EntitySpawnOpts, it any) *EntityHandle
 	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
-	TNT                func(opts EntitySpawnOpts, fuse time.Duration, igniter Entity) *EntityHandle
+	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	EnderPearl         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	Firework           func(opts EntitySpawnOpts, attached bool, firework Item, owner Entity) *EntityHandle
+	Firework           func(opts EntitySpawnOpts, firework Item, owner Entity, attached bool) *EntityHandle
 	LingeringPotion    func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
 	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle

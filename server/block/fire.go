@@ -61,7 +61,7 @@ func (f Fire) burn(from, to cube.Pos, tx *world.Tx, r *rand.Rand, chanceBound in
 			return
 		}
 		if t, ok := flammable.(TNT); ok {
-			t.Ignite(to, tx, nil)
+			t.Ignite(to, tx)
 			return
 		}
 		tx.SetBlock(to, nil, nil)

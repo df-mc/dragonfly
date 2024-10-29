@@ -12,7 +12,8 @@ type EnderPearl struct{}
 // Use ...
 func (e EnderPearl) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().EnderPearl
-	tx.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(1.5), user))
+	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: user.Rotation().Vec3().Mul(1.5)}
+	tx.AddEntity(create(opts, user))
 	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
 	ctx.SubtractFromCount(1)

@@ -216,7 +216,8 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
 	_, liquid := tx.Liquid(pos.Side(cube.FaceDown))
 	if air || liquid {
 		tx.SetBlock(pos, nil, nil)
-		tx.AddEntity(tx.World().EntityRegistry().Config().FallingBlock(b, pos.Vec3Centre()))
+		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
+		tx.AddEntity(tx.World().EntityRegistry().Config().FallingBlock(opts, b))
 	}
 }
 
@@ -271,7 +272,8 @@ type flammableEntity interface {
 // dropItem ...
 func dropItem(tx *world.Tx, it item.Stack, pos mgl64.Vec3) {
 	create := tx.World().EntityRegistry().Config().Item
-	tx.AddEntity(create(it, pos, mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}))
+	opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
+	tx.AddEntity(create(opts, it))
 }
 
 // bass is a struct that may be embedded for blocks that create a bass sound.
