@@ -71,7 +71,7 @@ func (Bow) Release(releaser Releaser, duration time.Duration, ctx *UseContext) {
 		if f, ok := enchant.Type().(interface{ BurnDuration() time.Duration }); ok {
 			burnDuration = f.BurnDuration()
 		}
-		if _, ok := enchant.Type().(interface{ PunchMultiplier(int, float64) float64 }); ok {
+		if _, ok := enchant.Type().(interface{ KnockBackMultiplier() float64 }); ok {
 			punchLevel = enchant.Level()
 		}
 		if p, ok := enchant.Type().(interface{ PowerDamage(int) float64 }); ok {
