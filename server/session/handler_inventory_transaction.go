@@ -22,7 +22,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		// Always resend inventories with normal transactions. Most of the time we do not use these
 		// transactions, so we're best off making sure the client and server stay in sync.
 		if err := h.handleNormalTransaction(pk, s); err != nil {
-			s.log.Debugf("failed processing packet from %v (%v): InventoryTransaction: failed verifying actions in Normal transaction: %v\n", s.conn.RemoteAddr(), s.c.Name(), err)
+			s.log.Debug("process packet: InventoryTransaction: verify Normal transaction actions: " + err.Error())
 			return nil
 		}
 		return nil
@@ -117,7 +117,7 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	if !ok {
 		// In some cases, for example when a falling block entity solidifies, latency may allow attacking an entity that
 		// no longer exists server side. This is expected, so we shouldn't kick the player.
-		s.log.Debugf("invalid entity interaction: no entity found with runtime ID %v", data.TargetEntityRuntimeID)
+		s.log.Debug("invalid entity interaction: no entity with runtime ID", "ID", data.TargetEntityRuntimeID)
 		return nil
 	}
 	if data.TargetEntityRuntimeID == selfEntityRuntimeID {

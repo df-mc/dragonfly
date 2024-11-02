@@ -15,7 +15,7 @@ type CocoaBean struct {
 }
 
 // BBox returns a single physics.BBox whose size depends on the age of the CocoaBean.
-func (c CocoaBean) BBox(cube.Pos, *world.World) []cube.BBox {
+func (c CocoaBean) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{full.
 		Stretch(c.Facing.RotateRight().Face().Axis(), -(6-float64(c.Age))/16).
 		ExtendTowards(cube.FaceDown, -0.25).
@@ -25,6 +25,6 @@ func (c CocoaBean) BBox(cube.Pos, *world.World) []cube.BBox {
 }
 
 // FaceSolid always returns false.
-func (c CocoaBean) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (c CocoaBean) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

@@ -24,12 +24,12 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/maps"
 	"os"
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -85,7 +85,18 @@ func (srv *Server) Listen() {
 		panic("start server: already started")
 	}
 
-	srv.conf.Log.Infof("Starting Dragonfly for Minecraft v%v...", protocol.CurrentVersion)
+	info, _ := debug.ReadBuildInfo()
+	if info == nil {
+		info = &debug.BuildInfo{GoVersion: "N/A", Settings: []debug.BuildSetting{{Key: "vcs.revision", Value: "N/A"}}}
+	}
+	revision := ""
+	for _, set := range info.Settings {
+		if set.Key == "vcs.revision" {
+			revision = set.Value
+		}
+	}
+
+	srv.conf.Log.Info("Starting Dragonfly server...", "mc-version", protocol.CurrentVersion, "go-version", info.GoVersion, "commit", revision)
 	srv.startListening()
 	go srv.wait()
 }
@@ -189,7 +200,7 @@ func (srv *Server) CloseOnProgramEnd() {
 	go func() {
 		<-c
 		if err := srv.Close(); err != nil {
-			srv.conf.Log.Errorf("close server: %v", err)
+			srv.conf.Log.Error("close server: " + err.Error())
 		}
 	}()
 }
@@ -206,31 +217,31 @@ func (srv *Server) Close() error {
 // close stops the server, storing player and world data to disk when
 // necessary.
 func (srv *Server) close() {
-	srv.conf.Log.Infof("Server shutting down...")
-	defer srv.conf.Log.Infof("Server stopped.")
+	srv.conf.Log.Info("Server shutting down...")
+	defer srv.conf.Log.Info("Server stopped.")
 
-	srv.conf.Log.Debugf("Disconnecting players...")
+	srv.conf.Log.Debug("Disconnecting players...")
 	for _, p := range srv.Players() {
 		p.Disconnect(text.Colourf("<yellow>%v</yellow>", srv.conf.ShutdownMessage))
 	}
 	srv.pwg.Wait()
 
-	srv.conf.Log.Debugf("Closing player provider...")
+	srv.conf.Log.Debug("Closing player provider...")
 	if err := srv.conf.PlayerProvider.Close(); err != nil {
-		srv.conf.Log.Errorf("Error while closing player provider: %v", err)
+		srv.conf.Log.Error("Close player provider: " + err.Error())
 	}
 
-	srv.conf.Log.Debugf("Closing worlds...")
+	srv.conf.Log.Debug("Closing worlds...")
 	for _, w := range []*world.World{srv.end, srv.nether, srv.world} {
 		if err := w.Close(); err != nil {
-			srv.conf.Log.Errorf("Error closing %v: %v", w.Dimension(), err)
+			srv.conf.Log.Error(fmt.Sprintf("Close dimension %v: ", w.Dimension()) + err.Error())
 		}
 	}
 
-	srv.conf.Log.Debugf("Closing listeners...")
+	srv.conf.Log.Debug("Closing listeners...")
 	for _, l := range srv.listeners {
 		if err := l.Close(); err != nil {
-			srv.conf.Log.Errorf("Error closing listener: %v", err)
+			srv.conf.Log.Error("Close listener: " + err.Error())
 		}
 	}
 }
@@ -280,7 +291,8 @@ func (srv *Server) startListening() {
 	for _, lf := range srv.conf.Listeners {
 		l, err := lf(srv.conf)
 		if err != nil {
-			srv.conf.Log.Fatalf("create listener: %v", err)
+			srv.conf.Log.Error("create listener: " + err.Error())
+			return
 		}
 		srv.listeners = append(srv.listeners, l)
 		go srv.listen(l)
@@ -347,7 +359,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 
-		srv.conf.Log.Debugf("connection %v failed spawning: %v\n", conn.RemoteAddr(), err)
+		srv.conf.Log.Debug("spawn failed: "+err.Error(), "raddr", conn.RemoteAddr())
 		return
 	}
 	_ = conn.WritePacket(&packet.ItemComponent{Items: srv.customItems})
@@ -413,7 +425,7 @@ func (srv *Server) checkNetIsolation() {
 		return
 	}
 	const loopbackExemptCmd = `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`
-	srv.conf.Log.Infof("You are currently unable to join the server on this machine. Run %v in an admin PowerShell session to resolve.\n", loopbackExemptCmd)
+	srv.conf.Log.Info("You are currently unable to join the server on this machine. Run " + loopbackExemptCmd + " in an admin PowerShell session to resolve.")
 }
 
 // handleSessionClose handles the closing of a session. It removes the player
@@ -430,7 +442,7 @@ func (srv *Server) handleSessionClose(c session.Controllable) {
 	}
 
 	if err := srv.conf.PlayerProvider.Save(p.UUID(), p.Data()); err != nil {
-		srv.conf.Log.Errorf("Error while saving data: %v", err)
+		srv.conf.Log.Error("Save player data: " + err.Error())
 	}
 	srv.pwg.Done()
 }
@@ -454,16 +466,8 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 // the program if the world could not be loaded. The layers passed are used to
 // create a generator.Flat that is used as generator for the world.
 func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *world.World {
-	logger := srv.conf.Log
-	if v, ok := logger.(interface {
-		WithField(key string, field any) *logrus.Entry
-	}); ok {
-		// Add a dimension field to be able to distinguish between the different
-		// dimensions in the log. Dimensions implement fmt.Stringer so we can
-		// just fmt.Sprint them for a readable name.
-		logger = v.WithField("dimension", strings.ToLower(fmt.Sprint(dim)))
-	}
-	logger.Debugf("Loading world...")
+	logger := srv.conf.Log.With("dimension", strings.ToLower(fmt.Sprint(dim)))
+	logger.Debug("Loading dimension...")
 
 	conf := world.Config{
 		Log:             logger,
@@ -483,7 +487,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		},
 	}
 	w := conf.New()
-	logger.Infof(`Opened world "%v".`, w.Name())
+	logger.Info("Opened world.", "name", w.Name())
 	return w
 }
 

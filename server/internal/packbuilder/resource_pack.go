@@ -2,8 +2,8 @@ package packbuilder
 
 import (
 	_ "embed"
-	"github.com/rogpeppe/go-internal/dirhash"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
+	"golang.org/x/mod/sumdb/dirhash"
 	"os"
 )
 

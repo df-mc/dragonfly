@@ -29,9 +29,9 @@ func (Flame) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
-// BurnDuration always returns a hundred seconds, no matter the level.
+// BurnDuration always returns five seconds, no matter the level.
 func (Flame) BurnDuration() time.Duration {
-	return time.Second * 100
+	return time.Second * 5
 }
 
 // CompatibleWithEnchantment ...

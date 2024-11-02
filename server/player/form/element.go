@@ -72,8 +72,7 @@ func (i Input) Value() string {
 type Toggle struct {
 	// Text is the text displayed over the toggle element. The text may contain Minecraft formatting codes.
 	Text string
-	// Default is the default value filled out in the input. The user may remove this value and fill out its
-	// own text. The text may contain Minecraft formatting codes.
+	// Default determines if the toggle should be on/off by default.
 	Default bool
 
 	value bool

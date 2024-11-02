@@ -155,7 +155,7 @@ func (w *World) Biome(pos cube.Pos) Biome {
 	id := int(c.Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
 	b, ok := BiomeByID(id)
 	if !ok {
-		w.conf.Log.Errorf("could not find biome by ID %v", id)
+		w.conf.Log.Error("biome not found by ID", "ID", id)
 	}
 	return b
 }
@@ -426,7 +426,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 	id := c.Block(x, y, z, 0)
 	b, ok := BlockByRuntimeID(id)
 	if !ok {
-		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
+		w.conf.Log.Error("Liquid: no block with runtime ID", "ID", id)
 		return nil, false
 	}
 	if liq, ok := b.(Liquid); ok {
@@ -436,7 +436,7 @@ func (w *World) Liquid(pos cube.Pos) (Liquid, bool) {
 
 	b, ok = BlockByRuntimeID(id)
 	if !ok {
-		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
+		w.conf.Log.Error("Liquid: no block with runtime ID", "ID", id)
 		return nil, false
 	}
 	liq, ok := b.(Liquid)
@@ -515,7 +515,7 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer u
 
 	b, ok := BlockByRuntimeID(id)
 	if !ok {
-		w.conf.Log.Errorf("failed removing liquids: cannot get block by runtime ID %v", id)
+		w.conf.Log.Error("removeLiquidOnLayer: no block with runtime ID", "ID", id)
 		return false, false
 	}
 	if _, ok := b.(Liquid); ok {
@@ -537,7 +537,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 	c.Unlock()
 	b, ok := BlockByRuntimeID(id)
 	if !ok {
-		w.conf.Log.Errorf("failed getting liquid: cannot get block by runtime ID %v", id)
+		w.conf.Log.Error("additionalLiquid: no block with runtime ID", "ID", id)
 		return nil, false
 	}
 	liq, ok := b.(Liquid)
@@ -853,7 +853,7 @@ func (w *World) PlayerSpawn(uuid uuid.UUID) cube.Pos {
 	}
 	pos, exist, err := w.conf.Provider.LoadPlayerSpawnPosition(uuid)
 	if err != nil {
-		w.conf.Log.Errorf("failed to get player spawn: %v", err)
+		w.conf.Log.Error("load player spawn: " + err.Error())
 		return w.Spawn()
 	}
 	if !exist {
@@ -869,7 +869,7 @@ func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
 		return
 	}
 	if err := w.conf.Provider.SavePlayerSpawnPosition(uuid, pos); err != nil {
-		w.conf.Log.Errorf("failed to set player spawn: %v", err)
+		w.conf.Log.Error("set player spawn: " + err.Error())
 	}
 }
 
@@ -1020,7 +1020,7 @@ func (w *World) PortalDestination(dim Dimension) *World {
 
 // Save saves the World to the provider.
 func (w *World) Save() {
-	w.conf.Log.Debugf("Saving chunks in memory to disk...")
+	w.conf.Log.Debug("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
 	toSave := maps.Clone(w.chunks)
@@ -1049,7 +1049,7 @@ func (w *World) close() {
 	close(w.closing)
 	w.running.Wait()
 
-	w.conf.Log.Debugf("Saving chunks in memory to disk...")
+	w.conf.Log.Debug("Saving chunks in memory to disk...")
 
 	w.chunkMu.Lock()
 	w.lastChunk = nil
@@ -1067,14 +1067,14 @@ func (w *World) close() {
 	}
 
 	if !w.conf.ReadOnly {
-		w.conf.Log.Debugf("Updating level.dat values...")
+		w.conf.Log.Debug("Updating level.dat values...")
 
 		w.provider().SaveSettings(w.set)
 	}
 
-	w.conf.Log.Debugf("Closing provider...")
+	w.conf.Log.Debug("Closing provider...")
 	if err := w.provider().Close(); err != nil {
-		w.conf.Log.Errorf("error closing world provider: %v", err)
+		w.conf.Log.Error("close world provider: " + err.Error())
 	}
 }
 
@@ -1207,7 +1207,7 @@ func (w *World) chunk(pos ChunkPos) *Column {
 		chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 		if err != nil {
 			w.chunkMu.Unlock()
-			w.conf.Log.Errorf("load chunk: failed loading %v: %v\n", pos, err)
+			w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 			return c
 		}
 		c.Unlock()
@@ -1333,7 +1333,7 @@ func (w *World) saveChunk(pos ChunkPos, c *Column, closeEntities bool) {
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
 		if err := w.provider().StoreColumn(pos, w.conf.Dim, c); err != nil {
-			w.conf.Log.Errorf("save chunk: %v", err)
+			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 		}
 	}
 	if closeEntities {

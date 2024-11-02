@@ -33,11 +33,8 @@ type Wall struct {
 
 // EncodeItem ...
 func (w Wall) EncodeItem() (string, int16) {
-	name, meta := encodeWallBlock(w.Block)
-	if meta == 0 {
-		return "minecraft:" + name + "_wall", 0
-	}
-	return "minecraft:cobblestone_wall", meta
+	name := encodeWallBlock(w.Block)
+	return "minecraft:" + name + "_wall", 0
 }
 
 // EncodeBlock ...
@@ -49,11 +46,7 @@ func (w Wall) EncodeBlock() (string, map[string]any) {
 		"wall_connection_type_west":  w.WestConnection.String(),
 		"wall_post_bit":              boolByte(w.Post),
 	}
-	name, meta := encodeWallBlock(w.Block)
-	if meta > 0 || name == "cobblestone" {
-		properties["wall_block_type"] = name
-		name = "cobblestone"
-	}
+	name := encodeWallBlock(w.Block)
 	return "minecraft:" + name + "_wall", properties
 }
 
