@@ -32,7 +32,7 @@ type EnderChest struct {
 
 // NewEnderChest creates a new initialised ender chest.
 func NewEnderChest() EnderChest {
-	return EnderChest{}
+	return EnderChest{viewers: &atomic.Int64{}}
 }
 
 // BreakInfo ...
