@@ -714,7 +714,7 @@ func (s *Session) SetHeldSlot(slot int) error {
 func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
 	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
 	// different place in the inventory.
-	if slot > 8 {
+	if slot < 0 || slot > 8 {
 		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
 	if s.heldSlot.Load() == uint32(slot) {
