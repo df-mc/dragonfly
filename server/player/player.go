@@ -1214,7 +1214,7 @@ func (p *Player) HeldSlot() int {
 // and 8, inclusive. If the slot is not in this range, SetHeldSlot will return an error.
 func (p *Player) SetHeldSlot(slot int) error {
 	if slot < 0 || slot > 8 {
-		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
 	if slot == p.HeldSlot() {
 		return nil
