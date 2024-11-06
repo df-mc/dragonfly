@@ -1220,8 +1220,7 @@ func (p *Player) SetHeldSlot(slot int) error {
 		return nil
 	}
 
-	expectedNewHeldItem, _ := p.inv.Item(slot)
-	if err := p.session().UpdateHeldSlot(slot, expectedNewHeldItem); err != nil {
+	if err := p.session().SetHeldSlot(slot); err != nil {
 		return err
 	}
 
