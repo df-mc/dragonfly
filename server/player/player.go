@@ -1204,6 +1204,32 @@ func (p *Player) Armour() *inventory.Armour {
 	return p.armour
 }
 
+// HeldSlot returns the slot in the hotbar that the player currently has selected. The return value is between
+// 0 and 8, inclusive.
+func (p *Player) HeldSlot() int {
+	return int(p.heldSlot.Load())
+}
+
+// SetHeldSlot sets the slot in the hotbar that the player currently has selected. The slot must be between 0
+// and 8, inclusive. If the slot is not in this range, SetHeldSlot will return an error.
+func (p *Player) SetHeldSlot(slot int) error {
+	if slot < 0 || slot > 8 {
+		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+	}
+	if slot == p.HeldSlot() {
+		return nil
+	}
+
+	expectedNewHeldItem, _ := p.inv.Item(slot)
+	if err := p.session().UpdateHeldSlot(slot, expectedNewHeldItem); err != nil {
+		return err
+	}
+
+	// heldSlot may not be updated if the player does not have a session, so we update it here.
+	p.heldSlot.Store(uint32(slot))
+	return nil
+}
+
 // HeldItems returns the items currently held in the hands of the player. The first item stack returned is the
 // one held in the main hand, the second is held in the off-hand.
 // If no item was held in a hand, the stack returned has a count of 0. Stack.Empty() may be used to check if
