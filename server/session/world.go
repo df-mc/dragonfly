@@ -60,7 +60,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	_, controllable := e.(Controllable)
 
 	s.entityMutex.Lock()
-	if id, ok := s.entityRuntimeIDs[e]; ok && controllable {
+	if id, ok := s.entityRuntimeIDs[e.Handle()]; ok && controllable {
 		runtimeID = id
 	} else {
 		s.currentEntityRuntimeID += 1
@@ -80,7 +80,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 
 		sessionMu.Lock()
 		for _, s := range sessions {
-			if s.c.UUID() == v.UUID() {
+			if s.ent.UUID() == v.UUID() {
 				actualPlayer = true
 				break
 			}
@@ -183,9 +183,9 @@ func (s *Session) HideEntity(e world.Entity) {
 	}
 
 	s.entityMutex.Lock()
-	id, ok := s.entityRuntimeIDs[e]
+	id, ok := s.entityRuntimeIDs[e.Handle()]
 	if _, controllable := e.(Controllable); !controllable {
-		delete(s.entityRuntimeIDs, e)
+		delete(s.entityRuntimeIDs, e.Handle())
 		delete(s.entities, id)
 	}
 	s.entityMutex.Unlock()
@@ -248,7 +248,6 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 
 	yaw, pitch := e.Rotation().Elem()
 	if id == selfEntityRuntimeID {
-		s.chunkLoader.Move(position)
 		s.teleportPos.Store(&position)
 	}
 
@@ -792,11 +791,11 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 
 // PlaySound plays a world.Sound to the client. The volume is not dependent on the distance to the source if it is a
 // sound of the LevelSoundEvent packet.
-func (s *Session) PlaySound(t world.Sound) {
+func (s *Session) PlaySound(t world.Sound, pos mgl64.Vec3) {
 	if s == Nop {
 		return
 	}
-	s.playSound(entity.EyePosition(s.c), t, true)
+	s.playSound(pos, t, true)
 }
 
 // ViewSound ...
@@ -957,16 +956,15 @@ func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
 }
 
 // OpenBlockContainer ...
-func (s *Session) OpenBlockContainer(pos cube.Pos) {
+func (s *Session) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 	if s.containerOpened.Load() && *s.openedPos.Load() == pos {
 		return
 	}
-	s.closeCurrentContainer()
+	s.closeCurrentContainer(tx)
 
-	w := s.c.World()
-	b := w.Block(pos)
+	b := tx.Block(pos)
 	if container, ok := b.(block.Container); ok {
-		s.openNormalContainer(container, pos)
+		s.openNormalContainer(container, pos, tx)
 		return
 	}
 	// We hit a special kind of window like beacons, which are not actually opened server-side.
@@ -995,12 +993,10 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	case block.SmithingTable:
 		containerType = protocol.ContainerTypeSmithingTable
 	case block.EnderChest:
-		b.AddViewer(w, pos)
+		b.AddViewer(tx, pos)
 
-		inv := s.c.EnderChestInventory()
-		s.openedWindow.Store(inv)
-
-		defer s.sendInv(inv, uint32(nextID))
+		s.openedWindow.Store(s.enderChest)
+		defer s.sendInv(s.enderChest, uint32(nextID))
 	}
 
 	s.openedContainerID.Store(uint32(containerType))
@@ -1013,12 +1009,12 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 }
 
 // openNormalContainer opens a normal container that can hold items in it server-side.
-func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
-	b.AddViewer(s, s.c.World(), pos)
+func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world.Tx) {
+	b.AddViewer(s, tx, pos)
 
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
-	inv := b.Inventory(s.c.World(), pos)
+	inv := b.Inventory(tx, pos)
 	s.openedWindow.Store(inv)
 	s.openedPos.Store(&pos)
 
@@ -1040,7 +1036,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 		ContainerPosition:       protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		ContainerEntityUniqueID: -1,
 	})
-	s.sendInv(b.Inventory(s.c.World(), pos), uint32(nextID))
+	s.sendInv(b.Inventory(tx, pos), uint32(nextID))
 }
 
 // ViewSlotChange ...
@@ -1170,7 +1166,7 @@ func (s *Session) closeWindow() {
 func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	s.entityMutex.RLock()
 	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	id, _ := s.entityRuntimeIDs[e]
+	id, _ := s.entityRuntimeIDs[e.Handle()]
 	s.entityMutex.RUnlock()
 	return id
 }

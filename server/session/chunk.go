@@ -125,7 +125,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 
 // dimensionID  returns the dimension ID of the world that the session is in.
 func (s *Session) dimensionID() int32 {
-	d, _ := world.DimensionID(s.ent.World().Dimension())
+	d, _ := world.DimensionID(s.chunkLoader.World().Dimension())
 	return int32(d)
 }
 
@@ -164,8 +164,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, c *chunk.Chunk, blockEntiti
 	s.openChunkTransactions = append(s.openChunkTransactions, m)
 	if l := len(s.blobs); l > 4096 {
 		s.blobMu.Unlock()
-		s.log.Error("too many blobs pending: disconnecting", "n", l)
-		_ = s.Close()
+		s.conf.Log.Error("too many blobs pending", "n", l)
 		return
 	}
 	for i := range hashes {
@@ -240,8 +239,7 @@ func (s *Session) trackBlob(hash uint64, blob []byte) bool {
 	s.blobMu.Lock()
 	if l := len(s.blobs); l > 4096 {
 		s.blobMu.Unlock()
-		s.log.Error("too many blobs pending: disconnecting", "n", l)
-		_ = s.Close()
+		s.conf.Log.Error("too many blobs pending", "n", l)
 		return false
 	}
 	s.blobs[hash] = blob

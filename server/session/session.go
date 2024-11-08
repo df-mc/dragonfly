@@ -32,16 +32,12 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log            *slog.Logger
+	conf           Config
 	once, connOnce sync.Once
 
 	ent      *world.EntityHandle
 	conn     Conn
 	handlers map[uint32]packetHandler
-
-	// onStop is called when the session is stopped. The controllable passed is the controllable that the
-	// session controls.
-	onStop func(controllable Controllable)
 
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
@@ -139,15 +135,19 @@ type Config struct {
 
 	JoinMessage, QuitMessage string
 
-	HandleStop func(Controllable)
+	HandleStop func(*world.Tx, Controllable)
 }
 
-func (conf Config) New(conn Conn, w *world.World) *Session {
+func (conf Config) New(conn Conn) *Session {
 	r := conn.ChunkRadius()
 	if r > conf.MaxChunkRadius {
 		r = conf.MaxChunkRadius
 		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
 	}
+	if conf.Log == nil {
+		conf.Log = slog.Default()
+	}
+	conf.Log = conf.Log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String())
 
 	s := &Session{}
 	*s = Session{
@@ -162,15 +162,14 @@ func (conf Config) New(conn Conn, w *world.World) *Session {
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
 		conn:                   conn,
-		log:                    conf.Log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String()),
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
 		joinMessage:            conf.JoinMessage,
 		quitMessage:            conf.QuitMessage,
 		recipes:                make(map[uint32]recipe.Recipe),
+		conf:                   conf,
 	}
-	inv := inventory.New(1, nil)
-	s.openedWindow.Store(inv)
+	s.openedWindow.Store(inventory.New(1, nil))
 
 	var scoreboardName string
 	var scoreboardLines []string
@@ -178,7 +177,6 @@ func (conf Config) New(conn Conn, w *world.World) *Session {
 	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
-	s.sendAvailableEntities(w)
 	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
 	s.sendRecipes()
 	s.sendArmourTrimData()
@@ -193,19 +191,21 @@ func (s *Session) EntityHandle() *world.EntityHandle {
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
 func (s *Session) Spawn(c Controllable, tx *world.Tx) {
-	ent := c.Handle()
-	s.ent = ent
-	s.entityRuntimeIDs[ent] = selfEntityRuntimeID
-	s.entities[selfEntityRuntimeID] = ent
+	handle := c.Handle()
+
+	s.ent = handle
+	s.entityRuntimeIDs[handle] = selfEntityRuntimeID
+	s.entities[selfEntityRuntimeID] = handle
 
 	pos := c.Position()
-	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx, s)
-	s.chunkLoader.Move(pos)
+	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
+	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
 		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
+	s.sendAvailableEntities(tx.World())
 	s.initPlayerList()
 
 	c.SetGameMode(c.GameMode())
@@ -218,40 +218,38 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 
-	tx.AddEntity(c)
-
 	chat.Global.Subscribe(c)
 	if s.joinMessage != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
 	}
 
+	go s.background()
 	go s.handlePackets()
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
 // manages. Close ensures the method only runs code on the first call.
-func (s *Session) Close() error {
-	s.once.Do(s.close)
-	return nil
+func (s *Session) Close(tx *world.Tx, c Controllable) {
+	s.once.Do(func() {
+		s.close(tx, c)
+	})
 }
 
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
-func (s *Session) close() {
-	_ = s.c.Close()
+func (s *Session) close(tx *world.Tx, c Controllable) {
+	_ = c.Close()
+	s.conf.HandleStop(tx, c)
 
-	s.EmptyUIInventory()
-
-	s.onStop(s.c)
+	s.EmptyUIInventory(c)
 
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = s.inv.Close()
 	_ = s.offHand.Close()
 	_ = s.armour.Close()
 
-	s.closeCurrentContainer()
-	_ = s.chunkLoader.Close()
-	s.c.World().RemoveEntity(s.c)
+	s.closeCurrentContainer(tx)
+	s.chunkLoader.Close(tx)
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
 	s.closePlayerList()
@@ -263,7 +261,10 @@ func (s *Session) close() {
 	if s.quitMessage != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
 	}
-	chat.Global.Unsubscribe(s.c)
+	chat.Global.Unsubscribe(c)
+
+	// Note: RemoveEntity must always happen at the VERY END.
+	tx.RemoveEntity(c)
 }
 
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed
@@ -293,28 +294,22 @@ func (s *Session) ClientData() login.ClientData {
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
-	go s.background()
-
 	defer func() {
-		// If this function ends up panicking, we don't want to call s.Close() as it may cause the entire
-		// server to freeze without printing the actual panic message.
-		// Instead, we check if there is a panic to recover, and just propagate the panic if this does happen
-		// to be the case.
-		if err := recover(); err != nil {
-			panic(err)
-		}
-		_ = s.Close()
+		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+			// Close the session.
+			s.Close(tx, e.(Controllable))
+		})
 	}()
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
 			return
 		}
-		<-s.ent.World().Exec(func(tx *world.Tx) {
-			err = s.handlePacket(pk, tx, s.ent.Entity(tx).(Controllable))
+		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+			err = s.handlePacket(pk, tx, e.(Controllable))
 		})
 		if err != nil {
-			s.log.Debug("process packet: " + err.Error())
+			s.conf.Log.Debug("process packet: " + err.Error())
 			return
 		}
 	}
@@ -331,8 +326,8 @@ func (s *Session) background() {
 		i          int
 	)
 
-	<-s.ent.World().Exec(func(tx *world.Tx) {
-		co := s.ent.Entity(tx).(Controllable)
+	s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+		co := e.(Controllable)
 		r = s.sendAvailableCommands(co)
 		enums, enumValues = s.enums(co)
 	})
@@ -342,8 +337,8 @@ func (s *Session) background() {
 	for {
 		select {
 		case <-t.C:
-			s.ent.World().Exec(func(tx *world.Tx) {
-				c := s.ent.Entity(tx).(Controllable)
+			s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+				c := e.(Controllable)
 
 				if i++; i%20 == 0 {
 					// Enum resending happens relatively often and frequent updates are more important than with full
@@ -356,9 +351,8 @@ func (s *Session) background() {
 						enums, enumValues = s.enums(c)
 					}
 				}
+				s.sendChunks(tx, c)
 			})
-			s.sendChunks()
-
 		case <-s.closeBackground:
 			return
 		}
@@ -367,31 +361,30 @@ func (s *Session) background() {
 
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
-func (s *Session) sendChunks() {
-	pos := s.c.Position()
-	s.chunkLoader.Move(pos)
+func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
+	pos := c.Position()
+	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
 		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
-	const maxChunkTransactions = 8
-
-	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
-		s.handleWorldSwitch(w)
+	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
+		s.handleWorldSwitch(w, tx, c)
 	}
 
 	s.blobMu.Lock()
+	const maxChunkTransactions = 8
 	toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 	s.blobMu.Unlock()
 	if toLoad > 4 {
 		toLoad = 4
 	}
-	s.chunkLoader.Load(toLoad)
+	s.chunkLoader.Load(tx, toLoad)
 }
 
 // handleWorldSwitch handles the player of the Session switching worlds.
-func (s *Session) handleWorldSwitch(w *world.World) {
+func (s *Session) handleWorldSwitch(w *world.World, tx *world.Tx, c Controllable) {
 	if s.conn.ClientCacheEnabled() {
 		s.blobMu.Lock()
 		s.blobs = map[uint64][]byte{}
@@ -402,15 +395,15 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 	dim, _ := world.DimensionID(w.Dimension())
 	same := w.Dimension() == s.chunkLoader.World().Dimension()
 	if !same {
-		s.changeDimension(int32(dim), false)
+		s.changeDimension(int32(dim), false, c)
 	}
-	s.ViewEntityTeleport(s.c, s.c.Position())
-	s.chunkLoader.ChangeWorld(w)
+	s.ViewEntityTeleport(c, c.Position())
+	s.chunkLoader.ChangeWorld(tx, w)
 }
 
 // changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
 // immediately.
-func (s *Session) changeDimension(dim int32, silent bool) {
+func (s *Session) changeDimension(dim int32, silent bool, c Controllable) {
 	s.changingDimension.Store(true)
 	h := s.handlers[packet.IDServerBoundLoadingScreen].(*ServerBoundLoadingScreenHandler)
 	id := h.currentID.Add(1)
@@ -418,7 +411,7 @@ func (s *Session) changeDimension(dim int32, silent bool) {
 
 	s.writePacket(&packet.ChangeDimension{
 		Dimension:       dim,
-		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		Position:        vec64To32(c.Position().Add(entityOffset(c))),
 		LoadingScreenID: protocol.Option(id),
 	})
 	s.writePacket(&packet.StopSound{StopAll: silent})
@@ -442,7 +435,7 @@ func (s *Session) ChangingDimension() bool {
 func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
 	handler, ok := s.handlers[pk.ID()]
 	if !ok {
-		s.log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
+		s.conf.Log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
 		return nil
 	}
 	if handler == nil {

@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
-	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/generator"
@@ -139,8 +138,8 @@ func (conf Config) New() *Server {
 
 	srv := &Server{
 		conf:     conf,
-		incoming: make(chan *session.Session),
-		p:        make(map[uuid.UUID]*player.Player),
+		incoming: make(chan incoming),
+		p:        make(map[uuid.UUID]*onlinePlayer),
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
 	world_finaliseBlockRegistry()

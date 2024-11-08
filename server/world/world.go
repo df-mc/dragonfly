@@ -95,26 +95,16 @@ func (w *World) Name() string {
 // Dimension returns the Dimension assigned to the World in world.New. The sky colour and behaviour of a variety of
 // world features differ based on the Dimension assigned to a World.
 func (w *World) Dimension() Dimension {
-	if w == nil {
-		return nopDim{}
-	}
 	return w.conf.Dim
 }
 
 // Range returns the range in blocks of the World (min and max). It is equivalent to calling World.Dimension().Range().
 func (w *World) Range() cube.Range {
-	if w == nil {
-		return cube.Range{}
-	}
 	return w.ra
 }
 
 func (w *World) Exec(f func(tx *Tx)) <-chan struct{} {
 	c := make(chan struct{}, 1)
-	if w == nil {
-		close(c)
-		return c
-	}
 	w.queue <- transaction{c: c, f: f}
 	return c
 }
@@ -563,7 +553,7 @@ func (w *World) skyLight(pos cube.Pos) uint8 {
 
 // Time returns the current time of the world. The time is incremented every 1/20th of a second, unless
 // World.StopTime() is called.
-func (w *World) time() int {
+func (w *World) Time() int {
 	if w == nil {
 		return 0
 	}
@@ -648,22 +638,21 @@ func (w *World) playSound(pos mgl64.Vec3, s Sound) {
 // all viewers of the world that have the chunk of the entity loaded.
 // If the chunk that the entity is in is not yet loaded, it will first be loaded.
 // If the entity passed to AddEntity is currently in a world, it is first removed from that world.
-func (w *World) addEntity(tx *Tx, e *EntityHandle) Entity {
-	e.w.Store(w)
-
-	pos := chunkPosFromVec3(e.data.Pos)
-	w.entities[e] = pos
+func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
+	handle.setAndUnlockWorld(w)
+	pos := chunkPosFromVec3(handle.data.Pos)
+	w.entities[handle] = pos
 
 	c := w.chunk(pos)
-	c.Entities, c.modified = append(c.Entities, e), true
+	c.Entities, c.modified = append(c.Entities, handle), true
 
-	ent := e.Entity(tx)
+	e := handle.Entity(tx)
 	for _, v := range c.viewers {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
-		showEntity(ent, v)
+		showEntity(e, v)
 	}
-	w.Handler().HandleEntitySpawn(ent)
-	return ent
+	w.Handler().HandleEntitySpawn(e)
+	return e
 }
 
 // RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
@@ -672,35 +661,32 @@ func (w *World) addEntity(tx *Tx, e *EntityHandle) Entity {
 // world. If it can not find it there, it will loop through all entities and try to find it.
 // RemoveEntity assumes the entity is currently loaded and in a loaded chunk. If not, the function will not do
 // anything.
-func (w *World) removeEntity(ent Entity) {
-	e := ent.Handle()
-	pos, found := w.entities[e]
+func (w *World) removeEntity(e Entity) *EntityHandle {
+	handle := e.Handle()
+	pos, found := w.entities[handle]
 	if !found {
 		// The entity currently isn't in this world.
-		return
+		return nil
 	}
+	w.Handler().HandleEntityDespawn(e)
 
-	w.Handler().HandleEntityDespawn(ent)
-	c, ok := w.chunks[pos]
-	if !ok {
-		// The chunk wasn't loaded, so we can't remove any entity from the chunk.
-		return
-	}
-	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, e), true
+	c := w.chunk(pos)
+	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
 
 	for _, v := range c.viewers {
-		v.HideEntity(ent)
+		v.HideEntity(e)
 	}
 
-	e.w.Store(nil)
-	delete(w.entities, e)
+	handle.unsetAndLockWorld()
+	delete(w.entities, handle)
+	return handle
 }
 
 // EntitiesWithin does a lookup through the entities in the chunks touched by the BBox passed, returning all
 // those which are contained within the BBox when it comes to their position.
 func (w *World) entitiesWithin(tx *Tx, box cube.BBox, ignored func(Entity) bool) []Entity {
 	// Make an estimate of 16 entities on average.
-	m := make([]Entity, 0, 16)
+	entities := make([]Entity, 0, 16)
 
 	minPos, maxPos := chunkPosFromVec3(box.Min()), chunkPosFromVec3(box.Max())
 
@@ -712,18 +698,18 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox, ignored func(Entity) bool)
 				continue
 			}
 			for _, handle := range c.Entities {
-				entity := handle.Entity(tx)
-				if ignored != nil && ignored(entity) {
+				e := handle.Entity(tx)
+				if ignored != nil && ignored(e) {
 					continue
 				}
 				if box.Vec3Within(handle.data.Pos) {
 					// The entity position was within the BBox, so we add it to the slice to return.
-					m = append(m, entity)
+					entities = append(entities, e)
 				}
 			}
 		}
 	}
-	return m
+	return entities
 }
 
 // Entities returns a list of all entities currently added to the World.
@@ -934,7 +920,7 @@ func (w *World) PortalDestination(dim Dimension) *World {
 
 // Save saves the World to the provider.
 func (w *World) Save() {
-	w.Exec(w.save)
+	<-w.Exec(w.save)
 }
 
 func (w *World) save(tx *Tx) {
@@ -995,7 +981,7 @@ func (w *World) allViewers() ([]Viewer, []*Loader) {
 // addWorldViewer adds a viewer to the world. Should only be used while the viewer isn't viewing any chunks.
 func (w *World) addWorldViewer(l *Loader) {
 	w.viewers[l] = l.viewer
-	l.viewer.ViewTime(w.time())
+	l.viewer.ViewTime(w.Time())
 	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
 	w.set.Unlock()
@@ -1006,9 +992,6 @@ func (w *World) addWorldViewer(l *Loader) {
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
 // position, such as block changes, entity changes etc., will be sent to the viewer.
 func (w *World) addViewer(tx *Tx, c *Column, loader *Loader) {
-	if w == nil {
-		return
-	}
 	c.viewers = append(c.viewers, loader.viewer)
 	c.loaders = append(c.loaders, loader)
 
@@ -1169,7 +1152,7 @@ func (w *World) chunkCacheJanitor() {
 	for {
 		select {
 		case <-t.C:
-			w.Exec(w.saveUnusedChunks)
+			<-w.Exec(w.closeUnusedChunks)
 		case <-w.closing:
 			w.running.Done()
 			return
@@ -1177,7 +1160,7 @@ func (w *World) chunkCacheJanitor() {
 	}
 }
 
-func (w *World) saveUnusedChunks(tx *Tx) {
+func (w *World) closeUnusedChunks(tx *Tx) {
 	for pos, c := range w.chunks {
 		if len(c.viewers) == 0 {
 			delete(w.chunks, pos)

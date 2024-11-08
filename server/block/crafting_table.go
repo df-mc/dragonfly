@@ -36,7 +36,7 @@ func (CraftingTable) FuelInfo() item.FuelInfo {
 // Activate ...
 func (c CraftingTable) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false

@@ -141,7 +141,7 @@ func (c Chest) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u ite
 			}
 		}
 		if d, ok := tx.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() <= 2 {
-			opener.OpenBlockContainer(pos)
+			opener.OpenBlockContainer(pos, tx)
 		}
 		return true
 	}

@@ -22,7 +22,7 @@ func (t ticker) tickLoop(w *World) {
 	for {
 		select {
 		case <-tc.C:
-			w.Exec(t.tick)
+			<-w.Exec(t.tick)
 		case <-w.closing:
 			// World is being closed: Stop ticking and get rid of a task.
 			w.running.Done()

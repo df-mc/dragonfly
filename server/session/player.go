@@ -28,9 +28,9 @@ import (
 // StartShowingEntity is made.
 func (s *Session) StopShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e]
+	_, ok := s.hiddenEntities[e.Handle()]
 	if !ok {
-		s.hiddenEntities[e] = struct{}{}
+		s.hiddenEntities[e.Handle()] = struct{}{}
 	}
 	s.entityMutex.Unlock()
 
@@ -42,9 +42,9 @@ func (s *Session) StopShowingEntity(e world.Entity) {
 // StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
 func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e]
+	_, ok := s.hiddenEntities[e.Handle()]
 	if ok {
-		delete(s.hiddenEntities, e)
+		delete(s.hiddenEntities, e.Handle())
 	}
 	s.entityMutex.Unlock()
 
@@ -359,7 +359,7 @@ func (s *Session) SendForm(f form.Form) {
 
 	h.mu.Lock()
 	if len(h.forms) > 10 {
-		s.log.Debug("SendForm: more than 10 active forms: dropping an existing one")
+		s.conf.Log.Debug("SendForm: more than 10 active forms: dropping an existing one")
 		for k := range h.forms {
 			delete(h.forms, k)
 			break
@@ -708,7 +708,7 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack, tx *world.Tx, c 
 	if !clientSideItem.Equal(actual) {
 		// Only ever debug these as they are frequent and expected to happen whenever client and server get
 		// out of sync.
-		s.log.Debug("update held slot: client-side item must be identical to server-side item, but got differences", "client-held", clientSideItem.String(), "server-held", actual.String())
+		s.conf.Log.Debug("update held slot: client-side item must be identical to server-side item, but got differences", "client-held", clientSideItem.String(), "server-held", actual.String())
 	}
 	for _, viewer := range tx.Viewers(c.Position()) {
 		viewer.ViewEntityItems(c)
@@ -922,8 +922,3 @@ func gameTypeFromMode(mode world.GameMode) int32 {
 //
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 func item_id(s item.Stack) int32
-
-// noinspection ALL
-//
-//go:linkname world_add github.com/df-mc/dragonfly/server/world.add
-func world_add(e world.Entity, w *world.World)

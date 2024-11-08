@@ -38,7 +38,7 @@ func (EnchantingTable) LightEmissionLevel() uint8 {
 // Activate ...
 func (EnchantingTable) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false

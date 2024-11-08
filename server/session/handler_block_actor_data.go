@@ -36,7 +36,7 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session, tx *world.Tx,
 // handleSign handles the BlockActorData packet sent when editing a sign.
 func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Pos, s *Session, tx *world.Tx, co Controllable) error {
 	if _, ok := tx.Block(pos).(block.Sign); !ok {
-		s.log.Debug("no sign at position of sign block actor data", "pos", pos.String())
+		s.conf.Log.Debug("no sign at position of sign block actor data", "pos", pos.String())
 		return nil
 	}
 

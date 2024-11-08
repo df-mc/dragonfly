@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"io"
-	"sync/atomic"
+	"sync"
 	"time"
 )
 
@@ -38,7 +38,8 @@ type EntityHandle struct {
 	id uuid.UUID
 	t  EntityType
 
-	w atomic.Pointer[World]
+	cond *sync.Cond
+	w    *World
 
 	data EntityData
 
@@ -64,7 +65,7 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 		opts.ID = uuid.New()
 		clear(opts.ID[:8])
 	}
-	handle := &EntityHandle{id: opts.ID, t: t}
+	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{})}
 	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	handle.data.Name = opts.NameTag
 	conf.Apply(&handle.data)
@@ -99,7 +100,7 @@ func (e *EntityHandle) Type() EntityType {
 }
 
 func (e *EntityHandle) Entity(tx *Tx) Entity {
-	if e.w.Load() != tx.World() {
+	if e.w != tx.World() {
 		panic("can't load entity with Tx of different world")
 	}
 	return e.t.Open(tx, e, &e.data)
@@ -109,8 +110,34 @@ func (e *EntityHandle) UUID() uuid.UUID {
 	return e.id
 }
 
-func (e *EntityHandle) World() *World {
-	return e.w.Load()
+func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) {
+	e.cond.L.Lock()
+	defer e.cond.L.Unlock()
+
+	for e.w == nil {
+		e.cond.Wait()
+	}
+	<-e.w.Exec(func(tx *Tx) {
+		f(tx, e.Entity(tx))
+		e.cond.Signal()
+	})
+}
+
+func (e *EntityHandle) unsetAndLockWorld() {
+	e.cond.L.Lock()
+	e.w = nil
+	e.cond.L.Unlock()
+}
+
+func (e *EntityHandle) setAndUnlockWorld(w *World) {
+	e.cond.L.Lock()
+	if e.w != nil {
+		panic("cannot add entity to new world before removing from old world")
+	}
+	e.w = w
+	e.cond.L.Unlock()
+
+	e.cond.Signal()
 }
 
 func (e *EntityHandle) Handle() *EntityHandle {

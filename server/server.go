@@ -50,18 +50,30 @@ type Server struct {
 	customItems  []protocol.ItemComponentEntry
 
 	listeners []Listener
-	incoming  chan *session.Session
+	incoming  chan incoming
 
 	pmu sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they
 	// leave, they are removed from the map.
-	p map[uuid.UUID]*world.EntityHandle
+	p map[uuid.UUID]*onlinePlayer
 	// pwg is a sync.WaitGroup used to wait for all players to be disconnected
 	// before server shutdown, so that their data is saved properly.
 	pwg sync.WaitGroup
 	// wg is used to wait for all Listeners to be closed and their respective
 	// goroutines to be finished.
 	wg sync.WaitGroup
+}
+
+type incoming struct {
+	s *session.Session
+	p *onlinePlayer
+	w *world.World
+}
+
+type onlinePlayer struct {
+	handle *world.EntityHandle
+	xuid   string
+	name   string
 }
 
 // HandleFunc is a function that may be passed to Server.Accept(). It can be
@@ -108,18 +120,17 @@ func (srv *Server) Listen() {
 // may be nil if player joining does not need to be handled. Accept returns
 // false if the Server is closed using a call to Close.
 func (srv *Server) Accept(f HandleFunc) bool {
-	s, ok := <-srv.incoming
+	inc, ok := <-srv.incoming
 	if !ok {
 		return false
 	}
-	handle := s.EntityHandle()
 	srv.pmu.Lock()
-	srv.p[handle.UUID()] = handle
+	srv.p[inc.p.handle.UUID()] = inc.p
 	srv.pmu.Unlock()
 
-	<-handle.World().Exec(func(tx *world.Tx) {
-		p := handle.Entity(tx).(*player.Player)
-		s.Spawn(p)
+	<-inc.w.Exec(func(tx *world.Tx) {
+		p := tx.AddEntity(inc.p.handle).(*player.Player)
+		inc.s.Spawn(p)
 
 		if f != nil {
 			f(p)
@@ -164,7 +175,11 @@ func (srv *Server) MaxPlayerCount() int {
 func (srv *Server) Players() []*world.EntityHandle {
 	srv.pmu.RLock()
 	defer srv.pmu.RUnlock()
-	return maps.Values(srv.p)
+	handles := make([]*world.EntityHandle, 0, len(srv.p))
+	for _, p := range srv.p {
+		handles = append(handles, p.handle)
+	}
+	return handles
 }
 
 // Player looks for a player on the server with the UUID passed. If found, the
@@ -174,25 +189,31 @@ func (srv *Server) Player(uuid uuid.UUID) (*world.EntityHandle, bool) {
 	srv.pmu.RLock()
 	defer srv.pmu.RUnlock()
 	p, ok := srv.p[uuid]
-	return p, ok
+	return p.handle, ok
 }
 
 // PlayerByName looks for a player on the server with the name passed. If
 // found, the player is returned and the bool returns holds a true value. If
 // not, the bool is false and the player is nil
 func (srv *Server) PlayerByName(name string) (*world.EntityHandle, bool) {
-	return sliceutil.SearchValue(srv.Players(), func(p *world.EntityHandle) bool {
-		return p.Name() == name
-	})
+	if p, ok := sliceutil.SearchValue(maps.Values(srv.p), func(p *onlinePlayer) bool {
+		return p.name == name
+	}); ok {
+		return p.handle, true
+	}
+	return nil, false
 }
 
 // PlayerByXUID looks for a player on the server with the XUID passed. If found,
 // the player is returned and the bool returned is true. If no player with the
 // XUID was found, nil and false are returned.
 func (srv *Server) PlayerByXUID(xuid string) (*world.EntityHandle, bool) {
-	return sliceutil.SearchValue(srv.Players(), func(p *world.EntityHandle) bool {
-		return p.XUID() == xuid
-	})
+	if p, ok := sliceutil.SearchValue(maps.Values(srv.p), func(p *onlinePlayer) bool {
+		return p.xuid == xuid
+	}); ok {
+		return p.handle, true
+	}
+	return nil, false
 }
 
 // CloseOnProgramEnd closes the server right before the program ends, so that
@@ -225,7 +246,13 @@ func (srv *Server) close() {
 
 	srv.conf.Log.Debug("Disconnecting players...")
 	for _, p := range srv.Players() {
-		p.Disconnect(text.Colourf("<yellow>%v</yellow>", srv.conf.ShutdownMessage))
+		// It would be more efficient to iterate over all worlds and disconnect
+		// all players per world in the same transaction, but there might be
+		// more worlds than the standard dimensions, so that will not be
+		// sufficient.
+		p.ExecWorld(func(tx *world.Tx, e world.Entity) {
+			e.(*player.Player).Disconnect(text.Colourf("<yellow>%v</yellow>", srv.conf.ShutdownMessage))
+		})
 	}
 	srv.pwg.Wait()
 
@@ -365,10 +392,12 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 		srv.conf.Log.Debug("spawn failed: "+err.Error(), "raddr", conn.RemoteAddr())
 		return
 	}
-	_ = conn.WritePacket(&packet.ItemComponent{Items: srv.customItems})
-	if p, ok := srv.Player(id); ok {
-		p.Disconnect("Logged in from another location.")
+	if _, ok := srv.Player(id); ok {
+		_ = l.Disconnect(conn, "Already logged in.")
+		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
+		return
 	}
+	_ = conn.WritePacket(&packet.ItemComponent{Items: srv.customItems})
 	srv.incoming <- srv.createPlayer(id, conn, playerData)
 }
 
@@ -433,9 +462,9 @@ func (srv *Server) checkNetIsolation() {
 
 // handleSessionClose handles the closing of a session. It removes the player
 // of the session from the server.
-func (srv *Server) handleSessionClose(c session.Controllable) {
+func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
 	srv.pmu.Lock()
-	p, ok := srv.p[c.UUID()]
+	_, ok := srv.p[c.UUID()]
 	delete(srv.p, c.UUID())
 	srv.pmu.Unlock()
 	if !ok {
@@ -444,7 +473,7 @@ func (srv *Server) handleSessionClose(c session.Controllable) {
 		return
 	}
 
-	if err := srv.conf.PlayerProvider.Save(p.UUID(), p.Data()); err != nil {
+	if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data()); err != nil {
 		srv.conf.Log.Error("Save player data: " + err.Error())
 	}
 	srv.pwg.Done()
@@ -452,7 +481,9 @@ func (srv *Server) handleSessionClose(c session.Controllable) {
 
 // createPlayer creates a new player instance using the UUID and connection
 // passed.
-func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) *session.Session {
+func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) incoming {
+	srv.pwg.Add(1)
+
 	w, gm, pos := srv.world, srv.world.DefaultGameMode(), srv.world.Spawn().Vec3Middle()
 	if data != nil {
 		w, gm, pos = data.World, data.GameMode, data.Position
@@ -463,9 +494,11 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
 		HandleStop:     srv.handleSessionClose,
-	}.New(conn, w)
+	}.New(conn)
 
-	p := world.EntitySpawnOpts{Position: pos, ID: id}.New(player.Type{}, player.Config{
+	// TODO: Do something with the gamemode here.
+
+	conf := player.Config{
 		Name:    conn.IdentityData().DisplayName,
 		XUID:    conn.IdentityData().XUID,
 		UUID:    id,
@@ -474,10 +507,9 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		Data:    data,
 		Pos:     pos,
 		Session: s,
-	})
-	// TODO: Set player to session here.
-	srv.pwg.Add(1)
-	return s
+	}
+	handle := world.EntitySpawnOpts{Position: pos, ID: id}.New(player.Type{}, conf)
+	return incoming{s: s, w: w, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
 }
 
 // createWorld loads a world of the server with a specific dimension, ending

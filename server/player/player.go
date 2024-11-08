@@ -126,6 +126,7 @@ func (p *Player) Type() world.EntityType {
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
 // the client. (Typically the XBOX Live name)
 func (p *Player) Name() string {
+	// TODO: This isn't correct, this will change if the nametag changes.
 	return p.data.Name
 }
 
@@ -805,7 +806,7 @@ func (p *Player) kill(src world.DamageSource) {
 
 	pos := p.Position()
 	if !keepInv {
-		p.dropContents()
+		p.dropItems()
 	}
 	for _, e := range p.Effects() {
 		p.RemoveEffect(e.Type())
@@ -829,11 +830,10 @@ func (p *Player) kill(src world.DamageSource) {
 	})
 }
 
-// dropContents drops all items and experience of the Player on the ground in random directions.
-func (p *Player) dropContents() {
+// dropItems drops all items and experience of the Player on the ground in random directions.
+func (p *Player) dropItems() {
 	pos := p.Position()
 	for _, orb := range entity.NewExperienceOrbs(pos, int(math.Min(float64(p.experience.Level()*7), 100))) {
-		orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 		p.tx.AddEntity(orb)
 	}
 	p.experience.Reset()
@@ -844,9 +844,8 @@ func (p *Player) dropContents() {
 		if _, ok := it.Enchantment(enchantment.CurseOfVanishing{}); ok {
 			continue
 		}
-		ent := entity.NewItem(it, pos)
-		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-		p.tx.AddEntity(ent)
+		opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
+		p.tx.AddEntity(entity.NewItem(opts, it))
 	}
 }
 
@@ -2137,9 +2136,9 @@ func (p *Player) Drop(s item.Stack) int {
 // OpenBlockContainer opens a block container, such as a chest, at the position passed. If no container was
 // present at that location, OpenBlockContainer does nothing.
 // OpenBlockContainer will also do nothing if the player has no session connected to it.
-func (p *Player) OpenBlockContainer(pos cube.Pos) {
+func (p *Player) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 	if p.session() != session.Nop {
-		p.session().OpenBlockContainer(pos)
+		p.session().OpenBlockContainer(pos, tx)
 	}
 }
 
@@ -2522,7 +2521,7 @@ func (p *Player) EyeHeight() float64 {
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
 // to players around it.
 func (p *Player) PlaySound(sound world.Sound) {
-	p.session().PlaySound(sound)
+	p.session().PlaySound(sound, entity.EyePosition(p))
 }
 
 // ShowParticle shows a particle that only this Player can see. Unlike World.AddParticle, it is not broadcast
@@ -2679,7 +2678,7 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 		p.Drop(ctx.NewItem.Grow(ctx.NewItem.Count() - n))
 	}
 	if p.Dead() {
-		p.dropContents()
+		p.dropItems()
 	}
 }
 
