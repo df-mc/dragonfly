@@ -37,7 +37,7 @@ func BreakDuration(b world.Block, i item.Stack) time.Duration {
 	if info.Effective(t) {
 		eff := t.BaseMiningEfficiency(b)
 		if e, ok := i.Enchantment(enchantment.Efficiency{}); ok {
-			breakTime += (enchantment.Efficiency{}).Addend(e.Level())
+			eff += (enchantment.Efficiency{}).Addend(e.Level())
 		}
 		breakTime /= eff
 	}
