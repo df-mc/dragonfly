@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"math"
 	"time"
@@ -89,10 +90,10 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if f, ok := e.(firework); ok {
 		m[protocol.EntityDataKeyDisplayTileRuntimeID] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
 		if o, ok := e.(owned); ok && f.Attached() {
-			m[protocol.EntityDataKeyCustomDisplay] = int64(s.entityRuntimeID(o.Owner()))
+			m[protocol.EntityDataKeyCustomDisplay] = int64(s.handleRuntimeID(o.Owner()))
 		}
 	} else if o, ok := e.(owned); ok {
-		m[protocol.EntityDataKeyOwner] = int64(s.entityRuntimeID(o.Owner()))
+		m[protocol.EntityDataKeyOwner] = int64(s.handleRuntimeID(o.Owner()))
 	}
 	if sc, ok := e.(scaled); ok {
 		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
@@ -126,7 +127,8 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 			m[protocol.EntityDataKeyEffectAmbience] = byte(0)
 		}
 	}
-	if l, ok := e.(living); ok && s.c == e {
+
+	if l, ok := e.(living); ok && s.ent.UUID() == l.UUID() {
 		deathPos, deathDimension, died := l.DeathPosition()
 		if died {
 			dim, _ := world.DimensionID(deathDimension)
@@ -201,7 +203,7 @@ type scaled interface {
 }
 
 type owned interface {
-	Owner() world.Entity
+	Owner() *world.EntityHandle
 }
 
 type named interface {
@@ -259,6 +261,7 @@ type tnt interface {
 }
 
 type living interface {
+	UUID() uuid.UUID
 	DeathPosition() (mgl64.Vec3, world.Dimension, bool)
 }
 

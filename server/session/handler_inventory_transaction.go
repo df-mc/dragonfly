@@ -114,6 +114,10 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
 
+	if data.TargetEntityRuntimeID == selfEntityRuntimeID {
+		return fmt.Errorf("invalid entity interaction: players cannot interact with themselves")
+	}
+
 	handle, ok := s.entityFromRuntimeID(data.TargetEntityRuntimeID)
 	if !ok {
 		// In some cases, for example when a falling block entity solidifies, latency may allow attacking an entity that
@@ -121,16 +125,17 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 		s.conf.Log.Debug("invalid entity interaction: no entity with runtime ID", "ID", data.TargetEntityRuntimeID)
 		return nil
 	}
-	if data.TargetEntityRuntimeID == selfEntityRuntimeID {
-		return fmt.Errorf("invalid entity interaction: players cannot interact with themselves")
+	e, ok := handle.Entity(tx)
+	if !ok {
+		s.conf.Log.Debug("invalid entity interaction: entity is not in the same world (anymore)", "ID", data.TargetEntityRuntimeID)
+		return nil
 	}
-
 	var valid bool
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
-		valid = c.UseItemOnEntity(handle.Entity(tx))
+		valid = c.UseItemOnEntity(e)
 	case protocol.UseItemOnEntityActionAttack:
-		valid = c.AttackEntity(handle.Entity(tx))
+		valid = c.AttackEntity(e)
 	default:
 		return fmt.Errorf("unhandled UseItemOnEntity ActionType %v", data.ActionType)
 	}

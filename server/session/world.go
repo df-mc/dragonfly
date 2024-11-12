@@ -1164,11 +1164,18 @@ func (s *Session) closeWindow() {
 // entityRuntimeID returns the runtime ID of the entity passed.
 // noinspection GoCommentLeadingSpace
 func (s *Session) entityRuntimeID(e world.Entity) uint64 {
+	return s.handleRuntimeID(e.Handle())
+}
+
+func (s *Session) handleRuntimeID(e *world.EntityHandle) uint64 {
 	s.entityMutex.RLock()
-	//lint:ignore S1005 Double assignment is done explicitly to prevent panics.
-	id, _ := s.entityRuntimeIDs[e.Handle()]
-	s.entityMutex.RUnlock()
-	return id
+	defer s.entityMutex.RUnlock()
+
+	if id, ok := s.entityRuntimeIDs[e]; ok {
+		return id
+	}
+	s.conf.Log.Error("entity runtime ID not found", "UUID", e.UUID().String())
+	return 0
 }
 
 // entityFromRuntimeID attempts to return an entity by its runtime ID. False is returned if no entity with the

@@ -13,7 +13,7 @@ import (
 // blue item used to teleport.
 func NewEnderPearl(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := enderPearlConf
-	conf.Owner = owner
+	conf.Owner = owner.Handle()
 	return opts.New(EnderPearlType{}, conf)
 }
 
@@ -34,7 +34,8 @@ type teleporter interface {
 
 // teleport teleports the owner of an Ent to a trace.Result's position.
 func teleport(e *Ent, tx *world.Tx, target trace.Result) {
-	if user, ok := e.Behaviour().(*ProjectileBehaviour).Owner().(teleporter); ok {
+	owner, _ := e.Behaviour().(*ProjectileBehaviour).Owner().Entity(tx)
+	if user, ok := owner.(teleporter); ok {
 		tx.PlaySound(user.Position(), sound.Teleport{})
 		user.Teleport(target.Position())
 		user.Hurt(5, FallDamageSource{})

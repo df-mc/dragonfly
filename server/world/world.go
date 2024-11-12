@@ -56,7 +56,7 @@ type World struct {
 	chunks map[ChunkPos]*Column
 
 	// entities holds a map of entities currently loaded and the last ChunkPos that the Entity was in.
-	// These are tracked so that a call to RemoveEntity can find the correct entity.
+	// These are tracked so that a call to RemoveEntity can find the correct Entity.
 	entities map[*EntityHandle]ChunkPos
 
 	r *rand.Rand
@@ -147,7 +147,7 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
-		// The block was also a block entity, so we look it up in the map.
+		// The block was also a block Entity, so we look it up in the map.
 		if b, ok := c.BlockEntities[pos]; ok {
 			return b
 		}
@@ -634,38 +634,38 @@ func (w *World) playSound(pos mgl64.Vec3, s Sound) {
 	}
 }
 
-// AddEntity adds an entity to the world at the position that the entity has. The entity will be visible to
-// all viewers of the world that have the chunk of the entity loaded.
-// If the chunk that the entity is in is not yet loaded, it will first be loaded.
-// If the entity passed to AddEntity is currently in a world, it is first removed from that world.
+// AddEntity adds an Entity to the world at the position that the Entity has. The Entity will be visible to
+// all viewers of the world that have the chunk of the Entity loaded.
+// If the chunk that the Entity is in is not yet loaded, it will first be loaded.
+// If the Entity passed to AddEntity is currently in a world, it is first removed from that world.
 func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
-	handle.setAndUnlockWorld(w)
+	handle.setAndUnlockWorld(w, tx)
 	pos := chunkPosFromVec3(handle.data.Pos)
 	w.entities[handle] = pos
 
 	c := w.chunk(pos)
 	c.Entities, c.modified = append(c.Entities, handle), true
 
-	e := handle.Entity(tx)
+	e := handle.mustEntity(tx)
 	for _, v := range c.viewers {
-		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
+		// We show the Entity to all viewers currently in the chunk that the Entity is spawned in.
 		showEntity(e, v)
 	}
 	w.Handler().HandleEntitySpawn(e)
 	return e
 }
 
-// RemoveEntity removes an entity from the world that is currently present in it. Any viewers of the entity
+// RemoveEntity removes an Entity from the world that is currently present in it. Any viewers of the Entity
 // will no longer be able to see it.
-// RemoveEntity operates assuming the position of the entity is the same as where it is currently in the
+// RemoveEntity operates assuming the position of the Entity is the same as where it is currently in the
 // world. If it can not find it there, it will loop through all entities and try to find it.
-// RemoveEntity assumes the entity is currently loaded and in a loaded chunk. If not, the function will not do
+// RemoveEntity assumes the Entity is currently loaded and in a loaded chunk. If not, the function will not do
 // anything.
-func (w *World) removeEntity(e Entity) *EntityHandle {
+func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	handle := e.Handle()
 	pos, found := w.entities[handle]
 	if !found {
-		// The entity currently isn't in this world.
+		// The Entity currently isn't in this world.
 		return nil
 	}
 	w.Handler().HandleEntityDespawn(e)
@@ -676,9 +676,8 @@ func (w *World) removeEntity(e Entity) *EntityHandle {
 	for _, v := range c.viewers {
 		v.HideEntity(e)
 	}
-
-	handle.unsetAndLockWorld()
 	delete(w.entities, handle)
+	handle.unsetAndLockWorld(tx)
 	return handle
 }
 
@@ -698,12 +697,12 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox, ignored func(Entity) bool)
 				continue
 			}
 			for _, handle := range c.Entities {
-				e := handle.Entity(tx)
+				e := handle.mustEntity(tx)
 				if ignored != nil && ignored(e) {
 					continue
 				}
 				if box.Vec3Within(handle.data.Pos) {
-					// The entity position was within the BBox, so we add it to the slice to return.
+					// The Entity position was within the BBox, so we add it to the slice to return.
 					entities = append(entities, e)
 				}
 			}
@@ -716,7 +715,7 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox, ignored func(Entity) bool)
 func (w *World) allEntities(tx *Tx) []Entity {
 	m := make([]Entity, 0, len(w.entities))
 	for e := range w.entities {
-		m = append(m, e.Entity(tx))
+		m = append(m, e.mustEntity(tx))
 	}
 	return m
 }
@@ -990,13 +989,13 @@ func (w *World) addWorldViewer(l *Loader) {
 }
 
 // addViewer adds a viewer to the world at a given position. Any events that happen in the chunk at that
-// position, such as block changes, entity changes etc., will be sent to the viewer.
+// position, such as block changes, Entity changes etc., will be sent to the viewer.
 func (w *World) addViewer(tx *Tx, c *Column, loader *Loader) {
 	c.viewers = append(c.viewers, loader.viewer)
 	c.loaders = append(c.loaders, loader)
 
 	for _, entity := range c.Entities {
-		showEntity(entity.Entity(tx), loader.viewer)
+		showEntity(entity.mustEntity(tx), loader.viewer)
 	}
 }
 
@@ -1017,7 +1016,7 @@ func (w *World) removeViewer(tx *Tx, pos ChunkPos, loader *Loader) {
 
 	// After removing the loader from the chunk, we also need to hide all entities from the viewer.
 	for _, entity := range c.Entities {
-		loader.viewer.HideEntity(entity.Entity(tx))
+		loader.viewer.HideEntity(entity.mustEntity(tx))
 	}
 }
 
@@ -1036,7 +1035,7 @@ func (w *World) Handler() Handler {
 	return *w.handler.Load()
 }
 
-// showEntity shows an entity to a viewer of the world. It makes sure everything of the entity, including the
+// showEntity shows an Entity to a viewer of the world. It makes sure everything of the Entity, including the
 // items held, is shown.
 func showEntity(e Entity, viewer Viewer) {
 	viewer.ViewEntity(e)
@@ -1074,7 +1073,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		w.chunks[pos] = col
 		for _, e := range col.Entities {
 			w.entities[e] = pos
-			e.w.Store(w)
+			e.w = w
 		}
 		return col, nil
 	case errors.Is(err, leveldb.ErrNotFound):
@@ -1137,7 +1136,7 @@ func (w *World) saveChunk(tx *Tx, pos ChunkPos, c *Column, closeEntities bool) {
 	}
 	if closeEntities {
 		for _, e := range c.Entities {
-			_ = e.Entity(tx).Close()
+			_ = e.mustEntity(tx).Close()
 		}
 		clear(c.Entities)
 	}
@@ -1214,12 +1213,12 @@ func columnFrom(c *chunk.Column, w *World) *Column {
 	for _, e := range c.Entities {
 		eid, ok := e.Data["identifier"].(string)
 		if !ok {
-			w.conf.Log.Error("read column: entity without identifier field", "ID", e.ID)
+			w.conf.Log.Error("read column: Entity without identifier field", "ID", e.ID)
 			continue
 		}
 		t, ok := w.conf.Entities.Lookup(eid)
 		if !ok {
-			w.conf.Log.Error("read column: unknown entity type", "ID", e.ID, "type", eid)
+			w.conf.Log.Error("read column: unknown Entity type", "ID", e.ID, "type", eid)
 			continue
 		}
 		col.Entities = append(col.Entities, entityFromData(t, e.ID, e.Data))

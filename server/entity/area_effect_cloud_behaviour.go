@@ -48,7 +48,7 @@ func (conf AreaEffectCloudBehaviourConfig) New() *AreaEffectCloudBehaviour {
 		stationary: stationary.New(),
 		duration:   conf.Duration,
 		radius:     conf.Radius,
-		targets:    make(map[world.Entity]time.Duration),
+		targets:    make(map[*world.EntityHandle]time.Duration),
 	}
 }
 
@@ -62,7 +62,7 @@ type AreaEffectCloudBehaviour struct {
 
 	duration time.Duration
 	radius   float64
-	targets  map[world.Entity]time.Duration
+	targets  map[*world.EntityHandle]time.Duration
 }
 
 // Radius returns the current radius of the area effect cloud.
@@ -103,7 +103,7 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	}
 
 	entities := tx.EntitiesWithin(e.Type().BBox(e).Translate(pos), func(entity world.Entity) bool {
-		_, target := a.targets[entity]
+		_, target := a.targets[entity.Handle()]
 		_, living := entity.(Living)
 		return !living || target || entity == e
 	})
@@ -133,7 +133,7 @@ func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, ent *Ent, entiti
 				l.AddEffect(eff)
 			}
 
-			a.targets[e] = ent.Age() + a.conf.ReapplicationDelay
+			a.targets[e.Handle()] = ent.Age() + a.conf.ReapplicationDelay
 			a.subtractUseDuration()
 			a.subtractUseRadius()
 

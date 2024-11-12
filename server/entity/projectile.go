@@ -17,7 +17,7 @@ import (
 // ProjectileBehaviourConfig.New() creates a ProjectileBehaviour using these
 // settings.
 type ProjectileBehaviourConfig struct {
-	Owner world.Entity
+	Owner *world.EntityHandle
 	// Gravity is the amount of Y velocity subtracted every tick.
 	Gravity float64
 	// Drag is used to reduce all axes of the velocity every tick. Velocity is
@@ -110,7 +110,7 @@ type ProjectileBehaviour struct {
 }
 
 // Owner returns the owner of the projectile.
-func (lt *ProjectileBehaviour) Owner() world.Entity {
+func (lt *ProjectileBehaviour) Owner() *world.EntityHandle {
 	return lt.conf.Owner
 }
 
@@ -259,7 +259,8 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 // entity and knocks it back. Additionally, it applies any potion effects and
 // fire if applicable.
 func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec3) {
-	src := ProjectileDamageSource{Projectile: e, Owner: lt.conf.Owner}
+	owner, _ := lt.conf.Owner.Entity(e.tx)
+	src := ProjectileDamageSource{Projectile: e, Owner: owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
@@ -324,6 +325,6 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) func(other world.Entity) bool {
 	return func(other world.Entity) (ignored bool) {
 		g, ok := other.(interface{ GameMode() world.GameMode })
 		_, living := other.(Living)
-		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other)
+		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.Handle())
 	}
 }

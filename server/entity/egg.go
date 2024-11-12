@@ -10,7 +10,7 @@ import (
 // to spawn chicks.
 func NewEgg(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := eggConf
-	conf.Owner = owner
+	conf.Owner = owner.Handle()
 	return opts.New(EggType{}, conf)
 }
 

@@ -13,7 +13,7 @@ import (
 // FireworkBehaviourConfig holds optional parameters for a FireworkBehaviour.
 type FireworkBehaviourConfig struct {
 	Firework item.Firework
-	Owner    world.Entity
+	Owner    *world.EntityHandle
 	// ExistenceDuration is the duration that an entity with this behaviour
 	// should last. Once this time expires, the entity is closed. If
 	// ExistenceDuration is 0, the entity will never expire automatically.
@@ -62,7 +62,7 @@ func (f *FireworkBehaviour) Attached() bool {
 }
 
 // Owner returns the world.Entity that launched the firework.
-func (f *FireworkBehaviour) Owner() world.Entity {
+func (f *FireworkBehaviour) Owner() *world.EntityHandle {
 	return f.conf.Owner
 }
 
@@ -74,20 +74,22 @@ func (f *FireworkBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 // tick ticks the entity, updating its velocity either with a constant factor
 // or based on the owner's position and velocity if attached.
-func (f *FireworkBehaviour) tick(e *Ent, _ *world.Tx) {
+func (f *FireworkBehaviour) tick(e *Ent, tx *world.Tx) {
+	owner, ok := f.conf.Owner.Entity(tx)
+
 	var ownerVel mgl64.Vec3
-	if o, ok := f.conf.Owner.(interface {
+	if o, ok := owner.(interface {
 		Velocity() mgl64.Vec3
 	}); ok {
 		ownerVel = o.Velocity()
 	}
 
-	if f.conf.Attached {
-		dV := f.conf.Owner.Rotation().Vec3()
+	if f.conf.Attached && ok {
+		dV := owner.Rotation().Vec3()
 
 		// The client will propel itself to match the firework's velocity since
 		// we set the appropriate metadata.
-		e.data.Pos = f.conf.Owner.Position()
+		e.data.Pos = owner.Position()
 		e.data.Vel = e.data.Vel.Add(ownerVel.Add(dV.Mul(0.1).Add(dV.Mul(1.5).Sub(ownerVel).Mul(0.5))))
 	} else {
 		e.data.Vel[0] *= f.conf.SidewaysVelocityMultiplier
@@ -99,6 +101,7 @@ func (f *FireworkBehaviour) tick(e *Ent, _ *world.Tx) {
 // explode causes an explosion at the position of the firework, spawning
 // particles and damaging nearby entities.
 func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
+	owner, _ := f.conf.Owner.Entity(tx)
 	pos, explosions := e.Position(), f.conf.Firework.Explosions
 
 	for _, v := range tx.Viewers(pos) {
@@ -132,7 +135,7 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 			continue
 		}
 		dmg := force * math.Sqrt((5.0-dist)/5.0)
-		src := ProjectileDamageSource{Owner: f.conf.Owner, Projectile: e}
+		src := ProjectileDamageSource{Owner: owner, Projectile: e}
 
 		if pos == tpos {
 			e.(Living).Hurt(dmg, src)

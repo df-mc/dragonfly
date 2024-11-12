@@ -8,16 +8,17 @@ import (
 	"golang.org/x/exp/maps"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-// EntityType is the type of Entity. It specifies the name, encoded entity
+// EntityType is the type of Entity. It specifies the name, encoded Entity
 // ID and bounding box of an Entity.
 type EntityType interface {
 	Open(tx *Tx, handle *EntityHandle, data *EntityData) Entity
 
-	// EncodeEntity converts the entity to its encoded representation: It
-	// returns the type of the Minecraft entity, for example
+	// EncodeEntity converts the Entity to its encoded representation: It
+	// returns the type of the Minecraft Entity, for example
 	// 'minecraft:falling_block'.
 	EncodeEntity() string
 	// BBox returns the bounding box of an Entity with this EntityType.
@@ -38,8 +39,9 @@ type EntityHandle struct {
 	id uuid.UUID
 	t  EntityType
 
-	cond *sync.Cond
-	w    *World
+	cond     *sync.Cond
+	lockedTx atomic.Pointer[Tx]
+	w        *World
 
 	data EntityData
 
@@ -99,11 +101,18 @@ func (e *EntityHandle) Type() EntityType {
 	return e.t
 }
 
-func (e *EntityHandle) Entity(tx *Tx) Entity {
-	if e.w != tx.World() {
-		panic("can't load entity with Tx of different world")
+func (e *EntityHandle) Entity(tx *Tx) (Entity, bool) {
+	if e == nil || e.w != tx.World() {
+		return nil, false
 	}
-	return e.t.Open(tx, e, &e.data)
+	return e.t.Open(tx, e, &e.data), true
+}
+
+func (e *EntityHandle) mustEntity(tx *Tx) Entity {
+	if ent, ok := e.Entity(tx); ok {
+		return ent
+	}
+	panic("can't load Entity with Tx of different world")
 }
 
 func (e *EntityHandle) UUID() uuid.UUID {
@@ -118,30 +127,36 @@ func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) {
 		e.cond.Wait()
 	}
 	<-e.w.Exec(func(tx *Tx) {
-		f(tx, e.Entity(tx))
+		e.lockedTx.Store(tx)
+		f(tx, e.mustEntity(tx))
+		e.lockedTx.Store(nil)
+
 		e.cond.Signal()
 	})
 }
 
-func (e *EntityHandle) unsetAndLockWorld() {
-	e.cond.L.Lock()
+func (e *EntityHandle) unsetAndLockWorld(tx *Tx) {
+	// If the Entity is in a tx created using ExecWorld, e.cond.L will already
+	// be locked. Don't try to lock again in that case.
+	if e.lockedTx.Load() != tx {
+		e.cond.L.Lock()
+		defer e.cond.L.Unlock()
+	}
 	e.w = nil
-	e.cond.L.Unlock()
 }
 
-func (e *EntityHandle) setAndUnlockWorld(w *World) {
-	e.cond.L.Lock()
+func (e *EntityHandle) setAndUnlockWorld(w *World, tx *Tx) {
+	// If the Entity is in a tx created using ExecWorld, e.cond.L will already
+	// be locked. Don't try to lock again in that case.
+	if e.lockedTx.Load() != tx {
+		e.cond.L.Lock()
+		defer e.cond.L.Unlock()
+	}
 	if e.w != nil {
-		panic("cannot add entity to new world before removing from old world")
+		panic("cannot add Entity to new world before removing from old world")
 	}
 	e.w = w
-	e.cond.L.Unlock()
-
 	e.cond.Signal()
-}
-
-func (e *EntityHandle) Handle() *EntityHandle {
-	return e
 }
 
 func (e *EntityHandle) decodeNBT(m map[string]any) {
@@ -165,9 +180,9 @@ func (e *EntityHandle) encodeNBT(_ *Tx) map[string]any {
 	}
 }
 
-// Entity represents an entity in the world, typically an object that may be moved around and can be
+// Entity represents an Entity in the world, typically an object that may be moved around and can be
 // interacted with by other entities.
-// Viewers of a world may view an entity when near it.
+// Viewers of a world may view an Entity when near it.
 type Entity interface {
 	io.Closer
 	Handle() *EntityHandle
@@ -175,49 +190,49 @@ type Entity interface {
 	// Type returns the EntityType of the Entity.
 	Type() EntityType
 
-	// Position returns the current position of the entity in the world.
+	// Position returns the current position of the Entity in the world.
 	Position() mgl64.Vec3
-	// Rotation returns the yaw and pitch of the entity in degrees. Yaw is horizontal rotation (rotation around the
+	// Rotation returns the yaw and pitch of the Entity in degrees. Yaw is horizontal rotation (rotation around the
 	// vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 	// when facing forward).
 	Rotation() cube.Rotation
-	// World returns the current world of the entity. This is always the world that the entity can actually be
+	// World returns the current world of the Entity. This is always the world that the Entity can actually be
 	// found in.
 	World() *World
 }
 
-// TickerEntity represents an entity that has a Tick method which should be called every time the entity is
+// TickerEntity represents an Entity that has a Tick method which should be called every time the Entity is
 // ticked every 20th of a second.
 type TickerEntity interface {
 	Entity
-	// Tick ticks the entity with the current World and tick passed.
+	// Tick ticks the Entity with the current World and tick passed.
 	Tick(tx *Tx, current int64)
 }
 
-// EntityAction represents an action that may be performed by an entity. Typically, these actions are sent to
+// EntityAction represents an action that may be performed by an Entity. Typically, these actions are sent to
 // viewers in a world so that they can see these actions.
 type EntityAction interface {
 	EntityAction()
 }
 
-// DamageSource represents the source of the damage dealt to an entity. This
-// source may be passed to the Hurt() method of an entity in order to deal
-// damage to an entity with a specific source.
+// DamageSource represents the source of the damage dealt to an Entity. This
+// source may be passed to the Hurt() method of an Entity in order to deal
+// damage to an Entity with a specific source.
 type DamageSource interface {
 	// ReducedByArmour checks if the source of damage may be reduced if the
 	// receiver of the damage is wearing armour.
 	ReducedByArmour() bool
 	// ReducedByResistance specifies if the Source is affected by the resistance
-	// effect. If false, damage dealt to an entity with this source will not be
-	// lowered if the entity has the resistance effect.
+	// effect. If false, damage dealt to an Entity with this source will not be
+	// lowered if the Entity has the resistance effect.
 	ReducedByResistance() bool
 	// Fire specifies if the Source is fire related and should be ignored when
-	// an entity has the fire resistance effect.
+	// an Entity has the fire resistance effect.
 	Fire() bool
 }
 
-// HealingSource represents a source of healing for an entity. This source may
-// be passed to the Heal() method of a living entity.
+// HealingSource represents a source of healing for an Entity. This source may
+// be passed to the Heal() method of a living Entity.
 type HealingSource interface {
 	HealingSource()
 }
@@ -254,7 +269,7 @@ func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
 	for _, e := range ent {
 		name := e.EncodeEntity()
 		if _, ok := m[name]; ok {
-			panic("cannot register the same entity (" + name + ") twice")
+			panic("cannot register the same Entity (" + name + ") twice")
 		}
 		m[name] = e
 	}
