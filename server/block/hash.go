@@ -748,7 +748,7 @@ func (s Sign) Hash() (uint64, uint64) {
 }
 
 func (s Skull) Hash() (uint64, uint64) {
-	return hashSkull, uint64(s.Attach.FaceUint8())
+	return hashSkull, uint64(s.Type.Uint8()) | uint64(s.Attach.FaceUint8())<<3
 }
 
 func (s Slab) Hash() (uint64, uint64) {
