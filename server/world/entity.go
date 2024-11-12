@@ -112,7 +112,7 @@ func (e *EntityHandle) mustEntity(tx *Tx) Entity {
 	if ent, ok := e.Entity(tx); ok {
 		return ent
 	}
-	panic("can't load Entity with Tx of different world")
+	panic("can't load entity with Tx of different world")
 }
 
 func (e *EntityHandle) UUID() uuid.UUID {
@@ -136,7 +136,7 @@ func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) {
 }
 
 func (e *EntityHandle) unsetAndLockWorld(tx *Tx) {
-	// If the Entity is in a tx created using ExecWorld, e.cond.L will already
+	// If the entity is in a tx created using ExecWorld, e.cond.L will already
 	// be locked. Don't try to lock again in that case.
 	if e.lockedTx.Load() != tx {
 		e.cond.L.Lock()
@@ -146,14 +146,14 @@ func (e *EntityHandle) unsetAndLockWorld(tx *Tx) {
 }
 
 func (e *EntityHandle) setAndUnlockWorld(w *World, tx *Tx) {
-	// If the Entity is in a tx created using ExecWorld, e.cond.L will already
+	// If the entity is in a tx created using ExecWorld, e.cond.L will already
 	// be locked. Don't try to lock again in that case.
 	if e.lockedTx.Load() != tx {
 		e.cond.L.Lock()
 		defer e.cond.L.Unlock()
 	}
 	if e.w != nil {
-		panic("cannot add Entity to new world before removing from old world")
+		panic("cannot add entity to new world before removing from old world")
 	}
 	e.w = w
 	e.cond.Signal()
@@ -269,7 +269,7 @@ func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
 	for _, e := range ent {
 		name := e.EncodeEntity()
 		if _, ok := m[name]; ok {
-			panic("cannot register the same Entity (" + name + ") twice")
+			panic("cannot register the same entity (" + name + ") twice")
 		}
 		m[name] = e
 	}

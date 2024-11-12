@@ -155,7 +155,7 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 				}
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
-				// implementing the RandomTicker don't rely on additional block Entity data.
+				// implementing the RandomTicker don't rely on additional block entity data.
 				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
 					subY := (i + (tx.Range().Min() >> 4)) << 4
 					randomBlocks = append(randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
@@ -206,16 +206,16 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 		}
 
 		if lastPos != chunkPos {
-			// The Entity was stored using an outdated chunk position. We update it and make sure it is ready
+			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for loaders to view it.
 			tx.World().entities[handle] = chunkPos
 			c.Entities = append(c.Entities, handle)
 
 			var viewers []Viewer
 
-			// When changing an Entity's world, then teleporting it immediately, we could end up in a situation
-			// where the old chunk of the Entity was not loaded. In this case, it should be safe simply to ignore
-			// the loaders from the old chunk. We can assume they never saw the Entity in the first place.
+			// When changing an entity's world, then teleporting it immediately, we could end up in a situation
+			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
+			// the loaders from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := tx.World().chunks[lastPos]; ok {
 				old.Entities = sliceutil.DeleteVal(old.Entities, handle)
 				viewers = old.viewers
@@ -223,14 +223,14 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 
 			for _, viewer := range viewers {
 				if sliceutil.Index(c.viewers, viewer) == -1 {
-					// First we hide the Entity from all loaders that were previously viewing it, but no
+					// First we hide the entity from all loaders that were previously viewing it, but no
 					// longer are.
 					viewer.HideEntity(e)
 				}
 			}
 			for _, viewer := range c.viewers {
 				if sliceutil.Index(viewers, viewer) == -1 {
-					// Then we show the Entity to all loaders that are now viewing the Entity in the new
+					// Then we show the entity to all loaders that are now viewing the entity in the new
 					// chunk.
 					showEntity(e, viewer)
 				}

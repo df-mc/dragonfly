@@ -147,7 +147,7 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
-		// The block was also a block Entity, so we look it up in the map.
+		// The block was also a block entity, so we look it up in the map.
 		if b, ok := c.BlockEntities[pos]; ok {
 			return b
 		}
@@ -648,7 +648,7 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 
 	e := handle.mustEntity(tx)
 	for _, v := range c.viewers {
-		// We show the Entity to all viewers currently in the chunk that the Entity is spawned in.
+		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, v)
 	}
 	w.Handler().HandleEntitySpawn(e)
@@ -665,7 +665,7 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	handle := e.Handle()
 	pos, found := w.entities[handle]
 	if !found {
-		// The Entity currently isn't in this world.
+		// The entity currently isn't in this world.
 		return nil
 	}
 	w.Handler().HandleEntityDespawn(e)
@@ -702,7 +702,7 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox, ignored func(Entity) bool)
 					continue
 				}
 				if box.Vec3Within(handle.data.Pos) {
-					// The Entity position was within the BBox, so we add it to the slice to return.
+					// The entity position was within the BBox, so we add it to the slice to return.
 					entities = append(entities, e)
 				}
 			}
@@ -1213,12 +1213,12 @@ func columnFrom(c *chunk.Column, w *World) *Column {
 	for _, e := range c.Entities {
 		eid, ok := e.Data["identifier"].(string)
 		if !ok {
-			w.conf.Log.Error("read column: Entity without identifier field", "ID", e.ID)
+			w.conf.Log.Error("read column: entity without identifier field", "ID", e.ID)
 			continue
 		}
 		t, ok := w.conf.Entities.Lookup(eid)
 		if !ok {
-			w.conf.Log.Error("read column: unknown Entity type", "ID", e.ID, "type", eid)
+			w.conf.Log.Error("read column: unknown entity type", "ID", e.ID, "type", eid)
 			continue
 		}
 		col.Entities = append(col.Entities, entityFromData(t, e.ID, e.Data))

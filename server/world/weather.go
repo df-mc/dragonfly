@@ -203,8 +203,8 @@ func (w weather) adjustPositionToEntities(tx *Tx, vec mgl64.Vec3) mgl64.Vec3 {
 	list := make([]mgl64.Vec3, 0, len(ent)/3)
 	for _, e := range ent {
 		if h, ok := e.(interface{ Health() float64 }); ok && h.Health() > 0 {
-			// Any (living) Entity that is positioned higher than the highest block at its position is eligible to be
-			// struck by lightning. We first save all Entity positions where this is the case.
+			// Any (living) entity that is positioned higher than the highest block at its position is eligible to be
+			// struck by lightning. We first save all entity positions where this is the case.
 			pos := cube.PosFromVec3(e.Position())
 			if tx.HighestBlock(pos[0], pos[1]) < pos[2] {
 				list = append(list, e.Position())
@@ -212,7 +212,7 @@ func (w weather) adjustPositionToEntities(tx *Tx, vec mgl64.Vec3) mgl64.Vec3 {
 		}
 	}
 	// We then select one of the positions of entities higher than the highest block and adjust the position of the
-	// lightning to it, so that the Entity is struck directly.
+	// lightning to it, so that the entity is struck directly.
 	if len(list) > 0 {
 		vec = list[w.w.r.Intn(len(list))]
 	}
