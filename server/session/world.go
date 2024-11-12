@@ -76,16 +76,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	id := e.Type().EncodeEntity()
 	switch v := e.(type) {
 	case Controllable:
-		actualPlayer := false
-
-		sessionMu.Lock()
-		for _, s := range sessions {
-			if s.ent.UUID() == v.UUID() {
-				actualPlayer = true
-				break
-			}
-		}
-		sessionMu.Unlock()
+		_, actualPlayer := sessions.Lookup(v.UUID())
 		if !actualPlayer {
 			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionAdd, Entries: []protocol.PlayerListEntry{{
 				UUID:           v.UUID(),

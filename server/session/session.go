@@ -7,12 +7,12 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -60,6 +60,11 @@ type Session struct {
 	heldSlot                     *uint32
 	inv, offHand, enderChest, ui *inventory.Inventory
 	armour                       *inventory.Armour
+
+	// joinSkin is the first skin that the player joined with. It is sent on
+	// spawn for the player list, but otherwise updated immediately when the
+	// player is viewed.
+	joinSkin skin.Skin
 
 	breakingPos cube.Pos
 
@@ -115,11 +120,6 @@ type Conn interface {
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
-
-// session is a slice of all open sessions. It is protected by the sessionMu, which must be locked whenever
-// accessing the value.
-var sessions []*Session
-var sessionMu sync.Mutex
 
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
@@ -184,10 +184,6 @@ func (conf Config) New(conn Conn) *Session {
 	return s
 }
 
-func (s *Session) EntityHandle() *world.EntityHandle {
-	return s.ent
-}
-
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
 func (s *Session) Spawn(c Controllable, tx *world.Tx) {
@@ -206,7 +202,9 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	})
 
 	s.sendAvailableEntities(tx.World())
-	s.initPlayerList()
+
+	s.joinSkin = c.Skin()
+	sessions.Add(s)
 
 	c.SetGameMode(c.GameMode())
 	for _, e := range c.Effects() {
@@ -252,7 +250,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	s.chunkLoader.Close(tx)
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
-	s.closePlayerList()
+	sessions.Remove(s)
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)
@@ -505,34 +503,6 @@ func (s *Session) writePacket(pk packet.Packet) {
 		return
 	}
 	_ = s.conn.WritePacket(pk)
-}
-
-// initPlayerList initialises the player list of the session and sends the session itself to all other
-// sessions currently open.
-func (s *Session) initPlayerList() {
-	sessionMu.Lock()
-	sessions = append(sessions, s)
-	for _, session := range sessions {
-		// AddStack the player of the session to all sessions currently open, and add the players of all sessions
-		// currently open to the player list of the new session.
-		session.addToPlayerList(s)
-		if s != session {
-			s.addToPlayerList(session)
-		}
-	}
-	sessionMu.Unlock()
-}
-
-// closePlayerList closes the player list of the session and removes the session from the player list of all
-// other sessions.
-func (s *Session) closePlayerList() {
-	sessionMu.Lock()
-	for _, session := range sessions {
-		// Remove the player of the session from the player list of all other sessions.
-		session.removeFromPlayerList(s)
-	}
-	sessions = sliceutil.DeleteVal(sessions, s)
-	sessionMu.Unlock()
 }
 
 // actorIdentifier represents the structure of an actor identifier sent over the network.
