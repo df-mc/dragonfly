@@ -70,12 +70,6 @@ func (e *Ent) Rotation() cube.Rotation {
 	return e.data.Rot
 }
 
-// World returns the world of the entity.
-func (e *Ent) World() *world.World {
-	// TODO: Fix this
-	return nil
-}
-
 // Age returns the total time lived of this entity. It increases by
 // time.Second/20 for every time Tick is called.
 func (e *Ent) Age() time.Duration {

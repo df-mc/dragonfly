@@ -5,10 +5,10 @@ import (
 	"math"
 )
 
-// Rotation describes the rotation of an object in the world. It holds a yaw
-// (r[0]) and pitch value (r[1]). Yaw is in the range (-180, 180) while pitch is
-// in the range (-90, 90). A positive pitch implies an entity is looking
-// downwards, while a negative pitch implies it is looking upwards.
+// Rotation describes the rotation of an object in the world in degrees. It
+// holds a yaw (r[0]) and pitch value (r[1]). Yaw is in the range (-180, 180)
+// while pitch is in the range (-90, 90). A positive pitch implies an entity is
+// looking downwards, while a negative pitch implies it is looking upwards.
 type Rotation [2]float64
 
 // Yaw returns the yaw of r (r[0]).

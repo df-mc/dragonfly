@@ -126,7 +126,7 @@ type Handler interface {
 	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
-	HandleItemDrop(ctx *event.Context, e world.Entity)
+	HandleItemDrop(ctx *event.Context, s item.Stack)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *event.Context, addr *net.UDPAddr)
@@ -150,7 +150,7 @@ type NopHandler struct{}
 // Compile time check to make sure NopHandler implements Handler.
 var _ Handler = NopHandler{}
 
-func (NopHandler) HandleItemDrop(*event.Context, world.Entity)                                {}
+func (NopHandler) HandleItemDrop(*event.Context, item.Stack)                                  {}
 func (NopHandler) HandleMove(*event.Context, mgl64.Vec3, float64, float64)                    {}
 func (NopHandler) HandleJump()                                                                {}
 func (NopHandler) HandleTeleport(*event.Context, mgl64.Vec3)                                  {}

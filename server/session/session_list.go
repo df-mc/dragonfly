@@ -21,16 +21,15 @@ func (l *sessionList) Add(s *Session) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.s = append(l.s, s)
 	for _, other := range l.s {
-		// AddStack the player of the session to all sessions currently open,
-		// and add the players of all sessions currently open to the player list
-		// of the new session.
+		// Show all sessions to the new session and the new session to all
+		// existing sessions.
 		l.sendSessionTo(s, other)
-		if s != other {
-			l.sendSessionTo(other, s)
-		}
+		l.sendSessionTo(other, s)
 	}
+	// Show the new session to itself.
+	l.sendSessionTo(s, s)
+	l.s = append(l.s, s)
 }
 
 func (l *sessionList) Remove(s *Session) {
@@ -38,7 +37,6 @@ func (l *sessionList) Remove(s *Session) {
 	defer l.mu.Unlock()
 
 	for _, other := range l.s {
-		// Remove the player of the other from the player list of others.
 		l.unsendSessionFrom(s, other)
 	}
 	l.s = sliceutil.DeleteVal(l.s, s)
@@ -57,7 +55,7 @@ func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
 }
 
 func (l *sessionList) sendSessionTo(s, to *Session) {
-	runtimeID := uint64(1)
+	runtimeID := uint64(selfEntityRuntimeID)
 
 	to.entityMutex.Lock()
 	if s != to {

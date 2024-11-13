@@ -4,10 +4,8 @@ import (
 	"encoding/binary"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/internal/lang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"golang.org/x/text/language"
 	"image/color"
 	"time"
 )
@@ -207,19 +205,6 @@ func (defaultFood) AlwaysConsumable() bool {
 // ConsumeDuration ...
 func (d defaultFood) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
-}
-
-// DisplayName returns the display name of the item as shown in game in the language passed. It panics if an unknown
-// item is passed in.
-func DisplayName(item world.Item, locale language.Tag) string {
-	if c, ok := item.(world.CustomItem); ok {
-		return c.Name()
-	}
-	name, ok := lang.DisplayName(item, locale)
-	if !ok {
-		panic("should never happen")
-	}
-	return name
 }
 
 // eyePosition returns the position of the eyes of the entity if the entity implements entity.Eyed, or the

@@ -192,13 +192,9 @@ type Entity interface {
 
 	// Position returns the current position of the Entity in the world.
 	Position() mgl64.Vec3
-	// Rotation returns the yaw and pitch of the Entity in degrees. Yaw is horizontal rotation (rotation around the
-	// vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
-	// when facing forward).
+	// Rotation returns the yaw (horizontal rotation) and pitch (vertical
+	// rotation) of the entity in degrees.
 	Rotation() cube.Rotation
-	// World returns the current world of the Entity. This is always the world that the Entity can actually be
-	// found in.
-	World() *World
 }
 
 // TickerEntity represents an Entity that has a Tick method which should be called every time the Entity is

@@ -1758,14 +1758,12 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 			info.BreakHandler(pos, p.tx, p)
 		}
 		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
-			orb.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})
 			p.tx.AddEntity(orb)
 		}
 	}
 	for _, drop := range drops {
-		ent := entity.NewItem(drop, pos.Vec3Centre())
-		ent.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-		p.tx.AddEntity(ent)
+		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre(), Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
+		p.tx.AddEntity(entity.NewItem(opts, drop))
 	}
 
 	p.Exhaust(0.005)
@@ -1971,11 +1969,6 @@ func (p *Player) Rotation() cube.Rotation {
 	return p.data.Rot
 }
 
-// ChangingDimension returns whether the player is currently changing dimension or not.
-func (p *Player) ChangingDimension() bool {
-	return p.session().ChangingDimension()
-}
-
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
 // be added is returned.
 func (p *Player) Collect(s item.Stack) int {
@@ -2122,14 +2115,12 @@ func (p *Player) mendItems(xp int) int {
 // The number of items that was dropped in the end is returned. It is generally the count of the stack passed
 // or 0 if dropping the item.Stack was cancelled.
 func (p *Player) Drop(s item.Stack) int {
-	e := entity.NewItemPickupDelay(s, p.Position().Add(mgl64.Vec3{0, 1.4}), time.Second*2)
-	e.SetVelocity(p.Rotation().Vec3().Mul(0.4))
-
 	ctx := event.C()
-	if p.Handler().HandleItemDrop(ctx, e); ctx.Cancelled() {
+	if p.Handler().HandleItemDrop(ctx, s); ctx.Cancelled() {
 		return 0
 	}
-	p.tx.AddEntity(e)
+	opts := world.EntitySpawnOpts{Position: p.Position().Add(mgl64.Vec3{0, 1.4}), Velocity: p.Rotation().Vec3().Mul(0.4)}
+	p.tx.AddEntity(entity.NewItemPickupDelay(opts, s, time.Second*2))
 	return s.Count()
 }
 
