@@ -115,10 +115,11 @@ func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 
 // allSkulls ...
 func allSkulls() (skulls []world.Block) {
-	for _, f := range cube.HorizontalFaces() {
-		// A direction of -2 and -1 isn't actually valid, but when encoding the block these are encoded as 0 and 1. We
-		// can't otherwise represent this properly in an Attachment type.
-		skulls = append(skulls, Skull{Attach: WallAttachment(f.Direction())})
+	for _, t := range SkullTypes() {
+		for _, d := range cube.Directions() {
+			skulls = append(skulls, Skull{Type: t, Attach: WallAttachment(d)})
+		}
+		skulls = append(skulls, Skull{Type: t, Attach: StandingAttachment(0)})
 	}
-	return append(skulls, Skull{Attach: StandingAttachment(0)})
+	return
 }
