@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"iter"
 	"math/rand"
 	"sync"
 	"time"
@@ -683,41 +684,39 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 
 // EntitiesWithin does a lookup through the entities in the chunks touched by the BBox passed, returning all
 // those which are contained within the BBox when it comes to their position.
-func (w *World) entitiesWithin(tx *Tx, box cube.BBox, ignored func(Entity) bool) []Entity {
-	// Make an estimate of 16 entities on average.
-	entities := make([]Entity, 0, 16)
+func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
+	return func(yield func(Entity) bool) {
+		minPos, maxPos := chunkPosFromVec3(box.Min()), chunkPosFromVec3(box.Max())
 
-	minPos, maxPos := chunkPosFromVec3(box.Min()), chunkPosFromVec3(box.Max())
-
-	for x := minPos[0]; x <= maxPos[0]; x++ {
-		for z := minPos[1]; z <= maxPos[1]; z++ {
-			c, ok := w.chunks[ChunkPos{x, z}]
-			if !ok {
-				// The chunk wasn't loaded, so there are no entities here.
-				continue
-			}
-			for _, handle := range c.Entities {
-				e := handle.mustEntity(tx)
-				if ignored != nil && ignored(e) {
+		for x := minPos[0]; x <= maxPos[0]; x++ {
+			for z := minPos[1]; z <= maxPos[1]; z++ {
+				c, ok := w.chunks[ChunkPos{x, z}]
+				if !ok {
+					// The chunk wasn't loaded, so there are no entities here.
 					continue
 				}
-				if box.Vec3Within(handle.data.Pos) {
-					// The entity position was within the BBox, so we add it to the slice to return.
-					entities = append(entities, e)
+				for _, handle := range c.Entities {
+					if !box.Vec3Within(handle.data.Pos) {
+						continue
+					}
+					if !yield(handle.mustEntity(tx)) {
+						return
+					}
 				}
 			}
 		}
 	}
-	return entities
 }
 
 // Entities returns a list of all entities currently added to the World.
-func (w *World) allEntities(tx *Tx) []Entity {
-	m := make([]Entity, 0, len(w.entities))
-	for e := range w.entities {
-		m = append(m, e.mustEntity(tx))
+func (w *World) allEntities(tx *Tx) iter.Seq[Entity] {
+	return func(yield func(Entity) bool) {
+		for e := range w.entities {
+			if ent := e.mustEntity(tx); !yield(ent) {
+				return
+			}
+		}
 	}
-	return m
 }
 
 // Spawn returns the spawn of the world. Every new player will by default spawn on this position in the world

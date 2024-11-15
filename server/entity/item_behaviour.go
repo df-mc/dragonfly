@@ -113,11 +113,9 @@ func (i *ItemBehaviour) checkNearby(e *Ent, tx *world.Tx) {
 	pos := e.Position()
 	bbox := e.Type().BBox(e)
 	grown := bbox.GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
-	nearby := tx.EntitiesWithin(bbox.Translate(pos).Grow(2), func(entity world.Entity) bool {
-		return entity == e
-	})
-	for _, other := range nearby {
-		if !other.Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
+
+	for other := range tx.EntitiesWithin(bbox.Translate(pos).Grow(2)) {
+		if e == other || !other.Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
 			continue
 		}
 		if collector, ok := other.(Collector); ok {

@@ -90,13 +90,10 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		math.Ceil(explosionPos[2]+d+1),
 	)
 
-	for _, e := range tx.EntitiesWithin(box.Grow(2), nil) {
+	for e := range tx.EntitiesWithin(box.Grow(2)) {
 		pos := e.Position()
-		if !e.Type().BBox(e).Translate(pos).IntersectsWith(box) {
-			continue
-		}
-		dist := pos.Sub(pos).Len()
-		if dist >= d {
+		dist := explosionPos.Sub(pos).Len()
+		if dist >= d || !e.Type().BBox(e).Translate(pos).IntersectsWith(box) {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {

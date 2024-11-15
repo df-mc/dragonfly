@@ -3,6 +3,7 @@ package world
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
+	"iter"
 	"time"
 )
 
@@ -94,11 +95,11 @@ func (tx *Tx) RemoveEntity(e Entity) {
 	tx.w.removeEntity(e, tx)
 }
 
-func (tx *Tx) EntitiesWithin(box cube.BBox, ignore func(Entity) bool) []Entity {
-	return tx.w.entitiesWithin(tx, box, ignore)
+func (tx *Tx) EntitiesWithin(box cube.BBox) iter.Seq[Entity] {
+	return tx.w.entitiesWithin(tx, box)
 }
 
-func (tx *Tx) Entities() []Entity {
+func (tx *Tx) Entities() iter.Seq[Entity] {
 	return tx.w.allEntities(tx)
 }
 

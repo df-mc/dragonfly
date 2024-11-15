@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"iter"
 	"math"
 	"time"
 )
@@ -123,11 +124,7 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 	}
 
 	force := float64(len(explosions)*2) + 5.0
-	targets := tx.EntitiesWithin(e.Type().BBox(e).Translate(pos).Grow(5.25), func(e world.Entity) bool {
-		l, living := e.(Living)
-		return !living || l.AttackImmune()
-	})
-	for _, e := range targets {
+	for e := range filterLiving(tx.EntitiesWithin(e.Type().BBox(e).Translate(pos).Grow(5.25))) {
 		tpos := e.Position()
 		dist := pos.Sub(tpos).Len()
 		if dist > 5.0 {
@@ -141,10 +138,22 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 			e.(Living).Hurt(dmg, src)
 			continue
 		}
-		if _, ok := trace.Perform(pos, tpos, tx, e.Type().BBox(e).Grow(0.3), func(world.Entity) bool {
-			return true
-		}); ok {
+		if _, ok := trace.Perform(pos, tpos, tx, e.Type().BBox(e).Grow(0.3), nil); ok {
 			e.(Living).Hurt(dmg, src)
+		}
+	}
+}
+
+func filterLiving(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
+	return func(yield func(world.Entity) bool) {
+		for e := range seq {
+			l, living := e.(Living)
+			if living || l.AttackImmune() {
+				continue
+			}
+			if !yield(l) {
+				return
+			}
 		}
 	}
 }

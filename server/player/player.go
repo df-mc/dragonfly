@@ -1703,8 +1703,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 		blockBoxes[i] = box.Translate(pos.Vec3())
 	}
 
-	around := p.tx.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3()), nil)
-	for _, e := range around {
+	for e := range p.tx.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3())) {
 		switch e.Type().(type) {
 		case entity.ItemType, entity.ArrowType:
 			continue

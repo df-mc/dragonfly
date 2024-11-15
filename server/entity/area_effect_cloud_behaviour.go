@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"iter"
 	"time"
 )
 
@@ -101,13 +102,7 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 			delete(a.targets, target)
 		}
 	}
-
-	entities := tx.EntitiesWithin(e.Type().BBox(e).Translate(pos), func(entity world.Entity) bool {
-		_, target := a.targets[entity.Handle()]
-		_, living := entity.(Living)
-		return !living || target || entity == e
-	})
-	if a.applyEffects(pos, e, entities) {
+	if a.applyEffects(pos, e, a.filter(tx.EntitiesWithin(e.Type().BBox(e).Translate(pos)))) {
 		for _, v := range tx.Viewers(pos) {
 			v.ViewEntityState(e)
 		}
@@ -115,12 +110,27 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	return nil
 }
 
+func (a *AreaEffectCloudBehaviour) filter(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
+	return func(yield func(world.Entity) bool) {
+		for e := range seq {
+			_, target := a.targets[e.Handle()]
+			_, living := e.(Living)
+			if !living || target {
+				continue
+			}
+			if !yield(e) {
+				return
+			}
+		}
+	}
+}
+
 // applyEffects applies the effects of an area effect cloud at pos to all
 // entities passed if they were within the radius and don't have an active
 // cooldown period.
-func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, ent *Ent, entities []world.Entity) bool {
+func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, ent *Ent, entities iter.Seq[world.Entity]) bool {
 	var update bool
-	for _, e := range entities {
+	for e := range entities {
 		delta := e.Position().Sub(pos)
 		delta[1] = 0
 		if delta.Len() <= a.radius {

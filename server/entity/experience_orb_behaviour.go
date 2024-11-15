@@ -84,12 +84,11 @@ func (exp *ExperienceOrbBehaviour) tick(e *Ent, tx *world.Tx) {
 // findTarget attempts to find a target for an experience orb in w around pos.
 func (exp *ExperienceOrbBehaviour) findTarget(tx *world.Tx, pos mgl64.Vec3) {
 	exp.target = nil
-	collectors := tx.EntitiesWithin(followBox.Translate(pos), func(o world.Entity) bool {
-		_, ok := o.(experienceCollector)
-		return !ok
-	})
-	if len(collectors) > 0 {
-		exp.target = collectors[0].(experienceCollector).Handle()
+	for o := range tx.EntitiesWithin(followBox.Translate(pos)) {
+		if _, ok := o.(experienceCollector); ok {
+			exp.target = o.Handle()
+			break
+		}
 	}
 	exp.lastSearch = time.Now()
 }

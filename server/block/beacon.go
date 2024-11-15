@@ -187,8 +187,8 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, tx *world.Tx) {
 	entitiesInRange := tx.EntitiesWithin(cube.Box(
 		float64(pos.X()-r), -math.MaxFloat64, float64(pos.Z()-r),
 		float64(pos.X()+r), math.MaxFloat64, float64(pos.Z()+r),
-	), nil)
-	for _, e := range entitiesInRange {
+	))
+	for e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {
 			if primaryEff.Type() != nil {
 				p.AddEffect(primaryEff)

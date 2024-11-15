@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"iter"
 	"math"
 	"math/rand"
 	"time"
@@ -210,10 +211,7 @@ func (lt *ProjectileBehaviour) tickAttached(e *Ent, tx *world.Tx) bool {
 func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 	translated := e.Type().BBox(e).Translate(e.Position())
 	grown := translated.GrowVec3(mgl64.Vec3{1, 0.5, 1})
-	ignore := func(other world.Entity) bool {
-		return e == other
-	}
-	for _, other := range tx.EntitiesWithin(translated.Grow(2), ignore) {
+	for other := range tx.EntitiesWithin(translated.Grow(2)) {
 		if !other.Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
 			continue
 		}
@@ -321,10 +319,19 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 // ignores returns a function to ignore entities in trace.Perform that are
 // either a spectator, not living, the entity itself or its owner in the first
 // 5 ticks.
-func (lt *ProjectileBehaviour) ignores(e *Ent) func(other world.Entity) bool {
-	return func(other world.Entity) (ignored bool) {
-		g, ok := other.(interface{ GameMode() world.GameMode })
-		_, living := other.(Living)
-		return (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.Handle())
+func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
+	return func(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
+		return func(yield func(world.Entity) bool) {
+			for other := range seq {
+				g, ok := other.(interface{ GameMode() world.GameMode })
+				_, living := other.(Living)
+				if (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.Handle()) {
+					continue
+				}
+				if !yield(other) {
+					return
+				}
+			}
+		}
 	}
 }
