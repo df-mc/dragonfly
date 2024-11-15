@@ -147,11 +147,10 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 func filterLiving(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
 	return func(yield func(world.Entity) bool) {
 		for e := range seq {
-			l, living := e.(Living)
-			if living || l.AttackImmune() {
+			if _, living := e.(Living); living {
 				continue
 			}
-			if !yield(l) {
+			if !yield(e) {
 				return
 			}
 		}
