@@ -75,6 +75,8 @@ func encodeWallBlock(block world.Block) string {
 		} else if block.Type == MossyStoneBricks() {
 			return "mossy_stone_brick"
 		}
+	case Tuff:
+		return "tuff"
 	}
 	panic("invalid block used for wall")
 }
@@ -104,5 +106,6 @@ func WallBlocks() []world.Block {
 		Sandstone{},
 		StoneBricks{Type: MossyStoneBricks()},
 		StoneBricks{},
+		Tuff{},
 	}
 }
