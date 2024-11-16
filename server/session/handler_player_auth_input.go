@@ -66,19 +66,19 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 
 // handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
 func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session) error {
-	if pk.InputData&packet.InputFlagPerformItemInteraction != 0 {
+	if pk.InputData.Test(packet.InputFlagPerformItemInteraction) {
 		if err := h.handleUseItemData(pk.ItemInteractionData, s); err != nil {
 			return err
 		}
 	}
-	if pk.InputData&packet.InputFlagPerformBlockActions != 0 {
+	if pk.InputData.Test(packet.InputFlagPerformBlockActions) {
 		if err := h.handleBlockActions(pk.BlockActions, s); err != nil {
 			return err
 		}
 	}
 	h.handleInputFlags(pk.InputData, s)
 
-	if pk.InputData&packet.InputFlagPerformItemStackRequest != 0 {
+	if pk.InputData.Test(packet.InputFlagPerformItemStackRequest) {
 		s.inTransaction.Store(true)
 		defer s.inTransaction.Store(false)
 
@@ -94,35 +94,35 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 }
 
 // handleInputFlags handles the toggleable input flags set in a PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleInputFlags(flags uint64, s *Session) {
-	if flags&packet.InputFlagStartSprinting != 0 {
+func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Session) {
+	if flags.Test(packet.InputFlagStartSprinting) {
 		s.c.StartSprinting()
 	}
-	if flags&packet.InputFlagStopSprinting != 0 {
+	if flags.Test(packet.InputFlagStopSprinting) {
 		s.c.StopSprinting()
 	}
-	if flags&packet.InputFlagStartSneaking != 0 {
+	if flags.Test(packet.InputFlagStartSneaking) {
 		s.c.StartSneaking()
 	}
-	if flags&packet.InputFlagStopSneaking != 0 {
+	if flags.Test(packet.InputFlagStopSneaking) {
 		s.c.StopSneaking()
 	}
-	if flags&packet.InputFlagStartSwimming != 0 {
+	if flags.Test(packet.InputFlagStartSwimming) {
 		s.c.StartSwimming()
 	}
-	if flags&packet.InputFlagStopSwimming != 0 {
+	if flags.Test(packet.InputFlagStopSwimming) {
 		s.c.StopSwimming()
 	}
-	if flags&packet.InputFlagStartGliding != 0 {
+	if flags.Test(packet.InputFlagStartGliding) {
 		s.c.StartGliding()
 	}
-	if flags&packet.InputFlagStopGliding != 0 {
+	if flags.Test(packet.InputFlagStopGliding) {
 		s.c.StopGliding()
 	}
-	if flags&packet.InputFlagStartJumping != 0 {
+	if flags.Test(packet.InputFlagStartJumping) {
 		s.c.Jump()
 	}
-	if flags&packet.InputFlagMissedSwing != 0 {
+	if flags.Test(packet.InputFlagMissedSwing) {
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 		s.c.PunchAir()
