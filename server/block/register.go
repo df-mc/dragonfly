@@ -248,6 +248,7 @@ func init() {
 	world.RegisterItem(EndStone{})
 	world.RegisterItem(EnderChest{})
 	world.RegisterItem(Farmland{})
+	world.RegisterItem(FletchingTable{})
 	world.RegisterItem(Furnace{})
 	world.RegisterItem(GlassPane{})
 	world.RegisterItem(Glass{})
