@@ -14,10 +14,10 @@ func (Type) BBox(e world.Entity) cube.BBox {
 	p := e.(*Player)
 	s := p.Scale()
 	switch {
+	case p.Gliding(), p.Swimming(), p.Crawling():
+		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	case p.Sneaking():
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.5*s, 0.3*s)
-	case p.Gliding(), p.Swimming():
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	default:
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
 	}
