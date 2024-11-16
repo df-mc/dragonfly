@@ -1047,16 +1047,14 @@ func (p *Player) StopSwimming() {
 // StartCrawling makes the player start crawling if it is not currently doing so. If the player is sneaking
 // while StartCrawling is called, the sneaking is stopped.
 func (p *Player) StartCrawling() {
-	var isAir bool
 	for _, corner := range p.Type().BBox(p).Translate(p.Position()).Corners() {
-		_, isAir = p.World().Block(cube.PosFromVec3(corner).Add(cube.Pos{0, 1, 0})).(block.Air)
+		_, isAir := p.World().Block(cube.PosFromVec3(corner).Add(cube.Pos{0, 1, 0})).(block.Air)
 		if !isAir {
+			if !p.crawling.CompareAndSwap(false, true) {
+				return
+			}
 			break
 		}
-	}
-
-	if !isAir && !p.crawling.CompareAndSwap(false, true) {
-		return
 	}
 	p.StopSneaking()
 	p.updateState()
@@ -2649,13 +2647,12 @@ func (p *Player) OnGround() bool {
 // EyeHeight returns the eye height of the player.
 func (p *Player) EyeHeight() float64 {
 	switch {
-	case p.swimming.Load() || p.crawling.Load():
+	case p.swimming.Load() || p.crawling.Load() || p.Gliding():
 		return 0.52
 	case p.sneaking.Load():
 		return 1.26
-	default:
-		return 1.62
 	}
+	return 1.62
 }
 
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
