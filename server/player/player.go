@@ -2644,7 +2644,8 @@ func (p *Player) OnGround() bool {
 	return p.onGround.Load()
 }
 
-// EyeHeight returns the eye height of the player: 1.62, 1.26 if player is sneaking or 0.52 if the player is swimming, gliding or crawling.
+// EyeHeight returns the eye height of the player: 1.62, 1.26 if player is sneaking or 0.52 if the player is
+// swimming, gliding or crawling.
 func (p *Player) EyeHeight() float64 {
 	switch {
 	case p.swimming.Load() || p.crawling.Load() || p.Gliding():
