@@ -198,6 +198,10 @@ func init() {
 	registerAll(allWood())
 	registerAll(allWool())
 	registerAll(allDecoratedPots())
+	registerAll(allCopper())
+	registerAll(allCopperDoors())
+	registerAll(allCopperGrates())
+	registerAll(allCopperTrapdoors())
 }
 
 func init() {
@@ -441,6 +445,19 @@ func init() {
 	}
 	for _, t := range DeepslateTypes() {
 		world.RegisterItem(Deepslate{Type: t})
+	}
+	for _, o := range OxidationTypes() {
+		world.RegisterItem(CopperDoor{Oxidation: o})
+		world.RegisterItem(CopperDoor{Oxidation: o, Waxed: true})
+		world.RegisterItem(CopperGrate{Oxidation: o})
+		world.RegisterItem(CopperGrate{Oxidation: o, Waxed: true})
+		world.RegisterItem(CopperTrapdoor{Oxidation: o})
+		world.RegisterItem(CopperTrapdoor{Oxidation: o, Waxed: true})
+
+		for _, c := range CopperTypes() {
+			world.RegisterItem(Copper{Type: c, Oxidation: o})
+			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
+		}
 	}
 }
 

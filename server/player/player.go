@@ -1466,6 +1466,15 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			}
 		}
 	}
+	if p.Sneaking() {
+		if act, ok := b.(block.SneakingActivatable); ok {
+			if useCtx := p.useContext(); act.SneakingActivate(pos, face, p.World(), p, useCtx) {
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
+				p.addNewItem(useCtx)
+				return
+			}
+		}
+	}
 	if i.Empty() {
 		return
 	}
