@@ -9,7 +9,7 @@ import (
 type BrewingStand struct{}
 
 // BBox ...
-func (b BrewingStand) BBox(cube.Pos, *world.World) []cube.BBox {
+func (b BrewingStand) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{
 		full.ExtendTowards(cube.FaceDown, 0.875),
 		full.Stretch(cube.X, -0.4375).Stretch(cube.Z, -0.4375).ExtendTowards(cube.FaceDown, 0.125),
@@ -17,6 +17,6 @@ func (b BrewingStand) BBox(cube.Pos, *world.World) []cube.BBox {
 }
 
 // FaceSolid ...
-func (b BrewingStand) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (b BrewingStand) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

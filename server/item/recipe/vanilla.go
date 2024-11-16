@@ -60,7 +60,7 @@ type potionContainerChangeRecipe struct {
 	Output  string    `nbt:"output"`
 }
 
-func RegisterVanilla() {
+func registerVanilla() {
 	var craftingRecipes struct {
 		Shaped    []shapedRecipe    `nbt:"shaped"`
 		Shapeless []shapelessRecipe `nbt:"shapeless"`

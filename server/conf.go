@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
-	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/session"
@@ -145,10 +144,7 @@ func (conf Config) New() *Server {
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
 	world_finaliseBlockRegistry()
-
-	// this is not a solution this is just for me to be able to test without having an import cycle.
-	// note: everything works but creative inventory is not showing up properly content wise.
-	recipe.RegisterVanilla()
+	recipe_registerVanilla()
 
 	srv.world = srv.createWorld(world.Overworld, &srv.nether, &srv.end)
 	srv.nether = srv.createWorld(world.Nether, &srv.world, &srv.end)
@@ -319,6 +315,11 @@ func DefaultConfig() UserConfig {
 	c.Resources.Required = false
 	return c
 }
+
+// noinspection ALL
+//
+//go:linkname recipe_registerVanilla github.com/df-mc/dragonfly/server/item/recipe.registerVanilla
+func recipe_registerVanilla()
 
 // noinspection ALL
 //
