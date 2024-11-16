@@ -28,10 +28,14 @@ func (s Sandstone) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (s Sandstone) EncodeItem() (name string, meta int16) {
-	if s.Red {
-		return "minecraft:red_sandstone", int16(s.Type.Uint8())
+	var prefix string
+	if s.Type != NormalSandstone() {
+		prefix = s.Type.String() + "_"
 	}
-	return "minecraft:sandstone", int16(s.Type.Uint8())
+	if s.Red {
+		return "minecraft:" + prefix + "red_sandstone", 0
+	}
+	return "minecraft:" + prefix + "sandstone", 0
 }
 
 // EncodeBlock ...
@@ -40,11 +44,10 @@ func (s Sandstone) EncodeBlock() (string, map[string]any) {
 	if s.Type != NormalSandstone() {
 		prefix = s.Type.String() + "_"
 	}
-	suffix := "sandstone"
 	if s.Red {
-		suffix = "red_sandstone"
+		return "minecraft:" + prefix + "red_sandstone", nil
 	}
-	return "minecraft:" + prefix + suffix, nil
+	return "minecraft:" + prefix + "sandstone", nil
 }
 
 // SmeltInfo ...
