@@ -20,6 +20,9 @@ type Sandstone struct {
 
 // BreakInfo ...
 func (s Sandstone) BreakInfo() BreakInfo {
+	if s.Type == SmoothSandstone() {
+		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
+	}
 	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(s))
 }
 
