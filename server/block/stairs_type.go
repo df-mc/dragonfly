@@ -65,6 +65,8 @@ func encodeStairsBlock(block world.Block) string {
 		if !block.Cracked {
 			return "polished_blackstone_brick"
 		}
+	case PolishedTuff:
+		return "polished_tuff"
 	case Prismarine:
 		switch block.Type {
 		case NormalPrismarine():
@@ -106,7 +108,13 @@ func encodeStairsBlock(block world.Block) string {
 		}
 		return "stone_brick"
 	case Tuff:
-		return "tuff"
+		if !block.Chiseled {
+			return "tuff"
+		}
+	case TuffBricks:
+		if !block.Chiseled {
+			return "tuff_brick"
+		}
 	}
 	panic("invalid block used for stairs")
 }
@@ -135,6 +143,7 @@ func StairsBlocks() []world.Block {
 		NetherBricks{Type: RedNetherBricks()},
 		NetherBricks{},
 		PolishedBlackstoneBrick{},
+		PolishedTuff{},
 		Purpur{},
 		Quartz{Smooth: true},
 		Quartz{},
@@ -142,6 +151,7 @@ func StairsBlocks() []world.Block {
 		StoneBricks{},
 		Stone{},
 		Tuff{},
+		TuffBricks{},
 	}
 	for _, p := range PrismarineTypes() {
 		b = append(b, Prismarine{Type: p})

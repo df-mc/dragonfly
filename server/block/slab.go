@@ -109,7 +109,8 @@ func (s Slab) BreakInfo() BreakInfo {
 
 	switch block := s.Block.(type) {
 	// TODO: Copper
-	// TODO: Deepslate
+	case Deepslate, DeepslateBricks, DeepslateTiles:
+		hardness = 3.5
 	case EndBricks:
 		hardness = 3.0
 		blastResistance = 45.0
@@ -135,6 +136,8 @@ func (s Slab) BreakInfo() BreakInfo {
 		harvestable = alwaysHarvestable
 		effective = axeEffective
 		blastResistance = 15.0
+	case Tuff, PolishedTuff:
+		hardness = 1.5
 	}
 	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if s.Double {

@@ -125,6 +125,7 @@ const (
 	hashPlanks
 	hashPodzol
 	hashPolishedBlackstoneBrick
+	hashPolishedTuff
 	hashPotato
 	hashPrismarine
 	hashPumpkin
@@ -166,6 +167,7 @@ const (
 	hashTerracotta
 	hashTorch
 	hashTuff
+	hashTuffBricks
 	hashWall
 	hashWater
 	hashWheatSeeds
@@ -667,6 +669,10 @@ func (b PolishedBlackstoneBrick) Hash() (uint64, uint64) {
 	return hashPolishedBlackstoneBrick, uint64(boolByte(b.Cracked))
 }
 
+func (PolishedTuff) Hash() (uint64, uint64) {
+	return hashPolishedTuff, 0
+}
+
 func (p Potato) Hash() (uint64, uint64) {
 	return hashPotato, uint64(p.Growth)
 }
@@ -827,8 +833,12 @@ func (t Torch) Hash() (uint64, uint64) {
 	return hashTorch, uint64(t.Facing) | uint64(t.Type.Uint8())<<3
 }
 
-func (Tuff) Hash() (uint64, uint64) {
-	return hashTuff, 0
+func (t Tuff) Hash() (uint64, uint64) {
+	return hashTuff, uint64(boolByte(t.Chiseled))
+}
+
+func (t TuffBricks) Hash() (uint64, uint64) {
+	return hashTuffBricks, uint64(boolByte(t.Chiseled))
 }
 
 func (w Wall) Hash() (uint64, uint64) {
