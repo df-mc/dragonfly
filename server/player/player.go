@@ -1044,6 +1044,14 @@ func (p *Player) StopSwimming() {
 	p.updateState()
 }
 
+// Splash is called when a water bottle splashes onto the player.
+func (p *Player) Splash(*world.World, mgl64.Vec3) {
+	if d := p.OnFireDuration(); d.Seconds() <= 0 {
+		return
+	}
+	p.Extinguish()
+}
+
 // StartGliding makes the player start gliding if it is not currently doing so.
 func (p *Player) StartGliding() {
 	if !p.gliding.CompareAndSwap(false, true) {
