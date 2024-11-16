@@ -304,7 +304,7 @@ func (box BBox) Mul(val float64) BBox {
 	return BBox{min: box.min.Mul(val), max: box.max.Mul(val)}
 }
 
-// Volume calculates Volume of the BBox.
+// Volume calculates volume of the BBox.
 func (box BBox) Volume() float64 {
 	return box.Height() * box.Length() * box.Width()
 }
