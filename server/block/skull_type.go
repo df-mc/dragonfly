@@ -77,19 +77,19 @@ func (s skull) Name() string {
 func (s skull) String() string {
 	switch s {
 	case 0:
-		return "skeleton"
+		return "skeleton_skull"
 	case 1:
-		return "wither_skeleton"
+		return "wither_skeleton_skull"
 	case 2:
-		return "zombie"
+		return "zombie_head"
 	case 3:
-		return "player"
+		return "player_head"
 	case 4:
-		return "creeper"
+		return "creeper_head"
 	case 5:
-		return "dragon"
+		return "dragon_head"
 	case 6:
-		return "piglin"
+		return "piglin_head"
 	}
 	panic("unknown skull type")
 }

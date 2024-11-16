@@ -26,13 +26,18 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		return fmt.Errorf("no loom container opened")
 	}
 
+	timesCrafted := int(a.TimesCrafted)
+	if timesCrafted < 1 {
+		return fmt.Errorf("times crafted must be least 1")
+	}
+
 	// Next, check if the input slot has a valid banner item.
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomInput},
 		Slot:      loomInputSlot,
 	}, s)
-	if input.Empty() {
-		return fmt.Errorf("input item is empty")
+	if input.Count() < timesCrafted {
+		return fmt.Errorf("input item count is less than times crafted")
 	}
 	b, ok := input.Item().(block.Banner)
 	if !ok {
@@ -47,8 +52,8 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomDye},
 		Slot:      loomDyeSlot,
 	}, s)
-	if dye.Empty() {
-		return fmt.Errorf("dye item is empty")
+	if dye.Count() < timesCrafted {
+		return fmt.Errorf("dye item count is less than times crafted")
 	}
 	d, ok := dye.Item().(item.Dye)
 	if !ok {
@@ -86,10 +91,10 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomInput},
 		Slot:      loomInputSlot,
-	}, input.Grow(-1), s)
+	}, input.Grow(-timesCrafted), s)
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomDye},
 		Slot:      loomDyeSlot,
-	}, dye.Grow(-1), s)
+	}, dye.Grow(-timesCrafted), s)
 	return h.createResults(s, duplicateStack(input, b))
 }

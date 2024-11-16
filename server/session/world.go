@@ -249,8 +249,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	yaw, pitch := e.Rotation().Elem()
 	if id == selfEntityRuntimeID {
 		s.chunkLoader.Move(position)
-		pos := &position
-		s.teleportPos.Store(&pos)
+		s.teleportPos.Store(&position)
 	}
 
 	s.writePacket(&packet.SetActorMotion{EntityRuntimeID: id})
@@ -536,6 +535,16 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		})
 	case sound.WaxedSignFailedInteraction:
 		pk.SoundType = packet.SoundEventWaxedSignInteractFail
+	case sound.WaxRemoved:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventWaxOff,
+			Position:  vec64To32(pos),
+		})
+	case sound.CopperScraped:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventScrape,
+			Position:  vec64To32(pos),
+		})
 	case sound.Pop:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundInfinityArrowPickup,
@@ -880,12 +889,13 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 		Layer:             uint32(layer),
 	})
 	if v, ok := b.(world.NBTer); ok {
-		NBTData := v.EncodeNBT()
-		NBTData["x"], NBTData["y"], NBTData["z"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
-		s.writePacket(&packet.BlockActorData{
-			Position: blockPos,
-			NBTData:  NBTData,
-		})
+		if nbtData := v.EncodeNBT(); nbtData != nil {
+			nbtData["x"], nbtData["y"], nbtData["z"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
+			s.writePacket(&packet.BlockActorData{
+				Position: blockPos,
+				NBTData:  nbtData,
+			})
+		}
 	}
 }
 
@@ -1002,7 +1012,7 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
 	inv := inventory.New(1, nil)
-	s.openedWindow.Store(&inv)
+	s.openedWindow.Store(inv)
 	s.openedPos.Store(&pos)
 
 	var containerType byte
@@ -1027,7 +1037,7 @@ func (s *Session) OpenBlockContainer(pos cube.Pos) {
 		b.AddViewer(w, pos)
 
 		inv := s.c.EnderChestInventory()
-		s.openedWindow.Store(&inv)
+		s.openedWindow.Store(inv)
 
 		defer s.sendInv(inv, uint32(nextID))
 	}
@@ -1048,7 +1058,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos) {
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
 	inv := b.Inventory(s.c.World(), pos)
-	s.openedWindow.Store(&inv)
+	s.openedWindow.Store(inv)
 	s.openedPos.Store(&pos)
 
 	var containerType byte
@@ -1192,7 +1202,7 @@ func (s *Session) closeWindow() {
 	}
 	s.openedContainerID.Store(0)
 	inv := inventory.New(1, nil)
-	s.openedWindow.Store(&inv)
+	s.openedWindow.Store(inv)
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
 }
 

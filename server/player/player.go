@@ -55,7 +55,7 @@ type Player struct {
 	skin atomic.Pointer[skin.Skin]
 	// s holds the session of the player. This field should not be used directly, but instead,
 	// Player.session() should be called.
-	s atomic.Pointer[*session.Session]
+	s atomic.Pointer[session.Session]
 	// h holds the current Handler of the player. It may be changed at any time by calling the Handle method.
 	h atomic.Pointer[Handler]
 
@@ -131,8 +131,11 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 		breathing:  true,
 		cooldowns:  make(map[string]time.Time),
 		mc:         &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
+		heldSlot:   &atomic.Uint32{},
 	}
 	var scoreTag string
+	var heldSlot uint32
+	var vel mgl64.Vec3
 	var gm world.GameMode = world.GameModeSurvival
 	p.gameMode.Store(&gm)
 	p.Handle(nil)
@@ -145,6 +148,8 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.enchantSeed.Store(rand.Int63())
 	p.scale.Store(math.Float64bits(1))
 	p.pos.Store(&pos)
+	p.vel.Store(&vel)
+	p.heldSlot.Store(heldSlot)
 	return p
 }
 
@@ -155,7 +160,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // you can leave the data as nil to use default data.
 func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
 	p := New(name, skin, pos)
-	p.s.Store(&s)
+	p.s.Store(s)
 	p.skin.Store(&skin)
 	p.uuid, p.xuid = uuid, xuid
 	p.inv, p.offHand, p.enderChest, p.armour, p.heldSlot = s.HandleInventories()
@@ -1461,6 +1466,15 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			}
 		}
 	}
+	if p.Sneaking() {
+		if act, ok := b.(block.SneakingActivatable); ok {
+			if useCtx := p.useContext(); act.SneakingActivate(pos, face, p.World(), p, useCtx) {
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
+				p.addNewItem(useCtx)
+				return
+			}
+		}
+	}
 	if i.Empty() {
 		return
 	}
@@ -2147,7 +2161,7 @@ func (p *Player) CollectExperience(value int) bool {
 		return false
 	}
 	last := p.lastXPPickup.Load()
-	if last == nil || time.Since(*last) < time.Millisecond*100 {
+	if last != nil && time.Since(*last) < time.Millisecond*100 {
 		return false
 	}
 	value = p.mendItems(value)
@@ -2939,7 +2953,7 @@ func (p *Player) Data() Data {
 // is returned.
 func (p *Player) session() *session.Session {
 	if s := p.s.Load(); s != nil {
-		return *s
+		return s
 	}
 	return session.Nop
 }

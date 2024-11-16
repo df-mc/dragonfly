@@ -1,12 +1,12 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/sandertv/gophertunnel/minecraft"
-	"github.com/sirupsen/logrus"
 	"io"
-	"log"
+	"log/slog"
 )
 
 // Listener is a source for connections that may be listened on by a Server using Server.listen. Proxies can use this to
@@ -31,15 +31,14 @@ func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 		Biomes:                 biomes(),
 		TexturePacksRequired:   conf.ResourcesRequired,
 	}
-	if l, ok := conf.Log.(*logrus.Logger); ok {
-		cfg.ErrorLog = log.Default()
-		log.SetOutput(l.WithField("src", "gophertunnel").WriterLevel(logrus.DebugLevel))
+	if conf.Log.Enabled(context.Background(), slog.LevelDebug) {
+		cfg.ErrorLog = conf.Log.With("net origin", "gophertunnel")
 	}
 	l, err := cfg.Listen("raknet", uc.Network.Address)
 	if err != nil {
 		return nil, fmt.Errorf("create minecraft listener: %w", err)
 	}
-	conf.Log.Infof("Server running on %v.\n", l.Addr())
+	conf.Log.Info("Server running.", "addr", l.Addr())
 	return listener{l}, nil
 }
 

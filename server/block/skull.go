@@ -83,12 +83,16 @@ func (s Skull) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (s Skull) EncodeItem() (name string, meta int16) {
-	return "minecraft:skull", int16(s.Type.Uint8())
+	return "minecraft:" + s.Type.String(), 0
 }
 
 // DecodeNBT ...
 func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
-	s.Type = SkullType{skull(nbtconv.Uint8(data, "SkullType"))}
+	if t := skull(nbtconv.Uint8(data, "SkullType")); t != 255 {
+		// Used to upgrade pre-1.21.40 skulls after their flattening. Any skull placed since will set
+		// SkullType to 255.
+		s.Type = SkullType{t}
+	}
 	s.Attach.o = cube.OrientationFromYaw(float64(nbtconv.Float32(data, "Rotation")))
 	if s.Attach.facing >= 0 {
 		s.Attach.hanging = true
@@ -98,23 +102,24 @@ func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
 
 // EncodeNBT ...
 func (s Skull) EncodeNBT() map[string]interface{} {
-	return map[string]interface{}{"id": "Skull", "SkullType": s.Type.Uint8(), "Rotation": float32(s.Attach.o.Yaw())}
+	return map[string]interface{}{"id": "Skull", "SkullType": uint8(255), "Rotation": float32(s.Attach.o.Yaw())}
 }
 
 // EncodeBlock ...
 func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 	if s.Attach.hanging {
-		return "minecraft:skull", map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}
+		return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}
 	}
-	return "minecraft:skull", map[string]interface{}{"facing_direction": int32(1)}
+	return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(1)}
 }
 
 // allSkulls ...
 func allSkulls() (skulls []world.Block) {
-	for _, f := range cube.HorizontalFaces() {
-		// A direction of -2 and -1 isn't actually valid, but when encoding the block these are encoded as 0 and 1. We
-		// can't otherwise represent this properly in an Attachment type.
-		skulls = append(skulls, Skull{Attach: WallAttachment(f.Direction())})
+	for _, t := range SkullTypes() {
+		for _, d := range cube.Directions() {
+			skulls = append(skulls, Skull{Type: t, Attach: WallAttachment(d)})
+		}
+		skulls = append(skulls, Skull{Type: t, Attach: StandingAttachment(0)})
 	}
-	return append(skulls, Skull{Attach: StandingAttachment(0)})
+	return
 }

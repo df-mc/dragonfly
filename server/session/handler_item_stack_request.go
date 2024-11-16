@@ -55,7 +55,7 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session) error {
 		if err := h.handleRequest(req, s); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
-			s.log.Debugf("failed processing packet from %v (%v): ItemStackRequest: error resolving item stack request: %v", s.conn.RemoteAddr(), s.c.Name(), err)
+			s.log.Debug("process packet: ItemStackRequest: resolve item stack request: " + err.Error())
 		}
 	}
 	return nil
@@ -208,7 +208,7 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 // smelting. If it does, it will drop the rewards at the player's location.
 func (h *ItemStackRequestHandler) collectRewards(s *Session, inv *inventory.Inventory, slot int) {
 	w := s.c.World()
-	if inv == *s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
+	if inv == s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
 		if f, ok := w.Block(*s.openedPos.Load()).(smelter); ok {
 			for _, o := range entity.NewExperienceOrbs(entity.EyePosition(s.c), f.ResetExperience()) {
 				o.SetVelocity(mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2})

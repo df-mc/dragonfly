@@ -12,11 +12,11 @@ type Ladder struct {
 }
 
 // BBox returns one physics.BBox that depends on the facing direction of the Ladder.
-func (l Ladder) BBox(cube.Pos, *world.World) []cube.BBox {
+func (l Ladder) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{full.ExtendTowards(l.Facing, -0.8125)}
 }
 
 // FaceSolid always returns false.
-func (l Ladder) FaceSolid(cube.Pos, cube.Face, *world.World) bool {
+func (l Ladder) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

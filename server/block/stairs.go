@@ -50,9 +50,12 @@ func (s Stairs) BreakInfo() BreakInfo {
 	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
 
 	switch block := s.Block.(type) {
-	// TODO: Copper
-	// TODO: Blackstone
-	// TODO: Deepslate
+	case Blackstone:
+		hardness = 1.5
+	case Copper:
+		hardness = 3.0
+	case Deepslate, DeepslateBricks, DeepslateTiles:
+		hardness = 3.5
 	case Planks:
 		harvestable = alwaysHarvestable
 		effective = axeEffective
@@ -75,6 +78,8 @@ func (s Stairs) BreakInfo() BreakInfo {
 		if block.Type == NormalStoneBricks() {
 			hardness = 1.5
 		}
+	case Tuff, PolishedTuff:
+		hardness = 1.5
 	}
 	return newBreakInfo(hardness, harvestable, effective, oneOf(s)).withBlastResistance(blastResistance)
 }
