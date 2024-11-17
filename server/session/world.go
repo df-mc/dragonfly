@@ -803,13 +803,13 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventLecternBookPlace
 	case sound.RespawnAnchorAmbient:
 		pk.SoundType = packet.SoundEventRespawnAnchorAmbient
-		pk.ExtraData = so.Charge
+		pk.ExtraData = int32(so.Charge)
 	case sound.RespawnAnchorCharge:
 		pk.SoundType = packet.SoundEventRespawnAnchorCharge
-		pk.ExtraData = so.Charge
+		pk.ExtraData = int32(so.Charge)
 	case sound.RespawnAnchorDeplete:
 		pk.SoundType = packet.SoundEventRespawnAnchorDeplete
-		pk.ExtraData = so.Charge
+		pk.ExtraData = int32(so.Charge)
 	case sound.Totem:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundTotemUsed,
