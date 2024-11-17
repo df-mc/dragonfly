@@ -50,6 +50,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if sw, ok := e.(swimmer); ok && sw.Swimming() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSwimming)
 	}
+	if cr, ok := e.(crawler); ok && cr.Crawling() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCrawling)
+	}
 	if gl, ok := e.(glider); ok && gl.Gliding() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagGliding)
 	}
@@ -176,6 +179,10 @@ type sprinter interface {
 
 type swimmer interface {
 	Swimming() bool
+}
+
+type crawler interface {
+	Crawling() bool
 }
 
 type glider interface {

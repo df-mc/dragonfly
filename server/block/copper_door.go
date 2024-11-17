@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
@@ -71,7 +70,6 @@ func (d CopperDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world
 		} else if d.Oxidation != b.Oxidation || d.Waxed != b.Waxed {
 			d.Oxidation = b.Oxidation
 			d.Waxed = b.Waxed
-			fmt.Println("NeighbourUpdateTick 1", d, b)
 			w.SetBlock(pos, d, nil)
 		}
 		return
@@ -85,7 +83,6 @@ func (d CopperDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world
 	} else if d.Oxidation != b.Oxidation || d.Waxed != b.Waxed {
 		d.Oxidation = b.Oxidation
 		d.Waxed = b.Waxed
-		fmt.Println("NeighbourUpdateTick 2", d, b)
 		w.SetBlock(pos, d, nil)
 	}
 }
@@ -148,7 +145,6 @@ func (d CopperDoor) SneakingActivate(pos cube.Pos, _ cube.Face, w *world.World, 
 	var ok bool
 	d.Oxidation, d.Waxed, ok = activateOxidizable(pos, w, user, d.Oxidation, d.Waxed)
 	if ok {
-		fmt.Println("SneakingActivate", d)
 		w.SetBlock(pos, d, nil)
 		return true
 	}
@@ -161,7 +157,9 @@ func (d CopperDoor) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BreakInfo ...
 func (d CopperDoor) BreakInfo() BreakInfo {
-	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(d))
+	return newBreakInfo(3, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
+	}, pickaxeEffective, oneOf(d))
 }
 
 // SideClosed ...

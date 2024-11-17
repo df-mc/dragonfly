@@ -69,6 +69,9 @@ type Controllable interface {
 	StartSwimming()
 	Swimming() bool
 	StopSwimming()
+	StartCrawling()
+	Crawling() bool
+	StopCrawling()
 	StartFlying()
 	Flying() bool
 	StopFlying()

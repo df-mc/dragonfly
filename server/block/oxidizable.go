@@ -45,7 +45,7 @@ func attemptOxidation(pos cube.Pos, w *world.World, r *rand.Rand, o Oxidizable) 
 	level := o.OxidationLevel()
 	if level == OxidizedOxidation() || !o.CanOxidate() {
 		return
-	} else if r.Float64() > 64/1125 {
+	} else if r.Float64() > 64.0/1125.0 {
 		return
 	}
 
