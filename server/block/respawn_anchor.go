@@ -40,7 +40,7 @@ func (r RespawnAnchor) BreakInfo() BreakInfo {
 // Activate ...
 func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
 
-	var nether bool = w.Dimension().WaterEvaporates()
+	var nether = w.Dimension().WaterEvaporates()
 
 	held, _ := u.HeldItems()
 	_, usingGlowStone := held.Item().(Glowstone)
