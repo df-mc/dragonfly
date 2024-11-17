@@ -15,6 +15,7 @@ const (
 	hashBarrier
 	hashBasalt
 	hashBeacon
+	hashBed
 	hashBedrock
 	hashBeetrootSeeds
 	hashBlackstone
@@ -144,6 +145,7 @@ const (
 	hashRawGold
 	hashRawIron
 	hashReinforcedDeepslate
+	hashRespawnAnchor
 	hashSand
 	hashSandstone
 	hashSeaLantern

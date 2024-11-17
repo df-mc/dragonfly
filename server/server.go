@@ -455,7 +455,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		w, gm, pos = data.World, data.GameMode, data.Position
 	}
 	s := session.New(conn, srv.conf.MaxChunkRadius, srv.conf.Log, srv.conf.JoinMessage, srv.conf.QuitMessage)
-	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.parseSkin(conn.ClientData()), s, pos, data)
+	p := player.NewWithSession(conn.IdentityData().DisplayName, conn.IdentityData().XUID, id, srv.parseSkin(conn.ClientData()), s, pos, data, srv)
 
 	s.Spawn(p, pos, w, gm, srv.handleSessionClose)
 	srv.pwg.Add(1)

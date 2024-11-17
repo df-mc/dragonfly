@@ -122,6 +122,7 @@ func init() {
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
+	registerAll(allBeds())
 	registerAll(allBeetroot())
 	registerAll(allBlackstone())
 	registerAll(allBlastFurnaces())
@@ -203,6 +204,7 @@ func init() {
 	registerAll(allCopperDoors())
 	registerAll(allCopperGrates())
 	registerAll(allCopperTrapdoors())
+	registerAll(allRespawnAnchors())
 }
 
 func init() {
@@ -374,6 +376,7 @@ func init() {
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
+		world.RegisterItem(Bed{Colour: c})
 		world.RegisterItem(Carpet{Colour: c})
 		world.RegisterItem(ConcretePowder{Colour: c})
 		world.RegisterItem(Concrete{Colour: c})
@@ -460,6 +463,9 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
+	}
+	for _, t := range allRespawnAnchorsItems() {
+		world.RegisterItem(t)
 	}
 }
 

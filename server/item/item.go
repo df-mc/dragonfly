@@ -166,6 +166,11 @@ type User interface {
 	UsingItem() bool
 	ReleaseItem()
 	UseItem()
+
+	SetSpawnPos(pos cube.Pos, w *world.World)
+
+	Messaget(key string, a ...string)
+	Sneaking() bool
 }
 
 // Carrier represents an entity that is able to carry an item.

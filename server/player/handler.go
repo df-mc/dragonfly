@@ -112,6 +112,8 @@ type Handler interface {
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
 	HandleSignEdit(ctx *event.Context, pos cube.Pos, frontSide bool, oldText, newText string)
+	// HandleSleep handles the player going to sleep. ctx.Cancel() may be called to cancel the sleep.
+	HandleSleep(ctx *event.Context, sendReminder *bool)
 	// HandleLecternPageTurn handles the player turning a page in a lectern. ctx.Cancel() may be called to cancel the
 	// page turn. The page number may be changed by assigning to *page.
 	HandleLecternPageTurn(ctx *event.Context, pos cube.Pos, oldPage int, newPage *int)
@@ -167,6 +169,7 @@ func (NopHandler) HandleBlockBreak(*event.Context, cube.Pos, *[]item.Stack, *int
 func (NopHandler) HandleBlockPlace(*event.Context, cube.Pos, world.Block)                     {}
 func (NopHandler) HandleBlockPick(*event.Context, cube.Pos, world.Block)                      {}
 func (NopHandler) HandleSignEdit(*event.Context, cube.Pos, bool, string, string)              {}
+func (NopHandler) HandleSleep(*event.Context, *bool)                                          {}
 func (NopHandler) HandleLecternPageTurn(*event.Context, cube.Pos, int, *int)                  {}
 func (NopHandler) HandleItemPickup(*event.Context, *item.Stack)                               {}
 func (NopHandler) HandleItemUse(*event.Context)                                               {}

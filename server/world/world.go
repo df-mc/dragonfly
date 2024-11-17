@@ -69,6 +69,16 @@ type World struct {
 	viewers   map[*Loader]Viewer
 }
 
+const (
+	TimeDay      = 1000
+	TimeNoon     = 6000
+	TimeSunset   = 12000
+	TimeNight    = 13000
+	TimeMidnight = 18000
+	TimeSunrise  = 23000
+	TimeFull     = 24000
+)
+
 // New creates a new initialised world. The world may be used right away, but it will not be saved or loaded
 // from files until it has been given a different provider than the default. (NopProvider)
 // By default, the name of the world will be 'World'.
@@ -806,6 +816,41 @@ func (w *World) Entities() []Entity {
 	return m
 }
 
+// Sleepers returns a list of all sleeping entities currently added to the World.
+func (w *World) Sleepers() []Sleeper {
+	ent := w.Entities()
+	sleepers := make([]Sleeper, 0, len(ent)/40)
+	for _, e := range ent {
+		if s, ok := e.(Sleeper); ok {
+			sleepers = append(sleepers, s)
+		}
+	}
+	return sleepers
+}
+
+// BroadcastSleepingIndicator broadcasts a sleeping indicator to all sleepers in the world.
+func (w *World) BroadcastSleepingIndicator() {
+	sleepers := w.Sleepers()
+	sleeping := len(sliceutil.Filter(sleepers, func(s Sleeper) bool {
+		_, ok := s.Sleeping()
+		return ok
+	}))
+	for _, s := range sleepers {
+		s.SendSleepingIndicator(sleeping, len(sleepers))
+	}
+}
+
+// BroadcastSleepingReminder broadcasts a sleeping reminder message to all sleepers in the world, excluding the sleeper
+// passed.
+func (w *World) BroadcastSleepingReminder(sleeper Sleeper) {
+	for _, s := range w.Sleepers() {
+		if s == sleeper {
+			continue
+		}
+		s.Messaget("chat.type.sleeping", sleeper.Name())
+	}
+}
+
 // OfEntity attempts to return a world that an entity is currently in. If the entity was not currently added
 // to a world, the world returned is nil and the bool returned is false.
 func OfEntity(e Entity) (*World, bool) {
@@ -871,6 +916,28 @@ func (w *World) SetPlayerSpawn(uuid uuid.UUID, pos cube.Pos) {
 	if err := w.conf.Provider.SavePlayerSpawnPosition(uuid, pos); err != nil {
 		w.conf.Log.Error("set player spawn: " + err.Error())
 	}
+}
+
+// SetRequiredSleepDuration sets the duration of time players in the world must sleep for, in order to advance to the
+// next day.
+func (w *World) SetRequiredSleepDuration(duration time.Duration) {
+	if w == nil {
+		return
+	}
+	w.set.Lock()
+	defer w.set.Unlock()
+	w.set.RequiredSleepTicks = duration.Milliseconds() / 50
+}
+
+// SetSleepRequirement sets the duration of time players in the world must sleep for, in order for the time to change to
+// day.
+func (w *World) SetSleepRequirement(duration time.Duration) {
+	if w == nil {
+		return
+	}
+	w.set.Lock()
+	defer w.set.Unlock()
+	w.set.RequiredSleepTicks = duration.Milliseconds() / 50
 }
 
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game

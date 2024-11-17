@@ -67,6 +67,9 @@ type Player struct {
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
+	sleeping atomic.Bool
+	sleepPos atomic.Pointer[cube.Pos]
+
 	glideTicks   atomic.Int64
 	fireTicks    atomic.Int64
 	fallDistance atomic.Uint64
@@ -107,12 +110,14 @@ type Player struct {
 	breakParticleCounter atomic.Uint32
 
 	hunger *hungerManager
+
+	dimensionProvider DimensionProvider
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network. You can either pass on player data you want to load or
 // you can leave the data as nil to use default data.
-func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
+func New(name string, skin skin.Skin, pos mgl64.Vec3, dp DimensionProvider) *Player {
 	p := &Player{}
 	*p = Player{
 		inv: inventory.New(36, func(slot int, before, after item.Stack) {
@@ -120,20 +125,21 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 				p.broadcastItems(slot, before, after)
 			}
 		}),
-		enderChest: inventory.New(27, nil),
-		uuid:       uuid.New(),
-		offHand:    inventory.New(1, p.broadcastItems),
-		armour:     inventory.NewArmour(p.broadcastArmour),
-		hunger:     newHungerManager(),
-		health:     entity.NewHealthManager(20, 20),
-		experience: entity.NewExperienceManager(),
-		effects:    entity.NewEffectManager(),
-		name:       name,
-		locale:     language.BritishEnglish,
-		breathing:  true,
-		cooldowns:  make(map[string]time.Time),
-		mc:         &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
-		heldSlot:   &atomic.Uint32{},
+		enderChest:        inventory.New(27, nil),
+		uuid:              uuid.New(),
+		offHand:           inventory.New(1, p.broadcastItems),
+		armour:            inventory.NewArmour(p.broadcastArmour),
+		hunger:            newHungerManager(),
+		health:            entity.NewHealthManager(20, 20),
+		experience:        entity.NewExperienceManager(),
+		effects:           entity.NewEffectManager(),
+		name:              name,
+		locale:            language.BritishEnglish,
+		breathing:         true,
+		cooldowns:         make(map[string]time.Time),
+		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
+		heldSlot:          &atomic.Uint32{},
+		dimensionProvider: dp,
 	}
 	var scoreTag string
 	var heldSlot uint32
@@ -161,8 +167,8 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player. You can either pass on player data you want to load or
 // you can leave the data as nil to use default data.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
-	p := New(name, skin, pos)
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data, dp DimensionProvider) *Player {
+	p := New(name, skin, pos, dp)
 	p.s.Store(s)
 	p.skin.Store(&skin)
 	p.uuid, p.xuid = uuid, xuid
@@ -287,6 +293,11 @@ func (p *Player) Message(a ...any) {
 // according to the fmt.Sprintf formatting rules.
 func (p *Player) Messagef(f string, a ...any) {
 	p.session().SendMessage(fmt.Sprintf(f, a...))
+}
+
+// Messaget sends a message translation to the player. The message is translated client-side using the client's locale.
+func (p *Player) Messaget(key string, a ...string) {
+	p.session().SendTranslation(key, a...)
 }
 
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
@@ -665,6 +676,8 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		w.PlaySound(pos, sound.Drowning{})
 	}
 
+	p.Wake()
+
 	p.SetAttackImmunity(immunity)
 	if p.Dead() {
 		p.kill(src)
@@ -910,8 +923,14 @@ func (p *Player) kill(src world.DamageSource) {
 			// We have an actual client connected to this player: We change its position server side so that in
 			// the future, the client won't respawn on the death location when disconnecting. The client should
 			// not see the movement itself yet, though.
-			newPos := w.Spawn().Vec3()
-			p.pos.Store(&newPos)
+			pos, w, blockHasBeenBroken := p.realSpawnPos()
+			if blockHasBeenBroken {
+				//bl := w.Block(pos).(block.SpawnBlock)
+				//bl.Update(pos, p, w)
+				p.SetSpawnPos(w.Spawn(), w)
+			}
+			vec := pos.Vec3()
+			p.pos.Store(&vec)
 		}
 	})
 }
@@ -940,7 +959,14 @@ func (p *Player) dropContents() {
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
 // again. Nothing will happen if the player does not have a session connected to it.
 func (p *Player) Respawn() {
-	w := p.World()
+	position, w, ok := p.realSpawnPos()
+	if bl, ok := w.Block(position).(block.SpawnBlock); ok {
+		bl.Update(position, p, w)
+	}
+	pos := position.Vec3Middle()
+	if ok {
+		p.Messaget("%tile.bed.notValid")
+	}
 	if !p.Dead() || w == nil || p.session() == session.Nop {
 		return
 	}
@@ -953,7 +979,6 @@ func (p *Player) Respawn() {
 	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
 	// always bring us back to the overworld.
 	w = w.PortalDestination(w.Dimension())
-	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
 
 	p.Handler().HandleRespawn(&pos, &w)
 
@@ -962,6 +987,26 @@ func (p *Player) Respawn() {
 	p.session().SendRespawn(pos)
 
 	p.SetVisible()
+}
+
+// SpawnPos returns spawn position in the current world.
+func (p *Player) SpawnPos() cube.Pos {
+	return p.World().PlayerSpawn(p.uuid)
+}
+
+// SetSpawnPos sets spawn position for the player in the provided world.
+func (p *Player) SetSpawnPos(pos cube.Pos, w *world.World) {
+	w.SetPlayerSpawn(p.UUID(), pos)
+}
+
+// realSpawnPos returns position and world where player should be spawned.
+func (p *Player) realSpawnPos() (cube.Pos, *world.World, bool) {
+	pos := p.SpawnPos()
+	w := p.World()
+	if b, ok := w.Block(pos).(block.SpawnBlock); ok && b.SpawnBlock() {
+		return pos, w, false
+	}
+	return p.dimensionProvider.World().Spawn(), p.dimensionProvider.World(), true
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
@@ -1158,6 +1203,75 @@ func (p *Player) Jump() {
 	} else {
 		p.Exhaust(0.05)
 	}
+}
+
+// Sleep makes the player sleep at the given position. If the position does not map to a bed (specifically the head side),
+// the player will not sleep.
+func (p *Player) Sleep(pos cube.Pos) {
+	ctx, sendReminder := event.C(), true
+	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
+		return
+	}
+
+	w := p.World()
+	if b, ok := w.Block(pos).(block.Bed); ok {
+		if b.User != nil {
+			// The player cannot sleep here.
+			return
+		}
+		b.User = p
+		w.SetBlock(pos, b, nil)
+	}
+
+	w.SetRequiredSleepDuration(time.Second * 5)
+	if sendReminder {
+		w.BroadcastSleepingReminder(p)
+	}
+
+	vec := pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
+
+	p.pos.Store(&vec)
+	p.sleeping.Store(true)
+	p.sleepPos.Store(&pos)
+
+	w.BroadcastSleepingIndicator()
+	p.updateState()
+}
+
+// Wake forces the player out of bed if they are sleeping.
+func (p *Player) Wake() {
+	if !p.sleeping.CompareAndSwap(true, false) {
+		return
+	}
+
+	w := p.World()
+	w.SetRequiredSleepDuration(0)
+	w.BroadcastSleepingIndicator()
+
+	for _, v := range p.viewers() {
+		v.ViewEntityWake(p)
+	}
+	p.updateState()
+
+	pos := *p.sleepPos.Load()
+	if b, ok := w.Block(pos).(block.Bed); ok {
+		b.User = nil
+		w.SetBlock(pos, b, nil)
+	}
+}
+
+// Sleeping returns true if the player is currently sleeping, along with the position of the bed the player is sleeping
+// on.
+func (p *Player) Sleeping() (cube.Pos, bool) {
+	if !p.sleeping.Load() {
+		return cube.Pos{}, false
+	}
+	return *p.sleepPos.Load(), true
+}
+
+// SendSleepingIndicator displays a notification to the player on the amount of sleeping players in the world.
+func (p *Player) SendSleepingIndicator(sleeping, max int) {
+	p.session().ViewSleepingPlayers(sleeping, max)
 }
 
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
@@ -1990,6 +2104,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
+	p.Wake()
 	p.teleport(pos)
 }
 
@@ -3108,4 +3223,12 @@ func (p *Player) resendBlock(pos cube.Pos, w *world.World) {
 // end, which is typically used for sending messages, popups and tips.
 func format(a []any) string {
 	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
+}
+
+// DimensionProvider provides access to all 3 dimensions.
+type DimensionProvider interface {
+	World() *world.World
+	Nether() *world.World
+	End() *world.World
+	Players() []*Player
 }

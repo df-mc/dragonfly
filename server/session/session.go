@@ -254,6 +254,8 @@ func (s *Session) close() {
 
 	s.closeCurrentContainer()
 	_ = s.chunkLoader.Close()
+
+	s.c.Wake()
 	s.c.World().RemoveEntity(s.c)
 
 	// This should always be called last due to the timing of the removal of entity runtime IDs.
