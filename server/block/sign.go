@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
-	"strings"
 	"time"
 )
 
@@ -178,7 +177,10 @@ func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // EncodeBlock ...
 func (s Sign) EncodeBlock() (name string, properties map[string]any) {
-	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
+	woodType := s.Wood.String() + "_"
+	if woodType == "dark_oak_" {
+		woodType = "darkoak_"
+	}
 	if woodType == "oak_" {
 		woodType = ""
 	}
