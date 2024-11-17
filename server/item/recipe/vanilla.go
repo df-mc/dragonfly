@@ -46,14 +46,14 @@ type furnaceRecipe struct {
 	Block  string     `nbt:"block"`
 }
 
-// potionRecipe is a recipe that
+// potionRecipe is a recipe that may be crafted in a brewing stand.
 type potionRecipe struct {
 	Input   inputItem  `nbt:"input"`
 	Reagent inputItem  `nbt:"reagent"`
 	Output  outputItem `nbt:"output"`
 }
 
-// potionContainerChangeRecipe ...
+// potionContainerChangeRecipe is a recipe that may be crafted in a brewing stand.
 type potionContainerChangeRecipe struct {
 	Input   string    `nbt:"input"`
 	Reagent inputItem `nbt:"reagent"`

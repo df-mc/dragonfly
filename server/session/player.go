@@ -106,8 +106,6 @@ func (s *Session) SendRespawn(pos mgl64.Vec3) {
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
-
-	//temporary solution until I find a better way to handle potion recipes and potion container change recipes.
 	potionRecipes := make([]protocol.PotionRecipe, 0)
 	potionContainerChange := make([]protocol.PotionContainerChangeRecipe, 0)
 
