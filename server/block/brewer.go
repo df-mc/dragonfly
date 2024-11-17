@@ -65,7 +65,7 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 				if brewingSlot == 0 || brewingSlot == 4 {
 					continue
 				}
-				if !brewingStack.Comparable(sourceStack) || brewingStack.Count() == brewingStack.MaxCount() {
+				if brewingStack.Count() == brewingStack.MaxCount() || !brewingStack.Comparable(sourceStack) {
 					continue
 				}
 
