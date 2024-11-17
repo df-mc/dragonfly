@@ -236,6 +236,10 @@ func (Beacon) Hash() (uint64, uint64) {
 	return hashBeacon, 0
 }
 
+func (b Bed) Hash() (uint64, uint64) {
+	return hashBed, uint64(b.Facing) | uint64(boolByte(b.Head))<<2
+}
+
 func (b Bedrock) Hash() (uint64, uint64) {
 	return hashBedrock, uint64(boolByte(b.InfiniteBurning))
 }
@@ -750,6 +754,10 @@ func (RawIron) Hash() (uint64, uint64) {
 
 func (ReinforcedDeepslate) Hash() (uint64, uint64) {
 	return hashReinforcedDeepslate, 0
+}
+
+func (RespawnAnchor) Hash() (uint64, uint64) {
+	return hashRespawnAnchor, 0
 }
 
 func (s Sand) Hash() (uint64, uint64) {
