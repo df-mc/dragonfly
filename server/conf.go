@@ -144,6 +144,8 @@ func (conf Config) New() *Server {
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
 	world_finaliseBlockRegistry()
+	recipe_registerVanilla()
+
 	srv.world = srv.createWorld(world.Overworld, &srv.nether, &srv.end)
 	srv.nether = srv.createWorld(world.Nether, &srv.world, &srv.end)
 	srv.end = srv.createWorld(world.End, &srv.nether, &srv.world)
@@ -313,6 +315,11 @@ func DefaultConfig() UserConfig {
 	c.Resources.Required = false
 	return c
 }
+
+// noinspection ALL
+//
+//go:linkname recipe_registerVanilla github.com/df-mc/dragonfly/server/item/recipe.registerVanilla
+func recipe_registerVanilla()
 
 // noinspection ALL
 //

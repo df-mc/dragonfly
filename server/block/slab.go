@@ -108,37 +108,15 @@ func (s Slab) BreakInfo() BreakInfo {
 	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
 
 	switch block := s.Block.(type) {
-	case Copper:
-		hardness = 3.0
-	case Deepslate, DeepslateBricks, DeepslateTiles:
-		hardness = 3.5
-	case EndBricks:
-		hardness = 3.0
-		blastResistance = 45.0
+	case Stone, Sandstone, Quartz, Purpur:
+	//These slab types do not match their block's hardness or blast resistance
 	case StoneBricks:
 		if block.Type == MossyStoneBricks() {
 			hardness = 1.5
 		}
-	case Andesite:
-		if block.Polished {
-			hardness = 1.5
-		}
-	case Diorite:
-		if block.Polished {
-			hardness = 1.5
-		}
-	case Granite:
-		if block.Polished {
-			hardness = 1.5
-		}
-	case Prismarine:
-		hardness = 1.5
-	case Planks:
-		harvestable = alwaysHarvestable
-		effective = axeEffective
-		blastResistance = 15.0
-	case Tuff, PolishedTuff:
-		hardness = 1.5
+	case Breakable:
+		breakInfo := s.BreakInfo()
+		hardness, blastResistance, harvestable, effective = breakInfo.Hardness, breakInfo.BlastResistance, breakInfo.Harvestable, breakInfo.Effective
 	}
 	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if s.Double {

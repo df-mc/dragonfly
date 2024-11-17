@@ -97,7 +97,9 @@ func (t CopperTrapdoor) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 
 // BreakInfo ...
 func (t CopperTrapdoor) BreakInfo() BreakInfo {
-	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(t)).withBlastResistance(15.0)
+	return newBreakInfo(3, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
+	}, pickaxeEffective, oneOf(t))
 }
 
 // SideClosed ...
