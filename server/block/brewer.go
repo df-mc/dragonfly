@@ -57,11 +57,15 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 			_, okPotion := sourceStack.Item().(item.Potion)
 			_, okSplash := sourceStack.Item().(item.SplashPotion)
 			_, okLingering := sourceStack.Item().(item.LingeringPotion)
-			if !okPotion && !okSplash && !okLingering {
+			_, okBottle := sourceStack.Item().(item.GlassBottle)
+			if !okPotion && !okSplash && !okLingering && !okBottle {
 				continue
 			}
 			for brewingSlot, brewingStack := range b.inventory.Slots() {
-				if brewingSlot == 0 || brewingSlot == 4 || !brewingStack.Empty() {
+				if brewingSlot == 0 || brewingSlot == 4 {
+					continue
+				}
+				if !brewingStack.Comparable(sourceStack) || brewingStack.Count() == brewingStack.MaxCount() {
 					continue
 				}
 
