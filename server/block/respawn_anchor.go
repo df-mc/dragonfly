@@ -15,11 +15,6 @@ type RespawnAnchor struct {
 	charge int32
 }
 
-// Hash ...
-func (r RespawnAnchor) Hash() (uint64, uint64) {
-	return hashRespawnAnchor, uint64(r.charge)
-}
-
 // LightEmissionLevel ...
 func (r RespawnAnchor) LightEmissionLevel() uint8 {
 	return (uint8(r.charge) + 1) * 3

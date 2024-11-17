@@ -25,11 +25,6 @@ type Bed struct {
 	User item.User
 }
 
-// Hash ...
-func (b Bed) Hash() (uint64, uint64) {
-	return hashBed, uint64(b.Facing) | uint64(boolByte(b.Head))<<2
-}
-
 // MaxCount always returns 1.
 func (Bed) MaxCount() int {
 	return 1
