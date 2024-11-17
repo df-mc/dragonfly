@@ -163,6 +163,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		}
 		m[protocol.EntityDataKeyVisibleMobEffects] = packedEffects
 	}
+	if d, ok := e.(dialogueProvider); ok {
+		m[protocol.EntityDataKeyHasNPC] = boolByte(d.CanShowDialogue())
+	}
 	if v, ok := e.(variable); ok {
 		m[protocol.EntityDataKeyVariant] = v.Variant()
 	}
@@ -278,4 +281,8 @@ type variable interface {
 
 type markVariable interface {
 	MarkVariant() int32
+}
+
+type dialogueProvider interface {
+	CanShowDialogue() bool
 }

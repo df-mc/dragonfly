@@ -485,6 +485,7 @@ func (s *Session) registerHandlers() {
 		packet.IDMobEquipment:              &MobEquipmentHandler{},
 		packet.IDModalFormResponse:         &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:                nil,
+		packet.IDNPCRequest:                &NPCRequestHandler{},
 		packet.IDPlayerAction:              &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:           &PlayerAuthInputHandler{},
 		packet.IDPlayerSkin:                &PlayerSkinHandler{},
