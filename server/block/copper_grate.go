@@ -10,6 +10,7 @@ import (
 
 // CopperGrate is a solid block commonly found in deserts and beaches underneath sand.
 type CopperGrate struct {
+	sourceWaterDisplacer
 	solid
 	transparent
 	bassDrum
