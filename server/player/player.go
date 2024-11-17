@@ -708,7 +708,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 // Explode ...
 func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
 	diff := p.Position().Sub(explosionPos)
-	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), entity.ExplosionDamageSource{})
+	p.Hurt(math.Floor((impact*impact+impact)/2*7*c.Size*2+1), entity.ExplosionDamageSource{})
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
 }
 
