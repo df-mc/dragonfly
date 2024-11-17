@@ -55,12 +55,6 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 					continue
 				}
 
-				_, okPotion := sourceStack.Item().(item.Potion)
-				_, okSplash := sourceStack.Item().(item.SplashPotion)
-				if !okPotion && !okSplash {
-					continue
-				}
-
 				slot = brewingSlot
 				break
 			}
@@ -73,7 +67,15 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 				// This item is not a valid brewing reagent.
 				continue
 			}
+		} else if slot != 4 {
+			_, okPotion := sourceStack.Item().(item.Potion)
+			_, okSplash := sourceStack.Item().(item.SplashPotion)
+			_, okLingering := sourceStack.Item().(item.LingeringPotion)
+			if !okPotion && !okSplash && !okLingering {
+				continue
+			}
 		}
+
 		if !sourceStack.Comparable(it) {
 			// The items are not the same.
 			continue
