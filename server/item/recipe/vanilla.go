@@ -60,6 +60,10 @@ type potionContainerChangeRecipe struct {
 	Output  string    `nbt:"output"`
 }
 
+// registerVanilla can be called to register all vanilla recipes from the generated data files.
+// noinspection GoUnusedFunction
+//
+//lint:ignore U1000 Function is used through compiler directives.
 func registerVanilla() {
 	var craftingRecipes struct {
 		Shaped    []shapedRecipe    `nbt:"shaped"`
