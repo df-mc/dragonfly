@@ -22,7 +22,9 @@ type CopperGrate struct {
 
 // BreakInfo ...
 func (c CopperGrate) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
+	return newBreakInfo(3, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
+	}, pickaxeEffective, oneOf(c)).withBlastResistance(30)
 }
 
 // Wax waxes the copper grate to stop it from oxidising further.
