@@ -2128,13 +2128,22 @@ func (p *Player) ChangingDimension() bool {
 	return p.session().ChangingDimension()
 }
 
+// CanCollect returns whether the player is able to pick up an item stack or not.
+func (p *Player) CanCollect() bool {
+	if p.Dead() {
+		return false
+	}
+	if !p.GameMode().AllowsInteraction() {
+		return false
+	}
+
+	return true
+}
+
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
 // be added is returned.
 func (p *Player) Collect(s item.Stack) int {
-	if p.Dead() {
-		return 0
-	}
-	if !p.GameMode().AllowsInteraction() {
+	if !p.CanCollect() {
 		return 0
 	}
 	ctx := event.C()

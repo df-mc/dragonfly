@@ -221,6 +221,11 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
 		if !ok {
 			continue
 		}
+
+		if !collector.CanCollect() {
+			continue
+		}
+
 		// A collector was within range to pick up the entity.
 		lt.close = true
 		for _, viewer := range w.Viewers(e.pos) {
@@ -229,6 +234,7 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent) {
 		if lt.conf.PickupItem.Empty() {
 			return
 		}
+
 		_ = collector.Collect(lt.conf.PickupItem)
 	}
 }
