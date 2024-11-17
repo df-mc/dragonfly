@@ -190,20 +190,20 @@ type LecternBookPlace struct{ sound }
 
 // RespawnAnchorCharge is a sound played when a respawn anchor has been charged.
 type RespawnAnchorCharge struct {
-	Charge int32
 	sound
+	Charge int
 }
 
 // RespawnAnchorDeplete is a sound played when someone respawns using respawn anchor.
 type RespawnAnchorDeplete struct {
-	Charge int32
 	sound
+	Charge int
 }
 
 // RespawnAnchorAmbient is an ambient sound of respawn anchor.
 type RespawnAnchorAmbient struct {
-	Charge int32
 	sound
+	Charge int
 }
 
 // SignWaxed is a sound played when a sign is waxed.

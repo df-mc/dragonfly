@@ -988,11 +988,6 @@ func (p *Player) Respawn() {
 	p.SetVisible()
 }
 
-// SpawnPos returns spawn position in the current world.
-func (p *Player) SpawnPos() cube.Pos {
-	return p.World().PlayerSpawn(p.uuid)
-}
-
 // SetSpawnPos sets spawn position for the player in the provided world.
 func (p *Player) SetSpawnPos(pos cube.Pos, w *world.World) {
 	w.SetPlayerSpawn(p.UUID(), pos)
@@ -1000,7 +995,7 @@ func (p *Player) SetSpawnPos(pos cube.Pos, w *world.World) {
 
 // realSpawnPos returns position and world where player should be spawned.
 func (p *Player) realSpawnPos() (cube.Pos, *world.World, bool) {
-	pos := p.SpawnPos()
+	pos := p.World().PlayerSpawn(p.uuid)
 	w := p.World()
 	if b, ok := w.Block(pos).(block.SpawnBlock); ok && b.SpawnBlock() {
 		return pos, w, false

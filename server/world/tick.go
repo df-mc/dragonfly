@@ -55,7 +55,7 @@ func (t ticker) tick() {
 	sleep := false
 	if t.w.set.RequiredSleepTicks > 0 {
 		t.w.set.RequiredSleepTicks--
-		if t.w.set.RequiredSleepTicks-1 <= 0 {
+		if t.w.set.RequiredSleepTicks <= 0 {
 			sleep = true
 		}
 	}
