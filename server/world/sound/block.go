@@ -191,6 +191,12 @@ type SignWaxed struct{ sound }
 // WaxedSignFailedInteraction is a sound played when a player tries to interact with a waxed sign.
 type WaxedSignFailedInteraction struct{ sound }
 
+// WaxRemoved is a sound played when wax is removed from a block.
+type WaxRemoved struct{ sound }
+
+// CopperScraped is a sound played when a player scrapes a copper block to reduce its oxidation level.
+type CopperScraped struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 
