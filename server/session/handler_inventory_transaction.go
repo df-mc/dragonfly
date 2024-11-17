@@ -135,8 +135,8 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	}
 	if !valid {
 		slot := int(s.heldSlot.Load())
-		item, _ := s.inv.Item(slot)
-		s.sendItem(item, slot, protocol.WindowIDInventory)
+		i, _ := s.inv.Item(slot)
+		s.sendItem(i, slot, protocol.WindowIDInventory)
 	}
 	return nil
 }
@@ -147,11 +147,11 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
 
-	// We reset the inventory so that we can send the held item update without the client already
-	// having done that client-side.
-	// Because of the new inventory system, the client will expect a transaction confirmation, but instead of doing that
+	// We reset the inventory so that we can send the held item update without the client having already done that client-side.
+	// Due to the new inventory system, the client will expect a transaction confirmation. However, instead of doing that,
 	// it's much easier to just resend the inventory.
-	h.resendInventories(s)
+	// This is also necessary in case the action is cancelled.
+	defer h.resendInventories(s)
 
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
