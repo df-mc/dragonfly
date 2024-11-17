@@ -12,7 +12,7 @@ require (
 	github.com/go-gl/mathgl v1.1.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/sandertv/gophertunnel v1.42.3-0.20241116121323-39b816f98736
+	github.com/sandertv/gophertunnel v1.42.3-0.20241116224652-2ce4a985ceb8
 	github.com/segmentio/fasthash v1.0.3
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	golang.org/x/mod v0.21.0
