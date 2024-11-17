@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	// The following four imports are essential for this package: They make sure this package is loaded after
-	// all these imports. This ensures that all blocks anditems are registered before the creative items are
+	// all these imports. This ensures that all blocks and items are registered before the creative items are
 	// registered in the init function in this package.
 	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"

@@ -40,11 +40,6 @@ func (b BrewingStand) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 	return false
 }
 
-// LightEmissionLevel ...
-func (b BrewingStand) LightEmissionLevel() uint8 {
-	return 1
-}
-
 // Tick is called to check if the brewing stand should update and start or stop brewing.
 func (b BrewingStand) Tick(_ int64, pos cube.Pos, w *world.World) {
 	// Get each item in the brewing stand. We don't need to validate errors here since we know the bounds of the stand.
@@ -119,9 +114,11 @@ func (b BrewingStand) DecodeNBT(data map[string]any) any {
 
 // BreakInfo ...
 func (b BrewingStand) BreakInfo() BreakInfo {
-	drops := b.inventory.Items()
-	drops = append(drops, item.NewStack(b, 1))
-	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, simpleDrops(drops...))
+	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+		for _, i := range b.Inventory(w, pos).Clear() {
+			dropItem(w, i, pos.Vec3Centre())
+		}
+	})
 }
 
 // EncodeBlock ...

@@ -38,14 +38,13 @@ func Register(recipe Recipe) {
 	}
 
 	if ok || okTwo {
-		_, containerChange := recipe.(PotionContainerChange)
-		inputItems2 := make([]world.Item, len(recipe.Input()))
+		input := make([]world.Item, len(recipe.Input()))
 		for i, stack := range recipe.Input() {
 			if s, ok := stack.(item.Stack); ok {
-				inputItems2[i] = s.Item()
+				input[i] = s.Item()
 			}
 		}
-		hash := hashItems(inputItems2, !containerChange)
+		hash := hashItems(input, !ok)
 
 		block := recipe.Block()
 		if index[block] == nil {
@@ -111,7 +110,8 @@ func hashItems(items []world.Item, useMeta bool) string {
 }
 
 // ValidBrewingReagent checks if the world.Item is a brewing reagent.
-func ValidBrewingReagent(itemName string) bool {
-	_, exists := reagent[itemName]
+func ValidBrewingReagent(i world.Item) bool {
+	name, _ := i.EncodeItem()
+	_, exists := reagent[name]
 	return exists
 }
