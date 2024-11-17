@@ -282,3 +282,29 @@ func (box BBox) ZOffset(nearby BBox, deltaZ float64) float64 {
 	}
 	return deltaZ
 }
+
+// Corners returns slice of all hitbox corners.
+func (box BBox) Corners() []mgl64.Vec3 {
+	min := box.min
+	max := box.max
+	return []mgl64.Vec3{
+		box.min,
+		box.max,
+		mgl64.Vec3{min[0], min[1], max[2]},
+		mgl64.Vec3{min[0], max[1], min[2]},
+		mgl64.Vec3{min[0], max[1], max[2]},
+		mgl64.Vec3{max[0], max[1], min[2]},
+		mgl64.Vec3{max[0], min[1], max[2]},
+		mgl64.Vec3{max[0], min[1], min[2]},
+	}
+}
+
+// Mul performs a scalar multiplication for min, max points of BBox.
+func (box BBox) Mul(val float64) BBox {
+	return BBox{min: box.min.Mul(val), max: box.max.Mul(val)}
+}
+
+// Volume calculates the volume of the BBox.
+func (box BBox) Volume() float64 {
+	return box.Height() * box.Length() * box.Width()
+}

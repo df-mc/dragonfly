@@ -63,7 +63,7 @@ type Player struct {
 	armour                   *inventory.Armour
 	heldSlot                 *atomic.Uint32
 
-	sneaking, sprinting, swimming, gliding, flying,
+	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
@@ -951,7 +951,7 @@ func (p *Player) Respawn() {
 // particles show up under the feet. The player will only start sprinting if its food level is high enough.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
-	if !p.hunger.canSprint() && p.GameMode().AllowsTakingDamage() {
+	if !p.hunger.canSprint() && p.GameMode().AllowsTakingDamage() || p.crawling.Load() {
 		return
 	}
 	ctx := event.C()
@@ -1042,6 +1042,35 @@ func (p *Player) StopSwimming() {
 		return
 	}
 	p.updateState()
+}
+
+// StartCrawling makes the player start crawling if it is not currently doing so. If the player is sneaking
+// while StartCrawling is called, the sneaking is stopped.
+func (p *Player) StartCrawling() {
+	for _, corner := range p.Type().BBox(p).Translate(p.Position()).Corners() {
+		_, isAir := p.World().Block(cube.PosFromVec3(corner).Add(cube.Pos{0, 1, 0})).(block.Air)
+		if !isAir {
+			if !p.crawling.CompareAndSwap(false, true) {
+				return
+			}
+			break
+		}
+	}
+	p.StopSneaking()
+	p.updateState()
+}
+
+// StopCrawling makes the player stop crawling if it is currently doing so.
+func (p *Player) StopCrawling() {
+	if !p.crawling.CompareAndSwap(true, false) {
+		return
+	}
+	p.updateState()
+}
+
+// Crawling checks if the player is currently crawling.
+func (p *Player) Crawling() bool {
+	return p.crawling.Load()
 }
 
 // StartGliding makes the player start gliding if it is not currently doing so.
@@ -1478,6 +1507,15 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The block was activated: Blocks such as doors must always have precedence over the item being
 			// used.
 			if useCtx := p.useContext(); act.Activate(pos, face, p.World(), p, useCtx) {
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
+				p.addNewItem(useCtx)
+				return
+			}
+		}
+	}
+	if p.Sneaking() {
+		if act, ok := b.(block.SneakingActivatable); ok {
+			if useCtx := p.useContext(); act.SneakingActivate(pos, face, p.World(), p, useCtx) {
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 				p.addNewItem(useCtx)
 				return
@@ -2633,10 +2671,14 @@ func (p *Player) OnGround() bool {
 	return p.onGround.Load()
 }
 
-// EyeHeight returns the eye height of the player: 1.62, or 0.52 if the player is swimming.
+// EyeHeight returns the eye height of the player: 1.62, 1.26 if player is sneaking or 0.52 if the player is
+// swimming, gliding or crawling.
 func (p *Player) EyeHeight() float64 {
-	if p.swimming.Load() {
+	switch {
+	case p.swimming.Load() || p.crawling.Load() || p.Gliding():
 		return 0.52
+	case p.sneaking.Load():
+		return 1.26
 	}
 	return 1.62
 }

@@ -23,7 +23,7 @@ func (EnchantedApple) ConsumeDuration() time.Duration {
 func (EnchantedApple) Consume(_ *world.World, c Consumer) Stack {
 	c.Saturate(4, 9.6)
 	c.AddEffect(effect.New(effect.Absorption{}, 4, 2*time.Minute))
-	c.AddEffect(effect.New(effect.Regeneration{}, 5, 30*time.Second))
+	c.AddEffect(effect.New(effect.Regeneration{}, 2, 30*time.Second))
 	c.AddEffect(effect.New(effect.FireResistance{}, 1, 5*time.Minute))
 	c.AddEffect(effect.New(effect.Resistance{}, 1, 5*time.Minute))
 	return Stack{}

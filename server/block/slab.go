@@ -108,33 +108,15 @@ func (s Slab) BreakInfo() BreakInfo {
 	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
 
 	switch block := s.Block.(type) {
-	// TODO: Copper
-	// TODO: Deepslate
-	case EndBricks:
-		hardness = 3.0
-		blastResistance = 45.0
+	case Stone, Sandstone, Quartz, Purpur:
+	//These slab types do not match their block's hardness or blast resistance
 	case StoneBricks:
 		if block.Type == MossyStoneBricks() {
 			hardness = 1.5
 		}
-	case Andesite:
-		if block.Polished {
-			hardness = 1.5
-		}
-	case Diorite:
-		if block.Polished {
-			hardness = 1.5
-		}
-	case Granite:
-		if block.Polished {
-			hardness = 1.5
-		}
-	case Prismarine:
-		hardness = 1.5
-	case Planks:
-		harvestable = alwaysHarvestable
-		effective = axeEffective
-		blastResistance = 15.0
+	case Breakable:
+		breakInfo := s.BreakInfo()
+		hardness, blastResistance, harvestable, effective = breakInfo.Hardness, breakInfo.BlastResistance, breakInfo.Harvestable, breakInfo.Effective
 	}
 	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if s.Double {
@@ -151,7 +133,8 @@ func (s Slab) Model() world.BlockModel {
 
 // EncodeItem ...
 func (s Slab) EncodeItem() (string, int16) {
-	return "minecraft:" + encodeSlabBlock(s.Block) + "_slab", 0
+	name, suffix := encodeSlabBlock(s.Block, false)
+	return "minecraft:" + name + suffix, 0
 }
 
 // EncodeBlock ...
@@ -160,11 +143,8 @@ func (s Slab) EncodeBlock() (string, map[string]any) {
 	if s.Top {
 		side = "top"
 	}
-	suffix := "_slab"
-	if s.Double {
-		suffix = "_double_slab"
-	}
-	return "minecraft:" + encodeSlabBlock(s.Block) + suffix, map[string]any{"minecraft:vertical_half": side}
+	name, suffix := encodeSlabBlock(s.Block, s.Double)
+	return "minecraft:" + name + suffix, map[string]any{"minecraft:vertical_half": side}
 }
 
 // allSlabs ...

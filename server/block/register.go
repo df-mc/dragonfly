@@ -101,6 +101,10 @@ func init() {
 	world.RegisterBlock(TNT{})
 	world.RegisterBlock(Terracotta{})
 	world.RegisterBlock(Tuff{})
+	world.RegisterBlock(Tuff{Chiseled: true})
+	world.RegisterBlock(TuffBricks{})
+	world.RegisterBlock(TuffBricks{Chiseled: true})
+	world.RegisterBlock(PolishedTuff{})
 	world.RegisterBlock(ShortGrass{})
 	world.RegisterBlock(Fern{})
 
@@ -194,6 +198,10 @@ func init() {
 	registerAll(allWood())
 	registerAll(allWool())
 	registerAll(allDecoratedPots())
+	registerAll(allCopper())
+	registerAll(allCopperDoors())
+	registerAll(allCopperGrates())
+	registerAll(allCopperTrapdoors())
 }
 
 func init() {
@@ -248,6 +256,7 @@ func init() {
 	world.RegisterItem(EndStone{})
 	world.RegisterItem(EnderChest{})
 	world.RegisterItem(Farmland{})
+	world.RegisterItem(FletchingTable{})
 	world.RegisterItem(Furnace{})
 	world.RegisterItem(GlassPane{})
 	world.RegisterItem(Glass{})
@@ -330,6 +339,10 @@ func init() {
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
+	world.RegisterItem(Tuff{Chiseled: true})
+	world.RegisterItem(TuffBricks{})
+	world.RegisterItem(TuffBricks{Chiseled: true})
+	world.RegisterItem(PolishedTuff{})
 	world.RegisterItem(WheatSeeds{})
 	world.RegisterItem(DecoratedPot{})
 	world.RegisterItem(ShortGrass{})
@@ -432,6 +445,19 @@ func init() {
 	}
 	for _, t := range DeepslateTypes() {
 		world.RegisterItem(Deepslate{Type: t})
+	}
+	for _, o := range OxidationTypes() {
+		world.RegisterItem(CopperDoor{Oxidation: o})
+		world.RegisterItem(CopperDoor{Oxidation: o, Waxed: true})
+		world.RegisterItem(CopperGrate{Oxidation: o})
+		world.RegisterItem(CopperGrate{Oxidation: o, Waxed: true})
+		world.RegisterItem(CopperTrapdoor{Oxidation: o})
+		world.RegisterItem(CopperTrapdoor{Oxidation: o, Waxed: true})
+
+		for _, c := range CopperTypes() {
+			world.RegisterItem(Copper{Type: c, Oxidation: o})
+			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
+		}
 	}
 }
 
