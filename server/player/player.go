@@ -920,13 +920,12 @@ func (p *Player) kill(src world.DamageSource) {
 		}
 		if p.Dead() {
 			p.SetInvisible()
+
 			// We have an actual client connected to this player: We change its position server side so that in
 			// the future, the client won't respawn on the death location when disconnecting. The client should
 			// not see the movement itself yet, though.
 			pos, w, blockHasBeenBroken := p.realSpawnPos()
 			if blockHasBeenBroken {
-				//bl := w.Block(pos).(block.SpawnBlock)
-				//bl.Update(pos, p, w)
 				p.SetSpawnPos(w.Spawn(), w)
 			}
 			vec := pos.Vec3()
