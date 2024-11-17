@@ -1061,6 +1061,14 @@ func (p *Player) StopSwimming() {
 	p.updateState()
 }
 
+// Splash is called when a water bottle splashes onto the player.
+func (p *Player) Splash(*world.World, mgl64.Vec3) {
+	if d := p.OnFireDuration(); d.Seconds() <= 0 {
+		return
+	}
+	p.Extinguish()
+}
+
 // StartCrawling makes the player start crawling if it is not currently doing so. If the player is sneaking
 // while StartCrawling is called, the sneaking is stopped.
 func (p *Player) StartCrawling() {
