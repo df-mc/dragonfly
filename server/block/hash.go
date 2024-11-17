@@ -22,6 +22,7 @@ const (
 	hashBlueIce
 	hashBone
 	hashBookshelf
+	hashBrewingStand
 	hashBricks
 	hashCactus
 	hashCake
@@ -259,6 +260,10 @@ func (b Bone) Hash() (uint64, uint64) {
 
 func (Bookshelf) Hash() (uint64, uint64) {
 	return hashBookshelf, 0
+}
+
+func (b BrewingStand) Hash() (uint64, uint64) {
+	return hashBrewingStand, uint64(boolByte(b.LeftSlot)) | uint64(boolByte(b.MiddleSlot))<<1 | uint64(boolByte(b.RightSlot))<<2
 }
 
 func (Bricks) Hash() (uint64, uint64) {

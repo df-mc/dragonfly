@@ -182,6 +182,9 @@ type ComposterFillLayer struct{ sound }
 // ComposterReady is a sound played when a composter has produced bone meal and is ready to be collected.
 type ComposterReady struct{ sound }
 
+// PotionBrewed is a sound played when a potion is brewed.
+type PotionBrewed struct{ sound }
+
 // LecternBookPlace is a sound played when a book is placed in a lectern.
 type LecternBookPlace struct{ sound }
 
