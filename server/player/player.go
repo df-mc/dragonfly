@@ -925,10 +925,13 @@ func (p *Player) kill(src world.DamageSource) {
 			// the future, the client won't respawn on the death location when disconnecting. The client should
 			// not see the movement itself yet, though.
 			pos, w, blockHasBeenBroken := p.realSpawnPos()
-			if blockHasBeenBroken {
-				p.SetSpawnPos(w.Spawn(), w)
-			}
 			vec := pos.Vec3()
+
+			if blockHasBeenBroken {
+				p.Handler().HandleRespawn(&vec, &w)
+				w.SetPlayerSpawn(p.UUID(), w.Spawn())
+			}
+
 			p.pos.Store(&vec)
 		}
 	})
@@ -986,11 +989,6 @@ func (p *Player) Respawn() {
 	p.session().SendRespawn(pos)
 
 	p.SetVisible()
-}
-
-// SetSpawnPos sets spawn position for the player in the provided world.
-func (p *Player) SetSpawnPos(pos cube.Pos, w *world.World) {
-	w.SetPlayerSpawn(p.UUID(), pos)
 }
 
 // realSpawnPos returns position and world where player should be spawned.

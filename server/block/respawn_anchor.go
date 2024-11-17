@@ -55,7 +55,7 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.Wo
 	if nether {
 		if r.Charge > 0 {
 			u.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
-			u.SetSpawnPos(pos, w)
+			w.SetPlayerSpawn(u.UUID(), pos)
 		}
 		return false
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/lang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"golang.org/x/text/language"
 	"image/color"
 	"time"
@@ -167,7 +168,7 @@ type User interface {
 	ReleaseItem()
 	UseItem()
 
-	SetSpawnPos(pos cube.Pos, w *world.World)
+	UUID() uuid.UUID
 
 	Messaget(key string, a ...string)
 	Sneaking() bool

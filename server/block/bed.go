@@ -115,7 +115,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 		return false
 	}
 
-	u.SetSpawnPos(pos, w)
+	w.SetPlayerSpawn(u.UUID(), pos)
 	s.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
 	time := w.Time() % world.TimeFull
 	if (time < world.TimeNight || time >= world.TimeSunrise) && !w.ThunderingAt(pos) {
