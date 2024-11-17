@@ -26,6 +26,17 @@ func encodeStairsBlock(block world.Block) string {
 			return "mossy_cobblestone"
 		}
 		return "stone"
+	case Copper:
+		if block.Type == CutCopper() {
+			name := "cut_copper"
+			if block.Oxidation != NormalOxidation() {
+				name = block.Oxidation.String() + "_" + name
+			}
+			if block.Waxed {
+				name = "waxed_" + name
+			}
+			return name
+		}
 	case Deepslate:
 		if block.Type == CobbledDeepslate() {
 			return "cobbled_deepslate"
@@ -122,7 +133,6 @@ func encodeStairsBlock(block world.Block) string {
 // StairsBlocks returns a list of all possible blocks for stairs.
 func StairsBlocks() []world.Block {
 	b := []world.Block{
-		// TODO: Copper
 		Andesite{Polished: true},
 		Andesite{},
 		Blackstone{Type: PolishedBlackstone()},
@@ -164,6 +174,10 @@ func StairsBlocks() []world.Block {
 	}
 	for _, w := range WoodTypes() {
 		b = append(b, Planks{Wood: w})
+	}
+	for _, o := range OxidationTypes() {
+		b = append(b, Copper{Type: CutCopper(), Oxidation: o})
+		b = append(b, Copper{Type: CutCopper(), Oxidation: o, Waxed: true})
 	}
 	return b
 }

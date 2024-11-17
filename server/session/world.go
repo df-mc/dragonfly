@@ -535,6 +535,16 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		})
 	case sound.WaxedSignFailedInteraction:
 		pk.SoundType = packet.SoundEventWaxedSignInteractFail
+	case sound.WaxRemoved:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventWaxOff,
+			Position:  vec64To32(pos),
+		})
+	case sound.CopperScraped:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventScrape,
+			Position:  vec64To32(pos),
+		})
 	case sound.Pop:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundInfinityArrowPickup,
