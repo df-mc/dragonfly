@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/entity/animation"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand"
@@ -976,9 +977,12 @@ func (s *Session) ViewEntityState(e world.Entity) {
 }
 
 // ViewEntityAnimation ...
-func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
+func (s *Session) ViewEntityAnimation(e world.Entity, a animation.Animation) {
 	s.writePacket(&packet.AnimateEntity{
-		Animation: animationName,
+		Animation:     a.Name(),
+		NextState:     a.NextState(),
+		StopCondition: a.StopCondition(),
+		Controller:    a.Controller(),
 		EntityRuntimeIDs: []uint64{
 			s.entityRuntimeID(e),
 		},
