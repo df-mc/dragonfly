@@ -2130,19 +2130,16 @@ func (p *Player) ChangingDimension() bool {
 
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
 // be added is returned.
-func (p *Player) Collect(s item.Stack) int {
-	if p.Dead() {
-		return 0
-	}
-	if !p.GameMode().AllowsInteraction() {
-		return 0
+func (p *Player) Collect(s item.Stack) (int, bool) {
+	if p.Dead() || !p.GameMode().AllowsInteraction() {
+		return 0, false
 	}
 	ctx := event.C()
 	if p.Handler().HandleItemPickup(ctx, &s); ctx.Cancelled() {
-		return 0
+		return 0, false
 	}
 	n, _ := p.Inventory().AddItem(s)
-	return n
+	return n, true
 }
 
 // Experience returns the amount of experience the player has.
