@@ -110,14 +110,12 @@ type Player struct {
 	breakParticleCounter atomic.Uint32
 
 	hunger *hungerManager
-
-	dimensionProvider DimensionProvider
 }
 
 // New returns a new initialised player. A random UUID is generated for the player, so that it may be
 // identified over network. You can either pass on player data you want to load or
 // you can leave the data as nil to use default data.
-func New(name string, skin skin.Skin, pos mgl64.Vec3, dp DimensionProvider) *Player {
+func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p := &Player{}
 	*p = Player{
 		inv: inventory.New(36, func(slot int, before, after item.Stack) {
@@ -125,21 +123,20 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3, dp DimensionProvider) *Pla
 				p.broadcastItems(slot, before, after)
 			}
 		}),
-		enderChest:        inventory.New(27, nil),
-		uuid:              uuid.New(),
-		offHand:           inventory.New(1, p.broadcastItems),
-		armour:            inventory.NewArmour(p.broadcastArmour),
-		hunger:            newHungerManager(),
-		health:            entity.NewHealthManager(20, 20),
-		experience:        entity.NewExperienceManager(),
-		effects:           entity.NewEffectManager(),
-		name:              name,
-		locale:            language.BritishEnglish,
-		breathing:         true,
-		cooldowns:         make(map[string]time.Time),
-		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
-		heldSlot:          &atomic.Uint32{},
-		dimensionProvider: dp,
+		enderChest: inventory.New(27, nil),
+		uuid:       uuid.New(),
+		offHand:    inventory.New(1, p.broadcastItems),
+		armour:     inventory.NewArmour(p.broadcastArmour),
+		hunger:     newHungerManager(),
+		health:     entity.NewHealthManager(20, 20),
+		experience: entity.NewExperienceManager(),
+		effects:    entity.NewEffectManager(),
+		name:       name,
+		locale:     language.BritishEnglish,
+		breathing:  true,
+		cooldowns:  make(map[string]time.Time),
+		mc:         &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
+		heldSlot:   &atomic.Uint32{},
 	}
 	var scoreTag string
 	var heldSlot uint32
@@ -167,8 +164,8 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3, dp DimensionProvider) *Pla
 // A set of additional fields must be provided to initialise the player with the client's data, such as the
 // name and the skin of the player. You can either pass on player data you want to load or
 // you can leave the data as nil to use default data.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data, dp DimensionProvider) *Player {
-	p := New(name, skin, pos, dp)
+func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
+	p := New(name, skin, pos)
 	p.s.Store(s)
 	p.skin.Store(&skin)
 	p.uuid, p.xuid = uuid, xuid
@@ -924,7 +921,7 @@ func (p *Player) kill(src world.DamageSource) {
 			// We have an actual client connected to this player: We change its position server side so that in
 			// the future, the client won't respawn on the death location when disconnecting. The client should
 			// not see the movement itself yet, though.
-			pos, w, blockHasBeenBroken := p.realSpawnPos()
+			pos, w, blockHasBeenBroken, _ := p.realSpawnPos()
 			vec := pos.Vec3()
 
 			if blockHasBeenBroken {
@@ -961,14 +958,19 @@ func (p *Player) dropContents() {
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
 // again. Nothing will happen if the player does not have a session connected to it.
 func (p *Player) Respawn() {
-	position, w, ok := p.realSpawnPos()
-	if bl, ok := w.Block(position).(block.SpawnBlock); ok {
-		bl.Update(position, p, w)
+	position, w, ok, previousDimension := p.realSpawnPos()
+	if ok {
+		switch previousDimension {
+		case world.Nether:
+			p.Messaget("%tile.respawn_anchor.notValid")
+		case world.Overworld:
+			p.Messaget("%tile.bed.notValid")
+		}
+	}
+	if bl, ok := w.Block(position).(block.RespawnBlock); ok {
+		bl.SpawnOn(position, p, w)
 	}
 	pos := position.Vec3Middle()
-	if ok {
-		p.Messaget("%tile.bed.notValid")
-	}
 	if !p.Dead() || w == nil || p.session() == session.Nop {
 		return
 	}
@@ -977,10 +979,6 @@ func (p *Player) Respawn() {
 	p.sendFood()
 	p.Extinguish()
 	p.ResetFallDistance()
-
-	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
-	// always bring us back to the overworld.
-	w = w.PortalDestination(w.Dimension())
 
 	p.Handler().HandleRespawn(&pos, &w)
 
@@ -992,13 +990,19 @@ func (p *Player) Respawn() {
 }
 
 // realSpawnPos returns position and world where player should be spawned.
-func (p *Player) realSpawnPos() (cube.Pos, *world.World, bool) {
-	pos := p.World().PlayerSpawn(p.uuid)
-	w := p.World()
-	if b, ok := w.Block(pos).(block.SpawnBlock); ok && b.SpawnBlock() {
-		return pos, w, false
+func (p *Player) realSpawnPos() (pos cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
+	w = p.World()
+
+	previousDimension = w.Dimension()
+	pos = w.PlayerSpawn(p.UUID())
+	if b, ok := w.Block(pos).(block.RespawnBlock); ok && b.CanSpawn() {
+		return pos, w, false, previousDimension
 	}
-	return p.dimensionProvider.World().Spawn(), p.dimensionProvider.World(), true
+
+	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
+	// always bring us back to the overworld.
+	w = w.PortalDestination(w.Dimension())
+	return w.Spawn(), w, true, previousDimension
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
@@ -1237,7 +1241,6 @@ func (p *Player) Wake() {
 	}
 
 	w := p.World()
-	w.SetRequiredSleepDuration(0)
 	w.BroadcastSleepingIndicator()
 
 	for _, v := range p.viewers() {
@@ -3215,12 +3218,4 @@ func (p *Player) resendBlock(pos cube.Pos, w *world.World) {
 // end, which is typically used for sending messages, popups and tips.
 func format(a []any) string {
 	return strings.TrimSuffix(strings.TrimSuffix(fmt.Sprintln(a...), "\n"), "\n")
-}
-
-// DimensionProvider provides access to all 3 dimensions.
-type DimensionProvider interface {
-	World() *world.World
-	Nether() *world.World
-	End() *world.World
-	Players() []*Player
 }

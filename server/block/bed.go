@@ -115,8 +115,12 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 		return false
 	}
 
-	w.SetPlayerSpawn(u.UUID(), pos)
-	s.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
+	previousSpawn := w.PlayerSpawn(u.UUID())
+	if previousSpawn != pos {
+		w.SetPlayerSpawn(u.UUID(), pos)
+		s.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
+	}
+
 	time := w.Time() % world.TimeFull
 	if (time < world.TimeNight || time >= world.TimeSunrise) && !w.ThunderingAt(pos) {
 		s.Messaget(text.Colourf("<grey>%%tile.bed.noSleep</grey>"))
@@ -229,14 +233,16 @@ func allBeds() (beds []world.Block) {
 	return
 }
 
-func (Bed) SpawnBlock() bool {
+func (Bed) CanSpawn() bool {
 	return true
 }
 
-func (Bed) Update(pos cube.Pos, u item.User, w *world.World) {}
+func (Bed) SpawnOn(pos cube.Pos, u item.User, w *world.World) {}
 
-// SpawnBlock represents a block using which player can set his spawn point.
-type SpawnBlock interface {
-	SpawnBlock() bool
-	Update(pos cube.Pos, u item.User, w *world.World)
+// RespawnBlock represents a block using which player can set his spawn point.
+type RespawnBlock interface {
+	// CanSpawn defines if player can use this block to respawn.
+	CanSpawn() bool
+	// SpawnOn is called when a player decides to respawn using this block.
+	SpawnOn(pos cube.Pos, u item.User, w *world.World)
 }

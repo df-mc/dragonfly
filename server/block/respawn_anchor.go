@@ -8,7 +8,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/text"
 )
 
-// RespawnAnchor is a block , allows players to set there respawn point in the nether.
+// RespawnAnchor is a block that allows the player to set their spawn point in the Nether.
 type RespawnAnchor struct {
 	solid
 	bassDrum
@@ -27,7 +27,7 @@ func (r RespawnAnchor) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (r RespawnAnchor) EncodeBlock() (string, map[string]any) {
-	return "minecraft:respawn_anchor", map[string]any{"respawn_anchor_charge": r.Charge}
+	return "minecraft:respawn_anchor", map[string]any{"respawn_anchor_charge": int32(r.Charge)}
 }
 
 // BreakInfo ...
@@ -39,9 +39,6 @@ func (r RespawnAnchor) BreakInfo() BreakInfo {
 
 // Activate ...
 func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
-
-	var nether = w.Dimension().WaterEvaporates()
-
 	held, _ := u.HeldItems()
 	_, usingGlowstone := held.Item().(Glowstone)
 
@@ -52,8 +49,12 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.Wo
 		w.PlaySound(pos.Vec3Centre(), sound.RespawnAnchorCharge{Charge: r.Charge})
 		return true
 	}
-	if nether {
+	if w.Dimension() == world.Nether {
 		if r.Charge > 0 {
+			previousSpawn := w.PlayerSpawn(u.UUID())
+			if previousSpawn == pos {
+				return false
+			}
 			u.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
 			w.SetPlayerSpawn(u.UUID(), pos)
 		}
@@ -89,11 +90,11 @@ func allRespawnAnchorsItems() []world.Item {
 	return all
 }
 
-func (r RespawnAnchor) SpawnBlock() bool {
+func (r RespawnAnchor) CanSpawn() bool {
 	return r.Charge > 0
 }
 
-func (r RespawnAnchor) Update(pos cube.Pos, u item.User, w *world.World) {
+func (r RespawnAnchor) SpawnOn(pos cube.Pos, u item.User, w *world.World) {
 	w.SetBlock(pos, RespawnAnchor{Charge: r.Charge - 1}, nil)
 	w.PlaySound(pos.Vec3(), sound.RespawnAnchorDeplete{Charge: r.Charge - 1})
 }

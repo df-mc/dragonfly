@@ -70,7 +70,7 @@ type Viewer interface {
 	ViewWorldSpawn(pos cube.Pos)
 	// ViewWeather views the weather of the world, including rain and thunder.
 	ViewWeather(raining, thunder bool)
-	// ViewEntityWake views an entity wake up from a bed.
+	// ViewEntityWake views an entity waking up from a bed.
 	ViewEntityWake(e Entity)
 }
 

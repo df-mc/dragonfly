@@ -756,8 +756,8 @@ func (ReinforcedDeepslate) Hash() (uint64, uint64) {
 	return hashReinforcedDeepslate, 0
 }
 
-func (RespawnAnchor) Hash() (uint64, uint64) {
-	return hashRespawnAnchor, 0
+func (r RespawnAnchor) Hash() (uint64, uint64) {
+	return hashRespawnAnchor, uint64(r.Charge)
 }
 
 func (s Sand) Hash() (uint64, uint64) {
