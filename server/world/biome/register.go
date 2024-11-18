@@ -60,6 +60,7 @@ func init() {
 	world.RegisterBiome(OldGrowthBirchForest{})
 	world.RegisterBiome(OldGrowthPineTaiga{})
 	world.RegisterBiome(OldGrowthSpruceTaiga{})
+	world.RegisterBiome(PaleGarden{})
 	world.RegisterBiome(Plains{})
 	world.RegisterBiome(River{})
 	world.RegisterBiome(SavannaPlateau{})
