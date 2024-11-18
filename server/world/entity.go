@@ -168,7 +168,7 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Name, _ = m["NameTag"].(string)
 }
 
-func (e *EntityHandle) encodeNBT(_ *Tx) map[string]any {
+func (e *EntityHandle) encodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":     []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
 		"Motion":  []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},

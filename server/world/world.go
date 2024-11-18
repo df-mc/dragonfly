@@ -894,14 +894,11 @@ func (w *World) Handle(h Handler) {
 // Viewers returns a list of all viewers viewing the position passed. A viewer will be assumed to be watching
 // if the position is within one of the chunks that the viewer is watching.
 func (w *World) viewersOf(pos mgl64.Vec3) (viewers []Viewer) {
-	if w == nil {
-		return nil
-	}
 	c, ok := w.chunks[chunkPosFromVec3(pos)]
 	if !ok {
 		return nil
 	}
-	return slices.Clone(c.viewers)
+	return c.viewers
 }
 
 // PortalDestination returns the destination world for a portal of a specific Dimension. If no destination World could
@@ -1192,7 +1189,7 @@ func columnTo(col *Column, tx *Tx) *chunk.Column {
 		BlockEntities: make([]chunk.BlockEntity, 0, len(col.BlockEntities)),
 	}
 	for _, e := range col.Entities {
-		data := e.encodeNBT(tx)
+		data := e.encodeNBT()
 		maps.Copy(data, e.t.EncodeNBT(&e.data))
 		data["identifier"] = e.t.EncodeEntity()
 		c.Entities = append(c.Entities, chunk.Entity{ID: int64(binary.LittleEndian.Uint64(e.id[8:])), Data: data})

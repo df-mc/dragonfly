@@ -91,8 +91,8 @@ func (tx *Tx) AddEntity(e *EntityHandle) Entity {
 	return tx.w.addEntity(tx, e)
 }
 
-func (tx *Tx) RemoveEntity(e Entity) {
-	tx.w.removeEntity(e, tx)
+func (tx *Tx) RemoveEntity(e Entity) *EntityHandle {
+	return tx.w.removeEntity(e, tx)
 }
 
 func (tx *Tx) EntitiesWithin(box cube.BBox) iter.Seq[Entity] {

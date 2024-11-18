@@ -855,25 +855,26 @@ func (p *Player) Respawn() {
 	if !p.Dead() || p.session() == session.Nop {
 		return
 	}
+	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
+	// always bring us back to the overworld.
+	w := p.tx.World().PortalDestination(p.tx.World().Dimension())
+	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
+
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
 	p.sendFood()
 	p.Extinguish()
 	p.ResetFallDistance()
 
-	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
-	// always bring us back to the overworld.
-	w := p.tx.World().PortalDestination(p.tx.World().Dimension())
-	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
-
 	p.Handler().HandleRespawn(&pos, &w)
 
-	// TODO: This respawns in the main world. That won't work with transactions.
-	p.tx.AddEntity(p)
-	p.Teleport(pos)
-	p.session().SendRespawn(pos)
-
-	p.SetVisible()
+	handle := p.tx.RemoveEntity(p)
+	w.Exec(func(tx *world.Tx) {
+		p = tx.AddEntity(handle).(*Player)
+		p.Teleport(pos)
+		p.session().SendRespawn(pos, p)
+		p.SetVisible()
+	})
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
