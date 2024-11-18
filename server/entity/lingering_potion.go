@@ -19,7 +19,7 @@ func NewLingeringPotion(opts world.EntitySpawnOpts, t potion.Potion, owner world
 	conf.Potion = t
 	conf.Particle = particle.Splash{Colour: colour}
 	conf.Hit = potionSplash(0.25, t, true)
-	conf.Owner = owner.Handle()
+	conf.Owner = owner.H()
 	return opts.New(LingeringPotionType{}, conf)
 }
 

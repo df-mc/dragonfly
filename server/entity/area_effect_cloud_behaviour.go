@@ -113,7 +113,7 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 func (a *AreaEffectCloudBehaviour) filter(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
 	return func(yield func(world.Entity) bool) {
 		for e := range seq {
-			_, target := a.targets[e.Handle()]
+			_, target := a.targets[e.H()]
 			_, living := e.(Living)
 			if !living || target {
 				continue
@@ -143,7 +143,7 @@ func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, ent *Ent, entiti
 				l.AddEffect(eff)
 			}
 
-			a.targets[e.Handle()] = ent.Age() + a.conf.ReapplicationDelay
+			a.targets[e.H()] = ent.Age() + a.conf.ReapplicationDelay
 			a.subtractUseDuration()
 			a.subtractUseRadius()
 

@@ -25,9 +25,8 @@ type Ent struct {
 	data   *world.EntityData
 }
 
-func (e *Ent) Handle() *world.EntityHandle {
-	// TODO: Move this over to world.EntityHandle.
-	return nil
+func (e *Ent) H() *world.EntityHandle {
+	return e.handle
 }
 
 func (e *Ent) Behaviour() Behaviour {

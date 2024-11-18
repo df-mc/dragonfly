@@ -41,7 +41,7 @@ type OffsetEntity interface {
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
-	_, ok := s.hiddenEntities[e.Handle()]
+	_, ok := s.hiddenEntities[e.H()]
 	s.entityMutex.RUnlock()
 	return ok
 }
@@ -60,13 +60,13 @@ func (s *Session) ViewEntity(e world.Entity) {
 	_, controllable := e.(Controllable)
 
 	s.entityMutex.Lock()
-	if id, ok := s.entityRuntimeIDs[e.Handle()]; ok && controllable {
+	if id, ok := s.entityRuntimeIDs[e.H()]; ok && controllable {
 		runtimeID = id
 	} else {
 		s.currentEntityRuntimeID += 1
 		runtimeID = s.currentEntityRuntimeID
-		s.entityRuntimeIDs[e.Handle()] = runtimeID
-		s.entities[runtimeID] = e.Handle()
+		s.entityRuntimeIDs[e.H()] = runtimeID
+		s.entities[runtimeID] = e.H()
 	}
 	s.entityMutex.Unlock()
 
@@ -174,9 +174,9 @@ func (s *Session) HideEntity(e world.Entity) {
 	}
 
 	s.entityMutex.Lock()
-	id, ok := s.entityRuntimeIDs[e.Handle()]
+	id, ok := s.entityRuntimeIDs[e.H()]
 	if _, controllable := e.(Controllable); !controllable {
-		delete(s.entityRuntimeIDs, e.Handle())
+		delete(s.entityRuntimeIDs, e.H())
 		delete(s.entities, id)
 	}
 	s.entityMutex.Unlock()
@@ -1155,7 +1155,7 @@ func (s *Session) closeWindow() {
 // entityRuntimeID returns the runtime ID of the entity passed.
 // noinspection GoCommentLeadingSpace
 func (s *Session) entityRuntimeID(e world.Entity) uint64 {
-	return s.handleRuntimeID(e.Handle())
+	return s.handleRuntimeID(e.H())
 }
 
 func (s *Session) handleRuntimeID(e *world.EntityHandle) uint64 {

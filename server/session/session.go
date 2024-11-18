@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -51,7 +49,7 @@ type Session struct {
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
 	// entity spawned to the session.
 	currentEntityRuntimeID uint64
-	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
+	// entityRuntimeIDs holds the runtime IDs of entities shown to the session.
 	entityRuntimeIDs map[*world.EntityHandle]uint64
 	entities         map[uint64]*world.EntityHandle
 	hiddenEntities   map[*world.EntityHandle]struct{}
@@ -153,7 +151,6 @@ func (conf Config) New(conn Conn) *Session {
 	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(54, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
@@ -187,7 +184,7 @@ func (conf Config) New(conn Conn) *Session {
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
 func (s *Session) Spawn(c Controllable, tx *world.Tx) {
-	handle := c.Handle()
+	handle := c.H()
 
 	s.ent = handle
 	s.entityRuntimeIDs[handle] = selfEntityRuntimeID
@@ -239,7 +236,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	_ = c.Close()
 	s.conf.HandleStop(tx, c)
 
-	s.EmptyUIInventory(c)
+	c.MoveItemsToInventory()
 
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = s.inv.Close()
@@ -482,18 +479,6 @@ func (s *Session) registerHandlers() {
 		packet.IDTickSync:                  nil,
 		packet.IDServerBoundLoadingScreen:  &ServerBoundLoadingScreenHandler{},
 		packet.IDServerBoundDiagnostics:    &ServerBoundDiagnosticsHandler{},
-	}
-}
-
-// handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
-// in the future.
-func (s *Session) handleInterfaceUpdate(slot int, _, item item.Stack) {
-	if slot == enchantingInputSlot && s.containerOpened.Load() {
-		pos := *s.openedPos.Load()
-		b := s.c.World().Block(pos)
-		if _, enchanting := b.(block.EnchantingTable); enchanting {
-			s.sendEnchantmentOptions(s.c.World(), pos, item)
-		}
 	}
 }
 

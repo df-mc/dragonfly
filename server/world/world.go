@@ -663,7 +663,7 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 // RemoveEntity assumes the Entity is currently loaded and in a loaded chunk. If not, the function will not do
 // anything.
 func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
-	handle := e.Handle()
+	handle := e.H()
 	pos, found := w.entities[handle]
 	if !found {
 		// The entity currently isn't in this world.

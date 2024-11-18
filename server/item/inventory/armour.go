@@ -238,7 +238,7 @@ func (a *Armour) Inventory() *Inventory {
 
 // Handle assigns a Handler to an Armour inventory so that its methods are called for the respective events. Nil may be
 // passed to set the default NopHandler.
-// Handle is the equivalent of calling (*Armour).Inventory().Handle.
+// Handle is the equivalent of calling (*Armour).Inventory().H.
 func (a *Armour) Handle(h Handler) {
 	a.inv.Handle(h)
 }

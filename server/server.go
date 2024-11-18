@@ -130,7 +130,7 @@ func (srv *Server) Accept(f HandleFunc) bool {
 
 	<-inc.w.Exec(func(tx *world.Tx) {
 		p := tx.AddEntity(inc.p.handle).(*player.Player)
-		inc.s.Spawn(p)
+		inc.s.Spawn(p, tx)
 
 		if f != nil {
 			f(p)
@@ -193,7 +193,7 @@ func (srv *Server) Player(uuid uuid.UUID) (*world.EntityHandle, bool) {
 }
 
 // PlayerByName looks for a player on the server with the name passed. If
-// found, the player is returned and the bool returns holds a true value. If
+// found, the player is returned and the bool returned holds a true value. If
 // not, the bool is false and the player is nil
 func (srv *Server) PlayerByName(name string) (*world.EntityHandle, bool) {
 	if p, ok := sliceutil.SearchValue(maps.Values(srv.p), func(p *onlinePlayer) bool {
@@ -497,6 +497,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 	}.New(conn)
 
 	// TODO: Do something with the gamemode here.
+	_ = gm
 
 	conf := player.Config{
 		Name:    conn.IdentityData().DisplayName,
@@ -582,7 +583,9 @@ func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 // connected and all entities in the server's world.
 func (srv *Server) registerTargetFunc() {
 	cmd.AddTargetFunc(func(src cmd.Source) (entities []cmd.Target, players []cmd.NamedTarget) {
-		return sliceutil.Convert[cmd.Target](src.World().Entities()), sliceutil.Convert[cmd.NamedTarget](srv.Players())
+		// TODO: Figure out transactions with commands.
+		// return sliceutil.Convert[cmd.Target](src.World().Entities()), sliceutil.Convert[cmd.NamedTarget](srv.Players())
+		return nil, nil
 	})
 }
 

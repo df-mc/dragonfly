@@ -54,6 +54,13 @@ func (inv *Inventory) Clone(f SlotFunc) *Inventory {
 	return &Inventory{h: NopHandler{}, slots: inv.Slots(), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
+// SlotFunc changes the function called when a slot in the inventory is changed.
+func (inv *Inventory) SlotFunc(f SlotFunc) {
+	inv.mu.Lock()
+	defer inv.mu.Unlock()
+	inv.f = f
+}
+
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
 // the item is returned and the error is nil. If no item was present in the slot, a Stack with air as its item
 // and a count of 0 is returned. Stack.Empty() may be called to check if this is the case.

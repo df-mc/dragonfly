@@ -86,7 +86,7 @@ func (exp *ExperienceOrbBehaviour) findTarget(tx *world.Tx, pos mgl64.Vec3) {
 	exp.target = nil
 	for o := range tx.EntitiesWithin(followBox.Translate(pos)) {
 		if _, ok := o.(experienceCollector); ok {
-			exp.target = o.Handle()
+			exp.target = o.H()
 			break
 		}
 	}

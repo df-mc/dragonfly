@@ -28,9 +28,9 @@ import (
 // StartShowingEntity is made.
 func (s *Session) StopShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e.Handle()]
+	_, ok := s.hiddenEntities[e.H()]
 	if !ok {
-		s.hiddenEntities[e.Handle()] = struct{}{}
+		s.hiddenEntities[e.H()] = struct{}{}
 	}
 	s.entityMutex.Unlock()
 
@@ -42,9 +42,9 @@ func (s *Session) StopShowingEntity(e world.Entity) {
 // StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
 func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e.Handle()]
+	_, ok := s.hiddenEntities[e.H()]
 	if ok {
-		delete(s.hiddenEntities, e.Handle())
+		delete(s.hiddenEntities, e.H())
 	}
 	s.entityMutex.Unlock()
 
@@ -69,21 +69,6 @@ func (s *Session) closeCurrentContainer(tx *world.Tx) {
 		container.RemoveViewer(s, tx, pos)
 	} else if enderChest, ok := b.(block.EnderChest); ok {
 		enderChest.RemoveViewer(tx, pos)
-	}
-}
-
-// EmptyUIInventory attempts to move all items in the UI inventory to the player's main inventory. If the main inventory
-// is full, the items are dropped on the ground instead.
-func (s *Session) EmptyUIInventory(c Controllable) {
-	if s == Nop {
-		return
-	}
-	for _, i := range s.ui.Clear() {
-		if n, err := s.inv.AddItem(i); err != nil {
-			// We couldn't add the item to the main inventory (probably because
-			// it was full), so we drop it instead.
-			c.Drop(i.Grow(i.Count() - n))
-		}
 	}
 }
 
@@ -520,15 +505,21 @@ func (s *Session) EnableInstantRespawn(enable bool) {
 
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories(tx *world.Tx, c Controllable) (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
-	s.inv = inventory.New(36, s.broadcastInvFunc(tx, c))
-	s.offHand = inventory.New(1, s.broadcastOffHandFunc(tx, c))
-	s.enderChest = inventory.New(27, s.broadcastEnderChestFunc(tx, c))
-	s.armour = inventory.NewArmour(s.broadcastArmourFunc(tx, c))
-	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
+func (s *Session) HandleInventories(tx *world.Tx, c Controllable, inv, offHand, enderChest, ui *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
+	s.inv = inv
+	s.inv.SlotFunc(s.broadcastInvFunc(tx, c))
+	s.offHand = offHand
+	s.offHand.SlotFunc(s.broadcastOffHandFunc(tx, c))
+	s.enderChest = enderChest
+	s.enderChest.SlotFunc(s.broadcastEnderChestFunc(tx, c))
+	s.armour = armour
+	s.armour.Inventory().SlotFunc(s.broadcastArmourFunc(tx, c))
+	s.ui = ui
+	s.ui.SlotFunc(s.uiInventoryFunc(tx, c))
+	s.heldSlot = heldSlot
 }
 
-func (s *Session) broadcastInvFunc(tx *world.Tx, c Controllable) func(slot int, before, after item.Stack) {
+func (s *Session) broadcastInvFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
 	return func(slot int, _, after item.Stack) {
 		if slot == int(*s.heldSlot) {
 			for _, viewer := range tx.Viewers(c.Position()) {
@@ -541,7 +532,7 @@ func (s *Session) broadcastInvFunc(tx *world.Tx, c Controllable) func(slot int, 
 	}
 }
 
-func (s *Session) broadcastEnderChestFunc(tx *world.Tx, _ Controllable) func(slot int, before, after item.Stack) {
+func (s *Session) broadcastEnderChestFunc(tx *world.Tx, _ Controllable) inventory.SlotFunc {
 	return func(slot int, _, after item.Stack) {
 		if !s.inTransaction.Load() {
 			if _, ok := tx.Block(*s.openedPos.Load()).(block.EnderChest); ok {
@@ -551,7 +542,7 @@ func (s *Session) broadcastEnderChestFunc(tx *world.Tx, _ Controllable) func(slo
 	}
 }
 
-func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) func(slot int, before, after item.Stack) {
+func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
 	return func(slot int, _, after item.Stack) {
 		for _, viewer := range tx.Viewers(c.Position()) {
 			viewer.ViewEntityItems(c)
@@ -566,7 +557,7 @@ func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) func(slot i
 	}
 }
 
-func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) func(slot int, before, after item.Stack) {
+func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
 	return func(slot int, before, after item.Stack) {
 		if !s.inTransaction.Load() {
 			s.sendItem(after, slot, protocol.WindowIDArmour)
@@ -577,6 +568,19 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) func(slot in
 		}
 		for _, viewer := range tx.Viewers(c.Position()) {
 			viewer.ViewEntityArmour(c)
+		}
+	}
+}
+
+// uiInventoryFunc handles an update to the UI inventory, used for updating enchantment options and possibly more
+// in the future.
+func (s *Session) uiInventoryFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
+	return func(slot int, _, after item.Stack) {
+		if slot == enchantingInputSlot && s.containerOpened.Load() {
+			pos := *s.openedPos.Load()
+			if _, enchanting := tx.Block(pos).(block.EnchantingTable); enchanting {
+				s.sendEnchantmentOptions(tx, c, pos, after)
+			}
 		}
 	}
 }

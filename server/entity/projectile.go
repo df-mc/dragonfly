@@ -325,7 +325,7 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 			for other := range seq {
 				g, ok := other.(interface{ GameMode() world.GameMode })
 				_, living := other.(Living)
-				if (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.Handle()) {
+				if (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
 					continue
 				}
 				if !yield(other) {

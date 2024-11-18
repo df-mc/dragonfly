@@ -35,6 +35,7 @@ func (conf Config) Apply(data *world.EntityData) {
 	}
 	data.Name, data.Pos = conf.Name, conf.Pos
 	data.Data = &playerData{
+		ui:                inventory.New(54, nil),
 		inv:               inventory.New(36, nil),
 		enderChest:        inventory.New(27, nil),
 		offHand:           inventory.New(1, nil),
@@ -79,18 +80,16 @@ func (t Type) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityD
 		playerData: pd,
 	}
 
-	// TODO: Make sure inventories don't get recreated everytime.
 	if pd.s != nil {
-		pd.inv, pd.offHand, pd.enderChest, pd.armour, pd.heldSlot = pd.s.HandleInventories(tx, p)
+		pd.s.HandleInventories(tx, p, pd.inv, pd.offHand, pd.enderChest, pd.ui, pd.armour, pd.heldSlot)
 	} else {
-		pd.inv = inventory.New(36, func(slot int, before, after item.Stack) {
+		pd.inv.SlotFunc(func(slot int, before, after item.Stack) {
 			if slot == int(*p.heldSlot) {
 				p.broadcastItems(slot, before, after)
 			}
 		})
-		pd.enderChest = inventory.New(27, nil)
-		pd.offHand = inventory.New(1, p.broadcastItems)
-		pd.armour = inventory.NewArmour(p.broadcastArmour)
+		pd.offHand.SlotFunc(p.broadcastItems)
+		pd.armour.Inventory().SlotFunc(p.broadcastArmour)
 	}
 
 	return p

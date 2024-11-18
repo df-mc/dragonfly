@@ -185,7 +185,7 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 // Viewers of a world may view an Entity when near it.
 type Entity interface {
 	io.Closer
-	Handle() *EntityHandle
+	H() *EntityHandle
 
 	// Type returns the EntityType of the Entity.
 	Type() EntityType

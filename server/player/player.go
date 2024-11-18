@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block"
@@ -47,9 +48,9 @@ type playerData struct {
 	s        *session.Session
 	h        Handler
 
-	inv, offHand, enderChest *inventory.Inventory
-	armour                   *inventory.Armour
-	heldSlot                 *uint32
+	inv, offHand, enderChest, ui *inventory.Inventory
+	armour                       *inventory.Armour
+	heldSlot                     *uint32
 
 	sneaking, sprinting, swimming, gliding, flying,
 	invisible, immobile, onGround, usingItem bool
@@ -89,6 +90,8 @@ type playerData struct {
 	breakParticleCounter uint32
 
 	hunger *hungerManager
+
+	once sync.Once
 }
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -100,27 +103,13 @@ type Player struct {
 	*playerData
 }
 
-// NewWithSession returns a new player for a network session, so that the network session can control the
-// player.
-// A set of additional fields must be provided to initialise the player with the client's data, such as the
-// name and the skin of the player. You can either pass on player data you want to load or
-// you can leave the data as nil to use default data.
-func NewWithSession(name, xuid string, uuid uuid.UUID, skin skin.Skin, s *session.Session, pos mgl64.Vec3, data *Data) *Player {
-	p := New(name, skin, pos)
-	p.s.Store(s)
-	p.skin.Store(&skin)
-	p.uuid, p.xuid = uuid, xuid
-	p.inv, p.offHand, p.enderChest, p.armour, p.heldSlot = s.HandleInventories()
-	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-	if data != nil {
-		p.load(*data)
-	}
-	return p
-}
-
 // Type returns the world.EntityType for the Player.
 func (p *Player) Type() world.EntityType {
 	return Type{}
+}
+
+func (p *Player) H() *world.EntityHandle {
+	return p.handle
 }
 
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
@@ -213,7 +202,7 @@ func (p *Player) Handle(h Handler) {
 	if h == nil {
 		h = NopHandler{}
 	}
-	p.h.Store(&h)
+	p.h = h
 }
 
 // Message sends a formatted message to the player. The message is formatted following the rules of
@@ -839,7 +828,7 @@ func (p *Player) dropItems() {
 	p.experience.Reset()
 	p.session().SendExperience(p.experience)
 
-	p.session().EmptyUIInventory()
+	p.MoveItemsToInventory()
 	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
 		if _, ok := it.Enchantment(enchantment.CurseOfVanishing{}); ok {
 			continue
@@ -849,9 +838,31 @@ func (p *Player) dropItems() {
 	}
 }
 
-// Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
-// again. Nothing will happen if the player does not have a session connected to it.
-func (p *Player) Respawn() {
+// MoveItemsToInventory moves items kept in 'temporary' slots, such as the
+// crafting grid of slots in an enchantment table, to the player's inventory.
+// If no space is left for these items, the leftover items are dropped.
+func (p *Player) MoveItemsToInventory() {
+	for _, i := range p.ui.Clear() {
+		if n, err := p.inv.AddItem(i); err != nil {
+			// We couldn't add the item to the main inventory (probably because
+			// it was full), so we drop it instead.
+			p.Drop(i.Grow(i.Count() - n))
+		}
+	}
+}
+
+// Respawn spawns the player after it dies, so that its health is replenished,
+// and it is spawned in the world again. Nothing will happen if the player does
+// not have a session connected to it.
+// Calling Respawn may lead to the player being removed from its world and being
+// added to a new world. This means that p cannot be assumed to be valid after
+// a call to Respawn.
+func (p *Player) Respawn() *world.EntityHandle {
+	p.respawn(nil)
+	return p.handle
+}
+
+func (p *Player) respawn(f func(p *Player)) {
 	if !p.Dead() || p.session() == session.Nop {
 		return
 	}
@@ -870,10 +881,13 @@ func (p *Player) Respawn() {
 
 	handle := p.tx.RemoveEntity(p)
 	w.Exec(func(tx *world.Tx) {
-		p = tx.AddEntity(handle).(*Player)
-		p.Teleport(pos)
-		p.session().SendRespawn(pos, p)
-		p.SetVisible()
+		np := tx.AddEntity(handle).(*Player)
+		np.Teleport(pos)
+		np.session().SendRespawn(pos, p)
+		np.SetVisible()
+		if f != nil {
+			f(np)
+		}
 	})
 }
 
@@ -1309,7 +1323,7 @@ func (p *Player) ReleaseItem() {
 	p.usingItem = false
 	ctx := p.useContext()
 	i, _ := p.HeldItems()
-	i.Item().(item.Releasable).Release(p, p.useDuration(), nil, ctx)
+	i.Item().(item.Releasable).Release(p, p.tx, ctx, p.useDuration())
 
 	p.handleUseContext(ctx)
 	p.updateState()
@@ -1414,7 +1428,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The block clicked was either not replaceable, or not replaceable using the block passed.
 			replacedPos = pos.Side(face)
 		}
-		if replaceable, ok := p.tx.Block(replacedPos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) || replacedPos.OutOfBounds(w.Range()) {
+		if replaceable, ok := p.tx.Block(replacedPos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) || replacedPos.OutOfBounds(p.tx.Range()) {
 			return
 		}
 		if !p.placeBlock(replacedPos, ib, false) || p.GameMode().CreativeInventory() {
@@ -1441,7 +1455,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 		return true
 	}
 	useCtx := p.useContext()
-	if !usable.UseOnEntity(e, p.tx.World(), p, useCtx) {
+	if !usable.UseOnEntity(e, p.tx, p, useCtx) {
 		return true
 	}
 	p.SwingArm()
@@ -2223,7 +2237,7 @@ func (p *Player) Tick(_ *world.World, current int64) {
 	}
 
 	if p.session() == session.Nop && !p.Immobile() {
-		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.Rotation())
+		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.Rotation(), p.tx)
 		m.Send()
 
 		p.data.Vel = m.Velocity()
@@ -2706,8 +2720,15 @@ func (p *Player) close(msg string) {
 	// If the player is being disconnected while they are dead, we respawn the player
 	// so that the player logic works correctly the next time they join.
 	if p.Dead() && p.session() != nil {
-		p.Respawn()
+		p.respawn(func(np *Player) {
+			np.quit(msg)
+		})
+		return
 	}
+	p.quit(msg)
+}
+
+func (p *Player) quit(msg string) {
 	p.h.HandleQuit()
 	p.h = NopHandler{}
 

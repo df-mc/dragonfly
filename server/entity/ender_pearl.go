@@ -13,7 +13,7 @@ import (
 // blue item used to teleport.
 func NewEnderPearl(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := enderPearlConf
-	conf.Owner = owner.Handle()
+	conf.Owner = owner.H()
 	return opts.New(EnderPearlType{}, conf)
 }
 
