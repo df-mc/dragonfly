@@ -32,7 +32,6 @@ const (
 	hashChain
 	hashChest
 	hashChiseledQuartz
-	hashChiseledResinBricks
 	hashClay
 	hashCoal
 	hashCoalOre
@@ -296,10 +295,6 @@ func (c Chest) Hash() (uint64, uint64) {
 
 func (ChiseledQuartz) Hash() (uint64, uint64) {
 	return hashChiseledQuartz, 0
-}
-
-func (ChiseledResinBricks) Hash() (uint64, uint64) {
-	return hashChiseledResinBricks, 0
 }
 
 func (Clay) Hash() (uint64, uint64) {
@@ -730,8 +725,8 @@ func (Resin) Hash() (uint64, uint64) {
 	return hashResin, 0
 }
 
-func (ResinBricks) Hash() (uint64, uint64) {
-	return hashResinBricks, 0
+func (r ResinBricks) Hash() (uint64, uint64) {
+	return hashResinBricks, uint64(boolByte(r.Chiseled))
 }
 
 func (s Sand) Hash() (uint64, uint64) {
