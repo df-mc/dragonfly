@@ -16,8 +16,18 @@ type InventoryTransactionHandler struct{}
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.InventoryTransaction)
 
-	if len(pk.LegacySetItemSlots) > 0 {
-		h.resendInventories(s)
+	for _, slots := range pk.LegacySetItemSlots {
+		switch slots.ContainerID {
+		case protocol.ContainerOffhand:
+			s.sendInv(s.offHand, protocol.WindowIDOffHand)
+		case protocol.ContainerInventory:
+			for _, slot := range slots.Slots {
+				if i, err := s.inv.Item(int(slot)); err == nil {
+					s.sendItem(i, int(slot), protocol.WindowIDInventory)
+				}
+			}
+		default:
+		}
 	}
 
 	switch data := pk.TransactionData.(type) {
