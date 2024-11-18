@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	chat.Global.Subscribe(chat.StdoutSubscriber{})
 	conf, err := readConfig(slog.Default())
 	if err != nil {

@@ -924,9 +924,6 @@ func (w *World) save(tx *Tx) {
 
 // Close closes the world and saves all chunks currently loaded.
 func (w *World) Close() error {
-	if w == nil {
-		return nil
-	}
 	w.o.Do(w.close)
 	return nil
 }
@@ -937,11 +934,11 @@ func (w *World) close() {
 	w.Handler().HandleClose()
 	w.Handle(NopHandler{})
 
-	close(w.closing)
-	w.running.Wait()
-
 	w.Save()
 	maps.Clear(w.chunks)
+
+	close(w.closing)
+	w.running.Wait()
 
 	w.set.ref.Add(-1)
 	if !w.advance {

@@ -34,6 +34,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and
@@ -42,7 +43,7 @@ type Server struct {
 	conf Config
 
 	once    sync.Once
-	started atomic.Bool
+	started atomic.Pointer[time.Time]
 
 	world, nether, end *world.World
 
@@ -93,7 +94,8 @@ func New() *Server {
 // are closed using a call to Close. Once started, players may be accepted
 // using Server.Accept().
 func (srv *Server) Listen() {
-	if !srv.started.CompareAndSwap(false, true) {
+	t := time.Now()
+	if !srv.started.CompareAndSwap(nil, &t) {
 		panic("start server: already started")
 	}
 
@@ -231,7 +233,7 @@ func (srv *Server) CloseOnProgramEnd() {
 
 // Close closes the server, making any call to Run/Accept cancel immediately.
 func (srv *Server) Close() error {
-	if !srv.started.Load() {
+	if srv.started.Load() == nil {
 		panic("server not yet running")
 	}
 	srv.once.Do(srv.close)
@@ -241,8 +243,7 @@ func (srv *Server) Close() error {
 // close stops the server, storing player and world data to disk when
 // necessary.
 func (srv *Server) close() {
-	srv.conf.Log.Info("Server shutting down...")
-	defer srv.conf.Log.Info("Server stopped.")
+	srv.conf.Log.Info("Server closing...")
 
 	srv.conf.Log.Debug("Disconnecting players...")
 	for _, p := range srv.Players() {
@@ -274,6 +275,7 @@ func (srv *Server) close() {
 			srv.conf.Log.Error("Close listener: " + err.Error())
 		}
 	}
+	srv.conf.Log.Info("Server closed.", "uptime", time.Since(*srv.started.Load()).String())
 }
 
 // listen makes the Server listen for new connections from the Listener passed.
