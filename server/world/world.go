@@ -46,9 +46,6 @@ type World struct {
 	weather
 	ticker
 
-	lastPos   ChunkPos
-	lastChunk *Column
-
 	closing chan struct{}
 	running sync.WaitGroup
 
@@ -565,7 +562,7 @@ func (w *World) Time() int {
 
 // SetTime sets the new time of the world. SetTime will always work, regardless of whether the time is stopped
 // or not.
-func (w *World) setTime(new int) {
+func (w *World) SetTime(new int) {
 	if w == nil {
 		return
 	}
@@ -582,14 +579,14 @@ func (w *World) setTime(new int) {
 // StopTime stops the time in the world. When called, the time will no longer cycle and the world will remain
 // at the time when StopTime is called. The time may be restarted by calling World.StartTime().
 // StopTime will not do anything if the time is already stopped.
-func (w *World) stopTime() {
+func (w *World) StopTime() {
 	w.enableTimeCycle(false)
 }
 
 // StartTime restarts the time in the world. When called, the time will start cycling again and the day/night
 // cycle will continue. The time may be stopped again by calling World.StopTime().
 // StartTime will not do anything if the time is already started.
-func (w *World) startTime() {
+func (w *World) StartTime() {
 	w.enableTimeCycle(true)
 }
 

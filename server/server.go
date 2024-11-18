@@ -496,7 +496,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		HandleStop:     srv.handleSessionClose,
 	}.New(conn)
 
-	// TODO: Do something with the gamemode here.
+	// TODO: Do something with the gamemode and other player data.
 	_ = gm
 
 	conf := player.Config{

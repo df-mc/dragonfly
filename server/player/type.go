@@ -61,18 +61,6 @@ func (conf Config) Apply(data *world.EntityData) {
 
 func (t Type) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	pd := data.Data.(*playerData)
-
-	// With session:
-	//	p := createSession(name, skin, pos)
-	//	p.s.Store(s)
-	//	p.skin.Store(&skin)
-	//	p.uuid, p.xuid = uuid, xuid
-	//	p.inv, p.offHand, p.enderChest, p.armour, p.heldSlot = s.HandleInventories()
-	//	p.locale, _ = language.Parse(strings.Replace(s.ClientData().LanguageCode, "_", "-", 1))
-	//	if data != nil {
-	//		p.load(*data)
-	//	}
-	//	return p
 	p := &Player{
 		tx:         tx,
 		handle:     handle,

@@ -1365,7 +1365,7 @@ func (p *Player) handleUseContext(ctx *item.UseContext) {
 
 // useDuration returns the duration the player has been using the item in the main hand.
 func (p *Player) useDuration() time.Duration {
-	return time.Now().Sub(p.usingSince) + time.Second/20
+	return time.Since(p.usingSince) + time.Second/20
 }
 
 // UsingItem checks if the Player is currently using an item. True is returned if the Player is currently eating an

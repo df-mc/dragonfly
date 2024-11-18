@@ -14,7 +14,6 @@ import (
 // TNT is an explosive block that can be primed to generate an explosion.
 type TNT struct {
 	solid
-	igniter world.Entity
 }
 
 // Activate ...
