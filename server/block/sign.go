@@ -178,11 +178,11 @@ func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 // EncodeBlock ...
 func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 	woodType := s.Wood.String() + "_"
-	if woodType == "dark_oak_" {
-		woodType = "darkoak_"
-	}
-	if woodType == "oak_" {
+	switch s.Wood {
+	case OakWood():
 		woodType = ""
+	case DarkOakWood():
+		woodType = "darkoak_"
 	}
 	if s.Attach.hanging {
 		return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(s.Attach.facing + 2)}
