@@ -705,12 +705,27 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 	}
 }
 
-// Entities returns a list of all entities currently added to the World.
+// allEntities returns an iterator that yields all entities in the World.
 func (w *World) allEntities(tx *Tx) iter.Seq[Entity] {
 	return func(yield func(Entity) bool) {
 		for e := range w.entities {
 			if ent := e.mustEntity(tx); !yield(ent) {
 				return
+			}
+		}
+	}
+}
+
+// allPlayers returns an iterator that yields all player entities in the World.
+func (w *World) allPlayers(tx *Tx) iter.Seq[Entity] {
+	return func(yield func(Entity) bool) {
+		for e := range w.entities {
+			if [8]byte(e.id[:8]) != [8]byte(uuid.Nil[:8]) {
+				// The first 8 bytes are set, so we are dealing with a player.
+				// Non-player entities only use the last 8 bytes.
+				if ent := e.mustEntity(tx); !yield(ent) {
+					return
+				}
 			}
 		}
 	}

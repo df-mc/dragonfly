@@ -320,7 +320,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	if p.Handler().HandleCommandExecution(ctx, command, args[1:]); ctx.Cancelled() {
 		return
 	}
-	command.Execute(strings.Join(args[1:], " "), p)
+	command.Execute(strings.Join(args[1:], " "), p, p.tx)
 }
 
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an

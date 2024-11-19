@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"slices"
 )
 
 // Target represents the target of a command. A []Target may be used as command parameter
@@ -18,25 +21,9 @@ type NamedTarget interface {
 	Name() string
 }
 
-// TargetFunc is a function used to find Targets eligible for a command executed by a given Source. Multiple
-// functions may be added by using AddTargetFunc.
-type TargetFunc func(src Source) (entities []Target, players []NamedTarget)
-
-// AddTargetFunc adds a TargetFunc to the list of functions used to find targets that may be targeted by a
-// Source.
-func AddTargetFunc(f TargetFunc) {
-	targetFunctions = append(targetFunctions, f)
-}
-
-// targetFunctions holds a list of all TargetFunc registered using AddTargetFunc.
-var targetFunctions []TargetFunc
-
 // targets returns all Targets selectable by the Source passed.
-func targets(src Source) (entities []Target, players []NamedTarget) {
-	for _, f := range targetFunctions {
-		e, p := f(src)
-		entities = append(entities, e...)
-		players = append(players, p...)
-	}
-	return
+func targets(tx *world.Tx) (entities []Target, players []NamedTarget) {
+	ent := sliceutil.Convert[Target](slices.Collect(tx.Entities()))
+	pl := sliceutil.Convert[NamedTarget](slices.Collect(tx.Players()))
+	return ent, pl
 }

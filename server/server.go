@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/internal/blockinternal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -591,16 +590,6 @@ func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	}
 
 	return playerSkin
-}
-
-// registerTargetFunc registers a cmd.TargetFunc to be able to get all players
-// connected and all entities in the server's world.
-func (srv *Server) registerTargetFunc() {
-	cmd.AddTargetFunc(func(src cmd.Source) (entities []cmd.Target, players []cmd.NamedTarget) {
-		// TODO: Figure out transactions with commands.
-		// return sliceutil.Convert[cmd.Target](src.World().Entities()), sliceutil.Convert[cmd.NamedTarget](srv.Players())
-		return nil, nil
-	})
 }
 
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.

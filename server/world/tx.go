@@ -103,6 +103,10 @@ func (tx *Tx) Entities() iter.Seq[Entity] {
 	return tx.w.allEntities(tx)
 }
 
+func (tx *Tx) Players() iter.Seq[Entity] {
+	return tx.w.allPlayers(tx)
+}
+
 func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
 	return tx.w.viewersOf(pos)
 }
