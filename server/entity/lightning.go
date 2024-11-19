@@ -67,7 +67,7 @@ func (s *lightningState) tick(e *Ent, tx *world.Tx) {
 // on fire.
 func (s *lightningState) dealDamage(e *Ent, tx *world.Tx) {
 	pos := e.Position()
-	bb := e.Type().BBox(e).GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
+	bb := e.H().Type().BBox(e).GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
 	for e := range tx.EntitiesWithin(bb) {
 		// Only damage entities that weren't already dead.
 		if l, ok := e.(Living); ok && l.Health() > 0 {

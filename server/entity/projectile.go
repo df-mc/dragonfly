@@ -192,7 +192,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 // projectile is still attached to a block and if it can be picked up.
 func (lt *ProjectileBehaviour) tickAttached(e *Ent, tx *world.Tx) bool {
 	boxes := tx.Block(lt.collisionPos).Model().BBox(lt.collisionPos, tx)
-	box := e.Type().BBox(e).Translate(e.Position())
+	box := e.H().Type().BBox(e).Translate(e.Position())
 
 	for _, bb := range boxes {
 		if box.IntersectsWith(bb.Translate(lt.collisionPos.Vec3()).Grow(0.05)) {
@@ -209,10 +209,10 @@ func (lt *ProjectileBehaviour) tickAttached(e *Ent, tx *world.Tx) bool {
 // tryPickup checks for nearby projectile collectors and closes the entity if
 // one was found.
 func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
-	translated := e.Type().BBox(e).Translate(e.Position())
+	translated := e.H().Type().BBox(e).Translate(e.Position())
 	grown := translated.GrowVec3(mgl64.Vec3{1, 0.5, 1})
 	for other := range tx.EntitiesWithin(translated.Grow(2)) {
-		if !other.Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
+		if !other.H().Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
 			continue
 		}
 		collector, ok := other.(Collector)
@@ -295,7 +295,7 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 		ok  bool
 	)
 	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
-		if hit, ok = trace.Perform(pos, end, tx, e.Type().BBox(e).Grow(1.0), lt.ignores(e)); ok {
+		if hit, ok = trace.Perform(pos, end, tx, e.H().Type().BBox(e).Grow(1.0), lt.ignores(e)); ok {
 			if _, ok := hit.(trace.BlockResult); ok {
 				// Undo the gravity because the velocity as a result of gravity
 				// at the point of collision should be 0.

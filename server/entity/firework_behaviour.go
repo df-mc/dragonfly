@@ -124,7 +124,7 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 	}
 
 	force := float64(len(explosions)*2) + 5.0
-	for e := range filterLiving(tx.EntitiesWithin(e.Type().BBox(e).Translate(pos).Grow(5.25))) {
+	for e := range filterLiving(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(5.25))) {
 		tpos := e.Position()
 		dist := pos.Sub(tpos).Len()
 		if dist > 5.0 {
@@ -138,7 +138,7 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 			e.(Living).Hurt(dmg, src)
 			continue
 		}
-		if _, ok := trace.Perform(pos, tpos, tx, e.Type().BBox(e).Grow(0.3), nil); ok {
+		if _, ok := trace.Perform(pos, tpos, tx, e.H().Type().BBox(e).Grow(0.3), nil); ok {
 			e.(Living).Hurt(dmg, src)
 		}
 	}

@@ -102,7 +102,7 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 			delete(a.targets, target)
 		}
 	}
-	if a.applyEffects(pos, e, a.filter(tx.EntitiesWithin(e.Type().BBox(e).Translate(pos)))) {
+	if a.applyEffects(pos, e, a.filter(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos)))) {
 		for _, v := range tx.Viewers(pos) {
 			v.ViewEntityState(e)
 		}

@@ -17,7 +17,7 @@ import (
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
 func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
-	bb := e.Type().BBox(e)
+	bb := e.H().Type().BBox(e)
 	m := protocol.NewEntityMetadata()
 
 	m[protocol.EntityDataKeyWidth] = float32(bb.Width())
@@ -28,10 +28,10 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 
 	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasGravity)
 	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagClimb)
-	if g, ok := e.Type().(glint); ok && g.Glint() {
+	if g, ok := e.H().Type().(glint); ok && g.Glint() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
 	}
-	if _, ok := e.Type().(entity.LingeringPotionType); ok {
+	if _, ok := e.H().Type().(entity.LingeringPotionType); ok {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
 	}
 	s.addSpecificMetadata(e, m)

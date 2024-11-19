@@ -93,7 +93,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	for e := range tx.EntitiesWithin(box.Grow(2)) {
 		pos := e.Position()
 		dist := explosionPos.Sub(pos).Len()
-		if dist >= d || !e.Type().BBox(e).Translate(pos).IntersectsWith(box) {
+		if dist >= d || !e.H().Type().BBox(e).Translate(pos).IntersectsWith(box) {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
@@ -175,7 +175,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 // exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
 func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 	pos := e.Position()
-	box := e.Type().BBox(e).Translate(pos)
+	box := e.H().Type().BBox(e).Translate(pos)
 
 	boxMin, boxMax := box.Min(), box.Max()
 	diff := boxMax.Sub(boxMin).Mul(2.0).Add(mgl64.Vec3{1, 1, 1})

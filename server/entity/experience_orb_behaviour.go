@@ -105,7 +105,7 @@ func (exp *ExperienceOrbBehaviour) moveToTarget(e *Ent, target experienceCollect
 		e.SetVelocity(e.Velocity().Add(diff.Normalize().Mul(0.2 * math.Pow(1-math.Sqrt(dist), 2))))
 	}
 
-	if e.Type().BBox(e).Translate(pos).IntersectsWith(target.Type().BBox(target).Translate(target.Position())) && target.CollectExperience(exp.conf.Experience) {
+	if e.H().Type().BBox(e).Translate(pos).IntersectsWith(target.H().Type().BBox(target).Translate(target.Position())) && target.CollectExperience(exp.conf.Experience) {
 		_ = e.Close()
 	}
 }

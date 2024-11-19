@@ -111,18 +111,18 @@ func (i *ItemBehaviour) tick(e *Ent, tx *world.Tx) {
 // stacks will merge.
 func (i *ItemBehaviour) checkNearby(e *Ent, tx *world.Tx) {
 	pos := e.Position()
-	bbox := e.Type().BBox(e)
+	bbox := e.H().Type().BBox(e)
 	grown := bbox.GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
 
 	for other := range tx.EntitiesWithin(bbox.Translate(pos).Grow(2)) {
-		if e == other || !other.Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
+		if e == other || !other.H().Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
 			continue
 		}
 		if collector, ok := other.(Collector); ok {
 			// A collector was within range to pick up the entity.
 			i.collect(e, collector, tx)
 			return
-		} else if _, ok := other.Type().(ItemType); ok {
+		} else if _, ok := other.H().Type().(ItemType); ok {
 			// Another item entity was in range to merge with.
 			if i.merge(e, other.(*Ent), tx) {
 				return

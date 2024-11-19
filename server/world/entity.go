@@ -45,7 +45,7 @@ type EntityHandle struct {
 
 	data EntityData
 
-	// HANDLER?? HANDLE WORLD CHANGE HERE
+	// TODO Handler? Handle world change here?
 }
 
 type EntitySpawnOpts struct {
@@ -185,11 +185,8 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 // Viewers of a world may view an Entity when near it.
 type Entity interface {
 	io.Closer
+	// H returns the EntityHandle that points to the entity.
 	H() *EntityHandle
-
-	// Type returns the EntityType of the Entity.
-	Type() EntityType
-
 	// Position returns the current position of the Entity in the world.
 	Position() mgl64.Vec3
 	// Rotation returns the yaw (horizontal rotation) and pitch (vertical

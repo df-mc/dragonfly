@@ -103,11 +103,6 @@ type Player struct {
 	*playerData
 }
 
-// Type returns the world.EntityType for the Player.
-func (p *Player) Type() world.EntityType {
-	return Type{}
-}
-
 func (p *Player) H() *world.EntityHandle {
 	return p.handle
 }
@@ -1719,11 +1714,11 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	}
 
 	for e := range p.tx.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3())) {
-		switch e.Type().(type) {
+		switch t := e.H().Type().(type) {
 		case entity.ItemType, entity.ArrowType:
 			continue
 		default:
-			if cube.AnyIntersections(blockBoxes, e.Type().BBox(e).Translate(e.Position()).Grow(-1e-6)) {
+			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-6)) {
 				return true
 			}
 		}
@@ -2371,7 +2366,7 @@ func (p *Player) insideOfWater() bool {
 // insideOfSolid returns true if the player is inside a solid block.
 func (p *Player) insideOfSolid() bool {
 	pos := cube.PosFromVec3(entity.EyePosition(p))
-	b, box := p.tx.Block(pos), p.Type().BBox(p).Translate(p.Position())
+	b, box := p.tx.Block(pos), p.handle.Type().BBox(p).Translate(p.Position())
 
 	_, solid := b.Model().(model.Solid)
 	if !solid {
@@ -2393,7 +2388,7 @@ func (p *Player) insideOfSolid() bool {
 
 // checkCollisions checks the player's block collisions.
 func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
-	entityBBox := p.Type().BBox(p).Translate(p.Position())
+	entityBBox := p.H().Type().BBox(p).Translate(p.Position())
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	p.checkEntityInsiders(entityBBox)
@@ -2474,7 +2469,7 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround() bool {
-	box := p.Type().BBox(p).Translate(p.Position())
+	box := p.H().Type().BBox(p).Translate(p.Position())
 	b := box.Grow(1)
 
 	low, high := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())

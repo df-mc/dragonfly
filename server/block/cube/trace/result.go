@@ -45,7 +45,7 @@ func Perform(start, end mgl64.Vec3, tx *world.Tx, box cube.BBox, filter EntityFi
 		entities = filter(entities)
 	}
 	for entity := range entities {
-		if !entity.Type().BBox(entity).Translate(entity.Position()).IntersectsWith(bb) {
+		if !entity.H().Type().BBox(entity).Translate(entity.Position()).IntersectsWith(bb) {
 			continue
 		}
 		// Check if we collide with the entities bounding box.

@@ -73,7 +73,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	yaw, pitch := e.Rotation().Elem()
 	metadata := s.parseEntityMetadata(e)
 
-	id := e.Type().EncodeEntity()
+	id := e.H().Type().EncodeEntity()
 	switch v := e.(type) {
 	case Controllable:
 		_, actualPlayer := sessions.Lookup(v.UUID())
@@ -113,7 +113,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 		}
 		return
 	case *entity.Ent:
-		switch e.Type().(type) {
+		switch e.H().Type().(type) {
 		case entity.ItemType:
 			s.writePacket(&packet.AddItemActor{
 				EntityUniqueID:  int64(runtimeID),
@@ -130,7 +130,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			metadata[protocol.EntityDataKeyVariant] = int32(world.BlockRuntimeID(v.Behaviour().(*entity.FallingBlockBehaviour).Block()))
 		}
 	}
-	if v, ok := e.Type().(NetworkEncodeableEntity); ok {
+	if v, ok := e.H().Type().(NetworkEncodeableEntity); ok {
 		id = v.NetworkEncodeEntity()
 	}
 
@@ -219,7 +219,7 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 
 // entityOffset returns the offset that entities have client-side.
 func entityOffset(e world.Entity) mgl64.Vec3 {
-	if offset, ok := e.Type().(OffsetEntity); ok {
+	if offset, ok := e.H().Type().(OffsetEntity); ok {
 		return mgl64.Vec3{0, offset.NetworkOffset()}
 	}
 	return mgl64.Vec3{}
