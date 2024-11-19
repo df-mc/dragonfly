@@ -21,7 +21,7 @@ func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, own
 	conf.ExistenceDuration = firework.RandomisedDuration()
 	conf.Attached = attached
 	conf.Owner = owner.H()
-	return opts.New(FireworkType{}, conf)
+	return opts.New(FireworkType, conf)
 }
 
 var fireworkConf = FireworkBehaviourConfig{
@@ -30,16 +30,18 @@ var fireworkConf = FireworkBehaviourConfig{
 }
 
 // FireworkType is a world.EntityType implementation for Firework.
-type FireworkType struct{}
+var FireworkType fireworkType
 
-func (t FireworkType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type fireworkType struct{}
+
+func (t fireworkType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (FireworkType) EncodeEntity() string        { return "minecraft:fireworks_rocket" }
-func (FireworkType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
+func (fireworkType) EncodeEntity() string        { return "minecraft:fireworks_rocket" }
+func (fireworkType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 
-func (FireworkType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (fireworkType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := fireworkConf
 	conf.Firework = nbtconv.MapItem(m, "Item").Item().(item.Firework)
 	conf.ExistenceDuration = conf.Firework.RandomisedDuration()
@@ -47,6 +49,6 @@ func (FireworkType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	data.Data = conf.New()
 }
 
-func (FireworkType) EncodeNBT(data *world.EntityData) map[string]any {
+func (fireworkType) EncodeNBT(data *world.EntityData) map[string]any {
 	return map[string]any{"Item": nbtconv.WriteItem(item.NewStack(data.Data.(*FireworkBehaviour).Firework(), 1), true)}
 }

@@ -122,7 +122,7 @@ func (i *ItemBehaviour) checkNearby(e *Ent, tx *world.Tx) {
 			// A collector was within range to pick up the entity.
 			i.collect(e, collector, tx)
 			return
-		} else if _, ok := other.H().Type().(ItemType); ok {
+		} else if other.H().Type() == ItemType {
 			// Another item entity was in range to merge with.
 			if i.merge(e, other.(*Ent), tx) {
 				return

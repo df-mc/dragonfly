@@ -15,7 +15,7 @@ import (
 func NewItem(opts world.EntitySpawnOpts, i item.Stack) *world.EntityHandle {
 	conf := itemConf
 	conf.Item = i
-	return opts.New(ItemType{}, conf)
+	return opts.New(ItemType, conf)
 }
 
 // NewItemPickupDelay creates a new item entity containing item stack i. A
@@ -25,7 +25,7 @@ func NewItemPickupDelay(opts world.EntitySpawnOpts, i item.Stack, delay time.Dur
 	conf := itemConf
 	conf.Item = i
 	conf.PickupDelay = delay
-	return opts.New(ItemType{}, conf)
+	return opts.New(ItemType, conf)
 }
 
 var itemConf = ItemBehaviourConfig{
@@ -34,19 +34,21 @@ var itemConf = ItemBehaviourConfig{
 }
 
 // ItemType is a world.EntityType implementation for Item.
-type ItemType struct{}
+var ItemType itemType
 
-func (t ItemType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type itemType struct{}
+
+func (t itemType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (ItemType) EncodeEntity() string   { return "minecraft:item" }
-func (ItemType) NetworkOffset() float64 { return 0.125 }
-func (ItemType) BBox(world.Entity) cube.BBox {
+func (itemType) EncodeEntity() string   { return "minecraft:item" }
+func (itemType) NetworkOffset() float64 { return 0.125 }
+func (itemType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (ItemType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (itemType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := itemConf
 	conf.Item = nbtconv.MapItem(m, "Item")
 	conf.PickupDelay = time.Duration(nbtconv.Int64(m, "PickupDelay")) * (time.Second / 20)
@@ -54,7 +56,7 @@ func (ItemType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	data.Data = conf.New()
 }
 
-func (ItemType) EncodeNBT(data *world.EntityData) map[string]any {
+func (itemType) EncodeNBT(data *world.EntityData) map[string]any {
 	b := data.Data.(*ItemBehaviour)
 	return map[string]any{
 		"Health":      int16(5),

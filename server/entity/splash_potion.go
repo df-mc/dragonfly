@@ -21,7 +21,7 @@ func NewSplashPotion(opts world.EntitySpawnOpts, t potion.Potion, owner world.En
 	conf.Hit = potionSplash(1, t, false)
 	conf.Owner = owner.H()
 
-	return opts.New(SplashPotionType{}, conf)
+	return opts.New(SplashPotionType, conf)
 }
 
 var splashPotionConf = ProjectileBehaviourConfig{
@@ -32,18 +32,20 @@ var splashPotionConf = ProjectileBehaviourConfig{
 }
 
 // SplashPotionType is a world.EntityType implementation for SplashPotion.
-type SplashPotionType struct{}
+var SplashPotionType splashPotionType
 
-func (t SplashPotionType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type splashPotionType struct{}
+
+func (t splashPotionType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (SplashPotionType) EncodeEntity() string { return "minecraft:splash_potion" }
-func (SplashPotionType) BBox(world.Entity) cube.BBox {
+func (splashPotionType) EncodeEntity() string { return "minecraft:splash_potion" }
+func (splashPotionType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (SplashPotionType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (splashPotionType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := splashPotionConf
 	conf.Potion = potion.From(nbtconv.Int32(m, "PotionId"))
 	colour, _ := effect.ResultingColour(conf.Potion.Effects())
@@ -53,6 +55,6 @@ func (SplashPotionType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	data.Data = conf.New()
 }
 
-func (SplashPotionType) EncodeNBT(data *world.EntityData) map[string]any {
+func (splashPotionType) EncodeNBT(data *world.EntityData) map[string]any {
 	return map[string]any{"PotionId": int32(data.Data.(*ProjectileBehaviour).conf.Potion.Uint8())}
 }

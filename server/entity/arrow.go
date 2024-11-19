@@ -34,7 +34,7 @@ func NewTippedArrowWithDamage(opts world.EntitySpawnOpts, damage float64, owner 
 	conf.Damage = damage
 	conf.Potion = tip
 	conf.Owner = owner.H()
-	return opts.New(ArrowType{}, conf)
+	return opts.New(ArrowType, conf)
 }
 
 var arrowConf = ProjectileBehaviourConfig{
@@ -54,18 +54,20 @@ func boolByte(b bool) uint8 {
 }
 
 // ArrowType is a world.EntityType implementation for Arrow.
-type ArrowType struct{}
+var ArrowType arrowType
 
-func (t ArrowType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type arrowType struct{}
+
+func (t arrowType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (ArrowType) EncodeEntity() string { return "minecraft:arrow" }
-func (ArrowType) BBox(world.Entity) cube.BBox {
+func (arrowType) EncodeEntity() string { return "minecraft:arrow" }
+func (arrowType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (ArrowType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (arrowType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := arrowConf
 	conf.Damage = float64(nbtconv.Float32(m, "Damage"))
 	conf.Potion = potion.From(nbtconv.Int32(m, "auxValue") - 1)
@@ -79,7 +81,7 @@ func (ArrowType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	data.Data = conf.New()
 }
 
-func (ArrowType) EncodeNBT(data *world.EntityData) map[string]any {
+func (arrowType) EncodeNBT(data *world.EntityData) map[string]any {
 	b := data.Data.(*ProjectileBehaviour)
 	m := map[string]any{
 		"Damage":       float32(b.conf.Damage),

@@ -511,7 +511,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		Pos:     pos,
 		Session: s,
 	}
-	handle := world.EntitySpawnOpts{Position: pos, ID: id}.New(player.Type{}, conf)
+	handle := world.EntitySpawnOpts{Position: pos, ID: id}.New(player.Type, conf)
 	return incoming{s: s, w: w, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
 }
 

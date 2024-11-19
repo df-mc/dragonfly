@@ -10,7 +10,7 @@ import (
 func NewSnowball(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := snowballConf
 	conf.Owner = owner.H()
-	return opts.New(SnowballType{}, conf)
+	return opts.New(SnowballType, conf)
 }
 
 var snowballConf = ProjectileBehaviourConfig{
@@ -21,18 +21,20 @@ var snowballConf = ProjectileBehaviourConfig{
 }
 
 // SnowballType is a world.EntityType implementation for snowballs.
-type SnowballType struct{}
+var SnowballType snowballType
 
-func (t SnowballType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type snowballType struct{}
+
+func (t snowballType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (SnowballType) EncodeEntity() string { return "minecraft:snowball" }
-func (SnowballType) BBox(world.Entity) cube.BBox {
+func (snowballType) EncodeEntity() string { return "minecraft:snowball" }
+func (snowballType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (SnowballType) DecodeNBT(_ map[string]any, data *world.EntityData) {
+func (snowballType) DecodeNBT(_ map[string]any, data *world.EntityData) {
 	data.Data = snowballConf.New()
 }
-func (SnowballType) EncodeNBT(*world.EntityData) map[string]any { return nil }
+func (snowballType) EncodeNBT(*world.EntityData) map[string]any { return nil }

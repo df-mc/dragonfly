@@ -19,7 +19,7 @@ func NewTNT(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle 
 		angle := rand.Float64() * math.Pi * 2
 		opts.Velocity = mgl64.Vec3{-math.Sin(angle) * 0.02, 0.1, -math.Cos(angle) * 0.02}
 	}
-	return opts.New(TNTType{}, conf)
+	return opts.New(TNTType, conf)
 }
 
 var tntConf = PassiveBehaviourConfig{
@@ -35,24 +35,26 @@ func explodeTNT(e *Ent, tx *world.Tx) {
 }
 
 // TNTType is a world.EntityType implementation for TNT.
-type TNTType struct{}
+var TNTType tntType
 
-func (t TNTType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type tntType struct{}
+
+func (t tntType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (TNTType) EncodeEntity() string   { return "minecraft:tnt" }
-func (TNTType) NetworkOffset() float64 { return 0.49 }
-func (TNTType) BBox(world.Entity) cube.BBox {
+func (tntType) EncodeEntity() string   { return "minecraft:tnt" }
+func (tntType) NetworkOffset() float64 { return 0.49 }
+func (tntType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
 }
 
-func (t TNTType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (t tntType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := tntConf
 	conf.ExistenceDuration = nbtconv.TickDuration[uint8](m, "Fuse")
 	data.Data = conf.New()
 }
 
-func (TNTType) EncodeNBT(data *world.EntityData) map[string]any {
+func (tntType) EncodeNBT(data *world.EntityData) map[string]any {
 	return map[string]any{"Fuse": uint8(data.Data.(*PassiveBehaviour).Fuse().Milliseconds() / 50)}
 }

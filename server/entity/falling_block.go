@@ -10,7 +10,7 @@ import (
 func NewFallingBlock(opts world.EntitySpawnOpts, block world.Block) *world.EntityHandle {
 	conf := fallingBlockConf
 	conf.Block = block
-	return opts.New(FallingBlockType{}, conf)
+	return opts.New(FallingBlockType, conf)
 }
 
 var fallingBlockConf = FallingBlockBehaviourConfig{
@@ -19,25 +19,27 @@ var fallingBlockConf = FallingBlockBehaviourConfig{
 }
 
 // FallingBlockType is a world.EntityType implementation for FallingBlock.
-type FallingBlockType struct{}
+var FallingBlockType fallingBlockType
 
-func (t FallingBlockType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type fallingBlockType struct{}
+
+func (t fallingBlockType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
-func (FallingBlockType) EncodeEntity() string   { return "minecraft:falling_block" }
-func (FallingBlockType) NetworkOffset() float64 { return 0.49 }
-func (FallingBlockType) BBox(world.Entity) cube.BBox {
+func (fallingBlockType) EncodeEntity() string   { return "minecraft:falling_block" }
+func (fallingBlockType) NetworkOffset() float64 { return 0.49 }
+func (fallingBlockType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
 }
 
-func (FallingBlockType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (fallingBlockType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := fallingBlockConf
 	conf.Block = nbtconv.Block(m, "FallingBlock")
 	conf.DistanceFallen = nbtconv.Float64(m, "FallDistance")
 	data.Data = conf.New()
 }
 
-func (FallingBlockType) EncodeNBT(data *world.EntityData) map[string]any {
+func (fallingBlockType) EncodeNBT(data *world.EntityData) map[string]any {
 	b := data.Data.(*FallingBlockBehaviour)
 	return map[string]any{"FallDistance": b.passive.fallDistance, "FallingBlock": nbtconv.WriteBlock(b.block)}
 }

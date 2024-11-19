@@ -13,7 +13,7 @@ import (
 func NewBottleOfEnchanting(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := bottleOfEnchantingConf
 	conf.Owner = owner.H()
-	return opts.New(BottleOfEnchantingType{}, conf)
+	return opts.New(BottleOfEnchantingType, conf)
 }
 
 var bottleOfEnchantingConf = ProjectileBehaviourConfig{
@@ -34,28 +34,30 @@ func spawnExperience(e *Ent, tx *world.Tx, target trace.Result) {
 }
 
 // BottleOfEnchantingType is a world.EntityType for BottleOfEnchanting.
-type BottleOfEnchantingType struct{}
+var BottleOfEnchantingType bottleOfEnchantingType
 
-func (t BottleOfEnchantingType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type bottleOfEnchantingType struct{}
+
+func (t bottleOfEnchantingType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
 // Glint returns true if the bottle should render with glint. It always returns
 // true for bottles of enchanting.
-func (BottleOfEnchantingType) Glint() bool {
+func (bottleOfEnchantingType) Glint() bool {
 	return true
 }
-func (BottleOfEnchantingType) EncodeEntity() string {
+func (bottleOfEnchantingType) EncodeEntity() string {
 	return "minecraft:xp_bottle"
 }
-func (BottleOfEnchantingType) BBox(world.Entity) cube.BBox {
+func (bottleOfEnchantingType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (BottleOfEnchantingType) DecodeNBT(_ map[string]any, data *world.EntityData) {
+func (bottleOfEnchantingType) DecodeNBT(_ map[string]any, data *world.EntityData) {
 	data.Data = bottleOfEnchantingConf.New()
 }
 
-func (BottleOfEnchantingType) EncodeNBT(data *world.EntityData) map[string]any {
+func (bottleOfEnchantingType) EncodeNBT(data *world.EntityData) map[string]any {
 	return nil
 }

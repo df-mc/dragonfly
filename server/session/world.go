@@ -113,7 +113,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 		}
 		return
 	case *entity.Ent:
-		switch e.H().Type().(type) {
+		switch e.H().Type() {
 		case entity.ItemType:
 			s.writePacket(&packet.AddItemActor{
 				EntityUniqueID:  int64(runtimeID),

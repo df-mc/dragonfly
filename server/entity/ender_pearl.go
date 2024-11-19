@@ -14,7 +14,7 @@ import (
 func NewEnderPearl(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := enderPearlConf
 	conf.Owner = owner.H()
-	return opts.New(EnderPearlType{}, conf)
+	return opts.New(EnderPearlType, conf)
 }
 
 var enderPearlConf = ProjectileBehaviourConfig{
@@ -43,17 +43,19 @@ func teleport(e *Ent, tx *world.Tx, target trace.Result) {
 }
 
 // EnderPearlType is a world.EntityType implementation for EnderPearl.
-type EnderPearlType struct{}
+var EnderPearlType enderPearlType
 
-func (t EnderPearlType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type enderPearlType struct{}
+
+func (t enderPearlType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (EnderPearlType) EncodeEntity() string { return "minecraft:ender_pearl" }
-func (EnderPearlType) BBox(world.Entity) cube.BBox {
+func (enderPearlType) EncodeEntity() string { return "minecraft:ender_pearl" }
+func (enderPearlType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
-func (EnderPearlType) DecodeNBT(_ map[string]any, data *world.EntityData) {
+func (enderPearlType) DecodeNBT(_ map[string]any, data *world.EntityData) {
 	data.Data = enderPearlConf.New()
 }
-func (EnderPearlType) EncodeNBT(*world.EntityData) map[string]any { return nil }
+func (enderPearlType) EncodeNBT(*world.EntityData) map[string]any { return nil }

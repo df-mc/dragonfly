@@ -28,7 +28,7 @@ func NewLightningWithDamage(opts world.EntitySpawnOpts, dmg float64, blockFire b
 		state:              2,
 		lifetime:           rand.Intn(4) + 1,
 	}).tick
-	return opts.New(LightningType{}, conf)
+	return opts.New(LightningType, conf)
 }
 
 var lightningConf = StationaryBehaviourConfig{SpawnSounds: []world.Sound{sound.Explosion{}, sound.Thunder{}}, ExistenceDuration: time.Second}
@@ -110,14 +110,16 @@ func fire() world.Block {
 }
 
 // LightningType is a world.EntityType implementation for Lightning.
-type LightningType struct{}
+var LightningType lightningType
 
-func (t LightningType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type lightningType struct{}
+
+func (t lightningType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
-func (t LightningType) DecodeNBT(_ map[string]any, data *world.EntityData) {
+func (t lightningType) DecodeNBT(_ map[string]any, data *world.EntityData) {
 	data.Data = lightningConf.New()
 }
-func (t LightningType) EncodeNBT(*world.EntityData) map[string]any { return nil }
-func (LightningType) EncodeEntity() string                         { return "minecraft:lightning_bolt" }
-func (LightningType) BBox(world.Entity) cube.BBox                  { return cube.BBox{} }
+func (t lightningType) EncodeNBT(*world.EntityData) map[string]any { return nil }
+func (lightningType) EncodeEntity() string                         { return "minecraft:lightning_bolt" }
+func (lightningType) BBox(world.Entity) cube.BBox                  { return cube.BBox{} }

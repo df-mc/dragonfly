@@ -16,9 +16,6 @@ import (
 	"time"
 )
 
-// Type is a world.EntityType implementation for Player.
-type Type struct{}
-
 type Config struct {
 	Name, XUID, Locale string
 	UUID               uuid.UUID
@@ -59,7 +56,12 @@ func (conf Config) Apply(data *world.EntityData) {
 	}
 }
 
-func (t Type) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+// Type is a world.EntityType implementation for Player.
+var Type ptype
+
+type ptype struct{}
+
+func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	pd := data.Data.(*playerData)
 	p := &Player{
 		tx:         tx,
@@ -83,9 +85,9 @@ func (t Type) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityD
 	return p
 }
 
-func (Type) EncodeEntity() string   { return "minecraft:player" }
-func (Type) NetworkOffset() float64 { return 1.621 }
-func (Type) BBox(e world.Entity) cube.BBox {
+func (ptype) EncodeEntity() string   { return "minecraft:player" }
+func (ptype) NetworkOffset() float64 { return 1.621 }
+func (ptype) BBox(e world.Entity) cube.BBox {
 	p := e.(*Player)
 	s := p.Scale()
 	switch {
@@ -97,5 +99,5 @@ func (Type) BBox(e world.Entity) cube.BBox {
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
 	}
 }
-func (t Type) DecodeNBT(map[string]any, *world.EntityData) {}
-func (t Type) EncodeNBT(*world.EntityData) map[string]any  { return nil }
+func (t ptype) DecodeNBT(map[string]any, *world.EntityData) {}
+func (t ptype) EncodeNBT(*world.EntityData) map[string]any  { return nil }

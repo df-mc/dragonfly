@@ -33,7 +33,7 @@ func NewExperienceOrb(opts world.EntitySpawnOpts, xp int) *world.EntityHandle {
 	if opts.Velocity.Len() == 0 {
 		opts.Velocity = mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2}
 	}
-	return opts.New(ExperienceOrbType{}, conf)
+	return opts.New(ExperienceOrbType, conf)
 }
 
 var experienceOrbConf = ExperienceOrbBehaviourConfig{
@@ -42,23 +42,25 @@ var experienceOrbConf = ExperienceOrbBehaviourConfig{
 }
 
 // ExperienceOrbType is a world.EntityType implementation for ExperienceOrb.
-type ExperienceOrbType struct{}
+var ExperienceOrbType experienceOrbType
 
-func (t ExperienceOrbType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type experienceOrbType struct{}
+
+func (t experienceOrbType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (ExperienceOrbType) EncodeEntity() string { return "minecraft:xp_orb" }
-func (ExperienceOrbType) BBox(world.Entity) cube.BBox {
+func (experienceOrbType) EncodeEntity() string { return "minecraft:xp_orb" }
+func (experienceOrbType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (ExperienceOrbType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (experienceOrbType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := experienceOrbConf
 	conf.Experience = int(nbtconv.Int32(m, "Value"))
 	data.Data = conf.New()
 }
 
-func (ExperienceOrbType) EncodeNBT(data *world.EntityData) map[string]any {
+func (experienceOrbType) EncodeNBT(data *world.EntityData) map[string]any {
 	return map[string]any{"Value": int32(data.Data.(*ExperienceOrbBehaviour).Experience())}
 }

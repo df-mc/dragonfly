@@ -31,7 +31,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	if g, ok := e.H().Type().(glint); ok && g.Glint() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
 	}
-	if _, ok := e.H().Type().(entity.LingeringPotionType); ok {
+	if e.H().Type() == entity.LingeringPotionType {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
 	}
 	s.addSpecificMetadata(e, m)

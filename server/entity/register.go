@@ -10,21 +10,21 @@ import (
 // DefaultRegistry is a world.EntityRegistry that registers all default entities
 // implemented by Dragonfly.
 var DefaultRegistry = conf.New([]world.EntityType{
-	AreaEffectCloudType{},
-	ArrowType{},
-	BottleOfEnchantingType{},
-	EggType{},
-	EnderPearlType{},
-	ExperienceOrbType{},
-	FallingBlockType{},
-	FireworkType{},
-	ItemType{},
-	LightningType{},
-	LingeringPotionType{},
-	SnowballType{},
-	SplashPotionType{},
-	TNTType{},
-	TextType{},
+	AreaEffectCloudType,
+	ArrowType,
+	BottleOfEnchantingType,
+	EggType,
+	EnderPearlType,
+	ExperienceOrbType,
+	FallingBlockType,
+	FireworkType,
+	ItemType,
+	LightningType,
+	LingeringPotionType,
+	SnowballType,
+	SplashPotionType,
+	TNTType,
+	TextType,
 })
 
 var conf = world.EntityRegistryConfig{
@@ -56,6 +56,6 @@ var conf = world.EntityRegistryConfig{
 			conf.PickupItem = item.NewStack(item.Arrow{Tip: tip.(potion.Potion)}, 1)
 		}
 		conf.Critical = critical
-		return opts.New(ArrowType{}, conf)
+		return opts.New(ArrowType, conf)
 	},
 }

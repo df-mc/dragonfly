@@ -11,7 +11,7 @@ import (
 func NewEgg(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := eggConf
 	conf.Owner = owner.H()
-	return opts.New(EggType{}, conf)
+	return opts.New(EggType, conf)
 }
 
 // TODO: Spawn chicken(e) 12.5% of the time.
@@ -23,16 +23,18 @@ var eggConf = ProjectileBehaviourConfig{
 }
 
 // EggType is a world.EntityType implementation for Egg.
-type EggType struct{}
+var EggType eggType
 
-func (t EggType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type eggType struct{}
+
+func (t eggType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (EggType) EncodeEntity() string { return "minecraft:egg" }
-func (EggType) BBox(world.Entity) cube.BBox {
+func (eggType) EncodeEntity() string { return "minecraft:egg" }
+func (eggType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (EggType) DecodeNBT(m map[string]any, data *world.EntityData) { data.Data = eggConf.New() }
-func (EggType) EncodeNBT(data *world.EntityData) map[string]any    { return nil }
+func (eggType) DecodeNBT(m map[string]any, data *world.EntityData) { data.Data = eggConf.New() }
+func (eggType) EncodeNBT(data *world.EntityData) map[string]any    { return nil }

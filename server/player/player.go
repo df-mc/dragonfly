@@ -1714,7 +1714,8 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 	}
 
 	for e := range p.tx.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3())) {
-		switch t := e.H().Type().(type) {
+		t := e.H().Type()
+		switch t {
 		case entity.ItemType, entity.ArrowType:
 			continue
 		default:
@@ -2388,7 +2389,7 @@ func (p *Player) insideOfSolid() bool {
 
 // checkCollisions checks the player's block collisions.
 func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
-	entityBBox := p.H().Type().BBox(p).Translate(p.Position())
+	entityBBox := Type.BBox(p).Translate(p.Position())
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	p.checkEntityInsiders(entityBBox)
@@ -2469,7 +2470,7 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround() bool {
-	box := p.H().Type().BBox(p).Translate(p.Position())
+	box := Type.BBox(p).Translate(p.Position())
 	b := box.Grow(1)
 
 	low, high := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())

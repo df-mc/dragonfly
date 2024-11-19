@@ -20,24 +20,26 @@ func NewLingeringPotion(opts world.EntitySpawnOpts, t potion.Potion, owner world
 	conf.Particle = particle.Splash{Colour: colour}
 	conf.Hit = potionSplash(0.25, t, true)
 	conf.Owner = owner.H()
-	return opts.New(LingeringPotionType{}, conf)
+	return opts.New(LingeringPotionType, conf)
 }
 
 // LingeringPotionType is a world.EntityType implementation for LingeringPotion.
-type LingeringPotionType struct{}
+var LingeringPotionType lingeringPotionType
 
-func (t LingeringPotionType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type lingeringPotionType struct{}
+
+func (t lingeringPotionType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (LingeringPotionType) EncodeEntity() string {
+func (lingeringPotionType) EncodeEntity() string {
 	return "minecraft:lingering_potion"
 }
-func (LingeringPotionType) BBox(world.Entity) cube.BBox {
+func (lingeringPotionType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (LingeringPotionType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (lingeringPotionType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := splashPotionConf
 	conf.Potion = potion.From(nbtconv.Int32(m, "PotionId"))
 	colour, _ := effect.ResultingColour(conf.Potion.Effects())
@@ -47,6 +49,6 @@ func (LingeringPotionType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	data.Data = conf.New()
 }
 
-func (LingeringPotionType) EncodeNBT(data *world.EntityData) map[string]any {
+func (lingeringPotionType) EncodeNBT(data *world.EntityData) map[string]any {
 	return map[string]any{"PotionId": int32(data.Data.(*ProjectileBehaviour).conf.Potion.Uint8())}
 }

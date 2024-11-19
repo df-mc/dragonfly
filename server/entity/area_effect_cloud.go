@@ -19,7 +19,7 @@ func NewAreaEffectCloud(opts world.EntitySpawnOpts, p potion.Potion) *world.Enti
 			break
 		}
 	}
-	return opts.New(AreaEffectCloudType{}, config)
+	return opts.New(AreaEffectCloudType, config)
 }
 
 var areaEffectCloudConf = AreaEffectCloudBehaviourConfig{
@@ -39,23 +39,25 @@ func NewAreaEffectCloudWith(opts world.EntitySpawnOpts, t potion.Potion, duratio
 		DurationUseGrowth:  durationOnUse,
 		ReapplicationDelay: reapplicationDelay,
 	}
-	return opts.New(AreaEffectCloudType{}, config)
+	return opts.New(AreaEffectCloudType, config)
 }
 
 // AreaEffectCloudType is a world.EntityType implementation for AreaEffectCloud.
-type AreaEffectCloudType struct{}
+var AreaEffectCloudType areaEffectCloudType
 
-func (t AreaEffectCloudType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+type areaEffectCloudType struct{}
+
+func (t areaEffectCloudType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (AreaEffectCloudType) EncodeEntity() string { return "minecraft:area_effect_cloud" }
-func (AreaEffectCloudType) BBox(e world.Entity) cube.BBox {
+func (areaEffectCloudType) EncodeEntity() string { return "minecraft:area_effect_cloud" }
+func (areaEffectCloudType) BBox(e world.Entity) cube.BBox {
 	r := e.(*Ent).Behaviour().(*AreaEffectCloudBehaviour).Radius()
 	return cube.Box(-r, 0, -r, r, 0.5, r)
 }
 
-func (AreaEffectCloudType) DecodeNBT(m map[string]any, data *world.EntityData) {
+func (areaEffectCloudType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	data.Data = AreaEffectCloudBehaviourConfig{
 		Potion:             potion.From(nbtconv.Int32(m, "PotionId")),
 		Radius:             float64(nbtconv.Float32(m, "Radius")),
@@ -67,7 +69,7 @@ func (AreaEffectCloudType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	}.New()
 }
 
-func (AreaEffectCloudType) EncodeNBT(data *world.EntityData) map[string]any {
+func (areaEffectCloudType) EncodeNBT(data *world.EntityData) map[string]any {
 	a := data.Data.(*AreaEffectCloudBehaviour)
 	return map[string]any{
 		"PotionId":           int32(a.conf.Potion.Uint8()),
