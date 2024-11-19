@@ -107,6 +107,10 @@ func (p *Player) H() *world.EntityHandle {
 	return p.handle
 }
 
+func (p *Player) Tx() *world.Tx {
+	return p.tx
+}
+
 // Name returns the username of the player. If the player is controlled by a client, it is the username of
 // the client. (Typically the XBOX Live name)
 func (p *Player) Name() string {
