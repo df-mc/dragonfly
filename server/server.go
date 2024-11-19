@@ -25,6 +25,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"golang.org/x/exp/maps"
+	"iter"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -121,24 +122,28 @@ func (srv *Server) Listen() {
 // to add a player.Handler to the player and prepare its session. The function
 // may be nil if player joining does not need to be handled. Accept returns
 // false if the Server is closed using a call to Close.
-func (srv *Server) Accept(f HandleFunc) bool {
-	inc, ok := <-srv.incoming
-	if !ok {
-		return false
-	}
-	srv.pmu.Lock()
-	srv.p[inc.p.handle.UUID()] = inc.p
-	srv.pmu.Unlock()
+func (srv *Server) Accept() iter.Seq[*player.Player] {
+	return func(yield func(*player.Player) bool) {
+		for {
+			inc, ok := <-srv.incoming
+			if !ok {
+				return
+			}
+			srv.pmu.Lock()
+			srv.p[inc.p.handle.UUID()] = inc.p
+			srv.pmu.Unlock()
 
-	<-inc.w.Exec(func(tx *world.Tx) {
-		p := tx.AddEntity(inc.p.handle).(*player.Player)
-		inc.s.Spawn(p, tx)
-
-		if f != nil {
-			f(p)
+			ret := false
+			<-inc.w.Exec(func(tx *world.Tx) {
+				p := tx.AddEntity(inc.p.handle).(*player.Player)
+				inc.s.Spawn(p, tx)
+				ret = !yield(p)
+			})
+			if ret {
+				return
+			}
 		}
-	})
-	return true
+	}
 }
 
 // World returns the overworld of the server. Players will be spawned in this
@@ -166,7 +171,9 @@ func (srv *Server) End() *world.World {
 // set to 0, MaxPlayerCount will return Server.PlayerCount + 1.
 func (srv *Server) MaxPlayerCount() int {
 	if srv.conf.MaxPlayers == 0 {
-		return len(srv.Players()) + 1
+		srv.pmu.RLock()
+		defer srv.pmu.RUnlock()
+		return len(srv.p) + 1
 	}
 	return srv.conf.MaxPlayers
 }
@@ -174,14 +181,25 @@ func (srv *Server) MaxPlayerCount() int {
 // Players returns a list of all players currently connected to the server.
 // Note that the slice returned is not updated when new players join or leave,
 // so it is only valid for as long as no new players join or players leave.
-func (srv *Server) Players() []*world.EntityHandle {
+func (srv *Server) Players() iter.Seq[*player.Player] {
 	srv.pmu.RLock()
-	defer srv.pmu.RUnlock()
 	handles := make([]*world.EntityHandle, 0, len(srv.p))
 	for _, p := range srv.p {
 		handles = append(handles, p.handle)
 	}
-	return handles
+	srv.pmu.RUnlock()
+
+	return func(yield func(*player.Player) bool) {
+		for _, handle := range handles {
+			ret := false
+			handle.ExecWorld(func(tx *world.Tx, e world.Entity) {
+				ret = !yield(e.(*player.Player))
+			})
+			if ret {
+				break
+			}
+		}
+	}
 }
 
 // Player looks for a player on the server with the UUID passed. If found, the
@@ -246,14 +264,8 @@ func (srv *Server) close() {
 	srv.conf.Log.Info("Server closing...")
 
 	srv.conf.Log.Debug("Disconnecting players...")
-	for _, p := range srv.Players() {
-		// It would be more efficient to iterate over all worlds and disconnect
-		// all players per world in the same transaction, but there might be
-		// more worlds than the standard dimensions, so that will not be
-		// sufficient.
-		p.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			e.(*player.Player).Disconnect(text.Colourf("<yellow>%v</yellow>", srv.conf.ShutdownMessage))
-		})
+	for p := range srv.Players() {
+		p.Disconnect(text.Colourf("<yellow>%v</yellow>", srv.conf.ShutdownMessage))
 	}
 	srv.pwg.Wait()
 

@@ -21,7 +21,8 @@ func main() {
 	srv.CloseOnProgramEnd()
 
 	srv.Listen()
-	for srv.Accept(nil) {
+	for p := range srv.Accept() {
+		_ = p
 	}
 }
 
