@@ -9,7 +9,7 @@ import (
 // experience needed for upcoming levels.
 type ExperienceManager struct {
 	experience int
-	display    float64
+	dec        float64
 }
 
 // NewExperienceManager returns a new ExperienceManager with no experience.
@@ -33,7 +33,7 @@ func (e *ExperienceManager) Add(amount int) (level int, progress float64) {
 
 // total returns the total amount of experience including the extra decimals provided for more accuracy.
 func (e *ExperienceManager) total() float64 {
-	return float64(e.experience) + e.display
+	return float64(e.experience) + e.dec
 }
 
 // Level returns the current experience level.
@@ -45,7 +45,7 @@ func (e *ExperienceManager) Level() int {
 // SetLevel sets the level of the manager.
 func (e *ExperienceManager) SetLevel(level int) {
 	if level < 0 || level > math.MaxInt32 {
-		panic(fmt.Sprintf("level must be between 0 and 2,147,483,647, got %display", level))
+		panic(fmt.Sprintf("level must be between 0 and 2,147,483,647, got %v", level))
 	}
 	_, progress := progressFromExperience(e.total())
 	e.experience = experienceForLevels(level) + int(float64(experienceForLevel(level))*progress)
@@ -65,12 +65,12 @@ func (e *ExperienceManager) SetProgress(progress float64) {
 	currentLevel, _ := progressFromExperience(e.total())
 	progressExp := float64(experienceForLevel(currentLevel)) * progress
 	e.experience = experienceForLevels(currentLevel) + int(progressExp)
-	e.display = progressExp - math.Trunc(progressExp)
+	e.dec = progressExp - math.Trunc(progressExp)
 }
 
 // Reset resets the total experience, level, and progress of the manager to zero.
 func (e *ExperienceManager) Reset() {
-	e.experience, e.display = 0, 0
+	e.experience, e.dec = 0, 0
 }
 
 // progressFromExperience returns the level and progress from the total experience given.

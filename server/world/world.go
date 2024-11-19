@@ -102,7 +102,7 @@ func (w *World) Range() cube.Range {
 }
 
 func (w *World) Exec(f func(tx *Tx)) <-chan struct{} {
-	c := make(chan struct{}, 1)
+	c := make(chan struct{})
 	w.queue <- transaction{c: c, f: f}
 	return c
 }
