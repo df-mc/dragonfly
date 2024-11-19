@@ -131,6 +131,7 @@ func init() {
 	registerAll(allBlastFurnaces())
 	registerAll(allBoneBlock())
 	registerAll(allBrewingStands())
+	registerAll(allButtons())
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCampfires())
