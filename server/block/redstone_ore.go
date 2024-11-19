@@ -24,7 +24,7 @@ func (c RedstoneOre) BreakInfo() BreakInfo {
 
 // SmeltInfo ...
 func (RedstoneOre) SmeltInfo() item.SmeltInfo {
-	return newOreSmeltInfo(item.NewStack(RedstoneWire{}, 1), 0.1)
+	return newOreSmeltInfo(item.NewStack(RedstoneWire{}, 1), 0.7)
 }
 
 // EncodeItem ...

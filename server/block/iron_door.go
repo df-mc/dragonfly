@@ -107,7 +107,7 @@ func (d IronDoor) RedstoneUpdate(pos cube.Pos, w *world.World) {
 		w.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
 		w.SetBlock(pos, d, &world.SetOpts{DisableBlockUpdates: true})
 	} else {
-		w.ScheduleBlockUpdate(pos, time.Millisecond*200)
+		w.ScheduleBlockUpdate(pos, time.Millisecond*50)
 	}
 }
 

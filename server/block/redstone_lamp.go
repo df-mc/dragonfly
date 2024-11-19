@@ -63,7 +63,7 @@ func (l RedstoneLamp) RedstoneUpdate(pos cube.Pos, w *world.World) {
 		l.Lit = true
 		w.SetBlock(pos, l, &world.SetOpts{DisableBlockUpdates: true})
 	} else {
-		w.ScheduleBlockUpdate(pos, time.Millisecond*200)
+		w.ScheduleBlockUpdate(pos, time.Millisecond*50)
 	}
 }
 

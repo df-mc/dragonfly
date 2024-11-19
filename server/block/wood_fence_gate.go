@@ -105,7 +105,7 @@ func (f WoodFenceGate) RedstoneUpdate(pos cube.Pos, w *world.World) {
 		w.PlaySound(pos.Vec3Centre(), sound.FenceGateOpen{Block: f})
 		w.SetBlock(pos, f, nil)
 	} else {
-		w.ScheduleBlockUpdate(pos, time.Millisecond*200)
+		w.ScheduleBlockUpdate(pos, time.Millisecond*50)
 	}
 }
 

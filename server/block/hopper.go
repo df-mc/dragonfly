@@ -11,7 +11,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"strings"
 	"sync"
-	"time"
 )
 
 // Hopper is a low-capacity storage block that can be used to collect item entities directly above it, as well as to
@@ -138,9 +137,6 @@ func (h Hopper) RedstoneUpdate(pos cube.Pos, w *world.World) {
 
 	h.Powered = powered
 	w.SetBlock(pos, h, nil)
-	if h.Powered {
-		w.ScheduleBlockUpdate(pos, time.Millisecond*200)
-	}
 }
 
 // Tick ...

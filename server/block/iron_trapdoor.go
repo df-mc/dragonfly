@@ -45,18 +45,6 @@ func (t IronTrapDoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Ve
 	return placed(ctx)
 }
 
-// Activate ...
-func (t IronTrapDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
-	t.Open = !t.Open
-	w.SetBlock(pos, t, nil)
-	if t.Open {
-		w.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
-		return true
-	}
-	w.PlaySound(pos.Vec3Centre(), sound.TrapdoorClose{Block: t})
-	return true
-}
-
 // BreakInfo ...
 func (t IronTrapDoor) BreakInfo() BreakInfo {
 	return newBreakInfo(5, alwaysHarvestable, axeEffective, oneOf(t))
@@ -77,7 +65,7 @@ func (t IronTrapDoor) RedstoneUpdate(pos cube.Pos, w *world.World) {
 		w.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
 		w.SetBlock(pos, t, &world.SetOpts{DisableBlockUpdates: true})
 	} else {
-		w.ScheduleBlockUpdate(pos, time.Millisecond*200)
+		w.ScheduleBlockUpdate(pos, time.Millisecond*50)
 	}
 }
 
