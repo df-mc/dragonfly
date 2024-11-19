@@ -163,7 +163,7 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	invA, _ := s.invByID(int32(from.Container.ContainerID), tx)
 	invB, _ := s.invByID(int32(to.Container.ContainerID), tx)
 
-	ctx := event.C()
+	ctx := event.C(inventory.Holder(c))
 	_ = call(ctx, int(from.Slot), i.Grow(int(count)-i.Count()), invA.Handler().HandleTake)
 	err := call(ctx, int(to.Slot), i.Grow(int(count)-i.Count()), invB.Handler().HandlePlace)
 	if err != nil {
@@ -187,7 +187,7 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 	invA, _ := s.invByID(int32(a.Source.Container.ContainerID), tx)
 	invB, _ := s.invByID(int32(a.Destination.Container.ContainerID), tx)
 
-	ctx := event.C()
+	ctx := event.C(inventory.Holder(c))
 	_ = call(ctx, int(a.Source.Slot), i, invA.Handler().HandleTake)
 	_ = call(ctx, int(a.Source.Slot), dest, invA.Handler().HandlePlace)
 	_ = call(ctx, int(a.Destination.Slot), dest, invB.Handler().HandleTake)
@@ -247,7 +247,7 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 	}
 
 	inv, _ := s.invByID(int32(a.Source.Container.ContainerID), tx)
-	if err := call(event.C(), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
+	if err := call(event.C(inventory.Holder(c)), int(a.Source.Slot), i.Grow(int(a.Count)-i.Count()), inv.Handler().HandleDrop); err != nil {
 		return err
 	}
 
@@ -499,7 +499,7 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session, tx *world.Tx) {
 
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
 // the event.Context was cancelled either before or after the call.
-func call(ctx *event.Context, slot int, it item.Stack, f func(ctx *event.Context, slot int, it item.Stack)) error {
+func call(ctx *inventory.Context, slot int, it item.Stack, f func(ctx *inventory.Context, slot int, it item.Stack)) error {
 	if ctx.Cancelled() {
 		return fmt.Errorf("action was cancelled")
 	}

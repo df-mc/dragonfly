@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -100,7 +101,7 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 	// logic in the Comparable() method was flawed, users would be able to cheat with item properties.
 	// Only grow or shrink the held item to prevent any such issues.
 	res := actual.Grow(count - actual.Count())
-	if err := call(event.C(), int(*s.heldSlot), res, s.inv.Handler().HandleDrop); err != nil {
+	if err := call(event.C(inventory.Holder(c)), int(*s.heldSlot), res, s.inv.Handler().HandleDrop); err != nil {
 		return err
 	}
 

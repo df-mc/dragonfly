@@ -622,8 +622,8 @@ func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
 
 // PlaySound plays a sound at a specific position in the world. Viewers of that position will be able to hear
 // the sound if they're close enough.
-func (w *World) playSound(pos mgl64.Vec3, s Sound) {
-	ctx := event.C()
+func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
+	ctx := event.C(tx)
 	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
 		return
 	}

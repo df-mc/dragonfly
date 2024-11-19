@@ -73,7 +73,7 @@ func (f Farmland) hydrated(pos cube.Pos, tx *world.Tx) bool {
 func (f Farmland) EntityLand(pos cube.Pos, tx *world.Tx, e world.Entity, distance *float64) {
 	if living, ok := e.(livingEntity); ok {
 		if fall, ok := living.(fallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
-			ctx := event.C()
+			ctx := event.C(tx)
 			if tx.World().Handler().HandleCropTrample(ctx, pos); !ctx.Cancelled() {
 				tx.SetBlock(pos, Dirt{}, nil)
 			}

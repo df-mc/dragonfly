@@ -84,7 +84,7 @@ func (tx *Tx) AddParticle(pos mgl64.Vec3, p Particle) {
 }
 
 func (tx *Tx) PlaySound(pos mgl64.Vec3, s Sound) {
-	tx.w.playSound(pos, s)
+	tx.w.playSound(tx, pos, s)
 }
 
 func (tx *Tx) AddEntity(e *EntityHandle) Entity {
