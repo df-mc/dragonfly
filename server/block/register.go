@@ -84,6 +84,9 @@ func init() {
 	world.RegisterBlock(RawCopper{})
 	world.RegisterBlock(RawGold{})
 	world.RegisterBlock(RawIron{})
+	world.RegisterBlock(RedstoneBlock{})
+	world.RegisterBlock(RedstoneLamp{Lit: true})
+	world.RegisterBlock(RedstoneLamp{})
 	world.RegisterBlock(ReinforcedDeepslate{})
 	world.RegisterBlock(Sand{Red: true})
 	world.RegisterBlock(Sand{})
@@ -116,6 +119,7 @@ func init() {
 		world.RegisterBlock(GoldOre{Type: ore})
 		world.RegisterBlock(IronOre{Type: ore})
 		world.RegisterBlock(LapisOre{Type: ore})
+		world.RegisterBlock(RedstoneOre{Type: ore})
 	}
 
 	registerAll(allAnvils())
@@ -156,6 +160,8 @@ func init() {
 	registerAll(allGrindstones())
 	registerAll(allHayBales())
 	registerAll(allHoppers())
+	registerAll(allIronDoors())
+	registerAll(allIronTrapdoors())
 	registerAll(allItemFrames())
 	registerAll(allKelp())
 	registerAll(allLadders())
@@ -163,6 +169,7 @@ func init() {
 	registerAll(allLava())
 	registerAll(allLeaves())
 	registerAll(allLecterns())
+	registerAll(allLevers())
 	registerAll(allLight())
 	registerAll(allLitPumpkins())
 	registerAll(allLogs())
@@ -178,6 +185,8 @@ func init() {
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
+	registerAll(allRedstoneTorches())
+	registerAll(allRedstoneWires())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
@@ -277,11 +286,14 @@ func init() {
 	world.RegisterItem(Iron{})
 	world.RegisterItem(ItemFrame{Glowing: true})
 	world.RegisterItem(ItemFrame{})
+	world.RegisterItem(IronDoor{})
+	world.RegisterItem(IronTrapDoor{})
 	world.RegisterItem(Jukebox{})
 	world.RegisterItem(Kelp{})
 	world.RegisterItem(Ladder{})
 	world.RegisterItem(Lapis{})
 	world.RegisterItem(Lectern{})
+	world.RegisterItem(Lever{})
 	world.RegisterItem(LitPumpkin{})
 	world.RegisterItem(Loom{})
 	world.RegisterItem(MelonSeeds{})
@@ -320,6 +332,10 @@ func init() {
 	world.RegisterItem(RawCopper{})
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
+	world.RegisterItem(RedstoneBlock{})
+	world.RegisterItem(RedstoneLamp{})
+	world.RegisterItem(RedstoneTorch{})
+	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(ReinforcedDeepslate{})
 	world.RegisterItem(Sand{Red: true})
 	world.RegisterItem(Sand{})
@@ -372,6 +388,9 @@ func init() {
 	for _, t := range AnvilTypes() {
 		world.RegisterItem(Anvil{Type: t})
 	}
+	for _, t := range ButtonTypes() {
+		world.RegisterItem(Button{Type: t})
+	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
 		world.RegisterItem(Carpet{Colour: c})
@@ -406,6 +425,7 @@ func init() {
 		world.RegisterItem(GoldOre{Type: ore})
 		world.RegisterItem(IronOre{Type: ore})
 		world.RegisterItem(LapisOre{Type: ore})
+		world.RegisterItem(RedstoneOre{Type: ore})
 	}
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})

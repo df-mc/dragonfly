@@ -172,6 +172,11 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 		if t, ok := w.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
 			t.Ignite(bpos, w, e)
 		}
+		if b, ok := w.Block(bpos).(block.Button); ok {
+			if b.Type != block.StoneButton() || b.Type != block.PolishedBlackstoneButton() {
+				b.Click(bpos, w)
+			}
+		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m)
 			return m

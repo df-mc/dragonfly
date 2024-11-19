@@ -24,6 +24,7 @@ const (
 	hashBookshelf
 	hashBrewingStand
 	hashBricks
+	hashButton
 	hashCactus
 	hashCake
 	hashCalcite
@@ -93,7 +94,9 @@ const (
 	hashInvisibleBedrock
 	hashIron
 	hashIronBars
+	hashIronDoor
 	hashIronOre
+	hashIronTrapDoor
 	hashItemFrame
 	hashJukebox
 	hashKelp
@@ -104,6 +107,7 @@ const (
 	hashLava
 	hashLeaves
 	hashLectern
+	hashLever
 	hashLight
 	hashLitPumpkin
 	hashLog
@@ -143,6 +147,11 @@ const (
 	hashRawCopper
 	hashRawGold
 	hashRawIron
+	hashRedstoneBlock
+	hashRedstoneLamp
+	hashRedstoneOre
+	hashRedstoneTorch
+	hashRedstoneWire
 	hashReinforcedDeepslate
 	hashSand
 	hashSandstone
@@ -268,6 +277,10 @@ func (b BrewingStand) Hash() (uint64, uint64) {
 
 func (Bricks) Hash() (uint64, uint64) {
 	return hashBricks, 0
+}
+
+func (b Button) Hash() (uint64, uint64) {
+	return hashButton, uint64(b.Type.Uint8()) | uint64(b.Facing)<<6 | uint64(boolByte(b.Pressed))<<9
 }
 
 func (c Cactus) Hash() (uint64, uint64) {
@@ -546,8 +559,16 @@ func (IronBars) Hash() (uint64, uint64) {
 	return hashIronBars, 0
 }
 
+func (d IronDoor) Hash() (uint64, uint64) {
+	return hashIronDoor, uint64(d.Facing) | uint64(boolByte(d.Open))<<2 | uint64(boolByte(d.Top))<<3 | uint64(boolByte(d.Right))<<4
+}
+
 func (i IronOre) Hash() (uint64, uint64) {
 	return hashIronOre, uint64(i.Type.Uint8())
+}
+
+func (t IronTrapDoor) Hash() (uint64, uint64) {
+	return hashIronTrapDoor, uint64(t.Facing) | uint64(boolByte(t.Open))<<2 | uint64(boolByte(t.Top))<<3
 }
 
 func (i ItemFrame) Hash() (uint64, uint64) {
@@ -588,6 +609,10 @@ func (l Leaves) Hash() (uint64, uint64) {
 
 func (l Lectern) Hash() (uint64, uint64) {
 	return hashLectern, uint64(l.Facing)
+}
+
+func (l Lever) Hash() (uint64, uint64) {
+	return hashLever, uint64(boolByte(l.Powered)) | uint64(l.Facing)<<1 | uint64(l.Direction)<<4
 }
 
 func (l Light) Hash() (uint64, uint64) {
@@ -744,6 +769,26 @@ func (RawGold) Hash() (uint64, uint64) {
 
 func (RawIron) Hash() (uint64, uint64) {
 	return hashRawIron, 0
+}
+
+func (RedstoneBlock) Hash() (uint64, uint64) {
+	return hashRedstoneBlock, 0
+}
+
+func (l RedstoneLamp) Hash() (uint64, uint64) {
+	return hashRedstoneLamp, uint64(boolByte(l.Lit))
+}
+
+func (c RedstoneOre) Hash() (uint64, uint64) {
+	return hashRedstoneOre, uint64(c.Type.Uint8())
+}
+
+func (t RedstoneTorch) Hash() (uint64, uint64) {
+	return hashRedstoneTorch, uint64(t.Facing) | uint64(boolByte(t.Lit))<<3
+}
+
+func (r RedstoneWire) Hash() (uint64, uint64) {
+	return hashRedstoneWire, uint64(r.Power)
 }
 
 func (ReinforcedDeepslate) Hash() (uint64, uint64) {

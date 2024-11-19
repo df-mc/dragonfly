@@ -235,6 +235,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		return "uint64(" + s + ")", 8
 	case "Block":
 		return "world.BlockHash(" + s + ")", 32
+	case "ButtonType":
+		return "uint64(" + s + ".Uint8())", 6
 	case "Attachment":
 		if _, ok := directives["facing_only"]; ok {
 			log.Println("Found directive: 'facing_only'")

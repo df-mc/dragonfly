@@ -101,6 +101,9 @@ type Permutable interface {
 	Permutations() []customblock.Permutation
 }
 
+// unknownFace is a face that is used for certain block items. This should not be exposed in the API.
+var unknownFace = cube.Face(len(cube.Faces()))
+
 func calculateFace(user item.User, placePos cube.Pos) cube.Face {
 	userPos := user.Position()
 	pos := cube.PosFromVec3(userPos)
