@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -17,6 +18,13 @@ type Target struct {
 
 	// Power is the redstone power level emitted by the target block, ranging from 0 to 15.
 	Power int
+}
+
+// BreakInfo ...
+func (t Target) BreakInfo() BreakInfo {
+	return newBreakInfo(0.5, alwaysHarvestable, hoeEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
+		updateAroundRedstone(pos, w)
+	})
 }
 
 // Source ...
@@ -51,8 +59,8 @@ func (t Target) HitByProjectile(pos mgl64.Vec3, blockPos cube.Pos, w *world.Worl
 		rawPower = 15 * (1 - math.Pow(normalizedDistance, 4.5))
 	}
 
-	newBlock := Target{Power: int(math.Max(math.Round(rawPower), 0))}
-	w.SetBlock(blockPos, newBlock, &world.SetOpts{DisableBlockUpdates: false})
+	t.Power = int(math.Max(math.Round(rawPower), 0))
+	w.SetBlock(blockPos, t, &world.SetOpts{DisableBlockUpdates: false})
 	w.PlaySound(blockPos.Vec3Centre(), sound.PowerOn{})
 
 	w.ScheduleBlockUpdate(blockPos, delay)
