@@ -66,9 +66,10 @@ type Server struct {
 }
 
 type incoming struct {
-	s *session.Session
-	p *onlinePlayer
-	w *world.World
+	conf player.Config
+	s    *session.Session
+	p    *onlinePlayer
+	w    *world.World
 }
 
 type onlinePlayer struct {
@@ -135,6 +136,7 @@ func (srv *Server) Accept() iter.Seq[*player.Player] {
 			ret := false
 			<-inc.w.Exec(func(tx *world.Tx) {
 				p := tx.AddEntity(inc.p.handle).(*player.Player)
+				inc.conf.Finalise(p)
 				inc.s.Spawn(p, tx)
 				ret = !yield(p)
 			})
@@ -418,6 +420,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 // may later be modified if the player was saved in the player provider of the
 // server.
 func (srv *Server) defaultGameData() minecraft.GameData {
+	gm, _ := world.GameModeID(srv.world.DefaultGameMode())
 	return minecraft.GameData{
 		// We set these IDs to 1, because that's how the session will treat them.
 		EntityUniqueID:  1,
@@ -429,7 +432,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		Time:       int64(srv.world.Time()),
 		Difficulty: 2,
 
-		PlayerGameMode:    packet.GameTypeCreative,
+		PlayerGameMode:    int32(gm),
 		PlayerPermissions: packet.PermissionLevelMember,
 		PlayerPosition:    vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
 
@@ -475,7 +478,7 @@ func (srv *Server) checkNetIsolation() {
 
 // handleSessionClose handles the closing of a session. It removes the player
 // of the session from the server.
-func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
+func (srv *Server) handleSessionClose(_ *world.Tx, c session.Controllable) {
 	srv.pmu.Lock()
 	_, ok := srv.p[c.UUID()]
 	delete(srv.p, c.UUID())
@@ -509,21 +512,19 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		HandleStop:     srv.handleSessionClose,
 	}.New(conn)
 
-	// TODO: Do something with the gamemode and other player data.
-	_ = gm
-
 	conf := player.Config{
-		Name:    conn.IdentityData().DisplayName,
-		XUID:    conn.IdentityData().XUID,
-		UUID:    id,
-		Locale:  conn.ClientData().LanguageCode,
-		Skin:    srv.parseSkin(conn.ClientData()),
-		Data:    data,
-		Pos:     pos,
-		Session: s,
+		Name:     conn.IdentityData().DisplayName,
+		XUID:     conn.IdentityData().XUID,
+		UUID:     id,
+		Locale:   conn.ClientData().LanguageCode,
+		Skin:     srv.parseSkin(conn.ClientData()),
+		Data:     data,
+		Pos:      pos,
+		Session:  s,
+		GameMode: gm,
 	}
 	handle := world.EntitySpawnOpts{Position: pos, ID: id}.New(player.Type, conf)
-	return incoming{s: s, w: w, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
+	return incoming{s: s, w: w, conf: conf, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
 }
 
 // createWorld loads a world of the server with a specific dimension, ending

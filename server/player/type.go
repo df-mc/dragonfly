@@ -18,6 +18,7 @@ import (
 
 type Config struct {
 	Name, XUID, Locale string
+	GameMode           world.GameMode
 	UUID               uuid.UUID
 	Skin               skin.Skin
 	Data               *Data
@@ -46,13 +47,19 @@ func (conf Config) Apply(data *world.EntityData) {
 		cooldowns:         make(map[string]time.Time),
 		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 		heldSlot:          new(uint32),
-		gameMode:          world.GameModeSurvival,
+		gameMode:          conf.GameMode,
 		skin:              conf.Skin,
 		airSupplyTicks:    300,
 		maxAirSupplyTicks: 300,
 		enchantSeed:       rand.Int63(),
 		scale:             1.0,
 		s:                 conf.Session,
+	}
+}
+
+func (conf Config) Finalise(p *Player) {
+	if conf.Data != nil {
+		p.load(*conf.Data)
 	}
 }
 
