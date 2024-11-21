@@ -106,7 +106,7 @@ func (p PressurePlate) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 
 // UseOnBlock ...
 func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, p)
+	pos, _, used := firstReplaceable(w, pos, face, p)
 	if !used {
 		return false
 	}
