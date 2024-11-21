@@ -113,6 +113,7 @@ func (w *World) handleTransactions() {
 		case queuedTx := <-w.queue:
 			tx := &Tx{w: w}
 			queuedTx.f(tx)
+			tx.close()
 			close(queuedTx.c)
 		case <-w.closing:
 			w.running.Done()

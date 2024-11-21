@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-type Tx struct{ w *World }
+type Tx struct {
+	w      *World
+	closed bool
+}
 
 // Range returns the lower and upper bounds of the World that the Tx is
 // operating on.
@@ -16,103 +19,110 @@ func (tx *Tx) Range() cube.Range {
 }
 
 func (tx *Tx) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
-	tx.w.setBlock(pos, b, opts)
+	tx.World().setBlock(pos, b, opts)
 }
 
 func (tx *Tx) Block(pos cube.Pos) Block {
-	return tx.w.block(pos)
+	return tx.World().block(pos)
 }
 
 func (tx *Tx) Liquid(pos cube.Pos) (Liquid, bool) {
-	return tx.w.liquid(pos)
+	return tx.World().liquid(pos)
 }
 
 func (tx *Tx) SetLiquid(pos cube.Pos, b Liquid) {
-	tx.w.setLiquid(pos, b)
+	tx.World().setLiquid(pos, b)
 }
 
 func (tx *Tx) BuildStructure(pos cube.Pos, s Structure) {
-	tx.w.buildStructure(pos, s)
+	tx.World().buildStructure(pos, s)
 }
 
 func (tx *Tx) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
-	tx.w.scheduleBlockUpdate(pos, delay)
+	tx.World().scheduleBlockUpdate(pos, delay)
 }
 
 func (tx *Tx) HighestLightBlocker(x, z int) int {
-	return tx.w.highestLightBlocker(x, z)
+	return tx.World().highestLightBlocker(x, z)
 }
 
 func (tx *Tx) HighestBlock(x, z int) int {
-	return tx.w.highestBlock(x, z)
+	return tx.World().highestBlock(x, z)
 }
 
 func (tx *Tx) Light(pos cube.Pos) uint8 {
-	return tx.w.light(pos)
+	return tx.World().light(pos)
 }
 
 func (tx *Tx) Skylight(pos cube.Pos) uint8 {
-	return tx.w.skyLight(pos)
+	return tx.World().skyLight(pos)
 }
 
 func (tx *Tx) SetBiome(pos cube.Pos, b Biome) {
-	tx.w.setBiome(pos, b)
+	tx.World().setBiome(pos, b)
 }
 
 func (tx *Tx) Biome(pos cube.Pos) Biome {
-	return tx.w.biome(pos)
+	return tx.World().biome(pos)
 }
 
 func (tx *Tx) Temperature(pos cube.Pos) float64 {
-	return tx.w.temperature(pos)
+	return tx.World().temperature(pos)
 }
 
 func (tx *Tx) RainingAt(pos cube.Pos) bool {
-	return tx.w.rainingAt(pos)
+	return tx.World().rainingAt(pos)
 }
 
 func (tx *Tx) SnowingAt(pos cube.Pos) bool {
-	return tx.w.snowingAt(pos)
+	return tx.World().snowingAt(pos)
 }
 
 func (tx *Tx) ThunderingAt(pos cube.Pos) bool {
-	return tx.w.thunderingAt(pos)
+	return tx.World().thunderingAt(pos)
 }
 
 func (tx *Tx) AddParticle(pos mgl64.Vec3, p Particle) {
-	tx.w.addParticle(pos, p)
+	tx.World().addParticle(pos, p)
 }
 
 func (tx *Tx) PlaySound(pos mgl64.Vec3, s Sound) {
-	tx.w.playSound(tx, pos, s)
+	tx.World().playSound(tx, pos, s)
 }
 
 func (tx *Tx) AddEntity(e *EntityHandle) Entity {
-	return tx.w.addEntity(tx, e)
+	return tx.World().addEntity(tx, e)
 }
 
 func (tx *Tx) RemoveEntity(e Entity) *EntityHandle {
-	return tx.w.removeEntity(e, tx)
+	return tx.World().removeEntity(e, tx)
 }
 
 func (tx *Tx) EntitiesWithin(box cube.BBox) iter.Seq[Entity] {
-	return tx.w.entitiesWithin(tx, box)
+	return tx.World().entitiesWithin(tx, box)
 }
 
 func (tx *Tx) Entities() iter.Seq[Entity] {
-	return tx.w.allEntities(tx)
+	return tx.World().allEntities(tx)
 }
 
 func (tx *Tx) Players() iter.Seq[Entity] {
-	return tx.w.allPlayers(tx)
+	return tx.World().allPlayers(tx)
 }
 
 func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
-	return tx.w.viewersOf(pos)
+	return tx.World().viewersOf(pos)
 }
 
 // World returns the World of the Tx. It panics if the transaction was already
 // marked complete.
 func (tx *Tx) World() *World {
+	if tx.closed {
+		panic("world.Tx: use of transaction after transaction finishes is not permitted")
+	}
 	return tx.w
+}
+
+func (tx *Tx) close() {
+	tx.closed = true
 }
