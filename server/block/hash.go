@@ -178,6 +178,7 @@ const (
 	hashStonecutter
 	hashSugarCane
 	hashTNT
+	hashTarget
 	hashTerracotta
 	hashTorch
 	hashTuff
@@ -893,6 +894,10 @@ func (c SugarCane) Hash() (uint64, uint64) {
 
 func (TNT) Hash() (uint64, uint64) {
 	return hashTNT, 0
+}
+
+func (Target) Hash() (uint64, uint64) {
+	return hashTarget, 0
 }
 
 func (Terracotta) Hash() (uint64, uint64) {
