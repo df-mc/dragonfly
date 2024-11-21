@@ -182,6 +182,7 @@ func init() {
 	registerAll(allNetherWart())
 	registerAll(allPlanks())
 	registerAll(allPotato())
+	registerAll(allPressurePlates())
 	registerAll(allPrismarine())
 	registerAll(allPumpkinStems())
 	registerAll(allPumpkins())
@@ -393,6 +394,9 @@ func init() {
 	}
 	for _, t := range ButtonTypes() {
 		world.RegisterItem(Button{Type: t})
+	}
+	for _, t := range PressurePlateTypes() {
+		world.RegisterItem(PressurePlate{Type: t})
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})

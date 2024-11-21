@@ -126,6 +126,11 @@ func (b Button) BreakInfo() BreakInfo {
 	})
 }
 
+// SideClosed ...
+func (b Button) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+	return false
+}
+
 // EncodeItem ...
 func (b Button) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + b.Type.String() + "_button", 0
