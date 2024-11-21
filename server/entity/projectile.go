@@ -172,6 +172,23 @@ func (lt *ProjectileBehaviour) Tick(e *Ent) *Movement {
 		if t, ok := w.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
 			t.Ignite(bpos, w, e)
 		}
+		if b, ok := w.Block(bpos).(block.Button); ok {
+			if b.Type != block.StoneButton() || b.Type != block.PolishedBlackstoneButton() {
+				b.Click(bpos, w)
+			}
+		}
+		if t, ok := w.Block(bpos).(block.Target); ok {
+			if _, ok := e.Type().(EnderPearlType); !ok {
+				delay := time.Millisecond * 400
+
+				//TODO: account for trident when added.
+				if _, ok := e.Type().(ArrowType); ok {
+					delay = time.Millisecond * 1000
+				}
+
+				t.HitByProjectile(r.Position(), r.BlockPosition(), w, delay)
+			}
+		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m)
 			return m

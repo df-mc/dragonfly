@@ -950,7 +950,7 @@ func (w *World) ScheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
 	t := w.set.CurrentTick
 	w.set.Unlock()
 
-	w.scheduledUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
+	w.scheduledUpdates[pos] = t + (delay.Milliseconds() / 50)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the position passed.
@@ -1016,6 +1016,33 @@ func (w *World) PortalDestination(dim Dimension) *World {
 		return res
 	}
 	return w
+}
+
+// RedstonePower returns the level of redstone power being emitted from a position to the provided face.
+func (w *World) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
+	b := w.Block(pos)
+	if c, ok := b.(Conductor); ok {
+		power = c.WeakPower(pos, face, w, accountForDust)
+	}
+	if b, ok := b.(redstoneBlocking); ok && b.RedstoneBlocking() {
+		return power
+	}
+	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() == 0 {
+		return power
+	}
+	for _, f := range cube.Faces() {
+		if !b.Model().FaceSolid(pos, f, w) {
+			return power
+		}
+	}
+	for _, f := range cube.Faces() {
+		c, ok := w.Block(pos.Side(f)).(Conductor)
+		if !ok {
+			continue
+		}
+		power = max(power, c.StrongPower(pos.Side(f), f, w, accountForDust))
+	}
+	return power
 }
 
 // Save saves the World to the provider.
