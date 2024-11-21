@@ -48,7 +48,7 @@ func (s *Session) entityHidden(e world.Entity) bool {
 
 // ViewEntity ...
 func (s *Session) ViewEntity(e world.Entity) {
-	if s.entityRuntimeID(e) == selfEntityRuntimeID {
+	if e.H() == s.ent {
 		s.ViewEntityState(e)
 		return
 	}
@@ -1165,7 +1165,7 @@ func (s *Session) handleRuntimeID(e *world.EntityHandle) uint64 {
 	if id, ok := s.entityRuntimeIDs[e]; ok {
 		return id
 	}
-	s.conf.Log.Error("entity runtime ID not found", "UUID", e.UUID().String())
+	s.conf.Log.Debug("entity runtime ID not found", "UUID", e.UUID().String())
 	return 0
 }
 

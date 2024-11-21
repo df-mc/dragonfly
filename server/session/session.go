@@ -167,6 +167,7 @@ func (conf Config) New(conn Conn) *Session {
 		conf:                   conf,
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
+	s.openedPos.Store(&cube.Pos{})
 
 	var scoreboardName string
 	var scoreboardLines []string

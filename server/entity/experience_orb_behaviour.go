@@ -71,14 +71,15 @@ var followBox = cube.Box(-8, -8, -8, 8, 8, 8)
 // tick finds a target for the experience orb and moves the orb towards it.
 func (exp *ExperienceOrbBehaviour) tick(e *Ent, tx *world.Tx) {
 	targetEnt, ok := exp.target.Entity(tx)
-	target := targetEnt.(experienceCollector)
+	target, _ := targetEnt.(experienceCollector)
 
 	pos := e.Position()
-	if (!ok || target.Dead() || pos.Sub(target.Position()).Len() > 8) && time.Since(exp.lastSearch) >= time.Second {
+	hasTarget := ok && !target.Dead() && pos.Sub(target.Position()).Len() <= 8
+	if !hasTarget && time.Since(exp.lastSearch) >= time.Second {
 		exp.findTarget(tx, pos)
-		return
+	} else if hasTarget {
+		exp.moveToTarget(e, target)
 	}
-	exp.moveToTarget(e, target)
 }
 
 // findTarget attempts to find a target for an experience orb in w around pos.

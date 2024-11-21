@@ -210,6 +210,9 @@ func (srv *Server) Player(uuid uuid.UUID) (*world.EntityHandle, bool) {
 	srv.pmu.RLock()
 	defer srv.pmu.RUnlock()
 	p, ok := srv.p[uuid]
+	if !ok {
+		return nil, false
+	}
 	return p.handle, ok
 }
 
@@ -552,7 +555,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		},
 	}
 	w := conf.New()
-	logger.Info("Opened world.", "name", w.Name())
+	logger.Info("Opened dimension.", "name", w.Name())
 	return w
 }
 

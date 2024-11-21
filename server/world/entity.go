@@ -80,7 +80,7 @@ func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 }
 
 func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
-	handle := &EntityHandle{t: t}
+	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{})}
 	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
 	handle.decodeNBT(data)
 	t.DecodeNBT(data, &handle.data)
@@ -130,8 +130,6 @@ func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) {
 		e.lockedTx.Store(tx)
 		f(tx, e.mustEntity(tx))
 		e.lockedTx.Store(nil)
-
-		e.cond.Signal()
 	})
 }
 
@@ -156,7 +154,7 @@ func (e *EntityHandle) setAndUnlockWorld(w *World, tx *Tx) {
 		panic("cannot add entity to new world before removing from old world")
 	}
 	e.w = w
-	e.cond.Signal()
+	e.cond.Broadcast()
 }
 
 func (e *EntityHandle) decodeNBT(m map[string]any) {

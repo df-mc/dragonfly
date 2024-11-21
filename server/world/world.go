@@ -108,7 +108,6 @@ func (w *World) Exec(f func(tx *Tx)) <-chan struct{} {
 }
 
 func (w *World) handleTransactions() {
-	w.running.Add(1)
 	for {
 		select {
 		case queuedTx := <-w.queue:
@@ -383,7 +382,7 @@ func (w *World) buildStructure(pos cube.Pos, s Structure) {
 			// After setting all blocks of the structure within a single chunk,
 			// we show the new chunk to all viewers once.
 			for _, viewer := range c.viewers {
-				viewer.ViewChunk(chunkPos, c.Chunk, c.BlockEntities)
+				viewer.ViewChunk(chunkPos, w.Dimension(), c.BlockEntities, c.Chunk)
 			}
 		}
 	}
@@ -1072,9 +1071,9 @@ func (w *World) chunk(pos ChunkPos) *Column {
 // loadChunk attempts to load a chunk from the provider, or generates a chunk if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 	column, err := w.provider().LoadColumn(pos, w.conf.Dim)
-	col := columnFrom(column, w)
 	switch {
 	case err == nil:
+		col := columnFrom(column, w)
 		w.chunks[pos] = col
 		for _, e := range col.Entities {
 			w.entities[e] = pos
@@ -1083,7 +1082,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		return col, nil
 	case errors.Is(err, leveldb.ErrNotFound):
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		col = newColumn(chunk.New(airRID, w.Range()))
+		col := newColumn(chunk.New(airRID, w.Range()))
 		w.chunks[pos] = col
 
 		w.conf.Generator.GenerateChunk(pos, col.Chunk)
@@ -1151,8 +1150,6 @@ func (w *World) saveChunk(tx *Tx, pos ChunkPos, c *Column, closeEntities bool) {
 func (w *World) chunkCacheJanitor() {
 	t := time.NewTicker(time.Minute * 5)
 	defer t.Stop()
-
-	w.running.Add(1)
 	for {
 		select {
 		case <-t.C:

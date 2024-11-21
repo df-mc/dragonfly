@@ -91,7 +91,7 @@ func (l *Loader) Load(tx *Tx, n int) {
 		pos := l.loadQueue[0]
 		c := tx.w.chunk(pos)
 
-		l.viewer.ViewChunk(pos, c.Chunk, c.BlockEntities)
+		l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
 		l.w.addViewer(tx, c, l)
 
 		l.loaded[pos] = c

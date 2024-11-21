@@ -17,8 +17,6 @@ type ticker struct{}
 func (t ticker) tickLoop(w *World) {
 	tc := time.NewTicker(time.Second / 20)
 	defer tc.Stop()
-
-	w.running.Add(1)
 	for {
 		select {
 		case <-tc.C:

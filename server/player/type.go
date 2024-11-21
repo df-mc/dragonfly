@@ -54,6 +54,7 @@ func (conf Config) Apply(data *world.EntityData) {
 		enchantSeed:       rand.Int63(),
 		scale:             1.0,
 		s:                 conf.Session,
+		h:                 NopHandler{},
 	}
 }
 

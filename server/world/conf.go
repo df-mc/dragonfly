@@ -79,9 +79,9 @@ func (conf Config) New() *World {
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
-	go w.tickLoop(w)         // TODO: Put this in a transaction.
-	go w.chunkCacheJanitor() // TODO: Put this in a transaction.
-
+	w.running.Add(3)
+	go w.tickLoop(w)
+	go w.chunkCacheJanitor()
 	go w.handleTransactions()
 	return w
 }
