@@ -44,7 +44,7 @@ func (c Copper) BreakInfo() BreakInfo {
 func (c Copper) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
 	before := c.Waxed
 	c.Waxed = true
-	return c, before != true
+	return c, !before
 }
 
 func (c Copper) CanOxidate() bool {

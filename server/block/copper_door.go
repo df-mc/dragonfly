@@ -184,9 +184,9 @@ func (d CopperDoor) EncodeItem() (name string, meta int16) {
 func (d CopperDoor) EncodeBlock() (name string, properties map[string]any) {
 	direction := d.Facing
 	if d.Facing == cube.East {
-		d.Facing = cube.North
+		direction = cube.North
 	} else if d.Facing == cube.North {
-		d.Facing = cube.East
+		direction = cube.East
 	}
 
 	name = "copper_door"
