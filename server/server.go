@@ -65,6 +65,7 @@ type Server struct {
 	wg sync.WaitGroup
 }
 
+// incoming holds data of a player that is connecting to the server.
 type incoming struct {
 	conf player.Config
 	s    *session.Session
@@ -72,15 +73,12 @@ type incoming struct {
 	w    *world.World
 }
 
+// onlinePlayer holds the entity handle, XUID and name of a player.
 type onlinePlayer struct {
 	handle *world.EntityHandle
 	xuid   string
 	name   string
 }
-
-// HandleFunc is a function that may be passed to Server.Accept(). It can be
-// used to prepare the session of a player before it can do anything.
-type HandleFunc func(p *player.Player)
 
 // New creates a Server using a default Config. The Server's worlds are created
 // and connections from the Server's listeners may be accepted by calling
@@ -90,10 +88,9 @@ func New() *Server {
 	return conf.New()
 }
 
-// Listen starts running the server's listeners but does not block, unlike Run.
-// Connections will be accepted on a different goroutine until the listeners
-// are closed using a call to Close. Once started, players may be accepted
-// using Server.Accept().
+// Listen starts running the server's listeners. Connections will be accepted
+// until the listeners are closed using a call to Close. Once Listen is called,
+// players may be accepted using Server.Accept().
 func (srv *Server) Listen() {
 	t := time.Now()
 	if !srv.started.CompareAndSwap(nil, &t) {
@@ -116,12 +113,19 @@ func (srv *Server) Listen() {
 	go srv.wait()
 }
 
-// Accept accepts an incoming player into the server. It blocks until a player
-// connects to the server. A HandleFunc may be passed which is run immediately
-// before a *player.Player is accepted to the Server. This function may be used
-// to add a player.Handler to the player and prepare its session. The function
-// may be nil if player joining does not need to be handled. Accept returns
-// false if the Server is closed using a call to Close.
+// Accept accepts incoming players into the server, returning an iterator that
+// yields players that join the server while blocking otherwise. The iterator
+// returned ends when the Server is closed using a call to Close. Players
+// returned are only valid within the block of the for loop used to iterate over
+// them:
+//
+//	  for p := range srv.Accept() {
+//	    // p is valid here
+//		   go func() {
+//	      // p is no longer valid here
+//	    }()
+//	  }
+//	  // p is no longer valid here
 func (srv *Server) Accept() iter.Seq[*player.Player] {
 	return func(yield func(*player.Player) bool) {
 		for {
@@ -179,10 +183,23 @@ func (srv *Server) MaxPlayerCount() int {
 	return srv.conf.MaxPlayers
 }
 
-// Players returns a list of all players currently connected to the server.
-// Note that the slice returned is not updated when new players join or leave,
-// so it is only valid for as long as no new players join or players leave.
-func (srv *Server) Players() iter.Seq[*player.Player] {
+// Players returns an iterator that yields players currently online. If Players
+// is called from within a transaction, the respective transaction should be
+// passed. Passing nil is otherwise valid. Players returned are only valid
+// within the block of the for loop used to iterate over them:
+//
+//	  for p := range srv.Players() {
+//	    // p is valid here
+//		   go func() {
+//	      // p is no longer valid here
+//	    }()
+//	  }
+//	  // p is no longer valid here
+//
+// Collecting all values from the iterator using a function such as
+// slices.Collect immediately invalidates the players because their transactions
+// will be finished.
+func (srv *Server) Players(tx *world.Tx) iter.Seq[*player.Player] {
 	srv.pmu.RLock()
 	handles := make([]*world.EntityHandle, 0, len(srv.p))
 	for _, p := range srv.p {
@@ -192,6 +209,14 @@ func (srv *Server) Players() iter.Seq[*player.Player] {
 
 	return func(yield func(*player.Player) bool) {
 		for _, handle := range handles {
+			if tx != nil {
+				if e, ok := handle.Entity(tx); ok {
+					if !yield(e.(*player.Player)) {
+						break
+					}
+					continue
+				}
+			}
 			ret := false
 			handle.ExecWorld(func(tx *world.Tx, e world.Entity) {
 				ret = !yield(e.(*player.Player))
@@ -204,8 +229,8 @@ func (srv *Server) Players() iter.Seq[*player.Player] {
 }
 
 // Player looks for a player on the server with the UUID passed. If found, the
-// player is returned and the bool returns holds a true value. If not, the bool
-// returned is false and the player is nil.
+// entity handle is returned and the bool returns holds a true value. If not,
+// the bool returned is false and the handle is nil.
 func (srv *Server) Player(uuid uuid.UUID) (*world.EntityHandle, bool) {
 	srv.pmu.RLock()
 	defer srv.pmu.RUnlock()
@@ -217,8 +242,8 @@ func (srv *Server) Player(uuid uuid.UUID) (*world.EntityHandle, bool) {
 }
 
 // PlayerByName looks for a player on the server with the name passed. If
-// found, the player is returned and the bool returned holds a true value. If
-// not, the bool is false and the player is nil
+// found, the entity handle is returned and the bool returned holds a true
+// value. If not, the bool is false and the handle is nil
 func (srv *Server) PlayerByName(name string) (*world.EntityHandle, bool) {
 	if p, ok := sliceutil.SearchValue(maps.Values(srv.p), func(p *onlinePlayer) bool {
 		return p.name == name
@@ -228,9 +253,9 @@ func (srv *Server) PlayerByName(name string) (*world.EntityHandle, bool) {
 	return nil, false
 }
 
-// PlayerByXUID looks for a player on the server with the XUID passed. If found,
-// the player is returned and the bool returned is true. If no player with the
-// XUID was found, nil and false are returned.
+// PlayerByXUID looks for a player on the server with the XUID passed. If
+// found, the entity handle is returned and the bool returned is true. If no
+// player with the XUID was found, nil and false are returned.
 func (srv *Server) PlayerByXUID(xuid string) (*world.EntityHandle, bool) {
 	if p, ok := sliceutil.SearchValue(maps.Values(srv.p), func(p *onlinePlayer) bool {
 		return p.xuid == xuid
@@ -262,13 +287,12 @@ func (srv *Server) Close() error {
 	return nil
 }
 
-// close stops the server, storing player and world data to disk when
-// necessary.
+// close stops the server, storing player and world data to disk.
 func (srv *Server) close() {
 	srv.conf.Log.Info("Server closing...")
 
 	srv.conf.Log.Debug("Disconnecting players...")
-	for p := range srv.Players() {
+	for p := range srv.Players(nil) {
 		p.Disconnect(text.Colourf("<yellow>%v</yellow>", srv.conf.ShutdownMessage))
 	}
 	srv.pwg.Wait()
@@ -307,10 +331,10 @@ func (srv *Server) listen(l Listener) {
 			// Cancel the context so that any call to StartGameContext is
 			// cancelled rapidly.
 			cancel()
-			// First wait until all connections that are being handled are
-			// done inserting the player into the channel. Afterwards, when
-			// we're sure no more values will be inserted in the players
-			// channel, we can return so the player channel can be closed.
+			// First wait until all connections that are being handled are done
+			// inserting the player into the channel. Afterwards, when we're
+			// sure no more values will be inserted in the players channel, we
+			// can return so the player channel can be closed.
 			wg.Wait()
 			srv.wg.Done()
 			return
@@ -347,8 +371,9 @@ func (srv *Server) startListening() {
 	}
 }
 
-// makeBlockEntries initializes the server's block components map using the registered custom blocks. It allows block
-// components to be created only once at startup.
+// makeBlockEntries initializes the server's block components map using the
+// registered custom blocks. It allows block components to be created only once
+// at startup.
 func (srv *Server) makeBlockEntries() {
 	custom := maps.Values(world.CustomBlocks())
 	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
@@ -385,8 +410,8 @@ func (srv *Server) wait() {
 	close(srv.incoming)
 }
 
-// finaliseConn finalises the session.Conn passed and subtracts from the
-// sync.WaitGroup once done.
+// finaliseConn finalises the session.Conn passed and adds it to the incoming
+// channel.
 func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) {
 	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := srv.defaultGameData()
@@ -425,7 +450,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 func (srv *Server) defaultGameData() minecraft.GameData {
 	gm, _ := world.GameModeID(srv.world.DefaultGameMode())
 	return minecraft.GameData{
-		// We set these IDs to 1, because that's how the session will treat them.
+		// Entity runtime/unique ID for the player itself is always 1 in df.
 		EntityUniqueID:  1,
 		EntityRuntimeID: 1,
 
@@ -487,8 +512,9 @@ func (srv *Server) handleSessionClose(_ *world.Tx, c session.Controllable) {
 	delete(srv.p, c.UUID())
 	srv.pmu.Unlock()
 	if !ok {
-		// When a player disconnects immediately after a session is started, it might not be added to the players map
-		// yet. This is expected, but we need to be careful not to crash when this happens.
+		// When a player disconnects immediately after a session is started, it
+		// might not be added to the players map yet. This is expected, but we
+		// need to be careful not to crash when this happens.
 		return
 	}
 
@@ -530,9 +556,9 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 	return incoming{s: s, w: w, conf: conf, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
 }
 
-// createWorld loads a world of the server with a specific dimension, ending
-// the program if the world could not be loaded. The layers passed are used to
-// create a generator.Flat that is used as generator for the world.
+// createWorld loads a world with a specific dimension using the provider set
+// in the Config. The nether and end dimensions point to the worlds that players
+// are moved to when passing through the respective portals.
 func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *world.World {
 	logger := srv.conf.Log.With("dimension", strings.ToLower(fmt.Sprint(dim)))
 	logger.Debug("Loading dimension...")
@@ -636,13 +662,13 @@ type sporingBiome interface {
 	Spores() (blueSpores float64, redSpores float64)
 }
 
-// biomes builds a mapping of all biome definitions of the server, ready to be set in the biomes field of the server
-// listener.
+// biomes builds a mapping of all biome definitions of the server, ready to be
+// set in the biomes field of the server listener.
 func biomes() map[string]any {
 	definitions := make(map[string]any)
 	for _, b := range world.Biomes() {
 		definition := map[string]any{
-			"name_hash":   b.String(), // This isn't actually a hash despite what the field name may suggest.
+			"name_hash":   b.String(), // Not actually a hash despite the name.
 			"temperature": float32(b.Temperature()),
 			"downfall":    float32(b.Rainfall()),
 			"rain":        b.Rainfall() > 0,
@@ -667,8 +693,7 @@ var (
 )
 
 // init reads all item entries from the resource JSON, and sets the according
-// values in the runtime ID maps. init also seeds the global `rand` with the
-// current time.
+// values in the runtime ID maps.
 func init() {
 	_ = nbt.Unmarshal(itemRuntimeIDData, &itemRuntimeIDs)
 }

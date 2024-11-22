@@ -279,7 +279,9 @@ func loadResources(dir string) ([]*resource.Pack, error) {
 	return packs, nil
 }
 
-// loadGenerator loads a standard world.Generator for a world.Dimension.
+// loadGenerator loads a standard world.Generator for a world.Dimension. The
+// generators returned are flat generators with grass/dirt, netherrack or end
+// stone depending on the dimension passed.
 func loadGenerator(dim world.Dimension) world.Generator {
 	switch dim {
 	case world.Overworld:
