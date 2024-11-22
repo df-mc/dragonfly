@@ -29,7 +29,7 @@ func encodeStairsBlock(block world.Block) string {
 	case Copper:
 		if block.Type == CutCopper() {
 			name := "cut_copper"
-			if block.Oxidation != NormalOxidation() {
+			if block.Oxidation != UnoxidisedOxidation() {
 				name = block.Oxidation.String() + "_" + name
 			}
 			if block.Waxed {

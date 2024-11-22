@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -21,6 +22,17 @@ type Copper struct {
 	Waxed bool
 }
 
+func (c Copper) Strip() (world.Block, world.Sound, bool) {
+	if c.Waxed {
+		c.Waxed = false
+		return c, sound.WaxRemoved{}, true
+	} else if ot, ok := c.Oxidation.Decrease(); ok {
+		c.Oxidation = ot
+		return c, sound.CopperScraped{}, true
+	}
+	return c, nil, false
+}
+
 // BreakInfo ...
 func (c Copper) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t item.Tool) bool {
@@ -30,11 +42,9 @@ func (c Copper) BreakInfo() BreakInfo {
 
 // Wax waxes the copper block to stop it from oxidising further.
 func (c Copper) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
-	if c.Waxed {
-		return c, false
-	}
+	before := c.Waxed
 	c.Waxed = true
-	return c, true
+	return c, before != true
 }
 
 func (c Copper) CanOxidate() bool {
@@ -45,40 +55,25 @@ func (c Copper) OxidationLevel() OxidationType {
 	return c.Oxidation
 }
 
-func (c Copper) WithOxidationLevel(o OxidationType) Oxidizable {
+func (c Copper) WithOxidationLevel(o OxidationType) Oxidisable {
 	c.Oxidation = o
 	return c
 }
 
-func (c Copper) Activate(pos cube.Pos, _ cube.Face, w *world.World, user item.User, _ *item.UseContext) bool {
-	var ok bool
-	c.Oxidation, c.Waxed, ok = activateOxidizable(pos, w, user, c.Oxidation, c.Waxed)
-	if ok {
-		w.SetBlock(pos, c, nil)
-		return true
-	}
-	return false
-}
-
-func (c Copper) SneakingActivate(pos cube.Pos, face cube.Face, w *world.World, user item.User, ctx *item.UseContext) bool {
-	// Sneaking should still trigger axe functionality.
-	return c.Activate(pos, face, w, user, ctx)
-}
-
-func (c Copper) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	attemptOxidation(pos, w, r, c)
+func (c Copper) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	attemptOxidation(pos, tx, r, c)
 }
 
 // EncodeItem ...
 func (c Copper) EncodeItem() (name string, meta int16) {
-	if c.Type == NormalCopper() && c.Oxidation == NormalOxidation() && !c.Waxed {
+	if c.Type == NormalCopper() && c.Oxidation == UnoxidisedOxidation() && !c.Waxed {
 		return "minecraft:copper_block", 0
 	}
 	name = "copper"
 	if c.Type != NormalCopper() {
 		name = c.Type.String() + "_" + name
 	}
-	if c.Oxidation != NormalOxidation() {
+	if c.Oxidation != UnoxidisedOxidation() {
 		name = c.Oxidation.String() + "_" + name
 	}
 	if c.Waxed {
@@ -89,14 +84,14 @@ func (c Copper) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c Copper) EncodeBlock() (string, map[string]any) {
-	if c.Type == NormalCopper() && c.Oxidation == NormalOxidation() && !c.Waxed {
+	if c.Type == NormalCopper() && c.Oxidation == UnoxidisedOxidation() && !c.Waxed {
 		return "minecraft:copper_block", nil
 	}
 	name := "copper"
 	if c.Type != NormalCopper() {
 		name = c.Type.String() + "_" + name
 	}
-	if c.Oxidation != NormalOxidation() {
+	if c.Oxidation != UnoxidisedOxidation() {
 		name = c.Oxidation.String() + "_" + name
 	}
 	if c.Waxed {

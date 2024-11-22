@@ -36,12 +36,12 @@ func (b BrewingStand) Model() world.BlockModel {
 }
 
 // SideClosed ...
-func (b BrewingStand) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (b BrewingStand) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // Tick is called to check if the brewing stand should update and start or stop brewing.
-func (b BrewingStand) Tick(_ int64, pos cube.Pos, w *world.World) {
+func (b BrewingStand) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	// Get each item in the brewing stand. We don't need to validate errors here since we know the bounds of the stand.
 	left, _ := b.inventory.Item(1)
 	middle, _ := b.inventory.Item(2)
@@ -51,32 +51,32 @@ func (b BrewingStand) Tick(_ int64, pos cube.Pos, w *world.World) {
 	displayLeft, displayMiddle, displayRight := b.LeftSlot, b.MiddleSlot, b.RightSlot
 	b.LeftSlot, b.MiddleSlot, b.RightSlot = !left.Empty(), !middle.Empty(), !right.Empty()
 	if b.LeftSlot != displayLeft || b.MiddleSlot != displayMiddle || b.RightSlot != displayRight {
-		w.SetBlock(pos, b, nil)
+		tx.SetBlock(pos, b, nil)
 	}
 
 	// Tick brewing.
-	b.tickBrewing("brewing_stand", pos, w)
+	b.tickBrewing("brewing_stand", pos, tx)
 }
 
 // Activate ...
-func (b BrewingStand) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
+func (b BrewingStand) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false
 }
 
 // UseOnBlock ...
-func (b BrewingStand) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, b)
+func (b BrewingStand) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, b)
 	if !used {
 		return
 	}
 
 	//noinspection GoAssignmentToReceiver
 	b = NewBrewingStand()
-	place(w, pos, b, user, ctx)
+	place(tx, pos, b, user, ctx)
 	return placed(ctx)
 }
 
@@ -114,9 +114,9 @@ func (b BrewingStand) DecodeNBT(data map[string]any) any {
 
 // BreakInfo ...
 func (b BrewingStand) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		for _, i := range b.Inventory(w, pos).Clear() {
-			dropItem(w, i, pos.Vec3Centre())
+	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		for _, i := range b.Inventory(tx, pos).Clear() {
+			dropItem(tx, i, pos.Vec3Centre())
 		}
 	})
 }

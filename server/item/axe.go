@@ -17,10 +17,13 @@ type Axe struct {
 
 // UseOnBlock handles the stripping of logs when a player clicks a log with an axe.
 func (a Axe) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
-	if s, ok := tx.Block(pos).(strippable); ok {
-		if res, ok := s.Strip(); ok {
+	if s, ok := tx.Block(pos).(Strippable); ok {
+		if res, so, ok := s.Strip(); ok {
 			tx.SetBlock(pos, res, nil)
 			tx.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
+			if so != nil {
+				tx.PlaySound(pos.Vec3(), so)
+			}
 
 			ctx.DamageItem(1)
 			return true
@@ -29,11 +32,13 @@ func (a Axe) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *w
 	return false
 }
 
-// strippable represents a block that can be stripped.
-type strippable interface {
-	// Strip returns a block that is the result of stripping it. Alternatively, the bool returned may be false to
-	// indicate the block couldn't be stripped.
-	Strip() (world.Block, bool)
+// Strippable represents a block that can be stripped by right-clicking it with
+// an axe.
+type Strippable interface {
+	// Strip returns a block that is the result of stripping it. Alternatively,
+	// the bool returned may be false to indicate the block couldn't be
+	// stripped.
+	Strip() (world.Block, world.Sound, bool)
 }
 
 // MaxCount always returns 1.

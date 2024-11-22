@@ -64,8 +64,8 @@ func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *w
 }
 
 // Strip ...
-func (l Log) Strip() (world.Block, bool) {
-	return Log{Axis: l.Axis, Wood: l.Wood, Stripped: true}, !l.Stripped
+func (l Log) Strip() (world.Block, world.Sound, bool) {
+	return Log{Axis: l.Axis, Wood: l.Wood, Stripped: true}, nil, !l.Stripped
 }
 
 // EncodeItem ...

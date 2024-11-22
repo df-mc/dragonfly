@@ -66,7 +66,7 @@ type playerData struct {
 
 	cooldowns map[string]time.Time
 
-	speed      float64
+	speed       float64
 	flightSpeed float64
 
 	health     *entity.HealthManager
@@ -1467,15 +1467,6 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The block was activated: Blocks such as doors must always have precedence over the item being
 			// used.
 			if useCtx := p.useContext(); act.Activate(pos, face, p.tx, p, useCtx) {
-				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
-				p.addNewItem(useCtx)
-				return
-			}
-		}
-	}
-	if p.Sneaking() {
-		if act, ok := b.(block.SneakingActivatable); ok {
-			if useCtx := p.useContext(); act.SneakingActivate(pos, face, p.World(), p, useCtx) {
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 				p.addNewItem(useCtx)
 				return

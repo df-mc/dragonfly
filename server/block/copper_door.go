@@ -31,6 +31,17 @@ type CopperDoor struct {
 	Right bool
 }
 
+func (d CopperDoor) Strip() (world.Block, world.Sound, bool) {
+	if d.Waxed {
+		d.Waxed = false
+		return d, sound.WaxRemoved{}, true
+	} else if ot, ok := d.Oxidation.Decrease(); ok {
+		d.Oxidation = ot
+		return d, sound.CopperScraped{}, true
+	}
+	return d, nil, false
+}
+
 // Model ...
 func (d CopperDoor) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
@@ -53,57 +64,57 @@ func (d CopperDoor) OxidationLevel() OxidationType {
 	return d.Oxidation
 }
 
-func (d CopperDoor) WithOxidationLevel(o OxidationType) Oxidizable {
+func (d CopperDoor) WithOxidationLevel(o OxidationType) Oxidisable {
 	d.Oxidation = o
 	return d
 }
 
 // NeighbourUpdateTick ...
-func (d CopperDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, w *world.World) {
+func (d CopperDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
 	if pos == changedNeighbour {
 		return
 	}
 	if d.Top {
-		if b, ok := w.Block(pos.Side(cube.FaceDown)).(CopperDoor); !ok {
-			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+		if b, ok := tx.Block(pos.Side(cube.FaceDown)).(CopperDoor); !ok {
+			tx.SetBlock(pos, nil, nil)
+			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		} else if d.Oxidation != b.Oxidation || d.Waxed != b.Waxed {
 			d.Oxidation = b.Oxidation
 			d.Waxed = b.Waxed
-			w.SetBlock(pos, d, nil)
+			tx.SetBlock(pos, d, nil)
 		}
 		return
 	}
-	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
-	} else if b, ok := w.Block(pos.Side(cube.FaceUp)).(CopperDoor); !ok {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	} else if b, ok := tx.Block(pos.Side(cube.FaceUp)).(CopperDoor); !ok {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	} else if d.Oxidation != b.Oxidation || d.Waxed != b.Waxed {
 		d.Oxidation = b.Oxidation
 		d.Waxed = b.Waxed
-		w.SetBlock(pos, d, nil)
+		tx.SetBlock(pos, d, nil)
 	}
 }
 
 // UseOnBlock handles the directional placing of doors
-func (d CopperDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (d CopperDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if face != cube.FaceUp {
 		// Doors can only be placed when clicking the top face.
 		return false
 	}
 	below := pos
 	pos = pos.Side(cube.FaceUp)
-	if !replaceableWith(w, pos, d) || !replaceableWith(w, pos.Side(cube.FaceUp), d) {
+	if !replaceableWith(tx, pos, d) || !replaceableWith(tx, pos.Side(cube.FaceUp), d) {
 		return false
 	}
-	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
+	if !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx) {
 		return false
 	}
 	d.Facing = user.Rotation().Direction()
-	left := w.Block(pos.Side(d.Facing.RotateLeft().Face()))
-	right := w.Block(pos.Side(d.Facing.RotateRight().Face()))
+	left := tx.Block(pos.Side(d.Facing.RotateLeft().Face()))
+	right := tx.Block(pos.Side(d.Facing.RotateRight().Face()))
 	if _, ok := left.(CopperDoor); ok {
 		d.Right = true
 	}
@@ -117,42 +128,32 @@ func (d CopperDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *wo
 	}
 
 	ctx.IgnoreBBox = true
-	place(w, pos, d, user, ctx)
-	place(w, pos.Side(cube.FaceUp), CopperDoor{Oxidation: d.Oxidation, Waxed: d.Waxed, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
+	place(tx, pos, d, user, ctx)
+	place(tx, pos.Side(cube.FaceUp), CopperDoor{Oxidation: d.Oxidation, Waxed: d.Waxed, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
 	ctx.SubtractFromCount(1)
 	return placed(ctx)
 }
 
-func (d CopperDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
+func (d CopperDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	d.Open = !d.Open
-	w.SetBlock(pos, d, nil)
+	tx.SetBlock(pos, d, nil)
 
 	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
-	other := w.Block(otherPos)
+	other := tx.Block(otherPos)
 	if door, ok := other.(CopperDoor); ok {
 		door.Open = d.Open
-		w.SetBlock(otherPos, door, nil)
+		tx.SetBlock(otherPos, door, nil)
 	}
 	if d.Open {
-		w.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
 		return true
 	}
-	w.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
+	tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
 	return true
 }
 
-func (d CopperDoor) SneakingActivate(pos cube.Pos, _ cube.Face, w *world.World, user item.User, _ *item.UseContext) bool {
-	var ok bool
-	d.Oxidation, d.Waxed, ok = activateOxidizable(pos, w, user, d.Oxidation, d.Waxed)
-	if ok {
-		w.SetBlock(pos, d, nil)
-		return true
-	}
-	return false
-}
-
-func (d CopperDoor) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	attemptOxidation(pos, w, r, d)
+func (d CopperDoor) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	attemptOxidation(pos, tx, r, d)
 }
 
 // BreakInfo ...
@@ -163,14 +164,14 @@ func (d CopperDoor) BreakInfo() BreakInfo {
 }
 
 // SideClosed ...
-func (d CopperDoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (d CopperDoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // EncodeItem ...
 func (d CopperDoor) EncodeItem() (name string, meta int16) {
 	name = "copper_door"
-	if d.Oxidation != NormalOxidation() {
+	if d.Oxidation != UnoxidisedOxidation() {
 		name = d.Oxidation.String() + "_" + name
 	}
 	if d.Waxed {
@@ -181,18 +182,15 @@ func (d CopperDoor) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (d CopperDoor) EncodeBlock() (name string, properties map[string]any) {
-	direction := 3
-	switch d.Facing {
-	case cube.South:
-		direction = 1
-	case cube.West:
-		direction = 2
-	case cube.East:
-		direction = 0
+	direction := d.Facing
+	if d.Facing == cube.East {
+		d.Facing = cube.North
+	} else if d.Facing == cube.North {
+		d.Facing = cube.East
 	}
 
 	name = "copper_door"
-	if d.Oxidation != NormalOxidation() {
+	if d.Oxidation != UnoxidisedOxidation() {
 		name = d.Oxidation.String() + "_" + name
 	}
 	if d.Waxed {

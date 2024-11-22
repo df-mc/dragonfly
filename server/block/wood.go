@@ -63,8 +63,8 @@ func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *
 }
 
 // Strip ...
-func (w Wood) Strip() (world.Block, bool) {
-	return Wood{Axis: w.Axis, Wood: w.Wood, Stripped: true}, !w.Stripped
+func (w Wood) Strip() (world.Block, world.Sound, bool) {
+	return Wood{Axis: w.Axis, Wood: w.Wood, Stripped: true}, nil, !w.Stripped
 }
 
 // EncodeItem ...

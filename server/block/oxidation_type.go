@@ -7,8 +7,8 @@ type OxidationType struct {
 
 type oxidation uint8
 
-// NormalOxidation is the normal variant of oxidation.
-func NormalOxidation() OxidationType {
+// UnoxidisedOxidation is the normal variant of oxidation.
+func UnoxidisedOxidation() OxidationType {
 	return OxidationType{0}
 }
 
@@ -22,8 +22,8 @@ func WeatheredOxidation() OxidationType {
 	return OxidationType{2}
 }
 
-// OxidizedOxidation is the oxidized variant of oxidation.
-func OxidizedOxidation() OxidationType {
+// OxidisedOxidation is the oxidised variant of oxidation.
+func OxidisedOxidation() OxidationType {
 	return OxidationType{3}
 }
 
@@ -53,7 +53,7 @@ func (s oxidation) Decrease() (OxidationType, bool) {
 	if s > 0 {
 		return OxidationType{s - 1}, true
 	}
-	return NormalOxidation(), false
+	return UnoxidisedOxidation(), false
 }
 
 // Increase attempts to increase the oxidation level by one. It returns the new oxidation level and if the
@@ -62,7 +62,7 @@ func (s oxidation) Increase() (OxidationType, bool) {
 	if s < 3 {
 		return OxidationType{s + 1}, true
 	}
-	return OxidizedOxidation(), false
+	return OxidisedOxidation(), false
 }
 
 // String ...
@@ -82,5 +82,5 @@ func (s oxidation) String() string {
 
 // OxidationTypes ...
 func OxidationTypes() []OxidationType {
-	return []OxidationType{NormalOxidation(), ExposedOxidation(), WeatheredOxidation(), OxidizedOxidation()}
+	return []OxidationType{UnoxidisedOxidation(), ExposedOxidation(), WeatheredOxidation(), OxidisedOxidation()}
 }
