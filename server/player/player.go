@@ -802,20 +802,28 @@ func (p *Player) kill(src world.DamageSource) {
 
 	p.deathPos, p.deathDimension = &pos, p.tx.World().Dimension()
 
-	// Wait a little before removing the entity. The client displays a death animation while the player is dying.
+	// Wait a little before removing the entity. The client displays a death
+	// animation while the player is dying.
 	time.AfterFunc(time.Millisecond*1100, func() {
-		if p.session() == session.Nop {
-			_ = p.Close()
-			return
-		}
-		if p.Dead() {
-			p.SetInvisible()
-			// We have an actual client connected to this player: We change its position server side so that in
-			// the future, the client won't respawn on the death location when disconnecting. The client should
-			// not see the movement itself yet, though.
-			p.data.Pos = p.tx.World().Spawn().Vec3()
-		}
+		p.H().ExecWorld(finishDying)
 	})
+}
+
+// finishDying completes the death of a player, removing it from the world.
+func finishDying(_ *world.Tx, e world.Entity) {
+	p := e.(*Player)
+	if p.session() == session.Nop {
+		_ = p.Close()
+		return
+	}
+	if p.Dead() {
+		p.SetInvisible()
+		// We have an actual client connected to this player: We change its
+		// position server side so that in the future, the client won't respawn
+		// on the death location when disconnecting. The client should not see
+		// the movement itself yet, though.
+		p.data.Pos = p.tx.World().Spawn().Vec3()
+	}
 }
 
 // dropItems drops all items and experience of the Player on the ground in random directions.
