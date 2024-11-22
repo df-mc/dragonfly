@@ -32,7 +32,9 @@ type Controllable interface {
 	SetHeldItems(right, left item.Stack)
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+
 	Speed() float64
+	FlightSpeed() float64
 
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
@@ -69,6 +71,9 @@ type Controllable interface {
 	StartSwimming()
 	Swimming() bool
 	StopSwimming()
+	StartCrawling()
+	Crawling() bool
+	StopCrawling()
 	StartFlying()
 	Flying() bool
 	StopFlying()

@@ -84,6 +84,9 @@ func (s *Session) SendRespawn(pos mgl64.Vec3, c Controllable) {
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	potionRecipes := make([]protocol.PotionRecipe, 0)
+	potionContainerChange := make([]protocol.PotionContainerChangeRecipe, 0)
+
 	for index, i := range recipe.Recipes() {
 		networkID := uint32(index) + 1
 		s.recipes[networkID] = i
@@ -136,9 +139,33 @@ func (s *Session) sendRecipes() {
 				Output:    stackFromItem(i.Output()[0]),
 				Block:     i.Block(),
 			})
+		case recipe.Potion:
+			inputRuntimeID, inputMeta, _ := world.ItemRuntimeID(i.Input()[0].(item.Stack).Item())
+			reagentRuntimeID, reagentMeta, _ := world.ItemRuntimeID(i.Input()[1].(item.Stack).Item())
+			outputRuntimeID, outputMeta, _ := world.ItemRuntimeID(i.Output()[0].Item())
+
+			potionRecipes = append(potionRecipes, protocol.PotionRecipe{
+				InputPotionID:        inputRuntimeID,
+				InputPotionMetadata:  int32(inputMeta),
+				ReagentItemID:        reagentRuntimeID,
+				ReagentItemMetadata:  int32(reagentMeta),
+				OutputPotionID:       outputRuntimeID,
+				OutputPotionMetadata: int32(outputMeta),
+			})
+
+		case recipe.PotionContainerChange:
+			inputRuntimeID, _, _ := world.ItemRuntimeID(i.Input()[0].(item.Stack).Item())
+			reagentRuntimeID, _, _ := world.ItemRuntimeID(i.Input()[1].(item.Stack).Item())
+			outputRuntimeID, _, _ := world.ItemRuntimeID(i.Output()[0].Item())
+
+			potionContainerChange = append(potionContainerChange, protocol.PotionContainerChangeRecipe{
+				InputItemID:   inputRuntimeID,
+				ReagentItemID: reagentRuntimeID,
+				OutputItemID:  outputRuntimeID,
+			})
 		}
 	}
-	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
+	s.writePacket(&packet.CraftingData{Recipes: recipes, PotionRecipes: potionRecipes, PotionContainerChangeRecipes: potionContainerChange, ClearRecipes: true})
 }
 
 // sendArmourTrimData sends the armour trim data.
@@ -236,6 +263,10 @@ func (s *Session) invByID(id int32, tx *world.Tx) (*inventory.Inventory, bool) {
 		case protocol.ContainerBeaconPayment:
 			if _, beacon := tx.Block(*s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
+			}
+		case protocol.ContainerBrewingStandInput, protocol.ContainerBrewingStandResult, protocol.ContainerBrewingStandFuel:
+			if _, brewingStand := tx.Block(*s.openedPos.Load()).(block.BrewingStand); brewingStand {
+				return s.openedWindow.Load(), true
 			}
 		case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
 			if _, anvil := tx.Block(*s.openedPos.Load()).(block.Anvil); anvil {
@@ -380,11 +411,11 @@ func (s *Session) SendGameMode(c Controllable) {
 		return
 	}
 	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(c.GameMode())})
-	s.sendAbilities(c)
+	s.SendAbilities(c)
 }
 
-// sendAbilities sends the abilities of the Controllable entity of the session to the client.
-func (s *Session) sendAbilities(c Controllable) {
+// SendAbilities sends the abilities of the Controllable entity of the session to the client.
+func (s *Session) SendAbilities(c Controllable) {
 	mode, abilities := c.GameMode(), uint32(0)
 	if mode.AllowsFlying() {
 		abilities |= protocol.AbilityMayFly
@@ -415,13 +446,13 @@ func (s *Session) sendAbilities(c Controllable) {
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: packet.CommandPermissionLevelNormal,
-		Layers: []protocol.AbilityLayer{ // TODO: Support customization of fly and walk speeds.
+		Layers: []protocol.AbilityLayer{
 			{
 				Type:      protocol.AbilityLayerTypeBase,
 				Abilities: protocol.AbilityCount - 1,
 				Values:    abilities,
-				FlySpeed:  protocol.AbilityBaseFlySpeed,
-				WalkSpeed: protocol.AbilityBaseWalkSpeed,
+				FlySpeed:  float32(c.FlightSpeed()),
+				WalkSpeed: float32(c.Speed()),
 			},
 		},
 	}})

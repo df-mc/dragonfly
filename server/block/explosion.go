@@ -92,12 +92,12 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 
 	for e := range tx.EntitiesWithin(box.Grow(2)) {
 		pos := e.Position()
-		dist := explosionPos.Sub(pos).Len()
-		if dist >= d || !e.H().Type().BBox(e).Translate(pos).IntersectsWith(box) {
+		dist := pos.Sub(explosionPos).Len()
+		if dist > d || dist == 0 {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - dist/d) * exposure(tx, pos, e)
+			impact := (1 - dist/d) * exposure(tx, explosionPos, e)
 			explodable.Explode(explosionPos, impact, c)
 		}
 	}

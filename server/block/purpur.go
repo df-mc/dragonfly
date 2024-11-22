@@ -57,7 +57,7 @@ func (p PurpurPillar) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (p PurpurPillar) EncodeItem() (name string, meta int16) {
-	return "minecraft:purpur_block", 1
+	return "minecraft:purpur_pillar", 0
 }
 
 // EncodeBlock ...

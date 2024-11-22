@@ -154,7 +154,7 @@ func (i *ItemBehaviour) merge(e *Ent, other *Ent, tx *world.Tx) bool {
 // collect makes a collector collect the item (or at least part of it).
 func (i *ItemBehaviour) collect(e *Ent, collector Collector, tx *world.Tx) {
 	pos := e.Position()
-	n := collector.Collect(i.i)
+	n, _ := collector.Collect(i.i)
 	if n == 0 {
 		return
 	}
@@ -179,6 +179,8 @@ type Collector interface {
 	world.Entity
 	// Collect collects the stack passed. It is called if the Collector is standing near an item entity that
 	// may be picked up.
-	// The count of items collected from the stack n is returned.
-	Collect(stack item.Stack) (n int)
+	// The count of items collected from the stack n is returned, along with a
+	// bool that indicates if the Collector was in a state where it could
+	// collect any items in the first place.
+	Collect(stack item.Stack) (n int, ok bool)
 }

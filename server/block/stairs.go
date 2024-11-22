@@ -47,36 +47,8 @@ func (s Stairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s Stairs) BreakInfo() BreakInfo {
-	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
-
-	switch block := s.Block.(type) {
-	// TODO: Copper
-	// TODO: Blackstone
-	// TODO: Deepslate
-	case Planks:
-		harvestable = alwaysHarvestable
-		effective = axeEffective
-		blastResistance = 15.0
-	case Prismarine:
-		hardness = 1.5
-	case Purpur:
-		hardness = 1.5
-	case Quartz:
-		hardness = 0.8
-		blastResistance = 4
-	case Sandstone:
-		if block.Type != SmoothSandstone() {
-			hardness = 0.8
-			blastResistance = 4
-		}
-	case Stone:
-		hardness = 1.5
-	case StoneBricks:
-		if block.Type == NormalStoneBricks() {
-			hardness = 1.5
-		}
-	}
-	return newBreakInfo(hardness, harvestable, effective, oneOf(s)).withBlastResistance(blastResistance)
+	breakInfo := s.Block.(Breakable).BreakInfo()
+	return newBreakInfo(breakInfo.Hardness, breakInfo.Harvestable, breakInfo.Effective, oneOf(s)).withBlastResistance(breakInfo.BlastResistance)
 }
 
 // Instrument ...

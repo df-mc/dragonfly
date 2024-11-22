@@ -123,6 +123,12 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags uint64, s *Session, c Con
 	if flags&packet.InputFlagStartJumping != 0 {
 		c.Jump()
 	}
+	if flags&packet.InputFlagStartCrawling != 0 {
+		s.c.StartCrawling()
+	}
+	if flags&packet.InputFlagStopCrawling != 0 {
+		s.c.StopCrawling()
+	}
 	if flags&packet.InputFlagMissedSwing != 0 {
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
