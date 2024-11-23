@@ -139,7 +139,7 @@ func (srv *Server) Accept() iter.Seq[*player.Player] {
 
 			ret := false
 			<-inc.w.Exec(func(tx *world.Tx) {
-				p := tx.AddEntity(inc.p.handle).(*player.Player)
+				p := tx.AddEntity(inc.p.handle).(*player.Player) // TODO: This requires that the session already has `s.ent` set. This only happens in inc.s.Spawn though...
 				inc.conf.Finalise(p)
 				inc.s.Spawn(p, tx)
 				ret = !yield(p)
@@ -359,14 +359,8 @@ func (srv *Server) startListening() {
 	srv.makeBlockEntries()
 	srv.makeItemComponents()
 
-	srv.wg.Add(len(srv.conf.Listeners))
-	for _, lf := range srv.conf.Listeners {
-		l, err := lf(srv.conf)
-		if err != nil {
-			srv.conf.Log.Error("create listener: " + err.Error())
-			return
-		}
-		srv.listeners = append(srv.listeners, l)
+	srv.wg.Add(len(srv.listeners))
+	for _, l := range srv.listeners {
 		go srv.listen(l)
 	}
 }

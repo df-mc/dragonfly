@@ -133,7 +133,7 @@ func (conf Config) New() *Server {
 			conf.Resources = append(conf.Resources, pack)
 		}
 	}
-	// Copy resources so that the slice can't be edited afterwards.
+	// Copy resources so that the slice can't be edited afterward.
 	conf.Resources = slices.Clone(conf.Resources)
 
 	srv := &Server{
@@ -142,6 +142,14 @@ func (conf Config) New() *Server {
 		p:        make(map[uuid.UUID]*onlinePlayer),
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
+	for _, lf := range conf.Listeners {
+		l, err := lf(conf)
+		if err != nil {
+			conf.Log.Error("create listener: " + err.Error())
+		}
+		srv.listeners = append(srv.listeners, l)
+	}
+
 	world_finaliseBlockRegistry()
 	recipe_registerVanilla()
 
