@@ -1319,8 +1319,7 @@ func (p *Player) UseItem() {
 		if !p.canRelease() {
 			return
 		}
-		p.usingSince = time.Now()
-		p.usingItem = true
+		p.usingSince, p.usingItem = time.Now(), true
 		p.updateState()
 	}
 
@@ -1352,26 +1351,9 @@ func (p *Player) UseItem() {
 			p.updateState()
 			return
 		}
-		// The player is currently using the item held. This is a signal the item was consumed, so we
-		// consume it and start using it again.
+		// The player is currently using the item held. This is a signal the
+		// item was consumed, so we release it.
 		p.ReleaseItem()
-		if duration := p.useDuration(); duration < usable.ConsumeDuration() {
-			// The required duration for consuming this item was not met, so we don't consume it.
-			return
-		}
-
-		ctx = event.C(p)
-		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
-			// Consuming was cancelled, but the client will continue consuming the next item.
-			p.usingSince = time.Now()
-			return
-		}
-		p.SetHeldItems(p.subtractItem(i, 1), left)
-
-		useCtx := p.useContext()
-		useCtx.NewItem = usable.Consume(p.tx, p)
-		p.addNewItem(useCtx)
-		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 }
 
@@ -1385,17 +1367,36 @@ func (p *Player) ReleaseItem() {
 		return
 	}
 	p.usingItem = false
-	ctx := p.useContext()
-	i, _ := p.HeldItems()
-	i.Item().(item.Releasable).Release(p, p.tx, ctx, p.useDuration())
 
-	p.handleUseContext(ctx)
+	useCtx := p.useContext()
+	i, _ := p.HeldItems()
+	switch it := i.Item().(type) {
+	case item.Releasable:
+		it.Release(p, p.tx, useCtx, p.useDuration())
+	case item.Consumable:
+		if duration := p.useDuration(); duration < it.ConsumeDuration() {
+			// The required duration for consuming this item was not met, so we don't consume it.
+			return
+		}
+		ctx := event.C(p)
+		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
+			// Consuming was cancelled, but the client will continue consuming the next item.
+			p.usingSince = time.Now()
+			return
+		}
+		useCtx.CountSub, useCtx.NewItem = 1, it.Consume(p.tx, p)
+		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+	}
+	p.handleUseContext(useCtx)
 	p.updateState()
 }
 
 // canRelease returns whether the player can release the item currently held in the main hand.
 func (p *Player) canRelease() bool {
 	held, _ := p.HeldItems()
+	if _, consumable := held.Item().(item.Consumable); consumable {
+		return true
+	}
 	releasable, ok := held.Item().(item.Releasable)
 	if !ok {
 		return false
