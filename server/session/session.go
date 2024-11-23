@@ -182,15 +182,20 @@ func (conf Config) New(conn Conn) *Session {
 	return s
 }
 
-// Spawn makes the Controllable passed spawn in the world.World.
-// The function passed will be called when the session stops running.
-func (s *Session) Spawn(c Controllable, tx *world.Tx) {
-	handle := c.H()
-
+// SetHandle sets the world.EntityHandle of the Session and attaches a skin to
+// other players on join.
+func (s *Session) SetHandle(handle *world.EntityHandle, skin skin.Skin) {
 	s.ent = handle
 	s.entityRuntimeIDs[handle] = selfEntityRuntimeID
 	s.entities[selfEntityRuntimeID] = handle
 
+	s.joinSkin = skin
+	sessions.Add(s)
+}
+
+// Spawn makes the Controllable passed spawn in the world.World.
+// The function passed will be called when the session stops running.
+func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	pos := c.Position()
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
 	s.chunkLoader.Move(tx, pos)
@@ -200,9 +205,6 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	})
 
 	s.sendAvailableEntities(tx.World())
-
-	s.joinSkin = c.Skin()
-	sessions.Add(s)
 
 	c.SetGameMode(c.GameMode())
 	for _, e := range c.Effects() {

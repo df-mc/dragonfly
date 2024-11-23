@@ -57,6 +57,7 @@ func (conf Config) Apply(data *world.EntityData) {
 		airSupplyTicks:    300,
 		maxAirSupplyTicks: 300,
 		breathing:         true,
+		nameTag:           conf.Name,
 	}
 }
 

@@ -139,7 +139,7 @@ func (srv *Server) Accept() iter.Seq[*player.Player] {
 
 			ret := false
 			<-inc.w.Exec(func(tx *world.Tx) {
-				p := tx.AddEntity(inc.p.handle).(*player.Player) // TODO: This requires that the session already has `s.ent` set. This only happens in inc.s.Spawn though...
+				p := tx.AddEntity(inc.p.handle).(*player.Player)
 				inc.conf.Finalise(p)
 				inc.s.Spawn(p, tx)
 				ret = !yield(p)
@@ -547,6 +547,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		GameMode: gm,
 	}
 	handle := world.EntitySpawnOpts{Position: pos, ID: id}.New(player.Type, conf)
+	s.SetHandle(handle, conf.Skin)
 	return incoming{s: s, w: w, conf: conf, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
 }
 
