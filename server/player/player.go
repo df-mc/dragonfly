@@ -203,7 +203,6 @@ func (p *Player) Locale() language.Tag {
 // handlers of the Handler passed.
 // Handle sets the player's Handler to NopHandler if nil is passed.
 func (p *Player) Handle(h Handler) {
-	// TODO: Decide where handlers go!
 	if h == nil {
 		h = NopHandler{}
 	}
@@ -2954,7 +2953,6 @@ func (p *Player) useContext() *item.UseContext {
 
 // Handler returns the Handler of the player.
 func (p *Player) Handler() Handler {
-	// TODO: Figure out handlers.
 	return p.h
 }
 

@@ -22,7 +22,7 @@ func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx
 	case byte(s.openedWindowID.Load()):
 		s.closeCurrentContainer(tx)
 	case 0xff:
-		// TODO: H closing the crafting grid.
+		// TODO: Handle closing the crafting grid.
 	default:
 		return fmt.Errorf("unexpected close request for unopened container %v", pk.WindowID)
 	}
