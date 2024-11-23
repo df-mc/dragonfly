@@ -126,11 +126,23 @@ func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) {
 	for e.w == nil {
 		e.cond.Wait()
 	}
+	if e.w == closeWorld {
+		// EntityHandle was closed.
+		return
+	}
 	<-e.w.Exec(func(tx *Tx) {
 		e.lockedTx.Store(tx)
 		f(tx, e.mustEntity(tx))
 		e.lockedTx.Store(nil)
 	})
+}
+
+var closeWorld = &World{}
+
+// Close closes the EntityHandle. Any subsequent call to ExecWorld will return
+// immediately without the transaction function being called.
+func (e *EntityHandle) Close(tx *Tx) {
+	e.setAndUnlockWorld(closeWorld, tx)
 }
 
 func (e *EntityHandle) unsetAndLockWorld(tx *Tx) {

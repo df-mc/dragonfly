@@ -261,6 +261,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	// Note: RemoveEntity must always happen at the VERY END.
 	tx.RemoveEntity(c)
+	s.ent.Close(tx)
 }
 
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed

@@ -2810,6 +2810,7 @@ func (p *Player) quit(msg string) {
 	// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
 	// session will remove the player once ready.
 	p.tx.RemoveEntity(p)
+	p.handle.Close(p.tx)
 }
 
 // load reads the player data from the provider. It uses the default values if the provider
