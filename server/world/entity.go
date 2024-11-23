@@ -119,7 +119,7 @@ func (e *EntityHandle) UUID() uuid.UUID {
 	return e.id
 }
 
-func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) {
+func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) bool {
 	e.cond.L.Lock()
 	defer e.cond.L.Unlock()
 
@@ -128,13 +128,14 @@ func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) {
 	}
 	if e.w == closeWorld {
 		// EntityHandle was closed.
-		return
+		return false
 	}
 	<-e.w.Exec(func(tx *Tx) {
 		e.lockedTx.Store(tx)
 		f(tx, e.mustEntity(tx))
 		e.lockedTx.Store(nil)
 	})
+	return true
 }
 
 var closeWorld = &World{}
