@@ -930,7 +930,7 @@ func (p *Player) StartSprinting() {
 	}
 	p.StopSneaking()
 	p.sprinting = true
-	p.SetSpeed(p.Speed() * 1.3)
+	p.SetSpeed(p.speed * 1.3)
 	p.updateState()
 }
 
@@ -948,8 +948,8 @@ func (p *Player) StopSprinting() {
 	if p.Handler().HandleToggleSprint(ctx, false); ctx.Cancelled() {
 		return
 	}
-	p.sprinting = true
-	p.SetSpeed(p.Speed() / 1.3)
+	p.sprinting = false
+	p.SetSpeed(p.speed / 1.3)
 	p.updateState()
 }
 
