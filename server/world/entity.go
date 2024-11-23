@@ -15,6 +15,7 @@ import (
 // EntityType is the type of Entity. It specifies the name, encoded Entity
 // ID and bounding box of an Entity.
 type EntityType interface {
+	// Open returns an Entity implementation in the context of a transaction.
 	Open(tx *Tx, handle *EntityHandle, data *EntityData) Entity
 
 	// EncodeEntity converts the Entity to its encoded representation: It
@@ -31,10 +32,15 @@ type EntityType interface {
 	EncodeNBT(data *EntityData) map[string]any
 }
 
+// EntityConfig is used to configure the initial settings of an Entity upon
+// creation using NewEntity.
 type EntityConfig interface {
 	Apply(data *EntityData)
 }
 
+// EntityHandle is a persistent identifier of an entity. It holds data of the
+// entity that can be transformed into an Entity implementation in the context
+// of a transaction.
 type EntityHandle struct {
 	id uuid.UUID
 	t  EntityType
@@ -48,18 +54,25 @@ type EntityHandle struct {
 	// TODO Handler? Handle world change here?
 }
 
+// EntitySpawnOpts holds spawning related options for entities created.
 type EntitySpawnOpts struct {
+	// Position is the position that an Entity should be spawned at.
 	Position mgl64.Vec3
-
+	// Rotation is the rotation that an Entity should be spawned with.
 	Rotation cube.Rotation
-
+	// Velocity specifies the initial velocity of the Entity.
 	Velocity mgl64.Vec3
-
+	// ID specifies the UUID of an entity. This field should usually be left
+	// empty, as a valid UUID is generated when not set. Non-player entities
+	// only have the last 8 bytes of the UUID set.
 	ID uuid.UUID
-
+	// NameTag is the name tag that the entity is spawned with.
 	NameTag string
 }
 
+// New creates an EntityHandle using an EntityType and EntityConfig passed. The
+// EntityHandle may be added to a world by calling Tx.AddEntity().
+// The spawn conditions depend on the options set in opts.
 func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 	if opts.ID == uuid.Nil {
 		// Generate a new UUID with only the upper 8 bytes filled. This UUID
@@ -74,11 +87,16 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 	return handle
 }
 
+// NewEntity creates an EntityHandle using an EntityType and EntityConfig
+// passed. The EntityHandle may be added to a world by calling Tx.AddEntity().
+// NewEntity uses the zero value for EntitySpawnOpts.
 func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 	var opts EntitySpawnOpts
 	return opts.New(t, conf)
 }
 
+// entityFromData reads an entity from the decoded NBT data passed and returns
+// an EntityHandle.
 func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
 	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{})}
 	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
@@ -87,20 +105,14 @@ func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
 	return handle
 }
 
-type EntityData struct {
-	Pos, Vel     mgl64.Vec3
-	Rot          cube.Rotation
-	Name         string
-	FireDuration time.Duration
-	Age          time.Duration
-
-	Data any
-}
-
+// Type returns the EntityType of the EntityHandle.
 func (e *EntityHandle) Type() EntityType {
 	return e.t
 }
 
+// Entity attempts to convert an EntityHandle to an Entity using the Tx passed.
+// A non-nil Entity is returned only if the entity's world matches the world of
+// the Tx. If they do not match, false is returned.
 func (e *EntityHandle) Entity(tx *Tx) (Entity, bool) {
 	if e == nil || e.w != tx.World() {
 		return nil, false
@@ -108,6 +120,7 @@ func (e *EntityHandle) Entity(tx *Tx) (Entity, bool) {
 	return e.t.Open(tx, e, &e.data), true
 }
 
+// mustEntity calls Entity but panics if the worlds do not match.
 func (e *EntityHandle) mustEntity(tx *Tx) Entity {
 	if ent, ok := e.Entity(tx); ok {
 		return ent
@@ -115,10 +128,17 @@ func (e *EntityHandle) mustEntity(tx *Tx) Entity {
 	panic("can't load entity with Tx of different world")
 }
 
+// UUID returns the identifier of the EntityHandle.
 func (e *EntityHandle) UUID() uuid.UUID {
 	return e.id
 }
 
+// ExecWorld obtains the EntityHandle's World in a thread-safe way and opens a
+// transaction in it when it does. If the EntityHandle has not been added to a
+// world, ExecWorld will block until the EntityHandle is added to a World and
+// run the transaction function once it is. If the Entity is closed before
+// ExecWorld is called, ExecWorld will return false immediately without running
+// the transaction function.
 func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) bool {
 	e.cond.L.Lock()
 	defer e.cond.L.Unlock()
@@ -170,6 +190,8 @@ func (e *EntityHandle) setAndUnlockWorld(w *World, tx *Tx) {
 	e.cond.Broadcast()
 }
 
+// decodeNBT decodes the position, velocity, rotation, age, on-fire duration and
+// name tag of an entity.
 func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Pos = readVec3(m, "Pos")
 	e.data.Vel = readVec3(m, "Motion")
@@ -179,6 +201,8 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Name, _ = m["NameTag"].(string)
 }
 
+// encodeNBT encodes the position, velocity, rotation, age, on-fire duration and
+// name tag of an entity.
 func (e *EntityHandle) encodeNBT() map[string]any {
 	return map[string]any{
 		"Pos":     []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
@@ -189,6 +213,17 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 		"Age":     int16(e.data.Age / (time.Second * 20)),
 		"NameTag": e.data.Name,
 	}
+}
+
+// EntityData holds data shared by every entity. It is kept in an EntityHandle.
+type EntityData struct {
+	Pos, Vel     mgl64.Vec3
+	Rot          cube.Rotation
+	Name         string
+	FireDuration time.Duration
+	Age          time.Duration
+
+	Data any
 }
 
 // Entity represents an Entity in the world, typically an object that may be moved around and can be

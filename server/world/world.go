@@ -109,9 +109,12 @@ func (w *World) Range() cube.Range {
 	return w.ra
 }
 
+// ExecFunc is a function that performs a synchronised transaction on a World.
+type ExecFunc func(tx *Tx)
+
 // Exec performs a synchronised transaction f on a World. Exec returns a channel
 // that is closed once the transaction is complete.
-func (w *World) Exec(f func(tx *Tx)) <-chan struct{} {
+func (w *World) Exec(f ExecFunc) <-chan struct{} {
 	c := make(chan struct{})
 	w.queue <- transaction{c: c, f: f}
 	return c
