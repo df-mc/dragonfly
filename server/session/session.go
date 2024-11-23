@@ -208,6 +208,7 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	for _, e := range c.Effects() {
 		s.SendEffect(e)
 	}
+	s.ViewEntityState(c)
 
 	s.sendInv(s.inv, protocol.WindowIDInventory)
 	s.sendInv(s.ui, protocol.WindowIDUI)

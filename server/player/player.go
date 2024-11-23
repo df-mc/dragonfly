@@ -2837,7 +2837,7 @@ func (p *Player) load(data Data) {
 
 	p.gameMode = data.GameMode
 	for _, potion := range data.Effects {
-		p.AddEffect(potion)
+		p.effects.Add(potion, p)
 	}
 	p.fireTicks = data.FireTicks
 	p.fallDistance = data.FallDistance
