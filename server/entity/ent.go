@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,7 @@ type Ent struct {
 	tx     *world.Tx
 	handle *world.EntityHandle
 	data   *world.EntityData
+	once   sync.Once
 }
 
 func (e *Ent) H() *world.EntityHandle {
@@ -126,7 +128,9 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 
 // Close closes the Ent and removes the associated entity from the world.
 func (e *Ent) Close() error {
-	e.tx.RemoveEntity(e)
-	e.handle.Close(e.tx)
+	e.once.Do(func() {
+		e.tx.RemoveEntity(e)
+		e.handle.Close(e.tx)
+	})
 	return nil
 }
