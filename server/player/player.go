@@ -2238,7 +2238,7 @@ func (p *Player) Latency() time.Duration {
 }
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
-func (p *Player) Tick(_ *world.World, current int64) {
+func (p *Player) Tick(_ *world.Tx, current int64) {
 	if p.Dead() {
 		return
 	}
