@@ -173,7 +173,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
 		if t, ok := tx.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
-			t.Ignite(bpos, tx)
+			t.Ignite(bpos, tx, nil)
 		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m, tx)
@@ -325,7 +325,7 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 			for other := range seq {
 				g, ok := other.(interface{ GameMode() world.GameMode })
 				_, living := other.(Living)
-				if (ok && !g.GameMode().HasCollision()) || e == other || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
+				if (ok && !g.GameMode().HasCollision()) || e.H() == other.H() || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
 					continue
 				}
 				if !yield(other) {
