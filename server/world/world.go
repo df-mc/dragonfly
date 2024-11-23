@@ -175,9 +175,9 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	return blockByRuntimeIDOrAir(rid)
 }
 
-// biome reads the biome at the position passed. If a chunk is not yet loaded
+// biome reads the Biome at the position passed. If a chunk is not yet loaded
 // at that position, the chunk is loaded, or generated if it could not be found
-// in the world save, and the biome returned.
+// in the world save, and the Biome returned.
 func (w *World) biome(pos cube.Pos) Biome {
 	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
@@ -192,19 +192,19 @@ func (w *World) biome(pos cube.Pos) Biome {
 }
 
 // highestLightBlocker gets the Y value of the highest fully light blocking
-// block at the x and z values passed in the world.
+// block at the x and z values passed in the World.
 func (w *World) highestLightBlocker(x, z int) int {
 	return int(w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)}).HighestLightBlocker(uint8(x), uint8(z)))
 }
 
-// highestBlock looks up the highest non-air block in the world at a specific x
-// and z in the world. The y value of the highest block is returned, or 0 if no
-// blocks were present in the column.
+// highestBlock looks up the highest non-air block in the World at a specific x
+// and z The y value of the highest block is returned, or 0 if no blocks were
+// present in the column.
 func (w *World) highestBlock(x, z int) int {
 	return int(w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)}).HighestBlock(uint8(x), uint8(z)))
 }
 
-// highestObstructingBlock returns the highest block in the world at a given x
+// highestObstructingBlock returns the highest block in the World at a given x
 // and z that has at least a solid top or bottom face.
 func (w *World) highestObstructingBlock(x, z int) int {
 	yHigh := w.highestBlock(x, z)
@@ -235,16 +235,16 @@ type SetOpts struct {
 
 // setBlock writes a block to the position passed. If a chunk is not yet loaded
 // at that position, the chunk is first loaded or generated if it could not be
-// found in the world save. SetBlock panics if the block passed has not yet
+// found in the world save. setBlock panics if the block passed has not yet
 // been registered using RegisterBlock(). Nil may be passed as the block to set
 // the block to air.
 //
-// A SetOpts struct may be passed to additionally modify behaviour of SetBlock,
+// A SetOpts struct may be passed to additionally modify behaviour of setBlock,
 // specifically to improve performance under specific circumstances. Nil should
 // be passed where performance is not essential, to make sure the world is
 // updated adequately.
 //
-// SetBlock should be avoided in situations where performance is critical when
+// setBlock should be avoided in situations where performance is critical when
 // needing to set a lot of blocks to the world. BuildStructure may be used
 // instead.
 func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
@@ -310,7 +310,7 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	}
 }
 
-// setBiome sets the biome at the position passed. If a chunk is not yet loaded
+// setBiome sets the Biome at the position passed. If a chunk is not yet loaded
 // at that position, the chunk is first loaded or generated if it could not be
 // found in the world save.
 func (w *World) setBiome(pos cube.Pos, b Biome) {
@@ -325,11 +325,11 @@ func (w *World) setBiome(pos cube.Pos, b Biome) {
 
 // buildStructure builds a Structure passed at a specific position in the
 // world. Unlike setBlock, it takes a Structure implementation, which provides
-// blocks to be placed at a specific location. BuildStructure is specifically
-// tinkered to be able to process a large batch of chunks simultaneously and
+// blocks to be placed at a specific location. buildStructure is specifically
+// optimised to be able to process a large batch of chunks simultaneously and
 // will do so within much less time than separate setBlock calls would. The
 // method operates on a per-chunk basis, setting all blocks within a single
-// chunk part of the structure before moving on to the next chunk.
+// chunk part of the Structure before moving on to the next chunk.
 func (w *World) buildStructure(pos cube.Pos, s Structure) {
 	dim := s.Dimensions()
 	width, height, length := dim[0], dim[1], dim[2]
@@ -409,8 +409,8 @@ func (w *World) buildStructure(pos cube.Pos, s Structure) {
 	}
 }
 
-// liquid attempts to return any Liquid block at the position passed. This
-// liquid may be in the foreground or in any other layer. If found, the Liquid
+// liquid attempts to return a Liquid block at the position passed. This
+// Liquid may be in the foreground or in any other layer. If found, the Liquid
 // is returned. If not, the bool returned is false.
 func (w *World) liquid(pos cube.Pos) (Liquid, bool) {
 	if pos.OutOfBounds(w.Range()) {
@@ -440,11 +440,11 @@ func (w *World) liquid(pos cube.Pos) (Liquid, bool) {
 	return liq, ok
 }
 
-// setLiquid sets a Liquid at a specific position in the world. Unlike
+// setLiquid sets a Liquid at a specific position in the World. Unlike
 // setBlock, setLiquid will not necessarily overwrite any existing blocks. It
 // will instead be in the same position as a block currently there, unless
-// there already is a liquid at that position, in which case it will be
-// overwritten. If nil is passed for the liquid, any liquid currently present
+// there already is a Liquid at that position, in which case it will be
+// overwritten. If nil is passed for the Liquid, any Liquid currently present
 // will be removed.
 func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 	if pos.OutOfBounds(w.Range()) {
@@ -556,9 +556,9 @@ func (w *World) light(pos cube.Pos) uint8 {
 	return w.chunk(chunkPosFromBlockPos(pos)).Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 }
 
-// SkyLight returns the skylight level at the position passed. This light level
+// skyLight returns the skylight level at the position passed. This light level
 // is not influenced by blocks that emit light, such as torches. The light
-// value, similarly to Light, is a value in the range 0-15, where 0 means no
+// value, similarly to light, is a value in the range 0-15, where 0 means no
 // light is present.
 func (w *World) skyLight(pos cube.Pos) uint8 {
 	if pos[1] < w.ra[0] {
@@ -634,7 +634,7 @@ func (w *World) temperature(pos cube.Pos) float64 {
 	return w.biome(pos).Temperature() - float64(diff)*tempDrop
 }
 
-// addParticle spawns a particle at a given position in the world. Viewers that
+// addParticle spawns a Particle at a given position in the World. Viewers that
 // are viewing the chunk will be shown the particle.
 func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
 	p.Spawn(w, pos)
@@ -643,7 +643,7 @@ func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
 	}
 }
 
-// playSound plays a sound at a specific position in the world. Viewers of that
+// playSound plays a sound at a specific position in the World. Viewers of that
 // position will be able to hear the sound if they are close enough.
 func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 	ctx := event.C(tx)
@@ -656,7 +656,7 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 }
 
 // addEntity adds an EntityHandle to a World. The Entity will be visible to all
-// viewers of the world that have the chunk at the EntityHandle's position. If
+// viewers of the World that have the chunk at the EntityHandle's position. If
 // the chunk that the EntityHandle is in is not yet loaded, it will first be
 // loaded. addEntity panics if the EntityHandle is already in a world.
 // addEntity returns the Entity created by the EntityHandle.
@@ -677,7 +677,7 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 	return e
 }
 
-// removeEntity removes an Entity from the world that is currently present in
+// removeEntity removes an Entity from the World that is currently present in
 // it. Any viewers of the Entity will no longer be able to see it.
 // removeEntity returns the EntityHandle of the Entity. After removing an Entity
 // from the World, the Entity is no longer usable.
@@ -930,7 +930,7 @@ func (w *World) Handle(h Handler) {
 	w.handler.Store(&h)
 }
 
-// Viewers returns all viewers viewing the position passed.
+// viewersOf returns all viewers viewing the position passed.
 func (w *World) viewersOf(pos mgl64.Vec3) []Viewer {
 	c, ok := w.chunks[chunkPosFromVec3(pos)]
 	if !ok {

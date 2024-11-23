@@ -130,7 +130,7 @@ func (b Beacon) recalculateLevel(pos cube.Pos, tx *world.Tx) int {
 // obstructed determines whether the beacon is currently obstructed.
 func (b Beacon) obstructed(pos cube.Pos, tx *world.Tx) bool {
 	// Fast obstructed light calculation.
-	if tx.Skylight(pos.Side(cube.FaceUp)) == 15 {
+	if tx.SkyLight(pos.Side(cube.FaceUp)) == 15 {
 		return false
 	}
 	// Slow obstructed light calculation, if the fast way out didn't suffice.
