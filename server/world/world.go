@@ -649,7 +649,7 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 		// We show the entity to all viewers currently in the chunk that the entity is spawned in.
 		showEntity(e, v)
 	}
-	w.Handler().HandleEntitySpawn(e)
+	w.Handler().HandleEntitySpawn(tx, e)
 	return e
 }
 
@@ -666,7 +666,7 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 		// The entity currently isn't in this world.
 		return nil
 	}
-	w.Handler().HandleEntityDespawn(e)
+	w.Handler().HandleEntityDespawn(tx, e)
 
 	c := w.chunk(pos)
 	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
@@ -945,12 +945,14 @@ func (w *World) Close() error {
 
 // close stops the World from ticking, saves all chunks to the Provider and updates the world's settings.
 func (w *World) close() {
-	// Let user code run anything that needs to be finished before the World is closed.
-	w.Handler().HandleClose()
-	w.Handle(NopHandler{})
+	w.Exec(func(tx *Tx) {
+		// Let user code run anything that needs to be finished before the World is closed.
+		w.Handler().HandleClose(tx)
+		w.Handle(NopHandler{})
 
-	w.Save()
-	maps.Clear(w.chunks)
+		w.save(tx)
+		maps.Clear(w.chunks)
+	})
 
 	close(w.closing)
 	w.running.Wait()
@@ -1135,7 +1137,7 @@ func (w *World) spreadLight(pos ChunkPos) {
 func (w *World) saveChunk(tx *Tx, pos ChunkPos, c *Column, closeEntities bool) {
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
-		if err := w.provider().StoreColumn(pos, w.conf.Dim, columnTo(c, tx)); err != nil {
+		if err := w.provider().StoreColumn(pos, w.conf.Dim, columnTo(c)); err != nil {
 			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 		}
 	}
@@ -1189,7 +1191,7 @@ func newColumn(c *chunk.Chunk) *Column {
 	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}}
 }
 
-func columnTo(col *Column, tx *Tx) *chunk.Column {
+func columnTo(col *Column) *chunk.Column {
 	c := &chunk.Column{
 		Chunk:         col.Chunk,
 		Entities:      make([]chunk.Entity, 0, len(col.Entities)),

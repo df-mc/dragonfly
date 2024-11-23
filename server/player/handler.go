@@ -22,7 +22,7 @@ type Handler interface {
 	// The new position, yaw and pitch are passed.
 	HandleMove(ctx *Context, newPos mgl64.Vec3, newRot cube.Rotation)
 	// HandleJump handles the player jumping.
-	HandleJump()
+	HandleJump(p *Player)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
 	HandleTeleport(ctx *Context, pos mgl64.Vec3)
 	// HandleChangeWorld handles when the player is added to a new world. before may be nil.
@@ -49,12 +49,12 @@ type Handler interface {
 	// The damage dealt to the player may be changed by assigning to *damage.
 	HandleHurt(ctx *Context, damage *float64, attackImmunity *time.Duration, src world.DamageSource)
 	// HandleDeath handles the player dying to a particular damage cause.
-	HandleDeath(src world.DamageSource, keepInv *bool)
+	HandleDeath(p *Player, src world.DamageSource, keepInv *bool)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
 	// changed by assigning to *pos. The world.World in which the Player is respawned may be modifying by assigning to
 	// *w. This world may be the world the Player died in, but it might also point to a different world (the overworld)
 	// if the Player died in the nether or end.
-	HandleRespawn(pos *mgl64.Vec3, w **world.World)
+	HandleRespawn(p *Player, pos *mgl64.Vec3, w **world.World)
 	// HandleSkinChange handles the player changing their skin. ctx.Cancel() may be called to cancel the skin
 	// change.
 	HandleSkinChange(ctx *Context, skin *skin.Skin)
@@ -137,11 +137,11 @@ type Handler interface {
 	HandleCommandExecution(ctx *Context, command cmd.Command, args []string)
 	// HandleQuit handles the closing of a player. It is always called when the player is disconnected,
 	// regardless of the reason.
-	HandleQuit()
+	HandleQuit(p *Player)
 	// HandleDiagnostics handles the latest diagnostics data that the player has sent to the server. This is
 	// not sent by every client however, only those with the "Creator > Enable Client Diagnostics" setting
 	// enabled.
-	HandleDiagnostics(d diagnostics.Diagnostics)
+	HandleDiagnostics(p *Player, d diagnostics.Diagnostics)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -154,7 +154,7 @@ var _ Handler = NopHandler{}
 
 func (NopHandler) HandleItemDrop(*Context, item.Stack)                                  {}
 func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                       {}
-func (NopHandler) HandleJump()                                                          {}
+func (NopHandler) HandleJump(*Player)                                                   {}
 func (NopHandler) HandleTeleport(*Context, mgl64.Vec3)                                  {}
 func (NopHandler) HandleChangeWorld(*world.World, *world.World)                         {}
 func (NopHandler) HandleToggleSprint(*Context, bool)                                    {}
@@ -182,7 +182,7 @@ func (NopHandler) HandlePunchAir(*Context)                                      
 func (NopHandler) HandleHurt(*Context, *float64, *time.Duration, world.DamageSource)    {}
 func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource)                   {}
 func (NopHandler) HandleFoodLoss(*Context, int, *int)                                   {}
-func (NopHandler) HandleDeath(world.DamageSource, *bool)                                {}
-func (NopHandler) HandleRespawn(*mgl64.Vec3, **world.World)                             {}
-func (NopHandler) HandleQuit()                                                          {}
-func (NopHandler) HandleDiagnostics(d diagnostics.Diagnostics)                          {}
+func (NopHandler) HandleDeath(*Player, world.DamageSource, *bool)                       {}
+func (NopHandler) HandleRespawn(*Player, *mgl64.Vec3, **world.World)                    {}
+func (NopHandler) HandleQuit(*Player)                                                   {}
+func (NopHandler) HandleDiagnostics(*Player, diagnostics.Diagnostics)                   {}

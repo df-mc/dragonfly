@@ -808,7 +808,7 @@ func (p *Player) kill(src world.DamageSource) {
 	p.addHealth(-p.MaxHealth())
 
 	keepInv := false
-	p.Handler().HandleDeath(src, &keepInv)
+	p.Handler().HandleDeath(p, src, &keepInv)
 	p.StopSneaking()
 	p.StopSprinting()
 
@@ -904,7 +904,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	p.Extinguish()
 	p.ResetFallDistance()
 
-	p.Handler().HandleRespawn(&pos, &w)
+	p.Handler().HandleRespawn(p, &pos, &w)
 
 	handle := p.tx.RemoveEntity(p)
 	w.Exec(func(tx *world.Tx) {
@@ -1113,7 +1113,7 @@ func (p *Player) Jump() {
 		return
 	}
 
-	p.Handler().HandleJump()
+	p.Handler().HandleJump(p)
 	if p.OnGround() {
 		jumpVel := 0.42
 		if e, ok := p.Effect(effect.JumpBoost{}); ok {
@@ -1744,7 +1744,8 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 // An item.UseContext may be passed to obtain information on if the block placement was successful. (SubCount will
 // be incremented). Nil may also be passed for the context parameter.
 func (p *Player) PlaceBlock(pos cube.Pos, b world.Block, ctx *item.UseContext) {
-	if !p.placeBlock(pos, b, ctx.IgnoreBBox) {
+	ignoreBBox := ctx != nil && ctx.IgnoreBBox
+	if !p.placeBlock(pos, b, ignoreBBox) {
 		return
 	}
 	if ctx != nil {
@@ -2703,7 +2704,7 @@ func (p *Player) PunchAir() {
 
 // UpdateDiagnostics updates the diagnostics of the player.
 func (p *Player) UpdateDiagnostics(d diagnostics.Diagnostics) {
-	p.Handler().HandleDiagnostics(d)
+	p.Handler().HandleDiagnostics(p, d)
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
@@ -2797,7 +2798,7 @@ func (p *Player) close(msg string) {
 }
 
 func (p *Player) quit(msg string) {
-	p.h.HandleQuit()
+	p.h.HandleQuit(p)
 	p.h = NopHandler{}
 
 	if s := p.s; s != nil {

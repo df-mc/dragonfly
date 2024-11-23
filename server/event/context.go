@@ -12,8 +12,8 @@ func C[T any](v T) *Context[T] {
 	return &Context[T]{val: v}
 }
 
-// V returns the subject of the Context.
-func (ctx *Context[T]) V() T {
+// Val returns the subject of the Context.
+func (ctx *Context[T]) Val() T {
 	return ctx.val
 }
 

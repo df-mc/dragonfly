@@ -40,13 +40,13 @@ type Handler interface {
 	// HandleCropTrample handles an Entity trampling a crop.
 	HandleCropTrample(ctx *Context, pos cube.Pos)
 	// HandleEntitySpawn handles an Entity being spawned into a World through a call to World.AddEntity.
-	HandleEntitySpawn(e Entity)
+	HandleEntitySpawn(tx *Tx, e Entity)
 	// HandleEntityDespawn handles an Entity being despawned from a World through a call to World.RemoveEntity.
-	HandleEntityDespawn(e Entity)
+	HandleEntityDespawn(tx *Tx, e Entity)
 	// HandleClose handles the World being closed. HandleClose may be used as a moment to finish code running on other
 	// goroutines that operates on the World specifically. HandleClose is called directly before the World stops
 	// ticking and before any chunks are saved to disk.
-	HandleClose()
+	HandleClose(tx *Tx)
 }
 
 // Compile time check to make sure NopHandler implements Handler.
@@ -64,6 +64,6 @@ func (NopHandler) HandleSound(*Context, Sound, mgl64.Vec3)                      
 func (NopHandler) HandleFireSpread(*Context, cube.Pos, cube.Pos)                {}
 func (NopHandler) HandleBlockBurn(*Context, cube.Pos)                           {}
 func (NopHandler) HandleCropTrample(*Context, cube.Pos)                         {}
-func (NopHandler) HandleEntitySpawn(Entity)                                     {}
-func (NopHandler) HandleEntityDespawn(Entity)                                   {}
-func (NopHandler) HandleClose()                                                 {}
+func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                {}
+func (NopHandler) HandleEntityDespawn(*Tx, Entity)                              {}
+func (NopHandler) HandleClose(*Tx)                                              {}
