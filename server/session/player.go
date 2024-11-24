@@ -481,21 +481,6 @@ func (s *Session) SendHealth(health *entity.HealthManager, absorption float64) {
 	})
 }
 
-// SendAbsorption sends the absorption value passed to the player.
-func (s *Session) SendAbsorption(value float64) {
-	s.writePacket(&packet.UpdateAttributes{
-		EntityRuntimeID: selfEntityRuntimeID,
-		Attributes: []protocol.Attribute{{
-			AttributeValue: protocol.AttributeValue{
-				Name:  "minecraft:absorption",
-				Value: float32(math.Ceil(value)),
-				Max:   float32(math.MaxFloat32),
-			},
-			DefaultMax: float32(math.MaxFloat32),
-		}},
-	})
-}
-
 // SendEffect sends an effects passed to the player.
 func (s *Session) SendEffect(e effect.Effect) {
 	s.SendEffectRemoval(e.Type())
