@@ -70,10 +70,14 @@ func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx
 // BreakInfo ...
 func (p Potato) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
-		if rand.Float64() < 0.02 {
-			return []item.Stack{item.NewStack(p, rand.Intn(5)+1), item.NewStack(item.PoisonousPotato{}, 1)}
+		n := 1
+		if p.Growth >= 7 {
+			n += rand.Intn(5)
 		}
-		return []item.Stack{item.NewStack(p, rand.Intn(5)+1)}
+		if rand.Float64() < 0.02 {
+			return []item.Stack{item.NewStack(p, n), item.NewStack(item.PoisonousPotato{}, 1)}
+		}
+		return []item.Stack{item.NewStack(p, n)}
 	})
 }
 
