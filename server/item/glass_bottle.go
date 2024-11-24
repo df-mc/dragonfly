@@ -29,6 +29,7 @@ func (g GlassBottle) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 				// Some blocks (think a cauldron) change when using a bottle on it.
 				tx.SetBlock(pos, res, nil)
 			}
+			return true
 		}
 	}
 	return false
