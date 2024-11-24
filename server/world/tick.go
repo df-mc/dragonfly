@@ -96,7 +96,11 @@ func (t ticker) tickScheduledBlocks(tx *Tx, tick int64) {
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
 func (t ticker) performNeighbourUpdates(tx *Tx) {
-	for _, update := range tx.World().neighbourUpdates {
+	updates := slices.Clone(tx.World().neighbourUpdates)
+	clear(tx.World().neighbourUpdates)
+	tx.World().neighbourUpdates = tx.World().neighbourUpdates[:0]
+
+	for _, update := range updates {
 		pos, changedNeighbour := update.pos, update.neighbour
 		if ticker, ok := tx.Block(pos).(NeighbourUpdateTicker); ok {
 			ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
@@ -107,8 +111,6 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 			}
 		}
 	}
-	clear(tx.World().neighbourUpdates)
-	tx.World().neighbourUpdates = tx.World().neighbourUpdates[:0]
 }
 
 // tickBlocksRandomly executes random block ticks in each sub chunk in the world that has at least one viewer
