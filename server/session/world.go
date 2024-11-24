@@ -987,24 +987,26 @@ func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
 
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
-	b := tx.Block(pos)
-	_, lectern := b.(block.Lectern) // The client does not send a ContainerClose packet for lecterns.
-
-	if !lectern && s.containerOpened.Load() && *s.openedPos.Load() == pos {
+	if s.containerOpened.Load() && *s.openedPos.Load() == pos {
 		return
 	}
 	s.closeCurrentContainer(tx)
 
+	b := tx.Block(pos)
 	if container, ok := b.(block.Container); ok {
 		s.openNormalContainer(container, pos, tx)
 		return
 	}
 	// We hit a special kind of window like beacons, which are not actually opened server-side.
 	nextID := s.nextWindowID()
-	s.containerOpened.Store(true)
-	inv := inventory.New(1, nil)
-	s.openedWindow.Store(inv)
-	s.openedPos.Store(&pos)
+	// The client does not send a ContainerClose packet for lecterns.
+	_, lectern := b.(block.Lectern)
+	if !lectern {
+		s.containerOpened.Store(true)
+		inv := inventory.New(1, nil)
+		s.openedWindow.Store(inv)
+		s.openedPos.Store(&pos)
+	}
 
 	var containerType byte
 	switch b := b.(type) {
