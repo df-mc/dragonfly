@@ -103,7 +103,10 @@ func (b Banner) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (b Banner) DecodeNBT(m map[string]any) any {
-	b.Colour = invertColourID(int16(nbtconv.Int32(m, "Base")))
+	if _, ok := m["Base"]; ok {
+		// Banner items do not have the Base NBT.
+		b.Colour = invertColourID(int16(nbtconv.Int32(m, "Base")))
+	}
 	b.Illager = nbtconv.Int32(m, "Type") == 1
 	if patterns := nbtconv.Slice(m, "Patterns"); patterns != nil {
 		b.Patterns = make([]BannerPatternLayer, len(patterns))
