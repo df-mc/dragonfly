@@ -1364,6 +1364,7 @@ func (p *Player) UseItem() {
 // the item started being used.
 func (p *Player) ReleaseItem() {
 	if !p.usingItem || !p.canRelease() || !p.GameMode().AllowsInteraction() {
+		p.usingItem = false
 		return
 	}
 	p.usingItem = false
