@@ -250,21 +250,23 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	s.closeCurrentContainer(tx)
 	s.chunkLoader.Close(tx)
 
-	// This should always be called last due to the timing of the removal of entity runtime IDs.
-	sessions.Remove(s)
-	s.entityMutex.Lock()
-	clear(s.entityRuntimeIDs)
-	clear(s.entities)
-	s.entityMutex.Unlock()
-
 	if s.quitMessage != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
 	}
 	chat.Global.Unsubscribe(c)
 
-	// Note: RemoveEntity must always happen at the VERY END.
+	// Note: Be aware of where RemoveEntity is called. This must not be done too
+	// early.
 	tx.RemoveEntity(c)
 	s.ent.Close(tx)
+
+	// This should always be called last due to the timing of the removal of
+	// entity runtime IDs.
+	sessions.Remove(s)
+	s.entityMutex.Lock()
+	clear(s.entityRuntimeIDs)
+	clear(s.entities)
+	s.entityMutex.Unlock()
 }
 
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed
