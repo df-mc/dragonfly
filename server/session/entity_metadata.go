@@ -55,7 +55,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagCrawling&63)
 	}
 	if gl, ok := e.(glider); ok && gl.Gliding() {
-		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagGliding)
+		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagGliding)
 	}
 	if b, ok := e.(breather); ok {
 		m[protocol.EntityDataKeyAirSupply] = int16(b.AirSupply().Milliseconds() / 50)
@@ -92,10 +92,10 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 	if f, ok := e.(firework); ok {
 		m[protocol.EntityDataKeyDisplayTileRuntimeID] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
-		if o, ok := e.(owned); ok && f.Attached() {
+		if o, ok := e.(owned); ok && f.Attached() && o.Owner() != nil {
 			m[protocol.EntityDataKeyCustomDisplay] = int64(s.handleRuntimeID(o.Owner()))
 		}
-	} else if o, ok := e.(owned); ok {
+	} else if o, ok := e.(owned); ok && o.Owner() != nil {
 		m[protocol.EntityDataKeyOwner] = int64(s.handleRuntimeID(o.Owner()))
 	}
 	if sc, ok := e.(scaled); ok {
