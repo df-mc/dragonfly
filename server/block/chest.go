@@ -58,21 +58,28 @@ func NewChest() Chest {
 // Inventory returns the inventory of the chest. The size of the inventory will be 27 or 54, depending on
 // whether the chest is single or double.
 func (c Chest) Inventory(tx *world.Tx, pos cube.Pos) *inventory.Inventory {
+	inv, _ := c.tryPair(tx, pos)
+	return inv
+}
+
+// tryPair attempts to pair the inventories of this chest with a potential
+// paired chest next to it. The (shared) inventory is returned and a bool is
+// returned indicating if the chest changed its pairing state.
+func (c Chest) tryPair(tx *world.Tx, pos cube.Pos) (*inventory.Inventory, bool) {
 	if c.paired {
 		if c.pairInv == nil {
 			if ch, pair, ok := c.pair(tx, pos, c.pairPos(pos)); ok {
-				c = ch
 				tx.SetBlock(pos, ch, nil)
 				tx.SetBlock(c.pairPos(pos), pair, nil)
-			} else {
-				c.paired = false
-				tx.SetBlock(pos, c, nil)
-				return c.inventory
+				return ch.pairInv, true
 			}
+			c.paired = false
+			tx.SetBlock(pos, c, nil)
+			return c.inventory, true
 		}
-		return c.pairInv
+		return c.pairInv, false
 	}
-	return c.inventory
+	return c.inventory, false
 }
 
 // WithName returns the chest after applying a specific name to the block.
@@ -110,6 +117,9 @@ func (c Chest) close(tx *world.Tx, pos cube.Pos) {
 
 // AddViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.
 func (c Chest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+	if _, changed := c.tryPair(tx, pos); changed {
+		c = tx.Block(pos).(Chest)
+	}
 	c.viewerMu.Lock()
 	defer c.viewerMu.Unlock()
 	if len(c.viewers) == 0 {
@@ -121,6 +131,9 @@ func (c Chest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 // RemoveViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to
 // it.
 func (c Chest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+	if _, changed := c.tryPair(tx, pos); changed {
+		c = tx.Block(pos).(Chest)
+	}
 	c.viewerMu.Lock()
 	defer c.viewerMu.Unlock()
 	if len(c.viewers) == 0 {

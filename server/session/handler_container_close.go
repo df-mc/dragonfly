@@ -17,7 +17,7 @@ func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx
 	switch pk.WindowID {
 	case 0:
 		// Closing of the normal inventory.
-		s.writePacket(&packet.ContainerClose{WindowID: 0})
+		s.writePacket(&packet.ContainerClose{})
 		s.invOpened = false
 	case byte(s.openedWindowID.Load()):
 		s.closeCurrentContainer(tx)

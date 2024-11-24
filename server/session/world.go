@@ -1044,7 +1044,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 
 // openNormalContainer opens a normal container that can hold items in it server-side.
 func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world.Tx) {
-	b.AddViewer(s, tx, pos)
+	b.AddViewer(s, tx, pos) // Paired chests might update the block here.
+	b = tx.Block(pos).(block.Container)
 
 	nextID := s.nextWindowID()
 	s.containerOpened.Store(true)
@@ -1192,8 +1193,7 @@ func (s *Session) closeWindow() {
 		return
 	}
 	s.openedContainerID.Store(0)
-	inv := inventory.New(1, nil)
-	s.openedWindow.Store(inv)
+	s.openedWindow.Store(inventory.New(1, nil))
 	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
 }
 
