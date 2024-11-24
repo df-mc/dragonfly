@@ -1363,6 +1363,7 @@ func (p *Player) UseItem() {
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
+	defer p.updateState()
 	if !p.usingItem || !p.canRelease() || !p.GameMode().AllowsInteraction() {
 		p.usingItem = false
 		return
@@ -1389,7 +1390,6 @@ func (p *Player) ReleaseItem() {
 		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 	p.handleUseContext(useCtx)
-	p.updateState()
 }
 
 // canRelease returns whether the player can release the item currently held in the main hand.
