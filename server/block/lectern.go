@@ -74,7 +74,10 @@ type readableBook interface {
 // Activate ...
 func (l Lectern) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if !l.Book.Empty() {
-		// We can't put a book on the lectern if it's full.
+		if opener, ok := u.(ContainerOpener); ok {
+			opener.OpenBlockContainer(pos, tx)
+			return true
+		}
 		return false
 	}
 

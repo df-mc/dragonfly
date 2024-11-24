@@ -987,12 +987,14 @@ func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
 
 // OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
-	if s.containerOpened.Load() && *s.openedPos.Load() == pos {
+	b := tx.Block(pos)
+	_, lectern := b.(block.Lectern) // The client does not send a ContainerClose packet for lecterns.
+
+	if !lectern && s.containerOpened.Load() && *s.openedPos.Load() == pos {
 		return
 	}
 	s.closeCurrentContainer(tx)
 
-	b := tx.Block(pos)
 	if container, ok := b.(block.Container); ok {
 		s.openNormalContainer(container, pos, tx)
 		return
@@ -1014,6 +1016,8 @@ func (s *Session) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 		containerType = protocol.ContainerTypeAnvil
 	case block.Beacon:
 		containerType = protocol.ContainerTypeBeacon
+	case block.Lectern:
+		containerType = protocol.ContainerTypeLectern
 	case block.Loom:
 		containerType = protocol.ContainerTypeLoom
 	case block.Grindstone:
