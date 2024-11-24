@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"net"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -2980,7 +2980,7 @@ func (p *Player) viewers() []world.Viewer {
 	viewers := p.tx.Viewers(p.Position())
 	var s world.Viewer = p.session()
 
-	if sliceutil.Index(viewers, s) == -1 {
+	if slices.Index(viewers, s) == -1 {
 		return append(viewers, s)
 	}
 	return viewers

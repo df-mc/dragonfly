@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"golang.org/x/exp/maps"
 	"math/rand"
+	"slices"
 	"time"
 )
 
@@ -220,14 +221,14 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 			}
 
 			for _, viewer := range viewers {
-				if sliceutil.Index(c.viewers, viewer) == -1 {
+				if slices.Index(c.viewers, viewer) == -1 {
 					// First we hide the entity from all loaders that were previously viewing it, but no
 					// longer are.
 					viewer.HideEntity(e)
 				}
 			}
 			for _, viewer := range c.viewers {
-				if sliceutil.Index(viewers, viewer) == -1 {
+				if slices.Index(viewers, viewer) == -1 {
 					// Then we show the entity to all loaders that are now viewing the entity in the new
 					// chunk.
 					showEntity(e, viewer)

@@ -108,7 +108,7 @@ func (srv *Server) Listen() {
 		}
 	}
 
-	srv.conf.Log.Info("Starting Dragonfly server...", "mc-version", protocol.CurrentVersion, "go-version", info.GoVersion, "commit", revision)
+	srv.conf.Log.Info("Dragonfly server started.", "mc-version", protocol.CurrentVersion, "go-version", info.GoVersion, "commit", revision)
 	srv.startListening()
 	go srv.wait()
 }

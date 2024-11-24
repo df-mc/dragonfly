@@ -231,7 +231,7 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 	selectedEnchants = append(selectedEnchants, enchant)
 
 	// Remove the selected enchantment from the list of available enchantments, so we don't select it again.
-	ind := sliceutil.Index(availableEnchants, enchant)
+	ind := slices.Index(availableEnchants, enchant)
 	availableEnchants = slices.Delete(availableEnchants, ind, ind+1)
 
 	// Based on the cost, select a random amount of additional enchantments.
@@ -251,7 +251,7 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 		selectedEnchants = append(selectedEnchants, enchant)
 
 		// Remove the selected enchantment from the list of available enchantments, so we don't select it again.
-		ind = sliceutil.Index(availableEnchants, enchant)
+		ind = slices.Index(availableEnchants, enchant)
 		availableEnchants = slices.Delete(availableEnchants, ind, ind+1)
 
 		// Halve the cost, so we have a lower chance of selecting another enchantment.
