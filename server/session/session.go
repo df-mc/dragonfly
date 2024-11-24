@@ -274,7 +274,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 func (s *Session) CloseConnection() {
 	s.connOnce.Do(func() {
 		_ = s.conn.Close()
-		s.closeBackground <- struct{}{}
+		close(s.closeBackground)
 	})
 }
 
