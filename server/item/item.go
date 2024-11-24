@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/lang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"golang.org/x/text/language"
 	"image/color"
 	"time"
@@ -16,7 +15,7 @@ import (
 // MaxCounter represents an item that has a specific max count. By default, each item will be expected to have
 // a maximum count of 64. MaxCounter may be implemented to change this behaviour.
 type MaxCounter interface {
-	// MaxCount returns the maximum number of items that a stack may be composed of. The number returned must
+	// MaxCount returns the maximum number of items a stack may be composed of. The number returned must
 	// be positive.
 	MaxCount() int
 }
@@ -167,11 +166,6 @@ type User interface {
 	UsingItem() bool
 	ReleaseItem()
 	UseItem()
-
-	UUID() uuid.UUID
-
-	Messaget(key string, a ...string)
-	Sneaking() bool
 }
 
 // Carrier represents an entity that is able to carry an item.

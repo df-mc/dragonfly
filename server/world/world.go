@@ -929,17 +929,6 @@ func (w *World) SetRequiredSleepDuration(duration time.Duration) {
 	w.set.RequiredSleepTicks = duration.Milliseconds() / 50
 }
 
-// SetSleepRequirement sets the duration of time players in the world must sleep for, in order for the time to change to
-// day.
-func (w *World) SetSleepRequirement(duration time.Duration) {
-	if w == nil {
-		return
-	}
-	w.set.Lock()
-	defer w.set.Unlock()
-	w.set.RequiredSleepTicks = duration.Milliseconds() / 50
-}
-
 // DefaultGameMode returns the default game mode of the world. When players join, they are given this game
 // mode.
 // The default game mode may be changed using SetDefaultGameMode().

@@ -464,8 +464,8 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
 	}
-	for _, t := range allRespawnAnchorsItems() {
-		world.RegisterItem(t)
+	for c := range 5 {
+		world.RegisterItem(RespawnAnchor{Charge: c})
 	}
 }
 

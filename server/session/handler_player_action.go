@@ -23,7 +23,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		return errSelfRuntimeID
 	}
 	switch action {
-	case protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone, protocol.PlayerActionStartSleeping:
+	case protocol.PlayerActionStartSleeping, protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone:
 	// Don't do anything for these actions.
 	case protocol.PlayerActionStopSleeping:
 		if mode := s.c.GameMode(); !mode.Visible() && !mode.HasCollision() {

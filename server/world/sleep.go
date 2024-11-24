@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/google/uuid"
 )
 
 // Sleeper represents an entity that can sleep.
@@ -9,6 +10,7 @@ type Sleeper interface {
 	Entity
 
 	Name() string
+	UUID() uuid.UUID
 
 	Messaget(key string, a ...string)
 	SendSleepingIndicator(sleeping, max int)

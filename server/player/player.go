@@ -921,11 +921,12 @@ func (p *Player) kill(src world.DamageSource) {
 			// We have an actual client connected to this player: We change its position server side so that in
 			// the future, the client won't respawn on the death location when disconnecting. The client should
 			// not see the movement itself yet, though.
-			pos, w, blockHasBeenBroken, _ := p.realSpawnPos()
+			pos, w, spawnObstructed, _ := p.spawnLocation()
 			vec := pos.Vec3()
 
-			if blockHasBeenBroken {
-				p.Handler().HandleRespawn(&vec, &w)
+			p.Handler().HandleRespawn(&vec, &w)
+
+			if spawnObstructed {
 				w.SetPlayerSpawn(p.UUID(), w.Spawn())
 			}
 
@@ -958,8 +959,8 @@ func (p *Player) dropContents() {
 // Respawn spawns the player after it dies, so that its health is replenished and it is spawned in the world
 // again. Nothing will happen if the player does not have a session connected to it.
 func (p *Player) Respawn() {
-	position, w, ok, previousDimension := p.realSpawnPos()
-	if ok {
+	position, w, spawnObstructed, previousDimension := p.spawnLocation()
+	if spawnObstructed {
 		switch previousDimension {
 		case world.Nether:
 			p.Messaget("%tile.respawn_anchor.notValid")
@@ -989,8 +990,8 @@ func (p *Player) Respawn() {
 	p.SetVisible()
 }
 
-// realSpawnPos returns position and world where player should be spawned.
-func (p *Player) realSpawnPos() (pos cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
+// spawnLocation returns position and world where player should be spawned.
+func (p *Player) spawnLocation() (pos cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
 	w = p.World()
 
 	previousDimension = w.Dimension()
@@ -1211,11 +1212,11 @@ func (p *Player) Sleep(pos cube.Pos) {
 
 	w := p.World()
 	if b, ok := w.Block(pos).(block.Bed); ok {
-		if b.User != nil {
+		if b.Sleeper != nil {
 			// The player cannot sleep here.
 			return
 		}
-		b.User = p
+		b.Sleeper = p
 		w.SetBlock(pos, b, nil)
 	}
 
@@ -1250,7 +1251,7 @@ func (p *Player) Wake() {
 
 	pos := *p.sleepPos.Load()
 	if b, ok := w.Block(pos).(block.Bed); ok {
-		b.User = nil
+		b.Sleeper = nil
 		w.SetBlock(pos, b, nil)
 	}
 }

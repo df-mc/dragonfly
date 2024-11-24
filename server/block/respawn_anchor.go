@@ -42,6 +42,11 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.Wo
 	held, _ := u.HeldItems()
 	_, usingGlowstone := held.Item().(Glowstone)
 
+	sleeper, ok := u.(world.Sleeper)
+	if !ok {
+		return false
+	}
+
 	if r.Charge < 4 && usingGlowstone {
 		r.Charge++
 		w.SetBlock(pos, r, nil)
@@ -49,19 +54,17 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.Wo
 		w.PlaySound(pos.Vec3Centre(), sound.RespawnAnchorCharge{Charge: r.Charge})
 		return true
 	}
-	if w.Dimension() == world.Nether {
-		if r.Charge > 0 {
-			previousSpawn := w.PlayerSpawn(u.UUID())
+
+	if r.Charge > 0 {
+		if w.Dimension() == world.Nether {
+			previousSpawn := w.PlayerSpawn(sleeper.UUID())
 			if previousSpawn == pos {
 				return false
 			}
-			u.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
-			w.SetPlayerSpawn(u.UUID(), pos)
+			sleeper.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
+			w.SetPlayerSpawn(sleeper.UUID(), pos)
+			return false
 		}
-		return false
-	}
-
-	if r.Charge > 0 {
 		w.SetBlock(pos, nil, nil)
 		ExplosionConfig{
 			Size:      5,
@@ -75,15 +78,6 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.Wo
 // allRespawnAnchors returns all possible respawn anchors.
 func allRespawnAnchors() []world.Block {
 	all := make([]world.Block, 0, 5)
-	for i := 0; i < 5; i++ {
-		all = append(all, RespawnAnchor{Charge: i})
-	}
-	return all
-}
-
-// allRespawnAnchorsItems returns all possible respawn anchors as items.
-func allRespawnAnchorsItems() []world.Item {
-	all := make([]world.Item, 0, 5)
 	for i := 0; i < 5; i++ {
 		all = append(all, RespawnAnchor{Charge: i})
 	}

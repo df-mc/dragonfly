@@ -21,8 +21,8 @@ type Bed struct {
 	Facing cube.Direction
 	// Head is true if the bed is the head side.
 	Head bool
-	// User is the user that is using the bed. It is only set for the Head part of the bed.
-	User item.User
+	// Sleeper is the user that is using the bed. It is only set for the Head part of the bed.
+	Sleeper world.Sleeper
 }
 
 // MaxCount always returns 1.
@@ -47,9 +47,7 @@ func (b Bed) BreakInfo() BreakInfo {
 		if !ok {
 			return
 		}
-		if s, ok := headSide.User.(world.Sleeper); ok {
-			s.Wake()
-		}
+		headSide.Sleeper.Wake()
 	})
 }
 
@@ -115,9 +113,9 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 		return false
 	}
 
-	previousSpawn := w.PlayerSpawn(u.UUID())
-	if previousSpawn != pos {
-		w.SetPlayerSpawn(u.UUID(), pos)
+	previousSpawn := w.PlayerSpawn(s.UUID())
+	if previousSpawn != pos && previousSpawn != sidePos {
+		w.SetPlayerSpawn(s.UUID(), pos)
 		s.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
 	}
 
@@ -126,7 +124,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 		s.Messaget(text.Colourf("<grey>%%tile.bed.noSleep</grey>"))
 		return true
 	}
-	if headSide.User != nil {
+	if headSide.Sleeper != nil {
 		s.Messaget(text.Colourf("<grey>%%tile.bed.occupied</grey>"))
 		return true
 	}
@@ -137,24 +135,14 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 
 // EntityLand ...
 func (b Bed) EntityLand(_ cube.Pos, _ *world.World, e world.Entity, distance *float64) {
-	if s, ok := e.(sneakingEntity); ok && s.Sneaking() {
-		// If the entity is sneaking, the fall distance and velocity stay the same.
-		return
-	}
 	if _, ok := e.(fallDistanceEntity); ok {
 		*distance *= 0.5
 	}
 	if v, ok := e.(velocityEntity); ok {
 		vel := v.Velocity()
-		vel[1] = vel[1] * -3 / 4
+		vel[1] = vel[1] * -2 / 3
 		v.SetVelocity(vel)
 	}
-}
-
-// sneakingEntity represents an entity that can sneak.
-type sneakingEntity interface {
-	// Sneaking returns true if the entity is currently sneaking.
-	Sneaking() bool
 }
 
 // velocityEntity represents an entity that can maintain a velocity.
@@ -180,8 +168,8 @@ func (b Bed) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (b Bed) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:bed", map[string]interface{}{
-		"facing_bit":   int32(horizontalDirection(b.Facing)),
-		"occupied_bit": boolByte(b.User != nil),
+		"direction":    int32(horizontalDirection(b.Facing)),
+		"occupied_bit": boolByte(b.Sleeper != nil),
 		"head_bit":     boolByte(b.Head),
 	}
 }
@@ -226,9 +214,11 @@ func (b Bed) side(pos cube.Pos, w *world.World) (Bed, cube.Pos, bool) {
 
 // allBeds returns all possible beds.
 func allBeds() (beds []world.Block) {
-	for _, d := range cube.Directions() {
-		beds = append(beds, Bed{Facing: d})
-		beds = append(beds, Bed{Facing: d, Head: true})
+	for _, c := range item.Colours() {
+		for _, d := range cube.Directions() {
+			beds = append(beds, Bed{Facing: d, Colour: c})
+			beds = append(beds, Bed{Facing: d, Colour: c, Head: true})
+		}
 	}
 	return
 }
