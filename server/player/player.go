@@ -456,13 +456,13 @@ func (p *Player) MaxHealth() float64 {
 // SetMaxHealth panics if the max health passed is 0 or lower.
 func (p *Player) SetMaxHealth(health float64) {
 	p.health.SetMaxHealth(health)
-	p.session().SendHealth(p.health)
+	p.session().SendHealth(p.health, p.absorptionHealth)
 }
 
 // addHealth adds health to the player's current health.
 func (p *Player) addHealth(health float64) {
 	p.health.AddHealth(health)
-	p.session().SendHealth(p.health)
+	p.session().SendHealth(p.health, p.absorptionHealth)
 }
 
 // Heal heals the entity for a given amount of health. The source passed
@@ -646,7 +646,7 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 // Nothing happens if a negative number is passed.
 func (p *Player) SetAbsorption(health float64) {
 	p.absorptionHealth = math.Max(health, 0)
-	p.session().SendAbsorption(p.absorptionHealth)
+	p.session().SendHealth(p.health, p.absorptionHealth)
 }
 
 // Absorption returns the absorption health that the player has.
@@ -1257,6 +1257,9 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 	for _, v := range p.viewers() {
 		v.ViewEntityGameMode(p)
 	}
+	if mode.AllowsTakingDamage() {
+		p.session().SendHealth(p.health, p.absorptionHealth)
+	}
 }
 
 // GameMode returns the current game mode assigned to the player. If not changed, the game mode returned will
@@ -1363,7 +1366,6 @@ func (p *Player) UseItem() {
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
-	defer p.updateState()
 	if !p.usingItem || !p.canRelease() || !p.GameMode().AllowsInteraction() {
 		p.usingItem = false
 		return
@@ -1390,6 +1392,7 @@ func (p *Player) ReleaseItem() {
 		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 	p.handleUseContext(useCtx)
+	p.updateState()
 }
 
 // canRelease returns whether the player can release the item currently held in the main hand.
@@ -2821,14 +2824,12 @@ func (p *Player) load(data Data) {
 
 	p.health.SetMaxHealth(data.MaxHealth)
 	p.health.AddHealth(data.Health - p.Health())
-	p.session().SendHealth(p.health)
-
 	p.absorptionHealth = data.AbsorptionLevel
-	p.session().SendAbsorption(data.AbsorptionLevel)
 
 	p.hunger.foodLevel, p.hunger.foodTick = data.Hunger, data.FoodTick
 	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
 	p.sendFood()
+	p.session().SendHealth(p.health, data.AbsorptionLevel)
 
 	p.airSupplyTicks, p.maxAirSupplyTicks = data.AirSupply, data.MaxAirSupply
 

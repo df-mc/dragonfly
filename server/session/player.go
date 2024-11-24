@@ -459,7 +459,7 @@ func (s *Session) SendAbilities(c Controllable) {
 }
 
 // SendHealth sends the health and max health to the player.
-func (s *Session) SendHealth(health *entity.HealthManager) {
+func (s *Session) SendHealth(health *entity.HealthManager, absorption float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
@@ -470,6 +470,13 @@ func (s *Session) SendHealth(health *entity.HealthManager) {
 			},
 			DefaultMax: 20,
 			Default:    20,
+		}, {
+			AttributeValue: protocol.AttributeValue{
+				Name:  "minecraft:absorption",
+				Value: float32(math.Ceil(absorption)),
+				Max:   float32(math.MaxFloat32),
+			},
+			DefaultMax: float32(math.MaxFloat32),
 		}},
 	})
 }
