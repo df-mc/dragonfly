@@ -121,7 +121,7 @@ func (srv *Server) Listen() {
 //
 //	  for p := range srv.Accept() {
 //	    // p is valid here
-//		   go func() {
+//		go func() {
 //	      // p is no longer valid here
 //	    }()
 //	  }
@@ -190,7 +190,7 @@ func (srv *Server) MaxPlayerCount() int {
 //
 //	  for p := range srv.Players() {
 //	    // p is valid here
-//		   go func() {
+//		go func() {
 //	      // p is no longer valid here
 //	    }()
 //	  }
