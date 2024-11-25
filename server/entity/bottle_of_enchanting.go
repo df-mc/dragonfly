@@ -27,7 +27,7 @@ var bottleOfEnchantingConf = ProjectileBehaviourConfig{
 
 // spawnExperience spawns experience orbs with a value of 3-11 at the target of
 // a trace.Result.
-func spawnExperience(e *Ent, tx *world.Tx, target trace.Result) {
+func spawnExperience(_ *Ent, tx *world.Tx, target trace.Result) {
 	for _, orb := range NewExperienceOrbs(target.Position(), rand.Intn(9)+3) {
 		tx.AddEntity(orb)
 	}
@@ -58,6 +58,6 @@ func (bottleOfEnchantingType) DecodeNBT(_ map[string]any, data *world.EntityData
 	data.Data = bottleOfEnchantingConf.New()
 }
 
-func (bottleOfEnchantingType) EncodeNBT(data *world.EntityData) map[string]any {
+func (bottleOfEnchantingType) EncodeNBT(_ *world.EntityData) map[string]any {
 	return nil
 }

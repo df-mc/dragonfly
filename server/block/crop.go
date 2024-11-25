@@ -24,7 +24,7 @@ type crop struct {
 }
 
 // NeighbourUpdateTick ...
-func (c crop) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c crop) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		b := tx.Block(pos)
 		tx.SetBlock(pos, nil, nil)

@@ -34,7 +34,7 @@ func (t Torch) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, t)
 	if !used {
 		return false
@@ -65,7 +65,7 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx 
 }
 
 // NeighbourUpdateTick ...
-func (t Torch) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
 		tx.SetBlock(pos, nil, nil)
 		dropItem(tx, item.NewStack(t, 1), pos.Vec3Centre())

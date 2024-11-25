@@ -35,7 +35,7 @@ func (c CocoaBean) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (c CocoaBean) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	var woodType WoodType
 	switch b := tx.Block(pos.Side(c.Facing.Face())).(type) {
 	case Log:
@@ -49,7 +49,7 @@ func (c CocoaBean) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world
 }
 
 // UseOnBlock ...
-func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false

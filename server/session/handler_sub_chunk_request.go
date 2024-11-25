@@ -10,7 +10,7 @@ import (
 type SubChunkRequestHandler struct{}
 
 // Handle ...
-func (*SubChunkRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (*SubChunkRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, _ Controllable) error {
 	pk := p.(*packet.SubChunkRequest)
 	s.ViewSubChunks(world.SubChunkPos(pk.Position), pk.Offsets, tx)
 	return nil

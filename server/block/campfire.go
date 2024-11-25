@@ -80,7 +80,7 @@ func (c Campfire) LightEmissionLevel() uint8 {
 }
 
 // Ignite ...
-func (c Campfire) Ignite(pos cube.Pos, tx *world.Tx, igniter world.Entity) bool {
+func (c Campfire) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	tx.PlaySound(pos.Vec3(), sound.Ignite{})
 	if !c.Extinguished {
 		return false
@@ -116,7 +116,7 @@ func (c Campfire) extinguish(pos cube.Pos, tx *world.Tx) {
 }
 
 // Activate ...
-func (c Campfire) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (c Campfire) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if held.Empty() {
 		return false
@@ -151,7 +151,7 @@ func (c Campfire) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u 
 }
 
 // UseOnBlock ...
-func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
@@ -165,7 +165,7 @@ func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, 
 }
 
 // Tick is called to cook the items within the campfire.
-func (c Campfire) Tick(currentTick int64, pos cube.Pos, tx *world.Tx) {
+func (c Campfire) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	if c.Extinguished {
 		// Extinguished, do nothing.
 		return
@@ -197,7 +197,7 @@ func (c Campfire) Tick(currentTick int64, pos cube.Pos, tx *world.Tx) {
 }
 
 // NeighbourUpdateTick ...
-func (c Campfire) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	_, ok := tx.Liquid(pos)
 	liquid, okTwo := tx.Liquid(pos.Side(cube.FaceUp))
 	if (ok || (okTwo && liquid.LiquidType() == "water")) && !c.Extinguished {

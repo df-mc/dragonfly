@@ -11,7 +11,7 @@ import (
 type InteractHandler struct{}
 
 // Handle ...
-func (h *InteractHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (h *InteractHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.Interact)
 	pos := c.Position()
 

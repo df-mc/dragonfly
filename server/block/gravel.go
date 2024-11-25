@@ -15,7 +15,7 @@ type Gravel struct {
 }
 
 // NeighbourUpdateTick ...
-func (g Gravel) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (g Gravel) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	g.fall(g, pos, tx)
 }
 

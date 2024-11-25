@@ -10,7 +10,7 @@ import (
 type ServerBoundDiagnosticsHandler struct{}
 
 // Handle ...
-func (h *ServerBoundDiagnosticsHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (h *ServerBoundDiagnosticsHandler) Handle(p packet.Packet, _ *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.ServerBoundDiagnostics)
 	c.UpdateDiagnostics(diagnostics.Diagnostics{
 		AverageFramesPerSecond:        float64(pk.AverageFramesPerSecond),

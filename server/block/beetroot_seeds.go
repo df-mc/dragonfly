@@ -34,7 +34,7 @@ func (b BeetrootSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // UseOnBlock ...
-func (b BeetrootSeeds) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (b BeetrootSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, b)
 	if !used {
 		return false

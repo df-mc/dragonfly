@@ -37,7 +37,7 @@ func (p Potato) ConsumeDuration() time.Duration {
 }
 
 // Consume ...
-func (p Potato) Consume(tx *world.Tx, c item.Consumer) item.Stack {
+func (p Potato) Consume(_ *world.Tx, c item.Consumer) item.Stack {
 	c.Saturate(1, 0.6)
 	return item.Stack{}
 }
@@ -53,7 +53,7 @@ func (p Potato) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // UseOnBlock ...
-func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, p)
 	if !used {
 		return false

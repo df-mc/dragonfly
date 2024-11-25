@@ -17,7 +17,7 @@ type TNT struct {
 }
 
 // Activate ...
-func (t TNT) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if _, ok := held.Enchantment(enchantment.FireAspect{}); ok {
 		t.Ignite(pos, tx, nil)
@@ -34,7 +34,7 @@ func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 }
 
 // Explode ...
-func (t TNT) Explode(explosionPos mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig) {
+func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, _ ExplosionConfig) {
 	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))))
 }
 

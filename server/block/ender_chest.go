@@ -51,7 +51,7 @@ func (EnderChest) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 }
 
 // UseOnBlock ...
-func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
@@ -65,7 +65,7 @@ func (c EnderChest) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3
 }
 
 // Activate ...
-func (c EnderChest) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (c EnderChest) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(enderChestOwner); ok {
 		opener.OpenBlockContainer(pos, tx)
 		return true

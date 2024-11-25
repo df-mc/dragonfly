@@ -23,7 +23,7 @@ func (f Froglight) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (f Froglight) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (f Froglight) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, f)
 	if !used {
 		return

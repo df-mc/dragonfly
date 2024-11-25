@@ -38,7 +38,7 @@ func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 }
 
 // UseOnBlock ...
-func (f Firework) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+func (f Firework) UseOnBlock(pos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
 	fpos := pos.Vec3().Add(clickPos)
 	create := tx.World().EntityRegistry().Config().Firework
 	opts := world.EntitySpawnOpts{Position: fpos, Rotation: cube.Rotation{rand.Float64() * 360, 90}}

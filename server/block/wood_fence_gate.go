@@ -46,7 +46,7 @@ func (WoodFenceGate) FuelInfo() item.FuelInfo {
 }
 
 // UseOnBlock ...
-func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, f)
 	if !used {
 		return false
@@ -59,7 +59,7 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.V
 }
 
 // NeighbourUpdateTick ...
-func (f WoodFenceGate) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (f WoodFenceGate) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if f.shouldBeLowered(pos, tx) != f.Lowered {
 		f.Lowered = !f.Lowered
 		tx.SetBlock(pos, f, nil)
@@ -75,7 +75,7 @@ func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // Activate ...
-func (f WoodFenceGate) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Rotation().Direction() {
 		f.Facing = f.Facing.Opposite()

@@ -75,7 +75,7 @@ func (k Kelp) withRandomAge() Kelp {
 }
 
 // UseOnBlock ...
-func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, k)
 	if !used {
 		return

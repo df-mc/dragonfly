@@ -32,7 +32,7 @@ type ignitable interface {
 }
 
 // UseOnBlock ...
-func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
 	if l, ok := tx.Block(pos).(ignitable); ok && l.Ignite(pos, tx, user) {
 		return true

@@ -52,7 +52,7 @@ func (l Lectern) BreakInfo() BreakInfo {
 }
 
 // UseOnBlock ...
-func (l Lectern) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (l Lectern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, l)
 	if !used {
 		return false
@@ -72,7 +72,7 @@ type readableBook interface {
 }
 
 // Activate ...
-func (l Lectern) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (l Lectern) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if !l.Book.Empty() {
 		if opener, ok := u.(ContainerOpener); ok {
 			opener.OpenBlockContainer(pos, tx)
@@ -96,7 +96,7 @@ func (l Lectern) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u i
 }
 
 // Punch ...
-func (l Lectern) Punch(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User) {
+func (l Lectern) Punch(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User) {
 	if l.Book.Empty() {
 		// We can't remove a book from the lectern if there isn't one.
 		return

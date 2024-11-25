@@ -32,7 +32,7 @@ type ItemFrame struct {
 }
 
 // Activate ...
-func (i ItemFrame) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if !i.Item.Empty() {
 		// TODO: Item frames with maps can only be rotated four times.
 		i.Rotations = (i.Rotations + 1) % 8
@@ -51,7 +51,7 @@ func (i ItemFrame) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u
 }
 
 // Punch ...
-func (i ItemFrame) Punch(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User) {
+func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User) {
 	if i.Item.Empty() {
 		return
 	}
@@ -69,7 +69,7 @@ func (i ItemFrame) Punch(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u it
 }
 
 // UseOnBlock ...
-func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, i)
 	if !used {
 		return false
@@ -149,7 +149,7 @@ func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 }
 
 // NeighbourUpdateTick ...
-func (i ItemFrame) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(i.Facing)).Model().(model.Empty); ok {
 		// TODO: Allow exceptions for pressure plates.
 		tx.SetBlock(pos, nil, nil)

@@ -53,7 +53,7 @@ func (g ShortGrass) CompostChance() float64 {
 }
 
 // NeighbourUpdateTick ...
-func (g ShortGrass) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (g ShortGrass) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(g, tx.Block(pos.Side(cube.FaceDown))) {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
@@ -66,7 +66,7 @@ func (g ShortGrass) HasLiquidDrops() bool {
 }
 
 // UseOnBlock ...
-func (g ShortGrass) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (g ShortGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, g)
 	if !used {
 		return false

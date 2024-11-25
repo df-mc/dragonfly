@@ -19,7 +19,7 @@ type Cactus struct {
 }
 
 // UseOnBlock handles making sure the neighbouring blocks are air.
-func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false
@@ -33,7 +33,7 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx
 }
 
 // NeighbourUpdateTick ...
-func (c Cactus) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !c.canGrowHere(pos, tx, true) {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
@@ -42,7 +42,7 @@ func (c Cactus) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx
 }
 
 // RandomTick ...
-func (c Cactus) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+func (c Cactus) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Age < 15 {
 		c.Age++
 	} else if c.Age == 15 {
@@ -75,7 +75,7 @@ func (c Cactus) canGrowHere(pos cube.Pos, tx *world.Tx, recursive bool) bool {
 }
 
 // EntityInside ...
-func (c Cactus) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+func (c Cactus) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
 		l.Hurt(0.5, DamageSource{Block: c})
 	}

@@ -46,7 +46,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), tx, c); err != nil {
 			return err
 		}
-		return h.handleReleaseItemTransaction(s, c)
+		return h.handleReleaseItemTransaction(c)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
 }
@@ -174,7 +174,7 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 }
 
 // handleReleaseItemTransaction ...
-func (h *InventoryTransactionHandler) handleReleaseItemTransaction(s *Session, c Controllable) error {
+func (h *InventoryTransactionHandler) handleReleaseItemTransaction(c Controllable) error {
 	c.ReleaseItem()
 	return nil
 }

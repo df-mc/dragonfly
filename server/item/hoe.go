@@ -15,7 +15,7 @@ type Hoe struct {
 }
 
 // UseOnBlock will turn a dirt or grass block into a farmland if the necessary properties are met.
-func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
 	if b, ok := tx.Block(pos).(tillable); ok {
 		if res, ok := b.Till(); ok {
 			if face == cube.FaceDown {

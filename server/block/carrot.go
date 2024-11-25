@@ -32,7 +32,7 @@ func (c Carrot) ConsumeDuration() time.Duration {
 }
 
 // Consume ...
-func (c Carrot) Consume(tx *world.Tx, co item.Consumer) item.Stack {
+func (c Carrot) Consume(_ *world.Tx, co item.Consumer) item.Stack {
 	co.Saturate(3, 3.6)
 	return item.Stack{}
 }
@@ -48,7 +48,7 @@ func (c Carrot) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // UseOnBlock ...
-func (c Carrot) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (c Carrot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false

@@ -11,7 +11,7 @@ import (
 type BookEditHandler struct{}
 
 // Handle ...
-func (b BookEditHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (b BookEditHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, _ Controllable) error {
 	pk := p.(*packet.BookEdit)
 
 	it, err := s.inv.Item(int(pk.InventorySlot))

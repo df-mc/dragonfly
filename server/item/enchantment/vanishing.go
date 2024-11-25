@@ -29,7 +29,7 @@ func (CurseOfVanishing) Rarity() item.EnchantmentRarity {
 }
 
 // CompatibleWithEnchantment ...
-func (CurseOfVanishing) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+func (CurseOfVanishing) CompatibleWithEnchantment(_ item.EnchantmentType) bool {
 	return true
 }
 

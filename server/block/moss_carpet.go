@@ -25,14 +25,14 @@ func (MossCarpet) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (MossCarpet) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (MossCarpet) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		tx.SetBlock(pos, nil, nil)
 	}
 }
 
 // UseOnBlock ...
-func (m MossCarpet) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (m MossCarpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, m)
 	if !used {
 		return

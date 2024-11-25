@@ -17,7 +17,7 @@ type BoneMealAffected interface {
 }
 
 // UseOnBlock ...
-func (b BoneMeal) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
 	if bm, ok := tx.Block(pos).(BoneMealAffected); ok && bm.BoneMeal(pos, tx) {
 		ctx.SubtractFromCount(1)
 		tx.AddParticle(pos.Vec3(), particle.BoneMeal{})

@@ -18,7 +18,7 @@ const (
 )
 
 // handleLoomCraft handles a CraftLoomRecipe stack request action made using a loom table.
-func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeStackRequestAction, s *Session, tx *world.Tx, c Controllable) error {
+func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	// First check if there actually is a loom opened.
 	if _, ok := tx.Block(*s.openedPos.Load()).(block.Loom); !ok || !s.containerOpened.Load() {
 		return fmt.Errorf("no loom container opened")

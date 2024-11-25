@@ -41,7 +41,7 @@ func (Banner) FuelInfo() item.FuelInfo {
 }
 
 // UseOnBlock ...
-func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, b)
 	if !used || face == cube.FaceDown {
 		return false
@@ -58,7 +58,7 @@ func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx
 }
 
 // NeighbourUpdateTick ...
-func (b Banner) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (b Banner) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if b.Attach.hanging {
 		if _, ok := tx.Block(pos.Side(b.Attach.facing.Opposite().Face())).(Air); ok {
 			tx.SetBlock(pos, nil, nil)

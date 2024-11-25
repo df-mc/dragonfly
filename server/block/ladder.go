@@ -22,7 +22,7 @@ type Ladder struct {
 }
 
 // NeighbourUpdateTick ...
-func (l Ladder) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(l.Facing.Opposite())).(LightDiffuser); ok {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
@@ -31,7 +31,7 @@ func (l Ladder) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx
 }
 
 // UseOnBlock ...
-func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, l)
 	if !used {
 		return false
@@ -59,7 +59,7 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx
 }
 
 // EntityInside ...
-func (l Ladder) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+func (l Ladder) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}

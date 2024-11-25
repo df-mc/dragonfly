@@ -120,7 +120,7 @@ func (s Sign) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
 }
 
 // Activate ...
-func (s Sign) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (s Sign) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if editor, ok := u.(SignEditor); ok && !s.Waxed {
 		editor.OpenSign(pos, s.EditingFrontSide(pos, u.Position()))
 	} else if s.Waxed {
@@ -141,7 +141,7 @@ type SignEditor interface {
 }
 
 // UseOnBlock ...
-func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, s)
 	if !used || face == cube.FaceDown {
 		return false
@@ -160,7 +160,7 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *
 }
 
 // NeighbourUpdateTick ...
-func (s Sign) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if s.Attach.hanging {
 		if _, ok := tx.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
 			tx.SetBlock(pos, nil, nil)

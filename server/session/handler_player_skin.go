@@ -10,7 +10,7 @@ import (
 type PlayerSkinHandler struct{}
 
 // Handle ...
-func (PlayerSkinHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (PlayerSkinHandler) Handle(p packet.Packet, _ *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerSkin)
 
 	playerSkin, err := protocolToSkin(pk.Skin)

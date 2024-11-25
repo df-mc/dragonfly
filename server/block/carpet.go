@@ -48,7 +48,7 @@ func (Carpet) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (c Carpet) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c Carpet) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		tx.SetBlock(pos, nil, nil)
 		dropItem(tx, item.NewStack(c, 1), pos.Vec3Centre())
@@ -56,7 +56,7 @@ func (c Carpet) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx
 }
 
 // UseOnBlock handles not placing carpets on top of air blocks.
-func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return

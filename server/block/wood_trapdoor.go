@@ -56,7 +56,7 @@ func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Ve
 }
 
 // Activate ...
-func (t WoodTrapdoor) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	t.Open = !t.Open
 	tx.SetBlock(pos, t, nil)
 	if t.Open {

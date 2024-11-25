@@ -71,7 +71,7 @@ func (w Wall) BreakInfo() BreakInfo {
 }
 
 // NeighbourUpdateTick ...
-func (w Wall) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	w, connectionsUpdated := w.calculateConnections(tx, pos)
 	w, postUpdated := w.calculatePost(tx, pos)
 	if connectionsUpdated || postUpdated {
@@ -80,7 +80,7 @@ func (w Wall) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) 
 }
 
 // UseOnBlock ...
-func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, w)
 	if !used {
 		return

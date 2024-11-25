@@ -36,7 +36,7 @@ func neighboursLavaFlammable(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // EntityInside ...
-func (l Lava) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+func (l Lava) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
@@ -88,14 +88,14 @@ func (Lava) LightEmissionLevel() uint8 {
 }
 
 // NeighbourUpdateTick ...
-func (l Lava) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (l Lava) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !l.Harden(pos, tx, nil) {
 		tx.ScheduleBlockUpdate(pos, tx.World().Dimension().LavaSpreadDuration())
 	}
 }
 
 // ScheduledTick ...
-func (l Lava) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+func (l Lava) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !l.Harden(pos, tx, nil) {
 		tickLiquid(l, pos, tx)
 	}

@@ -11,7 +11,7 @@ type ClientCacheBlobStatusHandler struct {
 }
 
 // Handle ...
-func (c *ClientCacheBlobStatusHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, co Controllable) error {
+func (c *ClientCacheBlobStatusHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, _ Controllable) error {
 	pk := p.(*packet.ClientCacheBlobStatus)
 
 	resp := &packet.ClientCacheMissResponse{Blobs: make([]protocol.CacheBlob, 0, len(pk.MissHashes))}

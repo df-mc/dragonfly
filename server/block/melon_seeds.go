@@ -24,7 +24,7 @@ func (MelonSeeds) SameCrop(c Crop) bool {
 }
 
 // NeighbourUpdateTick ...
-func (m MelonSeeds) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (m MelonSeeds) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: m})
@@ -74,7 +74,7 @@ func (m MelonSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // UseOnBlock ...
-func (m MelonSeeds) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (m MelonSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, m)
 	if !used {
 		return false

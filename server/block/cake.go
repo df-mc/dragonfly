@@ -25,7 +25,7 @@ func (c Cake) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 }
 
 // UseOnBlock ...
-func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false
@@ -40,7 +40,7 @@ func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *
 }
 
 // NeighbourUpdateTick ...
-func (c Cake) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, air := tx.Block(pos.Side(cube.FaceDown)).(Air); air {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
@@ -48,7 +48,7 @@ func (c Cake) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) 
 }
 
 // Activate ...
-func (c Cake) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if i, ok := u.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {

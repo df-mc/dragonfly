@@ -26,7 +26,7 @@ func (s Sand) SoilFor(block world.Block) bool {
 }
 
 // NeighbourUpdateTick ...
-func (s Sand) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (s Sand) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	s.fall(s, pos, tx)
 }
 

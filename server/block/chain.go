@@ -23,7 +23,7 @@ func (Chain) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 }
 
 // UseOnBlock ...
-func (c Chain) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (c Chain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return

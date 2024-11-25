@@ -28,14 +28,14 @@ func (f Farmland) SoilFor(block world.Block) bool {
 }
 
 // NeighbourUpdateTick ...
-func (f Farmland) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (f Farmland) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if solid := tx.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, tx); solid {
 		tx.SetBlock(pos, Dirt{}, nil)
 	}
 }
 
 // RandomTick ...
-func (f Farmland) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+func (f Farmland) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !f.hydrated(pos, tx) {
 		if f.Hydration > 0 {
 			f.Hydration--
@@ -70,7 +70,7 @@ func (f Farmland) hydrated(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // EntityLand ...
-func (f Farmland) EntityLand(pos cube.Pos, tx *world.Tx, e world.Entity, distance *float64) {
+func (f Farmland) EntityLand(pos cube.Pos, tx *world.Tx, e world.Entity, _ *float64) {
 	if living, ok := e.(livingEntity); ok {
 		if fall, ok := living.(fallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
 			ctx := event.C(tx)

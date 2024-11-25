@@ -19,7 +19,7 @@ type SugarCane struct {
 }
 
 // UseOnBlock ensures the placement of the block is OK.
-func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false
@@ -33,7 +33,7 @@ func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3,
 }
 
 // NeighbourUpdateTick ...
-func (c SugarCane) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c SugarCane) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !c.canGrowHere(pos, tx, true) {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
@@ -42,7 +42,7 @@ func (c SugarCane) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world
 }
 
 // RandomTick ...
-func (c SugarCane) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+func (c SugarCane) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Age < 15 {
 		c.Age++
 	} else if c.Age == 15 {

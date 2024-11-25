@@ -88,21 +88,21 @@ func (h Hopper) WithName(a ...any) world.Item {
 }
 
 // AddViewer adds a viewer to the hopper, so that it is updated whenever the inventory of the hopper is changed.
-func (h Hopper) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+func (h Hopper) AddViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	h.viewerMu.Lock()
 	defer h.viewerMu.Unlock()
 	h.viewers[v] = struct{}{}
 }
 
 // RemoveViewer removes a viewer from the hopper, so that slot updates in the inventory are no longer sent to it.
-func (h Hopper) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+func (h Hopper) RemoveViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	h.viewerMu.Lock()
 	defer h.viewerMu.Unlock()
 	delete(h.viewers, v)
 }
 
 // Activate ...
-func (Hopper) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (Hopper) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
 		return true
@@ -111,7 +111,7 @@ func (Hopper) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item
 }
 
 // UseOnBlock ...
-func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, h)
 	if !used {
 		return false

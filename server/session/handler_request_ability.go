@@ -9,7 +9,7 @@ import (
 type RequestAbilityHandler struct{}
 
 // Handle ...
-func (a RequestAbilityHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (a RequestAbilityHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.RequestAbility)
 	if pk.Ability == packet.AbilityFlying {
 		if !c.GameMode().AllowsFlying() {

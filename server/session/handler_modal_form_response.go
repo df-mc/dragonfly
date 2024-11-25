@@ -17,7 +17,7 @@ type ModalFormResponseHandler struct {
 }
 
 // Handle ...
-func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (h *ModalFormResponseHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ModalFormResponse)
 
 	h.mu.Lock()

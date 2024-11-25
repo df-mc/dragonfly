@@ -43,7 +43,7 @@ func (j Jukebox) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 }
 
 // ExtractItem ...
-func (j Jukebox) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
+func (j Jukebox) ExtractItem(_ Hopper, _ cube.Pos, _ *world.Tx) bool {
 	// TODO: This functionality requires redstone to be implemented.
 	return false
 }
@@ -75,7 +75,7 @@ type jukeboxUser interface {
 }
 
 // Activate ...
-func (j Jukebox) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if _, hasDisc := j.Disc(); hasDisc {
 		dropItem(tx, j.Item, pos.Side(cube.FaceUp).Vec3Middle())
 

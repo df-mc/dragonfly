@@ -90,7 +90,7 @@ func (s Slab) CanDisplace(b world.Liquid) bool {
 }
 
 // SideClosed ...
-func (s Slab) SideClosed(pos, side cube.Pos, tx *world.Tx) bool {
+func (s Slab) SideClosed(pos, side cube.Pos, _ *world.Tx) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.Top && side[1] == pos[1]-1
 }

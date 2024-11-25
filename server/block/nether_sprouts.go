@@ -15,14 +15,14 @@ type NetherSprouts struct {
 }
 
 // NeighbourUpdateTick ...
-func (n NetherSprouts) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (n NetherSprouts) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(n, tx.Block(pos.Side(cube.FaceDown))) {
 		tx.SetBlock(pos, nil, nil) // TODO: Nylium & mycelium
 	}
 }
 
 // UseOnBlock ...
-func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, n)
 	if !used {
 		return false

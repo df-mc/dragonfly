@@ -31,7 +31,7 @@ func (n NetherWart) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // UseOnBlock ...
-func (n NetherWart) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (n NetherWart) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, n)
 	if !used {
 		return false
@@ -45,7 +45,7 @@ func (n NetherWart) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3
 }
 
 // NeighbourUpdateTick ...
-func (n NetherWart) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (n NetherWart) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(SoulSand); !ok {
 		tx.SetBlock(pos, nil, nil)
 	}

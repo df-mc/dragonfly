@@ -86,7 +86,7 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	}
 
 	pos := e.Position()
-	if a.subtractTickRadius(e) {
+	if a.subtractTickRadius() {
 		for _, v := range tx.Viewers(pos) {
 			v.ViewEntityState(e)
 		}
@@ -155,7 +155,7 @@ func (a *AreaEffectCloudBehaviour) applyEffects(pos mgl64.Vec3, ent *Ent, entiti
 
 // subtractTickRadius grows the cloud's radius by the radiusTickGrowth value. If the
 // radius goes under 1/2, it will close the entity.
-func (a *AreaEffectCloudBehaviour) subtractTickRadius(e *Ent) bool {
+func (a *AreaEffectCloudBehaviour) subtractTickRadius() bool {
 	a.radius += a.conf.RadiusTickGrowth
 	if a.radius < 0.5 {
 		a.stationary.close = true

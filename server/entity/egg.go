@@ -36,5 +36,5 @@ func (eggType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (eggType) DecodeNBT(m map[string]any, data *world.EntityData) { data.Data = eggConf.New() }
-func (eggType) EncodeNBT(data *world.EntityData) map[string]any    { return nil }
+func (eggType) DecodeNBT(_ map[string]any, data *world.EntityData) { data.Data = eggConf.New() }
+func (eggType) EncodeNBT(_ *world.EntityData) map[string]any       { return nil }

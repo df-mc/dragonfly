@@ -108,7 +108,7 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 		case *protocol.CraftRecipeOptionalStackRequestAction:
 			err = h.handleCraftRecipeOptional(a, s, req.FilterStrings, c, tx)
 		case *protocol.CraftLoomRecipeStackRequestAction:
-			err = h.handleLoomCraft(a, s, tx, c)
+			err = h.handleLoomCraft(a, s, tx)
 		case *protocol.CraftGrindstoneRecipeStackRequestAction:
 			err = h.handleGrindstoneCraft(s, tx, c)
 		case *protocol.CraftCreativeStackRequestAction:

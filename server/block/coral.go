@@ -24,7 +24,7 @@ type Coral struct {
 }
 
 // UseOnBlock ...
-func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false
@@ -55,7 +55,7 @@ func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 }
 
 // NeighbourUpdateTick ...
-func (c Coral) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
@@ -68,7 +68,7 @@ func (c Coral) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx)
 }
 
 // ScheduledTick ...
-func (c Coral) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+func (c Coral) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Dead {
 		return
 	}

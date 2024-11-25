@@ -18,7 +18,7 @@ type DeadBush struct {
 }
 
 // NeighbourUpdateTick ...
-func (d DeadBush) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
@@ -29,7 +29,7 @@ func (d DeadBush) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.
 }
 
 // UseOnBlock ...
-func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, d)
 	if !used {
 		return false

@@ -31,7 +31,7 @@ func (a Anvil) BreakInfo() BreakInfo {
 }
 
 // Activate ...
-func (Anvil) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (Anvil) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
 		return true
@@ -40,7 +40,7 @@ func (Anvil) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.
 }
 
 // UseOnBlock ...
-func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, a)
 	if !used {
 		return
@@ -51,7 +51,7 @@ func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx 
 }
 
 // NeighbourUpdateTick ...
-func (a Anvil) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	a.fall(a, pos, tx)
 }
 

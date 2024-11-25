@@ -49,7 +49,7 @@ func (d WoodDoor) Model() world.BlockModel {
 }
 
 // NeighbourUpdateTick ...
-func (d WoodDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.Top {
 		if _, ok := tx.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
 			tx.SetBlock(pos, nil, nil)
@@ -67,7 +67,7 @@ func (d WoodDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.
 }
 
 // UseOnBlock handles the directional placing of doors
-func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if face != cube.FaceUp {
 		// Doors can only be placed when clicking the top face.
 		return false
@@ -105,7 +105,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, 
 }
 
 // Activate ...
-func (d WoodDoor) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	d.Open = !d.Open
 	tx.SetBlock(pos, d, nil)
 

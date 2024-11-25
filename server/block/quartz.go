@@ -31,7 +31,7 @@ type (
 )
 
 // UseOnBlock handles the rotational placing of quartz pillar blocks.
-func (q QuartzPillar) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (q QuartzPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, q)
 	if !used {
 		return

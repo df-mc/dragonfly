@@ -20,7 +20,7 @@ func (s SporeBlossom) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (s SporeBlossom) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (s SporeBlossom) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, tx) {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
@@ -28,7 +28,7 @@ func (s SporeBlossom) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *wo
 }
 
 // UseOnBlock ...
-func (s SporeBlossom) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (s SporeBlossom) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, s)
 	if !used {
 		return

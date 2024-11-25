@@ -30,7 +30,7 @@ func (MuddyMangroveRoots) SoilFor(block world.Block) bool {
 }
 
 // UseOnBlock ...
-func (m MuddyMangroveRoots) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (m MuddyMangroveRoots) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, m)
 	if !used {
 		return

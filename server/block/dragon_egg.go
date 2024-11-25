@@ -18,7 +18,7 @@ type DragonEgg struct {
 }
 
 // NeighbourUpdateTick ...
-func (d DragonEgg) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (d DragonEgg) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	d.fall(d, pos, tx)
 }
 
@@ -47,7 +47,7 @@ func (d DragonEgg) LightEmissionLevel() uint8 {
 }
 
 // Punch ...
-func (d DragonEgg) Punch(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User) {
+func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User) {
 	if gm, ok := u.(interface{ GameMode() world.GameMode }); ok && gm.GameMode().CreativeInventory() {
 		return
 	}
@@ -55,7 +55,7 @@ func (d DragonEgg) Punch(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u it
 }
 
 // Activate ...
-func (d DragonEgg) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	d.teleport(pos, tx)
 	return true
 }

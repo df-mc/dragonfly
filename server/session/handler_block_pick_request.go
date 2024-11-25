@@ -10,7 +10,7 @@ import (
 type BlockPickRequestHandler struct{}
 
 // Handle ...
-func (b BlockPickRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (b BlockPickRequestHandler) Handle(p packet.Packet, _ *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.BlockPickRequest)
 	c.PickBlock(cube.Pos{int(pk.Position.X()), int(pk.Position.Y()), int(pk.Position.Z())})
 	return nil

@@ -31,7 +31,7 @@ func (d DoubleFlower) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // NeighbourUpdateTick ...
-func (d DoubleFlower) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.UpperPart {
 		if bottom, ok := tx.Block(pos.Side(cube.FaceDown)).(DoubleFlower); !ok || bottom.Type != d.Type || bottom.UpperPart {
 			tx.SetBlock(pos, nil, nil)
@@ -52,7 +52,7 @@ func (d DoubleFlower) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *wo
 }
 
 // UseOnBlock ...
-func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, d)
 	if !used {
 		return false

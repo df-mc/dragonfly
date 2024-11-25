@@ -90,7 +90,7 @@ func (c Composter) BreakInfo() BreakInfo {
 }
 
 // Activate ...
-func (c Composter) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (c Composter) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if c.Level >= 7 {
 		if c.Level == 8 {
 			c.Level = 0
@@ -130,7 +130,7 @@ func (c Composter) fill(it item.Stack, pos cube.Pos, tx *world.Tx) bool {
 }
 
 // ScheduledTick ...
-func (c Composter) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+func (c Composter) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Level == 7 {
 		c.Level = 8
 		tx.SetBlock(pos, c, nil)

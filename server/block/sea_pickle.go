@@ -74,7 +74,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // UseOnBlock ...
-func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if existing, ok := tx.Block(pos).(SeaPickle); ok {
 		if existing.AdditionalCount >= 3 {
 			return false
@@ -104,7 +104,7 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3,
 }
 
 // NeighbourUpdateTick ...
-func (s SeaPickle) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !s.canSurvive(pos, tx) {
 		tx.SetBlock(pos, nil, nil)
 		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})

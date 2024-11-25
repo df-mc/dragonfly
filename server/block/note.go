@@ -47,7 +47,7 @@ func (n Note) EncodeNBT() map[string]any {
 }
 
 // Activate ...
-func (n Note) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}

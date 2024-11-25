@@ -29,7 +29,7 @@ func (l Loom) BreakInfo() BreakInfo {
 }
 
 // Activate ...
-func (Loom) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (Loom) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
 		return true
@@ -38,7 +38,7 @@ func (Loom) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.U
 }
 
 // UseOnBlock ...
-func (l Loom) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (l Loom) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, l)
 	if !used {
 		return

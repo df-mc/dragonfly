@@ -21,7 +21,7 @@ func (l LitPumpkin) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (l LitPumpkin) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (l LitPumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, l)
 	if !used {
 		return

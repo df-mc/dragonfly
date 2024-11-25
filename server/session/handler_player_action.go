@@ -12,7 +12,7 @@ import (
 type PlayerActionHandler struct{}
 
 // Handle ...
-func (*PlayerActionHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (*PlayerActionHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerAction)
 
 	return handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s, c)

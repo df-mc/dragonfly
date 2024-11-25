@@ -24,7 +24,7 @@ func (c ConcretePowder) Solidifies(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // NeighbourUpdateTick ...
-func (c ConcretePowder) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	for i := cube.Face(0); i < 6; i++ {
 		if _, ok := tx.Block(pos.Side(i)).(Water); ok {
 			tx.SetBlock(pos, Concrete{Colour: c.Colour}, nil)

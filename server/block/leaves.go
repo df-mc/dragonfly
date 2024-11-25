@@ -24,7 +24,7 @@ type Leaves struct {
 }
 
 // UseOnBlock makes leaves persistent when they are placed so that they don't decay.
-func (l Leaves) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (l Leaves) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, l)
 	if !used {
 		return
@@ -60,7 +60,7 @@ func findLog(pos cube.Pos, tx *world.Tx, visited *[]cube.Pos, distance int) bool
 }
 
 // RandomTick ...
-func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !l.Persistent && l.ShouldUpdate {
 		if findLog(pos, tx, &[]cube.Pos{}, 0) {
 			l.ShouldUpdate = false
@@ -72,7 +72,7 @@ func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // NeighbourUpdateTick ...
-func (l Leaves) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !l.Persistent && !l.ShouldUpdate {
 		l.ShouldUpdate = true
 		tx.SetBlock(pos, l, nil)

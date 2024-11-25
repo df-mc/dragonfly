@@ -27,7 +27,7 @@ type Water struct {
 }
 
 // EntityInside ...
-func (w Water) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+func (w Water) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
@@ -83,7 +83,7 @@ func (Water) LightDiffusionLevel() uint8 {
 }
 
 // ScheduledTick ...
-func (w Water) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+func (w Water) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if w.Depth == 7 {
 		// Attempt to form new water source blocks.
 		count := 0
@@ -113,7 +113,7 @@ func (w Water) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // NeighbourUpdateTick ...
-func (Water) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+func (Water) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if tx.World().Dimension().WaterEvaporates() {
 		// Particles are spawned client-side.
 		tx.SetLiquid(pos, nil)

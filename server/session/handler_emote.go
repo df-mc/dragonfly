@@ -13,7 +13,7 @@ type EmoteHandler struct {
 }
 
 // Handle ...
-func (h *EmoteHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (h *EmoteHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.Emote)
 
 	if pk.EntityRuntimeID != selfEntityRuntimeID {

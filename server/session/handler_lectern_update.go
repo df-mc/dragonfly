@@ -11,7 +11,7 @@ import (
 type LecternUpdateHandler struct{}
 
 // Handle ...
-func (LecternUpdateHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (LecternUpdateHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.LecternUpdate)
 	pos := blockPosFromProtocol(pk.Position)
 	if !canReach(c, pos.Vec3Middle()) {
