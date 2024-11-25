@@ -58,8 +58,10 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 			return nil
 		}
 		c.ContinueBreaking(cube.Face(face))
-	case protocol.PlayerActionStartItemUseOn, protocol.PlayerActionStopItemUseOn:
+	case protocol.PlayerActionStartItemUseOn:
 		// TODO: Properly utilize these actions.
+	case protocol.PlayerActionStopItemUseOn:
+		c.ReleaseItem()
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
