@@ -924,10 +924,8 @@ func (p *Player) kill(src world.DamageSource) {
 			pos, w, spawnObstructed, _ := p.spawnLocation()
 			vec := pos.Vec3()
 
-			p.Handler().HandleRespawn(&vec, &w)
-
 			if spawnObstructed {
-				w.SetPlayerSpawn(p.UUID(), w.Spawn())
+				w.SetPlayerSpawn(p.UUID(), pos)
 			}
 
 			p.pos.Store(&vec)

@@ -214,11 +214,9 @@ func (b Bed) side(pos cube.Pos, w *world.World) (Bed, cube.Pos, bool) {
 
 // allBeds returns all possible beds.
 func allBeds() (beds []world.Block) {
-	for _, c := range item.Colours() {
-		for _, d := range cube.Directions() {
-			beds = append(beds, Bed{Facing: d, Colour: c})
-			beds = append(beds, Bed{Facing: d, Colour: c, Head: true})
-		}
+	for _, d := range cube.Directions() {
+		beds = append(beds, Bed{Facing: d})
+		beds = append(beds, Bed{Facing: d, Head: true})
 	}
 	return
 }
