@@ -2,10 +2,9 @@ package recipe
 
 import (
 	_ "embed"
-
-	// Ensure all blocks and items are registered before trying to load vanilla recipes.
-	_ "github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
+
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
@@ -18,6 +17,8 @@ var (
 	vanillaSmithingTrimData []byte
 	//go:embed furnace_data.nbt
 	furnaceData []byte
+	//go:embed potion_data.nbt
+	vanillaPotionData []byte
 )
 
 // shapedRecipe is a recipe that must be crafted in a specific shape.
@@ -45,7 +46,25 @@ type furnaceRecipe struct {
 	Block  string     `nbt:"block"`
 }
 
-func init() {
+// potionRecipe is a recipe that may be crafted in a brewing stand.
+type potionRecipe struct {
+	Input   inputItem  `nbt:"input"`
+	Reagent inputItem  `nbt:"reagent"`
+	Output  outputItem `nbt:"output"`
+}
+
+// potionContainerChangeRecipe is a recipe that may be crafted in a brewing stand.
+type potionContainerChangeRecipe struct {
+	Input   string    `nbt:"input"`
+	Reagent inputItem `nbt:"reagent"`
+	Output  string    `nbt:"output"`
+}
+
+// registerVanilla can be called to register all vanilla recipes from the generated data files.
+// noinspection GoUnusedFunction
+//
+//lint:ignore U1000 Function is used through compiler directives.
+func registerVanilla() {
 	var craftingRecipes struct {
 		Shaped    []shapedRecipe    `nbt:"shaped"`
 		Shapeless []shapelessRecipe `nbt:"shapeless"`
@@ -142,6 +161,47 @@ func init() {
 			input:  []Item{input},
 			output: []item.Stack{output},
 			block:  s.Block,
+		}})
+	}
+
+	var potionRecipes struct {
+		Potions          []potionRecipe                `nbt:"potions"`
+		ContainerChanges []potionContainerChangeRecipe `nbt:"container_changes"`
+	}
+
+	if err := nbt.Unmarshal(vanillaPotionData, &potionRecipes); err != nil {
+		panic(err)
+	}
+
+	for _, r := range potionRecipes.Potions {
+		input, ok := r.Input.Item()
+		reagent, okTwo := r.Reagent.Item()
+		output, okThree := r.Output.Stack()
+		if !ok || !okTwo || !okThree {
+			// This can be expected to happen - refer to the comment above.
+			continue
+		}
+
+		Register(Potion{recipe{
+			input:  []Item{input, reagent},
+			output: []item.Stack{output},
+			block:  "brewing_stand",
+		}})
+	}
+
+	for _, c := range potionRecipes.ContainerChanges {
+		input, ok := world.ItemByName(c.Input, 0)
+		reagent, okTwo := c.Reagent.Item()
+		output, okThree := world.ItemByName(c.Output, 0)
+		if !ok || !okTwo || !okThree {
+			// This can be expected to happen - refer to the comment above.
+			continue
+		}
+
+		Register(PotionContainerChange{recipe{
+			input:  []Item{item.NewStack(input, 1), reagent},
+			output: []item.Stack{item.NewStack(output, 1)},
+			block:  "brewing_stand",
 		}})
 	}
 }

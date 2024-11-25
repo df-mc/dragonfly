@@ -63,7 +63,7 @@ type Player struct {
 	armour                   *inventory.Armour
 	heldSlot                 *atomic.Uint32
 
-	sneaking, sprinting, swimming, gliding, flying,
+	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem atomic.Bool
 	usingSince atomic.Int64
 
@@ -80,7 +80,9 @@ type Player struct {
 	// lastTickedWorld holds the world that the player was in, in the last tick.
 	lastTickedWorld *world.World
 
-	speed      atomic.Uint64
+	speed       atomic.Uint64
+	flightSpeed atomic.Uint64
+
 	health     *entity.HealthManager
 	experience *entity.ExperienceManager
 	effects    *entity.EffectManager
@@ -141,6 +143,7 @@ func New(name string, skin skin.Skin, pos mgl64.Vec3) *Player {
 	p.Handle(nil)
 	p.skin.Store(&skin)
 	p.speed.Store(math.Float64bits(0.1))
+	p.flightSpeed.Store(math.Float64bits(0.05))
 	p.nameTag.Store(&name)
 	p.scoreTag.Store(&scoreTag)
 	p.airSupplyTicks.Store(300)
@@ -491,6 +494,20 @@ func (p *Player) Speed() float64 {
 	return math.Float64frombits(p.speed.Load())
 }
 
+// SetFlightSpeed sets the flight speed of the player. The value passed represents the base speed, which is
+// multiplied by 10 to obtain the actual blocks/tick speed that the player will then obtain while flying.
+func (p *Player) SetFlightSpeed(flightSpeed float64) {
+	p.flightSpeed.Store(math.Float64bits(flightSpeed))
+	p.session().SendAbilities()
+}
+
+// FlightSpeed returns the flight speed of the player, with the value representing the base speed. The actual
+// blocks/tick speed is this value multiplied by 10. The default flight speed of a player is 0.05, which
+// corresponds to 0.5 blocks/tick.
+func (p *Player) FlightSpeed() float64 {
+	return math.Float64frombits(p.flightSpeed.Load())
+}
+
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
 func (p *Player) Health() float64 {
 	return p.health.Health()
@@ -691,7 +708,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 // Explode ...
 func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
 	diff := p.Position().Sub(explosionPos)
-	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size+1), entity.ExplosionDamageSource{})
+	p.Hurt(math.Floor((impact*impact+impact)/2*7*c.Size*2+1), entity.ExplosionDamageSource{})
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
 }
 
@@ -951,7 +968,7 @@ func (p *Player) Respawn() {
 // particles show up under the feet. The player will only start sprinting if its food level is high enough.
 // If the player is sneaking when calling StartSprinting, it is stopped from sneaking.
 func (p *Player) StartSprinting() {
-	if !p.hunger.canSprint() && p.GameMode().AllowsTakingDamage() {
+	if !p.hunger.canSprint() && p.GameMode().AllowsTakingDamage() || p.crawling.Load() {
 		return
 	}
 	ctx := event.C()
@@ -1042,6 +1059,43 @@ func (p *Player) StopSwimming() {
 		return
 	}
 	p.updateState()
+}
+
+// Splash is called when a water bottle splashes onto the player.
+func (p *Player) Splash(*world.World, mgl64.Vec3) {
+	if d := p.OnFireDuration(); d.Seconds() <= 0 {
+		return
+	}
+	p.Extinguish()
+}
+
+// StartCrawling makes the player start crawling if it is not currently doing so. If the player is sneaking
+// while StartCrawling is called, the sneaking is stopped.
+func (p *Player) StartCrawling() {
+	for _, corner := range p.Type().BBox(p).Translate(p.Position()).Corners() {
+		_, isAir := p.World().Block(cube.PosFromVec3(corner).Add(cube.Pos{0, 1, 0})).(block.Air)
+		if !isAir {
+			if !p.crawling.CompareAndSwap(false, true) {
+				return
+			}
+			break
+		}
+	}
+	p.StopSneaking()
+	p.updateState()
+}
+
+// StopCrawling makes the player stop crawling if it is currently doing so.
+func (p *Player) StopCrawling() {
+	if !p.crawling.CompareAndSwap(true, false) {
+		return
+	}
+	p.updateState()
+}
+
+// Crawling checks if the player is currently crawling.
+func (p *Player) Crawling() bool {
+	return p.crawling.Load()
 }
 
 // StartGliding makes the player start gliding if it is not currently doing so.
@@ -1460,6 +1514,15 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The block was activated: Blocks such as doors must always have precedence over the item being
 			// used.
 			if useCtx := p.useContext(); act.Activate(pos, face, p.World(), p, useCtx) {
+				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
+				p.addNewItem(useCtx)
+				return
+			}
+		}
+	}
+	if p.Sneaking() {
+		if act, ok := b.(block.SneakingActivatable); ok {
+			if useCtx := p.useContext(); act.SneakingActivate(pos, face, p.World(), p, useCtx) {
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 				p.addNewItem(useCtx)
 				return
@@ -2067,19 +2130,16 @@ func (p *Player) ChangingDimension() bool {
 
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
 // be added is returned.
-func (p *Player) Collect(s item.Stack) int {
-	if p.Dead() {
-		return 0
-	}
-	if !p.GameMode().AllowsInteraction() {
-		return 0
+func (p *Player) Collect(s item.Stack) (int, bool) {
+	if p.Dead() || !p.GameMode().AllowsInteraction() {
+		return 0, false
 	}
 	ctx := event.C()
 	if p.Handler().HandleItemPickup(ctx, &s); ctx.Cancelled() {
-		return 0
+		return 0, false
 	}
 	n, _ := p.Inventory().AddItem(s)
-	return n
+	return n, true
 }
 
 // Experience returns the amount of experience the player has.
@@ -2615,10 +2675,14 @@ func (p *Player) OnGround() bool {
 	return p.onGround.Load()
 }
 
-// EyeHeight returns the eye height of the player: 1.62, or 0.52 if the player is swimming.
+// EyeHeight returns the eye height of the player: 1.62, 1.26 if player is sneaking or 0.52 if the player is
+// swimming, gliding or crawling.
 func (p *Player) EyeHeight() float64 {
-	if p.swimming.Load() {
+	switch {
+	case p.swimming.Load() || p.crawling.Load() || p.Gliding():
 		return 0.52
+	case p.sneaking.Load():
+		return 1.26
 	}
 	return 1.62
 }

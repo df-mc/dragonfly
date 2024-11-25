@@ -122,7 +122,13 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Sessi
 	if flags.Test(packet.InputFlagStartJumping) {
 		s.c.Jump()
 	}
-	if flags.Test(packet.InputFlagMissedSwing) {
+	if flags&packet.InputFlagStartCrawling != 0 {
+		s.c.StartCrawling()
+	}
+	if flags&packet.InputFlagStopCrawling != 0 {
+		s.c.StopCrawling()
+	}
+	if flags&packet.InputFlagMissedSwing != 0 {
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 		s.c.PunchAir()

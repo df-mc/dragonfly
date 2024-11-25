@@ -21,6 +21,15 @@ type Activatable interface {
 	Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool
 }
 
+// SneakingActivatable represents a block that may be activated by a viewer of the world while sneaking. When
+// activated, the block will execute some specific logic.
+type SneakingActivatable interface {
+	// SneakingActivate activates the block at a specific block position while sneaking. The face clicked is
+	// passed, as well as the world in which the block was activated and the viewer that activated it.
+	// SneakingActivate returns a bool indicating if activating the block was used successfully.
+	SneakingActivate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool
+}
+
 // Pickable represents a block that may give a different item then the block itself when picked.
 type Pickable interface {
 	// Pick returns the item that is picked when the block is picked.
