@@ -49,6 +49,8 @@ github.com/sandertv/gophertunnel v1.42.3-0.20241116121323-39b816f98736 h1:02pOs3
 github.com/sandertv/gophertunnel v1.42.3-0.20241116121323-39b816f98736/go.mod h1:krvLSeRUNQ2iEYJNEgzrKtWO8W5ybZxN5lFfSCkHoNk=
 github.com/sandertv/gophertunnel v1.42.3-0.20241125193848-64ce0e369b7a h1:DzueVjS4Zh95fgeQa2PUsF3RljFi+7X0S1L7Awzh9ss=
 github.com/sandertv/gophertunnel v1.42.3-0.20241125193848-64ce0e369b7a/go.mod h1:krvLSeRUNQ2iEYJNEgzrKtWO8W5ybZxN5lFfSCkHoNk=
+github.com/sandertv/gophertunnel v1.42.3-0.20241125194719-af2083f28837 h1:f4WZA5Eg62X4n9UkfKs/DKYylIHxziHCdPDC+Qqa6E4=
+github.com/sandertv/gophertunnel v1.42.3-0.20241125194719-af2083f28837/go.mod h1:krvLSeRUNQ2iEYJNEgzrKtWO8W5ybZxN5lFfSCkHoNk=
 github.com/segmentio/fasthash v1.0.3 h1:EI9+KE1EwvMLBWwjpRDc+fEM+prwxDYbslddQGtrmhM=
 github.com/segmentio/fasthash v1.0.3/go.mod h1:waKX8l2N8yckOgmSsXJi7x1ZfdKZ4x7KRMzBtS3oedY=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
