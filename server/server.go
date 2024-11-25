@@ -119,13 +119,13 @@ func (srv *Server) Listen() {
 // returned are only valid within the block of the for loop used to iterate over
 // them:
 //
-//	  for p := range srv.Accept() {
-//	    // p is valid here
-//		go func() {
-//	      // p is no longer valid here
-//	    }()
-//	  }
-//	  // p is no longer valid here
+//	for p := range srv.Accept() {
+//	  // p is valid here
+//	  go func() {
+//	    // p is no longer valid here
+//	  }()
+//	}
+//	// p is no longer valid here
 func (srv *Server) Accept() iter.Seq[*player.Player] {
 	return func(yield func(*player.Player) bool) {
 		for {
@@ -188,13 +188,13 @@ func (srv *Server) MaxPlayerCount() int {
 // passed. Passing nil is otherwise valid. Players returned are only valid
 // within the block of the for loop used to iterate over them:
 //
-//	  for p := range srv.Players() {
-//	    // p is valid here
-//		go func() {
-//	      // p is no longer valid here
-//	    }()
-//	  }
-//	  // p is no longer valid here
+//	for p := range srv.Players() {
+//	  // p is valid here
+//	  go func() {
+//	    // p is no longer valid here
+//	  }()
+//	}
+//	// p is no longer valid here
 //
 // Collecting all values from the iterator using a function such as
 // slices.Collect immediately invalidates the players because their transactions
