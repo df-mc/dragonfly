@@ -2,7 +2,6 @@ package player
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/diagnostics"
 	"math"
 	"math/rand"
 	"net"
@@ -2707,7 +2706,7 @@ func (p *Player) PunchAir() {
 }
 
 // UpdateDiagnostics updates the diagnostics of the player.
-func (p *Player) UpdateDiagnostics(d diagnostics.Diagnostics) {
+func (p *Player) UpdateDiagnostics(d session.Diagnostics) {
 	p.Handler().HandleDiagnostics(p, d)
 }
 
