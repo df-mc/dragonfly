@@ -8,7 +8,7 @@ import (
 
 // AffectedDamageSource represents a world.DamageSource whose damage may be
 // affected by an enchantment. A world.DamageSource does not need to implement
-// AffectedDamageSource to let Protection affect the damage. This happens
+// AffectedDamageSource to let protection affect the damage. This happens
 // depending on the (world.DamageSource).ReducedByResistance() method.
 type AffectedDamageSource interface {
 	world.DamageSource
@@ -36,8 +36,8 @@ func ProtectionFactor(src world.DamageSource, enchantments []item.Enchantment) f
 			continue
 		}
 		reduced := false
-		if _, ok := t.(Protection); ok && src.ReducedByResistance() {
-			// Special case for Protection, because it applies to all damage
+		if _, ok := t.(protection); ok && src.ReducedByResistance() {
+			// Special case for protection, because it applies to all damage
 			// sources by default, except those not reduced by resistance.
 			reduced = true
 		} else if asrc, ok := src.(AffectedDamageSource); ok && asrc.AffectedByEnchantment(t) {

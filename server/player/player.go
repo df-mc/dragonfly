@@ -855,7 +855,7 @@ func (p *Player) dropItems() {
 
 	p.MoveItemsToInventory()
 	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
-		if _, ok := it.Enchantment(enchantment.CurseOfVanishing{}); ok {
+		if _, ok := it.Enchantment(enchantment.CurseOfVanishing); ok {
 			continue
 		}
 		opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
@@ -1190,7 +1190,7 @@ func (p *Player) OnFireDuration() time.Duration {
 // SetOnFire ...
 func (p *Player) SetOnFire(duration time.Duration) {
 	ticks := int64(duration.Seconds() * 20)
-	if level := p.Armour().HighestEnchantmentLevel(enchantment.FireProtection{}); level > 0 {
+	if level := p.Armour().HighestEnchantmentLevel(enchantment.FireProtection); level > 0 {
 		ticks -= int64(math.Floor(float64(ticks) * float64(level) * 0.15))
 	}
 	p.fireTicks = ticks
@@ -1570,8 +1570,8 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	if weakness, ok := p.Effect(effect.Weakness{}); ok {
 		dmg -= dmg * effect.Weakness{}.Multiplier(weakness.Level())
 	}
-	if s, ok := i.Enchantment(enchantment.Sharpness{}); ok {
-		dmg += (enchantment.Sharpness{}).Addend(s.Level())
+	if s, ok := i.Enchantment(enchantment.Sharpness); ok {
+		dmg += enchantment.Sharpness.Addend(s.Level())
 	}
 	if critical {
 		dmg *= 1.5
@@ -1592,16 +1592,16 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 
 	p.Exhaust(0.1)
 
-	if k, ok := i.Enchantment(enchantment.KnockBack{}); ok {
-		inc := (enchantment.KnockBack{}).Force(k.Level())
+	if k, ok := i.Enchantment(enchantment.Knockback); ok {
+		inc := enchantment.Knockback.Force(k.Level())
 		force += inc
 		height += inc
 	}
 	living.KnockBack(p.Position(), force, height)
 
-	if f, ok := i.Enchantment(enchantment.FireAspect{}); ok {
+	if f, ok := i.Enchantment(enchantment.FireAspect); ok {
 		if flammable, ok := living.(entity.Flammable); ok {
-			flammable.SetOnFire((enchantment.FireAspect{}).Duration(f.Level()))
+			flammable.SetOnFire(enchantment.FireAspect.Duration(f.Level()))
 		}
 	}
 
@@ -1672,7 +1672,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	if !p.OnGround() {
 		breakTime *= 5
 	}
-	if _, ok := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity{}); p.insideOfWater() && !ok {
+	if _, ok := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity); p.insideOfWater() && !ok {
 		breakTime *= 5
 	}
 	for _, e := range p.Effects() {
@@ -2154,17 +2154,17 @@ func (p *Player) CollectExperience(value int) bool {
 func (p *Player) mendItems(xp int) int {
 	mendingItems := make([]item.Stack, 0, 6)
 	held, offHand := p.HeldItems()
-	if _, ok := offHand.Enchantment(enchantment.Mending{}); ok && offHand.Durability() < offHand.MaxDurability() {
+	if _, ok := offHand.Enchantment(enchantment.Mending); ok && offHand.Durability() < offHand.MaxDurability() {
 		mendingItems = append(mendingItems, offHand)
 	}
-	if _, ok := held.Enchantment(enchantment.Mending{}); ok && held.Durability() < held.MaxDurability() {
+	if _, ok := held.Enchantment(enchantment.Mending); ok && held.Durability() < held.MaxDurability() {
 		mendingItems = append(mendingItems, held)
 	}
 	for _, i := range p.Armour().Items() {
 		if i.Durability() == i.MaxDurability() {
 			continue
 		}
-		if _, ok := i.Enchantment(enchantment.Mending{}); ok {
+		if _, ok := i.Enchantment(enchantment.Mending); ok {
 			mendingItems = append(mendingItems, i)
 		}
 	}
@@ -2176,7 +2176,7 @@ func (p *Player) mendItems(xp int) int {
 	repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(xp*2))
 	repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
 	if repairAmount >= 2 {
-		// Mending removes 1 experience point for every 2 durability points. If the repaired durability is less than 2,
+		// mending removes 1 experience point for every 2 durability points. If the repaired durability is less than 2,
 		// then no experience is removed.
 		xp -= int(math.Ceil(repairAmount / 2))
 	}
@@ -2317,8 +2317,8 @@ func (p *Player) Tick(_ *world.Tx, current int64) {
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
 func (p *Player) tickAirSupply() {
 	if !p.canBreathe() {
-		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration{}); ok && rand.Float64() <= (enchantment.Respiration{}).Chance(r.Level()) {
-			// Respiration grants a chance to avoid drowning damage every tick.
+		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration); ok && rand.Float64() <= enchantment.Respiration.Chance(r.Level()) {
+			// respiration grants a chance to avoid drowning damage every tick.
 			return
 		}
 		if p.airSupplyTicks -= 1; p.airSupplyTicks <= -20 {
@@ -2721,8 +2721,8 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 	if p.Handler().HandleItemDamage(ctx, s, d); ctx.Cancelled() {
 		return s
 	}
-	if e, ok := s.Enchantment(enchantment.Unbreaking{}); ok {
-		d = (enchantment.Unbreaking{}).Reduce(s.Item(), e.Level(), d)
+	if e, ok := s.Enchantment(enchantment.Unbreaking); ok {
+		d = enchantment.Unbreaking.Reduce(s.Item(), e.Level(), d)
 	}
 	if s = s.Damage(d); s.Empty() {
 		p.tx.PlaySound(p.Position(), sound.ItemBreak{})

@@ -52,8 +52,7 @@ func (FallDamageSource) ReducedByArmour() bool     { return false }
 func (FallDamageSource) ReducedByResistance() bool { return true }
 func (FallDamageSource) Fire() bool                { return false }
 func (FallDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
-	_, featherFalling := e.(enchantment.FeatherFalling)
-	return featherFalling
+	return e == enchantment.FeatherFalling
 }
 func (GlideDamageSource) ReducedByArmour() bool           { return false }
 func (GlideDamageSource) ReducedByResistance() bool       { return true }
@@ -77,13 +76,11 @@ func (ProjectileDamageSource) ReducedByResistance() bool  { return true }
 func (ProjectileDamageSource) ReducedByArmour() bool      { return true }
 func (ProjectileDamageSource) Fire() bool                 { return false }
 func (ProjectileDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
-	_, prot := e.(enchantment.ProjectileProtection)
-	return prot
+	return e == enchantment.ProjectileProtection
 }
 func (ExplosionDamageSource) ReducedByResistance() bool { return true }
 func (ExplosionDamageSource) ReducedByArmour() bool     { return true }
 func (ExplosionDamageSource) Fire() bool                { return false }
 func (ExplosionDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
-	_, prot := e.(enchantment.BlastProtection)
-	return prot
+	return e == enchantment.BlastProtection
 }

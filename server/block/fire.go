@@ -285,6 +285,5 @@ func (FireDamageSource) ReducedByResistance() bool { return true }
 func (FireDamageSource) ReducedByArmour() bool     { return true }
 func (FireDamageSource) Fire() bool                { return true }
 func (FireDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
-	_, prot := e.(enchantment.FireProtection)
-	return prot
+	return e == enchantment.FireProtection
 }

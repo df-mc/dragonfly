@@ -5,45 +5,45 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// ProjectileProtection is an armour enchantment that reduces damage from projectiles.
-type ProjectileProtection struct{}
+// ProjectileProtection is an armour enchantment that reduces damage from
+// projectiles.
+var ProjectileProtection projectileProtection
+
+type projectileProtection struct{}
 
 // Name ...
-func (ProjectileProtection) Name() string {
+func (projectileProtection) Name() string {
 	return "Projectile Protection"
 }
 
 // MaxLevel ...
-func (ProjectileProtection) MaxLevel() int {
+func (projectileProtection) MaxLevel() int {
 	return 4
 }
 
 // Cost ...
-func (ProjectileProtection) Cost(level int) (int, int) {
-	min := 3 + (level-1)*6
-	return min, min + 6
+func (projectileProtection) Cost(level int) (int, int) {
+	minCost := 3 + (level-1)*6
+	return minCost, minCost + 6
 }
 
 // Rarity ...
-func (ProjectileProtection) Rarity() item.EnchantmentRarity {
+func (projectileProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
 // Modifier returns the base protection modifier for the enchantment.
-func (ProjectileProtection) Modifier() float64 {
+func (projectileProtection) Modifier() float64 {
 	return 0.08
 }
 
 // CompatibleWithEnchantment ...
-func (ProjectileProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	_, blastProtection := t.(BlastProtection)
-	_, fireProtection := t.(FireProtection)
-	_, protection := t.(Protection)
-	return !blastProtection && !fireProtection && !protection
+func (projectileProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	return t != BlastProtection && t != FireProtection && t != Protection
 }
 
 // CompatibleWithItem ...
-func (ProjectileProtection) CompatibleWithItem(i world.Item) bool {
+func (projectileProtection) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Armour)
 	return ok
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
 	"math/rand"
+	"slices"
 	"time"
 )
 
@@ -36,8 +37,8 @@ func BreakDuration(b world.Block, i item.Stack) time.Duration {
 	}
 	if info.Effective(t) {
 		eff := t.BaseMiningEfficiency(b)
-		if e, ok := i.Enchantment(enchantment.Efficiency{}); ok {
-			eff += (enchantment.Efficiency{}).Addend(e.Level())
+		if e, ok := i.Enchantment(enchantment.Efficiency); ok {
+			eff += enchantment.Efficiency.Addend(e.Level())
 		}
 		breakTime /= eff
 	}
@@ -65,8 +66,8 @@ func BreaksInstantly(b world.Block, i item.Stack) bool {
 
 	// TODO: Account for haste etc here.
 	efficiencyVal := 0.0
-	if e, ok := i.Enchantment(enchantment.Efficiency{}); ok {
-		efficiencyVal += (enchantment.Efficiency{}).Addend(e.Level())
+	if e, ok := i.Enchantment(enchantment.Efficiency); ok {
+		efficiencyVal += enchantment.Efficiency.Addend(e.Level())
 	}
 	hasteVal := 0.0
 	return (t.BaseMiningEfficiency(b)+efficiencyVal)*hasteVal >= hardness*30
@@ -197,12 +198,9 @@ func oneOf(i ...world.Item) func(item.Tool, []item.Enchantment) []item.Stack {
 
 // hasSilkTouch checks if an item has the silk touch enchantment.
 func hasSilkTouch(enchantments []item.Enchantment) bool {
-	for _, enchant := range enchantments {
-		if _, ok := enchant.Type().(enchantment.SilkTouch); ok {
-			return true
-		}
-	}
-	return false
+	return slices.IndexFunc(enchantments, func(i item.Enchantment) bool {
+		return i.Type() == enchantment.SilkTouch
+	}) != -1
 }
 
 // silkTouchOneOf returns a drop function that returns 1x of the silk touch drop when silk touch exists, or 1x of the

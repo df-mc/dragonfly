@@ -5,43 +5,45 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Mending is an enchantment that repairs the item when experience orbs are collected.
-type Mending struct{}
+// Mending is an enchantment that repairs the item when experience orbs are
+// collected.
+var Mending mending
+
+type mending struct{}
 
 // Name ...
-func (Mending) Name() string {
+func (mending) Name() string {
 	return "Mending"
 }
 
 // MaxLevel ...
-func (Mending) MaxLevel() int {
+func (mending) MaxLevel() int {
 	return 1
 }
 
 // Cost ...
-func (Mending) Cost(level int) (int, int) {
-	min := level * 25
-	return min, min + 50
+func (mending) Cost(level int) (int, int) {
+	minCost := level * 25
+	return minCost, minCost + 50
 }
 
 // Rarity ...
-func (Mending) Rarity() item.EnchantmentRarity {
+func (mending) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
 // Treasure ...
-func (Mending) Treasure() bool {
+func (mending) Treasure() bool {
 	return true
 }
 
 // CompatibleWithEnchantment ...
-func (Mending) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	_, infinity := t.(Infinity)
-	return !infinity
+func (mending) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	return t != Infinity
 }
 
 // CompatibleWithItem ...
-func (Mending) CompatibleWithItem(i world.Item) bool {
+func (mending) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Durable)
 	return ok
 }

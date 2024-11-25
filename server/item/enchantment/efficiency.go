@@ -6,41 +6,43 @@ import (
 )
 
 // Efficiency is an enchantment that increases mining speed.
-type Efficiency struct{}
+var Efficiency efficiency
+
+type efficiency struct{}
 
 // Name ...
-func (Efficiency) Name() string {
+func (efficiency) Name() string {
 	return "Efficiency"
 }
 
 // MaxLevel ...
-func (Efficiency) MaxLevel() int {
+func (efficiency) MaxLevel() int {
 	return 5
 }
 
 // Cost ...
-func (Efficiency) Cost(level int) (int, int) {
-	min := 1 + 10*(level-1)
-	return min, min + 50
+func (efficiency) Cost(level int) (int, int) {
+	minCost := 1 + 10*(level-1)
+	return minCost, minCost + 50
 }
 
 // Rarity ...
-func (Efficiency) Rarity() item.EnchantmentRarity {
+func (efficiency) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
 // Addend returns the mining speed addend from efficiency.
-func (Efficiency) Addend(level int) float64 {
+func (efficiency) Addend(level int) float64 {
 	return float64(level*level + 1)
 }
 
 // CompatibleWithEnchantment ...
-func (Efficiency) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (efficiency) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (Efficiency) CompatibleWithItem(i world.Item) bool {
+func (efficiency) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
 	return ok && (t.ToolType() != item.TypeSword && t.ToolType() != item.TypeNone)
 }

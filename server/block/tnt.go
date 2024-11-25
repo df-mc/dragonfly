@@ -19,7 +19,7 @@ type TNT struct {
 // Activate ...
 func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
-	if _, ok := held.Enchantment(enchantment.FireAspect{}); ok {
+	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
 		t.Ignite(pos, tx, nil)
 		ctx.DamageItem(1)
 		return true
