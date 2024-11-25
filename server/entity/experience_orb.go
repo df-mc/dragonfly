@@ -5,8 +5,8 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"slices"
-	"time"
 )
 
 // orbSplitSizes contains split sizes used for dropping experience orbs.
@@ -14,23 +14,26 @@ var orbSplitSizes = []int{2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1}
 
 // NewExperienceOrbs takes in a position and an amount and automatically splits the amount into multiple orbs, returning
 // a slice of the created orbs.
-func NewExperienceOrbs(pos mgl64.Vec3, amount int) (orbs []*Ent) {
+func NewExperienceOrbs(pos mgl64.Vec3, amount int) (orbs []*world.EntityHandle) {
 	for amount > 0 {
 		size := orbSplitSizes[slices.IndexFunc(orbSplitSizes, func(value int) bool {
 			return amount >= value
 		})]
 
-		orbs = append(orbs, NewExperienceOrb(pos, size))
+		orbs = append(orbs, NewExperienceOrb(world.EntitySpawnOpts{Position: pos}, size))
 		amount -= size
 	}
 	return
 }
 
 // NewExperienceOrb creates a new experience orb and returns it.
-func NewExperienceOrb(pos mgl64.Vec3, xp int) *Ent {
+func NewExperienceOrb(opts world.EntitySpawnOpts, xp int) *world.EntityHandle {
 	conf := experienceOrbConf
 	conf.Experience = xp
-	return Config{Behaviour: conf.New()}.New(ExperienceOrbType{}, pos)
+	if opts.Velocity.Len() == 0 {
+		opts.Velocity = mgl64.Vec3{(rand.Float64()*0.2 - 0.1) * 2, rand.Float64() * 0.4, (rand.Float64()*0.2 - 0.1) * 2}
+	}
+	return opts.New(ExperienceOrbType, conf)
 }
 
 var experienceOrbConf = ExperienceOrbBehaviourConfig{
@@ -39,26 +42,25 @@ var experienceOrbConf = ExperienceOrbBehaviourConfig{
 }
 
 // ExperienceOrbType is a world.EntityType implementation for ExperienceOrb.
-type ExperienceOrbType struct{}
+var ExperienceOrbType experienceOrbType
 
-func (ExperienceOrbType) EncodeEntity() string { return "minecraft:xp_orb" }
-func (ExperienceOrbType) BBox(world.Entity) cube.BBox {
+type experienceOrbType struct{}
+
+func (t experienceOrbType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+	return &Ent{tx: tx, handle: handle, data: data}
+}
+
+func (experienceOrbType) EncodeEntity() string { return "minecraft:xp_orb" }
+func (experienceOrbType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
 }
 
-func (ExperienceOrbType) DecodeNBT(m map[string]any) world.Entity {
-	o := NewExperienceOrb(nbtconv.Vec3(m, "Pos"), int(nbtconv.Int32(m, "Value")))
-	o.vel = nbtconv.Vec3(m, "Motion")
-	o.age = time.Duration(nbtconv.Int16(m, "Age")) * (time.Second / 20)
-	return o
+func (experienceOrbType) DecodeNBT(m map[string]any, data *world.EntityData) {
+	conf := experienceOrbConf
+	conf.Experience = int(nbtconv.Int32(m, "Value"))
+	data.Data = conf.New()
 }
 
-func (ExperienceOrbType) EncodeNBT(e world.Entity) map[string]any {
-	orb := e.(*Ent)
-	return map[string]any{
-		"Age":    int16(orb.Age() / (time.Second * 20)),
-		"Value":  int32(orb.Behaviour().(*ExperienceOrbBehaviour).Experience()),
-		"Pos":    nbtconv.Vec3ToFloat32Slice(orb.Position()),
-		"Motion": nbtconv.Vec3ToFloat32Slice(orb.Velocity()),
-	}
+func (experienceOrbType) EncodeNBT(data *world.EntityData) map[string]any {
+	return map[string]any{"Value": int32(data.Data.(*ExperienceOrbBehaviour).Experience())}
 }

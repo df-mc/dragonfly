@@ -28,37 +28,37 @@ func (f Farmland) SoilFor(block world.Block) bool {
 }
 
 // NeighbourUpdateTick ...
-func (f Farmland) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if solid := w.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, w); solid {
-		w.SetBlock(pos, Dirt{}, nil)
+func (f Farmland) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if solid := tx.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, tx); solid {
+		tx.SetBlock(pos, Dirt{}, nil)
 	}
 }
 
 // RandomTick ...
-func (f Farmland) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
-	if !f.hydrated(pos, w) {
+func (f Farmland) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	if !f.hydrated(pos, tx) {
 		if f.Hydration > 0 {
 			f.Hydration--
-			w.SetBlock(pos, f, nil)
+			tx.SetBlock(pos, f, nil)
 		} else {
-			blockAbove := w.Block(pos.Side(cube.FaceUp))
+			blockAbove := tx.Block(pos.Side(cube.FaceUp))
 			if _, cropAbove := blockAbove.(Crop); !cropAbove {
-				w.SetBlock(pos, Dirt{}, nil)
+				tx.SetBlock(pos, Dirt{}, nil)
 			}
 		}
 	} else {
 		f.Hydration = 7
-		w.SetBlock(pos, f, nil)
+		tx.SetBlock(pos, f, nil)
 	}
 }
 
 // hydrated checks for water within 4 blocks in each direction from the farmland.
-func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
+func (f Farmland) hydrated(pos cube.Pos, tx *world.Tx) bool {
 	posX, posY, posZ := pos.X(), pos.Y(), pos.Z()
 	for y := 0; y <= 1; y++ {
 		for x := -4; x <= 4; x++ {
 			for z := -4; z <= 4; z++ {
-				if liquid, ok := w.Liquid(cube.Pos{posX + x, posY + y, posZ + z}); ok {
+				if liquid, ok := tx.Liquid(cube.Pos{posX + x, posY + y, posZ + z}); ok {
 					if _, ok := liquid.(Water); ok {
 						return true
 					}
@@ -70,12 +70,12 @@ func (f Farmland) hydrated(pos cube.Pos, w *world.World) bool {
 }
 
 // EntityLand ...
-func (f Farmland) EntityLand(pos cube.Pos, w *world.World, e world.Entity, distance *float64) {
+func (f Farmland) EntityLand(pos cube.Pos, tx *world.Tx, e world.Entity, _ *float64) {
 	if living, ok := e.(livingEntity); ok {
 		if fall, ok := living.(fallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
-			ctx := event.C()
-			if w.Handler().HandleCropTrample(ctx, pos); !ctx.Cancelled() {
-				w.SetBlock(pos, Dirt{}, nil)
+			ctx := event.C(tx)
+			if tx.World().Handler().HandleCropTrample(ctx, pos); !ctx.Cancelled() {
+				tx.SetBlock(pos, Dirt{}, nil)
 			}
 		}
 	}

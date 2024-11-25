@@ -25,9 +25,9 @@ type SeaPickle struct {
 }
 
 // canSurvive ...
-func (SeaPickle) canSurvive(pos cube.Pos, w *world.World) bool {
-	below := w.Block(pos.Side(cube.FaceDown))
-	if !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w) {
+func (SeaPickle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
+	below := tx.Block(pos.Side(cube.FaceDown))
+	if !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
 		return false
 	}
 	if emitter, ok := below.(LightDiffuser); ok && emitter.LightDiffusionLevel() != 15 {
@@ -37,17 +37,17 @@ func (SeaPickle) canSurvive(pos cube.Pos, w *world.World) bool {
 }
 
 // BoneMeal ...
-func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
+func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if s.Dead {
 		return false
 	}
-	if coral, ok := w.Block(pos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
+	if coral, ok := tx.Block(pos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
 		return false
 	}
 
 	if s.AdditionalCount != 3 {
 		s.AdditionalCount = 3
-		w.SetBlock(pos, s, nil)
+		tx.SetBlock(pos, s, nil)
 	}
 
 	for x := -2; x <= 2; x++ {
@@ -59,13 +59,13 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 				}
 				newPos := pos.Add(cube.Pos{x, y, z})
 
-				if _, ok := w.Block(newPos).(Water); !ok {
+				if _, ok := tx.Block(newPos).(Water); !ok {
 					continue
 				}
-				if coral, ok := w.Block(newPos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
+				if coral, ok := tx.Block(newPos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
 					continue
 				}
-				w.SetBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1}, nil)
+				tx.SetBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1}, nil)
 			}
 		}
 	}
@@ -74,51 +74,51 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, w *world.World) bool {
 }
 
 // UseOnBlock ...
-func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	if existing, ok := w.Block(pos).(SeaPickle); ok {
+func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	if existing, ok := tx.Block(pos).(SeaPickle); ok {
 		if existing.AdditionalCount >= 3 {
 			return false
 		}
 
 		existing.AdditionalCount++
-		place(w, pos, existing, user, ctx)
+		place(tx, pos, existing, user, ctx)
 		return placed(ctx)
 	}
 
-	pos, _, used := firstReplaceable(w, pos, face, s)
+	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
-	if !s.canSurvive(pos, w) {
+	if !s.canSurvive(pos, tx) {
 		return false
 	}
 
 	s.Dead = true
-	if liquid, ok := w.Liquid(pos); ok {
+	if liquid, ok := tx.Liquid(pos); ok {
 		_, ok = liquid.(Water)
 		s.Dead = !ok
 	}
 
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !s.canSurvive(pos, w) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-		dropItem(w, item.NewStack(s, s.AdditionalCount+1), pos.Vec3Centre())
+func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !s.canSurvive(pos, tx) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
+		dropItem(tx, item.NewStack(s, s.AdditionalCount+1), pos.Vec3Centre())
 		return
 	}
 
 	alive := false
-	if liquid, ok := w.Liquid(pos); ok {
+	if liquid, ok := tx.Liquid(pos); ok {
 		_, alive = liquid.(Water)
 	}
 	if s.Dead == alive {
 		s.Dead = !alive
-		w.SetBlock(pos, s, nil)
+		tx.SetBlock(pos, s, nil)
 	}
 }
 
@@ -128,7 +128,7 @@ func (SeaPickle) HasLiquidDrops() bool {
 }
 
 // SideClosed ...
-func (SeaPickle) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (SeaPickle) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

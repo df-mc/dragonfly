@@ -51,8 +51,8 @@ func (s Skull) Model() world.BlockModel {
 }
 
 // UseOnBlock ...
-func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, s)
+func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, s)
 	if !used || face == cube.FaceDown {
 		return false
 	}
@@ -62,12 +62,12 @@ func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	} else {
 		s.Attach = WallAttachment(face.Direction())
 	}
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
 // SideClosed ...
-func (Skull) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Skull) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

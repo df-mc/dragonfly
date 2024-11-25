@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/player/diagnostics"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -59,7 +58,7 @@ type Controllable interface {
 	EnchantmentSeed() int64
 	ResetEnchantmentSeed()
 
-	Respawn()
+	Respawn() *world.EntityHandle
 	Dead() bool
 
 	StartSneaking()
@@ -94,6 +93,7 @@ type Controllable interface {
 	TurnLecternPage(pos cube.Pos, page int) error
 
 	EnderChestInventory() *inventory.Inventory
+	MoveItemsToInventory()
 
 	// UUID returns the UUID of the controllable. It must be unique for all controllable entities present in
 	// the server.
@@ -106,5 +106,5 @@ type Controllable interface {
 	Skin() skin.Skin
 	SetSkin(skin.Skin)
 
-	UpdateDiagnostics(diagnostics.Diagnostics)
+	UpdateDiagnostics(Diagnostics)
 }

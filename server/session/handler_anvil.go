@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"math/rand"
@@ -18,15 +19,14 @@ const (
 
 // handleCraftRecipeOptional handles the CraftRecipeOptional request action, sent when taking a result from an anvil
 // menu. It also contains information such as the new name of the item and the multi-recipe network ID.
-func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) (err error) {
+func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string, co Controllable, tx *world.Tx) (err error) {
 	// First check if there actually is an anvil opened.
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no anvil container opened")
 	}
 
-	w := s.c.World()
 	pos := *s.openedPos.Load()
-	anvil, ok := w.Block(pos).(block.Anvil)
+	anvil, ok := tx.Block(pos).(block.Anvil)
 	if !ok {
 		return fmt.Errorf("no anvil container opened")
 	}
@@ -37,14 +37,14 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilInput},
 		Slot:      anvilInputSlot,
-	}, s)
+	}, s, tx)
 	if input.Empty() {
 		return fmt.Errorf("no item in input input slot")
 	}
 	material, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
 		Slot:      anvilMaterialSlot,
-	}, s)
+	}, s, tx)
 	result := input
 
 	// The sum of the input's anvil cost as well as the material's anvil cost.
@@ -110,17 +110,17 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	// We can bypass the "impossible cost" limit if we're in creative mode.
-	c := s.c.GameMode().CreativeInventory()
+	c := co.GameMode().CreativeInventory()
 	if cost >= 40 && !c {
 		return fmt.Errorf("impossible cost")
 	}
 
 	// Ensure we have enough levels (or if we're in creative mode, ignore the cost) to perform the action.
-	level := s.c.ExperienceLevel()
+	level := co.ExperienceLevel()
 	if level < cost && !c {
 		return fmt.Errorf("not enough experience")
 	} else if !c {
-		s.c.SetExperienceLevel(level - cost)
+		co.SetExperienceLevel(level - cost)
 	}
 
 	// If we had a result item, we need to calculate the new anvil cost and update it on the item.
@@ -140,31 +140,31 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if !c && rand.Float64() < 0.12 {
 		damaged := anvil.Break()
 		if _, ok := damaged.(block.Air); ok {
-			w.PlaySound(pos.Vec3Centre(), sound.AnvilBreak{})
+			tx.PlaySound(pos.Vec3Centre(), sound.AnvilBreak{})
 		} else {
-			w.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
+			tx.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
 		}
-		defer w.SetBlock(pos, damaged, nil)
+		defer tx.SetBlock(pos, damaged, nil)
 	} else {
-		w.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
+		tx.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
 	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilInput},
 		Slot:      anvilInputSlot,
-	}, item.Stack{}, s)
+	}, item.Stack{}, s, tx)
 	if repairCount > 0 {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
 			Slot:      anvilMaterialSlot,
-		}, material.Grow(-repairCount), s)
+		}, material.Grow(-repairCount), s, tx)
 	} else {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
 			Slot:      anvilMaterialSlot,
-		}, item.Stack{}, s)
+		}, item.Stack{}, s, tx)
 	}
-	return h.createResults(s, result)
+	return h.createResults(s, tx, result)
 }
 
 // repairItemWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item

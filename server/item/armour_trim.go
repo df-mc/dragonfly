@@ -37,7 +37,7 @@ func ArmourTrimMaterialFromString(name string) ArmourTrimMaterial {
 		return NetherQuartz{}
 	}
 
-	//TODO: add redstone material once pr is merged
+	// TODO: add redstone material once pr is merged
 
 	panic("should not happen")
 }

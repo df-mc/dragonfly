@@ -1,5 +1,7 @@
 package form
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // Submittable is a structure which may be submitted by sending it as a form using form.New(). When filled out
 // and submitted, the struct will have its Submit method called and its fields will have the values that the
 // Submitter passed filled out.
@@ -8,7 +10,7 @@ package form
 type Submittable interface {
 	// Submit is called when the Submitter submits the form sent to it. Once this method is called, all fields
 	// in the struct will have their values filled out as filled out by the Submitter.
-	Submit(submitter Submitter)
+	Submit(submitter Submitter, tx *world.Tx)
 }
 
 // MenuSubmittable is a structure which may be submitted by sending it as a form using form.NewMenu(), much
@@ -19,7 +21,7 @@ type MenuSubmittable interface {
 	// Submit is called when the Submitter submits the menu form sent to it. The method is called with the
 	// button that was pressed. It may be compared with buttons in the MenuSubmittable struct to check which
 	// button was pressed.
-	Submit(submitter Submitter, pressed Button)
+	Submit(submitter Submitter, pressed Button, tx *world.Tx)
 }
 
 // ModalSubmittable is a structure which may be submitted by sending it as a form using form.NewModal(), much
@@ -33,7 +35,7 @@ type ModalSubmittable MenuSubmittable
 // Closer represents a form which has special logic when being closed by a Submitter.
 type Closer interface {
 	// Close is called when the Submitter closes a form.
-	Close(submitter Submitter)
+	Close(submitter Submitter, tx *world.Tx)
 }
 
 // Submitter is an entity that is able to submit a form sent to it. It is able to fill out fields in the form

@@ -34,14 +34,14 @@ func (t GlazedTerracotta) EncodeBlock() (name string, properties map[string]any)
 }
 
 // UseOnBlock ensures the proper facing is used when placing a glazed terracotta block, by using the opposite of the player.
-func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, t)
+func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, t)
 	if !used {
 		return
 	}
 	t.Facing = user.Rotation().Direction().Opposite()
 
-	place(w, pos, t, user, ctx)
+	place(tx, pos, t, user, ctx)
 	return placed(ctx)
 }
 

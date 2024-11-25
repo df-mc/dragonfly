@@ -20,9 +20,12 @@ type Inventory struct {
 	h     Handler
 	slots []item.Stack
 
-	f      func(slot int, before, after item.Stack)
+	f      SlotFunc
 	canAdd func(s item.Stack, slot int) bool
 }
+
+// SlotFunc is a function called for each item changed in an Inventory.
+type SlotFunc func(slot int, before, after item.Stack)
 
 // ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
@@ -32,7 +35,7 @@ var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= 
 // constructed.
 // A function may be passed which is called every time a slot is changed. The function may also be nil, if
 // nothing needs to be done.
-func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
+func New(size int, f SlotFunc) *Inventory {
 	if size <= 0 {
 		panic("inventory size must be at least 1")
 	}
@@ -42,11 +45,20 @@ func New(size int, f func(slot int, before, after item.Stack)) *Inventory {
 	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
 }
 
-func (inv *Inventory) Clone(f func(slot int, before, after item.Stack)) *Inventory {
+// Clone copies an Inventory and returns it, calling the SlotFunc passed for any
+// slots changed in the new inventory.
+func (inv *Inventory) Clone(f SlotFunc) *Inventory {
 	if f == nil {
 		f = func(slot int, before, after item.Stack) {}
 	}
 	return &Inventory{h: NopHandler{}, slots: inv.Slots(), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+}
+
+// SlotFunc changes the function called when a slot in the inventory is changed.
+func (inv *Inventory) SlotFunc(f SlotFunc) {
+	inv.mu.Lock()
+	defer inv.mu.Unlock()
+	inv.f = f
 }
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,

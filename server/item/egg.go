@@ -14,10 +14,11 @@ func (e Egg) MaxCount() int {
 }
 
 // Use ...
-func (e Egg) Use(w *world.World, user User, ctx *UseContext) bool {
-	create := w.EntityRegistry().Config().Egg
-	w.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(1.5), user))
-	w.PlaySound(user.Position(), sound.ItemThrow{})
+func (e Egg) Use(tx *world.Tx, user User, ctx *UseContext) bool {
+	create := tx.World().EntityRegistry().Config().Egg
+	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: user.Rotation().Vec3().Mul(1.5)}
+	tx.AddEntity(create(opts, user))
+	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
 	ctx.SubtractFromCount(1)
 	return true

@@ -24,19 +24,19 @@ type Leaves struct {
 }
 
 // UseOnBlock makes leaves persistent when they are placed so that they don't decay.
-func (l Leaves) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, l)
+func (l Leaves) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, l)
 	if !used {
 		return
 	}
 	l.Persistent = true
 
-	place(w, pos, l, user, ctx)
+	place(tx, pos, l, user, ctx)
 	return placed(ctx)
 }
 
 // findLog ...
-func findLog(pos cube.Pos, w *world.World, visited *[]cube.Pos, distance int) bool {
+func findLog(pos cube.Pos, tx *world.Tx, visited *[]cube.Pos, distance int) bool {
 	for _, v := range *visited {
 		if v == pos {
 			return false
@@ -44,38 +44,38 @@ func findLog(pos cube.Pos, w *world.World, visited *[]cube.Pos, distance int) bo
 	}
 	*visited = append(*visited, pos)
 
-	if log, ok := w.Block(pos).(Log); ok && !log.Stripped {
+	if log, ok := tx.Block(pos).(Log); ok && !log.Stripped {
 		return true
 	}
-	if _, ok := w.Block(pos).(Leaves); !ok || distance > 6 {
+	if _, ok := tx.Block(pos).(Leaves); !ok || distance > 6 {
 		return false
 	}
 	logFound := false
 	pos.Neighbours(func(neighbour cube.Pos) {
-		if !logFound && findLog(neighbour, w, visited, distance+1) {
+		if !logFound && findLog(neighbour, tx, visited, distance+1) {
 			logFound = true
 		}
-	}, w.Range())
+	}, tx.Range())
 	return logFound
 }
 
 // RandomTick ...
-func (l Leaves) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !l.Persistent && l.ShouldUpdate {
-		if findLog(pos, w, &[]cube.Pos{}, 0) {
+		if findLog(pos, tx, &[]cube.Pos{}, 0) {
 			l.ShouldUpdate = false
-			w.SetBlock(pos, l, nil)
+			tx.SetBlock(pos, l, nil)
 		} else {
-			w.SetBlock(pos, nil, nil)
+			tx.SetBlock(pos, nil, nil)
 		}
 	}
 }
 
 // NeighbourUpdateTick ...
-func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !l.Persistent && !l.ShouldUpdate {
 		l.ShouldUpdate = true
-		w.SetBlock(pos, l, nil)
+		tx.SetBlock(pos, l, nil)
 	}
 }
 
@@ -117,7 +117,7 @@ func (Leaves) LightDiffusionLevel() uint8 {
 }
 
 // SideClosed ...
-func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

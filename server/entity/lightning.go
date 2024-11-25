@@ -13,26 +13,25 @@ import (
 // positioned at the position passed. Lightning is a lethal element to
 // thunderstorms. Lightning momentarily increases the skylight's brightness to
 // slightly greater than full daylight.
-func NewLightning(pos mgl64.Vec3) *Ent {
-	return NewLightningWithDamage(pos, 5, true, time.Second*8)
+func NewLightning(opts world.EntitySpawnOpts) *world.EntityHandle {
+	return NewLightningWithDamage(opts, 5, true, time.Second*8)
 }
 
 // NewLightningWithDamage creates a new lightning entities using the damage and
 // fire properties passed.
-func NewLightningWithDamage(pos mgl64.Vec3, dmg float64, blockFire bool, entityFireDuration time.Duration) *Ent {
-	state := &lightningState{
+func NewLightningWithDamage(opts world.EntitySpawnOpts, dmg float64, blockFire bool, entityFireDuration time.Duration) *world.EntityHandle {
+	conf := lightningConf
+	conf.Tick = (&lightningState{
 		Damage:             dmg,
 		EntityFireDuration: entityFireDuration,
 		BlockFire:          blockFire,
 		state:              2,
 		lifetime:           rand.Intn(4) + 1,
-	}
-	conf := lightningConf
-	conf.Tick = state.tick
-	return Config{Behaviour: conf.New()}.New(LightningType{}, pos)
+	}).tick
+	return opts.New(LightningType, conf)
 }
 
-var lightningConf = StationaryBehaviourConfig{SpawnSounds: []world.Sound{sound.Explosion{}, sound.Thunder{}}}
+var lightningConf = StationaryBehaviourConfig{SpawnSounds: []world.Sound{sound.Explosion{}, sound.Thunder{}}, ExistenceDuration: time.Second}
 
 // lightningState holds the state of a lightning entity.
 type lightningState struct {
@@ -44,8 +43,8 @@ type lightningState struct {
 
 // tick carries out lightning logic, dealing damage and setting blocks/entities
 // on fire when appropriate.
-func (s *lightningState) tick(e *Ent) {
-	w, pos := e.World(), e.Position()
+func (s *lightningState) tick(e *Ent, tx *world.Tx) {
+	pos := e.Position()
 
 	if s.state--; s.state < 0 {
 		if s.lifetime == 0 {
@@ -54,22 +53,22 @@ func (s *lightningState) tick(e *Ent) {
 			s.lifetime--
 			s.state = 1
 
-			if s.BlockFire && w.Difficulty().FireSpreadIncrease() >= 10 {
-				s.spreadFire(w, cube.PosFromVec3(pos))
+			if s.BlockFire && tx.World().Difficulty().FireSpreadIncrease() >= 10 {
+				s.spreadFire(tx, cube.PosFromVec3(pos))
 			}
 		}
 	}
 	if s.state > 0 {
-		s.dealDamage(e)
+		s.dealDamage(e, tx)
 	}
 }
 
 // dealDamage deals damage to all entities around the lightning and sets them
 // on fire.
-func (s *lightningState) dealDamage(e *Ent) {
-	w, pos := e.World(), e.Position()
-	bb := e.Type().BBox(e).GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
-	for _, e := range w.EntitiesWithin(bb, nil) {
+func (s *lightningState) dealDamage(e *Ent, tx *world.Tx) {
+	pos := e.Position()
+	bb := e.H().Type().BBox(e).GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
+	for e := range tx.EntitiesWithin(bb) {
 		// Only damage entities that weren't already dead.
 		if l, ok := e.(Living); ok && l.Health() > 0 {
 			if s.Damage > 0 {
@@ -84,20 +83,20 @@ func (s *lightningState) dealDamage(e *Ent) {
 
 // spreadFire attempts to place fire at the position of the lightning and does
 // 4 additional attempts to spread it around that position.
-func (s *lightningState) spreadFire(w *world.World, pos cube.Pos) {
-	s.fire().Start(w, pos)
+func (s *lightningState) spreadFire(tx *world.Tx, pos cube.Pos) {
+	s.fire().Start(tx, pos)
 	for i := 0; i < 4; i++ {
 		pos.Add(cube.Pos{rand.Intn(3) - 1, rand.Intn(3) - 1, rand.Intn(3) - 1})
-		s.fire().Start(w, pos)
+		s.fire().Start(tx, pos)
 	}
 }
 
 // fire returns a fire block.
 func (s *lightningState) fire() interface {
-	Start(w *world.World, pos cube.Pos)
+	Start(tx *world.Tx, pos cube.Pos)
 } {
 	return fire().(interface {
-		Start(w *world.World, pos cube.Pos)
+		Start(tx *world.Tx, pos cube.Pos)
 	})
 }
 
@@ -111,11 +110,16 @@ func fire() world.Block {
 }
 
 // LightningType is a world.EntityType implementation for Lightning.
-type LightningType struct{}
+var LightningType lightningType
 
-func (LightningType) EncodeEntity() string                  { return "minecraft:lightning_bolt" }
-func (LightningType) BBox(world.Entity) cube.BBox           { return cube.BBox{} }
-func (LightningType) DecodeNBT(map[string]any) world.Entity { return nil }
-func (LightningType) EncodeNBT(world.Entity) map[string]any {
-	return map[string]any{}
+type lightningType struct{}
+
+func (t lightningType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+	return &Ent{tx: tx, handle: handle, data: data}
 }
+func (t lightningType) DecodeNBT(_ map[string]any, data *world.EntityData) {
+	data.Data = lightningConf.New()
+}
+func (t lightningType) EncodeNBT(*world.EntityData) map[string]any { return nil }
+func (lightningType) EncodeEntity() string                         { return "minecraft:lightning_bolt" }
+func (lightningType) BBox(world.Entity) cube.BBox                  { return cube.BBox{} }

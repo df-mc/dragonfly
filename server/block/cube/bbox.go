@@ -290,12 +290,12 @@ func (box BBox) Corners() []mgl64.Vec3 {
 	return []mgl64.Vec3{
 		box.min,
 		box.max,
-		mgl64.Vec3{min[0], min[1], max[2]},
-		mgl64.Vec3{min[0], max[1], min[2]},
-		mgl64.Vec3{min[0], max[1], max[2]},
-		mgl64.Vec3{max[0], max[1], min[2]},
-		mgl64.Vec3{max[0], min[1], max[2]},
-		mgl64.Vec3{max[0], min[1], min[2]},
+		{min[0], min[1], max[2]},
+		{min[0], max[1], min[2]},
+		{min[0], max[1], max[2]},
+		{max[0], max[1], min[2]},
+		{max[0], min[1], max[2]},
+		{max[0], min[1], min[2]},
 	}
 }
 

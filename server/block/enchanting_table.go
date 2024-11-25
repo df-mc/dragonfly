@@ -26,7 +26,7 @@ func (e EnchantingTable) BreakInfo() BreakInfo {
 }
 
 // SideClosed ...
-func (EnchantingTable) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (EnchantingTable) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -36,9 +36,9 @@ func (EnchantingTable) LightEmissionLevel() uint8 {
 }
 
 // Activate ...
-func (EnchantingTable) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
+func (EnchantingTable) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false

@@ -13,7 +13,7 @@ type Chestplate struct {
 }
 
 // Use handles the using of a chestplate to auto-equip it in the designated armour slot.
-func (c Chestplate) Use(_ *world.World, _ User, ctx *UseContext) bool {
+func (c Chestplate) Use(_ *world.Tx, _ User, ctx *UseContext) bool {
 	ctx.SwapHeldWithArmour(1)
 	return false
 }

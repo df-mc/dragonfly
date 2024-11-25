@@ -18,7 +18,7 @@ func (i IronBars) BreakInfo() BreakInfo {
 }
 
 // SideClosed ...
-func (i IronBars) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (i IronBars) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

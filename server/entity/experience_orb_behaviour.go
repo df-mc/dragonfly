@@ -23,6 +23,10 @@ type ExperienceOrbBehaviourConfig struct {
 	Experience int
 }
 
+func (conf ExperienceOrbBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
+}
+
 // New creates an ExperienceOrbBehaviour using the parameters in conf.
 func (conf ExperienceOrbBehaviourConfig) New() *ExperienceOrbBehaviour {
 	if conf.Experience == 0 {
@@ -48,7 +52,7 @@ type ExperienceOrbBehaviour struct {
 	passive *PassiveBehaviour
 
 	lastSearch time.Time
-	target     experienceCollector
+	target     *world.EntityHandle
 }
 
 // Experience returns the amount of experience the orb carries.
@@ -57,37 +61,34 @@ func (exp *ExperienceOrbBehaviour) Experience() int {
 }
 
 // Tick finds a target for the experience orb and moves the orb towards it.
-func (exp *ExperienceOrbBehaviour) Tick(e *Ent) *Movement {
-	return exp.passive.Tick(e)
+func (exp *ExperienceOrbBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
+	return exp.passive.Tick(e, tx)
 }
 
 // followBox is the bounding box used to search for collectors to follow for experience orbs.
 var followBox = cube.Box(-8, -8, -8, 8, 8, 8)
 
 // tick finds a target for the experience orb and moves the orb towards it.
-func (exp *ExperienceOrbBehaviour) tick(e *Ent) {
-	w, pos := e.World(), e.Position()
-	if exp.target != nil && (exp.target.Dead() || exp.target.World() != w || pos.Sub(exp.target.Position()).Len() > 8) {
-		exp.target = nil
-	}
+func (exp *ExperienceOrbBehaviour) tick(e *Ent, tx *world.Tx) {
+	targetEnt, ok := exp.target.Entity(tx)
+	target, _ := targetEnt.(experienceCollector)
 
-	if time.Since(exp.lastSearch) >= time.Second {
-		exp.findTarget(w, pos)
-	}
-	if exp.target != nil {
-		exp.moveToTarget(e)
+	pos := e.Position()
+	hasTarget := ok && !target.Dead() && pos.Sub(target.Position()).Len() <= 8
+	if !hasTarget && time.Since(exp.lastSearch) >= time.Second {
+		exp.findTarget(tx, pos)
+	} else if hasTarget {
+		exp.moveToTarget(e, target)
 	}
 }
 
 // findTarget attempts to find a target for an experience orb in w around pos.
-func (exp *ExperienceOrbBehaviour) findTarget(w *world.World, pos mgl64.Vec3) {
-	if exp.target == nil {
-		collectors := w.EntitiesWithin(followBox.Translate(pos), func(o world.Entity) bool {
-			_, ok := o.(experienceCollector)
-			return !ok
-		})
-		if len(collectors) > 0 {
-			exp.target = collectors[0].(experienceCollector)
+func (exp *ExperienceOrbBehaviour) findTarget(tx *world.Tx, pos mgl64.Vec3) {
+	exp.target = nil
+	for o := range tx.EntitiesWithin(followBox.Translate(pos)) {
+		if _, ok := o.(experienceCollector); ok {
+			exp.target = o.H()
+			break
 		}
 	}
 	exp.lastSearch = time.Now()
@@ -95,9 +96,9 @@ func (exp *ExperienceOrbBehaviour) findTarget(w *world.World, pos mgl64.Vec3) {
 
 // moveToTarget applies velocity to the experience orb so that it moves towards
 // its current target. If it intersects with the target, the orb is collected.
-func (exp *ExperienceOrbBehaviour) moveToTarget(e *Ent) {
-	pos, dst := e.Position(), exp.target.Position()
-	if o, ok := exp.target.(Eyed); ok {
+func (exp *ExperienceOrbBehaviour) moveToTarget(e *Ent, target experienceCollector) {
+	pos, dst := e.Position(), target.Position()
+	if o, ok := target.(Eyed); ok {
 		dst[1] += o.EyeHeight() / 2
 	}
 	diff := dst.Sub(pos).Mul(0.125)
@@ -105,7 +106,7 @@ func (exp *ExperienceOrbBehaviour) moveToTarget(e *Ent) {
 		e.SetVelocity(e.Velocity().Add(diff.Normalize().Mul(0.2 * math.Pow(1-math.Sqrt(dist), 2))))
 	}
 
-	if e.Type().BBox(e).Translate(pos).IntersectsWith(exp.target.Type().BBox(exp.target).Translate(exp.target.Position())) && exp.target.CollectExperience(exp.conf.Experience) {
+	if e.H().Type().BBox(e).Translate(pos).IntersectsWith(target.H().Type().BBox(target).Translate(target.Position())) && target.CollectExperience(exp.conf.Experience) {
 		_ = e.Close()
 	}
 }

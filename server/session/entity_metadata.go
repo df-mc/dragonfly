@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"math"
 	"time"
@@ -16,7 +17,7 @@ import (
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
 func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
-	bb := e.Type().BBox(e)
+	bb := e.H().Type().BBox(e)
 	m := protocol.NewEntityMetadata()
 
 	m[protocol.EntityDataKeyWidth] = float32(bb.Width())
@@ -27,10 +28,10 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 
 	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasGravity)
 	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagClimb)
-	if g, ok := e.Type().(glint); ok && g.Glint() {
+	if g, ok := e.H().Type().(glint); ok && g.Glint() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
 	}
-	if _, ok := e.Type().(entity.LingeringPotionType); ok {
+	if e.H().Type() == entity.LingeringPotionType {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
 	}
 	s.addSpecificMetadata(e, m)
@@ -51,7 +52,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSwimming)
 	}
 	if cr, ok := e.(crawler); ok && cr.Crawling() {
-		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCrawling)
+		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagCrawling&63)
 	}
 	if gl, ok := e.(glider); ok && gl.Gliding() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagGliding)
@@ -91,11 +92,11 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 	if f, ok := e.(firework); ok {
 		m[protocol.EntityDataKeyDisplayTileRuntimeID] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
-		if o, ok := e.(owned); ok && f.Attached() {
-			m[protocol.EntityDataKeyCustomDisplay] = int64(s.entityRuntimeID(o.Owner()))
+		if o, ok := e.(owned); ok && f.Attached() && o.Owner() != nil {
+			m[protocol.EntityDataKeyCustomDisplay] = int64(s.handleRuntimeID(o.Owner()))
 		}
-	} else if o, ok := e.(owned); ok {
-		m[protocol.EntityDataKeyOwner] = int64(s.entityRuntimeID(o.Owner()))
+	} else if o, ok := e.(owned); ok && o.Owner() != nil {
+		m[protocol.EntityDataKeyOwner] = int64(s.handleRuntimeID(o.Owner()))
 	}
 	if sc, ok := e.(scaled); ok {
 		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
@@ -129,7 +130,8 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 			m[protocol.EntityDataKeyEffectAmbience] = byte(0)
 		}
 	}
-	if l, ok := e.(living); ok && s.c == e {
+
+	if l, ok := e.(living); ok && s.ent.UUID() == l.UUID() {
 		deathPos, deathDimension, died := l.DeathPosition()
 		if died {
 			dim, _ := world.DimensionID(deathDimension)
@@ -208,7 +210,7 @@ type scaled interface {
 }
 
 type owned interface {
-	Owner() world.Entity
+	Owner() *world.EntityHandle
 }
 
 type named interface {
@@ -266,6 +268,7 @@ type tnt interface {
 }
 
 type living interface {
+	UUID() uuid.UUID
 	DeathPosition() (mgl64.Vec3, world.Dimension, bool)
 }
 

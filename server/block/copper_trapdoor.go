@@ -36,15 +36,15 @@ func (t CopperTrapdoor) Model() world.BlockModel {
 
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
 // when needed.
-func (t CopperTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, t)
+func (t CopperTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, face, used := firstReplaceable(tx, pos, face, t)
 	if !used {
 		return false
 	}
 	t.Facing = user.Rotation().Direction().Opposite()
 	t.Top = (clickPos.Y() > 0.5 && face != cube.FaceUp) || face == cube.FaceDown
 
-	place(w, pos, t, user, ctx)
+	place(tx, pos, t, user, ctx)
 	return placed(ctx)
 }
 
@@ -57,6 +57,17 @@ func (t CopperTrapdoor) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
 	return t, true
 }
 
+func (t CopperTrapdoor) Strip() (world.Block, world.Sound, bool) {
+	if t.Waxed {
+		t.Waxed = false
+		return t, sound.WaxRemoved{}, true
+	} else if ot, ok := t.Oxidation.Decrease(); ok {
+		t.Oxidation = ot
+		return t, sound.CopperScraped{}, true
+	}
+	return t, nil, false
+}
+
 func (t CopperTrapdoor) CanOxidate() bool {
 	return !t.Waxed
 }
@@ -65,34 +76,24 @@ func (t CopperTrapdoor) OxidationLevel() OxidationType {
 	return t.Oxidation
 }
 
-func (t CopperTrapdoor) WithOxidationLevel(o OxidationType) Oxidizable {
+func (t CopperTrapdoor) WithOxidationLevel(o OxidationType) Oxidisable {
 	t.Oxidation = o
 	return t
 }
 
-func (t CopperTrapdoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
+func (t CopperTrapdoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	t.Open = !t.Open
-	w.SetBlock(pos, t, nil)
+	tx.SetBlock(pos, t, nil)
 	if t.Open {
-		w.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
+		tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
 		return true
 	}
-	w.PlaySound(pos.Vec3Centre(), sound.TrapdoorClose{Block: t})
+	tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorClose{Block: t})
 	return true
 }
 
-func (t CopperTrapdoor) SneakingActivate(pos cube.Pos, _ cube.Face, w *world.World, user item.User, _ *item.UseContext) bool {
-	var ok bool
-	t.Oxidation, t.Waxed, ok = activateOxidizable(pos, w, user, t.Oxidation, t.Waxed)
-	if ok {
-		w.SetBlock(pos, t, nil)
-		return true
-	}
-	return false
-}
-
-func (t CopperTrapdoor) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	attemptOxidation(pos, w, r, t)
+func (t CopperTrapdoor) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	attemptOxidation(pos, tx, r, t)
 }
 
 // BreakInfo ...
@@ -103,14 +104,14 @@ func (t CopperTrapdoor) BreakInfo() BreakInfo {
 }
 
 // SideClosed ...
-func (t CopperTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (t CopperTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // EncodeItem ...
 func (t CopperTrapdoor) EncodeItem() (name string, meta int16) {
 	name = "copper_trapdoor"
-	if t.Oxidation != NormalOxidation() {
+	if t.Oxidation != UnoxidisedOxidation() {
 		name = t.Oxidation.String() + "_" + name
 	}
 	if t.Waxed {
@@ -122,7 +123,7 @@ func (t CopperTrapdoor) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (t CopperTrapdoor) EncodeBlock() (name string, properties map[string]any) {
 	name = "copper_trapdoor"
-	if t.Oxidation != NormalOxidation() {
+	if t.Oxidation != UnoxidisedOxidation() {
 		name = t.Oxidation.String() + "_" + name
 	}
 	if t.Waxed {

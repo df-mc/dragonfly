@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
@@ -10,7 +11,7 @@ import (
 const stonecutterInputSlot = 0x03
 
 // handleStonecutting handles a CraftRecipe stack request action made using a stonecutter.
-func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
+func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
@@ -26,7 +27,7 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerStonecutterInput},
 		Slot:      stonecutterInputSlot,
-	}, s)
+	}, s, tx)
 	if !matchingStacks(input, expectedInputs[0]) {
 		return fmt.Errorf("input item is not the same as expected input")
 	}
@@ -35,6 +36,6 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerStonecutterInput},
 		Slot:      stonecutterInputSlot,
-	}, input.Grow(-1), s)
-	return h.createResults(s, output...)
+	}, input.Grow(-1), s, tx)
+	return h.createResults(s, tx, output...)
 }

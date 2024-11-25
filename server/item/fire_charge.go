@@ -19,16 +19,16 @@ func (f FireCharge) EncodeItem() (name string, meta int16) {
 }
 
 // UseOnBlock ...
-func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, u User, ctx *UseContext) bool {
-	if l, ok := w.Block(pos).(ignitable); ok && l.Ignite(pos, w, u) {
+func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+	if l, ok := tx.Block(pos).(ignitable); ok && l.Ignite(pos, tx, user) {
 		ctx.SubtractFromCount(1)
-		w.PlaySound(pos.Vec3Centre(), sound.FireCharge{})
+		tx.PlaySound(pos.Vec3Centre(), sound.FireCharge{})
 		return true
-	} else if s := pos.Side(face); w.Block(s) == air() {
+	} else if s := pos.Side(face); tx.Block(s) == air() {
 		ctx.SubtractFromCount(1)
-		w.PlaySound(s.Vec3Centre(), sound.FireCharge{})
-		w.SetBlock(s, fire(), nil)
-		w.ScheduleBlockUpdate(s, time.Duration(30+rand.Intn(10))*time.Second/20)
+		tx.PlaySound(s.Vec3Centre(), sound.FireCharge{})
+		tx.SetBlock(s, fire(), nil)
+		tx.ScheduleBlockUpdate(s, time.Duration(30+rand.Intn(10))*time.Second/20)
 		return true
 	}
 	return false

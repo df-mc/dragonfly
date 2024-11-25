@@ -36,28 +36,28 @@ func (s flowingWaterDisplacer) CanDisplace(b world.Liquid) bool {
 // tickLiquid ticks the liquid block passed at a specific position in the world. Depending on the surroundings
 // and the liquid block, the liquid will either spread or decrease in depth. Additionally, the liquid might
 // be turned into a solid block if a different liquid is next to it.
-func tickLiquid(b world.Liquid, pos cube.Pos, w *world.World) {
-	if !source(b) && !sourceAround(b, pos, w) {
+func tickLiquid(b world.Liquid, pos cube.Pos, tx *world.Tx) {
+	if !source(b) && !sourceAround(b, pos, tx) {
 		var res world.Liquid
 		if b.LiquidDepth()-4 > 0 {
 			res = b.WithDepth(b.LiquidDepth()-2*b.SpreadDecay(), false)
 		}
-		ctx := event.C()
-		if w.Handler().HandleLiquidDecay(ctx, pos, b, res); ctx.Cancelled() {
+		ctx := event.C(tx)
+		if tx.World().Handler().HandleLiquidDecay(ctx, pos, b, res); ctx.Cancelled() {
 			return
 		}
-		w.SetLiquid(pos, res)
+		tx.SetLiquid(pos, res)
 		return
 	}
-	displacer, _ := w.Block(pos).(world.LiquidDisplacer)
+	displacer, _ := tx.Block(pos).(world.LiquidDisplacer)
 
-	canFlowBelow := canFlowInto(b, w, pos.Side(cube.FaceDown), false)
+	canFlowBelow := canFlowInto(b, tx, pos.Side(cube.FaceDown), false)
 	if b.LiquidFalling() && !canFlowBelow {
 		b = b.WithDepth(8, true)
 	} else if canFlowBelow {
 		below := pos.Side(cube.FaceDown)
-		if displacer == nil || !displacer.SideClosed(pos, below, w) {
-			flowInto(b.WithDepth(8, true), pos, below, w, true)
+		if displacer == nil || !displacer.SideClosed(pos, below, tx) {
+			flowInto(b.WithDepth(8, true), pos, below, tx, true)
 		}
 	}
 
@@ -67,16 +67,16 @@ func tickLiquid(b world.Liquid, pos cube.Pos, w *world.World) {
 		return
 	}
 	if source(b) || !canFlowBelow {
-		paths := calculateLiquidPaths(b, pos, w, displacer)
+		paths := calculateLiquidPaths(b, pos, tx, displacer)
 		if len(paths) == 0 {
-			spreadOutwards(b, pos, w, displacer)
+			spreadOutwards(b, pos, tx, displacer)
 			return
 		}
 
 		smallestLen := len(paths[0])
 		for _, path := range paths {
 			if len(path) <= smallestLen {
-				flowInto(b, pos, path[0], w, false)
+				flowInto(b, pos, path[0], tx, false)
 			}
 		}
 	}
@@ -88,28 +88,28 @@ func source(b world.Liquid) bool {
 }
 
 // spreadOutwards spreads the liquid outwards into the horizontal directions.
-func spreadOutwards(b world.Liquid, pos cube.Pos, w *world.World, displacer world.LiquidDisplacer) {
+func spreadOutwards(b world.Liquid, pos cube.Pos, tx *world.Tx, displacer world.LiquidDisplacer) {
 	pos.Neighbours(func(neighbour cube.Pos) {
 		if neighbour[1] == pos[1] {
-			if displacer == nil || !displacer.SideClosed(pos, neighbour, w) {
-				flowInto(b, pos, neighbour, w, false)
+			if displacer == nil || !displacer.SideClosed(pos, neighbour, tx) {
+				flowInto(b, pos, neighbour, tx, false)
 			}
 		}
-	}, w.Range())
+	}, tx.Range())
 }
 
 // sourceAround checks if there is a source in the blocks around the position passed.
-func sourceAround(b world.Liquid, pos cube.Pos, w *world.World) (sourcePresent bool) {
+func sourceAround(b world.Liquid, pos cube.Pos, tx *world.Tx) (sourcePresent bool) {
 	pos.Neighbours(func(neighbour cube.Pos) {
 		if neighbour[1] == pos[1]-1 {
 			// We don't care about water below this one.
 			return
 		}
-		side, ok := w.Liquid(neighbour)
+		side, ok := tx.Liquid(neighbour)
 		if !ok || side.LiquidType() != b.LiquidType() {
 			return
 		}
-		if displacer, ok := w.Block(neighbour).(world.LiquidDisplacer); ok && displacer.SideClosed(neighbour, pos, w) {
+		if displacer, ok := tx.Block(neighbour).(world.LiquidDisplacer); ok && displacer.SideClosed(neighbour, pos, tx) {
 			// The side towards this liquid was closed, so this cannot function as a source for this
 			// liquid.
 			return
@@ -117,13 +117,13 @@ func sourceAround(b world.Liquid, pos cube.Pos, w *world.World) (sourcePresent b
 		if neighbour[1] == pos[1]+1 || source(side) || side.LiquidDepth() > b.LiquidDepth() {
 			sourcePresent = true
 		}
-	}, w.Range())
+	}, tx.Range())
 	return
 }
 
 // flowInto makes the liquid passed flow into the position passed in a world. If successful, the block at that
 // position will be broken and the liquid with a lower depth will replace it.
-func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) bool {
+func flowInto(b world.Liquid, src, pos cube.Pos, tx *world.Tx, falling bool) bool {
 	newDepth := b.LiquidDepth() - b.SpreadDecay()
 	if falling {
 		newDepth = b.LiquidDepth()
@@ -131,26 +131,26 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 	if newDepth <= 0 && !falling {
 		return false
 	}
-	existing := w.Block(pos)
+	existing := tx.Block(pos)
 	if existingLiquid, alsoLiquid := existing.(world.Liquid); alsoLiquid && existingLiquid.LiquidType() == b.LiquidType() {
 		if existingLiquid.LiquidDepth() >= newDepth || existingLiquid.LiquidFalling() {
 			// The existing liquid had a higher depth than the one we're propagating, or it was falling
 			// (basically considered full depth), so no need to continue.
 			return true
 		}
-		ctx := event.C()
-		if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+		ctx := event.C(tx)
+		if tx.World().Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
 			return false
 		}
-		w.SetLiquid(pos, b.WithDepth(newDepth, falling))
+		tx.SetLiquid(pos, b.WithDepth(newDepth, falling))
 		return true
 	} else if alsoLiquid {
-		existingLiquid.Harden(pos, w, &src)
+		existingLiquid.Harden(pos, tx, &src)
 		return false
 	}
 	displacer, isDisplacer := existing.(world.LiquidDisplacer)
 	if isDisplacer {
-		if _, ok := w.Liquid(pos); ok {
+		if _, ok := tx.Liquid(pos); ok {
 			// We've got a liquid displacer, and it's got a liquid within it, so we can't flow into this.
 			return false
 		}
@@ -160,26 +160,26 @@ func flowInto(b world.Liquid, src, pos cube.Pos, w *world.World, falling bool) b
 		// Can't flow into this block.
 		return false
 	}
-	ctx := event.C()
-	if w.Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
+	ctx := event.C(tx)
+	if tx.World().Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
 		return false
 	}
 
 	if isRemovable {
 		if _, air := existing.(Air); !air {
-			w.SetBlock(pos, nil, nil)
+			tx.SetBlock(pos, nil, nil)
 		}
 		if removable.HasLiquidDrops() {
 			if b, ok := existing.(Breakable); ok {
 				for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
-					dropItem(w, d, pos.Vec3Centre())
+					dropItem(tx, d, pos.Vec3Centre())
 				}
 			} else {
 				panic("liquid drops should always implement breakable")
 			}
 		}
 	}
-	w.SetLiquid(pos, b.WithDepth(newDepth, falling))
+	tx.SetLiquid(pos, b.WithDepth(newDepth, falling))
 	return true
 }
 
@@ -190,7 +190,7 @@ type liquidPath []cube.Pos
 // calculateLiquidPaths calculates paths in the world that the liquid passed can flow in to reach lower
 // grounds, starting at the position passed.
 // If none of these paths can be found, the returned slice has a length of 0.
-func calculateLiquidPaths(b world.Liquid, pos cube.Pos, w *world.World, displacer world.LiquidDisplacer) []liquidPath {
+func calculateLiquidPaths(b world.Liquid, pos cube.Pos, tx *world.Tx, displacer world.LiquidDisplacer) []liquidPath {
 	queue := liquidQueuePool.Get().(*liquidQueue)
 	defer func() {
 		queue.Reset()
@@ -208,26 +208,26 @@ func calculateLiquidPaths(b world.Liquid, pos cube.Pos, w *world.World, displace
 		}
 		node := queue.Front()
 		neighA, neighB, neighC, neighD := node.neighbours(decay * 2)
-		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighA.x, pos[1], neighA.z}, w)) {
-			if spreadNeighbour(b, pos, w, neighA, queue) {
+		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighA.x, pos[1], neighA.z}, tx)) {
+			if spreadNeighbour(b, pos, tx, neighA, queue) {
 				queue.shortestPath = neighA.Len()
 				paths = append(paths, neighA.Path(pos))
 			}
 		}
-		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighB.x, pos[1], neighB.z}, w)) {
-			if spreadNeighbour(b, pos, w, neighB, queue) {
+		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighB.x, pos[1], neighB.z}, tx)) {
+			if spreadNeighbour(b, pos, tx, neighB, queue) {
 				queue.shortestPath = neighB.Len()
 				paths = append(paths, neighB.Path(pos))
 			}
 		}
-		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighC.x, pos[1], neighC.z}, w)) {
-			if spreadNeighbour(b, pos, w, neighC, queue) {
+		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighC.x, pos[1], neighC.z}, tx)) {
+			if spreadNeighbour(b, pos, tx, neighC, queue) {
 				queue.shortestPath = neighC.Len()
 				paths = append(paths, neighC.Path(pos))
 			}
 		}
-		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighD.x, pos[1], neighD.z}, w)) {
-			if spreadNeighbour(b, pos, w, neighD, queue) {
+		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighD.x, pos[1], neighD.z}, tx)) {
+			if spreadNeighbour(b, pos, tx, neighD, queue) {
 				queue.shortestPath = neighD.Len()
 				paths = append(paths, neighD.Path(pos))
 			}
@@ -239,7 +239,7 @@ func calculateLiquidPaths(b world.Liquid, pos cube.Pos, w *world.World, displace
 
 // spreadNeighbour attempts to spread a path node into the neighbour passed. Note that this does not spread
 // the liquid, it only spreads the node used to calculate flow paths.
-func spreadNeighbour(b world.Liquid, src cube.Pos, w *world.World, node liquidNode, queue *liquidQueue) bool {
+func spreadNeighbour(b world.Liquid, src cube.Pos, tx *world.Tx, node liquidNode, queue *liquidQueue) bool {
 	if node.depth+3 <= 0 {
 		// Depth has reached zero or below, can't spread any further.
 		return false
@@ -249,12 +249,12 @@ func spreadNeighbour(b world.Liquid, src cube.Pos, w *world.World, node liquidNo
 		return false
 	}
 	pos := cube.Pos{node.x, src[1], node.z}
-	if !canFlowInto(b, w, pos, true) {
+	if !canFlowInto(b, tx, pos, true) {
 		// Can't flow into this block, can't spread any further.
 		return false
 	}
 	pos[1]--
-	if canFlowInto(b, w, pos, false) {
+	if canFlowInto(b, tx, pos, false) {
 		return true
 	}
 	queue.PushBack(node)
@@ -262,8 +262,8 @@ func spreadNeighbour(b world.Liquid, src cube.Pos, w *world.World, node liquidNo
 }
 
 // canFlowInto checks if a liquid can flow into the block present in the world at a specific block position.
-func canFlowInto(b world.Liquid, w *world.World, pos cube.Pos, sideways bool) bool {
-	bl := w.Block(pos)
+func canFlowInto(b world.Liquid, tx *world.Tx, pos cube.Pos, sideways bool) bool {
+	bl := tx.Block(pos)
 	if _, air := bl.(Air); air {
 		// Fast route for air: A type assert to a concrete type is much faster than a type assert to an interface.
 		return true

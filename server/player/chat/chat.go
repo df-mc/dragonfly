@@ -1,30 +1,31 @@
 package chat
 
 import (
+	"github.com/google/uuid"
 	"sync"
 )
 
-// Global represents a global chat. Players will write in this chat by default when they send any message in
-// the chat.
+// Global represents a global chat. Players will write in this chat by default
+// when they send any message in the chat.
 var Global = New()
 
-// Chat represents the in-game chat. Messages may be written to it to send a message to all subscribers. The
-// zero value of Chat is a chat ready to use.
-// Methods on Chat may be called from multiple goroutines concurrently.
-// Chat implements the io.Writer and io.StringWriter interfaces. fmt.Fprintf and fmt.Fprint may be used to write
-// formatted messages to the chat.
+// Chat represents the in-game chat. Messages may be written to it to send a
+// message to all subscribers.
+// Methods on Chat may be called from multiple goroutines concurrently. Chat
+// implements the io.Writer and io.StringWriter interfaces. fmt.Fprintf and
+// fmt.Fprint may be used to write formatted messages to the chat.
 type Chat struct {
 	m           sync.Mutex
-	subscribers map[Subscriber]struct{}
+	subscribers map[uuid.UUID]Subscriber
 }
 
 // New returns a new chat.
 func New() *Chat {
-	return &Chat{subscribers: map[Subscriber]struct{}{}}
+	return &Chat{subscribers: map[uuid.UUID]Subscriber{}}
 }
 
-// Write writes the byte slice p as a string to the chat. It is equivalent to calling
-// Chat.WriteString(string(p)).
+// Write writes the byte slice p as a string to the chat. It is equivalent to
+// calling Chat.WriteString(string(p)).
 func (chat *Chat) Write(p []byte) (n int, err error) {
 	return chat.WriteString(string(p))
 }
@@ -33,34 +34,34 @@ func (chat *Chat) Write(p []byte) (n int, err error) {
 func (chat *Chat) WriteString(s string) (n int, err error) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
-	for subscriber := range chat.subscribers {
+	for _, subscriber := range chat.subscribers {
 		subscriber.Message(s)
 	}
 	return len(s), nil
 }
 
-// Subscribe adds a subscriber to the chat, sending it every message written to the chat. In order to remove
-// it again, use Chat.Unsubscribe().
+// Subscribe adds a subscriber to the chat, sending it every message written to
+// the chat. In order to remove it again, use Chat.Unsubscribe().
 func (chat *Chat) Subscribe(s Subscriber) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
-	chat.subscribers[s] = struct{}{}
+	chat.subscribers[s.UUID()] = s
 }
 
 // Subscribed checks if a subscriber is currently subscribed to the chat.
 func (chat *Chat) Subscribed(s Subscriber) bool {
 	chat.m.Lock()
 	defer chat.m.Unlock()
-	_, ok := chat.subscribers[s]
+	_, ok := chat.subscribers[s.UUID()]
 	return ok
 }
 
-// Unsubscribe removes a subscriber from the chat, so that messages written to the chat will no longer be
-// sent to it.
+// Unsubscribe removes a subscriber from the chat, so that messages written to
+// the chat will no longer be sent to it.
 func (chat *Chat) Unsubscribe(s Subscriber) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
-	delete(chat.subscribers, s)
+	delete(chat.subscribers, s.UUID())
 }
 
 // Close closes the chat, removing all subscribers from it.

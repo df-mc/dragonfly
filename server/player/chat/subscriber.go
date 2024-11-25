@@ -2,20 +2,31 @@ package chat
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"strings"
 )
 
-// Subscriber represents an entity that may subscribe to a Chat. In order to do so, the Subscriber must
-// implement methods to send messages to it.
+// Subscriber represents an entity that may subscribe to a Chat. In order to do
+// so, the Subscriber must implement methods to send messages to it.
 type Subscriber interface {
-	// Message sends a formatted message to the subscriber. The message is formatted as it would when using
-	// fmt.Println.
+	// UUID returns a unique ID for the Subscriber.
+	UUID() uuid.UUID
+	// Message sends a formatted message to the subscriber. The message is
+	// formatted as it would when using fmt.Println.
 	Message(a ...any)
 }
 
-// StdoutSubscriber is an implementation of Subscriber that forwards messages sent to the chat to the stdout.
+// StdoutSubscriber is an implementation of Subscriber that forwards messages
+// sent to the chat to the stdout.
 type StdoutSubscriber struct{}
+
+var id = uuid.New()
+
+// UUID ...
+func (c StdoutSubscriber) UUID() uuid.UUID {
+	return id
+}
 
 // Message ...
 func (c StdoutSubscriber) Message(a ...any) {

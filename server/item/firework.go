@@ -19,7 +19,7 @@ type Firework struct {
 }
 
 // Use ...
-func (f Firework) Use(w *world.World, user User, ctx *UseContext) bool {
+func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	if g, ok := user.(interface {
 		Gliding() bool
 	}); !ok || !g.Gliding() {
@@ -28,20 +28,22 @@ func (f Firework) Use(w *world.World, user User, ctx *UseContext) bool {
 
 	pos := user.Position()
 
-	w.PlaySound(pos, sound.FireworkLaunch{})
-	create := w.EntityRegistry().Config().Firework
-	w.AddEntity(create(pos, user.Rotation(), true, f, user))
+	tx.PlaySound(pos, sound.FireworkLaunch{})
+	create := tx.World().EntityRegistry().Config().Firework
+	opts := world.EntitySpawnOpts{Position: pos, Rotation: user.Rotation()}
+	tx.AddEntity(create(opts, f, user, true))
 
 	ctx.SubtractFromCount(1)
 	return true
 }
 
 // UseOnBlock ...
-func (f Firework) UseOnBlock(blockPos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
-	pos := blockPos.Vec3().Add(clickPos)
-	create := w.EntityRegistry().Config().Firework
-	w.AddEntity(create(pos, cube.Rotation{rand.Float64() * 360, 90}, false, f, user))
-	w.PlaySound(pos, sound.FireworkLaunch{})
+func (f Firework) UseOnBlock(pos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+	fpos := pos.Vec3().Add(clickPos)
+	create := tx.World().EntityRegistry().Config().Firework
+	opts := world.EntitySpawnOpts{Position: fpos, Rotation: cube.Rotation{rand.Float64() * 360, 90}}
+	tx.AddEntity(create(opts, f, user, false))
+	tx.PlaySound(fpos, sound.FireworkLaunch{})
 
 	ctx.SubtractFromCount(1)
 	return true

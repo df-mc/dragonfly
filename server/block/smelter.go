@@ -39,7 +39,7 @@ func newSmelter() *smelter {
 }
 
 // InsertItem ...
-func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
+func (s *smelter) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range h.inventory.Slots() {
 		var slot int
 
@@ -54,7 +54,7 @@ func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 		}
 
 		stack := sourceStack.Grow(-sourceStack.Count() + 1)
-		it, _ := s.Inventory(w, pos).Item(slot)
+		it, _ := s.Inventory(tx, pos).Item(slot)
 		if slot == 1 {
 			if _, ok := sourceStack.Item().(item.Fuel); !ok {
 				// The item is not fuel.
@@ -73,7 +73,7 @@ func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 			stack = it.Grow(1)
 		}
 
-		_ = s.Inventory(w, pos).SetItem(slot, stack)
+		_ = s.Inventory(tx, pos).SetItem(slot, stack)
 		_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
 		return true
 	}
@@ -82,7 +82,7 @@ func (s *smelter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 }
 
 // ExtractItem ...
-func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
+func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range s.inventory.Slots() {
 		if sourceStack.Empty() {
 			continue
@@ -105,7 +105,7 @@ func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
 			continue
 		}
 
-		_ = s.Inventory(w, pos).SetItem(sourceSlot, sourceStack.Grow(-1))
+		_ = s.Inventory(tx, pos).SetItem(sourceSlot, sourceStack.Grow(-1))
 		return true
 	}
 
@@ -136,12 +136,12 @@ func (s *smelter) ResetExperience() int {
 }
 
 // Inventory returns the inventory of the furnace.
-func (s *smelter) Inventory(*world.World, cube.Pos) *inventory.Inventory {
+func (s *smelter) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return s.inventory
 }
 
 // AddViewer adds a viewer to the furnace, so that it is updated whenever the inventory of the furnace is changed.
-func (s *smelter) AddViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
+func (s *smelter) AddViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.viewers[v] = struct{}{}
@@ -149,7 +149,7 @@ func (s *smelter) AddViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 
 // RemoveViewer removes a viewer from the furnace, so that slot updates in the inventory are no longer sent to
 // it.
-func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
+func (s *smelter) RemoveViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if len(s.viewers) == 0 {

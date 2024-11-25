@@ -17,9 +17,9 @@ const (
 	// keyBlockEntities holds n amount of NBT compound tags appended to each other (not a TAG_List, just appended). The
 	// compound tags contain the position of the block entities.
 	keyBlockEntities = '1' // 31
-	// keyEntities holds n amount of NBT compound tags appended to each other (not a TAG_List, just appended). The
+	// keyEntitiesOld holds n amount of NBT compound tags appended to each other (not a TAG_List, just appended). The
 	// compound tags contain the position of the entities.
-	keyEntities = '2' // 32
+	keyEntitiesOld = '2' // 32
 	// keyFinalisation contains a single LE int32 that indicates the state of generation of the chunk. If 0, the chunk
 	// needs to be ticked. If 1, the chunk needs to be populated and if 2 (which is the state generally found in world
 	// saves from vanilla), the chunk is fully finalised.
@@ -32,6 +32,10 @@ const (
 	// keyChecksum holds a list of checksums of some sort. It's not clear of what data this checksum is composed or what
 	// these checksums are used for.
 	keyChecksums = ';' // 3b
+
+	keyEntityIdentifiers = "digp"
+
+	keyEntity = "actorprefix"
 )
 
 // Keys on a per-world basis. These are found only once in a leveldb world save.

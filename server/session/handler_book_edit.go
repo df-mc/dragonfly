@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -10,7 +11,7 @@ import (
 type BookEditHandler struct{}
 
 // Handle ...
-func (b BookEditHandler) Handle(p packet.Packet, s *Session) error {
+func (b BookEditHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, _ Controllable) error {
 	pk := p.(*packet.BookEdit)
 
 	it, err := s.inv.Item(int(pk.InventorySlot))

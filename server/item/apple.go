@@ -10,7 +10,7 @@ type Apple struct {
 }
 
 // Consume ...
-func (a Apple) Consume(_ *world.World, c Consumer) Stack {
+func (a Apple) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(4, 2.4)
 	return Stack{}
 }

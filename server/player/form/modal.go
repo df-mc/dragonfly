@@ -3,6 +3,7 @@ package form
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 )
 
@@ -68,10 +69,10 @@ func (m Modal) Body() string {
 
 // SubmitJSON submits a JSON byte slice to the modal form. This byte slice contains a JSON encoded bool in it,
 // which is used to determine which button was clicked.
-func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
+func (m Modal) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 	if b == nil {
 		if closer, ok := m.submittable.(Closer); ok {
-			closer.Close(submitter)
+			closer.Close(submitter, tx)
 		}
 		return nil
 	}
@@ -81,10 +82,10 @@ func (m Modal) SubmitJSON(b []byte, submitter Submitter) error {
 		return fmt.Errorf("error parsing JSON as bool: %w", err)
 	}
 	if value {
-		m.submittable.Submit(submitter, m.Buttons()[0])
+		m.submittable.Submit(submitter, m.Buttons()[0], tx)
 		return nil
 	}
-	m.submittable.Submit(submitter, m.Buttons()[1])
+	m.submittable.Submit(submitter, m.Buttons()[1], tx)
 	return nil
 }
 

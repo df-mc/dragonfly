@@ -23,7 +23,7 @@ type Composter struct {
 }
 
 // InsertItem ...
-func (c Composter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
+func (c Composter) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	if c.Level >= 7 || h.Facing != cube.FaceDown {
 		return false
 	}
@@ -33,7 +33,7 @@ func (c Composter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 			continue
 		}
 
-		if c.fill(sourceStack, pos, w) {
+		if c.fill(sourceStack, pos, tx) {
 			_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
 			return true
 		}
@@ -43,7 +43,7 @@ func (c Composter) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 }
 
 // ExtractItem ...
-func (c Composter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
+func (c Composter) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	if c.Level == 8 {
 		_, err := h.inventory.AddItem(item.NewStack(item.BoneMeal{}, 1))
 		if err != nil {
@@ -52,8 +52,8 @@ func (c Composter) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
 		}
 
 		c.Level = 0
-		w.SetBlock(pos.Side(cube.FaceUp), c, nil)
-		w.PlaySound(pos.Side(cube.FaceUp).Vec3(), sound.ComposterEmpty{})
+		tx.SetBlock(pos.Side(cube.FaceUp), c, nil)
+		tx.PlaySound(pos.Side(cube.FaceUp).Vec3(), sound.ComposterEmpty{})
 		return true
 	}
 
@@ -76,32 +76,32 @@ func (c Composter) FlammabilityInfo() FlammabilityInfo {
 }
 
 // SideClosed ...
-func (c Composter) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (c Composter) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // BreakInfo ...
 func (c Composter) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if c.Level == 8 {
-			dropItem(w, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
+			dropItem(tx, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
 		}
 	})
 }
 
 // Activate ...
-func (c Composter) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
+func (c Composter) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if c.Level >= 7 {
 		if c.Level == 8 {
 			c.Level = 0
-			w.SetBlock(pos, c, nil)
-			dropItem(w, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
-			w.PlaySound(pos.Vec3(), sound.ComposterEmpty{})
+			tx.SetBlock(pos, c, nil)
+			dropItem(tx, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
+			tx.PlaySound(pos.Vec3(), sound.ComposterEmpty{})
 		}
 		return false
 	}
 	it, _ := u.HeldItems()
-	if c.fill(it, pos, w) {
+	if c.fill(it, pos, tx) {
 		ctx.SubtractFromCount(1)
 		return true
 	}
@@ -109,32 +109,32 @@ func (c Composter) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Us
 }
 
 // Fill fills up the composter.
-func (c Composter) fill(it item.Stack, pos cube.Pos, w *world.World) bool {
+func (c Composter) fill(it item.Stack, pos cube.Pos, tx *world.Tx) bool {
 	compostable, ok := it.Item().(item.Compostable)
 	if !ok {
 		return false
 	}
-	w.AddParticle(pos.Vec3(), particle.BoneMeal{})
+	tx.AddParticle(pos.Vec3(), particle.BoneMeal{})
 	if rand.Float64() > compostable.CompostChance() {
-		w.PlaySound(pos.Vec3(), sound.ComposterFill{})
+		tx.PlaySound(pos.Vec3(), sound.ComposterFill{})
 		return true
 	}
 	c.Level++
-	w.SetBlock(pos, c, nil)
-	w.PlaySound(pos.Vec3(), sound.ComposterFillLayer{})
+	tx.SetBlock(pos, c, nil)
+	tx.PlaySound(pos.Vec3(), sound.ComposterFillLayer{})
 	if c.Level == 7 {
-		w.ScheduleBlockUpdate(pos, time.Second)
+		tx.ScheduleBlockUpdate(pos, time.Second)
 	}
 
 	return true
 }
 
 // ScheduledTick ...
-func (c Composter) ScheduledTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+func (c Composter) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Level == 7 {
 		c.Level = 8
-		w.SetBlock(pos, c, nil)
-		w.PlaySound(pos.Vec3(), sound.ComposterReady{})
+		tx.SetBlock(pos, c, nil)
+		tx.PlaySound(pos.Vec3(), sound.ComposterReady{})
 	}
 }
 

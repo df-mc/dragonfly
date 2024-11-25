@@ -86,7 +86,7 @@ type BreakInfo struct {
 	// Drops is a function called to get the drops of the block if it is broken using the item passed.
 	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
 	// BreakHandler is called after the block has broken.
-	BreakHandler func(pos cube.Pos, w *world.World, u item.User)
+	BreakHandler func(pos cube.Pos, w *world.Tx, u item.User)
 	// XPDrops is the range of XP a block can drop when broken.
 	XPDrops XPDropRange
 	// BlastResistance is the blast resistance of the block, which influences the block's ability to withstand an
@@ -119,7 +119,7 @@ func (b BreakInfo) withBlastResistance(res float64) BreakInfo {
 }
 
 // withBreakHandler sets the BreakHandler field of the BreakInfo struct to the passed value.
-func (b BreakInfo) withBreakHandler(handler func(pos cube.Pos, w *world.World, u item.User)) BreakInfo {
+func (b BreakInfo) withBreakHandler(handler func(pos cube.Pos, w *world.Tx, u item.User)) BreakInfo {
 	b.BreakHandler = handler
 	return b
 }

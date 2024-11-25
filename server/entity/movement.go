@@ -62,13 +62,12 @@ func (m *Movement) Rotation() cube.Rotation {
 // of its Drag and Gravity.
 // The new position of the entity after movement is returned.
 // The resulting Movement can be sent to viewers by calling Movement.Send.
-func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, rot cube.Rotation) *Movement {
-	w := e.World()
-	viewers := w.Viewers(pos)
+func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, rot cube.Rotation, tx *world.Tx) *Movement {
+	viewers := tx.Viewers(pos)
 
 	velBefore := vel
-	vel = c.applyHorizontalForces(w, pos, c.applyVerticalForces(vel))
-	dPos, vel := c.checkCollision(e, pos, vel)
+	vel = c.applyHorizontalForces(tx, pos, c.applyVerticalForces(vel))
+	dPos, vel := c.checkCollision(tx, e, pos, vel)
 
 	return &Movement{v: viewers, e: e,
 		pos: pos.Add(dPos), vel: vel, dpos: dPos, dvel: vel.Sub(velBefore),
@@ -100,10 +99,10 @@ func (c *MovementComputer) applyVerticalForces(vel mgl64.Vec3) mgl64.Vec3 {
 }
 
 // applyHorizontalForces applies friction to the velocity based on the Drag value, reducing it on the X and Z axes.
-func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.Vec3) mgl64.Vec3 {
+func (c *MovementComputer) applyHorizontalForces(tx *world.Tx, pos, vel mgl64.Vec3) mgl64.Vec3 {
 	friction := 1 - c.Drag
 	if c.onGround {
-		if f, ok := w.Block(cube.PosFromVec3(pos).Side(cube.FaceDown)).(interface {
+		if f, ok := tx.Block(cube.PosFromVec3(pos).Side(cube.FaceDown)).(interface {
 			Friction() float64
 		}); ok {
 			friction *= f.Friction()
@@ -119,13 +118,13 @@ func (c *MovementComputer) applyHorizontalForces(w *world.World, pos, vel mgl64.
 // checkCollision handles the collision of the entity with blocks, adapting the velocity of the entity if it
 // happens to collide with a block.
 // The final velocity and the Vec3 that the entity should move is returned.
-func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (mgl64.Vec3, mgl64.Vec3) {
+func (c *MovementComputer) checkCollision(tx *world.Tx, e world.Entity, pos, vel mgl64.Vec3) (mgl64.Vec3, mgl64.Vec3) {
 	// TODO: Implement collision with other entities.
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	// Entities only ever have a single bounding box.
-	entityBBox := e.Type().BBox(e).Translate(pos)
-	blocks := blockBBoxsAround(e, entityBBox.Extend(vel))
+	entityBBox := e.H().Type().BBox(e).Translate(pos)
+	blocks := blockBBoxsAround(tx, entityBBox.Extend(vel))
 
 	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
 		// First we move the entity BBox on the Y axis.
@@ -171,8 +170,7 @@ func (c *MovementComputer) checkCollision(e world.Entity, pos, vel mgl64.Vec3) (
 
 // blockBBoxsAround returns all blocks around the entity passed, using the BBox passed to make a prediction of
 // what blocks need to have their BBox returned.
-func blockBBoxsAround(e world.Entity, box cube.BBox) []cube.BBox {
-	w := e.World()
+func blockBBoxsAround(tx *world.Tx, box cube.BBox) []cube.BBox {
 	grown := box.Grow(0.25)
 	min, max := grown.Min(), grown.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
@@ -184,7 +182,7 @@ func blockBBoxsAround(e world.Entity, box cube.BBox) []cube.BBox {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				pos := cube.Pos{x, y, z}
-				boxes := w.Block(pos).Model().BBox(pos, w)
+				boxes := tx.Block(pos).Model().BBox(pos, tx)
 				for _, box := range boxes {
 					blockBBoxs = append(blockBBoxs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))
 				}

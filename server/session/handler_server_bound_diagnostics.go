@@ -1,7 +1,7 @@
 package session
 
 import (
-	"github.com/df-mc/dragonfly/server/player/diagnostics"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -9,9 +9,9 @@ import (
 type ServerBoundDiagnosticsHandler struct{}
 
 // Handle ...
-func (h *ServerBoundDiagnosticsHandler) Handle(p packet.Packet, s *Session) error {
+func (h *ServerBoundDiagnosticsHandler) Handle(p packet.Packet, _ *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.ServerBoundDiagnostics)
-	s.c.UpdateDiagnostics(diagnostics.Diagnostics{
+	c.UpdateDiagnostics(Diagnostics{
 		AverageFramesPerSecond:        float64(pk.AverageFramesPerSecond),
 		AverageServerSimTickTime:      float64(pk.AverageServerSimTickTime),
 		AverageClientSimTickTime:      float64(pk.AverageClientSimTickTime),
