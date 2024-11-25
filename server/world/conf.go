@@ -83,5 +83,7 @@ func (conf Config) New() *World {
 	go w.tickLoop(w)
 	go w.chunkCacheJanitor()
 	go w.handleTransactions()
+
+	<-w.Exec(w.tick)
 	return w
 }

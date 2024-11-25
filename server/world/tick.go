@@ -35,6 +35,11 @@ func (t ticker) tick(tx *Tx) {
 	viewers, loaders := tx.World().allViewers() // ALL VIEWERS
 
 	tx.World().set.Lock()
+	if s := tx.World().set.Spawn; s[1] > tx.Range()[1] {
+		// Vanilla will set the spawn position's Y value to max to indicate that
+		// the player should spawn at the highest position in the world.
+		tx.World().set.Spawn[1] = tx.World().highestObstructingBlock(s[0], s[2]) + 1
+	}
 	if len(viewers) == 0 && tx.World().set.CurrentTick != 0 {
 		tx.World().set.Unlock()
 		return

@@ -760,12 +760,8 @@ func (w *World) Spawn() cube.Pos {
 		return cube.Pos{}
 	}
 	w.set.Lock()
-	s := w.set.Spawn
-	w.set.Unlock()
-	if s[1] > w.Range()[1] {
-		s[1] = w.highestObstructingBlock(s[0], s[2]) + 1
-	}
-	return s
+	defer w.set.Unlock()
+	return w.set.Spawn
 }
 
 // SetSpawn sets the spawn of the world to a different position. The player
