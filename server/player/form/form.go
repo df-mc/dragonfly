@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 	"strings"
 	"unicode/utf8"
@@ -13,7 +14,7 @@ import (
 // and modal forms implement this interface.
 type Form interface {
 	json.Marshaler
-	SubmitJSON(b []byte, submitter Submitter) error
+	SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error
 }
 
 // Custom represents a form that may be sent to a player and has fields that should be filled out by the
@@ -75,10 +76,10 @@ func (f Custom) Elements() []Element {
 // making sure their values are valid for the form's elements.
 // If the values are valid and can be parsed properly, the Submittable.Submit() method of the form's Submittable is
 // called and the fields of the Submittable will be filled out.
-func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
+func (f Custom) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 	if b == nil {
 		if closer, ok := f.submittable.(Closer); ok {
-			closer.Close(submitter)
+			closer.Close(submitter, tx)
 		}
 		return nil
 	}
@@ -110,7 +111,7 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter) error {
 		data = data[1:]
 	}
 
-	v.Interface().(Submittable).Submit(submitter)
+	v.Interface().(Submittable).Submit(submitter, tx)
 
 	return nil
 }
