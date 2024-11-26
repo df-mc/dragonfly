@@ -11,12 +11,13 @@ import (
 // EffectManager manages the effects of an entity. The effect manager will only store effects that last for
 // a specific duration. Instant effects are applied instantly and not stored.
 type EffectManager struct {
-	effects map[reflect.Type]effect.Effect
+	initialEffects []effect.Effect
+	effects        map[reflect.Type]effect.Effect
 }
 
 // NewEffectManager creates and returns a new initialised EffectManager.
-func NewEffectManager() *EffectManager {
-	return &EffectManager{effects: map[reflect.Type]effect.Effect{}}
+func NewEffectManager(eff ...effect.Effect) *EffectManager {
+	return &EffectManager{effects: make(map[reflect.Type]effect.Effect), initialEffects: eff}
 }
 
 // Add adds an effect to the manager. If the effect is instant, it is applied to the Living entity passed
@@ -83,6 +84,11 @@ func (m *EffectManager) Effects() []effect.Effect {
 // removing expired effects.
 func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 	update := false
+
+	for _, eff := range m.initialEffects {
+		m.Add(eff, entity)
+	}
+	m.initialEffects = nil
 
 	for i, eff := range m.effects {
 		if m.expired(eff) {

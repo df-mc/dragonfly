@@ -31,8 +31,8 @@ func NewProvider(path string) (*Provider, error) {
 }
 
 // Save ...
-func (p *Provider) Save(id uuid.UUID, d player.Data) error {
-	b, err := json.Marshal(p.toJson(d))
+func (p *Provider) Save(id uuid.UUID, d player.Config, w *world.World) error {
+	b, err := json.Marshal(p.toJson(d, w))
 	if err != nil {
 		return err
 	}
@@ -40,17 +40,19 @@ func (p *Provider) Save(id uuid.UUID, d player.Data) error {
 }
 
 // Load ...
-func (p *Provider) Load(id uuid.UUID, world func(world.Dimension) *world.World) (player.Data, error) {
+func (p *Provider) Load(id uuid.UUID, world func(world.Dimension) *world.World) (player.Config, *world.World, error) {
 	b, err := p.db.Get(id[:], nil)
 	if err != nil {
-		return player.Data{}, err
+		return player.Config{}, nil, err
 	}
 	var d jsonData
 	err = json.Unmarshal(b, &d)
 	if err != nil {
-		return player.Data{}, err
+		return player.Config{}, nil, err
 	}
-	return p.fromJson(d, world), nil
+	conf, w := p.fromJson(d, world)
+
+	return conf, w, nil
 }
 
 // Close ...

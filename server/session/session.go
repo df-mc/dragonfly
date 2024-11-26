@@ -196,6 +196,10 @@ func (s *Session) SetHandle(handle *world.EntityHandle, skin skin.Skin) {
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
 func (s *Session) Spawn(c Controllable, tx *world.Tx) {
+	s.SendHealth(c.Health(), c.MaxHealth(), c.Absorption())
+	s.SendExperience(c.ExperienceLevel(), c.ExperienceProgress())
+	s.SendFood(c.Food(), 0, 0)
+
 	pos := c.Position()
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
 	s.chunkLoader.Move(tx, pos)

@@ -92,7 +92,7 @@ func (s Sponge) setWet(pos cube.Pos, tx *world.Tx) {
 // The maximum for absorbed blocks is 65.
 // The returned int specifies the amount of replaced water blocks.
 func (s Sponge) absorbWater(pos cube.Pos, tx *world.Tx) int {
-	// distanceToSponge binds a world.Pos to its distance from the sponge's position.
+	// distanceToSponge binds a world.Position to its distance from the sponge's position.
 	type distanceToSponge struct {
 		block    cube.Pos
 		distance int32
