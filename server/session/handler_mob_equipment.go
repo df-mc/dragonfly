@@ -22,8 +22,8 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c 
 		// This window ID is expected, but we don't handle it.
 		return nil
 	case protocol.WindowIDInventory:
-		return s.UpdateHeldSlot(int(pk.InventorySlot), stackToItem(pk.NewItem.Stack), tx, c)
+		return s.VerifyAndSetHeldSlot(int(pk.InventorySlot), stackToItem(pk.NewItem.Stack), c)
 	default:
-		return fmt.Errorf("only main inventory should be involved in slot chnage, got window ID %v", pk.WindowID)
+		return fmt.Errorf("only main inventory should be involved in slot change, got window ID %v", pk.WindowID)
 	}
 }

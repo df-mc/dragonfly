@@ -72,6 +72,7 @@ type Session struct {
 	openedWindow                   atomic.Pointer[inventory.Inventory]
 	openedPos                      atomic.Pointer[cube.Pos]
 	swingingArm                    atomic.Bool
+	changingSlot                   atomic.Bool
 	changingDimension              atomic.Bool
 
 	recipes map[uint32]recipe.Recipe
