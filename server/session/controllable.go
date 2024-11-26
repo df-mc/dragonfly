@@ -52,7 +52,13 @@ type Controllable interface {
 	SwingArm()
 	PunchAir()
 
+	Health() float64
+	MaxHealth() float64
+	Absorption() float64
+	Food() int
+
 	ExperienceLevel() int
+	ExperienceProgress() float64
 	SetExperienceLevel(level int)
 
 	EnchantmentSeed() int64

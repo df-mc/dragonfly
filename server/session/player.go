@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -459,14 +458,14 @@ func (s *Session) SendAbilities(c Controllable) {
 }
 
 // SendHealth sends the health and max health to the player.
-func (s *Session) SendHealth(health *entity.HealthManager, absorption float64) {
+func (s *Session) SendHealth(health, max, absorption float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			AttributeValue: protocol.AttributeValue{
 				Name:  "minecraft:health",
-				Value: float32(math.Ceil(health.Health())),
-				Max:   float32(math.Ceil(health.MaxHealth())),
+				Value: float32(math.Ceil(health)),
+				Max:   float32(math.Ceil(max)),
 			},
 			DefaultMax: 20,
 			Default:    20,
@@ -663,8 +662,7 @@ func (s *Session) UpdateHeldSlot(slot int, expected item.Stack, tx *world.Tx, c 
 }
 
 // SendExperience sends the experience level and progress from the given experience manager to the player.
-func (s *Session) SendExperience(e *entity.ExperienceManager) {
-	level, progress := e.Level(), e.Progress()
+func (s *Session) SendExperience(level int, progress float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{

@@ -60,8 +60,8 @@ type playerData struct {
 	fallDistance float64
 
 	breathing         bool
-	airSupplyTicks    int64
-	maxAirSupplyTicks int64
+	airSupplyTicks    int
+	maxAirSupplyTicks int
 
 	cooldowns map[string]time.Time
 
@@ -455,13 +455,13 @@ func (p *Player) MaxHealth() float64 {
 // SetMaxHealth panics if the max health passed is 0 or lower.
 func (p *Player) SetMaxHealth(health float64) {
 	p.health.SetMaxHealth(health)
-	p.session().SendHealth(p.health, p.absorptionHealth)
+	p.session().SendHealth(p.Health(), p.MaxHealth(), p.absorptionHealth)
 }
 
 // addHealth adds health to the player's current health.
 func (p *Player) addHealth(health float64) {
 	p.health.AddHealth(health)
-	p.session().SendHealth(p.health, p.absorptionHealth)
+	p.session().SendHealth(p.Health(), p.MaxHealth(), p.absorptionHealth)
 }
 
 // Heal heals the entity for a given amount of health. The source passed
@@ -645,7 +645,7 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 // Nothing happens if a negative number is passed.
 func (p *Player) SetAbsorption(health float64) {
 	p.absorptionHealth = math.Max(health, 0)
-	p.session().SendHealth(p.health, p.absorptionHealth)
+	p.session().SendHealth(p.Health(), p.MaxHealth(), p.absorptionHealth)
 }
 
 // Absorption returns the absorption health that the player has.
@@ -851,7 +851,7 @@ func (p *Player) dropItems() {
 		p.tx.AddEntity(orb)
 	}
 	p.experience.Reset()
-	p.session().SendExperience(p.experience)
+	p.session().SendExperience(p.ExperienceLevel(), p.ExperienceProgress())
 
 	p.MoveItemsToInventory()
 	for _, it := range append(p.inv.Clear(), append(p.armour.Clear(), p.offHand.Clear()...)...) {
@@ -1257,7 +1257,7 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 		v.ViewEntityGameMode(p)
 	}
 	if mode.AllowsTakingDamage() {
-		p.session().SendHealth(p.health, p.absorptionHealth)
+		p.session().SendHealth(p.Health(), p.MaxHealth(), p.absorptionHealth)
 	}
 }
 
@@ -2095,14 +2095,14 @@ func (p *Player) AddExperience(amount int) int {
 	} else if amount > 0 {
 		p.PlaySound(sound.Experience{})
 	}
-	p.session().SendExperience(p.experience)
+	p.session().SendExperience(p.ExperienceLevel(), p.ExperienceProgress())
 	return amount
 }
 
 // RemoveExperience removes experience from the player.
 func (p *Player) RemoveExperience(amount int) {
 	p.experience.Add(-amount)
-	p.session().SendExperience(p.experience)
+	p.session().SendExperience(p.ExperienceLevel(), p.ExperienceProgress())
 }
 
 // ExperienceLevel returns the experience level of the player.
@@ -2114,7 +2114,7 @@ func (p *Player) ExperienceLevel() int {
 // otherwise the method panics.
 func (p *Player) SetExperienceLevel(level int) {
 	p.experience.SetLevel(level)
-	p.session().SendExperience(p.experience)
+	p.session().SendExperience(p.ExperienceLevel(), p.ExperienceProgress())
 }
 
 // ExperienceProgress returns the experience progress of the player.
@@ -2126,7 +2126,7 @@ func (p *Player) ExperienceProgress() float64 {
 // the method panics.
 func (p *Player) SetExperienceProgress(progress float64) {
 	p.experience.SetProgress(progress)
-	p.session().SendExperience(p.experience)
+	p.session().SendExperience(p.ExperienceLevel(), p.ExperienceProgress())
 }
 
 // CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
@@ -2339,11 +2339,6 @@ func (p *Player) tickAirSupply() {
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
 // is full enough.
 func (p *Player) tickFood() {
-	p.hunger.foodTick++
-	if p.hunger.foodTick >= 80 {
-		p.hunger.foodTick = 0
-	}
-
 	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || p.tx.World().Difficulty().FoodRegenerates()) {
 		if p.tx.World().Difficulty().FoodRegenerates() {
 			p.AddFood(1)
@@ -2362,6 +2357,11 @@ func (p *Player) tickFood() {
 
 	if !p.hunger.canSprint() {
 		p.StopSprinting()
+	}
+
+	p.hunger.foodTick++
+	if p.hunger.foodTick > 80 {
+		p.hunger.foodTick = 1
 	}
 }
 
@@ -2393,7 +2393,7 @@ func (p *Player) AirSupply() time.Duration {
 
 // SetAirSupply sets the player's remaining air supply.
 func (p *Player) SetAirSupply(duration time.Duration) {
-	p.airSupplyTicks = duration.Milliseconds() / 50
+	p.airSupplyTicks = int(duration.Milliseconds() / 50)
 	p.updateState()
 }
 
@@ -2404,7 +2404,7 @@ func (p *Player) MaxAirSupply() time.Duration {
 
 // SetMaxAirSupply sets the player's maximum air supply.
 func (p *Player) SetMaxAirSupply(duration time.Duration) {
-	p.maxAirSupplyTicks = duration.Milliseconds() / 50
+	p.maxAirSupplyTicks = int(duration.Milliseconds() / 50)
 	p.updateState()
 }
 
@@ -2805,7 +2805,6 @@ func (p *Player) quit(msg string) {
 	p.h = NopHandler{}
 
 	if s := p.s; s != nil {
-		p.s = nil
 		s.Disconnect(msg)
 		s.CloseConnection()
 		return
@@ -2816,91 +2815,40 @@ func (p *Player) quit(msg string) {
 	p.handle.Close(p.tx)
 }
 
-// load reads the player data from the provider. It uses the default values if the provider
-// returns false.
-func (p *Player) load(data Data) {
-	p.data.Rot = cube.Rotation{data.Yaw, data.Pitch}
-
-	p.health.SetMaxHealth(data.MaxHealth)
-	p.health.AddHealth(data.Health - p.Health())
-	p.absorptionHealth = data.AbsorptionLevel
-
-	p.hunger.foodLevel, p.hunger.foodTick = data.Hunger, data.FoodTick
-	p.hunger.exhaustionLevel, p.hunger.saturationLevel = data.ExhaustionLevel, data.SaturationLevel
-	p.sendFood()
-	p.session().SendHealth(p.health, data.AbsorptionLevel)
-
-	p.airSupplyTicks, p.maxAirSupplyTicks = data.AirSupply, data.MaxAirSupply
-
-	p.experience.Add(data.Experience)
-	p.session().SendExperience(p.experience)
-
-	p.enchantSeed = data.EnchantmentSeed
-
-	p.gameMode = data.GameMode
-	for _, potion := range data.Effects {
-		p.effects.Add(potion, p)
-	}
-	p.fireTicks = data.FireTicks
-	p.fallDistance = data.FallDistance
-
-	p.loadInventory(data.Inventory)
-	for slot, stack := range data.EnderChestInventory {
-		_ = p.enderChest.SetItem(slot, stack)
-	}
-}
-
-// loadInventory loads all the data associated with the player inventory.
-func (p *Player) loadInventory(data InventoryData) {
-	for slot, stack := range data.Items {
-		_ = p.Inventory().SetItem(slot, stack)
-	}
-	_ = p.offHand.SetItem(0, data.OffHand)
-	p.Armour().Set(data.Helmet, data.Chestplate, data.Leggings, data.Boots)
-}
-
 // Data returns the player data that needs to be saved. This is used when the player
 // gets disconnected and the player provider needs to save the data.
-func (p *Player) Data() Data {
-	yaw, pitch := p.Rotation().Elem()
-	offHand, _ := p.offHand.Item(0)
-
+func (p *Player) Data() Config {
 	p.hunger.mu.RLock()
 	defer p.hunger.mu.RUnlock()
-
-	return Data{
-		UUID:            p.UUID(),
-		Username:        p.Name(),
-		Position:        p.Position(),
-		Velocity:        mgl64.Vec3{},
-		Yaw:             yaw,
-		Pitch:           pitch,
-		Health:          p.Health(),
-		MaxHealth:       p.MaxHealth(),
-		Hunger:          p.hunger.foodLevel,
-		Experience:      p.Experience(),
-		EnchantmentSeed: p.EnchantmentSeed(),
-		FoodTick:        p.hunger.foodTick,
-		AirSupply:       p.airSupplyTicks,
-		MaxAirSupply:    p.maxAirSupplyTicks,
-		ExhaustionLevel: p.hunger.exhaustionLevel,
-		SaturationLevel: p.hunger.saturationLevel,
-		AbsorptionLevel: p.Absorption(),
-		GameMode:        p.GameMode(),
-		Inventory: InventoryData{
-			Items:        p.Inventory().Slots(),
-			Boots:        p.armour.Boots(),
-			Leggings:     p.armour.Leggings(),
-			Chestplate:   p.armour.Chestplate(),
-			Helmet:       p.armour.Helmet(),
-			OffHand:      offHand,
-			MainHandSlot: *p.heldSlot,
-		},
-		EnderChestInventory: p.enderChest.Slots(),
-		Effects:             p.Effects(),
+	return Config{
+		Session:             p.s,
+		Skin:                p.skin,
+		XUID:                p.xuid,
+		UUID:                p.UUID(),
+		Name:                p.nameTag,
+		Locale:              p.locale,
+		GameMode:            p.gameMode,
+		Position:            p.Position(),
+		Rotation:            p.Rotation(),
+		Velocity:            p.Velocity(),
+		Health:              p.Health(),
+		MaxHealth:           p.MaxHealth(),
+		FoodTick:            p.hunger.foodTick,
+		Food:                p.hunger.foodLevel,
+		Exhaustion:          p.hunger.exhaustionLevel,
+		Saturation:          p.hunger.saturationLevel,
+		AirSupply:           p.airSupplyTicks,
+		MaxAirSupply:        p.maxAirSupplyTicks,
+		EnchantmentSeed:     p.enchantSeed,
+		Experience:          p.experience.Experience(),
+		HeldSlot:            int(*p.heldSlot),
+		Inventory:           p.inv,
+		OffHand:             p.offHand,
+		Armour:              p.armour,
+		EnderChestInventory: p.enderChest,
 		FireTicks:           p.fireTicks,
 		FallDistance:        p.fallDistance,
-		World:               p.tx.World(),
+		Effects:             p.Effects(),
 	}
 }
 
@@ -2980,7 +2928,6 @@ func (p *Player) broadcastArmour(_ int, before, after item.Stack) {
 func (p *Player) viewers() []world.Viewer {
 	viewers := p.tx.Viewers(p.Position())
 	var s world.Viewer = p.session()
-
 	if slices.Index(viewers, s) == -1 {
 		return append(viewers, s)
 	}

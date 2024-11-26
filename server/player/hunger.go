@@ -16,7 +16,7 @@ type hungerManager struct {
 // newHungerManager returns a new hunger manager with the default values for food level, saturation level and
 // exhaustion level.
 func newHungerManager() *hungerManager {
-	return &hungerManager{foodLevel: 20, saturationLevel: 5}
+	return &hungerManager{foodLevel: 20, saturationLevel: 5, foodTick: 1}
 }
 
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0

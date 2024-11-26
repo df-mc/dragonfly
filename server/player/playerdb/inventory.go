@@ -4,11 +4,27 @@ import (
 	"bytes"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/player"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
-func invToData(data player.InventoryData) jsonInventoryData {
+// InventoryData is a struct that contains all data of the player inventories.
+type InventoryData struct {
+	// Items contains all the items in the player's main inventory.
+	// This excludes armor and offhand.
+	Items []item.Stack
+	// Boots, Leggings, Chestplate, Helmet are armor pieces that belong to the slot corresponding to the name.
+	Boots      item.Stack
+	Leggings   item.Stack
+	Chestplate item.Stack
+	Helmet     item.Stack
+	// OffHand is what the player is carrying in their non-main hand, like a shield or arrows.
+	OffHand item.Stack
+	// MainHandSlot saves the slot in the hotbar that the player is currently switched to.
+	// Should be between 0-8.
+	MainHandSlot uint32
+}
+
+func invToData(data InventoryData) jsonInventoryData {
 	d := jsonInventoryData{
 		MainHandSlot: data.MainHandSlot,
 		OffHand:      encodeItem(data.OffHand),
@@ -21,8 +37,8 @@ func invToData(data player.InventoryData) jsonInventoryData {
 	return d
 }
 
-func dataToInv(data jsonInventoryData) player.InventoryData {
-	d := player.InventoryData{
+func dataToInv(data jsonInventoryData) InventoryData {
+	d := InventoryData{
 		MainHandSlot: data.MainHandSlot,
 		OffHand:      decodeItem(data.OffHand),
 		Items:        make([]item.Stack, 36),

@@ -24,6 +24,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"golang.org/x/exp/maps"
+	"golang.org/x/text/language"
 	"iter"
 	"os"
 	"os/exec"
@@ -140,7 +141,6 @@ func (srv *Server) Accept() iter.Seq[*player.Player] {
 			ret := false
 			<-inc.w.Exec(func(tx *world.Tx) {
 				p := tx.AddEntity(inc.p.handle).(*player.Player)
-				inc.conf.Finalise(p)
 				inc.s.Spawn(p, tx)
 				ret = !yield(p)
 			})
@@ -410,18 +410,17 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := srv.defaultGameData()
 
-	var playerData *player.Data
-	if d, err := srv.conf.PlayerProvider.Load(id, srv.dimension); err == nil {
-		if d.World == nil {
-			d.World = srv.world
-		}
-		data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
-		dim, _ := world.DimensionID(d.World.Dimension())
-		data.Dimension = int32(dim)
-		data.Yaw, data.Pitch = float32(d.Yaw), float32(d.Pitch)
-
-		playerData = &d
+	d, w, err := srv.conf.PlayerProvider.Load(id, srv.dimension)
+	if err != nil {
+		w = srv.world
+		d.Position = w.Spawn().Vec3Centre()
+		d.GameMode = w.DefaultGameMode()
 	}
+
+	data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
+	dim, _ := world.DimensionID(w.Dimension())
+	data.Dimension = int32(dim)
+	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
@@ -435,7 +434,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 		return
 	}
 	_ = conn.WritePacket(&packet.ItemComponent{Items: srv.customItems})
-	srv.incoming <- srv.createPlayer(id, conn, playerData)
+	srv.incoming <- srv.createPlayer(id, conn, d, w)
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It
@@ -500,7 +499,7 @@ func (srv *Server) checkNetIsolation() {
 
 // handleSessionClose handles the closing of a session. It removes the player
 // of the session from the server.
-func (srv *Server) handleSessionClose(_ *world.Tx, c session.Controllable) {
+func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
 	srv.pmu.Lock()
 	_, ok := srv.p[c.UUID()]
 	delete(srv.p, c.UUID())
@@ -512,7 +511,7 @@ func (srv *Server) handleSessionClose(_ *world.Tx, c session.Controllable) {
 		return
 	}
 
-	if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data()); err != nil {
+	if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data(), tx.World()); err != nil {
 		srv.conf.Log.Error("Save player data: " + err.Error())
 	}
 	srv.pwg.Done()
@@ -520,13 +519,9 @@ func (srv *Server) handleSessionClose(_ *world.Tx, c session.Controllable) {
 
 // createPlayer creates a new player instance using the UUID and connection
 // passed.
-func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Data) incoming {
+func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Config, w *world.World) incoming {
 	srv.pwg.Add(1)
 
-	w, gm, pos := srv.world, srv.world.DefaultGameMode(), srv.world.Spawn().Vec3Middle()
-	if data != nil {
-		w, gm, pos = data.World, data.GameMode, data.Position
-	}
 	s := session.Config{
 		Log:            srv.conf.Log,
 		MaxChunkRadius: srv.conf.MaxChunkRadius,
@@ -535,18 +530,14 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, data *player.Da
 		HandleStop:     srv.handleSessionClose,
 	}.New(conn)
 
-	conf := player.Config{
-		Name:     conn.IdentityData().DisplayName,
-		XUID:     conn.IdentityData().XUID,
-		UUID:     id,
-		Locale:   conn.ClientData().LanguageCode,
-		Skin:     srv.parseSkin(conn.ClientData()),
-		Data:     data,
-		Pos:      pos,
-		Session:  s,
-		GameMode: gm,
-	}
-	handle := world.EntitySpawnOpts{Position: pos, ID: id}.New(player.Type, conf)
+	conf.Name = conn.IdentityData().DisplayName
+	conf.XUID = conn.IdentityData().XUID
+	conf.UUID = id
+	conf.Locale, _ = language.Parse(strings.Replace(conn.ClientData().LanguageCode, "_", "-", 1))
+	conf.Skin = srv.parseSkin(conn.ClientData())
+	conf.Session = s
+
+	handle := world.EntitySpawnOpts{Position: conf.Position, ID: id}.New(player.Type, conf)
 	s.SetHandle(handle, conf.Skin)
 	return incoming{s: s, w: w, conf: conf, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
 }
