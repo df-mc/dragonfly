@@ -1231,6 +1231,37 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.offHand.SetItem(0, offHand)
 }
 
+// SetHeldSlot updates the held slot of the player to the slot provided. The
+// slot must be between 0 and 8.
+func (p *Player) SetHeldSlot(to int) error {
+	// The slot that the player might have selected must be within the hotbar:
+	// The held item cannot be in a different place in the inventory.
+	if to < 0 || to > 8 {
+		return fmt.Errorf("held slot exceeds hotbar range 0-8: slot is %v", to)
+	}
+	from := int(*p.heldSlot)
+	if from == to {
+		// Old slot was the same as new slot, so don't do anything.
+		return nil
+	}
+
+	ctx := event.C(p)
+	p.Handler().HandleHeldSlotChange(ctx, from, to)
+	if ctx.Cancelled() {
+		// The slot change was cancelled, resend held slot.
+		p.session().SendHeldSlot(from, p, true)
+		return nil
+	}
+	*p.heldSlot = uint32(to)
+	p.usingItem = false
+
+	for _, viewer := range p.viewers() {
+		viewer.ViewEntityItems(p)
+	}
+	p.session().SendHeldSlot(to, p, false)
+	return nil
+}
+
 // EnderChestInventory returns the player's ender chest inventory. Its accessed by the player when opening
 // ender chests anywhere.
 func (p *Player) EnderChestInventory() *inventory.Inventory {
@@ -1908,7 +1939,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 
 	if found {
 		if slot < 9 {
-			_ = p.session().SetHeldSlot(slot, p.tx, p)
+			_ = p.SetHeldSlot(slot)
 			return
 		}
 		_ = p.Inventory().Swap(slot, int(*p.heldSlot))
@@ -1921,7 +1952,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		return
 	}
 	if firstEmpty < 8 {
-		_ = p.session().SetHeldSlot(firstEmpty, p.tx, p)
+		_ = p.SetHeldSlot(firstEmpty)
 		_ = p.Inventory().SetItem(firstEmpty, pickedItem)
 		return
 	}

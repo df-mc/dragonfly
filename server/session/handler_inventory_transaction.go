@@ -33,17 +33,17 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		h.resendInventories(s)
 		return nil
 	case *protocol.UseItemOnEntityTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), tx, c); err != nil {
+		if err := s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
 			return err
 		}
 		return h.handleUseItemOnEntityTransaction(data, s, tx, c)
 	case *protocol.UseItemTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), tx, c); err != nil {
+		if err := s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
 			return err
 		}
 		return h.handleUseItemTransaction(data, s, c)
 	case *protocol.ReleaseItemTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), tx, c); err != nil {
+		if err := s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
 			return err
 		}
 		return h.handleReleaseItemTransaction(c)

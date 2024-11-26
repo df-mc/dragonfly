@@ -607,18 +607,11 @@ func (s *Session) uiInventoryFunc(tx *world.Tx, c Controllable) inventory.SlotFu
 	}
 }
 
-// SetHeldSlot sets the currently held hotbar slot.
-func (s *Session) SetHeldSlot(slot int, tx *world.Tx, c Controllable) error {
-	if slot > 8 {
-		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
+// SendHeldSlot sends the currently held hotbar slot.
+func (s *Session) SendHeldSlot(slot int, c Controllable, force bool) {
+	if s.changingSlot.Load() && !force {
+		return
 	}
-
-	*s.heldSlot = uint32(slot)
-
-	for _, viewer := range tx.Viewers(c.Position()) {
-		viewer.ViewEntityItems(c)
-	}
-
 	mainHand, _ := c.HeldItems()
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: selfEntityRuntimeID,
@@ -626,37 +619,37 @@ func (s *Session) SetHeldSlot(slot int, tx *world.Tx, c Controllable) error {
 		InventorySlot:   byte(slot),
 		HotBarSlot:      byte(slot),
 	})
-	return nil
 }
 
-// UpdateHeldSlot updates the held slot of the Session to the slot passed. It also verifies that the item in that slot
-// matches an expected item stack.
-func (s *Session) UpdateHeldSlot(slot int, expected item.Stack, tx *world.Tx, c Controllable) error {
-	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
-	// different place in the inventory.
-	if slot > 8 {
-		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+// VerifyAndSetHeldSlot verifies if the slot passed is a valid hotbar slot and
+// if the expected item.Stack is in it. Afterwards, it changes the held slot
+// of the player.
+func (s *Session) VerifyAndSetHeldSlot(slot int, expected item.Stack, c Controllable) error {
+	if err := s.VerifySlot(slot, expected); err != nil {
+		return err
 	}
-	if *s.heldSlot == uint32(slot) {
-		// Old slot was the same as new slot, so don't do anything.
-		return nil
+	s.changingSlot.Store(true)
+	defer s.changingSlot.Store(false)
+	return c.SetHeldSlot(slot)
+}
+
+// VerifySlot verifies if the slot passed is a valid hotbar slot and if the
+// expected item.Stack is in it.
+func (s *Session) VerifySlot(slot int, expected item.Stack) error {
+	// The slot that the player might have selected must be within the hotbar:
+	// The held item cannot be in a different place in the inventory.
+	if slot < 0 || slot > 8 {
+		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
-	// The user swapped changed held slots so stop using item right away.
-	c.ReleaseItem()
-
-	*s.heldSlot = uint32(slot)
-
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
 
-	// The item the client claims to have must be identical to the one we have registered server-side.
+	// The item the client claims to have must be identical to the one we have
+	// registered server-side.
 	if !clientSideItem.Equal(actual) {
-		// Only ever debug these as they are frequent and expected to happen whenever client and server get
-		// out of sync.
-		s.conf.Log.Debug("update held slot: client-side item must be identical to server-side item, but got differences", "client-held", clientSideItem.String(), "server-held", actual.String())
-	}
-	for _, viewer := range tx.Viewers(c.Position()) {
-		viewer.ViewEntityItems(c)
+		// Only ever debug these as they are frequent and expected to happen
+		// whenever client and server get out of sync.
+		s.conf.Log.Debug("verify slot: client-side item was not equal to server-side item", "client-held", clientSideItem.String(), "server-held", actual.String())
 	}
 	return nil
 }

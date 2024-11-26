@@ -29,6 +29,7 @@ type Controllable interface {
 	Locale() language.Tag
 
 	SetHeldItems(right, left item.Stack)
+	SetHeldSlot(slot int) error
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 
