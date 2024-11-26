@@ -193,7 +193,7 @@ func (e *EntityHandle) setAndUnlockWorld(w *World, tx *Tx) {
 // decodeNBT decodes the position, velocity, rotation, age, on-fire duration and
 // name tag of an entity.
 func (e *EntityHandle) decodeNBT(m map[string]any) {
-	e.data.Pos = readVec3(m, "Position")
+	e.data.Pos = readVec3(m, "Pos")
 	e.data.Vel = readVec3(m, "Motion")
 	e.data.Rot = readRotation(m)
 	e.data.Age = time.Duration(readInt16(m, "Age")) * (time.Second / 20)
@@ -205,13 +205,13 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 // name tag of an entity.
 func (e *EntityHandle) encodeNBT() map[string]any {
 	return map[string]any{
-		"Position": []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
-		"Motion":   []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
-		"Yaw":      float32(e.data.Rot[0]),
-		"Pitch":    float32(e.data.Rot[1]),
-		"Fire":     int16(e.data.FireDuration.Seconds() * 20),
-		"Age":      int16(e.data.Age / (time.Second * 20)),
-		"NameTag":  e.data.Name,
+		"Pos":     []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
+		"Motion":  []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
+		"Yaw":     float32(e.data.Rot[0]),
+		"Pitch":   float32(e.data.Rot[1]),
+		"Fire":    int16(e.data.FireDuration.Seconds() * 20),
+		"Age":     int16(e.data.Age / (time.Second * 20)),
+		"NameTag": e.data.Name,
 	}
 }
 
