@@ -19,20 +19,20 @@ type Basalt struct {
 }
 
 // UseOnBlock ...
-func (b Basalt) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, b)
+func (b Basalt) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, b)
 	if !used {
 		return
 	}
 	b.Axis = face.Axis()
 
-	place(w, pos, b, user, ctx)
+	place(tx, pos, b, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (b Basalt) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(b))
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withBlastResistance(21)
 }
 
 // EncodeItem ...

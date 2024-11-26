@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -9,7 +10,7 @@ import (
 type TextHandler struct{}
 
 // Handle ...
-func (TextHandler) Handle(p packet.Packet, s *Session) error {
+func (TextHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.Text)
 
 	if pk.TextType != packet.TextTypeChat {
@@ -21,6 +22,6 @@ func (TextHandler) Handle(p packet.Packet, s *Session) error {
 	if pk.XUID != s.conn.IdentityData().XUID {
 		return fmt.Errorf("XUID must be equal to player's XUID")
 	}
-	s.c.Chat(pk.Message)
+	c.Chat(pk.Message)
 	return nil
 }

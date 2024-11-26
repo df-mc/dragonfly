@@ -1,23 +1,21 @@
 package entity
 
-import "sync"
-
 // HealthManager handles the health of an entity.
 type HealthManager struct {
-	mu     sync.RWMutex
 	health float64
 	max    float64
 }
 
-// NewHealthManager returns a new health manager with a default of 20 health and max health.
-func NewHealthManager() *HealthManager {
-	return &HealthManager{health: 20, max: 20}
+// NewHealthManager returns a new health manager with the health and max health provided.
+func NewHealthManager(health, max float64) *HealthManager {
+	if health > max {
+		health = max
+	}
+	return &HealthManager{health: health, max: max}
 }
 
 // Health returns the current health of an entity.
 func (m *HealthManager) Health() float64 {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
 	return m.health
 }
 
@@ -25,23 +23,11 @@ func (m *HealthManager) Health() float64 {
 // exceeds the max, health will be set to the max. If the health is instead negative and results in a health
 // lower than 0, the final health will be 0.
 func (m *HealthManager) AddHealth(health float64) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	l := m.health + health
-	if l < 0 {
-		l = 0
-	} else if l > m.max {
-		l = m.max
-	}
-	m.health = l
+	m.health = max(min(m.health+health, m.max), 0)
 }
 
 // MaxHealth returns the maximum health of the entity.
 func (m *HealthManager) MaxHealth() float64 {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	return m.max
 }
 
@@ -51,10 +37,6 @@ func (m *HealthManager) SetMaxHealth(max float64) {
 	if max <= 0 {
 		max = 1
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.max = max
-	if m.health > max {
-		m.health = max
-	}
+	m.health = min(m.health, max)
 }

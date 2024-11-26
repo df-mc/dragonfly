@@ -1,57 +1,48 @@
 package enchantment
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/damage"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 // FireProtection is an armour enchantment that decreases fire damage.
-type FireProtection struct{}
+var FireProtection fireProtection
+
+type fireProtection struct{}
 
 // Name ...
-func (FireProtection) Name() string {
+func (fireProtection) Name() string {
 	return "Fire Protection"
 }
 
 // MaxLevel ...
-func (FireProtection) MaxLevel() int {
+func (fireProtection) MaxLevel() int {
 	return 4
 }
 
 // Cost ...
-func (FireProtection) Cost(level int) (int, int) {
-	min := 10 + (level-1)*8
-	return min, min + 8
+func (fireProtection) Cost(level int) (int, int) {
+	minCost := 10 + (level-1)*8
+	return minCost, minCost + 8
 }
 
 // Rarity ...
-func (FireProtection) Rarity() item.EnchantmentRarity {
+func (fireProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// Affects ...
-func (FireProtection) Affects(src damage.Source) bool {
-	_, fire := src.(damage.SourceFire)
-	_, fireTick := src.(damage.SourceFireTick)
-	return fire || fireTick
-}
-
 // Modifier returns the base protection modifier for the enchantment.
-func (FireProtection) Modifier() float64 {
-	return 1.25
+func (fireProtection) Modifier() float64 {
+	return 0.08
 }
 
 // CompatibleWithEnchantment ...
-func (FireProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	// TODO: Ensure that the armour does not have blast protection.
-	_, projectileProtection := t.(ProjectileProtection)
-	_, protection := t.(Protection)
-	return !projectileProtection && !protection
+func (fireProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	return t != BlastProtection && t != ProjectileProtection && t != Protection
 }
 
 // CompatibleWithItem ...
-func (FireProtection) CompatibleWithItem(i world.Item) bool {
+func (fireProtection) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Armour)
 	return ok
 }

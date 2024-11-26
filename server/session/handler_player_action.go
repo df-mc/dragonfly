@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -11,37 +12,38 @@ import (
 type PlayerActionHandler struct{}
 
 // Handle ...
-func (*PlayerActionHandler) Handle(p packet.Packet, s *Session) error {
+func (*PlayerActionHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerAction)
 
-	return handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s)
+	return handlePlayerAction(pk.ActionType, pk.BlockFace, pk.BlockPosition, pk.EntityRuntimeID, s, c)
 }
 
 // handlePlayerAction handles an action performed by a player, found in packet.PlayerAction and packet.PlayerAuthInput.
-func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityRuntimeID uint64, s *Session) error {
+func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityRuntimeID uint64, s *Session, c Controllable) error {
 	if entityRuntimeID != selfEntityRuntimeID {
 		return errSelfRuntimeID
 	}
 	switch action {
-	case protocol.PlayerActionRespawn:
+	case protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone:
 		// Don't do anything for these actions.
-	case protocol.PlayerActionDimensionChangeDone:
-		if s.switchingWorld.CAS(true, false) {
-			s.chunkLoader.Reset()
-			s.changeDimension(int32(s.c.World().Dimension().EncodeDimension()), true)
+	case protocol.PlayerActionStopSleeping:
+		if mode := c.GameMode(); !mode.Visible() && !mode.HasCollision() {
+			// As of v1.19.50, the client sends this packet when switching to spectator mode... even if it wasn't
+			// sleeping in the first place. This accounts for that.
+			return nil
 		}
 	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
 		s.breakingPos = cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
-		s.c.StartBreaking(s.breakingPos, cube.Face(face))
+		c.StartBreaking(s.breakingPos, cube.Face(face))
 	case protocol.PlayerActionAbortBreak:
-		s.c.AbortBreaking()
+		c.AbortBreaking()
 	case protocol.PlayerActionPredictDestroyBlock, protocol.PlayerActionStopBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
-		s.c.FinishBreaking()
+		c.FinishBreaking()
 	case protocol.PlayerActionCrackBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
@@ -52,16 +54,22 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		// block to be broken by comparing positions.
 		if newPos != s.breakingPos {
 			s.breakingPos = newPos
-			s.c.StartBreaking(newPos, cube.Face(face))
+			c.StartBreaking(newPos, cube.Face(face))
 			return nil
 		}
-		s.c.ContinueBreaking(cube.Face(face))
-	case protocol.PlayerActionStartItemUseOn, protocol.PlayerActionStopItemUseOn:
+		c.ContinueBreaking(cube.Face(face))
+	case protocol.PlayerActionStartItemUseOn:
 		// TODO: Properly utilize these actions.
+	case protocol.PlayerActionStopItemUseOn:
+		c.ReleaseItem()
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
-		// Don't do anything for this action.
+	// Don't do anything for this action.
+	case protocol.PlayerActionMissedSwing:
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
+		c.PunchAir()
 	default:
 		return fmt.Errorf("unhandled ActionType %v", action)
 	}

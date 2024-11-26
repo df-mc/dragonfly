@@ -2,12 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
 )
 
 // DoubleFlower is a two block high flower consisting of an upper and lower part.
@@ -27,54 +25,58 @@ func (d DoubleFlower) FlammabilityInfo() FlammabilityInfo {
 }
 
 // BoneMeal ...
-func (d DoubleFlower) BoneMeal(pos cube.Pos, w *world.World) bool {
-	itemEntity := entity.NewItem(item.NewStack(d, 1), pos.Vec3Centre())
-	itemEntity.SetVelocity(mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1})
-	w.AddEntity(itemEntity)
+func (d DoubleFlower) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+	dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
 	return true
 }
 
 // NeighbourUpdateTick ...
-func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.UpperPart {
-		if bottom, ok := w.Block(pos.Side(cube.FaceDown)).(DoubleFlower); !ok || bottom.Type != d.Type || bottom.UpperPart {
-			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+		if bottom, ok := tx.Block(pos.Side(cube.FaceDown)).(DoubleFlower); !ok || bottom.Type != d.Type || bottom.UpperPart {
+			tx.SetBlock(pos, nil, nil)
+			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+			dropItem(tx, item.NewStack(d, 1), pos.Vec3Middle())
 		}
 		return
 	}
-	if upper, ok := w.Block(pos.Side(cube.FaceUp)).(DoubleFlower); !ok || upper.Type != d.Type || !upper.UpperPart {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	if upper, ok := tx.Block(pos.Side(cube.FaceUp)).(DoubleFlower); !ok || upper.Type != d.Type || !upper.UpperPart {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		return
 	}
-	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	}
 }
 
 // UseOnBlock ...
-func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, d)
+func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, d)
 	if !used {
 		return false
 	}
-	if !replaceableWith(w, pos.Side(cube.FaceUp), d) {
+	if !replaceableWith(tx, pos.Side(cube.FaceUp), d) {
 		return false
 	}
-	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
-	place(w, pos, d, user, ctx)
-	place(w, pos.Side(cube.FaceUp), DoubleFlower{Type: d.Type, UpperPart: true}, user, ctx)
+	place(tx, pos, d, user, ctx)
+	place(tx, pos.Side(cube.FaceUp), DoubleFlower{Type: d.Type, UpperPart: true}, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (d DoubleFlower) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(d))
+}
+
+// CompostChance ...
+func (DoubleFlower) CompostChance() float64 {
+	return 0.65
 }
 
 // HasLiquidDrops ...
@@ -84,12 +86,12 @@ func (d DoubleFlower) HasLiquidDrops() bool {
 
 // EncodeItem ...
 func (d DoubleFlower) EncodeItem() (name string, meta int16) {
-	return "minecraft:double_plant", int16(d.Type.Uint8())
+	return "minecraft:" + d.Type.String(), 0
 }
 
 // EncodeBlock ...
 func (d DoubleFlower) EncodeBlock() (string, map[string]any) {
-	return "minecraft:double_plant", map[string]any{"double_plant_type": d.Type.String(), "upper_block_bit": d.UpperPart}
+	return "minecraft:" + d.Type.String(), map[string]any{"upper_block_bit": d.UpperPart}
 }
 
 // allDoubleFlowers ...

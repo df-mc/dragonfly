@@ -19,9 +19,14 @@ func (m MelonSlice) ConsumeDuration() time.Duration {
 }
 
 // Consume ...
-func (m MelonSlice) Consume(_ *world.World, c Consumer) Stack {
+func (m MelonSlice) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(2, 1.2)
 	return Stack{}
+}
+
+// CompostChance ...
+func (MelonSlice) CompostChance() float64 {
+	return 0.5
 }
 
 // EncodeItem ...

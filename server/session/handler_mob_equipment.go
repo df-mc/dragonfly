@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -10,7 +11,7 @@ import (
 type MobEquipmentHandler struct{}
 
 // Handle ...
-func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
+func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.MobEquipment)
 
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
@@ -21,17 +22,7 @@ func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session) error {
 		// This window ID is expected, but we don't handle it.
 		return nil
 	case protocol.WindowIDInventory:
-		// The item the client claims to have must be identical to the one we have registered server-side.
-		actual, _ := s.inv.Item(int(pk.InventorySlot))
-		clientSide := stackToItem(pk.NewItem.Stack)
-		if !actual.Equal(clientSide) {
-			// Only ever debug these as they are frequent and expected to happen whenever client and server get
-			// out of sync.
-			s.log.Debugf("failed processing packet from %v (%v): *packet.MobEquipment: client-side item must be identical to server-side item, but got differences: client: %v vs server: %v", s.conn.RemoteAddr(), s.c.Name(), clientSide, actual)
-		}
-		s.changingSlot.Store(true)
-		defer s.changingSlot.Store(false)
-		return s.c.SetHeldSlot(int(pk.InventorySlot))
+		return s.UpdateHeldSlot(int(pk.InventorySlot), stackToItem(pk.NewItem.Stack), tx, c)
 	default:
 		return fmt.Errorf("only main inventory should be involved in slot chnage, got window ID %v", pk.WindowID)
 	}

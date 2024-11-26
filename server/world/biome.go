@@ -17,6 +17,8 @@ type Biome interface {
 // to when calling RegisterBiome.
 var biomes = map[int]Biome{}
 
+var biomeByName = map[string]Biome{}
+
 // RegisterBiome registers a biome to the map so that it can be saved and loaded with the world.
 func RegisterBiome(b Biome) {
 	id := b.EncodeBiome()
@@ -24,11 +26,18 @@ func RegisterBiome(b Biome) {
 		panic("cannot register the same biome (" + b.String() + ") twice")
 	}
 	biomes[id] = b
+	biomeByName[b.String()] = b
 }
 
 // BiomeByID looks up a biome by the ID and returns it if found.
 func BiomeByID(id int) (Biome, bool) {
 	e, ok := biomes[id]
+	return e, ok
+}
+
+// BiomeByName looks up a biome by the name and returns it if found.
+func BiomeByName(name string) (Biome, bool) {
+	e, ok := biomeByName[name]
 	return e, ok
 }
 

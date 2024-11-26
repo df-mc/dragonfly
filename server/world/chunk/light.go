@@ -30,13 +30,19 @@ func anyLightBlocks(sub *SubChunk) bool {
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
 // chunk. In addition, any skylight above those nodes will be set to 15.
 func (a *lightArea) insertSkyLightNodes(queue *list.List) {
-	a.iterHeightmap(func(x, z int, height, highestNeighbour, highestY int) {
-		// If we hit a block like water or leaves (something that diffuses but does not block light), we
-		// need a node above this block regardless of the neighbours.
+	a.iterHeightmap(func(x, z int, height, highestNeighbour, highestY, lowestY int) {
 		pos := cube.Pos{x, height, z}
-		if level := a.highest(pos, FilteringBlocks); level != 15 && level != 0 {
-			queue.PushBack(node(pos.Side(cube.FaceUp), 15, SkyLight))
-			pos[1]++
+		if height <= a.r.Max() {
+			// Only set light if we're not at the top of the world.
+			a.setLight(pos, SkyLight, 15)
+
+			if pos[1] > lowestY {
+				if level := a.highest(pos.Sub(cube.Pos{0, 1}), FilteringBlocks); level != 15 && level != 0 {
+					// If we hit a block like water or leaves (something that diffuses but does not block light), we
+					// need a node above this block regardless of the neighbours.
+					queue.PushBack(node(pos, 15, SkyLight))
+				}
+			}
 		}
 		for y := pos[1]; y < highestY; y++ {
 			// We can do a bit of an optimisation here: We don't need to insert nodes if the neighbours are
@@ -92,7 +98,7 @@ func (a *lightArea) propagate(queue *list.List) {
 	}
 	a.setLight(n.pos, n.lt, n.level)
 
-	for _, neighbour := range a.neighbours(n) {
+	for neighbour := range a.neighbours(n) {
 		filter := a.highest(neighbour.pos, FilteringBlocks) + 1
 		if n.level > filter && a.light(neighbour.pos, n.lt) < n.level-filter {
 			neighbour.level = n.level - filter

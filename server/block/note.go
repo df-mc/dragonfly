@@ -20,14 +20,14 @@ type Note struct {
 }
 
 // playNote ...
-func (n Note) playNote(pos cube.Pos, w *world.World) {
-	w.PlaySound(pos.Vec3(), sound.Note{Instrument: n.instrument(pos, w), Pitch: n.Pitch})
-	w.AddParticle(pos.Vec3(), particle.Note{Instrument: n.Instrument(), Pitch: n.Pitch})
+func (n Note) playNote(pos cube.Pos, tx *world.Tx) {
+	tx.PlaySound(pos.Vec3(), sound.Note{Instrument: n.instrument(pos, tx), Pitch: n.Pitch})
+	tx.AddParticle(pos.Vec3(), particle.Note{Instrument: n.Instrument(), Pitch: n.Pitch})
 }
 
 // updateInstrument ...
-func (n Note) instrument(pos cube.Pos, w *world.World) sound.Instrument {
-	if instrumentBlock, ok := w.Block(pos.Side(cube.FaceDown)).(interface {
+func (n Note) instrument(pos cube.Pos, tx *world.Tx) sound.Instrument {
+	if instrumentBlock, ok := tx.Block(pos.Side(cube.FaceDown)).(interface {
 		Instrument() sound.Instrument
 	}); ok {
 		return instrumentBlock.Instrument()
@@ -37,7 +37,7 @@ func (n Note) instrument(pos cube.Pos, w *world.World) sound.Instrument {
 
 // DecodeNBT ...
 func (n Note) DecodeNBT(data map[string]any) any {
-	n.Pitch = int(nbtconv.Map[byte](data, "note"))
+	n.Pitch = int(nbtconv.Uint8(data, "note"))
 	return n
 }
 
@@ -46,22 +46,14 @@ func (n Note) EncodeNBT() map[string]any {
 	return map[string]any{"note": byte(n.Pitch)}
 }
 
-// Punch ...
-func (n Note) Punch(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) {
-	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
-		return
-	}
-	n.playNote(pos, w)
-}
-
 // Activate ...
-func (n Note) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User) bool {
-	if _, ok := w.Block(pos.Side(cube.FaceUp)).(Air); !ok {
+func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
+	if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); !ok {
 		return false
 	}
 	n.Pitch = (n.Pitch + 1) % 25
-	n.playNote(pos, w)
-	w.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
+	n.playNote(pos, tx)
+	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
 	return true
 }
 

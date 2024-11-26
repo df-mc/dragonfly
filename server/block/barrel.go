@@ -38,7 +38,7 @@ func NewBarrel() Barrel {
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{}, 1)
 	return Barrel{
-		inventory: inventory.New(27, func(slot int, item item.Stack) {
+		inventory: inventory.New(27, func(slot int, _, item item.Stack) {
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {
@@ -51,7 +51,7 @@ func NewBarrel() Barrel {
 }
 
 // Inventory returns the inventory of the barrel. The size of the inventory will be 27.
-func (b Barrel) Inventory() *inventory.Inventory {
+func (b Barrel) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return b.inventory
 }
 
@@ -62,32 +62,32 @@ func (b Barrel) WithName(a ...any) world.Item {
 }
 
 // open opens the barrel, displaying the animation and playing a sound.
-func (b Barrel) open(w *world.World, pos cube.Pos) {
+func (b Barrel) open(tx *world.Tx, pos cube.Pos) {
 	b.Open = true
-	w.PlaySound(pos.Vec3Centre(), sound.BarrelOpen{})
-	w.SetBlock(pos, b, nil)
+	tx.PlaySound(pos.Vec3Centre(), sound.BarrelOpen{})
+	tx.SetBlock(pos, b, nil)
 }
 
 // close closes the barrel, displaying the animation and playing a sound.
-func (b Barrel) close(w *world.World, pos cube.Pos) {
+func (b Barrel) close(tx *world.Tx, pos cube.Pos) {
 	b.Open = false
-	w.PlaySound(pos.Vec3Centre(), sound.BarrelClose{})
-	w.SetBlock(pos, b, nil)
+	tx.PlaySound(pos.Vec3Centre(), sound.BarrelClose{})
+	tx.SetBlock(pos, b, nil)
 }
 
 // AddViewer adds a viewer to the barrel, so that it is updated whenever the inventory of the barrel is changed.
-func (b Barrel) AddViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
+func (b Barrel) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
 	if len(b.viewers) == 0 {
-		b.open(w, pos)
+		b.open(tx, pos)
 	}
 	b.viewers[v] = struct{}{}
 }
 
 // RemoveViewer removes a viewer from the barrel, so that slot updates in the inventory are no longer sent to
 // it.
-func (b Barrel) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
+func (b Barrel) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
 	if len(b.viewers) == 0 {
@@ -95,22 +95,22 @@ func (b Barrel) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 	}
 	delete(b.viewers, v)
 	if len(b.viewers) == 0 {
-		b.close(w, pos)
+		b.close(tx, pos)
 	}
 }
 
 // Activate ...
-func (b Barrel) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (b Barrel) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false
 }
 
 // UseOnBlock ...
-func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, b)
+func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, b)
 	if !used {
 		return
 	}
@@ -118,13 +118,17 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	b = NewBarrel()
 	b.Facing = calculateFace(user, pos)
 
-	place(w, pos, b, user, ctx)
+	place(tx, pos, b, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (b Barrel) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		for _, i := range b.Inventory(tx, pos).Clear() {
+			dropItem(tx, i, pos.Vec3())
+		}
+	})
 }
 
 // FlammabilityInfo ...
@@ -143,8 +147,8 @@ func (b Barrel) DecodeNBT(data map[string]any) any {
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
 	b.Facing = facing
-	b.CustomName = nbtconv.Map[string](data, "CustomName")
-	nbtconv.InvFromNBT(b.inventory, nbtconv.Map[[]any](data, "Items"))
+	b.CustomName = nbtconv.String(data, "CustomName")
+	nbtconv.InvFromNBT(b.inventory, nbtconv.Slice(data, "Items"))
 	return b
 }
 
@@ -176,6 +180,7 @@ func (b Barrel) EncodeItem() (name string, meta int16) {
 	return "minecraft:barrel", 0
 }
 
+// allBarrels ...
 func allBarrels() (b []world.Block) {
 	for i := cube.Face(0); i < 6; i++ {
 		b = append(b, Barrel{Facing: i})

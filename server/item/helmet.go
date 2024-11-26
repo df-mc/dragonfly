@@ -13,7 +13,7 @@ type Helmet struct {
 }
 
 // Use handles the using of a helmet to auto-equip it in an armour slot.
-func (h Helmet) Use(_ *world.World, _ User, ctx *UseContext) bool {
+func (h Helmet) Use(_ *world.Tx, _ User, ctx *UseContext) bool {
 	ctx.SwapHeldWithArmour(0)
 	return false
 }
@@ -25,12 +25,12 @@ func (h Helmet) MaxCount() int {
 
 // DefencePoints ...
 func (h Helmet) DefencePoints() float64 {
-	switch h.Tier.(type) {
-	case ArmourTierLeather:
+	switch h.Tier.Name() {
+	case "leather":
 		return 1
-	case ArmourTierGold, ArmourTierChain, ArmourTierIron:
+	case "golden", "chainmail", "iron":
 		return 2
-	case ArmourTierDiamond, ArmourTierNetherite:
+	case "diamond", "netherite":
 		return 3
 	}
 	panic("invalid helmet tier")

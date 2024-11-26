@@ -7,7 +7,7 @@ type PackedMud struct {
 
 // BreakInfo ...
 func (p PackedMud) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, nothingEffective, oneOf(p))
+	return newBreakInfo(1, alwaysHarvestable, nothingEffective, oneOf(p)).withBlastResistance(15)
 }
 
 // EncodeItem ...

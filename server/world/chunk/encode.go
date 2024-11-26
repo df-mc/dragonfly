@@ -12,7 +12,7 @@ const (
 	// CurrentBlockVersion is the current version of blocks (states) of the game. This version is composed
 	// of 4 bytes indicating a version, interpreted as a big endian int. The current version represents
 	// 1.16.0.14 {1, 16, 0, 14}.
-	CurrentBlockVersion int32 = 17825806
+	CurrentBlockVersion int32 = 18040335
 )
 
 var (
@@ -35,9 +35,6 @@ type (
 		SubChunks [][]byte
 		// Biomes is the biome data of the chunk, which is composed of a biome storage for each sub-chunk.
 		Biomes []byte
-		// BlockNBT is an encoded NBT array of all blocks that carry additional NBT, such as chests, with all
-		// their contents.
-		BlockNBT []byte
 	}
 	// blockEntry represents a block as found in a disk save of a world.
 	blockEntry struct {
@@ -71,7 +68,7 @@ func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
 	s := c.sub[ind]
 	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), uint8(ind + (c.r[0] >> 4))})
 	for _, storage := range s.storages {
-		encodePalettedStorage(buf, storage, e, BlockPaletteEncoding)
+		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding)
 	}
 	sub := make([]byte, buf.Len())
 	_, _ = buf.Read(sub)
@@ -87,8 +84,10 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 		pool.Put(buf)
 	}()
 
+	var previous *PalettedStorage
 	for _, b := range c.biomes {
-		encodePalettedStorage(buf, b, e, BiomePaletteEncoding)
+		encodePalettedStorage(buf, b, previous, e, BiomePaletteEncoding)
+		previous = b
 	}
 	biomes := make([]byte, buf.Len())
 	_, _ = buf.Read(biomes)
@@ -97,7 +96,11 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 
 // encodePalettedStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette
 // of the PalettedStorage.
-func encodePalettedStorage(buf *bytes.Buffer, storage *PalettedStorage, e Encoding, pe paletteEncoding) {
+func encodePalettedStorage(buf *bytes.Buffer, storage, previous *PalettedStorage, e Encoding, pe paletteEncoding) {
+	if storage.Equal(previous) {
+		_, _ = buf.Write([]byte{0x7f<<1 | e.network()})
+		return
+	}
 	b := make([]byte, len(storage.indices)*4+1)
 	b[0] = byte(storage.bitsPerIndex<<1) | e.network()
 

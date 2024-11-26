@@ -34,21 +34,21 @@ func (t Torch) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, t)
+func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, face, used := firstReplaceable(tx, pos, face, t)
 	if !used {
 		return false
 	}
 	if face == cube.FaceDown {
 		return false
 	}
-	if _, ok := w.Block(pos).(world.Liquid); ok {
+	if _, ok := tx.Block(pos).(world.Liquid); ok {
 		return false
 	}
-	if !w.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, w) {
+	if !tx.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, tx) {
 		found := false
 		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceWest, cube.FaceNorth, cube.FaceEast, cube.FaceDown} {
-			if w.Block(pos.Side(i)).Model().FaceSolid(pos.Side(i), i.Opposite(), w) {
+			if tx.Block(pos.Side(i)).Model().FaceSolid(pos.Side(i), i.Opposite(), tx) {
 				found = true
 				face = i.Opposite()
 				break
@@ -60,14 +60,15 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	}
 	t.Facing = face.Opposite()
 
-	place(w, pos, t, user, ctx)
+	place(tx, pos, t, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !w.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), w) {
-		w.SetBlock(pos, nil, nil)
+func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
+		tx.SetBlock(pos, nil, nil)
+		dropItem(tx, item.NewStack(t, 1), pos.Vec3Centre())
 	}
 }
 

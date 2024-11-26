@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"maps"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"unsafe"
@@ -15,9 +17,13 @@ import (
 var (
 	//go:embed block_states.nbt
 	blockStateData []byte
+
+	blockProperties = map[string]map[string]any{}
 	// blocks holds a list of all registered Blocks indexed by their runtime ID. Blocks that were not explicitly
 	// registered are of the type unknownBlock.
 	blocks []Block
+	// customBlocks maps a custom block's identifier to a slice of custom blocks.
+	customBlocks = map[string]CustomBlock{}
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs = map[stateHash]uint32{}
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
@@ -57,7 +63,10 @@ func init() {
 		return name, properties, true
 	}
 	chunk.StateToRuntimeID = func(name string, properties map[string]any) (runtimeID uint32, found bool) {
-		rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
+		if rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]; ok {
+			return rid, true
+		}
+		rid, ok := stateRuntimeIDs[stateHash{name: name, properties: hashProperties(blockProperties[name])}]
 		return rid, ok
 	}
 }
@@ -69,25 +78,30 @@ func registerBlockState(s blockState) {
 	if _, ok := stateRuntimeIDs[h]; ok {
 		panic(fmt.Sprintf("cannot register the same state twice (%+v)", s))
 	}
+	if _, ok := blockProperties[s.Name]; !ok {
+		blockProperties[s.Name] = s.Properties
+	}
 	rid := uint32(len(blocks))
+	blocks = append(blocks, unknownBlock{blockState: s})
+
 	if s.Name == "minecraft:air" {
 		airRID = rid
 	}
-	stateRuntimeIDs[h] = rid
-	blocks = append(blocks, unknownBlock{s})
 
-	nbtBlocks = append(nbtBlocks, false)
-	randomTickBlocks = append(randomTickBlocks, false)
-	liquidBlocks = append(liquidBlocks, false)
-	liquidDisplacingBlocks = append(liquidDisplacingBlocks, false)
-	chunk.FilteringBlocks = append(chunk.FilteringBlocks, 15)
-	chunk.LightBlocks = append(chunk.LightBlocks, 0)
+	nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
+	randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
+	liquidBlocks = slices.Insert(liquidBlocks, int(rid), false)
+	liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
+	chunk.FilteringBlocks = slices.Insert(chunk.FilteringBlocks, int(rid), 15)
+	chunk.LightBlocks = slices.Insert(chunk.LightBlocks, int(rid), 0)
+	stateRuntimeIDs[h] = rid
 }
 
 // unknownBlock represents a block that has not yet been implemented. It is used for registering block
 // states that haven't yet been added.
 type unknownBlock struct {
 	blockState
+	data map[string]any
 }
 
 // EncodeBlock ...
@@ -101,8 +115,19 @@ func (unknownBlock) Model() BlockModel {
 }
 
 // Hash ...
-func (b unknownBlock) Hash() uint64 {
-	return math.MaxUint64
+func (b unknownBlock) Hash() (uint64, uint64) {
+	return 0, math.MaxUint64
+}
+
+// EncodeNBT ...
+func (b unknownBlock) EncodeNBT() map[string]any {
+	return b.data
+}
+
+// DecodeNBT ...
+func (b unknownBlock) DecodeNBT(data map[string]any) any {
+	b.data = maps.Clone(data)
+	return b
 }
 
 // blockState holds a combination of a name and properties, together with a version.
@@ -118,7 +143,7 @@ type stateHash struct {
 	name, properties string
 }
 
-// HashProperties produces a hash for the block properties held by the blockState.
+// hashProperties produces a hash for the block properties held by the blockState.
 func hashProperties(properties map[string]any) string {
 	if properties == nil {
 		return ""

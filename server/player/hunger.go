@@ -16,7 +16,7 @@ type hungerManager struct {
 // newHungerManager returns a new hunger manager with the default values for food level, saturation level and
 // exhaustion level.
 func newHungerManager() *hungerManager {
-	return &hungerManager{foodLevel: 20, saturationLevel: 5}
+	return &hungerManager{foodLevel: 20, saturationLevel: 5, foodTick: 1}
 }
 
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
@@ -30,13 +30,14 @@ func (m *hungerManager) Food() int {
 // SetFood sets the food level of a player. The level passed must be in a range of 0-20. If the level passed
 // is negative, the food level will be set to 0. If the level exceeds 20, the food level will be set to 20.
 func (m *hungerManager) SetFood(level int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if level < 0 {
 		level = 0
 	} else if level > 20 {
 		level = 20
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.foodLevel = level
 }
 
@@ -58,11 +59,12 @@ func (m *hungerManager) AddFood(points int) {
 // using newHungerManager.
 func (m *hungerManager) Reset() {
 	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.foodLevel = 20
 	m.saturationLevel = 5
 	m.exhaustionLevel = 0
 	m.foodTick = 0
-	m.mu.Unlock()
 }
 
 // exhaust exhausts the player by the amount of points passed. If the total exhaustion level exceeds 4, a
@@ -87,6 +89,7 @@ func (m *hungerManager) exhaust(points float64) {
 // saturation will never exceed the total food value.
 func (m *hungerManager) saturate(food int, saturation float64) {
 	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	level := m.foodLevel + food
 	if level < 0 {
@@ -106,7 +109,6 @@ func (m *hungerManager) saturate(food int, saturation float64) {
 		sat = float64(m.foodLevel)
 	}
 	m.saturationLevel = sat
-	m.mu.Unlock()
 }
 
 // desaturate removes one saturation point from the player. If the saturation level of the player is already
@@ -150,3 +152,11 @@ func (m *hungerManager) canSprint() bool {
 func (m *hungerManager) starving() bool {
 	return m.Food() == 0
 }
+
+// StarvationDamageSource is the world.DamageSource passed when a player is
+// dealt damage from an empty food bar.
+type StarvationDamageSource struct{}
+
+func (StarvationDamageSource) ReducedByArmour() bool     { return false }
+func (StarvationDamageSource) ReducedByResistance() bool { return false }
+func (StarvationDamageSource) Fire() bool                { return false }

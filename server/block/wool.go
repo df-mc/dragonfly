@@ -31,12 +31,12 @@ func (w Wool) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (w Wool) EncodeItem() (name string, meta int16) {
-	return "minecraft:wool", int16(w.Colour.Uint8())
+	return "minecraft:" + w.Colour.String() + "_wool", 0
 }
 
 // EncodeBlock ...
 func (w Wool) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:wool", map[string]any{"color": w.Colour.String()}
+	return "minecraft:" + w.Colour.String() + "_wool", nil
 }
 
 // allWool returns wool blocks with all possible colours.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"container/list"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"iter"
 	"math"
 )
 
@@ -63,15 +64,17 @@ func (a *lightArea) setLight(pos cube.Pos, l light, v uint8) {
 
 // neighbours returns all neighbour lightNode of the one passed. If one of these nodes would otherwise fall outside the
 // lightArea, it is not returned.
-func (a *lightArea) neighbours(n lightNode) []lightNode {
-	nodes := make([]lightNode, 0, 6)
-	for _, f := range cube.Faces() {
-		nn := lightNode{pos: n.pos.Side(f), lt: n.lt}
-		if nn.pos[1] <= a.r.Max() && nn.pos[1] >= a.r.Min() && nn.pos[0] >= a.baseX && nn.pos[2] >= a.baseZ && nn.pos[0] < a.baseX+a.w*16 && nn.pos[2] < a.baseZ+a.w*16 {
-			nodes = append(nodes, nn)
+func (a *lightArea) neighbours(n lightNode) iter.Seq[lightNode] {
+	return func(yield func(lightNode) bool) {
+		for _, f := range cube.Faces() {
+			nn := lightNode{pos: n.pos.Side(f), lt: n.lt}
+			if nn.pos[1] <= a.r.Max() && nn.pos[1] >= a.r.Min() && nn.pos[0] >= a.baseX && nn.pos[2] >= a.baseZ && nn.pos[0] < a.baseX+a.w*16 && nn.pos[2] < a.baseZ+a.w*16 {
+				if !yield(nn) {
+					return
+				}
+			}
 		}
 	}
-	return nodes
 }
 
 // iterSubChunks iterates over all blocks of the lightArea on a per-SubChunk basis. A filter function may be passed to
@@ -134,8 +137,9 @@ func (a *lightArea) iterEdges(filter func(a, b *SubChunk) bool, f func(a, b cube
 
 // iterHeightmap iterates over the height map of the lightArea and calls the function f with the height map value, the
 // height map value of the highest neighbour and the Y value of the highest non-empty SubChunk.
-func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY int)) {
+func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, highestY, lowestY int)) {
 	m, highestY := a.c[0].HeightMap(), a.c[0].Range().Min()
+	lowestY := highestY
 	for index := range a.c[0].sub {
 		if a.c[0].sub[index].Empty() {
 			continue
@@ -144,7 +148,7 @@ func (a *lightArea) iterHeightmap(f func(x, z int, height, highestNeighbour, hig
 	}
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
-			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.At(x, z)), int(m.HighestNeighbour(x, z)), highestY)
+			f(int(x)+a.baseX, int(z)+a.baseZ, int(m.At(x, z)), int(m.HighestNeighbour(x, z)), highestY, lowestY)
 		}
 	}
 }

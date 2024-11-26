@@ -1,18 +1,17 @@
 package world
 
 import (
-	"github.com/df-mc/atomic"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/sirupsen/logrus"
+	"log/slog"
 	"math/rand"
 	"time"
 )
 
 // Config may be used to create a new World. It holds a variety of fields that influence the World.
 type Config struct {
-	// Log is the Logger that will be used to log errors and debug messages to. If set to nil, a Logrus logger will be
-	// used.
-	Log Logger
+	// Log is the Logger that will be used to log errors and debug messages to.
+	// If set to nil, slog.Default() is set.
+	Log *slog.Logger
 	// Dim is the Dimension of the World. If set to nil, the World will use Overworld as its dimension. The dimension
 	// set here influences, among others, the sky colour, weather/time and liquid behaviour in that World.
 	Dim Dimension
@@ -23,7 +22,7 @@ type Config struct {
 	// Provider is the Provider implementation used to read and write World data. If set to nil, the Provider used will
 	// be NopProvider, which does not store any data to disk.
 	Provider Provider
-	// Generator is the Generator implementation used to generate new areas of the World. If set to nil, the Provider
+	// Generator is the Generator implementation used to generate new areas of the World. If set to nil, the Generator
 	// used will be NopGenerator, which generates completely empty chunks.
 	Generator Generator
 	// ReadOnly specifies if the World should be read-only, meaning no new data will be written to the Provider.
@@ -36,20 +35,16 @@ type Config struct {
 	// tick or when deciding where to strike lightning. If set to nil, `rand.NewSource(time.Now().Unix())` will be used
 	// to generate a new source.
 	RandSource rand.Source
-}
-
-// Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug
-// messages to this Logger when appropriate.
-type Logger interface {
-	Errorf(format string, a ...any)
-	Debugf(format string, a ...any)
+	// Entities is an EntityRegistry with all Entity types registered that may
+	// be added to the World.
+	Entities EntityRegistry
 }
 
 // New creates a new World using the Config conf. The World returned will start ticking as soon as a viewer is added
 // to it and is otherwise ready for use.
 func (conf Config) New() *World {
 	if conf.Log == nil {
-		conf.Log = logrus.New()
+		conf.Log = slog.Default()
 	}
 	if conf.Dim == nil {
 		conf.Dim = Overworld
@@ -69,19 +64,26 @@ func (conf Config) New() *World {
 	s := conf.Provider.Settings()
 	w := &World{
 		scheduledUpdates: make(map[cube.Pos]int64),
-		entities:         make(map[Entity]ChunkPos),
+		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
-		chunks:           make(map[ChunkPos]*chunkData),
+		chunks:           make(map[ChunkPos]*Column),
 		closing:          make(chan struct{}),
-		handler:          *atomic.NewValue[Handler](NopHandler{}),
+		queue:            make(chan transaction, 128),
 		r:                rand.New(conf.RandSource),
-		advance:          s.ref.Inc() == 1,
+		advance:          s.ref.Add(1) == 1,
 		conf:             conf,
+		ra:               conf.Dim.Range(),
 		set:              s,
 	}
-	w.weather, w.ticker = weather{w: w}, ticker{w: w}
+	w.weather, w.ticker = weather{w: w}, ticker{}
+	var h Handler = NopHandler{}
+	w.handler.Store(&h)
 
-	go w.tickLoop()
+	w.running.Add(3)
+	go w.tickLoop(w)
 	go w.chunkCacheJanitor()
+	go w.handleTransactions()
+
+	<-w.Exec(w.tick)
 	return w
 }

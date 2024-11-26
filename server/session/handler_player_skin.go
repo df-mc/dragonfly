@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -9,7 +10,7 @@ import (
 type PlayerSkinHandler struct{}
 
 // Handle ...
-func (PlayerSkinHandler) Handle(p packet.Packet, s *Session) error {
+func (PlayerSkinHandler) Handle(p packet.Packet, _ *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerSkin)
 
 	playerSkin, err := protocolToSkin(pk.Skin)
@@ -17,7 +18,7 @@ func (PlayerSkinHandler) Handle(p packet.Packet, s *Session) error {
 		return fmt.Errorf("error decoding skin: %w", err)
 	}
 
-	s.c.SetSkin(playerSkin)
+	c.SetSkin(playerSkin)
 
 	return nil
 }

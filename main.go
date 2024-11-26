@@ -5,52 +5,48 @@ import (
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
-	"github.com/sirupsen/logrus"
-	"io/ioutil"
+	"log/slog"
 	"os"
 )
 
 func main() {
-	log := logrus.New()
-	log.Formatter = &logrus.TextFormatter{ForceColors: true}
-	log.Level = logrus.DebugLevel
-
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	chat.Global.Subscribe(chat.StdoutSubscriber{})
-
-	config, err := readConfig()
+	conf, err := readConfig(slog.Default())
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
-	srv := server.New(&config, log)
+	srv := conf.New()
 	srv.CloseOnProgramEnd()
-	if err := srv.Start(); err != nil {
-		log.Fatalln(err)
-	}
 
-	for srv.Accept(nil) {
+	srv.Listen()
+	for p := range srv.Accept() {
+		_ = p
 	}
 }
 
-// readConfig reads the configuration from the config.toml file, or creates the file if it does not yet exist.
-func readConfig() (server.Config, error) {
+// readConfig reads the configuration from the config.toml file, or creates the
+// file if it does not yet exist.
+func readConfig(log *slog.Logger) (server.Config, error) {
 	c := server.DefaultConfig()
+	var zero server.Config
 	if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
 		data, err := toml.Marshal(c)
 		if err != nil {
-			return c, fmt.Errorf("failed encoding default config: %v", err)
+			return zero, fmt.Errorf("encode default config: %v", err)
 		}
-		if err := ioutil.WriteFile("config.toml", data, 0644); err != nil {
-			return c, fmt.Errorf("failed creating config: %v", err)
+		if err := os.WriteFile("config.toml", data, 0644); err != nil {
+			return zero, fmt.Errorf("create default config: %v", err)
 		}
-		return c, nil
+		return c.Config(log)
 	}
-	data, err := ioutil.ReadFile("config.toml")
+	data, err := os.ReadFile("config.toml")
 	if err != nil {
-		return c, fmt.Errorf("error reading config: %v", err)
+		return zero, fmt.Errorf("read config: %v", err)
 	}
 	if err := toml.Unmarshal(data, &c); err != nil {
-		return c, fmt.Errorf("error decoding config: %v", err)
+		return zero, fmt.Errorf("decode config: %v", err)
 	}
-	return c, nil
+	return c.Config(log)
 }

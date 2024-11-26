@@ -4,12 +4,9 @@ import (
 	"encoding/binary"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/internal/lang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"golang.org/x/text/language"
 	"image/color"
-	"math"
 	"time"
 )
 
@@ -29,7 +26,7 @@ type UsableOnBlock interface {
 	// The position of the block that was clicked, along with the clicked face and the position clicked
 	// relative to the corner of the block are passed.
 	// UseOnBlock returns a bool indicating if the item was used successfully.
-	UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool
+	UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool
 }
 
 // UsableOnEntity represents an item that may be used on an entity. If an item implements this interface, the
@@ -38,7 +35,7 @@ type UsableOnEntity interface {
 	// UseOnEntity is called when an item is used on an entity. The world passed is the world that the item is
 	// used in, and the entity clicked and the user of the item are also passed.
 	// UseOnEntity returns a bool indicating if the item was used successfully.
-	UseOnEntity(e world.Entity, w *world.World, user User, ctx *UseContext) bool
+	UseOnEntity(e world.Entity, tx *world.Tx, user User, ctx *UseContext) bool
 }
 
 // Usable represents an item that may be used 'in the air'. If an item implements this interface, the Use
@@ -47,7 +44,7 @@ type Usable interface {
 	// Use is called when the item is used in the air. The user that used the item and the world that the item
 	// was used in are passed to the method.
 	// Use returns a bool indicating if the item was used successfully.
-	Use(w *world.World, user User, ctx *UseContext) bool
+	Use(tx *world.Tx, user User, ctx *UseContext) bool
 }
 
 // Throwable represents a custom item that can be thrown such as a projectile. This will only have an effect on
@@ -75,7 +72,7 @@ type Consumable interface {
 	ConsumeDuration() time.Duration
 	// Consume consumes one item of the Stack that the Consumable is in. The Stack returned is added back to
 	// the inventory after consuming the item. For potions, for example, an empty bottle is returned.
-	Consume(w *world.World, c Consumer) Stack
+	Consume(tx *world.Tx, c Consumer) Stack
 }
 
 // Consumer represents a User that is able to consume Consumable items.
@@ -89,6 +86,11 @@ type Consumer interface {
 	// AddEffect will overwrite any effects present if the level of the effect is higher than the existing one, or
 	// if the effects' levels are equal and the new effect has a longer duration.
 	AddEffect(e effect.Effect)
+	// RemoveEffect removes any effect that might currently be active on the Consumer.
+	RemoveEffect(e effect.Type)
+	// Effects returns any effect currently applied to the Consumer. The returned effects are guaranteed not to have
+	// expired when returned.
+	Effects() []effect.Effect
 }
 
 // DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
@@ -148,7 +150,7 @@ type Releaser interface {
 // Releasable represents an item that can be released.
 type Releasable interface {
 	// Release is called when an item is released.
-	Release(releaser Releaser, duration time.Duration, ctx *UseContext)
+	Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration)
 	// Requirements returns the required items to release this item.
 	Requirements() []Stack
 }
@@ -157,9 +159,11 @@ type Releasable interface {
 // which interact with the world using an item.
 type User interface {
 	Carrier
-	// Facing returns the direction that the user is facing.
-	Facing() cube.Direction
 	SetHeldItems(mainHand, offHand Stack)
+
+	UsingItem() bool
+	ReleaseItem()
+	UseItem()
 }
 
 // Carrier represents an entity that is able to carry an item.
@@ -170,17 +174,24 @@ type Carrier interface {
 	HeldItems() (mainHand, offHand Stack)
 }
 
-// owned represents an entity that is "owned" by another entity. Entities like projectiles typically are "owned".
-type owned interface {
-	world.Entity
-	Owner() world.Entity
-	Own(owner world.Entity)
-}
-
 // BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast
 // to surrounding players.
 type BeaconPayment interface {
 	PayableForBeacon() bool
+}
+
+// Compostable represents an item that may be used to fill up a composter.
+type Compostable interface {
+	// CompostChance returns the chance the item will produce a layer of compost in the range of 0-1.
+	CompostChance() float64
+}
+
+// nopReleasable represents a releasable item that does nothing.
+type nopReleasable struct{}
+
+func (nopReleasable) Release(Releaser, *world.Tx, *UseContext, time.Duration) {}
+func (nopReleasable) Requirements() []Stack {
+	return []Stack{}
 }
 
 // defaultFood represents a consumable item with a default consumption duration.
@@ -194,33 +205,6 @@ func (defaultFood) AlwaysConsumable() bool {
 // ConsumeDuration ...
 func (d defaultFood) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
-}
-
-// DisplayName returns the display name of the item as shown in game in the language passed. It panics if an unknown
-// item is passed in.
-func DisplayName(item world.Item, locale language.Tag) string {
-	if c, ok := item.(world.CustomItem); ok {
-		return c.Name()
-	}
-	name, ok := lang.DisplayName(item, locale)
-	if !ok {
-		panic("should never happen")
-	}
-	return name
-}
-
-// directionVector returns a vector that describes the direction of the entity passed. The length of the Vec3
-// returned is always 1.
-func directionVector(e world.Entity) mgl64.Vec3 {
-	yaw, pitch := e.Rotation()
-	yawRad, pitchRad := mgl64.DegToRad(yaw), mgl64.DegToRad(pitch)
-	m := math.Cos(pitchRad)
-
-	return mgl64.Vec3{
-		-m * math.Sin(yawRad),
-		-math.Sin(pitchRad),
-		m * math.Cos(yawRad),
-	}.Normalize()
 }
 
 // eyePosition returns the position of the eyes of the entity if the entity implements entity.Eyed, or the
@@ -249,4 +233,12 @@ func rgbaFromInt32(x int32) color.RGBA {
 	binary.BigEndian.PutUint32(b, uint32(x))
 
 	return color.RGBA{A: b[0], R: b[1], G: b[2], B: b[3]}
+}
+
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
 }

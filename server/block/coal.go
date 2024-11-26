@@ -13,7 +13,7 @@ type Coal struct {
 
 // BreakInfo ...
 func (c Coal) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
 }
 
 // FlammabilityInfo ...

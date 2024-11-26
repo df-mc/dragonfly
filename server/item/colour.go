@@ -160,7 +160,7 @@ func (c colour) String() string {
 	case 7:
 		return "gray"
 	case 8:
-		return "silver"
+		return "light_gray"
 	case 9:
 		return "cyan"
 	case 10:
@@ -178,7 +178,25 @@ func (c colour) String() string {
 	}
 }
 
+// SilverString returns the name of the colour, with light_gray being replaced by silver.
+func (c colour) SilverString() string {
+	if c == 8 {
+		return "silver"
+	}
+	return c.String()
+}
+
 // Uint8 ...
 func (c colour) Uint8() uint8 {
 	return uint8(c)
+}
+
+// invertColour converts the item.Colour passed and returns the colour ID inverted.
+func invertColour(c Colour) int16 {
+	return ^int16(c.Uint8()) & 0xf
+}
+
+// invertColourID converts the int16 passed the returns the item.Colour inverted.
+func invertColourID(id int16) Colour {
+	return Colours()[uint8(^id&0xf)]
 }

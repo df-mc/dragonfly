@@ -13,7 +13,7 @@ type Chestplate struct {
 }
 
 // Use handles the using of a chestplate to auto-equip it in the designated armour slot.
-func (c Chestplate) Use(_ *world.World, _ User, ctx *UseContext) bool {
+func (c Chestplate) Use(_ *world.Tx, _ User, ctx *UseContext) bool {
 	ctx.SwapHeldWithArmour(1)
 	return false
 }
@@ -25,14 +25,14 @@ func (c Chestplate) MaxCount() int {
 
 // DefencePoints ...
 func (c Chestplate) DefencePoints() float64 {
-	switch c.Tier.(type) {
-	case ArmourTierLeather:
+	switch c.Tier.Name() {
+	case "leather":
 		return 3
-	case ArmourTierGold, ArmourTierChain:
+	case "golden", "chainmail":
 		return 5
-	case ArmourTierIron:
+	case "iron":
 		return 6
-	case ArmourTierDiamond, ArmourTierNetherite:
+	case "diamond", "netherite":
 		return 8
 	}
 	panic("invalid chestplate tier")

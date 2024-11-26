@@ -13,7 +13,7 @@ type Diamond struct {
 func (d Diamond) BreakInfo() BreakInfo {
 	return newBreakInfo(5, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, oneOf(d))
+	}, pickaxeEffective, oneOf(d)).withBlastResistance(30)
 }
 
 // PowersBeacon ...

@@ -38,6 +38,60 @@ var (
 	GameModeSpectator spectator
 )
 
+var gameModeReg = newGameModeRegistry(map[int]GameMode{
+	0: GameModeSurvival,
+	1: GameModeCreative,
+	2: GameModeAdventure,
+	3: GameModeSpectator,
+})
+
+// GameModeByID looks up a GameMode for the ID passed, returning
+// GameModeSurvival for 0, GameModeCreative for 1, GameModeAdventure for 2 and
+// GameModeSpectator for 3. If the ID is unknown, the bool returned is false. In
+// this case the GameMode returned is GameModeSurvival.
+func GameModeByID(id int) (GameMode, bool) {
+	return gameModeReg.Lookup(id)
+}
+
+// GameModeID looks up the ID that a GameMode was registered with. If not
+// found, false is returned.
+func GameModeID(mode GameMode) (int, bool) {
+	return gameModeReg.LookupID(mode)
+}
+
+type gameModeRegistry struct {
+	gameModes map[int]GameMode
+	ids       map[GameMode]int
+}
+
+// newGameModeRegistry returns an initialised gameModeRegistry.
+func newGameModeRegistry(mode map[int]GameMode) *gameModeRegistry {
+	ids := make(map[GameMode]int, len(mode))
+	for k, v := range mode {
+		ids[v] = k
+	}
+	return &gameModeRegistry{gameModes: mode, ids: ids}
+}
+
+// Lookup looks up a GameMode for the ID passed, returning GameModeSurvival for
+// 0, GameModeCreative for 1, GameModeAdventure for 2 and GameModeSpectator for
+// 3. If the ID is unknown, the bool returned is false. In this case the
+// GameMode returned is GameModeSurvival.
+func (reg *gameModeRegistry) Lookup(id int) (GameMode, bool) {
+	mode, ok := reg.gameModes[id]
+	if !ok {
+		mode = GameModeSurvival
+	}
+	return mode, ok
+}
+
+// LookupID looks up the ID that a GameMode was registered with. If not found,
+// false is returned.
+func (reg *gameModeRegistry) LookupID(mode GameMode) (int, bool) {
+	id, ok := reg.ids[mode]
+	return id, ok
+}
+
 // survival is the survival game mode: Players with this game mode have limited supplies and can break blocks after
 // taking some time.
 type survival struct{}

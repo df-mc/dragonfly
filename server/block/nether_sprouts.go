@@ -15,23 +15,23 @@ type NetherSprouts struct {
 }
 
 // NeighbourUpdateTick ...
-func (n NetherSprouts) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !supportsVegetation(n, w.Block(pos.Side(cube.FaceDown))) {
-		w.SetBlock(pos, nil, nil) //TODO: Nylium & mycelium
+func (n NetherSprouts) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !supportsVegetation(n, tx.Block(pos.Side(cube.FaceDown))) {
+		tx.SetBlock(pos, nil, nil) // TODO: Nylium & mycelium
 	}
 }
 
 // UseOnBlock ...
-func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, n)
+func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, n)
 	if !used {
 		return false
 	}
-	if !supportsVegetation(n, w.Block(pos.Side(cube.FaceDown))) {
-		return false //TODO: Nylium & mycelium
+	if !supportsVegetation(n, tx.Block(pos.Side(cube.FaceDown))) {
+		return false // TODO: Nylium & mycelium
 	}
 
-	place(w, pos, n, user, ctx)
+	place(tx, pos, n, user, ctx)
 	return placed(ctx)
 }
 
@@ -50,6 +50,11 @@ func (n NetherSprouts) BreakInfo() BreakInfo {
 	return newBreakInfo(0, func(t item.Tool) bool {
 		return t.ToolType() == item.TypeShears
 	}, nothingEffective, oneOf(n))
+}
+
+// CompostChance ...
+func (NetherSprouts) CompostChance() float64 {
+	return 0.5
 }
 
 // EncodeItem ...

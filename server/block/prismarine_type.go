@@ -44,11 +44,11 @@ func (s prismarine) Name() string {
 func (s prismarine) String() string {
 	switch s {
 	case 0:
-		return "default"
+		return "prismarine"
 	case 1:
-		return "dark"
+		return "dark_prismarine"
 	case 2:
-		return "bricks"
+		return "prismarine_bricks"
 	}
 	panic("unknown prismarine type")
 }

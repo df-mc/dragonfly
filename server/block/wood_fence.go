@@ -13,6 +13,7 @@ import (
 type WoodFence struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the fence. This field must have one of the values found in the wood
 	// package.
@@ -21,17 +22,11 @@ type WoodFence struct {
 
 // BreakInfo ...
 func (w WoodFence) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w))
-}
-
-// CanDisplace ...
-func (WoodFence) CanDisplace(b world.Liquid) bool {
-	_, ok := b.(Water)
-	return ok
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w)).withBlastResistance(15)
 }
 
 // SideClosed ...
-func (WoodFence) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (WoodFence) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -50,12 +45,7 @@ func (WoodFence) FuelInfo() item.FuelInfo {
 
 // EncodeBlock ...
 func (w WoodFence) EncodeBlock() (name string, properties map[string]any) {
-	switch w.Wood {
-	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		return "minecraft:fence", map[string]any{"wood_type": w.Wood.String()}
-	default:
-		return "minecraft:" + w.Wood.String() + "_fence", nil
-	}
+	return "minecraft:" + w.Wood.String() + "_fence", nil
 }
 
 // Model ...
@@ -65,12 +55,7 @@ func (w WoodFence) Model() world.BlockModel {
 
 // EncodeItem ...
 func (w WoodFence) EncodeItem() (name string, meta int16) {
-	switch w.Wood {
-	case OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood():
-		return "minecraft:fence", int16(w.Wood.Uint8())
-	default:
-		return "minecraft:" + w.Wood.String() + "_fence", 0
-	}
+	return "minecraft:" + w.Wood.String() + "_fence", 0
 }
 
 // allFence ...

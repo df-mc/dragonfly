@@ -1,162 +1,175 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"image/color"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"math"
 	"time"
 )
 
-// entityMetadata represents a map that holds metadata associated with an entity. The data held in the map
-// depends on the entity and varies on a per-entity basis.
-type entityMetadata map[uint32]any
-
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
 // all properties to their default values and disabling all flags.
-func (s *Session) parseEntityMetadata(e world.Entity) entityMetadata {
-	bb := e.BBox()
-	m := entityMetadata{
-		dataKeyBoundingBoxWidth:  float32(bb.Width()),
-		dataKeyBoundingBoxHeight: float32(bb.Height()),
-		dataKeyPotionColour:      int32(0),
-		dataKeyPotionAmbient:     byte(0),
-		dataKeyColour:            byte(0),
-	}
+func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
+	bb := e.H().Type().BBox(e)
+	m := protocol.NewEntityMetadata()
 
-	m.setFlag(dataKeyFlags, dataFlagAffectedByGravity)
-	m.setFlag(dataKeyFlags, dataFlagCanClimb)
-	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
-		m.setFlag(dataKeyFlags, dataFlagSneaking)
+	m[protocol.EntityDataKeyWidth] = float32(bb.Width())
+	m[protocol.EntityDataKeyHeight] = float32(bb.Height())
+	m[protocol.EntityDataKeyEffectColor] = int32(0)
+	m[protocol.EntityDataKeyEffectAmbience] = byte(0)
+	m[protocol.EntityDataKeyColorIndex] = byte(0)
+
+	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasGravity)
+	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagClimb)
+	if g, ok := e.H().Type().(glint); ok && g.Glint() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
 	}
-	if sp, ok := e.(sprinter); ok && sp.Sprinting() {
-		m.setFlag(dataKeyFlags, dataFlagSprinting)
+	if e.H().Type() == entity.LingeringPotionType {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
 	}
-	if sw, ok := e.(swimmer); ok && sw.Swimming() {
-		m.setFlag(dataKeyFlags, dataFlagSwimming)
-	}
-	if b, ok := e.(breather); ok {
-		m[dataKeyAir] = int16(b.AirSupply().Milliseconds() / 50)
-		m[dataKeyMaxAir] = int16(b.MaxAirSupply().Milliseconds() / 50)
-		if b.Breathing() {
-			m.setFlag(dataKeyFlags, dataFlagBreathing)
-		}
-	}
-	if i, ok := e.(invisible); ok && i.Invisible() {
-		m.setFlag(dataKeyFlags, dataFlagInvisible)
-	}
-	if i, ok := e.(immobile); ok && i.Immobile() {
-		m.setFlag(dataKeyFlags, dataFlagNoAI)
-	}
-	if o, ok := e.(onFire); ok && o.OnFireDuration() > 0 {
-		m.setFlag(dataKeyFlags, dataFlagOnFire)
-	}
-	if u, ok := e.(using); ok && u.UsingItem() {
-		m.setFlag(dataKeyFlags, dataFlagUsingItem)
-	}
-	if c, ok := e.(arrow); ok && c.Critical() {
-		m.setFlag(dataKeyFlags, dataFlagCritical)
-	}
-	if g, ok := e.(gameMode); ok && g.GameMode().HasCollision() {
-		m.setFlag(dataKeyFlags, dataFlagHasCollision)
-	}
-	if o, ok := e.(orb); ok {
-		m[dataKeyExperienceValue] = int32(o.Experience())
-	}
-	if sc, ok := e.(scaled); ok {
-		m[dataKeyScale] = float32(sc.Scale())
-	}
-	if o, ok := e.(owned); ok {
-		m[dataKeyOwnerRuntimeID] = int64(s.entityRuntimeID(o.Owner()))
-	}
-	if n, ok := e.(named); ok {
-		m[dataKeyNameTag] = n.NameTag()
-		m[dataKeyAlwaysShowNameTag] = uint8(1)
-		m.setFlag(dataKeyFlags, dataFlagAlwaysShowNameTag)
-		m.setFlag(dataKeyFlags, dataFlagCanShowNameTag)
-	}
-	if sc, ok := e.(scoreTag); ok {
-		m[dataKeyScoreTag] = sc.ScoreTag()
-	}
-	if sp, ok := e.(splash); ok {
-		pot := sp.Type()
-		m[dataKeyPotionAuxValue] = int16(pot.Uint8())
-		if len(pot.Effects()) > 0 {
-			m.setFlag(dataKeyFlags, dataFlagEnchanted)
-		}
-	}
-	if t, ok := e.(tipped); ok {
-		if tip := t.Tip().Uint8(); tip > 4 {
-			m[dataKeyCustomDisplay] = tip + 1
-		}
-	}
-	if eff, ok := e.(effectBearer); ok && len(eff.Effects()) > 0 {
-		colour, am := effect.ResultingColour(eff.Effects())
-		if (colour != color.RGBA{}) {
-			m[dataKeyPotionColour] = nbtconv.Int32FromRGBA(colour)
-			if am {
-				m[dataKeyPotionAmbient] = byte(1)
-			} else {
-				m[dataKeyPotionAmbient] = byte(0)
-			}
-		}
+	s.addSpecificMetadata(e, m)
+	if ent, ok := e.(*entity.Ent); ok {
+		s.addSpecificMetadata(ent.Behaviour(), m)
 	}
 	return m
 }
 
-// setFlag sets a flag with a specific index in the int64 stored in the entity metadata map to the value
-// passed. It is typically used for entity metadata flags.
-func (m entityMetadata) setFlag(key uint32, index uint8) {
-	if v, ok := m[key]; !ok {
-		m[key] = int64(0) ^ (1 << uint64(index))
-	} else {
-		m[key] = v.(int64) ^ (1 << uint64(index))
+func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
+	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSneaking)
+	}
+	if sp, ok := e.(sprinter); ok && sp.Sprinting() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSprinting)
+	}
+	if sw, ok := e.(swimmer); ok && sw.Swimming() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSwimming)
+	}
+	if cr, ok := e.(crawler); ok && cr.Crawling() {
+		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagCrawling&63)
+	}
+	if gl, ok := e.(glider); ok && gl.Gliding() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagGliding)
+	}
+	if b, ok := e.(breather); ok {
+		m[protocol.EntityDataKeyAirSupply] = int16(b.AirSupply().Milliseconds() / 50)
+		m[protocol.EntityDataKeyAirSupplyMax] = int16(b.MaxAirSupply().Milliseconds() / 50)
+		if b.Breathing() {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagBreathing)
+		}
+	}
+	if i, ok := e.(invisible); ok && i.Invisible() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+	}
+	if i, ok := e.(immobile); ok && i.Immobile() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagNoAI)
+	}
+	if o, ok := e.(onFire); ok && o.OnFireDuration() > 0 {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagOnFire)
+	}
+	if u, ok := e.(using); ok && u.UsingItem() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagUsingItem)
+	}
+	if c, ok := e.(arrow); ok && c.Critical() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCritical)
+	}
+	if g, ok := e.(gameMode); ok {
+		if g.GameMode().HasCollision() {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasCollision)
+		}
+		if !g.GameMode().Visible() {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		}
+	}
+	if o, ok := e.(orb); ok {
+		m[protocol.EntityDataKeyValue] = int32(o.Experience())
+	}
+	if f, ok := e.(firework); ok {
+		m[protocol.EntityDataKeyDisplayTileRuntimeID] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
+		if o, ok := e.(owned); ok && f.Attached() && o.Owner() != nil {
+			m[protocol.EntityDataKeyCustomDisplay] = int64(s.handleRuntimeID(o.Owner()))
+		}
+	} else if o, ok := e.(owned); ok && o.Owner() != nil {
+		m[protocol.EntityDataKeyOwner] = int64(s.handleRuntimeID(o.Owner()))
+	}
+	if sc, ok := e.(scaled); ok {
+		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
+	}
+	if t, ok := e.(tnt); ok {
+		m[protocol.EntityDataKeyFuseTime] = int32(t.Fuse().Milliseconds() / 50)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagIgnited)
+	}
+	if n, ok := e.(named); ok {
+		m[protocol.EntityDataKeyName] = n.NameTag()
+		m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+	}
+	if sc, ok := e.(scoreTag); ok {
+		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
+	}
+	if c, ok := e.(areaEffectCloud); ok {
+		m[protocol.EntityDataKeyDataRadius] = float32(c.Radius())
+
+		// We purposely fill these in with invalid values to disable the client-sided shrinking of the cloud.
+		m[protocol.EntityDataKeyDataDuration] = int32(math.MaxInt32)
+		m[protocol.EntityDataKeyDataChangeOnPickup] = float32(math.SmallestNonzeroFloat32)
+		m[protocol.EntityDataKeyDataChangeRate] = float32(math.SmallestNonzeroFloat32)
+
+		colour, am := effect.ResultingColour(c.Effects())
+		m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
+		if am {
+			m[protocol.EntityDataKeyEffectAmbience] = byte(1)
+		} else {
+			m[protocol.EntityDataKeyEffectAmbience] = byte(0)
+		}
+	}
+
+	if l, ok := e.(living); ok && s.ent.UUID() == l.UUID() {
+		deathPos, deathDimension, died := l.DeathPosition()
+		if died {
+			dim, _ := world.DimensionID(deathDimension)
+			m[protocol.EntityDataKeyPlayerLastDeathPosition] = vec64To32(deathPos)
+			m[protocol.EntityDataKeyPlayerLastDeathDimension] = int32(dim)
+		}
+		m[protocol.EntityDataKeyPlayerHasDied] = boolByte(died)
+	}
+	if p, ok := e.(splash); ok {
+		m[protocol.EntityDataKeyAuxValueData] = int16(p.Potion().Uint8())
+		if tip := p.Potion().Uint8(); tip > 4 {
+			m[protocol.EntityDataKeyCustomDisplay] = tip + 1
+		}
+	}
+	if eff, ok := e.(effectBearer); ok {
+		var packedEffects int64
+
+		for _, ef := range eff.Effects() {
+			if !ef.ParticlesHidden() {
+				id, found := effect.ID(ef.Type())
+				if !found {
+					continue
+				}
+				packedEffects = (packedEffects << 7) | int64(id<<1)
+				if ef.Ambient() {
+					packedEffects |= 1
+				}
+			}
+		}
+		m[protocol.EntityDataKeyVisibleMobEffects] = packedEffects
+	}
+	if v, ok := e.(variable); ok {
+		m[protocol.EntityDataKeyVariant] = v.Variant()
+	}
+	if mv, ok := e.(markVariable); ok {
+		m[protocol.EntityDataKeyMarkVariant] = mv.MarkVariant()
 	}
 }
-
-//noinspection GoUnusedConst
-const (
-	dataKeyFlags = iota
-	dataKeyHealth
-	dataKeyVariant
-	dataKeyColour
-	dataKeyNameTag
-	dataKeyOwnerRuntimeID
-	dataKeyTargetRuntimeID
-	dataKeyAir
-	dataKeyPotionColour
-	dataKeyPotionAmbient
-	dataKeyExperienceValue   = 15
-	dataKeyCustomDisplay     = 18
-	dataKeyPotionAuxValue    = 36
-	dataKeyScale             = 38
-	dataKeyMaxAir            = 42
-	dataKeyBoundingBoxWidth  = 53
-	dataKeyBoundingBoxHeight = 54
-	dataKeyAlwaysShowNameTag = 81
-	dataKeyScoreTag          = 84
-)
-
-//noinspection GoUnusedConst
-const (
-	dataFlagOnFire = iota
-	dataFlagSneaking
-	dataFlagRiding
-	dataFlagSprinting
-	dataFlagUsingItem
-	dataFlagInvisible
-	dataFlagCritical          = 13
-	dataFlagCanShowNameTag    = 14
-	dataFlagAlwaysShowNameTag = 15
-	dataFlagNoAI              = 16
-	dataFlagCanClimb          = 19
-	dataFlagBreathing         = 35
-	dataFlagHasCollision      = 47
-	dataFlagAffectedByGravity = 48
-	dataFlagEnchanted         = 51
-	dataFlagSwimming          = 56
-)
 
 type sneaker interface {
 	Sneaking() bool
@@ -168,6 +181,14 @@ type sprinter interface {
 
 type swimmer interface {
 	Swimming() bool
+}
+
+type crawler interface {
+	Crawling() bool
+}
+
+type glider interface {
+	Gliding() bool
 }
 
 type breather interface {
@@ -189,7 +210,7 @@ type scaled interface {
 }
 
 type owned interface {
-	Owner() world.Entity
+	Owner() *world.EntityHandle
 }
 
 type named interface {
@@ -201,7 +222,16 @@ type scoreTag interface {
 }
 
 type splash interface {
-	Type() potion.Potion
+	Potion() potion.Potion
+}
+
+type glint interface {
+	Glint() bool
+}
+
+type areaEffectCloud interface {
+	effectBearer
+	Radius() float64
 }
 
 type onFire interface {
@@ -210,10 +240,6 @@ type onFire interface {
 
 type effectBearer interface {
 	Effects() []effect.Effect
-}
-
-type tipped interface {
-	Tip() potion.Potion
 }
 
 type using interface {
@@ -228,6 +254,28 @@ type orb interface {
 	Experience() int
 }
 
+type firework interface {
+	Firework() item.Firework
+	Attached() bool
+}
+
 type gameMode interface {
 	GameMode() world.GameMode
+}
+
+type tnt interface {
+	Fuse() time.Duration
+}
+
+type living interface {
+	UUID() uuid.UUID
+	DeathPosition() (mgl64.Vec3, world.Dimension, bool)
+}
+
+type variable interface {
+	Variant() int32
+}
+
+type markVariable interface {
+	MarkVariant() int32
 }

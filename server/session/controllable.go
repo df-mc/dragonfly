@@ -19,6 +19,7 @@ import (
 // implemented in the form of a Player.
 // Methods in Controllable will be added as Session needs them in order to handle packets.
 type Controllable interface {
+	Name() string
 	world.Entity
 	item.User
 	form.Submitter
@@ -31,7 +32,9 @@ type Controllable interface {
 	SetHeldSlot(slot int) error
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+
 	Speed() float64
+	FlightSpeed() float64
 
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
@@ -42,21 +45,27 @@ type Controllable interface {
 	UseItem()
 	ReleaseItem()
 	UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3)
-	UseItemOnEntity(e world.Entity)
+	UseItemOnEntity(e world.Entity) bool
 	BreakBlock(pos cube.Pos)
 	PickBlock(pos cube.Pos)
-	AttackEntity(e world.Entity)
+	AttackEntity(e world.Entity) bool
 	Drop(s item.Stack) (n int)
 	SwingArm()
 	PunchAir()
 
+	Health() float64
+	MaxHealth() float64
+	Absorption() float64
+	Food() int
+
 	ExperienceLevel() int
+	ExperienceProgress() float64
 	SetExperienceLevel(level int)
 
 	EnchantmentSeed() int64
 	ResetEnchantmentSeed()
 
-	Respawn()
+	Respawn() *world.EntityHandle
 	Dead() bool
 
 	StartSneaking()
@@ -68,9 +77,15 @@ type Controllable interface {
 	StartSwimming()
 	Swimming() bool
 	StopSwimming()
+	StartCrawling()
+	Crawling() bool
+	StopCrawling()
 	StartFlying()
 	Flying() bool
 	StopFlying()
+	StartGliding()
+	Gliding() bool
+	StopGliding()
 	Jump()
 
 	StartBreaking(pos cube.Pos, face cube.Face)
@@ -80,9 +95,12 @@ type Controllable interface {
 
 	Exhaust(points float64)
 
-	EditSign(pos cube.Pos, text string) error
+	OpenSign(pos cube.Pos, frontSide bool)
+	EditSign(pos cube.Pos, frontText, backText string) error
+	TurnLecternPage(pos cube.Pos, page int) error
 
 	EnderChestInventory() *inventory.Inventory
+	MoveItemsToInventory()
 
 	// UUID returns the UUID of the controllable. It must be unique for all controllable entities present in
 	// the server.
@@ -94,4 +112,6 @@ type Controllable interface {
 	// entity looks in the world.
 	Skin() skin.Skin
 	SetSkin(skin.Skin)
+
+	UpdateDiagnostics(Diagnostics)
 }

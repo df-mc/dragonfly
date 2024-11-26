@@ -5,43 +5,45 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// SoulSpeed is an enchantment that can be applied on boots and allows the player to walk more quickly on soul sand or
-// soul soil.
-type SoulSpeed struct{}
+// SoulSpeed is an enchantment that can be applied on boots and allows the
+// player to walk more quickly on soul sand or soul soil.
+var SoulSpeed soulSpeed
+
+type soulSpeed struct{}
 
 // Name ...
-func (SoulSpeed) Name() string {
+func (soulSpeed) Name() string {
 	return "Soul Speed"
 }
 
 // MaxLevel ...
-func (SoulSpeed) MaxLevel() int {
+func (soulSpeed) MaxLevel() int {
 	return 3
 }
 
 // Cost ...
-func (SoulSpeed) Cost(level int) (int, int) {
-	min := level * 10
-	return min, min + 15
+func (soulSpeed) Cost(level int) (int, int) {
+	minCost := level * 10
+	return minCost, minCost + 15
 }
 
 // Rarity ...
-func (SoulSpeed) Rarity() item.EnchantmentRarity {
+func (soulSpeed) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // Treasure ...
-func (SoulSpeed) Treasure() bool {
+func (soulSpeed) Treasure() bool {
 	return true
 }
 
 // CompatibleWithEnchantment ...
-func (SoulSpeed) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (soulSpeed) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (SoulSpeed) CompatibleWithItem(i world.Item) bool {
+func (soulSpeed) CompatibleWithItem(i world.Item) bool {
 	b, ok := i.(item.BootsType)
 	return ok && b.Boots()
 }

@@ -10,16 +10,11 @@ type GlassPane struct {
 	transparent
 	thin
 	clicksAndSticks
-}
-
-// CanDisplace ...
-func (p GlassPane) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+	sourceWaterDisplacer
 }
 
 // SideClosed ...
-func (p GlassPane) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (p GlassPane) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

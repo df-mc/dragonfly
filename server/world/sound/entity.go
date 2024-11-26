@@ -15,6 +15,14 @@ type Drowning struct{ sound }
 // Burning is a sound played when an entity is on fire.
 type Burning struct{ sound }
 
+// Fall is a sound played when an entity falls and hits ground.
+type Fall struct {
+	// Distance is the distance the entity has fallen.
+	Distance float64
+
+	sound
+}
+
 // Burp is a sound played when a player finishes eating an item.
 type Burp struct{ sound }
 
@@ -38,3 +46,15 @@ type GhastWarning struct{ sound }
 
 // GhastShoot is a sound played when a ghast shoots a fire charge.
 type GhastShoot struct{ sound }
+
+// FireworkLaunch is a sound played when a firework is launched.
+type FireworkLaunch struct{ sound }
+
+// FireworkHugeBlast is a sound played when a huge sphere firework explodes.
+type FireworkHugeBlast struct{ sound }
+
+// FireworkBlast is a sound played when a small sphere firework explodes.
+type FireworkBlast struct{ sound }
+
+// FireworkTwinkle is a sound played when a firework explodes and should twinkle.
+type FireworkTwinkle struct{ sound }

@@ -20,23 +20,34 @@ type Sandstone struct {
 
 // BreakInfo ...
 func (s Sandstone) BreakInfo() BreakInfo {
-	return newBreakInfo(s.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, oneOf(s))
+	if s.Type == SmoothSandstone() {
+		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
+	}
+	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(s))
 }
 
 // EncodeItem ...
 func (s Sandstone) EncodeItem() (name string, meta int16) {
-	if s.Red {
-		return "minecraft:red_sandstone", int16(s.Type.Uint8())
+	var prefix string
+	if s.Type != NormalSandstone() {
+		prefix = s.Type.String() + "_"
 	}
-	return "minecraft:sandstone", int16(s.Type.Uint8())
+	if s.Red {
+		return "minecraft:" + prefix + "red_sandstone", 0
+	}
+	return "minecraft:" + prefix + "sandstone", 0
 }
 
 // EncodeBlock ...
 func (s Sandstone) EncodeBlock() (string, map[string]any) {
-	if s.Red {
-		return "minecraft:red_sandstone", map[string]any{"sand_stone_type": s.Type.String()}
+	var prefix string
+	if s.Type != NormalSandstone() {
+		prefix = s.Type.String() + "_"
 	}
-	return "minecraft:sandstone", map[string]any{"sand_stone_type": s.Type.String()}
+	if s.Red {
+		return "minecraft:" + prefix + "red_sandstone", nil
+	}
+	return "minecraft:" + prefix + "sandstone", nil
 }
 
 // SmeltInfo ...

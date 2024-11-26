@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"go/ast"
 	"reflect"
 	"strings"
@@ -18,16 +19,18 @@ import (
 // optional), or a type that implements the cmd.Parameter or cmd.Enum interface. cmd.Enum implementations must be of the
 // type string.
 // Fields in the Runnable struct may have `cmd:` struct tag to specify the name and suffix of a parameter as such:
-//   type T struct {
-//       Param int `cmd:"name,suffix"`
-//   }
+//
+//	type T struct {
+//	    Param int `cmd:"name,suffix"`
+//	}
+//
 // If no name is set, the field name is used. Additionally, the name as specified in the struct tag may be '-' to make
 // the parser ignore the field. In this case, the field does not have to be of one of the types above.
 type Runnable interface {
 	// Run runs the Command, using the arguments passed to the Command. The source is passed to the method,
-	// which is the source of the execution of the Command, and the output is passed, to which messages may be
+	// which is the source of the Command execution, and the output is passed, to which messages may be
 	// added which get sent to the source.
-	Run(src Source, o *Output)
+	Run(src Source, o *Output, tx *world.Tx)
 }
 
 // Allower may be implemented by a type also implementing Runnable to limit the sources that may run the
@@ -120,7 +123,7 @@ func (cmd Command) Aliases() []string {
 // If parsing of all Runnables was unsuccessful, a command output with an error message is sent to the Source
 // passed, and the Run method of the Runnables are not called.
 // The Source passed must not be nil. The method will panic if a nil Source is passed.
-func (cmd Command) Execute(args string, source Source) {
+func (cmd Command) Execute(args string, source Source, tx *world.Tx) {
 	if source == nil {
 		panic("execute: invalid command source: source must not be nil")
 	}
@@ -133,7 +136,7 @@ func (cmd Command) Execute(args string, source Source) {
 	for _, v := range cmd.v {
 		cp := reflect.New(v.Type())
 		cp.Elem().Set(v)
-		line, err := cmd.executeRunnable(cp, args, source, output)
+		line, err := cmd.executeRunnable(cp, args, source, output, tx)
 		if err == nil {
 			// Command was executed successfully: We won't execute any of the other Runnable values passed, as
 			// we've already found an overload that works.
@@ -217,7 +220,7 @@ func (cmd Command) String() string {
 // executeRunnable executes a Runnable v, by parsing the args passed using the source and output obtained. If
 // parsing was not successful or the Runnable could not be run by this source, an error is returned, and the
 // leftover command line.
-func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*Line, error) {
+func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output, tx *world.Tx) (*Line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
 		//lint:ignore ST1005 Error string is capitalised because it is shown to the player.
 		//goland:noinspection GoErrorStringFormat
@@ -251,7 +254,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			val = reflect.New(field.Field(0).Type()).Elem()
 		}
 
-		err, success := parser.parseArgument(arguments, val, opt, name(t), source)
+		err, success := parser.parseArgument(arguments, val, opt, name(t), source, tx)
 		if err != nil {
 			// Parsing was not successful, we return immediately as we don't need to call the Runnable.
 			return arguments, err
@@ -264,7 +267,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		return arguments, fmt.Errorf("unexpected '%v'", strings.Join(arguments.args, " "))
 	}
 
-	v.Interface().(Runnable).Run(source, output)
+	v.Interface().(Runnable).Run(source, output, tx)
 	return arguments, nil
 }
 
@@ -301,14 +304,19 @@ func verifySignature(command reflect.Value) error {
 	optionalField := false
 	for _, t := range exportedFields(command) {
 		field := command.FieldByName(t.Name)
-		if _, ok := field.Interface().(Enum); ok && field.Kind() != reflect.String {
-			return fmt.Errorf("parameters implementing Enum must be of the type string")
-		}
+
 		// If the field is not optional, while the last field WAS optional, we return an error, as this is
 		// not parsable in an expected way.
 		opt := optional(field)
 		if !opt && optionalField {
 			return fmt.Errorf("command must only have optional parameters at the end")
+		}
+		val := field
+		if opt {
+			val = reflect.New(field.Field(0).Type()).Elem()
+		}
+		if _, ok := val.Interface().(Enum); ok && val.Kind() != reflect.String {
+			return fmt.Errorf("parameters implementing Enum must be of the type string")
 		}
 		optionalField = opt
 	}

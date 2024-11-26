@@ -32,15 +32,6 @@ func (s sandstone) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Hardness ...
-func (s sandstone) Hardness() float64 {
-	switch s {
-	case 3:
-		return 2.0
-	}
-	return 0.8
-}
-
 // Name ...
 func (s sandstone) Name() string {
 	switch s {
@@ -64,21 +55,11 @@ func (s sandstone) String() string {
 	case 1:
 		return "cut"
 	case 2:
-		return "heiroglyphs"
+		return "chiseled"
 	case 3:
 		return "smooth"
 	}
 	panic("unknown sandstone type")
-}
-
-// SlabAble checks if a slab with this type can exist.
-func (s sandstone) SlabAble() bool {
-	return s != ChiseledSandstone().sandstone
-}
-
-// StairAble checks if a stair with this type can exist.
-func (s sandstone) StairAble() bool {
-	return s == NormalSandstone().sandstone || s == SmoothSandstone().sandstone
 }
 
 // SandstoneTypes ...

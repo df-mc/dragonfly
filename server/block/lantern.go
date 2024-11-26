@@ -11,6 +11,7 @@ import (
 // Lantern is a light emitting block.
 type Lantern struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Hanging determines if a lantern is hanging off a block.
 	Hanging bool
@@ -24,16 +25,18 @@ func (l Lantern) Model() world.BlockModel {
 }
 
 // NeighbourUpdateTick ...
-func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if l.Hanging {
 		up := pos.Side(cube.FaceUp)
-		if _, ok := w.Block(up).(Chain); !ok && !w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
-			w.SetBlock(pos, nil, nil)
+		if _, ok := tx.Block(up).(Chain); !ok && !tx.Block(up).Model().FaceSolid(up, cube.FaceDown, tx) {
+			tx.SetBlock(pos, nil, nil)
+			dropItem(tx, item.NewStack(l, 1), pos.Vec3Centre())
 		}
 	} else {
 		down := pos.Side(cube.FaceDown)
-		if !w.Block(down).Model().FaceSolid(down, cube.FaceUp, w) {
-			w.SetBlock(pos, nil, nil)
+		if !tx.Block(down).Model().FaceSolid(down, cube.FaceUp, tx) {
+			tx.SetBlock(pos, nil, nil)
+			dropItem(tx, item.NewStack(l, 1), pos.Vec3Centre())
 		}
 	}
 }
@@ -44,43 +47,37 @@ func (l Lantern) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, l)
+func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, face, used := firstReplaceable(tx, pos, face, l)
 	if !used {
 		return false
 	}
 	if face == cube.FaceDown {
 		upPos := pos.Side(cube.FaceUp)
-		if _, ok := w.Block(upPos).(Chain); !ok && !w.Block(upPos).Model().FaceSolid(upPos, cube.FaceDown, w) {
+		if _, ok := tx.Block(upPos).(Chain); !ok && !tx.Block(upPos).Model().FaceSolid(upPos, cube.FaceDown, tx) {
 			face = cube.FaceUp
 		}
 	}
 	if face != cube.FaceDown {
 		downPos := pos.Side(cube.FaceDown)
-		if !w.Block(downPos).Model().FaceSolid(downPos, cube.FaceUp, w) {
+		if !tx.Block(downPos).Model().FaceSolid(downPos, cube.FaceUp, tx) {
 			return false
 		}
 	}
 	l.Hanging = face == cube.FaceDown
 
-	place(w, pos, l, user, ctx)
+	place(tx, pos, l, user, ctx)
 	return placed(ctx)
 }
 
-// CanDisplace ...
-func (l Lantern) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed ...
-func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // BreakInfo ...
 func (l Lantern) BreakInfo() BreakInfo {
-	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
 }
 
 // EncodeItem ...

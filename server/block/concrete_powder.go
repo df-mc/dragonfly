@@ -18,20 +18,20 @@ type ConcretePowder struct {
 }
 
 // Solidifies ...
-func (c ConcretePowder) Solidifies(pos cube.Pos, w *world.World) bool {
-	_, water := w.Block(pos).(Water)
+func (c ConcretePowder) Solidifies(pos cube.Pos, tx *world.Tx) bool {
+	_, water := tx.Block(pos).(Water)
 	return water
 }
 
 // NeighbourUpdateTick ...
-func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	for i := cube.Face(0); i < 6; i++ {
-		if _, ok := w.Block(pos.Side(i)).(Water); ok {
-			w.SetBlock(pos, Concrete{Colour: c.Colour}, nil)
+		if _, ok := tx.Block(pos.Side(i)).(Water); ok {
+			tx.SetBlock(pos, Concrete{Colour: c.Colour}, nil)
 			return
 		}
 	}
-	c.fall(c, pos, w)
+	c.fall(c, pos, tx)
 }
 
 // BreakInfo ...
@@ -41,12 +41,12 @@ func (c ConcretePowder) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (c ConcretePowder) EncodeItem() (name string, meta int16) {
-	return "minecraft:concrete_powder", int16(c.Colour.Uint8())
+	return "minecraft:" + c.Colour.String() + "_concrete_powder", 0
 }
 
 // EncodeBlock ...
 func (c ConcretePowder) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:concrete_powder", map[string]any{"color": c.Colour.String()}
+	return "minecraft:" + c.Colour.String() + "_concrete_powder", nil
 }
 
 // allConcretePowder returns concrete powder with all possible colours.

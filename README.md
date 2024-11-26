@@ -3,14 +3,14 @@
 
 # Dragonfly
 
-Dragonfly is a heavily asynchronous server software for Minecraft Bedrock Edition written in Go. It was written with scalability
+Dragonfly is a heavily asynchronous server software for Minecraft: Bedrock Edition written in Go. It was written with scalability
 and simplicity in mind and aims to make the process of setting up a server and modifying it easy. Unlike other
 Minecraft server software, Dragonfly is generally used as a library to extend.
 
 [![Discord Banner 2](https://discordapp.com/api/guilds/623638955262345216/widget.png?style=banner2)](https://discord.gg/U4kFWHhTNR)
 
 ## Getting started
-Running Dragonfly requires at least **Go 1.18**. After starting the server through one of the methods below,
+Running Dragonfly requires at least **Go 1.21**. After starting the server through one of the methods below,
 **ctrl+c** may be used to shut down the server. Also check out the [wiki](https://github.com/df-mc/dragonfly/wiki) for
 more detailed info.
 
@@ -38,7 +38,8 @@ Dragonfly features a well-documented codebase with an easy-to-use API. Documenta
 [here](https://pkg.go.dev/github.com/df-mc/dragonfly/server) and in the subpackages found by clicking *Directories*.
 
 Publishing your project on GitHub? Consider adding the **[#df-mc](https://github.com/topic/df-mc)** topic to your
-repository to improve visibility of your project.
+repository and opening a pull request at [df-wiki](https://github.com/df-mc/wiki) adding your project as a Community
+Project to improve its visibility.
 
 ## Contributing
 Contributions are very welcome! Issues, pull requests and feature requests are highly appreciated. Opening a pull

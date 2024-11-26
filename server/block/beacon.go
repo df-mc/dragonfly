@@ -16,6 +16,7 @@ type Beacon struct {
 	solid
 	transparent
 	clicksAndSticks
+	sourceWaterDisplacer
 
 	// Primary and Secondary are the primary and secondary effects broadcast to nearby entities by the
 	// beacon.
@@ -38,9 +39,9 @@ func (b Beacon) BreakInfo() BreakInfo {
 }
 
 // Activate manages the opening of a beacon by activating it.
-func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (b Beacon) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return true
@@ -48,11 +49,11 @@ func (b Beacon) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User)
 
 // DecodeNBT ...
 func (b Beacon) DecodeNBT(data map[string]any) any {
-	b.level = int(nbtconv.Map[int32](data, "Levels"))
-	if primary, ok := effect.ByID(int(nbtconv.Map[int32](data, "Primary"))); ok {
+	b.level = int(nbtconv.Int32(data, "Levels"))
+	if primary, ok := effect.ByID(int(nbtconv.Int32(data, "Primary"))); ok {
 		b.Primary = primary.(effect.LastingType)
 	}
-	if secondary, ok := effect.ByID(int(nbtconv.Map[int32](data, "Secondary"))); ok {
+	if secondary, ok := effect.ByID(int(nbtconv.Int32(data, "Secondary"))); ok {
 		b.Secondary = secondary.(effect.LastingType)
 	}
 	return b
@@ -73,14 +74,8 @@ func (b Beacon) EncodeNBT() map[string]any {
 	return m
 }
 
-// CanDisplace ...
-func (b Beacon) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
-}
-
 // SideClosed ...
-func (b Beacon) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (b Beacon) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -96,32 +91,32 @@ func (b Beacon) Level() int {
 
 // Tick recalculates level, recalculates the active state of the beacon, and powers players,
 // once every 80 ticks (4 seconds).
-func (b Beacon) Tick(currentTick int64, pos cube.Pos, w *world.World) {
+func (b Beacon) Tick(currentTick int64, pos cube.Pos, tx *world.Tx) {
 	if currentTick%80 == 0 {
 		before := b.level
 		// Recalculating pyramid level and powering up players in range once every 4 seconds.
-		b.level = b.recalculateLevel(pos, w)
+		b.level = b.recalculateLevel(pos, tx)
 		if before != b.level {
-			w.SetBlock(pos, b, nil)
+			tx.SetBlock(pos, b, nil)
 		}
 		if b.level == 0 {
 			return
 		}
-		if !b.obstructed(pos, w) {
-			b.broadcastBeaconEffects(pos, w)
+		if !b.obstructed(pos, tx) {
+			b.broadcastBeaconEffects(pos, tx)
 		}
 	}
 }
 
 // recalculateLevel recalculates the level of the beacon's pyramid and returns it. The level can be 0-4.
-func (b Beacon) recalculateLevel(pos cube.Pos, w *world.World) int {
+func (b Beacon) recalculateLevel(pos cube.Pos, tx *world.Tx) int {
 	var lvl int
 	iter := 1
 	// This loop goes over all 4 possible pyramid levels.
 	for y := pos.Y() - 1; y >= pos.Y()-4; y-- {
 		for x := pos.X() - iter; x <= pos.X()+iter; x++ {
 			for z := pos.Z() - iter; z <= pos.Z()+iter; z++ {
-				if s, ok := w.Block(cube.Pos{x, y, z}).(BeaconSource); !ok || !s.PowersBeacon() {
+				if s, ok := tx.Block(cube.Pos{x, y, z}).(BeaconSource); !ok || !s.PowersBeacon() {
 					return lvl
 				}
 			}
@@ -133,19 +128,19 @@ func (b Beacon) recalculateLevel(pos cube.Pos, w *world.World) int {
 }
 
 // obstructed determines whether the beacon is currently obstructed.
-func (b Beacon) obstructed(pos cube.Pos, w *world.World) bool {
+func (b Beacon) obstructed(pos cube.Pos, tx *world.Tx) bool {
 	// Fast obstructed light calculation.
-	if w.SkyLight(pos.Side(cube.FaceUp)) == 15 {
+	if tx.SkyLight(pos.Side(cube.FaceUp)) == 15 {
 		return false
 	}
 	// Slow obstructed light calculation, if the fast way out didn't suffice.
-	return w.HighestLightBlocker(pos.X(), pos.Z()) > pos[1]
+	return tx.HighestLightBlocker(pos.X(), pos.Z()) > pos[1]
 }
 
 // broadcastBeaconEffects determines the entities in range which could receive the beacon's powers, and
 // determines the powers (effects) that these entities could get. Afterwards, the entities in range that are
 // beaconAffected get their according effect(s).
-func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
+func (b Beacon) broadcastBeaconEffects(pos cube.Pos, tx *world.Tx) {
 	seconds := 9 + b.level*2
 	if b.level == 4 {
 		seconds--
@@ -189,11 +184,11 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, w *world.World) {
 
 	// Finding entities in range.
 	r := 10 + (b.level * 10)
-	entitiesInRange := w.EntitiesWithin(cube.Box(
+	entitiesInRange := tx.EntitiesWithin(cube.Box(
 		float64(pos.X()-r), -math.MaxFloat64, float64(pos.Z()-r),
 		float64(pos.X()+r), math.MaxFloat64, float64(pos.Z()+r),
-	), nil)
-	for _, e := range entitiesInRange {
+	))
+	for e := range entitiesInRange {
 		if p, ok := e.(beaconAffected); ok {
 			if primaryEff.Type() != nil {
 				p.AddEffect(primaryEff)

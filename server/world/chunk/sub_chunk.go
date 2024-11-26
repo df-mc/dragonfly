@@ -9,6 +9,21 @@ type SubChunk struct {
 	skyLight   []uint8
 }
 
+// Equals returns if the sub chunk passed is equal to the current one.
+func (sub *SubChunk) Equals(s *SubChunk) bool {
+	if s.air != sub.air || len(s.storages) != len(sub.storages) {
+		return false
+	}
+
+	for i, st := range s.storages {
+		if !st.Equal(sub.storages[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // NewSubChunk creates a new sub chunk. All sub chunks should be created through this function
 func NewSubChunk(air uint32) *SubChunk {
 	return &SubChunk{air: air}
@@ -66,7 +81,6 @@ func (sub *SubChunk) SetBlockLight(x, y, z byte, level uint8) {
 // BlockLight returns the block light value at a specific value at a specific position in the sub chunk.
 func (sub *SubChunk) BlockLight(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
-
 	return (sub.blockLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 
@@ -86,7 +100,6 @@ func (sub *SubChunk) SetSkyLight(x, y, z byte, level uint8) {
 // SkyLight returns the skylight value at a specific value at a specific position in the sub chunk.
 func (sub *SubChunk) SkyLight(x, y, z byte) uint8 {
 	index := (uint16(x) << 8) | (uint16(z) << 4) | uint16(y)
-
 	return (sub.skyLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 

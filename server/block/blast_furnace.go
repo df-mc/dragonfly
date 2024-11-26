@@ -20,13 +20,13 @@ type BlastFurnace struct {
 	*smelter
 
 	// Facing is the direction the blast furnace is facing.
-	Facing cube.Face
+	Facing cube.Direction
 	// Lit is true if the blast furnace is lit.
 	Lit bool
 }
 
 // NewBlastFurnace creates a new initialised blast furnace. The smelter is properly initialised.
-func NewBlastFurnace(face cube.Face) BlastFurnace {
+func NewBlastFurnace(face cube.Direction) BlastFurnace {
 	return BlastFurnace{
 		Facing:  face,
 		smelter: newSmelter(),
@@ -34,15 +34,15 @@ func NewBlastFurnace(face cube.Face) BlastFurnace {
 }
 
 // Tick is called to check if the blast furnace should update and start or stop smelting.
-func (b BlastFurnace) Tick(_ int64, pos cube.Pos, w *world.World) {
+func (b BlastFurnace) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	if b.Lit && rand.Float64() <= 0.016 { // Every three or so seconds.
-		w.PlaySound(pos.Vec3Centre(), sound.BlastFurnaceCrackle{})
+		tx.PlaySound(pos.Vec3Centre(), sound.BlastFurnaceCrackle{})
 	}
 	if lit := b.smelter.tickSmelting(time.Second*5, time.Millisecond*200, b.Lit, func(i item.SmeltInfo) bool {
 		return i.Ores
 	}); b.Lit != lit {
 		b.Lit = lit
-		w.SetBlock(pos, b, nil)
+		tx.SetBlock(pos, b, nil)
 	}
 }
 
@@ -54,32 +54,36 @@ func (b BlastFurnace) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (b BlastFurnace) EncodeBlock() (name string, properties map[string]interface{}) {
 	if b.Lit {
-		return "minecraft:lit_blast_furnace", map[string]interface{}{"facing_direction": int32(b.Facing)}
+		return "minecraft:lit_blast_furnace", map[string]interface{}{"minecraft:cardinal_direction": b.Facing.String()}
 	}
-	return "minecraft:blast_furnace", map[string]interface{}{"facing_direction": int32(b.Facing)}
+	return "minecraft:blast_furnace", map[string]interface{}{"minecraft:cardinal_direction": b.Facing.String()}
 }
 
 // UseOnBlock ...
-func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, b)
+func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, b)
 	if !used {
 		return false
 	}
 
-	place(w, pos, NewBlastFurnace(user.Facing().Face().Opposite()), user, ctx)
+	place(tx, pos, NewBlastFurnace(user.Rotation().Direction().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (b BlastFurnace) BreakInfo() BreakInfo {
 	xp := b.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, simpleDrops(append(b.inventory.Items(), item.NewStack(b, 1))...)).withXPDropRange(xp, xp)
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		for _, i := range b.Inventory(tx, pos).Clear() {
+			dropItem(tx, i, pos.Vec3())
+		}
+	})
 }
 
 // Activate ...
-func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User) bool {
+func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false
@@ -97,18 +101,18 @@ func (b BlastFurnace) EncodeNBT() map[string]interface{} {
 		"CookTime":     int16(cook.Milliseconds() / 50),
 		"BurnDuration": int16(maximum.Milliseconds() / 50),
 		"StoredXPInt":  int16(b.Experience()),
-		"Items":        nbtconv.InvToNBT(b.Inventory()),
+		"Items":        nbtconv.InvToNBT(b.inventory),
 		"id":           "BlastFurnace",
 	}
 }
 
 // DecodeNBT ...
 func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
-	remaining := time.Duration(nbtconv.Map[int16](data, "BurnTime")) * time.Millisecond * 50
-	maximum := time.Duration(nbtconv.Map[int16](data, "BurnDuration")) * time.Millisecond * 50
-	cook := time.Duration(nbtconv.Map[int16](data, "CookTime")) * time.Millisecond * 50
+	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
+	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
+	cook := nbtconv.TickDuration[int16](data, "CookTime")
 
-	xp := int(nbtconv.Map[int16](data, "StoredXPInt"))
+	xp := int(nbtconv.Int16(data, "StoredXPInt"))
 	lit := b.Lit
 
 	//noinspection GoAssignmentToReceiver
@@ -116,13 +120,13 @@ func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
 	b.Lit = lit
 	b.setExperience(xp)
 	b.setDurations(remaining, maximum, cook)
-	nbtconv.InvFromNBT(b.Inventory(), nbtconv.Map[[]any](data, "Items"))
+	nbtconv.InvFromNBT(b.inventory, nbtconv.Slice(data, "Items"))
 	return b
 }
 
 // allBlastFurnaces ...
 func allBlastFurnaces() (furnaces []world.Block) {
-	for _, face := range cube.Faces() {
+	for _, face := range cube.Directions() {
 		furnaces = append(furnaces, BlastFurnace{Facing: face})
 		furnaces = append(furnaces, BlastFurnace{Facing: face, Lit: true})
 	}
