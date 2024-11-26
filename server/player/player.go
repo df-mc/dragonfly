@@ -2805,7 +2805,6 @@ func (p *Player) quit(msg string) {
 	p.h = NopHandler{}
 
 	if s := p.s; s != nil {
-		p.s = nil
 		s.Disconnect(msg)
 		s.CloseConnection()
 		return
@@ -2929,7 +2928,6 @@ func (p *Player) broadcastArmour(_ int, before, after item.Stack) {
 func (p *Player) viewers() []world.Viewer {
 	viewers := p.tx.Viewers(p.Position())
 	var s world.Viewer = p.session()
-
 	if slices.Index(viewers, s) == -1 {
 		return append(viewers, s)
 	}

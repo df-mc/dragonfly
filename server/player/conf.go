@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// Config holds options that a Player can be created with.
 type Config struct {
 	Session  *session.Session
 	Skin     skin.Skin
@@ -46,6 +47,8 @@ type Config struct {
 	Effects                []effect.Effect
 }
 
+// Apply applies fields from a Config to a world.EntityData, filling out empty
+// fields with reasonable defaults.
 func (cfg Config) Apply(data *world.EntityData) {
 	conf := fillDefaults(cfg)
 
@@ -85,6 +88,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 	data.Data = pdata
 }
 
+// fillDefaults fills empty fields in a Config with reasonable default values.
 func fillDefaults(conf Config) Config {
 	if (conf.Locale == language.Tag{}) {
 		conf.Locale = language.BritishEnglish
