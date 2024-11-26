@@ -242,7 +242,6 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) close(tx *world.Tx, c Controllable) {
-	_ = c.Close()
 	s.conf.HandleStop(tx, c)
 
 	c.MoveItemsToInventory()
@@ -302,8 +301,15 @@ func (s *Session) ClientData() login.ClientData {
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
 	defer func() {
+		// First close the Controllable. This might lead to a world change
+		// (player might be dead while disconnecting, in which case it will
+		// respawn first).
 		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			// Close the session.
+			_ = e.(Controllable).Close()
+		})
+		// Because the player might no longer be in the same world after
+		// closing, we create a new transaction
+		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
 			s.Close(tx, e.(Controllable))
 		})
 	}()
