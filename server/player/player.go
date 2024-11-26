@@ -1233,31 +1233,32 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 
 // SetHeldSlot updates the held slot of the player to the slot provided. The
 // slot must be between 0 and 8.
-func (p *Player) SetHeldSlot(slot int) error {
+func (p *Player) SetHeldSlot(to int) error {
 	// The slot that the player might have selected must be within the hotbar:
 	// The held item cannot be in a different place in the inventory.
-	if slot < 0 || slot > 8 {
-		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+	if to < 0 || to > 8 {
+		return fmt.Errorf("held slot exceeds hotbar range 0-8: slot is %v", to)
 	}
-	if *p.heldSlot == uint32(slot) {
+	from := int(*p.heldSlot)
+	if from == to {
 		// Old slot was the same as new slot, so don't do anything.
 		return nil
 	}
 
 	ctx := event.C(p)
-	p.Handler().HandleHeldSlotChange(ctx, slot)
+	p.Handler().HandleHeldSlotChange(ctx, from, to)
 	if ctx.Cancelled() {
 		// The slot change was cancelled, resend held slot.
-		p.session().SendHeldSlot(int(*p.heldSlot), p, true)
+		p.session().SendHeldSlot(from, p, true)
 		return nil
 	}
-	*p.heldSlot = uint32(slot)
+	*p.heldSlot = uint32(to)
 	p.usingItem = false
 
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
 	}
-	p.session().SendHeldSlot(slot, p, false)
+	p.session().SendHeldSlot(to, p, false)
 	return nil
 }
 
