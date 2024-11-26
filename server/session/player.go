@@ -621,6 +621,9 @@ func (s *Session) SendHeldSlot(slot int, c Controllable, force bool) {
 	})
 }
 
+// VerifyAndSetHeldSlot verifies if the slot passed is a valid hotbar slot and
+// if the expected item.Stack is in it. Afterwards, it changes the held slot
+// of the player.
 func (s *Session) VerifyAndSetHeldSlot(slot int, expected item.Stack, c Controllable) error {
 	if err := s.VerifySlot(slot, expected); err != nil {
 		return err
@@ -630,21 +633,22 @@ func (s *Session) VerifyAndSetHeldSlot(slot int, expected item.Stack, c Controll
 	return c.SetHeldSlot(slot)
 }
 
-// VerifySlot updates the held slot of the Session to the slot passed. It also verifies that the item in that slot
-// matches an expected item stack.
+// VerifySlot verifies if the slot passed is a valid hotbar slot and if the
+// expected item.Stack is in it.
 func (s *Session) VerifySlot(slot int, expected item.Stack) error {
-	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
-	// different place in the inventory.
+	// The slot that the player might have selected must be within the hotbar:
+	// The held item cannot be in a different place in the inventory.
 	if slot < 0 || slot > 8 {
 		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
 
-	// The item the client claims to have must be identical to the one we have registered server-side.
+	// The item the client claims to have must be identical to the one we have
+	// registered server-side.
 	if !clientSideItem.Equal(actual) {
-		// Only ever debug these as they are frequent and expected to happen whenever client and server get
-		// out of sync.
+		// Only ever debug these as they are frequent and expected to happen
+		// whenever client and server get out of sync.
 		s.conf.Log.Debug("verify slot: client-side item was not equal to server-side item", "client-held", clientSideItem.String(), "server-held", actual.String())
 	}
 	return nil
