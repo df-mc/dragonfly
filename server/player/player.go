@@ -536,8 +536,6 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		if damageLeft = damageLeft - p.lastDamage; damageLeft <= 0 {
 			return 0, false
 		}
-	} else {
-		p.lastDamage = 0
 	}
 
 	immunity := time.Second / 2
@@ -545,7 +543,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	if p.Handler().HandleHurt(ctx, &damageLeft, &immunity, src); ctx.Cancelled() {
 		return 0, false
 	}
-	p.setAttackImmunity(immunity, p.lastDamage+damageLeft)
+	p.setAttackImmunity(immunity, totalDamage)
 
 	if a := p.Absorption(); a > 0 {
 		p.SetAbsorption(a - damageLeft)
