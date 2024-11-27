@@ -1397,13 +1397,17 @@ func (p *Player) ReleaseItem() {
 	}
 	p.usingItem = false
 
-	useCtx := p.useContext()
+	useCtx, dur := p.useContext(), p.useDuration()
 	i, _ := p.HeldItems()
 	switch it := i.Item().(type) {
 	case item.Releasable:
-		it.Release(p, p.tx, useCtx, p.useDuration())
+		ctx := event.C(p)
+		if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
+			return
+		}
+		it.Release(p, p.tx, useCtx, dur)
 	case item.Consumable:
-		if duration := p.useDuration(); duration < it.ConsumeDuration() {
+		if dur < it.ConsumeDuration() {
 			// The required duration for consuming this item was not met, so we don't consume it.
 			return
 		}

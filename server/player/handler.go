@@ -95,6 +95,9 @@ type Handler interface {
 	// the item actually does anything when used on an entity. It is also called if the player is holding no
 	// item.
 	HandleItemUseOnEntity(ctx *Context, e world.Entity)
+	// HandleItemRelease handles the player releasing an item after using it for
+	// a particular duration. These include items such as bows.
+	HandleItemRelease(ctx *Context, item item.Stack, dur time.Duration)
 	// HandleItemConsume handles the player consuming an item. This is called whenever a consumable such as
 	// food is consumed.
 	HandleItemConsume(ctx *Context, item item.Stack)
@@ -182,6 +185,7 @@ func (NopHandler) HandleItemPickup(*Context, *item.Stack)                       
 func (NopHandler) HandleItemUse(*Context)                                                  {}
 func (NopHandler) HandleItemUseOnBlock(*Context, cube.Pos, cube.Face, mgl64.Vec3)          {}
 func (NopHandler) HandleItemUseOnEntity(*Context, world.Entity)                            {}
+func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Duration)      {}
 func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
 func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                              {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
