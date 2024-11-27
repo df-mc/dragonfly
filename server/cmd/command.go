@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"go/ast"
 	"reflect"
+	"slices"
 	"strings"
 )
 
@@ -51,25 +52,23 @@ type Command struct {
 	aliases     []string
 }
 
-// New returns a new Command using the name and description passed. The Runnable passed must be a
-// (pointer to a) struct, with its fields representing the parameters of the command.
-// When the command is run, the Run method of the Runnable will be called, after all fields have their values
-// from the parsed command set.
-// If r is not a struct or a pointer to a struct, New panics.
+// New returns a new Command using the name and description passed. Command
+// names and aliases are all converted to lowercase. The Runnable passed must
+// be a (pointer to a) struct, with its fields representing the parameters of
+// the command. When the command is run, the Run method of the Runnable will be
+// called after all fields have their values from the parsed command set. If r
+// is not a struct or a pointer to a struct, New panics.
 func New(name, description string, aliases []string, r ...Runnable) Command {
+	name = strings.ToLower(name)
+	for i, alias := range aliases {
+		aliases[i] = strings.ToLower(alias)
+	}
+
 	usages := make([]string, len(r))
 	runnableValues := make([]reflect.Value, len(r))
 
-	if len(aliases) > 0 {
-		namePresent := false
-		for _, alias := range aliases {
-			if alias == name {
-				namePresent = true
-			}
-		}
-		if !namePresent {
-			aliases = append(aliases, name)
-		}
+	if len(aliases) > 0 && slices.Index(aliases, name) != -1 {
+		aliases = append(aliases, name)
 	}
 
 	for i, runnable := range r {
