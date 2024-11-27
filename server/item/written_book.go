@@ -14,11 +14,6 @@ type WrittenBook struct {
 	Pages []string
 }
 
-// MaxCount always returns 1.
-func (WrittenBook) MaxCount() int {
-	return 1
-}
-
 // TotalPages returns the total number of pages in the book.
 func (w WrittenBook) TotalPages() int {
 	return len(w.Pages)
