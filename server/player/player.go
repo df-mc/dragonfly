@@ -72,8 +72,10 @@ type playerData struct {
 	experience *entity.ExperienceManager
 	effects    *entity.EffectManager
 
-	lastXPPickup  *time.Time
-	immunityTicks int64
+	lastXPPickup *time.Time
+
+	lastDamage  float64
+	immuneUntil time.Time
 
 	deathPos       *mgl64.Vec3
 	deathDimension world.Dimension
@@ -525,30 +527,29 @@ func (p *Player) fall(distance float64) {
 // final damage dealt to the Player and if the Player was vulnerable to this
 // kind of damage.
 func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
-	if _, ok := p.Effect(effect.FireResistance{}); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() {
+	if _, ok := p.Effect(effect.FireResistance{}); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() || dmg < 0 {
 		return 0, false
 	}
-	immunity := time.Second / 2
-	ctx := event.C(p)
-	if p.Handler().HandleHurt(ctx, &dmg, &immunity, src); ctx.Cancelled() {
-		return 0, false
-	}
-	if dmg < 0 {
-		return 0, true
-	}
-
 	totalDamage := p.FinalDamageFrom(dmg, src)
 	damageLeft := totalDamage
 
-	if a := p.Absorption(); a > 0 {
-		if damageLeft > a {
-			p.SetAbsorption(0)
-			damageLeft -= a
-		} else {
-			p.SetAbsorption(a - damageLeft)
-
-			damageLeft = 0
+	immune := time.Now().Before(p.immuneUntil)
+	if immune {
+		if damageLeft = damageLeft - p.lastDamage; damageLeft <= 0 {
+			return 0, false
 		}
+	}
+
+	immunity := time.Second / 2
+	ctx := event.C(p)
+	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
+		return 0, false
+	}
+	p.setAttackImmunity(immunity, totalDamage)
+
+	if a := p.Absorption(); a > 0 {
+		p.SetAbsorption(a - damageLeft)
+		damageLeft = max(0, damageLeft-a)
 	}
 
 	if p.Health()-damageLeft <= mgl64.Epsilon {
@@ -569,6 +570,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	if src.ReducedByArmour() {
 		p.Exhaust(0.1)
 		p.Armour().Damage(dmg, p.damageItem)
+
 		var origin world.Entity
 		if s, ok := src.(entity.AttackDamageSource); ok {
 			origin = s.Attacker
@@ -576,8 +578,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 			origin = s.Owner
 		}
 		if l, ok := origin.(entity.Living); ok {
-			thornsDmg := p.Armour().ThornsDamage(p.damageItem)
-			if thornsDmg > 0 {
+			if thornsDmg := p.Armour().ThornsDamage(p.damageItem); thornsDmg > 0 {
 				l.Hurt(thornsDmg, enchantment.ThornsDamageSource{Owner: p})
 			}
 		}
@@ -593,7 +594,6 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		p.tx.PlaySound(pos, sound.Drowning{})
 	}
 
-	p.SetAttackImmunity(immunity)
 	if p.Dead() {
 		p.kill(src)
 	}
@@ -624,7 +624,7 @@ func (p *Player) applyTotemEffects() {
 // enchantments on the individual pieces.
 // The damage returned will be at the least 0.
 func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
-	dmg = math.Max(dmg, 0)
+	dmg = max(dmg, 0)
 
 	dmg -= p.Armour().DamageReduction(dmg, src)
 	if res, ok := p.Effect(effect.Resistance{}); ok {
@@ -644,7 +644,7 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 // actually increase the maximum health. Once the hearts are lost, they will not regenerate.
 // Nothing happens if a negative number is passed.
 func (p *Player) SetAbsorption(health float64) {
-	p.absorptionHealth = math.Max(health, 0)
+	p.absorptionHealth = max(health, 0)
 	p.session().SendHealth(p.Health(), p.MaxHealth(), p.absorptionHealth)
 }
 
@@ -677,19 +677,10 @@ func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
 	p.SetVelocity(velocity.Mul(1 - p.Armour().KnockBackResistance()))
 }
 
-// AttackImmune checks if the player is currently immune to entity attacks, meaning it was recently attacked.
-func (p *Player) AttackImmune() bool {
-	return p.immunityTicks > 0
-}
-
-// AttackImmunity returns the duration the player is immune to entity attacks.
-func (p *Player) AttackImmunity() time.Duration {
-	return time.Duration(p.immunityTicks) * time.Second / 20
-}
-
-// SetAttackImmunity sets the duration the player is immune to entity attacks.
-func (p *Player) SetAttackImmunity(d time.Duration) {
-	p.immunityTicks = d.Milliseconds() / 50
+// setAttackImmunity sets the duration the player is immune to entity attacks.
+func (p *Player) setAttackImmunity(d time.Duration, dmg float64) {
+	p.immuneUntil = time.Now().Add(d)
+	p.lastDamage = dmg
 }
 
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
@@ -1590,9 +1581,6 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	if !ok {
 		return false
 	}
-	if living.AttackImmune() {
-		return true
-	}
 
 	dmg := i.AttackDamage()
 	if strength, ok := p.Effect(effect.Strength{}); ok {
@@ -2029,7 +2017,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 			p.fallDistance = 1.0
 		}
 		if p.collidedHorizontally {
-			if force := horizontalVel.Len()*10.0 - 3.0; force > 0.0 && !p.AttackImmune() {
+			if force := horizontalVel.Len()*10.0 - 3.0; force > 0.0 {
 				p.tx.PlaySound(p.Position(), sound.Fall{Distance: force})
 				p.Hurt(force, entity.GlideDamageSource{})
 			}
@@ -2301,11 +2289,11 @@ func (p *Player) Tick(_ *world.Tx, current int64) {
 
 	p.tickFood()
 	p.tickAirSupply()
-	p.immunityTicks = max(p.immunityTicks-1, 0)
+
 	if p.Position()[1] < float64(p.tx.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
 		p.Hurt(4, entity.VoidDamageSource{})
 	}
-	if !p.AttackImmune() && p.insideOfSolid() {
+	if p.insideOfSolid() {
 		p.Hurt(1, entity.SuffocationDamageSource{})
 	}
 
@@ -2314,7 +2302,7 @@ func (p *Player) Tick(_ *world.Tx, current int64) {
 		if !p.GameMode().AllowsTakingDamage() || p.OnFireDuration() <= 0 || p.tx.RainingAt(cube.PosFromVec3(p.Position())) {
 			p.Extinguish()
 		}
-		if p.OnFireDuration()%time.Second == 0 && !p.AttackImmune() {
+		if p.OnFireDuration()%time.Second == 0 {
 			p.Hurt(1, block.FireDamageSource{})
 		}
 	}
@@ -2354,9 +2342,7 @@ func (p *Player) tickAirSupply() {
 		}
 		if p.airSupplyTicks -= 1; p.airSupplyTicks <= -20 {
 			p.airSupplyTicks = 0
-			if !p.AttackImmune() {
-				p.Hurt(2, entity.DrowningDamageSource{})
-			}
+			p.Hurt(2, entity.DrowningDamageSource{})
 		}
 		p.breathing = false
 		p.updateState()

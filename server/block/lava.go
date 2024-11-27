@@ -41,7 +41,7 @@ func (l Lava) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 		fallEntity.ResetFallDistance()
 	}
 	if flammable, ok := e.(flammableEntity); ok {
-		if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+		if l, ok := e.(livingEntity); ok {
 			l.Hurt(4, LavaDamageSource{})
 		}
 		flammable.SetOnFire(15 * time.Second)

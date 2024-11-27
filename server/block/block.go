@@ -248,9 +248,6 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 
 // livingEntity ...
 type livingEntity interface {
-	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
-	// immune for half a second after being attacked.
-	AttackImmune() bool
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
 	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the entity currently has, the entity is killed.
