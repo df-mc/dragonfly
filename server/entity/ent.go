@@ -27,6 +27,11 @@ type Ent struct {
 	once   sync.Once
 }
 
+// Open converts a world.EntityHandle to an Ent in a world.Tx.
+func Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) *Ent {
+	return &Ent{tx: tx, handle: handle, data: data}
+}
+
 func (e *Ent) H() *world.EntityHandle {
 	return e.handle
 }
