@@ -647,6 +647,7 @@ func (s *Session) VerifySlot(slot int, expected item.Stack) error {
 	// The item the client claims to have must be identical to the one we have
 	// registered server-side.
 	if !clientSideItem.Equal(actual) {
+		s.sendItem(actual, slot, protocol.WindowIDInventory)
 		// Only ever debug these as they are frequent and expected to happen
 		// whenever client and server get out of sync.
 		s.conf.Log.Debug("verify slot: client-side item was not equal to server-side item", "client-held", clientSideItem.String(), "server-held", actual.String())
