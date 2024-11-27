@@ -191,7 +191,7 @@ func (f Fire) spread(from, to cube.Pos, tx *world.Tx, r *rand.Rand) {
 // EntityInside ...
 func (f Fire) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if flammable, ok := e.(flammableEntity); ok {
-		if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+		if l, ok := e.(livingEntity); ok {
 			l.Hurt(f.Type.Damage(), FireDamageSource{})
 		}
 		if flammable.OnFireDuration() < time.Second*8 {

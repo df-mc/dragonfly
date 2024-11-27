@@ -48,6 +48,7 @@ type Handler interface {
 	// HandleHurt handles the player being hurt by any damage source. ctx.Cancel() may be called to cancel the
 	// damage being dealt to the player.
 	// The damage dealt to the player may be changed by assigning to *damage.
+	// *damage is the final damage dealt to the player.
 	HandleHurt(ctx *Context, damage *float64, attackImmunity *time.Duration, src world.DamageSource)
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(p *Player, src world.DamageSource, keepInv *bool)

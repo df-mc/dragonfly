@@ -214,7 +214,7 @@ func (c Campfire) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 			tx.SetBlock(pos, c, nil)
 		}
 		if !c.Extinguished {
-			if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+			if l, ok := e.(livingEntity); ok {
 				l.Hurt(c.Type.Damage(), FireDamageSource{})
 			}
 		}

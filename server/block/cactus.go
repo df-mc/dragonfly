@@ -76,7 +76,7 @@ func (c Cactus) canGrowHere(pos cube.Pos, tx *world.Tx, recursive bool) bool {
 
 // EntityInside ...
 func (c Cactus) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
-	if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+	if l, ok := e.(livingEntity); ok {
 		l.Hurt(0.5, DamageSource{Block: c})
 	}
 }
