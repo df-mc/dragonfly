@@ -67,7 +67,7 @@ func New(name, description string, aliases []string, r ...Runnable) Command {
 	usages := make([]string, len(r))
 	runnableValues := make([]reflect.Value, len(r))
 
-	if len(aliases) > 0 && slices.Index(aliases, name) != -1 {
+	if len(aliases) > 0 && slices.Index(aliases, name) == -1 {
 		aliases = append(aliases, name)
 	}
 
