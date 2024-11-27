@@ -532,7 +532,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	}
 	totalDamage := p.FinalDamageFrom(dmg, src)
 	damageLeft := totalDamage
-	if p.immuneUntil.Before(time.Now()) {
+	if time.Now().Before(p.immuneUntil) {
 		if damageLeft = damageLeft - p.lastDamage; damageLeft <= 0 {
 			return 0, false
 		}
