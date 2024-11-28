@@ -108,6 +108,9 @@ func (s Skull) EncodeNBT() map[string]interface{} {
 // EncodeBlock ...
 func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 	if s.Attach.hanging {
+		if s.Attach.facing == unknownDirection {
+			return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(0)}
+		}
 		return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}
 	}
 	return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(1)}
@@ -116,7 +119,7 @@ func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 // allSkulls ...
 func allSkulls() (skulls []world.Block) {
 	for _, t := range SkullTypes() {
-		for _, d := range cube.Directions() {
+		for _, d := range append(cube.Directions(), unknownDirection) {
 			skulls = append(skulls, Skull{Type: t, Attach: WallAttachment(d)})
 		}
 		skulls = append(skulls, Skull{Type: t, Attach: StandingAttachment(0)})

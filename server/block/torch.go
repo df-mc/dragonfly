@@ -90,10 +90,15 @@ func (t Torch) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (t Torch) EncodeBlock() (name string, properties map[string]any) {
-	face := t.Facing.String()
+	var face string
 	if t.Facing == cube.FaceDown {
 		face = "top"
+	} else if t.Facing == unknownFace {
+		face = "unknown"
+	} else {
+		face = t.Facing.String()
 	}
+
 	switch t.Type {
 	case NormalFire():
 		return "minecraft:torch", map[string]any{"torch_facing_direction": face}
@@ -105,12 +110,12 @@ func (t Torch) EncodeBlock() (name string, properties map[string]any) {
 
 // allTorches ...
 func allTorches() (torch []world.Block) {
-	for i := cube.Face(0); i < 6; i++ {
-		if i == cube.FaceUp {
-			continue
+	for _, face := range cube.Faces() {
+		if face == cube.FaceUp {
+			face = unknownFace
 		}
-		torch = append(torch, Torch{Type: NormalFire(), Facing: i})
-		torch = append(torch, Torch{Type: SoulFire(), Facing: i})
+		torch = append(torch, Torch{Type: NormalFire(), Facing: face})
+		torch = append(torch, Torch{Type: SoulFire(), Facing: face})
 	}
 	return
 }
