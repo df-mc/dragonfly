@@ -81,15 +81,15 @@ func (s Sign) BreakInfo() BreakInfo {
 // Dye dyes the Sign, changing its base colour to that of the colour passed.
 func (s Sign) Dye(pos cube.Pos, userPos mgl64.Vec3, c item.Colour) (world.Block, bool) {
 	if s.EditingFrontSide(pos, userPos) {
-		if s.Front.BaseColour == c.RGBA() {
+		if s.Front.BaseColour == c.SignRGBA() {
 			return s, false
 		}
-		s.Front.BaseColour = c.RGBA()
+		s.Front.BaseColour = c.SignRGBA()
 	} else {
-		if s.Back.BaseColour == c.RGBA() {
+		if s.Back.BaseColour == c.SignRGBA() {
 			return s, false
 		}
-		s.Back.BaseColour = c.RGBA()
+		s.Back.BaseColour = c.SignRGBA()
 	}
 	return s, true
 }
