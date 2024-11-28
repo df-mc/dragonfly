@@ -188,7 +188,7 @@ func (srv *Server) MaxPlayerCount() int {
 // passed. Passing nil is otherwise valid. Players returned are only valid
 // within the block of the for loop used to iterate over them:
 //
-//	for p := range srv.Players() {
+//	for p := range srv.Players(nil) {
 //	  // p is valid here
 //	  go func() {
 //	    // p is no longer valid here
