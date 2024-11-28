@@ -49,8 +49,8 @@ type Viewer interface {
 	// ViewEntityState views the current state of an Entity. It is called whenever an Entity changes its
 	// physical appearance, for example when sprinting.
 	ViewEntityState(e Entity)
-	// ViewEntityAnimation starts viewing an animation performed by an Entity. The animation has to be from a resource pack.
-	ViewEntityAnimation(e Entity, animationName string)
+	// ViewEntityAnimation starts viewing an animation performed by an Entity.
+	ViewEntityAnimation(e Entity, a EntityAnimation)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
 	ViewParticle(pos mgl64.Vec3, p Particle)
@@ -91,7 +91,7 @@ func (NopViewer) ViewEntityItems(Entity)                                        
 func (NopViewer) ViewEntityArmour(Entity)                                                    {}
 func (NopViewer) ViewEntityAction(Entity, EntityAction)                                      {}
 func (NopViewer) ViewEntityState(Entity)                                                     {}
-func (NopViewer) ViewEntityAnimation(Entity, string)                                         {}
+func (NopViewer) ViewEntityAnimation(Entity, EntityAnimation)                                {}
 func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                                          {}
 func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                                {}
 func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                                       {}

@@ -158,6 +158,14 @@ func (tx *Tx) AddParticle(pos mgl64.Vec3, p Particle) {
 	tx.World().addParticle(pos, p)
 }
 
+// PlayEntityAnimation plays an animation on an entity in the World. The animation is played for all viewers
+// of the entity.
+func (tx *Tx) PlayEntityAnimation(e Entity, a EntityAnimation) {
+	for _, viewer := range tx.World().viewersOf(e.Position()) {
+		viewer.ViewEntityAnimation(e, a)
+	}
+}
+
 // PlaySound plays a sound at a specific position in the World. Viewers of that
 // position will be able to hear the sound if they are close enough.
 func (tx *Tx) PlaySound(pos mgl64.Vec3, s Sound) {

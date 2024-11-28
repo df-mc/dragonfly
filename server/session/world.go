@@ -976,9 +976,12 @@ func (s *Session) ViewEntityState(e world.Entity) {
 }
 
 // ViewEntityAnimation ...
-func (s *Session) ViewEntityAnimation(e world.Entity, animationName string) {
+func (s *Session) ViewEntityAnimation(e world.Entity, a world.EntityAnimation) {
 	s.writePacket(&packet.AnimateEntity{
-		Animation: animationName,
+		Animation:     a.Name(),
+		NextState:     a.NextState(),
+		StopCondition: a.StopCondition(),
+		Controller:    a.Controller(),
 		EntityRuntimeIDs: []uint64{
 			s.entityRuntimeID(e),
 		},
