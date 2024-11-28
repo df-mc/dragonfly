@@ -25,6 +25,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	m[protocol.EntityDataKeyEffectColor] = int32(0)
 	m[protocol.EntityDataKeyEffectAmbience] = byte(0)
 	m[protocol.EntityDataKeyColorIndex] = byte(0)
+	m[protocol.EntityDataKeyHasNPC] = uint8(1)
 
 	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasGravity)
 	m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagClimb)
@@ -163,9 +164,6 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		}
 		m[protocol.EntityDataKeyVisibleMobEffects] = packedEffects
 	}
-	if d, ok := e.(dialogueProvider); ok {
-		m[protocol.EntityDataKeyHasNPC] = boolByte(d.CanShowDialogue())
-	}
 	if v, ok := e.(variable); ok {
 		m[protocol.EntityDataKeyVariant] = v.Variant()
 	}
@@ -281,8 +279,4 @@ type variable interface {
 
 type markVariable interface {
 	MarkVariant() int32
-}
-
-type dialogueProvider interface {
-	CanShowDialogue() bool
 }
