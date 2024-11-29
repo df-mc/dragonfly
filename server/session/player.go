@@ -374,6 +374,17 @@ func (s *Session) SendDialogue(d dialogue.Dialogue, e world.Entity) {
 	h.dialogue = d
 	h.entityRuntimeID = s.entityRuntimeID(e)
 
+	metadata := s.parseEntityMetadata(e)
+
+	disp := d.Display()
+	disp.EntityOffset = disp.EntityOffset.Add(entityOffset(e))
+	display, _ := json.Marshal(map[string]any{"portrait_offsets": disp})
+	metadata[protocol.EntityDataKeyNPCData] = string(display)
+
+	s.writePacket(&packet.SetActorData{
+		EntityRuntimeID: h.entityRuntimeID,
+		EntityMetadata:  metadata,
+	})
 	s.writePacket(&packet.NPCDialogue{
 		EntityUniqueID: h.entityRuntimeID,
 		ActionType:     packet.NPCDialogueActionOpen,

@@ -2,9 +2,11 @@ package dialogue
 
 import "encoding/json"
 
-// Button represents a button added to a dialogue menu and consists of just text.
+// Button represents a button added to a dialogue menu and consists of just
+// text.
 type Button struct {
-	// Text holds the text displayed on the button. It may use Minecraft formatting codes.
+	// Text holds the text displayed on the button. It may use Minecraft
+	// formatting codes.
 	Text string
 }
 
