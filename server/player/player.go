@@ -2953,8 +2953,8 @@ func (p *Player) broadcastArmour(_ int, before, after item.Stack) {
 func (p *Player) viewers() []world.Viewer {
 	viewers := p.tx.Viewers(p.Position())
 	var s world.Viewer = p.session()
-	if slices.Index(viewers, s) == -1 {
-		return append(viewers, s)
+	if slices.Index(viewers, s) == -1 && p.s != nil {
+		return append(viewers, p.s)
 	}
 	return viewers
 }

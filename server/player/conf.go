@@ -117,5 +117,8 @@ func fillDefaults(conf Config) Config {
 	if conf.MaxHealth == 0 {
 		conf.MaxHealth, conf.Health = 20, 20
 	}
+	if conf.GameMode == nil {
+		conf.GameMode = world.GameModeSurvival
+	}
 	return conf
 }
