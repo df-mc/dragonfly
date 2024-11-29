@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -65,8 +66,18 @@ func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 		if findLog(pos, tx, &[]cube.Pos{}, 0) {
 			l.ShouldUpdate = false
 			tx.SetBlock(pos, l, nil)
-		} else {
-			tx.SetBlock(pos, nil, nil)
+			return
+		}
+		ctx := event.C(tx)
+		if tx.World().Handler().HandleLeavesDecay(ctx, pos); ctx.Cancelled() {
+			// Prevent immediate re-updating.
+			l.ShouldUpdate = false
+			tx.SetBlock(pos, l, nil)
+			return
+		}
+		tx.SetBlock(pos, nil, nil)
+		for _, drop := range l.BreakInfo().Drops(item.ToolNone{}, nil) {
+			dropItem(tx, drop, pos.Vec3Centre())
 		}
 	}
 }
@@ -93,10 +104,13 @@ func (l Leaves) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(l, 1)}
 		}
 		var drops []item.Stack
+		// TODO: Drop saplings.
+		if rand.Float64() < 0.02 {
+			drops = append(drops, item.NewStack(item.Stick{}, rand.Intn(2)+1))
+		}
 		if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 0.005 {
 			drops = append(drops, item.NewStack(item.Apple{}, 1))
 		}
-		// TODO: Saplings and sticks can drop along with apples
 		return drops
 	})
 }
