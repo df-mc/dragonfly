@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -362,6 +363,49 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 			},
 		},
 	})
+}
+
+// SendDialogue sends an NPC dialogue to the client of the connection. The Submit method of the dialogue is
+// called when the client interacts with a button in the dialogue.
+func (s *Session) SendDialogue(d dialogue.Dialogue, e world.Entity) {
+	b, _ := json.Marshal(d)
+
+	h := s.handlers[packet.IDNPCRequest].(*NPCRequestHandler)
+	h.dialogue = d
+	h.entityRuntimeID = s.entityRuntimeID(e)
+
+	metadata := s.parseEntityMetadata(e)
+
+	disp := d.Display()
+	disp.EntityOffset = disp.EntityOffset.Add(entityOffset(e))
+	display, _ := json.Marshal(map[string]any{"portrait_offsets": disp})
+	metadata[protocol.EntityDataKeyNPCData] = string(display)
+
+	s.writePacket(&packet.SetActorData{
+		EntityRuntimeID: h.entityRuntimeID,
+		EntityMetadata:  metadata,
+	})
+	s.writePacket(&packet.NPCDialogue{
+		EntityUniqueID: h.entityRuntimeID,
+		ActionType:     packet.NPCDialogueActionOpen,
+		Dialogue:       d.Body(),
+		SceneName:      "default",
+		NPCName:        d.Title(),
+		ActionJSON:     string(b),
+	})
+}
+
+func (s *Session) CloseDialogue() {
+	h := s.handlers[packet.IDNPCRequest].(*NPCRequestHandler)
+	if h.entityRuntimeID == 0 {
+		return
+	}
+
+	s.writePacket(&packet.NPCDialogue{
+		EntityUniqueID: h.entityRuntimeID,
+		ActionType:     packet.NPCDialogueActionClose,
+	})
+	h.entityRuntimeID = 0
 }
 
 // SendForm sends a form to the client of the connection. The Submit method of the form is called when the

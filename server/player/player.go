@@ -22,6 +22,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -352,6 +353,21 @@ func (p *Player) Transfer(address string) error {
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output)
+}
+
+// SendDialogue sends an NPC dialogue to the player, using the entity passed as the entity that the dialogue
+// is shown for. Dialogues can be sent on top of each other without the other closing, making it possible
+// to have non-flashing transitions between menus compared to forms. The player can either press one of the
+// buttons or close the dialogue. It is impossible for a dialogue to have any more than 6 buttons.
+func (p *Player) SendDialogue(d dialogue.Dialogue, e world.Entity) {
+	p.session().SendDialogue(d, e)
+}
+
+// CloseDialogue closes the player's currently open dialogue, if any. If the dialogue's Submittable implements
+// dialogue.Closer, the Close method of the Submittable is called after the client acknowledges the closing
+// of the dialogue.
+func (p *Player) CloseDialogue() {
+	p.session().CloseDialogue()
 }
 
 // SendForm sends a form to the player for the client to fill out. Once the client fills it out, the Submit
