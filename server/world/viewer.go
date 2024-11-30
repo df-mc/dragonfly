@@ -29,6 +29,11 @@ type Viewer interface {
 	// ViewEntityTeleport views the teleportation of an Entity. The Entity is immediately moved to a different
 	// target position.
 	ViewEntityTeleport(e Entity, pos mgl64.Vec3)
+	// ViewEntityMount views one entity mounting another. It is called when any entity mounts another or
+	// changes its role (passenger or driver).
+	ViewEntityMount(r Entity, rd Entity, driver bool)
+	// ViewEntityDismount views one entity dismounting another. It is called when any entity is dismounted.
+	ViewEntityDismount(r Entity, rd Entity)
 	// ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
 	ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration)
 	// ViewBrewingUpdate updates a brewing stand for the associated session based on previous times.
@@ -103,3 +108,5 @@ func (NopViewer) ViewWeather(bool, bool)                                        
 func (NopViewer) ViewBrewingUpdate(time.Duration, time.Duration, int32, int32, int32, int32) {}
 func (NopViewer) ViewFurnaceUpdate(time.Duration, time.Duration, time.Duration, time.Duration, time.Duration, time.Duration) {
 }
+func (NopViewer) ViewEntityMount(Entity, Entity, bool) {}
+func (NopViewer) ViewEntityDismount(Entity, Entity)    {}
