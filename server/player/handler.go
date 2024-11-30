@@ -3,7 +3,6 @@ package player
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -153,12 +152,6 @@ type Handler interface {
 	// not sent by every client however, only those with the "Creator > Enable Client Diagnostics" setting
 	// enabled.
 	HandleDiagnostics(p *Player, d session.Diagnostics)
-	// HandleMount handles when a player mounts an entity. ctx.Cancel() may be called to cancel the player mounting
-	// an entity.
-	HandleMount(ctx *Context, r entity.Rideable)
-	// HandleDismount handles when a player mounts an entity. ctx.Cancel() may be called to force the player
-	// to re-mount the entity.
-	HandleDismount(ctx *Context)
 }
 
 // NopHandler implements the Handler interface but does not execute any code when an event is called. The
@@ -205,5 +198,3 @@ func (NopHandler) HandleDeath(*Player, world.DamageSource, *bool)               
 func (NopHandler) HandleRespawn(*Player, *mgl64.Vec3, **world.World)                       {}
 func (NopHandler) HandleQuit(*Player)                                                      {}
 func (NopHandler) HandleDiagnostics(*Player, session.Diagnostics)                          {}
-func (NopHandler) HandleMount(*Context, entity.Rideable)                                   {}
-func (NopHandler) HandleDismount(*Context)                                                 {}

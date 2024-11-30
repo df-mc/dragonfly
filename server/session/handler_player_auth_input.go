@@ -41,16 +41,6 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		}
 	}
 
-	// Check if player is riding an entity, and move the entity.
-	riding, seat := c.RidingEntity()
-	if riding != nil {
-		if seat == 0 {
-			m := pk.MoveVector
-			riding.Move(mgl64.Vec2{float64(m[0]), float64(m[1])}, pk.Yaw, pk.Pitch)
-		}
-		s.ViewEntityMount(c, riding, seat-1 == 0)
-	}
-
 	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Sub the base offset of players from the pos.
 
 	newPos := vec32To64(pk.Position)

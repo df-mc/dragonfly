@@ -105,12 +105,6 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeyFuseTime] = int32(t.Fuse().Milliseconds() / 50)
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagIgnited)
 	}
-	if r, ok := e.(entity.Rider); ok {
-		m[protocol.EntityDataKeySeatOffset] = r.SeatPosition()
-		if rd, _ := r.RidingEntity(); rd != nil {
-			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
-		}
-	}
 	if n, ok := e.(named); ok {
 		m[protocol.EntityDataKeyName] = n.NameTag()
 		m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)

@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -135,10 +134,6 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	var valid bool
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
-		// Check if the entity is rideable, and if so ride the entity.
-		if r, ok := e.(entity.Rideable); ok {
-			c.MountEntity(r)
-		}
 		valid = c.UseItemOnEntity(e)
 	case protocol.UseItemOnEntityActionAttack:
 		valid = c.AttackEntity(e)
