@@ -55,6 +55,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 	data.Name, data.Pos, data.Rot = conf.Name, conf.Position, conf.Rotation
 	slot := uint32(conf.HeldSlot)
 	pdata := &playerData{
+		xuid:              conf.XUID,
 		ui:                inventory.New(54, nil),
 		inv:               conf.Inventory,
 		enderChest:        conf.EnderChestInventory,
