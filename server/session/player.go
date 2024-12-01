@@ -375,6 +375,7 @@ func (s *Session) SendDialogue(d dialogue.Dialogue, e world.Entity) {
 	h.entityRuntimeID = s.entityRuntimeID(e)
 
 	metadata := s.parseEntityMetadata(e)
+	metadata[protocol.EntityDataKeyHasNPC] = uint8(1)
 
 	disp := d.Display()
 	disp.EntityOffset = disp.EntityOffset.Add(entityOffset(e))
