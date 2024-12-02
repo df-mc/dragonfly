@@ -14,10 +14,7 @@ type Wither struct {
 
 // Apply ...
 func (Wither) Apply(e world.Entity, lvl int, d time.Duration) {
-	interval := 80 >> (lvl - 1)
-	if interval < 1 {
-		interval = 1
-	}
+	interval := max(80>>lvl, 1)
 	if tickDuration(d)%interval == 0 {
 		if l, ok := e.(living); ok {
 			l.Hurt(1, WitherDamageSource{})

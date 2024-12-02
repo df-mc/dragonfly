@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync"
 	"sync/atomic"
@@ -16,7 +17,7 @@ type ModalFormResponseHandler struct {
 }
 
 // Handle ...
-func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {
+func (h *ModalFormResponseHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ModalFormResponse)
 
 	h.mu.Lock()
@@ -37,7 +38,7 @@ func (h *ModalFormResponseHandler) Handle(p packet.Packet, s *Session) error {
 	if !ok {
 		return fmt.Errorf("no form with ID %v currently opened", pk.FormID)
 	}
-	if err := f.SubmitJSON(resp, s.c); err != nil {
+	if err := f.SubmitJSON(resp, c, tx); err != nil {
 		return fmt.Errorf("error submitting form data: %w", err)
 	}
 	return nil

@@ -16,7 +16,7 @@ type hungerManager struct {
 // newHungerManager returns a new hunger manager with the default values for food level, saturation level and
 // exhaustion level.
 func newHungerManager() *hungerManager {
-	return &hungerManager{foodLevel: 20, saturationLevel: 5}
+	return &hungerManager{foodLevel: 20, saturationLevel: 5, foodTick: 1}
 }
 
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
@@ -33,12 +33,7 @@ func (m *hungerManager) SetFood(level int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if level < 0 {
-		level = 0
-	} else if level > 20 {
-		level = 20
-	}
-	m.foodLevel = level
+	m.foodLevel = max(min(level, 20), 0)
 }
 
 // AddFood adds a number of food points to the current food level of a player.
@@ -46,13 +41,7 @@ func (m *hungerManager) AddFood(points int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	level := m.foodLevel + points
-	if level < 0 {
-		level = 0
-	} else if level > 20 {
-		level = 20
-	}
-	m.foodLevel = level
+	m.foodLevel = max(min(m.foodLevel+points, 20), 0)
 }
 
 // Reset resets the hunger manager to its default values, identical to those set when creating a new manager
@@ -64,7 +53,17 @@ func (m *hungerManager) Reset() {
 	m.foodLevel = 20
 	m.saturationLevel = 5
 	m.exhaustionLevel = 0
-	m.foodTick = 0
+	m.foodTick = 1
+}
+
+// ResetExhaustion resets the player's exhaustion level to 0. It prevents the
+// player's food level from decreasing immediately after cancelling food loss.
+func (m *hungerManager) resetExhaustion() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.exhaustionLevel = 0
+	m.saturationLevel = 0
+	m.foodTick = 1
 }
 
 // exhaust exhausts the player by the amount of points passed. If the total exhaustion level exceeds 4, a
@@ -91,24 +90,8 @@ func (m *hungerManager) saturate(food int, saturation float64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	level := m.foodLevel + food
-	if level < 0 {
-		level = 0
-	} else if level > 20 {
-		level = 20
-	}
-	m.foodLevel = level
-
-	sat := m.saturationLevel + saturation
-	if sat < 0 {
-		sat = 0
-	} else if sat > 20 {
-		sat = 20
-	}
-	if sat > float64(m.foodLevel) {
-		sat = float64(m.foodLevel)
-	}
-	m.saturationLevel = sat
+	m.foodLevel = max(min(m.foodLevel+food, 20), 0)
+	m.saturationLevel = max(min(m.saturationLevel+saturation, float64(m.foodLevel)), 0)
 }
 
 // desaturate removes one saturation point from the player. If the saturation level of the player is already
@@ -118,11 +101,7 @@ func (m *hungerManager) desaturate() {
 	if m.saturationLevel <= 0 && m.foodLevel != 0 {
 		m.foodLevel--
 	} else if m.saturationLevel > 0 {
-		m.saturationLevel--
-		if m.saturationLevel < 0 {
-			// Some foods provide saturation with decimals, so we have to account for an overcompensation.
-			m.saturationLevel = 0
-		}
+		m.saturationLevel = max(m.saturationLevel-1, 0)
 	}
 }
 

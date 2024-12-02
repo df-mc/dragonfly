@@ -30,24 +30,27 @@ func (t GlazedTerracotta) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (t GlazedTerracotta) EncodeBlock() (name string, properties map[string]any) {
+	if t.Facing == unknownDirection {
+		return "minecraft:" + t.Colour.SilverString() + "_glazed_terracotta", map[string]any{"facing_direction": int32(0)}
+	}
 	return "minecraft:" + t.Colour.SilverString() + "_glazed_terracotta", map[string]any{"facing_direction": int32(2 + t.Facing)}
 }
 
 // UseOnBlock ensures the proper facing is used when placing a glazed terracotta block, by using the opposite of the player.
-func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, t)
+func (t GlazedTerracotta) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, t)
 	if !used {
 		return
 	}
 	t.Facing = user.Rotation().Direction().Opposite()
 
-	place(w, pos, t, user, ctx)
+	place(tx, pos, t, user, ctx)
 	return placed(ctx)
 }
 
 // allGlazedTerracotta returns glazed terracotta blocks with all possible colours.
 func allGlazedTerracotta() (b []world.Block) {
-	for dir := cube.Direction(0); dir < 4; dir++ {
+	for _, dir := range append(cube.Directions(), unknownDirection) {
 		for _, c := range item.Colours() {
 			b = append(b, GlazedTerracotta{Colour: c, Facing: dir})
 		}

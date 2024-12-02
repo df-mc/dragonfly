@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -31,16 +30,12 @@ import (
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
 // of abstraction over direct packets. A Session basically 'controls' an entity.
 type Session struct {
-	log            *slog.Logger
+	conf           Config
 	once, connOnce sync.Once
 
-	c        Controllable
+	ent      *world.EntityHandle
 	conn     Conn
 	handlers map[uint32]packetHandler
-
-	// onStop is called when the session is stopped. The controllable passed is the controllable that the
-	// session controls.
-	onStop func(controllable Controllable)
 
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
@@ -54,15 +49,20 @@ type Session struct {
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
 	// entity spawned to the session.
 	currentEntityRuntimeID uint64
-	// entityRuntimeIDs holds a list of all runtime IDs of entities spawned to the session.
-	entityRuntimeIDs map[world.Entity]uint64
-	entities         map[uint64]world.Entity
-	hiddenEntities   map[world.Entity]struct{}
+	// entityRuntimeIDs holds the runtime IDs of entities shown to the session.
+	entityRuntimeIDs map[*world.EntityHandle]uint64
+	entities         map[uint64]*world.EntityHandle
+	hiddenEntities   map[*world.EntityHandle]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
-	heldSlot                     *atomic.Uint32
+	heldSlot                     *uint32
 	inv, offHand, enderChest, ui *inventory.Inventory
 	armour                       *inventory.Armour
+
+	// joinSkin is the first skin that the player joined with. It is sent on
+	// spawn for the player list, but otherwise updated immediately when the
+	// player is viewed.
+	joinSkin skin.Skin
 
 	breakingPos cube.Pos
 
@@ -72,6 +72,7 @@ type Session struct {
 	openedWindow                   atomic.Pointer[inventory.Inventory]
 	openedPos                      atomic.Pointer[cube.Pos]
 	swingingArm                    atomic.Bool
+	changingSlot                   atomic.Bool
 	changingDimension              atomic.Bool
 
 	recipes map[uint32]recipe.Recipe
@@ -119,11 +120,6 @@ type Conn interface {
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
 var Nop = &Session{}
 
-// session is a slice of all open sessions. It is protected by the sessionMu, which must be locked whenever
-// accessing the value.
-var sessions []*Session
-var sessionMu sync.Mutex
-
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
 
@@ -131,38 +127,48 @@ const selfEntityRuntimeID = 1
 // must therefore always be 1.
 var errSelfRuntimeID = errors.New("invalid entity runtime ID: runtime ID for self must always be 1")
 
-// New returns a new session using a controllable entity. The session will control this entity using the
-// packets that it receives.
-// New takes the connection from which to accept packets. It will start handling these packets after a call to
-// Session.Spawn().
-func New(conn Conn, maxChunkRadius int, log *slog.Logger, joinMessage, quitMessage string) *Session {
+type Config struct {
+	Log *slog.Logger
+
+	MaxChunkRadius int
+
+	JoinMessage, QuitMessage string
+
+	HandleStop func(*world.Tx, Controllable)
+}
+
+func (conf Config) New(conn Conn) *Session {
 	r := conn.ChunkRadius()
-	if r > maxChunkRadius {
-		r = maxChunkRadius
+	if r > conf.MaxChunkRadius {
+		r = conf.MaxChunkRadius
 		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
 	}
+	if conf.Log == nil {
+		conf.Log = slog.Default()
+	}
+	conf.Log = conf.Log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String())
 
 	s := &Session{}
 	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		ui:                     inventory.New(54, s.handleInterfaceUpdate),
 		handlers:               map[uint32]packetHandler{},
-		entityRuntimeIDs:       map[world.Entity]uint64{},
-		entities:               map[uint64]world.Entity{},
-		hiddenEntities:         map[world.Entity]struct{}{},
+		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
+		entities:               map[uint64]*world.EntityHandle{},
+		hiddenEntities:         map[*world.EntityHandle]struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
-		maxChunkRadius:         int32(maxChunkRadius),
+		maxChunkRadius:         int32(conf.MaxChunkRadius),
 		conn:                   conn,
-		log:                    log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String()),
 		currentEntityRuntimeID: 1,
-		heldSlot:               new(atomic.Uint32),
-		joinMessage:            joinMessage,
-		quitMessage:            quitMessage,
+		heldSlot:               new(uint32),
+		joinMessage:            conf.JoinMessage,
+		quitMessage:            conf.QuitMessage,
+		recipes:                make(map[uint32]recipe.Recipe),
+		conf:                   conf,
 	}
-	inv := inventory.New(1, nil)
-	s.openedWindow.Store(inv)
+	s.openedWindow.Store(inventory.New(1, nil))
+	s.openedPos.Store(&cube.Pos{})
 
 	var scoreboardName string
 	var scoreboardLines []string
@@ -170,104 +176,103 @@ func New(conn Conn, maxChunkRadius int, log *slog.Logger, joinMessage, quitMessa
 	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
+	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+	s.sendRecipes()
+	s.sendArmourTrimData()
+	s.SendSpeed(0.1)
 	return s
+}
+
+// SetHandle sets the world.EntityHandle of the Session and attaches a skin to
+// other players on join.
+func (s *Session) SetHandle(handle *world.EntityHandle, skin skin.Skin) {
+	s.ent = handle
+	s.entityRuntimeIDs[handle] = selfEntityRuntimeID
+	s.entities[selfEntityRuntimeID] = handle
+
+	s.joinSkin = skin
+	sessions.Add(s)
 }
 
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
-func (s *Session) Spawn(c Controllable, pos mgl64.Vec3, w *world.World, gm world.GameMode, onStop func(controllable Controllable)) {
-	s.onStop = onStop
-	s.c = c
-	s.recipes = make(map[uint32]recipe.Recipe)
-	s.entityRuntimeIDs[c] = selfEntityRuntimeID
-	s.entities[selfEntityRuntimeID] = c
+func (s *Session) Spawn(c Controllable, tx *world.Tx) {
+	s.SendHealth(c.Health(), c.MaxHealth(), c.Absorption())
+	s.SendExperience(c.ExperienceLevel(), c.ExperienceProgress())
+	s.SendFood(c.Food(), 0, 0)
 
-	s.chunkLoader = world.NewLoader(int(s.chunkRadius), w, s)
-	s.chunkLoader.Move(pos)
+	pos := c.Position()
+	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
+	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
 		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
-	s.sendAvailableEntities(w)
+	s.sendAvailableEntities(tx.World())
 
-	s.initPlayerList()
-
-	world_add(c, w)
-	s.c.SetGameMode(gm)
-	s.SendSpeed(0.1)
-	for _, e := range s.c.Effects() {
+	c.SetGameMode(c.GameMode())
+	for _, e := range c.Effects() {
 		s.SendEffect(e)
 	}
+	s.ViewEntityState(c)
+
+	s.sendInv(s.inv, protocol.WindowIDInventory)
+	s.sendInv(s.ui, protocol.WindowIDUI)
+	s.sendInv(s.offHand, protocol.WindowIDOffHand)
+	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 
 	chat.Global.Subscribe(c)
 	if s.joinMessage != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
 	}
 
-	s.sendInv(s.inv, protocol.WindowIDInventory)
-	s.sendInv(s.ui, protocol.WindowIDUI)
-	s.sendInv(s.offHand, protocol.WindowIDOffHand)
-	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
-	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
-	s.sendRecipes()
-	s.sendArmourTrimData()
-}
-
-// Start makes the session start handling incoming packets from the client.
-func (s *Session) Start() {
-	s.c.World().AddEntity(s.c)
+	go s.background()
 	go s.handlePackets()
-}
-
-// Controllable returns the Controllable entity that the Session controls.
-func (s *Session) Controllable() Controllable {
-	return s.c
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
 // manages. Close ensures the method only runs code on the first call.
-func (s *Session) Close() error {
-	s.once.Do(s.close)
-	return nil
+func (s *Session) Close(tx *world.Tx, c Controllable) {
+	s.once.Do(func() {
+		s.close(tx, c)
+	})
 }
 
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
-func (s *Session) close() {
-	_ = s.c.Close()
+func (s *Session) close(tx *world.Tx, c Controllable) {
+	s.conf.HandleStop(tx, c)
 
-	// Move UI inventory items to the main inventory.
-	for _, it := range s.ui.Items() {
-		if _, err := s.inv.AddItem(it); err != nil {
-			// We couldn't add the item to the main inventory (probably because it was full), so we drop it instead.
-			s.c.Drop(it)
-		}
-	}
-
-	s.onStop(s.c)
+	c.MoveItemsToInventory()
 
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = s.inv.Close()
 	_ = s.offHand.Close()
 	_ = s.armour.Close()
 
-	s.closeCurrentContainer()
-	_ = s.chunkLoader.Close()
+	s.closeCurrentContainer(tx)
+	s.chunkLoader.Close(tx)
 
 	s.c.Wake()
-	s.c.World().RemoveEntity(s.c)
-
-	// This should always be called last due to the timing of the removal of entity runtime IDs.
-	s.closePlayerList()
-	s.entityMutex.Lock()
-	s.entityRuntimeIDs, s.entities = map[world.Entity]uint64{}, map[uint64]world.Entity{}
-	s.entityMutex.Unlock()
 
 	if s.quitMessage != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
 	}
-	chat.Global.Unsubscribe(s.c)
+	chat.Global.Unsubscribe(c)
+
+	// Note: Be aware of where RemoveEntity is called. This must not be done too
+	// early.
+	tx.RemoveEntity(c)
+	s.ent.Close(tx)
+
+	// This should always be called last due to the timing of the removal of
+	// entity runtime IDs.
+	sessions.Remove(s)
+	s.entityMutex.Lock()
+	clear(s.entityRuntimeIDs)
+	clear(s.entities)
+	s.entityMutex.Unlock()
 }
 
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed
@@ -275,7 +280,7 @@ func (s *Session) close() {
 func (s *Session) CloseConnection() {
 	s.connOnce.Do(func() {
 		_ = s.conn.Close()
-		s.closeBackground <- struct{}{}
+		close(s.closeBackground)
 	})
 }
 
@@ -297,27 +302,29 @@ func (s *Session) ClientData() login.ClientData {
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
-	go s.background()
-
 	defer func() {
-		// If this function ends up panicking, we don't want to call s.Close() as it may cause the entire
-		// server to freeze without printing the actual panic message.
-		// Instead, we check if there is a panic to recover, and just propagate the panic if this does happen
-		// to be the case.
-		if err := recover(); err != nil {
-			panic(err)
-		}
-		_ = s.Close()
+		// First close the Controllable. This might lead to a world change
+		// (player might be dead while disconnecting, in which case it will
+		// respawn first).
+		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+			_ = e.(Controllable).Close()
+		})
+		// Because the player might no longer be in the same world after
+		// closing, we create a new transaction
+		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+			s.Close(tx, e.(Controllable))
+		})
 	}()
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
 			return
 		}
-		if err := s.handlePacket(pk); err != nil {
-			// An error occurred during the handling of a packet.
-			// Print the error and stop handling any more packets.
-			s.log.Debug("process packet: " + err.Error())
+		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+			err = s.handlePacket(pk, tx, e.(Controllable))
+		})
+		if err != nil {
+			s.conf.Log.Debug("process packet: " + err.Error())
 			return
 		}
 	}
@@ -327,30 +334,40 @@ func (s *Session) handlePackets() {
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {
 	var (
-		t                 = time.NewTicker(time.Second / 20)
-		r                 = s.sendAvailableCommands()
-		enums, enumValues = s.enums()
-		ok                bool
-		i                 int
+		r          map[string]map[int]cmd.Runnable
+		enums      map[string]cmd.Enum
+		enumValues map[string][]string
+		ok         bool
+		i          int
 	)
-	defer t.Stop()
 
+	s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+		co := e.(Controllable)
+		r = s.sendAvailableCommands(co)
+		enums, enumValues = s.enums(co)
+	})
+
+	t := time.NewTicker(time.Second / 20)
+	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
-			s.sendChunks()
+			s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+				c := e.(Controllable)
 
-			if i++; i%20 == 0 {
-				// Enum resending happens relatively often and frequent updates are more important than with full
-				// command changes. Those are generally only related to permission changes, which doesn't happen often.
-				s.resendEnums(enums, enumValues)
-			}
-			if i%100 == 0 {
-				// Try to resend commands only every 5 seconds.
-				if r, ok = s.resendCommands(r); ok {
-					enums, enumValues = s.enums()
+				if i++; i%20 == 0 {
+					// Enum resending happens relatively often and frequent updates are more important than with full
+					// command changes. Those are generally only related to permission changes, which doesn't happen often.
+					s.resendEnums(enums, enumValues, c)
 				}
-			}
+				if i%100 == 0 {
+					// Try to resend commands only every 5 seconds.
+					if r, ok = s.resendCommands(r, c); ok {
+						enums, enumValues = s.enums(c)
+					}
+				}
+				s.sendChunks(tx, c)
+			})
 		case <-s.closeBackground:
 			return
 		}
@@ -359,31 +376,30 @@ func (s *Session) background() {
 
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
-func (s *Session) sendChunks() {
-	pos := s.c.Position()
-	s.chunkLoader.Move(pos)
+func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
+	pos := c.Position()
+	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
 		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
 
-	const maxChunkTransactions = 8
-
-	if w := s.c.World(); s.chunkLoader.World() != w && w != nil {
-		s.handleWorldSwitch(w)
+	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
+		s.handleWorldSwitch(w, tx, c)
 	}
 
 	s.blobMu.Lock()
+	const maxChunkTransactions = 8
 	toLoad := maxChunkTransactions - len(s.openChunkTransactions)
 	s.blobMu.Unlock()
 	if toLoad > 4 {
 		toLoad = 4
 	}
-	s.chunkLoader.Load(toLoad)
+	s.chunkLoader.Load(tx, toLoad)
 }
 
 // handleWorldSwitch handles the player of the Session switching worlds.
-func (s *Session) handleWorldSwitch(w *world.World) {
+func (s *Session) handleWorldSwitch(w *world.World, tx *world.Tx, c Controllable) {
 	if s.conn.ClientCacheEnabled() {
 		s.blobMu.Lock()
 		s.blobs = map[uint64][]byte{}
@@ -394,15 +410,15 @@ func (s *Session) handleWorldSwitch(w *world.World) {
 	dim, _ := world.DimensionID(w.Dimension())
 	same := w.Dimension() == s.chunkLoader.World().Dimension()
 	if !same {
-		s.changeDimension(int32(dim), false)
+		s.changeDimension(int32(dim), false, c)
 	}
-	s.ViewEntityTeleport(s.c, s.c.Position())
-	s.chunkLoader.ChangeWorld(w)
+	s.ViewEntityTeleport(c, c.Position())
+	s.chunkLoader.ChangeWorld(tx, w)
 }
 
 // changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped
 // immediately.
-func (s *Session) changeDimension(dim int32, silent bool) {
+func (s *Session) changeDimension(dim int32, silent bool, c Controllable) {
 	s.changingDimension.Store(true)
 	h := s.handlers[packet.IDServerBoundLoadingScreen].(*ServerBoundLoadingScreenHandler)
 	id := h.currentID.Add(1)
@@ -410,7 +426,7 @@ func (s *Session) changeDimension(dim int32, silent bool) {
 
 	s.writePacket(&packet.ChangeDimension{
 		Dimension:       dim,
-		Position:        vec64To32(s.c.Position().Add(entityOffset(s.c))),
+		Position:        vec64To32(c.Position().Add(entityOffset(c))),
 		LoadingScreenID: protocol.Option(id),
 	})
 	s.writePacket(&packet.StopSound{StopAll: silent})
@@ -431,17 +447,17 @@ func (s *Session) ChangingDimension() bool {
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
-func (s *Session) handlePacket(pk packet.Packet) error {
+func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
 	handler, ok := s.handlers[pk.ID()]
 	if !ok {
-		s.log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
+		s.conf.Log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
 		return nil
 	}
 	if handler == nil {
 		// A nil handler means it was explicitly unhandled.
 		return nil
 	}
-	if err := handler.Handle(pk, s); err != nil {
+	if err := handler.Handle(pk, s, tx, c); err != nil {
 		return fmt.Errorf("%T: %w", pk, err)
 	}
 	return nil
@@ -471,6 +487,7 @@ func (s *Session) registerHandlers() {
 		packet.IDMobEquipment:              &MobEquipmentHandler{},
 		packet.IDModalFormResponse:         &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
 		packet.IDMovePlayer:                nil,
+		packet.IDNPCRequest:                &NPCRequestHandler{},
 		packet.IDPlayerAction:              &PlayerActionHandler{},
 		packet.IDPlayerAuthInput:           &PlayerAuthInputHandler{},
 		packet.IDPlayerSkin:                &PlayerSkinHandler{},
@@ -486,52 +503,12 @@ func (s *Session) registerHandlers() {
 	}
 }
 
-// handleInterfaceUpdate handles an update to the UI inventory, used for updating enchantment options and possibly more
-// in the future.
-func (s *Session) handleInterfaceUpdate(slot int, _, item item.Stack) {
-	if slot == enchantingInputSlot && s.containerOpened.Load() {
-		pos := *s.openedPos.Load()
-		b := s.c.World().Block(pos)
-		if _, enchanting := b.(block.EnchantingTable); enchanting {
-			s.sendEnchantmentOptions(s.c.World(), pos, item)
-		}
-	}
-}
-
 // writePacket writes a packet to the session's connection if it is not Nop.
 func (s *Session) writePacket(pk packet.Packet) {
 	if s == Nop {
 		return
 	}
 	_ = s.conn.WritePacket(pk)
-}
-
-// initPlayerList initialises the player list of the session and sends the session itself to all other
-// sessions currently open.
-func (s *Session) initPlayerList() {
-	sessionMu.Lock()
-	sessions = append(sessions, s)
-	for _, session := range sessions {
-		// AddStack the player of the session to all sessions currently open, and add the players of all sessions
-		// currently open to the player list of the new session.
-		session.addToPlayerList(s)
-		if s != session {
-			s.addToPlayerList(session)
-		}
-	}
-	sessionMu.Unlock()
-}
-
-// closePlayerList closes the player list of the session and removes the session from the player list of all
-// other sessions.
-func (s *Session) closePlayerList() {
-	sessionMu.Lock()
-	for _, session := range sessions {
-		// Remove the player of the session from the player list of all other sessions.
-		session.removeFromPlayerList(s)
-	}
-	sessions = sliceutil.DeleteVal(sessions, s)
-	sessionMu.Unlock()
 }
 
 // actorIdentifier represents the structure of an actor identifier sent over the network.

@@ -37,43 +37,47 @@ func (p Potato) ConsumeDuration() time.Duration {
 }
 
 // Consume ...
-func (p Potato) Consume(_ *world.World, c item.Consumer) item.Stack {
+func (p Potato) Consume(_ *world.Tx, c item.Consumer) item.Stack {
 	c.Saturate(1, 0.6)
 	return item.Stack{}
 }
 
 // BoneMeal ...
-func (p Potato) BoneMeal(pos cube.Pos, w *world.World) bool {
+func (p Potato) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if p.Growth == 7 {
 		return false
 	}
 	p.Growth = min(p.Growth+rand.Intn(4)+2, 7)
-	w.SetBlock(pos, p, nil)
+	tx.SetBlock(pos, p, nil)
 	return true
 }
 
 // UseOnBlock ...
-func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, p)
+func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, p)
 	if !used {
 		return false
 	}
 
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		return false
 	}
 
-	place(w, pos, p, user, ctx)
+	place(tx, pos, p, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (p Potato) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
-		if rand.Float64() < 0.02 {
-			return []item.Stack{item.NewStack(p, rand.Intn(5)+1), item.NewStack(item.PoisonousPotato{}, 1)}
+		n := 1
+		if p.Growth >= 7 {
+			n += rand.Intn(5)
 		}
-		return []item.Stack{item.NewStack(p, rand.Intn(5)+1)}
+		if rand.Float64() < 0.02 {
+			return []item.Stack{item.NewStack(p, n), item.NewStack(item.PoisonousPotato{}, 1)}
+		}
+		return []item.Stack{item.NewStack(p, n)}
 	})
 }
 
@@ -88,13 +92,13 @@ func (p Potato) EncodeItem() (name string, meta int16) {
 }
 
 // RandomTick ...
-func (p Potato) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	if w.Light(pos) < 8 {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
-	} else if p.Growth < 7 && r.Float64() <= p.CalculateGrowthChance(pos, w) {
+func (p Potato) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	if tx.Light(pos) < 8 {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
+	} else if p.Growth < 7 && r.Float64() <= p.CalculateGrowthChance(pos, tx) {
 		p.Growth++
-		w.SetBlock(pos, p, nil)
+		tx.SetBlock(pos, p, nil)
 	}
 }
 

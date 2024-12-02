@@ -39,7 +39,7 @@ func encodeSlabBlock(block world.Block, double bool) (id string, suffix string) 
 				suffix = "double_" + suffix
 			}
 			var name string
-			if block.Oxidation != NormalOxidation() {
+			if block.Oxidation != UnoxidisedOxidation() {
 				name = block.Oxidation.String() + "_"
 			}
 			if block.Waxed {

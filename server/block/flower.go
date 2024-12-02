@@ -22,7 +22,7 @@ type Flower struct {
 }
 
 // EntityInside ...
-func (f Flower) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+func (f Flower) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if f.Type == WitherRose() {
 		if living, ok := e.(interface {
 			AddEffect(effect.Effect)
@@ -33,17 +33,17 @@ func (f Flower) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
 }
 
 // BoneMeal ...
-func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
+func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 	if f.Type == WitherRose() {
 		return
 	}
 
 	for i := 0; i < 8; i++ {
 		p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
-		if _, ok := w.Block(p).(Air); !ok {
+		if _, ok := tx.Block(p).(Air); !ok {
 			continue
 		}
-		if _, ok := w.Block(p.Side(cube.FaceDown)).(Grass); !ok {
+		if _, ok := tx.Block(p.Side(cube.FaceDown)).(Grass); !ok {
 			continue
 		}
 		flowerType := f.Type
@@ -54,32 +54,32 @@ func (f Flower) BoneMeal(pos cube.Pos, w *world.World) (success bool) {
 				flowerType = Dandelion()
 			}
 		}
-		w.SetBlock(p, Flower{Type: flowerType}, nil)
+		tx.SetBlock(p, Flower{Type: flowerType}, nil)
 		success = true
 	}
 	return
 }
 
 // NeighbourUpdateTick ...
-func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !supportsVegetation(f, w.Block(pos.Side(cube.FaceDown))) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: f})
-		dropItem(w, item.NewStack(f, 1), pos.Vec3Centre())
+func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: f})
+		dropItem(tx, item.NewStack(f, 1), pos.Vec3Centre())
 	}
 }
 
 // UseOnBlock ...
-func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, f)
+func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, f)
 	if !used {
 		return false
 	}
-	if !supportsVegetation(f, w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
-	place(w, pos, f, user, ctx)
+	place(tx, pos, f, user, ctx)
 	return placed(ctx)
 }
 

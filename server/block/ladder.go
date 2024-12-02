@@ -22,27 +22,27 @@ type Ladder struct {
 }
 
 // NeighbourUpdateTick ...
-func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if _, ok := w.Block(pos.Side(l.Facing.Opposite())).(LightDiffuser); ok {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
-		dropItem(w, item.NewStack(l, 1), pos.Vec3Centre())
+func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if _, ok := tx.Block(pos.Side(l.Facing.Opposite())).(LightDiffuser); ok {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
+		dropItem(tx, item.NewStack(l, 1), pos.Vec3Centre())
 	}
 }
 
 // UseOnBlock ...
-func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, l)
+func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, face, used := firstReplaceable(tx, pos, face, l)
 	if !used {
 		return false
 	}
 	if face == cube.FaceUp || face == cube.FaceDown {
 		return false
 	}
-	if _, ok := w.Block(pos.Side(face.Opposite())).(LightDiffuser); ok {
+	if _, ok := tx.Block(pos.Side(face.Opposite())).(LightDiffuser); ok {
 		found := false
 		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceNorth, cube.FaceEast, cube.FaceWest} {
-			if diffuser, ok := w.Block(pos.Side(i)).(LightDiffuser); !ok || diffuser.LightDiffusionLevel() == 15 {
+			if diffuser, ok := tx.Block(pos.Side(i)).(LightDiffuser); !ok || diffuser.LightDiffusionLevel() == 15 {
 				found = true
 				face = i.Opposite()
 				break
@@ -54,19 +54,19 @@ func (l Ladder) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 	}
 	l.Facing = face
 
-	place(w, pos, l, user, ctx)
+	place(tx, pos, l, user, ctx)
 	return placed(ctx)
 }
 
 // EntityInside ...
-func (l Ladder) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+func (l Ladder) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
 }
 
 // SideClosed ...
-func (l Ladder) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (l Ladder) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

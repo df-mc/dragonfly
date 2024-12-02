@@ -11,7 +11,7 @@ type Rabbit struct {
 }
 
 // Consume ...
-func (r Rabbit) Consume(_ *world.World, c Consumer) Stack {
+func (r Rabbit) Consume(_ *world.Tx, c Consumer) Stack {
 	if r.Cooked {
 		c.Saturate(5, 6)
 	} else {

@@ -6,44 +6,43 @@ import (
 )
 
 // BlastProtection is an armour enchantment that reduces damage from explosions.
-type BlastProtection struct{}
+var BlastProtection blastProtection
+
+type blastProtection struct{}
 
 // Name ...
-func (BlastProtection) Name() string {
+func (blastProtection) Name() string {
 	return "Blast Protection"
 }
 
 // MaxLevel ...
-func (BlastProtection) MaxLevel() int {
+func (blastProtection) MaxLevel() int {
 	return 4
 }
 
 // Cost ...
-func (BlastProtection) Cost(level int) (int, int) {
-	min := 5 + (level-1)*8
-	return min, min + 8
+func (blastProtection) Cost(level int) (int, int) {
+	minCost := 5 + (level-1)*8
+	return minCost, minCost + 8
 }
 
 // Rarity ...
-func (BlastProtection) Rarity() item.EnchantmentRarity {
+func (blastProtection) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
 // Modifier returns the base protection modifier for the enchantment.
-func (BlastProtection) Modifier() float64 {
+func (blastProtection) Modifier() float64 {
 	return 0.08
 }
 
 // CompatibleWithEnchantment ...
-func (BlastProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	_, fireProtection := t.(FireProtection)
-	_, projectileProtection := t.(ProjectileProtection)
-	_, protection := t.(Protection)
-	return !fireProtection && !projectileProtection && !protection
+func (blastProtection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	return t != FireProtection && t != ProjectileProtection && t != Protection
 }
 
 // CompatibleWithItem ...
-func (BlastProtection) CompatibleWithItem(i world.Item) bool {
+func (blastProtection) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Armour)
 	return ok
 }

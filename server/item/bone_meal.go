@@ -13,14 +13,14 @@ type BoneMeal struct{}
 // BoneMealAffected represents a block that is affected when bone meal is used on it.
 type BoneMealAffected interface {
 	// BoneMeal attempts to affect the block using a bone meal item.
-	BoneMeal(pos cube.Pos, w *world.World) bool
+	BoneMeal(pos cube.Pos, tx *world.Tx) bool
 }
 
 // UseOnBlock ...
-func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if bm, ok := w.Block(pos).(BoneMealAffected); ok && bm.BoneMeal(pos, w) {
+func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
+	if bm, ok := tx.Block(pos).(BoneMealAffected); ok && bm.BoneMeal(pos, tx) {
 		ctx.SubtractFromCount(1)
-		w.AddParticle(pos.Vec3(), particle.BoneMeal{})
+		tx.AddParticle(pos.Vec3(), particle.BoneMeal{})
 		return true
 	}
 	return false

@@ -13,7 +13,7 @@ type Barrier struct {
 }
 
 // SideClosed ...
-func (Barrier) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Barrier) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

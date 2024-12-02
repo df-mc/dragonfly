@@ -46,51 +46,51 @@ func (WoodFenceGate) FuelInfo() item.FuelInfo {
 }
 
 // UseOnBlock ...
-func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, f)
+func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, f)
 	if !used {
 		return false
 	}
 	f.Facing = user.Rotation().Direction()
-	f.Lowered = f.shouldBeLowered(pos, w)
+	f.Lowered = f.shouldBeLowered(pos, tx)
 
-	place(w, pos, f, user, ctx)
+	place(tx, pos, f, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (f WoodFenceGate) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if f.shouldBeLowered(pos, w) != f.Lowered {
+func (f WoodFenceGate) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if f.shouldBeLowered(pos, tx) != f.Lowered {
 		f.Lowered = !f.Lowered
-		w.SetBlock(pos, f, nil)
+		tx.SetBlock(pos, f, nil)
 	}
 }
 
 // shouldBeLowered returns if the fence gate should be lowered or not, based on the neighbouring walls.
-func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, w *world.World) bool {
+func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, tx *world.Tx) bool {
 	leftSide := f.Facing.RotateLeft().Face()
-	_, left := w.Block(pos.Side(leftSide)).(Wall)
-	_, right := w.Block(pos.Side(leftSide.Opposite())).(Wall)
+	_, left := tx.Block(pos.Side(leftSide)).(Wall)
+	_, right := tx.Block(pos.Side(leftSide.Opposite())).(Wall)
 	return left || right
 }
 
 // Activate ...
-func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
+func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Rotation().Direction() {
 		f.Facing = f.Facing.Opposite()
 	}
-	w.SetBlock(pos, f, nil)
+	tx.SetBlock(pos, f, nil)
 	if f.Open {
-		w.PlaySound(pos.Vec3Centre(), sound.FenceGateOpen{Block: f})
+		tx.PlaySound(pos.Vec3Centre(), sound.FenceGateOpen{Block: f})
 		return true
 	}
-	w.PlaySound(pos.Vec3Centre(), sound.FenceGateClose{Block: f})
+	tx.PlaySound(pos.Vec3Centre(), sound.FenceGateClose{Block: f})
 	return true
 }
 
 // SideClosed ...
-func (f WoodFenceGate) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (f WoodFenceGate) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

@@ -10,10 +10,10 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
 
-      - name: Set up Go 1.22
+      - name: Set up Go 1.23
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: 1.23
         id: go
 
       - name: Get dependencies
@@ -31,6 +31,6 @@ jobs:
         run: test -z $(go fmt ./...)
 
       - name: Staticcheck
-        uses: dominikh/staticcheck-action@v1.3.0
+        uses: dominikh/staticcheck-action@v1
         with:
           install-go: false

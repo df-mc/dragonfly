@@ -48,51 +48,51 @@ func (s Sponge) EncodeBlock() (string, map[string]any) {
 
 // UseOnBlock places the sponge, absorbs nearby water if it's still dry and flags it as wet if any water has been
 // absorbed.
-func (s Sponge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (s Sponge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	var particles = false
-	pos, _, used = firstReplaceable(w, pos, face, s)
+	pos, _, used = firstReplaceable(tx, pos, face, s)
 	if !used {
 		return
 	}
 
 	// Check if the Sponge is placed in the Nether and if so, turn it into a normal Sponge instantly.
-	if w.Dimension().WaterEvaporates() && s.Wet {
+	if tx.World().Dimension().WaterEvaporates() && s.Wet {
 		s.Wet = false
 		particles = true
 	}
 
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	if particles && placed(ctx) {
-		w.AddParticle(pos.Side(cube.FaceUp).Vec3(), particle.Evaporate{})
+		tx.AddParticle(pos.Side(cube.FaceUp).Vec3(), particle.Evaporate{})
 	}
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick checks for nearby water flow. If water could be found and the sponge is dry, it will absorb the
 // water and be flagged as wet.
-func (s Sponge) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (s Sponge) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	// The sponge is dry, so it can absorb nearby water.
 	if !s.Wet {
-		if s.absorbWater(pos, w) > 0 {
+		if s.absorbWater(pos, tx) > 0 {
 			// Water has been absorbed, so we flag the sponge as wet.
-			s.setWet(pos, w)
+			s.setWet(pos, tx)
 		}
 	}
 }
 
 // setWet flags a sponge as wet. It replaces the block at pos by a wet sponge block and displays a block break
 // particle at the sponge's position with an offset of 0.5 on each axis.
-func (s Sponge) setWet(pos cube.Pos, w *world.World) {
+func (s Sponge) setWet(pos cube.Pos, tx *world.Tx) {
 	s.Wet = true
-	w.SetBlock(pos, s, nil)
-	w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: Water{Depth: 1}})
+	tx.SetBlock(pos, s, nil)
+	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: Water{Depth: 1}})
 }
 
 // absorbWater replaces water blocks near the sponge by air out to a taxicab geometry of 7 in all directions.
 // The maximum for absorbed blocks is 65.
 // The returned int specifies the amount of replaced water blocks.
-func (s Sponge) absorbWater(pos cube.Pos, w *world.World) int {
-	// distanceToSponge binds a world.Pos to its distance from the sponge's position.
+func (s Sponge) absorbWater(pos cube.Pos, tx *world.Tx) int {
+	// distanceToSponge binds a world.Position to its distance from the sponge's position.
 	type distanceToSponge struct {
 		block    cube.Pos
 		distance int32
@@ -113,17 +113,17 @@ func (s Sponge) absorbWater(pos cube.Pos, w *world.World) int {
 		queue = queue[1:]
 
 		next.block.Neighbours(func(neighbour cube.Pos) {
-			liquid, found := w.Liquid(neighbour)
+			liquid, found := tx.Liquid(neighbour)
 			if found {
 				if _, isWater := liquid.(Water); isWater {
-					w.SetLiquid(neighbour, nil)
+					tx.SetLiquid(neighbour, nil)
 					replaced++
 					if next.distance < 7 {
 						queue = append(queue, distanceToSponge{neighbour, next.distance + 1})
 					}
 				}
 			}
-		}, w.Range())
+		}, tx.Range())
 	}
 
 	return replaced

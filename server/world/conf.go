@@ -35,7 +35,7 @@ type Config struct {
 	// tick or when deciding where to strike lightning. If set to nil, `rand.NewSource(time.Now().Unix())` will be used
 	// to generate a new source.
 	RandSource rand.Source
-	// Entities is an EntityRegistry with all entity types registered that may
+	// Entities is an EntityRegistry with all Entity types registered that may
 	// be added to the World.
 	Entities EntityRegistry
 }
@@ -64,21 +64,26 @@ func (conf Config) New() *World {
 	s := conf.Provider.Settings()
 	w := &World{
 		scheduledUpdates: make(map[cube.Pos]int64),
-		entities:         make(map[Entity]ChunkPos),
+		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		closing:          make(chan struct{}),
+		queue:            make(chan transaction, 128),
 		r:                rand.New(conf.RandSource),
 		advance:          s.ref.Add(1) == 1,
 		conf:             conf,
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
-	w.weather, w.ticker = weather{w: w}, ticker{w: w}
+	w.weather, w.ticker = weather{w: w}, ticker{}
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
-	go w.tickLoop()
+	w.running.Add(3)
+	go w.tickLoop(w)
 	go w.chunkCacheJanitor()
+	go w.handleTransactions()
+
+	<-w.Exec(w.tick)
 	return w
 }

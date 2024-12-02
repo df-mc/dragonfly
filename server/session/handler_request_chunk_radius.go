@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -8,7 +9,7 @@ import (
 type RequestChunkRadiusHandler struct{}
 
 // Handle ...
-func (*RequestChunkRadiusHandler) Handle(p packet.Packet, s *Session) error {
+func (*RequestChunkRadiusHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, _ Controllable) error {
 	pk := p.(*packet.RequestChunkRadius)
 
 	if pk.ChunkRadius > s.maxChunkRadius {
@@ -16,7 +17,7 @@ func (*RequestChunkRadiusHandler) Handle(p packet.Packet, s *Session) error {
 	}
 	s.chunkRadius = pk.ChunkRadius
 
-	s.chunkLoader.ChangeRadius(int(pk.ChunkRadius))
+	s.chunkLoader.ChangeRadius(tx, int(pk.ChunkRadius))
 
 	s.writePacket(&packet.ChunkRadiusUpdated{ChunkRadius: s.chunkRadius})
 	return nil

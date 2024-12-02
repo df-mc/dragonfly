@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -37,6 +38,17 @@ func (c CopperGrate) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
 	return c, true
 }
 
+func (c CopperGrate) Strip() (world.Block, world.Sound, bool) {
+	if c.Waxed {
+		c.Waxed = false
+		return c, sound.WaxRemoved{}, true
+	} else if ot, ok := c.Oxidation.Decrease(); ok {
+		c.Oxidation = ot
+		return c, sound.CopperScraped{}, true
+	}
+	return c, nil, false
+}
+
 func (c CopperGrate) CanOxidate() bool {
 	return !c.Waxed
 }
@@ -45,34 +57,19 @@ func (c CopperGrate) OxidationLevel() OxidationType {
 	return c.Oxidation
 }
 
-func (c CopperGrate) WithOxidationLevel(o OxidationType) Oxidizable {
+func (c CopperGrate) WithOxidationLevel(o OxidationType) Oxidisable {
 	c.Oxidation = o
 	return c
 }
 
-func (c CopperGrate) Activate(pos cube.Pos, _ cube.Face, w *world.World, user item.User, _ *item.UseContext) bool {
-	var ok bool
-	c.Oxidation, c.Waxed, ok = activateOxidizable(pos, w, user, c.Oxidation, c.Waxed)
-	if ok {
-		w.SetBlock(pos, c, nil)
-		return true
-	}
-	return false
-}
-
-func (c CopperGrate) SneakingActivate(pos cube.Pos, face cube.Face, w *world.World, user item.User, ctx *item.UseContext) bool {
-	// Sneaking should still trigger axe functionality.
-	return c.Activate(pos, face, w, user, ctx)
-}
-
-func (c CopperGrate) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	attemptOxidation(pos, w, r, c)
+func (c CopperGrate) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	attemptOxidation(pos, tx, r, c)
 }
 
 // EncodeItem ...
 func (c CopperGrate) EncodeItem() (name string, meta int16) {
 	name = "copper_grate"
-	if c.Oxidation != NormalOxidation() {
+	if c.Oxidation != UnoxidisedOxidation() {
 		name = c.Oxidation.String() + "_" + name
 	}
 	if c.Waxed {
@@ -84,7 +81,7 @@ func (c CopperGrate) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (c CopperGrate) EncodeBlock() (string, map[string]any) {
 	name := "copper_grate"
-	if c.Oxidation != NormalOxidation() {
+	if c.Oxidation != UnoxidisedOxidation() {
 		name = c.Oxidation.String() + "_" + name
 	}
 	if c.Waxed {

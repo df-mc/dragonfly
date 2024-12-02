@@ -5,42 +5,45 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// FeatherFalling is an enchantment to boots that reduces fall damage. It does not affect falling speed.
-type FeatherFalling struct{}
+// FeatherFalling is an enchantment to boots that reduces fall damage. It does
+// not affect falling speed.
+var FeatherFalling featherFalling
+
+type featherFalling struct{}
 
 // Name ...
-func (FeatherFalling) Name() string {
+func (featherFalling) Name() string {
 	return "Feather Falling"
 }
 
 // MaxLevel ...
-func (FeatherFalling) MaxLevel() int {
+func (featherFalling) MaxLevel() int {
 	return 4
 }
 
 // Cost ...
-func (FeatherFalling) Cost(level int) (int, int) {
-	min := 5 + (level-1)*6
-	return min, min + 6
+func (featherFalling) Cost(level int) (int, int) {
+	minCost := 5 + (level-1)*6
+	return minCost, minCost + 6
 }
 
 // Rarity ...
-func (FeatherFalling) Rarity() item.EnchantmentRarity {
+func (featherFalling) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
 // Modifier returns the base protection modifier for the enchantment.
-func (FeatherFalling) Modifier() float64 {
+func (featherFalling) Modifier() float64 {
 	return 0.12
 }
 
 // CompatibleWithEnchantment ...
-func (FeatherFalling) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (featherFalling) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (FeatherFalling) CompatibleWithItem(i world.Item) bool {
+func (featherFalling) CompatibleWithItem(i world.Item) bool {
 	b, ok := i.(item.BootsType)
 	return ok && b.Boots()
 }

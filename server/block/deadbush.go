@@ -18,32 +18,32 @@ type DeadBush struct {
 }
 
 // NeighbourUpdateTick ...
-func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		if amount := rand.Intn(3); amount != 0 {
-			dropItem(w, item.NewStack(item.Stick{}, amount), pos.Vec3Centre())
+			dropItem(tx, item.NewStack(item.Stick{}, amount), pos.Vec3Centre())
 		}
 	}
 }
 
 // UseOnBlock ...
-func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, d)
+func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, d)
 	if !used {
 		return false
 	}
-	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
-	place(w, pos, d, user, ctx)
+	place(tx, pos, d, user, ctx)
 	return placed(ctx)
 }
 
 // SideClosed ...
-func (d DeadBush) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (d DeadBush) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

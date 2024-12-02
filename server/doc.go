@@ -4,11 +4,10 @@
 // `Server.Listen()` may be called to start and run the server. It should be
 // followed up by a loop as such:
 //
-//	  for srv.Accept(nil) {
-//		 }
+//	for p := range srv.Accept() {
+//	  // Use p
+//	}
 //
 // `Server.Accept()` blocks until a new player connects to the server and
-// spawns in the default world, and calls the function passed to it once this
-// happens. If `Server.Accept()` returns false, this means the server was
-// closed.
+// spawns in the default world.
 package server

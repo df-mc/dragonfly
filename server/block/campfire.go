@@ -44,7 +44,7 @@ func (Campfire) Model() world.BlockModel {
 }
 
 // SideClosed ...
-func (Campfire) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Campfire) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -80,50 +80,50 @@ func (c Campfire) LightEmissionLevel() uint8 {
 }
 
 // Ignite ...
-func (c Campfire) Ignite(pos cube.Pos, w *world.World, _ world.Entity) bool {
-	w.PlaySound(pos.Vec3(), sound.Ignite{})
+func (c Campfire) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
+	tx.PlaySound(pos.Vec3(), sound.Ignite{})
 	if !c.Extinguished {
 		return false
 	}
-	if _, ok := w.Liquid(pos); ok {
+	if _, ok := tx.Liquid(pos); ok {
 		return false
 	}
 
 	c.Extinguished = false
-	w.SetBlock(pos, c, nil)
+	tx.SetBlock(pos, c, nil)
 	return true
 }
 
 // Splash ...
-func (c Campfire) Splash(w *world.World, pos cube.Pos) {
+func (c Campfire) Splash(tx *world.Tx, pos cube.Pos) {
 	if c.Extinguished {
 		return
 	}
 
-	c.extinguish(pos, w)
+	c.extinguish(pos, tx)
 }
 
 // extinguish extinguishes the campfire.
-func (c Campfire) extinguish(pos cube.Pos, w *world.World) {
-	w.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+func (c Campfire) extinguish(pos cube.Pos, tx *world.Tx) {
+	tx.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 	c.Extinguished = true
 
 	for i := range c.Items {
 		c.Items[i].Time = time.Second * 30
 	}
 
-	w.SetBlock(pos, c, nil)
+	tx.SetBlock(pos, c, nil)
 }
 
 // Activate ...
-func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
+func (c Campfire) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if held.Empty() {
 		return false
 	}
 
 	if _, ok := held.Item().(item.Shovel); ok && !c.Extinguished {
-		c.extinguish(pos, w)
+		c.extinguish(pos, tx)
 		ctx.DamageItem(1)
 		return true
 	}
@@ -142,8 +142,8 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 
 			ctx.SubtractFromCount(1)
 
-			w.PlaySound(pos.Vec3Centre(), sound.ItemAdd{})
-			w.SetBlock(pos, c, nil)
+			tx.PlaySound(pos.Vec3Centre(), sound.ItemAdd{})
+			tx.SetBlock(pos, c, nil)
 			return true
 		}
 	}
@@ -151,27 +151,27 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.Use
 }
 
 // UseOnBlock ...
-func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
 	}
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Campfire); ok {
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Campfire); ok {
 		return false
 	}
 	c.Facing = user.Rotation().Direction().Opposite()
-	place(w, pos, c, user, ctx)
+	place(tx, pos, c, user, ctx)
 	return placed(ctx)
 }
 
 // Tick is called to cook the items within the campfire.
-func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
+func (c Campfire) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	if c.Extinguished {
 		// Extinguished, do nothing.
 		return
 	}
 	if rand.Float64() <= 0.016 { // Every three or so seconds.
-		w.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
+		tx.PlaySound(pos.Vec3Centre(), sound.CampfireCrackle{})
 	}
 
 	updated := false
@@ -187,34 +187,34 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, w *world.World) {
 		}
 
 		if food, ok := it.Item.Item().(item.Smeltable); ok {
-			dropItem(w, food.SmeltInfo().Product, pos.Vec3Middle())
+			dropItem(tx, food.SmeltInfo().Product, pos.Vec3Middle())
 		}
 		c.Items[i].Item = item.Stack{}
 	}
 	if updated {
-		w.SetBlock(pos, c, nil)
+		tx.SetBlock(pos, c, nil)
 	}
 }
 
 // NeighbourUpdateTick ...
-func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	_, ok := w.Liquid(pos)
-	liquid, okTwo := w.Liquid(pos.Side(cube.FaceUp))
+func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	_, ok := tx.Liquid(pos)
+	liquid, okTwo := tx.Liquid(pos.Side(cube.FaceUp))
 	if (ok || (okTwo && liquid.LiquidType() == "water")) && !c.Extinguished {
-		c.extinguish(pos, w)
+		c.extinguish(pos, tx)
 	}
 }
 
 // EntityInside ...
-func (c Campfire) EntityInside(pos cube.Pos, w *world.World, e world.Entity) {
+func (c Campfire) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	if flammable, ok := e.(flammableEntity); ok {
 		if flammable.OnFireDuration() > 0 && c.Extinguished {
 			c.Extinguished = false
-			w.PlaySound(pos.Vec3(), sound.Ignite{})
-			w.SetBlock(pos, c, nil)
+			tx.PlaySound(pos.Vec3(), sound.Ignite{})
+			tx.SetBlock(pos, c, nil)
 		}
 		if !c.Extinguished {
-			if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+			if l, ok := e.(livingEntity); ok {
 				l.Hurt(c.Type.Damage(), FireDamageSource{})
 			}
 		}

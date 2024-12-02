@@ -41,26 +41,26 @@ func (l *Loader) World() *World {
 
 // ChangeWorld changes the World of the Loader. The currently loaded chunks are reset and any future loading
 // is done from the new World.
-func (l *Loader) ChangeWorld(new *World) {
+func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.reset()
+	l.reset(tx)
 	l.world(new)
 }
 
 // ChangeRadius changes the maximum chunk radius of the Loader.
-func (l *Loader) ChangeRadius(new int) {
+func (l *Loader) ChangeRadius(tx *Tx, new int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	l.r = new
-	l.evictUnused()
+	l.evictUnused(tx)
 	l.populateLoadQueue()
 }
 
 // Move moves the loader to the position passed. The position is translated to a chunk position to load
-func (l *Loader) Move(pos mgl64.Vec3) {
+func (l *Loader) Move(tx *Tx, pos mgl64.Vec3) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -69,14 +69,14 @@ func (l *Loader) Move(pos mgl64.Vec3) {
 		return
 	}
 	l.pos = chunkPos
-	l.evictUnused()
+	l.evictUnused(tx)
 	l.populateLoadQueue()
 }
 
 // Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
 // every chunk loaded, the Viewer passed through construction in New has its ViewChunk method called.
 // Load does nothing for n <= 0.
-func (l *Loader) Load(n int) {
+func (l *Loader) Load(tx *Tx, n int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -89,10 +89,10 @@ func (l *Loader) Load(n int) {
 		}
 
 		pos := l.loadQueue[0]
-		c := l.w.chunk(pos)
+		c := tx.w.chunk(pos)
 
-		l.viewer.ViewChunk(pos, c.Chunk, c.BlockEntities)
-		l.w.addViewer(c, l)
+		l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
+		l.w.addViewer(tx, c, l)
 
 		l.loaded[pos] = c
 
@@ -113,33 +113,32 @@ func (l *Loader) Chunk(pos ChunkPos) (*Column, bool) {
 
 // Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that
 // are currently shown to it.
-func (l *Loader) Close() error {
+func (l *Loader) Close(tx *Tx) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.reset()
+	l.reset(tx)
 	l.closed = true
 	l.viewer = nil
-	return nil
 }
 
 // Reset clears all chunks loaded by the Loader and repopulates the loading queue so that they can all be loaded again.
-func (l *Loader) Reset() {
+func (l *Loader) Reset(tx *Tx) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.reset()
+	l.reset(tx)
 	l.w.addWorldViewer(l)
 	l.populateLoadQueue()
 }
 
 // reset clears the Loader so that it may be used as if it was created again with NewLoader.
-func (l *Loader) reset() {
+func (l *Loader) reset(tx *Tx) {
 	for pos := range l.loaded {
-		l.w.removeViewer(pos, l)
+		l.w.removeViewer(tx, pos, l)
 	}
 	l.loaded = map[ChunkPos]*Column{}
-	l.w.removeWorldViewer(l)
+	delete(l.w.viewers, l)
 }
 
 // world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
@@ -152,13 +151,13 @@ func (l *Loader) world(new *World) {
 
 // evictUnused gets rid of chunks in the loaded map which are no longer within the chunk radius of the loader,
 // and should therefore be removed.
-func (l *Loader) evictUnused() {
+func (l *Loader) evictUnused(tx *Tx) {
 	for pos := range l.loaded {
 		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
 		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
 		if int(dist) > l.r {
 			delete(l.loaded, pos)
-			l.w.removeViewer(pos, l)
+			l.w.removeViewer(tx, pos, l)
 		}
 	}
 }

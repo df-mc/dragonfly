@@ -24,13 +24,13 @@ type crop struct {
 }
 
 // NeighbourUpdateTick ...
-func (c crop) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		b := w.Block(pos)
-		w.SetBlock(pos, nil, nil)
+func (c crop) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
+		b := tx.Block(pos)
+		tx.SetBlock(pos, nil, nil)
 		if breakable, ok := b.(Breakable); ok {
 			for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, []item.Enchantment{}) {
-				dropItem(w, drop, pos.Vec3Centre())
+				dropItem(tx, drop, pos.Vec3Centre())
 			}
 		}
 	}
@@ -47,15 +47,15 @@ func (c crop) GrowthStage() int {
 }
 
 // CalculateGrowthChance calculates the chance the crop will grow during a random tick.
-func (c crop) CalculateGrowthChance(pos cube.Pos, w *world.World) float64 {
+func (c crop) CalculateGrowthChance(pos cube.Pos, tx *world.Tx) float64 {
 	points := 0.0
 
-	block := w.Block(pos)
+	block := tx.Block(pos)
 	under := pos.Side(cube.FaceDown)
 
 	for x := -1; x <= 1; x++ {
 		for z := -1; z <= 1; z++ {
-			block := w.Block(under.Add(cube.Pos{x, 0, z}))
+			block := tx.Block(under.Add(cube.Pos{x, 0, z}))
 			if farmland, ok := block.(Farmland); ok {
 				farmlandPoints := 0.0
 				if farmland.Hydration > 0 {
@@ -74,15 +74,15 @@ func (c crop) CalculateGrowthChance(pos cube.Pos, w *world.World) float64 {
 	north := pos.Side(cube.FaceNorth)
 	south := pos.Side(cube.FaceSouth)
 
-	northSouth := sameCrop(block, w.Block(north)) || sameCrop(block, w.Block(south))
-	westEast := sameCrop(block, w.Block(pos.Side(cube.FaceWest))) || sameCrop(block, w.Block(pos.Side(cube.FaceEast)))
+	northSouth := sameCrop(block, tx.Block(north)) || sameCrop(block, tx.Block(south))
+	westEast := sameCrop(block, tx.Block(pos.Side(cube.FaceWest))) || sameCrop(block, tx.Block(pos.Side(cube.FaceEast)))
 	if northSouth && westEast {
 		points /= 2
 	} else {
-		diagonal := sameCrop(block, w.Block(north.Side(cube.FaceWest))) ||
-			sameCrop(block, w.Block(north.Side(cube.FaceEast))) ||
-			sameCrop(block, w.Block(south.Side(cube.FaceWest))) ||
-			sameCrop(block, w.Block(south.Side(cube.FaceEast)))
+		diagonal := sameCrop(block, tx.Block(north.Side(cube.FaceWest))) ||
+			sameCrop(block, tx.Block(north.Side(cube.FaceEast))) ||
+			sameCrop(block, tx.Block(south.Side(cube.FaceWest))) ||
+			sameCrop(block, tx.Block(south.Side(cube.FaceEast)))
 		if diagonal {
 			points /= 2
 		}

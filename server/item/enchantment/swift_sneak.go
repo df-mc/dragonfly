@@ -5,43 +5,45 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// SwiftSneak is a non-renewable enchantment that can be applied to leggings and allows the player to walk more quickly
-// while sneaking.
-type SwiftSneak struct{}
+// SwiftSneak is a non-renewable enchantment that can be applied to leggings
+// and allows the player to walk more quickly while sneaking.
+var SwiftSneak swiftSneak
+
+type swiftSneak struct{}
 
 // Name ...
-func (SwiftSneak) Name() string {
+func (swiftSneak) Name() string {
 	return "Swift Sneak"
 }
 
 // MaxLevel ...
-func (SwiftSneak) MaxLevel() int {
+func (swiftSneak) MaxLevel() int {
 	return 3
 }
 
 // Cost ...
-func (SwiftSneak) Cost(level int) (int, int) {
-	min := level * 25
-	return min, min + 50
+func (swiftSneak) Cost(level int) (int, int) {
+	minCost := level * 25
+	return minCost, minCost + 50
 }
 
 // Rarity ...
-func (SwiftSneak) Rarity() item.EnchantmentRarity {
+func (swiftSneak) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...
-func (SwiftSneak) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (swiftSneak) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
 // Treasure ...
-func (SwiftSneak) Treasure() bool {
+func (swiftSneak) Treasure() bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (SwiftSneak) CompatibleWithItem(i world.Item) bool {
+func (swiftSneak) CompatibleWithItem(i world.Item) bool {
 	b, ok := i.(item.LeggingsType)
 	return ok && b.Leggings()
 }

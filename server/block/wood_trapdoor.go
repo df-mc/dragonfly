@@ -43,27 +43,27 @@ func (t WoodTrapdoor) Model() world.BlockModel {
 
 // UseOnBlock handles the directional placing of trapdoors and makes sure they are properly placed upside down
 // when needed.
-func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(w, pos, face, t)
+func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, face, used := firstReplaceable(tx, pos, face, t)
 	if !used {
 		return false
 	}
 	t.Facing = user.Rotation().Direction().Opposite()
 	t.Top = (clickPos.Y() > 0.5 && face != cube.FaceUp) || face == cube.FaceDown
 
-	place(w, pos, t, user, ctx)
+	place(tx, pos, t, user, ctx)
 	return placed(ctx)
 }
 
 // Activate ...
-func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
+func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	t.Open = !t.Open
-	w.SetBlock(pos, t, nil)
+	tx.SetBlock(pos, t, nil)
 	if t.Open {
-		w.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
+		tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
 		return true
 	}
-	w.PlaySound(pos.Vec3Centre(), sound.TrapdoorClose{Block: t})
+	tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorClose{Block: t})
 	return true
 }
 
@@ -78,7 +78,7 @@ func (WoodTrapdoor) FuelInfo() item.FuelInfo {
 }
 
 // SideClosed ...
-func (t WoodTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (t WoodTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

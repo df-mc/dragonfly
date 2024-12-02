@@ -18,24 +18,24 @@ type DragonEgg struct {
 }
 
 // NeighbourUpdateTick ...
-func (d DragonEgg) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	d.fall(d, pos, w)
+func (d DragonEgg) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	d.fall(d, pos, tx)
 }
 
 // SideClosed ...
-func (d DragonEgg) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (d DragonEgg) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // teleport ...
-func (d DragonEgg) teleport(pos cube.Pos, w *world.World) {
+func (d DragonEgg) teleport(pos cube.Pos, tx *world.Tx) {
 	for i := 0; i < 1000; i++ {
-		newPos := pos.Add(cube.Pos{rand.Intn(31) - 15, max(w.Range()[0]-pos.Y(), min(w.Range()[1]-pos.Y(), rand.Intn(15)-7)), rand.Intn(31) - 15})
+		newPos := pos.Add(cube.Pos{rand.Intn(31) - 15, max(tx.Range()[0]-pos.Y(), min(tx.Range()[1]-pos.Y(), rand.Intn(15)-7)), rand.Intn(31) - 15})
 
-		if _, ok := w.Block(newPos).(Air); ok {
-			w.SetBlock(newPos, d, nil)
-			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3(), particle.DragonEggTeleport{Diff: pos.Sub(newPos)})
+		if _, ok := tx.Block(newPos).(Air); ok {
+			tx.SetBlock(newPos, d, nil)
+			tx.SetBlock(pos, nil, nil)
+			tx.AddParticle(pos.Vec3(), particle.DragonEggTeleport{Diff: pos.Sub(newPos)})
 			return
 		}
 	}
@@ -47,16 +47,16 @@ func (d DragonEgg) LightEmissionLevel() uint8 {
 }
 
 // Punch ...
-func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, w *world.World, u item.User) {
+func (d DragonEgg) Punch(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User) {
 	if gm, ok := u.(interface{ GameMode() world.GameMode }); ok && gm.GameMode().CreativeInventory() {
 		return
 	}
-	d.teleport(pos, w)
+	d.teleport(pos, tx)
 }
 
 // Activate ...
-func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
-	d.teleport(pos, w)
+func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
+	d.teleport(pos, tx)
 	return true
 }
 

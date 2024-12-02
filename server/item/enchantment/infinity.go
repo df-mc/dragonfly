@@ -5,42 +5,44 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Infinity is an enchantment to bows that prevents regular arrows from being consumed when shot.
-type Infinity struct{}
+// Infinity is an enchantment to bows that prevents regular arrows from being
+// consumed when shot.
+var Infinity infinity
+
+type infinity struct{}
 
 // Name ...
-func (Infinity) Name() string {
+func (infinity) Name() string {
 	return "Infinity"
 }
 
 // MaxLevel ...
-func (Infinity) MaxLevel() int {
+func (infinity) MaxLevel() int {
 	return 1
 }
 
 // Cost ...
-func (Infinity) Cost(int) (int, int) {
+func (infinity) Cost(int) (int, int) {
 	return 20, 50
 }
 
 // Rarity ...
-func (Infinity) Rarity() item.EnchantmentRarity {
+func (infinity) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // ConsumesArrows always returns false.
-func (Infinity) ConsumesArrows() bool {
+func (infinity) ConsumesArrows() bool {
 	return false
 }
 
 // CompatibleWithEnchantment ...
-func (Infinity) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	_, mending := t.(Mending)
-	return !mending
+func (infinity) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	return t != Mending
 }
 
 // CompatibleWithItem ...
-func (Infinity) CompatibleWithItem(i world.Item) bool {
+func (infinity) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Bow)
 	return ok
 }

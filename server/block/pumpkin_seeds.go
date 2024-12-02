@@ -24,39 +24,39 @@ func (PumpkinSeeds) SameCrop(c Crop) bool {
 }
 
 // NeighbourUpdateTick ...
-func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
+func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
 	} else if p.Direction != cube.FaceDown {
-		if pumpkin, ok := w.Block(pos.Side(p.Direction)).(Pumpkin); !ok || pumpkin.Carved {
+		if pumpkin, ok := tx.Block(pos.Side(p.Direction)).(Pumpkin); !ok || pumpkin.Carved {
 			p.Direction = cube.FaceDown
-			w.SetBlock(pos, p, nil)
+			tx.SetBlock(pos, p, nil)
 		}
 	}
 }
 
 // RandomTick ...
-func (p PumpkinSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
-	if r.Float64() <= p.CalculateGrowthChance(pos, w) && w.Light(pos) >= 8 {
+func (p PumpkinSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	if r.Float64() <= p.CalculateGrowthChance(pos, tx) && tx.Light(pos) >= 8 {
 		if p.Growth < 7 {
 			p.Growth++
-			w.SetBlock(pos, p, nil)
+			tx.SetBlock(pos, p, nil)
 		} else {
 			directions := []cube.Direction{cube.North, cube.South, cube.West, cube.East}
 			for _, i := range directions {
-				if _, ok := w.Block(pos.Side(i.Face())).(Pumpkin); ok {
+				if _, ok := tx.Block(pos.Side(i.Face())).(Pumpkin); ok {
 					return
 				}
 			}
 			direction := directions[r.Intn(len(directions))].Face()
 			stemPos := pos.Side(direction)
-			if _, ok := w.Block(stemPos).(Air); ok {
-				switch w.Block(stemPos.Side(cube.FaceDown)).(type) {
+			if _, ok := tx.Block(stemPos).(Air); ok {
+				switch tx.Block(stemPos.Side(cube.FaceDown)).(type) {
 				case Farmland, Dirt, Grass:
 					p.Direction = direction
-					w.SetBlock(pos, p, nil)
-					w.SetBlock(stemPos, Pumpkin{}, nil)
+					tx.SetBlock(pos, p, nil)
+					tx.SetBlock(stemPos, Pumpkin{}, nil)
 				}
 			}
 		}
@@ -64,27 +64,27 @@ func (p PumpkinSeeds) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 }
 
 // BoneMeal ...
-func (p PumpkinSeeds) BoneMeal(pos cube.Pos, w *world.World) bool {
+func (p PumpkinSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if p.Growth == 7 {
 		return false
 	}
 	p.Growth = min(p.Growth+rand.Intn(4)+2, 7)
-	w.SetBlock(pos, p, nil)
+	tx.SetBlock(pos, p, nil)
 	return true
 }
 
 // UseOnBlock ...
-func (p PumpkinSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, p)
+func (p PumpkinSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, p)
 	if !used {
 		return false
 	}
 
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		return false
 	}
 
-	place(w, pos, p, user, ctx)
+	place(tx, pos, p, user, ctx)
 	return placed(ctx)
 }
 

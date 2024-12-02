@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
-	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/generator"
@@ -134,15 +133,23 @@ func (conf Config) New() *Server {
 			conf.Resources = append(conf.Resources, pack)
 		}
 	}
-	// Copy resources so that the slice can't be edited afterwards.
+	// Copy resources so that the slice can't be edited afterward.
 	conf.Resources = slices.Clone(conf.Resources)
 
 	srv := &Server{
 		conf:     conf,
-		incoming: make(chan *session.Session),
-		p:        make(map[uuid.UUID]*player.Player),
+		incoming: make(chan incoming),
+		p:        make(map[uuid.UUID]*onlinePlayer),
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
+	for _, lf := range conf.Listeners {
+		l, err := lf(conf)
+		if err != nil {
+			conf.Log.Error("create listener: " + err.Error())
+		}
+		srv.listeners = append(srv.listeners, l)
+	}
+
 	world_finaliseBlockRegistry()
 	recipe_registerVanilla()
 
@@ -150,7 +157,6 @@ func (conf Config) New() *Server {
 	srv.nether = srv.createWorld(world.Nether, &srv.world, &srv.end)
 	srv.end = srv.createWorld(world.End, &srv.nether, &srv.world)
 
-	srv.registerTargetFunc()
 	srv.checkNetIsolation()
 
 	return srv
@@ -283,7 +289,9 @@ func loadResources(dir string) ([]*resource.Pack, error) {
 	return packs, nil
 }
 
-// loadGenerator loads a standard world.Generator for a world.Dimension.
+// loadGenerator loads a standard world.Generator for a world.Dimension. The
+// generators returned are flat generators with grass/dirt, netherrack or end
+// stone depending on the dimension passed.
 func loadGenerator(dim world.Dimension) world.Generator {
 	switch dim {
 	case world.Overworld:

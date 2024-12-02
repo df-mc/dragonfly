@@ -11,47 +11,50 @@ import (
 
 // ticker implements World ticking methods. World embeds this struct, so any exported methods on ticker are exported
 // methods on World.
-type ticker struct{ w *World }
+type ticker struct{}
 
 // tickLoop starts ticking the World 20 times every second, updating all entities, blocks and other features such as
 // the time and weather of the world, as required.
-func (t ticker) tickLoop() {
+func (t ticker) tickLoop(w *World) {
 	tc := time.NewTicker(time.Second / 20)
 	defer tc.Stop()
-
-	t.w.running.Add(1)
 	for {
 		select {
 		case <-tc.C:
-			t.tick()
-		case <-t.w.closing:
+			<-w.Exec(t.tick)
+		case <-w.closing:
 			// World is being closed: Stop ticking and get rid of a task.
-			t.w.running.Done()
+			w.running.Done()
 			return
 		}
 	}
 }
 
 // tick performs a tick on the World and updates the time, weather, blocks and entities that require updates.
-func (t ticker) tick() {
-	viewers, loaders := t.w.allViewers()
+func (t ticker) tick(tx *Tx) {
+	viewers, loaders := tx.World().allViewers() // ALL VIEWERS
 
-	t.w.set.Lock()
-	if len(viewers) == 0 && t.w.set.CurrentTick != 0 {
-		t.w.set.Unlock()
+	tx.World().set.Lock()
+	if s := tx.World().set.Spawn; s[1] > tx.Range()[1] {
+		// Vanilla will set the spawn position's Y value to max to indicate that
+		// the player should spawn at the highest position in the world.
+		tx.World().set.Spawn[1] = tx.World().highestObstructingBlock(s[0], s[2]) + 1
+	}
+	if len(viewers) == 0 && tx.World().set.CurrentTick != 0 {
+		tx.World().set.Unlock()
 		return
 	}
-	if t.w.advance {
-		t.w.set.CurrentTick++
-		if t.w.set.TimeCycle {
-			t.w.set.Time++
+	if tx.World().advance {
+		tx.World().set.CurrentTick++
+		if tx.World().set.TimeCycle {
+			tx.World().set.Time++
 		}
-		if t.w.set.WeatherCycle {
-			t.w.advanceWeather()
+		if tx.World().set.WeatherCycle {
+			tx.World().advanceWeather()
 		}
 	}
 
-	rain, thunder, tick, tim := t.w.set.Raining, t.w.set.Thundering && t.w.set.Raining, t.w.set.CurrentTick, int(t.w.set.Time)
+	rain, thunder, tick, tim := tx.World().set.Raining, tx.World().set.Thundering && tx.World().set.Raining, tx.World().set.CurrentTick, int(tx.World().set.Time)
 	sleep := false
 	if t.w.set.RequiredSleepTicks > 0 {
 		t.w.set.RequiredSleepTicks--
@@ -59,14 +62,14 @@ func (t ticker) tick() {
 			sleep = true
 		}
 	}
-	t.w.set.Unlock()
+	tx.World().set.Unlock()
 
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
-			if t.w.conf.Dim.TimeCycle() {
+			if tx.World().Dimension().TimeCycle() {
 				viewer.ViewTime(tim)
 			}
-			if t.w.conf.Dim.WeatherCycle() {
+			if tx.World().Dimension().WeatherCycle() {
 				viewer.ViewWeather(rain, thunder)
 			}
 		}
@@ -75,54 +78,51 @@ func (t ticker) tick() {
 		t.tryAdvanceDay()
 	}
 	if thunder {
-		t.w.tickLightning()
+		tx.World().tickLightning(tx)
 	}
 
-	t.tickEntities(tick)
-	t.tickBlocksRandomly(loaders, tick)
-	t.tickScheduledBlocks(tick)
-	t.performNeighbourUpdates()
+	t.tickEntities(tx, tick)
+	t.tickBlocksRandomly(tx, loaders, tick)
+	t.tickScheduledBlocks(tx, tick)
+	t.performNeighbourUpdates(tx)
 }
 
 // tickScheduledBlocks executes scheduled block updates in chunks that are currently loaded.
-func (t ticker) tickScheduledBlocks(tick int64) {
-	t.w.updateMu.Lock()
-	positions := make([]cube.Pos, 0, len(t.w.scheduledUpdates)/4)
-	for pos, scheduledTick := range t.w.scheduledUpdates {
+func (t ticker) tickScheduledBlocks(tx *Tx, tick int64) {
+	positions := make([]cube.Pos, 0, len(tx.World().scheduledUpdates)/4)
+	for pos, scheduledTick := range tx.World().scheduledUpdates {
 		if scheduledTick <= tick {
 			positions = append(positions, pos)
-			delete(t.w.scheduledUpdates, pos)
+			delete(tx.World().scheduledUpdates, pos)
 		}
 	}
-	t.w.updateMu.Unlock()
 
 	for _, pos := range positions {
-		if ticker, ok := t.w.Block(pos).(ScheduledTicker); ok {
-			ticker.ScheduledTick(pos, t.w, t.w.r)
+		if ticker, ok := tx.Block(pos).(ScheduledTicker); ok {
+			ticker.ScheduledTick(pos, tx, tx.World().r)
 		}
-		if liquid, ok := t.w.additionalLiquid(pos); ok {
+		if liquid, ok := tx.World().additionalLiquid(pos); ok {
 			if ticker, ok := liquid.(ScheduledTicker); ok {
-				ticker.ScheduledTick(pos, t.w, t.w.r)
+				ticker.ScheduledTick(pos, tx, tx.World().r)
 			}
 		}
 	}
 }
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
-func (t ticker) performNeighbourUpdates() {
-	t.w.updateMu.Lock()
-	positions := slices.Clone(t.w.neighbourUpdates)
-	t.w.neighbourUpdates = t.w.neighbourUpdates[:0]
-	t.w.updateMu.Unlock()
+func (t ticker) performNeighbourUpdates(tx *Tx) {
+	updates := slices.Clone(tx.World().neighbourUpdates)
+	clear(tx.World().neighbourUpdates)
+	tx.World().neighbourUpdates = tx.World().neighbourUpdates[:0]
 
-	for _, update := range positions {
+	for _, update := range updates {
 		pos, changedNeighbour := update.pos, update.neighbour
-		if ticker, ok := t.w.Block(pos).(NeighbourUpdateTicker); ok {
-			ticker.NeighbourUpdateTick(pos, changedNeighbour, t.w)
+		if ticker, ok := tx.Block(pos).(NeighbourUpdateTicker); ok {
+			ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
 		}
-		if liquid, ok := t.w.additionalLiquid(pos); ok {
+		if liquid, ok := tx.World().additionalLiquid(pos); ok {
 			if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
-				ticker.NeighbourUpdateTick(pos, changedNeighbour, t.w)
+				ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
 			}
 		}
 	}
@@ -130,9 +130,9 @@ func (t ticker) performNeighbourUpdates() {
 
 // tickBlocksRandomly executes random block ticks in each sub chunk in the world that has at least one viewer
 // registered from the viewers passed.
-func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
+func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 	var (
-		r             = int32(t.w.tickRange())
+		r             = int32(tx.World().tickRange())
 		g             randUint4
 		blockEntities []cube.Pos
 		randomBlocks  []cube.Pos
@@ -151,20 +151,18 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 		loaded = append(loaded, pos)
 	}
 
-	t.w.chunkMu.Lock()
-	for pos, c := range t.w.chunks {
+	for pos, c := range tx.World().chunks {
 		if !t.anyWithinDistance(pos, loaded, r) {
 			// No loaders in this chunk that are within the simulation distance, so proceed to the next.
 			continue
 		}
-		c.Lock()
 		blockEntities = append(blockEntities, maps.Keys(c.BlockEntities)...)
 
 		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
 
 		// We generate up to j random positions for every sub chunk.
-		for j := 0; j < t.w.conf.RandomTickSpeed; j++ {
-			x, y, z := g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
+		for j := 0; j < tx.World().conf.RandomTickSpeed; j++ {
+			x, y, z := g.uint4(tx.World().r), g.uint4(tx.World().r), g.uint4(tx.World().r)
 
 			for i, sub := range c.Sub() {
 				if sub.Empty() {
@@ -175,27 +173,25 @@ func (t ticker) tickBlocksRandomly(loaders []*Loader, tick int64) {
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
 				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
-					subY := (i + (t.w.Range().Min() >> 4)) << 4
+					subY := (i + (tx.Range().Min() >> 4)) << 4
 					randomBlocks = append(randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
 
 					// Only generate new coordinates if a tickable block was actually found. If not, we can just re-use
 					// the coordinates for the next sub chunk.
-					x, y, z = g.uint4(t.w.r), g.uint4(t.w.r), g.uint4(t.w.r)
+					x, y, z = g.uint4(tx.World().r), g.uint4(tx.World().r), g.uint4(tx.World().r)
 				}
 			}
 		}
-		c.Unlock()
 	}
-	t.w.chunkMu.Unlock()
 
 	for _, pos := range randomBlocks {
-		if rb, ok := t.w.Block(pos).(RandomTicker); ok {
-			rb.RandomTick(pos, t.w, t.w.r)
+		if rb, ok := tx.Block(pos).(RandomTicker); ok {
+			rb.RandomTick(pos, tx, tx.World().r)
 		}
 	}
 	for _, pos := range blockEntities {
-		if tb, ok := t.w.Block(pos).(TickerBlock); ok {
-			tb.Tick(tick, pos, t.w)
+		if tb, ok := tx.Block(pos).(TickerBlock); ok {
+			tb.Tick(tick, pos, tx)
 		}
 	}
 }
@@ -215,85 +211,52 @@ func (t ticker) anyWithinDistance(pos ChunkPos, loaded []ChunkPos, r int32) bool
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
 // updating where necessary.
-func (t ticker) tickEntities(tick int64) {
-	type entityToMove struct {
-		e             Entity
-		after         *Column
-		viewersBefore []Viewer
-	}
-	var (
-		entitiesToMove []entityToMove
-		entitiesToTick []TickerEntity
-	)
+func (t ticker) tickEntities(tx *Tx, tick int64) {
+	for handle, lastPos := range tx.World().entities {
+		e := handle.mustEntity(tx)
+		chunkPos := chunkPosFromVec3(handle.data.Pos)
 
-	t.w.chunkMu.Lock()
-	t.w.entityMu.Lock()
-	for e, lastPos := range t.w.entities {
-		chunkPos := chunkPosFromVec3(e.Position())
-
-		c, ok := t.w.chunks[chunkPos]
+		c, ok := tx.World().chunks[chunkPos]
 		if !ok {
 			continue
-		}
-
-		c.Lock()
-		v := len(c.viewers)
-		c.Unlock()
-
-		if v > 0 {
-			if ticker, ok := e.(TickerEntity); ok {
-				entitiesToTick = append(entitiesToTick, ticker)
-			}
 		}
 
 		if lastPos != chunkPos {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for loaders to view it.
-			t.w.entities[e] = chunkPos
+			tx.World().entities[handle] = chunkPos
+			c.Entities = append(c.Entities, handle)
+
 			var viewers []Viewer
 
 			// When changing an entity's world, then teleporting it immediately, we could end up in a situation
 			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
 			// the loaders from the old chunk. We can assume they never saw the entity in the first place.
-			if old, ok := t.w.chunks[lastPos]; ok {
-				old.Lock()
-				old.Entities = sliceutil.DeleteVal(old.Entities, e)
-				viewers = slices.Clone(old.viewers)
-				old.Unlock()
+			if old, ok := tx.World().chunks[lastPos]; ok {
+				old.Entities = sliceutil.DeleteVal(old.Entities, handle)
+				viewers = old.viewers
 			}
-			entitiesToMove = append(entitiesToMove, entityToMove{e: e, viewersBefore: viewers, after: c})
-		}
-	}
-	t.w.entityMu.Unlock()
-	t.w.chunkMu.Unlock()
 
-	for _, move := range entitiesToMove {
-		move.after.Lock()
-		move.after.Entities = append(move.after.Entities, move.e)
-		viewersAfter := move.after.viewers
-		move.after.Unlock()
+			for _, viewer := range viewers {
+				if slices.Index(c.viewers, viewer) == -1 {
+					// First we hide the entity from all loaders that were previously viewing it, but no
+					// longer are.
+					viewer.HideEntity(e)
+				}
+			}
+			for _, viewer := range c.viewers {
+				if slices.Index(viewers, viewer) == -1 {
+					// Then we show the entity to all loaders that are now viewing the entity in the new
+					// chunk.
+					showEntity(e, viewer)
+				}
+			}
+		}
 
-		for _, viewer := range move.viewersBefore {
-			if sliceutil.Index(viewersAfter, viewer) == -1 {
-				// First we hide the entity from all loaders that were previously viewing it, but no
-				// longer are.
-				viewer.HideEntity(move.e)
+		if len(c.viewers) > 0 {
+			if te, ok := e.(TickerEntity); ok {
+				te.Tick(tx, tick)
 			}
-		}
-		for _, viewer := range viewersAfter {
-			if sliceutil.Index(move.viewersBefore, viewer) == -1 {
-				// Then we show the entity to all loaders that are now viewing the entity in the new
-				// chunk.
-				showEntity(move.e, viewer)
-			}
-		}
-	}
-	for _, ticker := range entitiesToTick {
-		// Make sure the entity is still in world and has not been closed.
-		if ticker.World() == t.w {
-			// We gather entities to ticker and ticker them later, so that the lock on the entity mutex is no longer
-			// active.
-			ticker.Tick(t.w, tick)
 		}
 	}
 }

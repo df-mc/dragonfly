@@ -13,7 +13,7 @@ import (
 )
 
 // handleCraft handles the CraftRecipe request action.
-func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
+func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
@@ -51,18 +51,18 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
 				Container: protocol.FullContainerName{ContainerID: protocol.ContainerCraftingInput},
 				Slot:      byte(slot),
-			}, st, s)
+			}, st, s, tx)
 			break
 		}
 		if !processed {
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
-	return h.createResults(s, craft.Output()...)
+	return h.createResults(s, tx, craft.Output()...)
 }
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
-func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session) error {
+func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
@@ -122,7 +122,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 				h.setItemInSlot(protocol.StackRequestSlotInfo{
 					Container: protocol.FullContainerName{ContainerID: id},
 					Slot:      byte(slot),
-				}, has, s)
+				}, has, s, tx)
 				if expected.Empty() {
 					// Consumed this item, so go to the next one.
 					break
@@ -151,12 +151,12 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 			output = append(output, o.Grow(inc-count))
 		}
 	}
-	return h.createResults(s, output...)
+	return h.createResults(s, tx, output...)
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
-func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeStackRequestAction, s *Session) error {
-	if !s.c.GameMode().CreativeInventory() {
+func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeStackRequestAction, s *Session, tx *world.Tx, c Controllable) error {
+	if !c.GameMode().CreativeInventory() {
 		return fmt.Errorf("can only craft creative items in gamemode creative/spectator")
 	}
 	index := a.CreativeItemNetworkID - 1
@@ -165,7 +165,7 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	}
 	it := creative.Items()[index]
 	it = it.Grow(it.MaxCount() - 1)
-	return h.createResults(s, it)
+	return h.createResults(s, tx, it)
 }
 
 // craftingSize gets the crafting size based on the opened container ID.

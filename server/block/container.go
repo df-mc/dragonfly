@@ -18,13 +18,13 @@ type ContainerViewer interface {
 // ContainerOpener represents an entity that is able to open a container.
 type ContainerOpener interface {
 	// OpenBlockContainer opens a block container at the position passed.
-	OpenBlockContainer(pos cube.Pos)
+	OpenBlockContainer(pos cube.Pos, tx *world.Tx)
 }
 
 // Container represents a container of items, typically a block such as a chest. Containers may have their
 // inventory opened by viewers.
 type Container interface {
-	AddViewer(v ContainerViewer, w *world.World, pos cube.Pos)
-	RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos)
-	Inventory(w *world.World, pos cube.Pos) *inventory.Inventory
+	AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos)
+	RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos)
+	Inventory(tx *world.Tx, pos cube.Pos) *inventory.Inventory
 }

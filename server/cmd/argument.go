@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"reflect"
@@ -73,7 +74,7 @@ type parser struct {
 
 // parseArgument parses the next argument from the command line passed and sets it to value v passed. If
 // parsing was not successful, an error is returned.
-func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name string, source Source) (error, bool) {
+func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name string, source Source, tx *world.Tx) (error, bool) {
 	var err error
 	i := v.Interface()
 	switch i.(type) {
@@ -92,7 +93,7 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name s
 	case Varargs:
 		err = p.varargs(line, v)
 	case []Target:
-		err = p.targets(line, v)
+		err = p.targets(line, v, tx)
 	case SubCommand:
 		err = p.sub(line, name)
 	default:
@@ -109,7 +110,7 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name s
 	if err == nil {
 		// The argument was parsed successfully, so it needs to be removed from the command line.
 		line.RemoveNext()
-	} else if err == ErrInsufficientArgs && optional {
+	} else if errors.Is(err, ErrInsufficientArgs) && optional {
 		// The command ran didn't have enough arguments for this parameter, but it was optional, so it does
 		// not matter. Make sure to clear the value though.
 		v.Set(reflect.Zero(v.Type()))
@@ -239,8 +240,8 @@ func (p parser) varargs(line *Line, v reflect.Value) error {
 }
 
 // targets ...
-func (p parser) targets(line *Line, v reflect.Value) error {
-	targets, err := p.parseTargets(line)
+func (p parser) targets(line *Line, v reflect.Value, tx *world.Tx) error {
+	targets, err := p.parseTargets(line, tx)
 	if err != nil {
 		return err
 	}
@@ -252,8 +253,8 @@ func (p parser) targets(line *Line, v reflect.Value) error {
 }
 
 // parseTargets parses one or more Targets from the Line passed.
-func (p parser) parseTargets(line *Line) ([]Target, error) {
-	entities, players := targets(line.src)
+func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
+	entities, players := targets(tx)
 	first, ok := line.Next()
 	if !ok {
 		return nil, ErrInsufficientArgs

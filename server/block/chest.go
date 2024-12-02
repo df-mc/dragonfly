@@ -57,22 +57,29 @@ func NewChest() Chest {
 
 // Inventory returns the inventory of the chest. The size of the inventory will be 27 or 54, depending on
 // whether the chest is single or double.
-func (c Chest) Inventory(w *world.World, pos cube.Pos) *inventory.Inventory {
+func (c Chest) Inventory(tx *world.Tx, pos cube.Pos) *inventory.Inventory {
+	inv, _ := c.tryPair(tx, pos)
+	return inv
+}
+
+// tryPair attempts to pair the inventories of this chest with a potential
+// paired chest next to it. The (shared) inventory is returned and a bool is
+// returned indicating if the chest changed its pairing state.
+func (c Chest) tryPair(tx *world.Tx, pos cube.Pos) (*inventory.Inventory, bool) {
 	if c.paired {
 		if c.pairInv == nil {
-			if ch, pair, ok := c.pair(w, pos, c.pairPos(pos)); ok {
-				c = ch
-				w.SetBlock(pos, ch, nil)
-				w.SetBlock(c.pairPos(pos), pair, nil)
-			} else {
-				c.paired = false
-				w.SetBlock(pos, c, nil)
-				return c.inventory
+			if ch, pair, ok := c.pair(tx, pos, c.pairPos(pos)); ok {
+				tx.SetBlock(pos, ch, nil)
+				tx.SetBlock(c.pairPos(pos), pair, nil)
+				return ch.pairInv, true
 			}
+			c.paired = false
+			tx.SetBlock(pos, c, nil)
+			return c.inventory, true
 		}
-		return c.pairInv
+		return c.pairInv, false
 	}
-	return c.inventory
+	return c.inventory, false
 }
 
 // WithName returns the chest after applying a specific name to the block.
@@ -82,45 +89,51 @@ func (c Chest) WithName(a ...any) world.Item {
 }
 
 // SideClosed ...
-func (Chest) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Chest) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // open opens the chest, displaying the animation and playing a sound.
-func (c Chest) open(w *world.World, pos cube.Pos) {
-	for _, v := range w.Viewers(pos.Vec3()) {
+func (c Chest) open(tx *world.Tx, pos cube.Pos) {
+	for _, v := range tx.Viewers(pos.Vec3()) {
 		if c.paired {
 			v.ViewBlockAction(c.pairPos(pos), OpenAction{})
 		}
 		v.ViewBlockAction(pos, OpenAction{})
 	}
-	w.PlaySound(pos.Vec3Centre(), sound.ChestOpen{})
+	tx.PlaySound(pos.Vec3Centre(), sound.ChestOpen{})
 }
 
 // close closes the chest, displaying the animation and playing a sound.
-func (c Chest) close(w *world.World, pos cube.Pos) {
-	for _, v := range w.Viewers(pos.Vec3()) {
+func (c Chest) close(tx *world.Tx, pos cube.Pos) {
+	for _, v := range tx.Viewers(pos.Vec3()) {
 		if c.paired {
 			v.ViewBlockAction(c.pairPos(pos), CloseAction{})
 		}
 		v.ViewBlockAction(pos, CloseAction{})
 	}
-	w.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
+	tx.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
 }
 
 // AddViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.
-func (c Chest) AddViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
+func (c Chest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+	if _, changed := c.tryPair(tx, pos); changed {
+		c = tx.Block(pos).(Chest)
+	}
 	c.viewerMu.Lock()
 	defer c.viewerMu.Unlock()
 	if len(c.viewers) == 0 {
-		c.open(w, pos)
+		c.open(tx, pos)
 	}
 	c.viewers[v] = struct{}{}
 }
 
 // RemoveViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to
 // it.
-func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
+func (c Chest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+	if _, changed := c.tryPair(tx, pos); changed {
+		c = tx.Block(pos).(Chest)
+	}
 	c.viewerMu.Lock()
 	defer c.viewerMu.Unlock()
 	if len(c.viewers) == 0 {
@@ -128,20 +141,20 @@ func (c Chest) RemoveViewer(v ContainerViewer, w *world.World, pos cube.Pos) {
 	}
 	delete(c.viewers, v)
 	if len(c.viewers) == 0 {
-		c.close(w, pos)
+		c.close(tx, pos)
 	}
 }
 
 // Activate ...
-func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
+func (c Chest) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		if c.paired {
-			if d, ok := w.Block(c.pairPos(pos).Side(cube.FaceUp)).(LightDiffuser); !ok || d.LightDiffusionLevel() > 2 {
+			if d, ok := tx.Block(c.pairPos(pos).Side(cube.FaceUp)).(LightDiffuser); !ok || d.LightDiffusionLevel() > 2 {
 				return false
 			}
 		}
-		if d, ok := w.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() <= 2 {
-			opener.OpenBlockContainer(pos)
+		if d, ok := tx.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() <= 2 {
+			opener.OpenBlockContainer(pos, tx)
 		}
 		return true
 	}
@@ -149,8 +162,8 @@ func (c Chest) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, 
 }
 
 // UseOnBlock ...
-func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
 	}
@@ -160,30 +173,30 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 
 	// Check both sides of the chest to see if it is possible to pair with another chest.
 	for _, dir := range []cube.Direction{c.Facing.RotateLeft(), c.Facing.RotateRight()} {
-		if ch, pair, ok := c.pair(w, pos, pos.Side(dir.Face())); ok {
-			place(w, pos, ch, user, ctx)
-			w.SetBlock(ch.pairPos(pos), pair, nil)
+		if ch, pair, ok := c.pair(tx, pos, pos.Side(dir.Face())); ok {
+			place(tx, pos, ch, user, ctx)
+			tx.SetBlock(ch.pairPos(pos), pair, nil)
 			return placed(ctx)
 		}
 	}
 
-	place(w, pos, c, user, ctx)
+	place(tx, pos, c, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if c.paired {
 			pairPos := c.pairPos(pos)
-			if _, pair, ok := c.unpair(w, pos); ok {
+			if _, pair, ok := c.unpair(tx, pos); ok {
 				c.paired = false
-				w.SetBlock(pairPos, pair, nil)
+				tx.SetBlock(pairPos, pair, nil)
 			}
 		}
 
-		for _, i := range c.Inventory(w, pos).Clear() {
-			dropItem(w, i, pos.Vec3Centre())
+		for _, i := range c.Inventory(tx, pos).Clear() {
+			dropItem(tx, i, pos.Vec3Centre())
 		}
 	})
 }
@@ -204,8 +217,8 @@ func (c Chest) Paired() bool {
 }
 
 // pair pairs this chest with the given chest position.
-func (c Chest) pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok bool) {
-	pair, ok = w.Block(pairPos).(Chest)
+func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok bool) {
+	pair, ok = tx.Block(pairPos).(Chest)
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
 	}
@@ -241,18 +254,18 @@ func (c Chest) pair(w *world.World, pos, pairPos cube.Pos) (ch, pair Chest, ok b
 }
 
 // unpair unpairs this chest from the chest it is currently paired with.
-func (c Chest) unpair(w *world.World, pos cube.Pos) (ch, pair Chest, ok bool) {
+func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
 	if !c.paired {
 		return c, Chest{}, false
 	}
 
-	pair, ok = w.Block(c.pairPos(pos)).(Chest)
+	pair, ok = tx.Block(c.pairPos(pos)).(Chest)
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
 	}
 
 	if len(c.viewers) != 0 {
-		c.close(w, pos)
+		c.close(tx, pos)
 	}
 
 	c.inventory = c.inventory.Clone(func(slot int, _, after item.Stack) {

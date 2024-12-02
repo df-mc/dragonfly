@@ -37,7 +37,7 @@ func newBrewer() *brewer {
 }
 
 // InsertItem ...
-func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
+func (b *brewer) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range h.inventory.Slots() {
 		var slot int
 
@@ -79,7 +79,7 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 		}
 
 		stack := sourceStack.Grow(-sourceStack.Count() + 1)
-		it, _ := b.Inventory(w, pos).Item(slot)
+		it, _ := b.Inventory(tx, pos).Item(slot)
 
 		if !sourceStack.Comparable(it) {
 			// The items are not the same.
@@ -93,7 +93,7 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 			stack = it.Grow(1)
 		}
 
-		_ = b.Inventory(w, pos).SetItem(slot, stack)
+		_ = b.Inventory(tx, pos).SetItem(slot, stack)
 		_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
 		return true
 
@@ -102,23 +102,17 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, w *world.World) bool {
 }
 
 // ExtractItem ...
-func (b *brewer) ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool {
+func (b *brewer) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range b.inventory.Slots() {
-		if sourceStack.Empty() {
+		if sourceStack.Empty() || sourceSlot == 0 || sourceSlot == 4 {
 			continue
 		}
-
-		if sourceSlot == 0 || sourceSlot == 4 {
-			continue
-		}
-
 		_, err := h.inventory.AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
 		if err != nil {
 			// The hopper is full.
 			continue
 		}
-
-		_ = b.Inventory(w, pos).SetItem(sourceSlot, sourceStack.Grow(-1))
+		_ = b.Inventory(tx, pos).SetItem(sourceSlot, sourceStack.Grow(-1))
 		return true
 	}
 	return false
@@ -139,12 +133,12 @@ func (b *brewer) Fuel() (fuel, maxFuel int32) {
 }
 
 // Inventory returns the inventory of the brewer.
-func (b *brewer) Inventory(*world.World, cube.Pos) *inventory.Inventory {
+func (b *brewer) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return b.inventory
 }
 
 // AddViewer adds a viewer to the brewer, so that it is updated whenever the inventory of the brewer is changed.
-func (b *brewer) AddViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
+func (b *brewer) AddViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.viewers[v] = struct{}{}
@@ -152,7 +146,7 @@ func (b *brewer) AddViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
 
 // RemoveViewer removes a viewer from the brewer, so that slot updates in the inventory are no longer sent to
 // it.
-func (b *brewer) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
+func (b *brewer) RemoveViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	delete(b.viewers, v)
@@ -174,7 +168,7 @@ func (b *brewer) setFuel(fuel, maxFuel int32) {
 
 // tickBrewing ticks the brewer, ensuring the necessary items exist in the brewer, and then processing all inputted
 // items for the necessary duration.
-func (b *brewer) tickBrewing(block string, pos cube.Pos, w *world.World) {
+func (b *brewer) tickBrewing(block string, pos cube.Pos, tx *world.Tx) {
 	b.mu.Lock()
 
 	// Get each item in the brewer. We don't need to validate errors here since we know the bounds of the brewer.
@@ -229,7 +223,7 @@ func (b *brewer) tickBrewing(block string, pos cube.Pos, w *world.World) {
 
 				// Reduce the ingredient by one.
 				defer b.inventory.SetItem(0, ingredient.Grow(-1))
-				w.PlaySound(pos.Vec3Centre(), sound.PotionBrewed{})
+				tx.PlaySound(pos.Vec3Centre(), sound.PotionBrewed{})
 
 				// Decrement the fuel, and reset the duration.
 				b.fuelAmount--

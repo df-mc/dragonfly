@@ -38,7 +38,7 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 
 // sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
 // /help list and will be auto-completed.
-func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
+func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.Runnable {
 	commands := cmd.Commands()
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
@@ -56,13 +56,13 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 			// Don't add duplicate entries for aliases.
 			continue
 		}
-		if run := c.Runnables(s.c); len(run) > 0 {
+		if run := c.Runnables(co); len(run) > 0 {
 			m[alias] = run
 		} else {
 			continue
 		}
 
-		params := c.Params(s.c)
+		params := c.Params(co)
 		overloads := make([]protocol.CommandOverload, len(params))
 
 		aliasesIndex := uint32(math.MaxUint32)
@@ -74,7 +74,7 @@ func (s *Session) sendAvailableCommands() map[string]map[int]cmd.Runnable {
 
 		for i, params := range params {
 			for _, paramInfo := range params {
-				t, enum := valueToParamType(paramInfo, s.c)
+				t, enum := valueToParamType(paramInfo, co)
 				t |= protocol.CommandArgValid
 				suffix := paramInfo.Suffix
 
@@ -197,25 +197,25 @@ func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum comman
 // resendCommands resends all commands that a Session has access to if the map of runnable commands passed does not
 // match with the commands that the Session is currently allowed to execute.
 // True is returned if the commands were resent.
-func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable) (map[string]map[int]cmd.Runnable, bool) {
+func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable, co Controllable) (map[string]map[int]cmd.Runnable, bool) {
 	commands := cmd.Commands()
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
 	for alias, c := range commands {
 		if c.Name() == alias {
-			if run := c.Runnables(s.c); len(run) > 0 {
+			if run := c.Runnables(co); len(run) > 0 {
 				m[alias] = run
 			}
 		}
 	}
 	if len(before) != len(m) {
-		return s.sendAvailableCommands(), true
+		return s.sendAvailableCommands(co), true
 	}
 	// First check for commands that were newly added.
 	for name, r := range m {
 		for k := range r {
 			if _, ok := before[name][k]; !ok {
-				return s.sendAvailableCommands(), true
+				return s.sendAvailableCommands(co), true
 			}
 		}
 	}
@@ -223,7 +223,7 @@ func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable) (map[st
 	for name, r := range before {
 		for k := range r {
 			if _, ok := m[name][k]; !ok {
-				return s.sendAvailableCommands(), true
+				return s.sendAvailableCommands(co), true
 			}
 		}
 	}
@@ -231,15 +231,15 @@ func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable) (map[st
 }
 
 // enums returns a map of all enums exposed to the Session and records the values those enums currently hold.
-func (s *Session) enums() (map[string]cmd.Enum, map[string][]string) {
+func (s *Session) enums(co Controllable) (map[string]cmd.Enum, map[string][]string) {
 	enums, enumValues := make(map[string]cmd.Enum), make(map[string][]string)
 	for alias, c := range cmd.Commands() {
 		if c.Name() == alias {
-			for _, params := range c.Params(s.c) {
+			for _, params := range c.Params(co) {
 				for _, paramInfo := range params {
 					if enum, ok := paramInfo.Value.(cmd.Enum); ok {
 						enums[enum.Type()] = enum
-						enumValues[enum.Type()] = enum.Options(s.c)
+						enumValues[enum.Type()] = enum.Options(co)
 					}
 				}
 			}
@@ -250,10 +250,10 @@ func (s *Session) enums() (map[string]cmd.Enum, map[string][]string) {
 
 // resendEnums checks the options of the enums passed against the values that were previously recorded. If they do not
 // match, the enum is resent to the client and the values are updated in the before map.
-func (s *Session) resendEnums(enums map[string]cmd.Enum, before map[string][]string) {
+func (s *Session) resendEnums(enums map[string]cmd.Enum, before map[string][]string, c Controllable) {
 	for name, enum := range enums {
 		valuesBefore := before[name]
-		values := enum.Options(s.c)
+		values := enum.Options(c)
 		before[name] = values
 
 		if len(valuesBefore) != len(values) {

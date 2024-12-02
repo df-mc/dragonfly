@@ -19,9 +19,6 @@ type Living interface {
 	// Dead checks if the entity is considered dead. True is returned if the health of the entity is equal to or
 	// lower than 0.
 	Dead() bool
-	// AttackImmune checks if the entity is currently immune to entity attacks. Entities typically turn
-	// immune for half a second after being attacked.
-	AttackImmune() bool
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
 	// damage, for example AttackDamageSource if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the entity currently has, the entity is killed.

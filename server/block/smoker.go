@@ -34,15 +34,15 @@ func NewSmoker(face cube.Direction) Smoker {
 }
 
 // Tick is called to check if the smoker should update and start or stop smelting.
-func (s Smoker) Tick(_ int64, pos cube.Pos, w *world.World) {
+func (s Smoker) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	if s.Lit && rand.Float64() <= 0.016 { // Every three or so seconds.
-		w.PlaySound(pos.Vec3Centre(), sound.SmokerCrackle{})
+		tx.PlaySound(pos.Vec3Centre(), sound.SmokerCrackle{})
 	}
 	if lit := s.smelter.tickSmelting(time.Second*5, time.Millisecond*200, s.Lit, func(i item.SmeltInfo) bool {
 		return i.Food
 	}); s.Lit != lit {
 		s.Lit = lit
-		w.SetBlock(pos, s, nil)
+		tx.SetBlock(pos, s, nil)
 	}
 }
 
@@ -60,30 +60,30 @@ func (s Smoker) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // UseOnBlock ...
-func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, s)
+func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
 
-	place(w, pos, NewSmoker(user.Rotation().Direction().Opposite()), user, ctx)
+	place(tx, pos, NewSmoker(user.Rotation().Direction().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (s Smoker) BreakInfo() BreakInfo {
 	xp := s.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(s)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		for _, i := range s.Inventory(w, pos).Clear() {
-			dropItem(w, i, pos.Vec3())
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(s)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		for _, i := range s.Inventory(tx, pos).Clear() {
+			dropItem(tx, i, pos.Vec3())
 		}
 	})
 }
 
 // Activate ...
-func (s Smoker) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
+func (s Smoker) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false

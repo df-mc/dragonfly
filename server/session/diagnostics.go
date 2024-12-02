@@ -1,4 +1,4 @@
-package diagnostics
+package session
 
 // Diagnostics represents the latest diagnostics data of the client.
 type Diagnostics struct {

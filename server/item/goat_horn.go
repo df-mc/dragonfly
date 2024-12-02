@@ -26,25 +26,30 @@ func (GoatHorn) Cooldown() time.Duration {
 }
 
 // Use ...
-func (g GoatHorn) Use(w *world.World, u User, _ *UseContext) bool {
-	w.PlaySound(u.Position(), sound.GoatHorn{Horn: g.Type})
+func (g GoatHorn) Use(tx *world.Tx, user User, _ *UseContext) bool {
+	tx.PlaySound(user.Position(), sound.GoatHorn{Horn: g.Type})
 	time.AfterFunc(time.Second, func() {
-		if !u.UsingItem() {
-			// We aren't using the goat horn anymore.
-			return
-		}
-
-		held, _ := u.HeldItems()
-		if _, ok := held.Item().(GoatHorn); !ok {
-			// We aren't holding the goat horn anymore.
-			return
-		}
-
-		// The goat horn is forcefully released by the server after a second. If the client released the item itself,
-		// before a second, this shouldn't do anything.
-		u.ReleaseItem()
+		user.H().ExecWorld(g.releaseItem)
 	})
 	return true
+}
+
+// releaseItem releases the goat horn item if a user is still using it.
+func (g GoatHorn) releaseItem(_ *world.Tx, e world.Entity) {
+	user := e.(User)
+	if !user.UsingItem() {
+		// We aren't using the goat horn anymore.
+		return
+	}
+	held, _ := user.HeldItems()
+	if _, ok := held.Item().(GoatHorn); !ok {
+		// We aren't holding the goat horn anymore.
+		return
+	}
+	// The goat horn is forcefully released by the server after a second. If the
+	// client released the item itself, before a second, this shouldn't do
+	// anything.
+	user.ReleaseItem()
 }
 
 // EncodeItem ...

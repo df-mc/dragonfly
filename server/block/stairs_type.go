@@ -7,7 +7,6 @@ import (
 // encodeStairsBlock encodes the provided block in to an identifier and meta value that can be used to encode the stairs.
 func encodeStairsBlock(block world.Block) string {
 	switch block := block.(type) {
-	// TODO: Copper
 	case Andesite:
 		if block.Polished {
 			return "polished_andesite"
@@ -29,7 +28,7 @@ func encodeStairsBlock(block world.Block) string {
 	case Copper:
 		if block.Type == CutCopper() {
 			name := "cut_copper"
-			if block.Oxidation != NormalOxidation() {
+			if block.Oxidation != UnoxidisedOxidation() {
 				name = block.Oxidation.String() + "_" + name
 			}
 			if block.Waxed {

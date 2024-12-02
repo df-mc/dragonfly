@@ -136,8 +136,18 @@ func (c colour) RGBA() color.RGBA {
 	case 14:
 		return color.RGBA{R: 0xb0, G: 0x2e, B: 0x26, A: 0xff}
 	default:
+		return color.RGBA{R: 0x1d, G: 0x1d, B: 0x21, A: 0xff}
+	}
+}
+
+// SignRGBA returns the colour as RGBA. It is identical to the RGBA method, except for the colour black. For the colour
+// black, a value of rgba(0, 0, 0, 255) is returned rather than rgba(29, 29, 33, 255), in order to match the black sign
+// text colour found in vanilla Minecraft.
+func (c colour) SignRGBA() color.RGBA {
+	if c == 15 {
 		return color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xff}
 	}
+	return c.RGBA()
 }
 
 // String ...

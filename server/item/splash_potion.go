@@ -18,10 +18,11 @@ func (s SplashPotion) MaxCount() int {
 }
 
 // Use ...
-func (s SplashPotion) Use(w *world.World, user User, ctx *UseContext) bool {
-	create := w.EntityRegistry().Config().SplashPotion
-	w.AddEntity(create(eyePosition(user), user.Rotation().Vec3().Mul(0.5), s.Type, user))
-	w.PlaySound(user.Position(), sound.ItemThrow{})
+func (s SplashPotion) Use(tx *world.Tx, user User, ctx *UseContext) bool {
+	create := tx.World().EntityRegistry().Config().SplashPotion
+	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: user.Rotation().Vec3().Mul(0.5)}
+	tx.AddEntity(create(opts, s.Type, user))
+	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
 	ctx.SubtractFromCount(1)
 	return true

@@ -12,11 +12,11 @@ type Honeycomb struct{}
 
 // UseOnBlock handles the logic of using an ink sac on a sign. Glowing ink sacs turn the text of these signs glowing,
 // whereas normal ink sacs revert them back to non-glowing text.
-func (Honeycomb) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
-	if wa, ok := w.Block(pos).(waxable); ok {
+func (Honeycomb) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+	if wa, ok := tx.Block(pos).(waxable); ok {
 		if res, ok := wa.Wax(pos, user.Position()); ok {
-			w.SetBlock(pos, res, nil)
-			w.PlaySound(pos.Vec3(), sound.SignWaxed{})
+			tx.SetBlock(pos, res, nil)
+			tx.PlaySound(pos.Vec3(), sound.SignWaxed{})
 			ctx.SubtractFromCount(1)
 			return true
 		}

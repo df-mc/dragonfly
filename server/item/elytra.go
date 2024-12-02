@@ -6,7 +6,7 @@ import "github.com/df-mc/dragonfly/server/world"
 type Elytra struct{}
 
 // Use handles the using of an elytra to auto-equip it in an armour slot.
-func (Elytra) Use(_ *world.World, _ User, ctx *UseContext) bool {
+func (Elytra) Use(_ *world.Tx, _ User, ctx *UseContext) bool {
 	ctx.SwapHeldWithArmour(1)
 	return false
 }
