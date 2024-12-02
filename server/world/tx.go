@@ -210,6 +210,49 @@ func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
 	return tx.World().viewersOf(pos)
 }
 
+// Sleepers returns an iterator that yields all sleeping entities currently added to the World.
+func (tx *Tx) Sleepers() iter.Seq[Sleeper] {
+	ent := tx.Entities()
+	return func(yield func(Sleeper) bool) {
+		for e := range ent {
+			if sleeper, ok := e.(Sleeper); ok {
+				if !yield(sleeper) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// BroadcastSleepingIndicator broadcasts a sleeping indicator to all sleepers in the world.
+func (tx *Tx) BroadcastSleepingIndicator() {
+	sleepers := tx.Sleepers()
+
+	sleeping, allSleepers := 0, 0
+
+	for s := range sleepers {
+		allSleepers++
+		if _, ok := s.Sleeping(); ok {
+			sleeping++
+		}
+	}
+
+	for s := range sleepers {
+		s.SendSleepingIndicator(sleeping, allSleepers)
+	}
+}
+
+// BroadcastSleepingReminder broadcasts a sleeping reminder message to all sleepers in the world, excluding the sleeper
+// passed.
+func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
+	for s := range tx.Sleepers() {
+		if s == sleeper {
+			continue
+		}
+		s.Messaget("chat.type.sleeping", sleeper.Name())
+	}
+}
+
 // World returns the World of the Tx. It panics if the transaction was already
 // marked complete.
 func (tx *Tx) World() *World {

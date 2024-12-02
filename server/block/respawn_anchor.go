@@ -38,7 +38,7 @@ func (r RespawnAnchor) BreakInfo() BreakInfo {
 }
 
 // Activate ...
-func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
+func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	_, usingGlowstone := held.Item().(Glowstone)
 
@@ -49,11 +49,13 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.Wo
 
 	if r.Charge < 4 && usingGlowstone {
 		r.Charge++
-		w.SetBlock(pos, r, nil)
+		tx.SetBlock(pos, r, nil)
 		ctx.SubtractFromCount(1)
-		w.PlaySound(pos.Vec3Centre(), sound.RespawnAnchorCharge{Charge: r.Charge})
+		tx.PlaySound(pos.Vec3Centre(), sound.RespawnAnchorCharge{Charge: r.Charge})
 		return true
 	}
+
+	w := tx.World()
 
 	if r.Charge > 0 {
 		if w.Dimension() == world.Nether {
@@ -65,11 +67,11 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, w *world.Wo
 			w.SetPlayerSpawn(sleeper.UUID(), pos)
 			return false
 		}
-		w.SetBlock(pos, nil, nil)
+		tx.SetBlock(pos, nil, nil)
 		ExplosionConfig{
 			Size:      5,
 			SpawnFire: true,
-		}.Explode(w, pos.Vec3Centre())
+		}.Explode(tx, pos.Vec3Centre())
 	}
 
 	return false
@@ -88,7 +90,7 @@ func (r RespawnAnchor) CanSpawn() bool {
 	return r.Charge > 0
 }
 
-func (r RespawnAnchor) SpawnOn(pos cube.Pos, u item.User, w *world.World) {
+func (r RespawnAnchor) SpawnOn(pos cube.Pos, u item.User, w *world.Tx) {
 	w.SetBlock(pos, RespawnAnchor{Charge: r.Charge - 1}, nil)
 	w.PlaySound(pos.Vec3(), sound.RespawnAnchorDeplete{Charge: r.Charge - 1})
 }

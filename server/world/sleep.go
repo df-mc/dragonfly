@@ -22,17 +22,13 @@ type Sleeper interface {
 
 // tryAdvanceDay attempts to advance the day of the world, by first ensuring that all sleepers are sleeping, and then
 // updating the time of day.
-func (t ticker) tryAdvanceDay() {
-	sleepers := t.w.Sleepers()
-	if len(sleepers) == 0 {
-		// No sleepers in the world.
-		return
-	}
+func (ticker) tryAdvanceDay(tx *Tx) {
+	sleepers := tx.Sleepers()
 
 	var thunderAnywhere bool
-	for _, s := range sleepers {
+	for s := range sleepers {
 		if !thunderAnywhere {
-			thunderAnywhere = t.w.ThunderingAt(cube.PosFromVec3(s.Position()))
+			thunderAnywhere = tx.ThunderingAt(cube.PosFromVec3(s.Position()))
 		}
 		if _, ok := s.Sleeping(); !ok {
 			// We can't advance the time - not everyone is sleeping.
@@ -40,17 +36,17 @@ func (t ticker) tryAdvanceDay() {
 		}
 	}
 
-	for _, s := range sleepers {
+	for s := range sleepers {
 		s.Wake()
 	}
 
-	totalTime := t.w.Time()
+	totalTime := tx.w.Time()
 	time := totalTime % TimeFull
 	if (time < TimeNight || time >= TimeSunrise) && !thunderAnywhere {
 		// The conditions for sleeping aren't being met.
 		return
 	}
 
-	t.w.SetTime(totalTime + TimeFull - time)
-	t.w.StopRaining()
+	tx.w.SetTime(totalTime + TimeFull - time)
+	tx.w.StopRaining()
 }

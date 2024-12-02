@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block"
@@ -58,7 +59,7 @@ type playerData struct {
 	sleeping atomic.Bool
 	sleepPos atomic.Pointer[cube.Pos]
 
-	usingSince time.Time
+	usingSince   time.Time
 	glideTicks   int64
 	fireTicks    int64
 	fallDistance float64
@@ -868,7 +869,6 @@ func finishDying(_ *world.Tx, e world.Entity) {
 			w.SetPlayerSpawn(p.UUID(), pos)
 		}
 
-
 		p.data.Pos = pos.Vec3()
 	}
 }
@@ -926,9 +926,7 @@ func (p *Player) respawn(f func(p *Player)) {
 			p.Messaget("%tile.bed.notValid")
 		}
 	}
-	if bl, ok := w.Block(position).(block.RespawnBlock); ok {
-		bl.SpawnOn(position, p, w)
-	}
+
 	pos := position.Vec3Middle()
 
 	if !p.Dead() || p.session() == session.Nop {
@@ -941,11 +939,14 @@ func (p *Player) respawn(f func(p *Player)) {
 	p.Extinguish()
 	p.ResetFallDistance()
 
-	p.Handler().HandleRespawn(p,&pos, &w)
+	p.Handler().HandleRespawn(p, &pos, &w)
 
 	handle := p.tx.RemoveEntity(p)
 	w.Exec(func(tx *world.Tx) {
 		np := tx.AddEntity(handle).(*Player)
+		if bl, ok := tx.Block(position).(block.RespawnBlock); ok {
+			bl.SpawnOn(position, p, tx)
+		}
 		np.Teleport(pos)
 		np.session().SendRespawn(pos, p)
 		np.SetVisible()
@@ -956,19 +957,20 @@ func (p *Player) respawn(f func(p *Player)) {
 }
 
 // spawnLocation returns position and world where player should be spawned.
-func (p *Player) spawnLocation() (pos cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
-	w = p.World()
-
+func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
+	tx := p.tx
+	w = tx.World()
 	previousDimension = w.Dimension()
-	pos = w.PlayerSpawn(p.UUID())
-	if b, ok := w.Block(pos).(block.RespawnBlock); ok && b.CanSpawn() {
-		return pos, w, false, previousDimension
+	playerSpawn = w.PlayerSpawn(p.UUID())
+	if b, ok := tx.Block(playerSpawn).(block.RespawnBlock); ok && b.CanSpawn() {
+		return playerSpawn, w, false, previousDimension
 	}
 
 	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
 	// always bring us back to the overworld.
 	w = w.PortalDestination(w.Dimension())
-	return w.Spawn(), w, true, previousDimension
+	worldSpawn := w.Spawn()
+	return worldSpawn, w, playerSpawn != worldSpawn, previousDimension
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
@@ -1184,33 +1186,32 @@ func (p *Player) Jump() {
 // Sleep makes the player sleep at the given position. If the position does not map to a bed (specifically the head side),
 // the player will not sleep.
 func (p *Player) Sleep(pos cube.Pos) {
-	ctx, sendReminder := event.C(), true
+	ctx, sendReminder := event.C(p), true
 	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
+
 		return
 	}
+	tx := p.tx
 
-	w := p.World()
-	if b, ok := w.Block(pos).(block.Bed); ok {
+	if b, ok := tx.Block(pos).(block.Bed); ok {
 		if b.Sleeper != nil {
 			// The player cannot sleep here.
 			return
 		}
 		b.Sleeper = p
-		w.SetBlock(pos, b, nil)
+		tx.SetBlock(pos, b, nil)
 	}
 
-	w.SetRequiredSleepDuration(time.Second * 5)
+	tx.World().SetRequiredSleepDuration(time.Second * 5)
 	if sendReminder {
-		w.BroadcastSleepingReminder(p)
+		tx.BroadcastSleepingReminder(p)
 	}
 
-	vec := pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
-
-	p.pos.Store(&vec)
+	p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
 	p.sleeping.Store(true)
 	p.sleepPos.Store(&pos)
 
-	w.BroadcastSleepingIndicator()
+	tx.BroadcastSleepingIndicator()
 	p.updateState()
 }
 
@@ -1220,8 +1221,8 @@ func (p *Player) Wake() {
 		return
 	}
 
-	w := p.World()
-	w.BroadcastSleepingIndicator()
+	tx := p.Tx()
+	tx.BroadcastSleepingIndicator()
 
 	for _, v := range p.viewers() {
 		v.ViewEntityWake(p)
@@ -1229,9 +1230,9 @@ func (p *Player) Wake() {
 	p.updateState()
 
 	pos := *p.sleepPos.Load()
-	if b, ok := w.Block(pos).(block.Bed); ok {
+	if b, ok := tx.Block(pos).(block.Bed); ok {
 		b.Sleeper = nil
-		w.SetBlock(pos, b, nil)
+		tx.SetBlock(pos, b, nil)
 	}
 }
 

@@ -254,7 +254,11 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	s.closeCurrentContainer(tx)
 	s.chunkLoader.Close(tx)
 
-	s.c.Wake()
+	if ent, ok := s.ent.Entity(tx); ok {
+		if c, ok := ent.(Controllable); ok {
+			c.Wake()
+		}
+	}
 
 	if s.quitMessage != "" {
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))

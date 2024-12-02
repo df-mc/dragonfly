@@ -56,9 +56,9 @@ func (t ticker) tick(tx *Tx) {
 
 	rain, thunder, tick, tim := tx.World().set.Raining, tx.World().set.Thundering && tx.World().set.Raining, tx.World().set.CurrentTick, int(tx.World().set.Time)
 	sleep := false
-	if t.w.set.RequiredSleepTicks > 0 {
-		t.w.set.RequiredSleepTicks--
-		if t.w.set.RequiredSleepTicks <= 0 {
+	if tx.w.set.RequiredSleepTicks > 0 {
+		tx.w.set.RequiredSleepTicks--
+		if tx.w.set.RequiredSleepTicks <= 0 {
 			sleep = true
 		}
 	}
@@ -75,7 +75,7 @@ func (t ticker) tick(tx *Tx) {
 		}
 	}
 	if sleep {
-		t.tryAdvanceDay()
+		t.tryAdvanceDay(tx)
 	}
 	if thunder {
 		tx.World().tickLightning(tx)

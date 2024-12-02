@@ -42,7 +42,7 @@ func (Bed) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
 
 // BreakInfo ...
 func (b Bed) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.World, _ item.User) {
+	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.Tx, _ item.User) {
 		headSide, _, ok := b.head(pos, w)
 		if !ok {
 			return
@@ -52,7 +52,7 @@ func (b Bed) BreakInfo() BreakInfo {
 }
 
 // UseOnBlock ...
-func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
+func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	if pos, _, used = firstReplaceable(w, pos, face, b); !used {
 		return
 	}
@@ -79,22 +79,24 @@ func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wor
 }
 
 // Activate ...
-func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ *item.UseContext) bool {
+func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	s, ok := u.(world.Sleeper)
 	if !ok {
 		return false
 	}
 
+	w := tx.World()
+
 	if w.Dimension() != world.Overworld {
-		w.SetBlock(pos, nil, nil)
+		tx.SetBlock(pos, nil, nil)
 		ExplosionConfig{
 			Size:      5,
 			SpawnFire: true,
-		}.Explode(w, pos.Vec3Centre())
+		}.Explode(tx, pos.Vec3Centre())
 		return true
 	}
 
-	_, sidePos, ok := b.side(pos, w)
+	_, sidePos, ok := b.side(pos, tx)
 	if !ok {
 		return false
 	}
@@ -105,11 +107,11 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 		return true
 	}
 
-	headSide, headPos, ok := b.head(pos, w)
+	headSide, headPos, ok := b.head(pos, tx)
 	if !ok {
 		return false
 	}
-	if _, ok = w.Liquid(headPos); ok {
+	if _, ok = tx.Liquid(headPos); ok {
 		return false
 	}
 
@@ -120,7 +122,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, _ 
 	}
 
 	time := w.Time() % world.TimeFull
-	if (time < world.TimeNight || time >= world.TimeSunrise) && !w.ThunderingAt(pos) {
+	if (time < world.TimeNight || time >= world.TimeSunrise) && !tx.ThunderingAt(pos) {
 		s.Messaget(text.Colourf("<grey>%%tile.bed.noSleep</grey>"))
 		return true
 	}
@@ -154,7 +156,7 @@ type velocityEntity interface {
 }
 
 // NeighbourUpdateTick ...
-func (b Bed) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (b Bed) NeighbourUpdateTick(pos, _ cube.Pos, w *world.Tx) {
 	if _, _, ok := b.side(pos, w); !ok {
 		w.SetBlock(pos, nil, nil)
 	}
@@ -189,7 +191,7 @@ func (b Bed) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // head returns the head side of the bed. If neither side is a head side, the third return value is false.
-func (b Bed) head(pos cube.Pos, w *world.World) (Bed, cube.Pos, bool) {
+func (b Bed) head(pos cube.Pos, w *world.Tx) (Bed, cube.Pos, bool) {
 	headSide, headPos, ok := b.side(pos, w)
 	if !ok {
 		return Bed{}, cube.Pos{}, false
@@ -201,7 +203,7 @@ func (b Bed) head(pos cube.Pos, w *world.World) (Bed, cube.Pos, bool) {
 }
 
 // side returns the other side of the bed. If the other side is not a bed, the third return value is false.
-func (b Bed) side(pos cube.Pos, w *world.World) (Bed, cube.Pos, bool) {
+func (b Bed) side(pos cube.Pos, w *world.Tx) (Bed, cube.Pos, bool) {
 	face := b.Facing.Face()
 	if b.Head {
 		face = face.Opposite()
@@ -225,12 +227,12 @@ func (Bed) CanSpawn() bool {
 	return true
 }
 
-func (Bed) SpawnOn(pos cube.Pos, u item.User, w *world.World) {}
+func (Bed) SpawnOn(pos cube.Pos, u item.User, w *world.Tx) {}
 
 // RespawnBlock represents a block using which player can set his spawn point.
 type RespawnBlock interface {
 	// CanSpawn defines if player can use this block to respawn.
 	CanSpawn() bool
 	// SpawnOn is called when a player decides to respawn using this block.
-	SpawnOn(pos cube.Pos, u item.User, w *world.World)
+	SpawnOn(pos cube.Pos, u item.User, tx *world.Tx)
 }
