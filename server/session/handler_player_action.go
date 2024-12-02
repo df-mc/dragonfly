@@ -32,7 +32,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 			// sleeping in the first place. This accounts for that.
 			return nil
 		}
-		s.c.Wake()
+		c.Wake()
 	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
