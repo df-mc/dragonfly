@@ -182,7 +182,7 @@ func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)     
 func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
 func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}
 func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)                 {}
-func (NopHandler) HandleSleep(*Context, *bool)                                          {}
+func (NopHandler) HandleSleep(*Context, *bool)                                             {}
 func (NopHandler) HandleLecternPageTurn(*Context, cube.Pos, int, *int)                     {}
 func (NopHandler) HandleItemPickup(*Context, *item.Stack)                                  {}
 func (NopHandler) HandleItemUse(*Context)                                                  {}
