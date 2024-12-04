@@ -12,6 +12,10 @@ type ShulkerBox struct {
 	Axis cube.Direction
 }
 
+func (s ShulkerBox) BreakInfo() BreakInfo {
+	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(10)
+}
+
 func (s ShulkerBox) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + s.Type.String(), nil // map[string]any{"facing": s.Axis.String()}
 }
