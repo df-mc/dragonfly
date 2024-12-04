@@ -203,6 +203,7 @@ func init() {
 	registerAll(allCopperDoors())
 	registerAll(allCopperGrates())
 	registerAll(allCopperTrapdoors())
+	registerAll(allShulkerBox())
 }
 
 func init() {
@@ -460,6 +461,10 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
+	}
+
+	for _, t := range ShulkerBoxTypes() {
+		world.RegisterItem(ShulkerBox{Type: t})
 	}
 }
 
