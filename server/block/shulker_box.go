@@ -17,7 +17,7 @@ func (s ShulkerBox) BreakInfo() BreakInfo {
 }
 
 func (s ShulkerBox) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + s.Type.String(), nil // map[string]any{"facing": s.Axis.String()}
+	return "minecraft:" + s.Type.String(), nil
 }
 
 func (s ShulkerBox) EncodeItem() (id string, meta int16) {
