@@ -81,6 +81,7 @@ func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3
 	if !used {
 		return
 	}
+	//noinspection GoAssignmentToReceiver
 	s = NewShulkerBox()
 	s.Facing = face
 	place(tx, pos, s, user, ctx)
@@ -114,6 +115,7 @@ func (s ShulkerBox) EncodeItem() (id string, meta int16) {
 }
 
 func (s ShulkerBox) DecodeNBT(data map[string]any) any {
+	//noinspection GoAssignmentToReceiver
 	s = NewShulkerBox()
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
 	s.Facing = cube.Face(nbtconv.Uint8(data, "facing"))
@@ -123,6 +125,7 @@ func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 func (s ShulkerBox) EncodeNBT() map[string]any {
 	if s.inventory == nil {
 		facing := s.Facing
+		//noinspection GoAssignmentToReceiver
 		s = NewShulkerBox()
 		s.Facing = facing
 	}
