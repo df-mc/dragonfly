@@ -60,6 +60,10 @@ type BarrelClose struct{ sound }
 // Deny is a sound played when a block is placed or broken above a 'Deny' block from Education edition.
 type Deny struct{ sound }
 
+type ShulkerBoxOpen struct{ sound }
+
+type ShulkerBoxClose struct{ sound }
+
 // DoorOpen is a sound played when a door is opened.
 type DoorOpen struct {
 	// Block is the block which is being opened, for which a sound should be played. The sound played depends on the

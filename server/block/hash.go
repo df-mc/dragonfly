@@ -776,7 +776,7 @@ func (Shroomlight) Hash() (uint64, uint64) {
 }
 
 func (s ShulkerBox) Hash() (uint64, uint64) {
-	return hashShulkerBox, uint64(s.Type.Uint8()) | uint64(s.Axis)<<2
+	return hashShulkerBox, uint64(s.Type.Uint8())
 }
 
 func (s Sign) Hash() (uint64, uint64) {
