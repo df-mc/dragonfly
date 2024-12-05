@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -8,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"strings"
 	"sync"
 )
 
@@ -15,7 +17,7 @@ type ShulkerBox struct {
 	solid      // TODO: I don't think it should be solid
 	Type       ShulkerBoxType
 	Facing     cube.Face
-	CustomName string // TODO: Implement custom names
+	CustomName string
 
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
@@ -36,6 +38,11 @@ func NewShulkerBox() ShulkerBox {
 		}
 	})
 
+	return s
+}
+
+func (s ShulkerBox) WithName(a ...any) world.Item {
+	s.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return s
 }
 
@@ -119,21 +126,26 @@ func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 	s = NewShulkerBox()
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
 	s.Facing = cube.Face(nbtconv.Uint8(data, "facing"))
+	s.CustomName = nbtconv.String(data, "CustomName")
 	return s
 }
 
 func (s ShulkerBox) EncodeNBT() map[string]any {
 	if s.inventory == nil {
-		facing := s.Facing
+		facing, customName := s.Facing, s.CustomName
 		//noinspection GoAssignmentToReceiver
 		s = NewShulkerBox()
-		s.Facing = facing
+		s.Facing, s.CustomName = facing, customName
 	}
 
 	m := map[string]any{
 		"Items":  nbtconv.InvToNBT(s.inventory),
 		"id":     "ShulkerBox",
 		"facing": uint8(s.Facing),
+	}
+
+	if s.CustomName != "" {
+		m["CustomName"] = s.CustomName
 	}
 	return m
 }
