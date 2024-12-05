@@ -122,7 +122,9 @@ func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 
 func (s ShulkerBox) EncodeNBT() map[string]any {
 	if s.inventory == nil {
+		facing := s.Facing
 		s = NewShulkerBox()
+		s.Facing = facing
 	}
 
 	m := map[string]any{
