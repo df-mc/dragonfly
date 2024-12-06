@@ -70,6 +70,16 @@ type World struct {
 	viewers map[*Loader]Viewer
 }
 
+const (
+	TimeDay      = 1000
+	TimeNoon     = 6000
+	TimeSunset   = 12000
+	TimeNight    = 13000
+	TimeMidnight = 18000
+	TimeSunrise  = 23000
+	TimeFull     = 24000
+)
+
 // transaction holds a transaction function and the channel to be closed once
 // complete.
 type transaction struct {
@@ -804,6 +814,17 @@ func (w *World) SetPlayerSpawn(id uuid.UUID, pos cube.Pos) {
 	if err := w.conf.Provider.SavePlayerSpawnPosition(id, pos); err != nil {
 		w.conf.Log.Error("save player spawn: "+err.Error(), "ID", id)
 	}
+}
+
+// SetRequiredSleepDuration sets the duration of time players in the world must sleep for, in order to advance to the
+// next day.
+func (w *World) SetRequiredSleepDuration(duration time.Duration) {
+	if w == nil {
+		return
+	}
+	w.set.Lock()
+	defer w.set.Unlock()
+	w.set.RequiredSleepTicks = duration.Milliseconds() / 50
 }
 
 // DefaultGameMode returns the default game mode of the world. When players
