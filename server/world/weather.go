@@ -1,9 +1,10 @@
 package world
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // weather implements weather related methods for World. World embeds this
@@ -72,6 +73,15 @@ func (w weather) StartRaining(dur time.Duration) {
 	w.setRaining(true, dur)
 }
 
+// Raining returns weather it is currently raining in the world
+// aswell as the remaining time it will be raining for
+func (w weather) Raining() (bool, time.Duration) {
+	w.w.set.Lock()
+	defer w.w.set.Unlock()
+
+	return w.w.set.Raining, time.Duration(w.w.set.RainTime)
+}
+
 // StopRaining makes it stop raining in the World.
 func (w weather) StopRaining() {
 	w.w.set.Lock()
@@ -96,6 +106,15 @@ func (w weather) StartThundering(dur time.Duration) {
 
 	w.setThunder(true, dur)
 	w.setRaining(true, dur)
+}
+
+// Thundering returns weather it is currently thundering and raining in the world
+// aswell as the remaining time it will be thundering for
+func (w weather) Thundering() (bool, time.Duration) {
+	w.w.set.Lock()
+	defer w.w.set.Unlock()
+
+	return w.w.set.Thundering && w.w.set.Raining, time.Duration(w.w.set.ThunderTime)
 }
 
 // StopThundering makes it stop thundering in the current world.
