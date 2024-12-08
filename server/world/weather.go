@@ -73,8 +73,8 @@ func (w weather) StartRaining(dur time.Duration) {
 	w.setRaining(true, dur)
 }
 
-// Raining returns whether it is currently raining in the world
-// as well as the remaining time it will be raining for
+// Raining returns whether it is currently raining in the world,
+// as well as the remaining time it will be raining for.
 func (w weather) Raining() (bool, time.Duration) {
 	w.w.set.Lock()
 	defer w.w.set.Unlock()
@@ -108,8 +108,8 @@ func (w weather) StartThundering(dur time.Duration) {
 	w.setRaining(true, dur)
 }
 
-// Thundering returns whether it is currently thundering and raining in the world
-// as well as the remaining time it will be thundering for
+// Thundering returns whether it is currently thundering and raining in the world,
+// as well as the remaining time it will be thundering for.
 func (w weather) Thundering() (bool, time.Duration) {
 	w.w.set.Lock()
 	defer w.w.set.Unlock()
