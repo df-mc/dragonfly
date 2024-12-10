@@ -88,8 +88,16 @@ func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3
 	if !used {
 		return
 	}
+
+	inv := s.inventory
+	customName := s.CustomName
 	//noinspection GoAssignmentToReceiver
 	s = NewShulkerBox()
+	if inv != nil {
+		s.inventory = inv
+	}
+	s.CustomName = customName
+
 	s.Facing = face
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
