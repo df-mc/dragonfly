@@ -90,10 +90,10 @@ func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3
 	}
 
 	if s.inventory == nil {
-		customName := s.CustomName
+		typ, customName := s.Type, s.CustomName
 		//noinspection GoAssignmentToReceiver
 		s = NewShulkerBox()
-		s.CustomName = customName
+		s.Type, s.CustomName = typ, customName
 	}
 
 	s.Facing = face
@@ -132,8 +132,10 @@ func (s ShulkerBox) EncodeItem() (id string, meta int16) {
 }
 
 func (s ShulkerBox) DecodeNBT(data map[string]any) any {
+	typ := s.Type
 	//noinspection GoAssignmentToReceiver
 	s = NewShulkerBox()
+	s.Type = typ
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
 	s.Facing = cube.Face(nbtconv.Uint8(data, "facing"))
 	s.CustomName = nbtconv.String(data, "CustomName")
@@ -142,10 +144,10 @@ func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 
 func (s ShulkerBox) EncodeNBT() map[string]any {
 	if s.inventory == nil {
-		facing, customName := s.Facing, s.CustomName
+		typ, facing, customName := s.Type, s.Facing, s.CustomName
 		//noinspection GoAssignmentToReceiver
 		s = NewShulkerBox()
-		s.Facing, s.CustomName = facing, customName
+		s.Type, s.Facing, s.CustomName = typ, facing, customName
 	}
 
 	m := map[string]any{
