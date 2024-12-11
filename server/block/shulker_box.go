@@ -113,7 +113,7 @@ func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3
 	return placed(ctx)
 }
 
-// open opens the shulker box, displaying animation and playing a sound.
+// open opens the shulker box, displaying the animation and playing a sound.
 func (s ShulkerBox) open(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, OpenAction{})
@@ -121,7 +121,7 @@ func (s ShulkerBox) open(tx *world.Tx, pos cube.Pos) {
 	tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxOpen{})
 }
 
-// close closes the shulker box, displaying animation and playing a sound.
+// close closes the shulker box, displaying the animation and playing a sound.
 func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, CloseAction{})
