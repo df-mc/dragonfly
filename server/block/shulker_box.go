@@ -9,8 +9,10 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"strings"
 	"sync"
+	"time"
 )
 
 // ShulkerBox is a dye-able block that stores items. Unlike other blocks, it keeps its contents when broken.
@@ -126,7 +128,13 @@ func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, CloseAction{})
 	}
-	tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxClose{}) //TODO: Make the sound delayed to sync with the closing action
+	tx.ScheduleBlockUpdate(pos, time.Millisecond*50*9)
+}
+
+func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	if len(s.viewers) == 0 {
+		tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxClose{})
+	}
 }
 
 // BreakInfo ...
