@@ -1,67 +1,103 @@
 package block
 
+// ShulkerBoxType represents a type of shulker box.
 type ShulkerBoxType struct {
 	shulkerBox
 }
 
 type shulkerBox uint8
 
+// NormalShulkerBox is the normal variant of the shulker box.
 func NormalShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{0}
 }
+
+// WhiteShulkerBox is the white variant of the shulker box.
 func WhiteShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{1}
 }
+
+// OrangeShulkerBox is the orange variant of the shulker box.
 func OrangeShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{2}
 }
+
+// MagentaShulkerBox is the magenta variant of the shulker box.
 func MagentaShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{3}
 }
+
+// LightBlueShulkerBox is the light blue variant of the shulker box.
 func LightBlueShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{4}
 }
+
+// YellowShulkerBox is the yellow variant of the shulker box.
 func YellowShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{5}
 }
+
+// LimeShulkerBox is the lime variant of the shulker box.
 func LimeShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{6}
 }
+
+// PinkShulkerBox is the pink variant of the shulker box.
 func PinkShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{7}
 }
+
+// GrayShulkerBox is the gray variant of the shulker box.
 func GrayShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{8}
 }
+
+// LightGrayShulkerBox is the light gray variant of the shulker box.
 func LightGrayShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{9}
 }
+
+// CyanShulkerBox is the cyan variant of the shulker box.
 func CyanShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{10}
 }
+
+// PurpleShulkerBox is the purple variant of the shulker box.
 func PurpleShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{11}
 }
+
+// BlueShulkerBox is the blue variant of the shulker box.
 func BlueShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{12}
 }
+
+// BrownShulkerBox is the brown variant of the shulker box.
 func BrownShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{13}
 }
+
+// GreenShulkerBox is the green variant of the shulker box.
 func GreenShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{14}
 }
+
+// RedShulkerBox is the red variant of the shulker box.
 func RedShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{15}
 }
+
+// BlackShulkerBox is the black variant of the shulker box.
 func BlackShulkerBox() ShulkerBoxType {
 	return ShulkerBoxType{16}
 }
 
+// Uint8 returns the shulker box type as a uint8.
 func (s shulkerBox) Uint8() uint8 {
 	return uint8(s)
 }
 
+// Name ...
 func (s shulkerBox) Name() string {
 	switch s {
 	case 0:
@@ -103,6 +139,7 @@ func (s shulkerBox) Name() string {
 	panic("unknown shulker box type")
 }
 
+// String ...
 func (s shulkerBox) String() string {
 	switch s {
 	case 0:
@@ -144,6 +181,7 @@ func (s shulkerBox) String() string {
 	panic("unkown shulker box type")
 }
 
+// ShulkerBoxTypes returns all shulker box types.
 func ShulkerBoxTypes() []ShulkerBoxType {
 	return []ShulkerBoxType{
 		NormalShulkerBox(),
