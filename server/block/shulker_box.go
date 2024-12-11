@@ -131,6 +131,7 @@ func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
 	tx.ScheduleBlockUpdate(pos, time.Millisecond*50*9)
 }
 
+// ScheduledTick ...
 func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if len(s.viewers) == 0 {
 		tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxClose{})
