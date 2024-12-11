@@ -121,6 +121,10 @@ func (s ShulkerBox) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(10)
 }
 
+func (s ShulkerBox) MaxCount() int {
+	return 1
+}
+
 func (s ShulkerBox) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + s.Type.String(), nil
 }
