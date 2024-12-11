@@ -203,7 +203,7 @@ func init() {
 	registerAll(allCopperDoors())
 	registerAll(allCopperGrates())
 	registerAll(allCopperTrapdoors())
-	registerAll(allShulkerBox())
+	registerAll(allShulkerBoxes())
 }
 
 func init() {

@@ -182,8 +182,8 @@ func (s ShulkerBox) EncodeNBT() map[string]any {
 	return m
 }
 
-// allShulkerBox ...
-func allShulkerBox() (shulkerboxes []world.Block) {
+// allShulkerBoxes ...
+func allShulkerBoxes() (shulkerboxes []world.Block) {
 	for _, t := range ShulkerBoxTypes() {
 		shulkerboxes = append(shulkerboxes, ShulkerBox{Type: t})
 	}
