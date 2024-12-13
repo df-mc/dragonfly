@@ -1,6 +1,6 @@
 package cube
 
-// Direction represents a direction towards one of the horizontal axes of the world.
+// Direction represents a direction towards one of the horizontal axes
 type Direction int
 
 const (
@@ -34,7 +34,8 @@ func (d Direction) Opposite() Direction {
 	panic("invalid direction")
 }
 
-// RotateRight rotates the direction 90 degrees to the right horizontally and returns the new direction.
+// RotateRight rotates the direction 90 degrees to the right horizontally
+// (clockwise) and returns the new direction.
 func (d Direction) RotateRight() Direction {
 	switch d {
 	case North:
@@ -49,7 +50,8 @@ func (d Direction) RotateRight() Direction {
 	panic("invalid direction")
 }
 
-// RotateLeft rotates the direction 90 degrees to the left horizontally and returns the new direction.
+// RotateLeft rotates the direction 90 degrees to the left horizontally
+// (counter-clockwise) and returns the new direction.
 func (d Direction) RotateLeft() Direction {
 	switch d {
 	case North:
