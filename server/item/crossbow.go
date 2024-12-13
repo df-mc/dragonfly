@@ -61,9 +61,7 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 
 		crossbow := newCrossbowWith(held, c)
 		releaser.SetHeldItems(crossbow, left)
-		return
 	}
-	return
 }
 
 func (c Crossbow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext) bool {
@@ -88,17 +86,17 @@ func (c Crossbow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
 			Rotation: rot,
 		}, firework, releaser, false)
 		tx.AddEntity(fireworkEntity)
-		return true
+	} else {
+		createArrow := tx.World().EntityRegistry().Config().Arrow
+		arrow := createArrow(world.EntitySpawnOpts{
+			Position: torsoPosition(releaser),
+			Velocity: dirVec.Mul(3.0),
+			Rotation: rot,
+		}, 9, releaser, true, false, !creative, 0, potion.Potion{})
+		tx.AddEntity(arrow)
 	}
 
-	createArrow := tx.World().EntityRegistry().Config().Arrow
-	arrow := createArrow(world.EntitySpawnOpts{
-		Position: torsoPosition(releaser),
-		Velocity: dirVec.Mul(3.0),
-		Rotation: rot,
-	}, 9, releaser, true, false, !creative, 0, potion.Potion{})
-	tx.AddEntity(arrow)
-
+	ctx.DamageItem(1)
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
 	crossbow := newCrossbowWith(held, c)

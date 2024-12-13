@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"log/slog"
@@ -20,8 +22,14 @@ func main() {
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
 
+	srv.World().SetTime(0)
+
 	srv.Listen()
 	for p := range srv.Accept() {
+		p.Inventory().Clear()
+		p.Inventory().AddItem(item.NewStack(item.Crossbow{}, 1).WithEnchantments(item.NewEnchantment(enchantment.QuickCharge, 1)))
+		p.Inventory().AddItem(item.NewStack(item.Crossbow{}, 1).WithEnchantments(item.NewEnchantment(enchantment.QuickCharge, 2)))
+		p.Inventory().AddItem(item.NewStack(item.Crossbow{}, 1).WithEnchantments(item.NewEnchantment(enchantment.QuickCharge, 3)))
 		_ = p
 	}
 }
