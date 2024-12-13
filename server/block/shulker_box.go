@@ -22,7 +22,7 @@ type ShulkerBox struct {
 	Type ShulkerBoxType
 	// Facing is the direction that the shulker box is facing.
 	Facing cube.Face
-	// CustomName is the custom name of the shulker box. This name is displayed when the chest is opened, and may
+	// CustomName is the custom name of the shulker box. This name is displayed when the shulker box is opened, and may
 	// include colour codes.
 	CustomName string
 
