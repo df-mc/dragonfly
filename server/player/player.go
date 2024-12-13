@@ -1367,18 +1367,16 @@ func (p *Player) UseItem() {
 		p.updateState()
 	}
 
-	if chargeable, ok := it.(item.Crossbow); ok {
+	if chargeable, ok := it.(item.Chargeable); ok {
 		if !p.usingItem {
-			if !chargeable.Item.Empty() {
-				// If the crossbow is charged, fire it.
-				chargeable.Release(p, p.tx, p.useContext())
-			} else {
+			if !chargeable.Release(p, p.tx, p.useContext()) {
 				// Start charging the crossbow.
 				p.usingSince, p.usingItem = time.Now(), true
 				p.updateState()
 			}
 			return
 		}
+
 		// Stop charging and determine if the crossbow is ready.
 		duration := time.Since(p.usingSince)
 		p.usingItem = false
@@ -2652,6 +2650,19 @@ func (p *Player) EyeHeight() float64 {
 		return 1.26
 	default:
 		return 1.62
+	}
+}
+
+// TorsoHeight returns the torso height of the player: 1.52, 1.16 if the player is sneaking, or 0.42 if the player is
+// swimming, gliding, or crawling.
+func (p *Player) TorsoHeight() float64 {
+	switch {
+	case p.swimming || p.crawling || p.gliding:
+		return 0.42
+	case p.sneaking:
+		return 1.16
+	default:
+		return 1.52
 	}
 }
 

@@ -1,23 +1,29 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/sound"
 	"time"
 	_ "unsafe"
 )
 
+// Crossbow is a ranged weapon similar to a bow that uses arrows or fireworks as ammunition.
 type Crossbow struct {
+	// Item is the item the crossbow is charged with.
 	Item Stack
 }
 
 // Charge starts the charging process and prints the intended duration.
 func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
+	if !c.Item.Empty() {
+		return
+	}
+
 	creative := releaser.GameMode().CreativeInventory()
 	held, left := releaser.HeldItems()
 
-	chargeDuration := 1250 * time.Millisecond
+	chargeDuration := time.Duration(1.25 * float64(time.Second))
 	for _, enchant := range held.Enchantments() {
 		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
 			chargeDuration = q.ChargeDuration(enchant.Level())
@@ -49,53 +55,55 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 		}
 
 		c.Item = projectileItem.Grow(-projectileItem.Count() + 1)
-
 		if !creative {
 			ctx.Consume(c.Item)
 		}
 
 		crossbow := newCrossbowWith(held, c)
 		releaser.SetHeldItems(crossbow, left)
+		return
 	}
+	return
 }
 
-// Release handles the firing of the crossbow after charging.
-func (c Crossbow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext) {
-	creative := releaser.GameMode().CreativeInventory()
-
-	// Check if the projectile is a firework or an arrow.
-	if _, isFirework := c.Item.Item().(Firework); isFirework {
-		create := tx.World().EntityRegistry().Config().Firework
-		firework := create(world.EntitySpawnOpts{
-			Position: eyePosition(releaser),
-			Velocity: releaser.Rotation().Vec3().Normalize().Mul(0.32),
-			Rotation: releaser.Rotation(),
-		}, c.Item.Item(), releaser, false)
-		tx.AddEntity(firework)
-	} else {
-		var tip potion.Potion
-		if !c.Item.Empty() {
-			// Arrow is empty if not found in the creative inventory.
-			tip = c.Item.Item().(Arrow).Tip
-		}
-
-		create := tx.World().EntityRegistry().Config().Arrow
-		damage, consume := 6.0, !creative
-		arrow := create(world.EntitySpawnOpts{
-			Position: eyePosition(releaser),
-			Velocity: releaser.Rotation().Vec3().Normalize().Mul(3),
-			Rotation: releaser.Rotation(),
-		}, damage, releaser, true, false, !creative && consume, 0, tip)
-
-		tx.AddEntity(arrow)
+func (c Crossbow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext) bool {
+	if c.Item.Empty() {
+		return false
 	}
 
-	releaser.PlaySound(sound.BowShoot{})
+	creative := releaser.GameMode().CreativeInventory()
+
+	rot := releaser.Rotation()
+	rot = cube.Rotation{-rot[0], -rot[1]}
+	if rot[0] > 180 {
+		rot[0] = 360 - rot[0]
+	}
+
+	dirVec := releaser.Rotation().Vec3().Normalize()
+	if firework, isFirework := c.Item.Item().(Firework); isFirework {
+		createFirework := tx.World().EntityRegistry().Config().Firework
+		fireworkEntity := createFirework(world.EntitySpawnOpts{
+			Position: torsoPosition(releaser),
+			Velocity: dirVec.Mul(1.5),
+			Rotation: rot,
+		}, firework, releaser, false)
+		tx.AddEntity(fireworkEntity)
+		return true
+	}
+
+	createArrow := tx.World().EntityRegistry().Config().Arrow
+	arrow := createArrow(world.EntitySpawnOpts{
+		Position: torsoPosition(releaser),
+		Velocity: dirVec.Mul(3.0),
+		Rotation: rot,
+	}, 9, releaser, true, false, !creative, 0, potion.Potion{})
+	tx.AddEntity(arrow)
 
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
 	crossbow := newCrossbowWith(held, c)
 	releaser.SetHeldItems(crossbow, left)
+	return true
 }
 
 // MaxCount always returns 1.
