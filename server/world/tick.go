@@ -32,7 +32,7 @@ func (t ticker) tickLoop(w *World) {
 
 // tick performs a tick on the World and updates the time, weather, blocks and entities that require updates.
 func (t ticker) tick(tx *Tx) {
-	viewers, loaders := tx.World().allViewers() // ALL VIEWERS
+	viewers, loaders := tx.World().allViewers()
 
 	tx.World().set.Lock()
 	if s := tx.World().set.Spawn; s[1] > tx.Range()[1] {
