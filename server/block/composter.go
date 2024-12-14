@@ -123,7 +123,7 @@ func (c Composter) fill(it item.Stack, pos cube.Pos, tx *world.Tx) bool {
 	tx.SetBlock(pos, c, nil)
 	tx.PlaySound(pos.Vec3(), sound.ComposterFillLayer{})
 	if c.Level == 7 {
-		tx.ScheduleBlockUpdate(pos, time.Second)
+		tx.ScheduleBlockUpdate(pos, c, time.Second)
 	}
 
 	return true

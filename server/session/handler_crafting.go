@@ -192,9 +192,6 @@ func duplicateStack(input item.Stack, newType world.Item) item.Stack {
 		WithLore(input.Lore()...).
 		WithEnchantments(input.Enchantments()...).
 		WithAnvilCost(input.AnvilCost())
-	if trim, ok := input.ArmourTrim(); ok {
-		outputStack = outputStack.WithArmourTrim(trim)
-	}
 	for k, v := range input.Values() {
 		outputStack = outputStack.WithValue(k, v)
 	}

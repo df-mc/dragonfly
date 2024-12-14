@@ -9,14 +9,16 @@ import (
 	"time"
 )
 
-// ticker implements World ticking methods. World embeds this struct, so any exported methods on ticker are exported
-// methods on World.
-type ticker struct{}
+// ticker implements World ticking methods.
+type ticker struct {
+	interval time.Duration
+}
 
-// tickLoop starts ticking the World 20 times every second, updating all entities, blocks and other features such as
-// the time and weather of the world, as required.
+// tickLoop starts ticking the World 20 times every second, updating all
+// entities, blocks and other features such as the time and weather of the
+// world, as required.
 func (t ticker) tickLoop(w *World) {
-	tc := time.NewTicker(time.Second / 20)
+	tc := time.NewTicker(t.interval)
 	defer tc.Stop()
 	for {
 		select {
@@ -30,73 +32,54 @@ func (t ticker) tickLoop(w *World) {
 	}
 }
 
-// tick performs a tick on the World and updates the time, weather, blocks and entities that require updates.
+// tick performs a tick on the World and updates the time, weather, blocks and
+// entities that require updates.
 func (t ticker) tick(tx *Tx) {
-	viewers, loaders := tx.World().allViewers() // ALL VIEWERS
+	viewers, loaders := tx.World().allViewers()
+	w := tx.World()
 
-	tx.World().set.Lock()
-	if s := tx.World().set.Spawn; s[1] > tx.Range()[1] {
+	w.set.Lock()
+	if s := w.set.Spawn; s[1] > tx.Range()[1] {
 		// Vanilla will set the spawn position's Y value to max to indicate that
 		// the player should spawn at the highest position in the world.
-		tx.World().set.Spawn[1] = tx.World().highestObstructingBlock(s[0], s[2]) + 1
+		w.set.Spawn[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
-	if len(viewers) == 0 && tx.World().set.CurrentTick != 0 {
-		tx.World().set.Unlock()
+	if len(viewers) == 0 && w.set.CurrentTick != 0 {
+		// Don't continue ticking if no viewers are in the world.
+		w.set.Unlock()
 		return
 	}
-	if tx.World().advance {
-		tx.World().set.CurrentTick++
-		if tx.World().set.TimeCycle {
-			tx.World().set.Time++
+	if w.advance {
+		w.set.CurrentTick++
+		if w.set.TimeCycle {
+			w.set.Time++
 		}
-		if tx.World().set.WeatherCycle {
-			tx.World().advanceWeather()
+		if w.set.WeatherCycle {
+			w.advanceWeather()
 		}
 	}
 
-	rain, thunder, tick, tim := tx.World().set.Raining, tx.World().set.Thundering && tx.World().set.Raining, tx.World().set.CurrentTick, int(tx.World().set.Time)
-	tx.World().set.Unlock()
+	rain, thunder, tick, tim := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time)
+	w.set.Unlock()
 
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
-			if tx.World().Dimension().TimeCycle() {
+			if w.Dimension().TimeCycle() {
 				viewer.ViewTime(tim)
 			}
-			if tx.World().Dimension().WeatherCycle() {
+			if w.Dimension().WeatherCycle() {
 				viewer.ViewWeather(rain, thunder)
 			}
 		}
 	}
 	if thunder {
-		tx.World().tickLightning(tx)
+		w.tickLightning(tx)
 	}
 
 	t.tickEntities(tx, tick)
+	w.scheduledUpdates.tick(tx, tick)
 	t.tickBlocksRandomly(tx, loaders, tick)
-	t.tickScheduledBlocks(tx, tick)
 	t.performNeighbourUpdates(tx)
-}
-
-// tickScheduledBlocks executes scheduled block updates in chunks that are currently loaded.
-func (t ticker) tickScheduledBlocks(tx *Tx, tick int64) {
-	positions := make([]cube.Pos, 0, len(tx.World().scheduledUpdates)/4)
-	for pos, scheduledTick := range tx.World().scheduledUpdates {
-		if scheduledTick <= tick {
-			positions = append(positions, pos)
-			delete(tx.World().scheduledUpdates, pos)
-		}
-	}
-
-	for _, pos := range positions {
-		if ticker, ok := tx.Block(pos).(ScheduledTicker); ok {
-			ticker.ScheduledTick(pos, tx, tx.World().r)
-		}
-		if liquid, ok := tx.World().additionalLiquid(pos); ok {
-			if ticker, ok := liquid.(ScheduledTicker); ok {
-				ticker.ScheduledTick(pos, tx, tx.World().r)
-			}
-		}
-	}
 }
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
@@ -268,4 +251,76 @@ func (g *randUint4) uint4(r *rand.Rand) uint8 {
 	g.x >>= 4
 	g.n--
 	return uint8(val)
+}
+
+// scheduledTickQueue implements a queue for scheduled block updates. Scheduled
+// block updates are both position and block type specific.
+type scheduledTickQueue struct {
+	ticks         []scheduledTick
+	furthestTicks map[scheduledTickIndex]int64
+	currentTick   int64
+}
+
+type scheduledTick struct {
+	pos   cube.Pos
+	b     Block
+	bhash uint64
+	t     int64
+}
+
+type scheduledTickIndex struct {
+	pos  cube.Pos
+	hash uint64
+}
+
+// newScheduledTickQueue creates a queue for scheduled block ticks.
+func newScheduledTickQueue() *scheduledTickQueue {
+	return &scheduledTickQueue{furthestTicks: make(map[scheduledTickIndex]int64)}
+}
+
+// tick processes scheduled ticks, calling ScheduledTicker.ScheduledTick for any
+// block update that is scheduled for the tick passed, and removing it from the
+// queue.
+func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
+	queue.currentTick = tick
+
+	w := tx.World()
+	for _, t := range queue.ticks {
+		if t.t > tick {
+			continue
+		}
+		b := tx.Block(t.pos)
+		if ticker, ok := tx.Block(t.pos).(ScheduledTicker); ok && BlockHash(b) == t.bhash {
+			ticker.ScheduledTick(t.pos, tx, w.r)
+		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && BlockHash(b) == t.bhash {
+			if ticker, ok := liquid.(ScheduledTicker); ok {
+				ticker.ScheduledTick(t.pos, tx, w.r)
+			}
+		}
+	}
+
+	// Clear scheduled ticks that were processed from the queue.
+	queue.ticks = slices.DeleteFunc(queue.ticks, func(t scheduledTick) bool {
+		return t.t <= tick
+	})
+	maps.DeleteFunc(queue.furthestTicks, func(index scheduledTickIndex, t int64) bool {
+		return t <= tick
+	})
+}
+
+// schedule schedules a block update at the position passed for the block type
+// passed after a specific delay. A block update is only scheduled if no block
+// update with the same position and block type is already scheduled at a later
+// time than the newly scheduled update.
+func (queue *scheduledTickQueue) schedule(pos cube.Pos, b Block, delay time.Duration) {
+	resTick := queue.currentTick + max(delay.Nanoseconds()/int64(time.Second/20), 1)
+	index := scheduledTickIndex{pos: pos, hash: BlockHash(b)}
+	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
+		// Already have a tick scheduled for this position that will occur after
+		// the delay passed. Block updates can only be scheduled if they are
+		// after any currently scheduled updates.
+		return
+	}
+	queue.furthestTicks[index] = resTick
+	queue.ticks = append(queue.ticks, scheduledTick{pos: pos, t: resTick, b: b, bhash: index.hash})
 }

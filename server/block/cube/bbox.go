@@ -4,14 +4,15 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// BBox represents an Axis Aligned Bounding Box in a 3D space. It is defined as two Vec3s, of which one is the
-// minimum and one is the maximum.
+// BBox represents an Axis Aligned Bounding Box in a 3D space. It is defined as
+// two Vec3s, of which one is the minimum and one is the maximum.
 type BBox struct {
 	min, max mgl64.Vec3
 }
 
-// Box creates a new axis aligned bounding box with the minimum and maximum coordinates provided. The returned
-// box has minimum and maximum coordinates swapped if necessary so that it is well-formed.
+// Box creates a new axis aligned bounding box with the minimum and maximum
+// coordinates provided. The returned box has minimum and maximum coordinates
+// swapped if necessary so that it is well-formed.
 func Box(x0, y0, z0, x1, y1, z1 float64) BBox {
 	if x0 > x1 {
 		x0, x1 = x1, x0
@@ -25,14 +26,16 @@ func Box(x0, y0, z0, x1, y1, z1 float64) BBox {
 	return BBox{min: mgl64.Vec3{x0, y0, z0}, max: mgl64.Vec3{x1, y1, z1}}
 }
 
-// Grow grows the bounding box in all directions by x and returns the new bounding box.
+// Grow grows the bounding box in all directions by x and returns the new
+// bounding box.
 func (box BBox) Grow(x float64) BBox {
 	add := mgl64.Vec3{x, x, x}
 	return BBox{min: box.min.Sub(add), max: box.max.Add(add)}
 }
 
-// GrowVec3 grows the BBox on all axes as represented by the Vec3 passed. The vec values are subtracted from
-// the minimum values of the BBox and added to the maximum values of the BBox.
+// GrowVec3 grows the BBox on all axes as represented by the Vec3 passed. The
+// vec values are subtracted from the minimum values of the BBox and added to
+// the maximum values of the BBox.
 func (box BBox) GrowVec3(vec mgl64.Vec3) BBox {
 	return BBox{min: box.min.Sub(vec), max: box.max.Add(vec)}
 }
@@ -62,8 +65,9 @@ func (box BBox) Height() float64 {
 	return box.max[1] - box.min[1]
 }
 
-// Extend expands the BBox on all axes as represented by the Vec3 passed. Negative coordinates result in an
-// expansion towards the negative axis, and vice versa for positive coordinates.
+// Extend expands the BBox on all axes as represented by the Vec3 passed.
+// Negative coordinates result in an expansion towards the negative axis, and
+// vice versa for positive coordinates.
 func (box BBox) Extend(vec mgl64.Vec3) BBox {
 	if vec[0] < 0 {
 		box.min[0] += vec[0]
@@ -118,13 +122,13 @@ func (box BBox) Stretch(a Axis, x float64) BBox {
 	return box
 }
 
-// Translate moves the entire BBox with the Vec3 given. The (minimum and maximum) x, y and z coordinates are
-// moved by those in the Vec3 passed.
+// Translate moves the entire BBox with the Vec3 given. The (minimum and
+// maximum) x, y and z coordinates are moved by those in the Vec3 passed.
 func (box BBox) Translate(vec mgl64.Vec3) BBox {
 	return BBox{min: box.min.Add(vec), max: box.max.Add(vec)}
 }
 
-// TranslateTowards moves the entire AABB by x in the direction of a Face passed.
+// TranslateTowards moves the entire BBox by x in the direction of a Face f.
 func (box BBox) TranslateTowards(f Face, x float64) BBox {
 	switch f {
 	case FaceDown:
@@ -143,13 +147,13 @@ func (box BBox) TranslateTowards(f Face, x float64) BBox {
 	return box
 }
 
-// IntersectsWith checks if the BBox intersects with another BBox, returning true if this is the case.
+// IntersectsWith checks if the BBox intersects with another BBox.
 func (box BBox) IntersectsWith(other BBox) bool {
 	return box.intersectsWith(other, 1e-5)
 }
 
-// intersectsWith checks if the BBox intersects with another BBox, using a specific epsilon. It returns true if this is
-// the case.
+// intersectsWith checks if the BBox intersects with another BBox using a
+// specific epsilon.
 func (box BBox) intersectsWith(other BBox, epsilon float64) bool {
 	if other.max[0]-box.min[0] > epsilon && box.max[0]-other.min[0] > epsilon {
 		if other.max[1]-box.min[1] > epsilon && box.max[1]-other.min[1] > epsilon {
@@ -159,8 +163,7 @@ func (box BBox) intersectsWith(other BBox, epsilon float64) bool {
 	return false
 }
 
-// AnyIntersections checks if any of boxes1 have intersections with any of boxes2 and returns true if this
-// happens to be the case.
+// AnyIntersections checks if any of boxes intersect with search.
 func AnyIntersections(boxes []BBox, search BBox) bool {
 	for _, box := range boxes {
 		if box.intersectsWith(search, 0) {
@@ -170,7 +173,7 @@ func AnyIntersections(boxes []BBox, search BBox) bool {
 	return false
 }
 
-// Vec3Within checks if the BBox has a Vec3 within it, returning true if it does.
+// Vec3Within checks if a BBox has vec within it.
 func (box BBox) Vec3Within(vec mgl64.Vec3) bool {
 	if vec[0] <= box.min[0] || vec[0] >= box.max[0] {
 		return false
@@ -181,7 +184,7 @@ func (box BBox) Vec3Within(vec mgl64.Vec3) bool {
 	return vec[1] > box.min[1] && vec[1] < box.max[1]
 }
 
-// Vec3WithinYZ checks if the BBox has a Vec3 within its Y and Z bounds, returning true if it does.
+// Vec3WithinYZ checks if a BBox has vec within its Y and Z bounds.
 func (box BBox) Vec3WithinYZ(vec mgl64.Vec3) bool {
 	if vec[2] < box.min[2] || vec[2] > box.max[2] {
 		return false
@@ -189,7 +192,7 @@ func (box BBox) Vec3WithinYZ(vec mgl64.Vec3) bool {
 	return vec[1] >= box.min[1] && vec[1] <= box.max[1]
 }
 
-// Vec3WithinXZ checks if the BBox has a Vec3 within its X and Z bounds, returning true if it does.
+// Vec3WithinXZ checks if a BBox has vec within its X and Z bounds.
 func (box BBox) Vec3WithinXZ(vec mgl64.Vec3) bool {
 	if vec[0] < box.min[0] || vec[0] > box.max[0] {
 		return false
@@ -197,7 +200,7 @@ func (box BBox) Vec3WithinXZ(vec mgl64.Vec3) bool {
 	return vec[2] >= box.min[2] && vec[2] <= box.max[2]
 }
 
-// Vec3WithinXY checks if the BBox has a Vec3 within its X and Y bounds, returning true if it does.
+// Vec3WithinXY checks if a BBox has vec within its X and Y bounds.
 func (box BBox) Vec3WithinXY(vec mgl64.Vec3) bool {
 	if vec[0] < box.min[0] || vec[0] > box.max[0] {
 		return false
@@ -205,106 +208,77 @@ func (box BBox) Vec3WithinXY(vec mgl64.Vec3) bool {
 	return vec[1] >= box.min[1] && vec[1] <= box.max[1]
 }
 
-// XOffset calculates the offset on the X axis between two bounding boxes, returning a delta always
-// smaller than or equal to deltaX if deltaX is bigger than 0, or always bigger than or equal to deltaX if it
-// is smaller than 0.
+// XOffset calculates the offset on the X axis between two bounding boxes,
+// returning a delta always smaller than or equal to deltaX if deltaX is bigger
+// than 0, or always bigger than or equal to deltaX if it is smaller than 0.
 func (box BBox) XOffset(nearby BBox, deltaX float64) float64 {
-	// Bail out if not within the same Y/Z plane.
-	if box.max[1] <= nearby.min[1] || box.min[1] >= nearby.max[1] {
-		return deltaX
-	} else if box.max[2] <= nearby.min[2] || box.min[2] >= nearby.max[2] {
+	if box.max[1] <= nearby.min[1] || box.min[1] >= nearby.max[1] || box.max[2] <= nearby.min[2] || box.min[2] >= nearby.max[2] {
+		// Not in the same Y/Z plane.
 		return deltaX
 	}
 	if deltaX > 0 && box.max[0] <= nearby.min[0] {
-		difference := nearby.min[0] - box.max[0]
-		if difference < deltaX {
-			deltaX = difference
-		}
-	}
-	if deltaX < 0 && box.min[0] >= nearby.max[0] {
-		difference := nearby.max[0] - box.min[0]
-
-		if difference > deltaX {
-			deltaX = difference
-		}
+		deltaX = min(deltaX, nearby.min[0]-box.max[0])
+	} else if deltaX < 0 && box.min[0] >= nearby.max[0] {
+		deltaX = max(deltaX, nearby.max[0]-box.min[0])
 	}
 	return deltaX
 }
 
-// YOffset calculates the offset on the Y axis between two bounding boxes, returning a delta always
-// smaller than or equal to deltaY if deltaY is bigger than 0, or always bigger than or equal to deltaY if it
-// is smaller than 0.
+// YOffset calculates the offset on the Y axis between two bounding boxes,
+// returning a delta always smaller than or equal to deltaY if deltaY is bigger
+// than 0, or always bigger than or equal to deltaY if it is smaller than 0.
 func (box BBox) YOffset(nearby BBox, deltaY float64) float64 {
-	// Bail out if not within the same X/Z plane.
-	if box.max[0] <= nearby.min[0] || box.min[0] >= nearby.max[0] {
-		return deltaY
-	} else if box.max[2] <= nearby.min[2] || box.min[2] >= nearby.max[2] {
+	if box.max[0] <= nearby.min[0] || box.min[0] >= nearby.max[0] || box.max[2] <= nearby.min[2] || box.min[2] >= nearby.max[2] {
+		// Not the same X/Z plane.
 		return deltaY
 	}
 	if deltaY > 0 && box.max[1] <= nearby.min[1] {
-		difference := nearby.min[1] - box.max[1]
-		if difference < deltaY {
-			deltaY = difference
-		}
+		deltaY = min(deltaY, nearby.min[1]-box.max[1])
 	}
 	if deltaY < 0 && box.min[1] >= nearby.max[1] {
-		difference := nearby.max[1] - box.min[1]
-
-		if difference > deltaY {
-			deltaY = difference
-		}
+		deltaY = max(deltaY, nearby.max[1]-box.min[1])
 	}
 	return deltaY
 }
 
-// ZOffset calculates the offset on the Z axis between two bounding boxes, returning a delta always
-// smaller than or equal to deltaZ if deltaZ is bigger than 0, or always bigger than or equal to deltaZ if it
-// is smaller than 0.
+// ZOffset calculates the offset on the Z axis between two bounding boxes,
+// returning a delta always smaller than or equal to deltaZ if deltaZ is bigger
+// than 0, or always bigger than or equal to deltaZ if it is smaller than 0.
 func (box BBox) ZOffset(nearby BBox, deltaZ float64) float64 {
-	// Bail out if not within the same X/Y plane.
-	if box.max[0] <= nearby.min[0] || box.min[0] >= nearby.max[0] {
-		return deltaZ
-	} else if box.max[1] <= nearby.min[1] || box.min[1] >= nearby.max[1] {
+	if box.max[0] <= nearby.min[0] || box.min[0] >= nearby.max[0] || box.max[1] <= nearby.min[1] || box.min[1] >= nearby.max[1] {
+		// Not the same X/Y plane.
 		return deltaZ
 	}
 	if deltaZ > 0 && box.max[2] <= nearby.min[2] {
-		difference := nearby.min[2] - box.max[2]
-		if difference < deltaZ {
-			deltaZ = difference
-		}
+		deltaZ = min(deltaZ, nearby.min[2]-box.max[2])
 	}
 	if deltaZ < 0 && box.min[2] >= nearby.max[2] {
-		difference := nearby.max[2] - box.min[2]
-
-		if difference > deltaZ {
-			deltaZ = difference
-		}
+		deltaZ = max(deltaZ, nearby.max[2]-box.min[2])
 	}
 	return deltaZ
 }
 
-// Corners returns slice of all hitbox corners.
+// Corners returns the positions of all corners of a BBox.
 func (box BBox) Corners() []mgl64.Vec3 {
-	min := box.min
-	max := box.max
+	bbmin, bbmax := box.min, box.max
 	return []mgl64.Vec3{
 		box.min,
 		box.max,
-		{min[0], min[1], max[2]},
-		{min[0], max[1], min[2]},
-		{min[0], max[1], max[2]},
-		{max[0], max[1], min[2]},
-		{max[0], min[1], max[2]},
-		{max[0], min[1], min[2]},
+		{bbmin[0], bbmin[1], bbmax[2]},
+		{bbmin[0], bbmax[1], bbmin[2]},
+		{bbmin[0], bbmax[1], bbmax[2]},
+		{bbmax[0], bbmax[1], bbmin[2]},
+		{bbmax[0], bbmin[1], bbmax[2]},
+		{bbmax[0], bbmin[1], bbmin[2]},
 	}
 }
 
-// Mul performs a scalar multiplication for min, max points of BBox.
+// Mul performs a scalar multiplication of the min and max points of a BBox.
 func (box BBox) Mul(val float64) BBox {
 	return BBox{min: box.min.Mul(val), max: box.max.Mul(val)}
 }
 
-// Volume calculates the volume of the BBox.
+// Volume calculates the volume of a BBox.
 func (box BBox) Volume() float64 {
 	return box.Height() * box.Length() * box.Width()
 }

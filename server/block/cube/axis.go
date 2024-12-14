@@ -2,8 +2,7 @@ package cube
 
 import "github.com/go-gl/mathgl/mgl64"
 
-// Axis represents the axis that a block may be directed in. Most blocks do not have an axis, but blocks such
-// as logs or pillars do.
+// Axis represents the axis that a block, such as a log, may be directed in.
 type Axis int
 
 const (
