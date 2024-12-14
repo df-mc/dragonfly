@@ -44,7 +44,6 @@ type World struct {
 	handler atomic.Pointer[Handler]
 
 	weather
-	ticker
 
 	closing chan struct{}
 	running sync.WaitGroup
@@ -64,7 +63,7 @@ type World struct {
 	// position at which an update is scheduled. If the current tick exceeds the
 	// tick value passed, the block update will be performed and the entry will
 	// be removed from the map.
-	scheduledUpdates map[cube.Pos]int64
+	scheduledUpdates *scheduledTickQueue
 	neighbourUpdates []neighbourUpdate
 
 	viewers map[*Loader]Viewer
@@ -868,21 +867,17 @@ func (w *World) SetDifficulty(d Difficulty) {
 	w.set.Difficulty = d
 }
 
-// scheduleBlockUpdate schedules a block update at the position passed after a
-// specific delay. If the block at that position does not handle block updates,
-// nothing will happen.
-func (w *World) scheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
-	if w == nil || pos.OutOfBounds(w.Range()) {
+// scheduleBlockUpdate schedules a block update at the position passed for the
+// block type passed after a specific delay. If the block at that position does
+// not handle block updates, nothing will happen.
+// Block updates are both block and position specific. A block update is only
+// scheduled if no block update with the same position and block type is
+// already scheduled at a later time than the newly scheduled update.
+func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
+	if pos.OutOfBounds(w.Range()) {
 		return
 	}
-	if _, exists := w.scheduledUpdates[pos]; exists {
-		return
-	}
-	w.set.Lock()
-	t := w.set.CurrentTick
-	w.set.Unlock()
-
-	w.scheduledUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
+	w.scheduledUpdates.schedule(pos, b, delay)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the

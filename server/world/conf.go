@@ -1,7 +1,6 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"log/slog"
 	"math/rand"
 	"time"
@@ -81,7 +80,7 @@ func (conf Config) New() *World {
 	}
 	s := conf.Provider.Settings()
 	w := &World{
-		scheduledUpdates: make(map[cube.Pos]int64),
+		scheduledUpdates: newScheduledTickQueue(),
 		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
@@ -93,15 +92,17 @@ func (conf Config) New() *World {
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
-	w.weather, w.ticker = weather{w: w}, ticker{}
+	w.weather = weather{w: w}
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
 	w.running.Add(3)
-	go w.tickLoop(w)
+
+	t := ticker{interval: time.Second / 20}
+	go t.tickLoop(w)
 	go w.autoSave()
 	go w.handleTransactions()
 
-	<-w.Exec(w.tick)
+	<-w.Exec(t.tick)
 	return w
 }
