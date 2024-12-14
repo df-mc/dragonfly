@@ -1,10 +1,11 @@
 package item
 
-// SmithingTemplate is an item used in smithing tables to alter tools and armour.
-// They are consumed when used, but can be duplicated using an existing template, its material and diamonds.
+// SmithingTemplate is an item used in smithing tables to alter tools and
+// armour. They are consumed when used, but can be duplicated using an existing
+// template, its material and diamonds.
 type SmithingTemplate struct {
 	// Template the upgrade item used in smithing tables.
-	Template ArmourSmithingTemplate
+	Template SmithingTemplateType
 }
 
 // EncodeItem ...

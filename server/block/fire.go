@@ -97,7 +97,7 @@ func (f Fire) tick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 		tx.SetBlock(pos, f, nil)
 	}
 
-	tx.ScheduleBlockUpdate(pos, time.Duration(30+r.Intn(10))*time.Second/20)
+	tx.ScheduleBlockUpdate(pos, f, time.Duration(30+r.Intn(10))*time.Second/20)
 
 	if !infinitelyBurns {
 		_, waterBelow := tx.Block(pos.Side(cube.FaceDown)).(Water)
@@ -184,8 +184,9 @@ func (f Fire) spread(from, to cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.World().Handler().HandleFireSpread(ctx, from, to); ctx.Cancelled() {
 		return
 	}
-	tx.SetBlock(to, Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)}, nil)
-	tx.ScheduleBlockUpdate(to, time.Duration(30+r.Intn(10))*time.Second/20)
+	spread := Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)}
+	tx.SetBlock(to, spread, nil)
+	tx.ScheduleBlockUpdate(to, spread, time.Duration(30+r.Intn(10))*time.Second/20)
 }
 
 // EntityInside ...
