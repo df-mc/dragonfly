@@ -13,7 +13,7 @@ import (
 type InventoryTransactionHandler struct{}
 
 // Handle ...
-func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
+func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) (err error) {
 	pk := p.(*packet.InventoryTransaction)
 
 	if len(pk.LegacySetItemSlots) > 2 {
@@ -24,6 +24,10 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 		// The client has requested the server to resend the specified slots even if they haven't changed server-side.
 		// Handling these requests is necessary to ensure the client's inventory remains in sync with the server.
 		for _, slot := range pk.LegacySetItemSlots {
+			if len(slot.Slots) > 2 {
+				err = fmt.Errorf("too many slots in slot sync request")
+				return
+			}
 			switch slot.ContainerID {
 			case protocol.ContainerOffhand:
 				s.sendInv(s.offHand, protocol.WindowIDOffHand)
@@ -46,24 +50,24 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 			s.log.Debug("process packet: InventoryTransaction: verify Normal transaction actions: " + err.Error())
 			return nil
 		}
-		return nil
+		return
 	case *protocol.MismatchTransactionData:
 		// Just resend the inventory and don't do anything.
 		h.resendInventories(s)
-		return nil
+		return
 	case *protocol.UseItemOnEntityTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
-			return err
+		if err = s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+			return
 		}
 		return h.handleUseItemOnEntityTransaction(data, s)
 	case *protocol.UseItemTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
-			return err
+		if err = s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+			return
 		}
 		return h.handleUseItemTransaction(data, s)
 	case *protocol.ReleaseItemTransactionData:
-		if err := s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
-			return err
+		if err = s.UpdateHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack)); err != nil {
+			return
 		}
 		return h.handleReleaseItemTransaction(s)
 	}
