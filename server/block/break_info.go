@@ -239,11 +239,15 @@ func silkTouchOnlyDrop(it world.Item) func(t item.Tool, enchantments []item.Ench
 // breakBlock removes a block, shows breaking particles and drops the drops of
 // the block as items.
 func breakBlock(b world.Block, pos cube.Pos, tx *world.Tx) {
-	tx.SetBlock(pos, nil, nil)
-	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+	breakBlockNoDrops(b, pos, tx)
 	if breakable, ok := b.(Breakable); ok {
 		for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 			dropItem(tx, drop, pos.Vec3Centre())
 		}
 	}
+}
+
+func breakBlockNoDrops(b world.Block, pos cube.Pos, tx *world.Tx) {
+	tx.SetBlock(pos, nil, nil)
+	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 }

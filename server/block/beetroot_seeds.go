@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -71,8 +70,7 @@ func (b BeetrootSeeds) EncodeItem() (name string, meta int16) {
 // RandomTick ...
 func (b BeetrootSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 8 {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+		breakBlock(b, pos, tx)
 	} else if b.Growth < 7 && r.Intn(3) > 0 && r.Float64() <= b.CalculateGrowthChance(pos, tx) {
 		b.Growth++
 		tx.SetBlock(pos, b, nil)

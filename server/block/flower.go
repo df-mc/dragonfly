@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 	"time"
@@ -63,19 +62,14 @@ func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 // NeighbourUpdateTick ...
 func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: f})
-		dropItem(tx, item.NewStack(f, 1), pos.Vec3Centre())
+		breakBlock(f, pos, tx)
 	}
 }
 
 // UseOnBlock ...
 func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, f)
-	if !used {
-		return false
-	}
-	if !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
+	if !used || !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 

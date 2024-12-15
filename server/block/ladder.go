@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
 )
@@ -24,9 +23,7 @@ type Ladder struct {
 // NeighbourUpdateTick ...
 func (l Ladder) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(l.Facing.Opposite())).(LightDiffuser); ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: l})
-		dropItem(tx, item.NewStack(l, 1), pos.Vec3Centre())
+		breakBlock(l, pos, tx)
 	}
 }
 
