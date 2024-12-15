@@ -82,7 +82,9 @@ func (d CopperDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *worl
 			tx.SetBlock(pos, d, nil)
 		}
 	} else if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
-		breakBlock(d, pos, tx)
+		// CopperDoor is pickaxeHarvestable, so don't use breakBlock() here.
+		breakBlockNoDrops(d, pos, tx)
+		dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
 	} else if b, ok := tx.Block(pos.Side(cube.FaceUp)).(CopperDoor); !ok {
 		breakBlockNoDrops(d, pos, tx)
 	} else if d.Oxidation != b.Oxidation || d.Waxed != b.Waxed {
