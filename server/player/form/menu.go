@@ -3,6 +3,7 @@ package form
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 )
 
@@ -80,10 +81,10 @@ func (m Menu) Buttons() []Button {
 }
 
 // SubmitJSON submits a JSON value to the menu, containing the index of the button clicked.
-func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
+func (m Menu) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 	if b == nil {
 		if closer, ok := m.submittable.(Closer); ok {
-			closer.Close(submitter)
+			closer.Close(submitter, tx)
 		}
 		return nil
 	}
@@ -97,7 +98,7 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter) error {
 	if index >= uint(len(buttons)) {
 		return fmt.Errorf("button index points to inexistent button: %v (only %v buttons present)", index, len(buttons))
 	}
-	m.submittable.Submit(submitter, buttons[index])
+	m.submittable.Submit(submitter, buttons[index], tx)
 	return nil
 }
 

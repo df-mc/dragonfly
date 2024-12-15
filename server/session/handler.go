@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -8,5 +9,5 @@ import (
 type packetHandler interface {
 	// Handle handles an incoming packet from the client. The session of the client is passed to the packetHandler.
 	// Handle returns an error if the packet was in any way invalid.
-	Handle(p packet.Packet, s *Session) error
+	Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error
 }

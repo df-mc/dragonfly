@@ -35,11 +35,11 @@ func (g Fern) BreakInfo() BreakInfo {
 }
 
 // BoneMeal attempts to affect the block using a bone meal item.
-func (g Fern) BoneMeal(pos cube.Pos, w *world.World) bool {
+func (g Fern) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	upper := DoubleTallGrass{Type: FernDoubleTallGrass(), UpperPart: true}
-	if replaceableWith(w, pos.Side(cube.FaceUp), upper) {
-		w.SetBlock(pos, DoubleTallGrass{Type: FernDoubleTallGrass()}, nil)
-		w.SetBlock(pos.Side(cube.FaceUp), upper, nil)
+	if replaceableWith(tx, pos.Side(cube.FaceUp), upper) {
+		tx.SetBlock(pos, DoubleTallGrass{Type: FernDoubleTallGrass()}, nil)
+		tx.SetBlock(pos.Side(cube.FaceUp), upper, nil)
 		return true
 	}
 	return false
@@ -51,10 +51,10 @@ func (g Fern) CompostChance() float64 {
 }
 
 // NeighbourUpdateTick ...
-func (g Fern) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
+func (g Fern) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !supportsVegetation(g, tx.Block(pos.Side(cube.FaceDown))) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
 	}
 }
 
@@ -64,16 +64,16 @@ func (g Fern) HasLiquidDrops() bool {
 }
 
 // UseOnBlock ...
-func (g Fern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, g)
+func (g Fern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, g)
 	if !used {
 		return false
 	}
-	if !supportsVegetation(g, w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(g, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
-	place(w, pos, g, user, ctx)
+	place(tx, pos, g, user, ctx)
 	return placed(ctx)
 }
 

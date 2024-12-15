@@ -28,7 +28,7 @@ func (s SuspiciousStew) EncodeItem() (name string, meta int16) {
 }
 
 // Consume ...
-func (s SuspiciousStew) Consume(_ *world.World, c Consumer) Stack {
+func (s SuspiciousStew) Consume(_ *world.Tx, c Consumer) Stack {
 	for _, effect := range s.Type.Effects() {
 		c.AddEffect(effect)
 	}

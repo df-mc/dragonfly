@@ -57,10 +57,7 @@ func (p SubChunkPos) Z() int32 {
 // chunkPosFromVec3 returns a chunk position from the Vec3 passed. The coordinates of the chunk position are
 // those of the Vec3 divided by 16, then rounded down.
 func chunkPosFromVec3(vec3 mgl64.Vec3) ChunkPos {
-	return ChunkPos{
-		int32(math.Floor(vec3[0])) >> 4,
-		int32(math.Floor(vec3[2])) >> 4,
-	}
+	return ChunkPos{int32(math.Floor(vec3[0])) >> 4, int32(math.Floor(vec3[2])) >> 4}
 }
 
 // chunkPosFromBlockPos returns the ChunkPos of the chunk that a block at a cube.Pos is in.

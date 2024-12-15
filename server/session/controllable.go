@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/player/diagnostics"
+	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -23,6 +23,7 @@ type Controllable interface {
 	Name() string
 	world.Entity
 	item.User
+	dialogue.Submitter
 	form.Submitter
 	cmd.Source
 	chat.Subscriber
@@ -30,9 +31,12 @@ type Controllable interface {
 	Locale() language.Tag
 
 	SetHeldItems(right, left item.Stack)
+	SetHeldSlot(slot int) error
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+
 	Speed() float64
+	FlightSpeed() float64
 
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
@@ -51,13 +55,19 @@ type Controllable interface {
 	SwingArm()
 	PunchAir()
 
+	Health() float64
+	MaxHealth() float64
+	Absorption() float64
+	Food() int
+
 	ExperienceLevel() int
+	ExperienceProgress() float64
 	SetExperienceLevel(level int)
 
 	EnchantmentSeed() int64
 	ResetEnchantmentSeed()
 
-	Respawn()
+	Respawn() *world.EntityHandle
 	Dead() bool
 
 	StartSneaking()
@@ -69,6 +79,9 @@ type Controllable interface {
 	StartSwimming()
 	Swimming() bool
 	StopSwimming()
+	StartCrawling()
+	Crawling() bool
+	StopCrawling()
 	StartFlying()
 	Flying() bool
 	StopFlying()
@@ -89,6 +102,7 @@ type Controllable interface {
 	TurnLecternPage(pos cube.Pos, page int) error
 
 	EnderChestInventory() *inventory.Inventory
+	MoveItemsToInventory()
 
 	// UUID returns the UUID of the controllable. It must be unique for all controllable entities present in
 	// the server.
@@ -101,5 +115,5 @@ type Controllable interface {
 	Skin() skin.Skin
 	SetSkin(skin.Skin)
 
-	UpdateDiagnostics(diagnostics.Diagnostics)
+	UpdateDiagnostics(Diagnostics)
 }

@@ -63,21 +63,21 @@ func (Hopper) Model() world.BlockModel {
 }
 
 // SideClosed ...
-func (Hopper) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Hopper) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // BreakInfo ...
 func (h Hopper) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(h)).withBlastResistance(24).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		for _, i := range h.Inventory(w, pos).Clear() {
-			dropItem(w, i, pos.Vec3())
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(h)).withBlastResistance(24).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		for _, i := range h.Inventory(tx, pos).Clear() {
+			dropItem(tx, i, pos.Vec3())
 		}
 	})
 }
 
 // Inventory returns the inventory of the hopper.
-func (h Hopper) Inventory(*world.World, cube.Pos) *inventory.Inventory {
+func (h Hopper) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return h.inventory
 }
 
@@ -88,31 +88,31 @@ func (h Hopper) WithName(a ...any) world.Item {
 }
 
 // AddViewer adds a viewer to the hopper, so that it is updated whenever the inventory of the hopper is changed.
-func (h Hopper) AddViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
+func (h Hopper) AddViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	h.viewerMu.Lock()
 	defer h.viewerMu.Unlock()
 	h.viewers[v] = struct{}{}
 }
 
 // RemoveViewer removes a viewer from the hopper, so that slot updates in the inventory are no longer sent to it.
-func (h Hopper) RemoveViewer(v ContainerViewer, _ *world.World, _ cube.Pos) {
+func (h Hopper) RemoveViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	h.viewerMu.Lock()
 	defer h.viewerMu.Unlock()
 	delete(h.viewers, v)
 }
 
 // Activate ...
-func (Hopper) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
+func (Hopper) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false
 }
 
 // UseOnBlock ...
-func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, h)
+func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, h)
 	if !used {
 		return false
 	}
@@ -124,40 +124,40 @@ func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.
 		h.Facing = face.Opposite()
 	}
 
-	place(w, pos, h, user, ctx)
+	place(tx, pos, h, user, ctx)
 	return placed(ctx)
 }
 
 // Tick ...
-func (h Hopper) Tick(currentTick int64, pos cube.Pos, w *world.World) {
+func (h Hopper) Tick(currentTick int64, pos cube.Pos, tx *world.Tx) {
 	h.TransferCooldown--
 	h.CollectCooldown--
 	h.LastTick = currentTick
 
 	if !h.Powered && h.TransferCooldown <= 0 {
-		inserted := h.insertItem(pos, w)
-		extracted := h.extractItem(pos, w)
+		inserted := h.insertItem(pos, tx)
+		extracted := h.extractItem(pos, tx)
 		if inserted || extracted {
 			h.TransferCooldown = 8
 		}
 	}
 
-	w.SetBlock(pos, h, nil)
+	tx.SetBlock(pos, h, nil)
 }
 
 // HopperInsertable represents a block that can have its contents inserted into by a hopper.
 type HopperInsertable interface {
 	// InsertItem handles the insert logic for that block.
-	InsertItem(h Hopper, pos cube.Pos, w *world.World) bool
+	InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool
 }
 
 // insertItem inserts an item into a block that can receive contents from the hopper.
-func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
+func (h Hopper) insertItem(pos cube.Pos, tx *world.Tx) bool {
 	destPos := pos.Side(h.Facing)
-	dest := w.Block(destPos)
+	dest := tx.Block(destPos)
 
 	if e, ok := dest.(HopperInsertable); ok {
-		return e.InsertItem(h, pos.Side(h.Facing), w)
+		return e.InsertItem(h, pos.Side(h.Facing), tx)
 	}
 
 	if container, ok := dest.(Container); ok {
@@ -166,7 +166,7 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 				continue
 			}
 
-			_, err := container.Inventory(w, pos).AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
+			_, err := container.Inventory(tx, pos).AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
 			if err != nil {
 				// The destination is full.
 				return false
@@ -176,7 +176,7 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 
 			if hopper, ok := dest.(Hopper); ok {
 				hopper.TransferCooldown = 8
-				w.SetBlock(destPos, hopper, nil)
+				tx.SetBlock(destPos, hopper, nil)
 			}
 
 			return true
@@ -188,20 +188,20 @@ func (h Hopper) insertItem(pos cube.Pos, w *world.World) bool {
 // HopperExtractable represents a block that can have its contents extracted by a hopper.
 type HopperExtractable interface {
 	// ExtractItem handles the extract logic for that block.
-	ExtractItem(h Hopper, pos cube.Pos, w *world.World) bool
+	ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool
 }
 
 // extractItem extracts an item from a container into the hopper.
-func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
+func (h Hopper) extractItem(pos cube.Pos, tx *world.Tx) bool {
 	originPos := pos.Side(cube.FaceUp)
-	origin := w.Block(originPos)
+	origin := tx.Block(originPos)
 
 	if e, ok := origin.(HopperExtractable); ok {
-		return e.ExtractItem(h, pos, w)
+		return e.ExtractItem(h, pos, tx)
 	}
 
 	if containerOrigin, ok := origin.(Container); ok {
-		for slot, stack := range containerOrigin.Inventory(w, originPos).Slots() {
+		for slot, stack := range containerOrigin.Inventory(tx, originPos).Slots() {
 			if stack.Empty() {
 				// We don't have any items to extract.
 				continue
@@ -213,11 +213,11 @@ func (h Hopper) extractItem(pos cube.Pos, w *world.World) bool {
 				continue
 			}
 
-			_ = containerOrigin.Inventory(w, originPos).SetItem(slot, stack.Grow(-1))
+			_ = containerOrigin.Inventory(tx, originPos).SetItem(slot, stack.Grow(-1))
 
 			if hopper, ok := origin.(Hopper); ok {
 				hopper.TransferCooldown = 8
-				w.SetBlock(originPos, hopper, nil)
+				tx.SetBlock(originPos, hopper, nil)
 			}
 
 			return true

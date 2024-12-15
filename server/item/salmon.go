@@ -11,7 +11,7 @@ type Salmon struct {
 }
 
 // Consume ...
-func (s Salmon) Consume(_ *world.World, c Consumer) Stack {
+func (s Salmon) Consume(_ *world.Tx, c Consumer) Stack {
 	if s.Cooked {
 		c.Saturate(6, 9.6)
 	} else {

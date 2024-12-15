@@ -15,10 +15,10 @@ type InkSac struct {
 
 // UseOnBlock handles the logic of using an ink sac on a sign. Glowing ink sacs turn the text of these signs glowing,
 // whereas normal ink sacs revert them back to non-glowing text.
-func (i InkSac) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool {
-	if in, ok := w.Block(pos).(inkable); ok {
+func (i InkSac) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+	if in, ok := tx.Block(pos).(inkable); ok {
 		if res, ok := in.Ink(pos, user.Position(), i.Glowing); ok {
-			w.SetBlock(pos, res, nil)
+			tx.SetBlock(pos, res, nil)
 			ctx.SubtractFromCount(1)
 			return true
 		}

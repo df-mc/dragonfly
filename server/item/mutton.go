@@ -11,7 +11,7 @@ type Mutton struct {
 }
 
 // Consume ...
-func (m Mutton) Consume(_ *world.World, c Consumer) Stack {
+func (m Mutton) Consume(_ *world.Tx, c Consumer) Stack {
 	if m.Cooked {
 		c.Saturate(6, 9.6)
 	} else {

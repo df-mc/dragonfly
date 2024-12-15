@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/google/uuid"
 	"io"
@@ -24,10 +25,10 @@ type Provider interface {
 	// LoadColumn reads a world.Column from the DB at a position and dimension
 	// in the DB. If no column at that position exists, errors.Is(err,
 	// leveldb.ErrNotFound) equals true.
-	LoadColumn(pos ChunkPos, dim Dimension) (*Column, error)
+	LoadColumn(pos ChunkPos, dim Dimension) (*chunk.Column, error)
 	// StoreColumn stores a world.Column at a position and dimension in the DB.
 	// An error is returned if storing was unsuccessful.
-	StoreColumn(pos ChunkPos, dim Dimension, col *Column) error
+	StoreColumn(pos ChunkPos, dim Dimension, col *chunk.Column) error
 }
 
 // Compile time check to make sure NopProvider implements Provider.
@@ -47,9 +48,11 @@ func (n NopProvider) Settings() *Settings {
 	}
 	return n.Set
 }
-func (NopProvider) SaveSettings(*Settings)                          {}
-func (NopProvider) LoadColumn(ChunkPos, Dimension) (*Column, error) { return nil, leveldb.ErrNotFound }
-func (NopProvider) StoreColumn(ChunkPos, Dimension, *Column) error  { return nil }
+func (NopProvider) SaveSettings(*Settings) {}
+func (NopProvider) LoadColumn(ChunkPos, Dimension) (*chunk.Column, error) {
+	return nil, leveldb.ErrNotFound
+}
+func (NopProvider) StoreColumn(ChunkPos, Dimension, *chunk.Column) error { return nil }
 func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (cube.Pos, bool, error) {
 	return cube.Pos{}, false, nil
 }

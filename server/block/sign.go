@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
-	"strings"
 	"time"
 )
 
@@ -49,7 +48,7 @@ type SignText struct {
 }
 
 // SideClosed ...
-func (s Sign) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (s Sign) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -81,15 +80,15 @@ func (s Sign) BreakInfo() BreakInfo {
 // Dye dyes the Sign, changing its base colour to that of the colour passed.
 func (s Sign) Dye(pos cube.Pos, userPos mgl64.Vec3, c item.Colour) (world.Block, bool) {
 	if s.EditingFrontSide(pos, userPos) {
-		if s.Front.BaseColour == c.RGBA() {
+		if s.Front.BaseColour == c.SignRGBA() {
 			return s, false
 		}
-		s.Front.BaseColour = c.RGBA()
+		s.Front.BaseColour = c.SignRGBA()
 	} else {
-		if s.Back.BaseColour == c.RGBA() {
+		if s.Back.BaseColour == c.SignRGBA() {
 			return s, false
 		}
-		s.Back.BaseColour = c.RGBA()
+		s.Back.BaseColour = c.SignRGBA()
 	}
 	return s, true
 }
@@ -120,11 +119,11 @@ func (s Sign) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
 }
 
 // Activate ...
-func (s Sign) Activate(pos cube.Pos, _ cube.Face, w *world.World, user item.User, _ *item.UseContext) bool {
-	if editor, ok := user.(SignEditor); ok && !s.Waxed {
-		editor.OpenSign(pos, s.EditingFrontSide(pos, user.Position()))
+func (s Sign) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
+	if editor, ok := u.(SignEditor); ok && !s.Waxed {
+		editor.OpenSign(pos, s.EditingFrontSide(pos, u.Position()))
 	} else if s.Waxed {
-		w.PlaySound(pos.Vec3(), sound.WaxedSignFailedInteraction{})
+		tx.PlaySound(pos.Vec3(), sound.WaxedSignFailedInteraction{})
 	}
 	return true
 }
@@ -141,8 +140,8 @@ type SignEditor interface {
 }
 
 // UseOnBlock ...
-func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, s)
+func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, s)
 	if !used || face == cube.FaceDown {
 		return false
 	}
@@ -152,7 +151,7 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 	} else {
 		s.Attach = WallAttachment(face.Direction())
 	}
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	if editor, ok := user.(SignEditor); ok {
 		editor.OpenSign(pos, true)
 	}
@@ -160,27 +159,30 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 }
 
 // NeighbourUpdateTick ...
-func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if s.Attach.hanging {
-		if _, ok := w.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
-			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-			dropItem(w, item.NewStack(Sign{Wood: s.Wood}, 1), pos.Vec3Centre())
+		if _, ok := tx.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
+			tx.SetBlock(pos, nil, nil)
+			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
+			dropItem(tx, item.NewStack(Sign{Wood: s.Wood}, 1), pos.Vec3Centre())
 		}
 		return
 	}
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-		dropItem(w, item.NewStack(Sign{Wood: s.Wood}, 1), pos.Vec3Centre())
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
+		dropItem(tx, item.NewStack(Sign{Wood: s.Wood}, 1), pos.Vec3Centre())
 	}
 }
 
 // EncodeBlock ...
 func (s Sign) EncodeBlock() (name string, properties map[string]any) {
-	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
-	if woodType == "oak_" {
+	woodType := s.Wood.String() + "_"
+	switch s.Wood {
+	case OakWood():
 		woodType = ""
+	case DarkOakWood():
+		woodType = "darkoak_"
 	}
 	if s.Attach.hanging {
 		return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(s.Attach.facing + 2)}

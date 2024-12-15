@@ -45,7 +45,7 @@ type ExplodableEntity interface {
 // Explodable represents a block that can be exploded.
 type Explodable interface {
 	// Explode is called when an explosion occurs. The block can react to the explosion using the configuration passed.
-	Explode(explosionPos mgl64.Vec3, pos cube.Pos, w *world.World, c ExplosionConfig)
+	Explode(explosionPos mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig)
 }
 
 // rays ...
@@ -66,7 +66,7 @@ func init() {
 }
 
 // Explode performs the explosion as specified by the configuration.
-func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
+func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	if c.Sound == nil {
 		c.Sound = sound.Explosion{}
 	}
@@ -90,17 +90,14 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 		math.Ceil(explosionPos[2]+d+1),
 	)
 
-	for _, e := range w.EntitiesWithin(box.Grow(2), nil) {
+	for e := range tx.EntitiesWithin(box.Grow(2)) {
 		pos := e.Position()
-		if !e.Type().BBox(e).Translate(pos).IntersectsWith(box) {
-			continue
-		}
-		dist := pos.Sub(pos).Len()
-		if dist >= d {
+		dist := pos.Sub(explosionPos).Len()
+		if dist > d || dist == 0 {
 			continue
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - dist/d) * exposure(pos, e)
+			impact := (1 - dist/d) * exposure(tx, explosionPos, e)
 			explodable.Explode(explosionPos, impact, c)
 		}
 	}
@@ -110,10 +107,10 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 		pos := explosionPos
 		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			currentBlock := w.Block(current)
+			currentBlock := tx.Block(current)
 
 			resistance := 0.0
-			if l, ok := w.Liquid(current); ok {
+			if l, ok := tx.Liquid(current); ok {
 				resistance = l.BlastResistance()
 			} else if i, ok := currentBlock.(Breakable); ok {
 				resistance = i.BreakInfo().BlastResistance
@@ -129,14 +126,14 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 		}
 	}
 	for _, pos := range affectedBlocks {
-		bl := w.Block(pos)
+		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
-			explodable.Explode(explosionPos, pos, w, c)
+			explodable.Explode(explosionPos, pos, tx, c)
 		} else if breakable, ok := bl.(Breakable); ok {
-			w.SetBlock(pos, nil, nil)
+			tx.SetBlock(pos, nil, nil)
 			if !c.DisableItemDrops && 1/c.Size > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
-					dropItem(w, drop, pos.Vec3Centre())
+					dropItem(tx, drop, pos.Vec3Centre())
 				}
 			}
 
@@ -144,18 +141,18 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 				if cb, ok := bl.(Chest); ok {
 					if cb.Paired() {
 						pairPos := cb.pairPos(pos)
-						if _, pair, ok := cb.unpair(w, pos); ok {
+						if _, pair, ok := cb.unpair(tx, pos); ok {
 							cb.paired = false
-							w.SetBlock(pairPos, pair, nil)
+							tx.SetBlock(pairPos, pair, nil)
 						}
 					}
 
-					for _, i := range cb.Inventory(w, pos).Clear() {
-						dropItem(w, i, pos.Vec3())
+					for _, i := range cb.Inventory(tx, pos).Clear() {
+						dropItem(tx, i, pos.Vec3())
 					}
 				} else {
-					for _, i := range container.Inventory(w, pos).Clear() {
-						dropItem(w, i, pos.Vec3())
+					for _, i := range container.Inventory(tx, pos).Clear() {
+						dropItem(tx, i, pos.Vec3())
 					}
 				}
 			}
@@ -164,22 +161,21 @@ func (c ExplosionConfig) Explode(w *world.World, explosionPos mgl64.Vec3) {
 	if c.SpawnFire {
 		for _, pos := range affectedBlocks {
 			if r.Intn(3) == 0 {
-				if _, ok := w.Block(pos).(Air); ok && w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, w) {
-					w.SetBlock(pos, Fire{}, nil)
+				if _, ok := tx.Block(pos).(Air); ok && tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, tx) {
+					tx.SetBlock(pos, Fire{}, nil)
 				}
 			}
 		}
 	}
 
-	w.AddParticle(explosionPos, c.Particle)
-	w.PlaySound(explosionPos, c.Sound)
+	tx.AddParticle(explosionPos, c.Particle)
+	tx.PlaySound(explosionPos, c.Sound)
 }
 
 // exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
-func exposure(origin mgl64.Vec3, e world.Entity) float64 {
-	w := e.World()
+func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 	pos := e.Position()
-	box := e.Type().BBox(e).Translate(pos)
+	box := e.H().Type().BBox(e).Translate(pos)
 
 	boxMin, boxMax := box.Min(), box.Max()
 	diff := boxMax.Sub(boxMin).Mul(2.0).Add(mgl64.Vec3{1, 1, 1})
@@ -204,7 +200,7 @@ func exposure(origin mgl64.Vec3, e world.Entity) float64 {
 
 				var collided bool
 				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (con bool) {
-					_, air := w.Block(pos).(Air)
+					_, air := tx.Block(pos).(Air)
 					collided = !air
 					return air
 				})

@@ -67,37 +67,32 @@ func (w Wall) BreakInfo() BreakInfo {
 	if !ok {
 		panic("wall block is not breakable")
 	}
-	blastResistance := breakable.BreakInfo().BlastResistance
-	switch w.Block.(type) {
-	case MudBricks:
-		blastResistance = 30
-	}
-	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w)).withBlastResistance(blastResistance)
+	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w)).withBlastResistance(breakable.BreakInfo().BlastResistance)
 }
 
 // NeighbourUpdateTick ...
-func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, wo *world.World) {
-	w, connectionsUpdated := w.calculateConnections(wo, pos)
-	w, postUpdated := w.calculatePost(wo, pos)
+func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	w, connectionsUpdated := w.calculateConnections(tx, pos)
+	w, postUpdated := w.calculatePost(tx, pos)
 	if connectionsUpdated || postUpdated {
-		wo.SetBlock(pos, w, nil)
+		tx.SetBlock(pos, w, nil)
 	}
 }
 
 // UseOnBlock ...
-func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, wo *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(wo, pos, face, w)
+func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, w)
 	if !used {
 		return
 	}
-	w, _ = w.calculateConnections(wo, pos)
-	w, _ = w.calculatePost(wo, pos)
-	place(wo, pos, w, user, ctx)
+	w, _ = w.calculateConnections(tx, pos)
+	w, _ = w.calculatePost(tx, pos)
+	place(tx, pos, w, user, ctx)
 	return placed(ctx)
 }
 
 // SideClosed ...
-func (Wall) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Wall) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -133,31 +128,31 @@ func (w Wall) WithConnectionType(direction cube.Direction, connection WallConnec
 
 // calculateConnections calculates the correct connections for the wall at a given position in a world. The updated wall
 // is returned and a bool to determine if any changes were made.
-func (w Wall) calculateConnections(wo *world.World, pos cube.Pos) (Wall, bool) {
+func (w Wall) calculateConnections(tx *world.Tx, pos cube.Pos) (Wall, bool) {
 	var updated bool
 	abovePos := pos.Add(cube.Pos{0, 1, 0})
-	above := wo.Block(abovePos)
+	above := tx.Block(abovePos)
 	for _, face := range cube.HorizontalFaces() {
 		sidePos := pos.Side(face)
-		side := wo.Block(sidePos)
+		side := tx.Block(sidePos)
 		// A wall can only connect to a block if the side is solid, with the only exception being thin blocks (such as
 		// glass panes and iron bars) as well as the sides of fence gates.
-		connected := side.Model().FaceSolid(sidePos, face.Opposite(), wo)
+		connected := side.Model().FaceSolid(sidePos, face.Opposite(), tx)
 		if !connected {
-			if _, ok := wo.Block(sidePos).(Wall); ok {
+			if _, ok := tx.Block(sidePos).(Wall); ok {
 				connected = true
-			} else if gate, ok := wo.Block(sidePos).(WoodFenceGate); ok {
+			} else if gate, ok := tx.Block(sidePos).(WoodFenceGate); ok {
 				connected = gate.Facing.Face().Axis() != face.Axis()
-			} else if _, ok := wo.Block(sidePos).Model().(model.Thin); ok {
+			} else if _, ok := tx.Block(sidePos).Model().(model.Thin); ok {
 				connected = true
 			}
 		}
 		var connectionType WallConnectionType
 		if connected {
 			// If the wall is connected to the side, it has the possibility of having a tall connection. This is
-			//calculated by checking for any overlapping blocks in the area of the connection.
+			// calculated by checking for any overlapping blocks in the area of the connection.
 			connectionType = ShortWallConnection()
-			boxes := above.Model().BBox(abovePos, wo)
+			boxes := above.Model().BBox(abovePos, tx)
 			for _, bb := range boxes {
 				if bb.Min().Y() == 0 {
 					xOverlap := bb.Min().X() < 0.75 && bb.Max().X() > 0.25
@@ -191,10 +186,10 @@ func (w Wall) calculateConnections(wo *world.World, pos cube.Pos) (Wall, bool) {
 
 // calculatePost calculates the correct post bit for the wall at a given position in a world. The updated wall is
 // returned and a bool to determine if any changes were made.
-func (w Wall) calculatePost(wo *world.World, pos cube.Pos) (Wall, bool) {
+func (w Wall) calculatePost(tx *world.Tx, pos cube.Pos) (Wall, bool) {
 	var updated bool
 	abovePos := pos.Add(cube.Pos{0, 1, 0})
-	above := wo.Block(abovePos)
+	above := tx.Block(abovePos)
 	connections := len(sliceutil.Filter(cube.HorizontalFaces(), func(face cube.Face) bool {
 		return w.ConnectionType(face.Direction()) != NoWallConnection()
 	}))

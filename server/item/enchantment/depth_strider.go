@@ -6,37 +6,39 @@ import (
 )
 
 // DepthStrider is a boot enchantment that increases underwater movement speed.
-type DepthStrider struct{}
+var DepthStrider depthStrider
+
+type depthStrider struct{}
 
 // Name ...
-func (DepthStrider) Name() string {
+func (depthStrider) Name() string {
 	return "Depth Strider"
 }
 
 // MaxLevel ...
-func (DepthStrider) MaxLevel() int {
+func (depthStrider) MaxLevel() int {
 	return 3
 }
 
 // Cost ...
-func (DepthStrider) Cost(level int) (int, int) {
-	min := level * 10
-	return min, min + 15
+func (depthStrider) Cost(level int) (int, int) {
+	minCost := level * 10
+	return minCost, minCost + 15
 }
 
 // Rarity ...
-func (DepthStrider) Rarity() item.EnchantmentRarity {
+func (depthStrider) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
 // CompatibleWithEnchantment ...
-func (DepthStrider) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (depthStrider) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	// TODO: Frost Walker
 	return true
 }
 
 // CompatibleWithItem ...
-func (DepthStrider) CompatibleWithItem(i world.Item) bool {
+func (depthStrider) CompatibleWithItem(i world.Item) bool {
 	b, ok := i.(item.BootsType)
 	return ok && b.Boots()
 }

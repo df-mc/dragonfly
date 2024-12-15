@@ -10,7 +10,7 @@ type Beetroot struct {
 }
 
 // Consume ...
-func (b Beetroot) Consume(_ *world.World, c Consumer) Stack {
+func (b Beetroot) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(1, 1.2)
 	return Stack{}
 }

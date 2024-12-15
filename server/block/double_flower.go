@@ -25,47 +25,47 @@ func (d DoubleFlower) FlammabilityInfo() FlammabilityInfo {
 }
 
 // BoneMeal ...
-func (d DoubleFlower) BoneMeal(pos cube.Pos, w *world.World) bool {
-	dropItem(w, item.NewStack(d, 1), pos.Vec3Centre())
+func (d DoubleFlower) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+	dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
 	return true
 }
 
 // NeighbourUpdateTick ...
-func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (d DoubleFlower) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.UpperPart {
-		if bottom, ok := w.Block(pos.Side(cube.FaceDown)).(DoubleFlower); !ok || bottom.Type != d.Type || bottom.UpperPart {
-			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
-			dropItem(w, item.NewStack(d, 1), pos.Vec3Middle())
+		if bottom, ok := tx.Block(pos.Side(cube.FaceDown)).(DoubleFlower); !ok || bottom.Type != d.Type || bottom.UpperPart {
+			tx.SetBlock(pos, nil, nil)
+			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+			dropItem(tx, item.NewStack(d, 1), pos.Vec3Middle())
 		}
 		return
 	}
-	if upper, ok := w.Block(pos.Side(cube.FaceUp)).(DoubleFlower); !ok || upper.Type != d.Type || !upper.UpperPart {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	if upper, ok := tx.Block(pos.Side(cube.FaceUp)).(DoubleFlower); !ok || upper.Type != d.Type || !upper.UpperPart {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 		return
 	}
-	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
 	}
 }
 
 // UseOnBlock ...
-func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, d)
+func (d DoubleFlower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, d)
 	if !used {
 		return false
 	}
-	if !replaceableWith(w, pos.Side(cube.FaceUp), d) {
+	if !replaceableWith(tx, pos.Side(cube.FaceUp), d) {
 		return false
 	}
-	if !supportsVegetation(d, w.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
-	place(w, pos, d, user, ctx)
-	place(w, pos.Side(cube.FaceUp), DoubleFlower{Type: d.Type, UpperPart: true}, user, ctx)
+	place(tx, pos, d, user, ctx)
+	place(tx, pos.Side(cube.FaceUp), DoubleFlower{Type: d.Type, UpperPart: true}, user, ctx)
 	return placed(ctx)
 }
 

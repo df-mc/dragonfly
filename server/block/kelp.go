@@ -24,10 +24,10 @@ func (k Kelp) SmeltInfo() item.SmeltInfo {
 }
 
 // BoneMeal ...
-func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
-	for y := pos.Y(); y <= w.Range()[1]; y++ {
+func (k Kelp) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+	for y := pos.Y(); y <= tx.Range()[1]; y++ {
 		currentPos := cube.Pos{pos.X(), y, pos.Z()}
-		block := w.Block(currentPos)
+		block := tx.Block(currentPos)
 		if kelp, ok := block.(Kelp); ok {
 			if kelp.Age == 25 {
 				break
@@ -35,7 +35,7 @@ func (k Kelp) BoneMeal(pos cube.Pos, w *world.World) bool {
 			continue
 		}
 		if water, ok := block.(Water); ok && water.Depth == 8 {
-			w.SetBlock(currentPos, Kelp{Age: k.Age + 1}, nil)
+			tx.SetBlock(currentPos, Kelp{Age: k.Age + 1}, nil)
 			return true
 		}
 		break
@@ -64,7 +64,7 @@ func (k Kelp) EncodeBlock() (name string, properties map[string]any) {
 }
 
 // SideClosed will always return false since kelp doesn't close any side.
-func (Kelp) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Kelp) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -75,21 +75,21 @@ func (k Kelp) withRandomAge() Kelp {
 }
 
 // UseOnBlock ...
-func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, k)
+func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, k)
 	if !used {
 		return
 	}
 
 	below := pos.Side(cube.FaceDown)
-	belowBlock := w.Block(below)
+	belowBlock := tx.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
-		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
+		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, tx) {
 			return false
 		}
 	}
 
-	liquid, ok := w.Liquid(pos)
+	liquid, ok := tx.Liquid(pos)
 	if !ok {
 		return false
 	} else if _, ok := liquid.(Water); !ok || liquid.LiquidDepth() < 8 {
@@ -97,48 +97,48 @@ func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Wo
 	}
 
 	// When first placed, kelp gets a random age between 0 and 24.
-	place(w, pos, k.withRandomAge(), user, ctx)
+	place(tx, pos, k.withRandomAge(), user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (k Kelp) NeighbourUpdateTick(pos, changed cube.Pos, w *world.World) {
-	if _, ok := w.Liquid(pos); !ok {
-		w.SetBlock(pos, nil, nil)
+func (k Kelp) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+	if _, ok := tx.Liquid(pos); !ok {
+		tx.SetBlock(pos, nil, nil)
 		return
 	}
-	if changed.Y()-1 == pos.Y() {
+	if changedNeighbour[1]-1 == pos.Y() {
 		// When a kelp block is broken above, the kelp block underneath it gets a new random age.
-		w.SetBlock(pos, k.withRandomAge(), nil)
+		tx.SetBlock(pos, k.withRandomAge(), nil)
 	}
 
 	below := pos.Side(cube.FaceDown)
-	belowBlock := w.Block(below)
+	belowBlock := tx.Block(below)
 	if _, kelp := belowBlock.(Kelp); !kelp {
-		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, w) {
-			w.SetBlock(pos, nil, nil)
+		if !belowBlock.Model().FaceSolid(below, cube.FaceUp, tx) {
+			tx.SetBlock(pos, nil, nil)
 		}
 	}
 }
 
 // RandomTick ...
-func (k Kelp) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+func (k Kelp) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	// Every random tick, there's a 14% chance for Kelp to grow if its age is below 25.
 	if r.Intn(100) < 15 && k.Age < 25 {
 		abovePos := pos.Side(cube.FaceUp)
 
-		liquid, ok := w.Liquid(abovePos)
+		liquid, ok := tx.Liquid(abovePos)
 
 		// For kelp to grow, there must be only water above.
 		if !ok {
 			return
 		} else if _, ok := liquid.(Water); ok {
-			switch w.Block(abovePos).(type) {
+			switch tx.Block(abovePos).(type) {
 			case Air, Water:
-				w.SetBlock(abovePos, Kelp{Age: k.Age + 1}, nil)
+				tx.SetBlock(abovePos, Kelp{Age: k.Age + 1}, nil)
 				if liquid.LiquidDepth() < 8 {
 					// When kelp grows into a water block, the water block becomes a source block.
-					w.SetLiquid(abovePos, Water{Still: true, Depth: 8, Falling: false})
+					tx.SetLiquid(abovePos, Water{Still: true, Depth: 8, Falling: false})
 				}
 			}
 		}

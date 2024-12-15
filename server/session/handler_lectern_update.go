@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -10,14 +11,14 @@ import (
 type LecternUpdateHandler struct{}
 
 // Handle ...
-func (LecternUpdateHandler) Handle(p packet.Packet, s *Session) error {
+func (LecternUpdateHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.LecternUpdate)
 	pos := blockPosFromProtocol(pk.Position)
-	if !canReach(s.c, pos.Vec3Middle()) {
+	if !canReach(c, pos.Vec3Middle()) {
 		return fmt.Errorf("block at %v is not within reach", pos)
 	}
-	if _, ok := s.c.World().Block(pos).(block.Lectern); !ok {
+	if _, ok := tx.Block(pos).(block.Lectern); !ok {
 		return fmt.Errorf("block at %v is not a lectern", pos)
 	}
-	return s.c.TurnLecternPage(pos, int(pk.Page))
+	return c.TurnLecternPage(pos, int(pk.Page))
 }

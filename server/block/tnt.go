@@ -14,14 +14,13 @@ import (
 // TNT is an explosive block that can be primed to generate an explosion.
 type TNT struct {
 	solid
-	igniter world.Entity
 }
 
 // Activate ...
-func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ctx *item.UseContext) bool {
+func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
-	if _, ok := held.Enchantment(enchantment.FireAspect{}); ok {
-		t.Ignite(pos, w, u)
+	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
+		t.Ignite(pos, tx, nil)
 		ctx.DamageItem(1)
 		return true
 	}
@@ -29,21 +28,14 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, w *world.World, u item.User, ct
 }
 
 // Ignite ...
-func (t TNT) Ignite(pos cube.Pos, w *world.World, igniter world.Entity) bool {
-	t.igniter = igniter
-	spawnTnt(pos, w, time.Second*4, t.igniter)
+func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
+	spawnTnt(pos, tx, time.Second*4)
 	return true
 }
 
-// Igniter returns the entity that ignited the TNT.
-// It is nil if ignited by a world source like fire.
-func (t TNT) Igniter() world.Entity {
-	return t.igniter
-}
-
 // Explode ...
-func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, w *world.World, _ ExplosionConfig) {
-	spawnTnt(pos, w, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))), t.igniter)
+func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, _ ExplosionConfig) {
+	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))))
 }
 
 // BreakInfo ...
@@ -67,8 +59,9 @@ func (t TNT) EncodeBlock() (name string, properties map[string]interface{}) {
 }
 
 // spawnTnt creates a new TNT entity at the given position with the given fuse duration.
-func spawnTnt(pos cube.Pos, w *world.World, fuse time.Duration, igniter world.Entity) {
-	w.PlaySound(pos.Vec3Centre(), sound.TNT{})
-	w.SetBlock(pos, nil, nil)
-	w.AddEntity(w.EntityRegistry().Config().TNT(pos.Vec3Centre(), fuse, igniter))
+func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration) {
+	tx.PlaySound(pos.Vec3Centre(), sound.TNT{})
+	tx.SetBlock(pos, nil, nil)
+	opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
+	tx.AddEntity(tx.World().EntityRegistry().Config().TNT(opts, fuse))
 }

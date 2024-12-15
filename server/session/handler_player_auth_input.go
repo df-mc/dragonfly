@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -14,18 +15,18 @@ import (
 type PlayerAuthInputHandler struct{}
 
 // Handle ...
-func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session) error {
+func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerAuthInput)
-	if err := h.handleMovement(pk, s); err != nil {
+	if err := h.handleMovement(pk, s, c); err != nil {
 		return err
 	}
-	return h.handleActions(pk, s)
+	return h.handleActions(pk, s, tx, c)
 }
 
 // handleMovement handles the movement part of the packet.PlayerAuthInput.
-func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Session) error {
-	yaw, pitch := s.c.Rotation().Elem()
-	pos := s.c.Position()
+func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Session, c Controllable) error {
+	yaw, pitch := c.Rotation().Elem()
+	pos := c.Position()
 
 	reference := []float64{pitch, yaw, yaw, pos[0], pos[1], pos[2]}
 	for i, v := range [...]*float32{&pk.Pitch, &pk.Yaw, &pk.HeadYaw, &pk.Position[0], &pk.Position[1], &pk.Position[2]} {
@@ -35,7 +36,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 			// world), see #425. For this reason, we don't actually return an error if this happens, because this will
 			// result in the player being kicked. Just log it and replace the NaN value with the one we have tracked
 			// server-side.
-			s.log.Debug("process packet: PlayerAuthInput: found nan/inf values. assuming server-side values", "pos", fmt.Sprint(pk.Position), "yaw", pk.Yaw, "head-yaw", pk.HeadYaw, "pitch", pk.Pitch)
+			s.conf.Log.Debug("process packet: PlayerAuthInput: found nan/inf values. assuming server-side values", "pos", fmt.Sprint(pk.Position), "yaw", pk.Yaw, "head-yaw", pk.HeadYaw, "pitch", pk.Pitch)
 			*v = float32(reference[i])
 		}
 	}
@@ -60,83 +61,89 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		s.teleportPos.Store(nil)
 	}
 
-	s.c.Move(deltaPos, deltaYaw, deltaPitch)
+	c.Move(deltaPos, deltaYaw, deltaPitch)
 	return nil
 }
 
 // handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session) error {
-	if pk.InputData&packet.InputFlagPerformItemInteraction != 0 {
-		if err := h.handleUseItemData(pk.ItemInteractionData, s); err != nil {
+func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session, tx *world.Tx, c Controllable) error {
+	if pk.InputData.Load(packet.InputFlagPerformItemInteraction) {
+		if err := h.handleUseItemData(pk.ItemInteractionData, s, c); err != nil {
 			return err
 		}
 	}
-	if pk.InputData&packet.InputFlagPerformBlockActions != 0 {
-		if err := h.handleBlockActions(pk.BlockActions, s); err != nil {
+	if pk.InputData.Load(packet.InputFlagPerformBlockActions) {
+		if err := h.handleBlockActions(pk.BlockActions, s, c); err != nil {
 			return err
 		}
 	}
-	h.handleInputFlags(pk.InputData, s)
+	h.handleInputFlags(pk.InputData, s, c)
 
-	if pk.InputData&packet.InputFlagPerformItemStackRequest != 0 {
+	if pk.InputData.Load(packet.InputFlagPerformItemStackRequest) {
 		s.inTransaction.Store(true)
 		defer s.inTransaction.Store(false)
 
 		// As of 1.18 this is now used for sending item stack requests such as when mining a block.
 		sh := s.handlers[packet.IDItemStackRequest].(*ItemStackRequestHandler)
-		if err := sh.handleRequest(pk.ItemStackRequest, s); err != nil {
+		if err := sh.handleRequest(pk.ItemStackRequest, s, tx, c); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
-			s.log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
+			s.conf.Log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
 		}
 	}
 	return nil
 }
 
 // handleInputFlags handles the toggleable input flags set in a PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleInputFlags(flags uint64, s *Session) {
-	if flags&packet.InputFlagStartSprinting != 0 {
-		s.c.StartSprinting()
+func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Session, c Controllable) {
+	if flags.Load(packet.InputFlagStartSprinting) {
+		c.StartSprinting()
 	}
-	if flags&packet.InputFlagStopSprinting != 0 {
-		s.c.StopSprinting()
+	if flags.Load(packet.InputFlagStopSprinting) {
+		c.StopSprinting()
 	}
-	if flags&packet.InputFlagStartSneaking != 0 {
-		s.c.StartSneaking()
+	if flags.Load(packet.InputFlagStartSneaking) {
+		c.StartSneaking()
 	}
-	if flags&packet.InputFlagStopSneaking != 0 {
-		s.c.StopSneaking()
+	if flags.Load(packet.InputFlagStopSneaking) {
+		c.StopSneaking()
 	}
-	if flags&packet.InputFlagStartSwimming != 0 {
-		s.c.StartSwimming()
+	if flags.Load(packet.InputFlagStartSwimming) {
+		c.StartSwimming()
 	}
-	if flags&packet.InputFlagStopSwimming != 0 {
-		s.c.StopSwimming()
+	if flags.Load(packet.InputFlagStopSwimming) {
+		c.StopSwimming()
 	}
-	if flags&packet.InputFlagStartGliding != 0 {
-		s.c.StartGliding()
+	if flags.Load(packet.InputFlagStartGliding) {
+		c.StartGliding()
 	}
-	if flags&packet.InputFlagStopGliding != 0 {
-		s.c.StopGliding()
+	if flags.Load(packet.InputFlagStopGliding) {
+		c.StopGliding()
 	}
-	if flags&packet.InputFlagStartJumping != 0 {
-		s.c.Jump()
+	if flags.Load(packet.InputFlagStartJumping) {
+		c.Jump()
 	}
-	if flags&packet.InputFlagMissedSwing != 0 {
+	if flags.Load(packet.InputFlagStartCrawling) {
+		c.StartCrawling()
+	}
+	if flags.Load(packet.InputFlagStopCrawling) {
+		c.StopCrawling()
+	}
+	if flags.Load(packet.InputFlagMissedSwing) {
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
-		s.c.PunchAir()
+		c.PunchAir()
 	}
 }
 
 // handleUseItemData handles the protocol.UseItemTransactionData found in a packet.PlayerAuthInput.
-func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransactionData, s *Session) error {
+func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransactionData, s *Session, c Controllable) error {
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
 
-	held, _ := s.c.HeldItems()
+	held, _ := c.HeldItems()
 	if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-		s.log.Debug("process packet: PlayerAuthInput: UseItemTransaction: mismatch between actual held item and client held item")
+		s.conf.Log.Debug("process packet: PlayerAuthInput: UseItemTransaction: mismatch between actual held item and client held item")
 		return nil
 	}
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
@@ -144,7 +151,7 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 	// Seems like this is only used for breaking blocks at the moment.
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
-		s.c.BreakBlock(pos)
+		c.BreakBlock(pos)
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType for PlayerAuthInput packet %v", data.ActionType)
 	}
@@ -152,9 +159,9 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 }
 
 // handleBlockActions handles a slice of protocol.PlayerBlockAction present in a PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleBlockActions(a []protocol.PlayerBlockAction, s *Session) error {
+func (h PlayerAuthInputHandler) handleBlockActions(a []protocol.PlayerBlockAction, s *Session, c Controllable) error {
 	for _, action := range a {
-		if err := handlePlayerAction(action.Action, action.Face, action.BlockPos, selfEntityRuntimeID, s); err != nil {
+		if err := handlePlayerAction(action.Action, action.Face, action.BlockPos, selfEntityRuntimeID, s, c); err != nil {
 			return err
 		}
 	}

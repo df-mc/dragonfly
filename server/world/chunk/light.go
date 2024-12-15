@@ -98,7 +98,7 @@ func (a *lightArea) propagate(queue *list.List) {
 	}
 	a.setLight(n.pos, n.lt, n.level)
 
-	for _, neighbour := range a.neighbours(n) {
+	for neighbour := range a.neighbours(n) {
 		filter := a.highest(neighbour.pos, FilteringBlocks) + 1
 		if n.level > filter && a.light(neighbour.pos, n.lt) < n.level-filter {
 			neighbour.level = n.level - filter

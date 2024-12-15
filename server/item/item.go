@@ -4,10 +4,8 @@ import (
 	"encoding/binary"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/internal/lang"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"golang.org/x/text/language"
 	"image/color"
 	"time"
 )
@@ -28,7 +26,7 @@ type UsableOnBlock interface {
 	// The position of the block that was clicked, along with the clicked face and the position clicked
 	// relative to the corner of the block are passed.
 	// UseOnBlock returns a bool indicating if the item was used successfully.
-	UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user User, ctx *UseContext) bool
+	UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool
 }
 
 // UsableOnEntity represents an item that may be used on an entity. If an item implements this interface, the
@@ -37,7 +35,7 @@ type UsableOnEntity interface {
 	// UseOnEntity is called when an item is used on an entity. The world passed is the world that the item is
 	// used in, and the entity clicked and the user of the item are also passed.
 	// UseOnEntity returns a bool indicating if the item was used successfully.
-	UseOnEntity(e world.Entity, w *world.World, user User, ctx *UseContext) bool
+	UseOnEntity(e world.Entity, tx *world.Tx, user User, ctx *UseContext) bool
 }
 
 // Usable represents an item that may be used 'in the air'. If an item implements this interface, the Use
@@ -46,7 +44,7 @@ type Usable interface {
 	// Use is called when the item is used in the air. The user that used the item and the world that the item
 	// was used in are passed to the method.
 	// Use returns a bool indicating if the item was used successfully.
-	Use(w *world.World, user User, ctx *UseContext) bool
+	Use(tx *world.Tx, user User, ctx *UseContext) bool
 }
 
 // Throwable represents a custom item that can be thrown such as a projectile. This will only have an effect on
@@ -74,7 +72,7 @@ type Consumable interface {
 	ConsumeDuration() time.Duration
 	// Consume consumes one item of the Stack that the Consumable is in. The Stack returned is added back to
 	// the inventory after consuming the item. For potions, for example, an empty bottle is returned.
-	Consume(w *world.World, c Consumer) Stack
+	Consume(tx *world.Tx, c Consumer) Stack
 }
 
 // Consumer represents a User that is able to consume Consumable items.
@@ -152,7 +150,7 @@ type Releaser interface {
 // Releasable represents an item that can be released.
 type Releasable interface {
 	// Release is called when an item is released.
-	Release(releaser Releaser, duration time.Duration, ctx *UseContext)
+	Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration)
 	// Requirements returns the required items to release this item.
 	Requirements() []Stack
 }
@@ -191,7 +189,7 @@ type Compostable interface {
 // nopReleasable represents a releasable item that does nothing.
 type nopReleasable struct{}
 
-func (nopReleasable) Release(Releaser, time.Duration, *UseContext) {}
+func (nopReleasable) Release(Releaser, *world.Tx, *UseContext, time.Duration) {}
 func (nopReleasable) Requirements() []Stack {
 	return []Stack{}
 }
@@ -207,19 +205,6 @@ func (defaultFood) AlwaysConsumable() bool {
 // ConsumeDuration ...
 func (d defaultFood) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
-}
-
-// DisplayName returns the display name of the item as shown in game in the language passed. It panics if an unknown
-// item is passed in.
-func DisplayName(item world.Item, locale language.Tag) string {
-	if c, ok := item.(world.CustomItem); ok {
-		return c.Name()
-	}
-	name, ok := lang.DisplayName(item, locale)
-	if !ok {
-		panic("should never happen")
-	}
-	return name
 }
 
 // eyePosition returns the position of the eyes of the entity if the entity implements entity.Eyed, or the

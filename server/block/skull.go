@@ -51,8 +51,8 @@ func (s Skull) Model() world.BlockModel {
 }
 
 // UseOnBlock ...
-func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, s)
+func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, s)
 	if !used || face == cube.FaceDown {
 		return false
 	}
@@ -62,12 +62,12 @@ func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.W
 	} else {
 		s.Attach = WallAttachment(face.Direction())
 	}
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
 // SideClosed ...
-func (Skull) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Skull) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -108,6 +108,9 @@ func (s Skull) EncodeNBT() map[string]interface{} {
 // EncodeBlock ...
 func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 	if s.Attach.hanging {
+		if s.Attach.facing == unknownDirection {
+			return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(0)}
+		}
 		return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(s.Attach.facing) + 2}
 	}
 	return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(1)}
@@ -116,7 +119,7 @@ func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 // allSkulls ...
 func allSkulls() (skulls []world.Block) {
 	for _, t := range SkullTypes() {
-		for _, d := range cube.Directions() {
+		for _, d := range append(cube.Directions(), unknownDirection) {
 			skulls = append(skulls, Skull{Type: t, Attach: WallAttachment(d)})
 		}
 		skulls = append(skulls, Skull{Type: t, Attach: StandingAttachment(0)})

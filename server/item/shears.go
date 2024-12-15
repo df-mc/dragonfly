@@ -10,15 +10,15 @@ import (
 type Shears struct{}
 
 // UseOnBlock ...
-func (s Shears) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
+func (s Shears) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
 	if face == cube.FaceUp || face == cube.FaceDown {
 		// Pumpkins can only be carved when one of the horizontal faces is clicked.
 		return false
 	}
-	if c, ok := w.Block(pos).(carvable); ok {
+	if c, ok := tx.Block(pos).(carvable); ok {
 		if res, ok := c.Carve(face); ok {
 			// TODO: Drop pumpkin seeds.
-			w.SetBlock(pos, res, nil)
+			tx.SetBlock(pos, res, nil)
 
 			ctx.DamageItem(1)
 			return true

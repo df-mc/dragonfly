@@ -19,64 +19,64 @@ type Cactus struct {
 }
 
 // UseOnBlock handles making sure the neighbouring blocks are air.
-func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false
 	}
-	if !c.canGrowHere(pos, w, true) {
+	if !c.canGrowHere(pos, tx, true) {
 		return false
 	}
 
-	place(w, pos, c, user, ctx)
+	place(tx, pos, c, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !c.canGrowHere(pos, w, true) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
-		dropItem(w, item.NewStack(c, 1), pos.Vec3Centre())
+func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !c.canGrowHere(pos, tx, true) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
+		dropItem(tx, item.NewStack(c, 1), pos.Vec3Centre())
 	}
 }
 
 // RandomTick ...
-func (c Cactus) RandomTick(pos cube.Pos, w *world.World, _ *rand.Rand) {
+func (c Cactus) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Age < 15 {
 		c.Age++
 	} else if c.Age == 15 {
 		c.Age = 0
-		if c.canGrowHere(pos.Side(cube.FaceDown), w, false) {
+		if c.canGrowHere(pos.Side(cube.FaceDown), tx, false) {
 			for y := 1; y < 3; y++ {
-				if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
-					w.SetBlock(pos.Add(cube.Pos{0, y}), Cactus{Age: 0}, nil)
+				if _, ok := tx.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
+					tx.SetBlock(pos.Add(cube.Pos{0, y}), Cactus{Age: 0}, nil)
 					break
-				} else if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Cactus); !ok {
+				} else if _, ok := tx.Block(pos.Add(cube.Pos{0, y})).(Cactus); !ok {
 					break
 				}
 			}
 		}
 	}
-	w.SetBlock(pos, c, nil)
+	tx.SetBlock(pos, c, nil)
 }
 
 // canGrowHere implements logic to check if cactus can live/grow here.
-func (c Cactus) canGrowHere(pos cube.Pos, w *world.World, recursive bool) bool {
+func (c Cactus) canGrowHere(pos cube.Pos, tx *world.Tx, recursive bool) bool {
 	for _, face := range cube.HorizontalFaces() {
-		if _, ok := w.Block(pos.Side(face)).(Air); !ok {
+		if _, ok := tx.Block(pos.Side(face)).(Air); !ok {
 			return false
 		}
 	}
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Cactus); ok && recursive {
-		return c.canGrowHere(pos.Side(cube.FaceDown), w, recursive)
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Cactus); ok && recursive {
+		return c.canGrowHere(pos.Side(cube.FaceDown), tx, recursive)
 	}
-	return supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1})))
+	return supportsVegetation(c, tx.Block(pos.Sub(cube.Pos{0, 1})))
 }
 
 // EntityInside ...
-func (c Cactus) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
-	if l, ok := e.(livingEntity); ok && !l.AttackImmune() {
+func (c Cactus) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
+	if l, ok := e.(livingEntity); ok {
 		l.Hurt(0.5, DamageSource{Block: c})
 	}
 }

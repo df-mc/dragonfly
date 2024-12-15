@@ -34,15 +34,15 @@ func NewBlastFurnace(face cube.Direction) BlastFurnace {
 }
 
 // Tick is called to check if the blast furnace should update and start or stop smelting.
-func (b BlastFurnace) Tick(_ int64, pos cube.Pos, w *world.World) {
+func (b BlastFurnace) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	if b.Lit && rand.Float64() <= 0.016 { // Every three or so seconds.
-		w.PlaySound(pos.Vec3Centre(), sound.BlastFurnaceCrackle{})
+		tx.PlaySound(pos.Vec3Centre(), sound.BlastFurnaceCrackle{})
 	}
 	if lit := b.smelter.tickSmelting(time.Second*5, time.Millisecond*200, b.Lit, func(i item.SmeltInfo) bool {
 		return i.Ores
 	}); b.Lit != lit {
 		b.Lit = lit
-		w.SetBlock(pos, b, nil)
+		tx.SetBlock(pos, b, nil)
 	}
 }
 
@@ -60,30 +60,30 @@ func (b BlastFurnace) EncodeBlock() (name string, properties map[string]interfac
 }
 
 // UseOnBlock ...
-func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	pos, _, used := firstReplaceable(w, pos, face, b)
+func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, b)
 	if !used {
 		return false
 	}
 
-	place(w, pos, NewBlastFurnace(user.Rotation().Direction().Opposite()), user, ctx)
+	place(tx, pos, NewBlastFurnace(user.Rotation().Direction().Opposite()), user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (b BlastFurnace) BreakInfo() BreakInfo {
 	xp := b.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, w *world.World, u item.User) {
-		for _, i := range b.Inventory(w, pos).Clear() {
-			dropItem(w, i, pos.Vec3())
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		for _, i := range b.Inventory(tx, pos).Clear() {
+			dropItem(tx, i, pos.Vec3())
 		}
 	})
 }
 
 // Activate ...
-func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
+func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false

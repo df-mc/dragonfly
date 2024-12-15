@@ -1,107 +1,107 @@
 package item
 
-type ArmourSmithingTemplate struct {
+type SmithingTemplateType struct {
 	smithingTemplateType
 }
 
 // TemplateNetheriteUpgrade returns the Netherite Upgrade Template
-func TemplateNetheriteUpgrade() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{0}
+func TemplateNetheriteUpgrade() SmithingTemplateType {
+	return SmithingTemplateType{0}
 }
 
 // TemplateSentry returns the Sentry Template.
-func TemplateSentry() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{1}
+func TemplateSentry() SmithingTemplateType {
+	return SmithingTemplateType{1}
 }
 
 // TemplateVex returns the Vex Template.
-func TemplateVex() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{2}
+func TemplateVex() SmithingTemplateType {
+	return SmithingTemplateType{2}
 }
 
 // TemplateWild returns the Wild Template.
-func TemplateWild() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{3}
+func TemplateWild() SmithingTemplateType {
+	return SmithingTemplateType{3}
 }
 
 // TemplateCoast returns the Coast Template.
-func TemplateCoast() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{4}
+func TemplateCoast() SmithingTemplateType {
+	return SmithingTemplateType{4}
 }
 
 // TemplateDune returns the Dune Template.
-func TemplateDune() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{5}
+func TemplateDune() SmithingTemplateType {
+	return SmithingTemplateType{5}
 }
 
 // TemplateWayFinder returns the WayFinder Template.
-func TemplateWayFinder() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{6}
+func TemplateWayFinder() SmithingTemplateType {
+	return SmithingTemplateType{6}
 }
 
 // TemplateRaiser returns the Raiser Template.
-func TemplateRaiser() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{7}
+func TemplateRaiser() SmithingTemplateType {
+	return SmithingTemplateType{7}
 }
 
 // TemplateShaper returns the Shaper Template.
-func TemplateShaper() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{8}
+func TemplateShaper() SmithingTemplateType {
+	return SmithingTemplateType{8}
 }
 
 // TemplateHost returns the Host Template.
-func TemplateHost() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{9}
+func TemplateHost() SmithingTemplateType {
+	return SmithingTemplateType{9}
 }
 
 // TemplateWard returns the Ward Template.
-func TemplateWard() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{10}
+func TemplateWard() SmithingTemplateType {
+	return SmithingTemplateType{10}
 }
 
 // TemplateSilence returns the Silence Template.
-func TemplateSilence() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{11}
+func TemplateSilence() SmithingTemplateType {
+	return SmithingTemplateType{11}
 }
 
 // TemplateTide returns the Tide Template.
-func TemplateTide() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{12}
+func TemplateTide() SmithingTemplateType {
+	return SmithingTemplateType{12}
 }
 
 // TemplateSnout returns the Snout Template.
-func TemplateSnout() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{13}
+func TemplateSnout() SmithingTemplateType {
+	return SmithingTemplateType{13}
 }
 
 // TemplateRib returns the Rib Template.
-func TemplateRib() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{14}
+func TemplateRib() SmithingTemplateType {
+	return SmithingTemplateType{14}
 }
 
 // TemplateEye returns the Eye Template.
-func TemplateEye() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{15}
+func TemplateEye() SmithingTemplateType {
+	return SmithingTemplateType{15}
 }
 
 // TemplateSpire returns the Spire Template.
-func TemplateSpire() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{16}
+func TemplateSpire() SmithingTemplateType {
+	return SmithingTemplateType{16}
 }
 
 // TemplateFlow returns the Flow Template.
-func TemplateFlow() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{17}
+func TemplateFlow() SmithingTemplateType {
+	return SmithingTemplateType{17}
 }
 
 // TemplateBolt returns the Bolt Template.
-func TemplateBolt() ArmourSmithingTemplate {
-	return ArmourSmithingTemplate{18}
+func TemplateBolt() SmithingTemplateType {
+	return SmithingTemplateType{18}
 }
 
 // SmithingTemplates returns all the ArmourSmithingTemplates
-func SmithingTemplates() []ArmourSmithingTemplate {
-	return []ArmourSmithingTemplate{
+func SmithingTemplates() []SmithingTemplateType {
+	return []SmithingTemplateType{
 		TemplateNetheriteUpgrade(),
 		TemplateSentry(),
 		TemplateVex(),
@@ -125,11 +125,6 @@ func SmithingTemplates() []ArmourSmithingTemplate {
 }
 
 type smithingTemplateType uint8
-
-// Uint8 returns the uint8 value of the smithing template type.
-func (s smithingTemplateType) Uint8() uint8 {
-	return uint8(s)
-}
 
 // String ...
 func (s smithingTemplateType) String() string {
@@ -177,48 +172,48 @@ func (s smithingTemplateType) String() string {
 	panic("should never happen")
 }
 
-// ArmourSmithingTemplateFromString returns an armour smithing template based on a string.
-func ArmourSmithingTemplateFromString(name string) ArmourSmithingTemplate {
+// smithingTemplateFromString returns an armour smithing template based on a string.
+func smithingTemplateFromString(name string) (SmithingTemplateType, bool) {
 	switch name {
 	case "netherite_upgrade":
-		return TemplateNetheriteUpgrade()
+		return TemplateNetheriteUpgrade(), true
 	case "sentry":
-		return TemplateSentry()
+		return TemplateSentry(), true
 	case "vex":
-		return TemplateVex()
+		return TemplateVex(), true
 	case "wild":
-		return TemplateWild()
+		return TemplateWild(), true
 	case "coast":
-		return TemplateCoast()
+		return TemplateCoast(), true
 	case "dune":
-		return TemplateDune()
+		return TemplateDune(), true
 	case "wayfinder":
-		return TemplateWayFinder()
+		return TemplateWayFinder(), true
 	case "raiser":
-		return TemplateRaiser()
+		return TemplateRaiser(), true
 	case "shaper":
-		return TemplateShaper()
+		return TemplateShaper(), true
 	case "host":
-		return TemplateHost()
+		return TemplateHost(), true
 	case "ward":
-		return TemplateWard()
+		return TemplateWard(), true
 	case "silence":
-		return TemplateSilence()
+		return TemplateSilence(), true
 	case "tide":
-		return TemplateTide()
+		return TemplateTide(), true
 	case "snout":
-		return TemplateSnout()
+		return TemplateSnout(), true
 	case "rib":
-		return TemplateRib()
+		return TemplateRib(), true
 	case "eye":
-		return TemplateEye()
+		return TemplateEye(), true
 	case "spire":
-		return TemplateSpire()
+		return TemplateSpire(), true
 	case "flow":
-		return TemplateFlow()
+		return TemplateFlow(), true
 	case "bolt":
-		return TemplateBolt()
+		return TemplateBolt(), true
+	default:
+		return SmithingTemplateType{}, false
 	}
-
-	panic("unknown template type")
 }

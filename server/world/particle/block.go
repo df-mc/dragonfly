@@ -65,7 +65,7 @@ type Note struct {
 type DragonEggTeleport struct {
 	particle
 
-	// Diff is a Pos with the values being the difference from the original position to the new position.
+	// Diff is a Position with the values being the difference from the original position to the new position.
 	Diff cube.Pos
 }
 

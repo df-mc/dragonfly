@@ -15,7 +15,7 @@ func (RabbitStew) MaxCount() int {
 }
 
 // Consume ...
-func (RabbitStew) Consume(_ *world.World, c Consumer) Stack {
+func (RabbitStew) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(10, 12)
 	return NewStack(Bowl{}, 1)
 }

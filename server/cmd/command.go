@@ -3,8 +3,10 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"go/ast"
 	"reflect"
+	"slices"
 	"strings"
 )
 
@@ -27,9 +29,9 @@ import (
 // the parser ignore the field. In this case, the field does not have to be of one of the types above.
 type Runnable interface {
 	// Run runs the Command, using the arguments passed to the Command. The source is passed to the method,
-	// which is the source of the execution of the Command, and the output is passed, to which messages may be
+	// which is the source of the Command execution, and the output is passed, to which messages may be
 	// added which get sent to the source.
-	Run(src Source, o *Output)
+	Run(src Source, o *Output, tx *world.Tx)
 }
 
 // Allower may be implemented by a type also implementing Runnable to limit the sources that may run the
@@ -50,25 +52,23 @@ type Command struct {
 	aliases     []string
 }
 
-// New returns a new Command using the name and description passed. The Runnable passed must be a
-// (pointer to a) struct, with its fields representing the parameters of the command.
-// When the command is run, the Run method of the Runnable will be called, after all fields have their values
-// from the parsed command set.
-// If r is not a struct or a pointer to a struct, New panics.
+// New returns a new Command using the name and description passed. Command
+// names and aliases are all converted to lowercase. The Runnable passed must
+// be a (pointer to a) struct, with its fields representing the parameters of
+// the command. When the command is run, the Run method of the Runnable will be
+// called after all fields have their values from the parsed command set. If r
+// is not a struct or a pointer to a struct, New panics.
 func New(name, description string, aliases []string, r ...Runnable) Command {
+	name = strings.ToLower(name)
+	for i, alias := range aliases {
+		aliases[i] = strings.ToLower(alias)
+	}
+
 	usages := make([]string, len(r))
 	runnableValues := make([]reflect.Value, len(r))
 
-	if len(aliases) > 0 {
-		namePresent := false
-		for _, alias := range aliases {
-			if alias == name {
-				namePresent = true
-			}
-		}
-		if !namePresent {
-			aliases = append(aliases, name)
-		}
+	if len(aliases) > 0 && slices.Index(aliases, name) == -1 {
+		aliases = append(aliases, name)
 	}
 
 	for i, runnable := range r {
@@ -122,7 +122,7 @@ func (cmd Command) Aliases() []string {
 // If parsing of all Runnables was unsuccessful, a command output with an error message is sent to the Source
 // passed, and the Run method of the Runnables are not called.
 // The Source passed must not be nil. The method will panic if a nil Source is passed.
-func (cmd Command) Execute(args string, source Source) {
+func (cmd Command) Execute(args string, source Source, tx *world.Tx) {
 	if source == nil {
 		panic("execute: invalid command source: source must not be nil")
 	}
@@ -135,7 +135,7 @@ func (cmd Command) Execute(args string, source Source) {
 	for _, v := range cmd.v {
 		cp := reflect.New(v.Type())
 		cp.Elem().Set(v)
-		line, err := cmd.executeRunnable(cp, args, source, output)
+		line, err := cmd.executeRunnable(cp, args, source, output, tx)
 		if err == nil {
 			// Command was executed successfully: We won't execute any of the other Runnable values passed, as
 			// we've already found an overload that works.
@@ -219,7 +219,7 @@ func (cmd Command) String() string {
 // executeRunnable executes a Runnable v, by parsing the args passed using the source and output obtained. If
 // parsing was not successful or the Runnable could not be run by this source, an error is returned, and the
 // leftover command line.
-func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output) (*Line, error) {
+func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output, tx *world.Tx) (*Line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
 		//lint:ignore ST1005 Error string is capitalised because it is shown to the player.
 		//goland:noinspection GoErrorStringFormat
@@ -253,7 +253,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			val = reflect.New(field.Field(0).Type()).Elem()
 		}
 
-		err, success := parser.parseArgument(arguments, val, opt, name(t), source)
+		err, success := parser.parseArgument(arguments, val, opt, name(t), source, tx)
 		if err != nil {
 			// Parsing was not successful, we return immediately as we don't need to call the Runnable.
 			return arguments, err
@@ -266,7 +266,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		return arguments, fmt.Errorf("unexpected '%v'", strings.Join(arguments.args, " "))
 	}
 
-	v.Interface().(Runnable).Run(source, output)
+	v.Interface().(Runnable).Run(source, output, tx)
 	return arguments, nil
 }
 

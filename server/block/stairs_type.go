@@ -7,7 +7,6 @@ import (
 // encodeStairsBlock encodes the provided block in to an identifier and meta value that can be used to encode the stairs.
 func encodeStairsBlock(block world.Block) string {
 	switch block := block.(type) {
-	// TODO: Copper
 	case Andesite:
 		if block.Polished {
 			return "polished_andesite"
@@ -26,6 +25,17 @@ func encodeStairsBlock(block world.Block) string {
 			return "mossy_cobblestone"
 		}
 		return "stone"
+	case Copper:
+		if block.Type == CutCopper() {
+			name := "cut_copper"
+			if block.Oxidation != UnoxidisedOxidation() {
+				name = block.Oxidation.String() + "_" + name
+			}
+			if block.Waxed {
+				name = "waxed_" + name
+			}
+			return name
+		}
 	case Deepslate:
 		if block.Type == CobbledDeepslate() {
 			return "cobbled_deepslate"
@@ -65,6 +75,8 @@ func encodeStairsBlock(block world.Block) string {
 		if !block.Cracked {
 			return "polished_blackstone_brick"
 		}
+	case PolishedTuff:
+		return "polished_tuff"
 	case Prismarine:
 		switch block.Type {
 		case NormalPrismarine():
@@ -82,6 +94,8 @@ func encodeStairsBlock(block world.Block) string {
 			return "smooth_quartz"
 		}
 		return "quartz"
+	case ResinBricks:
+		return "resin_brick"
 	case Sandstone:
 		switch block.Type {
 		case NormalSandstone():
@@ -106,7 +120,13 @@ func encodeStairsBlock(block world.Block) string {
 		}
 		return "stone_brick"
 	case Tuff:
-		return "tuff"
+		if !block.Chiseled {
+			return "tuff"
+		}
+	case TuffBricks:
+		if !block.Chiseled {
+			return "tuff_brick"
+		}
 	}
 	panic("invalid block used for stairs")
 }
@@ -114,7 +134,6 @@ func encodeStairsBlock(block world.Block) string {
 // StairsBlocks returns a list of all possible blocks for stairs.
 func StairsBlocks() []world.Block {
 	b := []world.Block{
-		// TODO: Copper
 		Andesite{Polished: true},
 		Andesite{},
 		Blackstone{Type: PolishedBlackstone()},
@@ -135,13 +154,16 @@ func StairsBlocks() []world.Block {
 		NetherBricks{Type: RedNetherBricks()},
 		NetherBricks{},
 		PolishedBlackstoneBrick{},
+		PolishedTuff{},
 		Purpur{},
 		Quartz{Smooth: true},
 		Quartz{},
+		ResinBricks{},
 		StoneBricks{Type: MossyStoneBricks()},
 		StoneBricks{},
 		Stone{},
 		Tuff{},
+		TuffBricks{},
 	}
 	for _, p := range PrismarineTypes() {
 		b = append(b, Prismarine{Type: p})
@@ -154,6 +176,10 @@ func StairsBlocks() []world.Block {
 	}
 	for _, w := range WoodTypes() {
 		b = append(b, Planks{Wood: w})
+	}
+	for _, o := range OxidationTypes() {
+		b = append(b, Copper{Type: CutCopper(), Oxidation: o})
+		b = append(b, Copper{Type: CutCopper(), Oxidation: o, Waxed: true})
 	}
 	return b
 }

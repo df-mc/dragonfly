@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -20,7 +20,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
-	"sync/atomic"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -29,9 +28,9 @@ import (
 // StartShowingEntity is made.
 func (s *Session) StopShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e]
+	_, ok := s.hiddenEntities[e.H()]
 	if !ok {
-		s.hiddenEntities[e] = struct{}{}
+		s.hiddenEntities[e.H()] = struct{}{}
 	}
 	s.entityMutex.Unlock()
 
@@ -43,9 +42,9 @@ func (s *Session) StopShowingEntity(e world.Entity) {
 // StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
 func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e]
+	_, ok := s.hiddenEntities[e.H()]
 	if ok {
-		delete(s.hiddenEntities, e)
+		delete(s.hiddenEntities, e.H())
 	}
 	s.entityMutex.Unlock()
 
@@ -58,46 +57,25 @@ func (s *Session) StartShowingEntity(e world.Entity) {
 }
 
 // closeCurrentContainer closes the container the player might currently have open.
-func (s *Session) closeCurrentContainer() {
+func (s *Session) closeCurrentContainer(tx *world.Tx) {
 	if !s.containerOpened.Load() {
 		return
 	}
 	s.closeWindow()
 
 	pos := *s.openedPos.Load()
-	w := s.c.World()
-	b := w.Block(pos)
+	b := tx.Block(pos)
 	if container, ok := b.(block.Container); ok {
-		container.RemoveViewer(s, w, pos)
+		container.RemoveViewer(s, tx, pos)
 	} else if enderChest, ok := b.(block.EnderChest); ok {
-		enderChest.RemoveViewer(w, pos)
-	}
-}
-
-// EmptyUIInventory attempts to move all items in the UI inventory to the player's main inventory. If the main inventory
-// is full, the items are dropped on the ground instead.
-func (s *Session) EmptyUIInventory() {
-	if s == Nop {
-		return
-	}
-	items := s.ui.Clear()
-	leftover := make([]item.Stack, 0, len(items))
-	for _, i := range items {
-		if n, err := s.inv.AddItem(i); err != nil {
-			leftover = append(leftover, i.Grow(i.Count()-n))
-		}
-	}
-	for _, i := range leftover {
-		// We can't put this back in the inventory, so the best option here is to simply get rid of the item if
-		// dropping was cancelled.
-		s.c.Drop(i)
+		enderChest.RemoveViewer(tx, pos)
 	}
 }
 
 // SendRespawn spawns the Controllable entity of the session client-side in the world, provided it has died.
-func (s *Session) SendRespawn(pos mgl64.Vec3) {
+func (s *Session) SendRespawn(pos mgl64.Vec3, c Controllable) {
 	s.writePacket(&packet.Respawn{
-		Position:        vec64To32(pos.Add(entityOffset(s.c))),
+		Position:        vec64To32(pos.Add(entityOffset(c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
 	})
@@ -106,6 +84,9 @@ func (s *Session) SendRespawn(pos mgl64.Vec3) {
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
+	potionRecipes := make([]protocol.PotionRecipe, 0)
+	potionContainerChange := make([]protocol.PotionContainerChangeRecipe, 0)
+
 	for index, i := range recipe.Recipes() {
 		networkID := uint32(index) + 1
 		s.recipes[networkID] = i
@@ -158,9 +139,33 @@ func (s *Session) sendRecipes() {
 				Output:    stackFromItem(i.Output()[0]),
 				Block:     i.Block(),
 			})
+		case recipe.Potion:
+			inputRuntimeID, inputMeta, _ := world.ItemRuntimeID(i.Input()[0].(item.Stack).Item())
+			reagentRuntimeID, reagentMeta, _ := world.ItemRuntimeID(i.Input()[1].(item.Stack).Item())
+			outputRuntimeID, outputMeta, _ := world.ItemRuntimeID(i.Output()[0].Item())
+
+			potionRecipes = append(potionRecipes, protocol.PotionRecipe{
+				InputPotionID:        inputRuntimeID,
+				InputPotionMetadata:  int32(inputMeta),
+				ReagentItemID:        reagentRuntimeID,
+				ReagentItemMetadata:  int32(reagentMeta),
+				OutputPotionID:       outputRuntimeID,
+				OutputPotionMetadata: int32(outputMeta),
+			})
+
+		case recipe.PotionContainerChange:
+			inputRuntimeID, _, _ := world.ItemRuntimeID(i.Input()[0].(item.Stack).Item())
+			reagentRuntimeID, _, _ := world.ItemRuntimeID(i.Input()[1].(item.Stack).Item())
+			outputRuntimeID, _, _ := world.ItemRuntimeID(i.Output()[0].Item())
+
+			potionContainerChange = append(potionContainerChange, protocol.PotionContainerChangeRecipe{
+				InputItemID:   inputRuntimeID,
+				ReagentItemID: reagentRuntimeID,
+				OutputItemID:  outputRuntimeID,
+			})
 		}
 	}
-	s.writePacket(&packet.CraftingData{Recipes: recipes, ClearRecipes: true})
+	s.writePacket(&packet.CraftingData{Recipes: recipes, PotionRecipes: potionRecipes, PotionContainerChangeRecipes: potionContainerChange, ClearRecipes: true})
 }
 
 // sendArmourTrimData sends the armour trim data.
@@ -198,7 +203,7 @@ func (s *Session) sendArmourTrimData() {
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
 		WindowID: windowID,
-		Content:  make([]protocol.ItemInstance, 0, s.inv.Size()),
+		Content:  make([]protocol.ItemInstance, 0, inv.Size()),
 	}
 	for _, i := range inv.Slots() {
 		pk.Content = append(pk.Content, instanceFromItem(i))
@@ -231,7 +236,7 @@ type smelter interface {
 
 // invByID attempts to return an inventory by the ID passed. If found, the inventory is returned and the bool
 // returned is true.
-func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
+func (s *Session) invByID(id int32, tx *world.Tx) (*inventory.Inventory, bool) {
 	switch id {
 	case protocol.ContainerCraftingInput, protocol.ContainerCreatedOutput, protocol.ContainerCursor:
 		// UI inventory.
@@ -244,62 +249,52 @@ func (s *Session) invByID(id int32) (*inventory.Inventory, bool) {
 	case protocol.ContainerArmor:
 		// Armour inventory.
 		return s.armour.Inventory(), true
-	case protocol.ContainerLevelEntity:
-		if s.containerOpened.Load() {
-			return s.openedWindow.Load(), true
+	default:
+		if !s.containerOpened.Load() {
+			return nil, false
 		}
-	case protocol.ContainerBarrel:
-		if s.containerOpened.Load() {
-			if _, barrel := s.c.World().Block(*s.openedPos.Load()).(block.Barrel); barrel {
+		switch id {
+		case protocol.ContainerLevelEntity:
+			return s.openedWindow.Load(), true
+		case protocol.ContainerBarrel:
+			if _, barrel := tx.Block(*s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
 			}
-		}
-	case protocol.ContainerBeaconPayment:
-		if s.containerOpened.Load() {
-			if _, beacon := s.c.World().Block(*s.openedPos.Load()).(block.Beacon); beacon {
+		case protocol.ContainerBeaconPayment:
+			if _, beacon := tx.Block(*s.openedPos.Load()).(block.Beacon); beacon {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
-		if s.containerOpened.Load() {
-			if _, anvil := s.c.World().Block(*s.openedPos.Load()).(block.Anvil); anvil {
+		case protocol.ContainerBrewingStandInput, protocol.ContainerBrewingStandResult, protocol.ContainerBrewingStandFuel:
+			if _, brewingStand := tx.Block(*s.openedPos.Load()).(block.BrewingStand); brewingStand {
+				return s.openedWindow.Load(), true
+			}
+		case protocol.ContainerAnvilInput, protocol.ContainerAnvilMaterial:
+			if _, anvil := tx.Block(*s.openedPos.Load()).(block.Anvil); anvil {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerSmithingTableTemplate, protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
-		if s.containerOpened.Load() {
-			if _, smithing := s.c.World().Block(*s.openedPos.Load()).(block.SmithingTable); smithing {
+		case protocol.ContainerSmithingTableTemplate, protocol.ContainerSmithingTableInput, protocol.ContainerSmithingTableMaterial:
+			if _, smithing := tx.Block(*s.openedPos.Load()).(block.SmithingTable); smithing {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
-		if s.containerOpened.Load() {
-			if _, loom := s.c.World().Block(*s.openedPos.Load()).(block.Loom); loom {
+		case protocol.ContainerLoomInput, protocol.ContainerLoomDye, protocol.ContainerLoomMaterial:
+			if _, loom := tx.Block(*s.openedPos.Load()).(block.Loom); loom {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerStonecutterInput:
-		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Stonecutter); ok {
+		case protocol.ContainerStonecutterInput:
+			if _, ok := tx.Block(*s.openedPos.Load()).(block.Stonecutter); ok {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
-		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.Grindstone); ok {
+		case protocol.ContainerGrindstoneInput, protocol.ContainerGrindstoneAdditional:
+			if _, ok := tx.Block(*s.openedPos.Load()).(block.Grindstone); ok {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
-		if s.containerOpened.Load() {
-			if _, enchanting := s.c.World().Block(*s.openedPos.Load()).(block.EnchantingTable); enchanting {
+		case protocol.ContainerEnchantingInput, protocol.ContainerEnchantingMaterial:
+			if _, enchanting := tx.Block(*s.openedPos.Load()).(block.EnchantingTable); enchanting {
 				return s.ui, true
 			}
-		}
-	case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
-		protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
-		if s.containerOpened.Load() {
-			if _, ok := s.c.World().Block(*s.openedPos.Load()).(smelter); ok {
+		case protocol.ContainerFurnaceIngredient, protocol.ContainerFurnaceFuel, protocol.ContainerFurnaceResult,
+			protocol.ContainerBlastFurnaceIngredient, protocol.ContainerSmokerIngredient:
+			if _, ok := tx.Block(*s.openedPos.Load()).(smelter); ok {
 				return s.openedWindow.Load(), true
 			}
 		}
@@ -370,6 +365,50 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 	})
 }
 
+// SendDialogue sends an NPC dialogue to the client of the connection. The Submit method of the dialogue is
+// called when the client interacts with a button in the dialogue.
+func (s *Session) SendDialogue(d dialogue.Dialogue, e world.Entity) {
+	b, _ := json.Marshal(d)
+
+	h := s.handlers[packet.IDNPCRequest].(*NPCRequestHandler)
+	h.dialogue = d
+	h.entityRuntimeID = s.entityRuntimeID(e)
+
+	metadata := s.parseEntityMetadata(e)
+	metadata[protocol.EntityDataKeyHasNPC] = uint8(1)
+
+	disp := d.Display()
+	disp.EntityOffset = disp.EntityOffset.Add(entityOffset(e))
+	display, _ := json.Marshal(map[string]any{"portrait_offsets": disp})
+	metadata[protocol.EntityDataKeyNPCData] = string(display)
+
+	s.writePacket(&packet.SetActorData{
+		EntityRuntimeID: h.entityRuntimeID,
+		EntityMetadata:  metadata,
+	})
+	s.writePacket(&packet.NPCDialogue{
+		EntityUniqueID: h.entityRuntimeID,
+		ActionType:     packet.NPCDialogueActionOpen,
+		Dialogue:       d.Body(),
+		SceneName:      "default",
+		NPCName:        d.Title(),
+		ActionJSON:     string(b),
+	})
+}
+
+func (s *Session) CloseDialogue() {
+	h := s.handlers[packet.IDNPCRequest].(*NPCRequestHandler)
+	if h.entityRuntimeID == 0 {
+		return
+	}
+
+	s.writePacket(&packet.NPCDialogue{
+		EntityUniqueID: h.entityRuntimeID,
+		ActionType:     packet.NPCDialogueActionClose,
+	})
+	h.entityRuntimeID = 0
+}
+
 // SendForm sends a form to the client of the connection. The Submit method of the form is called when the
 // client submits the form.
 func (s *Session) SendForm(f form.Form) {
@@ -380,7 +419,7 @@ func (s *Session) SendForm(f form.Form) {
 
 	h.mu.Lock()
 	if len(h.forms) > 10 {
-		s.log.Debug("SendForm: more than 10 active forms: dropping an existing one")
+		s.conf.Log.Debug("SendForm: more than 10 active forms: dropping an existing one")
 		for k := range h.forms {
 			delete(h.forms, k)
 			break
@@ -411,29 +450,29 @@ func (s *Session) Transfer(ip net.IP, port int) {
 
 // SendGameMode sends the game mode of the Controllable entity of the session to the client. It makes sure the right
 // flags are set to create the full game mode.
-func (s *Session) SendGameMode(mode world.GameMode) {
+func (s *Session) SendGameMode(c Controllable) {
 	if s == Nop {
 		return
 	}
-	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(mode)})
-	s.sendAbilities()
+	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(c.GameMode())})
+	s.SendAbilities(c)
 }
 
-// sendAbilities sends the abilities of the Controllable entity of the session to the client.
-func (s *Session) sendAbilities() {
-	mode, abilities := s.c.GameMode(), uint32(0)
+// SendAbilities sends the abilities of the Controllable entity of the session to the client.
+func (s *Session) SendAbilities(c Controllable) {
+	mode, abilities := c.GameMode(), uint32(0)
 	if mode.AllowsFlying() {
 		abilities |= protocol.AbilityMayFly
-		if s.c.Flying() {
+		if c.Flying() {
 			abilities |= protocol.AbilityFlying
 		}
 	}
 	if !mode.HasCollision() {
 		abilities |= protocol.AbilityNoClip
-		defer s.c.StartFlying()
+		defer c.StartFlying()
 		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
 		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
-		s.ViewEntityTeleport(s.c, s.c.Position())
+		s.ViewEntityTeleport(c, c.Position())
 	}
 	if !mode.AllowsTakingDamage() {
 		abilities |= protocol.AbilityInvulnerable
@@ -451,42 +490,34 @@ func (s *Session) sendAbilities() {
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: packet.CommandPermissionLevelNormal,
-		Layers: []protocol.AbilityLayer{ // TODO: Support customization of fly and walk speeds.
+		Layers: []protocol.AbilityLayer{
 			{
 				Type:      protocol.AbilityLayerTypeBase,
 				Abilities: protocol.AbilityCount - 1,
 				Values:    abilities,
-				FlySpeed:  protocol.AbilityBaseFlySpeed,
-				WalkSpeed: protocol.AbilityBaseWalkSpeed,
+				FlySpeed:  float32(c.FlightSpeed()),
+				WalkSpeed: float32(c.Speed()),
 			},
 		},
 	}})
 }
 
 // SendHealth sends the health and max health to the player.
-func (s *Session) SendHealth(health *entity.HealthManager) {
+func (s *Session) SendHealth(health, max, absorption float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{{
 			AttributeValue: protocol.AttributeValue{
 				Name:  "minecraft:health",
-				Value: float32(math.Ceil(health.Health())),
-				Max:   float32(math.Ceil(health.MaxHealth())),
+				Value: float32(math.Ceil(health)),
+				Max:   float32(math.Ceil(max)),
 			},
 			DefaultMax: 20,
 			Default:    20,
-		}},
-	})
-}
-
-// SendAbsorption sends the absorption value passed to the player.
-func (s *Session) SendAbsorption(value float64) {
-	s.writePacket(&packet.UpdateAttributes{
-		EntityRuntimeID: selfEntityRuntimeID,
-		Attributes: []protocol.Attribute{{
+		}, {
 			AttributeValue: protocol.AttributeValue{
 				Name:  "minecraft:absorption",
-				Value: float32(math.Ceil(value)),
+				Value: float32(math.Ceil(absorption)),
 				Max:   float32(math.MaxFloat32),
 			},
 			DefaultMax: float32(math.MaxFloat32),
@@ -539,140 +570,62 @@ func (s *Session) EnableInstantRespawn(enable bool) {
 	s.sendGameRules([]protocol.GameRule{{Name: "doimmediaterespawn", Value: enable}})
 }
 
-// addToPlayerList adds the player of a session to the player list of this session. It will be shown in the
-// in-game pause menu screen.
-func (s *Session) addToPlayerList(session *Session) {
-	c := session.c
-
-	runtimeID := uint64(1)
-	s.entityMutex.Lock()
-	if session != s {
-		s.currentEntityRuntimeID += 1
-		runtimeID = s.currentEntityRuntimeID
-	}
-	s.entityRuntimeIDs[c] = runtimeID
-	s.entities[runtimeID] = c
-	s.entityMutex.Unlock()
-
-	s.writePacket(&packet.PlayerList{
-		ActionType: packet.PlayerListActionAdd,
-		Entries: []protocol.PlayerListEntry{{
-			UUID:           c.UUID(),
-			EntityUniqueID: int64(runtimeID),
-			Username:       c.Name(),
-			XUID:           c.XUID(),
-			Skin:           skinToProtocol(c.Skin()),
-		}},
-	})
-}
-
-// skinToProtocol converts a skin to its protocol representation.
-func skinToProtocol(s skin.Skin) protocol.Skin {
-	var animations []protocol.SkinAnimation
-	for _, animation := range s.Animations {
-		protocolAnim := protocol.SkinAnimation{
-			ImageWidth:  uint32(animation.Bounds().Max.X),
-			ImageHeight: uint32(animation.Bounds().Max.Y),
-			ImageData:   animation.Pix,
-			FrameCount:  float32(animation.FrameCount),
-		}
-		switch animation.Type() {
-		case skin.AnimationHead:
-			protocolAnim.AnimationType = protocol.SkinAnimationHead
-		case skin.AnimationBody32x32:
-			protocolAnim.AnimationType = protocol.SkinAnimationBody32x32
-		case skin.AnimationBody128x128:
-			protocolAnim.AnimationType = protocol.SkinAnimationBody128x128
-		}
-		protocolAnim.ExpressionType = uint32(animation.AnimationExpression)
-		animations = append(animations, protocolAnim)
-	}
-
-	return protocol.Skin{
-		PlayFabID:          s.PlayFabID,
-		SkinID:             uuid.New().String(),
-		SkinResourcePatch:  s.ModelConfig.Encode(),
-		SkinImageWidth:     uint32(s.Bounds().Max.X),
-		SkinImageHeight:    uint32(s.Bounds().Max.Y),
-		SkinData:           s.Pix,
-		CapeImageWidth:     uint32(s.Cape.Bounds().Max.X),
-		CapeImageHeight:    uint32(s.Cape.Bounds().Max.Y),
-		CapeData:           s.Cape.Pix,
-		SkinGeometry:       s.Model,
-		PersonaSkin:        s.Persona,
-		CapeID:             uuid.New().String(),
-		FullID:             uuid.New().String(),
-		Animations:         animations,
-		Trusted:            true,
-		OverrideAppearance: true,
-	}
-}
-
-// removeFromPlayerList removes the player of a session from the player list of this session. It will no
-// longer be shown in the in-game pause menu screen.
-func (s *Session) removeFromPlayerList(session *Session) {
-	c := session.c
-
-	s.entityMutex.Lock()
-	delete(s.entities, s.entityRuntimeIDs[c])
-	delete(s.entityRuntimeIDs, c)
-	s.entityMutex.Unlock()
-
-	s.writePacket(&packet.PlayerList{
-		ActionType: packet.PlayerListActionRemove,
-		Entries: []protocol.PlayerListEntry{{
-			UUID: c.UUID(),
-		}},
-	})
-}
-
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
 // slots in the inventory are changed.
-func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inventory, armour *inventory.Armour, heldSlot *atomic.Uint32) {
-	s.inv = inventory.New(36, func(slot int, _, item item.Stack) {
-		if s.c == nil {
-			return
-		}
-		if slot == int(s.heldSlot.Load()) {
-			for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-				viewer.ViewEntityItems(s.c)
+func (s *Session) HandleInventories(tx *world.Tx, c Controllable, inv, offHand, enderChest, ui *inventory.Inventory, armour *inventory.Armour, heldSlot *uint32) {
+	s.inv = inv
+	s.inv.SlotFunc(s.broadcastInvFunc(tx, c))
+	s.offHand = offHand
+	s.offHand.SlotFunc(s.broadcastOffHandFunc(tx, c))
+	s.enderChest = enderChest
+	s.enderChest.SlotFunc(s.broadcastEnderChestFunc(tx, c))
+	s.armour = armour
+	s.armour.Inventory().SlotFunc(s.broadcastArmourFunc(tx, c))
+	s.ui = ui
+	s.ui.SlotFunc(s.uiInventoryFunc(tx, c))
+	s.heldSlot = heldSlot
+}
+
+func (s *Session) broadcastInvFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
+	return func(slot int, _, after item.Stack) {
+		if slot == int(*s.heldSlot) {
+			for _, viewer := range tx.Viewers(c.Position()) {
+				viewer.ViewEntityItems(c)
 			}
 		}
 		if !s.inTransaction.Load() {
-			s.sendItem(item, slot, protocol.WindowIDInventory)
+			s.sendItem(after, slot, protocol.WindowIDInventory)
 		}
-	})
-	s.offHand = inventory.New(1, func(slot int, _, item item.Stack) {
-		if s.c == nil {
-			return
+	}
+}
+
+func (s *Session) broadcastEnderChestFunc(tx *world.Tx, _ Controllable) inventory.SlotFunc {
+	return func(slot int, _, after item.Stack) {
+		if !s.inTransaction.Load() {
+			if _, ok := tx.Block(*s.openedPos.Load()).(block.EnderChest); ok {
+				s.ViewSlotChange(slot, after)
+			}
 		}
-		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-			viewer.ViewEntityItems(s.c)
+	}
+}
+
+func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
+	return func(slot int, _, after item.Stack) {
+		for _, viewer := range tx.Viewers(c.Position()) {
+			viewer.ViewEntityItems(c)
 		}
 		if !s.inTransaction.Load() {
 			i, _ := s.offHand.Item(0)
 			s.writePacket(&packet.InventoryContent{
 				WindowID: protocol.WindowIDOffHand,
-				Content: []protocol.ItemInstance{
-					instanceFromItem(i),
-				},
+				Content:  []protocol.ItemInstance{instanceFromItem(i)},
 			})
 		}
-	})
-	s.enderChest = inventory.New(27, func(slot int, _, item item.Stack) {
-		if s.c == nil {
-			return
-		}
-		if !s.inTransaction.Load() {
-			if _, ok := s.c.World().Block(*s.openedPos.Load()).(block.EnderChest); ok {
-				s.ViewSlotChange(slot, item)
-			}
-		}
-	})
-	s.armour = inventory.NewArmour(func(slot int, before, after item.Stack) {
-		if s.c == nil {
-			return
-		}
+	}
+}
+
+func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
+	return func(slot int, before, after item.Stack) {
 		if !s.inTransaction.Load() {
 			s.sendItem(after, slot, protocol.WindowIDArmour)
 		}
@@ -680,70 +633,75 @@ func (s *Session) HandleInventories() (inv, offHand, enderChest *inventory.Inven
 			// Only send armour if the item type actually changed.
 			return
 		}
-		for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-			viewer.ViewEntityArmour(s.c)
+		for _, viewer := range tx.Viewers(c.Position()) {
+			viewer.ViewEntityArmour(c)
 		}
-	})
-	return s.inv, s.offHand, s.enderChest, s.armour, s.heldSlot
+	}
 }
 
-// SetHeldSlot sets the currently held hotbar slot.
-func (s *Session) SetHeldSlot(slot int) error {
-	if slot > 8 {
-		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
+// uiInventoryFunc handles an update to the UI inventory, used for updating enchantment options and possibly more
+// in the future.
+func (s *Session) uiInventoryFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
+	return func(slot int, _, after item.Stack) {
+		if slot == enchantingInputSlot && s.containerOpened.Load() {
+			pos := *s.openedPos.Load()
+			if _, enchanting := tx.Block(pos).(block.EnchantingTable); enchanting {
+				s.sendEnchantmentOptions(tx, c, pos, after)
+			}
+		}
 	}
+}
 
-	s.heldSlot.Store(uint32(slot))
-
-	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-		viewer.ViewEntityItems(s.c)
+// SendHeldSlot sends the currently held hotbar slot.
+func (s *Session) SendHeldSlot(slot int, c Controllable, force bool) {
+	if s.changingSlot.Load() && !force {
+		return
 	}
-
-	mainHand, _ := s.c.HeldItems()
+	mainHand, _ := c.HeldItems()
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: selfEntityRuntimeID,
 		NewItem:         instanceFromItem(mainHand),
 		InventorySlot:   byte(slot),
 		HotBarSlot:      byte(slot),
 	})
-	return nil
 }
 
-// UpdateHeldSlot updates the held slot of the Session to the slot passed. It also verifies that the item in that slot
-// matches an expected item stack.
-func (s *Session) UpdateHeldSlot(slot int, expected item.Stack) error {
-	// The slot that the player might have selected must be within the hotbar: The held item cannot be in a
-	// different place in the inventory.
-	if slot > 8 {
-		return fmt.Errorf("new held slot exceeds hotbar range 0-8: slot is %v", slot)
+// VerifyAndSetHeldSlot verifies if the slot passed is a valid hotbar slot and
+// if the expected item.Stack is in it. Afterwards, it changes the held slot
+// of the player.
+func (s *Session) VerifyAndSetHeldSlot(slot int, expected item.Stack, c Controllable) error {
+	if err := s.VerifySlot(slot, expected); err != nil {
+		return err
 	}
-	if s.heldSlot.Load() == uint32(slot) {
-		// Old slot was the same as new slot, so don't do anything.
-		return nil
+	s.changingSlot.Store(true)
+	defer s.changingSlot.Store(false)
+	return c.SetHeldSlot(slot)
+}
+
+// VerifySlot verifies if the slot passed is a valid hotbar slot and if the
+// expected item.Stack is in it.
+func (s *Session) VerifySlot(slot int, expected item.Stack) error {
+	// The slot that the player might have selected must be within the hotbar:
+	// The held item cannot be in a different place in the inventory.
+	if slot < 0 || slot > 8 {
+		return fmt.Errorf("slot exceeds hotbar range 0-8: slot is %v", slot)
 	}
-	// The user swapped changed held slots so stop using item right away.
-	s.c.ReleaseItem()
-
-	s.heldSlot.Store(uint32(slot))
-
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
 
-	// The item the client claims to have must be identical to the one we have registered server-side.
+	// The item the client claims to have must be identical to the one we have
+	// registered server-side.
 	if !clientSideItem.Equal(actual) {
-		// Only ever debug these as they are frequent and expected to happen whenever client and server get
-		// out of sync.
-		s.log.Debug("update held slot: client-side item must be identical to server-side item, but got differences", "client-held", clientSideItem.String(), "server-held", actual.String())
-	}
-	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-		viewer.ViewEntityItems(s.c)
+		s.sendItem(actual, slot, protocol.WindowIDInventory)
+		// Only ever debug these as they are frequent and expected to happen
+		// whenever client and server get out of sync.
+		s.conf.Log.Debug("verify slot: client-side item was not equal to server-side item", "client-held", clientSideItem.String(), "server-held", actual.String())
 	}
 	return nil
 }
 
 // SendExperience sends the experience level and progress from the given experience manager to the player.
-func (s *Session) SendExperience(e *entity.ExperienceManager) {
-	level, progress := e.Level(), e.Progress()
+func (s *Session) SendExperience(level int, progress float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Attributes: []protocol.Attribute{
@@ -947,8 +905,3 @@ func gameTypeFromMode(mode world.GameMode) int32 {
 //
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
 func item_id(s item.Stack) int32
-
-// noinspection ALL
-//
-//go:linkname world_add github.com/df-mc/dragonfly/server/world.add
-func world_add(e world.Entity, w *world.World)

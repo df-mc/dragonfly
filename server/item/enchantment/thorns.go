@@ -6,43 +6,45 @@ import (
 )
 
 // Thorns is an enchantment that inflicts damage on attackers.
-type Thorns struct{}
+var Thorns thorns
+
+type thorns struct{}
 
 // Name ...
-func (Thorns) Name() string {
+func (thorns) Name() string {
 	return "Thorns"
 }
 
 // MaxLevel ...
-func (Thorns) MaxLevel() int {
+func (thorns) MaxLevel() int {
 	return 3
 }
 
 // Cost ...
-func (Thorns) Cost(level int) (int, int) {
-	min := 10 + 20*(level-1)
-	return min, min + 50
+func (thorns) Cost(level int) (int, int) {
+	minCost := 10 + 20*(level-1)
+	return minCost, minCost + 50
 }
 
 // Rarity ...
-func (Thorns) Rarity() item.EnchantmentRarity {
+func (thorns) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...
-func (Thorns) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (thorns) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (Thorns) CompatibleWithItem(i world.Item) bool {
+func (thorns) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Armour)
 	return ok
 }
 
 // ThornsDamageSource is used for damage caused by thorns.
 type ThornsDamageSource struct {
-	// Owner is the owner of the armour with the Thorns enchantment.
+	// Owner is the owner of the armour with the thorns enchantment.
 	Owner world.Entity
 }
 

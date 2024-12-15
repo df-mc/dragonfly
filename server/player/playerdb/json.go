@@ -1,7 +1,9 @@
 package playerdb
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -9,23 +11,22 @@ import (
 	"time"
 )
 
-func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world.World) player.Data {
+func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world.World) (player.Config, *world.World) {
 	dim, _ := world.DimensionByID(int(d.Dimension))
 	mode, _ := world.GameModeByID(int(d.GameMode))
-	data := player.Data{
+	conf := player.Config{
 		UUID:                uuid.MustParse(d.UUID),
-		Username:            d.Username,
+		XUID:                d.XUID,
+		Name:                d.Username,
 		Position:            d.Position,
+		Rotation:            cube.Rotation{d.Yaw, d.Pitch},
 		Velocity:            d.Velocity,
-		Yaw:                 d.Yaw,
-		Pitch:               d.Pitch,
 		Health:              d.Health,
 		MaxHealth:           d.MaxHealth,
-		Hunger:              d.Hunger,
+		Food:                d.Hunger,
 		FoodTick:            d.FoodTick,
-		ExhaustionLevel:     d.ExhaustionLevel,
-		SaturationLevel:     d.SaturationLevel,
-		AbsorptionLevel:     d.AbsorptionLevel,
+		Exhaustion:          d.ExhaustionLevel,
+		Saturation:          d.SaturationLevel,
 		Experience:          d.Experience,
 		AirSupply:           d.AirSupply,
 		MaxAirSupply:        d.MaxAirSupply,
@@ -34,47 +35,70 @@ func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world
 		Effects:             dataToEffects(d.Effects),
 		FireTicks:           d.FireTicks,
 		FallDistance:        d.FallDistance,
-		Inventory:           dataToInv(d.Inventory),
-		EnderChestInventory: make([]item.Stack, 27),
-		World:               lookupWorld(dim),
+		Inventory:           inventory.New(36, nil),
+		EnderChestInventory: inventory.New(27, nil),
+		OffHand:             inventory.New(1, nil),
+		Armour:              inventory.NewArmour(nil),
 	}
-	decodeItems(d.EnderChestInventory, data.EnderChestInventory)
-	return data
+	echest := make([]item.Stack, 27)
+	decodeItems(d.EnderChestInventory, echest)
+	invData := dataToInv(d.Inventory)
+
+	for slot, stack := range invData.Items {
+		_ = conf.Inventory.SetItem(slot, stack)
+	}
+	_ = conf.OffHand.SetItem(0, invData.OffHand)
+	conf.Armour.Set(invData.Helmet, invData.Chestplate, invData.Leggings, invData.Boots)
+	conf.HeldSlot = int(invData.MainHandSlot)
+
+	for slot, stack := range echest {
+		_ = conf.EnderChestInventory.SetItem(slot, stack)
+	}
+	return conf, lookupWorld(dim)
 }
 
-func (p *Provider) toJson(d player.Data) jsonData {
-	dim, _ := world.DimensionID(d.World.Dimension())
+func (p *Provider) toJson(d player.Config, w *world.World) jsonData {
+	dim, _ := world.DimensionID(w.Dimension())
 	mode, _ := world.GameModeID(d.GameMode)
+	offHand, _ := d.OffHand.Item(0)
 	return jsonData{
-		UUID:                d.UUID.String(),
-		Username:            d.Username,
-		Position:            d.Position,
-		Velocity:            d.Velocity,
-		Yaw:                 d.Yaw,
-		Pitch:               d.Pitch,
-		Health:              d.Health,
-		MaxHealth:           d.MaxHealth,
-		Hunger:              d.Hunger,
-		FoodTick:            d.FoodTick,
-		ExhaustionLevel:     d.ExhaustionLevel,
-		SaturationLevel:     d.SaturationLevel,
-		AbsorptionLevel:     d.AbsorptionLevel,
-		Experience:          d.Experience,
-		AirSupply:           d.AirSupply,
-		MaxAirSupply:        d.MaxAirSupply,
-		EnchantmentSeed:     d.EnchantmentSeed,
-		GameMode:            uint8(mode),
-		Effects:             effectsToData(d.Effects),
-		FireTicks:           d.FireTicks,
-		FallDistance:        d.FallDistance,
-		Inventory:           invToData(d.Inventory),
-		EnderChestInventory: encodeItems(d.EnderChestInventory),
+		UUID:            d.UUID.String(),
+		Username:        d.Name,
+		Position:        d.Position,
+		Velocity:        d.Velocity,
+		Yaw:             d.Rotation.Yaw(),
+		Pitch:           d.Rotation.Pitch(),
+		Health:          d.Health,
+		MaxHealth:       d.MaxHealth,
+		Hunger:          d.Food,
+		FoodTick:        d.FoodTick,
+		ExhaustionLevel: d.Exhaustion,
+		SaturationLevel: d.Saturation,
+		Experience:      d.Experience,
+		AirSupply:       d.AirSupply,
+		MaxAirSupply:    d.MaxAirSupply,
+		EnchantmentSeed: d.EnchantmentSeed,
+		GameMode:        uint8(mode),
+		Effects:         effectsToData(d.Effects),
+		FireTicks:       d.FireTicks,
+		FallDistance:    d.FallDistance,
+		Inventory: invToData(InventoryData{
+			Items:        d.Inventory.Slots(),
+			Boots:        d.Armour.Boots(),
+			Leggings:     d.Armour.Leggings(),
+			Chestplate:   d.Armour.Chestplate(),
+			Helmet:       d.Armour.Helmet(),
+			OffHand:      offHand,
+			MainHandSlot: uint32(d.HeldSlot),
+		}),
+		EnderChestInventory: encodeItems(d.EnderChestInventory.Slots()),
 		Dimension:           uint8(dim),
 	}
 }
 
 type jsonData struct {
 	UUID                             string
+	XUID                             string
 	Username                         string
 	Position, Velocity               mgl64.Vec3
 	Yaw, Pitch                       float64
@@ -82,10 +106,9 @@ type jsonData struct {
 	Hunger                           int
 	FoodTick                         int
 	ExhaustionLevel, SaturationLevel float64
-	AbsorptionLevel                  float64
 	EnchantmentSeed                  int64
 	Experience                       int
-	AirSupply, MaxAirSupply          int64
+	AirSupply, MaxAirSupply          int
 	GameMode                         uint8
 	Inventory                        jsonInventoryData
 	EnderChestInventory              []jsonSlot

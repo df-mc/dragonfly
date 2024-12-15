@@ -160,8 +160,8 @@ func (a *Armour) Damage(dmg float64, f DamageFunc) {
 	}
 }
 
-// ThornsDamage checks if any of the Armour items are enchanted with Thorns. If
-// this is the case and the Thorns enchantment activates (15% chance per level),
+// ThornsDamage checks if any of the Armour items are enchanted with thorns. If
+// this is the case and the thorns enchantment activates (15% chance per level),
 // a random Armour piece is damaged. The damage to be dealt to the attacker is
 // returned.
 func (a *Armour) ThornsDamage(f DamageFunc) float64 {
@@ -169,15 +169,15 @@ func (a *Armour) ThornsDamage(f DamageFunc) float64 {
 	dmg := 0.0
 
 	for _, i := range slots {
-		thorns, _ := i.Enchantment(enchantment.Thorns{})
+		thorns, _ := i.Enchantment(enchantment.Thorns)
 		if level := float64(thorns.Level()); rand.Float64() < level*0.15 {
-			// 15%/level chance of Thorns activation per item. Total damage from
-			// normal thorns armour (max Thorns III) should never exceed 4.0 in
+			// 15%/level chance of thorns activation per item. Total damage from
+			// normal thorns armour (max thorns III) should never exceed 4.0 in
 			// total.
 			dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
 		}
 	}
-	if highest := a.HighestEnchantmentLevel(enchantment.Thorns{}); highest > 10 {
+	if highest := a.HighestEnchantmentLevel(enchantment.Thorns); highest > 10 {
 		// When we find an armour piece with thorns XI or above, the logic
 		// changes: We have to find the armour piece with the highest level
 		// of thorns and subtract 10 from its level to calculate the final
@@ -188,8 +188,8 @@ func (a *Armour) ThornsDamage(f DamageFunc) float64 {
 		// Deal 2 damage to one random thorns item. Bedrock Edition and Java Edition
 		// both have different behaviour here and neither seem to match the expected
 		// behaviour. Java Edition deals 2 damage to a random thorns item for every
-		// Thorns armour item worn, while Bedrock Edition deals 1 additional damage
-		// for every Thorns item and another 2 for every Thorns item when it
+		// thorns armour item worn, while Bedrock Edition deals 1 additional damage
+		// for every thorns item and another 2 for every thorns item when it
 		// activates.
 		slot := rand.Intn(len(slots))
 		_ = a.Inventory().SetItem(slot, f(slots[slot], 2))
@@ -238,7 +238,7 @@ func (a *Armour) Inventory() *Inventory {
 
 // Handle assigns a Handler to an Armour inventory so that its methods are called for the respective events. Nil may be
 // passed to set the default NopHandler.
-// Handle is the equivalent of calling (*Armour).Inventory().Handle.
+// Handle is the equivalent of calling (*Armour).Inventory().H.
 func (a *Armour) Handle(h Handler) {
 	a.inv.Handle(h)
 }

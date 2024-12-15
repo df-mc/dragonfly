@@ -19,57 +19,57 @@ type SugarCane struct {
 }
 
 // UseOnBlock ensures the placement of the block is OK.
-func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false
 	}
-	if !c.canGrowHere(pos, w, true) {
+	if !c.canGrowHere(pos, tx, true) {
 		return false
 	}
 
-	place(w, pos, c, user, ctx)
+	place(tx, pos, c, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (c SugarCane) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if !c.canGrowHere(pos, w, true) {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
-		dropItem(w, item.NewStack(c, 1), pos.Vec3Centre())
+func (c SugarCane) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !c.canGrowHere(pos, tx, true) {
+		tx.SetBlock(pos, nil, nil)
+		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
+		dropItem(tx, item.NewStack(c, 1), pos.Vec3Centre())
 	}
 }
 
 // RandomTick ...
-func (c SugarCane) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+func (c SugarCane) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Age < 15 {
 		c.Age++
 	} else if c.Age == 15 {
 		c.Age = 0
-		if c.canGrowHere(pos.Side(cube.FaceDown), w, false) {
+		if c.canGrowHere(pos.Side(cube.FaceDown), tx, false) {
 			for y := 1; y < 3; y++ {
-				if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
-					w.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{}, nil)
+				if _, ok := tx.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
+					tx.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{}, nil)
 					break
-				} else if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(SugarCane); !ok {
+				} else if _, ok := tx.Block(pos.Add(cube.Pos{0, y})).(SugarCane); !ok {
 					break
 				}
 			}
 		}
 	}
-	w.SetBlock(pos, c, nil)
+	tx.SetBlock(pos, c, nil)
 }
 
 // BoneMeal ...
-func (c SugarCane) BoneMeal(pos cube.Pos, w *world.World) bool {
-	for _, ok := w.Block(pos.Side(cube.FaceDown)).(SugarCane); ok; _, ok = w.Block(pos.Side(cube.FaceDown)).(SugarCane) {
+func (c SugarCane) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+	for _, ok := tx.Block(pos.Side(cube.FaceDown)).(SugarCane); ok; _, ok = tx.Block(pos.Side(cube.FaceDown)).(SugarCane) {
 		pos = pos.Side(cube.FaceDown)
 	}
-	if c.canGrowHere(pos.Side(cube.FaceDown), w, false) {
+	if c.canGrowHere(pos.Side(cube.FaceDown), tx, false) {
 		for y := 1; y < 3; y++ {
-			if _, ok := w.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
-				w.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{}, nil)
+			if _, ok := tx.Block(pos.Add(cube.Pos{0, y})).(Air); ok {
+				tx.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{}, nil)
 			}
 		}
 		return true
@@ -78,14 +78,14 @@ func (c SugarCane) BoneMeal(pos cube.Pos, w *world.World) bool {
 }
 
 // canGrowHere implements logic to check if sugar cane can live/grow here.
-func (c SugarCane) canGrowHere(pos cube.Pos, w *world.World, recursive bool) bool {
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(SugarCane); ok && recursive {
-		return c.canGrowHere(pos.Side(cube.FaceDown), w, recursive)
+func (c SugarCane) canGrowHere(pos cube.Pos, tx *world.Tx, recursive bool) bool {
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(SugarCane); ok && recursive {
+		return c.canGrowHere(pos.Side(cube.FaceDown), tx, recursive)
 	}
 
-	if supportsVegetation(c, w.Block(pos.Sub(cube.Pos{0, 1}))) {
+	if supportsVegetation(c, tx.Block(pos.Sub(cube.Pos{0, 1}))) {
 		for _, face := range cube.HorizontalFaces() {
-			if liquid, ok := w.Liquid(pos.Side(face).Side(cube.FaceDown)); ok {
+			if liquid, ok := tx.Liquid(pos.Side(face).Side(cube.FaceDown)); ok {
 				if _, ok := liquid.(Water); ok {
 					return true
 				}

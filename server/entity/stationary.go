@@ -19,7 +19,11 @@ type StationaryBehaviourConfig struct {
 	SpawnSounds []world.Sound
 	// Tick is a function called every world tick. It may be used to implement
 	// additional behaviour for stationary entities.
-	Tick func(e *Ent)
+	Tick func(e *Ent, tx *world.Tx)
+}
+
+func (conf StationaryBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
 }
 
 // New creates a StationaryBehaviour using the settings provided in conf.
@@ -35,13 +39,12 @@ func (conf StationaryBehaviourConfig) New() *StationaryBehaviour {
 // such entities will not move them.
 type StationaryBehaviour struct {
 	conf  StationaryBehaviourConfig
-	age   time.Duration
 	close bool
 }
 
 // Tick checks if the entity should be closed and runs whatever additional
 // behaviour the entity might require.
-func (s *StationaryBehaviour) Tick(e *Ent) *Movement {
+func (s *StationaryBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	if s.close {
 		_ = e.Close()
 		return nil
@@ -49,11 +52,11 @@ func (s *StationaryBehaviour) Tick(e *Ent) *Movement {
 
 	if e.Age() == 0 {
 		for _, ss := range s.conf.SpawnSounds {
-			e.World().PlaySound(e.Position(), ss)
+			tx.PlaySound(e.Position(), ss)
 		}
 	}
 	if s.conf.Tick != nil {
-		s.conf.Tick(e)
+		s.conf.Tick(e, tx)
 	}
 
 	if e.Age() > s.conf.ExistenceDuration {

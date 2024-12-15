@@ -75,8 +75,7 @@ func (s stewType) Uint8() uint8 {
 
 // Effects returns suspicious stew effects.
 func (s stewType) Effects() []effect.Effect {
-	effects := []effect.Effect{}
-
+	var effects []effect.Effect
 	switch s.Uint8() {
 	case 0:
 		effects = append(effects, effect.New(effect.NightVision{}, 1, time.Second*4))

@@ -26,8 +26,8 @@ type Stairs struct {
 
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down
 // when needed.
-func (s Stairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, s)
+func (s Stairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, s)
 	if !used {
 		return
 	}
@@ -36,7 +36,7 @@ func (s Stairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, w 
 		s.UpsideDown = true
 	}
 
-	place(w, pos, s, user, ctx)
+	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
@@ -47,36 +47,8 @@ func (s Stairs) Model() world.BlockModel {
 
 // BreakInfo ...
 func (s Stairs) BreakInfo() BreakInfo {
-	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
-
-	switch block := s.Block.(type) {
-	// TODO: Copper
-	// TODO: Blackstone
-	// TODO: Deepslate
-	case Planks:
-		harvestable = alwaysHarvestable
-		effective = axeEffective
-		blastResistance = 15.0
-	case Prismarine:
-		hardness = 1.5
-	case Purpur:
-		hardness = 1.5
-	case Quartz:
-		hardness = 0.8
-		blastResistance = 4
-	case Sandstone:
-		if block.Type != SmoothSandstone() {
-			hardness = 0.8
-			blastResistance = 4
-		}
-	case Stone:
-		hardness = 1.5
-	case StoneBricks:
-		if block.Type == NormalStoneBricks() {
-			hardness = 1.5
-		}
-	}
-	return newBreakInfo(hardness, harvestable, effective, oneOf(s)).withBlastResistance(blastResistance)
+	breakInfo := s.Block.(Breakable).BreakInfo()
+	return newBreakInfo(breakInfo.Hardness, breakInfo.Harvestable, breakInfo.Effective, oneOf(s)).withBlastResistance(breakInfo.BlastResistance)
 }
 
 // Instrument ...
@@ -119,8 +91,8 @@ func toStairsDirection(v cube.Direction) int32 {
 }
 
 // SideClosed ...
-func (s Stairs) SideClosed(pos, side cube.Pos, w *world.World) bool {
-	return s.Model().FaceSolid(pos, pos.Face(side), w)
+func (s Stairs) SideClosed(pos, side cube.Pos, tx *world.Tx) bool {
+	return s.Model().FaceSolid(pos, pos.Face(side), tx)
 }
 
 // allStairs returns all states of stairs.

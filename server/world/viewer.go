@@ -11,44 +11,46 @@ import (
 // Viewer is a viewer in the world. It can view changes that are made in the world, such as the addition of
 // entities and the changes of blocks.
 type Viewer interface {
-	// ViewEntity views the entity passed. It is called for every entity that the viewer may encounter in the
+	// ViewEntity views the Entity passed. It is called for every Entity that the viewer may encounter in the
 	// world, either by moving entities or by moving the viewer using a world.Loader.
 	ViewEntity(e Entity)
-	// HideEntity stops viewing the entity passed. It is called for every entity that leaves the viewing range
+	// HideEntity stops viewing the Entity passed. It is called for every Entity that leaves the viewing range
 	// of the viewer, either by its movement or the movement of the viewer using a world.Loader.
 	HideEntity(e Entity)
-	// ViewEntityGameMode views the game mode of the entity passed. This is necessary for game-modes like spectator,
-	// which may update how the entity is viewed for others.
+	// ViewEntityGameMode views the game mode of the Entity passed. This is necessary for game-modes like spectator,
+	// which may update how the Entity is viewed for others.
 	ViewEntityGameMode(e Entity)
-	// ViewEntityMovement views the movement of an entity. The entity is moved with a delta position, yaw and
-	// pitch, which, when applied to the respective values of the entity, will result in the final values.
+	// ViewEntityMovement views the movement of an Entity. The Entity is moved with a delta position, yaw and
+	// pitch, which, when applied to the respective values of the Entity, will result in the final values.
 	ViewEntityMovement(e Entity, pos mgl64.Vec3, rot cube.Rotation, onGround bool)
-	// ViewEntityVelocity views the velocity of an entity. It is called right before a call to
+	// ViewEntityVelocity views the velocity of an Entity. It is called right before a call to
 	// ViewEntityMovement so that the Viewer may interpolate the movement itself.
 	ViewEntityVelocity(e Entity, vel mgl64.Vec3)
-	// ViewEntityTeleport views the teleportation of an entity. The entity is immediately moved to a different
+	// ViewEntityTeleport views the teleportation of an Entity. The Entity is immediately moved to a different
 	// target position.
 	ViewEntityTeleport(e Entity, pos mgl64.Vec3)
 	// ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
 	ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration)
+	// ViewBrewingUpdate updates a brewing stand for the associated session based on previous times.
+	ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFuelAmount, fuelAmount, prevFuelTotal, fuelTotal int32)
 	// ViewChunk views the chunk passed at a particular position. It is called for every chunk loaded using
 	// the world.Loader.
-	ViewChunk(pos ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]Block)
+	ViewChunk(pos ChunkPos, dim Dimension, blockEntities map[cube.Pos]Block, c *chunk.Chunk)
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
 	// second.
 	ViewTime(t int)
-	// ViewEntityItems views the items currently held by an entity that is able to equip items.
+	// ViewEntityItems views the items currently held by an Entity that is able to equip items.
 	ViewEntityItems(e Entity)
-	// ViewEntityArmour views the items currently equipped as armour by the entity.
+	// ViewEntityArmour views the items currently equipped as armour by the Entity.
 	ViewEntityArmour(e Entity)
-	// ViewEntityAction views an action performed by an entity. Available actions may be found in the `action`
+	// ViewEntityAction views an action performed by an Entity. Available actions may be found in the `action`
 	// package, and include things such as swinging an arm.
 	ViewEntityAction(e Entity, a EntityAction)
-	// ViewEntityState views the current state of an entity. It is called whenever an entity changes its
+	// ViewEntityState views the current state of an Entity. It is called whenever an Entity changes its
 	// physical appearance, for example when sprinting.
 	ViewEntityState(e Entity)
-	// ViewEntityAnimation starts viewing an animation performed by an entity. The animation has to be from a resource pack.
-	ViewEntityAnimation(e Entity, animationName string)
+	// ViewEntityAnimation starts viewing an animation performed by an Entity.
+	ViewEntityAnimation(e Entity, a EntityAnimation)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
 	ViewParticle(pos mgl64.Vec3, p Particle)
@@ -60,7 +62,7 @@ type Viewer interface {
 	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
 	// package, and include things such as a chest opening.
 	ViewBlockAction(pos cube.Pos, a BlockAction)
-	// ViewEmote views an emote being performed by another entity.
+	// ViewEmote views an emote being performed by another Entity.
 	ViewEmote(e Entity, emote uuid.UUID)
 	// ViewSkin views the current skin of a player.
 	ViewSkin(e Entity)
@@ -77,26 +79,27 @@ type NopViewer struct{}
 // Compile time check to make sure NopViewer implements Viewer.
 var _ Viewer = NopViewer{}
 
-func (NopViewer) ViewEntity(Entity)                                          {}
-func (NopViewer) HideEntity(Entity)                                          {}
-func (NopViewer) ViewEntityGameMode(Entity)                                  {}
-func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, cube.Rotation, bool) {}
-func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                      {}
-func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                      {}
-func (NopViewer) ViewChunk(ChunkPos, *chunk.Chunk, map[cube.Pos]Block)       {}
-func (NopViewer) ViewTime(int)                                               {}
-func (NopViewer) ViewEntityItems(Entity)                                     {}
-func (NopViewer) ViewEntityArmour(Entity)                                    {}
-func (NopViewer) ViewEntityAction(Entity, EntityAction)                      {}
-func (NopViewer) ViewEntityState(Entity)                                     {}
-func (NopViewer) ViewEntityAnimation(Entity, string)                         {}
-func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                          {}
-func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                {}
-func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                       {}
-func (NopViewer) ViewBlockAction(cube.Pos, BlockAction)                      {}
-func (NopViewer) ViewEmote(Entity, uuid.UUID)                                {}
-func (NopViewer) ViewSkin(Entity)                                            {}
-func (NopViewer) ViewWorldSpawn(cube.Pos)                                    {}
-func (NopViewer) ViewWeather(bool, bool)                                     {}
+func (NopViewer) ViewEntity(Entity)                                                          {}
+func (NopViewer) HideEntity(Entity)                                                          {}
+func (NopViewer) ViewEntityGameMode(Entity)                                                  {}
+func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, cube.Rotation, bool)                 {}
+func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                                      {}
+func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                                      {}
+func (NopViewer) ViewChunk(ChunkPos, Dimension, map[cube.Pos]Block, *chunk.Chunk)            {}
+func (NopViewer) ViewTime(int)                                                               {}
+func (NopViewer) ViewEntityItems(Entity)                                                     {}
+func (NopViewer) ViewEntityArmour(Entity)                                                    {}
+func (NopViewer) ViewEntityAction(Entity, EntityAction)                                      {}
+func (NopViewer) ViewEntityState(Entity)                                                     {}
+func (NopViewer) ViewEntityAnimation(Entity, EntityAnimation)                                {}
+func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                                          {}
+func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                                {}
+func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                                       {}
+func (NopViewer) ViewBlockAction(cube.Pos, BlockAction)                                      {}
+func (NopViewer) ViewEmote(Entity, uuid.UUID)                                                {}
+func (NopViewer) ViewSkin(Entity)                                                            {}
+func (NopViewer) ViewWorldSpawn(cube.Pos)                                                    {}
+func (NopViewer) ViewWeather(bool, bool)                                                     {}
+func (NopViewer) ViewBrewingUpdate(time.Duration, time.Duration, int32, int32, int32, int32) {}
 func (NopViewer) ViewFurnaceUpdate(time.Duration, time.Duration, time.Duration, time.Duration, time.Duration, time.Duration) {
 }

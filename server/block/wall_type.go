@@ -58,10 +58,14 @@ func encodeWallBlock(block world.Block) string {
 		if !block.Cracked {
 			return "polished_blackstone_brick"
 		}
+	case PolishedTuff:
+		return "polished_tuff"
 	case Prismarine:
 		if block.Type == NormalPrismarine() {
 			return "prismarine"
 		}
+	case ResinBricks:
+		return "resin_brick"
 	case Sandstone:
 		if block.Type == NormalSandstone() {
 			if block.Red {
@@ -74,6 +78,14 @@ func encodeWallBlock(block world.Block) string {
 			return "stone_brick"
 		} else if block.Type == MossyStoneBricks() {
 			return "mossy_stone_brick"
+		}
+	case Tuff:
+		if !block.Chiseled {
+			return "tuff"
+		}
+	case TuffBricks:
+		if !block.Chiseled {
+			return "tuff_brick"
 		}
 	}
 	panic("invalid block used for wall")
@@ -99,10 +111,14 @@ func WallBlocks() []world.Block {
 		NetherBricks{Type: RedNetherBricks()},
 		NetherBricks{},
 		PolishedBlackstoneBrick{},
+		PolishedTuff{},
 		Prismarine{},
+		ResinBricks{},
 		Sandstone{Red: true},
 		Sandstone{},
 		StoneBricks{Type: MossyStoneBricks()},
 		StoneBricks{},
+		Tuff{},
+		TuffBricks{},
 	}
 }
