@@ -16,7 +16,7 @@ type InventoryTransactionHandler struct{}
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.InventoryTransaction)
 
-	if len(pk.LegacySetItemSlots) > 10 {
+	if len(pk.LegacySetItemSlots) > 2 {
 		return fmt.Errorf("too many slot sync requests in inventory transaction")
 	}
 	
