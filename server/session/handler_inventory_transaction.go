@@ -16,6 +16,10 @@ type InventoryTransactionHandler struct{}
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error {
 	pk := p.(*packet.InventoryTransaction)
 
+	if len(pk.LegacySetItemSlots) > 10 {
+		return fmt.Errorf("too many slot sync requests in inventory transaction")
+	}
+	
 	defer func() {
 		// The client has requested the server to resend the specified slots even if they haven't changed server-side.
 		// Handling these requests is necessary to ensure the client's inventory remains in sync with the server.
