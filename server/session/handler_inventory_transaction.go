@@ -26,7 +26,6 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 					s.sendItem(i, int(slot), protocol.WindowIDInventory)
 				}
 			}
-		default:
 		}
 	}
 
