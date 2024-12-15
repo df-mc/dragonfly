@@ -36,7 +36,15 @@ func (r Rotation) Add(r2 Rotation) Rotation {
 // Opposite returns the Rotation opposite r, so that
 // r.Vec3().Add(r.Opposite().Vec3()).Len() is equal to 0.
 func (r Rotation) Opposite() Rotation {
-	return Rotation{r[0] + 180, -r[1]}.fix()
+	fixed := r.fix()
+	return Rotation{fixed[0] + 180, -fixed[1]}.fix()
+}
+
+// Neg returns the negation of the Rotation. It is equivalent to creating a new
+// Rotation{-r[0], -r[1]}.
+func (r Rotation) Neg() Rotation {
+	fixed := r.fix()
+	return Rotation{-fixed[0], -fixed[1]}
 }
 
 // Direction returns the horizontal Direction that r points towards based on the
