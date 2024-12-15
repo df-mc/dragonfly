@@ -290,9 +290,9 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 			continue
 		}
 		b := tx.Block(t.pos)
-		if ticker, ok := tx.Block(t.pos).(ScheduledTicker); ok && BlockHash(b) == t.bhash {
+		if ticker, ok := b.(ScheduledTicker); ok && BlockHash(b) == t.bhash {
 			ticker.ScheduledTick(t.pos, tx, w.r)
-		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && BlockHash(b) == t.bhash {
+		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && BlockHash(liquid) == t.bhash {
 			if ticker, ok := liquid.(ScheduledTicker); ok {
 				ticker.ScheduledTick(t.pos, tx, w.r)
 			}
