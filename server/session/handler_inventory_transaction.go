@@ -19,7 +19,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) (err e
 	if len(pk.LegacySetItemSlots) > 2 {
 		return fmt.Errorf("too many slot sync requests in inventory transaction")
 	}
-	
+
 	defer func() {
 		// The client has requested the server to resend the specified slots even if they haven't changed server-side.
 		// Handling these requests is necessary to ensure the client's inventory remains in sync with the server.
@@ -48,7 +48,6 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) (err e
 		// transactions, so we're best off making sure the client and server stay in sync.
 		if err := h.handleNormalTransaction(pk, s); err != nil {
 			s.log.Debug("process packet: InventoryTransaction: verify Normal transaction actions: " + err.Error())
-			return nil
 		}
 		return
 	case *protocol.MismatchTransactionData:
