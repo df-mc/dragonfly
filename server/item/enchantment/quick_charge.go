@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// QuickCharge is an enchantment for quickly reloading a crossbow.
 var QuickCharge quickCharge
 
 type quickCharge struct{}
@@ -22,17 +23,18 @@ func (quickCharge) MaxLevel() int {
 
 // Cost ...
 func (quickCharge) Cost(level int) (int, int) {
-	minCost := 5 + (level-1)*10
-	return minCost, minCost + 20
+	minCost := 12 + (level-1)*20
+	return minCost, 50
 }
 
 // Rarity ...
 func (quickCharge) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityCommon
+	return item.EnchantmentRarityUncommon
 }
 
-func (quickCharge) ChargeDuration(level int) time.Duration {
-	return time.Duration(1.25-0.25*float64(level)) * time.Second
+// DurationReduction returns the charge reduction duration.
+func (quickCharge) DurationReduction(level int) time.Duration {
+	return time.Duration((1.25 - 0.25*float64(level)) * float64(time.Second))
 }
 
 // CompatibleWithEnchantment ...

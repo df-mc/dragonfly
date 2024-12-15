@@ -20,8 +20,6 @@ func main() {
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
 
-	srv.World().SetTime(0)
-
 	srv.Listen()
 	for p := range srv.Accept() {
 		_ = p

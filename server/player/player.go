@@ -1370,17 +1370,16 @@ func (p *Player) UseItem() {
 	if chargeable, ok := it.(item.Chargeable); ok {
 		if !p.usingItem {
 			if !chargeable.Release(p, p.tx, p.useContext()) {
-				// Start charging the crossbow.
+				// If the item was not charged yet, start charging.
 				p.usingSince, p.usingItem = time.Now(), true
 				p.updateState()
 			}
 			return
 		}
 
-		// Stop charging and determine if the crossbow is ready.
-		duration := time.Since(p.usingSince)
+		// Stop charging and determine if the item is ready.
 		p.usingItem = false
-		chargeable.Charge(p, p.tx, p.useContext(), duration)
+		chargeable.Charge(p, p.tx, p.useContext(), time.Since(p.usingSince))
 		p.updateState()
 	}
 

@@ -14,7 +14,7 @@ type Crossbow struct {
 	Item Stack
 }
 
-// Charge starts the charging process and prints the intended duration.
+// Charge starts the charging process and checks if the charge duration meets the required duration.
 func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
 	if !c.Item.Empty() {
 		return
@@ -25,8 +25,8 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 
 	chargeDuration := time.Duration(1.25 * float64(time.Second))
 	for _, enchant := range held.Enchantments() {
-		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
-			chargeDuration = q.ChargeDuration(enchant.Level())
+		if q, ok := enchant.Type().(interface{ DurationReduction(int) time.Duration }); ok {
+			chargeDuration = min(chargeDuration, q.DurationReduction(enchant.Level()))
 		}
 	}
 
@@ -64,6 +64,7 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 	}
 }
 
+// Release checks if the item is fully charged and, if so, releases it.
 func (c Crossbow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext) bool {
 	if c.Item.Empty() {
 		return false
@@ -78,6 +79,7 @@ func (c Crossbow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
 	}
 
 	dirVec := releaser.Rotation().Vec3().Normalize()
+
 	if firework, isFirework := c.Item.Item().(Firework); isFirework {
 		createFirework := tx.World().EntityRegistry().Config().Firework
 		fireworkEntity := createFirework(world.EntitySpawnOpts{
@@ -119,7 +121,7 @@ func (Crossbow) DurabilityInfo() DurabilityInfo {
 
 // FuelInfo ...
 func (Crossbow) FuelInfo() FuelInfo {
-	return newFuelInfo(time.Second * 10)
+	return newFuelInfo(time.Second * 15)
 }
 
 // EnchantmentValue ...
