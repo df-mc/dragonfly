@@ -173,6 +173,10 @@ func (db *DB) column(k dbKey) (*chunk.Column, error) {
 		// Same as with entities, an ErrNotFound is fine here.
 		return nil, fmt.Errorf("read block entities: %w", err)
 	}
+	col.ScheduledBlocks, col.Tick, err = db.scheduledUpdates(k)
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
+		return nil, fmt.Errorf("read scheduled updates: %w", err)
+	}
 	return col, nil
 }
 
@@ -297,6 +301,29 @@ func (db *DB) blockEntities(k dbKey) ([]chunk.BlockEntity, error) {
 	return blockEntities, nil
 }
 
+func (db *DB) scheduledUpdates(k dbKey) ([]chunk.ScheduledBlockUpdate, int64, error) {
+	data, err := db.ldb.Get(k.Sum(keyPendingScheduledTicks), nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	var m scheduledUpdates
+	if err := nbt.UnmarshalEncoding(data, &m, nbt.LittleEndian); err != nil {
+		return nil, 0, fmt.Errorf("read nbt: " + err.Error())
+	}
+	updates := make([]chunk.ScheduledBlockUpdate, len(m.TickList))
+	for i, tick := range m.TickList {
+		t, _ := tick["time"].(int64)
+		bl, _ := tick["blockState"].(map[string]any)
+		block, err := chunk.BlockPaletteEncoding.DecodeBlockState(bl)
+		if err != nil {
+			db.conf.Log.Error("read scheduled updates: decode block state: " + err.Error())
+			continue
+		}
+		updates[i] = chunk.ScheduledBlockUpdate{Pos: blockPosFromNBT(tick), Block: block, Tick: t}
+	}
+	return updates, int64(m.CurrentTick), nil
+}
+
 // StoreColumn stores a world.Column at a position and dimension in the DB. An
 // error is returned if storing was unsuccessful.
 func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *chunk.Column) error {
@@ -309,7 +336,7 @@ func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *chunk.Co
 
 func (db *DB) storeColumn(k dbKey, col *chunk.Column) error {
 	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
-	n := 6 + len(data.SubChunks) + len(col.Entities)
+	n := 7 + len(data.SubChunks) + len(col.Entities)
 	batch := leveldb.MakeBatch(n)
 
 	db.storeVersion(batch, k, chunkVersion)
@@ -318,6 +345,7 @@ func (db *DB) storeColumn(k dbKey, col *chunk.Column) error {
 	db.storeFinalisation(batch, k, finalisationPopulated)
 	db.storeEntities(batch, k, col.Entities)
 	db.storeBlockEntities(batch, k, col.BlockEntities)
+	db.storeScheduledUpdates(batch, k, col.Tick, col.ScheduledBlocks)
 
 	return db.ldb.Write(batch, nil)
 }
@@ -389,7 +417,7 @@ func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []chunk.Enti
 	}
 
 	// Remove old entity data for this chunk.
-	batch.Delete(append(index(k.pos, k.dim), keyEntitiesOld))
+	batch.Delete(k.Sum(keyEntitiesOld))
 }
 
 func entityIndex(id int64) []byte {
@@ -407,10 +435,35 @@ func (db *DB) storeBlockEntities(batch *leveldb.Batch, k dbKey, blockEntities []
 	for _, b := range blockEntities {
 		b.Data["x"], b.Data["y"], b.Data["z"] = int32(b.Pos[0]), int32(b.Pos[1]), int32(b.Pos[2])
 		if err := enc.Encode(b.Data); err != nil {
-			db.conf.Log.Error("store block entities: encode NBT: " + err.Error())
+			db.conf.Log.Error("store block entities: encode nbt: " + err.Error())
 		}
 	}
 	batch.Put(k.Sum(keyBlockEntities), buf.Bytes())
+}
+
+func (db *DB) storeScheduledUpdates(batch *leveldb.Batch, k dbKey, tick int64, updates []chunk.ScheduledBlockUpdate) {
+	if len(updates) == 0 {
+		batch.Delete(k.Sum(keyPendingScheduledTicks))
+		return
+	}
+	list := make([]map[string]any, len(updates))
+	for i, update := range updates {
+		list[i] = map[string]any{
+			"x": int32(update.Pos[0]), "y": int32(update.Pos[1]), "z": int32(update.Pos[2]),
+			"time": update.Tick, "blockState": chunk.BlockPaletteEncoding.EncodeBlockState(update.Block),
+		}
+	}
+	b, err := nbt.MarshalEncoding(scheduledUpdates{CurrentTick: int32(tick), TickList: list}, nbt.LittleEndian)
+	if err != nil {
+		db.conf.Log.Error("store scheduled updates: encode nbt: " + err.Error())
+		return
+	}
+	batch.Put(k.Sum(keyPendingScheduledTicks), b)
+}
+
+type scheduledUpdates struct {
+	CurrentTick int32            `nbt:"currentTick"`
+	TickList    []map[string]any `nbt:"tickList"`
 }
 
 // NewColumnIterator returns a ColumnIterator that may be used to iterate over all

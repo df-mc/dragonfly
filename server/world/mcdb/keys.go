@@ -20,6 +20,9 @@ const (
 	// keyEntitiesOld holds n amount of NBT compound tags appended to each other (not a TAG_List, just appended). The
 	// compound tags contain the position of the entities.
 	keyEntitiesOld = '2' // 32
+	// keyPendingScheduledTicks holds an NBT structure containing all scheduled
+	// ticks that were pending in the chunk.
+	keyPendingScheduledTicks = '3'
 	// keyFinalisation contains a single LE int32 that indicates the state of generation of the chunk. If 0, the chunk
 	// needs to be ticked. If 1, the chunk needs to be populated and if 2 (which is the state generally found in world
 	// saves from vanilla), the chunk is fully finalised.

@@ -274,8 +274,8 @@ type scheduledTickIndex struct {
 }
 
 // newScheduledTickQueue creates a queue for scheduled block ticks.
-func newScheduledTickQueue() *scheduledTickQueue {
-	return &scheduledTickQueue{furthestTicks: make(map[scheduledTickIndex]int64)}
+func newScheduledTickQueue(tick int64) *scheduledTickQueue {
+	return &scheduledTickQueue{furthestTicks: make(map[scheduledTickIndex]int64), currentTick: tick}
 }
 
 // tick processes scheduled ticks, calling ScheduledTicker.ScheduledTick for any
@@ -313,7 +313,7 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 // update with the same position and block type is already scheduled at a later
 // time than the newly scheduled update.
 func (queue *scheduledTickQueue) schedule(pos cube.Pos, b Block, delay time.Duration) {
-	resTick := queue.currentTick + max(delay.Nanoseconds()/int64(time.Second/20), 1)
+	resTick := queue.currentTick + int64(max(delay/(time.Second/20), 1))
 	index := scheduledTickIndex{pos: pos, hash: BlockHash(b)}
 	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
 		// Already have a tick scheduled for this position that will occur after
@@ -323,4 +323,37 @@ func (queue *scheduledTickQueue) schedule(pos cube.Pos, b Block, delay time.Dura
 	}
 	queue.furthestTicks[index] = resTick
 	queue.ticks = append(queue.ticks, scheduledTick{pos: pos, t: resTick, b: b, bhash: index.hash})
+}
+
+// fromChunk returns all scheduled ticks positioned within a ChunkPos.
+func (queue *scheduledTickQueue) fromChunk(pos ChunkPos) []scheduledTick {
+	m := make([]scheduledTick, 0, 8)
+	for _, t := range queue.ticks {
+		if pos == chunkPosFromBlockPos(t.pos) {
+			m = append(m, t)
+		}
+	}
+	return m
+}
+
+// removeChunk removes all scheduled ticks positioned within a ChunkPos.
+func (queue *scheduledTickQueue) removeChunk(pos ChunkPos) {
+	queue.ticks = slices.DeleteFunc(queue.ticks, func(tick scheduledTick) bool {
+		return chunkPosFromBlockPos(tick.pos) == pos
+	})
+}
+
+// add adds a slice of scheduled ticks to the queue. It assumes no duplicate
+// ticks are present in the slice.
+func (queue *scheduledTickQueue) add(ticks []scheduledTick) {
+	queue.ticks = append(queue.ticks, ticks...)
+	for _, t := range ticks {
+		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
+		if existing, ok := queue.furthestTicks[index]; ok {
+			// Make sure we find the furthest tick for each of the ticks added.
+			// Some ticks may have the same block and position, in which case we
+			// need to set the furthest tick.
+			queue.furthestTicks[index] = max(existing, t.t)
+		}
+	}
 }
