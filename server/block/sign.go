@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
-	"strings"
 	"time"
 )
 
@@ -178,9 +177,12 @@ func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 
 // EncodeBlock ...
 func (s Sign) EncodeBlock() (name string, properties map[string]any) {
-	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
-	if woodType == "oak_" {
+	woodType := s.Wood.String() + "_"
+	switch s.Wood {
+	case OakWood():
 		woodType = ""
+	case DarkOakWood():
+		woodType = "darkoak_"
 	}
 	if s.Attach.hanging {
 		return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(s.Attach.facing + 2)}

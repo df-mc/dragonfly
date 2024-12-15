@@ -64,6 +64,8 @@ func encodeWallBlock(block world.Block) string {
 		if block.Type == NormalPrismarine() {
 			return "prismarine"
 		}
+	case ResinBricks:
+		return "resin_brick"
 	case Sandstone:
 		if block.Type == NormalSandstone() {
 			if block.Red {
@@ -111,6 +113,7 @@ func WallBlocks() []world.Block {
 		PolishedBlackstoneBrick{},
 		PolishedTuff{},
 		Prismarine{},
+		ResinBricks{},
 		Sandstone{Red: true},
 		Sandstone{},
 		StoneBricks{Type: MossyStoneBricks()},
