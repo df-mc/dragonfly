@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"time"
@@ -72,12 +71,6 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 
 	creative := releaser.GameMode().CreativeInventory()
 
-	rot := releaser.Rotation()
-	rot = cube.Rotation{-rot[0], -rot[1]}
-	if rot[0] > 180 {
-		rot[0] = 360 - rot[0]
-	}
-
 	dirVec := releaser.Rotation().Vec3().Normalize()
 
 	if firework, isFirework := c.Item.Item().(Firework); isFirework {
@@ -85,7 +78,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		fireworkEntity := createFirework(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(1.5),
-			Rotation: rot,
+			Rotation: releaser.Rotation().Opposite(),
 		}, firework, releaser, false)
 		tx.AddEntity(fireworkEntity)
 	} else {
@@ -93,7 +86,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		arrow := createArrow(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(3.0),
-			Rotation: rot,
+			Rotation: releaser.Rotation().Neg(),
 		}, 9, releaser, true, false, !creative, 0, potion.Potion{})
 		tx.AddEntity(arrow)
 	}

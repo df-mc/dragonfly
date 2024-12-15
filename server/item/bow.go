@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -55,11 +54,6 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		return
 	}
 
-	rot := releaser.Rotation()
-	rot = cube.Rotation{-rot[0], -rot[1]}
-	if rot[0] > 180 {
-		rot[0] = 360 - rot[0]
-	}
 	var tip potion.Potion
 	if !arrow.Empty() {
 		// Arrow is empty if not found in the creative inventory.
@@ -84,7 +78,7 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 	}
 
 	create := tx.World().EntityRegistry().Config().Arrow
-	opts := world.EntitySpawnOpts{Position: eyePosition(releaser), Velocity: releaser.Rotation().Vec3().Mul(force * 5), Rotation: rot}
+	opts := world.EntitySpawnOpts{Position: eyePosition(releaser), Velocity: releaser.Rotation().Vec3().Mul(force * 5), Rotation: releaser.Rotation().Neg()}
 	projectile := tx.AddEntity(create(opts, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip))
 	if f, ok := projectile.(interface{ SetOnFire(duration time.Duration) }); ok {
 		f.SetOnFire(burnDuration)
