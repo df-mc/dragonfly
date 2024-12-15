@@ -145,7 +145,7 @@ const (
 	hashRawGold
 	hashRawIron
 	hashReinforcedDeepslate
-  hashResin
+	hashResin
 	hashResinBricks
 	hashRespawnAnchor
 	hashSand
