@@ -17,12 +17,12 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 	pk := p.(*packet.InventoryTransaction)
 
 	defer func() {
-		for _, slots := range pk.LegacySetItemSlots {
-			switch slots.ContainerID {
+		for _, slot := range pk.LegacySetItemSlots {
+			switch slot.ContainerID {
 			case protocol.ContainerOffhand:
 				s.sendInv(s.offHand, protocol.WindowIDOffHand)
 			case protocol.ContainerInventory:
-				for _, slot := range slots.Slots {
+				for _, slot := range slot.Slots {
 					if i, err := s.inv.Item(int(slot)); err == nil {
 						s.sendItem(i, int(slot), protocol.WindowIDInventory)
 					}
