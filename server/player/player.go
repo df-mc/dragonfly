@@ -1369,7 +1369,7 @@ func (p *Player) UseItem() {
 
 	if chargeable, ok := it.(item.Chargeable); ok {
 		if !p.usingItem {
-			if !chargeable.Release(p, p.tx, p.useContext()) {
+			if !chargeable.ReleaseCharge(p, p.tx, p.useContext()) {
 				// If the item was not charged yet, start charging.
 				p.usingSince, p.usingItem = time.Now(), true
 				p.updateState()

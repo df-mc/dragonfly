@@ -64,8 +64,8 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 	}
 }
 
-// Release checks if the item is fully charged and, if so, releases it.
-func (c Crossbow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext) bool {
+// ReleaseCharge checks if the item is fully charged and, if so, releases it.
+func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool {
 	if c.Item.Empty() {
 		return false
 	}

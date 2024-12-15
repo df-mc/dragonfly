@@ -20,18 +20,3 @@ func EyePosition(e world.Entity) mgl64.Vec3 {
 	}
 	return pos
 }
-
-// Torsoed represents an entity that has a torso.
-type Torsoed interface {
-	// TorsoHeight ...
-	TorsoHeight() float64
-}
-
-// TorsoPosition ...
-func TorsoPosition(e world.Entity) mgl64.Vec3 {
-	pos := e.Position()
-	if torsoed, ok := e.(Torsoed); ok {
-		pos[1] += torsoed.TorsoHeight()
-	}
-	return pos
-}

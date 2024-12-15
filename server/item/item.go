@@ -159,8 +159,8 @@ type Releasable interface {
 type Chargeable interface {
 	// Charge is called when an item is being used.
 	Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration)
-	// Release is called when an item is being released.
-	Release(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
+	// ReleaseCharge is called when an item is being released.
+	ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
 }
 
 // User represents an entity that is able to use an item in the world, typically entities such as players,
