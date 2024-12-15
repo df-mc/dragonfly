@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"math"
 	"math/rand"
 	"slices"
@@ -232,5 +233,17 @@ func silkTouchOnlyDrop(it world.Item) func(t item.Tool, enchantments []item.Ench
 			return []item.Stack{item.NewStack(it, 1)}
 		}
 		return nil
+	}
+}
+
+// breakBlock removes a block, shows breaking particles and drops the drops of
+// the block as items.
+func breakBlock(b world.Block, pos cube.Pos, tx *world.Tx) {
+	tx.SetBlock(pos, nil, nil)
+	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+	if breakable, ok := b.(Breakable); ok {
+		for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
+			dropItem(tx, drop, pos.Vec3Centre())
+		}
 	}
 }
