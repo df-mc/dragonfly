@@ -17,6 +17,8 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session) error 
 	pk := p.(*packet.InventoryTransaction)
 
 	defer func() {
+		// Client requested the slots to be resend even when they were not changed. Handling of this
+		// is needed so that the contents of the client's inventory are synchronised with the server's.
 		for _, slot := range pk.LegacySetItemSlots {
 			switch slot.ContainerID {
 			case protocol.ContainerOffhand:
