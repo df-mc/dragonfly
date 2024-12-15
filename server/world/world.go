@@ -44,7 +44,6 @@ type World struct {
 	handler atomic.Pointer[Handler]
 
 	weather
-	ticker
 
 	closing chan struct{}
 	running sync.WaitGroup
@@ -64,7 +63,7 @@ type World struct {
 	// position at which an update is scheduled. If the current tick exceeds the
 	// tick value passed, the block update will be performed and the entry will
 	// be removed from the map.
-	scheduledUpdates map[cube.Pos]int64
+	scheduledUpdates *scheduledTickQueue
 	neighbourUpdates []neighbourUpdate
 
 	viewers map[*Loader]Viewer
@@ -889,21 +888,17 @@ func (w *World) SetDifficulty(d Difficulty) {
 	w.set.Difficulty = d
 }
 
-// scheduleBlockUpdate schedules a block update at the position passed after a
-// specific delay. If the block at that position does not handle block updates,
-// nothing will happen.
-func (w *World) scheduleBlockUpdate(pos cube.Pos, delay time.Duration) {
-	if w == nil || pos.OutOfBounds(w.Range()) {
+// scheduleBlockUpdate schedules a block update at the position passed for the
+// block type passed after a specific delay. If the block at that position does
+// not handle block updates, nothing will happen.
+// Block updates are both block and position specific. A block update is only
+// scheduled if no block update with the same position and block type is
+// already scheduled at a later time than the newly scheduled update.
+func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
+	if pos.OutOfBounds(w.Range()) {
 		return
 	}
-	if _, exists := w.scheduledUpdates[pos]; exists {
-		return
-	}
-	w.set.Lock()
-	t := w.set.CurrentTick
-	w.set.Unlock()
-
-	w.scheduledUpdates[pos] = t + delay.Nanoseconds()/int64(time.Second/20)
+	w.scheduledUpdates.schedule(pos, b, delay)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the
@@ -971,15 +966,43 @@ func (w *World) PortalDestination(dim Dimension) *World {
 
 // Save saves the World to the provider.
 func (w *World) Save() {
-	<-w.Exec(w.save)
+	<-w.Exec(w.save(w.saveChunk))
 }
 
 // save saves all loaded chunks to the World's provider.
-func (w *World) save(tx *Tx) {
-	w.conf.Log.Debug("Saving chunks in memory to disk...")
-	for pos, c := range w.chunks {
-		w.saveChunk(tx, pos, c, false)
+func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
+	return func(tx *Tx) {
+		if w.conf.ReadOnly {
+			return
+		}
+		w.conf.Log.Debug("Saving chunks in memory to disk...")
+		for pos, c := range w.chunks {
+			f(tx, pos, c)
+		}
+		w.conf.Log.Debug("Updating level.dat values...")
+		w.conf.Provider.SaveSettings(w.set)
 	}
+}
+
+// saveChunk saves a chunk and its entities to disk after compacting the chunk.
+func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
+	if !w.conf.ReadOnly && c.modified {
+		c.Compact()
+		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, columnTo(c)); err != nil {
+			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+		}
+	}
+}
+
+// closeChunk saves a chunk and its entities to disk after compacting the chunk.
+// Afterwards, all entities are closed.
+func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
+	w.saveChunk(tx, pos, c)
+	for _, e := range c.Entities {
+		_ = e.mustEntity(tx).Close()
+	}
+	clear(c.Entities)
+	delete(w.chunks, pos)
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -996,24 +1019,15 @@ func (w *World) close() {
 		w.Handler().HandleClose(tx)
 		w.Handle(NopHandler{})
 
-		w.save(tx)
-		maps.Clear(w.chunks)
+		w.save(w.closeChunk)(tx)
 	})
 
 	close(w.closing)
 	w.running.Wait()
 
-	w.set.ref.Add(-1)
-	if !w.advance {
+	if w.set.ref.Add(-1); !w.advance {
 		return
 	}
-
-	if !w.conf.ReadOnly {
-		w.conf.Log.Debug("Updating level.dat values...")
-
-		w.conf.Provider.SaveSettings(w.set)
-	}
-
 	w.conf.Log.Debug("Closing provider...")
 	if err := w.conf.Provider.Close(); err != nil {
 		w.conf.Log.Error("close world provider: " + err.Error())
@@ -1173,31 +1187,23 @@ func (w *World) spreadLight(pos ChunkPos) {
 	chunk.LightArea(c, int(pos[0])-1, int(pos[1])-1).Spread()
 }
 
-// saveChunk saves a chunk and its entities to disk after compacting the chunk.
-func (w *World) saveChunk(tx *Tx, pos ChunkPos, c *Column, closeEntities bool) {
-	if !w.conf.ReadOnly && c.modified {
-		c.Compact()
-		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, columnTo(c)); err != nil {
-			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
-		}
+// autoSave runs until the world is running, saving and removing chunks that
+// are no longer in use.
+func (w *World) autoSave() {
+	save := &time.Ticker{C: make(<-chan time.Time)}
+	if w.conf.SaveInterval > 0 {
+		save = time.NewTicker(w.conf.SaveInterval)
+		defer save.Stop()
 	}
-	if closeEntities {
-		for _, e := range c.Entities {
-			_ = e.mustEntity(tx).Close()
-		}
-		clear(c.Entities)
-	}
-}
+	closeUnused := time.NewTicker(time.Minute * 2)
+	defer closeUnused.Stop()
 
-// chunkCacheJanitor runs until the world is running, saving and removing
-// chunks that are no longer in use.
-func (w *World) chunkCacheJanitor() {
-	t := time.NewTicker(time.Minute * 5)
-	defer t.Stop()
 	for {
 		select {
-		case <-t.C:
+		case <-closeUnused.C:
 			<-w.Exec(w.closeUnusedChunks)
+		case <-save.C:
+			w.Save()
 		case <-w.closing:
 			w.running.Done()
 			return
@@ -1205,12 +1211,11 @@ func (w *World) chunkCacheJanitor() {
 	}
 }
 
-// closeUnusedChunk is called every 5 minutes by chunkCacheJanitor.
+// closeUnusedChunk is called every 5 minutes by autoSave.
 func (w *World) closeUnusedChunks(tx *Tx) {
 	for pos, c := range w.chunks {
 		if len(c.viewers) == 0 {
-			delete(w.chunks, pos)
-			w.saveChunk(tx, pos, c, true)
+			w.closeChunk(tx, pos, c)
 		}
 	}
 }

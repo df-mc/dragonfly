@@ -130,7 +130,7 @@ func (d CopperDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	ctx.IgnoreBBox = true
 	place(tx, pos, d, user, ctx)
 	place(tx, pos.Side(cube.FaceUp), CopperDoor{Oxidation: d.Oxidation, Waxed: d.Waxed, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
-	ctx.SubtractFromCount(1)
+	ctx.CountSub = 1
 	return placed(ctx)
 }
 

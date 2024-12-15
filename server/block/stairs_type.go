@@ -94,6 +94,8 @@ func encodeStairsBlock(block world.Block) string {
 			return "smooth_quartz"
 		}
 		return "quartz"
+	case ResinBricks:
+		return "resin_brick"
 	case Sandstone:
 		switch block.Type {
 		case NormalSandstone():
@@ -156,6 +158,7 @@ func StairsBlocks() []world.Block {
 		Purpur{},
 		Quartz{Smooth: true},
 		Quartz{},
+		ResinBricks{},
 		StoneBricks{Type: MossyStoneBricks()},
 		StoneBricks{},
 		Stone{},

@@ -113,13 +113,13 @@ func (w Water) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 }
 
 // NeighbourUpdateTick ...
-func (Water) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+func (w Water) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if tx.World().Dimension().WaterEvaporates() {
 		// Particles are spawned client-side.
 		tx.SetLiquid(pos, nil)
 		return
 	}
-	tx.ScheduleBlockUpdate(pos, time.Second/4)
+	tx.ScheduleBlockUpdate(pos, w, time.Second/4)
 }
 
 // LiquidType ...

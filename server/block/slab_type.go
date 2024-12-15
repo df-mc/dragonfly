@@ -105,6 +105,8 @@ func encodeSlabBlock(block world.Block, double bool) (id string, suffix string) 
 			return "smooth_quartz", suffix
 		}
 		return "quartz", suffix
+	case ResinBricks:
+		return "resin_brick", suffix
 	case Sandstone:
 		switch block.Type {
 		case NormalSandstone():
@@ -173,6 +175,7 @@ func SlabBlocks() []world.Block {
 		Purpur{},
 		Quartz{Smooth: true},
 		Quartz{},
+		ResinBricks{},
 		StoneBricks{Type: MossyStoneBricks()},
 		StoneBricks{},
 		Stone{Smooth: true},
