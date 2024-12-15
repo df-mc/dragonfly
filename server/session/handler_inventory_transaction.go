@@ -49,7 +49,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		// Always resend inventories with normal transactions. Most of the time we do not use these
 		// transactions, so we're best off making sure the client and server stay in sync.
 		if err := h.handleNormalTransaction(pk, s, c); err != nil {
-			s.conf.log.Debug("process packet: InventoryTransaction: verify Normal transaction actions: " + err.Error())
+			s.conf.Log.Debug("process packet: InventoryTransaction: verify Normal transaction actions: " + err.Error())
 		}
 		return
 	case *protocol.MismatchTransactionData:
