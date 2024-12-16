@@ -61,6 +61,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		s.teleportPos.Store(nil)
 	}
 
+	s.moving = true
 	c.Move(deltaPos, deltaYaw, deltaPitch)
 	return nil
 }
