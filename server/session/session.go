@@ -243,16 +243,16 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) close(tx *world.Tx, c Controllable) {
-	s.conf.HandleStop(tx, c)
-
 	c.MoveItemsToInventory()
+	s.closeCurrentContainer(tx)
+
+	s.conf.HandleStop(tx, c)
 
 	// Clear the inventories so that they no longer hold references to the connection.
 	_ = s.inv.Close()
 	_ = s.offHand.Close()
 	_ = s.armour.Close()
 
-	s.closeCurrentContainer(tx)
 	s.chunkLoader.Close(tx)
 
 	if s.quitMessage != "" {
