@@ -102,6 +102,9 @@ func (b BookAndQuill) DecodeNBT(data map[string]any) any {
 
 // EncodeNBT ...
 func (b BookAndQuill) EncodeNBT() map[string]any {
+	if len(b.Pages) == 0 {
+		return nil
+	}
 	pages := make([]any, 0, len(b.Pages))
 	for _, page := range b.Pages {
 		pages = append(pages, map[string]any{"text": page})
