@@ -70,7 +70,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	}
 
 	creative := releaser.GameMode().CreativeInventory()
-
+	rot := releaser.Rotation().Neg()
 	dirVec := releaser.Rotation().Vec3().Normalize()
 
 	if firework, isFirework := c.Item.Item().(Firework); isFirework {
@@ -78,7 +78,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		fireworkEntity := createFirework(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(1.5),
-			Rotation: releaser.Rotation().Opposite(),
+			Rotation: rot,
 		}, firework, releaser, false)
 		tx.AddEntity(fireworkEntity)
 	} else {
@@ -86,7 +86,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		arrow := createArrow(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(3.0),
-			Rotation: releaser.Rotation().Neg(),
+			Rotation: rot,
 		}, 9, releaser, true, false, !creative, 0, potion.Potion{})
 		tx.AddEntity(arrow)
 	}
