@@ -47,7 +47,11 @@ func (b Bed) BreakInfo() BreakInfo {
 		if !ok {
 			return
 		}
-		headSide.Sleeper.Wake()
+
+		sleeper := headSide.Sleeper
+		if sleeper != nil {
+			sleeper.Wake()
+		}
 	})
 }
 
@@ -56,7 +60,7 @@ func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Tx,
 	if pos, _, used = firstReplaceable(w, pos, face, b); !used {
 		return
 	}
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).Model().(model.Solid); !ok {
+	if !supportedFromBelow(pos, w) {
 		return
 	}
 
@@ -68,7 +72,8 @@ func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Tx,
 	if !replaceableWith(w, sidePos, side) {
 		return
 	}
-	if _, ok := w.Block(sidePos.Side(cube.FaceDown)).Model().(model.Solid); !ok {
+
+	if !supportedFromBelow(sidePos, w) {
 		return
 	}
 
@@ -223,16 +228,22 @@ func allBeds() (beds []world.Block) {
 	return
 }
 
-func (Bed) CanSpawn() bool {
+func (Bed) CanRespawnOn() bool {
 	return true
 }
 
-func (Bed) SpawnOn(pos cube.Pos, u item.User, w *world.Tx) {}
+func (Bed) RespawnOn(pos cube.Pos, u item.User, w *world.Tx) {}
 
 // RespawnBlock represents a block using which player can set his spawn point.
 type RespawnBlock interface {
-	// CanSpawn defines if player can use this block to respawn.
-	CanSpawn() bool
-	// SpawnOn is called when a player decides to respawn using this block.
-	SpawnOn(pos cube.Pos, u item.User, tx *world.Tx)
+	// CanRespawnOn defines if player can use this block to respawn.
+	CanRespawnOn() bool
+	// RespawnOn is called when a player decides to respawn using this block.
+	RespawnOn(pos cube.Pos, u item.User, tx *world.Tx)
+}
+
+// supportedFromBelow ...
+func supportedFromBelow(pos cube.Pos, w *world.Tx) bool {
+	below := pos.Side(cube.FaceDown)
+	return w.Block(below).Model().FaceSolid(below, cube.FaceUp, w)
 }

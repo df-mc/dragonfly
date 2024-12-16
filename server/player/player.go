@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block"
@@ -56,8 +55,8 @@ type playerData struct {
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
 
-	sleeping atomic.Bool
-	sleepPos atomic.Pointer[cube.Pos]
+	sleeping bool
+	sleepPos cube.Pos
 
 	usingSince   time.Time
 	glideTicks   int64
@@ -945,7 +944,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	w.Exec(func(tx *world.Tx) {
 		np := tx.AddEntity(handle).(*Player)
 		if bl, ok := tx.Block(position).(block.RespawnBlock); ok {
-			bl.SpawnOn(position, p, tx)
+			bl.RespawnOn(position, p, tx)
 		}
 		np.Teleport(pos)
 		np.session().SendRespawn(pos, p)
@@ -962,7 +961,7 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 	w = tx.World()
 	previousDimension = w.Dimension()
 	playerSpawn = w.PlayerSpawn(p.UUID())
-	if b, ok := tx.Block(playerSpawn).(block.RespawnBlock); ok && b.CanSpawn() {
+	if b, ok := tx.Block(playerSpawn).(block.RespawnBlock); ok && b.CanRespawnOn() {
 		return playerSpawn, w, false, previousDimension
 	}
 
@@ -1208,8 +1207,8 @@ func (p *Player) Sleep(pos cube.Pos) {
 	}
 
 	p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
-	p.sleeping.Store(true)
-	p.sleepPos.Store(&pos)
+	p.sleeping = true
+	p.sleepPos = pos
 
 	tx.BroadcastSleepingIndicator()
 	p.updateState()
@@ -1217,9 +1216,10 @@ func (p *Player) Sleep(pos cube.Pos) {
 
 // Wake forces the player out of bed if they are sleeping.
 func (p *Player) Wake() {
-	if !p.sleeping.CompareAndSwap(true, false) {
+	if !p.sleeping {
 		return
 	}
+	p.sleeping = false
 
 	tx := p.Tx()
 	tx.BroadcastSleepingIndicator()
@@ -1229,7 +1229,7 @@ func (p *Player) Wake() {
 	}
 	p.updateState()
 
-	pos := *p.sleepPos.Load()
+	pos := p.sleepPos
 	if b, ok := tx.Block(pos).(block.Bed); ok {
 		b.Sleeper = nil
 		tx.SetBlock(pos, b, nil)
@@ -1239,10 +1239,10 @@ func (p *Player) Wake() {
 // Sleeping returns true if the player is currently sleeping, along with the position of the bed the player is sleeping
 // on.
 func (p *Player) Sleeping() (cube.Pos, bool) {
-	if !p.sleeping.Load() {
+	if !p.sleeping {
 		return cube.Pos{}, false
 	}
-	return *p.sleepPos.Load(), true
+	return p.sleepPos, true
 }
 
 // SendSleepingIndicator displays a notification to the player on the amount of sleeping players in the world.

@@ -86,11 +86,11 @@ func allRespawnAnchors() []world.Block {
 	return all
 }
 
-func (r RespawnAnchor) CanSpawn() bool {
+func (r RespawnAnchor) CanRespawnOn() bool {
 	return r.Charge > 0
 }
 
-func (r RespawnAnchor) SpawnOn(pos cube.Pos, u item.User, w *world.Tx) {
+func (r RespawnAnchor) RespawnOn(pos cube.Pos, u item.User, w *world.Tx) {
 	w.SetBlock(pos, RespawnAnchor{Charge: r.Charge - 1}, nil)
 	w.PlaySound(pos.Vec3(), sound.RespawnAnchorDeplete{Charge: r.Charge - 1})
 }
