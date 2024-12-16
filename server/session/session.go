@@ -74,6 +74,7 @@ type Session struct {
 	swingingArm                    atomic.Bool
 	changingSlot                   atomic.Bool
 	changingDimension              atomic.Bool
+	moving                         bool
 
 	recipes map[uint32]recipe.Recipe
 
