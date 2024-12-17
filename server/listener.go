@@ -25,7 +25,7 @@ type Listener interface {
 func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 	cfg := minecraft.ListenConfig{
 		MaximumPlayers:         conf.MaxPlayers,
-		StatusProvider:         statusProvider{name: conf.Name},
+		StatusProvider:         conf.StatusProvider,
 		AuthenticationDisabled: conf.AuthDisabled,
 		ResourcePacks:          conf.Resources,
 		Biomes:                 biomes(),
