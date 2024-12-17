@@ -1367,6 +1367,22 @@ func (p *Player) UseItem() {
 		p.updateState()
 	}
 
+	if chargeable, ok := it.(item.Chargeable); ok {
+		if !p.usingItem {
+			if !chargeable.ReleaseCharge(p, p.tx, p.useContext()) {
+				// If the item was not charged yet, start charging.
+				p.usingSince, p.usingItem = time.Now(), true
+				p.updateState()
+			}
+			return
+		}
+
+		// Stop charging and determine if the item is ready.
+		p.usingItem = false
+		chargeable.Charge(p, p.tx, p.useContext(), time.Since(p.usingSince))
+		p.updateState()
+	}
+
 	switch usable := it.(type) {
 	case item.Usable:
 		useCtx := p.useContext()
@@ -2633,6 +2649,19 @@ func (p *Player) EyeHeight() float64 {
 		return 1.26
 	default:
 		return 1.62
+	}
+}
+
+// TorsoHeight returns the torso height of the player: 1.52, 1.16 if the player is sneaking, or 0.42 if the player is
+// swimming, gliding, or crawling.
+func (p *Player) TorsoHeight() float64 {
+	switch {
+	case p.swimming || p.crawling || p.gliding:
+		return 0.42
+	case p.sneaking:
+		return 1.16
+	default:
+		return 1.52
 	}
 }
 
