@@ -26,6 +26,11 @@ type Vines struct {
 	WestDirection bool
 }
 
+// SideClosed ...
+func (v Vines) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
+}
+
 // HasLiquidDrops ...
 func (v Vines) HasLiquidDrops() bool {
 	return false
