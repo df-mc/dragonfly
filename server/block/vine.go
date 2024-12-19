@@ -25,6 +25,11 @@ type Vines struct {
 	WestDirection bool
 }
 
+// HasLiquidDrops ...
+func (v Vines) HasLiquidDrops() bool {
+	return false
+}
+
 // FlammabilityInfo ...
 func (Vines) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(15, 100, true)
