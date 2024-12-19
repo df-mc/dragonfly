@@ -43,7 +43,7 @@ func (v Vines) BreakInfo() BreakInfo {
 }
 
 // EntityInside ...
-func (Vines) EntityInside(_ cube.Pos, _ *world.World, e world.Entity) {
+func (Vines) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
@@ -94,26 +94,26 @@ func (v Vines) Attachments() (attachments []cube.Direction) {
 }
 
 // UseOnBlock ...
-func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
-	if _, ok := w.Block(pos).Model().(model.Solid); !ok || face.Axis() == cube.Y {
+func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	if _, ok := tx.Block(pos).Model().(model.Solid); !ok || face.Axis() == cube.Y {
 		return false
 	}
-	pos, face, used := firstReplaceable(w, pos, face, v)
+	pos, face, used := firstReplaceable(tx, pos, face, v)
 	if !used {
 		return false
 	}
 	//noinspection GoAssignmentToReceiver
 	v = v.SetAttachment(face.Direction().Opposite(), true)
 
-	place(w, pos, v, user, ctx)
+	place(tx, pos, v, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	above, updated := w.Block(pos.Side(cube.FaceUp)), false
+func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	above, updated := tx.Block(pos.Side(cube.FaceUp)), false
 	for _, d := range v.Attachments() {
-		if _, ok := w.Block(pos.Side(d.Face())).Model().(model.Solid); !ok {
+		if _, ok := tx.Block(pos.Side(d.Face())).Model().(model.Solid); !ok {
 			if o, ok := above.(Vines); !ok || ok && !o.Attachment(d) {
 				//noinspection GoAssignmentToReceiver
 				v = v.SetAttachment(d, false)
@@ -125,14 +125,14 @@ func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
 		return
 	}
 	if _, ok := above.Model().(model.Solid); !ok && len(v.Attachments()) == 0 {
-		w.SetBlock(pos, nil, nil)
+		tx.SetBlock(pos, nil, nil)
 		return
 	}
-	w.SetBlock(pos, v, nil)
+	tx.SetBlock(pos, v, nil)
 }
 
 // RandomTick ...
-func (v Vines) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
+func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if r.Float64() > 0.25 {
 		// Vines have a 25% chance of spreading.
 		return
@@ -141,13 +141,13 @@ func (v Vines) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 	face := cube.Face(r.Intn(len(cube.Faces())))
 	selectedPos := pos.Side(face)
 	if face == cube.FaceUp || face == cube.FaceDown {
-		if selectedPos.OutOfBounds(w.Range()) {
+		if selectedPos.OutOfBounds(tx.Range()) {
 			// Vines can't spread outside world bounds.
 			return
 		}
 
-		_, air := w.Block(selectedPos).(Air)
-		newVines, vines := w.Block(selectedPos).(Vines)
+		_, air := tx.Block(selectedPos).(Air)
+		newVines, vines := tx.Block(selectedPos).(Vines)
 		if face == cube.FaceUp {
 			if !air {
 				// Vines can't spread upwards unless there is air.
@@ -155,7 +155,7 @@ func (v Vines) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			}
 
 			for _, f := range cube.HorizontalFaces() {
-				if r.Intn(2) == 0 && v.acceptableNeighbour(w, selectedPos, f.Opposite()) {
+				if r.Intn(2) == 0 && v.acceptableNeighbour(tx, selectedPos, f.Opposite()) {
 					newVines = newVines.SetAttachment(f.Direction(), true)
 				}
 			}
@@ -173,16 +173,16 @@ func (v Vines) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 				}
 			}
 			if changed {
-				w.SetBlock(selectedPos, newVines, nil)
+				tx.SetBlock(selectedPos, newVines, nil)
 			}
 			return
 		}
 
 		if len(newVines.Attachments()) > 0 {
-			w.SetBlock(selectedPos, newVines, nil)
+			tx.SetBlock(selectedPos, newVines, nil)
 		}
-	} else if !v.Attachment(face.Direction()) && v.canSpread(w, pos) {
-		if _, ok := w.Block(selectedPos).(Air); ok {
+	} else if !v.Attachment(face.Direction()) && v.canSpread(tx, pos) {
+		if _, ok := tx.Block(selectedPos).(Air); ok {
 			rightRotatedFace := face.RotateRight()
 			leftRotatedFace := face.RotateLeft()
 
@@ -192,17 +192,17 @@ func (v Vines) RandomTick(pos cube.Pos, w *world.World, r *rand.Rand) {
 			rightSelectedPos := selectedPos.Side(rightRotatedFace)
 			leftSelectedPos := selectedPos.Side(leftRotatedFace)
 
-			if attachedOnRight && v.acceptableNeighbour(w, rightSelectedPos.Side(rightRotatedFace), rightRotatedFace) {
-				w.SetBlock(selectedPos, (Vines{}).SetAttachment(rightRotatedFace.Direction(), true), nil)
-			} else if attachedOnLeft && v.acceptableNeighbour(w, leftSelectedPos.Side(leftRotatedFace), leftRotatedFace) {
-				w.SetBlock(selectedPos, (Vines{}).SetAttachment(leftRotatedFace.Direction(), true), nil)
-			} else if _, ok = w.Block(rightSelectedPos).(Air); ok && attachedOnRight && v.acceptableNeighbour(w, rightSelectedPos, face) {
-				w.SetBlock(rightSelectedPos, (Vines{}).SetAttachment(face.Opposite().Direction(), true), nil)
-			} else if _, ok = w.Block(leftSelectedPos).(Air); ok && attachedOnLeft && v.acceptableNeighbour(w, leftSelectedPos, face) {
-				w.SetBlock(leftSelectedPos, (Vines{}).SetAttachment(face.Opposite().Direction(), true), nil)
+			if attachedOnRight && v.acceptableNeighbour(tx, rightSelectedPos.Side(rightRotatedFace), rightRotatedFace) {
+				tx.SetBlock(selectedPos, (Vines{}).SetAttachment(rightRotatedFace.Direction(), true), nil)
+			} else if attachedOnLeft && v.acceptableNeighbour(tx, leftSelectedPos.Side(leftRotatedFace), leftRotatedFace) {
+				tx.SetBlock(selectedPos, (Vines{}).SetAttachment(leftRotatedFace.Direction(), true), nil)
+			} else if _, ok = tx.Block(rightSelectedPos).(Air); ok && attachedOnRight && v.acceptableNeighbour(tx, rightSelectedPos, face) {
+				tx.SetBlock(rightSelectedPos, (Vines{}).SetAttachment(face.Opposite().Direction(), true), nil)
+			} else if _, ok = tx.Block(leftSelectedPos).(Air); ok && attachedOnLeft && v.acceptableNeighbour(tx, leftSelectedPos, face) {
+				tx.SetBlock(leftSelectedPos, (Vines{}).SetAttachment(face.Opposite().Direction(), true), nil)
 			}
-		} else if _, ok = w.Block(selectedPos).Model().(model.Solid); ok {
-			w.SetBlock(pos, v.SetAttachment(face.Direction(), true), nil)
+		} else if _, ok = tx.Block(selectedPos).Model().(model.Solid); ok {
+			tx.SetBlock(pos, v.SetAttachment(face.Direction(), true), nil)
 		}
 	}
 }
@@ -224,11 +224,11 @@ func (v Vines) EncodeBlock() (string, map[string]any) {
 }
 
 // acceptableNeighbour returns true if the block at the given position is an acceptable neighbour.
-func (v Vines) acceptableNeighbour(w *world.World, pos cube.Pos, face cube.Face) bool {
-	above := w.Block(pos.Side(cube.FaceUp))
+func (v Vines) acceptableNeighbour(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
+	above := tx.Block(pos.Side(cube.FaceUp))
 	_, air := above.(Air)
 	_, vines := above.(Vines)
-	return v.canSpreadTo(w.Block(pos.Side(face.Opposite()))) && (air || vines || v.canSpreadTo(above))
+	return v.canSpreadTo(tx.Block(pos.Side(face.Opposite()))) && (air || vines || v.canSpreadTo(above))
 }
 
 // canSpreadTo returns true if the vines can spread to the given position.
@@ -248,12 +248,12 @@ func (Vines) canSpreadTo(b world.Block) bool {
 }
 
 // canSpread returns true if the vines can spread from the given position.
-func (v Vines) canSpread(w *world.World, pos cube.Pos) bool {
+func (v Vines) canSpread(tx *world.Tx, pos cube.Pos) bool {
 	var count int
 	for x := -4; x <= 4; x++ {
 		for z := -4; z <= 4; z++ {
 			for y := -1; y <= 1; y++ {
-				if _, ok := w.Block(pos.Add(cube.Pos{x, y, z})).(Vines); ok {
+				if _, ok := tx.Block(pos.Add(cube.Pos{x, y, z})).(Vines); ok {
 					count++
 					if count >= 5 {
 						return false
