@@ -249,16 +249,6 @@ func (v Vines) acceptableNeighbour(tx *world.Tx, pos cube.Pos, face cube.Face) b
 
 // canSpreadTo returns true if the vines can spread to the given position.
 func (Vines) canSpreadTo(b world.Block) bool {
-	// TODO: Account for pistons, cauldrons, and shulker boxes.
-	switch b.(type) {
-	case Glass, StainedGlass:
-		return false
-	case Beacon:
-		return false
-	case WoodTrapdoor:
-		return false
-	}
-
 	_, ok := b.Model().(model.Solid)
 	return ok
 }
