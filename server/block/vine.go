@@ -14,6 +14,7 @@ type Vines struct {
 	replaceable
 	transparent
 	empty
+	sourceWaterDisplacer
 
 	// NorthDirection is true if the vines are attached towards north.
 	NorthDirection bool
