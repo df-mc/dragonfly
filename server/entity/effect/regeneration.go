@@ -3,7 +3,6 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // Regeneration is an effect that causes the entity that it is added to slowly regenerate health. The level
@@ -13,12 +12,9 @@ type Regeneration struct {
 }
 
 // Apply applies health to the world.Entity passed if the duration of the effect is at the right tick.
-func (Regeneration) Apply(e world.Entity, lvl int, d time.Duration) {
-	interval := 50 >> (lvl - 1)
-	if interval < 1 {
-		interval = 1
-	}
-	if tickDuration(d)%interval == 0 {
+func (Regeneration) Apply(e world.Entity, eff Effect) {
+	interval := max(50>>(eff.Level()-1), 1)
+	if eff.Tick()%interval == 0 {
 		if l, ok := e.(living); ok {
 			l.Heal(1, RegenerationHealingSource{})
 		}

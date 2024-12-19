@@ -3,7 +3,6 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // Saturation is a lasting effect that causes the affected player to regain food and saturation.
@@ -12,11 +11,11 @@ type Saturation struct {
 }
 
 // Apply ...
-func (Saturation) Apply(e world.Entity, lvl int, _ time.Duration) {
+func (Saturation) Apply(e world.Entity, eff Effect) {
 	if i, ok := e.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {
-		i.Saturate(lvl, 2*float64(lvl))
+		i.Saturate(eff.Level(), 2*float64(eff.Level()))
 	}
 }
 

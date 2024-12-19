@@ -3,7 +3,6 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // Wither is a lasting effect that causes an entity to take continuous damage that is capable of killing an
@@ -13,9 +12,9 @@ type Wither struct {
 }
 
 // Apply ...
-func (Wither) Apply(e world.Entity, lvl int, d time.Duration) {
-	interval := max(80>>lvl, 1)
-	if tickDuration(d)%interval == 0 {
+func (Wither) Apply(e world.Entity, eff Effect) {
+	interval := max(80>>eff.Level(), 1)
+	if eff.Tick()%interval == 0 {
 		if l, ok := e.(living); ok {
 			l.Hurt(1, WitherDamageSource{})
 		}

@@ -3,7 +3,6 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // Hunger is a lasting effect that causes an affected player to gradually lose saturation and food.
@@ -12,11 +11,11 @@ type Hunger struct {
 }
 
 // Apply ...
-func (Hunger) Apply(e world.Entity, lvl int, _ time.Duration) {
+func (Hunger) Apply(e world.Entity, eff Effect) {
 	if i, ok := e.(interface {
 		Exhaust(points float64)
 	}); ok {
-		i.Exhaust(float64(lvl) * 0.005)
+		i.Exhaust(float64(eff.Level()) * 0.005)
 	}
 }
 

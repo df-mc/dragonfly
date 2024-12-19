@@ -3,7 +3,6 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
 // Poison is a lasting effect that causes the affected entity to lose health gradually. Poison cannot kill,
@@ -13,12 +12,9 @@ type Poison struct {
 }
 
 // Apply ...
-func (Poison) Apply(e world.Entity, lvl int, d time.Duration) {
-	interval := 50 >> (lvl - 1)
-	if interval < 1 {
-		interval = 1
-	}
-	if tickDuration(d)%interval == 0 {
+func (Poison) Apply(e world.Entity, eff Effect) {
+	interval := max(50>>(eff.Level()-1), 1)
+	if eff.Tick()%interval == 0 {
 		if l, ok := e.(living); ok && l.Health() > 1 {
 			l.Hurt(1, PoisonDamageSource{})
 		}
