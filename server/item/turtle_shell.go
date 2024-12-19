@@ -7,7 +7,7 @@ import "github.com/df-mc/dragonfly/server/world"
 type TurtleShell struct{}
 
 // Use handles the using of a turtle shell to auto-equip it in an armour slot.
-func (TurtleShell) Use(_ *world.World, _ User, ctx *UseContext) bool {
+func (TurtleShell) Use(_ *world.Tx, _ User, ctx *UseContext) bool {
 	ctx.SwapHeldWithArmour(0)
 	return false
 }

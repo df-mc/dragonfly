@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
@@ -15,6 +14,7 @@ import (
 type WoodDoor struct {
 	transparent
 	bass
+	sourceWaterDisplacer
 
 	// Wood is the type of wood of the door. This field must have one of the values found in the material
 	// package.
@@ -48,40 +48,35 @@ func (d WoodDoor) Model() world.BlockModel {
 }
 
 // NeighbourUpdateTick ...
-func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.Top {
-		if _, ok := w.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
-			w.SetBlock(pos, nil, nil)
-			w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+		if _, ok := tx.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
+			breakBlockNoDrops(d, pos, tx)
 		}
-		return
-	}
-	if solid := w.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, w); !solid {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
-	} else if _, ok := w.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
-		w.SetBlock(pos, nil, nil)
-		w.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	} else if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
+		breakBlock(d, pos, tx)
+	} else if _, ok := tx.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
+		breakBlockNoDrops(d, pos, tx)
 	}
 }
 
 // UseOnBlock handles the directional placing of doors
-func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) bool {
+func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if face != cube.FaceUp {
 		// Doors can only be placed when clicking the top face.
 		return false
 	}
 	below := pos
 	pos = pos.Side(cube.FaceUp)
-	if !replaceableWith(w, pos, d) || !replaceableWith(w, pos.Side(cube.FaceUp), d) {
+	if !replaceableWith(tx, pos, d) || !replaceableWith(tx, pos.Side(cube.FaceUp), d) {
 		return false
 	}
-	if !w.Block(below).Model().FaceSolid(below, cube.FaceUp, w) {
+	if !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx) {
 		return false
 	}
-	d.Facing = user.Facing()
-	left := w.Block(pos.Side(d.Facing.RotateLeft().Face()))
-	right := w.Block(pos.Side(d.Facing.RotateRight().Face()))
+	d.Facing = user.Rotation().Direction()
+	left := tx.Block(pos.Side(d.Facing.RotateLeft().Face()))
+	right := tx.Block(pos.Side(d.Facing.RotateRight().Face()))
 	if door, ok := left.(WoodDoor); ok {
 		if door.Wood == d.Wood {
 			d.Right = true
@@ -97,25 +92,28 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *worl
 	}
 
 	ctx.IgnoreBBox = true
-	place(w, pos, d, user, ctx)
-	place(w, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
+	place(tx, pos, d, user, ctx)
+	place(tx, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
 	ctx.CountSub = 1
 	return placed(ctx)
 }
 
 // Activate ...
-func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, w *world.World, _ item.User, _ *item.UseContext) bool {
+func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	d.Open = !d.Open
-	w.SetBlock(pos, d, nil)
+	tx.SetBlock(pos, d, nil)
 
 	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
-	other := w.Block(otherPos)
+	other := tx.Block(otherPos)
 	if door, ok := other.(WoodDoor); ok {
 		door.Open = d.Open
-		w.SetBlock(otherPos, door, nil)
+		tx.SetBlock(otherPos, door, nil)
 	}
-
-	w.PlaySound(pos.Vec3Centre(), sound.Door{})
+	if d.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+		return true
+	}
+	tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
 	return true
 }
 
@@ -124,14 +122,8 @@ func (d WoodDoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(d))
 }
 
-// CanDisplace ...
-func (d WoodDoor) CanDisplace(l world.Liquid) bool {
-	_, water := l.(Water)
-	return water
-}
-
 // SideClosed ...
-func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 

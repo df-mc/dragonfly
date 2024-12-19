@@ -16,19 +16,19 @@ type Shovel struct {
 }
 
 // UseOnBlock handles the creation of dirt path blocks from dirt or grass blocks.
-func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, _ User, ctx *UseContext) bool {
-	if b, ok := w.Block(pos).(shovellable); ok {
+func (s Shovel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
+	if b, ok := tx.Block(pos).(shovellable); ok {
 		if res, ok := b.Shovel(); ok {
 			if face == cube.FaceDown {
 				// Dirt paths are not created when the bottom face is clicked.
 				return false
 			}
-			if w.Block(pos.Side(cube.FaceUp)) != air() {
+			if tx.Block(pos.Side(cube.FaceUp)) != air() {
 				// Dirt paths can only be created if air is above the grass block.
 				return false
 			}
-			w.SetBlock(pos, res, nil)
-			w.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
+			tx.SetBlock(pos, res, nil)
+			tx.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
 
 			ctx.DamageItem(1)
 			return true

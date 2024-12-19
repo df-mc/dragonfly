@@ -34,7 +34,11 @@ func (l Log) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (l Log) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
+	b := newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
+	if l.Wood == CrimsonWood() || l.Wood == WarpedWood() {
+		b = b.withBlastResistance(1.5)
+	}
+	return b
 }
 
 // SmeltInfo ...
@@ -48,30 +52,26 @@ func (Log) FuelInfo() item.FuelInfo {
 }
 
 // UseOnBlock handles the rotational placing of logs.
-func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, l)
+func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, l)
 	if !used {
 		return
 	}
 	l.Axis = face.Axis()
 
-	place(w, pos, l, user, ctx)
+	place(tx, pos, l, user, ctx)
 	return placed(ctx)
 }
 
 // Strip ...
-func (l Log) Strip() (world.Block, bool) {
-	return Log{Axis: l.Axis, Wood: l.Wood, Stripped: true}, !l.Stripped
+func (l Log) Strip() (world.Block, world.Sound, bool) {
+	return Log{Axis: l.Axis, Wood: l.Wood, Stripped: true}, nil, !l.Stripped
 }
 
 // EncodeItem ...
 func (l Log) EncodeItem() (name string, meta int16) {
 	if !l.Stripped {
 		switch l.Wood {
-		case OakWood(), SpruceWood(), BirchWood(), JungleWood():
-			return "minecraft:log", int16(l.Wood.Uint8())
-		case AcaciaWood(), DarkOakWood():
-			return "minecraft:log2", int16(l.Wood.Uint8()) - 4
 		case CrimsonWood(), WarpedWood():
 			return "minecraft:" + l.Wood.String() + "_stem", 0
 		default:
@@ -90,10 +90,6 @@ func (l Log) EncodeItem() (name string, meta int16) {
 func (l Log) EncodeBlock() (name string, properties map[string]any) {
 	if !l.Stripped {
 		switch l.Wood {
-		case OakWood(), SpruceWood(), BirchWood(), JungleWood():
-			return "minecraft:log", map[string]any{"pillar_axis": l.Axis.String(), "old_log_type": l.Wood.String()}
-		case AcaciaWood(), DarkOakWood():
-			return "minecraft:log2", map[string]any{"pillar_axis": l.Axis.String(), "new_log_type": l.Wood.String()}
 		case CrimsonWood(), WarpedWood():
 			return "minecraft:" + l.Wood.String() + "_stem", map[string]any{"pillar_axis": l.Axis.String()}
 		default:

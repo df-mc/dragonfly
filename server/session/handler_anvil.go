@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"math/rand"
@@ -18,15 +19,14 @@ const (
 
 // handleCraftRecipeOptional handles the CraftRecipeOptional request action, sent when taking a result from an anvil
 // menu. It also contains information such as the new name of the item and the multi-recipe network ID.
-func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string) (err error) {
+func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRecipeOptionalStackRequestAction, s *Session, filterStrings []string, co Controllable, tx *world.Tx) (err error) {
 	// First check if there actually is an anvil opened.
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no anvil container opened")
 	}
 
-	w := s.c.World()
-	pos := s.openedPos.Load()
-	anvil, ok := w.Block(pos).(block.Anvil)
+	pos := *s.openedPos.Load()
+	anvil, ok := tx.Block(pos).(block.Anvil)
 	if !ok {
 		return fmt.Errorf("no anvil container opened")
 	}
@@ -35,16 +35,16 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerAnvilInput,
-		Slot:        anvilInputSlot,
-	}, s)
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilInput},
+		Slot:      anvilInputSlot,
+	}, s, tx)
 	if input.Empty() {
 		return fmt.Errorf("no item in input input slot")
 	}
 	material, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerAnvilMaterial,
-		Slot:        anvilMaterialSlot,
-	}, s)
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
+		Slot:      anvilMaterialSlot,
+	}, s, tx)
 	result := input
 
 	// The sum of the input's anvil cost as well as the material's anvil cost.
@@ -58,7 +58,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if !material.Empty() {
 		// First check if we are trying to repair the item with a material.
 		if repairable, ok := input.Item().(item.Repairable); ok && repairable.RepairableBy(material) {
-			result, actionCost, repairCount, err = repairWithMaterial(input, material, result)
+			result, actionCost, repairCount, err = repairItemWithMaterial(input, material, result)
 			if err != nil {
 				return err
 			}
@@ -76,7 +76,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 			// If the material is another durable item, we just need to increase the durability of the result by the
 			// material's durability at 12%.
 			if durable && !enchantedBook {
-				result, actionCost = repairWithDurable(input, material, result)
+				result, actionCost = repairItemWithDurable(input, material, result)
 			}
 
 			// Merge enchantments on the material item onto the result item.
@@ -91,20 +91,11 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		}
 	}
 
-	// First get the new name and the existing name. The existing name is either the custom name if it exists, or the
-	// item's display name in-game, which is locale dependent.
-	newName := filterStrings[int(a.FilterStringIndex)]
-	existingName := item.DisplayName(input.Item(), s.c.Locale())
-	if customName := input.CustomName(); len(customName) > 0 {
-		existingName = customName
-	}
-
-	// If our existing name isn't the same as the new name, then something changed, and we should update the custom
-	// name of the item.
-	if existingName != newName {
+	// If we have a filter string, then the client is intending to rename the item.
+	if len(filterStrings) > 0 {
 		renameCost = 1
 		actionCost += renameCost
-		result = result.WithCustomName(newName)
+		result = result.WithCustomName(filterStrings[int(a.FilterStringIndex)])
 	}
 
 	// Calculate the total cost. (action cost + anvil cost)
@@ -119,17 +110,17 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	}
 
 	// We can bypass the "impossible cost" limit if we're in creative mode.
-	c := s.c.GameMode().CreativeInventory()
+	c := co.GameMode().CreativeInventory()
 	if cost >= 40 && !c {
 		return fmt.Errorf("impossible cost")
 	}
 
 	// Ensure we have enough levels (or if we're in creative mode, ignore the cost) to perform the action.
-	level := s.c.ExperienceLevel()
+	level := co.ExperienceLevel()
 	if level < cost && !c {
 		return fmt.Errorf("not enough experience")
 	} else if !c {
-		s.c.SetExperienceLevel(level - cost)
+		co.SetExperienceLevel(level - cost)
 	}
 
 	// If we had a result item, we need to calculate the new anvil cost and update it on the item.
@@ -149,40 +140,36 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if !c && rand.Float64() < 0.12 {
 		damaged := anvil.Break()
 		if _, ok := damaged.(block.Air); ok {
-			w.PlaySound(pos.Vec3Centre(), sound.AnvilBreak{})
+			tx.PlaySound(pos.Vec3Centre(), sound.AnvilBreak{})
 		} else {
-			w.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
+			tx.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
 		}
-		defer w.SetBlock(pos, damaged, nil)
+		defer tx.SetBlock(pos, damaged, nil)
 	} else {
-		w.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
+		tx.PlaySound(pos.Vec3Centre(), sound.AnvilUse{})
 	}
 
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerAnvilInput,
-		Slot:        anvilInputSlot,
-	}, item.Stack{}, s)
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilInput},
+		Slot:      anvilInputSlot,
+	}, item.Stack{}, s, tx)
 	if repairCount > 0 {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID: containerAnvilMaterial,
-			Slot:        anvilMaterialSlot,
-		}, material.Grow(-repairCount), s)
+			Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
+			Slot:      anvilMaterialSlot,
+		}, material.Grow(-repairCount), s, tx)
 	} else {
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
-			ContainerID: containerAnvilMaterial,
-			Slot:        anvilMaterialSlot,
-		}, item.Stack{}, s)
+			Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
+			Slot:      anvilMaterialSlot,
+		}, item.Stack{}, s, tx)
 	}
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, result, s)
-	return nil
+	return h.createResults(s, tx, result)
 }
 
-// repairWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
+// repairItemWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
 // stack, the cost, and the repaired items count.
-func repairWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
+func repairItemWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
 	// Calculate the durability delta using the maximum durability and the current durability.
 	delta := min(input.MaxDurability()-input.Durability(), input.MaxDurability()/4)
 	if delta <= 0 {
@@ -199,8 +186,8 @@ func repairWithMaterial(input item.Stack, material item.Stack, result item.Stack
 	return result, cost, count, nil
 }
 
-// repairWithDurable is a helper function that repairs an item with another durable item stack.
-func repairWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
+// repairItemWithDurable is a helper function that repairs an item with another durable item stack.
+func repairItemWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
 	durability := input.Durability() + durable.Durability() + input.MaxDurability()*12/100
 	if durability > input.MaxDurability() {
 		durability = input.MaxDurability()

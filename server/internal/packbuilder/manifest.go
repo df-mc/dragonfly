@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,7 +19,7 @@ func buildManifest(dir string, headerUUID, moduleUUID uuid.UUID) {
 		Header: resource.Header{
 			Name:               "dragonfly auto-generated resource pack",
 			Description:        "This resource pack contains auto-generated content from dragonfly",
-			UUID:               headerUUID.String(),
+			UUID:               headerUUID,
 			Version:            [3]int{0, 0, 1},
 			MinimumGameVersion: parseVersion(protocol.CurrentVersion),
 		},
@@ -35,7 +35,7 @@ func buildManifest(dir string, headerUUID, moduleUUID uuid.UUID) {
 	if err != nil {
 		panic(err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(dir, "manifest.json"), m, 0666); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "manifest.json"), m, 0666); err != nil {
 		panic(err)
 	}
 }

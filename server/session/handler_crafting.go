@@ -2,17 +2,18 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"golang.org/x/exp/slices"
+	"math"
+	"slices"
 )
 
 // handleCraft handles the CraftRecipe request action.
-func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session) error {
+func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
@@ -22,7 +23,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
-	if _, ok := craft.Block().(block.CraftingTable); !ok {
+	if craft.Block() != "crafting_table" {
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
@@ -48,26 +49,20 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count())
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
-				ContainerID: containerCraftingGrid,
-				Slot:        byte(slot),
-			}, st, s)
+				Container: protocol.FullContainerName{ContainerID: protocol.ContainerCraftingInput},
+				Slot:      byte(slot),
+			}, st, s, tx)
 			break
 		}
 		if !processed {
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
-
-	output := craft.Output()
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, tx, craft.Output()...)
 }
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
-func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session) error {
+func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
 		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
@@ -77,30 +72,37 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	if !shaped && !shapeless {
 		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
 	}
-
-	input := make([]item.Stack, 0, len(craft.Input()))
-	for _, i := range craft.Input() {
-		input = append(input, i.Grow(i.Count()*(int(a.TimesCrafted)-1)))
+	if craft.Block() != "crafting_table" {
+		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
-	expectancies := make([]item.Stack, 0, len(input))
+	repetitions := int(a.TimesCrafted)
+	input := make([]recipe.Item, 0, len(craft.Input()))
+	for _, i := range craft.Input() {
+		input = append(input, grow(i, i.Count()*(repetitions-1)))
+	}
+
+	flattenedInputs := make([]recipe.Item, 0, len(input))
 	for _, i := range input {
 		if i.Empty() {
-			// We don't actually need this item - it's empty, so avoid putting it in our expectancies.
+			// We don't actually need this item - it's empty, so avoid putting it in our flattened inputs.
 			continue
 		}
 
-		if ind := slices.IndexFunc(expectancies, func(st item.Stack) bool {
-			return matchingStacks(st, i)
+		if ind := slices.IndexFunc(flattenedInputs, func(it recipe.Item) bool {
+			return matchingStacks(it, i)
 		}); ind >= 0 {
-			i = i.Grow(expectancies[ind].Count())
-			expectancies = slices.Delete(expectancies, ind, ind+1)
+			i = grow(i, flattenedInputs[ind].Count())
+			flattenedInputs = slices.Delete(flattenedInputs, ind, ind+1)
 		}
-		expectancies = append(expectancies, i)
+		flattenedInputs = append(flattenedInputs, i)
 	}
 
-	for _, expected := range expectancies {
-		for id, inv := range map[byte]*inventory.Inventory{containerCraftingGrid: s.ui, containerFullInventory: s.inv} {
+	for _, expected := range flattenedInputs {
+		for id, inv := range map[byte]*inventory.Inventory{
+			protocol.ContainerCraftingInput:              s.ui,
+			protocol.ContainerCombinedHotBarAndInventory: s.inv,
+		} {
 			for slot, has := range inv.Slots() {
 				if has.Empty() {
 					// We don't have this item, skip it.
@@ -116,11 +118,11 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 					removal = remaining
 				}
 
-				expected, has = expected.Grow(-removal), has.Grow(-removal)
+				expected, has = grow(expected, -removal), has.Grow(-removal)
 				h.setItemInSlot(protocol.StackRequestSlotInfo{
-					ContainerID: id,
-					Slot:        byte(slot),
-				}, has, s)
+					Container: protocol.FullContainerName{ContainerID: id},
+					Slot:      byte(slot),
+				}, has, s, tx)
 				if expected.Empty() {
 					// Consumed this item, so go to the next one.
 					break
@@ -138,18 +140,23 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 
 	output := make([]item.Stack, 0, len(craft.Output()))
 	for _, o := range craft.Output() {
-		output = append(output, o.Grow(o.Count()*(int(a.TimesCrafted)-1)))
+		count, maxCount := o.Count(), o.MaxCount()
+		total := count * repetitions
+
+		stacks := int(math.Ceil(float64(total) / float64(maxCount)))
+		for i := 0; i < stacks; i++ {
+			inc := min(total, maxCount)
+			total -= inc
+
+			output = append(output, o.Grow(inc-count))
+		}
 	}
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerCraftingGrid,
-		Slot:        craftingResult,
-	}, output[0], s)
-	return nil
+	return h.createResults(s, tx, output...)
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
-func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeStackRequestAction, s *Session) error {
-	if !s.c.GameMode().CreativeInventory() {
+func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeStackRequestAction, s *Session, tx *world.Tx, c Controllable) error {
+	if !c.GameMode().CreativeInventory() {
 		return fmt.Errorf("can only craft creative items in gamemode creative/spectator")
 	}
 	index := a.CreativeItemNetworkID - 1
@@ -158,12 +165,7 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	}
 	it := creative.Items()[index]
 	it = it.Grow(it.MaxCount() - 1)
-
-	h.setItemInSlot(protocol.StackRequestSlotInfo{
-		ContainerID: containerOutput,
-		Slot:        craftingResult,
-	}, it, s)
-	return nil
+	return h.createResults(s, tx, it)
 }
 
 // craftingSize gets the crafting size based on the opened container ID.
@@ -182,13 +184,57 @@ func (s *Session) craftingOffset() uint32 {
 	return craftingGridSmallOffset
 }
 
-// matchingStacks returns true if the two stacks are the same in a crafting scenario.
-func matchingStacks(has, expected item.Stack) bool {
-	_, variants := expected.Value("variants")
-	if !variants {
-		return has.Comparable(expected)
+// duplicateStack duplicates an item.Stack with the new item type given.
+func duplicateStack(input item.Stack, newType world.Item) item.Stack {
+	outputStack := item.NewStack(newType, input.Count()).
+		Damage(input.MaxDurability() - input.Durability()).
+		WithCustomName(input.CustomName()).
+		WithLore(input.Lore()...).
+		WithEnchantments(input.Enchantments()...).
+		WithAnvilCost(input.AnvilCost())
+	for k, v := range input.Values() {
+		outputStack = outputStack.WithValue(k, v)
 	}
-	nameOne, _ := has.Item().EncodeItem()
-	nameTwo, _ := expected.Item().EncodeItem()
-	return nameOne == nameTwo
+	return outputStack
+}
+
+// matchingStacks returns true if the two stacks are the same in a crafting scenario.
+func matchingStacks(has, expected recipe.Item) bool {
+	switch expected := expected.(type) {
+	case item.Stack:
+		switch has := has.(type) {
+		case recipe.ItemTag:
+			name, _ := expected.Item().EncodeItem()
+			return has.Contains(name)
+		case item.Stack:
+			_, variants := expected.Value("variants")
+			if !variants {
+				return has.Comparable(expected)
+			}
+			nameOne, _ := has.Item().EncodeItem()
+			nameTwo, _ := expected.Item().EncodeItem()
+			return nameOne == nameTwo
+		}
+		panic(fmt.Errorf("client has unexpected recipe item %T", has))
+	case recipe.ItemTag:
+		switch has := has.(type) {
+		case item.Stack:
+			name, _ := has.Item().EncodeItem()
+			return expected.Contains(name)
+		case recipe.ItemTag:
+			return has.Tag() == expected.Tag()
+		}
+		panic(fmt.Errorf("client has unexpected recipe item %T", has))
+	}
+	panic(fmt.Errorf("tried to match with unexpected recipe item %T", expected))
+}
+
+func grow(i recipe.Item, count int) recipe.Item {
+	switch i := i.(type) {
+	case item.Stack:
+		return i.Grow(count)
+	case recipe.ItemTag:
+		return recipe.NewItemTag(i.Tag(), i.Count()+count)
+	}
+	panic(fmt.Errorf("unexpected recipe item %T", i))
 }

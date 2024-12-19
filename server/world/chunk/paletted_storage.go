@@ -1,7 +1,7 @@
 package chunk
 
 import (
-	"reflect"
+	"bytes"
 	"unsafe"
 )
 
@@ -45,7 +45,7 @@ func newPalettedStorage(indices []uint32, palette *Palette) *PalettedStorage {
 	var (
 		bitsPerIndex       = uint16(len(indices) / uint32BitSize / uint32ByteSize)
 		indexMask          = (uint32(1) << bitsPerIndex) - 1
-		indicesStart       = (unsafe.Pointer)((*reflect.SliceHeader)(unsafe.Pointer(&indices)).Data)
+		indicesStart       = (unsafe.Pointer)(unsafe.SliceData(indices))
 		filledBitsPerIndex uint16
 	)
 	if bitsPerIndex != 0 {
@@ -79,6 +79,25 @@ func (storage *PalettedStorage) Set(x, y, z byte, v uint32) {
 		index = storage.addNew(v)
 	}
 	storage.setPaletteIndex(x&15, y&15, z&15, uint16(index))
+}
+
+// Equal checks if two PalettedStorages are equal value wise. False is returned
+// if either of the storages are nil.
+func (storage *PalettedStorage) Equal(other *PalettedStorage) bool {
+	if storage == nil || other == nil {
+		return false
+	}
+	if len(storage.indices) == 0 || len(other.indices) == 0 || storage.palette.values[0] == 0 || other.palette.values[0] == 0 {
+		return false
+	}
+	indicesA := unsafe.Slice((*byte)(unsafe.Pointer(&storage.indices[0])), len(storage.indices)*4)
+	indicesB := unsafe.Slice((*byte)(unsafe.Pointer(&other.indices[0])), len(other.indices)*4)
+	if !bytes.Equal(indicesA, indicesB) {
+		return false
+	}
+	paletteA := unsafe.Slice((*byte)(unsafe.Pointer(&storage.palette.values[0])), len(storage.palette.values)*4)
+	paletteB := unsafe.Slice((*byte)(unsafe.Pointer(&other.palette.values[0])), len(other.palette.values)*4)
+	return bytes.Equal(paletteA, paletteB)
 }
 
 // addNew adds a new value to the PalettedStorage's Palette and returns its index. If needed, the storage is resized.

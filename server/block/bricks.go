@@ -8,7 +8,7 @@ type Bricks struct {
 
 // BreakInfo ...
 func (b Bricks) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b))
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withBlastResistance(30)
 }
 
 // EncodeItem ...

@@ -1,61 +1,73 @@
 package world
 
 import (
-	"github.com/df-mc/atomic"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/sirupsen/logrus"
+	"log/slog"
 	"math/rand"
 	"time"
 )
 
-// Config may be used to create a new World. It holds a variety of fields that influence the World.
+// Config may be used to create a new World. It holds a variety of fields that
+// influence the World.
 type Config struct {
-	// Log is the Logger that will be used to log errors and debug messages to. If set to nil, a Logrus logger will be
-	// used.
-	Log Logger
-	// Dim is the Dimension of the World. If set to nil, the World will use Overworld as its dimension. The dimension
-	// set here influences, among others, the sky colour, weather/time and liquid behaviour in that World.
+	// Log is the Logger that will be used to log errors and debug messages to.
+	// If set to nil, slog.Default() is set.
+	Log *slog.Logger
+	// Dim is the Dimension of the World. If set to nil, the World will use
+	// Overworld as its dimension. The dimension set here influences, among
+	// others, the sky colour, weather/time and liquid behaviour in that World.
 	Dim Dimension
-	// PortalDestination is a function that returns the destination World for a portal of a specific Dimension type. If
-	// set to nil, no portals will function. If the function returns a nil world for a Dimension, only portals of that
-	// specific Dimension type will not function.
+	// PortalDestination is a function that returns the destination World for a
+	// portal of a specific Dimension type. If set to nil, no portals will
+	// function. If the function returns a nil world for a Dimension, only
+	// portals of that specific Dimension type will not function.
 	PortalDestination func(dim Dimension) *World
-	// Provider is the Provider implementation used to read and write World data. If set to nil, the Provider used will
-	// be NopProvider, which does not store any data to disk.
+	// Provider is the Provider implementation used to read and write World
+	// data. If set to nil, the Provider used will be NopProvider, which does
+	// not store any data to disk.
 	Provider Provider
-	// Generator is the Generator implementation used to generate new areas of the World. If set to nil, the Provider
-	// used will be NopGenerator, which generates completely empty chunks.
+	// Generator is the Generator implementation used to generate new areas of
+	// the World. If set to nil, the Generator used will be NopGenerator, which
+	// generates completely empty chunks.
 	Generator Generator
-	// ReadOnly specifies if the World should be read-only, meaning no new data will be written to the Provider.
+	// ReadOnly specifies if the World should be read-only, meaning no new data
+	// will be written to the Provider.
 	ReadOnly bool
-	// RandomTickSpeed specifies the rate at which blocks should be ticked in the World. By default, each sub chunk has
-	// 3 blocks randomly ticked per sub chunk, so the default value is 3. Setting this value to -1 or lower will stop
-	// random ticking altogether, while setting it higher results in faster ticking.
+	// SaveInterval specifies how often a World should be automatically saved to
+	// disk. This includes chunks, entities and level.dat data. If ReadOnly is
+	// set to false, changing SaveInterval will have no effect.
+	// By default, SaveInterval is set to 10 minutes. Setting SaveInterval to
+	// a negative number disables automatic saving entirely.
+	SaveInterval time.Duration
+	// RandomTickSpeed specifies the rate at which blocks should be ticked in
+	// the World. By default, each sub chunk has 3 blocks randomly ticked per
+	// sub chunk, so the default value is 3. Setting this value to -1 or lower
+	// will stop random ticking altogether, while setting it higher results in
+	// faster ticking.
 	RandomTickSpeed int
-	// RandSource is the rand.Source used for generation of random numbers in a World, such as when selecting blocks to
-	// tick or when deciding where to strike lightning. If set to nil, `rand.NewSource(time.Now().Unix())` will be used
-	// to generate a new source.
+	// RandSource is the rand.Source used for generation of random numbers in a
+	// World, such as when selecting blocks to tick or when deciding where to
+	// strike lightning. If set to nil, `rand.NewSource(time.Now().Unix())` will
+	// be used to generate a new source.
 	RandSource rand.Source
+	// Entities is an EntityRegistry with all Entity types registered that may
+	// be added to the World.
+	Entities EntityRegistry
 }
 
-// Logger is a logger implementation that may be passed to the Log field of Config. World will send errors and debug
-// messages to this Logger when appropriate.
-type Logger interface {
-	Errorf(format string, a ...any)
-	Debugf(format string, a ...any)
-}
-
-// New creates a new World using the Config conf. The World returned will start ticking as soon as a viewer is added
-// to it and is otherwise ready for use.
+// New creates a new World using the Config conf. The World returned will start
+// ticking as soon as a viewer is added to it and is otherwise ready for use.
 func (conf Config) New() *World {
 	if conf.Log == nil {
-		conf.Log = logrus.New()
+		conf.Log = slog.Default()
 	}
 	if conf.Dim == nil {
 		conf.Dim = Overworld
 	}
 	if conf.Provider == nil {
 		conf.Provider = NopProvider{}
+	}
+	if conf.SaveInterval == 0 {
+		conf.SaveInterval = time.Minute * 10
 	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}
@@ -68,20 +80,29 @@ func (conf Config) New() *World {
 	}
 	s := conf.Provider.Settings()
 	w := &World{
-		scheduledUpdates: make(map[cube.Pos]int64),
-		entities:         make(map[Entity]ChunkPos),
+		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
+		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
-		chunks:           make(map[ChunkPos]*chunkData),
+		chunks:           make(map[ChunkPos]*Column),
 		closing:          make(chan struct{}),
-		handler:          *atomic.NewValue[Handler](NopHandler{}),
+		queue:            make(chan transaction, 128),
 		r:                rand.New(conf.RandSource),
-		advance:          s.ref.Inc() == 1,
+		advance:          s.ref.Add(1) == 1,
 		conf:             conf,
+		ra:               conf.Dim.Range(),
 		set:              s,
 	}
-	w.weather, w.ticker = weather{w: w}, ticker{w: w}
+	w.weather = weather{w: w}
+	var h Handler = NopHandler{}
+	w.handler.Store(&h)
 
-	go w.tickLoop()
-	go w.chunkCacheJanitor()
+	w.running.Add(3)
+
+	t := ticker{interval: time.Second / 20}
+	go t.tickLoop(w)
+	go w.autoSave()
+	go w.handleTransactions()
+
+	<-w.Exec(t.tick)
 	return w
 }

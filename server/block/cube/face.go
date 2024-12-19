@@ -18,14 +18,14 @@ const (
 // Face represents the face of a block or entity.
 type Face int
 
-// Direction converts the Face to a Direction and returns it, assuming the Face is horizontal and not FaceUp
-// or FaceDown.
+// Direction converts the Face to a Direction and returns it, assuming the Face
+// is horizontal and not FaceUp or FaceDown.
 func (f Face) Direction() Direction {
 	return Direction(f - 2)
 }
 
-// Opposite returns the opposite face. FaceDown will return up, north will return south and west will return east,
-// and vice versa.
+// Opposite returns the opposite Face. FaceDown will return FaceUp, FaceNorth
+// will return FaceSouth, FaceWest will return FaceEast, and vice versa.
 func (f Face) Opposite() Face {
 	switch f {
 	default:
@@ -43,8 +43,9 @@ func (f Face) Opposite() Face {
 	}
 }
 
-// Axis returns the axis the face is facing. FaceEast and west correspond to the x-axis, north and south to the z
-// axis and up and down to the y-axis.
+// Axis returns the Axis the face is facing. FaceEast and FaceWest correspond
+// to the X Axis, FaceNorth and FaceSouth to the Z Axis and FaceUp and FaceDown
+// to the Y Axis.
 func (f Face) Axis() Axis {
 	switch f {
 	default:
@@ -56,7 +57,8 @@ func (f Face) Axis() Axis {
 	}
 }
 
-// RotateRight rotates the face 90 degrees to the right horizontally and returns the new face.
+// RotateRight rotates the face 90 degrees to the right horizontally
+// (clockwise) and returns the new Face.
 func (f Face) RotateRight() Face {
 	switch f {
 	case FaceNorth:
@@ -71,7 +73,8 @@ func (f Face) RotateRight() Face {
 	return f
 }
 
-// RotateLeft rotates the face 90 degrees to the left horizontally and returns the new face.
+// RotateLeft rotates the face 90 degrees to the left horizontally
+// (counter-clockwise) and returns the new Face.
 func (f Face) RotateLeft() Face {
 	switch f {
 	case FaceNorth:
@@ -105,7 +108,8 @@ func (f Face) String() string {
 	panic("invalid face")
 }
 
-// Faces returns a list of all faces, starting with down, then up, then north to west.
+// Faces returns a list of all faces, starting with down, then up, then north
+// to west.
 func Faces() []Face {
 	return faces[:]
 }

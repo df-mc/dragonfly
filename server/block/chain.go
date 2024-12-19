@@ -11,37 +11,32 @@ import (
 // Chain is a metallic decoration block.
 type Chain struct {
 	transparent
+	sourceWaterDisplacer
 
 	// Axis is the axis which the chain faces.
 	Axis cube.Axis
 }
 
-// CanDisplace ...
-func (Chain) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
-}
-
 // SideClosed ...
-func (Chain) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Chain) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // UseOnBlock ...
-func (c Chain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, c)
+func (c Chain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
 	}
 	c.Axis = face.Axis()
 
-	place(w, pos, c, user, ctx)
+	place(tx, pos, c, user, ctx)
 	return placed(ctx)
 }
 
 // BreakInfo ...
 func (c Chain) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(15)
 }
 
 // EncodeItem ...

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/df-mc/worldupgrader/blockupgrader"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -50,48 +51,65 @@ func (biomePaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 // blockPaletteEncoding implements the encoding of block palettes to disk.
 type blockPaletteEncoding struct{}
 
-func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
-	// Get the block state registered with the runtime IDs we have in the palette of the block storage
-	// as we need the name and data value to store.
-	name, props, _ := RuntimeIDToState(v)
-	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(blockEntry{Name: name, State: props, Version: CurrentBlockVersion})
+func (bpe blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(bpe.EncodeBlockState(v))
 }
-func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
+func (bpe blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	var m map[string]any
 	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&m); err != nil {
 		return 0, fmt.Errorf("error decoding block palette entry: %w", err)
 	}
+	return bpe.DecodeBlockState(m)
+}
 
+func (blockPaletteEncoding) EncodeBlockState(v uint32) blockEntry {
+	// Get the block state registered with the runtime IDs we have in the palette of the block storage
+	// as we need the name and data value to store.
+	name, props, _ := RuntimeIDToState(v)
+	return blockEntry{Name: name, State: props, Version: CurrentBlockVersion}
+}
+
+func (blockPaletteEncoding) DecodeBlockState(m map[string]any) (uint32, error) {
 	// Decode the name and version of the block entry.
 	name, _ := m["name"].(string)
 	version, _ := m["version"].(int32)
 
 	// Now check for a state field.
 	stateI, ok := m["states"]
-	if !ok {
-		// If it doesn't exist, this is likely a pre-1.13 block state, so decode the meta value instead.
+	if version < 17694723 {
+		// This entry is a pre-1.13 block state, so decode the meta value instead.
 		meta, _ := m["val"].(int16)
 
 		// Upgrade the pre-1.13 state into a post-1.13 state.
-		stateI, ok = upgradeLegacyEntry(name, meta)
+		state, ok := upgradeLegacyEntry(name, meta)
 		if !ok {
 			return 0, fmt.Errorf("cannot find mapping for legacy block entry: %v, %v", name, meta)
 		}
+
+		// Update the name, state, and version.
+		name = state.Name
+		stateI = state.State
+		version = state.Version
+	} else if !ok {
+		// The state is a post-1.13 block state, but the states field is missing, likely due to a broken world
+		// conversion.
+		stateI = make(map[string]any)
 	}
 	state, ok := stateI.(map[string]any)
 	if !ok {
 		return 0, fmt.Errorf("invalid state in block entry")
 	}
 
-	// If the entry is an alias, then we need to resolve it.
-	entry := blockEntry{Name: name, State: state, Version: version}
-	if updatedEntry, ok := upgradeAliasEntry(entry); ok {
-		entry = updatedEntry
-	}
+	// Upgrade the block state if necessary.
+	upgraded := blockupgrader.Upgrade(blockupgrader.BlockState{
+		Name:       name,
+		Properties: state,
+		Version:    version,
+	})
 
-	v, ok := StateToRuntimeID(entry.Name, entry.State)
+	v, ok := StateToRuntimeID(upgraded.Name, upgraded.Properties)
 	if !ok {
-		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", name, state)
+		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v} %v", upgraded.Name, upgraded.Properties, upgraded.Version)
 	}
 	return v, nil
 }
@@ -123,6 +141,9 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 		if err != nil {
 			return nil, err
 		}
+	}
+	if paletteCount == 0 {
+		return palette, fmt.Errorf("invalid palette entry count: found 0, but palette with %v bits per block must have at least 1 value", blockSize)
 	}
 	return palette, nil
 }

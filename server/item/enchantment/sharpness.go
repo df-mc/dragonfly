@@ -5,42 +5,45 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Sharpness is an enchantment applied to a sword or axe that increases melee damage.
-type Sharpness struct{}
+// Sharpness is an enchantment applied to a sword or axe that increases melee
+// damage.
+var Sharpness sharpness
+
+type sharpness struct{}
 
 // Name ...
-func (Sharpness) Name() string {
+func (sharpness) Name() string {
 	return "Sharpness"
 }
 
 // MaxLevel ...
-func (Sharpness) MaxLevel() int {
+func (sharpness) MaxLevel() int {
 	return 5
 }
 
 // Cost ...
-func (Sharpness) Cost(level int) (int, int) {
-	min := 1 + (level-1)*11
-	return min, min + 20
+func (sharpness) Cost(level int) (int, int) {
+	minCost := 1 + (level-1)*11
+	return minCost, minCost + 20
 }
 
 // Rarity ...
-func (Sharpness) Rarity() item.EnchantmentRarity {
+func (sharpness) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
 // Addend returns the additional damage when attacking with sharpness.
-func (Sharpness) Addend(level int) float64 {
+func (sharpness) Addend(level int) float64 {
 	return float64(level) * 1.25
 }
 
 // CompatibleWithEnchantment ...
-func (Sharpness) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (sharpness) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
 // CompatibleWithItem ...
-func (Sharpness) CompatibleWithItem(i world.Item) bool {
+func (sharpness) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
 	return ok && (t.ToolType() == item.TypeSword || t.ToolType() == item.TypeAxe)
 }

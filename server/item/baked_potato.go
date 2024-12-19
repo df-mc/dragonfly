@@ -8,9 +8,14 @@ type BakedPotato struct {
 }
 
 // Consume ...
-func (BakedPotato) Consume(_ *world.World, c Consumer) Stack {
+func (BakedPotato) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(5, 6)
 	return Stack{}
+}
+
+// CompostChance ...
+func (BakedPotato) CompostChance() float64 {
+	return 0.85
 }
 
 // EncodeItem ...

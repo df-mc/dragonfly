@@ -22,12 +22,12 @@ func (c Concrete) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (c Concrete) EncodeItem() (name string, meta int16) {
-	return "minecraft:concrete", int16(c.Colour.Uint8())
+	return "minecraft:" + c.Colour.String() + "_concrete", 0
 }
 
 // EncodeBlock ...
 func (c Concrete) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:concrete", map[string]any{"color": c.Colour.String()}
+	return "minecraft:" + c.Colour.String() + "_concrete", nil
 }
 
 // allConcrete returns concrete blocks with all possible colours.

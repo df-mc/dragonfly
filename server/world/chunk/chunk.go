@@ -2,14 +2,13 @@ package chunk
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"sync"
+	"slices"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
-	sync.Mutex
 	// r holds the (vertical) range of the Chunk. It includes both the minimum and maximum coordinates.
 	r cube.Range
 	// air is the runtime ID of air.
@@ -42,6 +41,25 @@ func New(air uint32, r cube.Range) *Chunk {
 		recalculateHeightMap: true,
 		heightMap:            make(HeightMap, 256),
 	}
+}
+
+// Equals returns if the chunk passed is equal to the current one
+func (chunk *Chunk) Equals(c *Chunk) bool {
+	if !chunk.recalculateHeightMap && !c.recalculateHeightMap && !slices.Equal(c.heightMap, chunk.heightMap) {
+		return false
+	}
+
+	if c.r != chunk.r || c.air != chunk.air || len(c.sub) != len(chunk.sub) {
+		return false
+	}
+
+	for i, s := range c.sub {
+		if !s.Equals(chunk.sub[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Range returns the cube.Range of the Chunk as passed to New.
@@ -110,11 +128,24 @@ func (chunk *Chunk) SkyLight(x uint8, y int16, z uint8) uint8 {
 // highest block that completely blocks any light from going through. If none is found, the value returned is
 // the minimum height.
 func (chunk *Chunk) HighestLightBlocker(x, z uint8) int16 {
+	return chunk.highestLightBlocker(x, z, false)
+}
+
+// highestLightBlocker iterates from the highest non-empty sub chunk downwards
+// to find the Y value of the highest block that completely blocks any light
+// from going through. If none is found, the value returned is the minimum
+// height. If addOne is true, one is added to the Y returned if a block was
+// found.
+func (chunk *Chunk) highestLightBlocker(x, z uint8, addOne bool) int16 {
+	var plus int16
+	if addOne {
+		plus++
+	}
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			for y := 15; y >= 0; y-- {
 				if FilteringBlocks[sub.storages[0].At(x, uint8(y), z)] == 15 {
-					return int16(y) | chunk.SubY(index)
+					return int16(y) | chunk.SubY(index) + plus
 				}
 			}
 		}
@@ -143,7 +174,7 @@ func (chunk *Chunk) HeightMap() HeightMap {
 	if chunk.recalculateHeightMap {
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
-				chunk.heightMap.Set(x, z, chunk.HighestLightBlocker(x, z))
+				chunk.heightMap.Set(x, z, chunk.highestLightBlocker(x, z, true))
 			}
 		}
 		chunk.recalculateHeightMap = false
@@ -173,4 +204,16 @@ func (chunk *Chunk) SubIndex(y int16) int16 {
 // SubY returns the sub chunk Y value matching the index passed.
 func (chunk *Chunk) SubY(index int16) int16 {
 	return (index << 4) + int16(chunk.r[0])
+}
+
+// HighestFilledSubChunk returns the index of the highest sub chunk in the chunk
+// that has any blocks in it. 0 is returned if no subchunks have any blocks.
+func (chunk *Chunk) HighestFilledSubChunk() uint16 {
+	highest := uint16(0)
+	for highest = uint16(len(chunk.sub) - 1); highest > 0; highest-- {
+		if !chunk.sub[highest].Empty() {
+			break
+		}
+	}
+	return highest
 }

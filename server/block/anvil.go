@@ -27,32 +27,32 @@ func (a Anvil) Model() world.BlockModel {
 
 // BreakInfo ...
 func (a Anvil) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a))
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a)).withBlastResistance(6000)
 }
 
 // Activate ...
-func (Anvil) Activate(pos cube.Pos, _ cube.Face, _ *world.World, u item.User, _ *item.UseContext) bool {
+func (Anvil) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
-		opener.OpenBlockContainer(pos)
+		opener.OpenBlockContainer(pos, tx)
 		return true
 	}
 	return false
 }
 
 // UseOnBlock ...
-func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, a)
+func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, a)
 	if !used {
 		return
 	}
-	a.Facing = user.Facing().RotateRight()
-	place(w, pos, a, user, ctx)
+	a.Facing = user.Rotation().Direction().RotateLeft()
+	place(tx, pos, a, user, ctx)
 	return placed(ctx)
 }
 
 // NeighbourUpdateTick ...
-func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	a.fall(a, pos, w)
+func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	a.fall(a, pos, tx)
 }
 
 // Damage returns the damage per block fallen of the anvil and the maximum damage the anvil can deal.
@@ -75,20 +75,19 @@ func (a Anvil) Break() world.Block {
 }
 
 // Landed is called when a falling anvil hits the ground, used to, for example, play a sound.
-func (Anvil) Landed(w *world.World, pos cube.Pos) {
-	w.PlaySound(pos.Vec3Centre(), sound.AnvilLand{})
+func (Anvil) Landed(tx *world.Tx, pos cube.Pos) {
+	tx.PlaySound(pos.Vec3Centre(), sound.AnvilLand{})
 }
 
 // EncodeItem ...
 func (a Anvil) EncodeItem() (name string, meta int16) {
-	return "minecraft:anvil", int16(a.Type.Uint8())
+	return "minecraft:" + a.Type.String(), 0
 }
 
 // EncodeBlock ...
 func (a Anvil) EncodeBlock() (string, map[string]any) {
-	return "minecraft:anvil", map[string]any{
-		"damage":    a.Type.String(),
-		"direction": int32(horizontalDirection(a.Facing)),
+	return "minecraft:" + a.Type.String(), map[string]any{
+		"minecraft:cardinal_direction": a.Facing.String(),
 	}
 }
 

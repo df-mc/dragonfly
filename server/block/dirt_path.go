@@ -17,17 +17,17 @@ func (p DirtPath) Till() (world.Block, bool) {
 }
 
 // NeighbourUpdateTick handles the turning from dirt path into dirt if a block is placed on top of it.
-func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
+func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	up := pos.Side(cube.FaceUp)
-	if w.Block(up).Model().FaceSolid(up, cube.FaceDown, w) {
+	if tx.Block(up).Model().FaceSolid(up, cube.FaceDown, tx) {
 		// A block with a solid side at the bottom was placed onto this one.
-		w.SetBlock(pos, Dirt{}, nil)
+		tx.SetBlock(pos, Dirt{}, nil)
 	}
 }
 
 // BreakInfo ...
 func (p DirtPath) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p))
+	return newBreakInfo(0.65, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p))
 }
 
 // EncodeItem ...

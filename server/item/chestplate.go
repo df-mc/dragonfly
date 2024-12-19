@@ -10,10 +10,12 @@ import (
 type Chestplate struct {
 	// Tier is the tier of the chestplate.
 	Tier ArmourTier
+	// Trim specifies the trim of the armour.
+	Trim ArmourTrim
 }
 
 // Use handles the using of a chestplate to auto-equip it in the designated armour slot.
-func (c Chestplate) Use(_ *world.World, _ User, ctx *UseContext) bool {
+func (c Chestplate) Use(_ *world.Tx, _ User, ctx *UseContext) bool {
 	ctx.SwapHeldWithArmour(1)
 	return false
 }
@@ -25,14 +27,14 @@ func (c Chestplate) MaxCount() int {
 
 // DefencePoints ...
 func (c Chestplate) DefencePoints() float64 {
-	switch c.Tier.(type) {
-	case ArmourTierLeather:
+	switch c.Tier.Name() {
+	case "leather":
 		return 3
-	case ArmourTierGold, ArmourTierChain:
+	case "golden", "chainmail":
 		return 5
-	case ArmourTierIron:
+	case "iron":
 		return 6
-	case ArmourTierDiamond, ArmourTierNetherite:
+	case "diamond", "netherite":
 		return 8
 	}
 	panic("invalid chestplate tier")
@@ -82,6 +84,12 @@ func (c Chestplate) Chestplate() bool {
 	return true
 }
 
+// WithTrim ...
+func (c Chestplate) WithTrim(trim ArmourTrim) world.Item {
+	c.Trim = trim
+	return c
+}
+
 // EncodeItem ...
 func (c Chestplate) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + c.Tier.Name() + "_chestplate", 0
@@ -95,13 +103,16 @@ func (c Chestplate) DecodeNBT(data map[string]any) any {
 			c.Tier = t
 		}
 	}
+	c.Trim = readTrim(data)
 	return c
 }
 
 // EncodeNBT ...
 func (c Chestplate) EncodeNBT() map[string]any {
+	m := map[string]any{}
 	if t, ok := c.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
-		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+		m["customColor"] = int32FromRGBA(t.Colour)
 	}
-	return nil
+	writeTrim(m, c.Trim)
+	return m
 }

@@ -1,23 +1,13 @@
 package item
 
-import (
-	"time"
-)
-
 // Spyglass is an item that zooms in on an area the player is looking at, like a telescope.
-type Spyglass struct{}
+type Spyglass struct {
+	nopReleasable
+}
 
 // MaxCount always returns 1.
 func (Spyglass) MaxCount() int {
 	return 1
-}
-
-// Release ...
-func (Spyglass) Release(Releaser, time.Duration, *UseContext) {}
-
-// Requirements ...
-func (Spyglass) Requirements() []Stack {
-	return []Stack{}
 }
 
 // EncodeItem ...

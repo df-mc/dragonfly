@@ -38,11 +38,6 @@ func (builder *ComponentBuilder) AddComponent(name string, value any) {
 	builder.components[name] = value
 }
 
-// Empty returns if there are no components or item properties in the builder.
-func (builder *ComponentBuilder) Empty() bool {
-	return len(builder.properties) == 0 && len(builder.components) == 0
-}
-
 // Construct constructs the final item components map and returns it. It also applies the default properties required
 // for the item to work without modifying the original maps in the builder.
 func (builder *ComponentBuilder) Construct() map[string]any {
@@ -57,9 +52,11 @@ func (builder *ComponentBuilder) Construct() map[string]any {
 // not modify the builder's properties map directly otherwise Empty() will return false in future use of the builder.
 func (builder *ComponentBuilder) applyDefaultProperties(x map[string]any) {
 	x["minecraft:icon"] = map[string]any{
-		"texture": strings.Split(builder.identifier, ":")[1],
+		"textures": map[string]any{
+			"default": strings.Split(builder.identifier, ":")[1],
+		},
 	}
-	x["creative_group"] = builder.category.String()
+	x["creative_group"] = builder.category.Group()
 	x["creative_category"] = int32(builder.category.Uint8())
 	if _, ok := x["max_stack_size"]; !ok {
 		x["max_stack_size"] = int32(64)

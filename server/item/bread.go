@@ -8,9 +8,14 @@ type Bread struct {
 }
 
 // Consume ...
-func (Bread) Consume(_ *world.World, c Consumer) Stack {
+func (Bread) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(5, 6)
 	return Stack{}
+}
+
+// CompostChance ...
+func (Bread) CompostChance() float64 {
+	return 0.85
 }
 
 // EncodeItem ...

@@ -136,8 +136,18 @@ func (c colour) RGBA() color.RGBA {
 	case 14:
 		return color.RGBA{R: 0xb0, G: 0x2e, B: 0x26, A: 0xff}
 	default:
+		return color.RGBA{R: 0x1d, G: 0x1d, B: 0x21, A: 0xff}
+	}
+}
+
+// SignRGBA returns the colour as RGBA. It is identical to the RGBA method, except for the colour black. For the colour
+// black, a value of rgba(0, 0, 0, 255) is returned rather than rgba(29, 29, 33, 255), in order to match the black sign
+// text colour found in vanilla Minecraft.
+func (c colour) SignRGBA() color.RGBA {
+	if c == 15 {
 		return color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0xff}
 	}
+	return c.RGBA()
 }
 
 // String ...
@@ -160,7 +170,7 @@ func (c colour) String() string {
 	case 7:
 		return "gray"
 	case 8:
-		return "silver"
+		return "light_gray"
 	case 9:
 		return "cyan"
 	case 10:
@@ -178,7 +188,25 @@ func (c colour) String() string {
 	}
 }
 
+// SilverString returns the name of the colour, with light_gray being replaced by silver.
+func (c colour) SilverString() string {
+	if c == 8 {
+		return "silver"
+	}
+	return c.String()
+}
+
 // Uint8 ...
 func (c colour) Uint8() uint8 {
 	return uint8(c)
+}
+
+// invertColour converts the item.Colour passed and returns the colour ID inverted.
+func invertColour(c Colour) int16 {
+	return ^int16(c.Uint8()) & 0xf
+}
+
+// invertColourID converts the int16 passed the returns the item.Colour inverted.
+func invertColourID(id int16) Colour {
+	return Colours()[uint8(^id&0xf)]
 }

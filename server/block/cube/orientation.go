@@ -2,10 +2,11 @@ package cube
 
 import "math"
 
-// Orientation represents the orientation of a sign
+// Orientation represents the rotation of a block divided into 16 options.
 type Orientation int
 
-// OrientationFromYaw returns an Orientation value that (roughly) matches the yaw passed.
+// OrientationFromYaw returns an Orientation value that (roughly) matches the
+// yaw passed.
 func OrientationFromYaw(yaw float64) Orientation {
 	yaw = math.Mod(yaw, 360)
 	return Orientation(math.Round(yaw / 360 * 16))

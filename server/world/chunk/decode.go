@@ -12,7 +12,7 @@ var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uin
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
-//noinspection GoUnusedExportedFunction
+// noinspection GoUnusedExportedFunction
 func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
 	var (
 		c   = New(air, r)
@@ -161,6 +161,9 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 	}
 
 	size := paletteSize(blockSize)
+	if size > 32 {
+		return nil, fmt.Errorf("cannot read paletted storage (size=%v) %T: size too large", blockSize, pe)
+	}
 	uint32Count := size.uint32s()
 
 	uint32s := make([]uint32, uint32Count)

@@ -16,7 +16,7 @@ type Chicken struct {
 }
 
 // Consume ...
-func (c Chicken) Consume(_ *world.World, co Consumer) Stack {
+func (c Chicken) Consume(_ *world.Tx, co Consumer) Stack {
 	if c.Cooked {
 		co.Saturate(6, 7.2)
 	} else {

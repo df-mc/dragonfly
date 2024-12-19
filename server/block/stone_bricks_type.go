@@ -51,13 +51,13 @@ func (s stoneBricks) Name() string {
 func (s stoneBricks) String() string {
 	switch s {
 	case 0:
-		return "default"
+		return "stone_bricks"
 	case 1:
-		return "mossy"
+		return "mossy_stone_bricks"
 	case 2:
-		return "cracked"
+		return "cracked_stone_bricks"
 	case 3:
-		return "chiseled"
+		return "chiseled_stone_bricks"
 	}
 	panic("unknown stone bricks type")
 }

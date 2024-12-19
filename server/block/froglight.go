@@ -23,14 +23,14 @@ func (f Froglight) LightEmissionLevel() uint8 {
 }
 
 // UseOnBlock ...
-func (f Froglight) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, face, used = firstReplaceable(w, pos, face, f)
+func (f Froglight) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, face, used = firstReplaceable(tx, pos, face, f)
 	if !used {
 		return
 	}
 	f.Axis = face.Axis()
 
-	place(w, pos, f, user, ctx)
+	place(tx, pos, f, user, ctx)
 	return placed(ctx)
 }
 
@@ -46,7 +46,7 @@ func (f Froglight) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (f Froglight) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + f.Type.String() + "_froglight", map[string]any{"axis": f.Axis.String()}
+	return "minecraft:" + f.Type.String() + "_froglight", map[string]any{"pillar_axis": f.Axis.String()}
 }
 
 // allFrogLight ...

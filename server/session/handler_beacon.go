@@ -5,28 +5,32 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
+// beaconInputSlot is the slot index of the input item in the beacon.
+const beaconInputSlot = 0x1b
+
 // handleBeaconPayment handles the selection of effects in a beacon and the removal of the item used to pay
 // for those effects.
-func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentStackRequestAction, s *Session) error {
+func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentStackRequestAction, s *Session, tx *world.Tx) error {
 	slot := protocol.StackRequestSlotInfo{
-		ContainerID: containerBeacon,
-		Slot:        0x1b,
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerBeaconPayment},
+		Slot:      beaconInputSlot,
 	}
 	// First check if there actually is a beacon opened.
 	if !s.containerOpened.Load() {
 		return fmt.Errorf("no beacon container opened")
 	}
-	pos := s.openedPos.Load()
-	beacon, ok := s.c.World().Block(pos).(block.Beacon)
+	pos := *s.openedPos.Load()
+	beacon, ok := tx.Block(pos).(block.Beacon)
 	if !ok {
 		return fmt.Errorf("no beacon container opened")
 	}
 
 	// Check if the item present in the beacon slot is valid.
-	payment, _ := h.itemInSlot(slot, s)
+	payment, _ := h.itemInSlot(slot, s, tx)
 	if payable, ok := payment.Item().(item.BeaconPayment); !ok || !payable.PayableForBeacon() {
 		return fmt.Errorf("item %#v in beacon slot cannot be used as payment", payment)
 	}
@@ -46,12 +50,12 @@ func (h *ItemStackRequestHandler) handleBeaconPayment(a *protocol.BeaconPaymentS
 	if sOk {
 		beacon.Secondary = secondary.(effect.LastingType)
 	}
-	s.c.World().SetBlock(pos, beacon, nil)
+	tx.SetBlock(pos, beacon, nil)
 
 	// The client will send a Destroy action after this action, but we can't rely on that because the client
 	// could just not send it.
 	// We just ignore the next Destroy action and set the item to air here.
-	h.setItemInSlot(slot, item.Stack{}, s)
+	h.setItemInSlot(slot, item.Stack{}, s, tx)
 	h.ignoreDestroy = true
 	return nil
 }

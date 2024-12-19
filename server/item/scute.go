@@ -5,5 +5,5 @@ type Scute struct{}
 
 // EncodeItem ...
 func (Scute) EncodeItem() (name string, meta int16) {
-	return "minecraft:scute", 0
+	return "minecraft:turtle_scute", 0
 }

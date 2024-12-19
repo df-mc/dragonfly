@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"time"
@@ -12,7 +13,7 @@ type EmoteHandler struct {
 }
 
 // Handle ...
-func (h *EmoteHandler) Handle(p packet.Packet, s *Session) error {
+func (h *EmoteHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.Emote)
 
 	if pk.EntityRuntimeID != selfEntityRuntimeID {
@@ -26,8 +27,8 @@ func (h *EmoteHandler) Handle(p packet.Packet, s *Session) error {
 	if err != nil {
 		return err
 	}
-	for _, viewer := range s.c.World().Viewers(s.c.Position()) {
-		viewer.ViewEmote(s.c, emote)
+	for _, viewer := range tx.Viewers(c.Position()) {
+		viewer.ViewEmote(c, emote)
 	}
 	return nil
 }

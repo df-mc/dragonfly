@@ -11,6 +11,7 @@ import (
 type Carpet struct {
 	carpet
 	transparent
+	sourceWaterDisplacer
 
 	// Colour is the colour of the carpet.
 	Colour item.Colour
@@ -18,17 +19,11 @@ type Carpet struct {
 
 // FlammabilityInfo ...
 func (c Carpet) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(30, 60, true)
-}
-
-// CanDisplace ...
-func (Carpet) CanDisplace(b world.Liquid) bool {
-	_, water := b.(Water)
-	return water
+	return newFlammabilityInfo(30, 20, true)
 }
 
 // SideClosed ...
-func (Carpet) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Carpet) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -39,12 +34,12 @@ func (c Carpet) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (c Carpet) EncodeItem() (name string, meta int16) {
-	return "minecraft:carpet", int16(c.Colour.Uint8())
+	return "minecraft:" + c.Colour.String() + "_carpet", 0
 }
 
 // EncodeBlock ...
 func (c Carpet) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:carpet", map[string]any{"color": c.Colour.String()}
+	return "minecraft:" + c.Colour.String() + "_carpet", nil
 }
 
 // HasLiquidDrops ...
@@ -53,24 +48,25 @@ func (Carpet) HasLiquidDrops() bool {
 }
 
 // NeighbourUpdateTick ...
-func (Carpet) NeighbourUpdateTick(pos, _ cube.Pos, w *world.World) {
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		w.SetBlock(pos, nil, nil)
+func (c Carpet) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
+		tx.SetBlock(pos, nil, nil)
+		dropItem(tx, item.NewStack(c, 1), pos.Vec3Centre())
 	}
 }
 
 // UseOnBlock handles not placing carpets on top of air blocks.
-func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.World, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(w, pos, face, c)
+func (c Carpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
 	}
 
-	if _, ok := w.Block(pos.Side(cube.FaceDown)).(Air); ok {
+	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
 		return
 	}
 
-	place(w, pos, c, user, ctx)
+	place(tx, pos, c, user, ctx)
 	return placed(ctx)
 }
 
