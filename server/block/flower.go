@@ -26,7 +26,7 @@ func (f Flower) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 		if living, ok := e.(interface {
 			AddEffect(effect.Effect)
 		}); ok {
-			living.AddEffect(effect.New(effect.Wither{}, 1, 2*time.Second))
+			living.AddEffect(effect.New(effect.Wither, 1, 2*time.Second))
 		}
 	}
 }

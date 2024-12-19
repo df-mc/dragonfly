@@ -5,14 +5,16 @@ import (
 	"image/color"
 )
 
-// Poison is a lasting effect that causes the affected entity to lose health gradually. Poison cannot kill,
-// unlike FatalPoison.
-type Poison struct {
+// Poison is a lasting effect that causes the affected entity to lose health
+// gradually. poison cannot kill, unlike fatalPoison.
+var Poison poison
+
+type poison struct {
 	nopLasting
 }
 
 // Apply ...
-func (Poison) Apply(e world.Entity, eff Effect) {
+func (poison) Apply(e world.Entity, eff Effect) {
 	interval := max(50>>(eff.Level()-1), 1)
 	if eff.Tick()%interval == 0 {
 		if l, ok := e.(living); ok && l.Health() > 1 {
@@ -22,14 +24,14 @@ func (Poison) Apply(e world.Entity, eff Effect) {
 }
 
 // RGBA ...
-func (Poison) RGBA() color.RGBA {
+func (poison) RGBA() color.RGBA {
 	return color.RGBA{R: 0x4e, G: 0x93, B: 0x31, A: 0xff}
 }
 
-// PoisonDamageSource is used for damage caused by an effect.Poison or
-// effect.FatalPoison applied to an entity.
+// PoisonDamageSource is used for damage caused by an effect.poison or
+// effect.fatalPoison applied to an entity.
 type PoisonDamageSource struct {
-	// Fatal specifies if the damage was caused by effect.FatalPoison and if
+	// Fatal specifies if the damage was caused by effect.fatalPoison and if
 	// the damage could therefore kill the entity.
 	Fatal bool
 }

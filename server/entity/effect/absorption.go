@@ -5,14 +5,16 @@ import (
 	"image/color"
 )
 
-// Absorption is a lasting effect that increases the health of an entity over the maximum. Once this extra
-// health is lost, it will not regenerate.
-type Absorption struct {
+// Absorption is a lasting effect that increases the health of an entity over
+// the maximum. Once this extra health is lost, it will not regenerate.
+var Absorption absorption
+
+type absorption struct {
 	nopLasting
 }
 
 // Start ...
-func (Absorption) Start(e world.Entity, lvl int) {
+func (absorption) Start(e world.Entity, lvl int) {
 	if i, ok := e.(interface {
 		SetAbsorption(health float64)
 	}); ok {
@@ -21,7 +23,7 @@ func (Absorption) Start(e world.Entity, lvl int) {
 }
 
 // End ...
-func (Absorption) End(e world.Entity, _ int) {
+func (absorption) End(e world.Entity, _ int) {
 	if i, ok := e.(interface {
 		SetAbsorption(health float64)
 	}); ok {
@@ -30,6 +32,6 @@ func (Absorption) End(e world.Entity, _ int) {
 }
 
 // RGBA ...
-func (Absorption) RGBA() color.RGBA {
+func (absorption) RGBA() color.RGBA {
 	return color.RGBA{R: 0x25, G: 0x52, B: 0xa5, A: 0xff}
 }

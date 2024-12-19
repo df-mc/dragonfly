@@ -14,7 +14,7 @@ type SpiderEye struct {
 // Consume ...
 func (SpiderEye) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(2, 3.2)
-	c.AddEffect(effect.New(effect.Poison{}, 1, time.Second*5))
+	c.AddEffect(effect.New(effect.Poison, 1, time.Second*5))
 	return Stack{}
 }
 

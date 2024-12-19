@@ -5,14 +5,16 @@ import (
 	"image/color"
 )
 
-// Wither is a lasting effect that causes an entity to take continuous damage that is capable of killing an
-// entity.
-type Wither struct {
+// Wither is a lasting effect that causes an entity to take continuous damage
+// that is capable of killing an entity.
+var Wither wither
+
+type wither struct {
 	nopLasting
 }
 
 // Apply ...
-func (Wither) Apply(e world.Entity, eff Effect) {
+func (wither) Apply(e world.Entity, eff Effect) {
 	interval := max(80>>eff.Level(), 1)
 	if eff.Tick()%interval == 0 {
 		if l, ok := e.(living); ok {
@@ -22,11 +24,11 @@ func (Wither) Apply(e world.Entity, eff Effect) {
 }
 
 // RGBA ...
-func (Wither) RGBA() color.RGBA {
+func (wither) RGBA() color.RGBA {
 	return color.RGBA{R: 0x35, G: 0x2a, B: 0x27, A: 0xff}
 }
 
-// WitherDamageSource is used for damage caused by an effect.Wither applied
+// WitherDamageSource is used for damage caused by an effect.wither applied
 // to an entity.
 type WitherDamageSource struct{}
 

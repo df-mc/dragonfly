@@ -5,13 +5,16 @@ import (
 	"image/color"
 )
 
-// Hunger is a lasting effect that causes an affected player to gradually lose saturation and food.
-type Hunger struct {
+// Hunger is a lasting effect that causes an affected player to gradually lose
+// saturation and food.
+var Hunger hunger
+
+type hunger struct {
 	nopLasting
 }
 
 // Apply ...
-func (Hunger) Apply(e world.Entity, eff Effect) {
+func (hunger) Apply(e world.Entity, eff Effect) {
 	if i, ok := e.(interface {
 		Exhaust(points float64)
 	}); ok {
@@ -20,6 +23,6 @@ func (Hunger) Apply(e world.Entity, eff Effect) {
 }
 
 // RGBA ...
-func (Hunger) RGBA() color.RGBA {
+func (hunger) RGBA() color.RGBA {
 	return color.RGBA{R: 0x58, G: 0x76, B: 0x53, A: 0xff}
 }

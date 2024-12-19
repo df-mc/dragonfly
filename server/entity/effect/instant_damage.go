@@ -5,12 +5,15 @@ import (
 	"image/color"
 )
 
-// InstantDamage is an instant effect that causes a living entity to immediately take some damage, depending
-// on the level and the potency of the effect.
-type InstantDamage struct{}
+// InstantDamage is an instant effect that causes a living entity to
+// immediately take some damage, depending on the level and the potency of the
+// effect.
+var InstantDamage instantDamage
+
+type instantDamage struct{}
 
 // Apply ...
-func (i InstantDamage) Apply(e world.Entity, eff Effect) {
+func (i instantDamage) Apply(e world.Entity, eff Effect) {
 	base := 3 << eff.Level()
 	if l, ok := e.(living); ok {
 		l.Hurt(float64(base)*eff.potency, InstantDamageSource{})
@@ -18,11 +21,11 @@ func (i InstantDamage) Apply(e world.Entity, eff Effect) {
 }
 
 // RGBA ...
-func (InstantDamage) RGBA() color.RGBA {
+func (instantDamage) RGBA() color.RGBA {
 	return color.RGBA{R: 0x43, G: 0x0a, B: 0x09, A: 0xff}
 }
 
-// InstantDamageSource is used for damage caused by an effect.InstantDamage
+// InstantDamageSource is used for damage caused by an effect.instantDamage
 // applied to an entity.
 type InstantDamageSource struct{}
 

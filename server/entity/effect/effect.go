@@ -22,7 +22,7 @@ type Type interface {
 	// the colours will be mixed together to form a new colour.
 	RGBA() color.RGBA
 	// Apply applies the effect to an entity. Apply is called only once for
-	// instant effects, such as InstantHealth, while it is called every tick for
+	// instant effects, such as instantHealth, while it is called every tick for
 	// lasting effects. The Effect holding the Type is passed along with the
 	// current tick.
 	Apply(e world.Entity, eff Effect)
@@ -170,7 +170,7 @@ type living interface {
 	// healing, for example entity.FoodHealingSource if the entity healed by having a full food bar. If the health
 	// added to the original health exceeds the entity's max health, Heal may not add the full amount.
 	Heal(health float64, source world.HealingSource)
-	// Speed returns the current speed of the living entity. The default value is different for each entity.
+	// speed returns the current speed of the living entity. The default value is different for each entity.
 	Speed() float64
 	// SetSpeed sets the speed of an entity to a new value.
 	SetSpeed(float64)
