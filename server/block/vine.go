@@ -156,48 +156,14 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 	face := cube.Face(r.Intn(len(cube.Faces())))
 	selectedPos := pos.Side(face)
-	if face == cube.FaceUp || face == cube.FaceDown {
-		if selectedPos.OutOfBounds(tx.Range()) {
-			// Vines can't spread outside world bounds.
+	if selectedPos.OutOfBounds(tx.Range()) {
+		return
+	}
+
+	if face.Axis() != cube.Y && !v.Attachment(face.Direction()) {
+		if !v.canSpread(tx, pos) {
 			return
 		}
-
-		_, air := tx.Block(selectedPos).(Air)
-		newVines, vines := tx.Block(selectedPos).(Vines)
-		if face == cube.FaceUp {
-			if !air || !v.canSpread(tx, pos) {
-				// Vines can't spread upwards unless there is air.
-				return
-			}
-
-			for _, f := range cube.HorizontalFaces() {
-				if r.Intn(2) == 0 && v.canSpreadTo(tx, selectedPos.Side(f)) {
-					newVines = newVines.SetAttachment(f.Direction(), v.Attachment(f.Direction()))
-				}
-			}
-		} else if air {
-			for _, f := range cube.HorizontalFaces() {
-				if r.Intn(2) == 0 && v.Attachment(f.Direction()) {
-					newVines = newVines.SetAttachment(f.Direction(), true)
-				}
-			}
-		} else if vines {
-			var changed bool
-			for _, f := range cube.HorizontalFaces() {
-				if r.Intn(2) == 0 && v.Attachment(f.Direction()) && !newVines.Attachment(f.Direction()) {
-					newVines, changed = newVines.SetAttachment(f.Direction(), true), true
-				}
-			}
-			if changed {
-				tx.SetBlock(selectedPos, newVines, nil)
-			}
-			return
-		}
-
-		if len(newVines.Attachments()) > 0 {
-			tx.SetBlock(selectedPos, newVines, nil)
-		}
-	} else if !v.Attachment(face.Direction()) && v.canSpread(tx, pos) {
 		if _, ok := tx.Block(selectedPos).(Air); ok {
 			rightRotatedFace := face.RotateRight()
 			leftRotatedFace := face.RotateLeft()
@@ -220,6 +186,40 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 		} else if v.canSpreadTo(tx, selectedPos) {
 			tx.SetBlock(pos, v.SetAttachment(face.Direction(), true), nil)
 		}
+		return
+	}
+
+	_, air := tx.Block(selectedPos).(Air)
+	newVines := tx.Block(selectedPos).(Vines)
+	if face == cube.FaceUp {
+		if air {
+			if !v.canSpread(tx, pos) {
+				return
+			}
+			for _, f := range cube.HorizontalFaces() {
+				if r.Intn(2) == 0 && v.canSpreadTo(tx, selectedPos.Side(f)) {
+					newVines = newVines.SetAttachment(f.Direction(), v.Attachment(f.Direction()))
+				}
+			}
+			if len(newVines.Attachments()) > 0 {
+				tx.SetBlock(selectedPos, newVines, nil)
+			}
+			return
+		}
+	}
+
+	selectedPos = pos.Side(cube.FaceDown)
+	if selectedPos.OutOfBounds(tx.Range()) {
+		return
+	}
+	var changed bool
+	for _, f := range cube.HorizontalFaces() {
+		if r.Intn(2) == 0 && v.Attachment(f.Direction()) && !newVines.Attachment(f.Direction()) {
+			newVines, changed = newVines.SetAttachment(f.Direction(), true), true
+		}
+	}
+	if changed {
+		tx.SetBlock(selectedPos, newVines, nil)
 	}
 }
 
