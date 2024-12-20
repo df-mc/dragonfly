@@ -17,6 +17,10 @@ type Subscriber interface {
 	Message(a ...any)
 }
 
+type Translator interface {
+	Messaget(t Translation)
+}
+
 // StdoutSubscriber is an implementation of Subscriber that forwards messages
 // sent to the chat to the stdout.
 type StdoutSubscriber struct{}

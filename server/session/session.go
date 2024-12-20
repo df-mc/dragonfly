@@ -256,6 +256,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	s.chunkLoader.Close(tx)
 
 	if s.quitMessage != "" {
+		chat.Global.Writet(chat.QuitMessage.F(s.conn.IdentityData().DisplayName))
 		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
 	}
 	chat.Global.Unsubscribe(c)

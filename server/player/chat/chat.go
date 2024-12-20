@@ -40,6 +40,18 @@ func (chat *Chat) WriteString(s string) (n int, err error) {
 	return len(s), nil
 }
 
+func (chat *Chat) Writet(t Translation) {
+	chat.m.Lock()
+	defer chat.m.Unlock()
+	for _, subscriber := range chat.subscribers {
+		if translator, ok := subscriber.(Translator); ok {
+			translator.Messaget(t)
+			continue
+		}
+		subscriber.Message(t.String())
+	}
+}
+
 // Subscribe adds a subscriber to the chat, sending it every message written to
 // the chat. In order to remove it again, use Chat.Unsubscribe().
 func (chat *Chat) Subscribe(s Subscriber) {
