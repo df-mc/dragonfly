@@ -118,6 +118,10 @@ func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	if !used {
 		return false
 	}
+	if _, ok := tx.Block(pos).(Vines); ok {
+		// Do not overwrite existing vine block.
+		return false
+	}
 	//noinspection GoAssignmentToReceiver
 	v = v.SetAttachment(face.Direction().Opposite(), true)
 
