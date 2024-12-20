@@ -27,17 +27,17 @@ type Vines struct {
 }
 
 // CompostChance ...
-func (v Vines) CompostChance() float64 {
+func (Vines) CompostChance() float64 {
 	return 0.5
 }
 
 // SideClosed ...
-func (v Vines) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
+func (Vines) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // HasLiquidDrops ...
-func (v Vines) HasLiquidDrops() bool {
+func (Vines) HasLiquidDrops() bool {
 	return false
 }
 
@@ -190,8 +190,7 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 
 	if face == cube.FaceUp {
-		_, air := tx.Block(selectedPos).(Air)
-		if air {
+		if _, ok := tx.Block(selectedPos).(Air); ok {
 			if !v.canSpread(tx, pos) {
 				return
 			}
@@ -212,9 +211,8 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if selectedPos.OutOfBounds(tx.Range()) {
 		return
 	}
-	_, air := tx.Block(selectedPos).(Air)
 	newVines, vines := tx.Block(selectedPos).(Vines)
-	if !air && !vines {
+	if _, ok := tx.Block(selectedPos).(Air); !ok && !vines {
 		return
 	}
 	var changed bool
