@@ -1,6 +1,7 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -12,6 +13,16 @@ func (s *Session) SendMessage(message string) {
 	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeRaw,
 		Message:  message,
+	})
+}
+
+// SendTranslation ...
+func (s *Session) SendTranslation(t chat.Translation) {
+	s.writePacket(&packet.Text{
+		TextType:         packet.TextTypeTranslation,
+		NeedsTranslation: true,
+		Message:          t.Format(),
+		Parameters:       t.Params(),
 	})
 }
 

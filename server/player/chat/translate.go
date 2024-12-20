@@ -2,7 +2,6 @@ package chat
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 )
 
 var JoinMessage = translate("%multiplayer.player.joined", 1, "%v joined the game")
@@ -26,15 +25,25 @@ func (t Translatable) F(a ...any) Translation {
 	for i, arg := range a {
 		params[i] = fmt.Sprint(arg)
 	}
-	return Translation{format: t.format, fallback: t.fallback, params: params}
+	return Translation{format: t.format, fallback: t.fallback, params: params, fallbackParams: a}
 }
 
 type Translation struct {
-	format   string
-	fallback string
-	params   []string
+	format string
+	params []string
+
+	fallback       string
+	fallbackParams []any
+}
+
+func (t Translation) Format() string {
+	return t.format
+}
+
+func (t Translation) Params() []string {
+	return t.params
 }
 
 func (t Translation) String() string {
-	return fmt.Sprintf(t.fallback, sliceutil.Convert[any](t.params)...)
+	return fmt.Sprintf(t.fallback, t.fallbackParams...)
 }

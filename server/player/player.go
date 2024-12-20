@@ -223,6 +223,10 @@ func (p *Player) Messagef(f string, a ...any) {
 	p.session().SendMessage(fmt.Sprintf(f, a...))
 }
 
+func (p *Player) Messaget(t chat.Translation) {
+	p.session().SendTranslation(t)
+}
+
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
 // overwrites/is overwritten by the name of the item equipped.
 // The popup is formatted following the rules of fmt.Sprintln without a newline at the end.
