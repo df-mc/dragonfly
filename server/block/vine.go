@@ -130,7 +130,7 @@ func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	above, updated := tx.Block(pos.Side(cube.FaceUp)), false
 	for _, d := range v.Attachments() {
 		if _, ok := tx.Block(pos.Side(d.Face())).Model().(model.Solid); !ok {
-			if o, ok := above.(Vines); !ok || ok && !o.Attachment(d) {
+			if o, ok := above.(Vines); !ok || !o.Attachment(d) {
 				//noinspection GoAssignmentToReceiver
 				v = v.SetAttachment(d, false)
 				updated = true
@@ -140,7 +140,7 @@ func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !updated {
 		return
 	}
-	if _, ok := above.Model().(model.Solid); !ok && len(v.Attachments()) == 0 {
+	if len(v.Attachments()) == 0 {
 		tx.SetBlock(pos, nil, nil)
 		return
 	}
