@@ -189,13 +189,13 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 		return
 	}
 
-	_, air := tx.Block(selectedPos).(Air)
-	newVines := tx.Block(selectedPos).(Vines)
 	if face == cube.FaceUp {
+		_, air := tx.Block(selectedPos).(Air)
 		if air {
 			if !v.canSpread(tx, pos) {
 				return
 			}
+			newVines := Vines{}
 			for _, f := range cube.HorizontalFaces() {
 				if r.Intn(2) == 0 && v.canSpreadTo(tx, selectedPos.Side(f)) {
 					newVines = newVines.SetAttachment(f.Direction(), v.Attachment(f.Direction()))
@@ -210,6 +210,11 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 	selectedPos = pos.Side(cube.FaceDown)
 	if selectedPos.OutOfBounds(tx.Range()) {
+		return
+	}
+	_, air := tx.Block(selectedPos).(Air)
+	newVines, vines := tx.Block(selectedPos).(Vines)
+	if !air && !vines {
 		return
 	}
 	var changed bool
