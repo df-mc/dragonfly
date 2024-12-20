@@ -18,7 +18,7 @@ type Subscriber interface {
 }
 
 type Translator interface {
-	Messaget(t Translation)
+	Messaget(t Translatable, a ...any)
 }
 
 // StdoutSubscriber is an implementation of Subscriber that forwards messages

@@ -18,7 +18,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"github.com/sandertv/gophertunnel/minecraft/text"
 	"io"
 	"log/slog"
 	"net"
@@ -225,7 +224,7 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 
 	chat.Global.Subscribe(c)
 	if s.joinMessage != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
+		chat.Global.Writet(chat.MessageJoin, s.conn.IdentityData().DisplayName)
 	}
 
 	go s.background()
@@ -256,8 +255,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	s.chunkLoader.Close(tx)
 
 	if s.quitMessage != "" {
-		chat.Global.Writet(chat.QuitMessage.F(s.conn.IdentityData().DisplayName))
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
+		chat.Global.Writet(chat.MessageQuit, s.conn.IdentityData().DisplayName)
 	}
 	chat.Global.Unsubscribe(c)
 

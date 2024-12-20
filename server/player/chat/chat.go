@@ -40,15 +40,15 @@ func (chat *Chat) WriteString(s string) (n int, err error) {
 	return len(s), nil
 }
 
-func (chat *Chat) Writet(t Translation) {
+func (chat *Chat) Writet(t Translatable, a ...any) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
 	for _, subscriber := range chat.subscribers {
 		if translator, ok := subscriber.(Translator); ok {
-			translator.Messaget(t)
+			translator.Messaget(t, a...)
 			continue
 		}
-		subscriber.Message(t.String())
+		subscriber.Message(t.F(a...).String())
 	}
 }
 

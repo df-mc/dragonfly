@@ -223,8 +223,8 @@ func (p *Player) Messagef(f string, a ...any) {
 	p.session().SendMessage(fmt.Sprintf(f, a...))
 }
 
-func (p *Player) Messaget(t chat.Translation) {
-	p.session().SendTranslation(t)
+func (p *Player) Messaget(t chat.Translatable, a ...any) {
+	p.session().SendTranslation(t.F(a...))
 }
 
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and

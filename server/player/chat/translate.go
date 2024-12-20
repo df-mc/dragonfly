@@ -2,12 +2,13 @@ package chat
 
 import (
 	"fmt"
+	"github.com/sandertv/gophertunnel/minecraft/text"
 )
 
-var JoinMessage = translate("%multiplayer.player.joined", 1, "%v joined the game")
-var QuitMessage = translate("%multiplayer.player.left", 1, "%v left the game")
+var MessageJoin = Translate("%multiplayer.player.joined", 1, "%v joined the game").Enc("<yellow>%v</yellow>")
+var MessageQuit = Translate("%multiplayer.player.left", 1, "%v left the game").Enc("<yellow>%v</yellow>")
 
-func translate(format string, params int, fallback string) Translatable {
+func Translate(format string, params int, fallback string) Translatable {
 	return Translatable{format: format, params: params, fallback: fallback}
 }
 
@@ -15,6 +16,12 @@ type Translatable struct {
 	format   string
 	params   int
 	fallback string
+}
+
+func (t Translatable) Enc(format string) Translatable {
+	t.format = text.Colourf(format, t.format)
+	t.fallback = text.Colourf(format, t.fallback)
+	return t
 }
 
 func (t Translatable) F(a ...any) Translation {
