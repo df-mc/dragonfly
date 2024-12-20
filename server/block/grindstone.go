@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -60,8 +59,8 @@ func (g Grindstone) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 		supportFace = cube.FaceDown
 	}
 	if _, ok := tx.Block(pos.Side(supportFace)).Model().(model.Empty); ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
+		// Grindstone is pickaxeHarvestable, so don't use breakBlock() here.
+		breakBlockNoDrops(g, pos, tx)
 		dropItem(tx, item.NewStack(g, 1), pos.Vec3Centre())
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
 )
@@ -61,16 +60,10 @@ func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 func (b Banner) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if b.Attach.hanging {
 		if _, ok := tx.Block(pos.Side(b.Attach.facing.Opposite().Face())).(Air); ok {
-			tx.SetBlock(pos, nil, nil)
-			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-			dropItem(tx, item.NewStack(b, 1), pos.Vec3Centre())
+			breakBlock(b, pos, tx)
 		}
-		return
-	}
-	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-		dropItem(tx, item.NewStack(b, 1), pos.Vec3Centre())
+	} else if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
+		breakBlock(b, pos, tx)
 	}
 }
 

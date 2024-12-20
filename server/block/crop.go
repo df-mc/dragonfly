@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -26,13 +25,7 @@ type crop struct {
 // NeighbourUpdateTick ...
 func (c crop) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		b := tx.Block(pos)
-		tx.SetBlock(pos, nil, nil)
-		if breakable, ok := b.(Breakable); ok {
-			for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, []item.Enchantment{}) {
-				dropItem(tx, drop, pos.Vec3Centre())
-			}
-		}
+		breakBlock(tx.Block(pos), pos, tx)
 	}
 }
 

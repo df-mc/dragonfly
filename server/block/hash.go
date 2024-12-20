@@ -68,6 +68,7 @@ const (
 	hashEmeraldOre
 	hashEnchantingTable
 	hashEndBricks
+	hashEndRod
 	hashEndStone
 	hashEnderChest
 	hashFarmland
@@ -127,6 +128,7 @@ const (
 	hashObsidian
 	hashPackedIce
 	hashPackedMud
+	hashPinkPetals
 	hashPlanks
 	hashPodzol
 	hashPolishedBlackstoneBrick
@@ -448,6 +450,10 @@ func (EndBricks) Hash() (uint64, uint64) {
 	return hashEndBricks, 0
 }
 
+func (e EndRod) Hash() (uint64, uint64) {
+	return hashEndRod, uint64(e.Facing)
+}
+
 func (EndStone) Hash() (uint64, uint64) {
 	return hashEndStone, 0
 }
@@ -682,6 +688,10 @@ func (PackedIce) Hash() (uint64, uint64) {
 
 func (PackedMud) Hash() (uint64, uint64) {
 	return hashPackedMud, 0
+}
+
+func (p PinkPetals) Hash() (uint64, uint64) {
+	return hashPinkPetals, uint64(p.AdditionalCount) | uint64(p.Facing)<<8
 }
 
 func (p Planks) Hash() (uint64, uint64) {

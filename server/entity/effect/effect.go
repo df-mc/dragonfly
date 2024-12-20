@@ -6,48 +6,54 @@ import (
 	"time"
 )
 
-// LastingType represents an effect type that can have a duration. An effect can be made using it by calling effect.New
-// with the LastingType.
+// LastingType represents an effect type that can have a duration. An effect
+// can be made using it by calling effect.New with the LastingType.
 type LastingType interface {
 	Type
-	// Start is called for lasting effects when they are initially added to an entity.
+	// Start is called for lasting effects when they are initially added.
 	Start(e world.Entity, lvl int)
-	// End is called for lasting effects when they are removed from an entity.
+	// End is called for lasting effects when they are removed.
 	End(e world.Entity, lvl int)
-}
-
-// PotentType represents an effect type which can have its potency changed.
-type PotentType interface {
-	Type
-	// WithPotency updates the potency of the type with the one given and returns it.
-	WithPotency(potency float64) Type
 }
 
 // Type is an effect implementation that can be applied to an entity.
 type Type interface {
-	// RGBA returns the colour of the effect. If multiple effects are present, the colours will be mixed
-	// together to form a new colour.
+	// RGBA returns the colour of the effect. If multiple effects are present,
+	// the colours will be mixed together to form a new colour.
 	RGBA() color.RGBA
-	// Apply applies the effect to an entity. This method applies the effect to an entity once for instant effects, such
-	// as healing the world.Entity for instant health.
-	// Apply always has a duration of 0 passed to it for instant effect implementations. For lasting effects that
-	// implement LastingType, the appropriate leftover duration is passed.
-	Apply(e world.Entity, lvl int, d time.Duration)
+	// Apply applies the effect to an entity. Apply is called only once for
+	// instant effects, such as instantHealth, while it is called every tick for
+	// lasting effects. The Effect holding the Type is passed along with the
+	// current tick.
+	Apply(e world.Entity, eff Effect)
 }
 
-// Effect is an effect that can be added to an entity. Effects are either instant (applying the effect only once) or
-// lasting (applying the effect every tick).
+// Effect is an effect that can be added to an entity. Effects are either
+// instant (applying the effect only once) or lasting (applying the effect
+// every tick).
 type Effect struct {
 	t                        Type
 	d                        time.Duration
 	lvl                      int
+	potency                  float64
 	ambient, particlesHidden bool
+	tick                     int
 }
 
-// NewInstant returns a new instant Effect using the Type passed. The effect will be applied to an entity once
-// and will expire immediately after.
+// NewInstant returns a new instant Effect using the Type passed. The effect
+// will be applied to an entity once and will expire immediately after.
+// NewInstant creates an Effect with a potency of 1.0.
 func NewInstant(t Type, lvl int) Effect {
-	return Effect{t: t, lvl: lvl}
+	return NewInstantWithPotency(t, lvl, 1)
+}
+
+// NewInstantWithPotency returns a new instant Effect using the Type and level
+// passed. The effect will be applied to an entity once and expire immediately
+// after. The potency passed additionally influences the strength of the effect.
+// A higher potency (> 1.0) increases the effect power, while a lower potency
+// (< 1.0) reduces it.
+func NewInstantWithPotency(t Type, lvl int, potency float64) Effect {
+	return Effect{t: t, lvl: lvl, potency: potency}
 }
 
 // New creates a new Effect using a LastingType passed. Once added to an entity, the time.Duration passed will be ticked down
@@ -102,21 +108,23 @@ func (e Effect) Type() Type {
 func (e Effect) TickDuration() Effect {
 	if _, ok := e.t.(LastingType); ok {
 		e.d -= time.Second / 20
+		e.tick++
 	}
 	return e
+}
+
+// Tick returns the current tick of the Effect. This is the number of ticks that
+// the Effect has been applied for.
+func (e Effect) Tick() int {
+	return e.tick
 }
 
 // nopLasting is a lasting effect with no (server-side) behaviour. It does not implement the RGBA method.
 type nopLasting struct{}
 
-func (nopLasting) Apply(world.Entity, int, time.Duration) {}
-func (nopLasting) End(world.Entity, int)                  {}
-func (nopLasting) Start(world.Entity, int)                {}
-
-// tickDuration returns the duration as in-game ticks.
-func tickDuration(d time.Duration) int {
-	return int(d / (time.Second / 20))
-}
+func (nopLasting) Apply(world.Entity, Effect) {}
+func (nopLasting) End(world.Entity, int)      {}
+func (nopLasting) Start(world.Entity, int)    {}
 
 // ResultingColour calculates the resulting colour of the effects passed and returns a bool specifying if the
 // effects were ambient effects, which will cause their particles to display less frequently.
@@ -125,8 +133,8 @@ func ResultingColour(effects []Effect) (color.RGBA, bool) {
 	ambient := true
 	for _, e := range effects {
 		if e.particlesHidden {
-			// Don't take effects with hidden particles into account for colour calculation: Their particles are hidden
-			// after all.
+			// Don't take effects with hidden particles into account for colour
+			// calculation: Their particles are hidden after all.
 			continue
 		}
 		c := e.Type().RGBA()
@@ -162,7 +170,7 @@ type living interface {
 	// healing, for example entity.FoodHealingSource if the entity healed by having a full food bar. If the health
 	// added to the original health exceeds the entity's max health, Heal may not add the full amount.
 	Heal(health float64, source world.HealingSource)
-	// Speed returns the current speed of the living entity. The default value is different for each entity.
+	// speed returns the current speed of the living entity. The default value is different for each entity.
 	Speed() float64
 	// SetSpeed sets the speed of an entity to a new value.
 	SetSpeed(float64)

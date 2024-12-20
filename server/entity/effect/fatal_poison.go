@@ -3,22 +3,21 @@ package effect
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
-	"time"
 )
 
-// FatalPoison is a lasting effect that causes the affected entity to lose health gradually. FatalPoison,
-// unlike Poison, can kill the entity it is applied to.
-type FatalPoison struct {
+// FatalPoison is a lasting effect that causes the affected entity to lose
+// health gradually. fatalPoison, unlike poison, can kill the entity it is
+// applied to.
+var FatalPoison fatalPoison
+
+type fatalPoison struct {
 	nopLasting
 }
 
 // Apply ...
-func (FatalPoison) Apply(e world.Entity, lvl int, d time.Duration) {
-	interval := 50 >> (lvl - 1)
-	if interval < 1 {
-		interval = 1
-	}
-	if tickDuration(d)%interval == 0 {
+func (fatalPoison) Apply(e world.Entity, eff Effect) {
+	interval := max(50>>(eff.Level()-1), 1)
+	if eff.Tick()%interval == 0 {
 		if l, ok := e.(living); ok {
 			l.Hurt(1, PoisonDamageSource{Fatal: true})
 		}
@@ -26,6 +25,6 @@ func (FatalPoison) Apply(e world.Entity, lvl int, d time.Duration) {
 }
 
 // RGBA ...
-func (FatalPoison) RGBA() color.RGBA {
+func (fatalPoison) RGBA() color.RGBA {
 	return color.RGBA{R: 0x4e, G: 0x93, B: 0x31, A: 0xff}
 }

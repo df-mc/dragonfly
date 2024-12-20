@@ -51,8 +51,8 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, t
 
 				splashed := otherE.(Living)
 				for _, eff := range effects {
-					if p, ok := eff.Type().(effect.PotentType); ok {
-						splashed.AddEffect(effect.NewInstant(p.WithPotency(f), eff.Level()))
+					if _, ok := eff.Type().(effect.LastingType); !ok {
+						splashed.AddEffect(effect.NewInstantWithPotency(eff.Type(), eff.Level(), f))
 						continue
 					}
 

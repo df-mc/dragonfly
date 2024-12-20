@@ -4,13 +4,15 @@ import (
 	"image/color"
 )
 
-// NightVision is a lasting effect that causes the affected entity to see in dark places as though they were
-// fully lit up.
-type NightVision struct {
+// NightVision is a lasting effect that causes the affected entity to see in
+// dark places as though they were fully lit up.
+var NightVision nightVision
+
+type nightVision struct {
 	nopLasting
 }
 
 // RGBA ...
-func (NightVision) RGBA() color.RGBA {
+func (nightVision) RGBA() color.RGBA {
 	return color.RGBA{R: 0x1f, G: 0x1f, B: 0xa1, A: 0xff}
 }
