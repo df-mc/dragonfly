@@ -224,7 +224,7 @@ func (p *Player) Messagef(f string, a ...any) {
 }
 
 func (p *Player) Messaget(t chat.Translatable, a ...any) {
-	p.session().SendTranslation(t.F(a...))
+	p.session().SendTranslation(t.F(a...), p.locale)
 }
 
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and

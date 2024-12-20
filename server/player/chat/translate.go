@@ -3,23 +3,33 @@ package chat
 import (
 	"fmt"
 	"github.com/sandertv/gophertunnel/minecraft/text"
+	"golang.org/x/text/language"
 )
 
-var MessageJoin = Translate("%multiplayer.player.joined", 1, "%v joined the game").Enc("<yellow>%v</yellow>")
-var MessageQuit = Translate("%multiplayer.player.left", 1, "%v left the game").Enc("<yellow>%v</yellow>")
+var MessageJoin = Translate(str("%multiplayer.player.joined"), 1, "%v joined the game").Enc("<yellow>%v</yellow>")
+var MessageQuit = Translate(str("%multiplayer.player.left"), 1, "%v left the game").Enc("<yellow>%v</yellow>")
 
-func Translate(format string, params int, fallback string) Translatable {
-	return Translatable{format: format, params: params, fallback: fallback}
+type str string
+
+func (s str) Resolve(language.Tag) string { return string(s) }
+
+type TranslationString interface {
+	Resolve(l language.Tag) string
+}
+
+func Translate(str TranslationString, params int, fallback string) Translatable {
+	return Translatable{str: str, params: params, fallback: fallback}
 }
 
 type Translatable struct {
+	str      TranslationString
 	format   string
 	params   int
 	fallback string
 }
 
 func (t Translatable) Enc(format string) Translatable {
-	t.format = text.Colourf(format, t.format)
+	t.format = format
 	t.fallback = text.Colourf(format, t.fallback)
 	return t
 }
@@ -32,10 +42,11 @@ func (t Translatable) F(a ...any) Translation {
 	for i, arg := range a {
 		params[i] = fmt.Sprint(arg)
 	}
-	return Translation{format: t.format, fallback: t.fallback, params: params, fallbackParams: a}
+	return Translation{str: t.str, format: t.format, fallback: t.fallback, params: params, fallbackParams: a}
 }
 
 type Translation struct {
+	str    TranslationString
 	format string
 	params []string
 
@@ -43,8 +54,8 @@ type Translation struct {
 	fallbackParams []any
 }
 
-func (t Translation) Format() string {
-	return t.format
+func (t Translation) Format(l language.Tag) string {
+	return text.Colourf(t.format, t.str.Resolve(l))
 }
 
 func (t Translation) Params() []string {
@@ -52,5 +63,5 @@ func (t Translation) Params() []string {
 }
 
 func (t Translation) String() string {
-	return fmt.Sprintf(t.fallback, t.fallbackParams...)
+	return fmt.Sprintf(text.Colourf(t.format, t.fallback), t.fallbackParams...)
 }

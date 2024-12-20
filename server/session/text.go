@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"golang.org/x/text/language"
 	"time"
 )
 
@@ -17,11 +18,11 @@ func (s *Session) SendMessage(message string) {
 }
 
 // SendTranslation ...
-func (s *Session) SendTranslation(t chat.Translation) {
+func (s *Session) SendTranslation(t chat.Translation, l language.Tag) {
 	s.writePacket(&packet.Text{
 		TextType:         packet.TextTypeTranslation,
 		NeedsTranslation: true,
-		Message:          t.Format(),
+		Message:          t.Format(l),
 		Parameters:       t.Params(),
 	})
 }
