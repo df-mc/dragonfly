@@ -223,6 +223,9 @@ func (p *Player) Messagef(f string, a ...any) {
 	p.session().SendMessage(fmt.Sprintf(f, a...))
 }
 
+// Messaget sends a translatable message to a player and parameterises it using
+// the arguments passed. Messaget panics if an incorrect amount of arguments
+// is passed.
 func (p *Player) Messaget(t chat.Translatable, a ...any) {
 	p.session().SendTranslation(t.F(a...), p.locale)
 }

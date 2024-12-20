@@ -17,7 +17,7 @@ func (s *Session) SendMessage(message string) {
 	})
 }
 
-// SendTranslation ...
+// SendTranslation sends a translation localised for a specific language.Tag.
 func (s *Session) SendTranslation(t chat.Translation, l language.Tag) {
 	s.writePacket(&packet.Text{
 		TextType:         packet.TextTypeTranslation,
