@@ -200,8 +200,8 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 			}
 			newVines := Vines{}
 			for _, f := range cube.HorizontalFaces() {
-				if r.Intn(2) == 0 && v.canSpreadTo(tx, selectedPos.Side(f)) {
-					newVines = newVines.SetAttachment(f.Direction(), v.Attachment(f.Direction()))
+				if r.Intn(2) == 0 && v.Attachment(f.Direction()) && v.canSpreadTo(tx, selectedPos.Side(f)) {
+					newVines = newVines.SetAttachment(f.Direction(), true)
 				}
 			}
 			if len(newVines.Attachments()) > 0 {
