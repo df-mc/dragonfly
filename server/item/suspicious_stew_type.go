@@ -93,23 +93,23 @@ func (s stewType) Effects() []effect.Effect {
 	var effects []effect.Effect
 	switch s.Uint8() {
 	case 0, 10:
-		effects = append(effects, effect.New(effect.NightVision, 1, time.Second*4))
+		effects = append(effects, effect.New(effect.NightVision, 1, time.Second*5))
 	case 1:
-		effects = append(effects, effect.New(effect.JumpBoost, 1, time.Second*4))
+		effects = append(effects, effect.New(effect.JumpBoost, 1, time.Second*5))
 	case 2:
 		effects = append(effects, effect.New(effect.Weakness, 1, time.Second*7))
 	case 3, 11:
 		effects = append(effects, effect.New(effect.Blindness, 1, time.Second*6))
 	case 4:
-		effects = append(effects, effect.New(effect.Poison, 1, time.Second*10))
+		effects = append(effects, effect.New(effect.Poison, 1, time.Second*11))
 	case 5, 6:
 		effects = append(effects, effect.New(effect.Saturation, 1, time.Second*3/10))
 	case 7:
-		effects = append(effects, effect.New(effect.FireResistance, 1, time.Second*2))
+		effects = append(effects, effect.New(effect.FireResistance, 1, time.Second*3))
 	case 8:
-		effects = append(effects, effect.New(effect.Regeneration, 1, time.Second*6))
+		effects = append(effects, effect.New(effect.Regeneration, 1, time.Second*7))
 	case 9:
-		effects = append(effects, effect.New(effect.Wither, 1, time.Second*6))
+		effects = append(effects, effect.New(effect.Wither, 1, time.Second*7))
 	case 12:
 		effects = append(effects, effect.New(effect.Nausea, 1, time.Second*7))
 	default:
