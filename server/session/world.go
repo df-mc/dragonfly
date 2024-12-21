@@ -718,8 +718,6 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventCrossbowLoadingStart
 	case sound.CrossbowLoadingMiddle:
 		pk.SoundType = packet.SoundEventCrossbowLoadingMiddle
-	case sound.CrossbowLoadingEnd:
-		pk.SoundType = packet.SoundEventCrossbowLoadingEnd
 	case sound.ArrowHit:
 		pk.SoundType = packet.SoundEventBowHit
 	case sound.ItemThrow:

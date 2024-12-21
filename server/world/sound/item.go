@@ -53,11 +53,8 @@ type CrossbowShoot struct{ sound }
 // CrossbowLoadingStart is a sound played when a crossbow is starting to load.
 type CrossbowLoadingStart struct{ sound }
 
-// CrossbowLoadingMiddle is a sound played when a crossbow is in the middle of load.
+// CrossbowLoadingMiddle is a sound played while a crossbow is loading and when a crossbow stops loading.
 type CrossbowLoadingMiddle struct{ sound }
-
-// CrossbowLoadingEnd is a sound played when a crossbow is at the end of loading.
-type CrossbowLoadingEnd struct{ sound }
 
 // ArrowHit is a sound played when an arrow hits ground.
 type ArrowHit struct{ sound }

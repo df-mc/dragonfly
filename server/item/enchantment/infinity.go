@@ -44,5 +44,6 @@ func (infinity) CompatibleWithEnchantment(t item.EnchantmentType) bool {
 // CompatibleWithItem ...
 func (infinity) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Bow)
-	return ok
+	_, ok2 := i.(item.Crossbow)
+	return ok || ok2
 }

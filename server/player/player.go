@@ -1371,6 +1371,8 @@ func (p *Player) UseItem() {
 		if !p.usingItem {
 			if !chargeable.ReleaseCharge(p, p.tx, p.useContext()) {
 				// If the item was not charged yet, start charging.
+				p.PlaySound(sound.CrossbowLoadingStart{})
+
 				p.usingSince, p.usingItem = time.Now(), true
 				p.updateState()
 			}

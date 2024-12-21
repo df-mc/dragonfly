@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"time"
 	_ "unsafe"
 )
@@ -22,17 +23,22 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 	creative := releaser.GameMode().CreativeInventory()
 	held, left := releaser.HeldItems()
 
-	chargeDuration := time.Duration(1.25 * float64(time.Second))
+	chargeDuration, consume := time.Duration(1.25*float64(time.Second)), !creative
 	for _, enchant := range held.Enchantments() {
 		if q, ok := enchant.Type().(interface{ DurationReduction(int) time.Duration }); ok {
 			chargeDuration = min(chargeDuration, q.DurationReduction(enchant.Level()))
+		}
+		if i, ok := enchant.Type().(interface{ ConsumesArrows() bool }); ok && !i.ConsumesArrows() {
+			consume = false
 		}
 	}
 
 	if duration >= chargeDuration {
 		var projectileItem Stack
 		if !left.Empty() {
-			if _, isFirework := left.Item().(Firework); isFirework {
+			_, isFirework := left.Item().(Firework)
+			_, isArrow := left.Item().(Arrow)
+			if isFirework || isArrow {
 				projectileItem = left
 			}
 		}
@@ -53,13 +59,14 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 			}
 		}
 
-		c.Item = projectileItem.Grow(-projectileItem.Count() + 1)
-		if !creative {
-			ctx.Consume(c.Item)
+		c.Item = NewStack(projectileItem.Item(), 1)
+		if consume {
+			ctx.Consume(projectileItem.Grow(-projectileItem.Count() + 1))
 		}
 
 		crossbow := newCrossbowWith(held, c)
 		releaser.SetHeldItems(crossbow, left)
+		releaser.PlaySound(sound.CrossbowLoadingMiddle{})
 		return true
 	}
 	return false
@@ -79,10 +86,12 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		createFirework := tx.World().EntityRegistry().Config().Firework
 		fireworkEntity := createFirework(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(1.5),
+			Velocity: dirVec.Mul(0.5),
 			Rotation: rot,
 		}, firework, releaser, false)
 		tx.AddEntity(fireworkEntity)
+
+		ctx.DamageItem(3)
 	} else {
 		createArrow := tx.World().EntityRegistry().Config().Arrow
 		arrow := createArrow(world.EntitySpawnOpts{
@@ -91,13 +100,15 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 			Rotation: rot,
 		}, 9, releaser, true, false, !creative, 0, potion.Potion{})
 		tx.AddEntity(arrow)
+
+		ctx.DamageItem(1)
 	}
 
-	ctx.DamageItem(1)
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
 	crossbow := newCrossbowWith(held, c)
 	releaser.SetHeldItems(crossbow, left)
+	releaser.PlaySound(sound.CrossbowShoot{})
 	return true
 }
 
