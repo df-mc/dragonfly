@@ -62,12 +62,12 @@ type Config struct {
 	// MaxChunkRadius is the maximum view distance that each player may have,
 	// measured in chunks. A chunk radius generally leads to more memory usage.
 	MaxChunkRadius int
-	// JoinMessage, QuitMessage and ShutdownMessage are the messages to send for
-	// when a player joins or quits the server and when the server shuts down,
-	// kicking all online players. JoinMessage and QuitMessage may have a '%v'
-	// argument, which will be replaced with the name of the player joining or
-	// quitting.
-	JoinMessage, QuitMessage, ShutdownMessage string
+	// DisableJoinQuitMessages specifies if join/quit messages should be
+	// broadcast when players join the server.
+	DisableJoinQuitMessages bool
+	// ShutdownMessage is the message sent when the server shuts down, kicking
+	// all online players.
+	ShutdownMessage string
 	// StatusProvider provides the server status shown to players in the server
 	// list. By default, StatusProvider will show the server name from the Name
 	// field and the current player count and maximum players.
@@ -191,14 +191,9 @@ type UserConfig struct {
 		// AuthEnabled controls whether players must be connected to Xbox Live
 		// in order to join the server.
 		AuthEnabled bool
-		// JoinMessage is the message that appears when a player joins the
-		// server. Leave this empty to disable it. %v is the placeholder for the
-		// username of the player
-		JoinMessage string
-		// QuitMessage is the message that appears when a player leaves the
-		// server. Leave this empty to disable it. %v is the placeholder for the
-		// username of the player
-		QuitMessage string
+		// DisableJoinQuitMessages specifies if the default join/quit messages
+		// should be broadcast when players join/quit the server.
+		DisableJoinQuitMessages bool
 	}
 	World struct {
 		// SaveData controls whether a world's data will be saved and loaded.
@@ -254,8 +249,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		AuthDisabled:            !uc.Server.AuthEnabled,
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
-		JoinMessage:             uc.Server.JoinMessage,
-		QuitMessage:             uc.Server.QuitMessage,
+		DisableJoinQuitMessages: uc.Server.DisableJoinQuitMessages,
 		ShutdownMessage:         uc.Server.ShutdownMessage,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
 	}
@@ -319,8 +313,6 @@ func DefaultConfig() UserConfig {
 	c.Server.Name = "Dragonfly Server"
 	c.Server.ShutdownMessage = "Server closed."
 	c.Server.AuthEnabled = true
-	c.Server.JoinMessage = "%v has joined the game"
-	c.Server.QuitMessage = "%v has left the game"
 	c.World.SaveData = true
 	c.World.Folder = "world"
 	c.Players.MaximumChunkRadius = 32

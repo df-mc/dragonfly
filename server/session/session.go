@@ -82,8 +82,6 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	joinMessage, quitMessage string
-
 	closeBackground chan struct{}
 }
 
@@ -132,7 +130,7 @@ type Config struct {
 
 	MaxChunkRadius int
 
-	JoinMessage, QuitMessage string
+	DisableJoinQuitMessages bool
 
 	HandleStop func(*world.Tx, Controllable)
 }
@@ -162,8 +160,6 @@ func (conf Config) New(conn Conn) *Session {
 		conn:                   conn,
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
-		joinMessage:            conf.JoinMessage,
-		quitMessage:            conf.QuitMessage,
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
 	}
@@ -223,7 +219,7 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 
 	chat.Global.Subscribe(c)
-	if s.joinMessage != "" {
+	if !s.conf.DisableJoinQuitMessages {
 		chat.Global.Writet(chat.MessageJoin, s.conn.IdentityData().DisplayName)
 	}
 
@@ -254,7 +250,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	s.chunkLoader.Close(tx)
 
-	if s.quitMessage != "" {
+	if !s.conf.DisableJoinQuitMessages {
 		chat.Global.Writet(chat.MessageQuit, s.conn.IdentityData().DisplayName)
 	}
 	chat.Global.Unsubscribe(c)
