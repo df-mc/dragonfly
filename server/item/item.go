@@ -158,7 +158,7 @@ type Releasable interface {
 // Chargeable represents an item that can be charged.
 type Chargeable interface {
 	// Charge is called when an item is being used.
-	Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration)
+	Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) bool
 	// ReleaseCharge is called when an item is being released.
 	ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
 }

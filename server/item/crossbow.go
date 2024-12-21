@@ -14,9 +14,9 @@ type Crossbow struct {
 }
 
 // Charge starts the charging process and checks if the charge duration meets the required duration.
-func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
+func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) bool {
 	if !c.Item.Empty() {
-		return
+		return false
 	}
 
 	creative := releaser.GameMode().CreativeInventory()
@@ -45,7 +45,7 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 			})
 
 			if !ok && !creative {
-				return
+				return false
 			}
 
 			if projectileItem.Empty() {
@@ -60,7 +60,9 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 
 		crossbow := newCrossbowWith(held, c)
 		releaser.SetHeldItems(crossbow, left)
+		return true
 	}
+	return false
 }
 
 // ReleaseCharge checks if the item is fully charged and, if so, releases it.

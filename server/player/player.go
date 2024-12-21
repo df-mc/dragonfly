@@ -1379,7 +1379,9 @@ func (p *Player) UseItem() {
 
 		// Stop charging and determine if the item is ready.
 		p.usingItem = false
-		chargeable.Charge(p, p.tx, p.useContext(), time.Since(p.usingSince))
+		if chargeable.Charge(p, p.tx, p.useContext(), time.Since(p.usingSince)) {
+			p.session().SendCrossbowChargeComplete()
+		}
 		p.updateState()
 	}
 

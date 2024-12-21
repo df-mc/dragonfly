@@ -725,6 +725,14 @@ func (s *Session) SendExperience(level int, progress float64) {
 	})
 }
 
+// SendCrossbowChargeComplete sends a packet to indicate that the crossbow charging process has been completed.
+func (s *Session) SendCrossbowChargeComplete() {
+	s.writePacket(&packet.ActorEvent{
+		EntityRuntimeID: selfEntityRuntimeID,
+		EventType:       packet.ActorEventFinishedChargingItem,
+	})
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
