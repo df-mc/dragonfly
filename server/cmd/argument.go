@@ -23,6 +23,7 @@ type Line struct {
 	src  Source
 }
 
+// SyntaxError returns a translated syntax error.
 func (line *Line) SyntaxError() error {
 	if len(line.args) == 0 {
 		return chat.MessageCommandSyntax.F(line.seen, "", "")
