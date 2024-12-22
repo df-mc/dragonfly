@@ -254,8 +254,12 @@ func (s *Session) invByID(id int32, tx *world.Tx) (*inventory.Inventory, bool) {
 			return nil, false
 		}
 		switch id {
-		case protocol.ContainerLevelEntity, protocol.ContainerShulkerBox:
+		case protocol.ContainerLevelEntity:
 			return s.openedWindow.Load(), true
+		case protocol.ContainerShulkerBox:
+			if _, shulkerbox := tx.Block(*s.openedPos.Load()).(block.ShulkerBox); shulkerbox {
+				return s.openedWindow.Load(), true
+			}
 		case protocol.ContainerBarrel:
 			if _, barrel := tx.Block(*s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
