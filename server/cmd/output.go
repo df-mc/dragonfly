@@ -20,6 +20,12 @@ func (o *Output) Errorf(format string, a ...any) {
 
 // Error formats an error message and adds it to the command output.
 func (o *Output) Error(a ...any) {
+	if len(a) == 1 {
+		if err, ok := a[0].(error); ok {
+			o.errors = append(o.errors, err)
+			return
+		}
+	}
 	o.errors = append(o.errors, errors.New(fmt.Sprint(a...)))
 }
 

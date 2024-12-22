@@ -330,7 +330,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	command, ok := cmd.ByAlias(args[0][1:])
 	if !ok {
 		o := &cmd.Output{}
-		o.Errorf("Unknown command: %v. Please check that the command exists and that you have permission to use it.", args[0])
+		o.Errort(chat.MessageCommandUnknown, args[0])
 		p.SendCommandOutput(o)
 		return
 	}
