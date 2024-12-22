@@ -142,7 +142,7 @@ func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // BreakInfo ...
 func (s ShulkerBox) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(10)
+	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, oneOf(s))
 }
 
 // MaxCount always returns 1.
