@@ -25,7 +25,7 @@ func (wither) Apply(e world.Entity, eff Effect) {
 
 // RGBA ...
 func (wither) RGBA() color.RGBA {
-	return color.RGBA{R: 0x35, G: 0x2a, B: 0x27, A: 0xff}
+	return color.RGBA{R: 0x73, G: 0x61, B: 0x56, A: 0xff}
 }
 
 // WitherDamageSource is used for damage caused by an effect.wither applied
