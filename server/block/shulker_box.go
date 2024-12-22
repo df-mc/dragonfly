@@ -130,7 +130,7 @@ func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, CloseAction{})
 	}
-	tx.ScheduleBlockUpdate(pos, time.Millisecond*50*9)
+	tx.ScheduleBlockUpdate(pos, s, time.Millisecond*50*9)
 }
 
 // ScheduledTick ...
