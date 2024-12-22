@@ -5,11 +5,13 @@ import (
 )
 
 // FireResistance is a lasting effect that grants immunity to fire & lava damage.
-type FireResistance struct {
+var FireResistance fireResistance
+
+type fireResistance struct {
 	nopLasting
 }
 
 // RGBA ...
-func (FireResistance) RGBA() color.RGBA {
+func (fireResistance) RGBA() color.RGBA {
 	return color.RGBA{R: 0xe4, G: 0x9a, B: 0x3a, A: 0xff}
 }

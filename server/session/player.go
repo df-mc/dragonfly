@@ -203,7 +203,7 @@ func (s *Session) sendArmourTrimData() {
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
 		WindowID: windowID,
-		Content:  make([]protocol.ItemInstance, 0, s.inv.Size()),
+		Content:  make([]protocol.ItemInstance, 0, inv.Size()),
 	}
 	for _, i := range inv.Slots() {
 		pk.Content = append(pk.Content, instanceFromItem(i))

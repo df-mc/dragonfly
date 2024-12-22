@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -20,21 +19,14 @@ type DeadBush struct {
 // NeighbourUpdateTick ...
 func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
-		if amount := rand.Intn(3); amount != 0 {
-			dropItem(tx, item.NewStack(item.Stick{}, amount), pos.Vec3Centre())
-		}
+		breakBlock(d, pos, tx)
 	}
 }
 
 // UseOnBlock ...
 func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, d)
-	if !used {
-		return false
-	}
-	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
+	if !used || !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 

@@ -68,6 +68,7 @@ const (
 	hashEmeraldOre
 	hashEnchantingTable
 	hashEndBricks
+	hashEndRod
 	hashEndStone
 	hashEnderChest
 	hashFarmland
@@ -127,6 +128,7 @@ const (
 	hashObsidian
 	hashPackedIce
 	hashPackedMud
+	hashPinkPetals
 	hashPlanks
 	hashPodzol
 	hashPolishedBlackstoneBrick
@@ -144,6 +146,8 @@ const (
 	hashRawGold
 	hashRawIron
 	hashReinforcedDeepslate
+	hashResin
+	hashResinBricks
 	hashSand
 	hashSandstone
 	hashSeaLantern
@@ -447,6 +451,10 @@ func (EndBricks) Hash() (uint64, uint64) {
 	return hashEndBricks, 0
 }
 
+func (e EndRod) Hash() (uint64, uint64) {
+	return hashEndRod, uint64(e.Facing)
+}
+
 func (EndStone) Hash() (uint64, uint64) {
 	return hashEndStone, 0
 }
@@ -683,6 +691,10 @@ func (PackedMud) Hash() (uint64, uint64) {
 	return hashPackedMud, 0
 }
 
+func (p PinkPetals) Hash() (uint64, uint64) {
+	return hashPinkPetals, uint64(p.AdditionalCount) | uint64(p.Facing)<<8
+}
+
 func (p Planks) Hash() (uint64, uint64) {
 	return hashPlanks, uint64(p.Wood.Uint8())
 }
@@ -749,6 +761,14 @@ func (RawIron) Hash() (uint64, uint64) {
 
 func (ReinforcedDeepslate) Hash() (uint64, uint64) {
 	return hashReinforcedDeepslate, 0
+}
+
+func (Resin) Hash() (uint64, uint64) {
+	return hashResin, 0
+}
+
+func (r ResinBricks) Hash() (uint64, uint64) {
+	return hashResinBricks, uint64(boolByte(r.Chiseled))
 }
 
 func (s Sand) Hash() (uint64, uint64) {

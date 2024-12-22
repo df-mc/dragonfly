@@ -10,6 +10,8 @@ import (
 type Leggings struct {
 	// Tier is the tier of the leggings.
 	Tier ArmourTier
+	// Trim specifies the trim of the armour.
+	Trim ArmourTrim
 }
 
 // Use handles the auto-equipping of leggings in an armour slot by using the item.
@@ -84,6 +86,12 @@ func (l Leggings) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
+// WithTrim ...
+func (l Leggings) WithTrim(trim ArmourTrim) world.Item {
+	l.Trim = trim
+	return l
+}
+
 // EncodeItem ...
 func (l Leggings) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + l.Tier.Name() + "_leggings", 0
@@ -97,13 +105,16 @@ func (l Leggings) DecodeNBT(data map[string]any) any {
 			l.Tier = t
 		}
 	}
+	l.Trim = readTrim(data)
 	return l
 }
 
 // EncodeNBT ...
 func (l Leggings) EncodeNBT() map[string]any {
+	m := map[string]any{}
 	if t, ok := l.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
-		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+		m["customColor"] = int32FromRGBA(t.Colour)
 	}
-	return nil
+	writeTrim(m, l.Trim)
+	return m
 }

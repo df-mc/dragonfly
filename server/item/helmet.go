@@ -10,6 +10,8 @@ import (
 type Helmet struct {
 	// Tier is the tier of the armour.
 	Tier ArmourTier
+	// Trim specifies the trim of the armour.
+	Trim ArmourTrim
 }
 
 // Use handles the using of a helmet to auto-equip it in an armour slot.
@@ -80,6 +82,12 @@ func (h Helmet) Helmet() bool {
 	return true
 }
 
+// WithTrim ...
+func (h Helmet) WithTrim(trim ArmourTrim) world.Item {
+	h.Trim = trim
+	return h
+}
+
 // EncodeItem ...
 func (h Helmet) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + h.Tier.Name() + "_helmet", 0
@@ -93,13 +101,38 @@ func (h Helmet) DecodeNBT(data map[string]any) any {
 			h.Tier = t
 		}
 	}
+	h.Trim = readTrim(data)
 	return h
 }
 
 // EncodeNBT ...
 func (h Helmet) EncodeNBT() map[string]any {
+	m := map[string]any{}
 	if t, ok := h.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
-		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+		m["customColor"] = int32FromRGBA(t.Colour)
 	}
-	return nil
+	writeTrim(m, h.Trim)
+	return m
+}
+
+func readTrim(m map[string]any) ArmourTrim {
+	if trim, ok := m["Trim"].(map[string]any); ok {
+		material, _ := trim["Material"].(string)
+		pattern, _ := trim["Pattern"].(string)
+		template, ok := smithingTemplateFromString(pattern)
+		trimMaterial, ok2 := trimMaterialFromString(material)
+		if ok && ok2 {
+			return ArmourTrim{Template: template, Material: trimMaterial}
+		}
+	}
+	return ArmourTrim{}
+}
+
+func writeTrim(m map[string]any, t ArmourTrim) {
+	if !t.Zero() {
+		m["Trim"] = map[string]any{
+			"Material": t.Material.TrimMaterial(),
+			"Pattern":  t.Template.String(),
+		}
+	}
 }

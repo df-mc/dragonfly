@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -87,7 +86,13 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 
 // BreakInfo ...
 func (i ItemFrame) BreakInfo() BreakInfo {
-	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, oneOf(i))
+	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
+		it := []item.Stack{item.NewStack(i, 1)}
+		if !i.Item.Empty() {
+			it = append(it, i.Item)
+		}
+		return it
+	})
 }
 
 // EncodeItem ...
@@ -152,12 +157,7 @@ func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(i.Facing)).Model().(model.Empty); ok {
 		// TODO: Allow exceptions for pressure plates.
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: i})
-		dropItem(tx, item.NewStack(i, 1), pos.Vec3Centre())
-		if !i.Item.Empty() {
-			dropItem(tx, i.Item, pos.Vec3Centre())
-		}
+		breakBlock(i, pos, tx)
 	}
 }
 

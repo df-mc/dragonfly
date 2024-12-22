@@ -10,6 +10,8 @@ import (
 type Boots struct {
 	// Tier is the tier of the boots.
 	Tier ArmourTier
+	// Trim specifies the trim of the armour.
+	Trim ArmourTrim
 }
 
 // Use handles the auto-equipping of boots in the armour slot when using it.
@@ -80,6 +82,12 @@ func (b Boots) Boots() bool {
 	return true
 }
 
+// WithTrim ...
+func (b Boots) WithTrim(trim ArmourTrim) world.Item {
+	b.Trim = trim
+	return b
+}
+
 // EncodeItem ...
 func (b Boots) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + b.Tier.Name() + "_boots", 0
@@ -93,13 +101,16 @@ func (b Boots) DecodeNBT(data map[string]any) any {
 			b.Tier = t
 		}
 	}
+	b.Trim = readTrim(data)
 	return b
 }
 
 // EncodeNBT ...
 func (b Boots) EncodeNBT() map[string]any {
+	m := map[string]any{}
 	if t, ok := b.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
-		return map[string]any{"customColor": int32FromRGBA(t.Colour)}
+		m["customColor"] = int32FromRGBA(t.Colour)
 	}
-	return nil
+	writeTrim(m, b.Trim)
+	return m
 }

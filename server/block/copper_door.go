@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -76,21 +75,18 @@ func (d CopperDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *worl
 	}
 	if d.Top {
 		if b, ok := tx.Block(pos.Side(cube.FaceDown)).(CopperDoor); !ok {
-			tx.SetBlock(pos, nil, nil)
-			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+			breakBlockNoDrops(d, pos, tx)
 		} else if d.Oxidation != b.Oxidation || d.Waxed != b.Waxed {
 			d.Oxidation = b.Oxidation
 			d.Waxed = b.Waxed
 			tx.SetBlock(pos, d, nil)
 		}
-		return
-	}
-	if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	} else if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
+		// CopperDoor is pickaxeHarvestable, so don't use breakBlock() here.
+		breakBlockNoDrops(d, pos, tx)
+		dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
 	} else if b, ok := tx.Block(pos.Side(cube.FaceUp)).(CopperDoor); !ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+		breakBlockNoDrops(d, pos, tx)
 	} else if d.Oxidation != b.Oxidation || d.Waxed != b.Waxed {
 		d.Oxidation = b.Oxidation
 		d.Waxed = b.Waxed
@@ -130,7 +126,7 @@ func (d CopperDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	ctx.IgnoreBBox = true
 	place(tx, pos, d, user, ctx)
 	place(tx, pos.Side(cube.FaceUp), CopperDoor{Oxidation: d.Oxidation, Waxed: d.Waxed, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
-	ctx.SubtractFromCount(1)
+	ctx.CountSub = 1
 	return placed(ctx)
 }
 

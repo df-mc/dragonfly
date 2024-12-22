@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
 )
@@ -26,8 +25,7 @@ func (PumpkinSeeds) SameCrop(c Crop) bool {
 // NeighbourUpdateTick ...
 func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
+		breakBlock(p, pos, tx)
 	} else if p.Direction != cube.FaceDown {
 		if pumpkin, ok := tx.Block(pos.Side(p.Direction)).(Pumpkin); !ok || pumpkin.Carved {
 			p.Direction = cube.FaceDown

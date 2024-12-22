@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"log/slog"
 	"os"
@@ -67,6 +68,10 @@ type Config struct {
 	// argument, which will be replaced with the name of the player joining or
 	// quitting.
 	JoinMessage, QuitMessage, ShutdownMessage string
+	// StatusProvider provides the server status shown to players in the server
+	// list. By default, StatusProvider will show the server name from the Name
+	// field and the current player count and maximum players.
+	StatusProvider minecraft.ServerStatusProvider
 	// PlayerProvider is the player.Provider used for storing and loading player
 	// data. If left as nil, player data will be newly created every time a
 	// player joins the server and no data will be stored.
@@ -109,6 +114,9 @@ func (conf Config) New() *Server {
 	}
 	if conf.Name == "" {
 		conf.Name = "Dragonfly Server"
+	}
+	if conf.StatusProvider == nil {
+		conf.StatusProvider = statusProvider{name: conf.Name}
 	}
 	if conf.PlayerProvider == nil {
 		conf.PlayerProvider = player.NopProvider{}

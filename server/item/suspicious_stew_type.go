@@ -11,8 +11,8 @@ type StewType struct {
 	stewType
 }
 
-// NightVisionStew returns suspicious stew night vision effect.
-func NightVisionStew() StewType {
+// NightVisionPoppyStew returns suspicious stew night vision effect.
+func NightVisionPoppyStew() StewType {
 	return StewType{0}
 }
 
@@ -26,8 +26,8 @@ func WeaknessStew() StewType {
 	return StewType{2}
 }
 
-// BlindnessStew returns suspicious stew blindness effect.
-func BlindnessStew() StewType {
+// BlindnessBluetStew returns suspicious stew blindness effect.
+func BlindnessBluetStew() StewType {
 	return StewType{3}
 }
 
@@ -61,9 +61,24 @@ func WitherStew() StewType {
 	return StewType{9}
 }
 
+// NightVisionTorchflowerStew returns suspicious stew night vision effect.
+func NightVisionTorchflowerStew() StewType {
+	return StewType{10}
+}
+
+// BlindnessEyeblossomStew returns suspicious stew blindness effect.
+func BlindnessEyeblossomStew() StewType {
+	return StewType{11}
+}
+
+// NauseaStew returns suspicious stew nausea effect.
+func NauseaStew() StewType {
+	return StewType{12}
+}
+
 // StewTypes ...
 func StewTypes() []StewType {
-	return []StewType{NightVisionStew(), JumpBoostStew(), WeaknessStew(), BlindnessStew(), PoisonStew(), SaturationDandelionStew(), SaturationOrchidStew(), FireResistanceStew(), RegenerationStew(), WitherStew()}
+	return []StewType{NightVisionPoppyStew(), JumpBoostStew(), WeaknessStew(), BlindnessBluetStew(), PoisonStew(), SaturationDandelionStew(), SaturationOrchidStew(), FireResistanceStew(), RegenerationStew(), WitherStew(), NightVisionTorchflowerStew(), BlindnessEyeblossomStew(), NauseaStew()}
 }
 
 type stewType uint8
@@ -77,26 +92,26 @@ func (s stewType) Uint8() uint8 {
 func (s stewType) Effects() []effect.Effect {
 	var effects []effect.Effect
 	switch s.Uint8() {
-	case 0:
-		effects = append(effects, effect.New(effect.NightVision{}, 1, time.Second*4))
+	case 0, 10:
+		effects = append(effects, effect.New(effect.NightVision, 1, time.Second*5))
 	case 1:
-		effects = append(effects, effect.New(effect.JumpBoost{}, 1, time.Second*4))
+		effects = append(effects, effect.New(effect.JumpBoost, 1, time.Second*5))
 	case 2:
-		effects = append(effects, effect.New(effect.Weakness{}, 1, time.Second*7))
-	case 3:
-		effects = append(effects, effect.New(effect.Blindness{}, 1, time.Second*6))
+		effects = append(effects, effect.New(effect.Weakness, 1, time.Second*7))
+	case 3, 11:
+		effects = append(effects, effect.New(effect.Blindness, 1, time.Second*6))
 	case 4:
-		effects = append(effects, effect.New(effect.Poison{}, 1, time.Second*10))
-	case 5:
-		effects = append(effects, effect.New(effect.Saturation{}, 1, time.Second*3/10))
-	case 6:
-		effects = append(effects, effect.New(effect.Saturation{}, 1, time.Second*3/10))
+		effects = append(effects, effect.New(effect.Poison, 1, time.Second*11))
+	case 5, 6:
+		effects = append(effects, effect.New(effect.Saturation, 1, time.Second*3/10))
 	case 7:
-		effects = append(effects, effect.New(effect.FireResistance{}, 1, time.Second*2))
+		effects = append(effects, effect.New(effect.FireResistance, 1, time.Second*3))
 	case 8:
-		effects = append(effects, effect.New(effect.Regeneration{}, 1, time.Second*6))
+		effects = append(effects, effect.New(effect.Regeneration, 1, time.Second*7))
 	case 9:
-		effects = append(effects, effect.New(effect.Wither{}, 1, time.Second*6))
+		effects = append(effects, effect.New(effect.Wither, 1, time.Second*7))
+	case 12:
+		effects = append(effects, effect.New(effect.Nausea, 1, time.Second*7))
 	default:
 		panic("should never happen")
 	}

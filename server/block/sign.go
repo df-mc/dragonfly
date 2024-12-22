@@ -5,11 +5,9 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
-	"strings"
 	"time"
 )
 
@@ -163,24 +161,21 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if s.Attach.hanging {
 		if _, ok := tx.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
-			tx.SetBlock(pos, nil, nil)
-			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-			dropItem(tx, item.NewStack(Sign{Wood: s.Wood}, 1), pos.Vec3Centre())
+			breakBlock(s, pos, tx)
 		}
-		return
-	}
-	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-		dropItem(tx, item.NewStack(Sign{Wood: s.Wood}, 1), pos.Vec3Centre())
+	} else if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
+		breakBlock(s, pos, tx)
 	}
 }
 
 // EncodeBlock ...
 func (s Sign) EncodeBlock() (name string, properties map[string]any) {
-	woodType := strings.Replace(s.Wood.String(), "_", "", 1) + "_"
-	if woodType == "oak_" {
+	woodType := s.Wood.String() + "_"
+	switch s.Wood {
+	case OakWood():
 		woodType = ""
+	case DarkOakWood():
+		woodType = "darkoak_"
 	}
 	if s.Attach.hanging {
 		return "minecraft:" + woodType + "wall_sign", map[string]any{"facing_direction": int32(s.Attach.facing + 2)}
