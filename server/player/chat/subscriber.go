@@ -20,9 +20,9 @@ type Subscriber interface {
 // Translator is a Subscriber that is able to translate messages to their own
 // locale.
 type Translator interface {
-	// Messaget sends a Translatable message to the Translator, using the
+	// Messaget sends a Translation message to the Translator, using the
 	// arguments passed to fill out any translation parameters.
-	Messaget(t Translatable, a ...any)
+	Messaget(t Translation, a ...any)
 }
 
 // StdoutSubscriber is an implementation of Subscriber that forwards messages

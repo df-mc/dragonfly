@@ -40,11 +40,11 @@ func (chat *Chat) WriteString(s string) (n int, err error) {
 	return len(s), nil
 }
 
-// Writet writes a Translatable message to a Chat, parameterising the message
+// Writet writes a Translation message to a Chat, parameterising the message
 // using the arguments passed. Messages are translated according to the locale
 // of subscribers if they implement Translator. Subscribers that do not
 // implement Translator have the fallback message sent.
-func (chat *Chat) Writet(t Translatable, a ...any) {
+func (chat *Chat) Writet(t Translation, a ...any) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
 	for _, subscriber := range chat.subscribers {

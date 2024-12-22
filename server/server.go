@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for maintaining correct initialisation order.
 	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
@@ -22,7 +23,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"github.com/sandertv/gophertunnel/minecraft/text"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
 	"iter"
@@ -293,7 +293,7 @@ func (srv *Server) close() {
 
 	srv.conf.Log.Debug("Disconnecting players...")
 	for p := range srv.Players(nil) {
-		p.Disconnect(text.Colourf("<yellow>%v</yellow>", srv.conf.ShutdownMessage))
+		p.Disconnect(chat.MessageServerDisconnect.Resolve(p.Locale()))
 	}
 	srv.pwg.Wait()
 
@@ -523,10 +523,11 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	srv.pwg.Add(1)
 
 	s := session.Config{
-		Log:                     srv.conf.Log,
-		MaxChunkRadius:          srv.conf.MaxChunkRadius,
-		DisableJoinQuitMessages: srv.conf.DisableJoinQuitMessages,
-		HandleStop:              srv.handleSessionClose,
+		Log:            srv.conf.Log,
+		MaxChunkRadius: srv.conf.MaxChunkRadius,
+		JoinMessage:    srv.conf.JoinMessage,
+		QuitMessage:    srv.conf.QuitMessage,
+		HandleStop:     srv.handleSessionClose,
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName

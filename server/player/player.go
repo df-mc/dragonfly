@@ -226,8 +226,8 @@ func (p *Player) Messagef(f string, a ...any) {
 // Messaget sends a translatable message to a player and parameterises it using
 // the arguments passed. Messaget panics if an incorrect amount of arguments
 // is passed.
-func (p *Player) Messaget(t chat.Translatable, a ...any) {
-	p.session().SendTranslation(t.F(a...), p.locale)
+func (p *Player) Messaget(t chat.Translation, a ...any) {
+	p.session().SendTranslation(t, p.locale, a)
 }
 
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
@@ -359,7 +359,7 @@ func (p *Player) Transfer(address string) error {
 
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
-	p.session().SendCommandOutput(output)
+	p.session().SendCommandOutput(output, p.locale)
 }
 
 // SendDialogue sends an NPC dialogue to the player, using the entity passed as the entity that the dialogue

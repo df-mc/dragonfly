@@ -130,7 +130,7 @@ type Config struct {
 
 	MaxChunkRadius int
 
-	DisableJoinQuitMessages bool
+	JoinMessage, QuitMessage chat.Translation
 
 	HandleStop func(*world.Tx, Controllable)
 }
@@ -219,8 +219,8 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 
 	chat.Global.Subscribe(c)
-	if !s.conf.DisableJoinQuitMessages {
-		chat.Global.Writet(chat.MessageJoin, s.conn.IdentityData().DisplayName)
+	if !s.conf.JoinMessage.Zero() {
+		chat.Global.Writet(s.conf.JoinMessage, s.conn.IdentityData().DisplayName)
 	}
 
 	go s.background()
@@ -250,8 +250,8 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	s.chunkLoader.Close(tx)
 
-	if !s.conf.DisableJoinQuitMessages {
-		chat.Global.Writet(chat.MessageQuit, s.conn.IdentityData().DisplayName)
+	if !s.conf.QuitMessage.Zero() {
+		chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
 	}
 	chat.Global.Unsubscribe(c)
 

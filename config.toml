@@ -13,8 +13,12 @@
   ShutdownMessage = "Server closed."
   # AuthEnabled controls whether players must be connected to Xbox Live in order to join the server.
   AuthEnabled = true
-  # DisableJoinQuitMessages specifies if join/quit messages should be broadcast when players join the server.
-  DisableJoinQuitMessages = false
+  # JoinMessage is the message that appears when a player joins the server. Leave this empty to disable it.
+  # %v is the placeholder for the username of the player. Set this to "" to disable.
+  JoinMessage = "%multiplayer.player.joined"
+  # QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
+  # %v is the placeholder for the username of the player. Set this to "" to disable.
+  QuitMessage = "%multiplayer.player.left"
 
 [World]
   # The folder that the world files (will) reside in, relative to the working directory. If not currently
