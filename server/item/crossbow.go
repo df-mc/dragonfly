@@ -91,11 +91,10 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		createArrow := tx.World().EntityRegistry().Config().Arrow
 		arrow := createArrow(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(3.0),
+			Velocity: dirVec.Mul(5.15),
 			Rotation: rot,
 		}, 9, releaser, false, false, !creative, 0, c.Item.Item().(Arrow).Tip)
 		tx.AddEntity(arrow)
-
 		ctx.DamageItem(1)
 	}
 
