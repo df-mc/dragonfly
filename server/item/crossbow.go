@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"time"
@@ -23,53 +22,50 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 	creative := releaser.GameMode().CreativeInventory()
 	held, left := releaser.HeldItems()
 
-	chargeDuration, consume := time.Duration(1.25*float64(time.Second)), !creative
+	chargeDuration := time.Duration(1.25 * float64(time.Second))
 	for _, enchant := range held.Enchantments() {
 		if q, ok := enchant.Type().(interface{ DurationReduction(int) time.Duration }); ok {
 			chargeDuration = min(chargeDuration, q.DurationReduction(enchant.Level()))
 		}
-		if i, ok := enchant.Type().(interface{ ConsumesArrows() bool }); ok && !i.ConsumesArrows() {
-			consume = false
+	}
+
+	if duration < chargeDuration {
+		return false
+	}
+
+	var projectileItem Stack
+	if !left.Empty() {
+		_, isFirework := left.Item().(Firework)
+		_, isArrow := left.Item().(Arrow)
+		if isFirework || isArrow {
+			projectileItem = left
 		}
 	}
 
-	if duration >= chargeDuration {
-		var projectileItem Stack
-		if !left.Empty() {
-			_, isFirework := left.Item().(Firework)
-			_, isArrow := left.Item().(Arrow)
-			if isFirework || isArrow {
-				projectileItem = left
-			}
+	if projectileItem.Empty() {
+		var ok bool
+		projectileItem, ok = ctx.FirstFunc(func(stack Stack) bool {
+			_, isArrow := stack.Item().(Arrow)
+			return isArrow
+		})
+
+		if !ok && !creative {
+			return false
 		}
 
 		if projectileItem.Empty() {
-			var ok bool
-			projectileItem, ok = ctx.FirstFunc(func(stack Stack) bool {
-				_, isArrow := stack.Item().(Arrow)
-				return isArrow
-			})
-
-			if !ok && !creative {
-				return false
-			}
-
-			if projectileItem.Empty() {
-				projectileItem = NewStack(Arrow{}, 1)
-			}
+			projectileItem = NewStack(Arrow{}, 1)
 		}
-
-		c.Item = NewStack(projectileItem.Item(), 1)
-		if consume {
-			ctx.Consume(projectileItem.Grow(-projectileItem.Count() + 1))
-		}
-
-		crossbow := newCrossbowWith(held, c)
-		releaser.SetHeldItems(crossbow, left)
-		releaser.PlaySound(sound.CrossbowLoadingMiddle{})
-		return true
 	}
-	return false
+
+	c.Item = NewStack(projectileItem.Item(), 1)
+	if !creative {
+		ctx.Consume(projectileItem.Grow(-projectileItem.Count() + 1))
+	}
+
+	crossbow := newCrossbowWith(held, c)
+	releaser.SetHeldItems(crossbow, left)
+	return true
 }
 
 // ReleaseCharge checks if the item is fully charged and, if so, releases it.
@@ -90,7 +86,6 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 			Rotation: rot,
 		}, firework, releaser, false)
 		tx.AddEntity(fireworkEntity)
-
 		ctx.DamageItem(3)
 	} else {
 		createArrow := tx.World().EntityRegistry().Config().Arrow
@@ -98,7 +93,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(3.0),
 			Rotation: rot,
-		}, 9, releaser, true, false, !creative, 0, potion.Potion{})
+		}, 9, releaser, false, false, !creative, 0, c.Item.Item().(Arrow).Tip)
 		tx.AddEntity(arrow)
 
 		ctx.DamageItem(1)

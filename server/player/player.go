@@ -1368,22 +1368,23 @@ func (p *Player) UseItem() {
 	}
 
 	if chargeable, ok := it.(item.Chargeable); ok {
+		useCtx := p.useContext()
 		if !p.usingItem {
-			if !chargeable.ReleaseCharge(p, p.tx, p.useContext()) {
+			if !chargeable.ReleaseCharge(p, p.tx, useCtx) {
 				// If the item was not charged yet, start charging.
-				p.PlaySound(sound.CrossbowLoadingStart{})
-
 				p.usingSince, p.usingItem = time.Now(), true
-				p.updateState()
 			}
+			p.handleUseContext(useCtx)
+			p.updateState()
 			return
 		}
 
 		// Stop charging and determine if the item is ready.
 		p.usingItem = false
-		if chargeable.Charge(p, p.tx, p.useContext(), time.Since(p.usingSince)) {
-			p.session().SendCrossbowChargeComplete()
+		if chargeable.Charge(p, p.tx, useCtx, time.Since(p.usingSince)) {
+			p.session().SendChargeItemComplete()
 		}
+		p.handleUseContext(useCtx)
 		p.updateState()
 	}
 

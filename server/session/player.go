@@ -725,8 +725,8 @@ func (s *Session) SendExperience(level int, progress float64) {
 	})
 }
 
-// SendCrossbowChargeComplete sends a packet to indicate that the crossbow charging process has been completed.
-func (s *Session) SendCrossbowChargeComplete() {
+// SendChargeItemComplete sends a packet to indicate that the item charging process has been completed.
+func (s *Session) SendChargeItemComplete() {
 	s.writePacket(&packet.ActorEvent{
 		EntityRuntimeID: selfEntityRuntimeID,
 		EventType:       packet.ActorEventFinishedChargingItem,
