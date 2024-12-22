@@ -58,9 +58,9 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 		}
 	}
 
-	c.Item = NewStack(projectileItem.Item(), 1)
+	c.Item = projectileItem.Grow(-projectileItem.Count() + 1)
 	if !creative {
-		ctx.Consume(projectileItem.Grow(-projectileItem.Count() + 1))
+		ctx.Consume(c.Item)
 	}
 
 	crossbow := newCrossbowWith(held, c)
