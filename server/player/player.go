@@ -2017,8 +2017,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 	var (
 		pos         = p.Position()
-		yaw, pitch  = p.Rotation().Elem()
-		res, resRot = pos.Add(deltaPos), cube.Rotation{yaw + deltaYaw, pitch + deltaPitch}
+		res, resRot = pos.Add(deltaPos), p.Rotation().Add(cube.Rotation{deltaYaw, deltaPitch})
 	)
 	ctx := event.C(p)
 	if p.Handler().HandleMove(ctx, res, resRot); ctx.Cancelled() {
