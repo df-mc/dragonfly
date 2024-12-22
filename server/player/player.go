@@ -1242,7 +1242,7 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.offHand.SetItem(0, offHand)
 }
 
-// HeldSlot returns the slot in the hotbar that the player currently has selected. The return value 
+// HeldSlot returns the slot in the hotbar that the player currently has selected. The return value
 // is between 0 and 8.
 func (p *Player) HeldSlot() int {
 	return int(*p.heldSlot)
