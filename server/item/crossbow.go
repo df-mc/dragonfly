@@ -63,7 +63,7 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 		ctx.Consume(c.Item)
 	}
 
-	crossbow := newCrossbowWith(held, c)
+	crossbow := newItem(held, c)
 	releaser.SetHeldItems(crossbow, left)
 	return true
 }
@@ -101,7 +101,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
-	crossbow := newCrossbowWith(held, c)
+	crossbow := newItem(held, c)
 	releaser.SetHeldItems(crossbow, left)
 	releaser.PlaySound(sound.CrossbowShoot{})
 	return true
@@ -151,22 +151,10 @@ func (c Crossbow) EncodeNBT() map[string]any {
 	return nil
 }
 
-// newCrossbowWith duplicates an item.Stack with the new item type given.
-func newCrossbowWith(input Stack, item Crossbow) Stack {
-	if _, ok := input.Item().(Crossbow); !ok {
-		return Stack{}
-	}
-	outputStack := NewStack(item, input.Count()).
-		Damage(input.MaxDurability() - input.Durability()).
-		WithCustomName(input.CustomName()).
-		WithLore(input.Lore()...).
-		WithEnchantments(input.Enchantments()...).
-		WithAnvilCost(input.AnvilCost())
-	for k, v := range input.Values() {
-		outputStack = outputStack.WithValue(k, v)
-	}
-	return outputStack
-}
+// noinspection ALL
+//
+//go:linkname newItem github.com/df-mc/dragonfly/server/internal/iteminternal.NewItem
+func newItem(stack Stack, item world.Item) Stack
 
 // noinspection ALL
 //
