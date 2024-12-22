@@ -18,6 +18,8 @@ import (
 // ShulkerBox is a dye-able block that stores items. Unlike other blocks, it keeps its contents when broken.
 type ShulkerBox struct {
 	solid // TODO: I don't think it should be solid
+	transparent
+	sourceWaterDisplacer
 	// Type is the type of shulker box of the block.
 	Type ShulkerBoxType
 	// Facing is the direction that the shulker box is facing.
