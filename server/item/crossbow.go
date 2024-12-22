@@ -24,8 +24,8 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 
 	chargeDuration := time.Duration(1.25 * float64(time.Second))
 	for _, enchant := range held.Enchantments() {
-		if q, ok := enchant.Type().(interface{ DurationReduction(int) time.Duration }); ok {
-			chargeDuration = min(chargeDuration, q.DurationReduction(enchant.Level()))
+		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
+			chargeDuration = min(chargeDuration, q.ChargeDuration(enchant.Level()))
 		}
 	}
 

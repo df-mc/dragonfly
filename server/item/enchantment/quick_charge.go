@@ -32,8 +32,8 @@ func (quickCharge) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// DurationReduction returns the charge reduction duration.
-func (quickCharge) DurationReduction(level int) time.Duration {
+// ChargeDuration returns the charge duration.
+func (quickCharge) ChargeDuration(level int) time.Duration {
 	return time.Duration((1.25 - 0.25*float64(level)) * float64(time.Second))
 }
 
