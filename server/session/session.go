@@ -18,7 +18,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"github.com/sandertv/gophertunnel/minecraft/text"
 	"io"
 	"log/slog"
 	"net"
@@ -83,8 +82,6 @@ type Session struct {
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
 
-	joinMessage, quitMessage string
-
 	closeBackground chan struct{}
 }
 
@@ -133,7 +130,7 @@ type Config struct {
 
 	MaxChunkRadius int
 
-	JoinMessage, QuitMessage string
+	JoinMessage, QuitMessage chat.Translation
 
 	HandleStop func(*world.Tx, Controllable)
 }
@@ -163,8 +160,6 @@ func (conf Config) New(conn Conn) *Session {
 		conn:                   conn,
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
-		joinMessage:            conf.JoinMessage,
-		quitMessage:            conf.QuitMessage,
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
 	}
@@ -224,8 +219,8 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 
 	chat.Global.Subscribe(c)
-	if s.joinMessage != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
+	if !s.conf.JoinMessage.Zero() {
+		chat.Global.Writet(s.conf.JoinMessage, s.conn.IdentityData().DisplayName)
 	}
 
 	go s.background()
@@ -255,8 +250,8 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	s.chunkLoader.Close(tx)
 
-	if s.quitMessage != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
+	if !s.conf.QuitMessage.Zero() {
+		chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
 	}
 	chat.Global.Unsubscribe(c)
 

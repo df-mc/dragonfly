@@ -223,6 +223,13 @@ func (p *Player) Messagef(f string, a ...any) {
 	p.session().SendMessage(fmt.Sprintf(f, a...))
 }
 
+// Messaget sends a translatable message to a player and parameterises it using
+// the arguments passed. Messaget panics if an incorrect amount of arguments
+// is passed.
+func (p *Player) Messaget(t chat.Translation, a ...any) {
+	p.session().SendTranslation(t, p.locale, a)
+}
+
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
 // overwrites/is overwritten by the name of the item equipped.
 // The popup is formatted following the rules of fmt.Sprintln without a newline at the end.
@@ -323,7 +330,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	command, ok := cmd.ByAlias(args[0][1:])
 	if !ok {
 		o := &cmd.Output{}
-		o.Errorf("Unknown command: %v. Please check that the command exists and that you have permission to use it.", args[0])
+		o.Errort(chat.MessageCommandUnknown, args[0])
 		p.SendCommandOutput(o)
 		return
 	}
@@ -352,7 +359,7 @@ func (p *Player) Transfer(address string) error {
 
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
-	p.session().SendCommandOutput(output)
+	p.session().SendCommandOutput(output, p.locale)
 }
 
 // SendDialogue sends an NPC dialogue to the player, using the entity passed as the entity that the dialogue
