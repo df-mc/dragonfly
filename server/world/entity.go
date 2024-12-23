@@ -102,7 +102,7 @@ func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 // entityFromData reads an entity from the decoded NBT data passed and returns
 // an EntityHandle.
 func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
-	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{})}
+	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
 	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
 	handle.decodeNBT(data)
 	t.DecodeNBT(data, &handle.data)
@@ -152,6 +152,7 @@ func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) (run bool)
 	for e.w == nil || (!weak && e.weakTxActive) {
 		e.cond.Wait()
 	}
+	e.worldless.Store(false)
 	if e.w == closeWorld {
 		// EntityHandle was closed.
 		e.cond.L.Unlock()
@@ -215,7 +216,6 @@ func (e *EntityHandle) setAndUnlockWorld(w *World, tx *Tx) {
 		panic("cannot add entity to new world before removing from old world")
 	}
 	e.w = w
-	e.worldless.Store(false)
 	e.cond.Broadcast()
 }
 
