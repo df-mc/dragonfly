@@ -53,7 +53,9 @@ func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 		}
 	})
 	clear(l.loaded)
+	l.w.viewerMu.Lock()
 	delete(l.w.viewers, l)
+	l.w.viewerMu.Unlock()
 
 	l.world(new)
 }
@@ -130,7 +132,10 @@ func (l *Loader) Close(tx *Tx) {
 		tx.World().removeViewer(tx, pos, l)
 	}
 	l.loaded = map[ChunkPos]*Column{}
+
+	l.w.viewerMu.Lock()
 	delete(l.w.viewers, l)
+	l.w.viewerMu.Unlock()
 
 	l.closed = true
 	l.viewer = nil

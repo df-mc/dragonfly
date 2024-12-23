@@ -66,7 +66,8 @@ type World struct {
 	scheduledUpdates *scheduledTickQueue
 	neighbourUpdates []neighbourUpdate
 
-	viewers map[*Loader]Viewer
+	viewerMu sync.Mutex
+	viewers  map[*Loader]Viewer
 }
 
 // transaction is a type that may be added to the transaction queue of a World.
@@ -1023,6 +1024,9 @@ func (w *World) close() {
 // allViewers returns all viewers and loaders, regardless of where in the world
 // they are viewing.
 func (w *World) allViewers() ([]Viewer, []*Loader) {
+	w.viewerMu.Lock()
+	defer w.viewerMu.Unlock()
+
 	viewers, loaders := make([]Viewer, 0, len(w.viewers)), make([]*Loader, 0, len(w.viewers))
 	for k, v := range w.viewers {
 		viewers = append(viewers, v)
@@ -1034,7 +1038,10 @@ func (w *World) allViewers() ([]Viewer, []*Loader) {
 // addWorldViewer adds a viewer to the world. Should only be used while the
 // viewer isn't viewing any chunks.
 func (w *World) addWorldViewer(l *Loader) {
+	w.viewerMu.Lock()
 	w.viewers[l] = l.viewer
+	w.viewerMu.Unlock()
+
 	l.viewer.ViewTime(w.Time())
 	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
