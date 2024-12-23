@@ -69,13 +69,10 @@ type World struct {
 	viewers map[*Loader]Viewer
 }
 
-// transaction holds a transaction function and the channel to be closed once
-// complete.
-type transaction struct {
-	c       chan bool
-	f       func(tx *Tx)
-	invalid *atomic.Bool
-	cond    *sync.Cond
+// transaction is a type that may be added to the transaction queue of a World.
+// Its Run method is called when the transaction is taken out of the queue.
+type transaction interface {
+	Run(w *World)
 }
 
 // New creates a new initialised world. The world may be used right away, but
@@ -115,15 +112,15 @@ type ExecFunc func(tx *Tx)
 
 // Exec performs a synchronised transaction f on a World. Exec returns a channel
 // that is closed once the transaction is complete.
-func (w *World) Exec(f ExecFunc) <-chan bool {
-	c := make(chan bool, 1)
-	w.queue <- transaction{c: c, f: f}
+func (w *World) Exec(f ExecFunc) <-chan struct{} {
+	c := make(chan struct{})
+	w.queue <- normalTransaction{c: c, f: f}
 	return c
 }
 
 func (w *World) weakExec(invalid *atomic.Bool, cond *sync.Cond, f ExecFunc) <-chan bool {
 	c := make(chan bool, 1)
-	w.queue <- transaction{c: c, f: f, invalid: invalid, cond: cond}
+	w.queue <- weakTransaction{c: c, f: f, invalid: invalid, cond: cond}
 	return c
 }
 
@@ -132,20 +129,8 @@ func (w *World) weakExec(invalid *atomic.Bool, cond *sync.Cond, f ExecFunc) <-ch
 func (w *World) handleTransactions() {
 	for {
 		select {
-		case queuedTx := <-w.queue:
-			if queuedTx.invalid != nil && queuedTx.invalid.Load() {
-				queuedTx.c <- false
-				queuedTx.cond.Broadcast()
-				continue
-			}
-			tx := &Tx{w: w}
-			queuedTx.f(tx)
-			tx.close()
-
-			queuedTx.c <- true
-			if queuedTx.cond != nil {
-				queuedTx.cond.Broadcast()
-			}
+		case tx := <-w.queue:
+			tx.Run(w)
 		case <-w.closing:
 			w.running.Done()
 			return
