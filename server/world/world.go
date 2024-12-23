@@ -988,17 +988,22 @@ func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
 func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
-		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, columnTo(c)); err != nil {
+		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos)); err != nil {
 			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 		}
 	}
 }
 
 // closeChunk saves a chunk and its entities to disk after compacting the chunk.
-// Afterwards, all entities are closed.
+// Afterwards, scheduled updates from that chunk are removed and all entities
+// in it are closed.
 func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 	w.saveChunk(tx, pos, c)
-	for _, e := range c.Entities {
+	w.scheduledUpdates.removeChunk(pos)
+	// Note: We close c.Entities here because some entities may remove
+	// themselves from the world in their Close method, which can lead to
+	// unexpected conditions.
+	for _, e := range slices.Clone(c.Entities) {
 		_ = e.mustEntity(tx).Close()
 	}
 	clear(c.Entities)
@@ -1014,7 +1019,7 @@ func (w *World) Close() error {
 // close stops the World from ticking, saves all chunks to the Provider and
 // updates the world's settings.
 func (w *World) close() {
-	w.Exec(func(tx *Tx) {
+	<-w.Exec(func(tx *Tx) {
 		// Let user code run anything that needs to be finished before closing.
 		w.Handler().HandleClose(tx)
 		w.Handle(NopHandler{})
@@ -1132,7 +1137,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 	column, err := w.conf.Provider.LoadColumn(pos, w.conf.Dim)
 	switch {
 	case err == nil:
-		col := columnFrom(column, w)
+		col := w.columnFrom(column, pos)
 		w.chunks[pos] = col
 		for _, e := range col.Entities {
 			w.entities[e] = pos
@@ -1240,11 +1245,14 @@ func newColumn(c *chunk.Chunk) *Column {
 
 // columnTo converts a Column to a chunk.Column so that it can be written to
 // a provider.
-func columnTo(col *Column) *chunk.Column {
+func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
+	scheduled := w.scheduledUpdates.fromChunk(pos)
 	c := &chunk.Column{
-		Chunk:         col.Chunk,
-		Entities:      make([]chunk.Entity, 0, len(col.Entities)),
-		BlockEntities: make([]chunk.BlockEntity, 0, len(col.BlockEntities)),
+		Chunk:           col.Chunk,
+		Entities:        make([]chunk.Entity, 0, len(col.Entities)),
+		BlockEntities:   make([]chunk.BlockEntity, 0, len(col.BlockEntities)),
+		ScheduledBlocks: make([]chunk.ScheduledBlockUpdate, 0, len(scheduled)),
+		Tick:            w.scheduledUpdates.currentTick,
 	}
 	for _, e := range col.Entities {
 		data := e.encodeNBT()
@@ -1255,12 +1263,15 @@ func columnTo(col *Column) *chunk.Column {
 	for pos, be := range col.BlockEntities {
 		c.BlockEntities = append(c.BlockEntities, chunk.BlockEntity{Pos: pos, Data: be.(NBTer).EncodeNBT()})
 	}
+	for _, t := range scheduled {
+		c.ScheduledBlocks = append(c.ScheduledBlocks, chunk.ScheduledBlockUpdate{Pos: t.pos, Block: BlockRuntimeID(t.b), Tick: t.t})
+	}
 	return c
 }
 
 // columnFrom converts a chunk.Column to a Column after reading it from a
 // provider.
-func columnFrom(c *chunk.Column, w *World) *Column {
+func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	col := &Column{
 		Chunk:         c.Chunk,
 		Entities:      make([]*EntityHandle, 0, len(c.Entities)),
@@ -1293,5 +1304,11 @@ func columnFrom(c *chunk.Column, w *World) *Column {
 		}
 		col.BlockEntities[be.Pos] = nb.DecodeNBT(be.Data).(Block)
 	}
+	scheduled, savedTick := make([]scheduledTick, 0, len(c.ScheduledBlocks)), c.Tick
+	for _, t := range c.ScheduledBlocks {
+		bl := blockByRuntimeIDOrAir(t.Block)
+		scheduled = append(scheduled, scheduledTick{pos: t.Pos, b: bl, bhash: BlockHash(bl), t: w.scheduledUpdates.currentTick + (t.Tick - savedTick)})
+	}
+	w.scheduledUpdates.add(scheduled)
 	return col
 }

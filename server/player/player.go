@@ -226,9 +226,11 @@ func (p *Player) Messagef(f string, a ...any) {
 	p.session().SendMessage(fmt.Sprintf(f, a...))
 }
 
-// Messaget sends a message translation to the player. The message is translated client-side using the client's locale.
-func (p *Player) Messaget(key string, a ...string) {
-	p.session().SendTranslation(key, a...)
+// Messaget sends a translatable message to a player and parameterises it using
+// the arguments passed. Messaget panics if an incorrect amount of arguments
+// is passed.
+func (p *Player) Messaget(t chat.Translation, a ...any) {
+	p.session().SendTranslation(t, p.locale, a)
 }
 
 // SendPopup sends a formatted popup to the player. The popup is shown above the hotbar of the player and
@@ -331,7 +333,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	command, ok := cmd.ByAlias(args[0][1:])
 	if !ok {
 		o := &cmd.Output{}
-		o.Errorf("Unknown command: %v. Please check that the command exists and that you have permission to use it.", args[0])
+		o.Errort(chat.MessageCommandUnknown, args[0])
 		p.SendCommandOutput(o)
 		return
 	}
@@ -360,7 +362,7 @@ func (p *Player) Transfer(address string) error {
 
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
-	p.session().SendCommandOutput(output)
+	p.session().SendCommandOutput(output, p.locale)
 }
 
 // SendDialogue sends an NPC dialogue to the player, using the entity passed as the entity that the dialogue
@@ -533,7 +535,7 @@ func (p *Player) fall(distance float64) {
 		h.EntityLand(pos, p.tx, p, &distance)
 	}
 	dmg := distance - 3
-	if boost, ok := p.Effect(effect.JumpBoost{}); ok {
+	if boost, ok := p.Effect(effect.JumpBoost); ok {
 		dmg -= float64(boost.Level())
 	}
 	if dmg < 0.5 {
@@ -551,7 +553,7 @@ func (p *Player) fall(distance float64) {
 // final damage dealt to the Player and if the Player was vulnerable to this
 // kind of damage.
 func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
-	if _, ok := p.Effect(effect.FireResistance{}); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() || dmg < 0 {
+	if _, ok := p.Effect(effect.FireResistance); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() || dmg < 0 {
 		return 0, false
 	}
 	totalDamage := p.FinalDamageFrom(dmg, src)
@@ -634,9 +636,9 @@ func (p *Player) applyTotemEffects() {
 		p.RemoveEffect(e.Type())
 	}
 
-	p.AddEffect(effect.New(effect.Regeneration{}, 2, time.Second*40))
-	p.AddEffect(effect.New(effect.FireResistance{}, 1, time.Second*40))
-	p.AddEffect(effect.New(effect.Absorption{}, 2, time.Second*5))
+	p.AddEffect(effect.New(effect.Regeneration, 2, time.Second*40))
+	p.AddEffect(effect.New(effect.FireResistance, 1, time.Second*40))
+	p.AddEffect(effect.New(effect.Absorption, 2, time.Second*5))
 
 	p.tx.PlaySound(p.Position(), sound.Totem{})
 
@@ -653,8 +655,8 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 	dmg = max(dmg, 0)
 
 	dmg -= p.Armour().DamageReduction(dmg, src)
-	if res, ok := p.Effect(effect.Resistance{}); ok {
-		dmg *= effect.Resistance{}.Multiplier(src, res.Level())
+	if res, ok := p.Effect(effect.Resistance); ok {
+		dmg *= effect.Resistance.Multiplier(src, res.Level())
 	}
 	return dmg
 }
@@ -1170,7 +1172,7 @@ func (p *Player) Jump() {
 	p.Handler().HandleJump(p)
 	if p.OnGround() {
 		jumpVel := 0.42
-		if e, ok := p.Effect(effect.JumpBoost{}); ok {
+		if e, ok := p.Effect(effect.JumpBoost); ok {
 			jumpVel = float64(e.Level()) / 10
 		}
 		p.data.Vel = mgl64.Vec3{0, jumpVel}
@@ -1262,7 +1264,7 @@ func (p *Player) SetInvisible() {
 // SetVisible sets the player visible again, so that other players can see it again. If the player was already
 // visible, or if the player is in spectator mode, nothing happens.
 func (p *Player) SetVisible() {
-	if _, ok := p.Effect(effect.Invisibility{}); ok || !p.GameMode().Visible() || !p.invisible {
+	if _, ok := p.Effect(effect.Invisibility); ok || !p.GameMode().Visible() || !p.invisible {
 		return
 	}
 	p.invisible = false
@@ -1297,10 +1299,10 @@ func (p *Player) Immobile() bool {
 	return p.immobile
 }
 
-// FireProof checks if the Player is currently fireproof. True is returned if the player has a FireResistance effect or
+// FireProof checks if the Player is currently fireproof. True is returned if the player has a fireResistance effect or
 // if it is in creative mode.
 func (p *Player) FireProof() bool {
-	if _, ok := p.Effect(effect.FireResistance{}); ok {
+	if _, ok := p.Effect(effect.FireResistance); ok {
 		return true
 	}
 	return !p.GameMode().AllowsTakingDamage()
@@ -1702,8 +1704,8 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 	var (
 		force, height  = 0.45, 0.3608
-		_, slowFalling = p.Effect(effect.SlowFalling{})
-		_, blind       = p.Effect(effect.Blindness{})
+		_, slowFalling = p.Effect(effect.SlowFalling)
+		_, blind       = p.Effect(effect.Blindness)
 		critical       = !p.Sprinting() && !p.Flying() && p.FallDistance() > 0 && !slowFalling && !blind
 	)
 
@@ -1720,11 +1722,11 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 
 	dmg := i.AttackDamage()
-	if strength, ok := p.Effect(effect.Strength{}); ok {
-		dmg += dmg * effect.Strength{}.Multiplier(strength.Level())
+	if strength, ok := p.Effect(effect.Strength); ok {
+		dmg += dmg * effect.Strength.Multiplier(strength.Level())
 	}
-	if weakness, ok := p.Effect(effect.Weakness{}); ok {
-		dmg -= dmg * effect.Weakness{}.Multiplier(weakness.Level())
+	if weakness, ok := p.Effect(effect.Weakness); ok {
+		dmg -= dmg * effect.Weakness.Multiplier(weakness.Level())
 	}
 	if s, ok := i.Enchantment(enchantment.Sharpness); ok {
 		dmg += enchantment.Sharpness.Addend(s.Level())
@@ -1833,13 +1835,13 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	}
 	for _, e := range p.Effects() {
 		lvl := e.Level()
-		switch v := e.Type().(type) {
+		switch e.Type() {
 		case effect.Haste:
-			breakTime = time.Duration(float64(breakTime) * v.Multiplier(lvl))
+			breakTime = time.Duration(float64(breakTime) * effect.Haste.Multiplier(lvl))
 		case effect.MiningFatigue:
-			breakTime = time.Duration(float64(breakTime) * v.Multiplier(lvl))
+			breakTime = time.Duration(float64(breakTime) * effect.MiningFatigue.Multiplier(lvl))
 		case effect.ConduitPower:
-			breakTime = time.Duration(float64(breakTime) * v.Multiplier(lvl))
+			breakTime = time.Duration(float64(breakTime) * effect.ConduitPower.Multiplier(lvl))
 		}
 	}
 	return breakTime
@@ -2124,8 +2126,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 	var (
 		pos         = p.Position()
-		yaw, pitch  = p.Rotation().Elem()
-		res, resRot = pos.Add(deltaPos), cube.Rotation{yaw + deltaYaw, pitch + deltaPitch}
+		res, resRot = pos.Add(deltaPos), p.Rotation().Add(cube.Rotation{deltaYaw, deltaPitch})
 	)
 	ctx := event.C(p)
 	if p.Handler().HandleMove(ctx, res, resRot); ctx.Cancelled() {
@@ -2406,7 +2407,7 @@ func (p *Player) Tick(_ *world.Tx, current int64) {
 	if _, ok := p.tx.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
-			p.AddEffect(effect.New(effect.WaterBreathing{}, 1, time.Second*10).WithoutParticles())
+			p.AddEffect(effect.New(effect.WaterBreathing, 1, time.Second*10).WithoutParticles())
 		}
 	}
 
@@ -2566,8 +2567,8 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 // canBreathe returns true if the player can currently breathe.
 func (p *Player) canBreathe() bool {
 	canTakeDamage := p.GameMode().AllowsTakingDamage()
-	_, waterBreathing := p.effects.Effect(effect.WaterBreathing{})
-	_, conduitPower := p.effects.Effect(effect.ConduitPower{})
+	_, waterBreathing := p.effects.Effect(effect.WaterBreathing)
+	_, conduitPower := p.effects.Effect(effect.ConduitPower)
 	return !canTakeDamage || waterBreathing || conduitPower || (!p.insideOfWater() && !p.insideOfSolid())
 }
 
@@ -2831,8 +2832,8 @@ func (p *Player) updateState() {
 // have the water breathing or conduit power effect, this returns false.
 // If the player is in creative or spectator mode, Breathing always returns true.
 func (p *Player) Breathing() bool {
-	_, breathing := p.Effect(effect.WaterBreathing{})
-	_, conduitPower := p.Effect(effect.ConduitPower{})
+	_, breathing := p.Effect(effect.WaterBreathing)
+	_, conduitPower := p.Effect(effect.ConduitPower)
 	_, submerged := p.tx.Liquid(cube.PosFromVec3(entity.EyePosition(p)))
 	return !p.GameMode().AllowsTakingDamage() || !submerged || breathing || conduitPower
 }

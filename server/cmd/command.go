@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"go/ast"
 	"reflect"
@@ -221,24 +222,24 @@ func (cmd Command) String() string {
 // leftover command line.
 func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output, tx *world.Tx) (*Line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
-		//lint:ignore ST1005 Error string is capitalised because it is shown to the player.
-		//goland:noinspection GoErrorStringFormat
-		return nil, fmt.Errorf("You cannot execute this command.")
+		return nil, chat.MessageCommandUnknown.F(cmd.name)
 	}
 
 	var argFrags []string
 	if args != "" {
 		r := csv.NewReader(strings.NewReader(args))
-		r.Comma = ' '
-		r.LazyQuotes = true
+		r.Comma, r.LazyQuotes = ' ', true
 		record, err := r.Read()
 		if err != nil {
-			return nil, fmt.Errorf("error parsing command string: %w", err)
+			// When LazyQuotes is enabled, this really never appears to return
+			// an error when we read only one line. Just in case it does though,
+			// we return the command usage.
+			return nil, chat.MessageCommandUsage.F(cmd.Usage())
 		}
 		argFrags = record
 	}
 	parser := parser{}
-	arguments := &Line{args: argFrags, src: source}
+	arguments := &Line{args: argFrags, src: source, seen: []string{"/" + cmd.name}}
 
 	// We iterate over all the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
@@ -255,7 +256,8 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 
 		err, success := parser.parseArgument(arguments, val, opt, name(t), source, tx)
 		if err != nil {
-			// Parsing was not successful, we return immediately as we don't need to call the Runnable.
+			// Parsing was not successful, we return immediately as we don't
+			// need to call the Runnable.
 			return arguments, err
 		}
 		if success && opt {
@@ -263,7 +265,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		}
 	}
 	if arguments.Len() != 0 {
-		return arguments, fmt.Errorf("unexpected '%v'", strings.Join(arguments.args, " "))
+		return arguments, arguments.SyntaxError()
 	}
 
 	v.Interface().(Runnable).Run(source, output, tx)

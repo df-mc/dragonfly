@@ -36,7 +36,7 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	}
 	t, ok := e.Type().(effect.LastingType)
 	if !ok {
-		e.Type().Apply(entity, lvl, 0)
+		e.Type().Apply(entity, e)
 		return e
 	}
 	typ := reflect.TypeOf(e.Type())
@@ -97,9 +97,8 @@ func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 			update = true
 			continue
 		}
-		eff = eff.TickDuration()
-		eff.Type().Apply(entity, eff.Level(), eff.Duration())
-		m.effects[i] = eff
+		eff.Type().Apply(entity, eff)
+		m.effects[i] = eff.TickDuration()
 	}
 
 	if update {

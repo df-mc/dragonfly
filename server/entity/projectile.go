@@ -148,7 +148,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		}
 		return nil
 	}
-	before, vel := e.Position(), e.Velocity()
+	vel := e.Velocity()
 	m, result := lt.tickMovement(e, tx)
 	e.data.Pos, e.data.Vel = m.pos, m.vel
 
@@ -168,7 +168,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	switch r := result.(type) {
 	case trace.EntityResult:
 		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
-			lt.hitEntity(l, e, before, vel)
+			lt.hitEntity(l, e, vel)
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
@@ -256,7 +256,7 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 // hitEntity is called when a projectile hits a Living. It deals damage to the
 // entity and knocks it back. Additionally, it applies any potion effects and
 // fire if applicable.
-func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec3) {
+func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
 	owner, _ := lt.conf.Owner.Entity(e.tx)
 	src := ProjectileDamageSource{Projectile: e, Owner: owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
@@ -264,7 +264,7 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec
 		dmg += rand.Float64() * dmg / 2
 	}
 	if _, vulnerable := l.Hurt(lt.conf.Damage, src); vulnerable {
-		l.KnockBack(origin, 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
+		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
 			l.AddEffect(eff)

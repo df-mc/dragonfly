@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// Beacon is a block that projects a light beam skyward, and can provide status effects such as Speed, Jump
-// Boost, Haste, Regeneration, Resistance, or Strength to nearby players.
+// Beacon is a block that projects a light beam skyward, and can provide status effects such as speed, Jump
+// Boost, haste, regeneration, resistance, or strength to nearby players.
 type Beacon struct {
 	solid
 	transparent
@@ -153,12 +153,12 @@ func (b Beacon) broadcastBeaconEffects(pos cube.Pos, tx *world.Tx) {
 	case 0:
 		primary = nil
 	case 1:
-		switch primary.(type) {
+		switch primary {
 		case effect.Resistance, effect.JumpBoost, effect.Strength:
 			primary = nil
 		}
 	case 2:
-		if _, ok := primary.(effect.Strength); ok {
+		if primary == effect.Strength {
 			primary = nil
 		}
 	case 3:
