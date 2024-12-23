@@ -45,7 +45,10 @@ type EntityHandle struct {
 	id uuid.UUID
 	t  EntityType
 
-	cond     *sync.Cond
+	cond         *sync.Cond
+	worldless    *atomic.Bool
+	weakTxActive bool
+
 	lockedTx atomic.Pointer[Tx]
 	w        *World
 
@@ -80,7 +83,8 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 		opts.ID = uuid.New()
 		clear(opts.ID[:8])
 	}
-	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{})}
+	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
+	handle.worldless.Store(true)
 	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	handle.data.Name = opts.NameTag
 	conf.Apply(&handle.data)
@@ -98,7 +102,7 @@ func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 // entityFromData reads an entity from the decoded NBT data passed and returns
 // an EntityHandle.
 func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
-	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{})}
+	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
 	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
 	handle.decodeNBT(data)
 	t.DecodeNBT(data, &handle.data)
@@ -133,38 +137,108 @@ func (e *EntityHandle) UUID() uuid.UUID {
 	return e.id
 }
 
+// Close closes the EntityHandle. Any subsequent call to ExecWorld will return
+// immediately without the transaction function being called.
+func (e *EntityHandle) Close(tx *Tx) {
+	e.setAndUnlockWorld(closeWorld, tx)
+}
+
 // ExecWorld obtains the EntityHandle's World in a thread-safe way and opens a
 // transaction in it when it does. If the EntityHandle has not been added to a
 // world, ExecWorld will block until the EntityHandle is added to a World and
 // run the transaction function once it is. If the Entity is closed before
 // ExecWorld is called, ExecWorld will return false immediately without running
 // the transaction function.
-func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) bool {
-	e.cond.L.Lock()
-	defer e.cond.L.Unlock()
+func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) (run bool) {
+	return e.execWorld(f, false)
+}
 
-	for e.w == nil {
+// execWorld uses a sync.Cond to synchronise access to the handler's world. We
+// are dealing with a rather complicated synchronisation pattern here.
+// The summary is as follows: The goal for ExecWorld is to block
+func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
+	e.cond.L.Lock()
+	for e.w == nil || (!weak && e.weakTxActive) {
+		// Wait suspends the current goroutine and unlocks e.cond.L, until
+		// e.cond.Broadcast() is called. After this, one of the goroutines
+		// waiting will acquire a lock of e.cond.L again. This means that only
+		// one goroutine will run the code after this simultaneously.
 		e.cond.Wait()
 	}
+	// If a goroutine manages to exit the for loop, it will have acquired a lock
+	// on e.cond.L. This also means that e.w can be assumed to not be nil here.
+	// Because of the lock on e.cond.L, no other transaction will be able to
+	// change e.w until we finish. e.worldless is set to true in
+	// e.unsetAndLockWorld(), where the entity's world is removed.
+	e.worldless.Store(false)
 	if e.w == closeWorld {
-		// EntityHandle was closed.
+		// EntityHandle was closed. No need to continue.
+		e.cond.L.Unlock()
 		return false
 	}
-	<-e.w.Exec(func(tx *Tx) {
+	// We now arrive at the more complicated part. When we call e.w.Exec(), our
+	// transaction must await earlier transactions in the world. If one of those
+	// earlier transactions tries to change e.w (through e.unsetAndLockWorld()
+	// or e.setAndUnlockWorld()), it must lock e.cond.L. This would lead to a
+	// deadlock, because we already have e.cond.L locked here.
+	// We work around this with so-called "weak transactions". This is a
+	// transaction that may be invalidated before it is executed. In this case,
+	// this invalidation happens by setting e.worldless to true. If the
+	// transaction turns out to be invalidated (ret == false), we simply try
+	// again, this time with e.execWorld(f, true) to make this goroutine bypass
+	// any goroutines still awaiting e.cond.
+	ret := e.weakExec(func(tx *Tx) {
 		e.lockedTx.Store(tx)
 		f(tx, e.mustEntity(tx))
 		e.lockedTx.Store(nil)
 	})
+	e.cond.L.Unlock()
+
+	if !ret {
+		// Our weak transaction was suspended. We try again, this time with
+		// e.execWorld(f, true) to make this goroutine bypass any goroutines
+		// still awaiting e.cond.
+		return e.execWorld(f, true)
+	}
+	return true
+}
+
+// weakExec performs a "weak transaction". It adds a transaction to the world
+// that is invalidated when e.worldless is set to true. In this case, weakExec
+// returns false. If the weak transaction is successfully executed, it returns
+// true, and any calls to ExecWorld waiting on e.cond are awakened. The goal of
+// weakExec is to suspend the current goroutine and unlock e.cond.L while
+// waiting for previous transactions to finish.
+func (e *EntityHandle) weakExec(f ExecFunc) bool {
+	e.weakTxActive = true
+
+	// We create a weak transaction and start a for loop to listen for the
+	// length of the channel. This might look weird, but the crucial part here
+	// is the call to e.cond.Wait(), which unlocks e.cond.L. This is required
+	// to prevent a deadlock if an earlier transaction tries to change e.w.
+	c := e.w.weakExec(e.worldless, e.cond, f)
+	for len(c) == 0 && e.w != closeWorld {
+		// Calling e.cond.Wait() here will free the lock on e.cond.L until our
+		// transaction finishes. e.w.weakExec() ensures that e.cond.Broadcast()
+		// is called once the transaction finished/is suspended, so we can
+		// continue after that.
+		e.cond.Wait()
+	}
+	// If the EntityHandle was closed (e.w == closeWorld), we treat the
+	// transaction as successful, because all transactions must be cancelled.
+	if e.w != closeWorld && !<-c {
+		// Weak transaction was suspended. Return false and try again.
+		return false
+	}
+	// After setting e.weakTxActive back to false, we must Broadcast to make
+	// sure any goroutines waiting in e.execWorld as a result of the
+	// e.weakTxActive condition can continue.
+	e.weakTxActive = false
+	e.cond.Broadcast()
 	return true
 }
 
 var closeWorld = &World{}
-
-// Close closes the EntityHandle. Any subsequent call to ExecWorld will return
-// immediately without the transaction function being called.
-func (e *EntityHandle) Close(tx *Tx) {
-	e.setAndUnlockWorld(closeWorld, tx)
-}
 
 func (e *EntityHandle) unsetAndLockWorld(tx *Tx) {
 	// If the entity is in a tx created using ExecWorld, e.cond.L will already
@@ -173,6 +247,7 @@ func (e *EntityHandle) unsetAndLockWorld(tx *Tx) {
 		e.cond.L.Lock()
 		defer e.cond.L.Unlock()
 	}
+	e.worldless.Store(true)
 	e.w = nil
 }
 

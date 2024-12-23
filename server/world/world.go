@@ -66,14 +66,14 @@ type World struct {
 	scheduledUpdates *scheduledTickQueue
 	neighbourUpdates []neighbourUpdate
 
-	viewers map[*Loader]Viewer
+	viewerMu sync.Mutex
+	viewers  map[*Loader]Viewer
 }
 
-// transaction holds a transaction function and the channel to be closed once
-// complete.
-type transaction struct {
-	c chan struct{}
-	f func(tx *Tx)
+// transaction is a type that may be added to the transaction queue of a World.
+// Its Run method is called when the transaction is taken out of the queue.
+type transaction interface {
+	Run(w *World)
 }
 
 // New creates a new initialised world. The world may be used right away, but
@@ -115,7 +115,13 @@ type ExecFunc func(tx *Tx)
 // that is closed once the transaction is complete.
 func (w *World) Exec(f ExecFunc) <-chan struct{} {
 	c := make(chan struct{})
-	w.queue <- transaction{c: c, f: f}
+	w.queue <- normalTransaction{c: c, f: f}
+	return c
+}
+
+func (w *World) weakExec(invalid *atomic.Bool, cond *sync.Cond, f ExecFunc) <-chan bool {
+	c := make(chan bool, 1)
+	w.queue <- weakTransaction{c: c, f: f, invalid: invalid, cond: cond}
 	return c
 }
 
@@ -124,11 +130,8 @@ func (w *World) Exec(f ExecFunc) <-chan struct{} {
 func (w *World) handleTransactions() {
 	for {
 		select {
-		case queuedTx := <-w.queue:
-			tx := &Tx{w: w}
-			queuedTx.f(tx)
-			tx.close()
-			close(queuedTx.c)
+		case tx := <-w.queue:
+			tx.Run(w)
 		case <-w.closing:
 			w.running.Done()
 			return
@@ -1021,6 +1024,9 @@ func (w *World) close() {
 // allViewers returns all viewers and loaders, regardless of where in the world
 // they are viewing.
 func (w *World) allViewers() ([]Viewer, []*Loader) {
+	w.viewerMu.Lock()
+	defer w.viewerMu.Unlock()
+
 	viewers, loaders := make([]Viewer, 0, len(w.viewers)), make([]*Loader, 0, len(w.viewers))
 	for k, v := range w.viewers {
 		viewers = append(viewers, v)
@@ -1032,7 +1038,10 @@ func (w *World) allViewers() ([]Viewer, []*Loader) {
 // addWorldViewer adds a viewer to the world. Should only be used while the
 // viewer isn't viewing any chunks.
 func (w *World) addWorldViewer(l *Loader) {
+	w.viewerMu.Lock()
 	w.viewers[l] = l.viewer
+	w.viewerMu.Unlock()
+
 	l.viewer.ViewTime(w.Time())
 	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
