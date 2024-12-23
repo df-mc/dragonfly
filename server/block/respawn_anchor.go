@@ -3,9 +3,9 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/sandertv/gophertunnel/minecraft/text"
 )
 
 // RespawnAnchor is a block that allows the player to set their spawn point in the Nether.
@@ -63,7 +63,7 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.T
 			if previousSpawn == pos {
 				return false
 			}
-			sleeper.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
+			sleeper.Messaget(chat.MessageRespawnPointSet)
 			w.SetPlayerSpawn(sleeper.UUID(), pos)
 			return false
 		}

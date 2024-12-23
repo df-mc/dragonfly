@@ -17,6 +17,14 @@ var MessageCommandUsage = Translate(str("%commands.generic.usage"), 1, `Usage: %
 var MessageCommandUnknown = Translate(str("%commands.generic.unknown"), 1, `Unknown command: "%v": Please check that the command exists and that you have permission to use it.`)
 var MessageCommandNoTargets = Translate(str("%commands.generic.noTargetMatch"), 0, `No targets matched selector`)
 
+var MessageBedTooFar = Translate(str("%tile.bed.tooFar"), 0, `Bed is too far away`).Enc("<grey>%v</grey>")
+var MessageRespawnPointSet = Translate(str("%tile.bed.respawnSet"), 0, `Respawn point set`).Enc("<grey>%v</grey>")
+var MessageNoSleep = Translate(str("%tile.bed.noSleep"), 0, `You can only sleep at night and during thunderstorms`).Enc("<grey>%v</grey>")
+var MessageBedIsOccupied = Translate(str("%tile.bed.occupied"), 0, `This bed is occupied`).Enc("<grey>%v</grey>")
+var MessageSleeping = Translate(str("%chat.type.sleeping"), 2, `%v is sleeping in a bed. To skip to dawn, %v more users need to sleep in beds at the same time.`)
+var MessageRespawnAnchorNotValid = Translate(str("%tile.respawn_anchor.notValid"), 0, `Your respawn anchor was out of charges, missing or obstructed`).Enc("<grey>%v</grey>")
+var MessageBedNotValid = Translate(str("%tile.bed.notValid"), 0, `Your home bed was missing or obstructed`)
+
 type str string
 
 // Resolve returns the translation identifier as a string.

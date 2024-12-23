@@ -922,9 +922,9 @@ func (p *Player) respawn(f func(p *Player)) {
 	if spawnObstructed {
 		switch previousDimension {
 		case world.Nether:
-			p.Messaget("%tile.respawn_anchor.notValid")
+			p.Messaget(chat.MessageRespawnAnchorNotValid)
 		case world.Overworld:
-			p.Messaget("%tile.bed.notValid")
+			p.Messaget(chat.MessageBedNotValid)
 		}
 	}
 
@@ -1204,13 +1204,14 @@ func (p *Player) Sleep(pos cube.Pos) {
 	}
 
 	tx.World().SetRequiredSleepDuration(time.Second * 5)
-	if sendReminder {
-		tx.BroadcastSleepingReminder(p)
-	}
 
 	p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
 	p.sleeping = true
 	p.sleepPos = pos
+
+	if sendReminder {
+		tx.BroadcastSleepingReminder(p)
+	}
 
 	tx.BroadcastSleepingIndicator()
 	p.updateState()

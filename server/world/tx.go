@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"time"
@@ -248,11 +249,13 @@ func (tx *Tx) BroadcastSleepingIndicator() {
 // BroadcastSleepingReminder broadcasts a sleeping reminder message to all sleepers in the world, excluding the sleeper
 // passed.
 func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
+	notSleeping := new(int)
+
 	for s := range tx.Sleepers() {
-		if s == sleeper {
-			continue
+		if _, ok := s.Sleeping(); !ok {
+			*notSleeping++
+			defer s.Messaget(chat.MessageSleeping, sleeper.Name(), *notSleeping)
 		}
-		s.Messaget("chat.type.sleeping", sleeper.Name())
 	}
 }
 

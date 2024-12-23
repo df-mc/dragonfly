@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/google/uuid"
 )
 
@@ -12,7 +13,7 @@ type Sleeper interface {
 	Name() string
 	UUID() uuid.UUID
 
-	Messaget(key string, a ...string)
+	Messaget(t chat.Translation, a ...any)
 	SendSleepingIndicator(sleeping, max int)
 
 	Sleep(pos cube.Pos)

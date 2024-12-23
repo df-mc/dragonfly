@@ -5,9 +5,9 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/sandertv/gophertunnel/minecraft/text"
 )
 
 // Bed is a block, allowing players to sleep to set their spawns and skip the night.
@@ -108,7 +108,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 
 	userPos := s.Position()
 	if sidePos.Vec3Middle().Sub(userPos).Len() > 4 && pos.Vec3Middle().Sub(userPos).Len() > 4 {
-		s.Messaget(text.Colourf("<grey>%%tile.bed.tooFar</grey>"))
+		s.Messaget(chat.MessageBedTooFar)
 		return true
 	}
 
@@ -123,16 +123,16 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 	previousSpawn := w.PlayerSpawn(s.UUID())
 	if previousSpawn != pos && previousSpawn != sidePos {
 		w.SetPlayerSpawn(s.UUID(), pos)
-		s.Messaget(text.Colourf("<grey>%%tile.bed.respawnSet</grey>"))
+		s.Messaget(chat.MessageRespawnPointSet)
 	}
 
 	time := w.Time() % world.TimeFull
 	if (time < world.TimeNight || time >= world.TimeSunrise) && !tx.ThunderingAt(pos) {
-		s.Messaget(text.Colourf("<grey>%%tile.bed.noSleep</grey>"))
+		s.Messaget(chat.MessageNoSleep)
 		return true
 	}
 	if headSide.Sleeper != nil {
-		s.Messaget(text.Colourf("<grey>%%tile.bed.occupied</grey>"))
+		s.Messaget(chat.MessageBedIsOccupied)
 		return true
 	}
 
