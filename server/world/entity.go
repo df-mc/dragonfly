@@ -45,7 +45,10 @@ type EntityHandle struct {
 	id uuid.UUID
 	t  EntityType
 
-	cond     *sync.Cond
+	cond         *sync.Cond
+	worldless    *atomic.Bool
+	weakTxActive bool
+
 	lockedTx atomic.Pointer[Tx]
 	w        *World
 
@@ -80,7 +83,8 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 		opts.ID = uuid.New()
 		clear(opts.ID[:8])
 	}
-	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{})}
+	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
+	handle.worldless.Store(true)
 	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	handle.data.Name = opts.NameTag
 	conf.Apply(&handle.data)
@@ -139,22 +143,45 @@ func (e *EntityHandle) UUID() uuid.UUID {
 // run the transaction function once it is. If the Entity is closed before
 // ExecWorld is called, ExecWorld will return false immediately without running
 // the transaction function.
-func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) bool {
-	e.cond.L.Lock()
-	defer e.cond.L.Unlock()
+func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) (run bool) {
+	return e.execWorld(f, false)
+}
 
-	for e.w == nil {
+func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) (run bool) {
+	e.cond.L.Lock()
+	for e.w == nil || (!weak && e.weakTxActive) {
 		e.cond.Wait()
 	}
 	if e.w == closeWorld {
 		// EntityHandle was closed.
+		e.cond.L.Unlock()
 		return false
 	}
-	<-e.w.Exec(func(tx *Tx) {
+
+	ret := e.weakExec(func(tx *Tx) {
 		e.lockedTx.Store(tx)
 		f(tx, e.mustEntity(tx))
 		e.lockedTx.Store(nil)
 	})
+	e.cond.L.Unlock()
+
+	if !ret {
+		return e.execWorld(f, true)
+	}
+	return true
+}
+
+func (e *EntityHandle) weakExec(f ExecFunc) bool {
+	e.weakTxActive = true
+	c := e.w.weakExec(e.worldless, e.cond, f)
+	for len(c) == 0 {
+		e.cond.Wait()
+	}
+	if success := <-c; !success {
+		return false
+	}
+	e.weakTxActive = false
+	e.cond.Broadcast()
 	return true
 }
 
@@ -173,6 +200,7 @@ func (e *EntityHandle) unsetAndLockWorld(tx *Tx) {
 		e.cond.L.Lock()
 		defer e.cond.L.Unlock()
 	}
+	e.worldless.Store(true)
 	e.w = nil
 }
 
@@ -187,6 +215,7 @@ func (e *EntityHandle) setAndUnlockWorld(w *World, tx *Tx) {
 		panic("cannot add entity to new world before removing from old world")
 	}
 	e.w = w
+	e.worldless.Store(false)
 	e.cond.Broadcast()
 }
 
