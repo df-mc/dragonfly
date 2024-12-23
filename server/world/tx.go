@@ -248,7 +248,6 @@ func (ntx normalTransaction) Run(w *World) {
 // weakTransaction is a transaction that may be cancelled by setting its invalid
 // bool to false before the transaction is run.
 type weakTransaction struct {
-	wait    chan struct{}
 	c       chan bool
 	f       func(tx *Tx)
 	invalid *atomic.Bool
