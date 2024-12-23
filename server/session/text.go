@@ -24,7 +24,7 @@ func (s *Session) SendTranslation(t chat.Translation, l language.Tag, a []any) {
 		TextType:         packet.TextTypeTranslation,
 		NeedsTranslation: true,
 		Message:          tr.Resolve(l),
-		Parameters:       tr.Params(),
+		Parameters:       tr.Params(l),
 	})
 }
 

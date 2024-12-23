@@ -75,15 +75,15 @@ func (t Translation) Resolve(l language.Tag) string {
 // F takes arguments for a translation string passed and returns a filled out
 // translation that may be sent to players. The number of arguments passed must
 // be exactly equal to the number specified in Translate. If not, F will panic.
+// Arguments passed are converted to strings using fmt.Sprint(). Exceptions are
+// made for argument values of the type TranslationString, Translation and
+// translation, which are resolved based on the Translator's language.
+// Translations used as arguments should not require any parameters.
 func (t Translation) F(a ...any) translation {
 	if len(a) != t.params {
 		panic(fmt.Sprintf("translation '%v' requires exactly %v parameters, got %v", t.format, t.params, len(a)))
 	}
-	params := make([]string, len(a))
-	for i, arg := range a {
-		params[i] = fmt.Sprint(arg)
-	}
-	return translation{t: t, params: params, fallbackParams: a}
+	return translation{t: t, params: a}
 }
 
 // translation is a translation string with its arguments filled out. Resolve may
@@ -91,9 +91,8 @@ func (t Translation) F(a ...any) translation {
 // Params may be called to obtain the parameters passed in Translation.F.
 // translation implements the fmt.Stringer and error interfaces.
 type translation struct {
-	t              Translation
-	params         []string
-	fallbackParams []any
+	t      Translation
+	params []any
 }
 
 // Resolve translates the TranslationString of the translation to the language
@@ -104,13 +103,21 @@ func (t translation) Resolve(l language.Tag) string {
 
 // Params returns a slice of values that are used to parameterise the
 // translation returned by Resolve.
-func (t translation) Params() []string {
-	return t.params
+func (t translation) Params(l language.Tag) []string {
+	params := make([]string, len(t.params))
+	for i, arg := range t.params {
+		if str, ok := arg.(TranslationString); ok {
+			params[i] = str.Resolve(l)
+			continue
+		}
+		params[i] = fmt.Sprint(arg)
+	}
+	return params
 }
 
 // String formats and returns the fallback value of the translation.
 func (t translation) String() string {
-	return fmt.Sprintf(text.Colourf(t.t.format, t.t.fallback), t.fallbackParams...)
+	return fmt.Sprintf(text.Colourf(t.t.format, t.t.fallback), t.params...)
 }
 
 // Error formats and returns the fallback value of the translation.
