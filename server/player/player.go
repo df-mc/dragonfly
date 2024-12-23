@@ -2391,12 +2391,12 @@ func (p *Player) tickFood() {
 			p.AddFood(1)
 		}
 		if p.hunger.foodTick%20 == 0 {
-			p.regenerate(false)
+			p.regenerate(true)
 		}
 	}
-	if p.hunger.foodTick == 0 {
+	if p.hunger.foodTick == 1 {
 		if p.hunger.canRegenerate() {
-			p.regenerate(true)
+			p.regenerate(false)
 		} else if p.hunger.starving() {
 			p.starve()
 		}
