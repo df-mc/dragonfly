@@ -102,7 +102,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	held, left := releaser.HeldItems()
 	crossbow := duplicateStack(held, c)
 	releaser.SetHeldItems(crossbow, left)
-	releaser.PlaySound(sound.CrossbowShoot{})
+	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
 	return true
 }
 
