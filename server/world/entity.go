@@ -48,9 +48,7 @@ type EntityHandle struct {
 	cond         *sync.Cond
 	worldless    *atomic.Bool
 	weakTxActive bool
-
-	lockedTx atomic.Pointer[Tx]
-	w        *World
+	w            *World
 
 	data EntityData
 
@@ -139,8 +137,9 @@ func (e *EntityHandle) UUID() uuid.UUID {
 
 // Close closes the EntityHandle. Any subsequent call to ExecWorld will return
 // immediately without the transaction function being called.
-func (e *EntityHandle) Close(tx *Tx) {
-	e.setAndUnlockWorld(closeWorld, tx)
+func (e *EntityHandle) Close() error {
+	e.setAndUnlockWorld(closeWorld)
+	return nil
 }
 
 // ExecWorld obtains the EntityHandle's World in a thread-safe way and opens a
@@ -187,11 +186,7 @@ func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
 	// transaction turns out to be invalidated (ret == false), we simply try
 	// again, this time with e.execWorld(f, true) to make this goroutine bypass
 	// any goroutines still awaiting e.cond.
-	ret := e.weakExec(func(tx *Tx) {
-		e.lockedTx.Store(tx)
-		f(tx, e.mustEntity(tx))
-		e.lockedTx.Store(nil)
-	})
+	ret := e.weakExec(func(tx *Tx) { f(tx, e.mustEntity(tx)) })
 	e.cond.L.Unlock()
 
 	if !ret {
@@ -240,24 +235,22 @@ func (e *EntityHandle) weakExec(f ExecFunc) bool {
 
 var closeWorld = &World{}
 
-func (e *EntityHandle) unsetAndLockWorld(tx *Tx) {
-	// If the entity is in a tx created using ExecWorld, e.cond.L will already
-	// be locked. Don't try to lock again in that case.
-	if e.lockedTx.Load() != tx {
-		e.cond.L.Lock()
-		defer e.cond.L.Unlock()
-	}
+// unsetAndLockWorld sets e.w to nil, causing any subsequent calls to ExecWorld
+// to block until e.w is set to a non-nil value.
+func (e *EntityHandle) unsetAndLockWorld() {
+	e.cond.L.Lock()
+	defer e.cond.L.Unlock()
+
 	e.worldless.Store(true)
 	e.w = nil
 }
 
-func (e *EntityHandle) setAndUnlockWorld(w *World, tx *Tx) {
-	// If the entity is in a tx created using ExecWorld, e.cond.L will already
-	// be locked. Don't try to lock again in that case.
-	if e.lockedTx.Load() != tx {
-		e.cond.L.Lock()
-		defer e.cond.L.Unlock()
-	}
+// setAndUnlockWorld sets e.w to a World passed and broadcasts e.cond, so that
+// any goroutines waiting for a non-nil world are awoken.
+func (e *EntityHandle) setAndUnlockWorld(w *World) {
+	e.cond.L.Lock()
+	defer e.cond.L.Unlock()
+
 	if e.w != nil {
 		panic("cannot add entity to new world before removing from old world")
 	}
