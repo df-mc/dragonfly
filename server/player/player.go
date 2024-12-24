@@ -2859,7 +2859,7 @@ func (p *Player) quit(msg string) {
 	// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
 	// session will remove the player once ready.
 	p.tx.RemoveEntity(p)
-	p.handle.Close(p.tx)
+	_ = p.handle.Close()
 }
 
 // Data returns the player data that needs to be saved. This is used when the player
