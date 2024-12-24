@@ -332,7 +332,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	command, ok := cmd.ByAlias(args[0][1:])
 	if !ok {
 		o := &cmd.Output{}
-		o.Errort(chat.MessageCommandUnknown, args[0])
+		o.Errort(cmd.MessageUnknown, args[0])
 		p.SendCommandOutput(o)
 		return
 	}
