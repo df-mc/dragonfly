@@ -93,5 +93,5 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomDye},
 		Slot:      loomDyeSlot,
 	}, dye.Grow(-timesCrafted), s, tx)
-	return h.createResults(s, tx, duplicateStack(input, b))
+	return h.createResults(s, tx, input.WithItem(b))
 }
