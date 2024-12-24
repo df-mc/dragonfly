@@ -22,6 +22,7 @@ func WriteItem(s item.Stack, disk bool) map[string]any {
 	writeDisplay(tag, s)
 	writeDragonflyData(tag, s)
 	writeEnchantments(tag, s)
+	writeUnbreakable(tag, s)
 
 	data := make(map[string]any)
 	if disk {
@@ -144,5 +145,12 @@ func writeDamage(m map[string]any, s item.Stack, disk bool) {
 func writeAnvilCost(m map[string]any, s item.Stack) {
 	if cost := s.AnvilCost(); cost > 0 {
 		m["RepairCost"] = int32(cost)
+	}
+}
+
+// writeUnbreakable writes the unbreakable tag to an item stack if it is unbreakable.
+func writeUnbreakable(m map[string]any, s item.Stack) {
+	if s.Unbreakable() {
+		m["Unbreakable"] = byte(1)
 	}
 }
