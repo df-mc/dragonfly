@@ -11,6 +11,8 @@ type BottleOfEnchanting struct{}
 // Use ...
 func (b BottleOfEnchanting) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().BottleOfEnchanting
+	r := user.Rotation()
+	r[1] = throwableOffset(r[1])
 	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: user.Rotation().Vec3().Mul(0.7)}
 	tx.AddEntity(create(opts, user))
 	tx.PlaySound(user.Position(), sound.ItemThrow{})
