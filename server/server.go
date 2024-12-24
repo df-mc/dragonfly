@@ -183,6 +183,13 @@ func (srv *Server) MaxPlayerCount() int {
 	return srv.conf.MaxPlayers
 }
 
+// PlayerCount returns the total number of players connected to the Server.
+func (srv *Server) PlayerCount() int {
+	srv.pmu.RLock()
+	defer srv.pmu.RUnlock()
+	return len(srv.p)
+}
+
 // Players returns an iterator that yields players currently online. If Players
 // is called from within a transaction, the respective transaction should be
 // passed. Passing nil is otherwise valid. Players returned are only valid

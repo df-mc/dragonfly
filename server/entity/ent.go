@@ -135,7 +135,7 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 func (e *Ent) Close() error {
 	e.once.Do(func() {
 		e.tx.RemoveEntity(e)
-		e.handle.Close(e.tx)
+		_ = e.handle.Close()
 	})
 	return nil
 }

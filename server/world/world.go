@@ -663,7 +663,7 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 // loaded. addEntity panics if the EntityHandle is already in a world.
 // addEntity returns the Entity created by the EntityHandle.
 func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
-	handle.setAndUnlockWorld(w, tx)
+	handle.setAndUnlockWorld(w)
 	pos := chunkPosFromVec3(handle.data.Pos)
 	w.entities[handle] = pos
 
@@ -699,7 +699,7 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 		v.HideEntity(e)
 	}
 	delete(w.entities, handle)
-	handle.unsetAndLockWorld(tx)
+	handle.unsetAndLockWorld()
 	return handle
 }
 
