@@ -32,6 +32,7 @@ func (Bow) FuelInfo() FuelInfo {
 // Release ...
 func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
 	creative := releaser.GameMode().CreativeInventory()
+	held, left := releaser.HeldItems()
 	ticks := duration.Milliseconds() / 50
 	if ticks < 3 {
 		// The player must hold the bow for at least three ticks.
@@ -45,8 +46,16 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		return
 	}
 
-	arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
-		_, ok := stack.Item().(Arrow)
+	var arrow Stack
+	if !left.Empty() {
+		if _, ok := left.Item().(Arrow); ok {
+			arrow = left
+		}
+	}
+
+	var ok bool
+	arrow, ok = ctx.FirstFunc(func(stack Stack) bool {
+		_, ok = stack.Item().(Arrow)
 		return ok
 	})
 	if !ok && !creative {
@@ -60,7 +69,6 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		tip = arrow.Item().(Arrow).Tip
 	}
 
-	held, _ := releaser.HeldItems()
 	damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), !creative
 	for _, enchant := range held.Enchantments() {
 		if f, ok := enchant.Type().(interface{ BurnDuration() time.Duration }); ok {
@@ -90,6 +98,7 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 	}
 
 	releaser.PlaySound(sound.BowShoot{})
+	releaser.SetHeldItems(held, left)
 }
 
 // EnchantmentValue ...
