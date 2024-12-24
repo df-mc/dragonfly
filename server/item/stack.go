@@ -211,7 +211,7 @@ func (s Stack) Lore() []string {
 // WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
 func (s Stack) WithValue(key string, val any) Stack {
-	s.data = maps.Clone(s.data)
+	s.data = cloneMap(s.data)
 	if val != nil {
 		s.data[key] = val
 	} else {
@@ -233,7 +233,7 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	if _, ok := s.item.(Book); ok {
 		s.item = EnchantedBook{}
 	}
-	s.enchantments = maps.Clone(s.enchantments)
+	s.enchantments = cloneMap(s.enchantments)
 	for _, enchant := range enchants {
 		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWithItem(s.item) {
 			// Enchantment is not compatible with the item.
@@ -246,7 +246,7 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 
 // WithoutEnchantments returns the current stack but with the passed enchantments removed.
 func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
-	s.enchantments = maps.Clone(s.enchantments)
+	s.enchantments = cloneMap(s.enchantments)
 	for _, enchant := range enchants {
 		delete(s.enchantments, enchant)
 	}
@@ -384,6 +384,14 @@ func (s Stack) String() string {
 // Modifying it will not modify the item stack.
 func (s Stack) Values() map[string]any {
 	return maps.Clone(s.data)
+}
+
+// cloneMap calls maps.Clone, but initialises m if it does not yet exist.
+func cloneMap[M ~map[K]V, K comparable, V any](m M) M {
+	if m == nil {
+		m = make(M)
+	}
+	return maps.Clone(m)
 }
 
 // stackID is a counter for unique stack IDs.
