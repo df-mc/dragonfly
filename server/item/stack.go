@@ -23,7 +23,8 @@ type Stack struct {
 	customName string
 	lore       []string
 
-	damage int
+	damage      int
+	unbreakable bool
 
 	anvilCost int
 
@@ -98,7 +99,7 @@ func (s Stack) MaxDurability() int {
 // get the maximum durability.
 func (s Stack) Damage(d int) Stack {
 	durable, ok := s.Item().(Durable)
-	if !ok {
+	if !ok || s.unbreakable {
 		// Not a durable item.
 		return s
 	}
@@ -143,6 +144,21 @@ func (s Stack) WithDurability(d int) Stack {
 		return durable.DurabilityInfo().BrokenItem()
 	}
 	s.damage = maxDurability - d
+	return s
+}
+
+// Unbreakable checks if the item stack is unbreakable.
+func (s Stack) Unbreakable() bool {
+	return s.unbreakable
+}
+
+// WithUnbreakable returns a copy of the Stack with the unbreakable tag set to the value passed. If the item
+// does not implement the Durable interface, the original stack is returned.
+func (s Stack) WithUnbreakable(u bool) Stack {
+	if _, ok := s.Item().(Durable); !ok {
+		return s
+	}
+	s.unbreakable = true
 	return s
 }
 
