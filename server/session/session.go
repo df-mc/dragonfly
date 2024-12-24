@@ -260,7 +260,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	// Note: Be aware of where RemoveEntity is called. This must not be done too
 	// early.
 	tx.RemoveEntity(c)
-	s.ent.Close(tx)
+	_ = s.ent.Close()
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.

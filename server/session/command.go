@@ -19,14 +19,14 @@ func (s *Session) SendCommandOutput(output *cmd.Output, l language.Tag) {
 	for _, message := range output.Messages() {
 		om := protocol.CommandOutputMessage{Success: true, Message: message.String()}
 		if t, ok := message.(translation); ok {
-			om.Message, om.Parameters = t.Resolve(l), t.Params()
+			om.Message, om.Parameters = t.Resolve(l), t.Params(l)
 		}
 		messages = append(messages, om)
 	}
 	for _, err := range output.Errors() {
 		om := protocol.CommandOutputMessage{Message: err.Error()}
 		if t, ok := err.(translation); ok {
-			om.Message, om.Parameters = t.Resolve(l), t.Params()
+			om.Message, om.Parameters = t.Resolve(l), t.Params(l)
 		}
 		messages = append(messages, om)
 	}
@@ -41,7 +41,7 @@ func (s *Session) SendCommandOutput(output *cmd.Output, l language.Tag) {
 
 type translation interface {
 	Resolve(l language.Tag) string
-	Params() []string
+	Params(l language.Tag) []string
 }
 
 // sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the

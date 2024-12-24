@@ -99,6 +99,8 @@ type playerData struct {
 	hunger *hungerManager
 
 	once sync.Once
+
+	prevWorld *world.World
 }
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -333,7 +335,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	command, ok := cmd.ByAlias(args[0][1:])
 	if !ok {
 		o := &cmd.Output{}
-		o.Errort(chat.MessageCommandUnknown, args[0])
+		o.Errort(cmd.MessageUnknown, args[0])
 		p.SendCommandOutput(o)
 		return
 	}
@@ -2401,7 +2403,7 @@ func (p *Player) Latency() time.Duration {
 }
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
-func (p *Player) Tick(_ *world.Tx, current int64) {
+func (p *Player) Tick(tx *world.Tx, current int64) {
 	if p.Dead() {
 		return
 	}
@@ -2462,6 +2464,11 @@ func (p *Player) Tick(_ *world.Tx, current int64) {
 		}
 	}
 
+	if p.prevWorld != tx.World() && p.prevWorld != nil {
+		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
+		p.prevWorld = tx.World()
+	}
+
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.Rotation(), p.tx)
 		m.Send()
@@ -2501,12 +2508,12 @@ func (p *Player) tickFood() {
 			p.AddFood(1)
 		}
 		if p.hunger.foodTick%20 == 0 {
-			p.regenerate(false)
+			p.regenerate(true)
 		}
 	}
-	if p.hunger.foodTick == 0 {
+	if p.hunger.foodTick == 1 {
 		if p.hunger.canRegenerate() {
-			p.regenerate(true)
+			p.regenerate(false)
 		} else if p.hunger.starving() {
 			p.starve()
 		}
@@ -2969,7 +2976,7 @@ func (p *Player) quit(msg string) {
 	// Only remove the player from the world if it's not attached to a session. If it is attached to a session, the
 	// session will remove the player once ready.
 	p.tx.RemoveEntity(p)
-	p.handle.Close(p.tx)
+	_ = p.handle.Close()
 }
 
 // Data returns the player data that needs to be saved. This is used when the player

@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/go-gl/mathgl/mgl64"
+	"maps"
 	"math"
 	"sync"
 )
@@ -45,7 +46,17 @@ func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.reset(tx)
+	loaded := maps.Clone(l.loaded)
+	l.w.Exec(func(tx *Tx) {
+		for pos := range loaded {
+			tx.World().removeViewer(tx, pos, l)
+		}
+	})
+	clear(l.loaded)
+	l.w.viewerMu.Lock()
+	delete(l.w.viewers, l)
+	l.w.viewerMu.Unlock()
+
 	l.world(new)
 }
 
@@ -117,28 +128,17 @@ func (l *Loader) Close(tx *Tx) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.reset(tx)
-	l.closed = true
-	l.viewer = nil
-}
-
-// Reset clears all chunks loaded by the Loader and repopulates the loading queue so that they can all be loaded again.
-func (l *Loader) Reset(tx *Tx) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	l.reset(tx)
-	l.w.addWorldViewer(l)
-	l.populateLoadQueue()
-}
-
-// reset clears the Loader so that it may be used as if it was created again with NewLoader.
-func (l *Loader) reset(tx *Tx) {
 	for pos := range l.loaded {
-		l.w.removeViewer(tx, pos, l)
+		tx.World().removeViewer(tx, pos, l)
 	}
 	l.loaded = map[ChunkPos]*Column{}
+
+	l.w.viewerMu.Lock()
 	delete(l.w.viewers, l)
+	l.w.viewerMu.Unlock()
+
+	l.closed = true
+	l.viewer = nil
 }
 
 // world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
