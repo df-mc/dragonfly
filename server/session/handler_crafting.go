@@ -10,7 +10,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"math"
 	"slices"
-	_ "unsafe"
 )
 
 // handleCraft handles the CraftRecipe request action.
@@ -225,8 +224,3 @@ func grow(i recipe.Item, count int) recipe.Item {
 	}
 	panic(fmt.Errorf("unexpected recipe item %T", i))
 }
-
-// noinspection ALL
-//
-//go:linkname duplicateStack github.com/df-mc/dragonfly/server/internal/iteminternal.DuplicateStack
-func duplicateStack(stack item.Stack, item world.Item) item.Stack
