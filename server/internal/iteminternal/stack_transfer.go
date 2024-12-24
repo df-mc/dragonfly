@@ -5,8 +5,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// NewItem duplicates an item.Stack with the new item type given.
-func NewItem(input item.Stack, i world.Item) item.Stack {
+// DuplicateStack duplicates an item.Stack with the new item type given.
+func DuplicateStack(input item.Stack, i world.Item) item.Stack {
 	outputStack := item.NewStack(i, input.Count()).
 		Damage(input.MaxDurability() - input.Durability()).
 		WithCustomName(input.CustomName()).

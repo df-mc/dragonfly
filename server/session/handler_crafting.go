@@ -10,6 +10,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"math"
 	"slices"
+	_ "unsafe"
 )
 
 // handleCraft handles the CraftRecipe request action.
@@ -184,20 +185,6 @@ func (s *Session) craftingOffset() uint32 {
 	return craftingGridSmallOffset
 }
 
-// duplicateStack duplicates an item.Stack with the new item type given.
-func duplicateStack(input item.Stack, newType world.Item) item.Stack {
-	outputStack := item.NewStack(newType, input.Count()).
-		Damage(input.MaxDurability() - input.Durability()).
-		WithCustomName(input.CustomName()).
-		WithLore(input.Lore()...).
-		WithEnchantments(input.Enchantments()...).
-		WithAnvilCost(input.AnvilCost())
-	for k, v := range input.Values() {
-		outputStack = outputStack.WithValue(k, v)
-	}
-	return outputStack
-}
-
 // matchingStacks returns true if the two stacks are the same in a crafting scenario.
 func matchingStacks(has, expected recipe.Item) bool {
 	switch expected := expected.(type) {
@@ -238,3 +225,8 @@ func grow(i recipe.Item, count int) recipe.Item {
 	}
 	panic(fmt.Errorf("unexpected recipe item %T", i))
 }
+
+// noinspection ALL
+//
+//go:linkname duplicateStack github.com/df-mc/dragonfly/server/internal/iteminternal.DuplicateStack
+func duplicateStack(stack item.Stack, item world.Item) item.Stack

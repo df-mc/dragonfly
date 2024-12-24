@@ -63,7 +63,7 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 		ctx.Consume(c.Item)
 	}
 
-	crossbow := newItem(held, c)
+	crossbow := duplicateStack(held, c)
 	releaser.SetHeldItems(crossbow, left)
 	return true
 }
@@ -100,7 +100,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
-	crossbow := newItem(held, c)
+	crossbow := duplicateStack(held, c)
 	releaser.SetHeldItems(crossbow, left)
 	releaser.PlaySound(sound.CrossbowShoot{})
 	return true
@@ -152,8 +152,8 @@ func (c Crossbow) EncodeNBT() map[string]any {
 
 // noinspection ALL
 //
-//go:linkname newItem github.com/df-mc/dragonfly/server/internal/iteminternal.NewItem
-func newItem(stack Stack, item world.Item) Stack
+//go:linkname duplicateStack github.com/df-mc/dragonfly/server/internal/iteminternal.DuplicateStack
+func duplicateStack(stack Stack, item world.Item) Stack
 
 // noinspection ALL
 //
