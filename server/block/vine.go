@@ -133,7 +133,7 @@ func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	above, updated := tx.Block(pos.Side(cube.FaceUp)), false
 	for _, d := range v.Attachments() {
-		if _, ok := tx.Block(pos.Side(d.Face())).Model().(model.Solid); !ok {
+		if !v.canSpreadTo(tx, pos.Side(d.Face())) {
 			if o, ok := above.(Vines); !ok || !o.Attachment(d) {
 				//noinspection GoAssignmentToReceiver
 				v = v.SetAttachment(d, false)
