@@ -95,7 +95,7 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		ctx.Consume(arrow.Grow(-arrow.Count() + 1))
 	}
 
-	releaser.PlaySound(sound.BowShoot{})
+	tx.PlaySound(eyePosition(releaser), sound.BowShoot{})
 }
 
 // EnchantmentValue ...
