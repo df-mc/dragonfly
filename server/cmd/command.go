@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"go/ast"
 	"reflect"
@@ -131,7 +130,7 @@ func (cmd Command) Execute(args string, source Source, tx *world.Tx) {
 	defer source.SendCommandOutput(output)
 
 	var leastErroneous error
-	leastArgsLeft := len(strings.Split(args, " "))
+	var leastArgsLeft *Line
 
 	for _, v := range cmd.v {
 		cp := reflect.New(v.Type())
@@ -150,15 +149,18 @@ func (cmd Command) Execute(args string, source Source, tx *world.Tx) {
 			}
 			continue
 		}
-		if line.Len() <= leastArgsLeft {
+		if leastArgsLeft == nil || line.Len() <= leastArgsLeft.Len() {
 			// If the line had less (or equal) arguments left than the previous lowest, we update the error,
 			// so that we can return an error that applies for the most successful Runnable.
 			leastErroneous = err
-			leastArgsLeft = line.Len()
+			leastArgsLeft = line
 		}
 	}
-	// No working Runnable found for the arguments passed. We add the most applicable error to the output and
-	// stop there.
+	// No working Runnable found for the arguments passed. We add the most
+	// applicable error to the output and stop there.
+	if leastArgsLeft != nil {
+		output.Error(leastArgsLeft.SyntaxError())
+	}
 	output.Error(leastErroneous)
 }
 
@@ -222,7 +224,7 @@ func (cmd Command) String() string {
 // leftover command line.
 func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, output *Output, tx *world.Tx) (*Line, error) {
 	if a, ok := v.Interface().(Allower); ok && !a.Allow(source) {
-		return nil, chat.MessageCommandUnknown.F(cmd.name)
+		return nil, MessageUnknown.F(cmd.name)
 	}
 
 	var argFrags []string
@@ -234,12 +236,12 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			// When LazyQuotes is enabled, this really never appears to return
 			// an error when we read only one line. Just in case it does though,
 			// we return the command usage.
-			return nil, chat.MessageCommandUsage.F(cmd.Usage())
+			return nil, MessageUsage.F(cmd.Usage())
 		}
 		argFrags = record
 	}
 	parser := parser{}
-	arguments := &Line{args: argFrags, src: source, seen: []string{"/" + cmd.name}}
+	arguments := &Line{args: argFrags, src: source, seen: []string{"/" + cmd.name}, cmd: cmd}
 
 	// We iterate over all the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
@@ -265,7 +267,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 		}
 	}
 	if arguments.Len() != 0 {
-		return arguments, arguments.SyntaxError()
+		return arguments, arguments.UsageError()
 	}
 
 	v.Interface().(Runnable).Run(source, output, tx)

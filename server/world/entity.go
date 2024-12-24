@@ -149,7 +149,7 @@ func (e *EntityHandle) Close() error {
 // run the transaction function once it is. If the Entity is closed before
 // ExecWorld is called, ExecWorld will return false immediately without running
 // the transaction function.
-func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) (run bool) {
+func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) bool {
 	return e.execWorld(f, false)
 }
 
