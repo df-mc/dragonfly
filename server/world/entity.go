@@ -136,7 +136,8 @@ func (e *EntityHandle) UUID() uuid.UUID {
 }
 
 // Close closes the EntityHandle. Any subsequent call to ExecWorld will return
-// immediately without the transaction function being called.
+// immediately without the transaction function being called. Close always
+// returns nil.
 func (e *EntityHandle) Close() error {
 	e.setAndUnlockWorld(closeWorld)
 	return nil
@@ -148,13 +149,14 @@ func (e *EntityHandle) Close() error {
 // run the transaction function once it is. If the Entity is closed before
 // ExecWorld is called, ExecWorld will return false immediately without running
 // the transaction function.
-func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) (run bool) {
+func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) bool {
 	return e.execWorld(f, false)
 }
 
 // execWorld uses a sync.Cond to synchronise access to the handler's world. We
-// are dealing with a rather complicated synchronisation pattern here.
-// The summary is as follows: The goal for ExecWorld is to block
+// are dealing with a rather complicated synchronisation pattern here. The goal
+// for ExecWorld is to block until e.w becomes accessible. Meanwhile, World.Exec
+// may also affect e.w, which execWorld needs to deal with.
 func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
 	e.cond.L.Lock()
 	for e.w == nil || (!weak && e.weakTxActive) {

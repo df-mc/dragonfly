@@ -12,11 +12,6 @@ var MessageJoin = Translate(str("%multiplayer.player.joined"), 1, `%v joined the
 var MessageQuit = Translate(str("%multiplayer.player.left"), 1, `%v left the game`).Enc("<yellow>%v</yellow>")
 var MessageServerDisconnect = Translate(str("%disconnect.disconnected"), 0, `Disconnected by Server`).Enc("<yellow>%v</yellow>")
 
-var MessageCommandSyntax = Translate(str("%commands.generic.syntax"), 3, `Syntax error: unexpected value: at "%v>>%v<<%v"`)
-var MessageCommandUsage = Translate(str("%commands.generic.usage"), 1, `Usage: %v`)
-var MessageCommandUnknown = Translate(str("%commands.generic.unknown"), 1, `Unknown command: "%v": Please check that the command exists and that you have permission to use it.`)
-var MessageCommandNoTargets = Translate(str("%commands.generic.noTargetMatch"), 0, `No targets matched selector`)
-
 type str string
 
 // Resolve returns the translation identifier as a string.

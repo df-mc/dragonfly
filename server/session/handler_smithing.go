@@ -85,7 +85,7 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		if !ok {
 			return fmt.Errorf("input item is not trimmable")
 		}
-		return h.createResults(s, tx, duplicateStack(input, trimmable.WithTrim(trim)))
+		return h.createResults(s, tx, input.WithItem(trimmable.WithTrim(trim)))
 	}
-	return h.createResults(s, tx, duplicateStack(input, craft.Output()[0].Item()))
+	return h.createResults(s, tx, input.WithItem(craft.Output()[0].Item()))
 }

@@ -96,6 +96,8 @@ type playerData struct {
 	hunger *hungerManager
 
 	once sync.Once
+
+	prevWorld *world.World
 }
 
 // Player is an implementation of a player entity. It has methods that implement the behaviour that players
@@ -330,7 +332,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	command, ok := cmd.ByAlias(args[0][1:])
 	if !ok {
 		o := &cmd.Output{}
-		o.Errort(chat.MessageCommandUnknown, args[0])
+		o.Errort(cmd.MessageUnknown, args[0])
 		p.SendCommandOutput(o)
 		return
 	}
@@ -2316,7 +2318,7 @@ func (p *Player) Latency() time.Duration {
 }
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
-func (p *Player) Tick(_ *world.Tx, current int64) {
+func (p *Player) Tick(tx *world.Tx, current int64) {
 	if p.Dead() {
 		return
 	}
@@ -2375,6 +2377,11 @@ func (p *Player) Tick(_ *world.Tx, current int64) {
 		if time.Now().After(ti) {
 			delete(p.cooldowns, it)
 		}
+	}
+
+	if p.prevWorld != tx.World() && p.prevWorld != nil {
+		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
+		p.prevWorld = tx.World()
 	}
 
 	if p.session() == session.Nop && !p.Immobile() {

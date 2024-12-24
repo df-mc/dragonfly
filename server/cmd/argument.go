@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand"
@@ -21,18 +19,24 @@ type Line struct {
 	args []string
 	seen []string
 	src  Source
+	cmd  Command
 }
 
 // SyntaxError returns a translated syntax error.
 func (line *Line) SyntaxError() error {
 	if len(line.args) == 0 {
-		return chat.MessageCommandSyntax.F(line.seen, "", "")
+		return MessageSyntax.F(strings.Join(line.seen, " "), "", "")
 	}
 	next := strings.Join(line.args[1:], " ")
 	if next != "" {
 		next = " " + next
 	}
-	return chat.MessageCommandSyntax.F(strings.Join(line.seen, " ")+" ", line.args[0], next)
+	return MessageSyntax.F(strings.Join(line.seen, " ")+" ", line.args[0], next)
+}
+
+// UsageError returns a translated usage error.
+func (line *Line) UsageError() error {
+	return MessageUsage.F(line.cmd.Usage())
 }
 
 // Next reads the next argument from the command line and returns it. If there were no more arguments to
@@ -137,19 +141,15 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name s
 	return err, err == nil
 }
 
-// ErrInsufficientArgs is returned by argument parsing functions if it does not have sufficient arguments
-// passed and is not optional.
-var ErrInsufficientArgs = errors.New("not enough arguments for command")
-
 // int ...
 func (p parser) int(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return line.SyntaxError()
+		return line.UsageError()
 	}
 	value, err := strconv.ParseInt(arg, 10, v.Type().Bits())
 	if err != nil {
-		return line.SyntaxError()
+		return MessageNumberInvalid.F(arg)
 	}
 	v.SetInt(value)
 	return nil
@@ -159,11 +159,11 @@ func (p parser) int(line *Line, v reflect.Value) error {
 func (p parser) uint(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return line.SyntaxError()
+		return line.UsageError()
 	}
 	value, err := strconv.ParseUint(arg, 10, v.Type().Bits())
 	if err != nil {
-		return line.SyntaxError()
+		return MessageNumberInvalid.F(arg)
 	}
 	v.SetUint(value)
 	return nil
@@ -173,11 +173,11 @@ func (p parser) uint(line *Line, v reflect.Value) error {
 func (p parser) float(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return line.SyntaxError()
+		return line.UsageError()
 	}
 	value, err := strconv.ParseFloat(arg, v.Type().Bits())
 	if err != nil {
-		return line.SyntaxError()
+		return MessageNumberInvalid.F(arg)
 	}
 	v.SetFloat(value)
 	return nil
@@ -187,7 +187,7 @@ func (p parser) float(line *Line, v reflect.Value) error {
 func (p parser) string(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return line.SyntaxError()
+		return line.UsageError()
 	}
 	v.SetString(arg)
 	return nil
@@ -197,11 +197,11 @@ func (p parser) string(line *Line, v reflect.Value) error {
 func (p parser) bool(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return line.SyntaxError()
+		return line.UsageError()
 	}
 	value, err := strconv.ParseBool(arg)
 	if err != nil {
-		return line.SyntaxError()
+		return MessageBooleanInvalid.F(arg)
 	}
 	v.SetBool(value)
 	return nil
@@ -211,14 +211,14 @@ func (p parser) bool(line *Line, v reflect.Value) error {
 func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error {
 	arg, ok := line.Next()
 	if !ok {
-		return line.SyntaxError()
+		return line.UsageError()
 	}
 	opts := v.Options(source)
 	ind := slices.IndexFunc(opts, func(s string) bool {
 		return strings.EqualFold(s, arg)
 	})
 	if ind < 0 {
-		return line.SyntaxError()
+		return MessageParameterInvalid.F(arg)
 	}
 	val.SetString(opts[ind])
 	return nil
@@ -228,12 +228,12 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error
 func (p parser) sub(line *Line, name string) error {
 	arg, ok := line.Next()
 	if !ok {
-		return line.SyntaxError()
+		return line.UsageError()
 	}
 	if strings.EqualFold(name, arg) {
 		return nil
 	}
-	return line.SyntaxError()
+	return MessageParameterInvalid.F(arg)
 }
 
 // vec3 ...
@@ -262,7 +262,7 @@ func (p parser) targets(line *Line, v reflect.Value, tx *world.Tx) error {
 		return err
 	}
 	if len(targets) == 0 {
-		return chat.MessageCommandNoTargets.F()
+		return MessageNoTargets.F()
 	}
 	v.Set(reflect.ValueOf(targets))
 	return nil
@@ -273,9 +273,9 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 	entities, players := targets(tx)
 	first, ok := line.Next()
 	if !ok {
-		return nil, line.SyntaxError()
+		return nil, line.UsageError()
 	}
-	switch first {
+	switch first[:2] {
 	case "@p":
 		pos := line.src.Position()
 		playerDistances := make([]float64, len(players))
@@ -301,27 +301,27 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 		}
 		return []Target{players[rand.Intn(len(players))]}, nil
 	default:
-		target, ok := p.parsePlayer(line, players)
-		if ok {
-			return []Target{target}, nil
+		target, err := p.parsePlayer(line, players)
+		if err != nil {
+			return nil, err
 		}
-		return nil, nil
+		return []Target{target}, nil
 	}
 }
 
 // parsePlayer parses one Player from the Line, consuming multiple arguments
 // from Line if necessary.
-func (p parser) parsePlayer(line *Line, players []NamedTarget) (Target, bool) {
+func (p parser) parsePlayer(line *Line, players []NamedTarget) (Target, error) {
 	name := ""
 	for i := 0; i < line.Len(); i++ {
 		name += line.args[0]
 		if ind := slices.IndexFunc(players, func(target NamedTarget) bool {
 			return strings.EqualFold(target.Name(), name)
 		}); ind != -1 {
-			return players[ind], true
+			return players[ind], nil
 		}
 		name += " "
 		line.RemoveNext()
 	}
-	return nil, false
+	return nil, MessagePlayerNotFound.F()
 }
