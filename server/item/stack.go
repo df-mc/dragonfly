@@ -158,7 +158,7 @@ func (s Stack) WithUnbreakable(u bool) Stack {
 	if _, ok := s.Item().(Durable); !ok {
 		return s
 	}
-	s.unbreakable = true
+	s.unbreakable = u
 	return s
 }
 
