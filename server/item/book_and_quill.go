@@ -116,11 +116,3 @@ func (b BookAndQuill) EncodeNBT() map[string]any {
 func (BookAndQuill) EncodeItem() (name string, meta int16) {
 	return "minecraft:writable_book", 0
 }
-
-// max ...
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}

@@ -25,7 +25,7 @@ func (poison) Apply(e world.Entity, eff Effect) {
 
 // RGBA ...
 func (poison) RGBA() color.RGBA {
-	return color.RGBA{R: 0x4e, G: 0x93, B: 0x31, A: 0xff}
+	return color.RGBA{R: 0x87, G: 0xa3, B: 0x63, A: 0xff}
 }
 
 // PoisonDamageSource is used for damage caused by an effect.poison or
