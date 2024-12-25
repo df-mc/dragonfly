@@ -22,17 +22,6 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 	creative := releaser.GameMode().CreativeInventory()
 	held, left := releaser.HeldItems()
 
-	chargeDuration := time.Duration(1.25 * float64(time.Second))
-	for _, enchant := range held.Enchantments() {
-		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
-			chargeDuration = min(chargeDuration, q.ChargeDuration(enchant.Level()))
-		}
-	}
-
-	if duration < chargeDuration {
-		return false
-	}
-
 	var projectileItem Stack
 	if !left.Empty() {
 		_, isFirework := left.Item().(Firework)
@@ -82,9 +71,9 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		createFirework := tx.World().EntityRegistry().Config().Firework
 		fireworkEntity := createFirework(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(0.5),
+			Velocity: dirVec.Mul(0.1),
 			Rotation: rot,
-		}, firework, releaser, false)
+		}, firework, releaser, 1.15, 0, false)
 		tx.AddEntity(fireworkEntity)
 		ctx.DamageItem(3)
 	} else {
