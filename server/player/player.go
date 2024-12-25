@@ -1503,11 +1503,12 @@ func (p *Player) handleUseContext(ctx *item.UseContext) {
 	p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 	p.addNewItem(ctx)
 	for _, it := range ctx.ConsumedItems {
-		err := p.offHand.RemoveItem(it)
-		if err == nil && it.Count() <= left.Count() {
-			continue
+		_ = p.offHand.RemoveItem(it)
+		it = it.Grow(-left.Count())
+
+		if it.Count() > 0 {
+			_ = p.Inventory().RemoveItem(it)
 		}
-		_ = p.Inventory().RemoveItem(it)
 	}
 }
 
