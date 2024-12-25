@@ -47,6 +47,24 @@ type BucketEmpty struct {
 // BowShoot is a sound played when a bow is shot.
 type BowShoot struct{ sound }
 
+// CrossbowShoot is a sound played when a crossbow is shot.
+type CrossbowShoot struct{ sound }
+
+// CrossbowLoadingStart is a sound played when a crossbow is starting to load.
+type CrossbowLoadingStart struct{ sound }
+
+// CrossbowLoadingMiddle is a sound played while a crossbow is loading and when a crossbow stops loading.
+type CrossbowLoadingMiddle struct{ sound }
+
+// CrossbowQuickChargeLoadingStart is a sound played when a crossbow with Quick Charge starts to load.
+type CrossbowQuickChargeLoadingStart struct{ sound }
+
+// CrossbowQuickChargeLoadingMiddle is a sound played while a crossbow with Quick Charge is loading.
+type CrossbowQuickChargeLoadingMiddle struct{ sound }
+
+// CrossbowQuickChargeEnd is a sound played when a crossbow with Quick Charge stops loading.
+type CrossbowQuickChargeEnd struct{ sound }
+
 // ArrowHit is a sound played when an arrow hits ground.
 type ArrowHit struct{ sound }
 

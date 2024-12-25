@@ -1,7 +1,6 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -33,6 +32,7 @@ func (Bow) FuelInfo() FuelInfo {
 // Release ...
 func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
 	creative := releaser.GameMode().CreativeInventory()
+	held, left := releaser.HeldItems()
 	ticks := duration.Milliseconds() / 50
 	if ticks < 3 {
 		// The player must hold the bow for at least three ticks.
@@ -46,27 +46,32 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		return
 	}
 
-	arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
-		_, ok := stack.Item().(Arrow)
-		return ok
-	})
-	if !ok && !creative {
-		// No arrows in inventory and not in creative mode.
-		return
+	var arrow Stack
+	if !left.Empty() {
+		if _, ok := left.Item().(Arrow); ok {
+			arrow = left
+		}
 	}
 
-	rot := releaser.Rotation()
-	rot = cube.Rotation{-rot[0], -rot[1]}
-	if rot[0] > 180 {
-		rot[0] = 360 - rot[0]
+	if arrow.Empty() {
+		var ok bool
+		arrow, ok = ctx.FirstFunc(func(stack Stack) bool {
+			_, ok = stack.Item().(Arrow)
+			return ok
+		})
+
+		if !ok && !creative {
+			// No arrows in inventory and not in creative mode.
+			return
+		}
 	}
+
 	var tip potion.Potion
 	if !arrow.Empty() {
 		// Arrow is empty if not found in the creative inventory.
 		tip = arrow.Item().(Arrow).Tip
 	}
 
-	held, _ := releaser.HeldItems()
 	damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), !creative
 	for _, enchant := range held.Enchantments() {
 		if f, ok := enchant.Type().(interface{ BurnDuration() time.Duration }); ok {
@@ -84,7 +89,7 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 	}
 
 	create := tx.World().EntityRegistry().Config().Arrow
-	opts := world.EntitySpawnOpts{Position: eyePosition(releaser), Velocity: releaser.Rotation().Vec3().Mul(force * 5), Rotation: rot}
+	opts := world.EntitySpawnOpts{Position: eyePosition(releaser), Velocity: releaser.Rotation().Vec3().Mul(force * 5), Rotation: releaser.Rotation().Neg()}
 	projectile := tx.AddEntity(create(opts, damage, releaser, force >= 1, false, !creative && consume, punchLevel, tip))
 	if f, ok := projectile.(interface{ SetOnFire(duration time.Duration) }); ok {
 		f.SetOnFire(burnDuration)
