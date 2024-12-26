@@ -23,7 +23,7 @@ type Parameter interface {
 //
 //	type GameMode string
 //	func (GameMode) Type() string { return "GameMode" }
-//	func (GameMode) Options(Source) []string { return []string{"survival", "creative"} }
+//	func (GameMode) Options(RedstoneSource) []string { return []string{"survival", "creative"} }
 //
 // Their values will then automatically be set to whichever option returned in Enum.Options is selected by
 // the user.

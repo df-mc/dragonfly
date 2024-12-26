@@ -75,6 +75,17 @@ type Liquid interface {
 	Harden(pos cube.Pos, tx *Tx, flownIntoBy *cube.Pos) bool
 }
 
+// Conductor represents a block that can conduct a redstone signal.
+type Conductor interface {
+	Block
+	// RedstoneSource returns true if the conductor is a signal source.
+	RedstoneSource() bool
+	// WeakPower returns the power from a partial source and has limited usage.
+	WeakPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
+	// StrongPower returns the power from a full source and can be passed to any redstone component.
+	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
+}
+
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
 // runtime IDs. It is used to look up a block's runtime ID quickly.
 var (
@@ -298,6 +309,11 @@ type lightEmitter interface {
 // lightDiffuser is identical to a block.LightDiffuser.
 type lightDiffuser interface {
 	LightDiffusionLevel() uint8
+}
+
+// redstoneBlocking is identical to a block.RedstoneBlocking.
+type redstoneBlocking interface {
+	RedstoneBlocking() bool
 }
 
 // replaceableBlock represents a block that may be replaced by another block automatically. An example is

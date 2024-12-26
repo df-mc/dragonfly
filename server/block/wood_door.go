@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math/rand"
 	"time"
 )
 
@@ -125,6 +126,30 @@ func (d WoodDoor) BreakInfo() BreakInfo {
 // SideClosed ...
 func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
+}
+
+// RedstoneUpdate ...
+func (d WoodDoor) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	if d.Open == receivedRedstonePower(pos, tx) {
+		return
+	}
+	if !d.Open {
+		d.Open = true
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+		tx.SetBlock(pos, d, &world.SetOpts{DisableBlockUpdates: true})
+	} else {
+		tx.ScheduleBlockUpdate(pos, d, time.Millisecond*50)
+	}
+}
+
+// ScheduledTick ...
+func (d WoodDoor) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	if receivedRedstonePower(pos, tx) {
+		return
+	}
+	d.Open = false
+	tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
+	tx.SetBlock(pos, d, &world.SetOpts{DisableBlockUpdates: true})
 }
 
 // EncodeItem ...

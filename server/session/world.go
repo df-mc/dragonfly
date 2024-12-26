@@ -597,6 +597,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventSmokerUse
 	case sound.PotionBrewed:
 		pk.SoundType = packet.SoundEventPotionBrewed
+	case sound.PowerOn:
+		pk.SoundType = packet.SoundEventPowerOn
+	case sound.PowerOff:
+		pk.SoundType = packet.SoundEventPowerOff
 	case sound.UseSpyglass:
 		pk.SoundType = packet.SoundEventUseSpyglass
 	case sound.StopUsingSpyglass:
