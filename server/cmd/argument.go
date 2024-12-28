@@ -275,7 +275,7 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 	if !ok {
 		return nil, line.UsageError()
 	}
-	switch first[:2] {
+	switch first[:min(len(first), 2)] {
 	case "@p":
 		pos := line.src.Position()
 		playerDistances := make([]float64, len(players))
