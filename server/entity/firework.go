@@ -23,7 +23,9 @@ func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, own
 	conf.Firework = firework
 	conf.ExistenceDuration = firework.RandomisedDuration()
 	conf.Attached = attached
-	conf.Owner = owner.H()
+	if attached {
+		conf.Owner = owner.H()
+	}
 	return opts.New(FireworkType, conf)
 }
 

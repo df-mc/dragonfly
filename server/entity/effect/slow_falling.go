@@ -14,5 +14,5 @@ type slowFalling struct {
 
 // RGBA ...
 func (slowFalling) RGBA() color.RGBA {
-	return color.RGBA{R: 0xf7, G: 0xf8, B: 0xe0, A: 0xff}
+	return color.RGBA{R: 0xf3, G: 0xcf, B: 0xb9, A: 0xff}
 }
