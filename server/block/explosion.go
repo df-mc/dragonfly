@@ -166,7 +166,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		for _, pos := range affectedBlocks {
 			if r.Intn(3) == 0 {
 				if _, ok := tx.Block(pos).(Air); ok && tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, tx) {
-					tx.SetBlock(pos, Fire{}, nil)
+					Fire{}.Start(tx, pos)
 				}
 			}
 		}

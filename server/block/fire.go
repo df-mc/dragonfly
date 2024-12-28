@@ -265,7 +265,9 @@ func (f Fire) Start(tx *world.Tx, pos cube.Pos) {
 	if air || shortGrass || fern {
 		below := tx.Block(pos.Side(cube.FaceDown))
 		if below.Model().FaceSolid(pos, cube.FaceUp, tx) || neighboursFlammable(pos, tx) {
-			tx.SetBlock(pos, Fire{}, nil)
+			f := Fire{}
+			tx.SetBlock(pos, f, nil)
+			tx.ScheduleBlockUpdate(pos, f, time.Duration(30+rand.Intn(10))*time.Second/20)
 		}
 	}
 }

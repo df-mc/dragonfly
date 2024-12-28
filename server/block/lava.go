@@ -56,7 +56,7 @@ func (l Lava) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 			pos = pos.Add(cube.Pos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
 			if _, ok := tx.Block(pos).(Air); ok {
 				if neighboursLavaFlammable(pos, tx) {
-					tx.SetBlock(pos, Fire{}, nil)
+					Fire{}.Start(tx, pos)
 				}
 			}
 		}
@@ -65,7 +65,7 @@ func (l Lava) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 			pos = pos.Add(cube.Pos{r.Intn(3) - 1, 0, r.Intn(3) - 1})
 			if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); ok {
 				if flammable, ok := tx.Block(pos).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable && flammable.FlammabilityInfo().Encouragement > 0 {
-					tx.SetBlock(pos, Fire{}, nil)
+					Fire{}.Start(tx, pos)
 				}
 			}
 		}
