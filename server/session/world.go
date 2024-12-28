@@ -41,7 +41,7 @@ type OffsetEntity interface {
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
-	_, ok := s.hiddenEntities[e.H()]
+	_, ok := s.hiddenEntities[e.H().UUID()]
 	s.entityMutex.RUnlock()
 	return ok
 }
