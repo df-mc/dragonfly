@@ -1451,7 +1451,7 @@ func (p *Player) ReleaseItem() {
 
 // canRelease returns whether the player can release the item currently held in the main hand.
 func (p *Player) canRelease() bool {
-	held, _ := p.HeldItems()
+	held, left := p.HeldItems()
 	if _, consumable := held.Item().(item.Consumable); consumable {
 		return true
 	}
@@ -1463,10 +1463,18 @@ func (p *Player) canRelease() bool {
 		return true
 	}
 	for _, req := range releasable.Requirements() {
+		reqName, _ := req.Item().EncodeItem()
+
+		if !left.Empty() {
+			leftName, _ := left.Item().EncodeItem()
+			if leftName == reqName {
+				continue
+			}
+		}
+
 		_, found := p.Inventory().FirstFunc(func(stack item.Stack) bool {
 			name, _ := stack.Item().EncodeItem()
-			otherName, _ := req.Item().EncodeItem()
-			return name == otherName
+			return name == reqName
 		})
 		if !found {
 			return false
@@ -1482,7 +1490,12 @@ func (p *Player) handleUseContext(ctx *item.UseContext) {
 	p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 	p.addNewItem(ctx)
 	for _, it := range ctx.ConsumedItems {
-		_ = p.Inventory().RemoveItem(it)
+		_ = p.offHand.RemoveItem(it)
+		it = it.Grow(-left.Count())
+
+		if !it.Empty() {
+			_ = p.Inventory().RemoveItem(it)
+		}
 	}
 }
 
@@ -2944,6 +2957,10 @@ func (p *Player) useContext() *item.UseContext {
 			}
 		},
 		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {
+			_, left := p.HeldItems()
+			if !left.Empty() && comparable(left) {
+				return left, true
+			}
 			inv := p.Inventory()
 			s, ok := inv.FirstFunc(comparable)
 			if !ok {
