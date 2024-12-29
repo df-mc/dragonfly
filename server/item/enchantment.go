@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/world"
 	"golang.org/x/exp/maps"
+	"sort"
 )
 
 // Enchantment is an enchantment that can be applied to a Stack. It holds an EnchantmentType and level that influences
@@ -86,5 +87,11 @@ func EnchantmentID(e EnchantmentType) (int, bool) {
 
 // Enchantments returns a slice of all registered enchantments.
 func Enchantments() []EnchantmentType {
-	return maps.Values(enchantmentsMap)
+	e := maps.Values(enchantmentsMap)
+	sort.Slice(e, func(i, j int) bool {
+		id1, _ := EnchantmentID(e[i])
+		id2, _ := EnchantmentID(e[j])
+		return id1 < id2
+	})
+	return e
 }
