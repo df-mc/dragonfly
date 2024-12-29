@@ -1411,15 +1411,14 @@ func (p *Player) UseItem() {
 			// The required duration for consuming this item was not met, so we don't consume it.
 			return
 		}
+		// Reset the duration for the next item to be consumed.
+		p.usingSince = time.Now()
 		ctx := event.C(p)
 		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
-			// Consuming was cancelled, but the client will continue consuming the next item.
-			p.usingSince = time.Now()
 			return
 		}
 		useCtx.CountSub, useCtx.NewItem = 1, usable.Consume(p.tx, p)
 		p.handleUseContext(useCtx)
-		p.usingSince = time.Now()
 		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 }
