@@ -1404,9 +1404,23 @@ func (p *Player) UseItem() {
 			p.updateState()
 			return
 		}
-		// The player is currently using the item held. This is a signal the
-		// item was consumed, so we release it.
-		p.ReleaseItem()
+		// The player is currently using the item held. This is a signal the item was consumed, so we
+		// consume it and start using it again.
+		useCtx, dur := p.useContext(), p.useDuration()
+		if dur < usable.ConsumeDuration() {
+			// The required duration for consuming this item was not met, so we don't consume it.
+			return
+		}
+		ctx := event.C(p)
+		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
+			// Consuming was cancelled, but the client will continue consuming the next item.
+			p.usingSince = time.Now()
+			return
+		}
+		useCtx.CountSub, useCtx.NewItem = 1, usable.Consume(p.tx, p)
+		p.handleUseContext(useCtx)
+		p.usingSince = time.Now()
+		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 }
 
@@ -1424,27 +1438,11 @@ func (p *Player) ReleaseItem() {
 
 	useCtx, dur := p.useContext(), p.useDuration()
 	i, _ := p.HeldItems()
-	switch it := i.Item().(type) {
-	case item.Releasable:
-		ctx := event.C(p)
-		if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
-			return
-		}
-		it.Release(p, p.tx, useCtx, dur)
-	case item.Consumable:
-		if dur < it.ConsumeDuration() {
-			// The required duration for consuming this item was not met, so we don't consume it.
-			return
-		}
-		ctx := event.C(p)
-		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
-			// Consuming was cancelled, but the client will continue consuming the next item.
-			p.usingSince = time.Now()
-			return
-		}
-		useCtx.CountSub, useCtx.NewItem = 1, it.Consume(p.tx, p)
-		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+	ctx := event.C(p)
+	if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
+		return
 	}
+	i.Item().(item.Releasable).Release(p, p.tx, useCtx, dur)
 	p.handleUseContext(useCtx)
 	p.updateState()
 }
@@ -1452,9 +1450,6 @@ func (p *Player) ReleaseItem() {
 // canRelease returns whether the player can release the item currently held in the main hand.
 func (p *Player) canRelease() bool {
 	held, left := p.HeldItems()
-	if _, consumable := held.Item().(item.Consumable); consumable {
-		return true
-	}
 	releasable, ok := held.Item().(item.Releasable)
 	if !ok {
 		return false
