@@ -46,24 +46,13 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		return
 	}
 
-	var arrow Stack
-	if !left.Empty() {
-		if _, ok := left.Item().(Arrow); ok {
-			arrow = left
-		}
-	}
-
-	if arrow.Empty() {
-		var ok bool
-		arrow, ok = ctx.FirstFunc(func(stack Stack) bool {
-			_, ok = stack.Item().(Arrow)
-			return ok
-		})
-
-		if !ok && !creative {
-			// No arrows in inventory and not in creative mode.
-			return
-		}
+	arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
+		_, ok := stack.Item().(Arrow)
+		return ok
+	})
+	if !ok && !creative {
+		// No arrows in inventory and not in creative mode.
+		return
 	}
 
 	var tip potion.Potion

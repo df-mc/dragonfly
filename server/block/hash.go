@@ -177,6 +177,7 @@ const (
 	hashTorch
 	hashTuff
 	hashTuffBricks
+	hashVines
 	hashWall
 	hashWater
 	hashWheatSeeds
@@ -884,6 +885,10 @@ func (t Tuff) Hash() (uint64, uint64) {
 
 func (t TuffBricks) Hash() (uint64, uint64) {
 	return hashTuffBricks, uint64(boolByte(t.Chiseled))
+}
+
+func (v Vines) Hash() (uint64, uint64) {
+	return hashVines, uint64(boolByte(v.NorthDirection)) | uint64(boolByte(v.EastDirection))<<1 | uint64(boolByte(v.SouthDirection))<<2 | uint64(boolByte(v.WestDirection))<<3
 }
 
 func (w Wall) Hash() (uint64, uint64) {

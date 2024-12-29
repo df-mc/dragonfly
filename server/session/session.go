@@ -13,6 +13,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -51,7 +52,7 @@ type Session struct {
 	// entityRuntimeIDs holds the runtime IDs of entities shown to the session.
 	entityRuntimeIDs map[*world.EntityHandle]uint64
 	entities         map[uint64]*world.EntityHandle
-	hiddenEntities   map[*world.EntityHandle]struct{}
+	hiddenEntities   map[uuid.UUID]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot                     *uint32
@@ -153,7 +154,7 @@ func (conf Config) New(conn Conn) *Session {
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
-		hiddenEntities:         map[*world.EntityHandle]struct{}{},
+		hiddenEntities:         map[uuid.UUID]struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
