@@ -2,7 +2,8 @@ package item
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 	"sort"
 )
 
@@ -87,7 +88,7 @@ func EnchantmentID(e EnchantmentType) (int, bool) {
 
 // Enchantments returns a slice of all registered enchantments.
 func Enchantments() []EnchantmentType {
-	e := maps.Values(enchantmentsMap)
+	e := slices.Collect(maps.Values(enchantmentsMap))
 	sort.Slice(e, func(i, j int) bool {
 		id1, _ := EnchantmentID(e[i])
 		id2, _ := EnchantmentID(e[j])
