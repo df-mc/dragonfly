@@ -65,8 +65,8 @@ func (Vines) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	}
 }
 
-// SetAttachment sets an attachment on the given cube.Direction.
-func (v Vines) SetAttachment(direction cube.Direction, attached bool) Vines {
+// WithAttachment returns a Vines block with an attachment on the given cube.Direction.
+func (v Vines) WithAttachment(direction cube.Direction, attached bool) Vines {
 	switch direction {
 	case cube.North:
 		v.NorthDirection = attached
@@ -123,7 +123,7 @@ func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 		return false
 	}
 	//noinspection GoAssignmentToReceiver
-	v = v.SetAttachment(face.Direction().Opposite(), true)
+	v = v.WithAttachment(face.Direction().Opposite(), true)
 
 	place(tx, pos, v, user, ctx)
 	return placed(ctx)
@@ -136,7 +136,7 @@ func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 		if !v.canSpreadTo(tx, pos.Side(d.Face())) {
 			if o, ok := above.(Vines); !ok || !o.Attachment(d) {
 				//noinspection GoAssignmentToReceiver
-				v = v.SetAttachment(d, false)
+				v = v.WithAttachment(d, false)
 				updated = true
 			}
 		}
@@ -200,17 +200,17 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 			// 4) If the clockwise direction fails, try again with the left
 			//    direction.
 			if attachedOnRight && v.canSpreadTo(tx, rightSelectedPos) {
-				tx.SetBlock(selectedPos, (Vines{}).SetAttachment(rightRotatedFace.Direction(), true), nil)
+				tx.SetBlock(selectedPos, (Vines{}).WithAttachment(rightRotatedFace.Direction(), true), nil)
 			} else if attachedOnLeft && v.canSpreadTo(tx, leftSelectedPos) {
-				tx.SetBlock(selectedPos, (Vines{}).SetAttachment(leftRotatedFace.Direction(), true), nil)
+				tx.SetBlock(selectedPos, (Vines{}).WithAttachment(leftRotatedFace.Direction(), true), nil)
 			} else if _, ok = tx.Block(rightSelectedPos).(Air); ok && attachedOnRight && v.canSpreadTo(tx, pos.Side(rightRotatedFace)) {
-				tx.SetBlock(rightSelectedPos, (Vines{}).SetAttachment(face.Opposite().Direction(), true), nil)
+				tx.SetBlock(rightSelectedPos, (Vines{}).WithAttachment(face.Opposite().Direction(), true), nil)
 			} else if _, ok = tx.Block(leftSelectedPos).(Air); ok && attachedOnLeft && v.canSpreadTo(tx, pos.Side(leftRotatedFace)) {
-				tx.SetBlock(leftSelectedPos, (Vines{}).SetAttachment(face.Opposite().Direction(), true), nil)
+				tx.SetBlock(leftSelectedPos, (Vines{}).WithAttachment(face.Opposite().Direction(), true), nil)
 			}
 		} else if v.canSpreadTo(tx, selectedPos) {
 			// If the neighbouring block is solid, update the vine to be attached in that direction.
-			tx.SetBlock(pos, v.SetAttachment(face.Direction(), true), nil)
+			tx.SetBlock(pos, v.WithAttachment(face.Direction(), true), nil)
 		}
 		return
 	}
@@ -231,7 +231,7 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 				// attach onto the direction, if there is also a solid block
 				// in that direction to support the vine.
 				if r.Intn(2) == 0 && v.Attachment(f.Direction()) && v.canSpreadTo(tx, selectedPos.Side(f)) {
-					newVines = newVines.SetAttachment(f.Direction(), true)
+					newVines = newVines.WithAttachment(f.Direction(), true)
 				}
 			}
 			if len(newVines.Attachments()) > 0 {
@@ -258,7 +258,7 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 		// 50% chance for the below vine block to attach onto the direction if
 		// it is not already attached in that direction.
 		if r.Intn(2) == 0 && v.Attachment(f.Direction()) && !newVines.Attachment(f.Direction()) {
-			newVines, changed = newVines.SetAttachment(f.Direction(), true), true
+			newVines, changed = newVines.WithAttachment(f.Direction(), true), true
 		}
 	}
 	if changed {
