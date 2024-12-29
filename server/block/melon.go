@@ -2,7 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Melon is a fruit block that grows from melon stems.
@@ -12,7 +12,7 @@ type Melon struct {
 
 // BreakInfo ...
 func (m Melon) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, silkTouchDrop(item.NewStack(item.MelonSlice{}, rand.Intn(5)+3), item.NewStack(m, 1)))
+	return newBreakInfo(1, alwaysHarvestable, axeEffective, silkTouchDrop(item.NewStack(item.MelonSlice{}, rand.IntN(5)+3), item.NewStack(m, 1)))
 }
 
 // CompostChance ...

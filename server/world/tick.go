@@ -4,7 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"maps"
-	"math/rand"
+	"math/rand/v2"
 	"slices"
 	"time"
 )

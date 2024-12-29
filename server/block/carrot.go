@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -41,7 +41,7 @@ func (c Carrot) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if c.Growth == 7 {
 		return false
 	}
-	c.Growth = min(c.Growth+rand.Intn(4)+2, 7)
+	c.Growth = min(c.Growth+rand.IntN(4)+2, 7)
 	tx.SetBlock(pos, c, nil)
 	return true
 }
@@ -67,7 +67,7 @@ func (c Carrot) BreakInfo() BreakInfo {
 		if c.Growth < 7 {
 			return []item.Stack{item.NewStack(c, 1)}
 		}
-		return []item.Stack{item.NewStack(c, rand.Intn(4)+2)}
+		return []item.Stack{item.NewStack(c, rand.IntN(4)+2)}
 	})
 }
 

@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Kelp is an underwater block which can grow on top of solids underwater.
@@ -70,7 +70,7 @@ func (Kelp) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // withRandomAge returns a new Kelp block with its age value randomized between 0 and 24.
 func (k Kelp) withRandomAge() Kelp {
-	k.Age = rand.Intn(25)
+	k.Age = rand.IntN(25)
 	return k
 }
 
@@ -124,7 +124,7 @@ func (k Kelp) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) 
 // RandomTick ...
 func (k Kelp) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	// Every random tick, there's a 14% chance for Kelp to grow if its age is below 25.
-	if r.Intn(100) < 15 && k.Age < 25 {
+	if r.IntN(100) < 15 && k.Age < 25 {
 		abovePos := pos.Side(cube.FaceUp)
 
 		liquid, ok := tx.Liquid(abovePos)

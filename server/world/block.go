@@ -10,7 +10,7 @@ import (
 	"image"
 	"math"
 	"math/bits"
-	"math/rand"
+	"math/rand/v2"
 	"sort"
 )
 
@@ -240,7 +240,7 @@ func air() Block {
 // RandomTicker represents a block that executes an action when it is ticked randomly. Every 20th of a second,
 // one random block in each sub chunk are picked to receive a random tick.
 type RandomTicker interface {
-	// RandomTick handles a random tick of the block at the position passed. Additionally, a rand.Rand
+	// RandomTick handles a random tick of the block at the position passed. Additionally, a rand.RandSource
 	// instance is passed which may be used to generate values randomly without locking.
 	RandomTick(pos cube.Pos, tx *Tx, r *rand.Rand)
 }
@@ -249,7 +249,7 @@ type RandomTicker interface {
 // when a block adjacent to it is broken.
 type ScheduledTicker interface {
 	// ScheduledTick handles a scheduled tick initiated by an event in one of the neighbouring blocks, such as
-	// when a block is placed or broken. Additionally, a rand.Rand instance is passed which may be used to
+	// when a block is placed or broken. Additionally, a rand.RandSource instance is passed which may be used to
 	// generate values randomly without locking.
 	ScheduledTick(pos cube.Pos, tx *Tx, r *rand.Rand)
 }

@@ -3,7 +3,7 @@ package player
 import (
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"slices"
 	"strings"
@@ -2137,7 +2137,7 @@ func (p *Player) EnchantmentSeed() int64 {
 
 // ResetEnchantmentSeed resets the enchantment seed to a new random value.
 func (p *Player) ResetEnchantmentSeed() {
-	p.enchantSeed = rand.Int63()
+	p.enchantSeed = rand.Int64()
 }
 
 // AddExperience adds experience to the player.
@@ -2230,7 +2230,7 @@ func (p *Player) mendItems(xp int) int {
 	if length == 0 {
 		return xp
 	}
-	foundItem := mendingItems[rand.Intn(length)]
+	foundItem := mendingItems[rand.IntN(length)]
 	repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(xp*2))
 	repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
 	if repairAmount >= 2 {

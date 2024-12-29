@@ -2,7 +2,7 @@ package world
 
 import (
 	"log/slog"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -46,8 +46,11 @@ type Config struct {
 	RandomTickSpeed int
 	// RandSource is the rand.Source used for generation of random numbers in a
 	// World, such as when selecting blocks to tick or when deciding where to
-	// strike lightning. If set to nil, `rand.NewSource(time.Now().Unix())` will
-	// be used to generate a new source.
+	// strike lightning. If set to nil, RandSource defaults to a `rand.PCG`
+	// source seeded with `time.Now().UnixNano()`. PCG is significantly faster
+	// than `rand.ChaCha8` on 64-bit systems at the expense of poorer
+	// statistical distribution, which is acceptable here.
+	// See https://go.dev/blog/chacha8rand.
 	RandSource rand.Source
 	// Entities is an EntityRegistry with all Entity types registered that may
 	// be added to the World.
@@ -76,7 +79,8 @@ func (conf Config) New() *World {
 		conf.RandomTickSpeed = 3
 	}
 	if conf.RandSource == nil {
-		conf.RandSource = rand.NewSource(time.Now().Unix())
+		t := uint64(time.Now().UnixNano())
+		conf.RandSource = rand.NewPCG(t, t)
 	}
 	s := conf.Provider.Settings()
 	w := &World{
