@@ -2363,8 +2363,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
 		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
-		p.prevWorld = tx.World()
 	}
+	p.prevWorld = tx.World()
 
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.Rotation(), p.tx)
