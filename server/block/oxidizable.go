@@ -3,7 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Oxidisable is a block that can naturally oxidise over time, such as copper.

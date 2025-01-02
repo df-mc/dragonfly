@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"time"
 )

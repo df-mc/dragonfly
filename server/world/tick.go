@@ -3,8 +3,8 @@ package world
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"golang.org/x/exp/maps"
-	"math/rand"
+	"maps"
+	"math/rand/v2"
 	"slices"
 	"time"
 )
@@ -129,7 +129,7 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 			// No loaders in this chunk that are within the simulation distance, so proceed to the next.
 			continue
 		}
-		blockEntities = append(blockEntities, maps.Keys(c.BlockEntities)...)
+		blockEntities = append(blockEntities, slices.Collect(maps.Keys(c.BlockEntities))...)
 
 		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
 

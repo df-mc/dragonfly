@@ -23,14 +23,15 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"golang.org/x/exp/maps"
 	"golang.org/x/text/language"
 	"iter"
+	"maps"
 	"os"
 	"os/exec"
 	"os/signal"
 	"runtime"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -252,7 +253,7 @@ func (srv *Server) Player(uuid uuid.UUID) (*world.EntityHandle, bool) {
 // found, the entity handle is returned and the bool returned holds a true
 // value. If not, the bool is false and the handle is nil
 func (srv *Server) PlayerByName(name string) (*world.EntityHandle, bool) {
-	if p, ok := sliceutil.SearchValue(maps.Values(srv.p), func(p *onlinePlayer) bool {
+	if p, ok := sliceutil.SearchValue(slices.Collect(maps.Values(srv.p)), func(p *onlinePlayer) bool {
 		return p.name == name
 	}); ok {
 		return p.handle, true
@@ -264,7 +265,7 @@ func (srv *Server) PlayerByName(name string) (*world.EntityHandle, bool) {
 // found, the entity handle is returned and the bool returned is true. If no
 // player with the XUID was found, nil and false are returned.
 func (srv *Server) PlayerByXUID(xuid string) (*world.EntityHandle, bool) {
-	if p, ok := sliceutil.SearchValue(maps.Values(srv.p), func(p *onlinePlayer) bool {
+	if p, ok := sliceutil.SearchValue(slices.Collect(maps.Values(srv.p)), func(p *onlinePlayer) bool {
 		return p.xuid == xuid
 	}); ok {
 		return p.handle, true
@@ -376,7 +377,7 @@ func (srv *Server) startListening() {
 // registered custom blocks. It allows block components to be created only once
 // at startup.
 func (srv *Server) makeBlockEntries() {
-	custom := maps.Values(world.CustomBlocks())
+	custom := slices.Collect(maps.Values(world.CustomBlocks()))
 	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
 
 	for i, b := range custom {

@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Vines are climbable non-solid vegetation blocks that grow on walls.
@@ -159,7 +159,7 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 
 	// Choose a random direction to spread.
-	face := cube.Face(r.Intn(len(cube.Faces())))
+	face := cube.Face(r.IntN(len(cube.Faces())))
 	selectedPos := pos.Side(face)
 
 	// If a horizontal direction was chosen and the vine block is not already
@@ -230,7 +230,7 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 				// there is a 50% chance for the new above vine block to
 				// attach onto the direction, if there is also a solid block
 				// in that direction to support the vine.
-				if r.Intn(2) == 0 && v.Attachment(f.Direction()) && v.canSpreadTo(tx, selectedPos.Side(f)) {
+				if r.IntN(2) == 0 && v.Attachment(f.Direction()) && v.canSpreadTo(tx, selectedPos.Side(f)) {
 					newVines = newVines.WithAttachment(f.Direction(), true)
 				}
 			}
@@ -257,7 +257,7 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 		// For each direction the current vine block is attached on, there is a
 		// 50% chance for the below vine block to attach onto the direction if
 		// it is not already attached in that direction.
-		if r.Intn(2) == 0 && v.Attachment(f.Direction()) && !newVines.Attachment(f.Direction()) {
+		if r.IntN(2) == 0 && v.Attachment(f.Direction()) && !newVines.Attachment(f.Direction()) {
 			newVines, changed = newVines.WithAttachment(f.Direction(), true), true
 		}
 	}

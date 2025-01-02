@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"reflect"
 	"slices"
 	"sort"
@@ -299,7 +299,7 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 		if len(players) == 0 {
 			return nil, nil
 		}
-		return []Target{players[rand.Intn(len(players))]}, nil
+		return []Target{players[rand.IntN(len(players))]}, nil
 	default:
 		target, err := p.parsePlayer(first, players)
 		if err != nil {

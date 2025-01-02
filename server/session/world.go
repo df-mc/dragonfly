@@ -3,7 +3,7 @@ package session
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"time"
 
@@ -1182,7 +1182,7 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 		EventType: packet.LevelEventStopRaining,
 	}
 	if raining {
-		pk.EventType, pk.EventData = packet.LevelEventStartRaining, int32(rand.Intn(50000)+10000)
+		pk.EventType, pk.EventData = packet.LevelEventStartRaining, int32(rand.IntN(50000)+10000)
 	}
 	s.writePacket(pk)
 
@@ -1190,7 +1190,7 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 		EventType: packet.LevelEventStopThunderstorm,
 	}
 	if thunder {
-		pk.EventType, pk.EventData = packet.LevelEventStartThunderstorm, int32(rand.Intn(50000)+10000)
+		pk.EventType, pk.EventData = packet.LevelEventStartThunderstorm, int32(rand.IntN(50000)+10000)
 	}
 	s.writePacket(pk)
 }

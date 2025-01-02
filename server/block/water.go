@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 

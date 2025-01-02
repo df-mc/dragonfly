@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // SeaPickle is a small stationary underwater block that emits light, and is typically found in colonies of up to
@@ -53,7 +53,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 		distance := -int(math.Abs(float64(x))) + 2
 		for z := -distance; z <= distance; z++ {
 			for y := -1; y < 1; y++ {
-				if (x == 0 && y == 0 && z == 0) || rand.Intn(6) != 0 {
+				if (x == 0 && y == 0 && z == 0) || rand.IntN(6) != 0 {
 					continue
 				}
 				newPos := pos.Add(cube.Pos{x, y, z})
@@ -64,7 +64,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 				if coral, ok := tx.Block(newPos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
 					continue
 				}
-				tx.SetBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1}, nil)
+				tx.SetBlock(newPos, SeaPickle{AdditionalCount: rand.IntN(3) + 1}, nil)
 			}
 		}
 	}
