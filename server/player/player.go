@@ -2367,8 +2367,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
+	held, _ := p.HeldItems()
 	if current%4 == 0 && p.usingItem {
-		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
 			// Eating particles seem to happen roughly every 4 ticks.
 			for _, v := range p.viewers() {
@@ -2376,6 +2376,13 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			}
 		}
 	}
+
+	if p.usingItem {
+		if c, ok := held.Item().(item.Chargeable); ok {
+			c.ContinueCharge(p, tx, p.useDuration())
+		}
+	}
+
 	for it, ti := range p.cooldowns {
 		if time.Now().After(ti) {
 			delete(p.cooldowns, it)
