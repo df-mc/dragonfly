@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
 	"log/slog"
@@ -23,7 +22,6 @@ func main() {
 
 	srv.Listen()
 	for p := range srv.Accept() {
-		p.Inventory().AddItem(item.NewStack(item.Arrow{}, 300))
 		_ = p
 	}
 }
