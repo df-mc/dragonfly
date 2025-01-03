@@ -1390,13 +1390,10 @@ func (p *Player) UseItem() {
 
 		// Stop charging and determine if the item is ready.
 		p.usingItem = false
-		//dur := p.useDuration()
-		if chargeable.Charge(p, p.tx, useCtx, p.useDuration()) {
+		dur := p.useDuration()
+		if chargeable.Charge(p, p.tx, useCtx, dur) {
 			p.session().SendChargeItemComplete()
 		}
-		// if chargeable.Charge(p, p.tx, useCtx, dur) {
-		// 	p.session().SendChargeItemComplete()
-		// }
 		p.handleUseContext(useCtx)
 		p.updateState()
 	}
