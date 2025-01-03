@@ -11,13 +11,15 @@ import (
 // for creating decorative explosions, boosting when flying with elytra, and
 // loading into a crossbow as ammunition.
 func NewFirework(opts world.EntitySpawnOpts, firework item.Firework) *world.EntityHandle {
-	return NewFireworkAttached(opts, firework, nil, false)
+	return NewFireworkAttached(opts, firework, nil, 1.15, 0.04, false)
 }
 
 // NewFireworkAttached creates a firework entity with an owner that the firework
 // may be attached to.
-func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, owner world.Entity, attached bool) *world.EntityHandle {
+func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, owner world.Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
 	conf := fireworkConf
+	conf.SidewaysVelocityMultiplier = sidewaysVelocityMultiplier
+	conf.UpwardsAcceleration = upwardsAcceleration
 	conf.Firework = firework
 	conf.ExistenceDuration = firework.RandomisedDuration()
 	conf.Attached = attached
@@ -27,10 +29,7 @@ func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, own
 	return opts.New(FireworkType, conf)
 }
 
-var fireworkConf = FireworkBehaviourConfig{
-	SidewaysVelocityMultiplier: 1.15,
-	UpwardsAcceleration:        0.04,
-}
+var fireworkConf = FireworkBehaviourConfig{}
 
 // FireworkType is a world.EntityType implementation for Firework.
 var FireworkType fireworkType
