@@ -1,10 +1,11 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/sound"
 	"time"
 	_ "unsafe"
+
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 // Crossbow is a ranged weapon similar to a bow that uses arrows or fireworks as ammunition.
@@ -93,6 +94,15 @@ func (c Crossbow) ContinueCharge(releaser Releaser, tx *world.Tx, duration time.
 			tx.PlaySound(releaser.Position(), sound.CrossbowQuickChargeLoadingStart{})
 		} else {
 			tx.PlaySound(releaser.Position(), sound.CrossbowLoadingStart{})
+		}
+	}
+
+	ticks := duration.Milliseconds() / 50
+	if ticks%16 == 0 { // After 16 ticks play the middle charge sound
+		if quickChargeLevel > 0 {
+			tx.PlaySound(releaser.Position(), sound.CrossbowQuickChargeLoadingMiddle{})
+		} else {
+			tx.PlaySound(releaser.Position(), sound.CrossbowLoadingMiddle{})
 		}
 	}
 
