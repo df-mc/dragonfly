@@ -9,7 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -18,8 +18,10 @@ import (
 type ExplosionConfig struct {
 	// Size is the size of the explosion, it is effectively the radius which entities/blocks will be affected within.
 	Size float64
-	// Rand is the source to use for the explosion "randomness".
-	Rand rand.Source
+	// RandSource is the source to use for the explosion "randomness". If set
+	// to nil, RandSource defaults to a `rand.PCG`source seeded with
+	// `time.Now().UnixNano()`.
+	RandSource rand.Source
 	// SpawnFire will cause the explosion to randomly start fires in 1/3 of all destroyed air blocks that are
 	// above opaque blocks.
 	SpawnFire bool
@@ -74,8 +76,9 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	if c.Particle == nil {
 		c.Particle = particle.HugeExplosion{}
 	}
-	if c.Rand == nil {
-		c.Rand = rand.NewSource(time.Now().UnixNano())
+	if c.RandSource == nil {
+		t := uint64(time.Now().UnixNano())
+		c.RandSource = rand.NewPCG(t, t)
 	}
 	if c.Size == 0 {
 		c.Size = 4
@@ -84,7 +87,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		c.ItemDropChance = 1.0 / c.Size
 	}
 
-	r, d := rand.New(c.Rand), c.Size*2
+	r, d := rand.New(c.RandSource), c.Size*2
 	box := cube.Box(
 		math.Floor(explosionPos[0]-d-1),
 		math.Floor(explosionPos[1]-d-1),
@@ -164,9 +167,9 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	}
 	if c.SpawnFire {
 		for _, pos := range affectedBlocks {
-			if r.Intn(3) == 0 {
+			if r.IntN(3) == 0 {
 				if _, ok := tx.Block(pos).(Air); ok && tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, tx) {
-					tx.SetBlock(pos, Fire{}, nil)
+					Fire{}.Start(tx, pos)
 				}
 			}
 		}

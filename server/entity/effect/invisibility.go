@@ -36,5 +36,5 @@ func (invisibility) End(e world.Entity, _ int) {
 
 // RGBA ...
 func (invisibility) RGBA() color.RGBA {
-	return color.RGBA{R: 0x7f, G: 0x83, B: 0x92, A: 0xff}
+	return color.RGBA{R: 0xf6, G: 0xf6, B: 0xf6, A: 0xff}
 }

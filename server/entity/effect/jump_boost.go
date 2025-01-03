@@ -14,5 +14,5 @@ type jumpBoost struct {
 
 // RGBA ...
 func (jumpBoost) RGBA() color.RGBA {
-	return color.RGBA{R: 0x22, G: 0xff, B: 0x4c, A: 0xff}
+	return color.RGBA{R: 0xfd, G: 0xff, B: 0x84, A: 0xff}
 }

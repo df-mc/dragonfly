@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -50,22 +50,22 @@ func (l Lava) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 
 // RandomTick ...
 func (l Lava) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	i := r.Intn(3)
+	i := r.IntN(3)
 	if i > 0 {
 		for j := 0; j < i; j++ {
-			pos = pos.Add(cube.Pos{r.Intn(3) - 1, 1, r.Intn(3) - 1})
+			pos = pos.Add(cube.Pos{r.IntN(3) - 1, 1, r.IntN(3) - 1})
 			if _, ok := tx.Block(pos).(Air); ok {
 				if neighboursLavaFlammable(pos, tx) {
-					tx.SetBlock(pos, Fire{}, nil)
+					Fire{}.Start(tx, pos)
 				}
 			}
 		}
 	} else {
 		for j := 0; j < 3; j++ {
-			pos = pos.Add(cube.Pos{r.Intn(3) - 1, 0, r.Intn(3) - 1})
+			pos = pos.Add(cube.Pos{r.IntN(3) - 1, 0, r.IntN(3) - 1})
 			if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); ok {
 				if flammable, ok := tx.Block(pos).(Flammable); ok && flammable.FlammabilityInfo().LavaFlammable && flammable.FlammabilityInfo().Encouragement > 0 {
-					tx.SetBlock(pos, Fire{}, nil)
+					Fire{}.Start(tx, pos)
 				}
 			}
 		}

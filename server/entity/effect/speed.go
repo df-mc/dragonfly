@@ -31,5 +31,5 @@ func (speed) End(e world.Entity, lvl int) {
 
 // RGBA ...
 func (speed) RGBA() color.RGBA {
-	return color.RGBA{R: 0x7c, G: 0xaf, B: 0xc6, A: 0xff}
+	return color.RGBA{R: 0x33, G: 0xeb, B: 0xff, A: 0xff}
 }

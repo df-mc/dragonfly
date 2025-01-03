@@ -22,7 +22,7 @@ func (i instantDamage) Apply(e world.Entity, eff Effect) {
 
 // RGBA ...
 func (instantDamage) RGBA() color.RGBA {
-	return color.RGBA{R: 0x43, G: 0x0a, B: 0x09, A: 0xff}
+	return color.RGBA{R: 0xa9, G: 0x65, B: 0x6a, A: 0xff}
 }
 
 // InstantDamageSource is used for damage caused by an effect.instantDamage

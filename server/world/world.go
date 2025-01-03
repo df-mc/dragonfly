@@ -5,7 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"iter"
-	"math/rand"
+	"maps"
+	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"golang.org/x/exp/maps"
 	"sync/atomic"
 )
 

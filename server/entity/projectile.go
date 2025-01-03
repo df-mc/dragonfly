@@ -10,7 +10,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 

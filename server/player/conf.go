@@ -11,7 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/text/language"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -110,7 +110,7 @@ func fillDefaults(conf Config) Config {
 		conf.Food, conf.Saturation = 20, 5
 	}
 	if conf.EnchantmentSeed == 0 {
-		conf.EnchantmentSeed = rand.Int63()
+		conf.EnchantmentSeed = rand.Int64()
 	}
 	if conf.MaxAirSupply == 0 {
 		conf.AirSupply, conf.MaxAirSupply = 300, 300
