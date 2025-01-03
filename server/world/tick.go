@@ -60,6 +60,15 @@ func (t ticker) tick(tx *Tx) {
 	}
 
 	rain, thunder, tick, tim := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time)
+
+	sleep := false
+	if tx.w.set.RequiredSleepTicks > 0 {
+		tx.w.set.RequiredSleepTicks--
+		if tx.w.set.RequiredSleepTicks <= 0 {
+			sleep = true
+		}
+	}
+
 	w.set.Unlock()
 
 	if tick%20 == 0 {
@@ -71,6 +80,9 @@ func (t ticker) tick(tx *Tx) {
 				viewer.ViewWeather(rain, thunder)
 			}
 		}
+	}
+	if sleep {
+		t.tryAdvanceDay(tx)
 	}
 	if thunder {
 		w.tickLightning(tx)
