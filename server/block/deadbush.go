@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // DeadBush is a transparent block in the form of an aesthetic plant.
@@ -55,7 +55,7 @@ func (d DeadBush) BreakInfo() BreakInfo {
 		if t.ToolType() == item.TypeShears {
 			return []item.Stack{item.NewStack(d, 1)}
 		}
-		if amount := rand.Intn(3); amount != 0 {
+		if amount := rand.IntN(3); amount != 0 {
 			return []item.Stack{item.NewStack(item.Stick{}, amount)}
 		}
 		return nil

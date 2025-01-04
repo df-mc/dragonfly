@@ -3,7 +3,7 @@ package player
 import (
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"slices"
 	"strings"
@@ -1404,9 +1404,22 @@ func (p *Player) UseItem() {
 			p.updateState()
 			return
 		}
-		// The player is currently using the item held. This is a signal the
-		// item was consumed, so we release it.
-		p.ReleaseItem()
+		// The player is currently using the item held. This is a signal the item was consumed, so we
+		// consume it and start using it again.
+		useCtx, dur := p.useContext(), p.useDuration()
+		if dur < usable.ConsumeDuration() {
+			// The required duration for consuming this item was not met, so we don't consume it.
+			return
+		}
+		// Reset the duration for the next item to be consumed.
+		p.usingSince = time.Now()
+		ctx := event.C(p)
+		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
+			return
+		}
+		useCtx.CountSub, useCtx.NewItem = 1, usable.Consume(p.tx, p)
+		p.handleUseContext(useCtx)
+		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 }
 
@@ -1424,37 +1437,18 @@ func (p *Player) ReleaseItem() {
 
 	useCtx, dur := p.useContext(), p.useDuration()
 	i, _ := p.HeldItems()
-	switch it := i.Item().(type) {
-	case item.Releasable:
-		ctx := event.C(p)
-		if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
-			return
-		}
-		it.Release(p, p.tx, useCtx, dur)
-	case item.Consumable:
-		if dur < it.ConsumeDuration() {
-			// The required duration for consuming this item was not met, so we don't consume it.
-			return
-		}
-		ctx := event.C(p)
-		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
-			// Consuming was cancelled, but the client will continue consuming the next item.
-			p.usingSince = time.Now()
-			return
-		}
-		useCtx.CountSub, useCtx.NewItem = 1, it.Consume(p.tx, p)
-		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+	ctx := event.C(p)
+	if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
+		return
 	}
+	i.Item().(item.Releasable).Release(p, p.tx, useCtx, dur)
 	p.handleUseContext(useCtx)
 	p.updateState()
 }
 
 // canRelease returns whether the player can release the item currently held in the main hand.
 func (p *Player) canRelease() bool {
-	held, _ := p.HeldItems()
-	if _, consumable := held.Item().(item.Consumable); consumable {
-		return true
-	}
+	held, left := p.HeldItems()
 	releasable, ok := held.Item().(item.Releasable)
 	if !ok {
 		return false
@@ -1463,10 +1457,18 @@ func (p *Player) canRelease() bool {
 		return true
 	}
 	for _, req := range releasable.Requirements() {
+		reqName, _ := req.Item().EncodeItem()
+
+		if !left.Empty() {
+			leftName, _ := left.Item().EncodeItem()
+			if leftName == reqName {
+				continue
+			}
+		}
+
 		_, found := p.Inventory().FirstFunc(func(stack item.Stack) bool {
 			name, _ := stack.Item().EncodeItem()
-			otherName, _ := req.Item().EncodeItem()
-			return name == otherName
+			return name == reqName
 		})
 		if !found {
 			return false
@@ -1482,7 +1484,12 @@ func (p *Player) handleUseContext(ctx *item.UseContext) {
 	p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 	p.addNewItem(ctx)
 	for _, it := range ctx.ConsumedItems {
-		_ = p.Inventory().RemoveItem(it)
+		_ = p.offHand.RemoveItem(it)
+		it = it.Grow(-left.Count())
+
+		if !it.Empty() {
+			_ = p.Inventory().RemoveItem(it)
+		}
 	}
 }
 
@@ -2130,7 +2137,7 @@ func (p *Player) EnchantmentSeed() int64 {
 
 // ResetEnchantmentSeed resets the enchantment seed to a new random value.
 func (p *Player) ResetEnchantmentSeed() {
-	p.enchantSeed = rand.Int63()
+	p.enchantSeed = rand.Int64()
 }
 
 // AddExperience adds experience to the player.
@@ -2223,7 +2230,7 @@ func (p *Player) mendItems(xp int) int {
 	if length == 0 {
 		return xp
 	}
-	foundItem := mendingItems[rand.Intn(length)]
+	foundItem := mendingItems[rand.IntN(length)]
 	repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(xp*2))
 	repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
 	if repairAmount >= 2 {
@@ -2356,8 +2363,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
 		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
-		p.prevWorld = tx.World()
 	}
+	p.prevWorld = tx.World()
 
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.Rotation(), p.tx)
@@ -2944,6 +2951,10 @@ func (p *Player) useContext() *item.UseContext {
 			}
 		},
 		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {
+			_, left := p.HeldItems()
+			if !left.Empty() && comparable(left) {
+				return left, true
+			}
 			inv := p.Inventory()
 			s, ok := inv.FirstFunc(comparable)
 			if !ok {

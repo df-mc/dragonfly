@@ -13,6 +13,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -51,7 +52,7 @@ type Session struct {
 	// entityRuntimeIDs holds the runtime IDs of entities shown to the session.
 	entityRuntimeIDs map[*world.EntityHandle]uint64
 	entities         map[uint64]*world.EntityHandle
-	hiddenEntities   map[*world.EntityHandle]struct{}
+	hiddenEntities   map[uuid.UUID]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot                     *uint32
@@ -153,7 +154,7 @@ func (conf Config) New(conn Conn) *Session {
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
-		hiddenEntities:         map[*world.EntityHandle]struct{}{},
+		hiddenEntities:         map[uuid.UUID]struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
@@ -371,16 +372,15 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
+	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
+		s.handleWorldSwitch(w, tx, c)
+	}
 	pos := c.Position()
 	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
 		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
-
-	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
-		s.handleWorldSwitch(w, tx, c)
-	}
 
 	s.blobMu.Lock()
 	const maxChunkTransactions = 8

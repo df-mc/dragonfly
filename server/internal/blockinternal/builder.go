@@ -2,7 +2,7 @@ package blockinternal
 
 import (
 	"github.com/df-mc/dragonfly/server/item/category"
-	"golang.org/x/exp/maps"
+	"maps"
 	"slices"
 )
 

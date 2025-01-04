@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // FallingBlockBehaviourConfig holds optional parameters for

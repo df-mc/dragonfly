@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -79,7 +79,7 @@ func (f Firework) DecodeNBT(data map[string]any) any {
 
 // RandomisedDuration returns the randomised flight duration of the firework.
 func (f Firework) RandomisedDuration() time.Duration {
-	return f.Duration + time.Duration(rand.Intn(int(time.Millisecond*600)))
+	return f.Duration + time.Duration(rand.IntN(int(time.Millisecond*600)))
 }
 
 // EncodeItem ...

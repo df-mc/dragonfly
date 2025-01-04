@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -94,7 +94,7 @@ func experienceFromEnchantments(stack item.Stack) int {
 	}
 
 	minExperience := int(math.Ceil(float64(totalCost) / 2))
-	return minExperience + rand.Intn(minExperience)
+	return minExperience + rand.IntN(minExperience)
 }
 
 // stripPossibleEnchantments strips all enchantments possible, excluding curses.

@@ -10,7 +10,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"slices"
 )
 
@@ -119,7 +119,7 @@ func (s *Session) sendEnchantmentOptions(tx *world.Tx, c Controllable, pos cube.
 		// to enchanting tables only. We also only need to set the middle index of Enchantments. The other two serve
 		// an unknown purpose and can cause various unexpected issues.
 		options = append(options, protocol.EnchantmentOption{
-			Name:            enchantNames[rand.Intn(len(enchantNames))],
+			Name:            enchantNames[rand.IntN(len(enchantNames))],
 			Cost:            uint32(selectedCosts[i]),
 			RecipeNetworkID: uint32(i),
 			Enchantments: protocol.ItemEnchantments{
@@ -148,12 +148,13 @@ func (s *Session) determineAvailableEnchantments(tx *world.Tx, c Controllable, p
 
 	// Search for bookshelves around the enchanting table. Bookshelves help boost the value of the enchantments that
 	// are selected, resulting in enchantments that are rarer but also more expensive.
-	random := rand.New(rand.NewSource(c.EnchantmentSeed()))
+	seed := uint64(c.EnchantmentSeed())
+	random := rand.New(rand.NewPCG(seed, seed))
 	bookshelves := searchBookshelves(tx, pos)
 	value := enchantable.EnchantmentValue()
 
 	// Calculate the base cost, used to calculate the upper, middle, and lower level costs.
-	baseCost := random.Intn(8) + 1 + (bookshelves >> 1) + random.Intn(bookshelves+1)
+	baseCost := random.IntN(8) + 1 + (bookshelves >> 1) + random.IntN(bookshelves+1)
 
 	// Calculate the upper, middle, and lower level costs.
 	upperLevelCost := max(baseCost/3, 1)
@@ -185,7 +186,7 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 	randomBonus := (random.Float64() + random.Float64() - 1.0) * 0.15
 
 	// Calculate the enchantment cost and clamp it to ensure it is always at least one with triangular distribution.
-	cost := level + 1 + random.Intn(value/4+1) + random.Intn(value/4+1)
+	cost := level + 1 + random.IntN(value/4+1) + random.IntN(value/4+1)
 	cost = clamp(int(math.Round(float64(cost)+float64(cost)*randomBonus)), 1, math.MaxInt32)
 
 	// Books are applicable to all enchantments, so make sure we have a flag for them here.
@@ -235,7 +236,7 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 	availableEnchants = slices.Delete(availableEnchants, ind, ind+1)
 
 	// Based on the cost, select a random amount of additional enchantments.
-	for random.Intn(50) <= cost {
+	for random.IntN(50) <= cost {
 		// Ensure that we don't have any conflicting enchantments. If so, remove them from the list of available
 		// enchantments.
 		lastEnchant := selectedEnchants[len(selectedEnchants)-1]
@@ -306,7 +307,7 @@ func weightedRandomEnchantment(rs *rand.Rand, enchants []item.Enchantment) item.
 	for _, e := range enchants {
 		totalWeight += e.Type().Rarity().Weight()
 	}
-	r := rs.Intn(totalWeight)
+	r := rs.IntN(totalWeight)
 	for _, e := range enchants {
 		r -= e.Type().Rarity().Weight()
 		if r < 0 {

@@ -4,7 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Farmland is a block that crops are grown on. Farmland is created by interacting with a grass or dirt block using a

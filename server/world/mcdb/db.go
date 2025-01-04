@@ -12,7 +12,7 @@ import (
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"slices"
@@ -272,7 +272,7 @@ func (db *DB) entitiesOld(k dbKey) ([]chunk.Entity, error) {
 		ent.ID, ok = ent.Data["UniqueID"].(int64)
 		if !ok {
 			db.conf.Log.Error("missing unique ID field, generating random", "data", fmt.Sprint(ent.Data))
-			ent.ID = rand.Int63()
+			ent.ID = rand.Int64()
 		}
 		entities = append(entities, ent)
 	}

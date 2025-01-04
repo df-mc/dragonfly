@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // BeetrootSeeds are a crop that can be harvested to craft soup or red dye.
@@ -53,7 +53,7 @@ func (b BeetrootSeeds) BreakInfo() BreakInfo {
 		if b.Growth < 7 {
 			return []item.Stack{item.NewStack(b, 1)}
 		}
-		return []item.Stack{item.NewStack(item.Beetroot{}, 1), item.NewStack(b, rand.Intn(4)+1)}
+		return []item.Stack{item.NewStack(item.Beetroot{}, 1), item.NewStack(b, rand.IntN(4)+1)}
 	})
 }
 
@@ -71,7 +71,7 @@ func (b BeetrootSeeds) EncodeItem() (name string, meta int16) {
 func (b BeetrootSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 8 {
 		breakBlock(b, pos, tx)
-	} else if b.Growth < 7 && r.Intn(3) > 0 && r.Float64() <= b.CalculateGrowthChance(pos, tx) {
+	} else if b.Growth < 7 && r.IntN(3) > 0 && r.Float64() <= b.CalculateGrowthChance(pos, tx) {
 		b.Growth++
 		tx.SetBlock(pos, b, nil)
 	}
