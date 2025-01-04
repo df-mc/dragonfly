@@ -89,7 +89,7 @@ func (r RedstoneWire) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	}
 }
 
-// Source ...
+// RedstoneSource ...
 func (RedstoneWire) RedstoneSource() bool {
 	return false
 }

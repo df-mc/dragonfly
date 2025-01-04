@@ -32,7 +32,7 @@ func (b Button) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 5)
 }
 
-// Source ...
+// RedstoneSource ...
 func (b Button) RedstoneSource() bool {
 	return true
 }

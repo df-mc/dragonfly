@@ -125,7 +125,7 @@ func (t RedstoneTorch) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:unlit_redstone_torch", map[string]any{"torch_facing_direction": face}
 }
 
-// Source ...
+// RedstoneSource ...
 func (t RedstoneTorch) RedstoneSource() bool {
 	return t.Lit
 }
@@ -135,12 +135,7 @@ func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bool
 	if !t.Lit {
 		return 0
 	}
-	if face == cube.FaceDown {
-		if t.Facing.Opposite() != cube.FaceDown {
-			return 15
-		}
-		return 0
-	}
+
 	if face != t.Facing.Opposite() {
 		return 15
 	}

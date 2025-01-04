@@ -42,7 +42,7 @@ func (r RedstoneBlock) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	return false
 }
 
-// Source ...
+// RedstoneSource ...
 func (r RedstoneBlock) RedstoneSource() bool {
 	return true
 }
