@@ -2380,7 +2380,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	if p.usingItem {
 		if c, ok := held.Item().(item.Chargeable); ok {
-			c.ContinueCharge(p, tx, p.useDuration())
+			c.ContinueCharge(p, tx, p.useContext(), p.useDuration())
 		}
 	}
 

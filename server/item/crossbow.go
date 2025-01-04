@@ -23,7 +23,6 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 	creative := releaser.GameMode().CreativeInventory()
 	held, left := releaser.HeldItems()
 
-	//TODO: modify chargeDuration to prevent funky loading
 	chargeDuration := time.Duration(1.25 * float64(time.Second))
 	for _, enchant := range held.Enchantments() {
 		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
@@ -71,15 +70,14 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 }
 
 // ContinueCharge ...
-func (c Crossbow) ContinueCharge(releaser Releaser, tx *world.Tx, duration time.Duration) {
+func (c Crossbow) ContinueCharge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
 	if !c.Item.Empty() {
 		return
 	}
 
-	//TODO: check if the releaser has required items in inventory.
-	// currently it will send the sound regardless if charging or not.
+	creative := releaser.GameMode().CreativeInventory()
+	held, left := releaser.HeldItems()
 
-	held, _ := releaser.HeldItems()
 	chargeDuration, quickChargeLevel := time.Duration(1.25*float64(time.Second)), 0
 	for _, enchant := range held.Enchantments() {
 		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
@@ -88,26 +86,54 @@ func (c Crossbow) ContinueCharge(releaser Releaser, tx *world.Tx, duration time.
 		}
 	}
 
-	progress := float64(duration) / float64(chargeDuration)
-	if duration.Seconds() <= 0.1 {
-		if quickChargeLevel > 0 {
-			tx.PlaySound(releaser.Position(), sound.CrossbowQuickChargeLoadingStart{})
-		} else {
-			tx.PlaySound(releaser.Position(), sound.CrossbowLoadingStart{})
+	var projectileItem Stack
+	if !left.Empty() {
+		_, isFirework := left.Item().(Firework)
+		_, isArrow := left.Item().(Arrow)
+		if isFirework || isArrow {
+			projectileItem = left
 		}
 	}
 
-	ticks := duration.Milliseconds() / 50
-	if ticks%16 == 0 { // After 16 ticks play the middle charge sound
-		if quickChargeLevel > 0 {
-			tx.PlaySound(releaser.Position(), sound.CrossbowQuickChargeLoadingMiddle{})
-		} else {
-			tx.PlaySound(releaser.Position(), sound.CrossbowLoadingMiddle{})
+	if projectileItem.Empty() {
+		var ok bool
+		projectileItem, ok = ctx.FirstFunc(func(stack Stack) bool {
+			_, isArrow := stack.Item().(Arrow)
+			return isArrow
+		})
+
+		if !ok && !creative {
+			return
 		}
+
+		if projectileItem.Empty() {
+			projectileItem = NewStack(Arrow{}, 1)
+		}
+	}
+
+	if projectileItem.Empty() {
+		return
+	}
+
+	hasQuickCharge := quickChargeLevel > 0
+	progress := float64(duration) / float64(chargeDuration)
+	if duration.Seconds() <= 0.1 {
+		tx.PlaySound(releaser.Position(), sound.Crossbow{Stage: sound.CrossbowStageLoadStart, QuickCharge: hasQuickCharge})
+	}
+
+	// Base reload time is 25 ticks; each Quick Charge level reduces by 5 ticks
+	multiplier := 25.0 / float64(25-(5*quickChargeLevel))
+
+	// Adjust ticks based on the multiplier
+	adjustedTicks := int(float64(duration.Milliseconds()) / (50 / multiplier))
+
+	// Play sound after every 16 ticks (adjusted by Quick Charge)
+	if adjustedTicks%16 == 0 {
+		tx.PlaySound(releaser.Position(), sound.Crossbow{Stage: sound.CrossbowStageMiddle, QuickCharge: hasQuickCharge})
 	}
 
 	if progress >= 1 && quickChargeLevel > 0 {
-		tx.PlaySound(releaser.Position(), sound.CrossbowQuickChargeEnd{})
+		tx.PlaySound(releaser.Position(), sound.Crossbow{Stage: sound.CrossbowStageLoadEnd, QuickCharge: hasQuickCharge})
 	}
 }
 
@@ -145,7 +171,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	held, left := releaser.HeldItems()
 	crossbow := held.WithItem(c)
 	releaser.SetHeldItems(crossbow, left)
-	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
+	tx.PlaySound(releaser.Position(), sound.Crossbow{Stage: sound.CrossbowStageShoot})
 	return true
 }
 

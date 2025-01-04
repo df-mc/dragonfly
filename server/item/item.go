@@ -160,7 +160,7 @@ type Chargeable interface {
 	// Charge is called when an item is being used.
 	Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) bool
 	// ContinueCharge continues the charge.
-	ContinueCharge(releaser Releaser, tx *world.Tx, duration time.Duration)
+	ContinueCharge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration)
 	// ReleaseCharge is called when an item is being released.
 	ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
 }
