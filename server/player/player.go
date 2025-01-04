@@ -1375,11 +1375,11 @@ func (p *Player) UseItem() {
 		p.usingSince, p.usingItem = time.Now(), true
 		p.updateState()
 	}
-
-	if chargeable, ok := it.(item.Chargeable); ok {
+	switch usable := it.(type) {
+	case item.Chargeable:
 		useCtx := p.useContext()
 		if !p.usingItem {
-			if !chargeable.ReleaseCharge(p, p.tx, useCtx) {
+			if !usable.ReleaseCharge(p, p.tx, useCtx) {
 				// If the item was not charged yet, start charging.
 				p.usingSince, p.usingItem = time.Now(), true
 			}
@@ -1391,14 +1391,11 @@ func (p *Player) UseItem() {
 		// Stop charging and determine if the item is ready.
 		p.usingItem = false
 		dur := p.useDuration()
-		if chargeable.Charge(p, p.tx, useCtx, dur) {
+		if usable.Charge(p, p.tx, useCtx, dur) {
 			p.session().SendChargeItemComplete()
 		}
 		p.handleUseContext(useCtx)
 		p.updateState()
-	}
-
-	switch usable := it.(type) {
 	case item.Usable:
 		useCtx := p.useContext()
 		if !usable.Use(p.tx, p, useCtx) {

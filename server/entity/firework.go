@@ -11,12 +11,16 @@ import (
 // for creating decorative explosions, boosting when flying with elytra, and
 // loading into a crossbow as ammunition.
 func NewFirework(opts world.EntitySpawnOpts, firework item.Firework) *world.EntityHandle {
-	return NewFireworkAttached(opts, firework, nil, 1.15, 0.04, false)
+	return newFirework(opts, firework, nil, 1.15, 0.04, false)
 }
 
 // NewFireworkAttached creates a firework entity with an owner that the firework
 // may be attached to.
-func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, owner world.Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
+func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, owner world.Entity) *world.EntityHandle {
+	return newFirework(opts, firework, owner, 0, 0, true)
+}
+
+func newFirework(opts world.EntitySpawnOpts, firework item.Firework, owner world.Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
 	conf := fireworkConf
 	conf.SidewaysVelocityMultiplier = sidewaysVelocityMultiplier
 	conf.UpwardsAcceleration = upwardsAcceleration

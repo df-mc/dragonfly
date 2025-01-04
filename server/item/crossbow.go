@@ -8,14 +8,16 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-// Crossbow is a ranged weapon similar to a bow that uses arrows or fireworks as ammunition.
+// Crossbow is a ranged weapon similar to a bow that uses arrows or fireworks
+// as ammunition.
 type Crossbow struct {
 	// Item is the item the crossbow is charged with.
 	Item Stack
 }
 
-// Charge starts the charging process and checks if the charge duration meets the required duration.
-func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) bool {
+// Charge starts the charging process and checks if the charge duration meets
+// the required duration.
+func (c Crossbow) Charge(releaser Releaser, _ *world.Tx, ctx *UseContext, duration time.Duration) bool {
 	if !c.Item.Empty() {
 		return false
 	}
@@ -23,49 +25,19 @@ func (c Crossbow) Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, durat
 	creative := releaser.GameMode().CreativeInventory()
 	held, left := releaser.HeldItems()
 
-	chargeDuration := time.Duration(1.25 * float64(time.Second))
-	for _, enchant := range held.Enchantments() {
-		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
-			chargeDuration = min(chargeDuration, q.ChargeDuration(enchant.Level()))
-		}
-	}
-
-	if duration < chargeDuration {
+	if chargeDuration, _ := c.chargeDuration(held); duration < chargeDuration {
 		return false
 	}
-
-	var projectileItem Stack
-	if !left.Empty() {
-		_, isFirework := left.Item().(Firework)
-		_, isArrow := left.Item().(Arrow)
-		if isFirework || isArrow {
-			projectileItem = left
-		}
+	projectileItem, ok := c.findProjectile(releaser, ctx)
+	if !ok {
+		return false
 	}
-
-	if projectileItem.Empty() {
-		var ok bool
-		projectileItem, ok = ctx.FirstFunc(func(stack Stack) bool {
-			_, isArrow := stack.Item().(Arrow)
-			return isArrow
-		})
-
-		if !ok && !creative {
-			return false
-		}
-
-		if projectileItem.Empty() {
-			projectileItem = NewStack(Arrow{}, 1)
-		}
-	}
-
 	c.Item = projectileItem.Grow(-projectileItem.Count() + 1)
 	if !creative {
 		ctx.Consume(c.Item)
 	}
 
-	crossbow := held.WithItem(c)
-	releaser.SetHeldItems(crossbow, left)
+	releaser.SetHeldItems(held.WithItem(c), left)
 	return true
 }
 
@@ -75,66 +47,69 @@ func (c Crossbow) ContinueCharge(releaser Releaser, tx *world.Tx, ctx *UseContex
 		return
 	}
 
-	creative := releaser.GameMode().CreativeInventory()
-	held, left := releaser.HeldItems()
-
-	chargeDuration, quickChargeLevel := time.Duration(1.25*float64(time.Second)), 0
-	for _, enchant := range held.Enchantments() {
-		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
-			chargeDuration = min(chargeDuration, q.ChargeDuration(enchant.Level()))
-			quickChargeLevel = enchant.Level()
-		}
-	}
-
-	var projectileItem Stack
-	if !left.Empty() {
-		_, isFirework := left.Item().(Firework)
-		_, isArrow := left.Item().(Arrow)
-		if isFirework || isArrow {
-			projectileItem = left
-		}
-	}
-
-	if projectileItem.Empty() {
-		var ok bool
-		projectileItem, ok = ctx.FirstFunc(func(stack Stack) bool {
-			_, isArrow := stack.Item().(Arrow)
-			return isArrow
-		})
-
-		if !ok && !creative {
-			return
-		}
-
-		if projectileItem.Empty() {
-			projectileItem = NewStack(Arrow{}, 1)
-		}
-	}
-
-	if projectileItem.Empty() {
+	held, _ := releaser.HeldItems()
+	if _, ok := c.findProjectile(releaser, ctx); !ok {
 		return
 	}
 
-	hasQuickCharge := quickChargeLevel > 0
-	progress := float64(duration) / float64(chargeDuration)
+	chargeDuration, qcLevel := c.chargeDuration(held)
 	if duration.Seconds() <= 0.1 {
-		tx.PlaySound(releaser.Position(), sound.Crossbow{Stage: sound.CrossbowStageLoadStart, QuickCharge: hasQuickCharge})
+		tx.PlaySound(releaser.Position(), sound.CrossbowLoad{Stage: sound.CrossbowLoadingStart, QuickCharge: qcLevel > 0})
 	}
 
 	// Base reload time is 25 ticks; each Quick Charge level reduces by 5 ticks
-	multiplier := 25.0 / float64(25-(5*quickChargeLevel))
+	multiplier := 25.0 / float64(25-(5*qcLevel))
 
 	// Adjust ticks based on the multiplier
 	adjustedTicks := int(float64(duration.Milliseconds()) / (50 / multiplier))
 
 	// Play sound after every 16 ticks (adjusted by Quick Charge)
 	if adjustedTicks%16 == 0 {
-		tx.PlaySound(releaser.Position(), sound.Crossbow{Stage: sound.CrossbowStageMiddle, QuickCharge: hasQuickCharge})
+		tx.PlaySound(releaser.Position(), sound.CrossbowLoad{Stage: sound.CrossbowLoadingMiddle, QuickCharge: qcLevel > 0})
 	}
 
-	if progress >= 1 && quickChargeLevel > 0 {
-		tx.PlaySound(releaser.Position(), sound.Crossbow{Stage: sound.CrossbowStageLoadEnd, QuickCharge: hasQuickCharge})
+	if progress := float64(duration) / float64(chargeDuration); progress >= 1 {
+		tx.PlaySound(releaser.Position(), sound.CrossbowLoad{Stage: sound.CrossbowLoadingEnd, QuickCharge: qcLevel > 0})
 	}
+}
+
+// chargeDuration calculates the duration required to charge the crossbow and
+// the quick charge enchantment level, if any.
+func (c Crossbow) chargeDuration(s Stack) (dur time.Duration, quickChargeLvl int) {
+	dur, lvl := time.Duration(1.25*float64(time.Second)), 0
+	for _, enchant := range s.Enchantments() {
+		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
+			dur = min(dur, q.ChargeDuration(enchant.Level()))
+			lvl = enchant.Level()
+		}
+	}
+	return dur, lvl
+}
+
+// findProjectile looks through the inventory of a Releaser to find a projectile
+// to insert into the crossbow. It first checks the left hand for fireworks or
+// arrows, and searches the rest of the inventory for arrows if no valid
+// projectile was in the left hand. False is returned if no valid projectile was
+// anywhere in the inventory.
+func (c Crossbow) findProjectile(r Releaser, ctx *UseContext) (Stack, bool) {
+	_, left := r.HeldItems()
+	_, isFirework := left.Item().(Firework)
+	_, isArrow := left.Item().(Arrow)
+	if isFirework || isArrow {
+		return left, true
+	}
+	if res, ok := ctx.FirstFunc(func(stack Stack) bool {
+		_, ok := stack.Item().(Arrow)
+		return ok
+	}); ok {
+		return res, true
+	}
+	if r.GameMode().CreativeInventory() {
+		// No projectiles in inventory but the player is in creative mode, so
+		// return an arrow anyway.
+		return NewStack(Arrow{}, 1), true
+	}
+	return Stack{}, false
 }
 
 // ReleaseCharge checks if the item is fully charged and, if so, releases it.
@@ -171,7 +146,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	held, left := releaser.HeldItems()
 	crossbow := held.WithItem(c)
 	releaser.SetHeldItems(crossbow, left)
-	tx.PlaySound(releaser.Position(), sound.Crossbow{Stage: sound.CrossbowStageShoot})
+	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
 	return true
 }
 
@@ -212,9 +187,7 @@ func (c Crossbow) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (c Crossbow) EncodeNBT() map[string]any {
 	if !c.Item.Empty() {
-		return map[string]any{
-			"chargedItem": writeItem(c.Item, true),
-		}
+		return map[string]any{"chargedItem": writeItem(c.Item, true)}
 	}
 	return nil
 }

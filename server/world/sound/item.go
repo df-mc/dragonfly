@@ -47,8 +47,8 @@ type BucketEmpty struct {
 // BowShoot is a sound played when a bow is shot.
 type BowShoot struct{ sound }
 
-// Crossbow is a sound when a crossbow is being used.
-type Crossbow struct {
+// CrossbowLoad is a sound when a crossbow is being loaded.
+type CrossbowLoad struct {
 	// Stage is the stage of the crossbow.
 	Stage int
 	// QuickCharge returns if the item being used has quick charge enchantment.
@@ -57,15 +57,17 @@ type Crossbow struct {
 	sound
 }
 
+// CrossbowShoot is a sound played when a crossbow is shot.
+type CrossbowShoot struct{ sound }
+
 const (
-	// CrossbowStageLoadStart is the stage where crossbows start to load.
-	CrossbowStageLoadStart = iota
-	// CrossbowStageMiddle is the stage where crossbow is loading and stops loading.
-	CrossbowStageMiddle
-	// CrossbowStageLoadEnd is the stage where crossbow is finished loading.
-	CrossbowStageLoadEnd
-	// CrossbowStageShoot is the stage where a crossbow is shot.
-	CrossbowStageShoot
+	// CrossbowLoadingStart is the stage where a crossbows start to load.
+	CrossbowLoadingStart = iota
+	// CrossbowLoadingMiddle is the stage where a crossbow loading but not yet
+	// finished loading.
+	CrossbowLoadingMiddle
+	// CrossbowLoadingEnd is the stage where a crossbow is finished loading.
+	CrossbowLoadingEnd
 )
 
 // ArrowHit is a sound played when an arrow hits ground.
