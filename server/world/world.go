@@ -1009,6 +1009,10 @@ func (w *World) close() {
 	close(w.closing)
 	w.running.Wait()
 
+	w.viewerMu.Lock()
+	maps.Clear(w.viewers)
+	w.viewerMu.Unlock()
+
 	if w.set.ref.Add(-1); !w.advance {
 		return
 	}
