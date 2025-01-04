@@ -35,7 +35,7 @@ func (p PressurePlate) BreakInfo() BreakInfo {
 	})
 }
 
-// Source ...
+// RedstoneSource ...
 func (p PressurePlate) RedstoneSource() bool {
 	return true
 }

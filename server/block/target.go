@@ -27,7 +27,7 @@ func (t Target) BreakInfo() BreakInfo {
 	})
 }
 
-// Source ...
+// RedstoneSource ...
 func (t Target) RedstoneSource() bool {
 	return true
 }

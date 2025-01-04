@@ -25,7 +25,7 @@ type Lever struct {
 	Direction cube.Direction
 }
 
-// Source ...
+// RedstoneSource ...
 func (l Lever) RedstoneSource() bool {
 	return true
 }
