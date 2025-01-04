@@ -716,6 +716,28 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventBucketEmptyLava
 	case sound.BowShoot:
 		pk.SoundType = packet.SoundEventBow
+	case sound.CrossbowLoad:
+		switch so.Stage {
+		case sound.CrossbowLoadingStart:
+			pk.SoundType = packet.SoundEventCrossbowLoadingStart
+			if so.QuickCharge {
+				pk.SoundType = packet.SoundEventCrossbowQuickChargeStart
+			}
+		case sound.CrossbowLoadingMiddle:
+			pk.SoundType = packet.SoundEventCrossbowLoadingMiddle
+			if so.QuickCharge {
+				pk.SoundType = packet.SoundEventCrossbowQuickChargeMiddle
+			}
+		case sound.CrossbowLoadingEnd:
+			pk.SoundType = packet.SoundEventCrossbowLoadingEnd
+			if so.QuickCharge {
+				pk.SoundType = packet.SoundEventCrossbowQuickChargeEnd
+			}
+		default:
+			panic("invalid crossbow loading stage")
+		}
+	case sound.CrossbowShoot:
+		pk.SoundType = packet.SoundEventCrossbowShoot
 	case sound.ArrowHit:
 		pk.SoundType = packet.SoundEventBowHit
 	case sound.ItemThrow:

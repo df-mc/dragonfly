@@ -1375,8 +1375,27 @@ func (p *Player) UseItem() {
 		p.usingSince, p.usingItem = time.Now(), true
 		p.updateState()
 	}
-
 	switch usable := it.(type) {
+	case item.Chargeable:
+		useCtx := p.useContext()
+		if !p.usingItem {
+			if !usable.ReleaseCharge(p, p.tx, useCtx) {
+				// If the item was not charged yet, start charging.
+				p.usingSince, p.usingItem = time.Now(), true
+			}
+			p.handleUseContext(useCtx)
+			p.updateState()
+			return
+		}
+
+		// Stop charging and determine if the item is ready.
+		p.usingItem = false
+		dur := p.useDuration()
+		if usable.Charge(p, p.tx, useCtx, dur) {
+			p.session().SendChargeItemComplete()
+		}
+		p.handleUseContext(useCtx)
+		p.updateState()
 	case item.Usable:
 		useCtx := p.useContext()
 		if !usable.Use(p.tx, p, useCtx) {
@@ -2346,8 +2365,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
+	held, _ := p.HeldItems()
 	if current%4 == 0 && p.usingItem {
-		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
 			// Eating particles seem to happen roughly every 4 ticks.
 			for _, v := range p.viewers() {
@@ -2355,6 +2374,13 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			}
 		}
 	}
+
+	if p.usingItem {
+		if c, ok := held.Item().(item.Chargeable); ok {
+			c.ContinueCharge(p, tx, p.useContext(), p.useDuration())
+		}
+	}
+
 	for it, ti := range p.cooldowns {
 		if time.Now().After(ti) {
 			delete(p.cooldowns, it)
@@ -2653,6 +2679,19 @@ func (p *Player) EyeHeight() float64 {
 		return 1.26
 	default:
 		return 1.62
+	}
+}
+
+// TorsoHeight returns the torso height of the player: 1.52, 1.16 if the player is sneaking, or 0.42 if the player is
+// swimming, gliding, or crawling.
+func (p *Player) TorsoHeight() float64 {
+	switch {
+	case p.swimming || p.crawling || p.gliding:
+		return 0.42
+	case p.sneaking:
+		return 1.16
+	default:
+		return 1.52
 	}
 }
 
