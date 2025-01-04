@@ -153,14 +153,9 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 							tx.SetBlock(pairPos, pair, nil)
 						}
 					}
-
-					for _, i := range cb.Inventory(tx, pos).Clear() {
-						dropItem(tx, i, pos.Vec3())
-					}
-				} else {
-					for _, i := range container.Inventory(tx, pos).Clear() {
-						dropItem(tx, i, pos.Vec3())
-					}
+				}
+				for _, i := range container.Inventory(tx, pos).Clear() {
+					dropItem(tx, i, pos.Vec3())
 				}
 			}
 		}
@@ -195,7 +190,7 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 	xOffset := (1.0 - math.Floor(diff[0])/diff[0]) / 2.0
 	zOffset := (1.0 - math.Floor(diff[2])/diff[2]) / 2.0
 
-	var checks, misses int
+	var checks, misses float64
 	for x := 0.0; x <= 1.0; x += step[0] {
 		for y := 0.0; y <= 1.0; y += step[1] {
 			for z := 0.0; z <= 1.0; z += step[2] {
@@ -204,13 +199,12 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 					lerp(y, boxMin[1], boxMax[1]),
 					lerp(z, boxMin[2], boxMax[2]) + zOffset,
 				}
-
 				var collided bool
-				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (con bool) {
-					_, air := tx.Block(pos).(Air)
-					collided = !air
-					return air
+				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (cont bool) {
+					_, collided = trace.BlockIntercept(pos, tx, tx.Block(pos), origin, point)
+					return !collided
 				})
+
 				if !collided {
 					misses++
 				}
@@ -218,7 +212,7 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 			}
 		}
 	}
-	return float64(misses) / float64(checks)
+	return misses / checks
 }
 
 // lerp returns the linear interpolation between a and b at t.
