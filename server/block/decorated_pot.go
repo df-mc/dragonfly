@@ -19,6 +19,9 @@ type PotDecoration interface {
 // DecoratedPot is a decoration block that can be crafted from up to four pottery sherds, and bricks on the sides where
 // no pattern should be displayed.
 type DecoratedPot struct {
+	transparent
+	sourceWaterDisplacer
+
 	// Facing is the direction the pot is facing. The first decoration will be facing opposite of this direction.
 	Facing cube.Direction
 	// Decorations are the four decorations displayed on the sides of the pot. If a decoration is a brick or nil,
