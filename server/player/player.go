@@ -2630,17 +2630,17 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround() bool {
-	box := Type.BBox(p).Translate(p.Position())
+	box := Type.BBox(p).Translate(p.Position()).Extend(mgl64.Vec3{0, -0.05})
 	b := box.Grow(1)
 
-	low, high := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())
+	epsilon := mgl64.Vec3{mgl64.Epsilon, mgl64.Epsilon, mgl64.Epsilon}
+	low, high := cube.PosFromVec3(b.Min().Add(epsilon)), cube.PosFromVec3(b.Max().Sub(epsilon))
 	for x := low[0]; x <= high[0]; x++ {
 		for z := low[2]; z <= high[2]; z++ {
 			for y := low[1]; y < high[1]; y++ {
 				pos := cube.Pos{x, y, z}
-				boxList := p.tx.Block(pos).Model().BBox(pos, p.tx)
-				for _, bb := range boxList {
-					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(box) {
+				for _, bb := range p.tx.Block(pos).Model().BBox(pos, p.tx) {
+					if bb.Translate(pos.Vec3()).IntersectsWith(box) {
 						return true
 					}
 				}
