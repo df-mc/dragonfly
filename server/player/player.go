@@ -1840,8 +1840,13 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 		p.resendBlocks(pos, cube.Faces()...)
 		return false
 	}
-	if !ignoreBBox && p.obstructedPos(pos, b) {
-		p.resendBlocks(pos, cube.Faces()...)
+	if obstructed, selfOnly := p.obstructedPos(pos, b); obstructed && !ignoreBBox {
+		if !selfOnly {
+			// Only resend blocks if there were other entities blocking the
+			// placement than the player itself. Resending blocks placed inside
+			// the player itself leads to synchronisation issues.
+			p.resendBlocks(pos, cube.Faces()...)
+		}
 		return false
 	}
 
@@ -1856,9 +1861,13 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	return true
 }
 
-// obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
-// The function returns true if there is an entity in the way that could prevent the block from being placed.
-func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
+// obstructedPos checks if the position passed is obstructed if the block
+// passed is attempted to be placed. The function returns true as the first
+// bool if there is an entity in the way that could prevent the block from
+// being placed.
+// If the only entity preventing the block from being placed is the player
+// itself, the second bool returned is true too.
+func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnly bool) {
 	blockBoxes := b.Model().BBox(pos, p.tx)
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
@@ -1871,11 +1880,15 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 			continue
 		default:
 			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-6)) {
-				return true
+				obstructed = true
+				if e.H() == p.handle {
+					continue
+				}
+				return true, false
 			}
 		}
 	}
-	return false
+	return obstructed, true
 }
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
