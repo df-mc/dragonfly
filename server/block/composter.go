@@ -52,8 +52,8 @@ func (c Composter) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 		}
 
 		c.Level = 0
-		tx.SetBlock(pos.Side(cube.FaceUp), c, nil)
-		tx.PlaySound(pos.Side(cube.FaceUp).Vec3(), sound.ComposterEmpty{})
+		tx.SetBlock(pos, c, nil)
+		tx.PlaySound(pos.Vec3(), sound.ComposterEmpty{})
 		return true
 	}
 
