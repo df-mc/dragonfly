@@ -89,9 +89,10 @@ type playerData struct {
 
 	breaking          bool
 	breakingPos       cube.Pos
+	breakingFace      cube.Face
 	lastBreakDuration time.Duration
 
-	breakParticleCounter uint32
+	breakCounter uint32
 
 	hunger *hungerManager
 
@@ -1730,7 +1731,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		punchable.Punch(pos, face, p.tx, p)
 	}
 
-	p.breaking = true
+	p.breaking, p.breakingFace = true, face
 	p.SwingArm()
 
 	if p.GameMode().CreativeInventory() {
@@ -1786,7 +1787,7 @@ func (p *Player) AbortBreaking() {
 	if !p.breaking {
 		return
 	}
-	p.breaking, p.breakParticleCounter = true, 0
+	p.breaking, p.breakCounter = false, 0
 	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(p.breakingPos, block.StopCrackAction{})
 	}
@@ -1800,19 +1801,17 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 		return
 	}
 	pos := p.breakingPos
-
-	p.SwingArm()
-
 	b := p.tx.Block(pos)
 	p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 
-	if p.breakParticleCounter += 1; p.breakParticleCounter%5 == 0 {
+	if p.breakCounter++; p.breakCounter%5 == 0 {
+		p.SwingArm()
+
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
-		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.tx.Block(pos)})
+		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 	}
-	breakTime := p.breakTime(pos)
-	if breakTime != p.lastBreakDuration {
+	if breakTime := p.breakTime(pos); breakTime != p.lastBreakDuration {
 		for _, viewer := range p.viewers() {
 			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
 		}
@@ -2348,7 +2347,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	p.tickFood()
 	p.tickAirSupply()
 
-	if p.Position()[1] < float64(p.tx.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
+	if p.Position()[1] < float64(p.tx.Range()[0]) {
 		p.Hurt(4, entity.VoidDamageSource{})
 	}
 	if p.insideOfSolid() {
@@ -2379,6 +2378,9 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		if c, ok := held.Item().(item.Chargeable); ok {
 			c.ContinueCharge(p, tx, p.useContext(), p.useDuration())
 		}
+	}
+	if p.breaking {
+		p.ContinueBreaking(p.breakingFace)
 	}
 
 	for it, ti := range p.cooldowns {
