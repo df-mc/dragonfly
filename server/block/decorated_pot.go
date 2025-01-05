@@ -71,11 +71,6 @@ func (p DecoratedPot) BreakInfo() BreakInfo {
 	})
 }
 
-// MaxCount ...
-func (DecoratedPot) MaxCount() int {
-	return 64
-}
-
 // EncodeItem ...
 func (p DecoratedPot) EncodeItem() (name string, meta int16) {
 	return "minecraft:decorated_pot", 0
