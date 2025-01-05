@@ -31,6 +31,36 @@ type DecoratedPot struct {
 	Decorations [4]PotDecoration
 }
 
+// ExtractItem ...
+func (p DecoratedPot) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
+	if p.Item.Empty() {
+		return false
+	}
+	if _, err := h.inventory.AddItem(p.Item.Grow(-p.Item.Count() + 1)); err != nil {
+		return false
+	}
+	p.Item = p.Item.Grow(-1)
+	tx.SetBlock(pos, p, nil)
+	return true
+}
+
+// InsertItem ...
+func (p DecoratedPot) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
+	for sourceSlot, sourceStack := range h.inventory.Slots() {
+		if !sourceStack.Empty() && sourceStack.Comparable(p.Item) {
+			if p.Item.Empty() {
+				p.Item = sourceStack.Grow(-sourceStack.Count() + 1)
+			} else {
+				p.Item = p.Item.Grow(1)
+			}
+			_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+			tx.SetBlock(pos, p, nil)
+			return true
+		}
+	}
+	return false
+}
+
 // Activate ...
 func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
