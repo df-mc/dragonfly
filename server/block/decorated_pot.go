@@ -31,7 +31,20 @@ type DecoratedPot struct {
 
 // BreakInfo ...
 func (p DecoratedPot) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if hasSilkTouch(enchantments) {
+			return []item.Stack{item.NewStack(p, 1)}
+		}
+		var drops []item.Stack
+		for _, d := range p.Decorations {
+			if d == nil {
+				drops = append(drops, item.NewStack(item.Brick{}, 1))
+				continue
+			}
+			drops = append(drops, item.NewStack(d, 1))
+		}
+		return drops
+	})
 }
 
 // MaxCount ...
