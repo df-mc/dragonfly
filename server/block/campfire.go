@@ -132,6 +132,10 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User,
 		return false
 	}
 
+	if _, ok = tx.Liquid(pos); ok {
+		return false
+	}
+
 	for i, it := range c.Items {
 		if it.Item.Empty() {
 			c.Items[i] = CampfireItem{
@@ -197,9 +201,22 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 
 // NeighbourUpdateTick ...
 func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	_, ok := tx.Liquid(pos)
-	liquid, okTwo := tx.Liquid(pos.Side(cube.FaceUp))
-	if (ok || (okTwo && liquid.LiquidType() == "water")) && !c.Extinguished {
+	if _, ok := tx.Liquid(pos); ok {
+		var updated bool
+		for i, it := range c.Items {
+			if !it.Item.Empty() {
+				dropItem(tx, it.Item, pos.Vec3Centre())
+				c.Items[i].Item, updated = item.Stack{}, true
+			}
+		}
+		if !c.Extinguished {
+			c.extinguish(pos, tx)
+		} else if updated {
+			tx.SetBlock(pos, c, nil)
+		}
+		return
+	}
+	if liquid, ok := tx.Liquid(pos.Side(cube.FaceUp)); ok && liquid.LiquidType() == "water" && !c.Extinguished {
 		c.extinguish(pos, tx)
 	}
 }
