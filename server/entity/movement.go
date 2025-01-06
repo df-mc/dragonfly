@@ -27,22 +27,6 @@ type Movement struct {
 	onGround             bool
 }
 
-// Send sends the Movement to any viewers watching the entity at the time of the movement. If the position/velocity
-// changes were negligible, nothing is sent.
-func (m *Movement) Send() {
-	posChanged := !m.dpos.ApproxEqualThreshold(zeroVec3, epsilon)
-	velChanged := !m.dvel.ApproxEqualThreshold(zeroVec3, epsilon)
-
-	for _, v := range m.v {
-		if posChanged {
-			v.ViewEntityMovement(m.e, m.pos, m.rot, m.onGround)
-		}
-		if velChanged {
-			v.ViewEntityVelocity(m.e, m.vel)
-		}
-	}
-}
-
 // Position returns the position as a result of the Movement as an mgl64.Vec3.
 func (m *Movement) Position() mgl64.Vec3 {
 	return m.pos

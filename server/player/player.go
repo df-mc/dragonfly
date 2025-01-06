@@ -2409,10 +2409,11 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.Rotation(), p.tx)
-		m.Send()
 
-		p.data.Vel = m.Velocity()
-		p.Move(m.Position().Sub(p.Position()), 0, 0)
+		// TODO: Move p.data.Move into p.Move()
+		// p.Move(m.Position().Sub(p.Position()), 0, 0)
+		p.data.Move(p, tx, m.Position(), m.Rotation(), p.onGround)
+		p.data.SetVelocity(p, tx, m.Velocity())
 	} else {
 		p.data.Vel = mgl64.Vec3{}
 	}

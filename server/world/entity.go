@@ -3,6 +3,7 @@ package world
 import (
 	"encoding/binary"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"io"
@@ -295,6 +296,62 @@ type EntityData struct {
 	Age          time.Duration
 
 	Data any
+}
+
+func (edata *EntityData) SetVelocity(e Entity, tx *Tx, vel mgl64.Vec3) {
+	if !vel.ApproxEqualThreshold(edata.Vel, epsilon) {
+		// Only send velocity if the delta is big enough.
+		for _, v := range tx.Viewers(edata.Pos) {
+			v.ViewEntityVelocity(e, vel)
+		}
+	}
+	edata.Vel = vel
+}
+
+func (edata *EntityData) Move(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
+	prevChunkPos, chunkPos := chunkPosFromVec3(edata.Pos), chunkPosFromVec3(pos)
+	edata.updatePosition(e, tx, pos, rot, onGround)
+	if prevChunkPos == chunkPos {
+		// Entity remains in the same chunk.
+		return
+	}
+
+	// The entity's chunk position changed: Move it from the old chunk to the
+	// new chunk.
+	prevChunk, chunk := tx.World().chunk(prevChunkPos), tx.World().chunk(chunkPos)
+
+	chunk.Entities = append(chunk.Entities, e.H())
+	prevChunk.Entities = sliceutil.DeleteVal(prevChunk.Entities, e.H())
+
+	for _, viewer := range prevChunk.viewers {
+		if slices.Index(chunk.viewers, viewer) == -1 {
+			// First we hide the entity from all viewers that were previously
+			// viewing it, but no longer are.
+			viewer.HideEntity(e)
+		}
+	}
+	for _, viewer := range chunk.viewers {
+		if slices.Index(prevChunk.viewers, viewer) == -1 {
+			// Then we show the entity to all loaders that are now viewing the
+			// entity in the new chunk.
+			showEntity(e, viewer)
+		}
+	}
+}
+
+// epsilon is the epsilon used for thresholds for change used for change in
+// position and velocity.
+const epsilon = 0.001
+
+func (edata *EntityData) updatePosition(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
+	if !pos.ApproxEqualThreshold(edata.Pos, epsilon) || !mgl64.Vec2(rot).ApproxEqualThreshold(mgl64.Vec2(edata.Rot), epsilon) {
+		// Only send movement if the delta of either rotation or position is
+		// significant enough.
+		for _, v := range tx.Viewers(edata.Pos) {
+			v.ViewEntityMovement(e, pos, rot, onGround)
+		}
+	}
+	edata.Pos, edata.Rot = pos, rot
 }
 
 // Entity represents an Entity in the world, typically an object that may be moved around and can be

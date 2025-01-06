@@ -85,7 +85,7 @@ func (conf Config) New() *World {
 	s := conf.Provider.Settings()
 	w := &World{
 		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
-		entities:         make(map[*EntityHandle]ChunkPos),
+		entities:         make(map[*EntityHandle]struct{}),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		closing:          make(chan struct{}),

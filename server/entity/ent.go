@@ -126,7 +126,8 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
 	if m := e.Behaviour().Tick(e, tx); m != nil {
-		m.Send()
+		e.data.Move(e, tx, m.pos, m.rot, m.onGround)
+		e.data.SetVelocity(e, tx, m.vel)
 	}
 	e.data.Age += time.Second / 20
 }

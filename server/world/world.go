@@ -52,7 +52,7 @@ type World struct {
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
 	// can find the correct Entity.
-	entities map[*EntityHandle]ChunkPos
+	entities map[*EntityHandle]struct{}
 
 	r *rand.Rand
 
@@ -662,7 +662,7 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 	handle.setAndUnlockWorld(w)
 	pos := chunkPosFromVec3(handle.data.Pos)
-	w.entities[handle] = pos
+	w.entities[handle] = struct{}{}
 
 	c := w.chunk(pos)
 	c.Entities, c.modified = append(c.Entities, handle), true
@@ -682,14 +682,13 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 // from the World, the Entity is no longer usable.
 func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	handle := e.H()
-	pos, found := w.entities[handle]
-	if !found {
+	if _, ok := w.entities[handle]; !ok {
 		// The entity currently isn't in this world.
 		return nil
 	}
 	w.Handler().HandleEntityDespawn(tx, e)
 
-	c := w.chunk(pos)
+	c := w.chunk(chunkPosFromVec3(e.Position()))
 	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
 
 	for _, v := range c.viewers {
@@ -1125,8 +1124,8 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		col := w.columnFrom(column, pos)
 		w.chunks[pos] = col
 		for _, e := range col.Entities {
-			w.entities[e] = pos
 			e.w = w
+			w.entities[e] = struct{}{}
 		}
 		return col, nil
 	case errors.Is(err, leveldb.ErrNotFound):
