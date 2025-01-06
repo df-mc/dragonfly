@@ -80,21 +80,7 @@ func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.U
 
 // BreakInfo ...
 func (p DecoratedPot) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if hasSilkTouch(enchantments) {
-			p.Item = item.Stack{}
-			return []item.Stack{item.NewStack(p, 1)}
-		}
-		var drops []item.Stack
-		for _, d := range p.Decorations {
-			if d == nil {
-				drops = append(drops, item.NewStack(item.Brick{}, 1))
-				continue
-			}
-			drops = append(drops, item.NewStack(d, 1))
-		}
-		return drops
-	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(DecoratedPot{Decorations: p.Decorations})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if !p.Item.Empty() {
 			dropItem(tx, p.Item, pos.Vec3Centre())
 		}
