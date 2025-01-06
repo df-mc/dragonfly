@@ -51,23 +51,22 @@ func (Campfire) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 // BreakInfo ...
 func (c Campfire) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		var drops []item.Stack
 		if hasSilkTouch(enchantments) {
-			drops = append(drops, item.NewStack(c, 1))
-		} else {
-			switch c.Type {
-			case NormalFire():
-				drops = append(drops, item.NewStack(item.Charcoal{}, 2))
-			case SoulFire():
-				drops = append(drops, item.NewStack(SoulSoil{}, 1))
-			}
+			return []item.Stack{item.NewStack(Campfire{Type: c.Type}, 1)}
 		}
+		switch c.Type {
+		case NormalFire():
+			return []item.Stack{item.NewStack(item.Charcoal{}, 2)}
+		case SoulFire():
+			return []item.Stack{item.NewStack(SoulSoil{}, 1)}
+		}
+		panic("should never happen")
+	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, v := range c.Items {
 			if !v.Item.Empty() {
-				drops = append(drops, v.Item)
+				dropItem(tx, v.Item, pos.Vec3Centre())
 			}
 		}
-		return drops
 	})
 }
 
