@@ -31,6 +31,11 @@ type DecoratedPot struct {
 	Decorations [4]PotDecoration
 }
 
+// Pick ...
+func (p DecoratedPot) Pick() item.Stack {
+	return item.NewStack(DecoratedPot{Decorations: p.Decorations}, 1)
+}
+
 // ExtractItem ...
 func (p DecoratedPot) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	if p.Item.Empty() {
