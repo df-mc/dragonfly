@@ -124,6 +124,7 @@ func init() {
 		world.RegisterBlock(IronOre{Type: ore})
 		world.RegisterBlock(LapisOre{Type: ore})
 		world.RegisterBlock(RedstoneOre{Type: ore})
+		world.RegisterBlock(RedstoneOre{Type: ore, Lit: true})
 	}
 
 	registerAll(allAnvils())
@@ -345,6 +346,8 @@ func init() {
 	world.RegisterItem(RawIron{})
 	world.RegisterItem(RedstoneBlock{})
 	world.RegisterItem(RedstoneLamp{})
+	world.RegisterItem(RedstoneOre{})
+	world.RegisterItem(RedstoneOre{Type: DeepslateOre()})
 	world.RegisterItem(RedstoneTorch{})
 	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(ReinforcedDeepslate{})

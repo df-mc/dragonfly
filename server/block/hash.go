@@ -798,8 +798,8 @@ func (l RedstoneLamp) Hash() (uint64, uint64) {
 	return hashRedstoneLamp, uint64(boolByte(l.Lit))
 }
 
-func (c RedstoneOre) Hash() (uint64, uint64) {
-	return hashRedstoneOre, uint64(c.Type.Uint8())
+func (r RedstoneOre) Hash() (uint64, uint64) {
+	return hashRedstoneOre, uint64(r.Type.Uint8()) | uint64(boolByte(r.Lit))<<1
 }
 
 func (t RedstoneTorch) Hash() (uint64, uint64) {
