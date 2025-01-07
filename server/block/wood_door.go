@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 	"time"
 )
 
@@ -133,23 +132,21 @@ func (d WoodDoor) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	if d.Open == receivedRedstonePower(pos, tx) {
 		return
 	}
-	if !d.Open {
-		d.Open = true
-		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
-		tx.SetBlock(pos, d, &world.SetOpts{DisableBlockUpdates: true})
-	} else {
-		tx.ScheduleBlockUpdate(pos, d, time.Millisecond*50)
-	}
-}
 
-// ScheduledTick ...
-func (d WoodDoor) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
-	if receivedRedstonePower(pos, tx) {
-		return
+	d.Open = receivedRedstonePower(pos, tx)
+	tx.SetBlock(pos, d, nil)
+
+	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
+	if other, ok := tx.Block(otherPos).(WoodDoor); ok {
+		other.Open = d.Open
+		tx.SetBlock(otherPos, other, nil)
 	}
-	d.Open = false
-	tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
-	tx.SetBlock(pos, d, &world.SetOpts{DisableBlockUpdates: true})
+
+	if d.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+	} else {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
+	}
 }
 
 // EncodeItem ...

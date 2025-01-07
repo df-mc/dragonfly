@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand/v2"
 	"time"
 )
 
@@ -88,23 +87,15 @@ func (t WoodTrapdoor) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	if t.Open == receivedRedstonePower(pos, tx) {
 		return
 	}
-	if !t.Open {
-		t.Open = true
-		tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
-		tx.SetBlock(pos, t, &world.SetOpts{DisableBlockUpdates: true})
-	} else {
-		tx.ScheduleBlockUpdate(pos, t, time.Millisecond*50)
-	}
-}
 
-// ScheduledTick ...
-func (t WoodTrapdoor) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
-	if receivedRedstonePower(pos, tx) {
-		return
+	t.Open = receivedRedstonePower(pos, tx)
+	tx.SetBlock(pos, t, nil)
+
+	if t.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
+	} else {
+		tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorClose{Block: t})
 	}
-	t.Open = false
-	tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorClose{Block: t})
-	tx.SetBlock(pos, t, &world.SetOpts{DisableBlockUpdates: true})
 }
 
 // EncodeItem ...
