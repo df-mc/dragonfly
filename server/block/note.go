@@ -35,6 +35,13 @@ func (n Note) instrument(pos cube.Pos, tx *world.Tx) sound.Instrument {
 	return sound.Piano()
 }
 
+// RedstoneUpdate ...
+func (n Note) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	if receivedRedstonePower(pos, tx) {
+		n.playNote(pos, tx)
+	}
+}
+
 // DecodeNBT ...
 func (n Note) DecodeNBT(data map[string]any) any {
 	n.Pitch = int(nbtconv.Uint8(data, "note"))
