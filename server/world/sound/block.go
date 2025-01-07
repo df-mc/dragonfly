@@ -191,6 +191,12 @@ type PowerOn struct{ sound }
 // PowerOff is a sound played when a redstone component is powered off.
 type PowerOff struct{ sound }
 
+// DispenseFail is a sound played when a dispenser fails to dispense an item.
+type DispenseFail struct{ sound }
+
+// Dispense is a sound played when a dispenser dispenses an item.
+type Dispense struct{ sound }
+
 // LecternBookPlace is a sound played when a book is placed in a lectern.
 type LecternBookPlace struct{ sound }
 
