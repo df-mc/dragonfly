@@ -33,6 +33,18 @@ type DecoratedPot struct {
 	Decorations [4]PotDecoration
 }
 
+// ProjectileHit ...
+func (p DecoratedPot) ProjectileHit(pos cube.Pos, tx *world.Tx, _ world.Entity, _ cube.Face) {
+	for _, d := range p.Decorations {
+		if d == nil {
+			dropItem(tx, item.NewStack(item.Brick{}, 1), pos.Vec3Centre())
+			continue
+		}
+		dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
+	}
+	breakBlockNoDrops(p, pos, tx)
+}
+
 // Pick ...
 func (p DecoratedPot) Pick() item.Stack {
 	return item.NewStack(DecoratedPot{Decorations: p.Decorations}, 1)
