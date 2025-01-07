@@ -248,6 +248,12 @@ func breakBlock(b world.Block, pos cube.Pos, tx *world.Tx) {
 }
 
 func breakBlockNoDrops(b world.Block, pos cube.Pos, tx *world.Tx) {
+	if breakable, ok := b.(Breakable); ok {
+		breakHandler := breakable.BreakInfo().BreakHandler
+		if breakHandler != nil {
+			breakHandler(pos, tx, nil)
+		}
+	}
 	tx.SetBlock(pos, nil, nil)
 	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 }
