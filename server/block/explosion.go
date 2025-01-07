@@ -137,25 +137,14 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		if explodable, ok := bl.(Explodable); ok {
 			explodable.Explode(explosionPos, pos, tx, c)
 		} else if breakable, ok := bl.(Breakable); ok {
+			breakHandler := breakable.BreakInfo().BreakHandler
+			if breakHandler != nil {
+				breakHandler(pos, tx, nil)
+			}
 			tx.SetBlock(pos, nil, nil)
 			if c.ItemDropChance > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(tx, drop, pos.Vec3Centre())
-				}
-			}
-
-			if container, ok := bl.(Container); ok {
-				if cb, ok := bl.(Chest); ok {
-					if cb.Paired() {
-						pairPos := cb.pairPos(pos)
-						if _, pair, ok := cb.unpair(tx, pos); ok {
-							cb.paired = false
-							tx.SetBlock(pairPos, pair, nil)
-						}
-					}
-				}
-				for _, i := range container.Inventory(tx, pos).Clear() {
-					dropItem(tx, i, pos.Vec3())
 				}
 			}
 		}

@@ -55,11 +55,7 @@ func (j Jukebox) FuelInfo() item.FuelInfo {
 
 // BreakInfo ...
 func (j Jukebox) BreakInfo() BreakInfo {
-	d := []item.Stack{item.NewStack(Jukebox{}, 1)}
-	if !j.Item.Empty() {
-		d = append(d, j.Item)
-	}
-	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, simpleDrops(d...)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(Jukebox{})).withBlastResistance(30).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if _, hasDisc := j.Disc(); hasDisc {
 			dropItem(tx, j.Item, pos.Vec3())
 			tx.PlaySound(pos.Vec3Centre(), sound.MusicDiscEnd{})
