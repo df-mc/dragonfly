@@ -126,9 +126,9 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		createFirework := tx.World().EntityRegistry().Config().Firework
 		fireworkEntity := createFirework(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(0.1),
+			Velocity: dirVec.Mul(0.8),
 			Rotation: rot,
-		}, firework, releaser, 1.15, 0, false)
+		}, firework, releaser, 1.0, 0, false)
 		tx.AddEntity(fireworkEntity)
 		ctx.DamageItem(3)
 	} else {
