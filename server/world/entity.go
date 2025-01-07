@@ -332,11 +332,11 @@ type DamageSource interface {
 	// ReducedByArmour checks if the source of damage may be reduced if the
 	// receiver of the damage is wearing armour.
 	ReducedByArmour() bool
-	// ReducedByResistance specifies if the RedstoneSource is affected by the resistance
+	// ReducedByResistance specifies if the Source is affected by the resistance
 	// effect. If false, damage dealt to an Entity with this source will not be
 	// lowered if the Entity has the resistance effect.
 	ReducedByResistance() bool
-	// Fire specifies if the RedstoneSource is fire related and should be ignored when
+	// Fire specifies if the Source is fire related and should be ignored when
 	// an Entity has the fire resistance effect.
 	Fire() bool
 }
