@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"golang.org/x/exp/slices"
+	"slices"
 	"sync"
 )
 

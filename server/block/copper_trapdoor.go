@@ -8,7 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // CopperTrapdoor is a block that can be used as an openable 1x1 barrier.

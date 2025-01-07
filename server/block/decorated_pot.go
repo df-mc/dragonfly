@@ -7,6 +7,8 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -19,6 +21,11 @@ type PotDecoration interface {
 // DecoratedPot is a decoration block that can be crafted from up to four pottery sherds, and bricks on the sides where
 // no pattern should be displayed.
 type DecoratedPot struct {
+	transparent
+	sourceWaterDisplacer
+
+	// Item is the item being stored in the decorated pot.
+	Item item.Stack
 	// Facing is the direction the pot is facing. The first decoration will be facing opposite of this direction.
 	Facing cube.Direction
 	// Decorations are the four decorations displayed on the sides of the pot. If a decoration is a brick or nil,
@@ -26,14 +33,93 @@ type DecoratedPot struct {
 	Decorations [4]PotDecoration
 }
 
-// BreakInfo ...
-func (p DecoratedPot) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p))
+// ProjectileHit ...
+func (p DecoratedPot) ProjectileHit(pos cube.Pos, tx *world.Tx, _ world.Entity, _ cube.Face) {
+	for _, d := range p.Decorations {
+		if d == nil {
+			dropItem(tx, item.NewStack(item.Brick{}, 1), pos.Vec3Centre())
+			continue
+		}
+		dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
+	}
+	breakBlockNoDrops(p, pos, tx)
 }
 
-// MaxCount ...
-func (DecoratedPot) MaxCount() int {
-	return 64
+// Pick ...
+func (p DecoratedPot) Pick() item.Stack {
+	return item.NewStack(DecoratedPot{Decorations: p.Decorations}, 1)
+}
+
+// ExtractItem ...
+func (p DecoratedPot) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
+	if p.Item.Empty() {
+		return false
+	}
+	if _, err := h.inventory.AddItem(p.Item.Grow(-p.Item.Count() + 1)); err != nil {
+		return false
+	}
+	p.Item = p.Item.Grow(-1)
+	tx.SetBlock(pos, p, nil)
+	return true
+}
+
+// InsertItem ...
+func (p DecoratedPot) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
+	for sourceSlot, sourceStack := range h.inventory.Slots() {
+		if !sourceStack.Empty() && sourceStack.Comparable(p.Item) {
+			if p.Item.Empty() {
+				p.Item = sourceStack.Grow(-sourceStack.Count() + 1)
+			} else {
+				p.Item = p.Item.Grow(1)
+			}
+			_ = h.inventory.SetItem(sourceSlot, sourceStack.Grow(-1))
+			tx.SetBlock(pos, p, nil)
+			return true
+		}
+	}
+	return false
+}
+
+// wobble ...
+func (p DecoratedPot) wobble(pos cube.Pos, tx *world.Tx, success bool) {
+	for _, v := range tx.Viewers(pos.Vec3Centre()) {
+		v.ViewBlockAction(pos, DecoratedPotWobbleAction{DecoratedPot: p, Success: success})
+	}
+
+	if success {
+		tx.AddParticle(pos.Vec3Middle().Add(mgl64.Vec3{0, 1.2}), particle.DustPlume{})
+		tx.PlaySound(pos.Vec3Centre(), sound.DecoratedPotInserted{Progress: float64(p.Item.Count()) / float64(p.Item.MaxCount())})
+	} else {
+		tx.PlaySound(pos.Vec3Centre(), sound.DecoratedPotInsertFailed{})
+	}
+}
+
+// Activate ...
+func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+	held, _ := u.HeldItems()
+	if held.Empty() || !p.Item.Comparable(held) || p.Item.Count() == p.Item.MaxCount() {
+		p.wobble(pos, tx, false)
+		return false
+	}
+
+	if p.Item.Empty() {
+		p.Item = held.Grow(-held.Count() + 1)
+	} else {
+		p.Item = p.Item.Grow(1)
+	}
+	tx.SetBlock(pos, p, nil)
+	p.wobble(pos, tx, true)
+	ctx.SubtractFromCount(1)
+	return true
+}
+
+// BreakInfo ...
+func (p DecoratedPot) BreakInfo() BreakInfo {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(DecoratedPot{Decorations: p.Decorations})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		if !p.Item.Empty() {
+			dropItem(tx, p.Item, pos.Vec3Centre())
+		}
+	})
 }
 
 // EncodeItem ...
@@ -74,14 +160,20 @@ func (p DecoratedPot) EncodeNBT() map[string]any {
 			sherds = append(sherds, name)
 		}
 	}
-	return map[string]any{
-		"sherds": sherds,
+
+	m := map[string]any{
 		"id":     "DecoratedPot",
+		"sherds": sherds,
 	}
+	if !p.Item.Empty() {
+		m["item"] = nbtconv.WriteItem(p.Item, true)
+	}
+	return m
 }
 
 // DecodeNBT ...
 func (p DecoratedPot) DecodeNBT(data map[string]any) any {
+	p.Item = nbtconv.MapItem(data, "item")
 	p.Decorations = [4]PotDecoration{}
 	if sherds := nbtconv.Slice(data, "sherds"); sherds != nil {
 		for i, name := range sherds {

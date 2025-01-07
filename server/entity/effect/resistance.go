@@ -26,5 +26,5 @@ func (resistance) Multiplier(e world.DamageSource, lvl int) float64 {
 
 // RGBA ...
 func (resistance) RGBA() color.RGBA {
-	return color.RGBA{R: 0x99, G: 0x45, B: 0x3a, A: 0xff}
+	return color.RGBA{R: 0x91, G: 0x46, B: 0xf0, A: 0xff}
 }

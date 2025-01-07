@@ -10,7 +10,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -172,8 +172,8 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
-		if t, ok := tx.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
-			t.Ignite(bpos, tx, nil)
+		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
+			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m, tx)

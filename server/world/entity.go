@@ -5,8 +5,9 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"golang.org/x/exp/maps"
 	"io"
+	"maps"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -365,7 +366,7 @@ type EntityRegistryConfig struct {
 	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	EnderPearl         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	Firework           func(opts EntitySpawnOpts, firework Item, owner Entity, attached bool) *EntityHandle
+	Firework           func(opts EntitySpawnOpts, firework Item, owner Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *EntityHandle
 	LingeringPotion    func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
 	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
@@ -400,7 +401,7 @@ func (reg EntityRegistry) Lookup(name string) (EntityType, bool) {
 
 // Types returns all EntityTypes passed upon construction of the EntityRegistry.
 func (reg EntityRegistry) Types() []EntityType {
-	return maps.Values(reg.ent)
+	return slices.Collect(maps.Values(reg.ent))
 }
 
 func readVec3(x map[string]any, k string) mgl64.Vec3 {

@@ -3,7 +3,7 @@ package enchantment
 import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Unbreaking is an enchantment that gives a chance for an item to avoid
@@ -50,7 +50,7 @@ func (unbreaking) Reduce(it world.Item, level, amount int) int {
 	after := amount
 	_, ok := it.(item.Armour)
 	for i := 0; i < amount; i++ {
-		if (!ok || rand.Float64() >= 0.6) && rand.Intn(level+1) > 0 {
+		if (!ok || rand.Float64() >= 0.6) && rand.IntN(level+1) > 0 {
 			after--
 		}
 	}

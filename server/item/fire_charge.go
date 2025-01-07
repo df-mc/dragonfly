@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -30,7 +30,7 @@ func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 
 		flame := fire()
 		tx.SetBlock(s, flame, nil)
-		tx.ScheduleBlockUpdate(s, flame, time.Duration(30+rand.Intn(10))*time.Second/20)
+		tx.ScheduleBlockUpdate(s, flame, time.Duration(30+rand.IntN(10))*time.Second/20)
 		return true
 	}
 	return false

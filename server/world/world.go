@@ -4,23 +4,20 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"iter"
-	"math/rand"
-	"sync"
-	"time"
-
-	"github.com/df-mc/goleveldb/leveldb"
-
-	"slices"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"golang.org/x/exp/maps"
+	"iter"
+	"maps"
+	"math/rand/v2"
+	"slices"
+	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players

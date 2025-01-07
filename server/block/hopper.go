@@ -157,7 +157,7 @@ func (h Hopper) insertItem(pos cube.Pos, tx *world.Tx) bool {
 	dest := tx.Block(destPos)
 
 	if e, ok := dest.(HopperInsertable); ok {
-		return e.InsertItem(h, pos.Side(h.Facing), tx)
+		return e.InsertItem(h, destPos, tx)
 	}
 
 	if container, ok := dest.(Container); ok {
@@ -197,7 +197,7 @@ func (h Hopper) extractItem(pos cube.Pos, tx *world.Tx) bool {
 	origin := tx.Block(originPos)
 
 	if e, ok := origin.(HopperExtractable); ok {
-		return e.ExtractItem(h, pos, tx)
+		return e.ExtractItem(h, originPos, tx)
 	}
 
 	if containerOrigin, ok := origin.(Container); ok {

@@ -28,9 +28,9 @@ import (
 // StartShowingEntity is made.
 func (s *Session) StopShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e.H()]
+	_, ok := s.hiddenEntities[e.H().UUID()]
 	if !ok {
-		s.hiddenEntities[e.H()] = struct{}{}
+		s.hiddenEntities[e.H().UUID()] = struct{}{}
 	}
 	s.entityMutex.Unlock()
 
@@ -42,9 +42,9 @@ func (s *Session) StopShowingEntity(e world.Entity) {
 // StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
 func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e.H()]
+	_, ok := s.hiddenEntities[e.H().UUID()]
 	if ok {
-		delete(s.hiddenEntities, e.H())
+		delete(s.hiddenEntities, e.H().UUID())
 	}
 	s.entityMutex.Unlock()
 
@@ -722,6 +722,14 @@ func (s *Session) SendExperience(level int, progress float64) {
 				DefaultMax: 1,
 			},
 		},
+	})
+}
+
+// SendChargeItemComplete sends a packet to indicate that the item charging process has been completed.
+func (s *Session) SendChargeItemComplete() {
+	s.writePacket(&packet.ActorEvent{
+		EntityRuntimeID: selfEntityRuntimeID,
+		EventType:       packet.ActorEventFinishedChargingItem,
 	})
 }
 

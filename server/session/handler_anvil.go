@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math/rand"
+	"math/rand/v2"
 )
 
 const (

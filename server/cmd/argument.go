@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"reflect"
 	"slices"
 	"sort"
@@ -275,7 +275,7 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 	if !ok {
 		return nil, line.UsageError()
 	}
-	switch first[:2] {
+	switch first[:min(len(first), 2)] {
 	case "@p":
 		pos := line.src.Position()
 		playerDistances := make([]float64, len(players))
@@ -299,9 +299,9 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 		if len(players) == 0 {
 			return nil, nil
 		}
-		return []Target{players[rand.Intn(len(players))]}, nil
+		return []Target{players[rand.IntN(len(players))]}, nil
 	default:
-		target, err := p.parsePlayer(line, players)
+		target, err := p.parsePlayer(first, players)
 		if err != nil {
 			return nil, err
 		}
@@ -309,19 +309,12 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 	}
 }
 
-// parsePlayer parses one Player from the Line, consuming multiple arguments
-// from Line if necessary.
-func (p parser) parsePlayer(line *Line, players []NamedTarget) (Target, error) {
-	name := ""
-	for i := 0; i < line.Len(); i++ {
-		name += line.args[0]
-		if ind := slices.IndexFunc(players, func(target NamedTarget) bool {
-			return strings.EqualFold(target.Name(), name)
-		}); ind != -1 {
-			return players[ind], nil
-		}
-		name += " "
-		line.RemoveNext()
+// parsePlayer attempts to find a target whose name matches the name passed.
+func (p parser) parsePlayer(name string, players []NamedTarget) (Target, error) {
+	if ind := slices.IndexFunc(players, func(target NamedTarget) bool {
+		return strings.EqualFold(target.Name(), name)
+	}); ind != -1 {
+		return players[ind], nil
 	}
 	return nil, MessagePlayerNotFound.F()
 }

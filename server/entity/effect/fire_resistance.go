@@ -13,5 +13,5 @@ type fireResistance struct {
 
 // RGBA ...
 func (fireResistance) RGBA() color.RGBA {
-	return color.RGBA{R: 0xe4, G: 0x9a, B: 0x3a, A: 0xff}
+	return color.RGBA{R: 0xff, G: 0x99, B: 0x00, A: 0xff}
 }

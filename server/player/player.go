@@ -3,7 +3,7 @@ package player
 import (
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"slices"
 	"strings"
@@ -92,9 +92,10 @@ type playerData struct {
 
 	breaking          bool
 	breakingPos       cube.Pos
+	breakingFace      cube.Face
 	lastBreakDuration time.Duration
 
-	breakParticleCounter uint32
+	breakCounter uint32
 
 	hunger *hungerManager
 
@@ -1484,8 +1485,27 @@ func (p *Player) UseItem() {
 		p.usingSince, p.usingItem = time.Now(), true
 		p.updateState()
 	}
-
 	switch usable := it.(type) {
+	case item.Chargeable:
+		useCtx := p.useContext()
+		if !p.usingItem {
+			if !usable.ReleaseCharge(p, p.tx, useCtx) {
+				// If the item was not charged yet, start charging.
+				p.usingSince, p.usingItem = time.Now(), true
+			}
+			p.handleUseContext(useCtx)
+			p.updateState()
+			return
+		}
+
+		// Stop charging and determine if the item is ready.
+		p.usingItem = false
+		dur := p.useDuration()
+		if usable.Charge(p, p.tx, useCtx, dur) {
+			p.session().SendChargeItemComplete()
+		}
+		p.handleUseContext(useCtx)
+		p.updateState()
 	case item.Usable:
 		useCtx := p.useContext()
 		if !usable.Use(p.tx, p, useCtx) {
@@ -1513,9 +1533,22 @@ func (p *Player) UseItem() {
 			p.updateState()
 			return
 		}
-		// The player is currently using the item held. This is a signal the
-		// item was consumed, so we release it.
-		p.ReleaseItem()
+		// The player is currently using the item held. This is a signal the item was consumed, so we
+		// consume it and start using it again.
+		useCtx, dur := p.useContext(), p.useDuration()
+		if dur < usable.ConsumeDuration() {
+			// The required duration for consuming this item was not met, so we don't consume it.
+			return
+		}
+		// Reset the duration for the next item to be consumed.
+		p.usingSince = time.Now()
+		ctx := event.C(p)
+		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
+			return
+		}
+		useCtx.CountSub, useCtx.NewItem = 1, usable.Consume(p.tx, p)
+		p.handleUseContext(useCtx)
+		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 }
 
@@ -1533,37 +1566,18 @@ func (p *Player) ReleaseItem() {
 
 	useCtx, dur := p.useContext(), p.useDuration()
 	i, _ := p.HeldItems()
-	switch it := i.Item().(type) {
-	case item.Releasable:
-		ctx := event.C(p)
-		if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
-			return
-		}
-		it.Release(p, p.tx, useCtx, dur)
-	case item.Consumable:
-		if dur < it.ConsumeDuration() {
-			// The required duration for consuming this item was not met, so we don't consume it.
-			return
-		}
-		ctx := event.C(p)
-		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
-			// Consuming was cancelled, but the client will continue consuming the next item.
-			p.usingSince = time.Now()
-			return
-		}
-		useCtx.CountSub, useCtx.NewItem = 1, it.Consume(p.tx, p)
-		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+	ctx := event.C(p)
+	if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
+		return
 	}
+	i.Item().(item.Releasable).Release(p, p.tx, useCtx, dur)
 	p.handleUseContext(useCtx)
 	p.updateState()
 }
 
 // canRelease returns whether the player can release the item currently held in the main hand.
 func (p *Player) canRelease() bool {
-	held, _ := p.HeldItems()
-	if _, consumable := held.Item().(item.Consumable); consumable {
-		return true
-	}
+	held, left := p.HeldItems()
 	releasable, ok := held.Item().(item.Releasable)
 	if !ok {
 		return false
@@ -1572,10 +1586,18 @@ func (p *Player) canRelease() bool {
 		return true
 	}
 	for _, req := range releasable.Requirements() {
+		reqName, _ := req.Item().EncodeItem()
+
+		if !left.Empty() {
+			leftName, _ := left.Item().EncodeItem()
+			if leftName == reqName {
+				continue
+			}
+		}
+
 		_, found := p.Inventory().FirstFunc(func(stack item.Stack) bool {
 			name, _ := stack.Item().EncodeItem()
-			otherName, _ := req.Item().EncodeItem()
-			return name == otherName
+			return name == reqName
 		})
 		if !found {
 			return false
@@ -1591,7 +1613,12 @@ func (p *Player) handleUseContext(ctx *item.UseContext) {
 	p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 	p.addNewItem(ctx)
 	for _, it := range ctx.ConsumedItems {
-		_ = p.Inventory().RemoveItem(it)
+		_ = p.offHand.RemoveItem(it)
+		it = it.Grow(-left.Count())
+
+		if !it.Empty() {
+			_ = p.Inventory().RemoveItem(it)
+		}
 	}
 }
 
@@ -1813,7 +1840,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		punchable.Punch(pos, face, p.tx, p)
 	}
 
-	p.breaking = true
+	p.breaking, p.breakingFace = true, face
 	p.SwingArm()
 
 	if p.GameMode().CreativeInventory() {
@@ -1869,7 +1896,7 @@ func (p *Player) AbortBreaking() {
 	if !p.breaking {
 		return
 	}
-	p.breaking, p.breakParticleCounter = true, 0
+	p.breaking, p.breakCounter = false, 0
 	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(p.breakingPos, block.StopCrackAction{})
 	}
@@ -1883,19 +1910,17 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 		return
 	}
 	pos := p.breakingPos
-
-	p.SwingArm()
-
 	b := p.tx.Block(pos)
 	p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 
-	if p.breakParticleCounter += 1; p.breakParticleCounter%5 == 0 {
+	if p.breakCounter++; p.breakCounter%5 == 0 {
+		p.SwingArm()
+
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
-		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: p.tx.Block(pos)})
+		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 	}
-	breakTime := p.breakTime(pos)
-	if breakTime != p.lastBreakDuration {
+	if breakTime := p.breakTime(pos); breakTime != p.lastBreakDuration {
 		for _, viewer := range p.viewers() {
 			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
 		}
@@ -1924,8 +1949,13 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 		p.resendBlocks(pos, cube.Faces()...)
 		return false
 	}
-	if !ignoreBBox && p.obstructedPos(pos, b) {
-		p.resendBlocks(pos, cube.Faces()...)
+	if obstructed, selfOnly := p.obstructedPos(pos, b); obstructed && !ignoreBBox {
+		if !selfOnly {
+			// Only resend blocks if there were other entities blocking the
+			// placement than the player itself. Resending blocks placed inside
+			// the player itself leads to synchronisation issues.
+			p.resendBlocks(pos, cube.Faces()...)
+		}
 		return false
 	}
 
@@ -1940,9 +1970,13 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	return true
 }
 
-// obstructedPos checks if the position passed is obstructed if the block passed is attempted to be placed.
-// The function returns true if there is an entity in the way that could prevent the block from being placed.
-func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
+// obstructedPos checks if the position passed is obstructed if the block
+// passed is attempted to be placed. The function returns true as the first
+// bool if there is an entity in the way that could prevent the block from
+// being placed.
+// If the only entity preventing the block from being placed is the player
+// itself, the second bool returned is true too.
+func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnly bool) {
 	blockBoxes := b.Model().BBox(pos, p.tx)
 	for i, box := range blockBoxes {
 		blockBoxes[i] = box.Translate(pos.Vec3())
@@ -1955,11 +1989,15 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) bool {
 			continue
 		default:
 			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-6)) {
-				return true
+				obstructed = true
+				if e.H() == p.handle {
+					continue
+				}
+				return true, false
 			}
 		}
 	}
-	return false
+	return obstructed, true
 }
 
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
@@ -2240,7 +2278,7 @@ func (p *Player) EnchantmentSeed() int64 {
 
 // ResetEnchantmentSeed resets the enchantment seed to a new random value.
 func (p *Player) ResetEnchantmentSeed() {
-	p.enchantSeed = rand.Int63()
+	p.enchantSeed = rand.Int64()
 }
 
 // AddExperience adds experience to the player.
@@ -2333,7 +2371,7 @@ func (p *Player) mendItems(xp int) int {
 	if length == 0 {
 		return xp
 	}
-	foundItem := mendingItems[rand.Intn(length)]
+	foundItem := mendingItems[rand.IntN(length)]
 	repairAmount := math.Min(float64(foundItem.MaxDurability()-foundItem.Durability()), float64(xp*2))
 	repairedItem := foundItem.WithDurability(foundItem.Durability() + int(repairAmount))
 	if repairAmount >= 2 {
@@ -2432,7 +2470,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	p.tickFood()
 	p.tickAirSupply()
 
-	if p.Position()[1] < float64(p.tx.Range()[0]) && p.GameMode().AllowsTakingDamage() && current%10 == 0 {
+	if p.Position()[1] < float64(p.tx.Range()[0]) {
 		p.Hurt(4, entity.VoidDamageSource{})
 	}
 	if p.insideOfSolid() {
@@ -2449,8 +2487,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
+	held, _ := p.HeldItems()
 	if current%4 == 0 && p.usingItem {
-		held, _ := p.HeldItems()
 		if _, ok := held.Item().(item.Consumable); ok {
 			// Eating particles seem to happen roughly every 4 ticks.
 			for _, v := range p.viewers() {
@@ -2458,6 +2496,16 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			}
 		}
 	}
+
+	if p.usingItem {
+		if c, ok := held.Item().(item.Chargeable); ok {
+			c.ContinueCharge(p, tx, p.useContext(), p.useDuration())
+		}
+	}
+	if p.breaking {
+		p.ContinueBreaking(p.breakingFace)
+	}
+
 	for it, ti := range p.cooldowns {
 		if time.Now().After(ti) {
 			delete(p.cooldowns, it)
@@ -2466,8 +2514,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
 		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
-		p.prevWorld = tx.World()
 	}
+	p.prevWorld = tx.World()
 
 	if p.session() == session.Nop && !p.Immobile() {
 		m := p.mc.TickMovement(p, p.Position(), p.Velocity(), p.Rotation(), p.tx)
@@ -2705,17 +2753,17 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround() bool {
-	box := Type.BBox(p).Translate(p.Position())
+	box := Type.BBox(p).Translate(p.Position()).Extend(mgl64.Vec3{0, -0.05})
 	b := box.Grow(1)
 
-	low, high := cube.PosFromVec3(b.Min()), cube.PosFromVec3(b.Max())
+	epsilon := mgl64.Vec3{mgl64.Epsilon, mgl64.Epsilon, mgl64.Epsilon}
+	low, high := cube.PosFromVec3(b.Min().Add(epsilon)), cube.PosFromVec3(b.Max().Sub(epsilon))
 	for x := low[0]; x <= high[0]; x++ {
 		for z := low[2]; z <= high[2]; z++ {
 			for y := low[1]; y < high[1]; y++ {
 				pos := cube.Pos{x, y, z}
-				boxList := p.tx.Block(pos).Model().BBox(pos, p.tx)
-				for _, bb := range boxList {
-					if bb.GrowVec3(mgl64.Vec3{0, 0.05}).Translate(pos.Vec3()).IntersectsWith(box) {
+				for _, bb := range p.tx.Block(pos).Model().BBox(pos, p.tx) {
+					if bb.Translate(pos.Vec3()).IntersectsWith(box) {
 						return true
 					}
 				}
@@ -2756,6 +2804,19 @@ func (p *Player) EyeHeight() float64 {
 		return 1.26
 	default:
 		return 1.62
+	}
+}
+
+// TorsoHeight returns the torso height of the player: 1.52, 1.16 if the player is sneaking, or 0.42 if the player is
+// swimming, gliding, or crawling.
+func (p *Player) TorsoHeight() float64 {
+	switch {
+	case p.swimming || p.crawling || p.gliding:
+		return 0.42
+	case p.sneaking:
+		return 1.16
+	default:
+		return 1.52
 	}
 }
 
@@ -3054,6 +3115,10 @@ func (p *Player) useContext() *item.UseContext {
 			}
 		},
 		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {
+			_, left := p.HeldItems()
+			if !left.Empty() && comparable(left) {
+				return left, true
+			}
 			inv := p.Inventory()
 			s, ok := inv.FirstFunc(comparable)
 			if !ok {

@@ -2,7 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // CopperOre is a rare mineral block found underground.
@@ -18,7 +18,7 @@ type CopperOre struct {
 func (c CopperOre) BreakInfo() BreakInfo {
 	return newBreakInfo(c.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
-	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.RawCopper{}, rand.Intn(4)+2), item.NewStack(c, 1))).withBlastResistance(9)
+	}, pickaxeEffective, silkTouchDrop(item.NewStack(item.RawCopper{}, rand.IntN(4)+2), item.NewStack(c, 1))).withBlastResistance(9)
 }
 
 // SmeltInfo ...

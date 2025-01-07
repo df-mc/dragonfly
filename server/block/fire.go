@@ -8,7 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -55,8 +55,8 @@ func infinitelyBurning(pos cube.Pos, tx *world.Tx) bool {
 
 // burn attempts to burn a block.
 func (f Fire) burn(from, to cube.Pos, tx *world.Tx, r *rand.Rand, chanceBound int) {
-	if flammable, ok := tx.Block(to).(Flammable); ok && r.Intn(chanceBound) < flammable.FlammabilityInfo().Flammability {
-		if r.Intn(f.Age+10) < 5 && !rainingAround(to, tx) {
+	if flammable, ok := tx.Block(to).(Flammable); ok && r.IntN(chanceBound) < flammable.FlammabilityInfo().Flammability {
+		if r.IntN(f.Age+10) < 5 && !rainingAround(to, tx) {
 			f.spread(from, to, tx, r)
 			return
 		}
@@ -86,18 +86,18 @@ func (f Fire) tick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 		return
 	}
 	infinitelyBurns := infinitelyBurning(pos, tx)
-	if !infinitelyBurns && (20+f.Age*3) > r.Intn(100) && rainingAround(pos, tx) {
+	if !infinitelyBurns && (20+f.Age*3) > r.IntN(100) && rainingAround(pos, tx) {
 		// Fire is extinguished by the rain.
 		tx.SetBlock(pos, nil, nil)
 		return
 	}
 
-	if f.Age < 15 && r.Intn(3) == 0 {
+	if f.Age < 15 && r.IntN(3) == 0 {
 		f.Age++
 		tx.SetBlock(pos, f, nil)
 	}
 
-	tx.ScheduleBlockUpdate(pos, f, time.Duration(30+r.Intn(10))*time.Second/20)
+	tx.ScheduleBlockUpdate(pos, f, time.Duration(30+r.IntN(10))*time.Second/20)
 
 	if !infinitelyBurns {
 		_, waterBelow := tx.Block(pos.Side(cube.FaceDown)).(Water)
@@ -111,7 +111,7 @@ func (f Fire) tick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 			}
 			return
 		}
-		if !flammableBlock(tx.Block(pos.Side(cube.FaceDown))) && f.Age == 15 && r.Intn(4) == 0 {
+		if !flammableBlock(tx.Block(pos.Side(cube.FaceDown))) && f.Age == 15 && r.IntN(4) == 0 {
 			tx.SetBlock(pos, nil, nil)
 			return
 		}
@@ -163,7 +163,7 @@ func (f Fire) tick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 					maxChance /= 2
 				}
 
-				if maxChance > 0 && r.Intn(randomBound) <= maxChance && !rainingAround(blockPos, tx) {
+				if maxChance > 0 && r.IntN(randomBound) <= maxChance && !rainingAround(blockPos, tx) {
 					f.spread(pos, blockPos, tx, r)
 				}
 			}
@@ -184,9 +184,9 @@ func (f Fire) spread(from, to cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.World().Handler().HandleFireSpread(ctx, from, to); ctx.Cancelled() {
 		return
 	}
-	spread := Fire{Type: f.Type, Age: min(15, f.Age+r.Intn(5)/4)}
+	spread := Fire{Type: f.Type, Age: min(15, f.Age+r.IntN(5)/4)}
 	tx.SetBlock(to, spread, nil)
-	tx.ScheduleBlockUpdate(to, spread, time.Duration(30+r.Intn(10))*time.Second/20)
+	tx.ScheduleBlockUpdate(to, spread, time.Duration(30+r.IntN(10))*time.Second/20)
 }
 
 // EntityInside ...
@@ -265,7 +265,9 @@ func (f Fire) Start(tx *world.Tx, pos cube.Pos) {
 	if air || shortGrass || fern {
 		below := tx.Block(pos.Side(cube.FaceDown))
 		if below.Model().FaceSolid(pos, cube.FaceUp, tx) || neighboursFlammable(pos, tx) {
-			tx.SetBlock(pos, Fire{}, nil)
+			f := Fire{}
+			tx.SetBlock(pos, f, nil)
+			tx.ScheduleBlockUpdate(pos, f, time.Duration(30+rand.IntN(10))*time.Second/20)
 		}
 	}
 }
