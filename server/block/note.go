@@ -38,6 +38,10 @@ func (n Note) instrument(pos cube.Pos, tx *world.Tx) sound.Instrument {
 // RedstoneUpdate ...
 func (n Note) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	if receivedRedstonePower(pos, tx) {
+		if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); !ok {
+			return
+		}
+
 		n.playNote(pos, tx)
 	}
 }
