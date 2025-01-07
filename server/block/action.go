@@ -26,6 +26,14 @@ type ContinueCrackAction struct {
 // StopCrackAction is a world.BlockAction to make the cracks forming in a block stop and disappear.
 type StopCrackAction struct{ action }
 
+// DecoratedPotWobbleAction is a world.BlockAction to make a decorated pot wobble when interacted with.
+type DecoratedPotWobbleAction struct {
+	action
+	DecoratedPot DecoratedPot
+	// Success is whether an item was successfully inserted into the decorated pot.
+	Success bool
+}
+
 // action implements the Action interface. Structures in this package may embed it to gets its functionality
 // out of the box.
 type action struct{}
