@@ -56,6 +56,11 @@ func (s Sign) MaxCount() int {
 	return 16
 }
 
+// PistonBreakable ...
+func (Sign) PistonBreakable() bool {
+	return true
+}
+
 // FlammabilityInfo ...
 func (s Sign) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)

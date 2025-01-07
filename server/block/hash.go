@@ -117,6 +117,7 @@ const (
 	hashMelon
 	hashMelonSeeds
 	hashMossCarpet
+	hashMoving
 	hashMud
 	hashMudBricks
 	hashMuddyMangroveRoots
@@ -130,10 +131,13 @@ const (
 	hashNetherite
 	hashNetherrack
 	hashNote
+	hashObserver
 	hashObsidian
 	hashPackedIce
 	hashPackedMud
 	hashPinkPetals
+	hashPiston
+	hashPistonArmCollision
 	hashPlanks
 	hashPodzol
 	hashPolishedBlackstoneBrick
@@ -154,6 +158,7 @@ const (
 	hashRedstoneBlock
 	hashRedstoneLamp
 	hashRedstoneOre
+	hashRedstoneRepeater
 	hashRedstoneTorch
 	hashRedstoneWire
 	hashReinforcedDeepslate
@@ -659,6 +664,10 @@ func (MossCarpet) Hash() (uint64, uint64) {
 	return hashMossCarpet, 0
 }
 
+func (Moving) Hash() (uint64, uint64) {
+	return hashMoving, 0
+}
+
 func (Mud) Hash() (uint64, uint64) {
 	return hashMud, 0
 }
@@ -711,6 +720,10 @@ func (Note) Hash() (uint64, uint64) {
 	return hashNote, 0
 }
 
+func (o Observer) Hash() (uint64, uint64) {
+	return hashObserver, uint64(o.Facing) | uint64(boolByte(o.Powered))<<3
+}
+
 func (o Obsidian) Hash() (uint64, uint64) {
 	return hashObsidian, uint64(boolByte(o.Crying))
 }
@@ -725,6 +738,14 @@ func (PackedMud) Hash() (uint64, uint64) {
 
 func (p PinkPetals) Hash() (uint64, uint64) {
 	return hashPinkPetals, uint64(p.AdditionalCount) | uint64(p.Facing)<<8
+}
+
+func (p Piston) Hash() (uint64, uint64) {
+	return hashPiston, uint64(p.Facing) | uint64(boolByte(p.Sticky))<<3
+}
+
+func (c PistonArmCollision) Hash() (uint64, uint64) {
+	return hashPistonArmCollision, uint64(c.Facing)
 }
 
 func (p Planks) Hash() (uint64, uint64) {
@@ -805,6 +826,10 @@ func (l RedstoneLamp) Hash() (uint64, uint64) {
 
 func (r RedstoneOre) Hash() (uint64, uint64) {
 	return hashRedstoneOre, uint64(r.Type.Uint8()) | uint64(boolByte(r.Lit))<<1
+}
+
+func (r RedstoneRepeater) Hash() (uint64, uint64) {
+	return hashRedstoneRepeater, uint64(r.Facing) | uint64(boolByte(r.Powered))<<2 | uint64(r.Delay)<<3
 }
 
 func (t RedstoneTorch) Hash() (uint64, uint64) {

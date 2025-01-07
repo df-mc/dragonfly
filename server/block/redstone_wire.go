@@ -171,7 +171,12 @@ func (RedstoneWire) connectsTo(block world.Block, face cube.Face, allowDirectSou
 	if _, ok := block.(RedstoneWire); ok {
 		return true
 	}
-	// TODO: Account for other redstone blocks.
+	if r, ok := block.(RedstoneRepeater); ok {
+		return r.Facing.Face() == face || r.Facing.Face().Opposite() == face
+	}
+	if _, ok := block.(Piston); ok {
+		return true
+	}
 	c, ok := block.(world.Conductor)
 	return ok && allowDirectSources && c.RedstoneSource()
 }
