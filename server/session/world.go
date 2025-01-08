@@ -1124,6 +1124,8 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world
 		containerType = protocol.ContainerTypeSmoker
 	case block.Hopper:
 		containerType = protocol.ContainerTypeHopper
+	case block.Dispenser:
+		containerType = protocol.ContainerTypeDispenser
 	case block.Dropper:
 		containerType = protocol.ContainerTypeDropper
 	}
