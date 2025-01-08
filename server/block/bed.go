@@ -36,7 +36,7 @@ func (Bed) Model() world.BlockModel {
 }
 
 // SideClosed ...
-func (Bed) SideClosed(cube.Pos, cube.Pos, *world.World) bool {
+func (Bed) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
@@ -56,11 +56,11 @@ func (b Bed) BreakInfo() BreakInfo {
 }
 
 // UseOnBlock ...
-func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
-	if pos, _, used = firstReplaceable(w, pos, face, b); !used {
+func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+	if pos, _, used = firstReplaceable(tx, pos, face, b); !used {
 		return
 	}
-	if !supportedFromBelow(pos, w) {
+	if !supportedFromBelow(pos, tx) {
 		return
 	}
 
@@ -69,17 +69,17 @@ func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, w *world.Tx,
 	side, sidePos := b, pos.Side(b.Facing.Face())
 	side.Head = true
 
-	if !replaceableWith(w, sidePos, side) {
+	if !replaceableWith(tx, sidePos, side) {
 		return
 	}
 
-	if !supportedFromBelow(sidePos, w) {
+	if !supportedFromBelow(sidePos, tx) {
 		return
 	}
 
 	ctx.IgnoreBBox = true
-	place(w, sidePos, side, user, ctx)
-	place(w, pos, b, user, ctx)
+	place(tx, sidePos, side, user, ctx)
+	place(tx, pos, b, user, ctx)
 	return placed(ctx)
 }
 
@@ -141,7 +141,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 }
 
 // EntityLand ...
-func (b Bed) EntityLand(_ cube.Pos, _ *world.World, e world.Entity, distance *float64) {
+func (b Bed) EntityLand(_ cube.Pos, _ *world.Tx, e world.Entity, distance *float64) {
 	if _, ok := e.(fallDistanceEntity); ok {
 		*distance *= 0.5
 	}

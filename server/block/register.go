@@ -88,6 +88,7 @@ func init() {
 	world.RegisterBlock(ResinBricks{Chiseled: true})
 	world.RegisterBlock(ResinBricks{})
 	world.RegisterBlock(Resin{})
+	world.RegisterItem(RespawnAnchor{})
 	world.RegisterBlock(Sand{Red: true})
 	world.RegisterBlock(Sand{})
 	world.RegisterBlock(SeaLantern{})
@@ -475,9 +476,6 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
-	}
-	for c := range 5 {
-		world.RegisterItem(RespawnAnchor{Charge: c})
 	}
 }
 

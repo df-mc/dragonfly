@@ -1190,21 +1190,27 @@ func (p *Player) Jump() {
 // Sleep makes the player sleep at the given position. If the position does not map to a bed (specifically the head side),
 // the player will not sleep.
 func (p *Player) Sleep(pos cube.Pos) {
-	ctx, sendReminder := event.C(p), true
-	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
 
+	if p.sleeping {
+		// The player is already sleeping.
 		return
 	}
-	tx := p.tx
 
-	if b, ok := tx.Block(pos).(block.Bed); ok {
-		if b.Sleeper != nil {
-			// The player cannot sleep here.
-			return
-		}
-		b.Sleeper = p
-		tx.SetBlock(pos, b, nil)
+	tx := p.tx
+	b, ok := tx.Block(pos).(block.Bed)
+
+	if !ok || b.Sleeper != nil {
+		// The player cannot sleep here.
+		return
 	}
+
+	ctx, sendReminder := event.C(p), true
+	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
+		return
+	}
+
+	b.Sleeper = p
+	tx.SetBlock(pos, b, nil)
 
 	tx.World().SetRequiredSleepDuration(time.Second * 5)
 
