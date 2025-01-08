@@ -331,12 +331,11 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	}
 	args := strings.Split(commandLine, " ")
 
-	name := args[0]
-	if name == "" {
+	name, ok := strings.CutPrefix(args[0], "/")
+	if !ok {
 		return
 	}
-	name = name[1:]
-	
+
 	command, ok := cmd.ByAlias(name)
 	if !ok {
 		o := &cmd.Output{}
