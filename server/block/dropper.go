@@ -128,7 +128,7 @@ func (d Dropper) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 
 // ScheduledTick ...
 func (d Dropper) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	slot, ok := d.randomSlotFromInventory(r)
+	slot, ok := d.firstSlotAvailableInventory()
 	if !ok {
 		tx.PlaySound(pos.Vec3(), sound.DispenseFail{})
 		return
@@ -172,19 +172,15 @@ func (d Dropper) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	tx.PlaySound(pos.Vec3(), sound.Dispense{})
 }
 
-// randomSlotFromInventory returns a random slot from the inventory of the dropper. If the inventory is empty, the
+// firstSlotAvailableInventory returns the first available item from the inventory of the dropper. If the inventory is empty, the
 // second return value is false.
-func (d Dropper) randomSlotFromInventory(r *rand.Rand) (int, bool) {
-	slots := make([]int, 0, d.inventory.Size())
+func (d Dropper) firstSlotAvailableInventory() (int, bool) {
 	for slot, it := range d.inventory.Slots() {
 		if !it.Empty() {
-			slots = append(slots, slot)
+			return slot, true
 		}
 	}
-	if len(slots) == 0 {
-		return 0, false
-	}
-	return slots[r.IntN(len(slots))], true
+	return 0, false
 }
 
 // EncodeItem ...
