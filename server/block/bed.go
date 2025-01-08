@@ -22,7 +22,7 @@ type Bed struct {
 	// Head is true if the bed is the head side.
 	Head bool
 	// Sleeper is the user that is using the bed. It is only set for the Head part of the bed.
-	Sleeper world.Sleeper
+	Sleeper *world.EntityHandle
 }
 
 // MaxCount always returns 1.
@@ -50,7 +50,12 @@ func (b Bed) BreakInfo() BreakInfo {
 
 		sleeper := headSide.Sleeper
 		if sleeper != nil {
-			sleeper.Wake()
+			sleeper.ExecWorld(func(tx *world.Tx, e world.Entity) {
+				sleeper, ok := e.(world.Sleeper)
+				if ok {
+					sleeper.Wake()
+				}
+			})
 		}
 	})
 }

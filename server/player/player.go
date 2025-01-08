@@ -1209,7 +1209,7 @@ func (p *Player) Sleep(pos cube.Pos) {
 		return
 	}
 
-	b.Sleeper = p
+	b.Sleeper = p.H()
 	tx.SetBlock(pos, b, nil)
 
 	tx.World().SetRequiredSleepDuration(time.Second * 5)
