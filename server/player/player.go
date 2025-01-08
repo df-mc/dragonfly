@@ -330,10 +330,17 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		return
 	}
 	args := strings.Split(commandLine, " ")
-	command, ok := cmd.ByAlias(args[0][1:])
+
+	name := args[0]
+	if name == "" {
+		return
+	}
+	name = name[1:]
+	
+	command, ok := cmd.ByAlias(name)
 	if !ok {
 		o := &cmd.Output{}
-		o.Errort(cmd.MessageUnknown, args[0])
+		o.Errort(cmd.MessageUnknown, name)
 		p.SendCommandOutput(o)
 		return
 	}
