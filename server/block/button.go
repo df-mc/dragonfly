@@ -78,6 +78,15 @@ func (b Button) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _
 	return b.Click(pos, tx)
 }
 
+// ProjectileHit ...
+func (b Button) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, face cube.Face) {
+	if b.Type == StoneButton() || b.Type == PolishedBlackstoneButton() {
+		return
+	}
+
+	b.Click(pos, tx)
+}
+
 // Click ...
 func (b Button) Click(pos cube.Pos, tx *world.Tx) bool {
 	if b.Pressed {

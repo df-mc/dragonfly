@@ -175,11 +175,6 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
 			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
-		if b, ok := tx.Block(bpos).(block.Button); ok {
-			if b.Type != block.StoneButton() || b.Type != block.PolishedBlackstoneButton() {
-				b.Click(bpos, tx)
-			}
-		}
 		if t, ok := tx.Block(bpos).(block.Target); ok {
 			if _, ok := e.H().Type().(enderPearlType); !ok {
 				delay := time.Millisecond * 400
