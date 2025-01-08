@@ -172,8 +172,8 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
-		if t, ok := tx.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
-			t.Ignite(bpos, tx, nil)
+		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
+			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
 		if b, ok := tx.Block(bpos).(block.Button); ok {
 			if b.Type != block.StoneButton() || b.Type != block.PolishedBlackstoneButton() {

@@ -7,6 +7,8 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -29,6 +31,18 @@ type DecoratedPot struct {
 	// Decorations are the four decorations displayed on the sides of the pot. If a decoration is a brick or nil,
 	// the side will appear to be empty.
 	Decorations [4]PotDecoration
+}
+
+// ProjectileHit ...
+func (p DecoratedPot) ProjectileHit(pos cube.Pos, tx *world.Tx, _ world.Entity, _ cube.Face) {
+	for _, d := range p.Decorations {
+		if d == nil {
+			dropItem(tx, item.NewStack(item.Brick{}, 1), pos.Vec3Centre())
+			continue
+		}
+		dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
+	}
+	breakBlockNoDrops(p, pos, tx)
 }
 
 // Pick ...
@@ -66,10 +80,25 @@ func (p DecoratedPot) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
+// wobble ...
+func (p DecoratedPot) wobble(pos cube.Pos, tx *world.Tx, success bool) {
+	for _, v := range tx.Viewers(pos.Vec3Centre()) {
+		v.ViewBlockAction(pos, DecoratedPotWobbleAction{DecoratedPot: p, Success: success})
+	}
+
+	if success {
+		tx.AddParticle(pos.Vec3Middle().Add(mgl64.Vec3{0, 1.2}), particle.DustPlume{})
+		tx.PlaySound(pos.Vec3Centre(), sound.DecoratedPotInserted{Progress: float64(p.Item.Count()) / float64(p.Item.MaxCount())})
+	} else {
+		tx.PlaySound(pos.Vec3Centre(), sound.DecoratedPotInsertFailed{})
+	}
+}
+
 // Activate ...
 func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if held.Empty() || !p.Item.Comparable(held) || p.Item.Count() == p.Item.MaxCount() {
+		p.wobble(pos, tx, false)
 		return false
 	}
 
@@ -79,6 +108,7 @@ func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.U
 		p.Item = p.Item.Grow(1)
 	}
 	tx.SetBlock(pos, p, nil)
+	p.wobble(pos, tx, true)
 	ctx.SubtractFromCount(1)
 	return true
 }

@@ -16,14 +16,9 @@ type TNT struct {
 	solid
 }
 
-// NeighbourUpdateTick ...
-func (t TNT) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	t.RedstoneUpdate(pos, tx)
-}
-
-// RedstoneUpdate ...
-func (t TNT) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
-	if receivedRedstonePower(pos, tx) {
+// ProjectileHit ...
+func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
+	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
 		t.Ignite(pos, tx, nil)
 	}
 }
