@@ -135,6 +135,11 @@ func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
+// PistonBreakable ...
+func (Leaves) PistonBreakable() bool {
+	return true
+}
+
 // EncodeBlock ...
 func (l Leaves) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + l.Wood.String() + "_leaves", map[string]any{"persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
