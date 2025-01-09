@@ -102,7 +102,7 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 	t.Lit = !t.Lit
 	tx.SetBlock(pos, t, nil)
-	updateDirectionalRedstone(pos, tx, t.Facing.Opposite())
+	updateStrongRedstone(pos, tx)
 }
 
 // EncodeItem ...
