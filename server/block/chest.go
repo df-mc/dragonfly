@@ -258,9 +258,9 @@ func (c Chest) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 		return
 	}
 
-	updateAroundRedstone(pos, tx)
+	updateStrongRedstone(pos, tx)
 	if c.Paired() {
-		updateAroundRedstone(c.pairPos(pos), tx)
+		updateStrongRedstone(c.pairPos(pos), tx)
 	}
 }
 
