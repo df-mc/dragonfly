@@ -1,7 +1,6 @@
 package block
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
@@ -65,9 +64,13 @@ func (r RedstoneRepeater) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3,
 	if !used {
 		return false
 	}
-	if d, ok := tx.Block(pos.Side(cube.FaceDown)).(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
-		return false
+	b := tx.Block(pos.Side(cube.FaceDown))
+	if d, ok := b.(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
+		if _, isPiston := b.(Piston); !isPiston {
+			return false
+		}
 	}
+
 	r.Facing = user.Rotation().Direction().Opposite()
 
 	place(tx, pos, r, user, ctx)
@@ -80,9 +83,12 @@ func (r RedstoneRepeater) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3,
 
 // NeighbourUpdateTick ...
 func (r RedstoneRepeater) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if d, ok := tx.Block(pos.Side(cube.FaceDown)).(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
-		tx.SetBlock(pos, nil, nil)
-		dropItem(tx, item.NewStack(r, 1), pos.Vec3Centre())
+	b := tx.Block(pos.Side(cube.FaceDown))
+	if d, ok := b.(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
+		if _, piston := b.(Piston); !piston {
+			tx.SetBlock(pos, nil, nil)
+			dropItem(tx, item.NewStack(r, 1), pos.Vec3Centre())
+		}
 	}
 }
 
@@ -133,7 +139,6 @@ func (r RedstoneRepeater) Locked(pos cube.Pos, tx *world.Tx) bool {
 func (r RedstoneRepeater) locking(pos cube.Pos, direction cube.Direction, tx *world.Tx) bool {
 	block := tx.Block(pos)
 
-	fmt.Println(block.EncodeBlock())
 	if repeater, ok := block.(RedstoneRepeater); ok {
 		return repeater.Powered && repeater.Facing == direction
 	}
