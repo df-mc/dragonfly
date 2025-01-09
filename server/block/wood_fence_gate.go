@@ -94,6 +94,22 @@ func (f WoodFenceGate) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
+// RedstoneUpdate ...
+func (f WoodFenceGate) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	if f.Open == receivedRedstonePower(pos, tx) {
+		return
+	}
+
+	f.Open = receivedRedstonePower(pos, tx)
+	tx.SetBlock(pos, f, nil)
+
+	if f.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.FenceGateOpen{Block: f})
+	} else {
+		tx.PlaySound(pos.Vec3Centre(), sound.FenceGateClose{Block: f})
+	}
+}
+
 // EncodeItem ...
 func (f WoodFenceGate) EncodeItem() (name string, meta int16) {
 	if f.Wood == OakWood() {

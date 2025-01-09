@@ -82,6 +82,22 @@ func (t WoodTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
+// RedstoneUpdate ...
+func (t WoodTrapdoor) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	if t.Open == receivedRedstonePower(pos, tx) {
+		return
+	}
+
+	t.Open = receivedRedstonePower(pos, tx)
+	tx.SetBlock(pos, t, nil)
+
+	if t.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorOpen{Block: t})
+	} else {
+		tx.PlaySound(pos.Vec3Centre(), sound.TrapdoorClose{Block: t})
+	}
+}
+
 // EncodeItem ...
 func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
 	if t.Wood == OakWood() {

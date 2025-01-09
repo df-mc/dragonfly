@@ -47,6 +47,11 @@ func (d WoodDoor) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
 }
 
+// PistonBreakable ...
+func (WoodDoor) PistonBreakable() bool {
+	return true
+}
+
 // NeighbourUpdateTick ...
 func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.Top {
@@ -125,6 +130,28 @@ func (d WoodDoor) BreakInfo() BreakInfo {
 // SideClosed ...
 func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
+}
+
+// RedstoneUpdate ...
+func (d WoodDoor) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	if d.Open == receivedRedstonePower(pos, tx) {
+		return
+	}
+
+	d.Open = receivedRedstonePower(pos, tx)
+	tx.SetBlock(pos, d, nil)
+
+	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
+	if other, ok := tx.Block(otherPos).(WoodDoor); ok {
+		other.Open = d.Open
+		tx.SetBlock(otherPos, other, nil)
+	}
+
+	if d.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+	} else {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
+	}
 }
 
 // EncodeItem ...
