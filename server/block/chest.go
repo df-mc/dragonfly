@@ -134,9 +134,6 @@ func (c Chest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	// Schedule redstone update for trapped chests.
 	if c.Trapped {
 		tx.ScheduleBlockUpdate(pos, c, time.Millisecond*100)
-		if c.Paired() {
-			tx.ScheduleBlockUpdate(c.pairPos(pos), c, time.Millisecond*100)
-		}
 	}
 }
 
@@ -159,9 +156,6 @@ func (c Chest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	// Schedule redstone update for trapped chests.
 	if c.Trapped {
 		tx.ScheduleBlockUpdate(pos, c, time.Millisecond*100)
-		if c.Paired() {
-			tx.ScheduleBlockUpdate(c.pairPos(pos), c, time.Millisecond*100)
-		}
 	}
 }
 
@@ -265,6 +259,9 @@ func (c Chest) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 
 	updateAroundRedstone(pos, tx)
+	if c.Paired() {
+		updateAroundRedstone(c.pairPos(pos), tx)
+	}
 }
 
 // FuelInfo ...
