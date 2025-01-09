@@ -37,7 +37,7 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 // BreakInfo ...
 func (t RedstoneTorch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
-		updateDirectionalRedstone(pos, tx, t.Facing.Opposite())
+		updateStrongRedstone(pos, tx)
 	})
 }
 
@@ -72,7 +72,7 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	place(tx, pos, t, user, ctx)
 	if placed(ctx) {
 		t.RedstoneUpdate(pos, tx)
-		updateDirectionalRedstone(pos, tx, t.Facing.Opposite())
+		updateStrongRedstone(pos, tx)
 		return true
 	}
 	return false
