@@ -1,6 +1,7 @@
 package block
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
@@ -96,7 +97,7 @@ func (r RedstoneRepeater) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ it
 
 // RedstoneUpdate ...
 func (r RedstoneRepeater) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
-	if r.Locked() {
+	if r.Locked(pos, tx) {
 		// Ignore this update; the repeater is locked.
 		return
 	}
@@ -107,7 +108,7 @@ func (r RedstoneRepeater) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 
 // ScheduledTick ...
 func (r RedstoneRepeater) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
-	if r.Locked() {
+	if r.Locked(pos, tx) {
 		// Ignore this tick; the repeater is locked.
 		return
 	}
@@ -123,9 +124,23 @@ func (r RedstoneRepeater) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand
 	updateGateRedstone(pos, tx, r.Facing.Face())
 }
 
-// Locked ...
-func (RedstoneRepeater) Locked() bool {
-	//TODO implement me
+// Locked checks if the repeater is locked.
+func (r RedstoneRepeater) Locked(pos cube.Pos, tx *world.Tx) bool {
+	return r.locking(pos.Side(r.Facing.RotateLeft().Face()), r.Facing.RotateLeft(), tx) || r.locking(pos.Side(r.Facing.RotateRight().Face()), r.Facing.RotateRight(), tx)
+}
+
+// locking checks of the block at the given position is a powered repeater or comparator facing the repeater
+func (r RedstoneRepeater) locking(pos cube.Pos, direction cube.Direction, tx *world.Tx) bool {
+	block := tx.Block(pos)
+
+	fmt.Println(block.EncodeBlock())
+	if repeater, ok := block.(RedstoneRepeater); ok {
+		return repeater.Powered && repeater.Facing == direction
+	}
+
+	if comparator, ok := block.(RedstoneComparator); ok {
+		return comparator.Powered && comparator.Facing == direction
+	}
 	return false
 }
 

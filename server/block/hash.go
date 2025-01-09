@@ -157,6 +157,7 @@ const (
 	hashRawGold
 	hashRawIron
 	hashRedstoneBlock
+	hashRedstoneComparator
 	hashRedstoneLamp
 	hashRedstoneOre
 	hashRedstoneRepeater
@@ -823,6 +824,10 @@ func (RawIron) Hash() (uint64, uint64) {
 
 func (RedstoneBlock) Hash() (uint64, uint64) {
 	return hashRedstoneBlock, 0
+}
+
+func (r RedstoneComparator) Hash() (uint64, uint64) {
+	return hashRedstoneComparator, uint64(r.Facing) | uint64(boolByte(r.Subtract))<<2 | uint64(boolByte(r.Powered))<<3 | uint64(r.Power)<<4
 }
 
 func (l RedstoneLamp) Hash() (uint64, uint64) {
