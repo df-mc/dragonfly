@@ -52,7 +52,7 @@ type EntityHandle struct {
 	weakTxActive bool
 	w            *World
 
-	data EntityData
+	data *EntityData
 
 	// TODO Handler? Handle world change here?
 }
@@ -83,11 +83,11 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 		opts.ID = uuid.New()
 		clear(opts.ID[:8])
 	}
-	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
+	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}, data: &EntityData{}}
 	handle.worldless.Store(true)
 	handle.data.pos, handle.data.rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	handle.data.Name = opts.NameTag
-	conf.Apply(&handle.data)
+	conf.Apply(handle.data)
 	return handle
 }
 
@@ -102,10 +102,10 @@ func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 // entityFromData reads an entity from the decoded NBT data passed and returns
 // an EntityHandle.
 func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
-	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
+	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}, data: &EntityData{}}
 	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
 	handle.decodeNBT(data)
-	t.DecodeNBT(data, &handle.data)
+	t.DecodeNBT(data, handle.data)
 	return handle
 }
 
@@ -121,7 +121,8 @@ func (e *EntityHandle) Entity(tx *Tx) (Entity, bool) {
 	if e == nil || e.w != tx.World() {
 		return nil, false
 	}
-	return e.t.Open(tx, e, &e.data), true
+	e.data.ent, e.data.tx = e.t.Open(tx, e, e.data), tx
+	return e.data.ent, true
 }
 
 // mustEntity calls Entity but panics if the worlds do not match.
@@ -289,6 +290,9 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 
 // EntityData holds data shared by every entity. It is kept in an EntityHandle.
 type EntityData struct {
+	ent Entity
+	tx  *Tx
+
 	pos, Vel     mgl64.Vec3
 	rot          cube.Rotation
 	Name         string
@@ -302,11 +306,11 @@ func (edata *EntityData) Velocity() mgl64.Vec3 {
 	return edata.Vel
 }
 
-func (edata *EntityData) SetVelocity(e Entity, tx *Tx, vel mgl64.Vec3) {
+func (edata *EntityData) SetVelocity(vel mgl64.Vec3) {
 	if !vel.ApproxEqualThreshold(edata.Vel, epsilon) {
 		// Only send velocity if the delta is big enough.
-		for _, v := range tx.Viewers(edata.pos) {
-			v.ViewEntityVelocity(e, vel)
+		for _, v := range edata.tx.Viewers(edata.pos) {
+			v.ViewEntityVelocity(edata.ent, vel)
 		}
 	}
 	edata.Vel = vel
@@ -320,30 +324,30 @@ func (edata *EntityData) Rotation() cube.Rotation {
 	return edata.rot
 }
 
-func (edata *EntityData) Teleport(e Entity, tx *Tx, pos mgl64.Vec3) {
-	edata.SetVelocity(e, tx, mgl64.Vec3{})
-	for _, v := range tx.Viewers(edata.pos) {
-		v.ViewEntityTeleport(e, pos)
+func (edata *EntityData) Teleport(pos mgl64.Vec3) {
+	edata.SetVelocity(mgl64.Vec3{})
+	for _, v := range edata.tx.Viewers(edata.pos) {
+		v.ViewEntityTeleport(edata.ent, pos)
 	}
-	edata.setPosition(e, tx, pos, edata.rot)
+	edata.setPosition(pos, edata.rot)
 }
 
 // epsilon is the epsilon used for thresholds for change used for change in
 // position and velocity.
 const epsilon = 0.001
 
-func (edata *EntityData) Move(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
+func (edata *EntityData) Move(pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
 	if !pos.ApproxEqualThreshold(edata.pos, epsilon) || !mgl64.Vec2(rot).ApproxEqualThreshold(mgl64.Vec2(edata.rot), epsilon) {
 		// Only send movement if the delta of either rotation or position is
 		// significant enough.
-		for _, v := range tx.Viewers(edata.pos) {
-			v.ViewEntityMovement(e, pos, rot, onGround)
+		for _, v := range edata.tx.Viewers(edata.pos) {
+			v.ViewEntityMovement(edata.ent, pos, rot, onGround)
 		}
 	}
-	edata.setPosition(e, tx, pos, rot)
+	edata.setPosition(pos, rot)
 }
 
-func (edata *EntityData) setPosition(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotation) {
+func (edata *EntityData) setPosition(pos mgl64.Vec3, rot cube.Rotation) {
 	prevChunkPos, chunkPos := chunkPosFromVec3(edata.pos), chunkPosFromVec3(pos)
 	if prevChunkPos == chunkPos {
 		// Entity remains in the same chunk.
@@ -352,16 +356,16 @@ func (edata *EntityData) setPosition(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.
 
 	// The entity's chunk position changed: Move it from the old chunk to the
 	// new chunk.
-	prevChunk, chunk := tx.World().chunk(prevChunkPos), tx.World().chunk(chunkPos)
+	prevChunk, chunk := edata.tx.World().chunk(prevChunkPos), edata.tx.World().chunk(chunkPos)
 
-	chunk.Entities = append(chunk.Entities, e.H())
-	prevChunk.Entities = sliceutil.DeleteVal(prevChunk.Entities, e.H())
+	chunk.Entities = append(chunk.Entities, edata.ent.H())
+	prevChunk.Entities = sliceutil.DeleteVal(prevChunk.Entities, edata.ent.H())
 
 	for _, viewer := range prevChunk.viewers {
 		if slices.Index(chunk.viewers, viewer) == -1 {
 			// First we hide the entity from all viewers that were previously
 			// viewing it, but no longer are.
-			viewer.HideEntity(e)
+			viewer.HideEntity(edata.ent)
 		}
 	}
 	edata.pos, edata.rot = pos, rot
@@ -369,7 +373,7 @@ func (edata *EntityData) setPosition(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.
 		if slices.Index(prevChunk.viewers, viewer) == -1 {
 			// Then we show the entity to all loaders that are now viewing the
 			// entity in the new chunk.
-			showEntity(e, viewer)
+			showEntity(edata.ent, viewer)
 		}
 	}
 }

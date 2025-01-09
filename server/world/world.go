@@ -1240,7 +1240,7 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 	}
 	for _, e := range col.Entities {
 		data := e.encodeNBT()
-		maps.Copy(data, e.t.EncodeNBT(&e.data))
+		maps.Copy(data, e.t.EncodeNBT(e.data))
 		data["identifier"] = e.t.EncodeEntity()
 		c.Entities = append(c.Entities, chunk.Entity{ID: int64(binary.LittleEndian.Uint64(e.id[8:])), Data: data})
 	}

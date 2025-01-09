@@ -63,7 +63,7 @@ func (e *Ent) Velocity() mgl64.Vec3 {
 // SetVelocity sets the velocity of the entity. The values in the Vec3 passed represent the speed on
 // that axis in blocks/tick.
 func (e *Ent) SetVelocity(v mgl64.Vec3) {
-	e.data.SetVelocity(e, e.tx, v)
+	e.data.SetVelocity(v)
 }
 
 // Rotation returns the rotation of the entity.
@@ -126,8 +126,8 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
 	if m := e.Behaviour().Tick(e, tx); m != nil {
-		e.data.Move(e, tx, m.pos, m.rot, m.onGround)
-		e.data.SetVelocity(e, tx, m.vel)
+		e.data.Move(m.pos, m.rot, m.onGround)
+		e.data.SetVelocity(m.vel)
 	}
 	e.data.Age += time.Second / 20
 }

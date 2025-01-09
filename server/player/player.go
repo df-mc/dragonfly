@@ -861,7 +861,7 @@ func finishDying(_ *world.Tx, e world.Entity) {
 		// position server side so that in the future, the client won't respawn
 		// on the death location when disconnecting. The client should not see
 		// the movement itself yet, though.
-		p.data.Move(p, p.tx, p.tx.World().Spawn().Vec3(), p.Rotation(), p.onGround)
+		p.data.Move(p.tx.World().Spawn().Vec3(), p.Rotation(), p.onGround)
 	}
 }
 
@@ -2032,7 +2032,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the Handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
-	p.data.Teleport(p, p.tx, pos)
+	p.data.Teleport(pos)
 	p.ResetFallDistance()
 }
 
@@ -2064,7 +2064,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 		return
 	}
-	p.data.Move(p, p.tx, res, resRot, p.OnGround())
+	p.data.Move(res, resRot, p.OnGround())
 	if deltaPos.Len() <= 3 {
 		// Only update velocity if the player is not moving too fast to prevent potential OOMs.
 		p.data.Vel = deltaPos
@@ -2117,7 +2117,7 @@ func (p *Player) Velocity() mgl64.Vec3 {
 // SetVelocity updates the player's velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
-	p.data.SetVelocity(p, p.tx, velocity)
+	p.data.SetVelocity(velocity)
 }
 
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
@@ -2397,8 +2397,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 		// TODO: Move p.data.Move into p.Move()
 		// p.Move(m.Position().Sub(p.Position()), 0, 0)
-		p.data.Move(p, tx, m.Position(), m.Rotation(), p.onGround)
-		p.data.SetVelocity(p, tx, m.Velocity())
+		p.data.Move(m.Position(), m.Rotation(), p.onGround)
+		p.data.SetVelocity(m.Velocity())
 	} else {
 		p.data.Vel = mgl64.Vec3{}
 	}
