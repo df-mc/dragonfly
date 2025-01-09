@@ -661,7 +661,7 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 // addEntity returns the Entity created by the EntityHandle.
 func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 	handle.setAndUnlockWorld(w)
-	pos := chunkPosFromVec3(handle.data.Pos)
+	pos := chunkPosFromVec3(handle.data.pos)
 	w.entities[handle] = struct{}{}
 
 	c := w.chunk(pos)
@@ -713,7 +713,7 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 					continue
 				}
 				for _, handle := range c.Entities {
-					if !box.Vec3Within(handle.data.Pos) {
+					if !box.Vec3Within(handle.data.pos) {
 						continue
 					}
 					if !yield(handle.mustEntity(tx)) {

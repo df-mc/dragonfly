@@ -118,7 +118,7 @@ func (lt *ProjectileBehaviour) Owner() *world.EntityHandle {
 // Explode adds velocity to a projectile to blast it away from the explosion's
 // source.
 func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
-	e.data.Vel = e.Velocity().Add(e.Position().Sub(src).Normalize().Mul(impact))
+	e.data.SetVelocity(e, e.tx, e.Velocity().Add(e.Position().Sub(src).Normalize().Mul(impact)))
 }
 
 // Potion returns the potion.Potion that is applied to an entity if hit by the
@@ -150,7 +150,8 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	}
 	vel := e.Velocity()
 	m, result := lt.tickMovement(e, tx)
-	e.data.Pos, e.data.Vel = m.pos, m.vel
+	e.data.Move(e, tx, m.pos, m.rot, m.onGround)
+	e.data.SetVelocity(e, tx, m.vel)
 
 	lt.collisionPos, lt.collided, lt.ageCollided = cube.Pos{}, false, 0
 

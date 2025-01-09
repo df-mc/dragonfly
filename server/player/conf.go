@@ -52,7 +52,6 @@ type Config struct {
 func (cfg Config) Apply(data *world.EntityData) {
 	conf := fillDefaults(cfg)
 
-	data.Name, data.Pos, data.Rot = conf.Name, conf.Position, conf.Rotation
 	slot := uint32(conf.HeldSlot)
 	pdata := &playerData{
 		xuid:              conf.XUID,

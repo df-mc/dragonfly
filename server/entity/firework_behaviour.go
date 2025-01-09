@@ -85,17 +85,20 @@ func (f *FireworkBehaviour) tick(e *Ent, tx *world.Tx) {
 		ownerVel = o.Velocity()
 	}
 
+	vel := e.data.Velocity()
 	if f.conf.Attached && ok {
 		dV := owner.Rotation().Vec3()
 
 		// The client will propel itself to match the firework's velocity since
 		// we set the appropriate metadata.
-		e.data.Pos = owner.Position()
-		e.data.Vel = e.data.Vel.Add(ownerVel.Add(dV.Mul(0.1).Add(dV.Mul(1.5).Sub(ownerVel).Mul(0.5))))
+		e.data.Move(e, tx, owner.Position(), e.data.Rotation(), false)
+		e.data.SetVelocity(e, tx, vel.Add(ownerVel.Add(dV.Mul(0.1).Add(dV.Mul(1.5).Sub(ownerVel).Mul(0.5)))))
 	} else {
-		e.data.Vel[0] *= f.conf.SidewaysVelocityMultiplier
-		e.data.Vel[1] += f.conf.UpwardsAcceleration
-		e.data.Vel[2] *= f.conf.SidewaysVelocityMultiplier
+		e.data.SetVelocity(e, tx, mgl64.Vec3{
+			vel[0] * f.conf.SidewaysVelocityMultiplier,
+			vel[1] * f.conf.UpwardsAcceleration,
+			vel[2] * f.conf.SidewaysVelocityMultiplier,
+		})
 	}
 }
 

@@ -861,7 +861,7 @@ func finishDying(_ *world.Tx, e world.Entity) {
 		// position server side so that in the future, the client won't respawn
 		// on the death location when disconnecting. The client should not see
 		// the movement itself yet, though.
-		p.data.Pos = p.tx.World().Spawn().Vec3()
+		p.data.Move(p, p.tx, p.tx.World().Spawn().Vec3(), p.Rotation(), p.onGround)
 	}
 }
 
@@ -2032,11 +2032,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // teleport teleports the player to a target position in the world. It does not call the Handler of the
 // player.
 func (p *Player) teleport(pos mgl64.Vec3) {
-	for _, v := range p.viewers() {
-		v.ViewEntityTeleport(p, pos)
-	}
-	p.data.Pos = pos
-	p.data.Vel = mgl64.Vec3{}
+	p.data.Teleport(p, p.tx, pos)
 	p.ResetFallDistance()
 }
 
@@ -2068,12 +2064,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 		return
 	}
-	for _, v := range p.viewers() {
-		v.ViewEntityMovement(p, res, resRot, p.OnGround())
-	}
-
-	p.data.Pos = res
-	p.data.Rot = resRot
+	p.data.Move(p, p.tx, res, resRot, p.OnGround())
 	if deltaPos.Len() <= 3 {
 		// Only update velocity if the player is not moving too fast to prevent potential OOMs.
 		p.data.Vel = deltaPos
@@ -2115,31 +2106,25 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 // Position returns the current position of the player. It may be changed as the player moves or is moved
 // around the world.
 func (p *Player) Position() mgl64.Vec3 {
-	return p.data.Pos
+	return p.data.Position()
 }
 
 // Velocity returns the players current velocity. If there is an attached session, this will be empty.
 func (p *Player) Velocity() mgl64.Vec3 {
-	return p.data.Vel
+	return p.data.Velocity()
 }
 
 // SetVelocity updates the player's velocity. If there is an attached session, this will just send
 // the velocity to the player session for the player to update.
 func (p *Player) SetVelocity(velocity mgl64.Vec3) {
-	if p.session() == session.Nop {
-		p.data.Vel = velocity
-		return
-	}
-	for _, v := range p.viewers() {
-		v.ViewEntityVelocity(p, velocity)
-	}
+	p.data.SetVelocity(p, p.tx, velocity)
 }
 
 // Rotation returns the yaw and pitch of the player in degrees. Yaw is horizontal rotation (rotation around the
 // vertical axis, 0 when facing forward), pitch is vertical rotation (rotation around the horizontal axis, also 0
 // when facing forward).
 func (p *Player) Rotation() cube.Rotation {
-	return p.data.Rot
+	return p.data.Rotation()
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
@@ -2352,7 +2337,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
-	p.checkBlockCollisions(p.data.Vel)
+	p.checkBlockCollisions(p.data.Velocity())
 	p.onGround = p.checkOnGround()
 
 	p.effects.Tick(p, p.tx)

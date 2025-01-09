@@ -51,24 +51,24 @@ func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig
 
 // Position returns the current position of the entity.
 func (e *Ent) Position() mgl64.Vec3 {
-	return e.data.Pos
+	return e.data.Position()
 }
 
 // Velocity returns the current velocity of the entity. The values in the Vec3 returned represent the speed on
 // that axis in blocks/tick.
 func (e *Ent) Velocity() mgl64.Vec3 {
-	return e.data.Vel
+	return e.data.Velocity()
 }
 
 // SetVelocity sets the velocity of the entity. The values in the Vec3 passed represent the speed on
 // that axis in blocks/tick.
 func (e *Ent) SetVelocity(v mgl64.Vec3) {
-	e.data.Vel = v
+	e.data.SetVelocity(e, e.tx, v)
 }
 
 // Rotation returns the rotation of the entity.
 func (e *Ent) Rotation() cube.Rotation {
-	return e.data.Rot
+	return e.data.Rotation()
 }
 
 // Age returns the total time lived of this entity. It increases by
@@ -89,7 +89,7 @@ func (e *Ent) SetOnFire(duration time.Duration) {
 
 	e.data.FireDuration = duration
 	if stateChanged {
-		for _, v := range e.tx.Viewers(e.data.Pos) {
+		for _, v := range e.tx.Viewers(e.data.Position()) {
 			v.ViewEntityState(e)
 		}
 	}
@@ -118,7 +118,7 @@ func (e *Ent) SetNameTag(s string) {
 // Tick ticks Ent, progressing its lifetime and closing the entity if it is
 // in the void.
 func (e *Ent) Tick(tx *world.Tx, current int64) {
-	y := e.data.Pos[1]
+	y := e.data.Position()[1]
 	if y < float64(tx.Range()[0]) && current%10 == 0 {
 		_ = e.Close()
 		return

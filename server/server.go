@@ -545,7 +545,13 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	conf.Skin = srv.parseSkin(conn.ClientData())
 	conf.Session = s
 
-	handle := world.EntitySpawnOpts{Position: conf.Position, ID: id}.New(player.Type, conf)
+	handle := world.EntitySpawnOpts{
+		NameTag:  conf.Name,
+		Position: conf.Position,
+		Rotation: conf.Rotation,
+		Velocity: conf.Velocity,
+		ID:       id,
+	}.New(player.Type, conf)
 	s.SetHandle(handle, conf.Skin)
 	return incoming{s: s, w: w, conf: conf, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
 }

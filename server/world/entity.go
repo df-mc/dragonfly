@@ -85,7 +85,7 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 	}
 	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
 	handle.worldless.Store(true)
-	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
+	handle.data.pos, handle.data.rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	handle.data.Name = opts.NameTag
 	conf.Apply(&handle.data)
 	return handle
@@ -265,9 +265,9 @@ func (e *EntityHandle) setAndUnlockWorld(w *World) {
 // decodeNBT decodes the position, velocity, rotation, age, on-fire duration and
 // name tag of an entity.
 func (e *EntityHandle) decodeNBT(m map[string]any) {
-	e.data.Pos = readVec3(m, "Pos")
+	e.data.pos = readVec3(m, "Pos")
 	e.data.Vel = readVec3(m, "Motion")
-	e.data.Rot = readRotation(m)
+	e.data.rot = readRotation(m)
 	e.data.Age = time.Duration(readInt16(m, "Age")) * (time.Second / 20)
 	e.data.FireDuration = time.Duration(readInt16(m, "Fire")) * time.Second / 20
 	e.data.Name, _ = m["NameTag"].(string)
@@ -277,10 +277,10 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 // name tag of an entity.
 func (e *EntityHandle) encodeNBT() map[string]any {
 	return map[string]any{
-		"Pos":     []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
+		"Pos":     []float32{float32(e.data.pos[0]), float32(e.data.pos[1]), float32(e.data.pos[2])},
 		"Motion":  []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
-		"Yaw":     float32(e.data.Rot[0]),
-		"Pitch":   float32(e.data.Rot[1]),
+		"Yaw":     float32(e.data.rot[0]),
+		"Pitch":   float32(e.data.rot[1]),
 		"Fire":    int16(e.data.FireDuration.Seconds() * 20),
 		"Age":     int16(e.data.Age / (time.Second * 20)),
 		"NameTag": e.data.Name,
@@ -289,8 +289,8 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 
 // EntityData holds data shared by every entity. It is kept in an EntityHandle.
 type EntityData struct {
-	Pos, Vel     mgl64.Vec3
-	Rot          cube.Rotation
+	pos, Vel     mgl64.Vec3
+	rot          cube.Rotation
 	Name         string
 	FireDuration time.Duration
 	Age          time.Duration
@@ -298,19 +298,53 @@ type EntityData struct {
 	Data any
 }
 
+func (edata *EntityData) Velocity() mgl64.Vec3 {
+	return edata.Vel
+}
+
 func (edata *EntityData) SetVelocity(e Entity, tx *Tx, vel mgl64.Vec3) {
 	if !vel.ApproxEqualThreshold(edata.Vel, epsilon) {
 		// Only send velocity if the delta is big enough.
-		for _, v := range tx.Viewers(edata.Pos) {
+		for _, v := range tx.Viewers(edata.pos) {
 			v.ViewEntityVelocity(e, vel)
 		}
 	}
 	edata.Vel = vel
 }
 
+func (edata *EntityData) Position() mgl64.Vec3 {
+	return edata.pos
+}
+
+func (edata *EntityData) Rotation() cube.Rotation {
+	return edata.rot
+}
+
+func (edata *EntityData) Teleport(e Entity, tx *Tx, pos mgl64.Vec3) {
+	edata.SetVelocity(e, tx, mgl64.Vec3{})
+	for _, v := range tx.Viewers(edata.pos) {
+		v.ViewEntityTeleport(e, pos)
+	}
+	edata.setPosition(e, tx, pos, edata.rot)
+}
+
+// epsilon is the epsilon used for thresholds for change used for change in
+// position and velocity.
+const epsilon = 0.001
+
 func (edata *EntityData) Move(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
-	prevChunkPos, chunkPos := chunkPosFromVec3(edata.Pos), chunkPosFromVec3(pos)
-	edata.updatePosition(e, tx, pos, rot, onGround)
+	if !pos.ApproxEqualThreshold(edata.pos, epsilon) || !mgl64.Vec2(rot).ApproxEqualThreshold(mgl64.Vec2(edata.rot), epsilon) {
+		// Only send movement if the delta of either rotation or position is
+		// significant enough.
+		for _, v := range tx.Viewers(edata.pos) {
+			v.ViewEntityMovement(e, pos, rot, onGround)
+		}
+	}
+	edata.setPosition(e, tx, pos, rot)
+}
+
+func (edata *EntityData) setPosition(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotation) {
+	prevChunkPos, chunkPos := chunkPosFromVec3(edata.pos), chunkPosFromVec3(pos)
 	if prevChunkPos == chunkPos {
 		// Entity remains in the same chunk.
 		return
@@ -330,6 +364,7 @@ func (edata *EntityData) Move(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotatio
 			viewer.HideEntity(e)
 		}
 	}
+	edata.pos, edata.rot = pos, rot
 	for _, viewer := range chunk.viewers {
 		if slices.Index(prevChunk.viewers, viewer) == -1 {
 			// Then we show the entity to all loaders that are now viewing the
@@ -337,21 +372,6 @@ func (edata *EntityData) Move(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotatio
 			showEntity(e, viewer)
 		}
 	}
-}
-
-// epsilon is the epsilon used for thresholds for change used for change in
-// position and velocity.
-const epsilon = 0.001
-
-func (edata *EntityData) updatePosition(e Entity, tx *Tx, pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
-	if !pos.ApproxEqualThreshold(edata.Pos, epsilon) || !mgl64.Vec2(rot).ApproxEqualThreshold(mgl64.Vec2(edata.Rot), epsilon) {
-		// Only send movement if the delta of either rotation or position is
-		// significant enough.
-		for _, v := range tx.Viewers(edata.Pos) {
-			v.ViewEntityMovement(e, pos, rot, onGround)
-		}
-	}
-	edata.Pos, edata.Rot = pos, rot
 }
 
 // Entity represents an Entity in the world, typically an object that may be moved around and can be

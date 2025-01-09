@@ -58,7 +58,7 @@ type PassiveBehaviour struct {
 // Explode adds velocity to a passive entity to blast it away from the
 // explosion's source.
 func (p *PassiveBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
-	e.data.Vel = e.data.Vel.Add(e.data.Pos.Sub(src).Normalize().Mul(impact))
+	e.data.SetVelocity(e, e.tx, e.data.Velocity().Add(e.data.Position().Sub(src).Normalize().Mul(impact)))
 }
 
 // Fuse returns the leftover time until PassiveBehaviourConfig.Expire is called,
@@ -78,8 +78,9 @@ func (p *PassiveBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		return nil
 	}
 
-	m := p.mc.TickMovement(e, e.data.Pos, e.data.Vel, e.data.Rot, tx)
-	e.data.Pos, e.data.Vel = m.pos, m.vel
+	m := p.mc.TickMovement(e, e.data.Position(), e.data.Velocity(), e.data.Rotation(), tx)
+	e.data.Move(e, tx, m.pos, m.rot, m.onGround)
+	e.data.SetVelocity(e, tx, m.vel)
 	p.fallDistance = math.Max(p.fallDistance-m.dvel[1], 0)
 
 	p.fuse = p.conf.ExistenceDuration - e.Age()
