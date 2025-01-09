@@ -2016,7 +2016,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		p.SetHeldItems(pickedItem, offhand)
 		return
 	}
-	if firstEmpty < 8 {
+	if firstEmpty < 9 {
 		_ = p.SetHeldSlot(firstEmpty)
 		_ = p.Inventory().SetItem(firstEmpty, pickedItem)
 		return
