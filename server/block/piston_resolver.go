@@ -112,11 +112,18 @@ func (r *pistonResolver) calculateBlocks(pos cube.Pos, face cube.Face, breakFace
 		return false
 	}
 
-	// account for slime.
-	if !r.calculateBlocks(pos.Side(breakFace), breakFace, breakFace) {
+	if _, ok := block.(Slime); ok {
+		for _, otherFace := range cube.Faces() {
+			if face.Opposite() == otherFace {
+				continue
+			}
+			if !r.calculateBlocks(pos.Side(otherFace), otherFace, breakFace) {
+				return false
+			}
+		}
+	} else if !r.calculateBlocks(pos.Side(breakFace), breakFace, breakFace) {
 		return false
 	}
-
 	return true
 }
 
