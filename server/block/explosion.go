@@ -30,6 +30,13 @@ type ExplosionConfig struct {
 	// the explosion. If set to 1 or higher, all items are dropped.
 	ItemDropChance float64
 
+	// CanAffectEntity determines if an entity can be affected by this explosion. By default,
+	// all entities within the size of the explosion will be affected.
+	CanAffectEntity func(e world.Entity, impact *float64) bool
+	// CanAffectBlock determines if this block position can be affected by this explosion. By default,
+	// all Breakable blocks within the size of the explosion will be affected.
+	CanAffectBlock func(tx *world.Tx, pos cube.Pos) bool
+
 	// Sound is the sound to play when the explosion is created. If set to nil, this will default to the sound of a
 	// regular explosion.
 	Sound world.Sound
@@ -86,6 +93,16 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	if c.ItemDropChance == 0 {
 		c.ItemDropChance = 1.0 / c.Size
 	}
+	if c.CanAffectEntity == nil {
+		c.CanAffectEntity = func(world.Entity, *float64) bool {
+			return true
+		}
+	}
+	if c.CanAffectBlock == nil {
+		c.CanAffectBlock = func(*world.Tx, cube.Pos) bool {
+			return true
+		}
+	}
 
 	r, d := rand.New(c.RandSource), c.Size*2
 	box := cube.Box(
@@ -105,7 +122,9 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		}
 		if explodable, ok := e.(ExplodableEntity); ok {
 			impact := (1 - dist/d) * exposure(tx, explosionPos, e)
-			explodable.Explode(explosionPos, impact, c)
+			if c.CanAffectEntity(e, &impact) {
+				explodable.Explode(explosionPos, impact, c)
+			}
 		}
 	}
 
@@ -133,6 +152,9 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		}
 	}
 	for _, pos := range affectedBlocks {
+		if !c.CanAffectBlock(tx, pos) {
+			continue
+		}
 		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
 			explodable.Explode(explosionPos, pos, tx, c)
