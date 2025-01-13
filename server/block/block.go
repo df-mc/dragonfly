@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -224,9 +223,7 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.Tx) bool {
 
 // fall spawns a falling block entity at the given position.
 func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
-	_, air := tx.Block(pos.Side(cube.FaceDown)).Model().(model.Empty)
-	_, liquid := tx.Liquid(pos.Side(cube.FaceDown))
-	if air || liquid {
+	if replaceableWith(tx, pos.Side(cube.FaceDown), b) {
 		tx.SetBlock(pos, nil, nil)
 		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
 		tx.AddEntity(tx.World().EntityRegistry().Config().FallingBlock(opts, b))
