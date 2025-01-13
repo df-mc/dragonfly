@@ -1205,28 +1205,25 @@ func (p *Player) Sleep(pos cube.Pos) {
 	}
 
 	ctx, sendReminder := event.C(p), true
+	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
+		return
+	}
 
-	b.SleepOn(pos, p, p.tx, func() bool {
-		if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
-			return false
-		}
+	b.Sleeper = p.H()
+	tx.SetBlock(pos, b, nil)
 
-		p.sleeping = true
+	tx.World().SetRequiredSleepDuration(time.Second * 5)
 
-		tx.World().SetRequiredSleepDuration(time.Second * 5)
+	p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
+	p.sleeping = true
+	p.sleepPos = pos
 
-		p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
-		p.sleepPos = pos
+	if sendReminder {
+		tx.BroadcastSleepingReminder(p)
+	}
 
-		if sendReminder {
-			tx.BroadcastSleepingReminder(p)
-		}
-
-		tx.BroadcastSleepingIndicator()
-		p.updateState()
-		return true
-	})
-
+	tx.BroadcastSleepingIndicator()
+	p.updateState()
 }
 
 // Wake forces the player out of bed if they are sleeping.

@@ -42,8 +42,8 @@ func (Bed) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (b Bed) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
-		headSide, _, ok := b.head(pos, tx)
+	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, w *world.Tx, _ item.User) {
+		headSide, _, ok := b.head(pos, w)
 		if !ok {
 			return
 		}
@@ -201,8 +201,8 @@ func (b Bed) DecodeNBT(data map[string]interface{}) interface{} {
 }
 
 // head returns the head side of the bed. If neither side is a head side, the third return value is false.
-func (b Bed) head(pos cube.Pos, tx *world.Tx) (Bed, cube.Pos, bool) {
-	headSide, headPos, ok := b.side(pos, tx)
+func (b Bed) head(pos cube.Pos, w *world.Tx) (Bed, cube.Pos, bool) {
+	headSide, headPos, ok := b.side(pos, w)
 	if !ok {
 		return Bed{}, cube.Pos{}, false
 	}
@@ -213,14 +213,14 @@ func (b Bed) head(pos cube.Pos, tx *world.Tx) (Bed, cube.Pos, bool) {
 }
 
 // side returns the other side of the bed. If the other side is not a bed, the third return value is false.
-func (b Bed) side(pos cube.Pos, tx *world.Tx) (Bed, cube.Pos, bool) {
+func (b Bed) side(pos cube.Pos, w *world.Tx) (Bed, cube.Pos, bool) {
 	face := b.Facing.Face()
 	if b.Head {
 		face = face.Opposite()
 	}
 
 	sidePos := pos.Side(face)
-	o, ok := tx.Block(sidePos).(Bed)
+	o, ok := w.Block(sidePos).(Bed)
 	return o, sidePos, ok
 }
 
@@ -237,19 +237,7 @@ func (Bed) CanRespawnOn() bool {
 	return true
 }
 
-func (Bed) RespawnOn(pos cube.Pos, u item.User, tx *world.Tx) {}
-
-// SleepOn called to set Bed.Head if succeed startSleeping called.
-func (b Bed) SleepOn(pos cube.Pos, sleeper world.Sleeper, tx *world.Tx, startSleeping func() bool) {
-	head, headPos, ok := b.head(pos, tx)
-	if !ok {
-		return
-	}
-	if startSleeping() {
-		head.Sleeper = sleeper.H()
-		tx.SetBlock(headPos, head, nil)
-	}
-}
+func (Bed) RespawnOn(pos cube.Pos, u item.User, w *world.Tx) {}
 
 // RespawnBlock represents a block using which player can set his spawn point.
 type RespawnBlock interface {
@@ -260,7 +248,7 @@ type RespawnBlock interface {
 }
 
 // supportedFromBelow ...
-func supportedFromBelow(pos cube.Pos, tx *world.Tx) bool {
+func supportedFromBelow(pos cube.Pos, w *world.Tx) bool {
 	below := pos.Side(cube.FaceDown)
-	return tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
+	return w.Block(below).Model().FaceSolid(below, cube.FaceUp, w)
 }
