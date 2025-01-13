@@ -152,6 +152,7 @@ func MapItem(x map[string]any, k string) item.Stack {
 		readEnchantments(tag, &s)
 		readDisplay(tag, &s)
 		readDragonflyData(tag, &s)
+		readUnbreakable(tag, &s)
 		return s
 	}
 	return item.Stack{}
@@ -176,6 +177,7 @@ func Item(data map[string]any, s *item.Stack) item.Stack {
 	readDisplay(tag, s)
 	readDragonflyData(tag, s)
 	readEnchantments(tag, s)
+	readUnbreakable(tag, s)
 	return *s
 }
 
@@ -280,4 +282,10 @@ func readDragonflyData(m map[string]any, s *item.Stack) {
 			*s = s.WithValue(val.K, val.V)
 		}
 	}
+}
+
+// readDamage reads the unbreakable value stored in the NBT with the Unbreakable tag and saves it to the item.Stack
+// passed.
+func readUnbreakable(m map[string]any, s *item.Stack) {
+	*s = s.WithUnbreakable(Bool(m, "Unbreakable"))
 }
