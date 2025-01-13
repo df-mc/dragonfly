@@ -166,9 +166,9 @@ type velocityEntity interface {
 }
 
 // NeighbourUpdateTick ...
-func (b Bed) NeighbourUpdateTick(pos, _ cube.Pos, w *world.Tx) {
-	if _, _, ok := b.side(pos, w); !ok {
-		w.SetBlock(pos, nil, nil)
+func (b Bed) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if _, _, ok := b.side(pos, tx); !ok {
+		breakBlockNoDrops(b, pos, tx)
 	}
 }
 
@@ -207,7 +207,7 @@ func (b Bed) head(pos cube.Pos, w *world.Tx) (Bed, cube.Pos, bool) {
 		return Bed{}, cube.Pos{}, false
 	}
 	if b.Head {
-		headSide, headPos = b, pos
+		return b, pos, true
 	}
 	return headSide, headPos, true
 }

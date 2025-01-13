@@ -12,6 +12,8 @@ import (
 type RespawnAnchor struct {
 	solid
 	bassDrum
+
+	// Charge is the Glowstone charge of the RespawnAnchor.
 	Charge int
 }
 
@@ -22,7 +24,7 @@ func (r RespawnAnchor) LightEmissionLevel() uint8 {
 
 // EncodeItem ...
 func (r RespawnAnchor) EncodeItem() (name string, meta int16) {
-	return "minecraft:respawn_anchor", int16(r.Charge)
+	return "minecraft:respawn_anchor", 0
 }
 
 // EncodeBlock ...
@@ -65,7 +67,7 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.T
 			}
 			sleeper.Messaget(chat.MessageRespawnPointSet)
 			w.SetPlayerSpawn(sleeper.UUID(), pos)
-			return false
+			return true
 		}
 		tx.SetBlock(pos, nil, nil)
 		ExplosionConfig{

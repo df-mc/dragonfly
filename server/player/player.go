@@ -1233,7 +1233,7 @@ func (p *Player) Wake() {
 	}
 	p.sleeping = false
 
-	tx := p.Tx()
+	tx := p.tx
 	tx.BroadcastSleepingIndicator()
 
 	for _, v := range p.viewers() {
