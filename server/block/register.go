@@ -88,7 +88,6 @@ func init() {
 	world.RegisterBlock(ResinBricks{Chiseled: true})
 	world.RegisterBlock(ResinBricks{})
 	world.RegisterBlock(Resin{})
-	world.RegisterItem(RespawnAnchor{})
 	world.RegisterBlock(Sand{Red: true})
 	world.RegisterBlock(Sand{})
 	world.RegisterBlock(SeaLantern{})
