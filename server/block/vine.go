@@ -140,7 +140,7 @@ func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 		return
 	}
 	if len(v.Attachments()) == 0 {
-		tx.SetBlock(pos, nil, nil)
+		breakBlock(v, pos, tx)
 		return
 	}
 	tx.SetBlock(pos, v, nil)

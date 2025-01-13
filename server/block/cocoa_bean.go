@@ -44,7 +44,7 @@ func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 		woodType = b.Wood
 	}
 	if woodType != JungleWood() {
-		tx.SetBlock(pos, nil, nil)
+		breakBlock(c, pos, tx)
 	}
 }
 
