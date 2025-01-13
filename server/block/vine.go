@@ -48,14 +48,9 @@ func (Vines) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (v Vines) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, func(t item.Tool) bool {
-		return t.ToolType() == item.TypeShears || t.ToolType() == item.TypeAxe
-	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears {
-			return []item.Stack{item.NewStack(v, 1)}
-		}
-		return nil
-	})
+	return newBreakInfo(0.2, func(t item.Tool) bool {
+		return t.ToolType() == item.TypeShears
+	}, axeEffective, oneOf(v))
 }
 
 // EntityInside ...
