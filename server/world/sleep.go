@@ -23,7 +23,7 @@ type Sleeper interface {
 
 // tryAdvanceDay attempts to advance the day of the world, by first ensuring that all sleepers are sleeping, and then
 // updating the time of day.
-func (ticker) tryAdvanceDay(tx *Tx) {
+func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 	sleepers := tx.Sleepers()
 
 	var thunderAnywhere bool
@@ -48,6 +48,8 @@ func (ticker) tryAdvanceDay(tx *Tx) {
 		return
 	}
 
-	tx.w.SetTime(totalTime + TimeFull - time)
+	if timeCycle {
+		tx.w.SetTime(totalTime + TimeFull - time)
+	}
 	tx.w.StopRaining()
 }
