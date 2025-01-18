@@ -86,8 +86,7 @@ func (r RedstoneRepeater) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	b := tx.Block(pos.Side(cube.FaceDown))
 	if d, ok := b.(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
 		if _, piston := b.(Piston); !piston {
-			tx.SetBlock(pos, nil, nil)
-			dropItem(tx, item.NewStack(r, 1), pos.Vec3Centre())
+			breakBlock(r, pos, tx)
 		}
 	}
 }

@@ -67,8 +67,7 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 // NeighbourUpdateTick ...
 func (b Button) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(b.Facing.Opposite())).Model().FaceSolid(pos.Side(b.Facing.Opposite()), b.Facing, tx) {
-		tx.SetBlock(pos, nil, nil)
-		dropItem(tx, item.NewStack(b, 1), pos.Vec3Centre())
+		breakBlock(b, pos, tx)
 		updateDirectionalRedstone(pos, tx, b.Facing.Opposite())
 	}
 }

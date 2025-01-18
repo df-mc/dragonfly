@@ -70,8 +70,7 @@ func (r RedstoneComparator) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec
 // NeighbourUpdateTick ...
 func (r RedstoneComparator) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d, ok := tx.Block(pos.Side(cube.FaceDown)).(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
-		tx.SetBlock(pos, nil, nil)
-		dropItem(tx, item.NewStack(r, 1), pos.Vec3Centre())
+		breakBlock(r, pos, tx)
 	}
 }
 

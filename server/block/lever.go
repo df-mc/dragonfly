@@ -54,8 +54,7 @@ func (l Lever) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 // NeighbourUpdateTick ...
 func (l Lever) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(l.Facing.Opposite())).Model().FaceSolid(pos.Side(l.Facing.Opposite()), l.Facing, tx) {
-		tx.SetBlock(pos, nil, nil)
-		dropItem(tx, item.NewStack(l, 1), pos.Vec3Centre())
+		breakBlock(l, pos, tx)
 		updateDirectionalRedstone(pos, tx, l.Facing.Opposite())
 	}
 }

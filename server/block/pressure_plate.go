@@ -114,8 +114,7 @@ func (p PressurePlate) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 // NeighbourUpdateTick ...
 func (p PressurePlate) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d, ok := tx.Block(pos.Side(cube.FaceDown)).(LightDiffuser); ok && d.LightDiffusionLevel() == 0 {
-		tx.SetBlock(pos, nil, nil)
-		dropItem(tx, item.NewStack(p, 1), pos.Vec3Centre())
+		breakBlock(p, pos, tx)
 	}
 }
 

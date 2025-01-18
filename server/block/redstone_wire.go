@@ -73,8 +73,7 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, neighbour cube.Pos, tx *world.Tx)
 		return
 	}
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		tx.SetBlock(pos, nil, nil)
-		dropItem(tx, item.NewStack(r, 1), pos.Vec3Centre())
+		breakBlock(r, pos, tx)
 		return
 	}
 	r.RedstoneUpdate(pos, tx)
