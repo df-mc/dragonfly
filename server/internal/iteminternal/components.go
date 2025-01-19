@@ -78,26 +78,6 @@ func Components(it world.CustomItem) map[string]any {
 	if x, ok := it.(item.HandEquipped); ok {
 		builder.AddProperty("hand_equipped", x.HandEquipped())
 	}
-	itemScale := calculateItemScale(it)
-	builder.AddComponent("minecraft:render_offsets", map[string]any{
-		"main_hand": map[string]any{
-			"first_person": map[string]any{
-				"scale": itemScale,
-			},
-			"third_person": map[string]any{
-				"scale": itemScale,
-			},
-		},
-		"off_hand": map[string]any{
-			"first_person": map[string]any{
-				"scale": itemScale,
-			},
-			"third_person": map[string]any{
-				"scale": itemScale,
-			},
-		},
-	})
-
 	return builder.Construct()
 }
 
