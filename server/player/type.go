@@ -43,7 +43,7 @@ func (ptype) BBox(e world.Entity) cube.BBox {
 	case p.Gliding(), p.Swimming(), p.Crawling():
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	case p.Sneaking():
-		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.5*s, 0.3*s)
+		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.490625*s, 0.3*s)
 	default:
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 1.8*s, 0.3*s)
 	}
