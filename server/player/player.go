@@ -2158,8 +2158,15 @@ func (p *Player) Collect(s item.Stack) (int, bool) {
 	if p.Handler().HandleItemPickup(ctx, &s); ctx.Cancelled() {
 		return 0, false
 	}
-	n, _ := p.Inventory().AddItem(s)
-	return n, true
+	var added int
+	if _, offHand := p.HeldItems(); !offHand.Empty() && offHand.Comparable(s) {
+		added, _ = p.offHand.AddItem(s)
+	}
+	if s.Count() != added {
+		n, _ := p.Inventory().AddItem(s.Grow(-added))
+		added += n
+	}
+	return added, true
 }
 
 // Experience returns the amount of experience the player has.
