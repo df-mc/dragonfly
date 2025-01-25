@@ -2158,8 +2158,15 @@ func (p *Player) Collect(s item.Stack) (int, bool) {
 	if p.Handler().HandleItemPickup(ctx, &s); ctx.Cancelled() {
 		return 0, false
 	}
-	n, _ := p.Inventory().AddItem(s)
-	return n, true
+	var added int
+	if _, offHand := p.HeldItems(); !offHand.Empty() && offHand.Comparable(s) {
+		added, _ = p.offHand.AddItem(s)
+	}
+	if s.Count() != added {
+		n, _ := p.Inventory().AddItem(s.Grow(-added))
+		added += n
+	}
+	return added, true
 }
 
 // Experience returns the amount of experience the player has.
@@ -2312,7 +2319,7 @@ func (p *Player) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 // HideEntity hides a world.Entity from the Player so that it can under no circumstance see it. Hidden entities can be
 // made visible again through a call to ShowEntity.
 func (p *Player) HideEntity(e world.Entity) {
-	if p.session() != session.Nop && p != e {
+	if p.session() != session.Nop && p.H() != e.H() {
 		p.session().StopShowingEntity(e)
 	}
 }
