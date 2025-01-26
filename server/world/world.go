@@ -291,6 +291,9 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 				c.SetBlock(x, y, z, 1, before)
 				secondLayer = l
 			}
+		} else if li := c.Block(x, y, z, 1); li != airRID {
+			c.SetBlock(x, y, z, 1, airRID)
+			secondLayer = air()
 		}
 
 		if secondLayer != nil {
