@@ -29,6 +29,11 @@ func (SeaPickle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
 	if !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
 		return false
 	}
+	if liquid, ok := tx.Liquid(pos); ok {
+		if _, ok = liquid.(Water); !ok || liquid.LiquidDepth() != 8 {
+			return false
+		}
+	}
 	if emitter, ok := below.(LightDiffuser); ok && emitter.LightDiffusionLevel() != 15 {
 		return false
 	}
