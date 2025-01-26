@@ -135,7 +135,14 @@ func replaceableWith(tx *world.Tx, pos cube.Pos, with world.Block) bool {
 	}
 	b := tx.Block(pos)
 	if replaceable, ok := b.(Replaceable); ok {
-		return replaceable.ReplaceableBy(with) && b != with
+		if !replaceable.ReplaceableBy(with) || b == with {
+			return false
+		}
+		if liquid, ok := tx.Liquid(pos); ok {
+			replaceable, ok := liquid.(Replaceable)
+			return ok && replaceable.ReplaceableBy(with)
+		}
+		return true
 	}
 	return false
 }
