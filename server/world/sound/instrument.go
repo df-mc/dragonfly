@@ -37,23 +37,23 @@ func Bass() Instrument {
 	return Instrument{4}
 }
 
-// Bell is an instrument type for the note block.
-func Bell() Instrument {
+// Flute is an instrument type for the note block.
+func Flute() Instrument {
 	return Instrument{5}
 }
 
-// Flute is an instrument type for the note block.
-func Flute() Instrument {
+// Bell is an instrument type for the note block.
+func Bell() Instrument {
 	return Instrument{6}
-}
-
-// Chimes is an instrument type for the note block.
-func Chimes() Instrument {
-	return Instrument{7}
 }
 
 // Guitar is an instrument type for the note block.
 func Guitar() Instrument {
+	return Instrument{7}
+}
+
+// Chimes is an instrument type for the note block.
+func Chimes() Instrument {
 	return Instrument{8}
 }
 

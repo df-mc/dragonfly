@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -136,7 +135,14 @@ func replaceableWith(tx *world.Tx, pos cube.Pos, with world.Block) bool {
 	}
 	b := tx.Block(pos)
 	if replaceable, ok := b.(Replaceable); ok {
-		return replaceable.ReplaceableBy(with) && b != with
+		if !replaceable.ReplaceableBy(with) || b == with {
+			return false
+		}
+		if liquid, ok := tx.Liquid(pos); ok {
+			replaceable, ok := liquid.(Replaceable)
+			return ok && replaceable.ReplaceableBy(with)
+		}
+		return true
 	}
 	return false
 }
@@ -224,9 +230,7 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.Tx) bool {
 
 // fall spawns a falling block entity at the given position.
 func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
-	_, air := tx.Block(pos.Side(cube.FaceDown)).Model().(model.Empty)
-	_, liquid := tx.Liquid(pos.Side(cube.FaceDown))
-	if air || liquid {
+	if replaceableWith(tx, pos.Side(cube.FaceDown), b) {
 		tx.SetBlock(pos, nil, nil)
 		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
 		tx.AddEntity(tx.World().EntityRegistry().Config().FallingBlock(opts, b))

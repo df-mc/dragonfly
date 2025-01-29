@@ -33,6 +33,11 @@ type DecoratedPot struct {
 	Decorations [4]PotDecoration
 }
 
+// SideClosed ...
+func (p DecoratedPot) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
+}
+
 // ProjectileHit ...
 func (p DecoratedPot) ProjectileHit(pos cube.Pos, tx *world.Tx, _ world.Entity, _ cube.Face) {
 	for _, d := range p.Decorations {

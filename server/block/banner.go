@@ -24,6 +24,11 @@ type Banner struct {
 	Illager bool
 }
 
+// Pick ...
+func (b Banner) Pick() item.Stack {
+	return item.NewStack(Banner{Colour: b.Colour, Patterns: b.Patterns, Illager: b.Illager}, 1)
+}
+
 // MaxCount ...
 func (Banner) MaxCount() int {
 	return 16
