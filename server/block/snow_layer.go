@@ -58,9 +58,7 @@ func (s SnowLayer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 
 // BreakInfo ...
 func (s SnowLayer) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, shovelEffective, shovelEffective, func(item.Tool, []item.Enchantment) []item.Stack {
-		return []item.Stack{item.NewStack(item.Snowball{}, max(1, s.Height/2+1))}
-	}).withBlastResistance(0.1)
+	return newBreakInfo(0.1, shovelEffective, shovelEffective, silkTouchDrop(item.NewStack(item.Snowball{}, max(1, s.Height/2+1)), item.NewStack(SnowLayer{}, s.Height+1))).withBlastResistance(0.1)
 }
 
 // ScheduledTick ...
