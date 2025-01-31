@@ -47,7 +47,7 @@ func (s SnowLayer) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 		}
 	}
 
-	pos, face, used = firstReplaceable(tx, pos, face, s)
+	pos, _, used = firstReplaceable(tx, pos, face, s)
 	if !used {
 		return
 	}
