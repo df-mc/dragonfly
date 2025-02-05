@@ -163,7 +163,7 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	if int(index) >= len(creative.Items()) {
 		return fmt.Errorf("creative item with network ID %v does not exist", index)
 	}
-	it := creative.Items()[index]
+	it := creative.Items()[index].Stack
 	it = it.Grow(it.MaxCount() - 1)
 	return h.createResults(s, tx, it)
 }
