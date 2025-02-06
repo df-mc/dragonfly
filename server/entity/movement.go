@@ -77,7 +77,7 @@ func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, rot
 }
 
 // checkEntityInsiders checks if the entity is colliding with any EntityInsider blocks.
-func (m *Movement) checkEntityInsiders(ent world.Entity, tx *world.Tx) {
+func (c *MovementComputer) checkEntityInsiders(ent world.Entity, tx *world.Tx) {
 	box := ent.H().Type().BBox(ent).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
@@ -149,6 +149,8 @@ func (c *MovementComputer) applyHorizontalForces(tx *world.Tx, pos, vel mgl64.Ve
 func (c *MovementComputer) checkCollision(tx *world.Tx, e world.Entity, pos, vel mgl64.Vec3) (mgl64.Vec3, mgl64.Vec3) {
 	// TODO: Implement collision with other entities.
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
+
+	c.checkEntityInsiders(e, tx)
 
 	// Entities only ever have a single bounding box.
 	entityBBox := e.H().Type().BBox(e).Translate(pos)
