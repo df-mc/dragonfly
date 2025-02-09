@@ -173,7 +173,7 @@ func (NopHandler) HandleToggleSprint(*Context, bool)                            
 func (NopHandler) HandleToggleSneak(*Context, bool)                                        {}
 func (NopHandler) HandleCommandExecution(*Context, cmd.Command, []string)                  {}
 func (NopHandler) HandleTransfer(*Context, *net.UDPAddr)                                   {}
-func (h NopHandler) HandleTick(p *Player, tx *world.Tx, tick int64)                        {}
+func (NopHandler) HandleTick(p *Player, tx *world.Tx, tick int64)                          {}
 func (NopHandler) HandleChat(*Context, *string)                                            {}
 func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
 func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
