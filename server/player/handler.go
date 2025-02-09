@@ -141,6 +141,8 @@ type Handler interface {
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *Context, addr *net.UDPAddr)
+	// HandleTick handles player tick.
+	HandleTick(p *Player, tx *world.Tx, tick int64)
 	// HandleCommandExecution handles the command execution of a player, who wrote a command in the chat.
 	// ctx.Cancel() may be called to cancel the command execution.
 	HandleCommandExecution(ctx *Context, command cmd.Command, args []string)
@@ -161,7 +163,8 @@ type NopHandler struct{}
 // Compile time check to make sure NopHandler implements Handler.
 var _ Handler = NopHandler{}
 
-func (NopHandler) HandleItemDrop(*Context, item.Stack)                                     {}
+func (NopHandler) HandleItemDrop(*Context, item.Stack) {}
+
 func (NopHandler) HandleHeldSlotChange(*Context, int, int)                                 {}
 func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                          {}
 func (NopHandler) HandleJump(*Player)                                                      {}
@@ -171,6 +174,7 @@ func (NopHandler) HandleToggleSprint(*Context, bool)                            
 func (NopHandler) HandleToggleSneak(*Context, bool)                                        {}
 func (NopHandler) HandleCommandExecution(*Context, cmd.Command, []string)                  {}
 func (NopHandler) HandleTransfer(*Context, *net.UDPAddr)                                   {}
+func (h NopHandler) HandleTick(p *Player, tx *world.Tx, tick int64)                        {}
 func (NopHandler) HandleChat(*Context, *string)                                            {}
 func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
 func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
