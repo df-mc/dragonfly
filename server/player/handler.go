@@ -36,7 +36,7 @@ type Handler interface {
 	// HandleChat handles a message sent in the chat by a player. ctx.Cancel() may be called to cancel the
 	// message being sent in chat.
 	// The message may be changed by assigning to *message.
-	HandleChat(ctx *Context, message *string)
+	HandleChat(ctx *Context, format *string, message *string)
 	// HandleFoodLoss handles the food bar of a player depleting naturally, for example because the player was
 	// sprinting and jumping. ctx.Cancel() may be called to cancel the food points being lost.
 	HandleFoodLoss(ctx *Context, from int, to *int)
@@ -171,7 +171,7 @@ func (NopHandler) HandleToggleSprint(*Context, bool)                            
 func (NopHandler) HandleToggleSneak(*Context, bool)                                        {}
 func (NopHandler) HandleCommandExecution(*Context, cmd.Command, []string)                  {}
 func (NopHandler) HandleTransfer(*Context, *net.UDPAddr)                                   {}
-func (NopHandler) HandleChat(*Context, *string)                                            {}
+func (NopHandler) HandleChat(*Context, *string, *string)                                   {}
 func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
 func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
 func (NopHandler) HandleStartBreak(*Context, cube.Pos)                                     {}
