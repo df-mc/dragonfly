@@ -315,13 +315,15 @@ func (p *Player) RemoveBossBar() {
 // Chat writes a message in the global chat (chat.Global). The message is prefixed with the name of the
 // player and is formatted following the rules of fmt.Sprintln.
 func (p *Player) Chat(msg ...any) {
-	f := "<%v> %v\n"
+	formatter := func(username, message string) string {
+		return fmt.Sprintf("<%v> %v", username, message)
+	}
 	message := format(msg)
 	ctx := event.C(p)
-	if p.Handler().HandleChat(ctx, &f, &message); ctx.Cancelled() {
+	if p.Handler().HandleChat(ctx, &formatter, &message); ctx.Cancelled() {
 		return
 	}
-	_, _ = fmt.Fprintf(chat.Global, f, p.Name(), message)
+	_, _ = fmt.Fprintf(chat.Global, formatter(p.Name(), message)+"\n")
 }
 
 // ExecuteCommand executes a command passed as the player. If the command could not be found, or if the usage
