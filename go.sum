@@ -6,8 +6,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/df-mc/goleveldb v1.1.9 h1:ihdosZyy5jkQKrxucTQmN90jq/2lUwQnJZjIYIC/9YU=
 github.com/df-mc/goleveldb v1.1.9/go.mod h1:+NHCup03Sci5q84APIA21z3iPZCuk6m6ABtg4nANCSk=
-github.com/df-mc/worldupgrader v1.0.18 h1:Q34X9ID/hGuDyj9oiq+dpyjOaJdNxhVmVUepf/EPYDA=
-github.com/df-mc/worldupgrader v1.0.18/go.mod h1:tsSOLTRm9mpG7VHvYpAjjZrkRHWmSbKZAm9bOLNnlDk=
+github.com/df-mc/worldupgrader v1.0.19 h1:BnwRe/lVv9IhwRWZK5olvTYNTKWh7rhFdqNPDMnoKFM=
+github.com/df-mc/worldupgrader v1.0.19/go.mod h1:tsSOLTRm9mpG7VHvYpAjjZrkRHWmSbKZAm9bOLNnlDk=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/go-gl/mathgl v1.2.0 h1:v2eOj/y1B2afDxF6URV1qCYmo1KW08lAMtTbOn3KXCY=
 github.com/go-gl/mathgl v1.2.0/go.mod h1:pf9+b5J3LFP7iZ4XXaVzZrCle0Q/vNpB/vDe5+3ulRE=
@@ -39,8 +39,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sandertv/go-raknet v1.14.2 h1:UZLyHn5yQU2Dq2GVq/LlxwAUikaq4q4AA1rl/Pf3AXQ=
 github.com/sandertv/go-raknet v1.14.2/go.mod h1:/yysjwfCXm2+2OY8mBazLzcxJ3irnylKCyG3FLgUPVU=
-github.com/sandertv/gophertunnel v1.43.2-0.20250205122318-98ae443c59fd h1:uLUw6XKdxx2gg0+USWUQQ98RJnRZqxrS4IQnt2wmK/g=
-github.com/sandertv/gophertunnel v1.43.2-0.20250205122318-98ae443c59fd/go.mod h1:XuEJo+ARim+NKiD90Z56sQRcDtCOErz26e2bt3LEd9I=
+github.com/sandertv/gophertunnel v1.44.0 h1:GJoVzVO8C3ZvUwpUby1MrPCtanCZH1WPI5FGRGGoXGY=
+github.com/sandertv/gophertunnel v1.44.0/go.mod h1:XuEJo+ARim+NKiD90Z56sQRcDtCOErz26e2bt3LEd9I=
 github.com/segmentio/fasthash v1.0.3 h1:EI9+KE1EwvMLBWwjpRDc+fEM+prwxDYbslddQGtrmhM=
 github.com/segmentio/fasthash v1.0.3/go.mod h1:waKX8l2N8yckOgmSsXJi7x1ZfdKZ4x7KRMzBtS3oedY=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
