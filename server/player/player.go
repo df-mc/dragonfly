@@ -2699,7 +2699,10 @@ func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
 	entityBBox := Type.BBox(p).Translate(p.Position())
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
-	p.checkEntityInsiders(entityBBox)
+	//It is already checked if MovementComputer is used
+	if p.session() != session.Nop {
+		p.checkEntityInsiders(entityBBox)
+	}
 
 	grown := entityBBox.Extend(vel).Grow(0.25)
 	low, high := grown.Min(), grown.Max()
