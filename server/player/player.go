@@ -1644,7 +1644,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	)
 
 	ctx := event.C(p)
-	if p.Handler().HandleAttackEntity(ctx, e, &force, &height, &critical); ctx.Cancelled() {
+	if p.Handler().HandleAttackEntity(ctx, e, &force, &height, &friction, &critical); ctx.Cancelled() {
 		return false
 	}
 	p.SwingArm()
