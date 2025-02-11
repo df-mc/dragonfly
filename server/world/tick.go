@@ -60,7 +60,20 @@ func (t ticker) tick(tx *Tx) {
 	}
 
 	rain, thunder, tick, tim := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time)
+
+	timeCycle := tx.w.set.TimeCycle
+
+	tryAdvanceDay := false
+	if tx.w.set.RequiredSleepTicks > 0 {
+		tx.w.set.RequiredSleepTicks--
+		tryAdvanceDay = tx.w.set.RequiredSleepTicks <= 0
+	}
+
 	w.set.Unlock()
+
+	if tryAdvanceDay {
+		t.tryAdvanceDay(tx, timeCycle)
+	}
 
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
@@ -72,6 +85,7 @@ func (t ticker) tick(tx *Tx) {
 			}
 		}
 	}
+
 	if thunder {
 		w.tickLightning(tx)
 	}

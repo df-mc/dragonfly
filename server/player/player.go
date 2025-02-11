@@ -54,8 +54,11 @@ type playerData struct {
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
-	usingSince time.Time
 
+	sleeping bool
+	sleepPos cube.Pos
+
+	usingSince   time.Time
 	glideTicks   int64
 	fireTicks    int64
 	fallDistance float64
@@ -626,6 +629,8 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		p.tx.PlaySound(pos, sound.Drowning{})
 	}
 
+	p.Wake()
+
 	if p.Dead() {
 		p.kill(src)
 	}
@@ -867,7 +872,14 @@ func finishDying(_ *world.Tx, e world.Entity) {
 		// position server side so that in the future, the client won't respawn
 		// on the death location when disconnecting. The client should not see
 		// the movement itself yet, though.
-		p.data.Pos = p.tx.World().Spawn().Vec3()
+
+		pos, w, spawnObstructed, _ := p.spawnLocation()
+
+		if spawnObstructed {
+			w.SetPlayerSpawn(p.UUID(), pos)
+		}
+
+		p.data.Pos = pos.Vec3()
 	}
 }
 
@@ -915,13 +927,21 @@ func (p *Player) Respawn() *world.EntityHandle {
 }
 
 func (p *Player) respawn(f func(p *Player)) {
+	position, w, spawnObstructed, previousDimension := p.spawnLocation()
+	if spawnObstructed {
+		switch previousDimension {
+		case world.Nether:
+			p.Messaget(chat.MessageRespawnAnchorNotValid)
+		case world.Overworld:
+			p.Messaget(chat.MessageBedNotValid)
+		}
+	}
+
+	pos := position.Vec3Middle()
+
 	if !p.Dead() || p.session() == session.Nop {
 		return
 	}
-	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
-	// always bring us back to the overworld.
-	w := p.tx.World().PortalDestination(p.tx.World().Dimension())
-	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
 
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
@@ -934,6 +954,9 @@ func (p *Player) respawn(f func(p *Player)) {
 	handle := p.tx.RemoveEntity(p)
 	w.Exec(func(tx *world.Tx) {
 		np := tx.AddEntity(handle).(*Player)
+		if bl, ok := tx.Block(position).(block.RespawnBlock); ok {
+			bl.RespawnOn(position, p, tx)
+		}
 		np.Teleport(pos)
 		np.session().SendRespawn(pos, p)
 		np.SetVisible()
@@ -941,6 +964,23 @@ func (p *Player) respawn(f func(p *Player)) {
 			f(np)
 		}
 	})
+}
+
+// spawnLocation returns position and world where player should be spawned.
+func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
+	tx := p.tx
+	w = tx.World()
+	previousDimension = w.Dimension()
+	playerSpawn = w.PlayerSpawn(p.UUID())
+	if b, ok := tx.Block(playerSpawn).(block.RespawnBlock); ok && b.CanRespawnOn() {
+		return playerSpawn, w, false, previousDimension
+	}
+
+	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
+	// always bring us back to the overworld.
+	w = w.PortalDestination(w.Dimension())
+	worldSpawn := w.Spawn()
+	return worldSpawn, w, playerSpawn != worldSpawn, previousDimension
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
@@ -1151,6 +1191,81 @@ func (p *Player) Jump() {
 	} else {
 		p.Exhaust(0.05)
 	}
+}
+
+// Sleep makes the player sleep at the given position. If the position does not map to a bed (specifically the head side),
+// the player will not sleep.
+func (p *Player) Sleep(pos cube.Pos) {
+
+	if p.sleeping {
+		// The player is already sleeping.
+		return
+	}
+
+	tx := p.tx
+	b, ok := tx.Block(pos).(block.Bed)
+
+	if !ok || b.Sleeper != nil {
+		// The player cannot sleep here.
+		return
+	}
+
+	ctx, sendReminder := event.C(p), true
+	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
+		return
+	}
+
+	b.Sleeper = p.H()
+	tx.SetBlock(pos, b, nil)
+
+	tx.World().SetRequiredSleepDuration(time.Second * 5)
+
+	p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
+	p.sleeping = true
+	p.sleepPos = pos
+
+	if sendReminder {
+		tx.BroadcastSleepingReminder(p)
+	}
+
+	tx.BroadcastSleepingIndicator()
+	p.updateState()
+}
+
+// Wake forces the player out of bed if they are sleeping.
+func (p *Player) Wake() {
+	if !p.sleeping {
+		return
+	}
+	p.sleeping = false
+
+	tx := p.tx
+	tx.BroadcastSleepingIndicator()
+
+	for _, v := range p.viewers() {
+		v.ViewEntityWake(p)
+	}
+	p.updateState()
+
+	pos := p.sleepPos
+	if b, ok := tx.Block(pos).(block.Bed); ok {
+		b.Sleeper = nil
+		tx.SetBlock(pos, b, nil)
+	}
+}
+
+// Sleeping returns true if the player is currently sleeping, along with the position of the bed the player is sleeping
+// on.
+func (p *Player) Sleeping() (cube.Pos, bool) {
+	if !p.sleeping {
+		return cube.Pos{}, false
+	}
+	return p.sleepPos, true
+}
+
+// SendSleepingIndicator displays a notification to the player on the amount of sleeping players in the world.
+func (p *Player) SendSleepingIndicator(sleeping, max int) {
+	p.session().ViewSleepingPlayers(sleeping, max)
 }
 
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
@@ -2036,6 +2151,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
+	p.Wake()
 	p.teleport(pos)
 }
 
