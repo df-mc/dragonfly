@@ -669,7 +669,7 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
 	diff := p.Position().Sub(explosionPos)
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size*2+1), entity.ExplosionDamageSource{})
-	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
+	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact, 2)
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
@@ -688,25 +688,28 @@ func (p *Player) Absorption() float64 {
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
 // source of the velocity, typically the position of an attacking entity. The source is used to calculate the
 // direction which the entity should be knocked back in.
-func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
+func (p *Player) KnockBack(src mgl64.Vec3, force, height, friction float64) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
-	p.knockBack(src, force, height)
+	p.knockBack(src, force, height, friction)
 }
 
 // knockBack is an unexported function that is used to knock the player back. This function does not check if the player
 // can take damage or not.
-func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
-	velocity := p.Position().Sub(src)
-	velocity[1] = 0
-
-	if velocity.Len() != 0 {
-		velocity = velocity.Normalize().Mul(force)
+func (p *Player) knockBack(src mgl64.Vec3, force, height, friction float64) {
+	f := 1 - p.Armour().KnockBackResistance()
+	force, height = force*f, height*f
+	if force <= 0 || height <= 0 {
+		return
 	}
+	diff := p.Position().Sub(src).Normalize().Mul(force)
+	diff[1] = 0
+
+	velocity := p.Velocity().Mul(1 / friction).Add(diff)
 	velocity[1] = height
 
-	p.SetVelocity(velocity.Mul(1 - p.Armour().KnockBackResistance()))
+	p.SetVelocity(velocity)
 }
 
 // setAttackImmunity sets the duration the player is immune to entity attacks.
@@ -1634,10 +1637,10 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		return false
 	}
 	var (
-		force, height  = 0.45, 0.3608
-		_, slowFalling = p.Effect(effect.SlowFalling)
-		_, blind       = p.Effect(effect.Blindness)
-		critical       = !p.Sprinting() && !p.Flying() && p.FallDistance() > 0 && !slowFalling && !blind
+		force, height, friction = 0.4, 0.4, 2.0
+		_, slowFalling          = p.Effect(effect.SlowFalling)
+		_, blind                = p.Effect(effect.Blindness)
+		critical                = !p.Sprinting() && !p.Flying() && p.FallDistance() > 0 && !slowFalling && !blind
 	)
 
 	ctx := event.C(p)
@@ -1686,7 +1689,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		force += inc
 		height += inc
 	}
-	living.KnockBack(p.Position(), force, height)
+	living.KnockBack(p.Position(), force, height, friction)
 
 	if f, ok := i.Enchantment(enchantment.FireAspect); ok {
 		if flammable, ok := living.(entity.Flammable); ok {
