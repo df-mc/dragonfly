@@ -143,6 +143,8 @@ type Handler interface {
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *Context, addr *net.UDPAddr)
+	// HandleTick handles player tick.
+	HandleTick(p *Player, tx *world.Tx, tick int64)
 	// HandleCommandExecution handles the command execution of a player, who wrote a command in the chat.
 	// ctx.Cancel() may be called to cancel the command execution.
 	HandleCommandExecution(ctx *Context, command cmd.Command, args []string)
@@ -173,6 +175,7 @@ func (NopHandler) HandleToggleSprint(*Context, bool)                            
 func (NopHandler) HandleToggleSneak(*Context, bool)                                        {}
 func (NopHandler) HandleCommandExecution(*Context, cmd.Command, []string)                  {}
 func (NopHandler) HandleTransfer(*Context, *net.UDPAddr)                                   {}
+func (NopHandler) HandleTick(p *Player, tx *world.Tx, tick int64)                          {}
 func (NopHandler) HandleChat(*Context, *string)                                            {}
 func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
 func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
