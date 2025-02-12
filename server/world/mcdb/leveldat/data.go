@@ -70,6 +70,7 @@ type Data struct {
 		PlayerPermissionsLevel int32   `nbt:"playerPermissionsLevel"`
 		Teleport               bool    `nbt:"teleport"`
 		WalkSpeed              float32 `nbt:"walkSpeed"`
+		VerticalFlySpeed       float32 `nbt:"verticalFlySpeed"`
 	} `nbt:"abilities"`
 	BonusChestEnabled              bool           `nbt:"bonusChestEnabled"`
 	BonusChestSpawned              bool           `nbt:"bonusChestSpawned"`
@@ -160,6 +161,7 @@ func (d *Data) FillDefault() {
 	d.Abilities.OpenContainers = true
 	d.Abilities.PlayerPermissionsLevel = 1
 	d.Abilities.WalkSpeed = 0.1
+	d.Abilities.VerticalFlySpeed = 1.0
 	d.BaseGameVersion = "*"
 	d.CommandBlockOutput = true
 	d.CommandBlocksEnabled = true
