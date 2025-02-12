@@ -69,8 +69,9 @@ type playerData struct {
 
 	cooldowns map[string]time.Time
 
-	speed       float64
-	flightSpeed float64
+	speed               float64
+	flightSpeed         float64
+	verticalFlightSpeed float64
 
 	health     *entity.HealthManager
 	experience *entity.ExperienceManager
@@ -474,6 +475,19 @@ func (p *Player) SetFlightSpeed(flightSpeed float64) {
 // corresponds to 0.5 blocks/tick.
 func (p *Player) FlightSpeed() float64 {
 	return p.flightSpeed
+}
+
+// SetVerticalFlightSpeed sets the flight speed of the player on the Y axis. The value passed represents the
+// base speed, which is the blocks/tick speed that the player will obtain while flying.
+func (p *Player) SetVerticalFlightSpeed(flightSpeed float64) {
+	p.verticalFlightSpeed = flightSpeed
+	p.session().SendAbilities(p)
+}
+
+// VerticalFlightSpeed returns the flight speed of the player on the Y axis, with the value representing the
+// base speed. The default vertical flight speed of a player is 1.0, which corresponds to 1 block/tick.
+func (p *Player) VerticalFlightSpeed() float64 {
+	return p.verticalFlightSpeed
 }
 
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
@@ -3205,10 +3219,9 @@ func (p *Player) resendBlocks(pos cube.Pos, faces ...cube.Face) {
 func (p *Player) resendBlock(pos cube.Pos) {
 	b := p.tx.Block(pos)
 	p.session().ViewBlockUpdate(pos, b, 0)
-	if _, ok := b.(world.Liquid); !ok {
-		if liq, ok := p.tx.Liquid(pos); ok {
-			p.session().ViewBlockUpdate(pos, liq, 1)
-		}
+	if _, ok := b.(world.LiquidDisplacer); ok {
+		liq, _ := p.tx.Liquid(pos)
+		p.session().ViewBlockUpdate(pos, liq, 1)
 	}
 }
 

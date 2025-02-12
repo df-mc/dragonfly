@@ -173,7 +173,8 @@ func (conf Config) New(conn Conn) *Session {
 	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
-	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+	groups, items := creativeContent()
+	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
 	s.sendArmourTrimData()
 	s.SendSpeed(0.1)
