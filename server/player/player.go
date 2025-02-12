@@ -3085,10 +3085,9 @@ func (p *Player) resendBlocks(pos cube.Pos, faces ...cube.Face) {
 func (p *Player) resendBlock(pos cube.Pos) {
 	b := p.tx.Block(pos)
 	p.session().ViewBlockUpdate(pos, b, 0)
-	if _, ok := b.(world.Liquid); !ok {
-		if liq, ok := p.tx.Liquid(pos); ok {
-			p.session().ViewBlockUpdate(pos, liq, 1)
-		}
+	if _, ok := b.(world.LiquidDisplacer); ok {
+		liq, _ := p.tx.Liquid(pos)
+		p.session().ViewBlockUpdate(pos, liq, 1)
 	}
 }
 
