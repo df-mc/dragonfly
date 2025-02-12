@@ -19,13 +19,14 @@ type WoodDoor struct {
 	// Wood is the type of wood of the door. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
-	// Facing is the direction the door is facing.
+	// Facing is the direction that the door opens towards. When closed, the door sits on the side of its
+	// block on the opposite direction.
 	Facing cube.Direction
 	// Open is whether the door is open.
 	Open bool
-	// Top is whether the block is the top or bottom half of a door
+	// Top is whether the block is the top or bottom half of a door.
 	Top bool
-	// Right is whether the door hinge is on the right side
+	// Right is whether the door hinge is on the right side.
 	Right bool
 }
 
@@ -138,9 +139,9 @@ func (d WoodDoor) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
 	if d.Wood == OakWood() {
-		return "minecraft:wooden_door", map[string]any{"minecraft:cardinal_direction": d.Facing.String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:wooden_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
-	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"minecraft:cardinal_direction": d.Facing.String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 }
 
 // allDoors returns a list of all door types
