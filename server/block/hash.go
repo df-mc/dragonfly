@@ -106,6 +106,7 @@ const (
 	hashLeaves
 	hashLectern
 	hashLight
+	hashLilyPad
 	hashLitPumpkin
 	hashLog
 	hashLoom
@@ -601,6 +602,10 @@ func (l Lectern) Hash() (uint64, uint64) {
 
 func (l Light) Hash() (uint64, uint64) {
 	return hashLight, uint64(l.Level)
+}
+
+func (LilyPad) Hash() (uint64, uint64) {
+	return hashLilyPad, 0
 }
 
 func (l LitPumpkin) Hash() (uint64, uint64) {
