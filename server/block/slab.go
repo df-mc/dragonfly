@@ -68,8 +68,8 @@ func (s Slab) Instrument() sound.Instrument {
 
 // FlammabilityInfo ...
 func (s Slab) FlammabilityInfo() FlammabilityInfo {
-	if w, ok := s.Block.(Planks); ok && w.Wood.Flammable() {
-		return newFlammabilityInfo(5, 20, true)
+	if flammable, ok := s.Block.(Flammable); ok {
+		return flammable.FlammabilityInfo()
 	}
 	return newFlammabilityInfo(0, 0, false)
 }
