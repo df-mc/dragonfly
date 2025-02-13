@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
@@ -263,10 +264,14 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, vulnerable := l.Hurt(lt.conf.Damage, src); vulnerable {
+	if _, vulnerable := l.Hurt(dmg, src); vulnerable {
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
+			if lasting, ok := eff.Type().(effect.LastingType); ok {
+				l.AddEffect(effect.New(lasting, eff.Level(), time.Duration(float64(eff.Duration())/8)))
+				continue
+			}
 			l.AddEffect(eff)
 		}
 		if flammable, ok := l.(Flammable); ok && e.OnFireDuration() > 0 {
