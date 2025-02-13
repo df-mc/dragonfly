@@ -50,13 +50,19 @@ func RegisterGroup(group Group) {
 
 // Items returns a list with all items that have been registered as a creative item. These items will
 // be accessible by players in-game who have creative mode enabled.
-func Items() []Item {
-	return creativeItemStacks
-}
+func Items() (out []Item) {
+	for _, data := range items {
+		if data.GroupIndex >= int32(len(creativeGroups)) {
+			panic(fmt.Errorf("invalid group index %v for item %v", data.GroupIndex, data.Name))
+		}
+		st, ok := itemStackFromEntry(data)
+		if !ok {
+			continue
+		}
+		out = append(out, Item{st, creativeGroups[data.GroupIndex].Name})
+	}
 
-// RegisterItem registers an item as a creative item, exposing it in the creative inventory.
-func RegisterItem(item Item) {
-	creativeItemStacks = append(creativeItemStacks, item)
+	return out
 }
 
 var (
@@ -66,9 +72,8 @@ var (
 	// creativeGroups holds a list of all groups that were registered to the creative inventory using
 	// RegisterGroup.
 	creativeGroups []Group
-	// creativeItemStacks holds a list of all item stacks that were registered to the creative inventory using
-	// RegisterItem.
-	creativeItemStacks []Item
+	// items holds a list of all item stacks that were registered to the creative inventory.
+	items []creativeItemEntry
 )
 
 // creativeGroupEntry holds data of a creative group as present in the creative inventory.
@@ -97,6 +102,7 @@ func init() {
 	if err := nbt.Unmarshal(creativeItemData, &m); err != nil {
 		panic(err)
 	}
+	items = m.Items
 	for i, group := range m.Groups {
 		name := group.Name
 		if name == "" {
@@ -105,16 +111,6 @@ func init() {
 		st, _ := itemStackFromEntry(group.Icon)
 		c := Category{category(group.Category)}
 		RegisterGroup(Group{Category: c, Name: name, Icon: st})
-	}
-	for _, data := range m.Items {
-		if data.GroupIndex >= int32(len(creativeGroups)) {
-			panic(fmt.Errorf("invalid group index %v for item %v", data.GroupIndex, data.Name))
-		}
-		st, ok := itemStackFromEntry(data)
-		if !ok {
-			continue
-		}
-		RegisterItem(Item{st, creativeGroups[data.GroupIndex].Name})
 	}
 }
 
