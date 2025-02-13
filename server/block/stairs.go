@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // Stairs are blocks that allow entities to walk up blocks without jumping.
@@ -69,8 +68,8 @@ func (s Stairs) FlammabilityInfo() FlammabilityInfo {
 
 // FuelInfo ...
 func (s Stairs) FuelInfo() item.FuelInfo {
-	if w, ok := s.Block.(Planks); ok && w.Wood.Flammable() {
-		return newFuelInfo(time.Second * 15)
+	if fuel, ok := s.Block.(item.Fuel); ok {
+		return fuel.FuelInfo()
 	}
 	return item.FuelInfo{}
 }

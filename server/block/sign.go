@@ -62,7 +62,10 @@ func (s Sign) FlammabilityInfo() FlammabilityInfo {
 }
 
 // FuelInfo ...
-func (Sign) FuelInfo() item.FuelInfo {
+func (s Sign) FuelInfo() item.FuelInfo {
+	if !s.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 10)
 }
 
