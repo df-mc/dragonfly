@@ -3,7 +3,6 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
@@ -160,10 +159,10 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 		return fmt.Errorf("can only craft creative items in gamemode creative/spectator")
 	}
 	index := a.CreativeItemNetworkID - 1
-	if int(index) >= len(creative.Items()) {
+	if int(index) >= len(s.conf.CreativeItems) {
 		return fmt.Errorf("creative item with network ID %v does not exist", index)
 	}
-	it := creative.Items()[index].Stack
+	it := s.conf.CreativeItems[index].Stack
 	it = it.Grow(it.MaxCount() - 1)
 	return h.createResults(s, tx, it)
 }
