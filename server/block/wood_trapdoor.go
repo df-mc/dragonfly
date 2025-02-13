@@ -73,7 +73,10 @@ func (t WoodTrapdoor) BreakInfo() BreakInfo {
 }
 
 // FuelInfo ...
-func (WoodTrapdoor) FuelInfo() item.FuelInfo {
+func (t WoodTrapdoor) FuelInfo() item.FuelInfo {
+	if !t.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 15)
 }
 

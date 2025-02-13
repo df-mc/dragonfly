@@ -47,7 +47,10 @@ func (Log) SmeltInfo() item.SmeltInfo {
 }
 
 // FuelInfo ...
-func (Log) FuelInfo() item.FuelInfo {
+func (l Log) FuelInfo() item.FuelInfo {
+	if !l.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 15)
 }
 

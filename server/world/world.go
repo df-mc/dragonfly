@@ -285,12 +285,17 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 				secondLayer = air()
 				b = blockByRuntimeIDOrAir(li)
 			}
-		} else if liquidDisplacingBlocks[rid] && liquidBlocks[before] {
-			l := blockByRuntimeIDOrAir(before)
-			if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
-				c.SetBlock(x, y, z, 1, before)
-				secondLayer = l
+		} else if liquidDisplacingBlocks[rid] {
+			if liquidBlocks[before] {
+				l := blockByRuntimeIDOrAir(before)
+				if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
+					c.SetBlock(x, y, z, 1, before)
+					secondLayer = l
+				}
 			}
+		} else if li := c.Block(x, y, z, 1); li != airRID {
+			c.SetBlock(x, y, z, 1, airRID)
+			secondLayer = air()
 		}
 
 		if secondLayer != nil {

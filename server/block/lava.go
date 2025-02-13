@@ -12,7 +12,6 @@ import (
 // Lava is a light-emitting fluid block that causes fire damage.
 type Lava struct {
 	empty
-	replaceable
 
 	// Still makes the lava not spread whenever it is updated. Still lava cannot be acquired in the game
 	// without world editing.
@@ -33,6 +32,16 @@ func neighboursLavaFlammable(pos cube.Pos, tx *world.Tx) bool {
 		}
 	}
 	return false
+}
+
+// ReplaceableBy ...
+func (l Lava) ReplaceableBy(b world.Block) bool {
+	if _, ok := b.(LiquidRemovable); ok {
+		_, displacer := b.(world.LiquidDisplacer)
+		_, liquid := b.(world.Liquid)
+		return displacer || liquid
+	}
+	return true
 }
 
 // EntityInside ...
