@@ -78,7 +78,7 @@ func (m *EffectManager) Effect(e effect.Type) (effect.Effect, bool) {
 // Effects returns a list of all effects currently present in the effect manager. This will never include
 // effects that have expired.
 func (m *EffectManager) Effects() []effect.Effect {
-	return slices.Collect(maps.Values(m.effects))
+	return append(slices.Collect(maps.Values(m.effects)), m.initialEffects...)
 }
 
 // Tick ticks the EffectManager, applying all of its effects to the Living entity passed when applicable and
