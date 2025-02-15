@@ -92,15 +92,17 @@ func (s Stack) MaxDurability() int {
 }
 
 // Damage returns a new stack that is damaged by the amount passed. (Meaning, its durability lowered by the
-// amount passed.) If the item does not implement the Durable interface, the original stack is returned.
+// amount passed.) If the item does not implement the Durable interface, the method will panic.
 // The damage passed may be negative to add durability.
 // If the final durability reaches 0 or below, the item returned is the resulting item of the breaking of the
 // item. If the final durability reaches a number higher than the maximum durability, the stack returned will
 // get the maximum durability.
 func (s Stack) Damage(d int) Stack {
 	durable, ok := s.Item().(Durable)
-	if !ok || s.unbreakable {
-		// Not a durable item.
+	if !ok {
+		panic("item must be durable")
+	}
+	if s.unbreakable {
 		return s
 	}
 	durability := s.Durability()
@@ -123,15 +125,14 @@ func (s Stack) Damage(d int) Stack {
 }
 
 // WithDurability returns a new item stack with the durability passed. If the item does not implement the
-// Durable interface, WithDurability returns the original stack.
+// Durable interface, the method will panic.
 // The closer the durability d is to 0, the closer the item is to being broken. If a durability of 0 is passed,
 // a stack with the item type of the BrokenItem is returned. If a durability is passed that exceeds the
 // maximum durability, the stack returned will have the maximum durability.
 func (s Stack) WithDurability(d int) Stack {
 	durable, ok := s.Item().(Durable)
 	if !ok {
-		// Not a durable item.
-		return s
+		panic("item must be durable")
 	}
 	maxDurability := durable.DurabilityInfo().MaxDurability
 	if d > maxDurability {
@@ -152,13 +153,23 @@ func (s Stack) Unbreakable() bool {
 	return s.unbreakable
 }
 
-// WithUnbreakable returns a copy of the Stack with the unbreakable tag set to the value passed. If the item
-// does not implement the Durable interface, the original stack is returned.
-func (s Stack) WithUnbreakable(u bool) Stack {
+// AsUnbreakable returns a copy of the Stack with the unbreakable tag set. If the item does not implement the
+// Durable interface, the method will panic.
+func (s Stack) AsUnbreakable() Stack {
 	if _, ok := s.Item().(Durable); !ok {
-		return s
+		panic("item must be durable")
 	}
-	s.unbreakable = u
+	s.unbreakable = true
+	return s
+}
+
+// AsBreakable returns a copy of the Stack without the unbreakable tag set. If the item does not implement the
+// Durable interface, the method will panic.
+func (s Stack) AsBreakable() Stack {
+	if _, ok := s.Item().(Durable); !ok {
+		panic("item must be durable")
+	}
+	s.unbreakable = false
 	return s
 }
 
