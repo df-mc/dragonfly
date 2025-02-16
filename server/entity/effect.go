@@ -35,6 +35,11 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	if dur < 0 {
 		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
 	}
+
+	m.initialEffects = slices.DeleteFunc(m.initialEffects, func(eff effect.Effect) bool {
+		return e.Type() == eff.Type()
+	})
+
 	t, ok := e.Type().(effect.LastingType)
 	if !ok {
 		e.Type().Apply(entity, e)
