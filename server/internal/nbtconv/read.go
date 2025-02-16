@@ -201,9 +201,6 @@ func readItemStack(m, t map[string]any) item.Stack {
 
 // readDamage reads the damage value stored in the NBT with the Damage tag and saves it to the item.Stack passed.
 func readDamage(m map[string]any, s *item.Stack, disk bool) {
-	if _, ok := s.Item().(item.Durable); !ok {
-		return
-	}
 	if disk {
 		*s = s.Damage(int(Int16(m, "Damage")))
 		return
