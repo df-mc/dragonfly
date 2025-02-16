@@ -58,6 +58,8 @@ type Handler interface {
 	// HandleEntityDespawn handles an Entity being despawned from a World
 	// through a call to Tx.RemoveEntity.
 	HandleEntityDespawn(tx *Tx, e Entity)
+	// HandleExplosion handles an explosion from affecting a block or an entity.
+	HandleExplosion(ctx *Context, entities *[]Entity, blocks *[]cube.Pos, fire *bool)
 	// HandleClose handles the World being closed. HandleClose may be used as a
 	// moment to finish code running on other goroutines that operates on the
 	// World specifically. HandleClose is called directly before the World stops
@@ -83,4 +85,5 @@ func (NopHandler) HandleCropTrample(*Context, cube.Pos)                         
 func (NopHandler) HandleLeavesDecay(*Context, cube.Pos)                         {}
 func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                {}
 func (NopHandler) HandleEntityDespawn(*Tx, Entity)                              {}
+func (NopHandler) HandleExplosion(*Context, *[]Entity, *[]cube.Pos, *bool)      {}
 func (NopHandler) HandleClose(*Tx)                                              {}
