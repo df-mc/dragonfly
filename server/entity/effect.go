@@ -36,9 +36,7 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
 	}
 
-	m.initialEffects = slices.DeleteFunc(m.initialEffects, func(eff effect.Effect) bool {
-		return e.Type() == eff.Type()
-	})
+	e = m.checkInitials(e)
 
 	t, ok := e.Type().(effect.LastingType)
 	if !ok {
@@ -61,6 +59,20 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 
 	existing.Type().(effect.LastingType).End(entity, existing.Level())
 	t.Start(entity, lvl)
+	return e
+}
+
+// checkInitials checks if added effect intersects with initial effects.
+func (m *EffectManager) checkInitials(e effect.Effect) effect.Effect {
+	m.initialEffects = slices.DeleteFunc(m.initialEffects, func(eff effect.Effect) bool {
+		if e.Type() == eff.Type() {
+			if e.Level() < eff.Level() || e.Level() == eff.Level() && e.Duration() < eff.Duration() {
+				e = eff
+			}
+			return true
+		}
+		return false
+	})
 	return e
 }
 
