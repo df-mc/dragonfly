@@ -279,7 +279,5 @@ func readDragonflyData(m map[string]any, s *item.Stack) {
 // readUnbreakable reads the unbreakable value stored in the NBT with the Unbreakable tag and saves it to the item.Stack
 // passed.
 func readUnbreakable(m map[string]any, s *item.Stack) {
-	if Bool(m, "Unbreakable") {
-		*s = s.AsUnbreakable()
-	}
+	*s = s.AsUnbreakable(Bool(m, "Unbreakable"))
 }
