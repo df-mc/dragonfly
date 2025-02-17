@@ -27,6 +27,11 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
+	timesCrafted := int(a.NumberOfCrafts)
+	if timesCrafted < 1 {
+		return fmt.Errorf("times crafted must be at least 1")
+	}
+
 	size := s.craftingSize()
 	offset := s.craftingOffset()
 	consumed := make([]bool, size)
@@ -38,7 +43,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				continue
 			}
 			has, _ := s.ui.Item(int(slot))
-			if has.Empty() != expected.Empty() || has.Count() < expected.Count() {
+			if has.Empty() != expected.Empty() || has.Count() < expected.Count()*timesCrafted {
 				// We can't process this item, as it's not a part of the recipe.
 				continue
 			}
@@ -47,7 +52,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				continue
 			}
 			processed, consumed[slot-offset] = true, true
-			st := has.Grow(-expected.Count())
+			st := has.Grow(-expected.Count() * timesCrafted)
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
 				Container: protocol.FullContainerName{ContainerID: protocol.ContainerCraftingInput},
 				Slot:      byte(slot),
@@ -58,7 +63,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
-	return h.createResults(s, tx, craft.Output()...)
+	return h.createResults(s, tx, repeatStacks(craft.Output(), timesCrafted)...)
 }
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
@@ -76,10 +81,14 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
-	repetitions := int(a.TimesCrafted)
+	timesCrafted := int(a.TimesCrafted)
+	if timesCrafted < 1 {
+		return fmt.Errorf("times crafted must be at least 1")
+	}
+
 	input := make([]recipe.Item, 0, len(craft.Input()))
 	for _, i := range craft.Input() {
-		input = append(input, grow(i, i.Count()*(repetitions-1)))
+		input = append(input, grow(i, i.Count()*(timesCrafted-1)))
 	}
 
 	flattenedInputs := make([]recipe.Item, 0, len(input))
@@ -138,20 +147,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		}
 	}
 
-	output := make([]item.Stack, 0, len(craft.Output()))
-	for _, o := range craft.Output() {
-		count, maxCount := o.Count(), o.MaxCount()
-		total := count * repetitions
-
-		stacks := int(math.Ceil(float64(total) / float64(maxCount)))
-		for i := 0; i < stacks; i++ {
-			inc := min(total, maxCount)
-			total -= inc
-
-			output = append(output, o.Grow(inc-count))
-		}
-	}
-	return h.createResults(s, tx, output...)
+	return h.createResults(s, tx, repeatStacks(craft.Output(), timesCrafted)...)
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -213,6 +209,25 @@ func matchingStacks(has, expected recipe.Item) bool {
 		panic(fmt.Errorf("client has unexpected recipe item %T", has))
 	}
 	panic(fmt.Errorf("tried to match with unexpected recipe item %T", expected))
+}
+
+// repeatStacks multiplies the count of all item stacks provided by the number of repetitions provided. Item
+// stacks where the new count would exceed the item's max count are split into multiple item stacks.
+func repeatStacks(items []item.Stack, repetitions int) []item.Stack {
+	output := make([]item.Stack, 0, len(items))
+	for _, o := range items {
+		count, maxCount := o.Count(), o.MaxCount()
+		total := count * repetitions
+
+		stacks := int(math.Ceil(float64(total) / float64(maxCount)))
+		for i := 0; i < stacks; i++ {
+			inc := min(total, maxCount)
+			total -= inc
+
+			output = append(output, o.Grow(inc-count))
+		}
+	}
+	return output
 }
 
 func grow(i recipe.Item, count int) recipe.Item {
