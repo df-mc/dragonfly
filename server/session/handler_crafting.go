@@ -86,13 +86,8 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		return fmt.Errorf("times crafted must be at least 1")
 	}
 
-	input := make([]recipe.Item, 0, len(craft.Input()))
+	flattenedInputs := make([]recipe.Item, 0, len(craft.Input()))
 	for _, i := range craft.Input() {
-		input = append(input, grow(i, i.Count()*(timesCrafted-1)))
-	}
-
-	flattenedInputs := make([]recipe.Item, 0, len(input))
-	for _, i := range input {
 		if i.Empty() {
 			// We don't actually need this item - it's empty, so avoid putting it in our flattened inputs.
 			continue
@@ -101,13 +96,15 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		if ind := slices.IndexFunc(flattenedInputs, func(it recipe.Item) bool {
 			return matchingStacks(it, i)
 		}); ind >= 0 {
-			i = grow(i, flattenedInputs[ind].Count())
-			flattenedInputs = slices.Delete(flattenedInputs, ind, ind+1)
+			flattenedInputs[ind] = grow(i, flattenedInputs[ind].Count())
+			continue
 		}
 		flattenedInputs = append(flattenedInputs, i)
 	}
 
 	for _, expected := range flattenedInputs {
+		remaining := expected.Count() * timesCrafted
+
 		for id, inv := range map[byte]*inventory.Inventory{
 			protocol.ContainerCraftingInput:              s.ui,
 			protocol.ContainerCombinedHotBarAndInventory: s.inv,
@@ -122,27 +119,28 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 					continue
 				}
 
-				remaining, removal := expected.Count(), has.Count()
+				removal := has.Count()
 				if remaining < removal {
 					removal = remaining
 				}
+				remaining -= removal
 
-				expected, has = grow(expected, -removal), has.Grow(-removal)
+				has = has.Grow(-removal)
 				h.setItemInSlot(protocol.StackRequestSlotInfo{
 					Container: protocol.FullContainerName{ContainerID: id},
 					Slot:      byte(slot),
 				}, has, s, tx)
-				if expected.Empty() {
+				if remaining == 0 {
 					// Consumed this item, so go to the next one.
 					break
 				}
 			}
-			if expected.Empty() {
+			if remaining == 0 {
 				// Consumed this item, so go to the next one.
 				break
 			}
 		}
-		if !expected.Empty() {
+		if remaining != 0 {
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
