@@ -100,6 +100,12 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 
 	affectedEntities := make([]world.Entity, 0, 32)
 	for e := range tx.EntitiesWithin(box.Grow(2)) {
+		pos := e.Position()
+		dist := pos.Sub(explosionPos).Len()
+		if dist > d || dist == 0 {
+			continue
+		}
+
 		affectedEntities = append(affectedEntities, e)
 	}
 
@@ -153,14 +159,8 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	}
 
 	for _, e := range affectedEntities {
-		pos := e.Position()
-		dist := pos.Sub(explosionPos).Len()
-		if dist > d || dist == 0 {
-			continue
-		}
-
 		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - dist/d) * exposure(tx, explosionPos, e)
+			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
 			explodable.Explode(explosionPos, impact, c)
 		}
 	}
