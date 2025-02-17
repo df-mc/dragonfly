@@ -22,6 +22,8 @@
         "minecraft:mangrove_chest_boat",
         "minecraft:oak_boat",
         "minecraft:oak_chest_boat",
+        "minecraft:pale_oak_boat",
+        "minecraft:pale_oak_chest_boat",
         "minecraft:spruce_boat",
         "minecraft:spruce_chest_boat"
     ],
@@ -42,6 +44,8 @@
         "minecraft:mangrove_chest_boat",
         "minecraft:oak_boat",
         "minecraft:oak_chest_boat",
+        "minecraft:pale_oak_boat",
+        "minecraft:pale_oak_chest_boat",
         "minecraft:spruce_boat",
         "minecraft:spruce_chest_boat"
     ],
@@ -77,7 +81,9 @@
         "minecraft:burn_pottery_sherd",
         "minecraft:danger_pottery_sherd",
         "minecraft:explorer_pottery_sherd",
+        "minecraft:flow_pottery_sherd",
         "minecraft:friend_pottery_sherd",
+        "minecraft:guster_pottery_sherd",
         "minecraft:heart_pottery_sherd",
         "minecraft:heartbreak_pottery_sherd",
         "minecraft:howl_pottery_sherd",
@@ -85,6 +91,7 @@
         "minecraft:mourner_pottery_sherd",
         "minecraft:plenty_pottery_sherd",
         "minecraft:prize_pottery_sherd",
+        "minecraft:scrape_pottery_sherd",
         "minecraft:sheaf_pottery_sherd",
         "minecraft:shelter_pottery_sherd",
         "minecraft:skull_pottery_sherd",
@@ -99,7 +106,8 @@
         "minecraft:diamond_leggings",
         "minecraft:diamond_pickaxe",
         "minecraft:diamond_shovel",
-        "minecraft:diamond_sword"
+        "minecraft:diamond_sword",
+        "minecraft:mace"
     ],
     "minecraft:digger": [
         "minecraft:diamond_axe",
@@ -140,6 +148,7 @@
         "minecraft:jungle_door",
         "minecraft:mangrove_door",
         "minecraft:oxidized_copper_door",
+        "minecraft:pale_oak_door",
         "minecraft:spruce_door",
         "minecraft:warped_door",
         "minecraft:waxed_copper_door",
@@ -173,6 +182,7 @@
         "minecraft:jungle_hanging_sign",
         "minecraft:mangrove_hanging_sign",
         "minecraft:oak_hanging_sign",
+        "minecraft:pale_oak_hanging_sign",
         "minecraft:spruce_hanging_sign",
         "minecraft:warped_hanging_sign"
     ],
@@ -314,6 +324,9 @@
         "minecraft:stone_pickaxe",
         "minecraft:wooden_pickaxe"
     ],
+    "minecraft:is_shears": [
+        "minecraft:shears"
+    ],
     "minecraft:is_shovel": [
         "minecraft:diamond_shovel",
         "minecraft:golden_shovel",
@@ -326,6 +339,7 @@
         "minecraft:diamond_sword",
         "minecraft:golden_sword",
         "minecraft:iron_sword",
+        "minecraft:mace",
         "minecraft:netherite_sword",
         "minecraft:stone_sword",
         "minecraft:wooden_sword"
@@ -346,6 +360,7 @@
         "minecraft:iron_pickaxe",
         "minecraft:iron_shovel",
         "minecraft:iron_sword",
+        "minecraft:mace",
         "minecraft:netherite_axe",
         "minecraft:netherite_hoe",
         "minecraft:netherite_pickaxe",
@@ -392,6 +407,8 @@
         "minecraft:mangrove_wood",
         "minecraft:oak_log",
         "minecraft:oak_wood",
+        "minecraft:pale_oak_log",
+        "minecraft:pale_oak_wood",
         "minecraft:spruce_log",
         "minecraft:spruce_wood",
         "minecraft:stripped_acacia_log",
@@ -410,6 +427,8 @@
         "minecraft:stripped_mangrove_wood",
         "minecraft:stripped_oak_log",
         "minecraft:stripped_oak_wood",
+        "minecraft:stripped_pale_oak_log",
+        "minecraft:stripped_pale_oak_wood",
         "minecraft:stripped_spruce_log",
         "minecraft:stripped_spruce_wood",
         "minecraft:stripped_warped_hyphae",
@@ -432,6 +451,8 @@
         "minecraft:mangrove_wood",
         "minecraft:oak_log",
         "minecraft:oak_wood",
+        "minecraft:pale_oak_log",
+        "minecraft:pale_oak_wood",
         "minecraft:spruce_log",
         "minecraft:spruce_wood",
         "minecraft:stripped_acacia_log",
@@ -448,6 +469,8 @@
         "minecraft:stripped_mangrove_wood",
         "minecraft:stripped_oak_log",
         "minecraft:stripped_oak_wood",
+        "minecraft:stripped_pale_oak_log",
+        "minecraft:stripped_pale_oak_wood",
         "minecraft:stripped_spruce_log",
         "minecraft:stripped_spruce_wood"
     ],
@@ -464,11 +487,14 @@
         "minecraft:music_disc_blocks",
         "minecraft:music_disc_cat",
         "minecraft:music_disc_chirp",
+        "minecraft:music_disc_creator",
+        "minecraft:music_disc_creator_music_box",
         "minecraft:music_disc_far",
         "minecraft:music_disc_mall",
         "minecraft:music_disc_mellohi",
         "minecraft:music_disc_otherside",
         "minecraft:music_disc_pigstep",
+        "minecraft:music_disc_precipice",
         "minecraft:music_disc_relic",
         "minecraft:music_disc_stal",
         "minecraft:music_disc_strad",
@@ -496,10 +522,12 @@
         "minecraft:jungle_planks",
         "minecraft:mangrove_planks",
         "minecraft:oak_planks",
+        "minecraft:pale_oak_planks",
         "minecraft:spruce_planks",
         "minecraft:warped_planks"
     ],
     "minecraft:sand": [
+        "minecraft:red_sand",
         "minecraft:sand"
     ],
     "minecraft:sign": [
@@ -521,6 +549,8 @@
         "minecraft:mangrove_sign",
         "minecraft:oak_hanging_sign",
         "minecraft:oak_sign",
+        "minecraft:pale_oak_hanging_sign",
+        "minecraft:pale_oak_sign",
         "minecraft:spruce_hanging_sign",
         "minecraft:spruce_sign",
         "minecraft:warped_hanging_sign",
@@ -533,6 +563,7 @@
     "minecraft:spawn_egg": [
         "minecraft:agent_spawn_egg",
         "minecraft:allay_spawn_egg",
+        "minecraft:armadillo_spawn_egg",
         "minecraft:axolotl_spawn_egg",
         "minecraft:bat_spawn_egg",
         "minecraft:bee_spawn_egg",
@@ -545,6 +576,7 @@
         "minecraft:chicken_spawn_egg",
         "minecraft:cod_spawn_egg",
         "minecraft:cow_spawn_egg",
+        "minecraft:creaking_spawn_egg",
         "minecraft:creeper_spawn_egg",
         "minecraft:dolphin_spawn_egg",
         "minecraft:donkey_spawn_egg",
@@ -615,7 +647,10 @@
         "minecraft:zombie_villager_spawn_egg"
     ],
     "minecraft:stone_bricks": [
-        "minecraft:stonebrick"
+        "minecraft:chiseled_stone_bricks",
+        "minecraft:cracked_stone_bricks",
+        "minecraft:mossy_stone_bricks",
+        "minecraft:stone_bricks"
     ],
     "minecraft:stone_crafting_materials": [
         "minecraft:blackstone",
@@ -662,12 +697,15 @@
         "minecraft:lapis_lazuli",
         "minecraft:netherite_ingot",
         "minecraft:quartz",
-        "minecraft:redstone"
+        "minecraft:redstone",
+        "minecraft:resin_brick"
     ],
     "minecraft:trim_templates": [
+        "minecraft:bolt_armor_trim_smithing_template",
         "minecraft:coast_armor_trim_smithing_template",
         "minecraft:dune_armor_trim_smithing_template",
         "minecraft:eye_armor_trim_smithing_template",
+        "minecraft:flow_armor_trim_smithing_template",
         "minecraft:host_armor_trim_smithing_template",
         "minecraft:raiser_armor_trim_smithing_template",
         "minecraft:rib_armor_trim_smithing_template",
@@ -759,6 +797,7 @@
         "minecraft:jungle_slab",
         "minecraft:mangrove_slab",
         "minecraft:oak_slab",
+        "minecraft:pale_oak_slab",
         "minecraft:spruce_slab",
         "minecraft:warped_slab"
     ],
