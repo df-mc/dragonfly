@@ -35,3 +35,8 @@ func (Glowstone) EncodeBlock() (string, map[string]any) {
 func (Glowstone) LightEmissionLevel() uint8 {
 	return 15
 }
+
+// RedstoneBlocking ...
+func (Glowstone) RedstoneBlocking() bool {
+	return true
+}
