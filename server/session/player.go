@@ -498,7 +498,7 @@ func (s *Session) SendAbilities(c Controllable) {
 				Values:           abilities,
 				FlySpeed:         float32(c.FlightSpeed()),
 				VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
-				WalkSpeed:        float32(c.Speed()),
+				WalkSpeed:        protocol.AbilityBaseWalkSpeed,
 			},
 		},
 	}})

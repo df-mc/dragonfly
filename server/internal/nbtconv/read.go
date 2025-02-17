@@ -142,17 +142,7 @@ func PosToInt32Slice(x cube.Pos) []int32 {
 // to a world.Item.
 func MapItem(x map[string]any, k string) item.Stack {
 	if m, ok := x[k].(map[string]any); ok {
-		tag, ok := m["tag"].(map[string]any)
-		if !ok {
-			tag = map[string]any{}
-		}
-
-		s := readItemStack(m, tag)
-		readDamage(tag, &s, true)
-		readEnchantments(tag, &s)
-		readDisplay(tag, &s)
-		readDragonflyData(tag, &s)
-		return s
+		return Item(m, nil)
 	}
 	return item.Stack{}
 }

@@ -298,14 +298,9 @@ func (s Stack) WithAnvilCost(anvilCost int) Stack {
 // properties from s to the new stack. Damage to an item, enchantments and anvil
 // costs are only copied if they are still applicable to the new item type.
 func (s Stack) WithItem(t world.Item) Stack {
-	cp := NewStack(t, s.count).
-		Damage(s.damage).
-		WithCustomName(s.customName).
-		WithLore(s.lore...).
-		WithEnchantments(s.Enchantments()...).
-		WithAnvilCost(s.anvilCost)
-	cp.data = s.data
-	return cp
+	s.id = newID()
+	s.item = t
+	return s
 }
 
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
