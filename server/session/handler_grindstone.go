@@ -114,7 +114,7 @@ func stripPossibleEnchantments(stack item.Stack) item.Stack {
 		}
 		stack = stack.WithoutEnchantments(enchant.Type())
 	}
-	return stack
+	return stack.WithAnvilCost(0)
 }
 
 // nonZeroItem returns the item.Stack that exists out of two input items. The function expects at least one of the
