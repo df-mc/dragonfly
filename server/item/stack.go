@@ -23,7 +23,8 @@ type Stack struct {
 	customName string
 	lore       []string
 
-	damage int
+	damage      int
+	unbreakable bool
 
 	anvilCost int
 
@@ -98,8 +99,7 @@ func (s Stack) MaxDurability() int {
 // get the maximum durability.
 func (s Stack) Damage(d int) Stack {
 	durable, ok := s.Item().(Durable)
-	if !ok {
-		// Not a durable item.
+	if !ok || s.unbreakable {
 		return s
 	}
 	durability := s.Durability()
@@ -122,14 +122,13 @@ func (s Stack) Damage(d int) Stack {
 }
 
 // WithDurability returns a new item stack with the durability passed. If the item does not implement the
-// Durable interface, WithDurability returns the original stack.
+// Durable interface, the original stack is returned.
 // The closer the durability d is to 0, the closer the item is to being broken. If a durability of 0 is passed,
 // a stack with the item type of the BrokenItem is returned. If a durability is passed that exceeds the
 // maximum durability, the stack returned will have the maximum durability.
 func (s Stack) WithDurability(d int) Stack {
 	durable, ok := s.Item().(Durable)
 	if !ok {
-		// Not a durable item.
 		return s
 	}
 	maxDurability := durable.DurabilityInfo().MaxDurability
@@ -143,6 +142,31 @@ func (s Stack) WithDurability(d int) Stack {
 		return durable.DurabilityInfo().BrokenItem()
 	}
 	s.damage = maxDurability - d
+	return s
+}
+
+// Unbreakable checks if the item stack is unbreakable.
+func (s Stack) Unbreakable() bool {
+	return s.unbreakable
+}
+
+// AsUnbreakable returns a copy of the Stack with the unbreakable tag set. If the item does not implement the
+// Durable interface, the original stack is returned.
+func (s Stack) AsUnbreakable() Stack {
+	if _, ok := s.Item().(Durable); !ok {
+		return s
+	}
+	s.unbreakable = true
+	return s
+}
+
+// AsBreakable returns a copy of the Stack without the unbreakable tag set. If the item does not implement the
+// Durable interface, the original stack is returned.
+func (s Stack) AsBreakable() Stack {
+	if _, ok := s.Item().(Durable); !ok {
+		return s
+	}
+	s.unbreakable = false
 	return s
 }
 
@@ -304,6 +328,7 @@ func (s Stack) WithItem(t world.Item) Stack {
 		WithLore(s.lore...).
 		WithEnchantments(s.Enchantments()...).
 		WithAnvilCost(s.anvilCost)
+	cp.unbreakable = s.unbreakable && s.MaxDurability() != -1
 	cp.data = s.data
 	return cp
 }
