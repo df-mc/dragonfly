@@ -152,11 +152,21 @@ func (s Stack) Unbreakable() bool {
 
 // AsUnbreakable returns a copy of the Stack with the unbreakable tag set. If the item does not implement the
 // Durable interface, the original stack is returned.
-func (s Stack) AsUnbreakable(u bool) Stack {
+func (s Stack) AsUnbreakable() Stack {
 	if _, ok := s.Item().(Durable); !ok {
 		return s
 	}
-	s.unbreakable = u
+	s.unbreakable = true
+	return s
+}
+
+// AsBreakable returns a copy of the Stack without the unbreakable tag set. If the item does not implement the
+// Durable interface, the original stack is returned.
+func (s Stack) AsBreakable() Stack {
+	if _, ok := s.Item().(Durable); !ok {
+		return s
+	}
+	s.unbreakable = false
 	return s
 }
 
@@ -317,8 +327,8 @@ func (s Stack) WithItem(t world.Item) Stack {
 		WithCustomName(s.customName).
 		WithLore(s.lore...).
 		WithEnchantments(s.Enchantments()...).
-		WithAnvilCost(s.anvilCost).
-		AsUnbreakable(s.unbreakable)
+		WithAnvilCost(s.anvilCost)
+	cp.unbreakable = s.unbreakable && s.MaxDurability() != -1
 	cp.data = s.data
 	return cp
 }
