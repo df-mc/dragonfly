@@ -32,8 +32,8 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	if lvl <= 0 {
 		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have level of 0 or below: %v", lvl))
 	}
-	if dur < 0 {
-		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
+	if dur < -1 {
+		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration other than -1 (infinite): %v", dur))
 	}
 	t, ok := e.Type().(effect.LastingType)
 	if !ok {
