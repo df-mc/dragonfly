@@ -58,8 +58,11 @@ type Handler interface {
 	// HandleEntityDespawn handles an Entity being despawned from a World
 	// through a call to Tx.RemoveEntity.
 	HandleEntityDespawn(tx *Tx, e Entity)
-	// HandleExplosion handles an explosion from affecting a block or an entity.
-	HandleExplosion(ctx *Context, position mgl64.Vec3, entities *[]Entity, blocks *[]cube.Pos, itemDropChance *float64, fire *bool)
+	// HandleExplosion handles an explosion in the world. ctx.Cancel() may be called
+	// to cancel the explosion.
+	// The affected entities, affected blocks, item drop chance, and whether the
+	// explosion spawns fire may be altered.
+	HandleExplosion(ctx *Context, position mgl64.Vec3, entities *[]Entity, blocks *[]cube.Pos, itemDropChance *float64, spawnFire *bool)
 	// HandleClose handles the World being closed. HandleClose may be used as a
 	// moment to finish code running on other goroutines that operates on the
 	// World specifically. HandleClose is called directly before the World stops
