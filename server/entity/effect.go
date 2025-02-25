@@ -93,7 +93,7 @@ func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 	m.initialEffects = nil
 
 	for i, eff := range m.effects {
-		if m.expired(eff) && eff.Duration() != -1 {
+		if m.expired(eff) {
 			delete(m.effects, i)
 			eff.Type().(effect.LastingType).End(entity, eff.Level())
 			update = true
@@ -112,5 +112,5 @@ func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 
 // expired checks if an Effect has expired.
 func (m *EffectManager) expired(e effect.Effect) bool {
-	return e.Duration() <= 0
+	return e.Duration() <= 0 && e.Duration() != -1
 }
