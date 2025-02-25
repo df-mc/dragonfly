@@ -107,7 +107,9 @@ func (e Effect) Type() Type {
 // Effect.
 func (e Effect) TickDuration() Effect {
 	if _, ok := e.t.(LastingType); ok {
-		e.d -= time.Second / 20
+		if e.d != -1 {
+			e.d -= time.Second / 20
+		}
 		e.tick++
 	}
 	return e

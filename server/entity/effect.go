@@ -49,7 +49,8 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		t.Start(entity, lvl)
 		return e
 	}
-	if existing.Level() > lvl || (existing.Level() == lvl && existing.Duration() > dur) {
+	// Infinite duration has priority over other durations
+	if existing.Level() > lvl || (existing.Level() == lvl && (existing.Duration() > dur || existing.Duration() == -1)) {
 		return existing
 	}
 	m.effects[typ] = e
@@ -92,7 +93,7 @@ func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 	m.initialEffects = nil
 
 	for i, eff := range m.effects {
-		if m.expired(eff) {
+		if m.expired(eff) && eff.Duration() != -1 {
 			delete(m.effects, i)
 			eff.Type().(effect.LastingType).End(entity, eff.Level())
 			update = true
