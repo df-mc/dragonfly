@@ -45,7 +45,7 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, t
 				}
 
 				f := 1 - dist/4
-				if entityResult, ok := res.(trace.EntityResult); ok && entityResult.Entity() == e {
+				if entityResult, ok := res.(trace.EntityResult); ok && entityResult.Entity().H() == otherE.H() {
 					f = 1
 				}
 

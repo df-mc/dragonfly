@@ -58,6 +58,11 @@ type Handler interface {
 	// HandleEntityDespawn handles an Entity being despawned from a World
 	// through a call to Tx.RemoveEntity.
 	HandleEntityDespawn(tx *Tx, e Entity)
+	// HandleExplosion handles an explosion in the world. ctx.Cancel() may be called
+	// to cancel the explosion.
+	// The affected entities, affected blocks, item drop chance, and whether the
+	// explosion spawns fire may be altered.
+	HandleExplosion(ctx *Context, position mgl64.Vec3, entities *[]Entity, blocks *[]cube.Pos, itemDropChance *float64, spawnFire *bool)
 	// HandleClose handles the World being closed. HandleClose may be used as a
 	// moment to finish code running on other goroutines that operates on the
 	// World specifically. HandleClose is called directly before the World stops
@@ -73,14 +78,15 @@ var _ Handler = (*NopHandler)(nil)
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
-func (NopHandler) HandleLiquidFlow(*Context, cube.Pos, cube.Pos, Liquid, Block) {}
-func (NopHandler) HandleLiquidDecay(*Context, cube.Pos, Liquid, Liquid)         {}
-func (NopHandler) HandleLiquidHarden(*Context, cube.Pos, Block, Block, Block)   {}
-func (NopHandler) HandleSound(*Context, Sound, mgl64.Vec3)                      {}
-func (NopHandler) HandleFireSpread(*Context, cube.Pos, cube.Pos)                {}
-func (NopHandler) HandleBlockBurn(*Context, cube.Pos)                           {}
-func (NopHandler) HandleCropTrample(*Context, cube.Pos)                         {}
-func (NopHandler) HandleLeavesDecay(*Context, cube.Pos)                         {}
-func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                {}
-func (NopHandler) HandleEntityDespawn(*Tx, Entity)                              {}
-func (NopHandler) HandleClose(*Tx)                                              {}
+func (NopHandler) HandleLiquidFlow(*Context, cube.Pos, cube.Pos, Liquid, Block)                  {}
+func (NopHandler) HandleLiquidDecay(*Context, cube.Pos, Liquid, Liquid)                          {}
+func (NopHandler) HandleLiquidHarden(*Context, cube.Pos, Block, Block, Block)                    {}
+func (NopHandler) HandleSound(*Context, Sound, mgl64.Vec3)                                       {}
+func (NopHandler) HandleFireSpread(*Context, cube.Pos, cube.Pos)                                 {}
+func (NopHandler) HandleBlockBurn(*Context, cube.Pos)                                            {}
+func (NopHandler) HandleCropTrample(*Context, cube.Pos)                                          {}
+func (NopHandler) HandleLeavesDecay(*Context, cube.Pos)                                          {}
+func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                                 {}
+func (NopHandler) HandleEntityDespawn(*Tx, Entity)                                               {}
+func (NopHandler) HandleExplosion(*Context, mgl64.Vec3, *[]Entity, *[]cube.Pos, *float64, *bool) {}
+func (NopHandler) HandleClose(*Tx)                                                               {}
