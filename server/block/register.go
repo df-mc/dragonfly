@@ -317,6 +317,7 @@ func init() {
 	world.RegisterItem(Ladder{})
 	world.RegisterItem(Lapis{})
 	world.RegisterItem(Lectern{})
+	world.RegisterItem(Lever{})
 	world.RegisterItem(LilyPad{})
 	world.RegisterItem(LitPumpkin{})
 	world.RegisterItem(Loom{})
