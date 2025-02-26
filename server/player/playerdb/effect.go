@@ -10,10 +10,12 @@ func effectsToData(effects []effect.Effect) []jsonEffect {
 			continue
 		}
 		data[key] = jsonEffect{
-			ID:       id,
-			Duration: eff.Duration(),
-			Level:    eff.Level(),
-			Ambient:  eff.Ambient(),
+			ID:              id,
+			Duration:        eff.Duration(),
+			Level:           eff.Level(),
+			Ambient:         eff.Ambient(),
+			ParticlesHidden: eff.ParticlesHidden(),
+			Infinite:        eff.Infinite(),
 		}
 	}
 	return data
@@ -30,9 +32,15 @@ func dataToEffects(data []jsonEffect) []effect.Effect {
 		case effect.LastingType:
 			if d.Ambient {
 				effects[i] = effect.NewAmbient(eff, d.Level, d.Duration)
-				continue
+			} else if d.Infinite {
+				effects[i] = effect.NewInfinite(eff, d.Level)
+			} else {
+				effects[i] = effect.New(eff, d.Level, d.Duration)
 			}
-			effects[i] = effect.New(eff, d.Level, d.Duration)
+
+			if d.ParticlesHidden {
+				effects[i] = effects[i].WithoutParticles()
+			}
 		default:
 			effects[i] = effect.NewInstant(eff, d.Level)
 		}

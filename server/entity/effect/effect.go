@@ -37,6 +37,7 @@ type Effect struct {
 	lvl                      int
 	potency                  float64
 	ambient, particlesHidden bool
+	infinite                 bool
 	tick                     int
 }
 
@@ -68,6 +69,11 @@ func NewAmbient(t LastingType, lvl int, d time.Duration) Effect {
 	return Effect{t: t, lvl: lvl, d: d, ambient: true}
 }
 
+// NewInfinite creates a new infinitely lasting effect.
+func NewInfinite(t LastingType, lvl int) Effect {
+	return Effect{t: t, lvl: lvl, infinite: true}
+}
+
 // WithoutParticles returns the same Effect with particles disabled. Adding the effect to players will not display the
 // particles around the player.
 func (e Effect) WithoutParticles() Effect {
@@ -97,6 +103,11 @@ func (e Effect) Ambient() bool {
 	return e.ambient
 }
 
+// Infinite returns if the Effect duration is infinite.
+func (e Effect) Infinite() bool {
+	return e.infinite
+}
+
 // Type returns the underlying type of the Effect. It is either of the type Type or LastingType, depending on whether it
 // was created using New or NewAmbient, or NewInstant.
 func (e Effect) Type() Type {
@@ -107,7 +118,9 @@ func (e Effect) Type() Type {
 // Effect.
 func (e Effect) TickDuration() Effect {
 	if _, ok := e.t.(LastingType); ok {
-		e.d -= time.Second / 20
+		if !e.Infinite() {
+			e.d -= time.Second / 20
+		}
 		e.tick++
 	}
 	return e
