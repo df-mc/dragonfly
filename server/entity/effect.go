@@ -52,7 +52,8 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		t.Start(entity, lvl)
 		return e
 	}
-	if existing.Level() > lvl || (existing.Level() == lvl && existing.Duration() > dur) {
+	// Infinite duration has priority over other durations
+	if existing.Level() > lvl || (existing.Level() == lvl && ((existing.Duration() > dur && !e.Infinite()) || existing.Infinite())) {
 		return existing
 	}
 	m.effects[typ] = e
@@ -128,5 +129,5 @@ func (m *EffectManager) flushInitialEffects(entity Living) {
 
 // expired checks if an Effect has expired.
 func (m *EffectManager) expired(e effect.Effect) bool {
-	return e.Duration() <= 0
+	return e.Duration() <= 0 && !e.Infinite()
 }
