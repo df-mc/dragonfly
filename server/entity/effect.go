@@ -36,9 +36,7 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
 	}
 
-	if m.initialEffects != nil {
-		m.flushInitialEffects(entity)
-	}
+	m.flushInitialEffects(entity)
 
 	t, ok := e.Type().(effect.LastingType)
 	if !ok {
@@ -110,10 +108,7 @@ func (m *EffectManager) Effects() []effect.Effect {
 func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 	update := false
 
-	for _, eff := range m.initialEffects {
-		m.Add(eff, entity)
-	}
-	m.initialEffects = nil
+	m.flushInitialEffects(entity)
 
 	for i, eff := range m.effects {
 		if m.expired(eff) {
