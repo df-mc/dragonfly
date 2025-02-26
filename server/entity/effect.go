@@ -73,9 +73,7 @@ func (m *EffectManager) flushInitialEffects(entity Living) {
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
 func (m *EffectManager) Remove(e effect.Type, entity Living) {
-	if m.initialEffects != nil {
-		m.flushInitialEffects(entity)
-	}
+	m.flushInitialEffects(entity)
 
 	t := reflect.TypeOf(e)
 	if existing, ok := m.effects[t]; ok {
