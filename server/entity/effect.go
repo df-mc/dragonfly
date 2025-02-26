@@ -36,7 +36,9 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
 	}
 
-	e = m.checkInitials(e)
+	if m.initialEffects != nil {
+		m.flushInitialEffects(entity)
+	}
 
 	t, ok := e.Type().(effect.LastingType)
 	if !ok {
@@ -62,22 +64,21 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	return e
 }
 
-// checkInitials checks if added effect intersects with initial effects.
-func (m *EffectManager) checkInitials(e effect.Effect) effect.Effect {
-	m.initialEffects = slices.DeleteFunc(m.initialEffects, func(eff effect.Effect) bool {
-		if e.Type() == eff.Type() {
-			if e.Level() < eff.Level() || e.Level() == eff.Level() && e.Duration() < eff.Duration() {
-				e = eff
-			}
-			return true
-		}
-		return false
-	})
-	return e
+// flushInitialEffects flushes initial effects on entity.
+func (m *EffectManager) flushInitialEffects(entity Living) {
+	initialEffects := m.initialEffects
+	m.initialEffects = nil
+	for _, e := range initialEffects {
+		m.Add(e, entity)
+	}
 }
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
 func (m *EffectManager) Remove(e effect.Type, entity Living) {
+	if m.initialEffects != nil {
+		m.flushInitialEffects(entity)
+	}
+
 	t := reflect.TypeOf(e)
 	if existing, ok := m.effects[t]; ok {
 		existing.Type().(effect.LastingType).End(entity, existing.Level())
@@ -88,6 +89,12 @@ func (m *EffectManager) Remove(e effect.Type, entity Living) {
 // Effect returns the effect instance and true if the entity has the effect. If not found, it will return an empty
 // effect instance and false.
 func (m *EffectManager) Effect(e effect.Type) (effect.Effect, bool) {
+	for _, eff := range m.initialEffects {
+		if eff.Type() == e {
+			return eff, true
+		}
+	}
+
 	existing, ok := m.effects[reflect.TypeOf(e)]
 	return existing, ok
 }
