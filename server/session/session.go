@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -133,6 +134,8 @@ type Config struct {
 
 	JoinMessage, QuitMessage chat.Translation
 
+	CreativeGroups []creative.Group
+
 	HandleStop func(*world.Tx, Controllable)
 }
 
@@ -173,7 +176,7 @@ func (conf Config) New(conn Conn) *Session {
 	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
-	groups, items := creativeContent()
+	groups, items := creativeContent(conf.CreativeGroups)
 	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
 	s.sendArmourTrimData()
