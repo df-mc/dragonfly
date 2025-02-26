@@ -32,7 +32,7 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	if lvl <= 0 {
 		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have level of 0 or below: %v", lvl))
 	}
-	if dur < 0 && !e.Infinite() {
+	if dur < 0 {
 		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
 	}
 	t, ok := e.Type().(effect.LastingType)
@@ -50,7 +50,7 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		return e
 	}
 	// Infinite duration has priority over other durations
-	if existing.Level() > lvl || (existing.Level() == lvl && (existing.Duration() > dur || e.Infinite())) {
+	if existing.Level() > lvl || (existing.Level() == lvl && ((existing.Duration() > dur && !e.Infinite()) || existing.Infinite())) {
 		return existing
 	}
 	m.effects[typ] = e
