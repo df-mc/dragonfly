@@ -539,7 +539,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 		MaxChunkRadius: srv.conf.MaxChunkRadius,
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
-		CreativeItems:  srv.conf.CreativeItems,
+		CreativeGroups: srv.conf.CreativeGroups,
 		HandleStop:     srv.handleSessionClose,
 	}.New(conn)
 

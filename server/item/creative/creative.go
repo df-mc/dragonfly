@@ -13,16 +13,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
-// Item represents a registered item in the creative inventory. It holds a stack of the item and a group that
-// the item is part of.
-type Item struct {
-	// Stack is the stack of the item that is registered in the creative inventory.
-	Stack item.Stack
-	// Group is the name of the group that the item is part of. If two groups are registered with the same
-	// name, the item will always reside in the first group that was registered.
-	Group string
-}
-
 // Group represents a group of items in the creative inventory. Each group has a category, a name and an icon.
 // If either the name or icon is empty, the group is considered an 'anonymous group' and will not group its
 // contents together in the creative inventory.
@@ -34,11 +24,23 @@ type Group struct {
 	Name string
 	// Icon is the item that will be displayed as the icon of the group in the creative inventory.
 	Icon item.Stack
+	// Items are all items that are that belong to this Group.
+	Items []item.Stack
 }
 
 // Groups returns a list with all groups that have been registered as a creative group. These groups will be
 // accessible by players in-game who have creative mode enabled.
 func Groups() []Group {
+	for _, it := range items {
+		if it.GroupIndex >= int32(len(creativeGroups)) {
+			panic(fmt.Errorf("invalid group index %v for item %v", it.GroupIndex, it.Name))
+		}
+		st, ok := itemStackFromEntry(it)
+		if !ok {
+			continue
+		}
+		creativeGroups[it.GroupIndex].Items = append(creativeGroups[it.GroupIndex].Items, st)
+	}
 	return creativeGroups
 }
 
@@ -46,23 +48,6 @@ func Groups() []Group {
 // be referenced using its name when calling RegisterItem.
 func RegisterGroup(group Group) {
 	creativeGroups = append(creativeGroups, group)
-}
-
-// Items returns a list with all items that have been registered as a creative item. These items will
-// be accessible by players in-game who have creative mode enabled.
-func Items() (out []Item) {
-	for _, data := range items {
-		if data.GroupIndex >= int32(len(creativeGroups)) {
-			panic(fmt.Errorf("invalid group index %v for item %v", data.GroupIndex, data.Name))
-		}
-		st, ok := itemStackFromEntry(data)
-		if !ok {
-			continue
-		}
-		out = append(out, Item{st, creativeGroups[data.GroupIndex].Name})
-	}
-
-	return out
 }
 
 var (
