@@ -531,9 +531,9 @@ func (s *Session) SendHealth(health, max, absorption float64) {
 func (s *Session) SendEffect(e effect.Effect) {
 	s.SendEffectRemoval(e.Type())
 	id, _ := effect.ID(e.Type())
-	dur := e.Duration()
-	if dur != -1 {
-		dur = dur / (time.Second / 20)
+	dur := e.Duration() / (time.Second / 20)
+	if e.Infinite() {
+		dur = -1
 	}
 
 	s.writePacket(&packet.MobEffect{

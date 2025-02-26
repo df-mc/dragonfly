@@ -14,6 +14,7 @@ func effectsToData(effects []effect.Effect) []jsonEffect {
 			Duration: eff.Duration(),
 			Level:    eff.Level(),
 			Ambient:  eff.Ambient(),
+			Infinite: eff.Infinite(),
 		}
 	}
 	return data

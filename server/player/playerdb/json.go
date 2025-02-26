@@ -138,4 +138,5 @@ type jsonEffect struct {
 	Level    int
 	Duration time.Duration
 	Ambient  bool
+	Infinite bool
 }
