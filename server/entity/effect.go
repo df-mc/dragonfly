@@ -62,15 +62,6 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	return e
 }
 
-// flushInitialEffects flushes initial effects on entity.
-func (m *EffectManager) flushInitialEffects(entity Living) {
-	initialEffects := m.initialEffects
-	m.initialEffects = nil
-	for _, e := range initialEffects {
-		m.Add(e, entity)
-	}
-}
-
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
 func (m *EffectManager) Remove(e effect.Type, entity Living) {
 	m.flushInitialEffects(entity)
@@ -123,6 +114,15 @@ func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 		for _, v := range tx.Viewers(entity.Position()) {
 			v.ViewEntityState(entity)
 		}
+	}
+}
+
+// flushInitialEffects flushes the initial effects, applying them onto the Living entity passed.
+func (m *EffectManager) flushInitialEffects(entity Living) {
+	initialEffects := m.initialEffects
+	m.initialEffects = nil
+	for _, e := range initialEffects {
+		m.Add(e, entity)
 	}
 }
 
