@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -38,7 +38,7 @@ func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 	}
 
 	for i := 0; i < 8; i++ {
-		p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
+		p := pos.Add(cube.Pos{rand.IntN(7) - 3, rand.IntN(3) - 1, rand.IntN(7) - 3})
 		if _, ok := tx.Block(p).(Air); !ok {
 			continue
 		}

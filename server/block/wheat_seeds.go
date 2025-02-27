@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // WheatSeeds are a crop that can be harvested to craft bread, cake, & cookies.
@@ -24,7 +24,7 @@ func (s WheatSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if s.Growth == 7 {
 		return false
 	}
-	s.Growth = min(s.Growth+rand.Intn(4)+2, 7)
+	s.Growth = min(s.Growth+rand.IntN(4)+2, 7)
 	tx.SetBlock(pos, s, nil)
 	return true
 }
@@ -50,7 +50,7 @@ func (s WheatSeeds) BreakInfo() BreakInfo {
 		if s.Growth < 7 {
 			return []item.Stack{item.NewStack(s, 1)}
 		}
-		return []item.Stack{item.NewStack(item.Wheat{}, 1), item.NewStack(s, rand.Intn(4)+1)}
+		return []item.Stack{item.NewStack(item.Wheat{}, 1), item.NewStack(s, rand.IntN(4)+1)}
 	})
 }
 

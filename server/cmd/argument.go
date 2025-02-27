@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,7 +17,26 @@ import (
 // command. It is a convenience wrapper around a string slice.
 type Line struct {
 	args []string
+	seen []string
 	src  Source
+	cmd  Command
+}
+
+// SyntaxError returns a translated syntax error.
+func (line *Line) SyntaxError() error {
+	if len(line.args) == 0 {
+		return MessageSyntax.F(strings.Join(line.seen, " "), "", "")
+	}
+	next := strings.Join(line.args[1:], " ")
+	if next != "" {
+		next = " " + next
+	}
+	return MessageSyntax.F(strings.Join(line.seen, " ")+" ", line.args[0], next)
+}
+
+// UsageError returns a translated usage error.
+func (line *Line) UsageError() error {
+	return MessageUsage.F(line.cmd.Usage())
 }
 
 // Next reads the next argument from the command line and returns it. If there were no more arguments to
@@ -51,6 +70,7 @@ func (line *Line) RemoveN(n int) {
 		line.args = nil
 		return
 	}
+	line.seen = append(line.seen, line.args[:n]...)
 	line.args = line.args[n:]
 }
 
@@ -77,6 +97,13 @@ type parser struct {
 func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name string, source Source, tx *world.Tx) (error, bool) {
 	var err error
 	i := v.Interface()
+	if line.Len() == 0 && optional {
+		// The command run didn't have enough arguments for this parameter, but
+		// it was optional, so it does not matter. Make sure to clear the value
+		// though.
+		v.Set(reflect.Zero(v.Type()))
+		return nil, false
+	}
 	switch i.(type) {
 	case int, int8, int16, int32, int64:
 		err = p.int(line, v)
@@ -110,28 +137,19 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name s
 	if err == nil {
 		// The argument was parsed successfully, so it needs to be removed from the command line.
 		line.RemoveNext()
-	} else if errors.Is(err, ErrInsufficientArgs) && optional {
-		// The command ran didn't have enough arguments for this parameter, but it was optional, so it does
-		// not matter. Make sure to clear the value though.
-		v.Set(reflect.Zero(v.Type()))
-		return nil, false
 	}
 	return err, err == nil
 }
-
-// ErrInsufficientArgs is returned by argument parsing functions if it does not have sufficient arguments
-// passed and is not optional.
-var ErrInsufficientArgs = errors.New("not enough arguments for command")
 
 // int ...
 func (p parser) int(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return ErrInsufficientArgs
+		return line.UsageError()
 	}
 	value, err := strconv.ParseInt(arg, 10, v.Type().Bits())
 	if err != nil {
-		return fmt.Errorf(`cannot parse argument "%v" as type %v for argument "%v"`, arg, v.Kind(), p.currentField)
+		return MessageNumberInvalid.F(arg)
 	}
 	v.SetInt(value)
 	return nil
@@ -141,11 +159,11 @@ func (p parser) int(line *Line, v reflect.Value) error {
 func (p parser) uint(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return ErrInsufficientArgs
+		return line.UsageError()
 	}
 	value, err := strconv.ParseUint(arg, 10, v.Type().Bits())
 	if err != nil {
-		return fmt.Errorf(`cannot parse argument "%v" as type %v for argument "%v"`, arg, v.Kind(), p.currentField)
+		return MessageNumberInvalid.F(arg)
 	}
 	v.SetUint(value)
 	return nil
@@ -155,11 +173,11 @@ func (p parser) uint(line *Line, v reflect.Value) error {
 func (p parser) float(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return ErrInsufficientArgs
+		return line.UsageError()
 	}
 	value, err := strconv.ParseFloat(arg, v.Type().Bits())
 	if err != nil {
-		return fmt.Errorf(`cannot parse argument "%v" as type %v for argument "%v"`, arg, v.Kind(), p.currentField)
+		return MessageNumberInvalid.F(arg)
 	}
 	v.SetFloat(value)
 	return nil
@@ -169,7 +187,7 @@ func (p parser) float(line *Line, v reflect.Value) error {
 func (p parser) string(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return ErrInsufficientArgs
+		return line.UsageError()
 	}
 	v.SetString(arg)
 	return nil
@@ -179,11 +197,11 @@ func (p parser) string(line *Line, v reflect.Value) error {
 func (p parser) bool(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
-		return ErrInsufficientArgs
+		return line.UsageError()
 	}
 	value, err := strconv.ParseBool(arg)
 	if err != nil {
-		return fmt.Errorf(`cannot parse argument "%v" as type bool for argument "%v"`, arg, p.currentField)
+		return MessageBooleanInvalid.F(arg)
 	}
 	v.SetBool(value)
 	return nil
@@ -193,18 +211,16 @@ func (p parser) bool(line *Line, v reflect.Value) error {
 func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error {
 	arg, ok := line.Next()
 	if !ok {
-		return ErrInsufficientArgs
+		return line.UsageError()
 	}
-	found := ""
-	for _, option := range v.Options(source) {
-		if strings.EqualFold(option, arg) {
-			found = option
-		}
+	opts := v.Options(source)
+	ind := slices.IndexFunc(opts, func(s string) bool {
+		return strings.EqualFold(s, arg)
+	})
+	if ind < 0 {
+		return MessageParameterInvalid.F(arg)
 	}
-	if found == "" {
-		return fmt.Errorf(`invalid argument "%v" for enum parameter "%v"`, arg, v.Type())
-	}
-	val.SetString(found)
+	val.SetString(opts[ind])
 	return nil
 }
 
@@ -212,12 +228,12 @@ func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error
 func (p parser) sub(line *Line, name string) error {
 	arg, ok := line.Next()
 	if !ok {
-		return ErrInsufficientArgs
+		return line.UsageError()
 	}
 	if strings.EqualFold(name, arg) {
 		return nil
 	}
-	return fmt.Errorf(`invalid argument "%v" for sub command "%v"`, arg, name)
+	return MessageParameterInvalid.F(arg)
 }
 
 // vec3 ...
@@ -246,7 +262,7 @@ func (p parser) targets(line *Line, v reflect.Value, tx *world.Tx) error {
 		return err
 	}
 	if len(targets) == 0 {
-		return fmt.Errorf("no targets found")
+		return MessageNoTargets.F()
 	}
 	v.Set(reflect.ValueOf(targets))
 	return nil
@@ -257,9 +273,9 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 	entities, players := targets(tx)
 	first, ok := line.Next()
 	if !ok {
-		return nil, ErrInsufficientArgs
+		return nil, line.UsageError()
 	}
-	switch first {
+	switch first[:min(len(first), 2)] {
 	case "@p":
 		pos := line.src.Position()
 		playerDistances := make([]float64, len(players))
@@ -283,23 +299,22 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 		if len(players) == 0 {
 			return nil, nil
 		}
-		return []Target{players[rand.Intn(len(players))]}, nil
+		return []Target{players[rand.IntN(len(players))]}, nil
 	default:
-		target, err := p.parsePlayer(players, first)
-		return []Target{target}, err
+		target, err := p.parsePlayer(first, players)
+		if err != nil {
+			return nil, err
+		}
+		return []Target{target}, nil
 	}
 }
 
-// parsePlayer parses one Player from the Line, reading more arguments if necessary to find a valid player
-// from the players Target list.
-func (p parser) parsePlayer(players []NamedTarget, name string) (Target, error) {
-	for _, p := range players {
-		if strings.EqualFold(p.Name(), name) {
-			// We found a match for this amount of arguments. Following arguments may still be a better
-			// match though (subset in the name, such as 'Hello' vs 'Hello World' as name), so keep going
-			// until we saturate the command line or pass 15 characters.
-			return p, nil
-		}
+// parsePlayer attempts to find a target whose name matches the name passed.
+func (p parser) parsePlayer(name string, players []NamedTarget) (Target, error) {
+	if ind := slices.IndexFunc(players, func(target NamedTarget) bool {
+		return strings.EqualFold(target.Name(), name)
+	}); ind != -1 {
+		return players[ind], nil
 	}
-	return nil, fmt.Errorf("player with name '%v' not found", name)
+	return nil, MessagePlayerNotFound.F()
 }

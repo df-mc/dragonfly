@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and
@@ -174,7 +174,7 @@ func (a *Armour) ThornsDamage(f DamageFunc) float64 {
 			// 15%/level chance of thorns activation per item. Total damage from
 			// normal thorns armour (max thorns III) should never exceed 4.0 in
 			// total.
-			dmg = math.Min(dmg+float64(1+rand.Intn(4)), 4.0)
+			dmg = math.Min(dmg+float64(1+rand.IntN(4)), 4.0)
 		}
 	}
 	if highest := a.HighestEnchantmentLevel(enchantment.Thorns); highest > 10 {
@@ -191,7 +191,7 @@ func (a *Armour) ThornsDamage(f DamageFunc) float64 {
 		// thorns armour item worn, while Bedrock Edition deals 1 additional damage
 		// for every thorns item and another 2 for every thorns item when it
 		// activates.
-		slot := rand.Intn(len(slots))
+		slot := rand.IntN(len(slots))
 		_ = a.Inventory().SetItem(slot, f(slots[slot], 2))
 	}
 	return dmg

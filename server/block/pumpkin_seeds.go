@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // PumpkinSeeds grow pumpkin blocks.
@@ -47,7 +47,7 @@ func (p PumpkinSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 					return
 				}
 			}
-			direction := directions[r.Intn(len(directions))].Face()
+			direction := directions[r.IntN(len(directions))].Face()
 			stemPos := pos.Side(direction)
 			if _, ok := tx.Block(stemPos).(Air); ok {
 				switch tx.Block(stemPos.Side(cube.FaceDown)).(type) {
@@ -66,7 +66,7 @@ func (p PumpkinSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if p.Growth == 7 {
 		return false
 	}
-	p.Growth = min(p.Growth+rand.Intn(4)+2, 7)
+	p.Growth = min(p.Growth+rand.IntN(4)+2, 7)
 	tx.SetBlock(pos, p, nil)
 	return true
 }

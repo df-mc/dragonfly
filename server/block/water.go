@@ -7,14 +7,13 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
 // Water is a natural fluid that generates abundantly in the world.
 type Water struct {
 	empty
-	replaceable
 
 	// Still makes the water appear as if it is not flowing.
 	Still bool
@@ -24,6 +23,16 @@ type Water struct {
 	// Falling specifies if the water is falling. Falling water will always appear as a source block, but its
 	// behaviour differs when it starts spreading.
 	Falling bool
+}
+
+// ReplaceableBy ...
+func (w Water) ReplaceableBy(b world.Block) bool {
+	if _, ok := b.(LiquidRemovable); ok {
+		_, displacer := b.(world.LiquidDisplacer)
+		_, liquid := b.(world.Liquid)
+		return displacer || liquid
+	}
+	return true
 }
 
 // EntityInside ...

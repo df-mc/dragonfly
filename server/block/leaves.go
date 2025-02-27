@@ -6,7 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
@@ -106,7 +106,7 @@ func (l Leaves) BreakInfo() BreakInfo {
 		var drops []item.Stack
 		// TODO: Drop saplings.
 		if rand.Float64() < 0.02 {
-			drops = append(drops, item.NewStack(item.Stick{}, rand.Intn(2)+1))
+			drops = append(drops, item.NewStack(item.Stick{}, rand.IntN(2)+1))
 		}
 		if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 0.005 {
 			drops = append(drops, item.NewStack(item.Apple{}, 1))

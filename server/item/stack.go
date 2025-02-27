@@ -2,6 +2,7 @@ package item
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 	"sort"
@@ -22,7 +23,8 @@ type Stack struct {
 	customName string
 	lore       []string
 
-	damage int
+	damage      int
+	unbreakable bool
 
 	anvilCost int
 
@@ -97,8 +99,7 @@ func (s Stack) MaxDurability() int {
 // get the maximum durability.
 func (s Stack) Damage(d int) Stack {
 	durable, ok := s.Item().(Durable)
-	if !ok {
-		// Not a durable item.
+	if !ok || s.unbreakable {
 		return s
 	}
 	durability := s.Durability()
@@ -121,14 +122,13 @@ func (s Stack) Damage(d int) Stack {
 }
 
 // WithDurability returns a new item stack with the durability passed. If the item does not implement the
-// Durable interface, WithDurability returns the original stack.
+// Durable interface, the original stack is returned.
 // The closer the durability d is to 0, the closer the item is to being broken. If a durability of 0 is passed,
 // a stack with the item type of the BrokenItem is returned. If a durability is passed that exceeds the
 // maximum durability, the stack returned will have the maximum durability.
 func (s Stack) WithDurability(d int) Stack {
 	durable, ok := s.Item().(Durable)
 	if !ok {
-		// Not a durable item.
 		return s
 	}
 	maxDurability := durable.DurabilityInfo().MaxDurability
@@ -142,6 +142,31 @@ func (s Stack) WithDurability(d int) Stack {
 		return durable.DurabilityInfo().BrokenItem()
 	}
 	s.damage = maxDurability - d
+	return s
+}
+
+// Unbreakable checks if the item stack is unbreakable.
+func (s Stack) Unbreakable() bool {
+	return s.unbreakable
+}
+
+// AsUnbreakable returns a copy of the Stack with the unbreakable tag set. If the item does not implement the
+// Durable interface, the original stack is returned.
+func (s Stack) AsUnbreakable() Stack {
+	if _, ok := s.Item().(Durable); !ok {
+		return s
+	}
+	s.unbreakable = true
+	return s
+}
+
+// AsBreakable returns a copy of the Stack without the unbreakable tag set. If the item does not implement the
+// Durable interface, the original stack is returned.
+func (s Stack) AsBreakable() Stack {
+	if _, ok := s.Item().(Durable); !ok {
+		return s
+	}
+	s.unbreakable = false
 	return s
 }
 
@@ -210,7 +235,7 @@ func (s Stack) Lore() []string {
 // WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
 func (s Stack) WithValue(key string, val any) Stack {
-	s.data = copyMap(s.data)
+	s.data = cloneMap(s.data)
 	if val != nil {
 		s.data[key] = val
 	} else {
@@ -232,7 +257,7 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	if _, ok := s.item.(Book); ok {
 		s.item = EnchantedBook{}
 	}
-	s.enchantments = copyEnchantments(s.enchantments)
+	s.enchantments = cloneMap(s.enchantments)
 	for _, enchant := range enchants {
 		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWithItem(s.item) {
 			// Enchantment is not compatible with the item.
@@ -245,7 +270,7 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 
 // WithoutEnchantments returns the current stack but with the passed enchantments removed.
 func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
-	s.enchantments = copyEnchantments(s.enchantments)
+	s.enchantments = cloneMap(s.enchantments)
 	for _, enchant := range enchants {
 		delete(s.enchantments, enchant)
 	}
@@ -265,10 +290,7 @@ func (s Stack) Enchantment(enchant EnchantmentType) (Enchantment, bool) {
 // Enchantments returns an array of all Enchantments on the item. Enchantments returns the enchantments of a Stack in a
 // deterministic order.
 func (s Stack) Enchantments() []Enchantment {
-	e := make([]Enchantment, 0, len(s.enchantments))
-	for _, ench := range s.enchantments {
-		e = append(e, ench)
-	}
+	e := slices.Collect(maps.Values(s.enchantments))
 	sort.Slice(e, func(i, j int) bool {
 		id1, _ := EnchantmentID(e[i].t)
 		id2, _ := EnchantmentID(e[j].t)
@@ -294,6 +316,21 @@ func (s Stack) WithAnvilCost(anvilCost int) Stack {
 	}
 	s.anvilCost = anvilCost
 	return s
+}
+
+// WithItem returns a Stack with the item type passed, copying all the
+// properties from s to the new stack. Damage to an item, enchantments and anvil
+// costs are only copied if they are still applicable to the new item type.
+func (s Stack) WithItem(t world.Item) Stack {
+	cp := NewStack(t, s.count).
+		Damage(s.damage).
+		WithCustomName(s.customName).
+		WithLore(s.lore...).
+		WithEnchantments(s.Enchantments()...).
+		WithAnvilCost(s.anvilCost)
+	cp.unbreakable = s.unbreakable && s.MaxDurability() != -1
+	cp.data = s.data
+	return cp
 }
 
 // AddStack adds another stack to the stack and returns both stacks. The first stack returned will have as
@@ -371,7 +408,15 @@ func (s Stack) String() string {
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:
 // Modifying it will not modify the item stack.
 func (s Stack) Values() map[string]any {
-	return copyMap(s.data)
+	return maps.Clone(s.data)
+}
+
+// cloneMap calls maps.Clone, but initialises m if it does not yet exist.
+func cloneMap[M ~map[K]V, K comparable, V any](m M) M {
+	if m == nil {
+		m = make(M)
+	}
+	return maps.Clone(m)
 }
 
 // stackID is a counter for unique stack IDs.
@@ -397,22 +442,4 @@ func id(s Stack) int32 {
 // end, which is typically used for sending messages, popups and tips.
 func format(a []any) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
-}
-
-// copyMap makes a copy of the map passed. It does not recursively copy the map.
-func copyMap(m map[string]any) map[string]any {
-	cp := make(map[string]any, len(m))
-	for k, v := range m {
-		cp[k] = v
-	}
-	return cp
-}
-
-// copyEnchantments makes a copy of the enchantments map passed. It does not recursively copy the map.
-func copyEnchantments(m map[EnchantmentType]Enchantment) map[EnchantmentType]Enchantment {
-	cp := make(map[EnchantmentType]Enchantment, len(m))
-	for k, v := range m {
-		cp[k] = v
-	}
-	return cp
 }

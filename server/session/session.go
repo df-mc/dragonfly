@@ -13,12 +13,12 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"github.com/sandertv/gophertunnel/minecraft/text"
 	"io"
 	"log/slog"
 	"net"
@@ -52,7 +52,7 @@ type Session struct {
 	// entityRuntimeIDs holds the runtime IDs of entities shown to the session.
 	entityRuntimeIDs map[*world.EntityHandle]uint64
 	entities         map[uint64]*world.EntityHandle
-	hiddenEntities   map[*world.EntityHandle]struct{}
+	hiddenEntities   map[uuid.UUID]struct{}
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot                     *uint32
@@ -82,8 +82,6 @@ type Session struct {
 	blobs                 map[uint64][]byte
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
-
-	joinMessage, quitMessage string
 
 	closeBackground chan struct{}
 }
@@ -133,7 +131,7 @@ type Config struct {
 
 	MaxChunkRadius int
 
-	JoinMessage, QuitMessage string
+	JoinMessage, QuitMessage chat.Translation
 
 	HandleStop func(*world.Tx, Controllable)
 }
@@ -156,15 +154,13 @@ func (conf Config) New(conn Conn) *Session {
 		handlers:               map[uint32]packetHandler{},
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
-		hiddenEntities:         map[*world.EntityHandle]struct{}{},
+		hiddenEntities:         map[uuid.UUID]struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
 		conn:                   conn,
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
-		joinMessage:            conf.JoinMessage,
-		quitMessage:            conf.QuitMessage,
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
 	}
@@ -177,7 +173,8 @@ func (conf Config) New(conn Conn) *Session {
 	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
-	s.writePacket(&packet.CreativeContent{Items: creativeItems()})
+	groups, items := creativeContent()
+	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
 	s.sendArmourTrimData()
 	s.SendSpeed(0.1)
@@ -224,8 +221,8 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 
 	chat.Global.Subscribe(c)
-	if s.joinMessage != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.joinMessage, s.conn.IdentityData().DisplayName)))
+	if !s.conf.JoinMessage.Zero() {
+		chat.Global.Writet(s.conf.JoinMessage, s.conn.IdentityData().DisplayName)
 	}
 
 	go s.background()
@@ -255,15 +252,15 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	s.chunkLoader.Close(tx)
 
-	if s.quitMessage != "" {
-		_, _ = fmt.Fprintln(chat.Global, text.Colourf("<yellow>%v</yellow>", fmt.Sprintf(s.quitMessage, s.conn.IdentityData().DisplayName)))
+	if !s.conf.QuitMessage.Zero() {
+		chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
 	}
 	chat.Global.Unsubscribe(c)
 
 	// Note: Be aware of where RemoveEntity is called. This must not be done too
 	// early.
 	tx.RemoveEntity(c)
-	s.ent.Close(tx)
+	_ = s.ent.Close()
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.
@@ -376,16 +373,15 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
+	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
+		s.handleWorldSwitch(w, tx, c)
+	}
 	pos := c.Position()
 	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
 		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
-
-	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
-		s.handleWorldSwitch(w, tx, c)
-	}
 
 	s.blobMu.Lock()
 	const maxChunkTransactions = 8

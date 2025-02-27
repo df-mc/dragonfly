@@ -3,7 +3,7 @@ package session
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"time"
 
@@ -41,7 +41,7 @@ type OffsetEntity interface {
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
-	_, ok := s.hiddenEntities[e.H()]
+	_, ok := s.hiddenEntities[e.H().UUID()]
 	s.entityMutex.RUnlock()
 	return ok
 }
@@ -453,6 +453,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticleLegacyEvent | 10,
 			Position:  vec64To32(pos),
 		})
+	case particle.DustPlume:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 88,
+			Position:  vec64To32(pos),
+		})
 	}
 }
 
@@ -712,6 +717,28 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventBucketEmptyLava
 	case sound.BowShoot:
 		pk.SoundType = packet.SoundEventBow
+	case sound.CrossbowLoad:
+		switch so.Stage {
+		case sound.CrossbowLoadingStart:
+			pk.SoundType = packet.SoundEventCrossbowLoadingStart
+			if so.QuickCharge {
+				pk.SoundType = packet.SoundEventCrossbowQuickChargeStart
+			}
+		case sound.CrossbowLoadingMiddle:
+			pk.SoundType = packet.SoundEventCrossbowLoadingMiddle
+			if so.QuickCharge {
+				pk.SoundType = packet.SoundEventCrossbowQuickChargeMiddle
+			}
+		case sound.CrossbowLoadingEnd:
+			pk.SoundType = packet.SoundEventCrossbowLoadingEnd
+			if so.QuickCharge {
+				pk.SoundType = packet.SoundEventCrossbowQuickChargeEnd
+			}
+		default:
+			panic("invalid crossbow loading stage")
+		}
+	case sound.CrossbowShoot:
+		pk.SoundType = packet.SoundEventCrossbowShoot
 	case sound.ArrowHit:
 		pk.SoundType = packet.SoundEventBowHit
 	case sound.ItemThrow:
@@ -788,6 +815,16 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			EventType: packet.LevelEventSoundTotemUsed,
 			Position:  vec64To32(pos),
 		})
+	case sound.DecoratedPotInserted:
+		s.writePacket(&packet.PlaySound{
+			SoundName: "block.decorated_pot.insert",
+			Position:  vec64To32(pos),
+			Volume:    1,
+			Pitch:     0.7 + 0.5*float32(so.Progress),
+		})
+		return
+	case sound.DecoratedPotInsertFailed:
+		pk.SoundType = packet.SoundEventDecoratedPotInsertFail
 	}
 	s.writePacket(pk)
 }
@@ -1130,6 +1167,14 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 			Position:  vec64To32(pos.Vec3()),
 			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
 		})
+	case block.DecoratedPotWobbleAction:
+		nbt := t.DecoratedPot.EncodeNBT()
+		nbt["x"], nbt["y"], nbt["z"] = blockPos.X(), blockPos.Y(), blockPos.Z()
+		nbt["animation"] = boolByte(t.Success) + 1
+		s.writePacket(&packet.BlockActorData{
+			Position: blockPos,
+			NBTData:  nbt,
+		})
 	}
 }
 
@@ -1170,7 +1215,7 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 		EventType: packet.LevelEventStopRaining,
 	}
 	if raining {
-		pk.EventType, pk.EventData = packet.LevelEventStartRaining, int32(rand.Intn(50000)+10000)
+		pk.EventType, pk.EventData = packet.LevelEventStartRaining, int32(rand.IntN(50000)+10000)
 	}
 	s.writePacket(pk)
 
@@ -1178,7 +1223,7 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 		EventType: packet.LevelEventStopThunderstorm,
 	}
 	if thunder {
-		pk.EventType, pk.EventData = packet.LevelEventStartThunderstorm, int32(rand.Intn(50000)+10000)
+		pk.EventType, pk.EventData = packet.LevelEventStartThunderstorm, int32(rand.IntN(50000)+10000)
 	}
 	s.writePacket(pk)
 }

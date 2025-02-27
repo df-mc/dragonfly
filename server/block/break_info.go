@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"slices"
 	"time"
 )
@@ -133,7 +133,7 @@ type XPDropRange [2]int
 func (r XPDropRange) RandomValue() int {
 	diff := r[1] - r[0]
 	// Add one because it's a [r[0], r[1]] interval.
-	return rand.Intn(diff+1) + r[0]
+	return rand.IntN(diff+1) + r[0]
 }
 
 // pickaxeEffective is a convenience function for blocks that are effectively mined with a pickaxe.
@@ -248,6 +248,12 @@ func breakBlock(b world.Block, pos cube.Pos, tx *world.Tx) {
 }
 
 func breakBlockNoDrops(b world.Block, pos cube.Pos, tx *world.Tx) {
+	if breakable, ok := b.(Breakable); ok {
+		breakHandler := breakable.BreakInfo().BreakHandler
+		if breakHandler != nil {
+			breakHandler(pos, tx, nil)
+		}
+	}
 	tx.SetBlock(pos, nil, nil)
 	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 }

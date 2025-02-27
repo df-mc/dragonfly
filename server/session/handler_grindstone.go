@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -47,6 +47,15 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session, tx *world.Tx
 
 	resultStack := nonZeroItem(firstInput, secondInput)
 	if !firstInput.Empty() && !secondInput.Empty() {
+		name, meta := firstInput.Item().EncodeItem()
+		name2, meta2 := secondInput.Item().EncodeItem()
+		if name != name2 || meta != meta2 {
+			return fmt.Errorf("input items must be the same type")
+		}
+		if _, ok := firstInput.Item().(item.Durable); !ok {
+			return fmt.Errorf("input items must be durable")
+		}
+
 		// We add the enchantments to the result stack in order to calculate the gained experience. These enchantments
 		// are stripped when creating the result.
 		resultStack = firstInput.WithEnchantments(secondInput.Enchantments()...)
@@ -94,7 +103,7 @@ func experienceFromEnchantments(stack item.Stack) int {
 	}
 
 	minExperience := int(math.Ceil(float64(totalCost) / 2))
-	return minExperience + rand.Intn(minExperience)
+	return minExperience + rand.IntN(minExperience)
 }
 
 // stripPossibleEnchantments strips all enchantments possible, excluding curses.
@@ -105,7 +114,7 @@ func stripPossibleEnchantments(stack item.Stack) item.Stack {
 		}
 		stack = stack.WithoutEnchantments(enchant.Type())
 	}
-	return stack
+	return stack.WithAnvilCost(0)
 }
 
 // nonZeroItem returns the item.Stack that exists out of two input items. The function expects at least one of the

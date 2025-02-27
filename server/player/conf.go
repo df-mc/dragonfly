@@ -11,7 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/text/language"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -55,34 +55,35 @@ func (cfg Config) Apply(data *world.EntityData) {
 	data.Name, data.Pos, data.Rot = conf.Name, conf.Position, conf.Rotation
 	slot := uint32(conf.HeldSlot)
 	pdata := &playerData{
-		xuid:              conf.XUID,
-		ui:                inventory.New(54, nil),
-		inv:               conf.Inventory,
-		enderChest:        conf.EnderChestInventory,
-		offHand:           conf.OffHand,
-		armour:            conf.Armour,
-		hunger:            newHungerManager(),
-		health:            entity.NewHealthManager(conf.Health, conf.MaxHealth), // 20, 20
-		experience:        entity.NewExperienceManager(),
-		effects:           entity.NewEffectManager(conf.Effects...),
-		locale:            conf.Locale,
-		cooldowns:         make(map[string]time.Time),
-		mc:                &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
-		heldSlot:          &slot,
-		gameMode:          conf.GameMode,
-		skin:              conf.Skin,
-		enchantSeed:       conf.EnchantmentSeed,
-		s:                 conf.Session,
-		h:                 NopHandler{},
-		speed:             0.1,
-		flightSpeed:       0.05,
-		scale:             1.0,
-		airSupplyTicks:    conf.AirSupply,
-		maxAirSupplyTicks: conf.MaxAirSupply,
-		breathing:         true,
-		nameTag:           conf.Name,
-		fireTicks:         conf.FireTicks,
-		fallDistance:      conf.FallDistance,
+		xuid:                conf.XUID,
+		ui:                  inventory.New(54, nil),
+		inv:                 conf.Inventory,
+		enderChest:          conf.EnderChestInventory,
+		offHand:             conf.OffHand,
+		armour:              conf.Armour,
+		hunger:              newHungerManager(),
+		health:              entity.NewHealthManager(conf.Health, conf.MaxHealth), // 20, 20
+		experience:          entity.NewExperienceManager(),
+		effects:             entity.NewEffectManager(conf.Effects...),
+		locale:              conf.Locale,
+		cooldowns:           make(map[string]time.Time),
+		mc:                  &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
+		heldSlot:            &slot,
+		gameMode:            conf.GameMode,
+		skin:                conf.Skin,
+		enchantSeed:         conf.EnchantmentSeed,
+		s:                   conf.Session,
+		h:                   NopHandler{},
+		speed:               0.1,
+		flightSpeed:         0.05,
+		verticalFlightSpeed: 1.0,
+		scale:               1.0,
+		airSupplyTicks:      conf.AirSupply,
+		maxAirSupplyTicks:   conf.MaxAirSupply,
+		breathing:           true,
+		nameTag:             conf.Name,
+		fireTicks:           conf.FireTicks,
+		fallDistance:        conf.FallDistance,
 	}
 	pdata.hunger.foodLevel, pdata.hunger.foodTick, pdata.hunger.exhaustionLevel, pdata.hunger.saturationLevel = conf.Food, conf.FoodTick, conf.Exhaustion, conf.Saturation
 	pdata.experience.Add(conf.Experience)
@@ -110,7 +111,7 @@ func fillDefaults(conf Config) Config {
 		conf.Food, conf.Saturation = 20, 5
 	}
 	if conf.EnchantmentSeed == 0 {
-		conf.EnchantmentSeed = rand.Int63()
+		conf.EnchantmentSeed = rand.Int64()
 	}
 	if conf.MaxAirSupply == 0 {
 		conf.AirSupply, conf.MaxAirSupply = 300, 300

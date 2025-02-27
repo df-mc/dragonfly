@@ -8,7 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // ItemFrame is a block entity that displays the item or block that is inside it.
@@ -86,12 +86,10 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 
 // BreakInfo ...
 func (i ItemFrame) BreakInfo() BreakInfo {
-	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
-		it := []item.Stack{item.NewStack(i, 1)}
+	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, oneOf(ItemFrame{Glowing: i.Glowing})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		if !i.Item.Empty() {
-			it = append(it, i.Item)
+			dropItem(tx, i.Item, pos.Vec3Centre())
 		}
-		return it
 	})
 }
 
@@ -145,7 +143,7 @@ func (i ItemFrame) Pick() item.Stack {
 	if i.Item.Empty() {
 		return item.NewStack(ItemFrame{Glowing: i.Glowing}, 1)
 	}
-	return item.NewStack(i.Item.Item(), 1)
+	return i.Item.Grow(-i.Item.Count() + 1)
 }
 
 // SideClosed ...

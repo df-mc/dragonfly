@@ -155,6 +155,16 @@ type Releasable interface {
 	Requirements() []Stack
 }
 
+// Chargeable represents an item that can be charged.
+type Chargeable interface {
+	// Charge is called when an item is being used.
+	Charge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) bool
+	// ContinueCharge continues the charge.
+	ContinueCharge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration)
+	// ReleaseCharge is called when an item is being released.
+	ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
+}
+
 // User represents an entity that is able to use an item in the world, typically entities such as players,
 // which interact with the world using an item.
 type User interface {
@@ -213,6 +223,16 @@ func eyePosition(e world.Entity) mgl64.Vec3 {
 	pos := e.Position()
 	if eyed, ok := e.(interface{ EyeHeight() float64 }); ok {
 		pos = pos.Add(mgl64.Vec3{0, eyed.EyeHeight()})
+	}
+	return pos
+}
+
+// torsoPosition returns the position of the torso of the entity if the entity implements entity.Torsoed, or the
+// actual position if it doesn't.
+func torsoPosition(e world.Entity) mgl64.Vec3 {
+	pos := e.Position()
+	if torso, ok := e.(interface{ TorsoHeight() float64 }); ok {
+		pos = pos.Add(mgl64.Vec3{0, torso.TorsoHeight()})
 	}
 	return pos
 }

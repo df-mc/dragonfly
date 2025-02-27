@@ -58,7 +58,7 @@ type itemHash struct {
 }
 
 var (
-	//go:embed item_runtime_ids.nbt
+	//go:embed vanilla_items.nbt
 	itemRuntimeIDData []byte
 	// items holds a list of all registered items, indexed using the itemHash created when calling
 	// Item.EncodeItem.
@@ -73,14 +73,19 @@ var (
 
 // init reads all item entries from the resource JSON, and sets the according values in the runtime ID maps.
 func init() {
-	var m map[string]int32
+	var m map[string]struct {
+		RuntimeID      int32          `nbt:"runtime_id"`
+		ComponentBased bool           `nbt:"component_based"`
+		Version        int32          `nbt:"version"`
+		Data           map[string]any `nbt:"data,omitempty"`
+	}
 	err := nbt.Unmarshal(itemRuntimeIDData, &m)
 	if err != nil {
 		panic(err)
 	}
-	for name, rid := range m {
-		itemNamesToRuntimeIDs[name] = rid
-		itemRuntimeIDsToNames[rid] = name
+	for name, e := range m {
+		itemNamesToRuntimeIDs[name] = e.RuntimeID
+		itemRuntimeIDsToNames[e.RuntimeID] = name
 	}
 }
 

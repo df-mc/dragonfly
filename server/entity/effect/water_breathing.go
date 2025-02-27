@@ -14,5 +14,5 @@ type waterBreathing struct {
 
 // RGBA ...
 func (waterBreathing) RGBA() color.RGBA {
-	return color.RGBA{R: 0x2e, G: 0x52, B: 0x99, A: 0xff}
+	return color.RGBA{R: 0x98, G: 0xda, B: 0xc0, A: 0xff}
 }

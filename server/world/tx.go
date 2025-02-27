@@ -4,6 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 	"iter"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -225,4 +227,49 @@ func (tx *Tx) World() *World {
 // close finishes the Tx, causing any following call on the Tx to panic.
 func (tx *Tx) close() {
 	tx.closed = true
+}
+
+// normalTransaction is added to the transaction queue for transactions created
+// using World.Exec().
+type normalTransaction struct {
+	c chan struct{}
+	f func(tx *Tx)
+}
+
+// Run creates a *Tx, calls ntx.f, closes the transaction and finally closes
+// ntx.c.
+func (ntx normalTransaction) Run(w *World) {
+	tx := &Tx{w: w}
+	ntx.f(tx)
+	tx.close()
+	close(ntx.c)
+}
+
+// weakTransaction is a transaction that may be cancelled by setting its invalid
+// bool to false before the transaction is run.
+type weakTransaction struct {
+	c       chan bool
+	f       func(tx *Tx)
+	invalid *atomic.Bool
+	cond    *sync.Cond
+}
+
+// Run runs the transaction, first checking if its invalid bool is false and
+// creating a *Tx if so. Afterwards, a bool indicating if the transaction was
+// run is added to wtx.c. Finally, wtx.cond.Broadcast() is called.
+func (wtx weakTransaction) Run(w *World) {
+	valid := !wtx.invalid.Load()
+	if valid {
+		tx := &Tx{w: w}
+		wtx.f(tx)
+		tx.close()
+	}
+	// We have to acquire a lock on wtx.cond.L here to make sure cond.Wait()
+	// has been called before we call cond.Broadcast(). If not, we might
+	// broadcast before cond.Wait() and cause a permanent suspension.
+	wtx.cond.L.Lock()
+	defer wtx.cond.L.Unlock()
+
+	wtx.c <- valid
+	wtx.cond.Broadcast()
 }
