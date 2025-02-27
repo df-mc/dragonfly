@@ -16,9 +16,9 @@ type Shulker struct {
 // BBox returns a BBox that depends on the opening/closing progress of the shulker.
 func (s Shulker) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	peak := physicalPeak(s.Progress)
-
+	// Adds peak to the top and subtracts peak from the bottom.  (according to BDS)
 	bbox := full
-	bbox.ExtendTowards(s.Facing, peak)
+	bbox.ExtendTowards(s.Facing, peak).ExtendTowards(s.Facing.Opposite(), -peak)
 
 	return []cube.BBox{bbox}
 }
