@@ -788,10 +788,6 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			EventType: packet.LevelEventSoundTotemUsed,
 			Position:  vec64To32(pos),
 		})
-	case sound.ShulkerBoxClose:
-		pk.SoundType = packet.SoundEventShulkerBoxClosed
-	case sound.ShulkerBoxOpen:
-		pk.SoundType = packet.SoundEventShulkerBoxOpen
 	}
 	s.writePacket(pk)
 }

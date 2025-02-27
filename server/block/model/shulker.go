@@ -1,0 +1,36 @@
+package model
+
+import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
+)
+
+// Shulker is the model of a shulker. It depends on the opening/closing progress of the shulker.
+type Shulker struct {
+	// Facing is the face that the shulker faces.
+	Facing cube.Face
+	// Progress is the opening/closing progress of the shulker. It is a float between 0 and 1.
+	Progress int32
+}
+
+// BBox returns a BBox that depends on the opening/closing progress of the shulker.
+func (s Shulker) BBox(cube.Pos, world.BlockSource) []cube.BBox {
+	peak := physicalPeak(s.Progress)
+
+	bbox := full
+	bbox.ExtendTowards(s.Facing, peak)
+
+	return []cube.BBox{bbox}
+}
+
+// physicalPeak returns the peak of which the shulker reaches in its current progress
+func physicalPeak(progress int32) float64 {
+	fp := float64(progress) / 10.0
+	openness := 1.0 - fp
+	return (1.0 - openness*openness*openness) * 0.5
+}
+
+// FaceSolid always returns false.
+func (Shulker) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
+	return false
+}

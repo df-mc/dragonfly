@@ -3,21 +3,28 @@ package block
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"sync"
-	"time"
+	"sync/atomic"
+)
+
+const (
+	StateClosed = iota
+	StateOpening
+	StateOpened
+	StateClosing
 )
 
 // ShulkerBox is a dye-able block that stores items. Unlike other blocks, it keeps its contents when broken.
 type ShulkerBox struct {
-	solid // TODO: I don't think it should be solid
 	transparent
 	sourceWaterDisplacer
 	// Type is the type of shulker box of the block.
@@ -31,24 +38,38 @@ type ShulkerBox struct {
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
 	viewers   map[ContainerViewer]struct{}
+	// progress is the openness of the shulker box opening or closing. It is a float between 0 and 1.
+	progress *atomic.Int32
+	// animationStatus is the current openness state of the shulker box (whether its opened, closing, etc.).
+	animationStatus *atomic.Int32
 }
 
 // NewShulkerBox creates a new initialised shulker box. The inventory is properly initialised.
 func NewShulkerBox() ShulkerBox {
 	s := ShulkerBox{
-		viewerMu: new(sync.RWMutex),
-		viewers:  make(map[ContainerViewer]struct{}, 1),
+		viewerMu:        new(sync.RWMutex),
+		viewers:         make(map[ContainerViewer]struct{}, 1),
+		progress:        new(atomic.Int32),
+		animationStatus: new(atomic.Int32),
 	}
 
 	s.inventory = inventory.New(27, func(slot int, _, after item.Stack) {
 		s.viewerMu.RLock()
 		defer s.viewerMu.RUnlock()
 		for viewer := range s.viewers {
-			viewer.ViewSlotChange(slot, after)
+			// A shulker box inventory can't store shulker boxes, this is mostly handled by the client.
+			if _, ok := after.Item().(ShulkerBox); !ok {
+				viewer.ViewSlotChange(slot, after)
+			}
 		}
 	})
 
 	return s
+}
+
+// Model ...
+func (s ShulkerBox) Model() world.BlockModel {
+	return model.Shulker{Facing: s.Facing, Progress: s.progress.Load()}
 }
 
 // WithName returns the shulker box after applying a specific name to the block.
@@ -82,12 +103,12 @@ func (s ShulkerBox) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) 
 }
 
 // Inventory returns the inventory of the shulker box.
-func (s ShulkerBox) Inventory(tx *world.Tx, pos cube.Pos) *inventory.Inventory {
+func (s ShulkerBox) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return s.inventory
 }
 
 // Activate ...
-func (s ShulkerBox) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (s ShulkerBox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		if d, ok := tx.Block(pos.Side(s.Facing)).(LightDiffuser); ok && d.LightDiffusionLevel() <= 2 {
 			opener.OpenBlockContainer(pos, tx)
@@ -99,7 +120,7 @@ func (s ShulkerBox) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, 
 }
 
 // UseOnBlock ...
-func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, s)
 	if !used {
 		return
@@ -122,7 +143,9 @@ func (s ShulkerBox) open(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, OpenAction{})
 	}
+	s.animationStatus.Store(StateOpening)
 	tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxOpen{})
+	tx.ScheduleBlockUpdate(pos, s, 0)
 }
 
 // close closes the shulker box, displaying the animation and playing a sound.
@@ -130,13 +153,32 @@ func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, CloseAction{})
 	}
-	tx.ScheduleBlockUpdate(pos, s, time.Millisecond*50*9)
+	s.animationStatus.Store(StateClosing)
+	tx.ScheduleBlockUpdate(pos, s, 0)
 }
 
 // ScheduledTick ...
-func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	if len(s.viewers) == 0 {
-		tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxClose{})
+func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	switch s.animationStatus.Load() {
+	case StateClosed:
+		s.progress.Store(0)
+	case StateOpening:
+		s.progress.Add(1)
+		if s.progress.Load() >= 10 {
+			s.progress.Store(10)
+			s.animationStatus.Store(StateOpened)
+		}
+		tx.ScheduleBlockUpdate(pos, s, 0)
+	case StateOpened:
+		s.progress.Store(10)
+	case StateClosing:
+		s.progress.Add(-1)
+		if s.progress.Load() <= 0 {
+			tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxClose{})
+			s.progress.Store(0)
+			s.animationStatus.Store(StateClosed)
+		}
+		tx.ScheduleBlockUpdate(pos, s, 0)
 	}
 }
 
@@ -193,7 +235,7 @@ func (s ShulkerBox) EncodeNBT() map[string]any {
 	return m
 }
 
-// allShulkerBoxes ...
+// allShulkerBoxes ...e
 func allShulkerBoxes() (shulkerboxes []world.Block) {
 	for _, t := range ShulkerBoxTypes() {
 		shulkerboxes = append(shulkerboxes, ShulkerBox{Type: t})
