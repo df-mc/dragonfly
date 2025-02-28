@@ -238,15 +238,20 @@ func (p parser) sub(line *Line, name string) error {
 
 // vec3 ...
 func (p parser) vec3(line *Line, v reflect.Value) error {
-	if err := p.float(line, v.Index(0)); err != nil {
-		return err
+	pos := line.src.Position()
+	for i := 0; i < 3; i++ {
+		arg, ok := line.Next()
+		if !ok {
+			return line.UsageError()
+		}
+		coord, err := p.coordinate(arg, pos[i])
+		if err != nil {
+			return err
+		}
+		v.Index(i).SetFloat(coord)
+		line.RemoveNext()
 	}
-	line.RemoveNext()
-	if err := p.float(line, v.Index(1)); err != nil {
-		return err
-	}
-	line.RemoveNext()
-	return p.float(line, v.Index(2))
+	return nil
 }
 
 // varargs ...
@@ -317,4 +322,25 @@ func (p parser) parsePlayer(name string, players []NamedTarget) (Target, error) 
 		return players[ind], nil
 	}
 	return nil, MessagePlayerNotFound.F()
+}
+
+// coordinate parses a single coordinate argument. If the argument starts with "~",
+// it is interpreted relative to the provided current value; otherwise it is treated as an absolute value.
+func (p parser) coordinate(arg string, current float64) (float64, error) {
+	if strings.HasPrefix(arg, "~") {
+		offsetStr := strings.TrimPrefix(arg, "~")
+		if offsetStr == "" {
+			return current, nil
+		}
+		offset, err := strconv.ParseFloat(offsetStr, 64)
+		if err != nil {
+			return 0, MessageNumberInvalid.F(arg)
+		}
+		return current + offset, nil
+	}
+	f, err := strconv.ParseFloat(arg, 64)
+	if err != nil {
+		return 0, MessageNumberInvalid.F(arg)
+	}
+	return f, nil
 }
