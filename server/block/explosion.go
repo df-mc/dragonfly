@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -97,16 +98,15 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		math.Ceil(explosionPos[2]+d+1),
 	)
 
+	affectedEntities := make([]world.Entity, 0, 32)
 	for e := range tx.EntitiesWithin(box.Grow(2)) {
 		pos := e.Position()
 		dist := pos.Sub(explosionPos).Len()
 		if dist > d || dist == 0 {
 			continue
 		}
-		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - dist/d) * exposure(tx, explosionPos, e)
-			explodable.Explode(explosionPos, impact, c)
-		}
+
+		affectedEntities = append(affectedEntities, e)
 	}
 
 	affectedBlocks := make([]cube.Pos, 0, 32)
@@ -132,6 +132,14 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 			}
 		}
 	}
+
+	ctx := event.C(tx)
+	spawnFire := c.SpawnFire
+	itemDropChance := c.ItemDropChance
+	if tx.World().Handler().HandleExplosion(ctx, explosionPos, &affectedEntities, &affectedBlocks, &itemDropChance, &spawnFire); ctx.Cancelled() {
+		return
+	}
+
 	for _, pos := range affectedBlocks {
 		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
@@ -142,14 +150,22 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 				breakHandler(pos, tx, nil)
 			}
 			tx.SetBlock(pos, nil, nil)
-			if c.ItemDropChance > r.Float64() {
+			if itemDropChance > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(tx, drop, pos.Vec3Centre())
 				}
 			}
 		}
 	}
-	if c.SpawnFire {
+
+	for _, e := range affectedEntities {
+		if explodable, ok := e.(ExplodableEntity); ok {
+			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
+			explodable.Explode(explosionPos, impact, c)
+		}
+	}
+
+	if spawnFire {
 		for _, pos := range affectedBlocks {
 			if r.IntN(3) == 0 {
 				if _, ok := tx.Block(pos).(Air); ok && tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos, cube.FaceUp, tx) {
