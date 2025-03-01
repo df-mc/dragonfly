@@ -133,9 +133,15 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 	}
 
 	time := w.Time() % world.TimeFull
-	if !tx.ThunderingAt(pos) && ((tx.RainingAt(pos) && (time <= 12010 || time >= 23991)) || (!tx.RainingAt(pos) && (time <= 12542 || time >= 23459))){
-		s.Messaget(chat.MessageNoSleep)
-		return true
+	if !tx.ThunderingAt(pos) {
+		if tx.RainingAt(pos) && (time <= 12010 || time >= 23991) {
+			s.Messaget(chat.MessageNoSleep)
+			return true
+		}
+		if !tx.RainingAt(pos) && (time <= 12542 || time >= 23459) {
+			s.Messaget(chat.MessageNoSleep)
+			return true
+		}
 	}
 	if headSide.Sleeper != nil {
 		s.Messaget(chat.MessageBedIsOccupied)
