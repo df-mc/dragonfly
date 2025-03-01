@@ -96,6 +96,11 @@ func (Lava) LightEmissionLevel() uint8 {
 	return 15
 }
 
+// PistonBreakable ...
+func (Lava) PistonBreakable() bool {
+	return true
+}
+
 // NeighbourUpdateTick ...
 func (l Lava) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !l.Harden(pos, tx, nil) {

@@ -421,6 +421,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
 			Position:  vec64To32(pos),
 		})
+	case particle.Dispense:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticlesShoot,
+			Position:  vec64To32(pos),
+		})
 	case particle.Effect:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleLegacyEvent | 33,
@@ -602,6 +607,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventSmokerUse
 	case sound.PotionBrewed:
 		pk.SoundType = packet.SoundEventPotionBrewed
+	case sound.PowerOn:
+		pk.SoundType = packet.SoundEventPowerOn
+	case sound.PowerOff:
+		pk.SoundType = packet.SoundEventPowerOff
 	case sound.UseSpyglass:
 		pk.SoundType = packet.SoundEventUseSpyglass
 	case sound.StopUsingSpyglass:
@@ -808,6 +817,14 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventComposterFillLayer
 	case sound.ComposterReady:
 		pk.SoundType = packet.SoundEventComposterReady
+	case sound.PistonExtend:
+		pk.SoundType = packet.SoundEventPistonOut
+	case sound.PistonRetract:
+		pk.SoundType = packet.SoundEventPistonIn
+	case sound.DispenseFail:
+		pk.SoundType = packet.SoundEventBlockClickFail
+	case sound.Dispense:
+		pk.SoundType = packet.SoundEventBlockClick
 	case sound.LecternBookPlace:
 		pk.SoundType = packet.SoundEventLecternBookPlace
 	case sound.Totem:
@@ -1107,6 +1124,10 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world
 		containerType = protocol.ContainerTypeSmoker
 	case block.Hopper:
 		containerType = protocol.ContainerTypeHopper
+	case block.Dispenser:
+		containerType = protocol.ContainerTypeDispenser
+	case block.Dropper:
+		containerType = protocol.ContainerTypeDropper
 	}
 
 	s.writePacket(&packet.ContainerOpen{
