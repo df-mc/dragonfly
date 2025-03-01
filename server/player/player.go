@@ -991,11 +991,23 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 		panic("not implemented")
 	}
 	if b, ok := tx.Block(playerSpawn).(block.RespawnAnchor); ok && b.CanRespawnOn() {
-		// TODO implement logic https://minecraft.wiki/w/Respawn_Anchor#Respawning
-		panic("not implemented")
-	}
-	if b, ok := tx.Block(playerSpawn).(block.RespawnBlock); ok && b.CanRespawnOn() {
-		return playerSpawn, w, false, previousDimension
+		xOffset := []cube.Pos{{0, 0, -1}, {-1, 0, 0}, {1, 0, 0}, {0, 0, 1}, {-1, 0, -1}, {1, 0, -1}, {-1, 0, 1}, {1, 0, 1}}
+		yOffset := []cube.Pos{{0, -1, 0},  {0, 0, 0}, {0, 1, 0}};
+
+		for _, y := range yOffset {
+			for _, x := range xOffset {
+				newOffset := y.Add(x)
+				if _, ok := tx.Block(playerSpawn.Add(newOffset)).(block.Air); ok {
+					return playerSpawn.Add(newOffset), w, false, previousDimension
+				}
+			}
+		}
+
+		if _, ok := tx.Block(playerSpawn.Add(cube.Pos{0, 1, 0})).(block.Air); ok {
+			return playerSpawn.Add(cube.Pos{0, 1, 0}), w, false, previousDimension
+		}
+
+		p.Messaget(chat.MessageRespawnAnchorNotValid)
 	}
 
 	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
