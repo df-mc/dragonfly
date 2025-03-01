@@ -52,7 +52,6 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		t.Start(entity, lvl)
 		return e
 	}
-	// Infinite duration has priority over other durations
 	if existing.Level() > lvl || (existing.Level() == lvl && ((existing.Duration() > dur && !e.Infinite()) || existing.Infinite())) {
 		return existing
 	}

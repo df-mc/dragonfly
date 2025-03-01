@@ -69,7 +69,8 @@ func NewAmbient(t LastingType, lvl int, d time.Duration) Effect {
 	return Effect{t: t, lvl: lvl, d: d, ambient: true}
 }
 
-// NewInfinite creates a new infinitely lasting effect.
+// NewInfinite creates a new Effect using a LastingType passed. Once added to an entity, the effect will persist indefinitely,
+// until the effect is removed.
 func NewInfinite(t LastingType, lvl int) Effect {
 	return Effect{t: t, lvl: lvl, infinite: true}
 }
@@ -91,8 +92,8 @@ func (e Effect) Level() int {
 	return e.lvl
 }
 
-// Duration returns the leftover duration of the Effect. The duration returned is always 0 if NewInstant was used to
-// create the effect.
+// Duration returns the leftover duration of the Effect. The duration returned is always 0 if NewInstant or NewInfinite
+// were used to create the effect.
 func (e Effect) Duration() time.Duration {
 	return e.d
 }
