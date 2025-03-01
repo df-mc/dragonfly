@@ -1210,7 +1210,6 @@ func (p *Player) Jump() {
 // Sleep makes the player sleep at the given position. If the position does not map to a bed (specifically the head side),
 // the player will not sleep.
 func (p *Player) Sleep(pos cube.Pos) {
-
 	if p.sleeping {
 		// The player is already sleeping.
 		return
