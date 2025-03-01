@@ -39,7 +39,10 @@ func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 }
 
 // FuelInfo ...
-func (WoodDoor) FuelInfo() item.FuelInfo {
+func (d WoodDoor) FuelInfo() item.FuelInfo {
+	if !d.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 10)
 }
 
@@ -78,10 +81,8 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 	d.Facing = user.Rotation().Direction()
 	left := tx.Block(pos.Side(d.Facing.RotateLeft().Face()))
 	right := tx.Block(pos.Side(d.Facing.RotateRight().Face()))
-	if door, ok := left.(WoodDoor); ok {
-		if door.Wood == d.Wood {
-			d.Right = true
-		}
+	if _, ok := left.Model().(model.Door); ok {
+		d.Right = true
 	}
 	// The side the door hinge is on can be affected by the blocks to the left and right of the door. In particular,
 	// opaque blocks on the right side of the door with transparent blocks on the left side result in a right sided

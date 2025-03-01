@@ -23,11 +23,19 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 		return fmt.Errorf("recipe with network id %v is not a stonecutter recipe", a.RecipeNetworkID)
 	}
 
+	timesCrafted := int(a.NumberOfCrafts)
+	if timesCrafted < 1 {
+		return fmt.Errorf("times crafted must be at least 1")
+	}
+
 	expectedInputs := craft.Input()
 	input, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerStonecutterInput},
 		Slot:      stonecutterInputSlot,
 	}, s, tx)
+	if input.Count() < timesCrafted {
+		return fmt.Errorf("input item count is less than number of crafts")
+	}
 	if !matchingStacks(input, expectedInputs[0]) {
 		return fmt.Errorf("input item is not the same as expected input")
 	}
@@ -36,6 +44,6 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 	h.setItemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerStonecutterInput},
 		Slot:      stonecutterInputSlot,
-	}, input.Grow(-1), s, tx)
-	return h.createResults(s, tx, output...)
+	}, input.Grow(-timesCrafted), s, tx)
+	return h.createResults(s, tx, repeatStacks(output, timesCrafted)...)
 }

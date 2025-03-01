@@ -112,7 +112,7 @@ func (d CopperDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	d.Facing = user.Rotation().Direction()
 	left := tx.Block(pos.Side(d.Facing.RotateLeft().Face()))
 	right := tx.Block(pos.Side(d.Facing.RotateRight().Face()))
-	if _, ok := left.(CopperDoor); ok {
+	if _, ok := left.Model().(model.Door); ok {
 		d.Right = true
 	}
 	// The side the door hinge is on can be affected by the blocks to the left and right of the door. In particular,

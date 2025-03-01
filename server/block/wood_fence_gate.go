@@ -41,7 +41,10 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 }
 
 // FuelInfo ...
-func (WoodFenceGate) FuelInfo() item.FuelInfo {
+func (f WoodFenceGate) FuelInfo() item.FuelInfo {
+	if !f.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 15)
 }
 

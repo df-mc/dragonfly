@@ -13,11 +13,7 @@ type CoalOre struct {
 
 // BreakInfo ...
 func (c CoalOre) BreakInfo() BreakInfo {
-	i := newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(item.Coal{}, c)).withXPDropRange(0, 2)
-	if c.Type == DeepslateOre() {
-		i = i.withBlastResistance(9)
-	}
-	return i
+	return newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(item.Coal{}, c)).withXPDropRange(0, 2).withBlastResistance(15)
 }
 
 // SmeltInfo ...

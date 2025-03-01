@@ -498,7 +498,7 @@ func (s *Session) SendAbilities(c Controllable) {
 				Values:           abilities,
 				FlySpeed:         float32(c.FlightSpeed()),
 				VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
-				WalkSpeed:        float32(c.Speed()),
+				WalkSpeed:        protocol.AbilityBaseWalkSpeed,
 			},
 		},
 	}})
@@ -531,13 +531,17 @@ func (s *Session) SendHealth(health, max, absorption float64) {
 func (s *Session) SendEffect(e effect.Effect) {
 	s.SendEffectRemoval(e.Type())
 	id, _ := effect.ID(e.Type())
+	dur := e.Duration() / (time.Second / 20)
+	if e.Infinite() {
+		dur = -1
+	}
 	s.writePacket(&packet.MobEffect{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Operation:       packet.MobEffectAdd,
 		EffectType:      int32(id),
 		Amplifier:       int32(e.Level() - 1),
 		Particles:       !e.ParticlesHidden(),
-		Duration:        int32(e.Duration() / (time.Second / 20)),
+		Duration:        int32(dur),
 	})
 }
 
