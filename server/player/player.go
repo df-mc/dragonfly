@@ -986,6 +986,14 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 	w = tx.World()
 	previousDimension = w.Dimension()
 	playerSpawn = w.PlayerSpawn(p.UUID())
+	if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
+		// TODO implement logic https://minecraft.wiki/w/Bed#Setting_the_spawn_point
+		panic("not implemented")
+	}
+	if b, ok := tx.Block(playerSpawn).(block.RespawnAnchor); ok && b.CanRespawnOn() {
+		// TODO implement logic https://minecraft.wiki/w/Respawn_Anchor#Respawning
+		panic("not implemented")
+	}
 	if b, ok := tx.Block(playerSpawn).(block.RespawnBlock); ok && b.CanRespawnOn() {
 		return playerSpawn, w, false, previousDimension
 	}

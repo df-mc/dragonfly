@@ -148,6 +148,8 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 		return true
 	}
 
+	// TODO: add a check for when monsters are neerby
+
 	s.Sleep(headPos)
 	return true
 }
