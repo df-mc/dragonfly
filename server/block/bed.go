@@ -47,7 +47,6 @@ func (b Bed) BreakInfo() BreakInfo {
 		if !ok {
 			return
 		}
-
 		sleeper := headSide.Sleeper
 		if sleeper != nil {
 
