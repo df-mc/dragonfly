@@ -1231,7 +1231,7 @@ func (p *Player) Sleep(pos cube.Pos) {
 	b.Sleeper = p.H()
 	tx.SetBlock(pos, b, nil)
 
-	tx.World().SetRequiredSleepDuration(time.Second * 5)
+	tx.World().SetRequiredSleepDuration(time.Millisecond * 5050)
 
 	p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
 	p.sleeping = true
