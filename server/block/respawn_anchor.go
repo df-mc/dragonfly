@@ -92,6 +92,27 @@ func (r RespawnAnchor) CanRespawnOn() bool {
 	return r.Charge > 0
 }
 
+// SafeSpawn returns a safe spawn position for the respawn anchor. If no safe spawn position is found, it returns an empty position.
+func (r RespawnAnchor) SafeSpawn(tx *world.Tx, p cube.Pos) (cube.Pos, bool) {
+	xOffset := []cube.Pos{{0, 0, -1}, {-1, 0, 0}, {1, 0, 0}, {0, 0, 1}, {-1, 0, -1}, {1, 0, -1}, {-1, 0, 1}, {1, 0, 1}}
+	yOffset := []cube.Pos{{0, -1, 0}, {0, 0, 0}, {0, 1, 0}}
+
+	for _, y := range yOffset {
+		for _, x := range xOffset {
+			newOffset := y.Add(x)
+			if _, ok := tx.Block(p.Add(newOffset)).(Air); ok {
+				return p.Add(newOffset), true
+			}
+		}
+	}
+
+	if _, ok := tx.Block(p.Add(cube.Pos{0, 1, 0})).(Air); ok {
+		return p.Add(cube.Pos{0, 1, 0}), true
+	}
+
+	return cube.Pos{}, false
+}
+
 func (r RespawnAnchor) RespawnOn(pos cube.Pos, u item.User, w *world.Tx) {
 	w.SetBlock(pos, RespawnAnchor{Charge: r.Charge - 1}, nil)
 	w.PlaySound(pos.Vec3(), sound.RespawnAnchorDeplete{Charge: r.Charge - 1})

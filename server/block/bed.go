@@ -246,6 +246,24 @@ func (Bed) CanRespawnOn() bool {
 	return true
 }
 
+var bedOffsets = map[cube.Face][]cube.Pos{
+	cube.FaceNorth: {{-1, 0, 0}, {-1, 0, 1}, {0, 0, 1}, {1, 0, 1}, {1, 0, 0}, {1, 0, -1}, {1, 0, -2}, {0, 0, -2}, {-1, 0, -2}, {-1, 0, -1}, {0, 1, -1}, {0, 1, 0}},
+	cube.FaceEast:  {{0, 0, -1}, {-1, 0, -1}, {-1, 0, 0}, {-1, 0, 1}, {-1, 0, 1}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}, {2, 0, 0}, {2, 0, -1}, {1, 0, -1}, {1, 1, 0}, {0, 1, 0}},
+	cube.FaceSouth: {{1, 0, 0}, {1, 0, -1}, {0, 0, -1}, {-1, 0, -1}, {-1, 0, 0}, {-1, 0, 1}, {-1, 0, 2}, {0, 0, 2}, {1, 0, 2}, {1, 0, 1}, {0, 1, 1}, {0, 1, 0}},
+	cube.FaceWest:  {{0, 0, 1}, {1, 0, 1}, {1, 0, 0}, {1, 0, -1}, {1, 0, -1}, {0, 0, -1}, {-1, 0, -1}, {-2, 0, -1}, {-2, 0, 0}, {-2, 0, 1}, {-1, 0, 1}, {-1, 1, 0}, {0, 1, 0}},
+}
+
+// SafeSpawn returns a safe spawn position for the bed. If no safe spawn position is found, it returns an empty position.
+func (b Bed) SafeSpawn(tx *world.Tx, p cube.Pos) (cube.Pos, bool) {
+	for _, offset := range bedOffsets[b.Facing.Face()] {
+		if _, ok := tx.Block(p.Add(offset)).(Air); ok {
+			return p.Add(offset), true
+		}
+	}
+
+	return cube.Pos{}, false
+}
+
 func (Bed) RespawnOn(pos cube.Pos, u item.User, tx *world.Tx) {}
 
 // RespawnBlock represents a block using which player can set his spawn point.
