@@ -987,12 +987,24 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 	previousDimension = w.Dimension()
 	playerSpawn = w.PlayerSpawn(p.UUID())
 	if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
-		// TODO implement logic https://minecraft.wiki/w/Bed#Setting_the_spawn_point
-		panic("not implemented")
+		var bedOffsets = map[cube.Face][]cube.Pos{
+			cube.FaceNorth: {{-1, 0, 0}, {-1, 0, 1}, {0, 0, 1}, {1, 0, 1}, {1, 0, 0}, {1, 0, -1}, {1, 0, -2}, {0, 0, -2}, {-1, 0, -2}, {-1, 0, -1}, {0, 1, -1}, {0, 1, 0}},
+			cube.FaceEast:  {{0, 0, -1}, {-1, 0, -1}, {-1, 0, 0}, {-1, 0, 1}, {-1, 0, 1}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}, {2, 0, 0}, {2, 0, -1}, {1, 0, -1}, {1, 1, 0}, {0, 1, 0}},
+			cube.FaceSouth: {{1, 0, 0}, {1, 0, -1}, {0, 0, -1}, {-1, 0, -1}, {-1, 0, 0}, {-1, 0, 1}, {-1, 0, 2}, {0, 0, 2}, {1, 0, 2}, {1, 0, 1}, {0, 1, 1}, {0, 1, 0}},
+			cube.FaceWest:  {{0, 0, 1}, {1, 0, 1}, {1, 0, 0}, {1, 0, -1}, {1, 0, -1}, {0, 0, -1}, {-1, 0, -1}, {-2, 0, -1}, {-2, 0, 0}, {-2, 0, 1}, {-1, 0, 1}, {-1, 1, 0}, {0, 1, 0}},
+		}
+
+		for _, offset := range bedOffsets[b.Facing.Face()] {
+			if _, ok := tx.Block(playerSpawn.Add(offset)).(block.Air); ok {
+				return playerSpawn.Add(offset), w, false, previousDimension
+			}
+		}
+
+		p.Messaget(chat.MessageBedNotValid)
 	}
 	if b, ok := tx.Block(playerSpawn).(block.RespawnAnchor); ok && b.CanRespawnOn() {
 		xOffset := []cube.Pos{{0, 0, -1}, {-1, 0, 0}, {1, 0, 0}, {0, 0, 1}, {-1, 0, -1}, {1, 0, -1}, {-1, 0, 1}, {1, 0, 1}}
-		yOffset := []cube.Pos{{0, -1, 0},  {0, 0, 0}, {0, 1, 0}};
+		yOffset := []cube.Pos{{0, -1, 0}, {0, 0, 0}, {0, 1, 0}}
 
 		for _, y := range yOffset {
 			for _, x := range xOffset {

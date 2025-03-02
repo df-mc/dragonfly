@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
-	"time"
-
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
+	"log/slog"
+	"os"
 )
 
 func main() {
@@ -25,15 +23,6 @@ func main() {
 	srv.Listen()
 	for p := range srv.Accept() {
 		_ = p
-
-		go func() {
-			for {
-				c := p.Position();
-				p.SendTip(fmt.Sprintf("X: %.2f, Y: %.2f, Z: %.2f, Facing: %s", c.X(), c.Y(), c.Z(), p.Rotation().Direction().Face().String()))
-
-				time.Sleep(time.Millisecond)
-			}
-		}()
 	}
 }
 
