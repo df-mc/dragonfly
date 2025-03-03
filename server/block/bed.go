@@ -77,7 +77,6 @@ func (b Bed) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx
 	if !replaceableWith(tx, sidePos, side) {
 		return
 	}
-
 	if !supportedFromBelow(sidePos, tx) {
 		return
 	}
