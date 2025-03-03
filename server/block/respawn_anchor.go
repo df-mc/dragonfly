@@ -93,7 +93,7 @@ func (r RespawnAnchor) CanRespawnOn() bool {
 }
 
 // SafeSpawn returns a safe spawn position for the respawn anchor. If no safe spawn position is found, it returns an empty position.
-func (r RespawnAnchor) SafeSpawn(tx *world.Tx, p cube.Pos) (cube.Pos, bool) {
+func (r RespawnAnchor) SafeSpawn(p cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	xOffset := []cube.Pos{{0, 0, -1}, {-1, 0, 0}, {1, 0, 0}, {0, 0, 1}, {-1, 0, -1}, {1, 0, -1}, {-1, 0, 1}, {1, 0, 1}}
 	yOffset := []cube.Pos{{0, -1, 0}, {0, 0, 0}, {0, 1, 0}}
 

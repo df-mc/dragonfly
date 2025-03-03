@@ -254,7 +254,7 @@ var bedOffsets = map[cube.Face][]cube.Pos{
 }
 
 // SafeSpawn returns a safe spawn position for the bed. If no safe spawn position is found, it returns an empty position.
-func (b Bed) SafeSpawn(tx *world.Tx, p cube.Pos) (cube.Pos, bool) {
+func (b Bed) SafeSpawn(p cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	for _, offset := range bedOffsets[b.Facing.Face()] {
 		if _, ok := tx.Block(p.Add(offset)).(Air); ok {
 			return p.Add(offset), true
@@ -272,6 +272,8 @@ type RespawnBlock interface {
 	CanRespawnOn() bool
 	// RespawnOn is called when a player decides to respawn using this block.
 	RespawnOn(pos cube.Pos, u item.User, tx *world.Tx)
+	// SafeSpawn returns a safe spawn position for the block. If no safe spawn position is found, it returns an empty position.
+	SafeSpawn(p cube.Pos, tx *world.Tx) (cube.Pos, bool)
 }
 
 // supportedFromBelow ...

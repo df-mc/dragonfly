@@ -987,7 +987,7 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 	previousDimension = w.Dimension()
 	playerSpawn = w.PlayerSpawn(p.UUID())
 	if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
-		pos, ok := b.SafeSpawn(tx, playerSpawn)
+		pos, ok := b.SafeSpawn(playerSpawn, tx)
 		if ok {
 			return pos, w, false, previousDimension
 		}
@@ -995,7 +995,7 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 		p.Messaget(chat.MessageBedNotValid)
 	}
 	if b, ok := tx.Block(playerSpawn).(block.RespawnAnchor); ok && b.CanRespawnOn() {
-		pos, ok := b.SafeSpawn(tx, playerSpawn)
+		pos, ok := b.SafeSpawn(playerSpawn, tx)
 		if ok {
 			return pos, w, false, previousDimension
 		}
