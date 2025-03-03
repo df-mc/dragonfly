@@ -146,7 +146,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 		return true
 	}
 
-	// TODO: add a check for when monsters are neerby
+	// TODO: add a check for when monsters are nearby
 
 	s.Sleep(headPos)
 	return true
@@ -240,6 +240,7 @@ func allBeds() (beds []world.Block) {
 	return
 }
 
+// CanRespawnOn ...
 func (Bed) CanRespawnOn() bool {
 	return true
 }
@@ -251,17 +252,17 @@ var bedOffsets = map[cube.Face][]cube.Pos{
 	cube.FaceWest:  {{0, 0, 1}, {1, 0, 1}, {1, 0, 0}, {1, 0, -1}, {1, 0, -1}, {0, 0, -1}, {-1, 0, -1}, {-2, 0, -1}, {-2, 0, 0}, {-2, 0, 1}, {-1, 0, 1}, {-1, 1, 0}, {0, 1, 0}},
 }
 
-// SafeSpawn returns a safe spawn position for the bed. If no safe spawn position is found, it returns an empty position.
+// SafeSpawn ...
 func (b Bed) SafeSpawn(p cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	for _, offset := range bedOffsets[b.Facing.Face()] {
 		if _, ok := tx.Block(p.Add(offset)).(Air); ok {
 			return p.Add(offset), true
 		}
 	}
-
 	return cube.Pos{}, false
 }
 
+// RespawnOn ...
 func (Bed) RespawnOn(pos cube.Pos, u item.User, tx *world.Tx) {}
 
 // RespawnBlock represents a block using which player can set his spawn point.

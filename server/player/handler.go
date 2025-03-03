@@ -121,7 +121,7 @@ type Handler interface {
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
 	HandleSignEdit(ctx *Context, pos cube.Pos, frontSide bool, oldText, newText string)
-	// HandleSleep handles the player starting to sleep. ctx.Cancel() may be called to cancel the sleep.
+	// HandleSleep handles the player beginning the sleep action. ctx.Cancel() may be called to cancel the action.
 	HandleSleep(ctx *Context, sendReminder *bool)
 	// HandleLecternPageTurn handles the player turning a page in a lectern. ctx.Cancel() may be called to cancel the
 	// page turn. The page number may be changed by assigning to *page.
