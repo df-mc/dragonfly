@@ -49,7 +49,6 @@ func (b Bed) BreakInfo() BreakInfo {
 		}
 		sleeper := headSide.Sleeper
 		if sleeper != nil {
-
 			ent, ok := sleeper.Entity(tx)
 			if ok {
 				sleeper, ok := ent.(world.Sleeper)
