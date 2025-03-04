@@ -44,7 +44,7 @@ func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 				return
 			}
 
-			if !tx.RainingAt(pos) && (time <= TimeSleepWithRain || time >= TimeSleepWithRain) {
+			if !tx.RainingAt(pos) && (time <= TimeSleepWithRain || time >= TimeWakeWithRain) {
 				return
 			}
 		}
