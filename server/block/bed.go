@@ -100,7 +100,6 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 	}
 
 	w := tx.World()
-
 	if w.Dimension() != world.Overworld {
 		tx.SetBlock(pos, nil, nil)
 		ExplosionConfig{
@@ -250,6 +249,7 @@ func (Bed) CanRespawnOn() bool {
 	return true
 }
 
+// bedOffsets is a map of offsets for each face of the bed. The offsets are relative to the heel side of the bed.
 var bedOffsets = map[cube.Face][]cube.Pos{
 	cube.FaceNorth: {{-1, 0, 0}, {-1, 0, 1}, {0, 0, 1}, {1, 0, 1}, {1, 0, 0}, {1, 0, -1}, {1, 0, -2}, {0, 0, -2}, {-1, 0, -2}, {-1, 0, -1}, {0, 1, -1}, {0, 1, 0}},
 	cube.FaceEast:  {{0, 0, -1}, {-1, 0, -1}, {-1, 0, 0}, {-1, 0, 1}, {-1, 0, 1}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1}, {2, 0, 0}, {2, 0, -1}, {1, 0, -1}, {1, 1, 0}, {0, 1, 0}},

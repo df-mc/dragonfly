@@ -57,7 +57,6 @@ func (r RespawnAnchor) Activate(pos cube.Pos, clickedFace cube.Face, tx *world.T
 	}
 
 	w := tx.World()
-
 	if r.Charge > 0 {
 		if w.Dimension() == world.Nether {
 			previousSpawn := w.PlayerSpawn(sleeper.UUID())

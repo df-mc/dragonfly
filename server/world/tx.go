@@ -234,8 +234,7 @@ func (tx *Tx) Sleepers() iter.Seq[Sleeper] {
 func (tx *Tx) BroadcastSleepingIndicator() {
 	sleepers := tx.Sleepers()
 
-	sleeping, allSleepers := 0, 0
-
+	var sleeping, allSleepers int
 	for s := range sleepers {
 		allSleepers++
 		if _, ok := s.Sleeping(); ok {
@@ -252,7 +251,6 @@ func (tx *Tx) BroadcastSleepingIndicator() {
 // passed.
 func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
 	notSleeping := new(int)
-
 	for s := range tx.Sleepers() {
 		if _, ok := s.Sleeping(); !ok {
 			*notSleeping++

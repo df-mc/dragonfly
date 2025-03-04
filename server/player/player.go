@@ -980,7 +980,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	})
 }
 
-// spawnLocation returns position and world where player should be spawned.
+// spawnLocation designates a players safe spawn location
 func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
 	tx := p.tx
 	w = tx.World()
@@ -1230,7 +1230,6 @@ func (p *Player) Sleep(pos cube.Pos) {
 
 	tx := p.tx
 	b, ok := tx.Block(pos).(block.Bed)
-
 	if !ok || b.Sleeper != nil {
 		// The player cannot sleep here.
 		return
