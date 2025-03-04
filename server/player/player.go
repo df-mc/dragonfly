@@ -980,7 +980,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	})
 }
 
-// spawnLocation designates a players safe spawn location
+// spawnLocation designates a players safe spawn location.
 func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
 	tx := p.tx
 	w = tx.World()

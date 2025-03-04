@@ -250,11 +250,11 @@ func (tx *Tx) BroadcastSleepingIndicator() {
 // BroadcastSleepingReminder broadcasts a sleeping reminder message to all sleepers in the world, excluding the sleeper
 // passed.
 func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
-	notSleeping := new(int)
+	var notSleeping int
 	for s := range tx.Sleepers() {
 		if _, ok := s.Sleeping(); !ok {
-			*notSleeping++
-			defer s.Messaget(chat.MessageSleeping, sleeper.Name(), *notSleeping)
+			notSleeping++
+			defer s.Messaget(chat.MessageSleeping, sleeper.Name(), notSleeping)
 		}
 	}
 }
