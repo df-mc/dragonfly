@@ -67,16 +67,6 @@ type World struct {
 	viewers  map[*Loader]Viewer
 }
 
-const (
-	TimeDay      = 1000
-	TimeNoon     = 6000
-	TimeSunset   = 12000
-	TimeNight    = 13000
-	TimeMidnight = 18000
-	TimeSunrise  = 23000
-	TimeFull     = 24000
-)
-
 // transaction is a type that may be added to the transaction queue of a World.
 // Its Run method is called when the transaction is taken out of the queue.
 type transaction interface {

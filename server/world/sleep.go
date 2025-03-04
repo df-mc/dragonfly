@@ -21,6 +21,15 @@ type Sleeper interface {
 	Wake()
 }
 
+// Time constants for sleep usage.
+const (
+	TimeSleep         = 12010
+	TimeWake          = 23991
+	TimeSleepWithRain = 12542
+	TimeWakeWithRain  = 23459
+	TimeFull          = 24000
+)
+
 // tryAdvanceDay attempts to advance the day of the world, by first ensuring that all sleepers are sleeping, and then
 // updating the time of day.
 func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
@@ -31,11 +40,11 @@ func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 		pos := cube.PosFromVec3(s.Position())
 
 		if !tx.ThunderingAt(pos) {
-			if time <= 12010 || time >= 23991 {
+			if time <= TimeSleep || time >= TimeWake {
 				return
 			}
 
-			if !tx.RainingAt(pos) && (time <= 12542 || time >= 23459) {
+			if !tx.RainingAt(pos) && (time <= TimeSleepWithRain || time >= TimeSleepWithRain) {
 				return
 			}
 		}
