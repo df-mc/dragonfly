@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/csv"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
 	"go/ast"
@@ -228,7 +229,18 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 
 	var argFrags []string
 	if args != "" {
-		argFrags = SplitCommandArgs(args)
+		r := csv.NewReader(strings.NewReader(args))
+		r.Comma, r.LazyQuotes = ' ', true
+		record, err := r.Read()
+		if err != nil {
+			// When LazyQuotes is enabled, this really never appears to return
+			// an error when we read only one line. Just in case it does though,
+			// we return the command usage.
+			return nil, MessageUsage.F(cmd.Usage())
+		}
+		argFrags = slices.DeleteFunc(record, func(s string) bool {
+			return s == ""
+		})
 	}
 	parser := parser{}
 	arguments := &Line{args: argFrags, src: source, seen: []string{"/" + cmd.name}, cmd: cmd}
@@ -334,42 +346,4 @@ func exportedFields(command reflect.Value) []reflect.StructField {
 		fields = append(fields, t)
 	}
 	return fields
-}
-
-// SplitCommandArgs splits str to args for command execution.
-func SplitCommandArgs(str string) []string {
-	var (
-		args          []string
-		arg           strings.Builder
-		quote         bool
-		previousSpace bool
-	)
-
-	for _, char := range str {
-		switch char {
-		case '"':
-			quote = !quote
-		case ' ':
-			if quote {
-				// writing part of the string.
-				arg.WriteRune(char)
-				continue
-			}
-			if previousSpace {
-				// trimming space.
-				continue
-			}
-			// end of the arg.
-			previousSpace = true
-			args = append(args, arg.String())
-			arg.Reset()
-		default:
-			previousSpace = false
-			arg.WriteRune(char)
-		}
-	}
-	if arg.Len() != 0 {
-		args = append(args, arg.String())
-	}
-	return args
 }
