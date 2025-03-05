@@ -330,7 +330,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	if p.Dead() {
 		return
 	}
-	args := cmd.SplitCommandArgs(commandLine)
+	args := strings.Split(commandLine, " ")
 
 	name, ok := strings.CutPrefix(args[0], "/")
 	if !ok {
