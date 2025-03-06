@@ -3,7 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -16,7 +16,7 @@ type PoisonousPotato struct {
 func (p PoisonousPotato) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(2, 1.2)
 	if rand.Float64() < 0.6 {
-		c.AddEffect(effect.New(effect.Poison{}, 1, 5*time.Second))
+		c.AddEffect(effect.New(effect.Poison, 1, 5*time.Second))
 	}
 	return Stack{}
 }

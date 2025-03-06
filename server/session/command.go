@@ -5,27 +5,30 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"golang.org/x/text/language"
 	"math"
 )
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
 // command, which might be the player or a websocket server.
-func (s *Session) SendCommandOutput(output *cmd.Output) {
+func (s *Session) SendCommandOutput(output *cmd.Output, l language.Tag) {
 	if s == Nop {
 		return
 	}
 	messages := make([]protocol.CommandOutputMessage, 0, output.MessageCount()+output.ErrorCount())
 	for _, message := range output.Messages() {
-		messages = append(messages, protocol.CommandOutputMessage{
-			Success: true,
-			Message: message,
-		})
+		om := protocol.CommandOutputMessage{Success: true, Message: message.String()}
+		if t, ok := message.(translation); ok {
+			om.Message, om.Parameters = t.Resolve(l), t.Params(l)
+		}
+		messages = append(messages, om)
 	}
 	for _, err := range output.Errors() {
-		messages = append(messages, protocol.CommandOutputMessage{
-			Success: false,
-			Message: err.Error(),
-		})
+		om := protocol.CommandOutputMessage{Message: err.Error()}
+		if t, ok := err.(translation); ok {
+			om.Message, om.Parameters = t.Resolve(l), t.Params(l)
+		}
+		messages = append(messages, om)
 	}
 
 	s.writePacket(&packet.CommandOutput{
@@ -34,6 +37,11 @@ func (s *Session) SendCommandOutput(output *cmd.Output) {
 		SuccessCount:   uint32(output.MessageCount()),
 		OutputMessages: messages,
 	})
+}
+
+type translation interface {
+	Resolve(l language.Tag) string
+	Params(l language.Tag) []string
 }
 
 // sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the

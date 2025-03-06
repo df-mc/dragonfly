@@ -5,8 +5,9 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"slices"
 	"time"
 )
@@ -132,7 +133,7 @@ type XPDropRange [2]int
 func (r XPDropRange) RandomValue() int {
 	diff := r[1] - r[0]
 	// Add one because it's a [r[0], r[1]] interval.
-	return rand.Intn(diff+1) + r[0]
+	return rand.IntN(diff+1) + r[0]
 }
 
 // pickaxeEffective is a convenience function for blocks that are effectively mined with a pickaxe.
@@ -233,4 +234,26 @@ func silkTouchOnlyDrop(it world.Item) func(t item.Tool, enchantments []item.Ench
 		}
 		return nil
 	}
+}
+
+// breakBlock removes a block, shows breaking particles and drops the drops of
+// the block as items.
+func breakBlock(b world.Block, pos cube.Pos, tx *world.Tx) {
+	breakBlockNoDrops(b, pos, tx)
+	if breakable, ok := b.(Breakable); ok {
+		for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
+			dropItem(tx, drop, pos.Vec3Centre())
+		}
+	}
+}
+
+func breakBlockNoDrops(b world.Block, pos cube.Pos, tx *world.Tx) {
+	if breakable, ok := b.(Breakable); ok {
+		breakHandler := breakable.BreakInfo().BreakHandler
+		if breakHandler != nil {
+			breakHandler(pos, tx, nil)
+		}
+	}
+	tx.SetBlock(pos, nil, nil)
+	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 }

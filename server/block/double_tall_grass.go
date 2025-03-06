@@ -4,9 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // DoubleTallGrass is a two-block high variety of grass.
@@ -30,32 +29,19 @@ func (d DoubleTallGrass) HasLiquidDrops() bool {
 func (d DoubleTallGrass) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.UpperPart {
 		if bottom, ok := tx.Block(pos.Side(cube.FaceDown)).(DoubleTallGrass); !ok || bottom.Type != d.Type || bottom.UpperPart {
-			tx.SetBlock(pos, nil, nil)
-			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+			breakBlockNoDrops(d, pos, tx)
 		}
-		return
-	}
-	if upper, ok := tx.Block(pos.Side(cube.FaceUp)).(DoubleTallGrass); !ok || upper.Type != d.Type || !upper.UpperPart {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
-		return
-	}
-	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	} else if upper, ok := tx.Block(pos.Side(cube.FaceUp)).(DoubleTallGrass); !ok || upper.Type != d.Type || !upper.UpperPart {
+		breakBlockNoDrops(d, pos, tx)
+	} else if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
+		breakBlock(d, pos, tx)
 	}
 }
 
 // UseOnBlock ...
 func (d DoubleTallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, d)
-	if !used {
-		return false
-	}
-	if !replaceableWith(tx, pos.Side(cube.FaceUp), d) {
-		return false
-	}
-	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
+	if !used || !replaceableWith(tx, pos.Side(cube.FaceUp), d) || !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 

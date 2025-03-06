@@ -7,7 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -52,8 +52,8 @@ func (c Composter) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 		}
 
 		c.Level = 0
-		tx.SetBlock(pos.Side(cube.FaceUp), c, nil)
-		tx.PlaySound(pos.Side(cube.FaceUp).Vec3(), sound.ComposterEmpty{})
+		tx.SetBlock(pos, c, nil)
+		tx.PlaySound(pos.Vec3(), sound.ComposterEmpty{})
 		return true
 	}
 
@@ -82,7 +82,7 @@ func (c Composter) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (c Composter) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(0.6, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if c.Level == 8 {
 			dropItem(tx, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
 		}

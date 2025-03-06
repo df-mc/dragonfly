@@ -200,6 +200,16 @@ type WaxRemoved struct{ sound }
 // CopperScraped is a sound played when a player scrapes a copper block to reduce its oxidation level.
 type CopperScraped struct{ sound }
 
+// DecoratedPotInserted is a sound played when an item is successfully inserted into a decorated pot.
+type DecoratedPotInserted struct {
+	sound
+	// Progress is how much of the decorated pot has been filled.
+	Progress float64
+}
+
+// DecoratedPotInsertFailed is a sound played when an item fails to be inserted into a decorated pot.
+type DecoratedPotInsertFailed struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

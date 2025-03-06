@@ -37,6 +37,7 @@ type Controllable interface {
 
 	Speed() float64
 	FlightSpeed() float64
+	VerticalFlightSpeed() float64
 
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)

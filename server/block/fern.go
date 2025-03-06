@@ -4,9 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Fern is a transparent plant block which can be used to obtain seeds and as decoration.
@@ -53,8 +52,7 @@ func (g Fern) CompostChance() float64 {
 // NeighbourUpdateTick ...
 func (g Fern) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(g, tx.Block(pos.Side(cube.FaceDown))) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: g})
+		breakBlock(g, pos, tx)
 	}
 }
 
@@ -66,10 +64,7 @@ func (g Fern) HasLiquidDrops() bool {
 // UseOnBlock ...
 func (g Fern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, g)
-	if !used {
-		return false
-	}
-	if !supportsVegetation(g, tx.Block(pos.Side(cube.FaceDown))) {
+	if !used || !supportsVegetation(g, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 

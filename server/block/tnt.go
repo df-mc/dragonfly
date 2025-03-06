@@ -7,13 +7,20 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
 // TNT is an explosive block that can be primed to generate an explosion.
 type TNT struct {
 	solid
+}
+
+// ProjectileHit ...
+func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
+	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
+		t.Ignite(pos, tx, nil)
+	}
 }
 
 // Activate ...
@@ -35,7 +42,7 @@ func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 
 // Explode ...
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, _ ExplosionConfig) {
-	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.Intn(int(time.Second+time.Second/2))))
+	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))))
 }
 
 // BreakInfo ...

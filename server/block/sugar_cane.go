@@ -4,9 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // SugarCane is a plant block that generates naturally near water.
@@ -35,14 +34,16 @@ func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 // NeighbourUpdateTick ...
 func (c SugarCane) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !c.canGrowHere(pos, tx, true) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
-		dropItem(tx, item.NewStack(c, 1), pos.Vec3Centre())
+		breakBlock(c, pos, tx)
 	}
 }
 
 // RandomTick ...
 func (c SugarCane) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	if !c.canGrowHere(pos, tx, true) {
+		breakBlock(c, pos, tx)
+		return
+	}
 	if c.Age < 15 {
 		c.Age++
 	} else if c.Age == 15 {

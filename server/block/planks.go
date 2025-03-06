@@ -35,7 +35,10 @@ func (p Planks) RepairsWoodTools() bool {
 }
 
 // FuelInfo ...
-func (Planks) FuelInfo() item.FuelInfo {
+func (p Planks) FuelInfo() item.FuelInfo {
+	if !p.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 15)
 }
 

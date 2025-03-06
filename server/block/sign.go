@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
@@ -63,7 +62,10 @@ func (s Sign) FlammabilityInfo() FlammabilityInfo {
 }
 
 // FuelInfo ...
-func (Sign) FuelInfo() item.FuelInfo {
+func (s Sign) FuelInfo() item.FuelInfo {
+	if !s.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 10)
 }
 
@@ -162,16 +164,10 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if s.Attach.hanging {
 		if _, ok := tx.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
-			tx.SetBlock(pos, nil, nil)
-			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-			dropItem(tx, item.NewStack(Sign{Wood: s.Wood}, 1), pos.Vec3Centre())
+			breakBlock(s, pos, tx)
 		}
-		return
-	}
-	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-		dropItem(tx, item.NewStack(Sign{Wood: s.Wood}, 1), pos.Vec3Centre())
+	} else if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
+		breakBlock(s, pos, tx)
 	}
 }
 

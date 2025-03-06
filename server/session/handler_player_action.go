@@ -45,19 +45,8 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		defer s.swingingArm.Store(false)
 		c.FinishBreaking()
 	case protocol.PlayerActionCrackBreak:
-		s.swingingArm.Store(true)
-		defer s.swingingArm.Store(false)
-
-		newPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
-
-		// Sometimes no new position will be sent using a StartBreak action, so we need to detect a change in the
-		// block to be broken by comparing positions.
-		if newPos != s.breakingPos {
-			s.breakingPos = newPos
-			c.StartBreaking(newPos, cube.Face(face))
-			return nil
-		}
-		c.ContinueBreaking(cube.Face(face))
+		// Don't do anything for this action. It is no longer used. Block
+		// cracking is done fully server-side.
 	case protocol.PlayerActionStartItemUseOn:
 		// TODO: Properly utilize these actions.
 	case protocol.PlayerActionStopItemUseOn:
@@ -65,7 +54,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
-	// Don't do anything for this action.
+		// Don't do anything for this action.
 	case protocol.PlayerActionMissedSwing:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)

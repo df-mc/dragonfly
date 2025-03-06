@@ -4,9 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -42,7 +41,7 @@ func (c Carrot) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if c.Growth == 7 {
 		return false
 	}
-	c.Growth = min(c.Growth+rand.Intn(4)+2, 7)
+	c.Growth = min(c.Growth+rand.IntN(4)+2, 7)
 	tx.SetBlock(pos, c, nil)
 	return true
 }
@@ -68,7 +67,7 @@ func (c Carrot) BreakInfo() BreakInfo {
 		if c.Growth < 7 {
 			return []item.Stack{item.NewStack(c, 1)}
 		}
-		return []item.Stack{item.NewStack(c, rand.Intn(4)+2)}
+		return []item.Stack{item.NewStack(c, rand.IntN(4)+2)}
 	})
 }
 
@@ -85,8 +84,7 @@ func (c Carrot) EncodeItem() (name string, meta int16) {
 // RandomTick ...
 func (c Carrot) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 8 {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
+		breakBlock(c, pos, tx)
 	} else if c.Growth < 7 && r.Float64() <= c.CalculateGrowthChance(pos, tx) {
 		c.Growth++
 		tx.SetBlock(pos, c, nil)

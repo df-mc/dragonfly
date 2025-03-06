@@ -4,10 +4,9 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // SeaPickle is a small stationary underwater block that emits light, and is typically found in colonies of up to
@@ -29,6 +28,11 @@ func (SeaPickle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
 	below := tx.Block(pos.Side(cube.FaceDown))
 	if !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
 		return false
+	}
+	if liquid, ok := tx.Liquid(pos); ok {
+		if _, ok = liquid.(Water); !ok || liquid.LiquidDepth() != 8 {
+			return false
+		}
 	}
 	if emitter, ok := below.(LightDiffuser); ok && emitter.LightDiffusionLevel() != 15 {
 		return false
@@ -54,7 +58,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 		distance := -int(math.Abs(float64(x))) + 2
 		for z := -distance; z <= distance; z++ {
 			for y := -1; y < 1; y++ {
-				if (x == 0 && y == 0 && z == 0) || rand.Intn(6) != 0 {
+				if (x == 0 && y == 0 && z == 0) || rand.IntN(6) != 0 {
 					continue
 				}
 				newPos := pos.Add(cube.Pos{x, y, z})
@@ -65,7 +69,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 				if coral, ok := tx.Block(newPos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
 					continue
 				}
-				tx.SetBlock(newPos, SeaPickle{AdditionalCount: rand.Intn(3) + 1}, nil)
+				tx.SetBlock(newPos, SeaPickle{AdditionalCount: rand.IntN(3) + 1}, nil)
 			}
 		}
 	}
@@ -106,9 +110,7 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 // NeighbourUpdateTick ...
 func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !s.canSurvive(pos, tx) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-		dropItem(tx, item.NewStack(s, s.AdditionalCount+1), pos.Vec3Centre())
+		breakBlock(s, pos, tx)
 		return
 	}
 

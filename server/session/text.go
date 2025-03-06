@@ -1,9 +1,11 @@
 package session
 
 import (
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"golang.org/x/text/language"
 	"time"
 )
 
@@ -12,6 +14,17 @@ func (s *Session) SendMessage(message string) {
 	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeRaw,
 		Message:  message,
+	})
+}
+
+// SendTranslation sends a translation localised for a specific language.Tag.
+func (s *Session) SendTranslation(t chat.Translation, l language.Tag, a []any) {
+	tr := t.F(a...)
+	s.writePacket(&packet.Text{
+		TextType:         packet.TextTypeTranslation,
+		NeedsTranslation: true,
+		Message:          tr.Resolve(l),
+		Parameters:       tr.Params(l),
 	})
 }
 

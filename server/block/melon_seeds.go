@@ -4,9 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // MelonSeeds grow melon blocks.
@@ -26,8 +25,7 @@ func (MelonSeeds) SameCrop(c Crop) bool {
 // NeighbourUpdateTick ...
 func (m MelonSeeds) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: m})
+		breakBlock(m, pos, tx)
 	} else if m.Direction != cube.FaceDown {
 		if _, ok := tx.Block(pos.Side(m.Direction)).(Melon); !ok {
 			m.Direction = cube.FaceDown
@@ -49,7 +47,7 @@ func (m MelonSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 					return
 				}
 			}
-			direction := directions[r.Intn(len(directions))].Face()
+			direction := directions[r.IntN(len(directions))].Face()
 			stemPos := pos.Side(direction)
 			if _, ok := tx.Block(stemPos).(Air); ok {
 				switch tx.Block(stemPos.Side(cube.FaceDown)).(type) {
@@ -68,7 +66,7 @@ func (m MelonSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if m.Growth == 7 {
 		return false
 	}
-	m.Growth = min(m.Growth+rand.Intn(4)+2, 7)
+	m.Growth = min(m.Growth+rand.IntN(4)+2, 7)
 	tx.SetBlock(pos, m, nil)
 	return true
 }

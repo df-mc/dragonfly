@@ -8,7 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"time"
 )
@@ -51,23 +51,22 @@ func (Campfire) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 // BreakInfo ...
 func (c Campfire) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		var drops []item.Stack
 		if hasSilkTouch(enchantments) {
-			drops = append(drops, item.NewStack(c, 1))
-		} else {
-			switch c.Type {
-			case NormalFire():
-				drops = append(drops, item.NewStack(item.Charcoal{}, 2))
-			case SoulFire():
-				drops = append(drops, item.NewStack(SoulSoil{}, 1))
-			}
+			return []item.Stack{item.NewStack(Campfire{Type: c.Type}, 1)}
 		}
+		switch c.Type {
+		case NormalFire():
+			return []item.Stack{item.NewStack(item.Charcoal{}, 2)}
+		case SoulFire():
+			return []item.Stack{item.NewStack(SoulSoil{}, 1)}
+		}
+		panic("should never happen")
+	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, v := range c.Items {
 			if !v.Item.Empty() {
-				drops = append(drops, v.Item)
+				dropItem(tx, v.Item, pos.Vec3Centre())
 			}
 		}
-		return drops
 	})
 }
 
@@ -130,6 +129,10 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User,
 
 	rawFood, ok := held.Item().(item.Smeltable)
 	if !ok || !rawFood.SmeltInfo().Food {
+		return false
+	}
+
+	if _, ok = tx.Liquid(pos); ok {
 		return false
 	}
 
@@ -198,9 +201,22 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 
 // NeighbourUpdateTick ...
 func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	_, ok := tx.Liquid(pos)
-	liquid, okTwo := tx.Liquid(pos.Side(cube.FaceUp))
-	if (ok || (okTwo && liquid.LiquidType() == "water")) && !c.Extinguished {
+	if _, ok := tx.Liquid(pos); ok {
+		var updated bool
+		for i, it := range c.Items {
+			if !it.Item.Empty() {
+				dropItem(tx, it.Item, pos.Vec3Centre())
+				c.Items[i].Item, updated = item.Stack{}, true
+			}
+		}
+		if !c.Extinguished {
+			c.extinguish(pos, tx)
+		} else if updated {
+			tx.SetBlock(pos, c, nil)
+		}
+		return
+	}
+	if liquid, ok := tx.Liquid(pos.Side(cube.FaceUp)); ok && liquid.LiquidType() == "water" && !c.Extinguished {
 		c.extinguish(pos, tx)
 	}
 }

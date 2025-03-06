@@ -8,23 +8,16 @@
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the
   # name of the server.
   Name = "Dragonfly Server"
-  # The message shown to players when the server is shutting down. The message may be left empty to direct
-  # players to the server list directly.
-  ShutdownMessage = "Server closed."
-  # AuthEnabled controls whether or not players must be connected to Xbox Live in order to join the server.
+  # AuthEnabled controls whether players must be connected to Xbox Live in order to join the server.
   AuthEnabled = true
-  # JoinMessage is the message that appears when a player joins the server. Leave this empty to disable it.
-  # %v is the placeholder for the username of the player. Set this to "" to disable.
-  JoinMessage = "%v has joined the game"
-  # QuitMessage is the message that appears when a player leaves the server. Leave this empty to disable it.
-  # %v is the placeholder for the username of the player. Set this to "" to disable.
-  QuitMessage = "%v has left the game"
+  # DisableJoinQuitMessages specifies if join/quit messages should be broadcast when players join the server.
+  DisableJoinQuitMessages = false
 
 [World]
   # The folder that the world files (will) reside in, relative to the working directory. If not currently
   # present, the folder will be made.
   Folder = "world"
-  # Whether or not the worlds' data will be saved and loaded. If true, the server will use the
+  # Whether the worlds' data will be saved and loaded. If true, the server will use the
   # default LevelDB data provider and if false, an empty provider will be used. To use your
   # own provider, turn this value to false, as you will still be able to pass your own provider.
   SaveData = true
@@ -36,7 +29,7 @@
   # The maximum chunk radius that players may set in their settings. If they try to set it above this number,
   # it will be capped and set to the max.
   MaximumChunkRadius = 32
-  # Whether or not a player's data will be saved and loaded. If true, the server will use the
+  # Whether a player's data will be saved and loaded. If true, the server will use the
   # default LevelDB data provider and if false, an empty provider will be used. To use your
   # own provider, turn this value to false, as you will still be able to pass your own provider.
   SaveData = true
@@ -49,5 +42,5 @@
   AutoBuildPack = true
   # Folder configures the directory used by the server to load resource packs.
   Folder = "resources"
-  # Required configures whether or not the server will require players to have a resource pack to join.
+  # Required configures whether the server will require players to have a resource pack to join.
   Required = true

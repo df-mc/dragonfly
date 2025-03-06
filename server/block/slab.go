@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // Slab is a half block that allows entities to walk up blocks without jumping.
@@ -69,16 +68,16 @@ func (s Slab) Instrument() sound.Instrument {
 
 // FlammabilityInfo ...
 func (s Slab) FlammabilityInfo() FlammabilityInfo {
-	if w, ok := s.Block.(Planks); ok && w.Wood.Flammable() {
-		return newFlammabilityInfo(5, 20, true)
+	if flammable, ok := s.Block.(Flammable); ok {
+		return flammable.FlammabilityInfo()
 	}
 	return newFlammabilityInfo(0, 0, false)
 }
 
 // FuelInfo ...
 func (s Slab) FuelInfo() item.FuelInfo {
-	if w, ok := s.Block.(Planks); ok && w.Wood.Flammable() {
-		return newFuelInfo(time.Second * 15)
+	if fuel, ok := s.Block.(item.Fuel); ok {
+		return fuel.FuelInfo()
 	}
 	return item.FuelInfo{}
 }
@@ -108,7 +107,7 @@ func (s Slab) BreakInfo() BreakInfo {
 	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
 
 	switch block := s.Block.(type) {
-	case Stone, Sandstone, Quartz, Purpur:
+	case Stone, Sandstone, Quartz, Purpur, Blackstone, PolishedBlackstoneBrick:
 	// These slab types do not match their block's hardness or blast resistance
 	case StoneBricks:
 		if block.Type == MossyStoneBricks() {

@@ -5,9 +5,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // Cactus is a plant block that generates naturally in dry areas and causes damage.
@@ -21,10 +20,7 @@ type Cactus struct {
 // UseOnBlock handles making sure the neighbouring blocks are air.
 func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
-	if !used {
-		return false
-	}
-	if !c.canGrowHere(pos, tx, true) {
+	if !used || !c.canGrowHere(pos, tx, true) {
 		return false
 	}
 
@@ -35,9 +31,7 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 // NeighbourUpdateTick ...
 func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !c.canGrowHere(pos, tx, true) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
-		dropItem(tx, item.NewStack(c, 1), pos.Vec3Centre())
+		breakBlock(c, pos, tx)
 	}
 }
 

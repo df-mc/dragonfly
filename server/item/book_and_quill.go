@@ -102,6 +102,9 @@ func (b BookAndQuill) DecodeNBT(data map[string]any) any {
 
 // EncodeNBT ...
 func (b BookAndQuill) EncodeNBT() map[string]any {
+	if len(b.Pages) == 0 {
+		return nil
+	}
 	pages := make([]any, 0, len(b.Pages))
 	for _, page := range b.Pages {
 		pages = append(pages, map[string]any{"text": page})
@@ -112,12 +115,4 @@ func (b BookAndQuill) EncodeNBT() map[string]any {
 // EncodeItem ...
 func (BookAndQuill) EncodeItem() (name string, meta int16) {
 	return "minecraft:writable_book", 0
-}
-
-// max ...
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

@@ -2,7 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"math/rand"
+	"math/rand/v2"
 )
 
 // SeaLantern is an underwater light sources that appear in ocean monuments and underwater ruins.
@@ -19,7 +19,7 @@ func (SeaLantern) LightEmissionLevel() uint8 {
 
 // BreakInfo ...
 func (s SeaLantern) BreakInfo() BreakInfo {
-	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchDrop(item.NewStack(item.PrismarineCrystals{}, rand.Intn(2)+2), item.NewStack(s, 1)))
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchDrop(item.NewStack(item.PrismarineCrystals{}, rand.IntN(2)+2), item.NewStack(s, 1)))
 }
 
 // EncodeItem ...

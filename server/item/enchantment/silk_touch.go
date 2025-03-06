@@ -28,7 +28,7 @@ func (silkTouch) Cost(int) (int, int) {
 
 // Rarity ...
 func (silkTouch) Rarity() item.EnchantmentRarity {
-	return item.EnchantmentRarityRare
+	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...

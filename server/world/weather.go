@@ -78,10 +78,10 @@ func (w weather) StopRaining() {
 	defer w.w.set.Unlock()
 
 	if w.w.set.Raining {
-		w.setRaining(false, time.Second*(time.Duration(w.w.r.Intn(8400)+600)))
+		w.setRaining(false, time.Second*(time.Duration(w.w.r.IntN(8400)+600)))
 		if w.w.set.Thundering {
 			// Also reset thunder if it was previously thundering.
-			w.setThunder(false, time.Second*(time.Duration(w.w.r.Intn(8400)+600)))
+			w.setThunder(false, time.Second*(time.Duration(w.w.r.IntN(8400)+600)))
 		}
 	}
 }
@@ -103,7 +103,7 @@ func (w weather) StopThundering() {
 	w.w.set.Lock()
 	defer w.w.set.Unlock()
 	if w.w.set.Thundering && w.w.set.Raining {
-		w.setThunder(false, time.Second*(time.Duration(w.w.r.Intn(8400)+600)))
+		w.setThunder(false, time.Second*(time.Duration(w.w.r.IntN(8400)+600)))
 	}
 }
 
@@ -120,9 +120,9 @@ func (w weather) advanceWeather() {
 		// days) and when the rain is turned off it is reset to a value of
 		// 12,000-179,999 ticks (0.5-7.5 game days).
 		if w.w.set.Raining {
-			w.w.setRaining(false, time.Second*(time.Duration(w.w.r.Intn(8400)+600)))
+			w.w.setRaining(false, time.Second*(time.Duration(w.w.r.IntN(8400)+600)))
 		} else {
-			w.w.setRaining(true, time.Second*time.Duration(w.w.r.Intn(600)+600))
+			w.w.setRaining(true, time.Second*time.Duration(w.w.r.IntN(600)+600))
 		}
 	}
 	if w.w.set.ThunderTime <= 0 {
@@ -132,9 +132,9 @@ func (w weather) advanceWeather() {
 		// minutes), and when thunder is turned off the counter rests to
 		// 12,000-179,999 ticks (0.5-7.5 days).
 		if w.w.set.Thundering {
-			w.w.setThunder(false, time.Second*(time.Duration(w.w.r.Intn(8400)+600)))
+			w.w.setThunder(false, time.Second*(time.Duration(w.w.r.IntN(8400)+600)))
 		} else {
-			w.w.setThunder(true, time.Second*time.Duration(w.w.r.Intn(620)+180))
+			w.w.setThunder(true, time.Second*time.Duration(w.w.r.IntN(620)+180))
 		}
 	}
 }
@@ -171,7 +171,7 @@ func (w weather) tickLightning(tx *Tx) {
 	for pos := range w.w.chunks {
 		// Wiki: For each loaded chunk, every tick there is a 1⁄100,000 chance
 		// of an attempted lightning strike during a thunderstorm
-		if w.w.r.Intn(100000) == 0 {
+		if w.w.r.IntN(100000) == 0 {
 			positions = append(positions, pos)
 		}
 	}
@@ -195,7 +195,7 @@ func (w weather) strikeLightning(tx *Tx, c ChunkPos) {
 // lightning and adjusts the position to any of the living entities found in or
 // above the position if any are found.
 func (w weather) lightningPosition(tx *Tx, c ChunkPos) mgl64.Vec3 {
-	v := w.w.r.Int31()
+	v := w.w.r.Int32()
 	x, z := float64(c[0]<<4+(v&0xf)), float64(c[1]<<4+((v>>8)&0xf))
 
 	vec := w.adjustPositionToEntities(tx, mgl64.Vec3{x, float64(tx.HighestBlock(int(x), int(z)) + 1), z})
@@ -231,7 +231,7 @@ func (w weather) adjustPositionToEntities(tx *Tx, vec mgl64.Vec3) mgl64.Vec3 {
 	// block and adjust the position of the lightning to it, so that the entity
 	// is struck directly.
 	if len(list) > 0 {
-		vec = list[w.w.r.Intn(len(list))]
+		vec = list[w.w.r.IntN(len(list))]
 	}
 	return vec
 }

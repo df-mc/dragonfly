@@ -4,17 +4,20 @@ import (
 	"image/color"
 )
 
-// Strength is a lasting effect that increases the damage dealt with melee attacks when applied to an entity.
-type Strength struct {
+// Strength is a lasting effect that increases the damage dealt with melee
+// attacks when applied to an entity.
+var Strength strength
+
+type strength struct {
 	nopLasting
 }
 
 // Multiplier returns the damage multiplier of the effect.
-func (Strength) Multiplier(lvl int) float64 {
+func (strength) Multiplier(lvl int) float64 {
 	return 0.3 * float64(lvl)
 }
 
 // RGBA ...
-func (Strength) RGBA() color.RGBA {
-	return color.RGBA{R: 0x93, G: 0x24, B: 0x23, A: 0xff}
+func (strength) RGBA() color.RGBA {
+	return color.RGBA{R: 0xff, G: 0xc7, B: 0x00, A: 0xff}
 }

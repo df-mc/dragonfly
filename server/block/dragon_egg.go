@@ -1,7 +1,7 @@
 package block
 
 import (
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
@@ -30,7 +30,7 @@ func (d DragonEgg) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 // teleport ...
 func (d DragonEgg) teleport(pos cube.Pos, tx *world.Tx) {
 	for i := 0; i < 1000; i++ {
-		newPos := pos.Add(cube.Pos{rand.Intn(31) - 15, max(tx.Range()[0]-pos.Y(), min(tx.Range()[1]-pos.Y(), rand.Intn(15)-7)), rand.Intn(31) - 15})
+		newPos := pos.Add(cube.Pos{rand.IntN(31) - 15, max(tx.Range()[0]-pos.Y(), min(tx.Range()[1]-pos.Y(), rand.IntN(15)-7)), rand.IntN(31) - 15})
 
 		if _, ok := tx.Block(newPos).(Air); ok {
 			tx.SetBlock(newPos, d, nil)
@@ -62,7 +62,7 @@ func (d DragonEgg) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User
 
 // BreakInfo ...
 func (d DragonEgg) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(d))
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(45)
 }
 
 // EncodeItem ...

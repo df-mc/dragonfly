@@ -59,7 +59,7 @@ func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *
 
 // BreakInfo ...
 func (n Note) BreakInfo() BreakInfo {
-	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, oneOf(n))
+	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, oneOf(Note{}))
 }
 
 // FuelInfo ...

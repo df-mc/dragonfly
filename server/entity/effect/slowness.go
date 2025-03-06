@@ -5,14 +5,16 @@ import (
 	"image/color"
 )
 
-// Slowness is a lasting effect that decreases the movement speed of a living entity by 15% for each level
-// that the effect has.
-type Slowness struct {
+// Slowness is a lasting effect that decreases the movement speed of a living
+// entity by 15% for each level that the effect has.
+var Slowness slowness
+
+type slowness struct {
 	nopLasting
 }
 
 // Start ...
-func (Slowness) Start(e world.Entity, lvl int) {
+func (slowness) Start(e world.Entity, lvl int) {
 	slowness := 1 - float64(lvl)*0.15
 	if slowness <= 0 {
 		slowness = 0.00001
@@ -23,7 +25,7 @@ func (Slowness) Start(e world.Entity, lvl int) {
 }
 
 // End ...
-func (Slowness) End(e world.Entity, lvl int) {
+func (slowness) End(e world.Entity, lvl int) {
 	slowness := 1 - float64(lvl)*0.15
 	if slowness <= 0 {
 		slowness = 0.00001
@@ -34,6 +36,6 @@ func (Slowness) End(e world.Entity, lvl int) {
 }
 
 // RGBA ...
-func (Slowness) RGBA() color.RGBA {
-	return color.RGBA{R: 0x5a, G: 0x6c, B: 0x81, A: 0xff}
+func (slowness) RGBA() color.RGBA {
+	return color.RGBA{R: 0x8b, G: 0xaf, B: 0xe0, A: 0xff}
 }

@@ -4,13 +4,14 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -148,7 +149,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		}
 		return nil
 	}
-	before, vel := e.Position(), e.Velocity()
+	vel := e.Velocity()
 	m, result := lt.tickMovement(e, tx)
 	e.data.Pos, e.data.Vel = m.pos, m.vel
 
@@ -168,12 +169,12 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	switch r := result.(type) {
 	case trace.EntityResult:
 		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
-			lt.hitEntity(l, e, before, vel)
+			lt.hitEntity(l, e, vel)
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
-		if t, ok := tx.Block(bpos).(block.TNT); ok && e.OnFireDuration() > 0 {
-			t.Ignite(bpos, tx, nil)
+		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
+			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m, tx)
@@ -256,17 +257,21 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 // hitEntity is called when a projectile hits a Living. It deals damage to the
 // entity and knocks it back. Additionally, it applies any potion effects and
 // fire if applicable.
-func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, origin, vel mgl64.Vec3) {
+func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
 	owner, _ := lt.conf.Owner.Entity(e.tx)
 	src := ProjectileDamageSource{Projectile: e, Owner: owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, vulnerable := l.Hurt(lt.conf.Damage, src); vulnerable {
-		l.KnockBack(origin, 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
+	if _, vulnerable := l.Hurt(dmg, src); vulnerable {
+		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
+			if lasting, ok := eff.Type().(effect.LastingType); ok {
+				l.AddEffect(effect.New(lasting, eff.Level(), time.Duration(float64(eff.Duration())/8)))
+				continue
+			}
 			l.AddEffect(eff)
 		}
 		if flammable, ok := l.(Flammable); ok && e.OnFireDuration() > 0 {

@@ -3,7 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func (c Chicken) Consume(_ *world.Tx, co Consumer) Stack {
 	} else {
 		co.Saturate(2, 1.2)
 		if rand.Float64() < 0.3 {
-			co.AddEffect(effect.New(effect.Hunger{}, 1, 30*time.Second))
+			co.AddEffect(effect.New(effect.Hunger, 1, 30*time.Second))
 		}
 	}
 	return Stack{}

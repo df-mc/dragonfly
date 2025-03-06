@@ -6,12 +6,14 @@ import (
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/player"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"log/slog"
 	"os"
@@ -63,10 +65,15 @@ type Config struct {
 	MaxChunkRadius int
 	// JoinMessage, QuitMessage and ShutdownMessage are the messages to send for
 	// when a player joins or quits the server and when the server shuts down,
-	// kicking all online players. JoinMessage and QuitMessage may have a '%v'
-	// argument, which will be replaced with the name of the player joining or
-	// quitting.
-	JoinMessage, QuitMessage, ShutdownMessage string
+	// kicking all online players. If set, JoinMessage and QuitMessage must have
+	// exactly 1 argument, which will be replaced with the name of the player
+	// joining or quitting.
+	// ShutdownMessage is set to chat.MessageServerDisconnect if empty.
+	JoinMessage, QuitMessage, ShutdownMessage chat.Translation
+	// StatusProvider provides the server status shown to players in the server
+	// list. By default, StatusProvider will show the server name from the Name
+	// field and the current player count and maximum players.
+	StatusProvider minecraft.ServerStatusProvider
 	// PlayerProvider is the player.Provider used for storing and loading player
 	// data. If left as nil, player data will be newly created every time a
 	// player joins the server and no data will be stored.
@@ -110,6 +117,9 @@ func (conf Config) New() *Server {
 	if conf.Name == "" {
 		conf.Name = "Dragonfly Server"
 	}
+	if conf.StatusProvider == nil {
+		conf.StatusProvider = statusProvider{name: conf.Name}
+	}
 	if conf.PlayerProvider == nil {
 		conf.PlayerProvider = player.NopProvider{}
 	}
@@ -124,6 +134,9 @@ func (conf Config) New() *Server {
 	}
 	if conf.MaxChunkRadius == 0 {
 		conf.MaxChunkRadius = 12
+	}
+	if conf.ShutdownMessage.Zero() {
+		conf.ShutdownMessage = chat.MessageServerDisconnect
 	}
 	if len(conf.Entities.Types()) == 0 {
 		conf.Entities = entity.DefaultRegistry
@@ -176,21 +189,12 @@ type UserConfig struct {
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
 		Name string
-		// ShutdownMessage is the message shown to players when the server shuts
-		// down. If empty, players will be directed to the menu screen right
-		// away.
-		ShutdownMessage string
 		// AuthEnabled controls whether players must be connected to Xbox Live
 		// in order to join the server.
 		AuthEnabled bool
-		// JoinMessage is the message that appears when a player joins the
-		// server. Leave this empty to disable it. %v is the placeholder for the
-		// username of the player
-		JoinMessage string
-		// QuitMessage is the message that appears when a player leaves the
-		// server. Leave this empty to disable it. %v is the placeholder for the
-		// username of the player
-		QuitMessage string
+		// DisableJoinQuitMessages specifies if default join and quit messages
+		// for players should be disabled.
+		DisableJoinQuitMessages bool
 	}
 	World struct {
 		// SaveData controls whether a world's data will be saved and loaded.
@@ -246,10 +250,10 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		AuthDisabled:            !uc.Server.AuthEnabled,
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
-		JoinMessage:             uc.Server.JoinMessage,
-		QuitMessage:             uc.Server.QuitMessage,
-		ShutdownMessage:         uc.Server.ShutdownMessage,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
+	}
+	if !uc.Server.DisableJoinQuitMessages {
+		conf.JoinMessage, conf.QuitMessage = chat.MessageJoin, chat.MessageQuit
 	}
 	if uc.World.SaveData {
 		conf.WorldProvider, err = mcdb.Config{Log: log}.Open(uc.World.Folder)
@@ -309,10 +313,7 @@ func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
 	c.Server.Name = "Dragonfly Server"
-	c.Server.ShutdownMessage = "Server closed."
 	c.Server.AuthEnabled = true
-	c.Server.JoinMessage = "%v has joined the game"
-	c.Server.QuitMessage = "%v has left the game"
 	c.World.SaveData = true
 	c.World.Folder = "world"
 	c.Players.MaximumChunkRadius = 32

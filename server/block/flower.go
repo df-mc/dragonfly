@@ -5,9 +5,8 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -27,7 +26,7 @@ func (f Flower) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 		if living, ok := e.(interface {
 			AddEffect(effect.Effect)
 		}); ok {
-			living.AddEffect(effect.New(effect.Wither{}, 1, 2*time.Second))
+			living.AddEffect(effect.New(effect.Wither, 1, 2*time.Second))
 		}
 	}
 }
@@ -39,7 +38,7 @@ func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 	}
 
 	for i := 0; i < 8; i++ {
-		p := pos.Add(cube.Pos{rand.Intn(7) - 3, rand.Intn(3) - 1, rand.Intn(7) - 3})
+		p := pos.Add(cube.Pos{rand.IntN(7) - 3, rand.IntN(3) - 1, rand.IntN(7) - 3})
 		if _, ok := tx.Block(p).(Air); !ok {
 			continue
 		}
@@ -63,19 +62,14 @@ func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 // NeighbourUpdateTick ...
 func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: f})
-		dropItem(tx, item.NewStack(f, 1), pos.Vec3Centre())
+		breakBlock(f, pos, tx)
 	}
 }
 
 // UseOnBlock ...
 func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, f)
-	if !used {
-		return false
-	}
-	if !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
+	if !used || !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 

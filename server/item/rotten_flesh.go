@@ -3,11 +3,11 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
-// RottenFlesh is a food item that can be eaten by the player, at the high risk of inflicting Hunger.
+// RottenFlesh is a food item that can be eaten by the player, at the high risk of inflicting hunger.
 type RottenFlesh struct {
 	defaultFood
 }
@@ -16,7 +16,7 @@ type RottenFlesh struct {
 func (RottenFlesh) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(4, 0.8)
 	if rand.Float64() < 0.8 {
-		c.AddEffect(effect.New(effect.Hunger{}, 1, 30*time.Second))
+		c.AddEffect(effect.New(effect.Hunger, 1, 30*time.Second))
 	}
 	return Stack{}
 }

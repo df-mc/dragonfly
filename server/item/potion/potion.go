@@ -234,90 +234,90 @@ func From(id int32) Potion {
 func (p Potion) Effects() []effect.Effect {
 	switch p {
 	case NightVision():
-		return []effect.Effect{effect.New(effect.NightVision{}, 1, 3*time.Minute)}
+		return []effect.Effect{effect.New(effect.NightVision, 1, 3*time.Minute)}
 	case LongNightVision():
-		return []effect.Effect{effect.New(effect.NightVision{}, 1, 8*time.Minute)}
+		return []effect.Effect{effect.New(effect.NightVision, 1, 8*time.Minute)}
 	case Invisibility():
-		return []effect.Effect{effect.New(effect.Invisibility{}, 1, 3*time.Minute)}
+		return []effect.Effect{effect.New(effect.Invisibility, 1, 3*time.Minute)}
 	case LongInvisibility():
-		return []effect.Effect{effect.New(effect.Invisibility{}, 1, 8*time.Minute)}
+		return []effect.Effect{effect.New(effect.Invisibility, 1, 8*time.Minute)}
 	case Leaping():
-		return []effect.Effect{effect.New(effect.JumpBoost{}, 1, 3*time.Minute)}
+		return []effect.Effect{effect.New(effect.JumpBoost, 1, 3*time.Minute)}
 	case LongLeaping():
-		return []effect.Effect{effect.New(effect.JumpBoost{}, 1, 8*time.Minute)}
+		return []effect.Effect{effect.New(effect.JumpBoost, 1, 8*time.Minute)}
 	case StrongLeaping():
-		return []effect.Effect{effect.New(effect.JumpBoost{}, 2, 90*time.Second)}
+		return []effect.Effect{effect.New(effect.JumpBoost, 2, 90*time.Second)}
 	case FireResistance():
-		return []effect.Effect{effect.New(effect.FireResistance{}, 1, 3*time.Minute)}
+		return []effect.Effect{effect.New(effect.FireResistance, 1, 3*time.Minute)}
 	case LongFireResistance():
-		return []effect.Effect{effect.New(effect.FireResistance{}, 1, 8*time.Minute)}
+		return []effect.Effect{effect.New(effect.FireResistance, 1, 8*time.Minute)}
 	case Swiftness():
-		return []effect.Effect{effect.New(effect.Speed{}, 1, 3*time.Minute)}
+		return []effect.Effect{effect.New(effect.Speed, 1, 3*time.Minute)}
 	case LongSwiftness():
-		return []effect.Effect{effect.New(effect.Speed{}, 1, 8*time.Minute)}
+		return []effect.Effect{effect.New(effect.Speed, 1, 8*time.Minute)}
 	case StrongSwiftness():
-		return []effect.Effect{effect.New(effect.Speed{}, 2, 90*time.Second)}
+		return []effect.Effect{effect.New(effect.Speed, 2, 90*time.Second)}
 	case Slowness():
-		return []effect.Effect{effect.New(effect.Slowness{}, 1, 90*time.Second)}
+		return []effect.Effect{effect.New(effect.Slowness, 1, 90*time.Second)}
 	case LongSlowness():
-		return []effect.Effect{effect.New(effect.Slowness{}, 1, 4*time.Minute)}
+		return []effect.Effect{effect.New(effect.Slowness, 1, 4*time.Minute)}
+	case StrongSlowness():
+		return []effect.Effect{effect.New(effect.Slowness, 4, 20*time.Second)}
 	case WaterBreathing():
-		return []effect.Effect{effect.New(effect.WaterBreathing{}, 1, 3*time.Minute)}
+		return []effect.Effect{effect.New(effect.WaterBreathing, 1, 3*time.Minute)}
 	case LongWaterBreathing():
-		return []effect.Effect{effect.New(effect.WaterBreathing{}, 1, 8*time.Minute)}
+		return []effect.Effect{effect.New(effect.WaterBreathing, 1, 8*time.Minute)}
 	case Healing():
-		return []effect.Effect{effect.NewInstant(effect.InstantHealth{}, 1)}
+		return []effect.Effect{effect.NewInstant(effect.InstantHealth, 1)}
 	case StrongHealing():
-		return []effect.Effect{effect.NewInstant(effect.InstantHealth{}, 2)}
+		return []effect.Effect{effect.NewInstant(effect.InstantHealth, 2)}
 	case Harming():
-		return []effect.Effect{effect.NewInstant(effect.InstantDamage{}, 1)}
+		return []effect.Effect{effect.NewInstant(effect.InstantDamage, 1)}
 	case StrongHarming():
-		return []effect.Effect{effect.NewInstant(effect.InstantDamage{}, 2)}
+		return []effect.Effect{effect.NewInstant(effect.InstantDamage, 2)}
 	case Poison():
-		return []effect.Effect{effect.New(effect.Poison{}, 1, 45*time.Second)}
+		return []effect.Effect{effect.New(effect.Poison, 1, 45*time.Second)}
 	case LongPoison():
-		return []effect.Effect{effect.New(effect.Poison{}, 1, 2*time.Minute)}
+		return []effect.Effect{effect.New(effect.Poison, 1, 2*time.Minute)}
 	case StrongPoison():
-		return []effect.Effect{effect.New(effect.Poison{}, 2, 22500*time.Millisecond)}
+		return []effect.Effect{effect.New(effect.Poison, 2, 22500*time.Millisecond)}
 	case Regeneration():
-		return []effect.Effect{effect.New(effect.Regeneration{}, 1, 45*time.Second)}
+		return []effect.Effect{effect.New(effect.Regeneration, 1, 45*time.Second)}
 	case LongRegeneration():
-		return []effect.Effect{effect.New(effect.Regeneration{}, 1, 2*time.Minute)}
+		return []effect.Effect{effect.New(effect.Regeneration, 1, 2*time.Minute)}
 	case StrongRegeneration():
-		return []effect.Effect{effect.New(effect.Regeneration{}, 2, 22*time.Second)}
+		return []effect.Effect{effect.New(effect.Regeneration, 2, 22500*time.Millisecond)}
 	case Strength():
-		return []effect.Effect{effect.New(effect.Strength{}, 1, 3*time.Minute)}
+		return []effect.Effect{effect.New(effect.Strength, 1, 3*time.Minute)}
 	case LongStrength():
-		return []effect.Effect{effect.New(effect.Strength{}, 1, 8*time.Minute)}
+		return []effect.Effect{effect.New(effect.Strength, 1, 8*time.Minute)}
 	case StrongStrength():
-		return []effect.Effect{effect.New(effect.Strength{}, 2, 90*time.Second)}
+		return []effect.Effect{effect.New(effect.Strength, 2, 90*time.Second)}
 	case Weakness():
-		return []effect.Effect{effect.New(effect.Weakness{}, 1, 90*time.Second)}
+		return []effect.Effect{effect.New(effect.Weakness, 1, 90*time.Second)}
 	case LongWeakness():
-		return []effect.Effect{effect.New(effect.Weakness{}, 1, 4*time.Minute)}
+		return []effect.Effect{effect.New(effect.Weakness, 1, 4*time.Minute)}
 	case Wither():
-		return []effect.Effect{effect.New(effect.Wither{}, 1, 40*time.Second)}
+		return []effect.Effect{effect.New(effect.Wither, 1, 40*time.Second)}
 	case TurtleMaster():
 		return []effect.Effect{
-			effect.New(effect.Resistance{}, 3, 20*time.Second),
-			effect.New(effect.Slowness{}, 4, 20*time.Second),
+			effect.New(effect.Resistance, 3, 20*time.Second),
+			effect.New(effect.Slowness, 4, 20*time.Second),
 		}
 	case LongTurtleMaster():
 		return []effect.Effect{
-			effect.New(effect.Resistance{}, 3, 40*time.Second),
-			effect.New(effect.Slowness{}, 4, 40*time.Second),
+			effect.New(effect.Resistance, 3, 40*time.Second),
+			effect.New(effect.Slowness, 4, 40*time.Second),
 		}
 	case StrongTurtleMaster():
 		return []effect.Effect{
-			effect.New(effect.Resistance{}, 5, 20*time.Second),
-			effect.New(effect.Slowness{}, 6, 20*time.Second),
+			effect.New(effect.Resistance, 5, 20*time.Second),
+			effect.New(effect.Slowness, 6, 20*time.Second),
 		}
 	case SlowFalling():
-		return []effect.Effect{effect.New(effect.SlowFalling{}, 1, 90*time.Second)}
+		return []effect.Effect{effect.New(effect.SlowFalling, 1, 90*time.Second)}
 	case LongSlowFalling():
-		return []effect.Effect{effect.New(effect.SlowFalling{}, 1, 4*time.Minute)}
-	case StrongSlowness():
-		return []effect.Effect{effect.New(effect.Slowness{}, 4, 20*time.Second)}
+		return []effect.Effect{effect.New(effect.SlowFalling, 1, 4*time.Minute)}
 	}
 	return []effect.Effect{}
 }

@@ -45,14 +45,14 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, t
 				}
 
 				f := 1 - dist/4
-				if entityResult, ok := res.(trace.EntityResult); ok && entityResult.Entity() == e {
+				if entityResult, ok := res.(trace.EntityResult); ok && entityResult.Entity().H() == otherE.H() {
 					f = 1
 				}
 
 				splashed := otherE.(Living)
 				for _, eff := range effects {
-					if p, ok := eff.Type().(effect.PotentType); ok {
-						splashed.AddEffect(effect.NewInstant(p.WithPotency(f), eff.Level()))
+					if _, ok := eff.Type().(effect.LastingType); !ok {
+						splashed.AddEffect(effect.NewInstantWithPotency(eff.Type(), eff.Level(), f))
 						continue
 					}
 

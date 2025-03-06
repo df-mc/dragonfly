@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
@@ -20,13 +19,14 @@ type WoodDoor struct {
 	// Wood is the type of wood of the door. This field must have one of the values found in the material
 	// package.
 	Wood WoodType
-	// Facing is the direction the door is facing.
+	// Facing is the direction that the door opens towards. When closed, the door sits on the side of its
+	// block on the opposite direction.
 	Facing cube.Direction
 	// Open is whether the door is open.
 	Open bool
-	// Top is whether the block is the top or bottom half of a door
+	// Top is whether the block is the top or bottom half of a door.
 	Top bool
-	// Right is whether the door hinge is on the right side
+	// Right is whether the door hinge is on the right side.
 	Right bool
 }
 
@@ -39,7 +39,10 @@ func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 }
 
 // FuelInfo ...
-func (WoodDoor) FuelInfo() item.FuelInfo {
+func (d WoodDoor) FuelInfo() item.FuelInfo {
+	if !d.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 10)
 }
 
@@ -52,17 +55,12 @@ func (d WoodDoor) Model() world.BlockModel {
 func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.Top {
 		if _, ok := tx.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
-			tx.SetBlock(pos, nil, nil)
-			tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+			breakBlockNoDrops(d, pos, tx)
 		}
-		return
-	}
-	if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+	} else if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
+		breakBlock(d, pos, tx)
 	} else if _, ok := tx.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: d})
+		breakBlockNoDrops(d, pos, tx)
 	}
 }
 
@@ -83,10 +81,8 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 	d.Facing = user.Rotation().Direction()
 	left := tx.Block(pos.Side(d.Facing.RotateLeft().Face()))
 	right := tx.Block(pos.Side(d.Facing.RotateRight().Face()))
-	if door, ok := left.(WoodDoor); ok {
-		if door.Wood == d.Wood {
-			d.Right = true
-		}
+	if _, ok := left.Model().(model.Door); ok {
+		d.Right = true
 	}
 	// The side the door hinge is on can be affected by the blocks to the left and right of the door. In particular,
 	// opaque blocks on the right side of the door with transparent blocks on the left side result in a right sided
@@ -143,20 +139,10 @@ func (d WoodDoor) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
-	direction := 3
-	switch d.Facing {
-	case cube.South:
-		direction = 1
-	case cube.West:
-		direction = 2
-	case cube.East:
-		direction = 0
-	}
-
 	if d.Wood == OakWood() {
-		return "minecraft:wooden_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		return "minecraft:wooden_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
-	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 }
 
 // allDoors returns a list of all door types

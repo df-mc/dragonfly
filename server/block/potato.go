@@ -4,9 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -47,7 +46,7 @@ func (p Potato) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if p.Growth == 7 {
 		return false
 	}
-	p.Growth = min(p.Growth+rand.Intn(4)+2, 7)
+	p.Growth = min(p.Growth+rand.IntN(4)+2, 7)
 	tx.SetBlock(pos, p, nil)
 	return true
 }
@@ -72,7 +71,7 @@ func (p Potato) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		n := 1
 		if p.Growth >= 7 {
-			n += rand.Intn(5)
+			n += rand.IntN(5)
 		}
 		if rand.Float64() < 0.02 {
 			return []item.Stack{item.NewStack(p, n), item.NewStack(item.PoisonousPotato{}, 1)}
@@ -94,8 +93,7 @@ func (p Potato) EncodeItem() (name string, meta int16) {
 // RandomTick ...
 func (p Potato) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 8 {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: p})
+		breakBlock(p, pos, tx)
 	} else if p.Growth < 7 && r.Float64() <= p.CalculateGrowthChance(pos, tx) {
 		p.Growth++
 		tx.SetBlock(pos, p, nil)

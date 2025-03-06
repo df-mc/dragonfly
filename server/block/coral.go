@@ -4,9 +4,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
@@ -57,11 +56,9 @@ func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 // NeighbourUpdateTick ...
 func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
-		tx.SetBlock(pos, nil, nil)
-		tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: c})
+		breakBlock(c, pos, tx)
 		return
-	}
-	if c.Dead {
+	} else if c.Dead {
 		return
 	}
 	tx.ScheduleBlockUpdate(pos, c, time.Second*5/2)
