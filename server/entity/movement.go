@@ -78,7 +78,7 @@ func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, rot
 
 // checkEntityInsiders checks if the entity is colliding with any EntityInsider blocks.
 func (c *MovementComputer) checkEntityInsiders(ent world.Entity, tx *world.Tx) {
-	box := ent.H().Type().BBox(ent).Grow(-0.0001)
+	box := ent.H().Type().BBox(ent).Translate(ent.Position()).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
 	for y := low[1]; y <= high[1]; y++ {
