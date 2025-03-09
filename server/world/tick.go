@@ -49,8 +49,9 @@ func (t ticker) tick(tx *Tx) {
 		w.set.Unlock()
 		return
 	}
+	w.set.CurrentTick++
+
 	if w.advance {
-		w.set.CurrentTick++
 		if w.set.TimeCycle {
 			w.set.Time++
 		}
