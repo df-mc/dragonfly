@@ -27,29 +27,29 @@ import (
 
 // StopShowingEntity stops showing a world.Entity to the Session. It will be completely invisible until a call to
 // StartShowingEntity is made.
-func (s *Session) StopShowingEntity(e world.Entity) {
+func (s *Session) StopShowingEntity(h *world.EntityHandle, tx *world.Tx) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e.H().UUID()]
+	_, ok := s.hiddenEntities[h.UUID()]
 	if !ok {
-		s.hiddenEntities[e.H().UUID()] = struct{}{}
+		s.hiddenEntities[h.UUID()] = struct{}{}
 	}
 	s.entityMutex.Unlock()
 
-	if !ok {
+	if e, ok2 := h.Entity(tx); !ok && ok2 {
 		s.HideEntity(e)
 	}
 }
 
 // StartShowingEntity starts showing a world.Entity to the Session that was previously hidden using StopShowingEntity.
-func (s *Session) StartShowingEntity(e world.Entity) {
+func (s *Session) StartShowingEntity(h *world.EntityHandle, tx *world.Tx) {
 	s.entityMutex.Lock()
-	_, ok := s.hiddenEntities[e.H().UUID()]
+	_, ok := s.hiddenEntities[h.UUID()]
 	if ok {
-		delete(s.hiddenEntities, e.H().UUID())
+		delete(s.hiddenEntities, h.UUID())
 	}
 	s.entityMutex.Unlock()
 
-	if ok {
+	if e, ok2 := h.Entity(tx); ok && ok2 {
 		s.ViewEntity(e)
 		s.ViewEntityState(e)
 		s.ViewEntityItems(e)

@@ -2336,17 +2336,17 @@ func (p *Player) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 
 // HideEntity hides a world.Entity from the Player so that it can under no circumstance see it. Hidden entities can be
 // made visible again through a call to ShowEntity.
-func (p *Player) HideEntity(e world.Entity) {
-	if p.session() != session.Nop && p.H() != e.H() {
-		p.session().StopShowingEntity(e)
+func (p *Player) HideEntity(h *world.EntityHandle) {
+	if p.session() != session.Nop && p.H() != h {
+		p.session().StopShowingEntity(h, p.tx)
 	}
 }
 
 // ShowEntity shows a world.Entity previously hidden from the Player using HideEntity. It does nothing if the entity
 // wasn't currently hidden.
-func (p *Player) ShowEntity(e world.Entity) {
+func (p *Player) ShowEntity(h *world.EntityHandle) {
 	if p.session() != session.Nop {
-		p.session().StartShowingEntity(e)
+		p.session().StartShowingEntity(h, p.tx)
 	}
 }
 
