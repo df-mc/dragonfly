@@ -540,6 +540,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
 		HandleStop:     srv.handleSessionClose,
+		Recovery:       srv.conf.Recovery,
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName
