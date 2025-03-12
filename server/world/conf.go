@@ -95,6 +95,7 @@ func (conf Config) New() *World {
 		conf:             conf,
 		ra:               conf.Dim.Range(),
 		set:              s,
+		tick:             s.CurrentTick,
 	}
 	w.weather = weather{w: w}
 	var h Handler = NopHandler{}
