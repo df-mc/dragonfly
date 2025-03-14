@@ -1731,6 +1731,9 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		if replaceable, ok := p.tx.Block(replacedPos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) || replacedPos.OutOfBounds(p.tx.Range()) {
 			return
 		}
+		if r, ok := b.(block.RespawnAnchor); ok && r.Charge >= 4 && p.tx.World().Dimension() != world.Nether {
+			return
+		}
 		if !p.placeBlock(replacedPos, ib, false) || p.GameMode().CreativeInventory() {
 			return
 		}
