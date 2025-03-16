@@ -15,6 +15,7 @@ const (
 	hashBarrier
 	hashBasalt
 	hashBeacon
+	hashBed
 	hashBedrock
 	hashBeetrootSeeds
 	hashBlackstone
@@ -149,6 +150,7 @@ const (
 	hashReinforcedDeepslate
 	hashResin
 	hashResinBricks
+	hashRespawnAnchor
 	hashSand
 	hashSandstone
 	hashSeaLantern
@@ -238,6 +240,10 @@ func (b Basalt) Hash() (uint64, uint64) {
 
 func (Beacon) Hash() (uint64, uint64) {
 	return hashBeacon, 0
+}
+
+func (b Bed) Hash() (uint64, uint64) {
+	return hashBed, uint64(b.Facing) | uint64(boolByte(b.Head))<<2
 }
 
 func (b Bedrock) Hash() (uint64, uint64) {
@@ -774,6 +780,10 @@ func (Resin) Hash() (uint64, uint64) {
 
 func (r ResinBricks) Hash() (uint64, uint64) {
 	return hashResinBricks, uint64(boolByte(r.Chiseled))
+}
+
+func (r RespawnAnchor) Hash() (uint64, uint64) {
+	return hashRespawnAnchor, uint64(r.Charge)
 }
 
 func (s Sand) Hash() (uint64, uint64) {
