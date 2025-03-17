@@ -107,7 +107,7 @@ func (s Slab) BreakInfo() BreakInfo {
 	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
 
 	switch block := s.Block.(type) {
-	case Stone, Sandstone, Quartz, Purpur:
+	case Stone, Sandstone, Quartz, Purpur, Blackstone, PolishedBlackstoneBrick:
 	// These slab types do not match their block's hardness or blast resistance
 	case StoneBricks:
 		if block.Type == MossyStoneBricks() {
