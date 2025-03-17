@@ -5,11 +5,11 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Shulker is the model of a shulker. It depends on the opening/closing progress of the shulker.
+// Shulker is the model of a shulker. It depends on the opening/closing progress of the shulker block.
 type Shulker struct {
 	// Facing is the face that the shulker faces.
 	Facing cube.Face
-	// Progress is the opening/closing progress of the shulker. It is a float between 0 and 1.
+	// Progress is the opening/closing progress of the shulker.
 	Progress int32
 }
 
