@@ -48,7 +48,7 @@ func (l Lectern) BreakInfo() BreakInfo {
 	if !l.Book.Empty() {
 		d = append(d, l.Book)
 	}
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, simpleDrops(d...))
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(d...))
 }
 
 // UseOnBlock ...
