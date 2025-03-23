@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	"slices"
+
 	// The following four imports are essential for this package: They make sure this package is loaded after
 	// all these imports. This ensures that all blocks and items are registered before the creative items are
 	// registered in the init function in this package.
@@ -31,17 +33,18 @@ type Group struct {
 // Groups returns a list with all groups that have been registered as a creative group. These groups will be
 // accessible by players in-game who have creative mode enabled.
 func Groups() []Group {
+	groups := slices.Clone(creativeGroups)
 	for _, it := range items {
-		if it.GroupIndex >= int32(len(creativeGroups)) {
+		if it.GroupIndex >= int32(len(groups)) {
 			panic(fmt.Errorf("invalid group index %v for item %v", it.GroupIndex, it.Name))
 		}
 		st, ok := itemStackFromEntry(it)
 		if !ok {
 			continue
 		}
-		creativeGroups[it.GroupIndex].Items = append(creativeGroups[it.GroupIndex].Items, st)
+		groups[it.GroupIndex].Items = append(groups[it.GroupIndex].Items, st)
 	}
-	return creativeGroups
+	return groups
 }
 
 // RegisterGroup registers a group as a creative group, exposing it in the creative inventory. It can then

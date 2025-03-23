@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	_ "github.com/df-mc/dragonfly/server/item" // Imported for maintaining correct initialisation order.
+	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/skin"
@@ -539,7 +540,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 		MaxChunkRadius: srv.conf.MaxChunkRadius,
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
-		CreativeGroups: srv.conf.CreativeGroups,
+		CreativeGroups: creative.Groups(),
 		HandleStop:     srv.handleSessionClose,
 	}.New(conn)
 
