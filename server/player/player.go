@@ -332,10 +332,11 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	}
 	args := strings.Split(strings.TrimLeft(commandLine, "/ "), " ")
 
-	name, ok := strings.CutPrefix(args[0], "/")
-	if !ok {
-		return
-	}
+	args = slices.DeleteFunc(args, func(s string) bool {
+		return s == ""
+	})
+
+	name := args[0]
 
 	command, ok := cmd.ByAlias(name)
 	if !ok {
