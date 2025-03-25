@@ -13,6 +13,11 @@ type Obsidian struct {
 	Crying bool
 }
 
+// PistonImmovable ...
+func (o Obsidian) PistonImmovable() bool {
+	return !o.Crying
+}
+
 // LightEmissionLevel ...
 func (o Obsidian) LightEmissionLevel() uint8 {
 	if o.Crying {

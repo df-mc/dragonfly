@@ -128,6 +128,17 @@ func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
+// RedstoneUpdate ...
+func (h Hopper) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	powered := receivedRedstonePower(pos, tx)
+	if powered == h.Powered {
+		return
+	}
+
+	h.Powered = powered
+	tx.SetBlock(pos, h, nil)
+}
+
 // Tick ...
 func (h Hopper) Tick(currentTick int64, pos cube.Pos, tx *world.Tx) {
 	h.TransferCooldown--

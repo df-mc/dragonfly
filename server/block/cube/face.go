@@ -24,6 +24,15 @@ func (f Face) Direction() Direction {
 	return Direction(f - 2)
 }
 
+// Positive returns whether the face is the positive of its axis. For example, FaceEast is positive, FaceWest is not.
+func (f Face) Positive() bool {
+	switch f {
+	case FaceUp, FaceSouth, FaceEast:
+		return true
+	}
+	return false
+}
+
 // Opposite returns the opposite Face. FaceDown will return FaceUp, FaceNorth
 // will return FaceSouth, FaceWest will return FaceEast, and vice versa.
 func (f Face) Opposite() Face {
