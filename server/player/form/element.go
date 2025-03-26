@@ -65,7 +65,7 @@ func (Header) ReadOnly() bool {
 // submit values to it.
 type Divider struct{}
 
-// NewDivider creates and returns a new divider.
+// NewDivider creates and returns a new Divider.
 func NewDivider() Divider {
 	return Divider{}
 }
