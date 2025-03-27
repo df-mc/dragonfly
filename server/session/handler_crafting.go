@@ -153,13 +153,27 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	if !c.GameMode().CreativeInventory() {
 		return fmt.Errorf("can only craft creative items in gamemode creative/spectator")
 	}
-	index := a.CreativeItemNetworkID - 1
-	if int(index) >= len(creative.Items()) {
-		return fmt.Errorf("creative item with network ID %v does not exist", index)
+	index := int(a.CreativeItemNetworkID - 1)
+
+	it, err := itemByIndex(s.conf.CreativeGroups, index)
+	if err != nil {
+		return err
 	}
-	it := creative.Items()[index].Stack
+
 	it = it.Grow(it.MaxCount() - 1)
 	return h.createResults(s, tx, it)
+}
+
+// itemByIndex returns creative item by index.
+func itemByIndex(groups []creative.Group, index int) (item.Stack, error) {
+	offset := 0
+	for _, group := range groups {
+		if offset+len(group.Items) > index {
+			return group.Items[index-offset], nil
+		}
+		offset += len(group.Items)
+	}
+	return item.Stack{}, fmt.Errorf("creative item with network ID %v does not exist", index)
 }
 
 // craftingSize gets the crafting size based on the opened container ID.
