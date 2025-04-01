@@ -66,8 +66,9 @@ type playerData struct {
 
 	cooldowns map[string]time.Time
 
-	speed       float64
-	flightSpeed float64
+	speed               float64
+	flightSpeed         float64
+	verticalFlightSpeed float64
 
 	health     *entity.HealthManager
 	experience *entity.ExperienceManager
@@ -330,10 +331,16 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		return
 	}
 	args := strings.Split(commandLine, " ")
-	command, ok := cmd.ByAlias(args[0][1:])
+
+	name, ok := strings.CutPrefix(args[0], "/")
+	if !ok {
+		return
+	}
+
+	command, ok := cmd.ByAlias(name)
 	if !ok {
 		o := &cmd.Output{}
-		o.Errort(cmd.MessageUnknown, args[0])
+		o.Errort(cmd.MessageUnknown, name)
 		p.SendCommandOutput(o)
 		return
 	}
@@ -465,6 +472,19 @@ func (p *Player) SetFlightSpeed(flightSpeed float64) {
 // corresponds to 0.5 blocks/tick.
 func (p *Player) FlightSpeed() float64 {
 	return p.flightSpeed
+}
+
+// SetVerticalFlightSpeed sets the flight speed of the player on the Y axis. The value passed represents the
+// base speed, which is the blocks/tick speed that the player will obtain while flying.
+func (p *Player) SetVerticalFlightSpeed(flightSpeed float64) {
+	p.verticalFlightSpeed = flightSpeed
+	p.session().SendAbilities(p)
+}
+
+// VerticalFlightSpeed returns the flight speed of the player on the Y axis, with the value representing the
+// base speed. The default vertical flight speed of a player is 1.0, which corresponds to 1 block/tick.
+func (p *Player) VerticalFlightSpeed() float64 {
+	return p.verticalFlightSpeed
 }
 
 // Health returns the current health of the player. It will always be lower than Player.MaxHealth().
@@ -1504,12 +1524,16 @@ func (p *Player) handleUseContext(ctx *item.UseContext) {
 	p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
 	p.addNewItem(ctx)
 	for _, it := range ctx.ConsumedItems {
-		_ = p.offHand.RemoveItem(it)
-		it = it.Grow(-left.Count())
+		_, offHand := p.HeldItems()
+		if offHand.Comparable(it) {
+			if err := p.offHand.RemoveItem(it); err == nil {
+				continue
+			}
 
-		if !it.Empty() {
-			_ = p.Inventory().RemoveItem(it)
+			it = it.Grow(-offHand.Count())
 		}
+
+		_ = p.Inventory().RemoveItem(it)
 	}
 }
 
@@ -2016,7 +2040,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		p.SetHeldItems(pickedItem, offhand)
 		return
 	}
-	if firstEmpty < 8 {
+	if firstEmpty < 9 {
 		_ = p.SetHeldSlot(firstEmpty)
 		_ = p.Inventory().SetItem(firstEmpty, pickedItem)
 		return
@@ -2158,8 +2182,15 @@ func (p *Player) Collect(s item.Stack) (int, bool) {
 	if p.Handler().HandleItemPickup(ctx, &s); ctx.Cancelled() {
 		return 0, false
 	}
-	n, _ := p.Inventory().AddItem(s)
-	return n, true
+	var added int
+	if _, offHand := p.HeldItems(); !offHand.Empty() && offHand.Comparable(s) {
+		added, _ = p.offHand.AddItem(s)
+	}
+	if s.Count() != added {
+		n, _ := p.Inventory().AddItem(s.Grow(-added))
+		added += n
+	}
+	return added, true
 }
 
 // Experience returns the amount of experience the player has.
@@ -2312,7 +2343,7 @@ func (p *Player) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 // HideEntity hides a world.Entity from the Player so that it can under no circumstance see it. Hidden entities can be
 // made visible again through a call to ShowEntity.
 func (p *Player) HideEntity(e world.Entity) {
-	if p.session() != session.Nop && p != e {
+	if p.session() != session.Nop && p.H() != e.H() {
 		p.session().StopShowingEntity(e)
 	}
 }
@@ -3074,10 +3105,9 @@ func (p *Player) resendBlocks(pos cube.Pos, faces ...cube.Face) {
 func (p *Player) resendBlock(pos cube.Pos) {
 	b := p.tx.Block(pos)
 	p.session().ViewBlockUpdate(pos, b, 0)
-	if _, ok := b.(world.Liquid); !ok {
-		if liq, ok := p.tx.Liquid(pos); ok {
-			p.session().ViewBlockUpdate(pos, liq, 1)
-		}
+	if _, ok := b.(world.LiquidDisplacer); ok {
+		liq, _ := p.tx.Liquid(pos)
+		p.session().ViewBlockUpdate(pos, liq, 1)
 	}
 }
 

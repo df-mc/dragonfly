@@ -385,7 +385,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	case particle.Flame:
 		if pa.Colour != (color.RGBA{}) {
 			s.writePacket(&packet.LevelEvent{
-				EventType: packet.LevelEventParticleLegacyEvent | 56,
+				EventType: packet.LevelEventParticleLegacyEvent | 57,
 				Position:  vec64To32(pos),
 				EventData: nbtconv.Int32FromRGBA(pa.Colour),
 			})
@@ -423,34 +423,39 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		})
 	case particle.Effect:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 33,
+			EventType: packet.LevelEventParticleLegacyEvent | 34,
 			EventData: (int32(pa.Colour.A) << 24) | (int32(pa.Colour.R) << 16) | (int32(pa.Colour.G) << 8) | int32(pa.Colour.B),
 			Position:  vec64To32(pos),
 		})
 	case particle.EntityFlame:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 18,
+			EventType: packet.LevelEventParticleLegacyEvent | 19,
 			Position:  vec64To32(pos),
 		})
 	case particle.Dust:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 32,
+			EventType: packet.LevelEventParticleLegacyEvent | 33,
 			Position:  vec64To32(pos),
 			EventData: nbtconv.Int32FromRGBA(pa.Colour),
 		})
 	case particle.WaterDrip:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 27,
+			EventType: packet.LevelEventParticleLegacyEvent | 28,
 			Position:  vec64To32(pos),
 		})
 	case particle.LavaDrip:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 28,
+			EventType: packet.LevelEventParticleLegacyEvent | 29,
 			Position:  vec64To32(pos),
 		})
 	case particle.Lava:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleLegacyEvent | 10,
+			Position:  vec64To32(pos),
+		})
+	case particle.DustPlume:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 88,
 			Position:  vec64To32(pos),
 		})
 	}
@@ -810,6 +815,16 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			EventType: packet.LevelEventSoundTotemUsed,
 			Position:  vec64To32(pos),
 		})
+	case sound.DecoratedPotInserted:
+		s.writePacket(&packet.PlaySound{
+			SoundName: "block.decorated_pot.insert",
+			Position:  vec64To32(pos),
+			Volume:    1,
+			Pitch:     0.7 + 0.5*float32(so.Progress),
+		})
+		return
+	case sound.DecoratedPotInsertFailed:
+		pk.SoundType = packet.SoundEventDecoratedPotInsertFail
 	}
 	s.writePacket(pk)
 }
@@ -1151,6 +1166,14 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 			EventType: packet.LevelEventUpdateBlockCracking,
 			Position:  vec64To32(pos.Vec3()),
 			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
+		})
+	case block.DecoratedPotWobbleAction:
+		nbt := t.DecoratedPot.EncodeNBT()
+		nbt["x"], nbt["y"], nbt["z"] = blockPos.X(), blockPos.Y(), blockPos.Z()
+		nbt["animation"] = boolByte(t.Success) + 1
+		s.writePacket(&packet.BlockActorData{
+			Position: blockPos,
+			NBTData:  nbt,
 		})
 	}
 }

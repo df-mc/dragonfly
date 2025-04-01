@@ -93,8 +93,9 @@ func (r Rotation) Vec3() mgl64.Vec3 {
 // fix 'overflows' the Rotation's values to make sure they are within the range
 // as described above.
 func (r Rotation) fix() Rotation {
+	signYaw, signPitch := math.Copysign(180, r[0]), math.Copysign(90, r[1])
 	return Rotation{
-		math.Mod(r[0]+180, 360) - 180,
-		math.Mod(r[1]+90, 180) - 90,
+		math.Mod(r[0]+signYaw, 360) - signYaw,
+		math.Mod(r[1]+signPitch, 180) - signPitch,
 	}
 }

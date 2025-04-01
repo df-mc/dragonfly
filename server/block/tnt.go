@@ -16,6 +16,13 @@ type TNT struct {
 	solid
 }
 
+// ProjectileHit ...
+func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
+	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
+		t.Ignite(pos, tx, nil)
+	}
+}
+
 // Activate ...
 func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()

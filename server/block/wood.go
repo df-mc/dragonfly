@@ -33,11 +33,7 @@ func (w Wood) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (w Wood) BreakInfo() BreakInfo {
-	hardness := 2.0
-	if w.Wood == CrimsonWood() || w.Wood == WarpedWood() {
-		hardness = 0.3
-	}
-	return newBreakInfo(hardness, alwaysHarvestable, axeEffective, oneOf(w))
+	return newBreakInfo(2.0, alwaysHarvestable, axeEffective, oneOf(w))
 }
 
 // SmeltInfo ...
@@ -46,7 +42,10 @@ func (Wood) SmeltInfo() item.SmeltInfo {
 }
 
 // FuelInfo ...
-func (Wood) FuelInfo() item.FuelInfo {
+func (w Wood) FuelInfo() item.FuelInfo {
+	if !w.Wood.Flammable() {
+		return item.FuelInfo{}
+	}
 	return newFuelInfo(time.Second * 15)
 }
 

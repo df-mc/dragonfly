@@ -20,6 +20,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
+	"slices"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -492,11 +493,12 @@ func (s *Session) SendAbilities(c Controllable) {
 		CommandPermissions: packet.CommandPermissionLevelNormal,
 		Layers: []protocol.AbilityLayer{
 			{
-				Type:      protocol.AbilityLayerTypeBase,
-				Abilities: protocol.AbilityCount - 1,
-				Values:    abilities,
-				FlySpeed:  float32(c.FlightSpeed()),
-				WalkSpeed: float32(c.Speed()),
+				Type:             protocol.AbilityLayerTypeBase,
+				Abilities:        protocol.AbilityCount - 1,
+				Values:           abilities,
+				FlySpeed:         float32(c.FlightSpeed()),
+				VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
+				WalkSpeed:        protocol.AbilityBaseWalkSpeed,
 			},
 		},
 	}})
@@ -529,13 +531,17 @@ func (s *Session) SendHealth(health, max, absorption float64) {
 func (s *Session) SendEffect(e effect.Effect) {
 	s.SendEffectRemoval(e.Type())
 	id, _ := effect.ID(e.Type())
+	dur := e.Duration() / (time.Second / 20)
+	if e.Infinite() {
+		dur = -1
+	}
 	s.writePacket(&packet.MobEffect{
 		EntityRuntimeID: selfEntityRuntimeID,
 		Operation:       packet.MobEffectAdd,
 		EffectType:      int32(id),
 		Amplifier:       int32(e.Level() - 1),
 		Particles:       !e.ParticlesHidden(),
-		Duration:        int32(e.Duration() / (time.Second / 20)),
+		Duration:        int32(dur),
 	})
 }
 
@@ -831,16 +837,32 @@ func stacksToIngredientItems(inputs []recipe.Item) []protocol.ItemDescriptorCoun
 	return items
 }
 
-// creativeItems returns all creative inventory items as protocol item stacks.
-func creativeItems() []protocol.CreativeItem {
-	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
-	for index, i := range creative.Items() {
-		it = append(it, protocol.CreativeItem{
-			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  deleteDamage(stackFromItem(i)),
+// creativeContent returns all creative groups, and creative inventory items as protocol item stacks.
+func creativeContent() ([]protocol.CreativeGroup, []protocol.CreativeItem) {
+	groups := make([]protocol.CreativeGroup, 0, len(creative.Groups()))
+	for _, group := range creative.Groups() {
+		groups = append(groups, protocol.CreativeGroup{
+			Category: int32(group.Category.Uint8()),
+			Name:     group.Name,
+			Icon:     deleteDamage(stackFromItem(group.Icon)),
 		})
 	}
-	return it
+
+	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
+	for index, i := range creative.Items() {
+		group := slices.IndexFunc(creative.Groups(), func(group creative.Group) bool {
+			return group.Name == i.Group
+		})
+		if group < 0 {
+			continue
+		}
+		it = append(it, protocol.CreativeItem{
+			CreativeItemNetworkID: uint32(index) + 1,
+			Item:                  deleteDamage(stackFromItem(i.Stack)),
+			GroupIndex:            uint32(group),
+		})
+	}
+	return groups, it
 }
 
 // deleteDamage strips the damage from a protocol item.
@@ -901,7 +923,7 @@ func gameTypeFromMode(mode world.GameMode) int32 {
 		return packet.GameTypeCreative
 	}
 	if !mode.Visible() && !mode.HasCollision() {
-		return packet.GameTypeSpectator
+		return packet.GameTypeSurvivalSpectator
 	}
 	return packet.GameTypeSurvival
 }

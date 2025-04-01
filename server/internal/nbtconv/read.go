@@ -142,17 +142,7 @@ func PosToInt32Slice(x cube.Pos) []int32 {
 // to a world.Item.
 func MapItem(x map[string]any, k string) item.Stack {
 	if m, ok := x[k].(map[string]any); ok {
-		tag, ok := m["tag"].(map[string]any)
-		if !ok {
-			tag = map[string]any{}
-		}
-
-		s := readItemStack(m, tag)
-		readDamage(tag, &s, true)
-		readEnchantments(tag, &s)
-		readDisplay(tag, &s)
-		readDragonflyData(tag, &s)
-		return s
+		return Item(m, nil)
 	}
 	return item.Stack{}
 }
@@ -176,6 +166,7 @@ func Item(data map[string]any, s *item.Stack) item.Stack {
 	readDisplay(tag, s)
 	readDragonflyData(tag, s)
 	readEnchantments(tag, s)
+	readUnbreakable(tag, s)
 	return *s
 }
 
@@ -279,5 +270,13 @@ func readDragonflyData(m map[string]any, s *item.Stack) {
 		for _, val := range values {
 			*s = s.WithValue(val.K, val.V)
 		}
+	}
+}
+
+// readUnbreakable reads the unbreakable value stored in the NBT with the Unbreakable tag and saves it to the item.Stack
+// passed.
+func readUnbreakable(m map[string]any, s *item.Stack) {
+	if Bool(m, "Unbreakable") {
+		*s = s.AsUnbreakable()
 	}
 }

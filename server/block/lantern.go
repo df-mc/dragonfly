@@ -29,14 +29,12 @@ func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if l.Hanging {
 		up := pos.Side(cube.FaceUp)
 		if _, ok := tx.Block(up).(Chain); !ok && !tx.Block(up).Model().FaceSolid(up, cube.FaceDown, tx) {
-			tx.SetBlock(pos, nil, nil)
-			dropItem(tx, item.NewStack(l, 1), pos.Vec3Centre())
+			breakBlock(l, pos, tx)
 		}
 	} else {
 		down := pos.Side(cube.FaceDown)
 		if !tx.Block(down).Model().FaceSolid(down, cube.FaceUp, tx) {
-			tx.SetBlock(pos, nil, nil)
-			dropItem(tx, item.NewStack(l, 1), pos.Vec3Centre())
+			breakBlock(l, pos, tx)
 		}
 	}
 }
@@ -77,7 +75,7 @@ func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (l Lantern) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
+	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
 }
 
 // EncodeItem ...

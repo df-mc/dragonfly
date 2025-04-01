@@ -56,7 +56,7 @@ func (s *smelter) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 		stack := sourceStack.Grow(-sourceStack.Count() + 1)
 		it, _ := s.Inventory(tx, pos).Item(slot)
 		if slot == 1 {
-			if _, ok := sourceStack.Item().(item.Fuel); !ok {
+			if fuel, ok := sourceStack.Item().(item.Fuel); !ok || fuel.FuelInfo().Duration == 0 {
 				// The item is not fuel.
 				continue
 			}

@@ -35,6 +35,9 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 	if dur < 0 {
 		panic(fmt.Sprintf("(*EffectManager).Add: effect cannot have negative duration: %v", dur))
 	}
+
+	m.flushInitialEffects(entity)
+
 	t, ok := e.Type().(effect.LastingType)
 	if !ok {
 		e.Type().Apply(entity, e)
@@ -49,7 +52,7 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 		t.Start(entity, lvl)
 		return e
 	}
-	if existing.Level() > lvl || (existing.Level() == lvl && existing.Duration() > dur) {
+	if existing.Level() > lvl || (existing.Level() == lvl && ((existing.Duration() > dur && !e.Infinite()) || existing.Infinite())) {
 		return existing
 	}
 	m.effects[typ] = e
@@ -61,6 +64,8 @@ func (m *EffectManager) Add(e effect.Effect, entity Living) effect.Effect {
 
 // Remove removes any Effect present in the EffectManager with the type of the effect passed.
 func (m *EffectManager) Remove(e effect.Type, entity Living) {
+	m.flushInitialEffects(entity)
+
 	t := reflect.TypeOf(e)
 	if existing, ok := m.effects[t]; ok {
 		existing.Type().(effect.LastingType).End(entity, existing.Level())
@@ -71,6 +76,12 @@ func (m *EffectManager) Remove(e effect.Type, entity Living) {
 // Effect returns the effect instance and true if the entity has the effect. If not found, it will return an empty
 // effect instance and false.
 func (m *EffectManager) Effect(e effect.Type) (effect.Effect, bool) {
+	for _, eff := range m.initialEffects {
+		if eff.Type() == e {
+			return eff, true
+		}
+	}
+
 	existing, ok := m.effects[reflect.TypeOf(e)]
 	return existing, ok
 }
@@ -78,7 +89,7 @@ func (m *EffectManager) Effect(e effect.Type) (effect.Effect, bool) {
 // Effects returns a list of all effects currently present in the effect manager. This will never include
 // effects that have expired.
 func (m *EffectManager) Effects() []effect.Effect {
-	return slices.Collect(maps.Values(m.effects))
+	return append(slices.Collect(maps.Values(m.effects)), m.initialEffects...)
 }
 
 // Tick ticks the EffectManager, applying all of its effects to the Living entity passed when applicable and
@@ -86,10 +97,7 @@ func (m *EffectManager) Effects() []effect.Effect {
 func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 	update := false
 
-	for _, eff := range m.initialEffects {
-		m.Add(eff, entity)
-	}
-	m.initialEffects = nil
+	m.flushInitialEffects(entity)
 
 	for i, eff := range m.effects {
 		if m.expired(eff) {
@@ -109,7 +117,16 @@ func (m *EffectManager) Tick(entity Living, tx *world.Tx) {
 	}
 }
 
+// flushInitialEffects flushes the initial effects, applying them onto the Living entity passed.
+func (m *EffectManager) flushInitialEffects(entity Living) {
+	initialEffects := m.initialEffects
+	m.initialEffects = nil
+	for _, e := range initialEffects {
+		m.Add(e, entity)
+	}
+}
+
 // expired checks if an Effect has expired.
 func (m *EffectManager) expired(e effect.Effect) bool {
-	return e.Duration() <= 0
+	return e.Duration() <= 0 && !e.Infinite()
 }

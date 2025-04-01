@@ -20,13 +20,14 @@ type CopperDoor struct {
 	Oxidation OxidationType
 	// Waxed bool is whether the copper door has been waxed with honeycomb.
 	Waxed bool
-	// Facing is the direction the door is facing.
+	// Facing is the direction that the door opens towards. When closed, the door sits on the side of its
+	// block on the opposite direction.
 	Facing cube.Direction
 	// Open is whether the door is open.
 	Open bool
-	// Top is whether the block is the top or bottom half of a door
+	// Top is whether the block is the top or bottom half of a door.
 	Top bool
-	// Right is whether the door hinge is on the right side
+	// Right is whether the door hinge is on the right side.
 	Right bool
 }
 
@@ -111,7 +112,7 @@ func (d CopperDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	d.Facing = user.Rotation().Direction()
 	left := tx.Block(pos.Side(d.Facing.RotateLeft().Face()))
 	right := tx.Block(pos.Side(d.Facing.RotateRight().Face()))
-	if _, ok := left.(CopperDoor); ok {
+	if _, ok := left.Model().(model.Door); ok {
 		d.Right = true
 	}
 	// The side the door hinge is on can be affected by the blocks to the left and right of the door. In particular,
@@ -178,13 +179,6 @@ func (d CopperDoor) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (d CopperDoor) EncodeBlock() (name string, properties map[string]any) {
-	direction := d.Facing
-	if d.Facing == cube.East {
-		direction = cube.North
-	} else if d.Facing == cube.North {
-		direction = cube.East
-	}
-
 	name = "copper_door"
 	if d.Oxidation != UnoxidisedOxidation() {
 		name = d.Oxidation.String() + "_" + name
@@ -192,7 +186,7 @@ func (d CopperDoor) EncodeBlock() (name string, properties map[string]any) {
 	if d.Waxed {
 		name = "waxed_" + name
 	}
-	return "minecraft:" + name, map[string]any{"direction": int32(direction), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+	return "minecraft:" + name, map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 }
 
 // allCopperDoors returns a list of all copper door types
