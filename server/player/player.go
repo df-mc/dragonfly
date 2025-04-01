@@ -1788,6 +1788,7 @@ func (p *Player) AbortBreaking() {
 		return
 	}
 	p.breaking, p.breakCounter = false, 0
+	p.Handler().HandleStopBreak(p, p.breakingPos)
 	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(p.breakingPos, block.StopCrackAction{})
 	}
