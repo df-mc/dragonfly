@@ -11,6 +11,7 @@ import (
 	"math"
 	"math/bits"
 	"math/rand/v2"
+	"slices"
 	"sort"
 )
 
@@ -229,11 +230,7 @@ func BlockByName(name string, properties map[string]any) (Block, bool) {
 
 // Blocks returns a slice of all registered blocks.
 func Blocks() []Block {
-	m := make([]Block, 0, len(blocks))
-	for _, b := range blocks {
-		m = append(m, b)
-	}
-	return m
+	return slices.Clone(blocks)
 }
 
 // CustomBlocks returns a map of all custom blocks registered with their names as keys.
