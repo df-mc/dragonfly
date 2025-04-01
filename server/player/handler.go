@@ -69,10 +69,10 @@ type Handler interface {
 	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *Context, pos cube.Pos)
-	// HandleStopBreak handles the player stopping breaking a block at the position passed. This is called when
-	// the player stops breaking a block, either because they finished breaking it or because they stopped
-	// breaking it.
-	HandleStopBreak(p *Player, pos cube.Pos)
+	// HandleAbortBreak handles the player aborting breaking a block at the position passed. This is called
+	// when the player stops breaking a block before it is broken. This may be called after HandleStartBreak
+	// was called.
+	HandleAbortBreak(p *Player, pos cube.Pos)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered
 	// to change what items will actually be dropped.
@@ -179,7 +179,7 @@ func (NopHandler) HandleChat(*Context, *string)                                 
 func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
 func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
 func (NopHandler) HandleStartBreak(*Context, cube.Pos)                                     {}
-func (NopHandler) HandleStopBreak(*Player, cube.Pos)                                       {}
+func (NopHandler) HandleAbortBreak(*Player, cube.Pos)                                      {}
 func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)                {}
 func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
 func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}

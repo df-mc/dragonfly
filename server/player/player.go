@@ -1776,7 +1776,7 @@ func (p *Player) FinishBreaking() {
 		p.resendBlock(p.breakingPos)
 		return
 	}
-	p.AbortBreaking()
+	p.abortBreaking()
 	p.BreakBlock(p.breakingPos)
 }
 
@@ -1787,8 +1787,13 @@ func (p *Player) AbortBreaking() {
 	if !p.breaking {
 		return
 	}
+	p.Handler().HandleAbortBreak(p, p.breakingPos)
+	p.abortBreaking()
+}
+
+// abortBreaking like AbortBreaking, but does not call the handler.
+func (p *Player) abortBreaking() {
 	p.breaking, p.breakCounter = false, 0
-	p.Handler().HandleStopBreak(p, p.breakingPos)
 	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(p.breakingPos, block.StopCrackAction{})
 	}
