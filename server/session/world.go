@@ -231,13 +231,13 @@ func (s *Session) ViewTime(time int) {
 }
 
 // ViewEntityTeleport ...
-func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
+func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3, rotation cube.Rotation) {
 	id := s.entityRuntimeID(e)
 	if s.entityHidden(e) {
 		return
 	}
 
-	yaw, pitch := e.Rotation().Elem()
+	yaw, pitch := rotation.Elem()
 	if id == selfEntityRuntimeID {
 		s.teleportPos.Store(&position)
 	}

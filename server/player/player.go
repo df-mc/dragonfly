@@ -948,7 +948,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	handle := p.tx.RemoveEntity(p)
 	w.Exec(func(tx *world.Tx) {
 		np := tx.AddEntity(handle).(*Player)
-		np.Teleport(pos)
+		np.Teleport(pos, p.Rotation())
 		np.session().SendRespawn(pos, p)
 		np.SetVisible()
 		if f != nil {
@@ -2045,19 +2045,19 @@ func (p *Player) PickBlock(pos cube.Pos) {
 
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
-func (p *Player) Teleport(pos mgl64.Vec3) {
+func (p *Player) Teleport(pos mgl64.Vec3, rot cube.Rotation) {
 	ctx := event.C(p)
-	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
+	if p.Handler().HandleTeleport(ctx, pos, rot); ctx.Cancelled() {
 		return
 	}
-	p.teleport(pos)
+	p.teleport(pos, rot)
 }
 
 // teleport teleports the player to a target position in the world. It does not call the Handler of the
 // player.
-func (p *Player) teleport(pos mgl64.Vec3) {
+func (p *Player) teleport(pos mgl64.Vec3, rot cube.Rotation) {
 	for _, v := range p.viewers() {
-		v.ViewEntityTeleport(p, pos)
+		v.ViewEntityTeleport(p, pos, rot)
 	}
 	p.data.Pos = pos
 	p.data.Vel = mgl64.Vec3{}
@@ -2088,7 +2088,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		if p.session() != session.Nop && pos.ApproxEqual(p.Position()) {
 			// The position of the player was changed and the event cancelled. This means we still need to notify the
 			// player of this movement change.
-			p.teleport(pos)
+			p.teleport(pos, p.Rotation())
 		}
 		return
 	}
