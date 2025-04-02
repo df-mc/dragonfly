@@ -2060,6 +2060,7 @@ func (p *Player) teleport(pos mgl64.Vec3, rot cube.Rotation) {
 		v.ViewEntityTeleport(p, pos, rot)
 	}
 	p.data.Pos = pos
+	p.data.Rot = rot
 	p.data.Vel = mgl64.Vec3{}
 	p.ResetFallDistance()
 }
