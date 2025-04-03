@@ -9,6 +9,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"math"
+	"math/rand/v2"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +30,8 @@ type Chest struct {
 	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
 	// include colour codes.
 	CustomName string
+	// Trapped is the chest type if returns true, the chest is a trapped chest.
+	Trapped bool
 
 	paired       bool
 	pairX, pairZ int
@@ -126,6 +130,11 @@ func (c Chest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 		c.open(tx, pos)
 	}
 	c.viewers[v] = struct{}{}
+
+	// Schedule redstone update for trapped chests.
+	if c.Trapped {
+		tx.ScheduleBlockUpdate(pos, c, time.Millisecond*100)
+	}
 }
 
 // RemoveViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to
@@ -143,6 +152,11 @@ func (c Chest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	if len(c.viewers) == 0 {
 		c.close(tx, pos)
 	}
+
+	// Schedule redstone update for trapped chests.
+	if c.Trapped {
+		tx.ScheduleBlockUpdate(pos, c, time.Millisecond*100)
+	}
 }
 
 // Activate ...
@@ -153,6 +167,7 @@ func (c Chest) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ 
 				return false
 			}
 		}
+
 		if d, ok := tx.Block(pos.Side(cube.FaceUp)).(LightDiffuser); ok && d.LightDiffusionLevel() <= 2 {
 			opener.OpenBlockContainer(pos, tx)
 		}
@@ -167,9 +182,16 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	if !used {
 		return
 	}
+
 	//noinspection GoAssignmentToReceiver
 	c = NewChest()
 	c.Facing = user.Rotation().Direction().Opposite()
+
+	// check if the held item is a trapped chest or regular chest
+	h, _ := user.HeldItems()
+	if heldChest, ok := h.Item().(Chest); ok {
+		c.Trapped = heldChest.Trapped
+	}
 
 	// Check both sides of the chest to see if it is possible to pair with another chest.
 	for _, dir := range []cube.Direction{c.Facing.RotateLeft(), c.Facing.RotateRight()} {
@@ -195,10 +217,51 @@ func (c Chest) BreakInfo() BreakInfo {
 			}
 		}
 
+		if c.Trapped {
+			updateAroundRedstone(pos, tx)
+		}
+
 		for _, i := range c.Inventory(tx, pos).Clear() {
 			dropItem(tx, i, pos.Vec3Centre())
 		}
 	})
+}
+
+// RedstoneSource ...
+func (c Chest) RedstoneSource() bool {
+	if c.Trapped {
+		c.viewerMu.RLock()
+		defer c.viewerMu.RUnlock()
+		return len(c.viewers) > 0
+	}
+	return false
+}
+
+// WeakPower ...
+func (c Chest) WeakPower(_ cube.Pos, _ cube.Face, _ *world.Tx, _ bool) int {
+	if !c.Trapped {
+		return 0
+	}
+	c.viewerMu.RLock()
+	defer c.viewerMu.RUnlock()
+	return int(math.Min(float64(len(c.viewers)), 15))
+}
+
+// StrongPower ...
+func (c Chest) StrongPower(pos cube.Pos, face cube.Face, tx *world.Tx, accountForDust bool) int {
+	return c.WeakPower(pos, face, tx, accountForDust)
+}
+
+// ScheduledTick ...
+func (c Chest) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	if !c.Trapped {
+		return
+	}
+
+	updateStrongRedstone(pos, tx)
+	if c.Paired() {
+		updateStrongRedstone(c.pairPos(pos), tx)
+	}
 }
 
 // FuelInfo ...
@@ -219,7 +282,7 @@ func (c Chest) Paired() bool {
 // pair pairs this chest with the given chest position.
 func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok bool) {
 	pair, ok = tx.Block(pairPos).(Chest)
-	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
+	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) || c.Trapped != pair.Trapped {
 		return c, pair, false
 	}
 	m := new(sync.RWMutex)
@@ -260,7 +323,7 @@ func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
 	}
 
 	pair, ok = tx.Block(c.pairPos(pos)).(Chest)
-	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
+	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) || c.Trapped != pair.Trapped {
 		return c, pair, false
 	}
 
@@ -302,6 +365,8 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 	c.Facing = facing
 	c.CustomName = nbtconv.String(data, "CustomName")
 
+	c.Trapped = nbtconv.Bool(data, "Trapped")
+
 	pairX, ok := data["pairx"]
 	pairZ, ok2 := data["pairz"]
 	if ok && ok2 {
@@ -320,15 +385,17 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (c Chest) EncodeNBT() map[string]any {
 	if c.inventory == nil {
-		facing, customName := c.Facing, c.CustomName
+		facing, customName, trapped := c.Facing, c.CustomName, c.Trapped
 		//noinspection GoAssignmentToReceiver
 		c = NewChest()
-		c.Facing, c.CustomName = facing, customName
+		c.Facing, c.CustomName, c.Trapped = facing, customName, trapped
 	}
 	m := map[string]any{
-		"Items": nbtconv.InvToNBT(c.inventory),
-		"id":    "Chest",
+		"Items":   nbtconv.InvToNBT(c.inventory),
+		"id":      "Chest",
+		"Trapped": c.Trapped,
 	}
+
 	if c.CustomName != "" {
 		m["CustomName"] = c.CustomName
 	}
@@ -341,12 +408,18 @@ func (c Chest) EncodeNBT() map[string]any {
 }
 
 // EncodeItem ...
-func (Chest) EncodeItem() (name string, meta int16) {
+func (c Chest) EncodeItem() (name string, meta int16) {
+	if c.Trapped {
+		return "minecraft:trapped_chest", 0
+	}
 	return "minecraft:chest", 0
 }
 
 // EncodeBlock ...
 func (c Chest) EncodeBlock() (name string, properties map[string]any) {
+	if c.Trapped {
+		return "minecraft:trapped_chest", map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
+	}
 	return "minecraft:chest", map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
 }
 
@@ -354,6 +427,7 @@ func (c Chest) EncodeBlock() (name string, properties map[string]any) {
 func allChests() (chests []world.Block) {
 	for _, direction := range cube.Directions() {
 		chests = append(chests, Chest{Facing: direction})
+		chests = append(chests, Chest{Facing: direction, Trapped: true})
 	}
 	return
 }

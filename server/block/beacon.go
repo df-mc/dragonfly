@@ -89,6 +89,11 @@ func (b Beacon) Level() int {
 	return b.level
 }
 
+// PistonImmovable ...
+func (Beacon) PistonImmovable() bool {
+	return true
+}
+
 // Tick recalculates level, recalculates the active state of the beacon, and powers players,
 // once every 80 ticks (4 seconds).
 func (b Beacon) Tick(currentTick int64, pos cube.Pos, tx *world.Tx) {

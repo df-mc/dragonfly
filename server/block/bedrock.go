@@ -20,3 +20,8 @@ func (b Bedrock) EncodeBlock() (name string, properties map[string]any) {
 	//noinspection SpellCheckingInspection
 	return "minecraft:bedrock", map[string]any{"infiniburn_bit": b.InfiniteBurning}
 }
+
+// PistonImmovable ...
+func (Bedrock) PistonImmovable() bool {
+	return true
+}
