@@ -45,14 +45,24 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 
 	newPos := vec32To64(pk.Position)
 	deltaPos, deltaYaw, deltaPitch := newPos.Sub(pos), float64(pk.Yaw)-yaw, float64(pk.Pitch)-pitch
-	if mgl64.FloatEqual(deltaPos.Len(), 0) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0) {
+	deltaPosLenSqr := deltaPos.LenSqr()
+	if mgl64.FloatEqual(deltaPosLenSqr, 0) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0) {
 		// The PlayerAuthInput packet is sent every tick, so don't do anything if the position and rotation
 		// were unchanged.
 		return nil
 	}
 
+	if deltaPosLenSqr > 15 { // this is probably too big if we process every movement
+		// This is NOT an anti-cheat check. It is a safety check.
+		// Without it hackers can teleport with freedom on their own and cause lots of undesirable behaviour, like
+		// freezes, lag spikes and memory exhaustion due to sync chunk loading and collision checks across large distances.
+		// Not only that, but high-latency players can trigger such behaviour innocently.
+		s.conf.Log.Debug("process packet: PlayerAuthInput: player moved too far", "distance", math.Sqrt(deltaPosLenSqr))
+		return nil
+	}
+
 	if expected := s.teleportPos.Load(); expected != nil {
-		if newPos.Sub(*expected).Len() > 1 {
+		if newPos.Sub(*expected).LenSqr() > 1 {
 			// The player has moved before it received the teleport packet. Ignore this movement entirely and
 			// wait for the client to sync itself back to the server. Once we get a movement that is close
 			// enough to the teleport position, we'll allow the player to move around again.
