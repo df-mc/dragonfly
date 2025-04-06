@@ -1327,7 +1327,7 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 	p.session().SendGameMode(p)
 	for _, v := range p.viewers() {
 		if v == p.session() {
-			return
+			continue
 		}
 		v.ViewEntityGameMode(p)
 	}
