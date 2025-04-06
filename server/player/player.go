@@ -2127,7 +2127,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 
 	p.onGround = p.checkOnGround(deltaPos)
-	fmt.Printf("OnGround=%v\n", p.onGround)
 	p.updateFallState(deltaPos[1])
 
 	if p.Swimming() {
