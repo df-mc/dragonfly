@@ -323,7 +323,6 @@ func (srv *Server) close() {
 			srv.conf.Log.Error("Close listener: " + err.Error())
 		}
 	}
-	srv.conf.Log.Info("Server closed.", "uptime", time.Since(*srv.started.Load()).String())
 }
 
 // listen makes the Server listen for new connections from the Listener passed.
@@ -413,6 +412,7 @@ func (srv *Server) makeItemComponents() {
 // to listen and closed the players channel once that happens.
 func (srv *Server) wait() {
 	srv.wg.Wait()
+	srv.conf.Log.Info("Server closed.", "uptime", time.Since(*srv.started.Load()).String())
 	close(srv.incoming)
 }
 
