@@ -1903,7 +1903,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 		case entity.ItemType, entity.ArrowType:
 			continue
 		default:
-			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-6)) {
+			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-4)) {
 				obstructed = true
 				if e.H() == p.handle {
 					continue
