@@ -81,8 +81,10 @@ func (a *lightArea) neighbours(n lightNode) iter.Seq[lightNode] {
 // specify if a SubChunk should be iterated over. If it returns false, it will not be iterated over.
 func (a *lightArea) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cube.Pos)) {
 	for cx := 0; cx < a.w; cx++ {
+		chunkBaseX := a.baseX + (cx << 4)
 		for cz := 0; cz < a.w; cz++ {
-			baseX, baseZ, c := a.baseX+(cx<<4), a.baseZ+(cz<<4), a.c[a.chunkIndex(cx, cz)]
+			chunkBaseZ := a.baseZ + (cz << 4)
+			c := a.c[a.chunkIndex(cx, cz)]
 
 			for index, sub := range c.sub {
 				if !filter(sub) {
@@ -90,7 +92,7 @@ func (a *lightArea) iterSubChunks(filter func(sub *SubChunk) bool, f func(pos cu
 				}
 				baseY := int(c.SubY(int16(index)))
 				a.iterSubChunk(func(x, y, z int) {
-					f(cube.Pos{x + baseX, y + baseY, z + baseZ})
+					f(cube.Pos{x + chunkBaseX, y + baseY, z + chunkBaseZ})
 				})
 			}
 		}
