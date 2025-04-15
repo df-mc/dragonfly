@@ -473,7 +473,7 @@ func (s *Session) SendAbilities(c Controllable) {
 		defer c.StartFlying()
 		// If the client is currently on the ground and turned to spectator mode, it will be unable to sprint during
 		// flight. In order to allow this, we force the client to be flying through a MovePlayer packet.
-		s.ViewEntityTeleport(c, c.Position())
+		s.ViewEntityTeleport(c, c.Position(), c.Rotation())
 	}
 	if !mode.AllowsTakingDamage() {
 		abilities |= protocol.AbilityInvulnerable
