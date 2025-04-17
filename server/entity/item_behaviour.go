@@ -25,6 +25,9 @@ type ItemBehaviourConfig struct {
 	// PickupDelay specifies how much time must expire before the item can be
 	// picked up by collectors. The default is time.Second / 2.
 	PickupDelay time.Duration
+	// DespawnDelay specifies how long the item stack should last before it
+	// despawns. The default is time.Minute * 5.
+	DespawnDelay time.Duration
 }
 
 func (conf ItemBehaviourConfig) Apply(data *world.EntityData) {
@@ -41,6 +44,9 @@ func (conf ItemBehaviourConfig) New() *ItemBehaviour {
 
 	if conf.PickupDelay == 0 {
 		conf.PickupDelay = time.Second / 2
+	}
+	if conf.DespawnDelay == 0 {
+		conf.DespawnDelay = time.Minute * 5
 	}
 	if conf.ExistenceDuration == 0 {
 		conf.ExistenceDuration = time.Minute * 5
@@ -62,7 +68,8 @@ type ItemBehaviour struct {
 	passive *PassiveBehaviour
 	i       item.Stack
 
-	pickupDelay time.Duration
+	pickupDelay  time.Duration
+	despawnDelay time.Duration
 }
 
 // Item returns the item.Stack held by the entity.
@@ -102,6 +109,12 @@ func (i *ItemBehaviour) tick(e *Ent, tx *world.Tx) {
 		i.checkNearby(e, tx)
 	} else if i.pickupDelay < math.MaxInt16*(time.Second/20) {
 		i.pickupDelay -= time.Second / 20
+	}
+
+	if i.despawnDelay == 0 {
+		i.despawnDelay = i.conf.DespawnDelay
+	} else if i.despawnDelay < math.MaxInt16*(time.Second/20) {
+		i.despawnDelay -= time.Second / 20
 	}
 }
 
