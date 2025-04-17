@@ -900,7 +900,7 @@ func (p *Player) dropItems() {
 			continue
 		}
 		opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
-		p.tx.AddEntity(entity.NewItemDelay(opts, it, time.Second/2, time.Minute*5))
+		p.tx.AddEntity(entity.NewItem(opts, it))
 	}
 }
 
@@ -2321,7 +2321,7 @@ func (p *Player) Drop(s item.Stack) int {
 		return 0
 	}
 	opts := world.EntitySpawnOpts{Position: p.Position().Add(mgl64.Vec3{0, 1.4}), Velocity: p.Rotation().Vec3().Mul(0.4)}
-	p.tx.AddEntity(entity.NewItemDelay(opts, s, time.Second*2, time.Minute*5))
+	p.tx.AddEntity(entity.NewItemPickupDelay(opts, s, time.Second*2))
 	return s.Count()
 }
 

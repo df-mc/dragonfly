@@ -28,19 +28,6 @@ func NewItemPickupDelay(opts world.EntitySpawnOpts, i item.Stack, delay time.Dur
 	return opts.New(ItemType, conf)
 }
 
-// NewItemDelay creates a new item entity containing item stack i. A
-// pickup delay and a despawn delay may be specified. The pickup delay
-// defines for how long the item stack cannot be picked up from the ground.
-// The despawn delay defines for how long the item stack should last before
-// it despawns.
-func NewItemDelay(opts world.EntitySpawnOpts, i item.Stack, pickupDelay time.Duration, despawnDelay time.Duration) *world.EntityHandle {
-	conf := itemConf
-	conf.Item = i
-	conf.PickupDelay = pickupDelay
-	conf.DespawnDelay = despawnDelay
-	return opts.New(ItemType, conf)
-}
-
 var itemConf = ItemBehaviourConfig{
 	Gravity: 0.04,
 	Drag:    0.02,
