@@ -32,6 +32,22 @@ type ArrowShakeAction struct {
 	action
 }
 
+// LinkAction is action that makes one entity link to another.
+type LinkAction struct {
+	// Target is entity that is being linked.
+	Target world.Entity
+
+	action
+}
+
+// UnlinkAction is action that used to unlink one entity from another.
+type UnlinkAction struct {
+	// Target is entity that is being unlinked.
+	Target world.Entity
+
+	action
+}
+
 // PickedUpAction is a world.EntityAction that makes an item get picked up by a collector. After this animation, the
 // item disappears from viewers watching it.
 type PickedUpAction struct {
