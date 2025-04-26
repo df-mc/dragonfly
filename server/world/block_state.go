@@ -121,7 +121,7 @@ func (b unknownBlock) Hash() (uint64, uint64) {
 
 // EncodeNBT ...
 func (b unknownBlock) EncodeNBT() map[string]any {
-	return b.data
+	return maps.Clone(b.data)
 }
 
 // DecodeNBT ...
