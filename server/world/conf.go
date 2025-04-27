@@ -100,7 +100,8 @@ func (conf Config) New() *World {
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
-	w.running.Add(3)
+	w.queueing.Add(1)
+	w.running.Add(2)
 
 	t := ticker{interval: time.Second / 20}
 	go t.tickLoop(w)
