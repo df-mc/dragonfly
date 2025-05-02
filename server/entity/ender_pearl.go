@@ -28,7 +28,7 @@ var enderPearlConf = ProjectileBehaviourConfig{
 // teleporter represents a living entity that can teleport.
 type teleporter interface {
 	// Teleport teleports the entity to the position given.
-	Teleport(pos mgl64.Vec3)
+	Teleport(pos mgl64.Vec3, rot cube.Rotation)
 	Living
 }
 
@@ -37,7 +37,7 @@ func teleport(e *Ent, tx *world.Tx, target trace.Result) {
 	owner, _ := e.Behaviour().(*ProjectileBehaviour).Owner().Entity(tx)
 	if user, ok := owner.(teleporter); ok {
 		tx.PlaySound(user.Position(), sound.Teleport{})
-		user.Teleport(target.Position())
+		user.Teleport(target.Position(), user.Rotation())
 		user.Hurt(5, FallDamageSource{})
 	}
 }

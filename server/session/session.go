@@ -419,7 +419,7 @@ func (s *Session) handleWorldSwitch(w *world.World, tx *world.Tx, c Controllable
 	if !same {
 		s.changeDimension(int32(dim), false, c)
 	}
-	s.ViewEntityTeleport(c, c.Position())
+	s.ViewEntityTeleport(c, c.Position(), c.Rotation())
 	s.chunkLoader.ChangeWorld(tx, w)
 }
 
