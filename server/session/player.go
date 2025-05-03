@@ -20,7 +20,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"math"
 	"net"
-	"slices"
 	"time"
 	_ "unsafe" // Imported for compiler directives.
 )
@@ -838,30 +837,27 @@ func stacksToIngredientItems(inputs []recipe.Item) []protocol.ItemDescriptorCoun
 }
 
 // creativeContent returns all creative groups, and creative inventory items as protocol item stacks.
-func creativeContent() ([]protocol.CreativeGroup, []protocol.CreativeItem) {
-	groups := make([]protocol.CreativeGroup, 0, len(creative.Groups()))
-	for _, group := range creative.Groups() {
+func creativeContent(creativeGroups []creative.Group) ([]protocol.CreativeGroup, []protocol.CreativeItem) {
+	groups := make([]protocol.CreativeGroup, 0, len(creativeGroups))
+	it := make([]protocol.CreativeItem, 0, len(creativeGroups)*10)
+
+	var itemIdx uint32
+	for index, group := range creativeGroups {
 		groups = append(groups, protocol.CreativeGroup{
 			Category: int32(group.Category.Uint8()),
 			Name:     group.Name,
 			Icon:     deleteDamage(stackFromItem(group.Icon)),
 		})
+		for _, stack := range group.Items {
+			itemIdx++
+			it = append(it, protocol.CreativeItem{
+				CreativeItemNetworkID: itemIdx,
+				Item:                  deleteDamage(stackFromItem(stack)),
+				GroupIndex:            uint32(index),
+			})
+		}
 	}
 
-	it := make([]protocol.CreativeItem, 0, len(creative.Items()))
-	for index, i := range creative.Items() {
-		group := slices.IndexFunc(creative.Groups(), func(group creative.Group) bool {
-			return group.Name == i.Group
-		})
-		if group < 0 {
-			continue
-		}
-		it = append(it, protocol.CreativeItem{
-			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  deleteDamage(stackFromItem(i.Stack)),
-			GroupIndex:            uint32(group),
-		})
-	}
 	return groups, it
 }
 
