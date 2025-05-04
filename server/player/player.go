@@ -2833,6 +2833,10 @@ func (p *Player) SwingArm() {
 	if p.Dead() {
 		return
 	}
+	ctx := event.C(p)
+	if p.Handler().HandleSwingArm(ctx); ctx.Cancelled() {
+		return
+	}
 	for _, v := range p.viewers() {
 		v.ViewEntityAction(p, entity.SwingArmAction{})
 	}

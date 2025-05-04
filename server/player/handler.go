@@ -118,6 +118,9 @@ type Handler interface {
 	HandleExperienceGain(ctx *Context, amount *int)
 	// HandlePunchAir handles the player punching air.
 	HandlePunchAir(ctx *Context)
+	// HandleSwingArm handles the player swinging their arm. ctx.Cancel() may be called to cancel the arm
+	// swing.
+	HandleSwingArm(ctx *Context)
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
 	HandleSignEdit(ctx *Context, pos cube.Pos, frontSide bool, oldText, newText string)
@@ -190,6 +193,7 @@ func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                   
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
+func (NopHandler) HandleSwingArm(*Context)                                                 {}
 func (NopHandler) HandleHurt(*Context, *float64, bool, *time.Duration, world.DamageSource) {}
 func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource)                      {}
 func (NopHandler) HandleFoodLoss(*Context, int, *int)                                      {}
