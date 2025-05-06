@@ -37,6 +37,51 @@ func (Label) ReadOnly() bool {
 	return true
 }
 
+// Header represents a static header on a form. It serves only to display a large box of text, and users cannot
+// submit values to it.
+type Header struct {
+	// Text is the text held by the header. The text may contain Minecraft formatting codes.
+	Text string
+}
+
+// NewHeader creates and returns a new Header with the values passed.
+func NewHeader(text string) Header {
+	return Header{Text: text}
+}
+
+// MarshalJSON ...
+func (h Header) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type": "header",
+		"text": h.Text,
+	})
+}
+
+func (Header) ReadOnly() bool {
+	return true
+}
+
+// Divider represents a static divider on a form. It serves only to display a section divider, and users cannot
+// submit values to it.
+type Divider struct{}
+
+// NewDivider creates and returns a new Divider.
+func NewDivider() Divider {
+	return Divider{}
+}
+
+// MarshalJSON ...
+func (d Divider) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type": "divider",
+		"text": "",
+	})
+}
+
+func (Divider) ReadOnly() bool {
+	return true
+}
+
 // Input represents a text input box element. Submitters may write any text in these boxes with no specific
 // length.
 type Input struct {
@@ -253,6 +298,8 @@ func (b Button) MarshalJSON() ([]byte, error) {
 }
 
 func (Label) elem()      {}
+func (Header) elem()     {}
+func (Divider) elem()    {}
 func (Input) elem()      {}
 func (Toggle) elem()     {}
 func (Slider) elem()     {}
