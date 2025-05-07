@@ -7,6 +7,11 @@ type InvisibleBedrock struct {
 	solid
 }
 
+// PistonImmovable ...
+func (InvisibleBedrock) PistonImmovable() bool {
+	return true
+}
+
 // EncodeItem ...
 func (InvisibleBedrock) EncodeItem() (name string, meta int16) {
 	return "minecraft:invisible_bedrock", 0

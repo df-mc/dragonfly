@@ -84,6 +84,9 @@ type Lava struct{ particle }
 // DustPlume is a particle that shows up when an item is successfully inserted into a decorated pot.
 type DustPlume struct{ particle }
 
+// Dispense is a particle that shows up when a dispenser or dropper dispenses an item.
+type Dispense struct{ particle }
+
 // particle serves as a base for all particles in this package.
 type particle struct{}
 
