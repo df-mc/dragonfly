@@ -28,7 +28,6 @@ func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 		StatusProvider:         conf.StatusProvider,
 		AuthenticationDisabled: conf.AuthDisabled,
 		ResourcePacks:          conf.Resources,
-		Biomes:                 biomes(),
 		TexturePacksRequired:   conf.ResourcesRequired,
 	}
 	if conf.Log.Enabled(context.Background(), slog.LevelDebug) {
