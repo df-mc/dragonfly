@@ -105,7 +105,7 @@ func (s *Session) sendBiomes() {
 		nameIndex := addString(b.BiomeName)
 
 		var tagIndices []uint16
-		if b.Tags != nil && len(b.Tags) > 0 {
+		if len(b.Tags) > 0 {
 			tagIndices = make([]uint16, len(b.Tags))
 			for i, tag := range b.Tags {
 				tagIndices[i] = uint16(addString(tag))
