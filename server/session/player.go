@@ -91,6 +91,9 @@ func (s *Session) sendBiomes() {
 	stringIndices := make(map[string]int)
 
 	addString := func(str string) int {
+		if idx, ok := stringIndices[str]; ok {
+			return idx
+		}
 		idx := len(stringList)
 		stringList = append(stringList, str)
 		stringIndices[str] = idx
