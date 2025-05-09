@@ -643,42 +643,6 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 	return entries
 }
 
-// ashyBiome represents a biome that has any form of ash.
-type ashyBiome interface {
-	// Ash returns the ash and white ash of the biome.
-	Ash() (ash float64, whiteAsh float64)
-}
-
-// sporingBiome represents a biome that has blue or red spores.
-type sporingBiome interface {
-	// Spores returns the blue and red spores of the biome.
-	Spores() (blueSpores float64, redSpores float64)
-}
-
-// biomes builds a mapping of all biome definitions of the server, ready to be
-// set in the biomes field of the server listener.
-func biomes() map[string]any {
-	definitions := make(map[string]any)
-	for _, b := range world.Biomes() {
-		definition := map[string]any{
-			"name_hash":   b.String(), // Not actually a hash despite the name.
-			"temperature": float32(b.Temperature()),
-			"downfall":    float32(b.Rainfall()),
-			"rain":        b.Rainfall() > 0,
-		}
-		if a, ok := b.(ashyBiome); ok {
-			ash, whiteAsh := a.Ash()
-			definition["ash"], definition["white_ash"] = float32(ash), float32(whiteAsh)
-		}
-		if s, ok := b.(sporingBiome); ok {
-			blueSpores, redSpores := s.Spores()
-			definition["blue_spores"], definition["red_spores"] = float32(blueSpores), float32(redSpores)
-		}
-		definitions[b.String()] = definition
-	}
-	return definitions
-}
-
 var (
 	//go:embed world/vanilla_items.nbt
 	vanillaItemsData []byte
