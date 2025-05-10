@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	// MaxVanillaBiomeID is the highest ID used by vanilla biomes.
-	MaxVanillaBiomeID int
+	// maxVanillaBiomeID is the highest ID used by vanilla biomes.
+	maxVanillaBiomeID int
 )
 
 // finaliseBiomeRegistry is called after all vanilla biomes have been registered.
@@ -19,8 +19,8 @@ var (
 func finaliseBiomeRegistry() {
 	for _, b := range biomes {
 		id := b.EncodeBiome()
-		if id > MaxVanillaBiomeID {
-			MaxVanillaBiomeID = id
+		if id > maxVanillaBiomeID {
+			maxVanillaBiomeID = id
 		}
 	}
 }
@@ -66,7 +66,7 @@ func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 
 		var biomeID protocol.Optional[uint16]
 		id := b.EncodeBiome()
-		if id > MaxVanillaBiomeID {
+		if id > maxVanillaBiomeID {
 			biomeID = protocol.Option[uint16](uint16(id))
 		}
 
