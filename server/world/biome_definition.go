@@ -12,7 +12,7 @@ var (
 )
 
 // finaliseBiomeRegistry is called after all vanilla biomes have been registered.
-// It sets MaxVanillaBiomeID to the highest ID found among them.
+// It sets maxVanillaBiomeID to the highest ID found among them.
 // noinspection GoUnusedFunction
 //
 //lint:ignore U1000 Function is used through compiler directives.
