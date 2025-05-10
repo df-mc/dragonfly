@@ -11,9 +11,12 @@ var (
 	MaxVanillaBiomeID int
 )
 
-// FinaliseBiomeRegistry finalises the biome registry by setting MaxVanillaBiomeID to the highest ID found
-// among the registered vanilla biomes.
-func FinaliseBiomeRegistry() {
+// finaliseBiomeRegistry is called after all vanilla biomes have been registered.
+// It sets MaxVanillaBiomeID to the highest ID found among them.
+// noinspection GoUnusedFunction
+//
+//lint:ignore U1000 Function is used through compiler directives.
+func finaliseBiomeRegistry() {
 	for _, b := range biomes {
 		id := b.EncodeBiome()
 		if id > MaxVanillaBiomeID {
