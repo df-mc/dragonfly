@@ -91,4 +91,6 @@ func init() {
 	world.RegisterBiome(WindsweptSavanna{})
 	world.RegisterBiome(WoodedBadlandsPlateau{})
 	world.RegisterBiome(WoodedHills{})
+
+	world.FinaliseBiomeRegistry()
 }

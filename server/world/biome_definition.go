@@ -6,6 +6,22 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
+var (
+	// MaxVanillaBiomeID is the highest ID used by vanilla biomes.
+	MaxVanillaBiomeID int
+)
+
+// FinaliseBiomeRegistry finalises the biome registry by setting MaxVanillaBiomeID to the highest ID found
+// among the registered vanilla biomes.
+func FinaliseBiomeRegistry() {
+	for _, b := range biomes {
+		id := b.EncodeBiome()
+		if id > MaxVanillaBiomeID {
+			MaxVanillaBiomeID = id
+		}
+	}
+}
+
 // ashyBiome represents a biome that has any form of ash.
 type ashyBiome interface {
 	// Ash returns the ash and white ash of the biome.
@@ -17,9 +33,6 @@ type sporingBiome interface {
 	// Spores returns the blue and red spores of the biome.
 	Spores() (blueSpores float64, redSpores float64)
 }
-
-// MaxVanillaBiomeID ...
-const MaxVanillaBiomeID = 193
 
 // BiomeDefinitions returns the list of biome definitions along with the associated StringList.
 func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
