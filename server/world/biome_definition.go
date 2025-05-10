@@ -1,43 +1,29 @@
 package world
 
 import (
-	"bytes"
-	_ "embed"
+	"encoding/binary"
+	"image/color"
 
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
-var (
-	//go:embed biome_definitions.nbt
-	biomeDefinitionData []byte
+// ashyBiome represents a biome that has any form of ash.
+type ashyBiome interface {
+	// Ash returns the ash and white ash of the biome.
+	Ash() (ash float64, whiteAsh float64)
+}
 
-	cachedBiomeDefinitions []protocol.BiomeDefinition
-	cachedBiomeStringList  []string
-)
+// sporingBiome represents a biome that has blue or red spores.
+type sporingBiome interface {
+	// Spores returns the blue and red spores of the biome.
+	Spores() (blueSpores float64, redSpores float64)
+}
 
-func init() {
-	type biomeNBT struct {
-		BiomeName        string   `nbt:"name"`
-		BiomeID          uint16   `nbt:"id,omitempty"`
-		Temperature      float32  `nbt:"temperature"`
-		Downfall         float32  `nbt:"downfall"`
-		RedSporeDensity  float32  `nbt:"redSporeDensity"`
-		BlueSporeDensity float32  `nbt:"blueSporeDensity"`
-		AshDensity       float32  `nbt:"ashDensity"`
-		WhiteAshDensity  float32  `nbt:"whiteAshDensity"`
-		Depth            float32  `nbt:"depth"`
-		Scale            float32  `nbt:"scale"`
-		MapWaterColour   int32    `nbt:"mapWaterColour"`
-		Rain             bool     `nbt:"rain"`
-		Tags             []string `nbt:"tags"`
-	}
+// MaxVanillaBiomeID ...
+const MaxVanillaBiomeID = 193
 
-	var rawBiomes []biomeNBT
-	if err := nbt.NewDecoder(bytes.NewReader(biomeDefinitionData)).Decode(&rawBiomes); err != nil {
-		panic(err)
-	}
-
+// BiomeDefinitions returns the list of biome definitions along with the associated StringList.
+func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 	var (
 		internedStrings     []string
 		internedStringIndex = make(map[string]int)
@@ -53,42 +39,58 @@ func init() {
 		return index
 	}
 
-	encodedBiomes := make([]protocol.BiomeDefinition, 0, len(rawBiomes))
-	for _, biome := range rawBiomes {
-		nameIndex := intern(biome.BiomeName)
+	encodedBiomes := make([]protocol.BiomeDefinition, 0, len(biomes))
+	for _, b := range biomes {
+		nameIndex := intern(b.String())
 
-		tagIndices := make([]uint16, len(biome.Tags))
-		for i, tag := range biome.Tags {
+		tags := b.Tags()
+		tagIndices := make([]uint16, len(tags))
+		for i, tag := range tags {
 			tagIndices[i] = uint16(intern(tag))
 		}
 
 		var biomeID protocol.Optional[uint16]
-		if biome.BiomeID > 0 {
-			biomeID = protocol.Option[uint16](biome.BiomeID)
+		id := b.EncodeBiome()
+		if id > MaxVanillaBiomeID {
+			biomeID = protocol.Option[uint16](uint16(id))
 		}
 
-		encodedBiomes = append(encodedBiomes, protocol.BiomeDefinition{
-			NameIndex:        int16(nameIndex),
-			BiomeID:          biomeID,
-			Temperature:      biome.Temperature,
-			Downfall:         biome.Downfall,
-			RedSporeDensity:  biome.RedSporeDensity,
-			BlueSporeDensity: biome.BlueSporeDensity,
-			AshDensity:       biome.AshDensity,
-			WhiteAshDensity:  biome.WhiteAshDensity,
-			Depth:            biome.Depth,
-			Scale:            biome.Scale,
-			MapWaterColour:   biome.MapWaterColour,
-			Rain:             biome.Rain,
-			Tags:             protocol.Option[[]uint16](tagIndices),
-		})
+		def := protocol.BiomeDefinition{
+			NameIndex:      int16(nameIndex),
+			BiomeID:        biomeID,
+			Temperature:    float32(b.Temperature()),
+			Downfall:       float32(b.Rainfall()),
+			Depth:          float32(b.Depth()),
+			Scale:          float32(b.Scale()),
+			MapWaterColour: int32FromRGBA(b.WaterColour()),
+			Rain:           b.Rainfall() > 0,
+			Tags:           protocol.Option[[]uint16](tagIndices),
+		}
+
+		if a, ok := b.(ashyBiome); ok {
+			ash, whiteAsh := a.Ash()
+			def.AshDensity = float32(ash)
+			def.WhiteAshDensity = float32(whiteAsh)
+		}
+
+		if s, ok := b.(sporingBiome); ok {
+			blueSpores, redSpores := s.Spores()
+			def.BlueSporeDensity = float32(blueSpores)
+			def.RedSporeDensity = float32(redSpores)
+		}
+
+		encodedBiomes = append(encodedBiomes, def)
 	}
 
-	cachedBiomeDefinitions = encodedBiomes
-	cachedBiomeStringList = internedStrings
+	return encodedBiomes, internedStrings
 }
 
-// BiomeDefinitions returns cached biome data and string list.
-func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
-	return cachedBiomeDefinitions, cachedBiomeStringList
+// int32FromRGBA converts a color.RGBA into an int32. These int32s are present in things such as signs and dyed leather armour.
+func int32FromRGBA(x color.RGBA) int32 {
+	if x.R == 0 && x.G == 0 && x.B == 0 {
+		// Default to black colour. The default (0x000000) is a transparent colour. Text with this colour will not show
+		// up on the sign.
+		return int32(-0x1000000)
+	}
+	return int32(binary.BigEndian.Uint32([]byte{x.A, x.R, x.G, x.B}))
 }
