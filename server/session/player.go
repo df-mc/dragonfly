@@ -85,54 +85,7 @@ func (s *Session) SendRespawn(pos mgl64.Vec3, c Controllable) {
 
 // sendBiomes sends all the vanilla biomes to the session.
 func (s *Session) sendBiomes() {
-	biomes := world.BiomeDefinitions()
-
-	stringList := make([]string, 0)
-	stringIndices := make(map[string]int)
-
-	addString := func(str string) int {
-		if idx, ok := stringIndices[str]; ok {
-			return idx
-		}
-		idx := len(stringList)
-		stringList = append(stringList, str)
-		stringIndices[str] = idx
-		return idx
-	}
-
-	definitions := make([]protocol.BiomeDefinition, 0, len(biomes))
-	for _, b := range biomes {
-		nameIndex := addString(b.BiomeName)
-
-		var tagIndices []uint16
-		if len(b.Tags) > 0 {
-			tagIndices = make([]uint16, len(b.Tags))
-			for i, tag := range b.Tags {
-				tagIndices[i] = uint16(addString(tag))
-			}
-		}
-
-		var biomeId protocol.Optional[uint16]
-		if b.BiomeID > 0 {
-			biomeId = protocol.Option[uint16](b.BiomeID)
-		}
-		definitions = append(definitions, protocol.BiomeDefinition{
-			NameIndex:        int16(nameIndex),
-			BiomeID:          biomeId,
-			Temperature:      b.Temperature,
-			Downfall:         b.Downfall,
-			RedSporeDensity:  b.RedSporeDensity,
-			BlueSporeDensity: b.BlueSporeDensity,
-			AshDensity:       b.AshDensity,
-			WhiteAshDensity:  b.WhiteAshDensity,
-			Depth:            b.Depth,
-			Scale:            b.Scale,
-			MapWaterColour:   b.MapWaterColour,
-			Rain:             b.Rain,
-			Tags:             protocol.Option[[]uint16](tagIndices),
-		})
-	}
-
+	definitions, stringList := world.BiomeDefinitions()
 	s.writePacket(&packet.BiomeDefinitionList{
 		BiomeDefinitions: definitions,
 		StringList:       stringList,
