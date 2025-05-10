@@ -2,7 +2,6 @@ package world
 
 import (
 	"encoding/binary"
-	"image/color"
 
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -56,15 +55,20 @@ func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 		}
 
 		def := protocol.BiomeDefinition{
-			NameIndex:      int16(nameIndex),
-			BiomeID:        biomeID,
-			Temperature:    float32(b.Temperature()),
-			Downfall:       float32(b.Rainfall()),
-			Depth:          float32(b.Depth()),
-			Scale:          float32(b.Scale()),
-			MapWaterColour: int32FromRGBA(b.WaterColour()),
-			Rain:           b.Rainfall() > 0,
-			Tags:           protocol.Option[[]uint16](tagIndices),
+			NameIndex:   int16(nameIndex),
+			BiomeID:     biomeID,
+			Temperature: float32(b.Temperature()),
+			Downfall:    float32(b.Rainfall()),
+			Depth:       float32(b.Depth()),
+			Scale:       float32(b.Scale()),
+			MapWaterColour: int32(binary.BigEndian.Uint32([]byte{
+				b.WaterColour().A,
+				b.WaterColour().R,
+				b.WaterColour().G,
+				b.WaterColour().B,
+			})),
+			Rain: b.Rainfall() > 0,
+			Tags: protocol.Option[[]uint16](tagIndices),
 		}
 
 		if a, ok := b.(ashyBiome); ok {
@@ -83,14 +87,4 @@ func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 	}
 
 	return encodedBiomes, internedStrings
-}
-
-// int32FromRGBA converts a color.RGBA into an int32. These int32s are present in things such as signs and dyed leather armour.
-func int32FromRGBA(x color.RGBA) int32 {
-	if x.R == 0 && x.G == 0 && x.B == 0 {
-		// Default to black colour. The default (0x000000) is a transparent colour. Text with this colour will not show
-		// up on the sign.
-		return int32(-0x1000000)
-	}
-	return int32(binary.BigEndian.Uint32([]byte{x.A, x.R, x.G, x.B}))
 }
