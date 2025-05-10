@@ -1,12 +1,22 @@
 package world
 
+import "image/color"
+
 // Biome is a region in a world with distinct geographical features, flora, temperatures, humidity ratings,
-// and sky, water, grass and foliage colors.
+// and sky, water, grass and foliage colours.
 type Biome interface {
 	// Temperature returns the temperature of the biome.
 	Temperature() float64
 	// Rainfall returns the rainfall of the biome.
 	Rainfall() float64
+	// Depth returns the depth of the biome.
+	Depth() float64
+	// Scale returns the scale of the biome.
+	Scale() float64
+	// WaterColour returns the water colour of the biome.
+	WaterColour() color.RGBA
+	// Tags returns the tags for the biome.
+	Tags() []string
 	// String returns the biome name as a string.
 	String() string
 	// EncodeBiome encodes the biome into an int value that is used to identify the biome over the network.

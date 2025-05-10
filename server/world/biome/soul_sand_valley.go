@@ -1,5 +1,7 @@
 package biome
 
+import "image/color"
+
 // SoulSandValley ...
 type SoulSandValley struct{}
 
@@ -16,6 +18,26 @@ func (SoulSandValley) Rainfall() float64 {
 // Ash ...
 func (SoulSandValley) Ash() (ash float64, whiteAsh float64) {
 	return 0.05, 0
+}
+
+// Depth ...
+func (SoulSandValley) Depth() float64 {
+	return 0.1
+}
+
+// Scale ...
+func (SoulSandValley) Scale() float64 {
+	return 0.2
+}
+
+// WaterColour ...
+func (SoulSandValley) WaterColour() color.RGBA {
+	return color.RGBA{R: 0x90, G: 0x59, B: 0x57, A: 0xa5}
+}
+
+// Tags ...
+func (SoulSandValley) Tags() []string {
+	return []string{"nether", "soulsand_valley", "spawn_ghast", "spawn_endermen", "spawns_warm_variant_farm_animals"}
 }
 
 // String ...

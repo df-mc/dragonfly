@@ -3,6 +3,12 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"net"
+	"slices"
+	"time"
+	_ "unsafe" // Imported for compiler directives.
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -18,11 +24,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
-	"net"
-	"slices"
-	"time"
-	_ "unsafe" // Imported for compiler directives.
 )
 
 // StopShowingEntity stops showing a world.Entity to the Session. It will be completely invisible until a call to
@@ -79,6 +80,15 @@ func (s *Session) SendRespawn(pos mgl64.Vec3, c Controllable) {
 		Position:        vec64To32(pos.Add(entityOffset(c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
+	})
+}
+
+// sendBiomes sends all the vanilla biomes to the session.
+func (s *Session) sendBiomes() {
+	definitions, stringList := world.BiomeDefinitions()
+	s.writePacket(&packet.BiomeDefinitionList{
+		BiomeDefinitions: definitions,
+		StringList:       stringList,
 	})
 }
 
