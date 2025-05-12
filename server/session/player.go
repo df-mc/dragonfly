@@ -37,7 +37,7 @@ func (s *Session) StopShowingEntity(e world.Entity) {
 	s.entityMutex.Unlock()
 
 	if !ok {
-		s.HideEntity(e)
+		s.doHideEntity(e)
 	}
 }
 
@@ -51,7 +51,7 @@ func (s *Session) StartShowingEntity(e world.Entity) {
 	s.entityMutex.Unlock()
 
 	if ok {
-		s.ViewEntity(e)
+		s.doViewEntity(e)
 		s.ViewEntityState(e)
 		s.ViewEntityItems(e)
 		s.ViewEntityArmour(e)

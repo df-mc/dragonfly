@@ -52,14 +52,28 @@ func (s *Session) ViewEntity(e world.Entity) {
 		s.ViewEntityState(e)
 		return
 	}
+
+	s.entityMutex.Lock()
+	s.visibleEntities[e.H().UUID()] = struct{}{}
+	s.entityMutex.Unlock()
+
 	if s.entityHidden(e) {
 		return
 	}
+
+	s.doViewEntity(e)
+}
+
+func (s *Session) doViewEntity(e world.Entity) {
 	var runtimeID uint64
 
 	_, controllable := e.(Controllable)
 
 	s.entityMutex.Lock()
+	if _, ok := s.visibleEntities[e.H().UUID()]; !ok {
+		s.entityMutex.Unlock()
+		return
+	}
 	if id, ok := s.entityRuntimeIDs[e.H()]; ok && controllable {
 		runtimeID = id
 	} else {
@@ -169,10 +183,18 @@ func (s *Session) ViewEntityGameMode(e world.Entity) {
 
 // HideEntity ...
 func (s *Session) HideEntity(e world.Entity) {
+	s.entityMutex.Lock()
+	delete(s.visibleEntities, e.H().UUID())
+	s.entityMutex.Unlock()
+
+	s.doHideEntity(e)
+
+}
+
+func (s *Session) doHideEntity(e world.Entity) {
 	if s.entityRuntimeID(e) == selfEntityRuntimeID {
 		return
 	}
-
 	s.entityMutex.Lock()
 	id, ok := s.entityRuntimeIDs[e.H()]
 	if _, controllable := e.(Controllable); !controllable {
