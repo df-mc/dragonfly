@@ -172,10 +172,7 @@ func (s Stack) AsBreakable() Stack {
 
 // Empty checks if the stack is empty (has a count of 0).
 func (s Stack) Empty() bool {
-	if s.Count() == 0 {
-		return true
-	}
-	if s.item == nil {
+	if s.Count() == 0 || s.item == nil {
 		return true
 	}
 	name, _ := s.item.EncodeItem()
