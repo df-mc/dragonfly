@@ -339,7 +339,7 @@ type DamageSource interface {
 	// Fire specifies if the Source is fire related and should be ignored when
 	// an Entity has the fire resistance effect.
 	Fire() bool
-	// IgnoreTotem specifies if totem going to be ignored if damage is lethal.
+	// IgnoreTotem specifies whether the totem will be ignored if the damage is lethal.
 	IgnoreTotem() bool
 }
 
