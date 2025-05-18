@@ -12,6 +12,8 @@
   AuthEnabled = true
   # DisableJoinQuitMessages specifies if join/quit messages should be broadcast when players join the server.
   DisableJoinQuitMessages = false
+  # EnableVibrantVisuals specifies if the vibrant visuals experiment should be enabled or not.
+  EnableVibrantVisuals = true
 
 [World]
   # The folder that the world files (will) reside in, relative to the working directory. If not currently

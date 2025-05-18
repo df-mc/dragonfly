@@ -2,6 +2,12 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"slices"
+	_ "unsafe"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
@@ -15,11 +21,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"slices"
-	_ "unsafe"
 )
 
 // Config contains options for starting a Minecraft server.
@@ -70,6 +71,9 @@ type Config struct {
 	// joining or quitting.
 	// ShutdownMessage is set to chat.MessageServerDisconnect if empty.
 	JoinMessage, QuitMessage, ShutdownMessage chat.Translation
+	// EnableVibrantVisuals specifies if the vibrant visuals experiment
+	// should be enabled or not.
+	EnableVibrantVisuals bool
 	// StatusProvider provides the server status shown to players in the server
 	// list. By default, StatusProvider will show the server name from the Name
 	// field and the current player count and maximum players.
@@ -195,6 +199,9 @@ type UserConfig struct {
 		// DisableJoinQuitMessages specifies if default join and quit messages
 		// for players should be disabled.
 		DisableJoinQuitMessages bool
+		// EnableVibrantVisuals specifies if the vibrant visuals experiment
+		// should be enabled or not.
+		EnableVibrantVisuals bool
 	}
 	World struct {
 		// SaveData controls whether a world's data will be saved and loaded.
@@ -255,6 +262,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 	if !uc.Server.DisableJoinQuitMessages {
 		conf.JoinMessage, conf.QuitMessage = chat.MessageJoin, chat.MessageQuit
 	}
+	conf.EnableVibrantVisuals = uc.Server.EnableVibrantVisuals
 	if uc.World.SaveData {
 		conf.WorldProvider, err = mcdb.Config{Log: log}.Open(uc.World.Folder)
 		if err != nil {
@@ -314,6 +322,7 @@ func DefaultConfig() UserConfig {
 	c.Network.Address = ":19132"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
+	c.Server.EnableVibrantVisuals = true
 	c.World.SaveData = true
 	c.World.Folder = "world"
 	c.Players.MaximumChunkRadius = 32

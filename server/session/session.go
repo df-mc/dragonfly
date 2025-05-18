@@ -188,7 +188,7 @@ func (conf Config) New(conn Conn) *Session {
 			case <-s.closeBackground:
 				return
 			case pk := <-s.packets:
-				_ = conn.WritePacket(pk)
+				_ = s.conn.WritePacket(pk)
 			}
 		}
 	}()
@@ -511,6 +511,11 @@ func (s *Session) registerHandlers() {
 	}
 }
 
+// RegisterHandler ...
+func (s *Session) RegisterHandler(id uint32, h packetHandler) {
+	s.handlers[id] = h
+}
+
 // writePacket writes a packet to the session's connection if it is not Nop.
 func (s *Session) writePacket(pk packet.Packet) {
 	if s == Nop {
@@ -520,6 +525,24 @@ func (s *Session) writePacket(pk packet.Packet) {
 	case s.packets <- pk:
 	case <-s.closeBackground:
 	}
+}
+
+// WritePacket ...
+func (s *Session) WritePacket(pk packet.Packet) {
+	s.writePacket(pk)
+}
+
+// Flush ...
+func (s *Session) Flush() error {
+	if s == Nop {
+		return nil
+	}
+	return s.conn.Flush()
+}
+
+// Conn ...
+func (s *Session) Conn() Conn {
+	return s.conn
 }
 
 // actorIdentifier represents the structure of an actor identifier sent over the network.

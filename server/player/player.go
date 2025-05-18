@@ -1326,6 +1326,9 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 
 	p.session().SendGameMode(p)
 	for _, v := range p.viewers() {
+		if v == p.session() {
+			continue
+		}
 		v.ViewEntityGameMode(p)
 	}
 	if mode.AllowsTakingDamage() {
@@ -3005,6 +3008,11 @@ func (p *Player) session() *session.Session {
 		return s
 	}
 	return session.Nop
+}
+
+// Session ...
+func (p *Player) Session() *session.Session {
+	return p.session()
 }
 
 // useContext returns an item.UseContext initialised for a Player.

@@ -435,6 +435,18 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	data.Dimension = int32(dim)
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
 
+	var experiments []protocol.ExperimentData
+	if srv.conf.EnableVibrantVisuals {
+		experiments = append(experiments, protocol.ExperimentData{
+			Name:    "experimental_graphics",
+			Enabled: true,
+		})
+	}
+
+	if len(experiments) > 0 {
+		data.Experiments = experiments
+	}
+
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 

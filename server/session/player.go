@@ -3,6 +3,7 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math"
 	"net"
 	"slices"
@@ -94,6 +95,14 @@ func (s *Session) sendBiomes() {
 
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
+	craftingCacheMu.Lock()
+	defer craftingCacheMu.Unlock()
+	if craftingDataCache != nil {
+		s.recipes = maps.Clone(craftingRecipesCache)
+		s.writePacket(craftingDataCache)
+		return
+	}
+
 	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
 	potionRecipes := make([]protocol.PotionRecipe, 0)
 	potionContainerChange := make([]protocol.PotionContainerChangeRecipe, 0)
@@ -176,6 +185,8 @@ func (s *Session) sendRecipes() {
 			})
 		}
 	}
+
+	craftingRecipesCache = maps.Clone(s.recipes)
 	s.writePacket(&packet.CraftingData{Recipes: recipes, PotionRecipes: potionRecipes, PotionContainerChangeRecipes: potionContainerChange, ClearRecipes: true})
 }
 
