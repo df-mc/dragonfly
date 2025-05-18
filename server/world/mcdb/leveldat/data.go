@@ -1,11 +1,12 @@
 package leveldat
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
-	"time"
 )
 
 // Data holds a collection of data that specify a range of Settings of the
@@ -148,6 +149,7 @@ type Data struct {
 	TNTExplosionDropDecay          bool           `nbt:"tntexplosiondropdecay"`
 	HasUncompleteWorldFileOnDisk   bool           `nbt:"HasUncompleteWorldFileOnDisk"`
 	PlayerHasDied                  bool           `nbt:"PlayerHasDied"`
+	LocatorBar                     bool           `nbt:"locatorbar"`
 }
 
 // FillDefault fills out d with all the default level.dat values.
@@ -220,6 +222,7 @@ func (d *Data) FillDefault() {
 	d.TNTExplodes = true
 	d.WorldVersion = 1
 	d.XBLBroadcastIntent = 3
+	d.LocatorBar = false
 }
 
 // Settings returns a world.Settings value based on the properties stored in d.
