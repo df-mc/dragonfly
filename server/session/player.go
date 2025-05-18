@@ -465,7 +465,11 @@ func (s *Session) SendGameMode(c Controllable) {
 	if s == Nop {
 		return
 	}
-	s.writePacket(&packet.SetPlayerGameType{GameType: gameTypeFromMode(c.GameMode())})
+	gameType := gameTypeFromMode(c.GameMode())
+	s.writePacket(&packet.SetPlayerGameType{GameType: gameType})
+	if gameType == packet.GameTypeSpectator {
+		return
+	}
 	s.SendAbilities(c)
 }
 
