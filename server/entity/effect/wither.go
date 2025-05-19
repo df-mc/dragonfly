@@ -35,3 +35,4 @@ type WitherDamageSource struct{}
 func (WitherDamageSource) ReducedByResistance() bool { return true }
 func (WitherDamageSource) ReducedByArmour() bool     { return false }
 func (WitherDamageSource) Fire() bool                { return false }
+func (WitherDamageSource) IgnoreTotem() bool         { return false }

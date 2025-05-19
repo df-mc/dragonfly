@@ -240,3 +240,4 @@ type LavaDamageSource struct{}
 func (LavaDamageSource) ReducedByResistance() bool { return true }
 func (LavaDamageSource) ReducedByArmour() bool     { return true }
 func (LavaDamageSource) Fire() bool                { return true }
+func (LavaDamageSource) IgnoreTotem() bool         { return false }

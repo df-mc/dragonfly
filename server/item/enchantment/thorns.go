@@ -51,3 +51,4 @@ type ThornsDamageSource struct {
 func (ThornsDamageSource) ReducedByResistance() bool { return true }
 func (ThornsDamageSource) ReducedByArmour() bool     { return false }
 func (ThornsDamageSource) Fire() bool                { return false }
+func (ThornsDamageSource) IgnoreTotem() bool         { return false }
