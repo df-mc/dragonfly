@@ -959,6 +959,22 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EntityRuntimeID: s.entityRuntimeID(e),
 			EventType:       packet.ActorEventDeath,
 		})
+	case entity.LinkAction:
+		s.writePacket(&packet.SetActorLink{
+			EntityLink: protocol.EntityLink{
+				RiddenEntityUniqueID: int64(s.entityRuntimeID(e)),
+				RiderEntityUniqueID:  int64(s.entityRuntimeID(act.Target)),
+				Type:                 protocol.EntityLinkRider,
+			},
+		})
+	case entity.UnlinkAction:
+		s.writePacket(&packet.SetActorLink{
+			EntityLink: protocol.EntityLink{
+				RiddenEntityUniqueID: int64(s.entityRuntimeID(e)),
+				RiderEntityUniqueID:  int64(s.entityRuntimeID(act.Target)),
+				Type:                 protocol.EntityLinkRemove,
+			},
+		})
 	case entity.PickedUpAction:
 		s.writePacket(&packet.TakeItemActor{
 			ItemEntityRuntimeID:  s.entityRuntimeID(e),
