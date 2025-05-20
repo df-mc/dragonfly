@@ -9,7 +9,6 @@ import (
 // the element interface may be used as struct fields when passing the form structure to form.New().
 type Element interface {
 	json.Marshaler
-	ReadOnly() bool
 	elem()
 }
 
@@ -31,10 +30,6 @@ func (l Label) MarshalJSON() ([]byte, error) {
 		"type": "label",
 		"text": l.Text,
 	})
-}
-
-func (Label) ReadOnly() bool {
-	return true
 }
 
 // Input represents a text input box element. Submitters may write any text in these boxes with no specific
@@ -72,10 +67,6 @@ func (i Input) Value() string {
 	return i.value
 }
 
-func (Input) ReadOnly() bool {
-	return false
-}
-
 // Toggle represents an on-off button element. Submitters may either toggle this on or off, which will then
 // hold a value of true or false respectively.
 type Toggle struct {
@@ -104,10 +95,6 @@ func (t Toggle) MarshalJSON() ([]byte, error) {
 // Value returns the value filled out by the user.
 func (t Toggle) Value() bool {
 	return t.value
-}
-
-func (Toggle) ReadOnly() bool {
-	return false
 }
 
 // Slider represents a slider element. Submitters may move the slider to values within the range of the slider
@@ -149,10 +136,6 @@ func (s Slider) Value() float64 {
 	return s.value
 }
 
-func (Slider) ReadOnly() bool {
-	return false
-}
-
 // Dropdown represents a dropdown which, when clicked, opens a window with the options set in the Options
 // field. Submitters may select one of the options.
 type Dropdown struct {
@@ -189,10 +172,6 @@ func (d Dropdown) Value() int {
 	return d.value
 }
 
-func (Dropdown) ReadOnly() bool {
-	return false
-}
-
 // StepSlider represents a slider that has a number of options that may be selected. It is essentially a
 // combination of a Dropdown and a Slider, looking like a slider but having properties like a dropdown.
 type StepSlider Dropdown
@@ -216,10 +195,6 @@ func (s StepSlider) MarshalJSON() ([]byte, error) {
 // in the Options slice.
 func (s StepSlider) Value() int {
 	return s.value
-}
-
-func (StepSlider) ReadOnly() bool {
-	return false
 }
 
 // Button represents a button added to a Menu or Modal form. The button has text on it and an optional image,
