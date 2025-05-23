@@ -654,6 +654,7 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
 		return
 	}
+	s.Play(w, pos)
 	for _, viewer := range w.viewersOf(pos) {
 		viewer.ViewSound(pos, s)
 	}
