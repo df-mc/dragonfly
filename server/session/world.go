@@ -305,7 +305,7 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 
 	inv := armoured.Armour()
 
-	// Show the main hand item.
+	// Show the entity's armour
 	s.writePacket(&packet.MobArmourEquipment{
 		EntityRuntimeID: runtimeID,
 		Helmet:          instanceFromItem(inv.Helmet()),
