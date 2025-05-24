@@ -123,7 +123,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	return entry
 }
 
-// dimensionID  returns the dimension ID of the world that the session is in.
+// dimensionID returns the dimension ID of the world that the session is in.
 func (s *Session) dimensionID(dim world.Dimension) int32 {
 	d, _ := world.DimensionID(dim)
 	return int32(d)
