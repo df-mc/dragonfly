@@ -1,6 +1,11 @@
 package entity
 
 import (
+	"iter"
+	"math"
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
@@ -9,10 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"iter"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
 // ProjectileBehaviourConfig allows the configuration of projectiles. Calling
@@ -80,6 +81,10 @@ type ProjectileBehaviourConfig struct {
 	// CollisionPosition specifies the position that the projectile is stuck
 	// in. If non-empty, the entity will not move.
 	CollisionPosition cube.Pos
+	// CloseClause is a function evaluated every tick while the projectile
+	// exists in the world. If the function returns true, the projectile will be
+	// removed from the world.
+	CloseClause func(e *Ent, tx *world.Tx, owner *world.EntityHandle) bool
 }
 
 func (conf ProjectileBehaviourConfig) Apply(data *world.EntityData) {
@@ -141,6 +146,13 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	if lt.close {
 		_ = e.Close()
 		return nil
+	}
+
+	if lt.conf.CloseClause != nil {
+		if lt.conf.CloseClause(e, tx, lt.Owner()) {
+			lt.close = true
+			return nil
+		}
 	}
 
 	if lt.collided && lt.tickAttached(e, tx) {
