@@ -35,6 +35,7 @@ type Data struct {
 	LimitedWorldOriginZ            int32
 	LimitedWorldDepth              int32 `nbt:"limitedWorldDepth"`
 	LimitedWorldWidth              int32 `nbt:"limitedWorldWidth"`
+	LocatorBar                     bool  `nbt:"locatorbar"`
 	MinimumCompatibleClientVersion []int32
 	MultiPlayerGame                bool `nbt:"MultiplayerGame"`
 	MultiPlayerGameIntent          bool `nbt:"MultiplayerGameIntent"`
@@ -192,6 +193,7 @@ func (d *Data) FillDefault() {
 	d.LimitedWorldDepth = 16
 	d.LimitedWorldOriginY = math.MaxInt16
 	d.LimitedWorldWidth = 16
+	d.LocatorBar = false
 	d.MaxCommandChainLength = math.MaxUint16
 	d.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
 	d.MobGriefing = true
