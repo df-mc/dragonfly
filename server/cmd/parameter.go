@@ -56,6 +56,14 @@ type Optional[T any] struct {
 	set bool
 }
 
+// Option creates new Optional value with the option.
+func Option[T any](value T) Optional[T] {
+	return Optional[T]{
+		value,
+		true,
+	}
+}
+
 // Load returns the value specified upon executing the command and a bool that is true if the parameter was filled out
 // by the Source.
 func (o Optional[T]) Load() (T, bool) {

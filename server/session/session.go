@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/event"
 	"io"
 	"log/slog"
 	"net"
@@ -38,6 +39,9 @@ type Session struct {
 	conn     Conn
 	handlers map[uint32]packetHandler
 	packets  chan packet.Packet
+
+	userHandler   UserPacketHandler
+	userHandlerMu sync.Mutex
 
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
@@ -188,11 +192,31 @@ func (conf Config) New(conn Conn) *Session {
 			case <-s.closeBackground:
 				return
 			case pk := <-s.packets:
-				_ = conn.WritePacket(pk)
+				ctx := event.C(s)
+				if s.UserHandler().HandleServerPacket(ctx, pk); !ctx.Cancelled() {
+					_ = conn.WritePacket(pk)
+				}
 			}
 		}
 	}()
 	return s
+}
+
+// UserHandler returns Session UserPacketHandler.
+func (s *Session) UserHandler() UserPacketHandler {
+	s.userHandlerMu.Lock()
+	defer s.userHandlerMu.Unlock()
+	return s.userHandler
+}
+
+// Handle ...
+func (s *Session) Handle(h UserPacketHandler) {
+	if h == nil {
+		panic("nil UserPacketHandler")
+	}
+	s.userHandlerMu.Lock()
+	s.userHandler = h
+	s.userHandlerMu.Unlock()
 }
 
 // SetHandle sets the world.EntityHandle of the Session and attaches a skin to
@@ -457,6 +481,12 @@ func (s *Session) ChangingDimension() bool {
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
 func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
+	ctx := event.C(s)
+	if s.UserHandler().HandleClientPacket(ctx, c, pk); ctx.Cancelled() {
+		// Cancelled by user.
+		return nil
+	}
+
 	handler, ok := s.handlers[pk.ID()]
 	if !ok {
 		s.conf.Log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
@@ -469,11 +499,15 @@ func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (
 	if err := handler.Handle(pk, s, tx, c); err != nil {
 		return fmt.Errorf("%T: %w", pk, err)
 	}
+
 	return nil
 }
 
-// registerHandlers registers all packet handlers found in the packetHandler package.
+// registerHandlers registers all packet handlers found in the PacketHandler package.
 func (s *Session) registerHandlers() {
+	s.userHandlerMu.Lock()
+	s.userHandler = NopUserPacketHandler{}
+	s.userHandlerMu.Unlock()
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:                nil,
 		packet.IDAdventureSettings:         nil, // Deprecated, the client still sends this though.

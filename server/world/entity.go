@@ -309,6 +309,8 @@ type Entity interface {
 	// Rotation returns the yaw (horizontal rotation) and pitch (vertical
 	// rotation) of the entity in degrees.
 	Rotation() cube.Rotation
+	// Tx is entity world transaction.
+	Tx() *Tx
 }
 
 // TickerEntity represents an Entity that has a Tick method which should be called every time the Entity is
