@@ -226,11 +226,11 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 			}
 		}
 
-		if len(c.viewers) > 0 {
-			if te, ok := e.(TickerEntity); ok {
-				te.Tick(tx, tick)
-			}
+		//if len(c.viewers) > 0 {
+		if te, ok := e.(TickerEntity); ok {
+			te.Tick(tx, tick)
 		}
+		//}
 	}
 }
 

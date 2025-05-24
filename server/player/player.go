@@ -2366,6 +2366,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	if p.Dead() {
 		return
 	}
+	p.Handler().HandleTick(p, current)
 	if _, ok := p.tx.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -3057,7 +3058,7 @@ func (p *Player) Handler() Handler {
 }
 
 // broadcastItems broadcasts the items held to viewers.
-func (p *Player) broadcastItems(int, item.Stack, item.Stack) {
+func (p *Player) broadcastItems(_ int, _, _ item.Stack) {
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
 	}

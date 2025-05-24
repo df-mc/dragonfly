@@ -172,7 +172,8 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 	switch r := result.(type) {
 	case trace.EntityResult:
-		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
+		ent := r.Entity()
+		if l, ok := ent.(Living); ok && lt.conf.Damage >= 0 {
 			lt.hitEntity(l, e, vel)
 		}
 	case trace.BlockResult:
@@ -332,9 +333,10 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 	return func(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
 		return func(yield func(world.Entity) bool) {
 			for other := range seq {
-				if !lt.conf.Allower(other, &lt.conf) {
+				if lt.conf.Allower != nil && !lt.conf.Allower(other, &lt.conf) {
 					continue
 				}
+
 				g, ok := other.(interface{ GameMode() world.GameMode })
 				_, living := other.(Living)
 				if (ok && (!g.GameMode().HasCollision() || !g.GameMode().Visible())) || e.H() == other.H() || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {

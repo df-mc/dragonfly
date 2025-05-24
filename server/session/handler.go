@@ -23,9 +23,3 @@ type UserPacketHandler interface {
 	// HandleServerPacket ...
 	HandleServerPacket(ctx *Context, p packet.Packet)
 }
-
-// NopUserPacketHandler is no-operation implementation of UserPacketHandler.
-type NopUserPacketHandler struct{}
-
-func (NopUserPacketHandler) HandleClientPacket(*Context, Controllable, packet.Packet) {}
-func (NopUserPacketHandler) HandleServerPacket(*Context, packet.Packet)               {}

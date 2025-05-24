@@ -192,10 +192,13 @@ func (conf Config) New(conn Conn) *Session {
 			case <-s.closeBackground:
 				return
 			case pk := <-s.packets:
-				ctx := event.C(s)
-				if s.UserHandler().HandleServerPacket(ctx, pk); !ctx.Cancelled() {
-					_ = conn.WritePacket(pk)
+				if handler := s.UserHandler(); handler != nil {
+					ctx := event.C(s)
+					if s.UserHandler().HandleServerPacket(ctx, pk); ctx.Cancelled() {
+						continue
+					}
 				}
+				_ = conn.WritePacket(pk)
 			}
 		}
 	}()
@@ -212,8 +215,9 @@ func (s *Session) UserHandler() UserPacketHandler {
 // Handle ...
 func (s *Session) Handle(h UserPacketHandler) {
 	if h == nil {
-		panic("nil UserPacketHandler")
+		return
 	}
+
 	s.userHandlerMu.Lock()
 	s.userHandler = h
 	s.userHandlerMu.Unlock()
@@ -481,10 +485,12 @@ func (s *Session) ChangingDimension() bool {
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
 func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
-	ctx := event.C(s)
-	if s.UserHandler().HandleClientPacket(ctx, c, pk); ctx.Cancelled() {
-		// Cancelled by user.
-		return nil
+	if handler := s.UserHandler(); handler != nil {
+		ctx := event.C(s)
+		if handler.HandleClientPacket(ctx, c, pk); ctx.Cancelled() {
+			// Cancelled by user.
+			return nil
+		}
 	}
 
 	handler, ok := s.handlers[pk.ID()]
@@ -505,9 +511,6 @@ func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (
 
 // registerHandlers registers all packet handlers found in the PacketHandler package.
 func (s *Session) registerHandlers() {
-	s.userHandlerMu.Lock()
-	s.userHandler = NopUserPacketHandler{}
-	s.userHandlerMu.Unlock()
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:                nil,
 		packet.IDAdventureSettings:         nil, // Deprecated, the client still sends this though.
