@@ -80,7 +80,11 @@ type ProjectileBehaviourConfig struct {
 	// CollisionPosition specifies the position that the projectile is stuck
 	// in. If non-empty, the entity will not move.
 	CollisionPosition cube.Pos
+	// Allower ...
+	Allower ProjectileIntersectAllower
 }
+
+type ProjectileIntersectAllower func(ent world.Entity, conf *ProjectileBehaviourConfig) bool
 
 func (conf ProjectileBehaviourConfig) Apply(data *world.EntityData) {
 	data.Data = conf.New()
@@ -328,9 +332,12 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 	return func(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
 		return func(yield func(world.Entity) bool) {
 			for other := range seq {
+				if !lt.conf.Allower(other, &lt.conf) {
+					continue
+				}
 				g, ok := other.(interface{ GameMode() world.GameMode })
 				_, living := other.(Living)
-				if (ok && !g.GameMode().HasCollision()) || e.H() == other.H() || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
+				if (ok && (!g.GameMode().HasCollision() || !g.GameMode().Visible())) || e.H() == other.H() || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
 					continue
 				}
 				if !yield(other) {
