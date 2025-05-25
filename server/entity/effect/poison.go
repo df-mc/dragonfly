@@ -39,3 +39,4 @@ type PoisonDamageSource struct {
 func (PoisonDamageSource) ReducedByResistance() bool { return true }
 func (PoisonDamageSource) ReducedByArmour() bool     { return false }
 func (PoisonDamageSource) Fire() bool                { return false }
+func (PoisonDamageSource) IgnoreTotem() bool         { return false }
