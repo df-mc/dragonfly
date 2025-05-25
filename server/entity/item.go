@@ -1,18 +1,18 @@
 package entity
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // NewItem creates a new item entity using the item stack passed. The item
 // entity will be positioned at the position passed. If the stack's count
 // exceeds its max count, the count of the stack will be changed to the
 // maximum.
-func NewItem(opts world.EntitySpawnOpts, i item.Stack) *world.EntityHandle {
+func NewItem(opts world.EntitySpawnOpts, i world.ItemStack) *world.EntityHandle {
 	conf := itemConf
 	conf.Item = i
 	return opts.New(ItemType, conf)
@@ -21,7 +21,7 @@ func NewItem(opts world.EntitySpawnOpts, i item.Stack) *world.EntityHandle {
 // NewItemPickupDelay creates a new item entity containing item stack i. A
 // delay may be specified which defines for how long the item stack cannot be
 // picked up from the ground.
-func NewItemPickupDelay(opts world.EntitySpawnOpts, i item.Stack, delay time.Duration) *world.EntityHandle {
+func NewItemPickupDelay(opts world.EntitySpawnOpts, i world.ItemStack, delay time.Duration) *world.EntityHandle {
 	conf := itemConf
 	conf.Item = i
 	conf.PickupDelay = delay

@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -51,7 +50,7 @@ type (
 func (FallDamageSource) ReducedByArmour() bool     { return false }
 func (FallDamageSource) ReducedByResistance() bool { return true }
 func (FallDamageSource) Fire() bool                { return false }
-func (FallDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
+func (FallDamageSource) AffectedByEnchantment(e world.EnchantmentType) bool {
 	return e == enchantment.FeatherFalling
 }
 func (GlideDamageSource) ReducedByArmour() bool           { return false }
@@ -75,12 +74,12 @@ func (DrowningDamageSource) Fire() bool                   { return false }
 func (ProjectileDamageSource) ReducedByResistance() bool  { return true }
 func (ProjectileDamageSource) ReducedByArmour() bool      { return true }
 func (ProjectileDamageSource) Fire() bool                 { return false }
-func (ProjectileDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
+func (ProjectileDamageSource) AffectedByEnchantment(e world.EnchantmentType) bool {
 	return e == enchantment.ProjectileProtection
 }
 func (ExplosionDamageSource) ReducedByResistance() bool { return true }
 func (ExplosionDamageSource) ReducedByArmour() bool     { return true }
 func (ExplosionDamageSource) Fire() bool                { return false }
-func (ExplosionDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
+func (ExplosionDamageSource) AffectedByEnchantment(e world.EnchantmentType) bool {
 	return e == enchantment.BlastProtection
 }

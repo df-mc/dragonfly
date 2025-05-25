@@ -2,8 +2,10 @@ package playerdb
 
 import (
 	"bytes"
+
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
@@ -11,14 +13,14 @@ import (
 type InventoryData struct {
 	// Items contains all the items in the player's main inventory.
 	// This excludes armor and offhand.
-	Items []item.Stack
+	Items []world.ItemStack
 	// Boots, Leggings, Chestplate, Helmet are armor pieces that belong to the slot corresponding to the name.
-	Boots      item.Stack
-	Leggings   item.Stack
-	Chestplate item.Stack
-	Helmet     item.Stack
+	Boots      world.ItemStack
+	Leggings   world.ItemStack
+	Chestplate world.ItemStack
+	Helmet     world.ItemStack
 	// OffHand is what the player is carrying in their non-main hand, like a shield or arrows.
-	OffHand item.Stack
+	OffHand world.ItemStack
 	// MainHandSlot saves the slot in the hotbar that the player is currently switched to.
 	// Should be between 0-8.
 	MainHandSlot uint32
@@ -41,7 +43,7 @@ func dataToInv(data jsonInventoryData) InventoryData {
 	d := InventoryData{
 		MainHandSlot: data.MainHandSlot,
 		OffHand:      decodeItem(data.OffHand),
-		Items:        make([]item.Stack, 36),
+		Items:        make([]world.ItemStack, 36),
 	}
 	decodeItems(data.Items, d.Items)
 	d.Boots = decodeItem(data.Boots)
@@ -51,7 +53,7 @@ func dataToInv(data jsonInventoryData) InventoryData {
 	return d
 }
 
-func encodeItems(items []item.Stack) (encoded []jsonSlot) {
+func encodeItems(items []world.ItemStack) (encoded []jsonSlot) {
 	encoded = make([]jsonSlot, 0, len(items))
 	for slot, i := range items {
 		data := encodeItem(i)
@@ -69,7 +71,7 @@ func decodeItems(encoded []jsonSlot, items []item.Stack) {
 	}
 }
 
-func encodeItem(item item.Stack) []byte {
+func encodeItem(item world.ItemStack) []byte {
 	if item.Empty() {
 		return nil
 	}

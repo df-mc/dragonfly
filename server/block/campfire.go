@@ -1,6 +1,10 @@
 package block
 
 import (
+	"math/rand/v2"
+	"strconv"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -8,9 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"strconv"
-	"time"
 )
 
 // Campfire is a block that can be used to cook food, pacify bees, act as a spread-proof light source, smoke signal or
@@ -33,7 +34,7 @@ type Campfire struct {
 // CampfireItem holds data about the items in the campfire.
 type CampfireItem struct {
 	// Item is a specific item being cooked on top of the campfire.
-	Item item.Stack
+	Item world.ItemStack
 	// Time is the countdown of ticks until the food item is cooked (when 0).
 	Time time.Duration
 }
@@ -50,15 +51,15 @@ func (Campfire) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (c Campfire) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []world.Enchantment) []world.ItemStack {
 		if hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(Campfire{Type: c.Type}, 1)}
+			return []world.ItemStack{item.NewStack(Campfire{Type: c.Type}, 1)}
 		}
 		switch c.Type {
 		case NormalFire():
-			return []item.Stack{item.NewStack(item.Charcoal{}, 2)}
+			return []world.ItemStack{item.NewStack(item.Charcoal{}, 2)}
 		case SoulFire():
-			return []item.Stack{item.NewStack(SoulSoil{}, 1)}
+			return []world.ItemStack{item.NewStack(SoulSoil{}, 1)}
 		}
 		panic("should never happen")
 	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {

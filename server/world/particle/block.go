@@ -1,11 +1,12 @@
 package particle
 
 import (
+	"image/color"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
 )
 
 // Flame is a particle shown around torches. It can have any colour specified with the Colour field.

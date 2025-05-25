@@ -1,14 +1,15 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -283,7 +284,7 @@ type flammableEntity interface {
 }
 
 // dropItem ...
-func dropItem(tx *world.Tx, it item.Stack, pos mgl64.Vec3) {
+func dropItem(tx *world.Tx, it world.ItemStack, pos mgl64.Vec3) {
 	create := tx.World().EntityRegistry().Config().Item
 	opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
 	tx.AddEntity(create(opts, it))

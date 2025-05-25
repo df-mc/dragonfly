@@ -2,17 +2,18 @@ package world
 
 import (
 	"fmt"
-	"github.com/brentp/intintmap"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/customblock"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/segmentio/fasthash/fnv1"
 	"image"
 	"math"
 	"math/bits"
 	"math/rand/v2"
 	"slices"
 	"sort"
+
+	"github.com/brentp/intintmap"
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/customblock"
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/segmentio/fasthash/fnv1"
 )
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
@@ -155,6 +156,9 @@ func finaliseBlock(rid uint32, b Block) {
 	}
 	if _, ok := b.(NBTer); ok {
 		nbtBlocks[rid] = true
+	}
+	if _, ok := b.(InventoryHolder); ok {
+		inventoryHolder[rid] = true
 	}
 	if _, ok := b.(RandomTicker); ok {
 		randomTickBlocks[rid] = true

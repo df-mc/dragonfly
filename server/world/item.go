@@ -3,10 +3,45 @@ package world
 import (
 	_ "embed"
 	"fmt"
+	"image"
+
 	"github.com/df-mc/dragonfly/server/item/category"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"image"
 )
+
+type ItemStack interface {
+	AddStack(s2 ItemStack) (a ItemStack, b ItemStack)
+	AnvilCost() int
+	AsBreakable() ItemStack
+	AttackDamage() float64
+	Comparable(s2 ItemStack) bool
+	Count() int
+	CustomName() string
+	Damage(d int) ItemStack
+	Durability() int
+	Empty() bool
+	Enchantment(enchant EnchantmentType) (Enchantment, bool)
+	Enchantments() []Enchantment
+	Equal(s2 ItemStack) bool
+	Grow(n int) ItemStack
+	Item() Item
+	Lore() []string
+	MaxCount() int
+	MaxDurability() int
+	String() string
+	Unbreakable() bool
+	Value(key string) (val any, ok bool)
+	Values() map[string]any
+	WithAnvilCost(anvilCost int) ItemStack
+	WithCustomName(a ...any) ItemStack
+	WithDurability(d int) ItemStack
+	WithEnchantments(enchants ...Enchantment) ItemStack
+	WithItem(t Item) ItemStack
+	WithLore(lines ...string) ItemStack
+	WithValue(key string, val any) ItemStack
+	WithoutEnchantments(enchants ...EnchantmentType) ItemStack
+	AsUnbreakable() ItemStack
+}
 
 // Item represents an item that may be added to an inventory. It has a method to encode the item to an ID and
 // a metadata value.

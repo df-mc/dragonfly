@@ -223,7 +223,7 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 }
 
 // sendItem sends the item stack passed to the client with the window ID and slot passed.
-func (s *Session) sendItem(item item.Stack, slot int, windowID uint32) {
+func (s *Session) sendItem(item world.ItemStack, slot int, windowID uint32) {
 	s.writePacket(&packet.InventorySlot{
 		WindowID: windowID,
 		Slot:     uint32(slot),
@@ -603,7 +603,7 @@ func (s *Session) HandleInventories(tx *world.Tx, c Controllable, inv, offHand, 
 }
 
 func (s *Session) broadcastInvFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
-	return func(slot int, _, after item.Stack) {
+	return func(slot int, _, after world.ItemStack) {
 		if slot == int(*s.heldSlot) {
 			for _, viewer := range tx.Viewers(c.Position()) {
 				viewer.ViewEntityItems(c)
@@ -616,7 +616,7 @@ func (s *Session) broadcastInvFunc(tx *world.Tx, c Controllable) inventory.SlotF
 }
 
 func (s *Session) broadcastEnderChestFunc(tx *world.Tx, _ Controllable) inventory.SlotFunc {
-	return func(slot int, _, after item.Stack) {
+	return func(slot int, _, after world.ItemStack) {
 		if !s.inTransaction.Load() {
 			if _, ok := tx.Block(*s.openedPos.Load()).(block.EnderChest); ok {
 				s.ViewSlotChange(slot, after)
@@ -626,7 +626,7 @@ func (s *Session) broadcastEnderChestFunc(tx *world.Tx, _ Controllable) inventor
 }
 
 func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
-	return func(slot int, _, after item.Stack) {
+	return func(slot int, _, after world.ItemStack) {
 		for _, viewer := range tx.Viewers(c.Position()) {
 			viewer.ViewEntityItems(c)
 		}
@@ -641,7 +641,7 @@ func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) inventory.S
 }
 
 func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
-	return func(slot int, before, after item.Stack) {
+	return func(slot int, before, after world.ItemStack) {
 		if !s.inTransaction.Load() {
 			s.sendItem(after, slot, protocol.WindowIDArmour)
 		}
@@ -658,7 +658,7 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.Sl
 // uiInventoryFunc handles an update to the UI inventory, used for updating enchantment options and possibly more
 // in the future.
 func (s *Session) uiInventoryFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
-	return func(slot int, _, after item.Stack) {
+	return func(slot int, _, after world.ItemStack) {
 		if slot == enchantingInputSlot && s.containerOpened.Load() {
 			pos := *s.openedPos.Load()
 			if _, enchanting := tx.Block(pos).(block.EnchantingTable); enchanting {
@@ -750,7 +750,7 @@ func (s *Session) SendChargeItemComplete() {
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.
-func stackFromItem(it item.Stack) protocol.ItemStack {
+func stackFromItem(it world.ItemStack) protocol.ItemStack {
 	if it.Empty() {
 		return protocol.ItemStack{}
 	}
@@ -798,7 +798,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 }
 
 // instanceFromItem converts an item.Stack to its network ItemInstance representation.
-func instanceFromItem(it item.Stack) protocol.ItemInstance {
+func instanceFromItem(it world.ItemStack) protocol.ItemInstance {
 	return protocol.ItemInstance{
 		StackNetworkID: item_id(it),
 		Stack:          stackFromItem(it),
@@ -806,7 +806,7 @@ func instanceFromItem(it item.Stack) protocol.ItemInstance {
 }
 
 // stacksToRecipeStacks converts a list of item.Stacks to their protocol representation with damage stripped for recipes.
-func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
+func stacksToRecipeStacks(inputs []world.ItemStack) []protocol.ItemStack {
 	items := make([]protocol.ItemStack, 0, len(inputs))
 	for _, i := range inputs {
 		items = append(items, deleteDamage(stackFromItem(i)))
@@ -944,4 +944,4 @@ func gameTypeFromMode(mode world.GameMode) int32 {
 // noinspection ALL
 //
 //go:linkname item_id github.com/df-mc/dragonfly/server/item.id
-func item_id(s item.Stack) int32
+func item_id(s world.ItemStack) int32

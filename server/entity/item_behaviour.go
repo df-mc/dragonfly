@@ -1,19 +1,19 @@
 package entity
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"time"
 )
 
 // ItemBehaviourConfig holds optional parameters for an ItemBehaviour.
 type ItemBehaviourConfig struct {
-	Item item.Stack
+	Item world.ItemStack
 	// Gravity is the amount of Y velocity subtracted every tick.
 	Gravity float64
 	// Drag is used to reduce all axes of the velocity every tick. Velocity is
@@ -60,13 +60,13 @@ func (conf ItemBehaviourConfig) New() *ItemBehaviour {
 type ItemBehaviour struct {
 	conf    ItemBehaviourConfig
 	passive *PassiveBehaviour
-	i       item.Stack
+	i       world.ItemStack
 
 	pickupDelay time.Duration
 }
 
 // Item returns the item.Stack held by the entity.
-func (i *ItemBehaviour) Item() item.Stack {
+func (i *ItemBehaviour) Item() world.ItemStack {
 	return i.i
 }
 
@@ -182,5 +182,5 @@ type Collector interface {
 	// The count of items collected from the stack n is returned, along with a
 	// bool that indicates if the Collector was in a state where it could
 	// collect any items in the first place.
-	Collect(stack item.Stack) (n int, ok bool)
+	Collect(stack world.ItemStack) (n int, ok bool)
 }

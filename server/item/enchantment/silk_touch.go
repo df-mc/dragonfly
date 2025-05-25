@@ -27,12 +27,12 @@ func (silkTouch) Cost(int) (int, int) {
 }
 
 // Rarity ...
-func (silkTouch) Rarity() item.EnchantmentRarity {
+func (silkTouch) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...
-func (silkTouch) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (silkTouch) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	// TODO: Fortune.
 	return true
 }

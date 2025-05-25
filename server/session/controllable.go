@@ -30,7 +30,7 @@ type Controllable interface {
 
 	Locale() language.Tag
 
-	SetHeldItems(right, left item.Stack)
+	SetHeldItems(right, left world.ItemStack)
 	SetHeldSlot(slot int) error
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
@@ -52,7 +52,7 @@ type Controllable interface {
 	BreakBlock(pos cube.Pos)
 	PickBlock(pos cube.Pos)
 	AttackEntity(e world.Entity) bool
-	Drop(s item.Stack) (n int)
+	Drop(s world.ItemStack) (n int)
 	SwingArm()
 	PunchAir()
 

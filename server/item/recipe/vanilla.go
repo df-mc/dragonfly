@@ -2,6 +2,7 @@ package recipe
 
 import (
 	_ "embed"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 
@@ -159,7 +160,7 @@ func registerVanilla() {
 
 		Register(Furnace{recipe{
 			input:  []Item{input},
-			output: []item.Stack{output},
+			output: []world.ItemStack{output},
 			block:  s.Block,
 		}})
 	}
@@ -184,7 +185,7 @@ func registerVanilla() {
 
 		Register(Potion{recipe{
 			input:  []Item{input, reagent},
-			output: []item.Stack{output},
+			output: []world.ItemStack{output},
 			block:  "brewing_stand",
 		}})
 	}
@@ -200,7 +201,7 @@ func registerVanilla() {
 
 		Register(PotionContainerChange{recipe{
 			input:  []Item{item.NewStack(input, 1), reagent},
-			output: []item.Stack{item.NewStack(output, 1)},
+			output: []world.ItemStack{item.NewStack(output, 1)},
 			block:  "brewing_stand",
 		}})
 	}

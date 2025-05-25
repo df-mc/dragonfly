@@ -10,7 +10,7 @@ type Recipe interface {
 	// Input returns the items required to craft the recipe.
 	Input() []Item
 	// Output returns the items that are produced when the recipe is crafted.
-	Output() []item.Stack
+	Output() []world.ItemStack
 	// Block returns the block that is used to craft the recipe.
 	Block() string
 	// Priority returns the priority of the recipe. Recipes with lower priority are preferred compared to recipes with
@@ -29,7 +29,7 @@ type Shapeless struct {
 func NewShapeless(input []Item, output item.Stack, block string) Shapeless {
 	return Shapeless{recipe: recipe{
 		input:  input,
-		output: []item.Stack{output},
+		output: []world.ItemStack{output},
 		block:  block,
 	}}
 }
@@ -43,7 +43,7 @@ type SmithingTransform struct {
 func NewSmithingTransform(base, addition, template Item, output item.Stack, block string) SmithingTransform {
 	return SmithingTransform{recipe: recipe{
 		input:  []Item{base, addition, template},
-		output: []item.Stack{output},
+		output: []world.ItemStack{output},
 		block:  block,
 	}}
 }
@@ -71,7 +71,7 @@ type Furnace struct {
 func NewFurnace(input Item, output item.Stack, block string) Furnace {
 	return Furnace{recipe: recipe{
 		input:  []Item{input},
-		output: []item.Stack{output},
+		output: []world.ItemStack{output},
 		block:  block,
 	}}
 }
@@ -86,7 +86,7 @@ type PotionContainerChange struct {
 func NewPotionContainerChange(input, output world.Item, reagent item.Stack) PotionContainerChange {
 	return PotionContainerChange{recipe: recipe{
 		input:  []Item{item.NewStack(input, 1), reagent},
-		output: []item.Stack{item.NewStack(output, 1)},
+		output: []world.ItemStack{item.NewStack(output, 1)},
 		block:  "brewing_stand",
 	}}
 }
@@ -100,7 +100,7 @@ type Potion struct {
 func NewPotion(input, reagent Item, output item.Stack) Potion {
 	return Potion{recipe: recipe{
 		input:  []Item{input, reagent},
-		output: []item.Stack{output},
+		output: []world.ItemStack{output},
 		block:  "brewing_stand",
 	}}
 }
@@ -121,7 +121,7 @@ func NewShaped(input []Item, output item.Stack, shape Shape, block string) Shape
 		shape: shape,
 		recipe: recipe{
 			input:  input,
-			output: []item.Stack{output},
+			output: []world.ItemStack{output},
 			block:  block,
 		},
 	}
@@ -139,7 +139,7 @@ type recipe struct {
 	// required to craft the output. The amount of input items must be exactly equal to Width * Height.
 	input []Item
 	// output contains items that are created as a result of crafting the recipe.
-	output []item.Stack
+	output []world.ItemStack
 	// block is the block that is used to craft the recipe.
 	block string
 	// priority is the priority of the recipe versus others.
@@ -152,7 +152,7 @@ func (r recipe) Input() []Item {
 }
 
 // Output ...
-func (r recipe) Output() []item.Stack {
+func (r recipe) Output() []world.ItemStack {
 	return r.output
 }
 

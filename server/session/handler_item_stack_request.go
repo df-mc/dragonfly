@@ -2,6 +2,9 @@ package session
 
 import (
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
@@ -10,8 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
-	"time"
 )
 
 // ItemStackRequestHandler handles the ItemStackRequest packet. It handles the actions done within the
@@ -22,7 +23,7 @@ type ItemStackRequestHandler struct {
 	changes         map[byte]map[byte]changeInfo
 	responseChanges map[int32]map[*inventory.Inventory]map[byte]responseChange
 
-	pendingResults []item.Stack
+	pendingResults []world.ItemStack
 
 	current       time.Time
 	ignoreDestroy bool
@@ -39,7 +40,7 @@ type responseChange struct {
 // item information and is used for reverting and verifying.
 type changeInfo struct {
 	after  protocol.StackResponseSlotInfo
-	before item.Stack
+	before world.ItemStack
 }
 
 // Handle ...
@@ -300,7 +301,7 @@ func (h *ItemStackRequestHandler) handleCreate(a *protocol.CreateStackRequestAct
 var defaultCreation = &protocol.CreateStackRequestAction{}
 
 // createResults creates a new craft result and adds it to the list of pending craft results.
-func (h *ItemStackRequestHandler) createResults(s *Session, tx *world.Tx, result ...item.Stack) error {
+func (h *ItemStackRequestHandler) createResults(s *Session, tx *world.Tx, result ...world.ItemStack) error {
 	h.pendingResults = append(h.pendingResults, result...)
 	if len(result) > 1 {
 		// With multiple results, the client notifies the server on when to create the results.
@@ -395,7 +396,7 @@ func (h *ItemStackRequestHandler) tryAcknowledgeChanges(s *Session, tx *world.Tx
 }
 
 // itemInSlot looks for the item in the slot as indicated by the slot info passed.
-func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo, s *Session, tx *world.Tx) (item.Stack, error) {
+func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo, s *Session, tx *world.Tx) (world.ItemStack, error) {
 	inv, ok := s.invByID(int32(slot.Container.ContainerID), tx)
 	if !ok {
 		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.Container.ContainerID)
@@ -414,7 +415,7 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 }
 
 // setItemInSlot sets an item stack in the slot of a container present in the slot info.
-func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session, tx *world.Tx) {
+func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i world.ItemStack, s *Session, tx *world.Tx) {
 	inv, _ := s.invByID(int32(slot.Container.ContainerID), tx)
 
 	sl := int(slot.Slot)
@@ -499,7 +500,7 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session, tx *world.Tx) {
 
 // call uses an event.Context, slot and item.Stack to call the event handler function passed. An error is returned if
 // the event.Context was cancelled either before or after the call.
-func call(ctx *inventory.Context, slot int, it item.Stack, f func(ctx *inventory.Context, slot int, it item.Stack)) error {
+func call(ctx *inventory.Context, slot int, it world.ItemStack, f func(ctx *inventory.Context, slot int, it world.ItemStack)) error {
 	if ctx.Cancelled() {
 		return fmt.Errorf("action was cancelled")
 	}

@@ -28,7 +28,7 @@ func (respiration) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (respiration) Rarity() item.EnchantmentRarity {
+func (respiration) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
@@ -38,7 +38,7 @@ func (respiration) Chance(level int) float64 {
 }
 
 // CompatibleWithEnchantment ...
-func (respiration) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (respiration) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

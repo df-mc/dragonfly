@@ -27,7 +27,7 @@ func (efficiency) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (efficiency) Rarity() item.EnchantmentRarity {
+func (efficiency) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
@@ -37,7 +37,7 @@ func (efficiency) Addend(level int) float64 {
 }
 
 // CompatibleWithEnchantment ...
-func (efficiency) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (efficiency) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

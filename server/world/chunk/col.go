@@ -7,6 +7,7 @@ import (
 type Column struct {
 	Chunk           *Chunk
 	Entities        []Entity
+	Inventories     []Inventory
 	BlockEntities   []BlockEntity
 	Tick            int64
 	ScheduledBlocks []ScheduledBlockUpdate
@@ -14,6 +15,10 @@ type Column struct {
 
 type BlockEntity struct {
 	Pos  cube.Pos
+	Data map[string]any
+}
+
+type Inventory struct {
 	Data map[string]any
 }
 

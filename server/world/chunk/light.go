@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"container/list"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 

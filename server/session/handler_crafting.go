@@ -2,14 +2,15 @@ package session
 
 import (
 	"fmt"
+	"math"
+	"slices"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
-	"slices"
 )
 
 // handleCraft handles the CraftRecipe request action.
@@ -211,8 +212,8 @@ func matchingStacks(has, expected recipe.Item) bool {
 
 // repeatStacks multiplies the count of all item stacks provided by the number of repetitions provided. Item
 // stacks where the new count would exceed the item's max count are split into multiple item stacks.
-func repeatStacks(items []item.Stack, repetitions int) []item.Stack {
-	output := make([]item.Stack, 0, len(items))
+func repeatStacks(items []world.ItemStack, repetitions int) []world.ItemStack {
+	output := make([]world.ItemStack, 0, len(items))
 	for _, o := range items {
 		count, maxCount := o.Count(), o.MaxCount()
 		total := count * repetitions

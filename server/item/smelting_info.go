@@ -2,6 +2,8 @@ package item
 
 import (
 	"time"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Smeltable represents an item that can be input into a smelter, such as a blast furnace, furnace, or smoker, to cook and
@@ -62,7 +64,7 @@ type FuelInfo struct {
 	// Duration returns the amount of time the fuel can be used to burn an input in a smelter.
 	Duration time.Duration
 	// Residue is the resulting item from burning the fuel in a smelter.
-	Residue Stack
+	Residue world.ItemStack
 }
 
 // WithResidue returns a new FuelInfo with a residue.

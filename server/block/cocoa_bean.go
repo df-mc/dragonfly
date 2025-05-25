@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // CocoaBean is a crop block found in jungle biomes.
@@ -87,11 +88,11 @@ func (c CocoaBean) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // BreakInfo ...
 func (c CocoaBean) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(item.Tool, []world.Enchantment) []world.ItemStack {
 		if c.Age == 2 {
-			return []item.Stack{item.NewStack(c, rand.IntN(2)+2)}
+			return []world.ItemStack{item.NewStack(c, rand.IntN(2)+2)}
 		}
-		return []item.Stack{item.NewStack(c, 1)}
+		return []world.ItemStack{item.NewStack(c, 1)}
 	}).withBlastResistance(15)
 }
 

@@ -3,12 +3,13 @@ package nbtconv
 import (
 	"bytes"
 	"encoding/gob"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/constraints"
-	"time"
 )
 
 // Bool reads a uint8 value from a map at key k and returns true if it equals 1.
@@ -202,15 +203,15 @@ func readItemStack(m, t map[string]any) item.Stack {
 // readDamage reads the damage value stored in the NBT with the Damage tag and saves it to the item.Stack passed.
 func readDamage(m map[string]any, s *item.Stack, disk bool) {
 	if disk {
-		*s = s.Damage(int(Int16(m, "Damage")))
+		*s = s.Damage(int(Int16(m, "Damage"))).(item.Stack)
 		return
 	}
-	*s = s.Damage(int(Int32(m, "Damage")))
+	*s = s.Damage(int(Int32(m, "Damage"))).(item.Stack)
 }
 
 // readAnvilCost ...
 func readAnvilCost(m map[string]any, s *item.Stack) {
-	*s = s.WithAnvilCost(int(Int32(m, "RepairCost")))
+	*s = s.WithAnvilCost(int(Int32(m, "RepairCost"))).(item.Stack)
 }
 
 // readEnchantments reads the enchantments stored in the ench tag of the NBT passed and stores it into an item.Stack.
@@ -225,7 +226,7 @@ func readEnchantments(m map[string]any, s *item.Stack) {
 	}
 	for _, ench := range enchantments {
 		if t, ok := item.EnchantmentByID(int(Int16(ench, "id"))); ok {
-			*s = s.WithEnchantments(item.NewEnchantment(t, int(Int16(ench, "lvl"))))
+			*s = s.WithEnchantments(item.NewEnchantment(t, int(Int16(ench, "lvl")))).(item.Stack)
 		}
 	}
 }
@@ -236,16 +237,16 @@ func readDisplay(m map[string]any, s *item.Stack) {
 	if display, ok := m["display"].(map[string]any); ok {
 		if name, ok := display["Name"].(string); ok {
 			// Only add the custom name if actually set.
-			*s = s.WithCustomName(name)
+			*s = s.WithCustomName(name).(item.Stack)
 		}
 		if lore, ok := display["Lore"].([]string); ok {
-			*s = s.WithLore(lore...)
+			*s = s.WithLore(lore...).(item.Stack)
 		} else if lore, ok := display["Lore"].([]any); ok {
 			loreLines := make([]string, 0, len(lore))
 			for _, l := range lore {
 				loreLines = append(loreLines, l.(string))
 			}
-			*s = s.WithLore(loreLines...)
+			*s = s.WithLore(loreLines...).(item.Stack)
 		}
 	}
 }
@@ -268,7 +269,7 @@ func readDragonflyData(m map[string]any, s *item.Stack) {
 			panic("error decoding item user data: " + err.Error())
 		}
 		for _, val := range values {
-			*s = s.WithValue(val.K, val.V)
+			*s = s.WithValue(val.K, val.V).(item.Stack)
 		}
 	}
 }
@@ -277,6 +278,6 @@ func readDragonflyData(m map[string]any, s *item.Stack) {
 // passed.
 func readUnbreakable(m map[string]any, s *item.Stack) {
 	if Bool(m, "Unbreakable") {
-		*s = s.AsUnbreakable()
+		*s = s.AsUnbreakable().(item.Stack)
 	}
 }

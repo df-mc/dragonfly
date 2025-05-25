@@ -1,14 +1,15 @@
 package block
 
 import (
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"sync"
-	"time"
 )
 
 // brewer is a struct that may be embedded by blocks that can brew potions, such as brewing stands.
@@ -26,7 +27,7 @@ type brewer struct {
 // newBrewer creates a new initialised brewer. The inventory is properly initialised.
 func newBrewer() *brewer {
 	b := &brewer{viewers: make(map[ContainerViewer]struct{})}
-	b.inventory = inventory.New(5, func(slot int, _, item item.Stack) {
+	b.inventory = inventory.New(5, func(slot int, _, item world.ItemStack) {
 		b.mu.Lock()
 		defer b.mu.Unlock()
 		for viewer := range b.viewers {

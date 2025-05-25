@@ -5,13 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"golang.org/x/tools/go/packages"
 	"io"
 	"log"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 func main() {

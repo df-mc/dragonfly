@@ -28,12 +28,12 @@ func (swiftSneak) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (swiftSneak) Rarity() item.EnchantmentRarity {
+func (swiftSneak) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...
-func (swiftSneak) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (swiftSneak) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

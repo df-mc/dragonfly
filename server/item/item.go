@@ -2,12 +2,13 @@ package item
 
 import (
 	"encoding/binary"
+	"image/color"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
-	"time"
 )
 
 // MaxCounter represents an item that has a specific max count. By default, each item will be expected to have
@@ -169,7 +170,7 @@ type Chargeable interface {
 // which interact with the world using an item.
 type User interface {
 	Carrier
-	SetHeldItems(mainHand, offHand Stack)
+	SetHeldItems(mainHand, offHand world.ItemStack)
 
 	UsingItem() bool
 	ReleaseItem()
@@ -181,7 +182,7 @@ type Carrier interface {
 	world.Entity
 	// HeldItems returns the items currently held by the entity. Viewers of the entity will be able to see
 	// these items.
-	HeldItems() (mainHand, offHand Stack)
+	HeldItems() (mainHand, offHand world.ItemStack)
 }
 
 // BeaconPayment represents an item that may be used as payment for a beacon to select effects to be broadcast

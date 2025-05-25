@@ -1,11 +1,12 @@
 package item
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math"
-	"time"
 )
 
 // Bow is a ranged weapon that fires arrows.
@@ -45,7 +46,7 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		return
 	}
 
-	arrow, ok := ctx.FirstFunc(func(stack Stack) bool {
+	arrow, ok := ctx.FirstFunc(func(stack world.ItemStack) bool {
 		_, ok := stack.Item().(Arrow)
 		return ok
 	})

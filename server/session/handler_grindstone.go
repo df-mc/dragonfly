@@ -2,9 +2,10 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"math"
 	"math/rand/v2"
+
+	"github.com/df-mc/dragonfly/server/world"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -88,7 +89,7 @@ type curseEnchantment interface {
 }
 
 // experienceFromEnchantments returns the amount of experience that is gained from the enchantments on the given stack.
-func experienceFromEnchantments(stack item.Stack) int {
+func experienceFromEnchantments(stack world.ItemStack) int {
 	var totalCost int
 	for _, enchant := range stack.Enchantments() {
 		if _, ok := enchant.Type().(curseEnchantment); ok {
@@ -107,7 +108,7 @@ func experienceFromEnchantments(stack item.Stack) int {
 }
 
 // stripPossibleEnchantments strips all enchantments possible, excluding curses.
-func stripPossibleEnchantments(stack item.Stack) item.Stack {
+func stripPossibleEnchantments(stack world.ItemStack) world.ItemStack {
 	for _, enchant := range stack.Enchantments() {
 		if _, ok := enchant.Type().(curseEnchantment); ok {
 			continue
@@ -119,7 +120,7 @@ func stripPossibleEnchantments(stack item.Stack) item.Stack {
 
 // nonZeroItem returns the item.Stack that exists out of two input items. The function expects at least one of the
 // items to be non-empty.
-func nonZeroItem(first, second item.Stack) item.Stack {
+func nonZeroItem(first, second world.ItemStack) world.ItemStack {
 	if first.Empty() {
 		return second
 	}

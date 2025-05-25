@@ -27,7 +27,7 @@ func (knockback) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (knockback) Rarity() item.EnchantmentRarity {
+func (knockback) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
@@ -37,7 +37,7 @@ func (knockback) Force(level int) float64 {
 }
 
 // CompatibleWithEnchantment ...
-func (knockback) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (knockback) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

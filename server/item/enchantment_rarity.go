@@ -1,16 +1,5 @@
 package item
 
-// EnchantmentRarity represents an enchantment rarity for enchantments. These rarities may inhibit certain properties,
-// such as anvil costs or enchanting table weights.
-type EnchantmentRarity interface {
-	// Name returns the name of the enchantment rarity.
-	Name() string
-	// Cost returns the cost of the enchantment rarity.
-	Cost() int
-	// Weight returns the weight of the enchantment rarity.
-	Weight() int
-}
-
 var (
 	// EnchantmentRarityCommon represents the common enchantment rarity.
 	EnchantmentRarityCommon enchantmentRarityCommon

@@ -26,12 +26,12 @@ func (aquaAffinity) Cost(int) (int, int) {
 }
 
 // Rarity ...
-func (aquaAffinity) Rarity() item.EnchantmentRarity {
+func (aquaAffinity) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
 // CompatibleWithEnchantment ...
-func (aquaAffinity) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (aquaAffinity) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

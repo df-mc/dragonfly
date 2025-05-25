@@ -2,12 +2,13 @@ package session
 
 import (
 	"fmt"
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math/rand/v2"
 )
 
 const (
@@ -169,7 +170,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 
 // repairItemWithMaterial is a helper function that repairs an item stack with a given material stack. It returns the new item
 // stack, the cost, and the repaired items count.
-func repairItemWithMaterial(input item.Stack, material item.Stack, result item.Stack) (item.Stack, int, int, error) {
+func repairItemWithMaterial(input world.ItemStack, material world.ItemStack, result world.ItemStack) (world.ItemStack, int, int, error) {
 	// Calculate the durability delta using the maximum durability and the current durability.
 	delta := min(input.MaxDurability()-input.Durability(), input.MaxDurability()/4)
 	if delta <= 0 {
@@ -187,7 +188,7 @@ func repairItemWithMaterial(input item.Stack, material item.Stack, result item.S
 }
 
 // repairItemWithDurable is a helper function that repairs an item with another durable item stack.
-func repairItemWithDurable(input item.Stack, durable item.Stack, result item.Stack) (item.Stack, int) {
+func repairItemWithDurable(input world.ItemStack, durable world.ItemStack, result world.ItemStack) (world.ItemStack, int) {
 	durability := input.Durability() + durable.Durability() + input.MaxDurability()*12/100
 	if durability > input.MaxDurability() {
 		durability = input.MaxDurability()
@@ -204,7 +205,7 @@ func repairItemWithDurable(input item.Stack, durable item.Stack, result item.Sta
 
 // mergeEnchantments merges the enchantments of the material item stack onto the result item stack and returns the result
 // item stack, booleans indicating whether the enchantments had any compatible or incompatible enchantments, and the cost.
-func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack, cost int, enchantedBook bool) (item.Stack, bool, bool, int) {
+func mergeEnchantments(input world.ItemStack, material world.ItemStack, result world.ItemStack, cost int, enchantedBook bool) (world.ItemStack, bool, bool, int) {
 	var hasCompatible, hasIncompatible bool
 	for _, enchant := range material.Enchantments() {
 		// First ensure that the enchantment type is compatible with the input item.

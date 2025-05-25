@@ -1,6 +1,8 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -8,7 +10,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // ItemFrame is a block entity that displays the item or block that is inside it.
@@ -20,7 +21,7 @@ type ItemFrame struct {
 	// Facing is the direction from the frame to the block.
 	Facing cube.Face
 	// Item is the item that is displayed inside the frame.
-	Item item.Stack
+	Item world.ItemStack
 	// Rotations is the number of rotations for the item in the frame. Each rotation is 45 degrees, with the exception
 	// being maps having 90 degree rotations.
 	Rotations int
@@ -139,7 +140,7 @@ func (i ItemFrame) EncodeNBT() map[string]any {
 }
 
 // Pick returns the item that is picked when the block is picked.
-func (i ItemFrame) Pick() item.Stack {
+func (i ItemFrame) Pick() world.ItemStack {
 	if i.Item.Empty() {
 		return item.NewStack(ItemFrame{Glowing: i.Glowing}, 1)
 	}

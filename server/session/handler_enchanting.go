@@ -2,6 +2,10 @@ package session
 
 import (
 	"fmt"
+	"math"
+	"math/rand/v2"
+	"slices"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -9,9 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
-	"math/rand/v2"
-	"slices"
 )
 
 const (
@@ -94,7 +95,7 @@ func (h *ItemStackRequestHandler) handleEnchant(a *protocol.CraftRecipeStackRequ
 
 // sendEnchantmentOptions sends a list of available enchantments to the client based on the client's enchantment seed
 // and nearby bookshelves.
-func (s *Session) sendEnchantmentOptions(tx *world.Tx, c Controllable, pos cube.Pos, stack item.Stack) {
+func (s *Session) sendEnchantmentOptions(tx *world.Tx, c Controllable, pos cube.Pos, stack world.ItemStack) {
 	// First determine the available enchantments for the given item stack.
 	selectedCosts, selectedEnchants := s.determineAvailableEnchantments(tx, c, pos, stack)
 	if len(selectedEnchants) == 0 {
@@ -134,7 +135,7 @@ func (s *Session) sendEnchantmentOptions(tx *world.Tx, c Controllable, pos cube.
 }
 
 // determineAvailableEnchantments returns a list of pseudo-random enchantments for the given item stack.
-func (s *Session) determineAvailableEnchantments(tx *world.Tx, c Controllable, pos cube.Pos, stack item.Stack) ([]int, [][]item.Enchantment) {
+func (s *Session) determineAvailableEnchantments(tx *world.Tx, c Controllable, pos cube.Pos, stack world.ItemStack) ([]int, [][]world.Enchantment) {
 	// First ensure that the item is enchantable and does not already have any enchantments.
 	enchantable, ok := stack.Item().(item.Enchantable)
 	if !ok {
@@ -166,7 +167,7 @@ func (s *Session) determineAvailableEnchantments(tx *world.Tx, c Controllable, p
 			upperLevelCost,
 			middleLevelCost,
 			lowerLevelCost,
-		}, [][]item.Enchantment{
+		}, [][]world.Enchantment{
 			createEnchantments(random, stack, value, upperLevelCost),
 			createEnchantments(random, stack, value, middleLevelCost),
 			createEnchantments(random, stack, value, lowerLevelCost),
@@ -175,12 +176,12 @@ func (s *Session) determineAvailableEnchantments(tx *world.Tx, c Controllable, p
 
 // treasureEnchantment represents an enchantment that may be a treasure enchantment.
 type treasureEnchantment interface {
-	item.EnchantmentType
+	world.EnchantmentType
 	Treasure() bool
 }
 
 // createEnchantments creates a list of enchantments for the given item stack and returns them.
-func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) []item.Enchantment {
+func createEnchantments(random *rand.Rand, stack world.ItemStack, value, level int) []world.Enchantment {
 	// Calculate the "random bonus" for this level. This factor is used in calculating the enchantment cost, used
 	// during the selection of enchantments.
 	randomBonus := (random.Float64() + random.Float64() - 1.0) * 0.15
@@ -223,7 +224,7 @@ func createEnchantments(random *rand.Rand, stack item.Stack, value, level int) [
 	}
 
 	// Now we need to select the enchantments.
-	selectedEnchants := make([]item.Enchantment, 0, len(availableEnchants))
+	selectedEnchants := make([]world.Enchantment, 0, len(availableEnchants))
 
 	// Select the first enchantment using a weighted random algorithm, favouring enchantments that have a higher weight.
 	// These weights are based on the enchantment's rarity, with common and uncommon enchantments having a higher weight

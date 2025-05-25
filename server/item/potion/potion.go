@@ -1,8 +1,9 @@
 package potion
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/entity/effect"
 )
 
 // Potion holds the effects given by the potion type.

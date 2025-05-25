@@ -3,7 +3,9 @@ package creative
 import (
 	_ "embed"
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+
 	// The following four imports are essential for this package: They make sure this package is loaded after
 	// all these imports. This ensures that all blocks and items are registered before the creative items are
 	// registered in the init function in this package.
@@ -17,7 +19,7 @@ import (
 // the item is part of.
 type Item struct {
 	// Stack is the stack of the item that is registered in the creative inventory.
-	Stack item.Stack
+	Stack world.ItemStack
 	// Group is the name of the group that the item is part of. If two groups are registered with the same
 	// name, the item will always reside in the first group that was registered.
 	Group string
@@ -160,7 +162,7 @@ func itemStackFromEntry(data creativeItemEntry) (item.Stack, bool) {
 					invalid = true
 					break
 				}
-				st = st.WithEnchantments(item.NewEnchantment(t, int(nbtconv.Int16(v, "lvl"))))
+				st = st.WithEnchantments(item.NewEnchantment(t, int(nbtconv.Int16(v, "lvl")))).(item.Stack)
 			}
 		}
 		if invalid {

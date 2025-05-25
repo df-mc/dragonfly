@@ -1,9 +1,10 @@
 package recipe
 
 import (
+	"math"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"math"
 )
 
 // Item represents an item that can be used as either the input or output of an item. These do not
@@ -46,7 +47,7 @@ func (i inputItem) Item() (Item, bool) {
 	}
 	st := item.NewStack(it, int(i.Count))
 	if i.Meta == math.MaxInt16 {
-		st = st.WithValue("variants", true)
+		st = st.WithValue("variants", true).(item.Stack)
 	}
 
 	return st, true
@@ -103,8 +104,8 @@ func (o outputItem) Stack() (item.Stack, bool) {
 type outputItems []outputItem
 
 // Stacks converts output items to item stacks.
-func (d outputItems) Stacks() ([]item.Stack, bool) {
-	s := make([]item.Stack, 0, len(d))
+func (d outputItems) Stacks() ([]world.ItemStack, bool) {
+	s := make([]world.ItemStack, 0, len(d))
 	for _, o := range d {
 		itemOutput, ok := o.Stack()
 		if !ok {

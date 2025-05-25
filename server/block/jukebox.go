@@ -2,12 +2,13 @@ package block
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"time"
 )
 
 // Jukebox is a block used to play music discs.
@@ -16,7 +17,7 @@ type Jukebox struct {
 	bass
 
 	// Item is the music disc played by the jukebox.
-	Item item.Stack
+	Item world.ItemStack
 }
 
 // InsertItem ...

@@ -1,9 +1,10 @@
 package enchantment
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // FireAspect is a sword enchantment that sets the target on fire.
@@ -28,7 +29,7 @@ func (fireAspect) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (fireAspect) Rarity() item.EnchantmentRarity {
+func (fireAspect) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
@@ -38,7 +39,7 @@ func (fireAspect) Duration(level int) time.Duration {
 }
 
 // CompatibleWithEnchantment ...
-func (fireAspect) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (fireAspect) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

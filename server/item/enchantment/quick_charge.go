@@ -1,9 +1,10 @@
 package enchantment
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // QuickCharge is an enchantment for quickly reloading a crossbow.
@@ -28,7 +29,7 @@ func (quickCharge) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (quickCharge) Rarity() item.EnchantmentRarity {
+func (quickCharge) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
@@ -38,7 +39,7 @@ func (quickCharge) ChargeDuration(level int) time.Duration {
 }
 
 // CompatibleWithEnchantment ...
-func (quickCharge) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (quickCharge) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

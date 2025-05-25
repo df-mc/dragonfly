@@ -1,14 +1,15 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/inventory"
-	"github.com/df-mc/dragonfly/server/world"
 	"math"
 	"math/rand/v2"
 	"sync"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // smelter is a struct that may be embedded by blocks that can smelt blocks and items, such as blast furnaces, furnaces,
@@ -28,7 +29,7 @@ type smelter struct {
 // newSmelter initializes a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
 func newSmelter() *smelter {
 	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
-	s.inventory = inventory.New(3, func(slot int, _, item item.Stack) {
+	s.inventory = inventory.New(3, func(slot int, _, item world.ItemStack) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		for viewer := range s.viewers {

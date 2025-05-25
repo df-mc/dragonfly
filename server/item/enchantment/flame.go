@@ -1,9 +1,10 @@
 package enchantment
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"time"
 )
 
 // Flame turns your arrows into flaming arrows allowing you to set your targets
@@ -28,7 +29,7 @@ func (flame) Cost(int) (int, int) {
 }
 
 // Rarity ...
-func (flame) Rarity() item.EnchantmentRarity {
+func (flame) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
@@ -38,7 +39,7 @@ func (flame) BurnDuration() time.Duration {
 }
 
 // CompatibleWithEnchantment ...
-func (flame) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (flame) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

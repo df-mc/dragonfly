@@ -117,11 +117,11 @@ func (s Slab) BreakInfo() BreakInfo {
 		breakInfo := block.BreakInfo()
 		hardness, blastResistance, harvestable, effective = breakInfo.Hardness, breakInfo.BlastResistance, breakInfo.Harvestable, breakInfo.Effective
 	}
-	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []world.Enchantment) []world.ItemStack {
 		if s.Double {
-			return []item.Stack{item.NewStack(s, 2)}
+			return []world.ItemStack{item.NewStack(s, 2)}
 		}
-		return []item.Stack{item.NewStack(s, 1)}
+		return []world.ItemStack{item.NewStack(s, 1)}
 	}).withBlastResistance(blastResistance)
 }
 

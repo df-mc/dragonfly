@@ -27,12 +27,12 @@ func (depthStrider) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (depthStrider) Rarity() item.EnchantmentRarity {
+func (depthStrider) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
 // CompatibleWithEnchantment ...
-func (depthStrider) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (depthStrider) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	// TODO: Frost Walker
 	return true
 }
