@@ -193,7 +193,6 @@ func (d *Data) FillDefault() {
 	d.LimitedWorldDepth = 16
 	d.LimitedWorldOriginY = math.MaxInt16
 	d.LimitedWorldWidth = 16
-	d.LocatorBar = false
 	d.MaxCommandChainLength = math.MaxUint16
 	d.MinimumCompatibleClientVersion = minimumCompatibleClientVersion
 	d.MobGriefing = true
