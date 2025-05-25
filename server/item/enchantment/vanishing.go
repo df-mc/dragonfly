@@ -27,12 +27,12 @@ func (curseOfVanishing) Cost(int) (int, int) {
 }
 
 // Rarity ...
-func (curseOfVanishing) Rarity() item.EnchantmentRarity {
+func (curseOfVanishing) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...
-func (curseOfVanishing) CompatibleWithEnchantment(_ item.EnchantmentType) bool {
+func (curseOfVanishing) CompatibleWithEnchantment(_ world.EnchantmentType) bool {
 	return true
 }
 

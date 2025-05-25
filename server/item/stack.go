@@ -30,7 +30,7 @@ type Stack struct {
 
 	data map[string]any
 
-	enchantments map[EnchantmentType]Enchantment
+	enchantments map[world.EnchantmentType]world.Enchantment
 }
 
 // NewStack returns a new stack using the item type and the count passed. NewStack panics if the count passed
@@ -63,7 +63,7 @@ func (s Stack) MaxCount() int {
 // Grow grows the Stack's count by n, returning the resulting Stack. If a positive number is passed, the stack
 // is grown, whereas if a negative size is passed, the resulting Stack will have a lower count. The count of
 // the returned Stack will never be negative.
-func (s Stack) Grow(n int) Stack {
+func (s Stack) Grow(n int) world.ItemStack {
 	s.count += n
 	if s.count < 0 {
 		s.count = 0
@@ -97,7 +97,7 @@ func (s Stack) MaxDurability() int {
 // If the final durability reaches 0 or below, the item returned is the resulting item of the breaking of the
 // item. If the final durability reaches a number higher than the maximum durability, the stack returned will
 // get the maximum durability.
-func (s Stack) Damage(d int) Stack {
+func (s Stack) Damage(d int) world.ItemStack {
 	durable, ok := s.Item().(Durable)
 	if !ok || s.unbreakable {
 		return s
@@ -126,7 +126,7 @@ func (s Stack) Damage(d int) Stack {
 // The closer the durability d is to 0, the closer the item is to being broken. If a durability of 0 is passed,
 // a stack with the item type of the BrokenItem is returned. If a durability is passed that exceeds the
 // maximum durability, the stack returned will have the maximum durability.
-func (s Stack) WithDurability(d int) Stack {
+func (s Stack) WithDurability(d int) world.ItemStack {
 	durable, ok := s.Item().(Durable)
 	if !ok {
 		return s
@@ -152,7 +152,7 @@ func (s Stack) Unbreakable() bool {
 
 // AsUnbreakable returns a copy of the Stack with the unbreakable tag set. If the item does not implement the
 // Durable interface, the original stack is returned.
-func (s Stack) AsUnbreakable() Stack {
+func (s Stack) AsUnbreakable() world.ItemStack {
 	if _, ok := s.Item().(Durable); !ok {
 		return s
 	}
@@ -162,7 +162,7 @@ func (s Stack) AsUnbreakable() Stack {
 
 // AsBreakable returns a copy of the Stack without the unbreakable tag set. If the item does not implement the
 // Durable interface, the original stack is returned.
-func (s Stack) AsBreakable() Stack {
+func (s Stack) AsBreakable() world.ItemStack {
 	if _, ok := s.Item().(Durable); !ok {
 		return s
 	}
@@ -203,7 +203,7 @@ func (s Stack) AttackDamage() float64 {
 
 // WithCustomName returns a copy of the Stack with the custom name passed. The custom name is formatted
 // according to the rules of fmt.Sprintln.
-func (s Stack) WithCustomName(a ...any) Stack {
+func (s Stack) WithCustomName(a ...any) world.ItemStack {
 	s.customName = format(a)
 	if nameable, ok := s.Item().(nameable); ok {
 		s.item = nameable.WithName(a...)
@@ -220,7 +220,7 @@ func (s Stack) CustomName() string {
 // WithLore returns a copy of the Stack with the lore passed. Each string passed is put on a different line,
 // where the first string is at the top and the last at the bottom.
 // The lore may be cleared by passing no lines into the Stack.
-func (s Stack) WithLore(lines ...string) Stack {
+func (s Stack) WithLore(lines ...string) world.ItemStack {
 	s.lore = lines
 	return s
 }
@@ -238,7 +238,7 @@ func (s Stack) Lore() []string {
 //
 // WithValue stores Values by encoding them using the encoding/gob package. Users of WithValue must ensure
 // that their value is valid for encoding with this package.
-func (s Stack) WithValue(key string, val any) Stack {
+func (s Stack) WithValue(key string, val any) world.ItemStack {
 	s.data = cloneMap(s.data)
 	if val != nil {
 		s.data[key] = val
@@ -257,23 +257,23 @@ func (s Stack) Value(key string) (val any, ok bool) {
 
 // WithEnchantments returns the current stack with the passed enchantments. If an enchantment is not compatible
 // with the item stack, it will not be applied.
-func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
+func (s Stack) WithEnchantments(enchants ...world.Enchantment) world.ItemStack {
 	if _, ok := s.item.(Book); ok {
 		s.item = EnchantedBook{}
 	}
 	s.enchantments = cloneMap(s.enchantments)
 	for _, enchant := range enchants {
-		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.t.CompatibleWithItem(s.item) {
+		if _, ok := s.Item().(EnchantedBook); !ok && !enchant.Type().CompatibleWithItem(s.item) {
 			// Enchantment is not compatible with the item.
 			continue
 		}
-		s.enchantments[enchant.t] = enchant
+		s.enchantments[enchant.Type()] = enchant
 	}
 	return s
 }
 
 // WithoutEnchantments returns the current stack but with the passed enchantments removed.
-func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
+func (s Stack) WithoutEnchantments(enchants ...world.EnchantmentType) world.ItemStack {
 	s.enchantments = cloneMap(s.enchantments)
 	for _, enchant := range enchants {
 		delete(s.enchantments, enchant)
@@ -286,18 +286,18 @@ func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
 
 // Enchantment attempts to return an Enchantment set to the Stack using Stack.WithEnchantment(). If an Enchantment
 // is found by the EnchantmentType, the enchantment and the bool true is returned.
-func (s Stack) Enchantment(enchant EnchantmentType) (Enchantment, bool) {
+func (s Stack) Enchantment(enchant world.EnchantmentType) (world.Enchantment, bool) {
 	ench, ok := s.enchantments[enchant]
 	return ench, ok
 }
 
 // Enchantments returns an array of all Enchantments on the item. Enchantments returns the enchantments of a Stack in a
 // deterministic order.
-func (s Stack) Enchantments() []Enchantment {
+func (s Stack) Enchantments() []world.Enchantment {
 	e := slices.Collect(maps.Values(s.enchantments))
 	sort.Slice(e, func(i, j int) bool {
-		id1, _ := EnchantmentID(e[i].t)
-		id2, _ := EnchantmentID(e[j].t)
+		id1, _ := EnchantmentID(e[i].Type())
+		id2, _ := EnchantmentID(e[j].Type())
 		return id1 < id2
 	})
 	return e
@@ -310,7 +310,7 @@ func (s Stack) AnvilCost() int {
 }
 
 // WithAnvilCost returns the current Stack with the anvil cost set to the passed value.
-func (s Stack) WithAnvilCost(anvilCost int) Stack {
+func (s Stack) WithAnvilCost(anvilCost int) world.ItemStack {
 	i := s.Item()
 	_, repairable := i.(Repairable)
 	_, enchantedBook := i.(EnchantedBook)
@@ -325,13 +325,13 @@ func (s Stack) WithAnvilCost(anvilCost int) Stack {
 // WithItem returns a Stack with the item type passed, copying all the
 // properties from s to the new stack. Damage to an item, enchantments and anvil
 // costs are only copied if they are still applicable to the new item type.
-func (s Stack) WithItem(t world.Item) Stack {
+func (s Stack) WithItem(t world.Item) world.ItemStack {
 	cp := NewStack(t, s.count).
 		Damage(s.damage).
 		WithCustomName(s.customName).
 		WithLore(s.lore...).
 		WithEnchantments(s.Enchantments()...).
-		WithAnvilCost(s.anvilCost)
+		WithAnvilCost(s.anvilCost).(Stack)
 	cp.unbreakable = s.unbreakable && s.MaxDurability() != -1
 	cp.data = s.data
 	return cp
@@ -342,10 +342,11 @@ func (s Stack) WithItem(t world.Item) Stack {
 // returned by Item.MaxCount(). The second stack will have the leftover items: It may be empty if the count of
 // both stacks together don't exceed the max count.
 // If the two stacks are not comparable, AddStack will return both the original stack and the stack passed.
-func (s Stack) AddStack(s2 Stack) (a, b Stack) {
+func (s Stack) AddStack(s2 world.ItemStack) (a, b world.ItemStack) {
+	st2 := s2.(Stack)
 	if s.Count() >= s.MaxCount() {
 		// No more items could be added to the original stack.
-		return s, s2
+		return s, st2
 	}
 	if !s.Comparable(s2) {
 		// The items are not comparable and thus cannot be stacked together.
@@ -356,42 +357,42 @@ func (s Stack) AddStack(s2 Stack) (a, b Stack) {
 		diff = s2.Count()
 	}
 
-	s.count, s2.count = s.count+diff, s2.count-diff
-	s.id, s2.id = newID(), newID()
+	s.count, st2.count = s.Count()+diff, s2.Count()-diff
+	s.id, st2.id = newID(), newID()
 	return s, s2
 }
 
 // Equal checks if the two stacks are equal. Equal is equivalent to a Stack.Comparable check while also
 // checking the count and durability.
-func (s Stack) Equal(s2 Stack) bool {
-	return s.Comparable(s2) && s.count == s2.count && s.damage == s2.damage
+func (s Stack) Equal(s2 world.ItemStack) bool {
+	return s.Comparable(s2) && s.count == s2.Count() && s.damage == s2.Durability()
 }
 
 // Comparable checks if two stacks can be considered comparable. True is returned if the two stacks have an
 // equal item type and have equal enchantments, lore and custom names, or if one of the stacks is empty.
 // Comparable does not check if the two stacks have the same durability.
-func (s Stack) Comparable(s2 Stack) bool {
+func (s Stack) Comparable(s2 world.ItemStack) bool {
 	if s.Empty() || s2.Empty() {
 		return true
 	}
 
 	name, meta := s.Item().EncodeItem()
 	name2, meta2 := s2.Item().EncodeItem()
-	if name != name2 || meta != meta2 || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
+	if name != name2 || meta != meta2 || s.anvilCost != s2.AnvilCost() || s.customName != s2.CustomName() {
 		return false
 	}
-	for !slices.Equal(s.lore, s2.lore) {
+	for !slices.Equal(s.lore, s2.Lore()) {
 		return false
 	}
-	if len(s.enchantments) != len(s2.enchantments) {
+	if len(s.enchantments) != len(s2.Enchantments()) {
 		return false
 	}
 	for i := range s.enchantments {
-		if s.enchantments[i] != s2.enchantments[i] {
+		if e, _ := s2.Enchantment(i); s.enchantments[i] != e {
 			return false
 		}
 	}
-	if !reflect.DeepEqual(s.data, s2.data) {
+	if !reflect.DeepEqual(s.data, s2.Values()) {
 		return false
 	}
 	if nbt, ok := s.Item().(world.NBTer); ok {

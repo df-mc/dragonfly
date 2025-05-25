@@ -1,11 +1,12 @@
 package session
 
 import (
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
 	"strings"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/entity/effect"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -1119,7 +1120,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world
 }
 
 // ViewSlotChange ...
-func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
+func (s *Session) ViewSlotChange(slot int, newItem world.ItemStack) {
 	if !s.containerOpened.Load() {
 		return
 	}

@@ -1259,7 +1259,7 @@ func (p *Player) Armour() *inventory.Armour {
 // one held in the main hand, the second is held in the off-hand.
 // If no item was held in a hand, the stack returned has a count of 0. Stack.Empty() may be used to check if
 // the hand held anything.
-func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
+func (p *Player) HeldItems() (mainHand, offHand world.ItemStack) {
 	offHand, _ = p.offHand.Item(0)
 	mainHand, _ = p.inv.Item(int(*p.heldSlot))
 	return mainHand, offHand
@@ -1267,7 +1267,7 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 
 // SetHeldItems sets items to the main hand and the off-hand of the player. The Stacks passed may be empty
 // (Stack.Empty()) to clear the held item.
-func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
+func (p *Player) SetHeldItems(mainHand, offHand world.ItemStack) {
 	_ = p.inv.SetItem(int(*p.heldSlot), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
 }
@@ -1506,7 +1506,7 @@ func (p *Player) canRelease() bool {
 			}
 		}
 
-		_, found := p.Inventory().FirstFunc(func(stack item.Stack) bool {
+		_, found := p.Inventory().FirstFunc(func(stack world.ItemStack) bool {
 			name, _ := stack.Item().EncodeItem()
 			return name == reqName
 		})
@@ -1974,18 +1974,18 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 }
 
 // drops returns the drops that the player can get from the block passed using the item held.
-func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
+func (p *Player) drops(held world.ItemStack, b world.Block) []world.ItemStack {
 	t, ok := held.Item().(item.Tool)
 	if !ok {
 		t = item.ToolNone{}
 	}
-	var drops []item.Stack
+	var drops []world.ItemStack
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
 			drops = breakable.BreakInfo().Drops(t, held.Enchantments())
 		}
 	} else if it, ok := b.(world.Item); ok && !p.GameMode().CreativeInventory() {
-		drops = []item.Stack{item.NewStack(it, 1)}
+		drops = []world.ItemStack{item.NewStack(it, 1)}
 	}
 	return drops
 }
@@ -2272,7 +2272,7 @@ func (p *Player) CollectExperience(value int) bool {
 
 // mendItems handles the mending enchantment when collecting experience, it then returns the leftover experience.
 func (p *Player) mendItems(xp int) int {
-	mendingItems := make([]item.Stack, 0, 6)
+	mendingItems := make([]world.ItemStack, 0, 6)
 	held, offHand := p.HeldItems()
 	if _, ok := offHand.Enchantment(enchantment.Mending); ok && offHand.Durability() < offHand.MaxDurability() {
 		mendingItems = append(mendingItems, offHand)
@@ -2315,7 +2315,7 @@ func (p *Player) mendItems(xp int) int {
 // The dropped item entity has a pickup delay of 2 seconds.
 // The number of items that was dropped in the end is returned. It is generally the count of the stack passed
 // or 0 if dropping the item.Stack was cancelled.
-func (p *Player) Drop(s item.Stack) int {
+func (p *Player) Drop(s world.ItemStack) int {
 	ctx := event.C(p)
 	if p.Handler().HandleItemDrop(ctx, s); ctx.Cancelled() {
 		return 0
@@ -2859,7 +2859,7 @@ func (p *Player) UpdateDiagnostics(d session.Diagnostics) {
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
 // broke, a breaking sound is played.
 // If the player is not survival, the original stack is returned.
-func (p *Player) damageItem(s item.Stack, d int) item.Stack {
+func (p *Player) damageItem(s world.ItemStack, d int) world.ItemStack {
 	if p.GameMode().CreativeInventory() || d == 0 || s.MaxDurability() == -1 {
 		return s
 	}
@@ -2878,7 +2878,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 
 // subtractItem subtracts d from the count of the item stack passed and returns it, if the player is in
 // survival or adventure mode.
-func (p *Player) subtractItem(s item.Stack, d int) item.Stack {
+func (p *Player) subtractItem(s world.ItemStack, d int) world.ItemStack {
 	if !p.GameMode().CreativeInventory() && d != 0 {
 		return s.Grow(-d)
 	}
@@ -3009,7 +3009,7 @@ func (p *Player) session() *session.Session {
 
 // useContext returns an item.UseContext initialised for a Player.
 func (p *Player) useContext() *item.UseContext {
-	call := func(ctx *inventory.Context, slot int, it item.Stack, f func(ctx *inventory.Context, slot int, it item.Stack)) error {
+	call := func(ctx *inventory.Context, slot int, it world.ItemStack, f func(ctx *inventory.Context, slot int, it world.ItemStack)) error {
 		if ctx.Cancelled() {
 			return fmt.Errorf("action was cancelled")
 		}
@@ -3035,7 +3035,7 @@ func (p *Player) useContext() *item.UseContext {
 				p.PlaySound(sound.EquipItem{Item: srcIt.Item()})
 			}
 		},
-		FirstFunc: func(comparable func(item.Stack) bool) (item.Stack, bool) {
+		FirstFunc: func(comparable func(world.ItemStack) bool) (world.ItemStack, bool) {
 			_, left := p.HeldItems()
 			if !left.Empty() && comparable(left) {
 				return left, true
@@ -3057,14 +3057,14 @@ func (p *Player) Handler() Handler {
 }
 
 // broadcastItems broadcasts the items held to viewers.
-func (p *Player) broadcastItems(int, item.Stack, item.Stack) {
+func (p *Player) broadcastItems(int, world.ItemStack, world.ItemStack) {
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
 	}
 }
 
 // broadcastArmour broadcasts the armour equipped to viewers.
-func (p *Player) broadcastArmour(_ int, before, after item.Stack) {
+func (p *Player) broadcastArmour(_ int, before, after world.ItemStack) {
 	if before.Comparable(after) && before.Empty() == after.Empty() {
 		// Only send armour if the type of the armour changed.
 		return

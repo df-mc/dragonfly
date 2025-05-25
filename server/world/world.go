@@ -4,13 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/df-mc/goleveldb/leveldb"
-	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"iter"
 	"maps"
 	"math/rand/v2"
@@ -18,6 +11,15 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/df-mc/goleveldb/leveldb"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
+	handles "github.com/royalmcpe/golang-handles-map"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players
@@ -52,7 +54,8 @@ type World struct {
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
 	// can find the correct Entity.
-	entities map[*EntityHandle]ChunkPos
+	entities    map[*EntityHandle]ChunkPos
+	inventories handles.HandleMap[Inventory, *Inventory]
 
 	r *rand.Rand
 
@@ -158,6 +161,8 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
 	if nbtBlocks[rid] {
+		// TODO: Check if block is an inventory block and load inventory contents from nbt
+
 		// The block was also a block entity, so we look it up in the map.
 		if b, ok := c.BlockEntities[pos]; ok {
 			return b
@@ -230,6 +235,14 @@ type SetOpts struct {
 	// performance is very important, or where it is known no liquid can be
 	// present anyway.
 	DisableLiquidDisplacement bool
+	// DisableInventoryResolution disables the inventory of a block if it's a container.
+	// This is mostly useful if you want to override the inventory of a block with your own.s
+	DisableInventoryResolution bool
+}
+
+type ContainerOpts struct {
+	Size       uint
+	CustomName string
 }
 
 // setBlock writes a block to the position passed. If a chunk is not yet loaded
@@ -312,6 +325,20 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	if !opts.DisableBlockUpdates {
 		w.doBlockUpdatesAround(pos)
 	}
+}
+
+func (w *World) setContainer(container Container, opts *ContainerOpts) *InventoryHandle {
+	h, _ := w.inventories.Add(Inventory{
+		customName: opts.CustomName,
+		size:       container.Size(),
+		container:  container,
+	})
+
+	return (*InventoryHandle)(h)
+}
+
+func (w *World) container(h *InventoryHandle) Container {
+	return w.inventories.Get((*handles.Handle)(h)).container
 }
 
 // setBiome sets the Biome at the position passed. If a chunk is not yet loaded
@@ -1222,6 +1249,7 @@ type Column struct {
 
 	*chunk.Chunk
 	Entities      []*EntityHandle
+	Inventories   map[*Inventory]InventoryHandle
 	BlockEntities map[cube.Pos]Block
 
 	viewers []Viewer
@@ -1240,6 +1268,7 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 	c := &chunk.Column{
 		Chunk:           col.Chunk,
 		Entities:        make([]chunk.Entity, 0, len(col.Entities)),
+		Inventories:     make([]chunk.Inventory, 0, len(col.Inventories)),
 		BlockEntities:   make([]chunk.BlockEntity, 0, len(col.BlockEntities)),
 		ScheduledBlocks: make([]chunk.ScheduledBlockUpdate, 0, len(scheduled)),
 		Tick:            w.scheduledUpdates.currentTick,
@@ -1253,6 +1282,7 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 	for pos, be := range col.BlockEntities {
 		c.BlockEntities = append(c.BlockEntities, chunk.BlockEntity{Pos: pos, Data: be.(NBTer).EncodeNBT()})
 	}
+	// TODO: Add entity to column and load contents from nbt
 	for _, t := range scheduled {
 		c.ScheduledBlocks = append(c.ScheduledBlocks, chunk.ScheduledBlockUpdate{Pos: t.pos, Block: BlockRuntimeID(t.b), Tick: t.t})
 	}
@@ -1266,6 +1296,7 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 		Chunk:         c.Chunk,
 		Entities:      make([]*EntityHandle, 0, len(c.Entities)),
 		BlockEntities: make(map[cube.Pos]Block, len(c.BlockEntities)),
+		Inventories:   make(map[*Inventory]InventoryHandle, len(c.Inventories)),
 	}
 	for _, e := range c.Entities {
 		eid, ok := e.Data["identifier"].(string)
@@ -1294,6 +1325,7 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 		}
 		col.BlockEntities[be.Pos] = nb.DecodeNBT(be.Data).(Block)
 	}
+	// TODO: Read inventory contents from nbt
 	scheduled, savedTick := make([]scheduledTick, 0, len(c.ScheduledBlocks)), c.Tick
 	for _, t := range c.ScheduledBlocks {
 		bl := blockByRuntimeIDOrAir(t.Block)

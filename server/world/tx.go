@@ -1,12 +1,13 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Tx represents a synchronised transaction performed on a World. Most
@@ -39,6 +40,14 @@ func (tx *Tx) Range() cube.Range {
 // instead.
 func (tx *Tx) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	tx.World().setBlock(pos, b, opts)
+}
+
+func (tx *Tx) SetContainer(container Container, opts *ContainerOpts) *InventoryHandle {
+	return tx.World().setContainer(container, opts)
+}
+
+func (tx *Tx) Container(h *InventoryHandle) Container {
+	return tx.World().container(h)
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded

@@ -27,7 +27,7 @@ func (infinity) Cost(int) (int, int) {
 }
 
 // Rarity ...
-func (infinity) Rarity() item.EnchantmentRarity {
+func (infinity) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
@@ -37,7 +37,7 @@ func (infinity) ConsumesArrows() bool {
 }
 
 // CompatibleWithEnchantment ...
-func (infinity) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+func (infinity) CompatibleWithEnchantment(t world.EnchantmentType) bool {
 	return t != Mending
 }
 

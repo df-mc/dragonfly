@@ -27,12 +27,12 @@ func (thorns) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (thorns) Rarity() item.EnchantmentRarity {
+func (thorns) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
 // CompatibleWithEnchantment ...
-func (thorns) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (thorns) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

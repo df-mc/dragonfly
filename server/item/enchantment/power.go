@@ -27,7 +27,7 @@ func (power) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (power) Rarity() item.EnchantmentRarity {
+func (power) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
@@ -37,7 +37,7 @@ func (power) PowerDamage(level int) float64 {
 }
 
 // CompatibleWithEnchantment ...
-func (power) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (power) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

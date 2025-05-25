@@ -28,7 +28,7 @@ func (mending) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (mending) Rarity() item.EnchantmentRarity {
+func (mending) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
@@ -38,7 +38,7 @@ func (mending) Treasure() bool {
 }
 
 // CompatibleWithEnchantment ...
-func (mending) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+func (mending) CompatibleWithEnchantment(t world.EnchantmentType) bool {
 	return t != Infinity
 }
 

@@ -1,15 +1,16 @@
 package block
 
 import (
+	"math"
+	"math/rand/v2"
+	"slices"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
-	"math"
-	"math/rand/v2"
-	"slices"
-	"time"
 )
 
 // Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks
@@ -21,7 +22,7 @@ type Breakable interface {
 
 // BreakDuration returns the base duration that breaking the block passed takes when being broken using the
 // item passed.
-func BreakDuration(b world.Block, i item.Stack) time.Duration {
+func BreakDuration(b world.Block, i world.ItemStack) time.Duration {
 	breakable, ok := b.(Breakable)
 	if !ok {
 		return math.MaxInt64
@@ -51,7 +52,7 @@ func BreakDuration(b world.Block, i item.Stack) time.Duration {
 
 // BreaksInstantly checks if the block passed can be broken instantly using the item stack passed to break
 // it.
-func BreaksInstantly(b world.Block, i item.Stack) bool {
+func BreaksInstantly(b world.Block, i world.ItemStack) bool {
 	breakable, ok := b.(Breakable)
 	if !ok {
 		return false
@@ -86,7 +87,7 @@ type BreakInfo struct {
 	// than with an empty hand.
 	Effective func(t item.Tool) bool
 	// Drops is a function called to get the drops of the block if it is broken using the item passed.
-	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
+	Drops func(t item.Tool, enchantments []world.Enchantment) []world.ItemStack
 	// BreakHandler is called after the block has broken.
 	BreakHandler func(pos cube.Pos, w *world.Tx, u item.User)
 	// XPDrops is the range of XP a block can drop when broken.
@@ -98,7 +99,7 @@ type BreakInfo struct {
 
 // newBreakInfo creates a BreakInfo struct with the properties passed. The XPDrops field is 0 by default. The blast
 // resistance is set to the block's hardness*5 by default.
-func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective func(item.Tool) bool, drops func(item.Tool, []item.Enchantment) []item.Stack) BreakInfo {
+func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective func(item.Tool) bool, drops func(item.Tool, []world.Enchantment) []world.ItemStack) BreakInfo {
 	return BreakInfo{
 		Hardness:        hardness,
 		BlastResistance: hardness * 5,
@@ -180,16 +181,16 @@ var neverHarvestable = func(t item.Tool) bool {
 var pickaxeHarvestable = pickaxeEffective
 
 // simpleDrops returns a drops function that returns the items passed.
-func simpleDrops(s ...item.Stack) func(item.Tool, []item.Enchantment) []item.Stack {
-	return func(item.Tool, []item.Enchantment) []item.Stack {
+func simpleDrops(s ...world.ItemStack) func(item.Tool, []world.Enchantment) []world.ItemStack {
+	return func(item.Tool, []world.Enchantment) []world.ItemStack {
 		return s
 	}
 }
 
 // oneOf returns a drops function that returns one of each of the item types passed.
-func oneOf(i ...world.Item) func(item.Tool, []item.Enchantment) []item.Stack {
-	return func(item.Tool, []item.Enchantment) []item.Stack {
-		var s []item.Stack
+func oneOf(i ...world.Item) func(item.Tool, []world.Enchantment) []world.ItemStack {
+	return func(item.Tool, []world.Enchantment) []world.ItemStack {
+		var s []world.ItemStack
 		for _, it := range i {
 			s = append(s, item.NewStack(it, 1))
 		}
@@ -198,39 +199,39 @@ func oneOf(i ...world.Item) func(item.Tool, []item.Enchantment) []item.Stack {
 }
 
 // hasSilkTouch checks if an item has the silk touch enchantment.
-func hasSilkTouch(enchantments []item.Enchantment) bool {
-	return slices.IndexFunc(enchantments, func(i item.Enchantment) bool {
+func hasSilkTouch(enchantments []world.Enchantment) bool {
+	return slices.IndexFunc(enchantments, func(i world.Enchantment) bool {
 		return i.Type() == enchantment.SilkTouch
 	}) != -1
 }
 
 // silkTouchOneOf returns a drop function that returns 1x of the silk touch drop when silk touch exists, or 1x of the
 // normal drop when it does not.
-func silkTouchOneOf(normal, silkTouch world.Item) func(item.Tool, []item.Enchantment) []item.Stack {
-	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+func silkTouchOneOf(normal, silkTouch world.Item) func(item.Tool, []world.Enchantment) []world.ItemStack {
+	return func(t item.Tool, enchantments []world.Enchantment) []world.ItemStack {
 		if hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(silkTouch, 1)}
+			return []world.ItemStack{item.NewStack(silkTouch, 1)}
 		}
-		return []item.Stack{item.NewStack(normal, 1)}
+		return []world.ItemStack{item.NewStack(normal, 1)}
 	}
 }
 
 // silkTouchDrop returns a drop function that returns the silk touch drop when silk touch exists, or the
 // normal drop when it does not.
-func silkTouchDrop(normal, silkTouch item.Stack) func(item.Tool, []item.Enchantment) []item.Stack {
-	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+func silkTouchDrop(normal, silkTouch world.ItemStack) func(item.Tool, []world.Enchantment) []world.ItemStack {
+	return func(t item.Tool, enchantments []world.Enchantment) []world.ItemStack {
 		if hasSilkTouch(enchantments) {
-			return []item.Stack{silkTouch}
+			return []world.ItemStack{silkTouch}
 		}
-		return []item.Stack{normal}
+		return []world.ItemStack{normal}
 	}
 }
 
 // silkTouchOnlyDrop returns a drop function that returns the drop when silk touch exists.
-func silkTouchOnlyDrop(it world.Item) func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+func silkTouchOnlyDrop(it world.Item) func(t item.Tool, enchantments []world.Enchantment) []world.ItemStack {
+	return func(t item.Tool, enchantments []world.Enchantment) []world.ItemStack {
 		if hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(it, 1)}
+			return []world.ItemStack{item.NewStack(it, 1)}
 		}
 		return nil
 	}

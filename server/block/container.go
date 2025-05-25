@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -12,7 +11,7 @@ type ContainerViewer interface {
 	world.Viewer
 	// ViewSlotChange views a change of a single slot in the inventory, in which the item was changed to the
 	// new item passed.
-	ViewSlotChange(slot int, newItem item.Stack)
+	ViewSlotChange(slot int, newItem world.ItemStack)
 }
 
 // ContainerOpener represents an entity that is able to open a container.

@@ -1,11 +1,12 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // Fern is a transparent plant block which can be used to obtain seeds and as decoration.
@@ -22,12 +23,12 @@ func (g Fern) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (g Fern) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []world.Enchantment) []world.ItemStack {
 		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(g, 1)}
+			return []world.ItemStack{item.NewStack(g, 1)}
 		}
 		if rand.Float32() > 0.57 {
-			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
+			return []world.ItemStack{item.NewStack(WheatSeeds{}, 1)}
 		}
 		return nil
 	})

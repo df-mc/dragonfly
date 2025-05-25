@@ -1,13 +1,14 @@
 package recipe
 
 import (
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/world"
 	"slices"
 	"sort"
 	"strings"
 	"unsafe"
+
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // recipes is a list of each recipe.
@@ -56,7 +57,7 @@ func Register(recipe Recipe) {
 
 // Perform performs the recipe with the given block and inputs and returns the outputs. If the inputs do not map to
 // any outputs, false is returned for the second return value.
-func Perform(block string, input ...world.Item) (output []item.Stack, ok bool) {
+func Perform(block string, input ...world.Item) (output []world.ItemStack, ok bool) {
 	blockInd, ok := index[block]
 	if !ok {
 		// Block specific index didn't exist.

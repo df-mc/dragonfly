@@ -1,5 +1,7 @@
 package item
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // UseContext is passed to every item Use methods. It may be used to subtract items or to deal damage to them
 // after the action is complete.
 type UseContext struct {
@@ -14,20 +16,20 @@ type UseContext struct {
 	// hand, it'll be added there.
 	NewItem Stack
 	// ConsumedItems contains a list of items that were consumed in the process of using the item.
-	ConsumedItems []Stack
+	ConsumedItems []world.ItemStack
 	// NewItemSurvivalOnly will add any new items only in survival mode.
 	NewItemSurvivalOnly bool
 
 	// FirstFunc returns the first item in the context holder's inventory if found. The second return value describes
 	// whether the item was found. The comparable function is used to compare the item to the given item.
-	FirstFunc func(comparable func(Stack) bool) (Stack, bool)
+	FirstFunc func(comparable func(world.ItemStack) bool) (world.ItemStack, bool)
 
 	// SwapHeldWithArmour holds a function that swaps the item currently held by a User with armour slot i.
 	SwapHeldWithArmour func(i int)
 }
 
 // Consume consumes the provided item when the context is handled.
-func (ctx *UseContext) Consume(s Stack) {
+func (ctx *UseContext) Consume(s world.ItemStack) {
 	ctx.ConsumedItems = append(ctx.ConsumedItems, s)
 }
 

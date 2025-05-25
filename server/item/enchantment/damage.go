@@ -1,9 +1,9 @@
 package enchantment
 
 import (
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/world"
 	"math"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // AffectedDamageSource represents a world.DamageSource whose damage may be
@@ -14,7 +14,7 @@ type AffectedDamageSource interface {
 	world.DamageSource
 	// AffectedByEnchantment specifies if a world.DamageSource is affected by
 	// the item.EnchantmentType passed.
-	AffectedByEnchantment(e item.EnchantmentType) bool
+	AffectedByEnchantment(e world.EnchantmentType) bool
 }
 
 // DamageModifier is an item.EnchantmentType that can reduce damage through a
@@ -27,7 +27,7 @@ type DamageModifier interface {
 // item.Enchantment. The factor depends on the world.DamageSource passed and is
 // in a range of [0, 0.8], where 0.8 means incoming damage would be reduced by
 // 80%.
-func ProtectionFactor(src world.DamageSource, enchantments []item.Enchantment) float64 {
+func ProtectionFactor(src world.DamageSource, enchantments []world.Enchantment) float64 {
 	f := 0.0
 	for _, e := range enchantments {
 		t := e.Type()

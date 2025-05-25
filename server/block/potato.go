@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Potato is a crop that can be consumed raw or cooked to make baked potatoes.
@@ -36,7 +37,7 @@ func (p Potato) ConsumeDuration() time.Duration {
 }
 
 // Consume ...
-func (p Potato) Consume(_ *world.Tx, c item.Consumer) item.Stack {
+func (p Potato) Consume(_ *world.Tx, c item.Consumer) world.ItemStack {
 	c.Saturate(1, 0.6)
 	return item.Stack{}
 }
@@ -68,15 +69,15 @@ func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 
 // BreakInfo ...
 func (p Potato) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []world.Enchantment) []world.ItemStack {
 		n := 1
 		if p.Growth >= 7 {
 			n += rand.IntN(5)
 		}
 		if rand.Float64() < 0.02 {
-			return []item.Stack{item.NewStack(p, n), item.NewStack(item.PoisonousPotato{}, 1)}
+			return []world.ItemStack{item.NewStack(p, n), item.NewStack(item.PoisonousPotato{}, 1)}
 		}
-		return []item.Stack{item.NewStack(p, n)}
+		return []world.ItemStack{item.NewStack(p, n)}
 	})
 }
 
