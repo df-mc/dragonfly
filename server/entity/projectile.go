@@ -139,6 +139,11 @@ func (lt *ProjectileBehaviour) Critical() bool {
 	return lt.conf.Critical && !lt.collided
 }
 
+// Immobile ...
+func (lt *ProjectileBehaviour) Immobile() bool {
+	return lt.collided
+}
+
 // Tick runs the tick-based behaviour of a ProjectileBehaviour and returns the
 // Movement within the tick. Tick handles the movement, collision and hitting
 // of a projectile.
