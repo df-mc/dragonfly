@@ -1672,9 +1672,9 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	dmg := i.AttackDamage()
 	it := i.Item()
 	if d, ok := it.(interface {
-		CalculateDamage(world.Entity, world.Entity, *bool) float64
+		CalculateDamage(world.Entity, world.Entity, *bool, item.Stack) float64
 	}); ok {
-		dmg = d.CalculateDamage(p, e, &critical)
+		dmg = d.CalculateDamage(p, e, &critical, i)
 	}
 
 	if strength, ok := p.Effect(effect.Strength); ok {
