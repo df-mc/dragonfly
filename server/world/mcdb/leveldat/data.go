@@ -35,6 +35,7 @@ type Data struct {
 	LimitedWorldOriginZ            int32
 	LimitedWorldDepth              int32 `nbt:"limitedWorldDepth"`
 	LimitedWorldWidth              int32 `nbt:"limitedWorldWidth"`
+	LocatorBar                     bool  `nbt:"locatorbar"`
 	MinimumCompatibleClientVersion []int32
 	MultiPlayerGame                bool `nbt:"MultiplayerGame"`
 	MultiPlayerGameIntent          bool `nbt:"MultiplayerGameIntent"`
