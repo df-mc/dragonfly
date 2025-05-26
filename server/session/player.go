@@ -687,6 +687,7 @@ func (s *Session) uiInventoryFunc(tx *world.Tx, c Controllable) inventory.SlotFu
 				s.sendEnchantmentOptions(tx, c, pos, after)
 			}
 		}
+		s.sendInv(s.ui, protocol.WindowIDUI)
 	}
 }
 
