@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Form represents a form that may be sent to a Submitter. The three types of forms, custom forms, menu forms
@@ -95,24 +96,31 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
 	v.Set(reflect.ValueOf(f.submittable))
 
+	var index int
 	for i := 0; i < v.NumField(); i++ {
 		fieldV := v.Field(i)
 		if !fieldV.CanSet() {
 			continue
 		}
-		e := fieldV.Interface().(Element)
+		e, ok := fieldV.Interface().(Element)
+		if !ok {
+			return fmt.Errorf("field does not implement Element interface")
+		}
 		if e.ReadOnly() {
+			if index < len(data) && data[index] == nil {
+				index++
+			}
 			continue
 		}
-		if len(data) == 0 {
-			return fmt.Errorf("form JSON data array does not have enough values")
+		if index >= len(data) {
+			return fmt.Errorf("not enough data values for form (expected at least %d)", i+1)
 		}
-		elem, err := f.parseValue(e, data[0])
+		elem, err := f.parseValue(e, data[index])
 		if err != nil {
-			return fmt.Errorf("error parsing form response value: %w", err)
+			return fmt.Errorf("error parsing form value at index %d: %w", index, err)
 		}
 		fieldV.Set(elem)
-		data = data[1:]
+		index++
 	}
 
 	v.Interface().(Submittable).Submit(submitter, tx)
