@@ -2,11 +2,12 @@ package inventory
 
 import (
 	"fmt"
+	"math"
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
-	"math"
-	"math/rand/v2"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and
@@ -107,7 +108,7 @@ func (a *Armour) Boots() item.Stack {
 // DamageReduction returns the amount of damage that is reduced by the Armour for
 // an amount of damage and damage source. The value returned takes into account
 // the armour itself and its enchantments.
-func (a *Armour) DamageReduction(dmg float64, src world.DamageSource) float64 {
+func (a *Armour) DamageReduction(dmg float64, src world.DamageSource, sourceEnchantments []item.Enchantment) float64 {
 	var (
 		original                 = dmg
 		defencePoints, toughness float64
@@ -122,7 +123,7 @@ func (a *Armour) DamageReduction(dmg float64, src world.DamageSource) float64 {
 		}
 	}
 
-	dmg -= dmg * enchantment.ProtectionFactor(src, enchantments)
+	dmg -= dmg * enchantment.ProtectionFactor(src, enchantments, sourceEnchantments)
 	if src.ReducedByArmour() {
 		// Armour in Bedrock edition reduces the damage taken by 4% for each effective armour point. Effective
 		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defense

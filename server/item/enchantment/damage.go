@@ -1,9 +1,10 @@
 package enchantment
 
 import (
+	"math"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"math"
 )
 
 // AffectedDamageSource represents a world.DamageSource whose damage may be
@@ -27,8 +28,19 @@ type DamageModifier interface {
 // item.Enchantment. The factor depends on the world.DamageSource passed and is
 // in a range of [0, 0.8], where 0.8 means incoming damage would be reduced by
 // 80%.
-func ProtectionFactor(src world.DamageSource, enchantments []item.Enchantment) float64 {
+func ProtectionFactor(src world.DamageSource, enchantments []item.Enchantment, sourceEnchantments []item.Enchantment) float64 {
 	f := 0.0
+	reduction := 1.0
+
+	for _, e := range sourceEnchantments {
+		t := e.Type()
+		if r, ok := t.(interface {
+			ArmourEfficiencyReduction(level int) float64
+		}); ok {
+			reduction *= r.ArmourEfficiencyReduction(e.Level())
+		}
+	}
+
 	for _, e := range enchantments {
 		t := e.Type()
 		modifier, ok := t.(DamageModifier)
@@ -48,5 +60,7 @@ func ProtectionFactor(src world.DamageSource, enchantments []item.Enchantment) f
 			f += float64(e.Level()) * modifier.Modifier()
 		}
 	}
+
+	f *= reduction
 	return math.Min(f, 0.8)
 }

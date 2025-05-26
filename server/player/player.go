@@ -672,7 +672,14 @@ func (p *Player) applyTotemEffects() {
 func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 	dmg = max(dmg, 0)
 
-	dmg -= p.Armour().DamageReduction(dmg, src)
+	var sourceEnchantments []item.Enchantment
+	if s, ok := src.(entity.AttackDamageSource); ok {
+		if attacker, ok := s.Attacker.(*Player); ok {
+			held, _ := attacker.HeldItems()
+			sourceEnchantments = held.Enchantments()
+		}
+	}
+	dmg -= p.Armour().DamageReduction(dmg, src, sourceEnchantments)
 	if res, ok := p.Effect(effect.Resistance); ok {
 		dmg *= effect.Resistance.Multiplier(src, res.Level())
 	}
