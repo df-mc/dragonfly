@@ -92,6 +92,7 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, 
 			}
 		}
 	}
+	updateAroundRedstone(pos, tx)
 	return true
 }
 
@@ -103,6 +104,24 @@ func (j Jukebox) Disc() (sound.DiscType, bool) {
 		}
 	}
 	return sound.DiscType{}, false
+}
+
+// WeakPower ...
+func (j Jukebox) WeakPower(pos cube.Pos, face cube.Face, tx *world.Tx, accountForDust bool) int {
+	if !j.Item.Empty() {
+		return 15
+	}
+	return 0
+}
+
+// StrongPower ...
+func (j Jukebox) StrongPower(pos cube.Pos, face cube.Face, tx *world.Tx, accountForDust bool) int {
+	return j.WeakPower(pos, face, tx, accountForDust)
+}
+
+// RedstoneSource ...
+func (j Jukebox) RedstoneSource() bool {
+	return !j.Item.Empty()
 }
 
 // EncodeNBT ...

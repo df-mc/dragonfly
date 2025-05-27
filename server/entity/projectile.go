@@ -176,6 +176,18 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
 			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
+		if t, ok := tx.Block(bpos).(block.Target); ok {
+			if _, ok := e.H().Type().(enderPearlType); !ok {
+				delay := time.Millisecond * 400
+
+				//TODO: account for trident when added.
+				if _, ok := e.H().Type().(arrowType); !ok {
+					delay = time.Millisecond * 1000
+				}
+
+				t.HitByProjectile(r.Position(), r.BlockPosition(), tx, delay)
+			}
+		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m, tx)
 			return m

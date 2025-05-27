@@ -116,7 +116,7 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	}
 	//noinspection GoAssignmentToReceiver
 	b = NewBarrel()
-	b.Facing = calculateFace(user, pos)
+	b.Facing = calculateFace(user, pos, false)
 
 	place(tx, pos, b, user, ctx)
 	return placed(ctx)
