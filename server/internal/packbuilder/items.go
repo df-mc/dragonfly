@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
-	"image"
-	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,8 +28,6 @@ func buildItems(dir string) (count int, lang []string) {
 		name := strings.Split(identifier, ":")[1]
 		textureData[name] = map[string]string{"textures": fmt.Sprintf("textures/items/%s.png", name)}
 
-		buildItemTexture(dir, name, item.Texture())
-
 		count++
 	}
 
@@ -41,21 +37,6 @@ func buildItems(dir string) (count int, lang []string) {
 		"texture_data":       textureData,
 	})
 	return
-}
-
-// buildItemTexture creates a PNG file for the item from the provided image and name and writes it to the pack.
-func buildItemTexture(dir, name string, img image.Image) {
-	texture, err := os.Create(filepath.Join(dir, "textures/items", name+".png"))
-	if err != nil {
-		panic(err)
-	}
-	if err := png.Encode(texture, img); err != nil {
-		_ = texture.Close()
-		panic(err)
-	}
-	if err := texture.Close(); err != nil {
-		panic(err)
-	}
 }
 
 // buildItemAtlas creates the identifier to texture mapping and writes it to the pack.

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/event"
 	"io"
+	"iter"
 	"log/slog"
 	"net"
 	"sync"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
@@ -205,6 +205,86 @@ func (conf Config) New(conn Conn) *Session {
 	return s
 }
 
+// AddHiddenEntity ...
+func (s *Session) AddHiddenEntity(rid uint64, ent *world.EntityHandle) {
+	s.entityMutex.Lock()
+	s.entityRuntimeIDs[ent] = rid
+	s.entities[rid] = ent
+	s.hiddenEntities[ent.UUID()] = struct{}{}
+	s.entityMutex.Unlock()
+}
+
+// ClearHiddenEntities ...
+func (s *Session) ClearHiddenEntities() {
+	s.entityMutex.Lock()
+	for key := range s.hiddenEntities {
+		delete(s.hiddenEntities, key)
+	}
+	s.entityMutex.Unlock()
+}
+
+// EntityHandle returns session EntityHandle.
+func (s *Session) EntityHandle() *world.EntityHandle {
+	return s.ent
+}
+
+// Entities returns all Session entities.
+func (s *Session) Entities() iter.Seq2[uint64, *world.EntityHandle] {
+	s.entityMutex.RLock()
+	collected := s.entities
+	s.entityMutex.RUnlock()
+
+	return func(yield func(uint64, *world.EntityHandle) bool) {
+		for id, ent := range collected {
+			if !yield(id, ent) {
+				return
+			}
+		}
+	}
+}
+
+// HiddenEntities returns all Session hidden entities.
+func (s *Session) HiddenEntities() iter.Seq2[uint64, *world.EntityHandle] {
+	s.entityMutex.RLock()
+	collected := s.entities
+	hidden := s.hiddenEntities
+	s.entityMutex.RUnlock()
+
+	return func(yield func(uint64, *world.EntityHandle) bool) {
+		for id, ent := range collected {
+			if _, ok := hidden[ent.UUID()]; ok {
+				if !yield(id, ent) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// HasEntity returns true, if Session contains an entity.
+func (s *Session) HasEntity(h *world.EntityHandle) bool {
+	s.entityMutex.RLock()
+	defer s.entityMutex.RUnlock()
+	_, ok := s.entityRuntimeIDs[h]
+	return ok
+}
+
+// Hidden returns true if entity is hidden.
+func (s *Session) Hidden(id uuid.UUID) bool {
+	s.entityMutex.RLock()
+	defer s.entityMutex.RUnlock()
+	_, ok := s.hiddenEntities[id]
+	return ok
+}
+
+// Entity tries to load an entity for Session memory.
+func (s *Session) Entity(rid uint64) (*world.EntityHandle, bool) {
+	s.entityMutex.RLock()
+	defer s.entityMutex.RUnlock()
+	ent, ok := s.entities[rid]
+	return ent, ok
+}
+
 // UserHandler returns Session UserPacketHandler.
 func (s *Session) UserHandler() UserPacketHandler {
 	s.userHandlerMu.Lock()
@@ -337,6 +417,11 @@ func (s *Session) ClientData() login.ClientData {
 	return s.conn.ClientData()
 }
 
+// IdentityData returns the login.IdentityData of the underlying *minecraft.Conn.
+func (s *Session) IdentityData() login.IdentityData {
+	return s.conn.IdentityData()
+}
+
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
@@ -371,44 +456,40 @@ func (s *Session) handlePackets() {
 // background performs background tasks of the Session. This includes chunk sending and automatic command updating.
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {
-	var (
-		r          map[string]map[int]cmd.Runnable
-		enums      map[string]cmd.Enum
-		enumValues map[string][]string
-		ok         bool
-		i          int
-	)
-
 	s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-		co := e.(Controllable)
-		r = s.sendAvailableCommands(co)
-		enums, enumValues = s.enums(co)
+		c := e.(Controllable)
+		s.ResendCommands(c)
 	})
 
 	t := time.NewTicker(time.Second / 20)
 	defer t.Stop()
+
 	for {
 		select {
 		case <-t.C:
 			s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
 				c := e.(Controllable)
-
-				if i++; i%20 == 0 {
-					// Enum resending happens relatively often and frequent updates are more important than with full
-					// command changes. Those are generally only related to permission changes, which doesn't happen often.
-					s.resendEnums(enums, enumValues, c)
-				}
-				if i%100 == 0 {
-					// Try to resend commands only every 5 seconds.
-					if r, ok = s.resendCommands(r, c); ok {
-						enums, enumValues = s.enums(c)
-					}
-				}
 				s.sendChunks(tx, c)
+				s.ResendCommands(c)
 			})
 		case <-s.closeBackground:
 			return
 		}
+	}
+}
+
+// ResendCommands will resend all server commands for a session.
+func (s *Session) ResendCommands(c Controllable) {
+	var (
+		r  = s.sendAvailableCommands(c)
+		ok bool
+		enums,
+		enumValues = s.enums(c)
+	)
+
+	s.resendEnums(enums, enumValues, c)
+	if r, ok = s.resendCommands(r, c); ok {
+		enums, enumValues = s.enums(c)
 	}
 }
 
@@ -557,6 +638,16 @@ func (s *Session) writePacket(pk packet.Packet) {
 	case s.packets <- pk:
 	case <-s.closeBackground:
 	}
+}
+
+// WritePacket is exported alias to writePacket.
+func (s *Session) WritePacket(pk packet.Packet) {
+	s.writePacket(pk)
+}
+
+// Conn ...
+func (s *Session) Conn() Conn {
+	return s.conn
 }
 
 // actorIdentifier represents the structure of an actor identifier sent over the network.

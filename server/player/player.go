@@ -111,6 +111,18 @@ type Player struct {
 	*playerData
 }
 
+func (p *Player) DeleteValue(key string) {
+	p.handle.DeleteValue(key)
+}
+
+func (p *Player) SetValue(key string, value any) {
+	p.handle.SetValue(key, value)
+}
+
+func (p *Player) Value(key string) (any, bool) {
+	return p.handle.Value(key)
+}
+
 func (p *Player) H() *world.EntityHandle {
 	return p.handle
 }
@@ -3104,6 +3116,11 @@ func (p *Player) resendBlock(pos cube.Pos) {
 		liq, _ := p.tx.Liquid(pos)
 		p.session().ViewBlockUpdate(pos, liq, 1)
 	}
+}
+
+// Session returns this Player session.
+func (p *Player) Session() *session.Session {
+	return p.session()
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the

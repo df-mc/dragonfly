@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/item/category"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"image"
 )
 
 // Item represents an item that may be added to an inventory. It has a method to encode the item to an ID and
@@ -22,8 +21,8 @@ type CustomItem interface {
 	Item
 	// Name is the name that will be displayed on the item to all clients.
 	Name() string
-	// Texture is the Image of the texture for this item.
-	Texture() image.Image
+	// TexturePath is the path to the texture for this item in resource pack.
+	TexturePath() string // TODO implement it
 	// Category is the category the item will be listed under in the creative inventory.
 	Category() category.Category
 }
