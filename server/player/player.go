@@ -1156,7 +1156,7 @@ func (p *Player) Jump() {
 	if p.OnGround() {
 		jumpVel := 0.42
 		if e, ok := p.Effect(effect.JumpBoost); ok {
-			jumpVel = float64(e.Level()) / 10
+			jumpVel += float64(e.Level()) / 10
 		}
 		vel := p.data.Vel
 		vel[1] = jumpVel
