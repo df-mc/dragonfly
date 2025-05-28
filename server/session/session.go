@@ -461,16 +461,22 @@ func (s *Session) background() {
 		s.ResendCommands(c)
 	})
 
+	var tick int
+
 	t := time.NewTicker(time.Second / 20)
 	defer t.Stop()
 
 	for {
 		select {
 		case <-t.C:
+			tick++
 			s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
 				c := e.(Controllable)
 				s.sendChunks(tx, c)
-				s.ResendCommands(c)
+
+				if (tick % 70) == 0 { // Every 3.5 seconds
+					s.ResendCommands(c)
+				}
 			})
 		case <-s.closeBackground:
 			return
