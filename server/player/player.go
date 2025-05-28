@@ -736,6 +736,11 @@ func (p *Player) setAttackImmunity(d time.Duration, dmg float64) {
 	p.lastDamage = dmg
 }
 
+// AttackImmune ...
+func (p *Player) AttackImmune() bool {
+	return p.immuneUntil.After(time.Now())
+}
+
 // Food returns the current food level of a player. The level returned is guaranteed to always be between 0
 // and 20. Every half drumstick is one level.
 func (p *Player) Food() int {
@@ -2181,6 +2186,14 @@ func (p *Player) SetVelocity(velocity mgl64.Vec3) {
 // when facing forward).
 func (p *Player) Rotation() cube.Rotation {
 	return p.data.Rot
+}
+
+// SetRotation ...
+func (p *Player) SetRotation(r cube.Rotation) {
+	if p.session() == session.Nop {
+		p.data.Rot = r
+		return
+	}
 }
 
 // Collect makes the player collect the item stack passed, adding it to the inventory. The amount of items that could
