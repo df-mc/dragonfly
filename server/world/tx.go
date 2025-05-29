@@ -245,7 +245,9 @@ func (ntx normalTransaction) Run(w *World) {
 	tx := &Tx{w: w}
 	defer func() {
 		if r := recover(); r != nil {
-			w.conf.Log.Error(fmt.Sprintf("recovered from panic (normalTransaction): %v\n%s", r, debug.Stack()))
+			message, stack := r, debug.Stack()
+			w.conf.Log.Error(fmt.Sprintf("recovered from panic (normalTransaction): %v\n%s", message, stack))
+			w.conf.Notifier.Notify(message, stack)
 		}
 		tx.close()
 		close(ntx.c)
@@ -277,7 +279,9 @@ func (wtx weakTransaction) Run(w *World) {
 				if r := recover(); r != nil {
 					wtx.invalid.Store(true)
 					ran = true
-					w.conf.Log.Error(fmt.Sprintf("recovered from panic (weakTransaction): %v\n%s", r, debug.Stack()))
+					message, stack := r, debug.Stack()
+					w.conf.Log.Error(fmt.Sprintf("recovered from panic (weakTransaction): %v\n%s", message, stack))
+					w.conf.Notifier.Notify(message, stack)
 				}
 			}()
 			wtx.f(tx)

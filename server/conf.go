@@ -90,6 +90,8 @@ type Config struct {
 	// ReadOnlyWorld specifies if the standard worlds should be read only. If
 	// set to true, the WorldProvider won't be saved to at all.
 	ReadOnlyWorld bool
+	// Notifier ...
+	Notifier world.Notifier
 	// Generator should return a function that specifies the world.Generator to
 	// use for every world.Dimension (world.Overworld, world.Nether and
 	// world.End). If left empty, Generator will be set to a flat world for each
@@ -132,6 +134,9 @@ func (conf Config) New() *Server {
 	}
 	if conf.WorldProvider == nil {
 		conf.WorldProvider = world.NopProvider{}
+	}
+	if conf.Notifier == nil {
+		conf.Notifier = world.NopNotifier{}
 	}
 	if conf.Generator == nil {
 		conf.Generator = loadGenerator

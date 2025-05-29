@@ -576,6 +576,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 
 	conf := world.Config{
 		Log:             logger,
+		Notifier:        srv.conf.Notifier,
 		Dim:             dim,
 		Provider:        srv.conf.WorldProvider,
 		Generator:       srv.conf.Generator(dim),
