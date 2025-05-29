@@ -208,6 +208,11 @@ func (s *Session) SetHandle(handle *world.EntityHandle, skin skin.Skin) {
 	sessions.Add(s)
 }
 
+// Handle returns the world.EntityHandle of the Session.
+func (s *Session) Handle() *world.EntityHandle {
+	return s.ent
+}
+
 // Spawn makes the Controllable passed spawn in the world.World.
 // The function passed will be called when the session stops running.
 func (s *Session) Spawn(c Controllable, tx *world.Tx) {
