@@ -37,7 +37,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 			// world), see #425. For this reason, we don't actually return an error if this happens, because this will
 			// result in the player being kicked. Just log it and replace the NaN value with the one we have tracked
 			// server-side.
-			s.conf.Log.Debug("process packet: PlayerAuthInput: found nan/inf values. assuming server-side values", "pos", fmt.Sprint(pk.Position), "yaw", pk.Yaw, "head-yaw", pk.HeadYaw, "pitch", pk.Pitch)
+			// debug; s.conf.Log.Debug("process packet: PlayerAuthInput: found nan/inf values. assuming server-side values", "pos", fmt.Sprint(pk.Position), "yaw", pk.Yaw, "head-yaw", pk.HeadYaw, "pitch", pk.Pitch)
 			*v = float32(reference[i])
 		}
 	}
@@ -61,7 +61,7 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		}
 		s.teleportPos.Store(nil)
 	} else if deltaPosLenSqr > 225 {
-		s.conf.Log.Debug("process packet: PlayerAuthInput: player moved too far: ", "distance", math.Sqrt(deltaPosLenSqr))
+		// debug; s.conf.Log.Debug("process packet: PlayerAuthInput: player moved too far: ", "distance", math.Sqrt(deltaPosLenSqr))
 		s.ViewEntityTeleport(c, c.Position())
 		return nil
 	}
@@ -94,7 +94,7 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 		if err := sh.handleRequest(pk.ItemStackRequest, s, tx, c); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
-			s.conf.Log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
+			// debug; s.conf.Log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
 		}
 	}
 	return nil
@@ -149,7 +149,7 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 
 	held, _ := c.HeldItems()
 	if !held.Equal(stackToItem(data.HeldItem.Stack)) {
-		s.conf.Log.Debug("process packet: PlayerAuthInput: UseItemTransaction: mismatch between actual held item and client held item")
+		// debug; s.conf.Log.Debug("process packet: PlayerAuthInput: UseItemTransaction: mismatch between actual held item and client held item")
 		return nil
 	}
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}

@@ -441,7 +441,7 @@ func (s *Session) SendForm(f form.Form) {
 
 	h.mu.Lock()
 	if len(h.forms) > 10 {
-		s.conf.Log.Debug("SendForm: more than 10 active forms: dropping an existing one")
+		// debug; s.conf.Log.Debug("SendForm: more than 10 active forms: dropping an existing one")
 		for k := range h.forms {
 			delete(h.forms, k)
 			break
@@ -734,7 +734,7 @@ func (s *Session) VerifySlot(slot int, expected item.Stack) error {
 		s.sendItem(actual, slot, protocol.WindowIDInventory)
 		// Only ever debug these as they are frequent and expected to happen
 		// whenever client and server get out of sync.
-		s.conf.Log.Debug("verify slot: client-side item was not equal to server-side item", "client-held", clientSideItem.String(), "server-held", actual.String())
+		// debug; s.conf.Log.Debug("verify slot: client-side item was not equal to server-side item", "client-held", clientSideItem.String(), "server-held", actual.String())
 	}
 	return nil
 }

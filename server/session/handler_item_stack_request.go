@@ -54,7 +54,7 @@ func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session, tx *world.
 		if err := h.handleRequest(req, s, tx, c); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
-			s.conf.Log.Debug("process packet: ItemStackRequest: resolve item stack request: " + err.Error())
+			// debug; s.conf.Log.Debug("process packet: ItemStackRequest: resolve item stack request: " + err.Error())
 		}
 	}
 	return nil
