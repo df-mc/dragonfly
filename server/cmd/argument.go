@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math/rand/v2"
 	"reflect"
 	"slices"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Line represents a command line holding command arguments that were passed upon the execution of the
@@ -123,6 +124,8 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name s
 		err = p.targets(line, v, tx)
 	case SubCommand:
 		err = p.sub(line, name)
+	case func():
+		err = nil
 	default:
 		if param, ok := i.(Parameter); ok {
 			err = param.Parse(line, v)
