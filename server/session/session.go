@@ -97,6 +97,8 @@ type Conn interface {
 	// ClientData returns the login.ClientData of a Conn. This includes less sensitive data of the player like its skin,
 	// language code and other non-essential information.
 	ClientData() login.ClientData
+	// Proto returns the protocol of a Conn.
+	Proto() minecraft.Protocol
 	// ClientCacheEnabled specifies if the Conn has the client cache, used for caching chunks client-side, enabled or
 	// not. Some platforms, like the Nintendo Switch, have this disabled at all times.
 	ClientCacheEnabled() bool
