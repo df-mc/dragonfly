@@ -1,12 +1,15 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
+	"fmt"
 	"iter"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Tx represents a synchronised transaction performed on a World. Most
@@ -240,9 +243,14 @@ type normalTransaction struct {
 // ntx.c.
 func (ntx normalTransaction) Run(w *World) {
 	tx := &Tx{w: w}
+	defer func() {
+		if r := recover(); r != nil {
+			w.conf.Log.Error(fmt.Sprintf("recovered from panic (normalTransaction): %v\n%s", r, debug.Stack()))
+		}
+		tx.close()
+		close(ntx.c)
+	}()
 	ntx.f(tx)
-	tx.close()
-	close(ntx.c)
 }
 
 // weakTransaction is a transaction that may be cancelled by setting its invalid
@@ -259,17 +267,27 @@ type weakTransaction struct {
 // run is added to wtx.c. Finally, wtx.cond.Broadcast() is called.
 func (wtx weakTransaction) Run(w *World) {
 	valid := !wtx.invalid.Load()
+	ran := false
+
 	if valid {
 		tx := &Tx{w: w}
-		wtx.f(tx)
-		tx.close()
+		func() {
+			defer func() {
+				tx.close()
+				if r := recover(); r != nil {
+					wtx.invalid.Store(true)
+					ran = true
+					w.conf.Log.Error(fmt.Sprintf("recovered from panic (weakTransaction): %v\n%s", r, debug.Stack()))
+				}
+			}()
+			wtx.f(tx)
+			ran = true
+		}()
 	}
-	// We have to acquire a lock on wtx.cond.L here to make sure cond.Wait()
-	// has been called before we call cond.Broadcast(). If not, we might
-	// broadcast before cond.Wait() and cause a permanent suspension.
+
 	wtx.cond.L.Lock()
 	defer wtx.cond.L.Unlock()
 
-	wtx.c <- valid
+	wtx.c <- ran
 	wtx.cond.Broadcast()
 }
