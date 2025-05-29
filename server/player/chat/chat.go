@@ -1,8 +1,9 @@
 package chat
 
 import (
-	"github.com/google/uuid"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 // Global represents a global chat. Players will write in this chat by default
@@ -48,7 +49,7 @@ func (chat *Chat) Writet(t Translation, a ...any) {
 	chat.m.Lock()
 	defer chat.m.Unlock()
 	for _, subscriber := range chat.subscribers {
-		if translator, ok := subscriber.(Translator); ok {
+		if translator, ok := subscriber.(Translator); ok && t.Vanilla() {
 			translator.Messaget(t, a...)
 			continue
 		}

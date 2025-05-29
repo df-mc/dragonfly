@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"golang.org/x/text/language"
 )
@@ -80,14 +81,14 @@ type stringer string
 
 func (s stringer) String() string { return string(s) }
 
-var MessageSyntax = chat.Translate(str("%commands.generic.syntax"), 3, `Syntax error: unexpected value: at "%v>>%v<<%v"`).Enc("<red>%v</red>")
-var MessageUsage = chat.Translate(str("%commands.generic.usage"), 1, `Usage: %v`).Enc("<red>%v</red>")
-var MessageUnknown = chat.Translate(str("%commands.generic.unknown"), 1, `Unknown command: "%v": Please check that the command exists and that you have permission to use it.`).Enc("<red>%v</red>")
-var MessageNoTargets = chat.Translate(str("%commands.generic.noTargetMatch"), 0, `No targets matched selector`).Enc("<red>%v</red>")
-var MessageNumberInvalid = chat.Translate(str("%commands.generic.num.invalid"), 1, `'%v' is not a valid number`).Enc("<red>> %v</red>")
-var MessageBooleanInvalid = chat.Translate(str("%commands.generic.boolean.invalid"), 1, `'%v' is not true or false`).Enc("<red>> %v</red>")
-var MessagePlayerNotFound = chat.Translate(str("%commands.generic.player.notFound"), 0, `That player cannot be found`).Enc("<red>> %v</red>")
-var MessageParameterInvalid = chat.Translate(str("%commands.generic.parameter.invalid"), 1, `'%v' is not a valid parameter`).Enc("<red>> %v</red>")
+var MessageSyntax = chat.Translate(str("%commands.generic.syntax"), 3, `Syntax error: unexpected value: at "%v>>%v<<%v"`, true).Enc("<red>%v</red>")
+var MessageUsage = chat.Translate(str("%commands.generic.usage"), 1, `Usage: %v`, true).Enc("<red>%v</red>")
+var MessageUnknown = chat.Translate(str("%commands.generic.unknown"), 1, `Unknown command: "%v": Please check that the command exists and that you have permission to use it.`, true).Enc("<red>%v</red>")
+var MessageNoTargets = chat.Translate(str("%commands.generic.noTargetMatch"), 0, `No targets matched selector`, true).Enc("<red>%v</red>")
+var MessageNumberInvalid = chat.Translate(str("%commands.generic.num.invalid"), 1, `'%v' is not a valid number`, true).Enc("<red>> %v</red>")
+var MessageBooleanInvalid = chat.Translate(str("%commands.generic.boolean.invalid"), 1, `'%v' is not true or false`, true).Enc("<red>> %v</red>")
+var MessagePlayerNotFound = chat.Translate(str("%commands.generic.player.notFound"), 0, `That player cannot be found`, true).Enc("<red>> %v</red>")
+var MessageParameterInvalid = chat.Translate(str("%commands.generic.parameter.invalid"), 1, `'%v' is not a valid parameter`, true).Enc("<red>> %v</red>")
 
 type str string
 

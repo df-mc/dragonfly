@@ -2,15 +2,16 @@ package chat
 
 import (
 	"fmt"
+
 	"github.com/sandertv/gophertunnel/minecraft/text"
 	"golang.org/x/text/language"
 )
 
 // https://github.com/Mojang/bedrock-samples/blob/main/resource_pack/texts/en_GB.lang
 
-var MessageJoin = Translate(str("%multiplayer.player.joined"), 1, `%v joined the game`).Enc("<yellow>%v</yellow>")
-var MessageQuit = Translate(str("%multiplayer.player.left"), 1, `%v left the game`).Enc("<yellow>%v</yellow>")
-var MessageServerDisconnect = Translate(str("%disconnect.disconnected"), 0, `Disconnected by Server`).Enc("<yellow>%v</yellow>")
+var MessageJoin = Translate(str("%multiplayer.player.joined"), 1, `%v joined the game`, true).Enc("<yellow>%v</yellow>")
+var MessageQuit = Translate(str("%multiplayer.player.left"), 1, `%v left the game`, true).Enc("<yellow>%v</yellow>")
+var MessageServerDisconnect = Translate(str("%disconnect.disconnected"), 0, `Disconnected by Server`, true).Enc("<yellow>%v</yellow>")
 
 type str string
 
@@ -31,8 +32,8 @@ type TranslationString interface {
 // is used when translation.String is called on the translation that results
 // from a call to Translation.F. This fallback string should have as many
 // formatting identifiers (like in fmt.Sprintf) as the number of params.
-func Translate(str TranslationString, params int, fallback string) Translation {
-	return Translation{str: str, params: params, fallback: fallback, format: "%v"}
+func Translate(str TranslationString, params int, fallback string, vanilla bool) Translation {
+	return Translation{str: str, params: params, fallback: fallback, format: "%v", vanilla: vanilla}
 }
 
 // Translation represents a TranslationString with additional formatting, that
@@ -43,6 +44,12 @@ type Translation struct {
 	format   string
 	params   int
 	fallback string
+	vanilla  bool
+}
+
+// Vanilla returns whether the Translation exists in vanilla or not.
+func (t Translation) Vanilla() bool {
+	return t.vanilla
 }
 
 // Zero returns false if a Translation was not created using Translate or
