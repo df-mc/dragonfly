@@ -149,7 +149,7 @@ func (conf Config) New(conn Conn) *Session {
 	if conf.Log == nil {
 		conf.Log = slog.Default()
 	}
-	conf.Log = conf.Log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String())
+	conf.Log = conf.Log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity)
 
 	s := &Session{}
 	*s = Session{
