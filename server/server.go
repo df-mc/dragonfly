@@ -450,12 +450,12 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 
-		srv.conf.Log.Debug("spawn failed: "+err.Error(), "raddr", conn.RemoteAddr())
+		srv.conf.Log.Debug("spawn failed: " + err.Error())
 		return
 	}
 	if _, ok := srv.Player(id); ok {
 		_ = l.Disconnect(conn, "Already logged in.")
-		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
+		srv.conf.Log.Debug("spawn failed: already logged in")
 		return
 	}
 	_ = conn.WritePacket(&packet.ItemRegistry{Items: srv.customItems})
