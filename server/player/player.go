@@ -2200,7 +2200,7 @@ func (p *Player) SetRotation(r cube.Rotation) {
 	p.Move(mgl64.Vec3{}, rot.Yaw()-r.Yaw(), rot.Pitch()-r.Pitch())
 
 	for _, v := range p.Tx().Viewers(p.Position()) {
-		v.ViewEntityMovement(p, p.Position(), p.Rotation(), p.OnGround())
+		v.ViewEntityTeleport(p, p.Position())
 	}
 }
 
