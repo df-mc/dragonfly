@@ -736,6 +736,11 @@ func (p *Player) setAttackImmunity(d time.Duration, dmg float64) {
 	p.lastDamage = dmg
 }
 
+// SetAttackImmunity ...
+func (p *Player) SetAttackImmunity(d time.Duration) {
+	p.immuneUntil = time.Now().Add(d)
+}
+
 // AttackImmune ...
 func (p *Player) AttackImmune() bool {
 	return p.immuneUntil.After(time.Now())
