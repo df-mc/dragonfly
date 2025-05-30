@@ -188,7 +188,7 @@ func (conf Config) New(conn Conn) *Session {
 			case <-s.closeBackground:
 				return
 			case pk := <-s.packets:
-				_ = conn.WritePacket(pk)
+				_ = s.conn.WritePacket(pk)
 			}
 		}
 	}()
