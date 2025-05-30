@@ -1258,6 +1258,11 @@ func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	return s.handleRuntimeID(e.H())
 }
 
+// EntityRuntimeID ...
+func (s *Session) EntityRuntimeID(e world.Entity) uint64 {
+	return s.handleRuntimeID(e.H())
+}
+
 func (s *Session) handleRuntimeID(e *world.EntityHandle) uint64 {
 	s.entityMutex.RLock()
 	defer s.entityMutex.RUnlock()
