@@ -2195,9 +2195,12 @@ func (p *Player) Rotation() cube.Rotation {
 
 // SetRotation ...
 func (p *Player) SetRotation(r cube.Rotation) {
-	if p.session() == session.Nop {
-		p.data.Rot = r
-		return
+	rot := p.Rotation()
+	p.data.Rot = r
+	p.Move(mgl64.Vec3{}, rot.Yaw()-r.Yaw(), rot.Pitch()-r.Pitch())
+
+	for _, v := range p.Tx().Viewers(p.Position()) {
+		v.ViewEntityMovement(p, p.Position(), p.Rotation(), p.OnGround())
 	}
 }
 
