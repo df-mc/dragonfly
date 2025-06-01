@@ -1568,6 +1568,11 @@ func (p *Player) UsingItem() bool {
 	return p.usingItem
 }
 
+// SetUsingItem ...
+func (p *Player) SetUsingItem(usingItem bool) {
+	p.usingItem = usingItem
+}
+
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
 // player is assumed to have clicked the face passed with the relative click position clickPos.
 // If the item could not be used successfully, for example when the position is out of range, the method
