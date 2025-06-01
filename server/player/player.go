@@ -2866,6 +2866,11 @@ func (p *Player) updateState() {
 	}
 }
 
+// UpdateState ...
+func (p *Player) UpdateState() {
+	p.updateState()
+}
+
 // Breathing checks if the player is currently able to breathe. If it's underwater and the player does not
 // have the water breathing or conduit power effect, this returns false.
 // If the player is in creative or spectator mode, Breathing always returns true.
