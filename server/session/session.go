@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/event"
 	"io"
-	"iter"
 	"log/slog"
+	"maps"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -205,84 +205,16 @@ func (conf Config) New(conn Conn) *Session {
 	return s
 }
 
-// AddHiddenEntity ...
-func (s *Session) AddHiddenEntity(rid uint64, ent *world.EntityHandle) {
-	s.entityMutex.Lock()
-	s.entityRuntimeIDs[ent] = rid
-	s.entities[rid] = ent
-	s.hiddenEntities[ent.UUID()] = struct{}{}
-	s.entityMutex.Unlock()
-}
-
-// ClearHiddenEntities ...
-func (s *Session) ClearHiddenEntities() {
-	s.entityMutex.Lock()
-	for key := range s.hiddenEntities {
-		delete(s.hiddenEntities, key)
-	}
-	s.entityMutex.Unlock()
-}
-
 // EntityHandle returns session EntityHandle.
 func (s *Session) EntityHandle() *world.EntityHandle {
 	return s.ent
 }
 
-// Entities returns all Session entities.
-func (s *Session) Entities() iter.Seq2[uint64, *world.EntityHandle] {
-	s.entityMutex.RLock()
-	collected := s.entities
-	s.entityMutex.RUnlock()
-
-	return func(yield func(uint64, *world.EntityHandle) bool) {
-		for id, ent := range collected {
-			if !yield(id, ent) {
-				return
-			}
-		}
-	}
-}
-
-// HiddenEntities returns all Session hidden entities.
-func (s *Session) HiddenEntities() iter.Seq2[uint64, *world.EntityHandle] {
-	s.entityMutex.RLock()
-	collected := s.entities
-	hidden := s.hiddenEntities
-	s.entityMutex.RUnlock()
-
-	return func(yield func(uint64, *world.EntityHandle) bool) {
-		for id, ent := range collected {
-			if _, ok := hidden[ent.UUID()]; ok {
-				if !yield(id, ent) {
-					return
-				}
-			}
-		}
-	}
-}
-
-// HasEntity returns true, if Session contains an entity.
-func (s *Session) HasEntity(h *world.EntityHandle) bool {
+// Entities returns all saved Session entities.
+func (s *Session) Entities() map[uint64]*world.EntityHandle {
 	s.entityMutex.RLock()
 	defer s.entityMutex.RUnlock()
-	_, ok := s.entityRuntimeIDs[h]
-	return ok
-}
-
-// Hidden returns true if entity is hidden.
-func (s *Session) Hidden(id uuid.UUID) bool {
-	s.entityMutex.RLock()
-	defer s.entityMutex.RUnlock()
-	_, ok := s.hiddenEntities[id]
-	return ok
-}
-
-// Entity tries to load an entity for Session memory.
-func (s *Session) Entity(rid uint64) (*world.EntityHandle, bool) {
-	s.entityMutex.RLock()
-	defer s.entityMutex.RUnlock()
-	ent, ok := s.entities[rid]
-	return ent, ok
+	return maps.Clone(s.entities)
 }
 
 // UserHandler returns Session UserPacketHandler.
@@ -439,14 +371,16 @@ func (s *Session) handlePackets() {
 		})
 	}()
 	for {
-		pk, err := s.conn.ReadPacket()
+		pk, err := s.ReadPacket()
 		if err != nil {
 			return
 		}
+
 		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
 			err = s.handlePacket(pk, tx, e.(Controllable))
 		})
-		if err != nil {
+
+		if err != nil && !errors.Is(err, context.Canceled) {
 			s.conf.Log.Debug("process packet: " + err.Error())
 			return
 		}
@@ -572,14 +506,6 @@ func (s *Session) ChangingDimension() bool {
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
 func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
-	if handler := s.UserHandler(); handler != nil {
-		ctx := event.C(s)
-		if handler.HandleClientPacket(ctx, c, pk); ctx.Cancelled() {
-			// Cancelled by user.
-			return nil
-		}
-	}
-
 	handler, ok := s.handlers[pk.ID()]
 	if !ok {
 		s.conf.Log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
@@ -592,7 +518,6 @@ func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (
 	if err := handler.Handle(pk, s, tx, c); err != nil {
 		return fmt.Errorf("%T: %w", pk, err)
 	}
-
 	return nil
 }
 
@@ -649,6 +574,19 @@ func (s *Session) writePacket(pk packet.Packet) {
 // WritePacket is exported alias to writePacket.
 func (s *Session) WritePacket(pk packet.Packet) {
 	s.writePacket(pk)
+}
+
+// ReadPacket ...
+func (s *Session) ReadPacket() (packet.Packet, error) {
+	pk, err := s.conn.ReadPacket()
+	if err != nil {
+		return nil, err
+	}
+	ctx := event.C(s)
+	if s.UserHandler().HandleClientPacket(ctx, pk); ctx.Cancelled() {
+		return nil, context.Canceled
+	}
+	return pk, nil
 }
 
 // Conn ...

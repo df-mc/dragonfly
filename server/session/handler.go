@@ -19,7 +19,7 @@ type Context = event.Context[*Session]
 // UserPacketHandler ...
 type UserPacketHandler interface {
 	// HandleClientPacket ...
-	HandleClientPacket(ctx *Context, c Controllable, p packet.Packet)
+	HandleClientPacket(ctx *Context, pk packet.Packet)
 	// HandleServerPacket ...
-	HandleServerPacket(ctx *Context, p packet.Packet)
+	HandleServerPacket(ctx *Context, pk packet.Packet)
 }

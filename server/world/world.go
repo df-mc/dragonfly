@@ -42,6 +42,9 @@ type World struct {
 
 	weather
 
+	tickFunc   func(*Tx)
+	tickFuncMu sync.Mutex
+
 	closing chan struct{}
 	running sync.WaitGroup
 
@@ -1185,11 +1188,6 @@ func (w *World) spreadLight(pos ChunkPos) {
 // autoSave runs until the world is running, saving and removing chunks that
 // are no longer in use.
 func (w *World) autoSave() {
-	save := &time.Ticker{C: make(<-chan time.Time)}
-	if w.conf.SaveInterval > 0 {
-		save = time.NewTicker(w.conf.SaveInterval)
-		defer save.Stop()
-	}
 	closeUnused := time.NewTicker(time.Minute * 2)
 	defer closeUnused.Stop()
 
@@ -1197,8 +1195,6 @@ func (w *World) autoSave() {
 		select {
 		case <-closeUnused.C:
 			<-w.Exec(w.closeUnusedChunks)
-		case <-save.C:
-			w.Save()
 		case <-w.closing:
 			w.running.Done()
 			return
@@ -1301,4 +1297,16 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	}
 	w.scheduledUpdates.add(scheduled)
 	return col
+}
+
+func (w *World) getTickFunc() func(*Tx) {
+	w.tickFuncMu.Lock()
+	defer w.tickFuncMu.Unlock()
+	return w.tickFunc
+}
+
+func (w *World) UpdateTickFunc(f func(*Tx)) {
+	w.tickFuncMu.Lock()
+	w.tickFunc = f
+	w.tickFuncMu.Unlock()
 }

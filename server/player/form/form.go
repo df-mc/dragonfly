@@ -22,7 +22,7 @@ type Form interface {
 // player that the form is sent to.
 type Custom struct {
 	title       string
-	submittable func() Submittable
+	submittable Submittable
 }
 
 // MarshalJSON ...
@@ -40,8 +40,8 @@ func (f Custom) MarshalJSON() ([]byte, error) {
 // fields are used to set text, defaults and placeholders. If the Submittable passed is not a struct, New
 // panics. New also panics if one of the exported field types of the Submittable is not one that implements
 // the Element interface.
-func New(submittable func() Submittable, title ...any) Custom {
-	t := reflect.TypeOf(submittable())
+func New(submittable Submittable, title ...any) Custom {
+	t := reflect.TypeOf(submittable)
 	if t.Kind() != reflect.Struct {
 		panic("submittable must be struct")
 	}
@@ -57,8 +57,8 @@ func (f Custom) Title() string {
 
 // Elements returns a list of all elements as set in the Submittable passed to form.New().
 func (f Custom) Elements() []Element {
-	v := reflect.New(reflect.TypeOf(f.submittable())).Elem()
-	v.Set(reflect.ValueOf(f.submittable()))
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(reflect.ValueOf(f.submittable))
 	n := v.NumField()
 
 	elements := make([]Element, 0, n)
@@ -79,7 +79,7 @@ func (f Custom) Elements() []Element {
 // called and the fields of the Submittable will be filled out.
 func (f Custom) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 	if b == nil {
-		if closer, ok := f.submittable().(Closer); ok {
+		if closer, ok := f.submittable.(Closer); ok {
 			closer.Close(submitter, tx)
 		}
 		return nil
@@ -93,8 +93,8 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 		return fmt.Errorf("error decoding JSON data to slice: %w", err)
 	}
 
-	v := reflect.New(reflect.TypeOf(f.submittable())).Elem()
-	v.Set(reflect.ValueOf(f.submittable()))
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(reflect.ValueOf(f.submittable))
 
 	for i := 0; i < v.NumField(); i++ {
 		fieldV := v.Field(i)
@@ -184,10 +184,10 @@ func (f Custom) parseValue(elem Element, s any) (reflect.Value, error) {
 func (f Custom) verify() {
 	el := reflect.TypeOf((*Element)(nil)).Elem()
 
-	v := reflect.New(reflect.TypeOf(f.submittable())).Elem()
-	v.Set(reflect.ValueOf(f.submittable()))
+	v := reflect.New(reflect.TypeOf(f.submittable)).Elem()
+	v.Set(reflect.ValueOf(f.submittable))
 
-	t := reflect.TypeOf(f.submittable())
+	t := reflect.TypeOf(f.submittable)
 	for i := 0; i < v.NumField(); i++ {
 		if !v.Field(i).CanSet() {
 			continue

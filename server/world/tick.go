@@ -11,7 +11,8 @@ import (
 
 // ticker implements World ticking methods.
 type ticker struct {
-	interval time.Duration
+	interval   time.Duration
+	additional *func() func(*Tx)
 }
 
 // tickLoop starts ticking the World 20 times every second, updating all
@@ -23,7 +24,14 @@ func (t ticker) tickLoop(w *World) {
 	for {
 		select {
 		case <-tc.C:
-			<-w.Exec(t.tick)
+			<-w.Exec(func(tx *Tx) {
+				t.tick(tx)
+				if t.additional != nil && *t.additional != nil {
+					if fn := (*t.additional)(); fn != nil {
+						fn(tx)
+					}
+				}
+			})
 		case <-w.closing:
 			// World is being closed: Stop ticking and get rid of a task.
 			w.running.Done()

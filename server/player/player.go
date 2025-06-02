@@ -929,6 +929,11 @@ func (p *Player) MoveItemsToInventory() {
 	}
 }
 
+// UI returns player UI inventory.
+func (p *Player) UI() *inventory.Inventory {
+	return p.ui
+}
+
 // Respawn spawns the player after it dies, so that its health is replenished,
 // and it is spawned in the world again. Nothing will happen if the player does
 // not have a session connected to it.
@@ -3116,11 +3121,6 @@ func (p *Player) resendBlock(pos cube.Pos) {
 		liq, _ := p.tx.Liquid(pos)
 		p.session().ViewBlockUpdate(pos, liq, 1)
 	}
-}
-
-// Session returns this Player session.
-func (p *Player) Session() *session.Session {
-	return p.session()
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the

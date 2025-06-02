@@ -55,6 +55,8 @@ type Config struct {
 	// Entities is an EntityRegistry with all Entity types registered that may
 	// be added to the World.
 	Entities EntityRegistry
+	// TickFunc ...
+	TickFunc func(*Tx)
 }
 
 // New creates a new World using the Config conf. The World returned will start
@@ -82,6 +84,9 @@ func (conf Config) New() *World {
 		t := uint64(time.Now().UnixNano())
 		conf.RandSource = rand.NewPCG(t, t)
 	}
+	if conf.TickFunc == nil {
+		conf.TickFunc = func(tx *Tx) {}
+	}
 	s := conf.Provider.Settings()
 	w := &World{
 		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
@@ -102,7 +107,8 @@ func (conf Config) New() *World {
 
 	w.running.Add(3)
 
-	t := ticker{interval: time.Second / 20}
+	getTickFunc := w.getTickFunc
+	t := ticker{interval: time.Second / 20, additional: &getTickFunc}
 	go t.tickLoop(w)
 	go w.autoSave()
 	go w.handleTransactions()
