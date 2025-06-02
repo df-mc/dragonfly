@@ -1173,11 +1173,15 @@ func (p *Player) Jump() {
 	if p.OnGround() {
 		jumpVel := 0.42
 		if e, ok := p.Effect(effect.JumpBoost); ok {
-			jumpVel = float64(e.Level()) / 10
+			jumpVel += float64(e.Level()+1) / 10
 		}
-		p.data.Vel = mgl64.Vec3{0, jumpVel}
+		vel := p.data.Vel
+		vel[1] = jumpVel
+		p.data.Vel = vel
 	}
 	if p.Sprinting() {
+		yRot := mgl64.DegToRad(p.data.Rot.Yaw())
+		p.data.Vel = p.data.Vel.Add(mgl64.Vec3{-math.Sin(yRot) * 0.2, 0, math.Cos(yRot) * 0.2})
 		p.Exhaust(0.2)
 	} else {
 		p.Exhaust(0.05)
