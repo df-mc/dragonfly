@@ -221,6 +221,9 @@ func (s *Session) Entities() map[uint64]*world.EntityHandle {
 func (s *Session) UserHandler() UserPacketHandler {
 	s.userHandlerMu.Lock()
 	defer s.userHandlerMu.Unlock()
+	if s.userHandler == nil {
+		return NopUserHandler{}
+	}
 	return s.userHandler
 }
 
@@ -323,6 +326,10 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)
 	s.entityMutex.Unlock()
+}
+
+func (s *Session) ChunkLoader() *world.Loader {
+	return s.chunkLoader
 }
 
 // CloseConnection closes the underlying connection of the session so that the session ends up being closed

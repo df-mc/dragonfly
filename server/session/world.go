@@ -458,6 +458,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticleLegacyEvent | 88,
 			Position:  vec64To32(pos),
 		})
+	case particle.Custom:
+		s.writePacket(&packet.SpawnParticleEffect{
+			EntityUniqueID: -1,
+			Position:       vec64To32(pos),
+			ParticleName:   pa.Identifier,
+		})
 	}
 }
 
@@ -825,6 +831,24 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		return
 	case sound.DecoratedPotInsertFailed:
 		pk.SoundType = packet.SoundEventDecoratedPotInsertFail
+	case sound.Custom:
+		var volume, pitch float32
+		volume, pitch = float32(so.Volume), float32(so.Pitch)
+
+		if volume == 0 {
+			volume = 1.0
+		}
+		if pitch == 0 {
+			pitch = 1.0
+		}
+
+		s.writePacket(&packet.PlaySound{
+			SoundName: so.Identifier,
+			Position:  vec64To32(pos),
+			Volume:    volume,
+			Pitch:     pitch,
+		})
+		return
 	}
 	s.writePacket(pk)
 }
