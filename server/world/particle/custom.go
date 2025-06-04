@@ -4,4 +4,6 @@ package particle
 type Custom struct {
 	particle
 	Identifier string
+
+	MoLangVariables map[string]any
 }

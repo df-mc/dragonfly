@@ -3,6 +3,6 @@ package sound
 // Custom is custom sound implementation.
 type Custom struct {
 	sound
-	Identifier    string
+	Definition    string
 	Volume, Pitch float64
 }

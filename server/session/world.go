@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/json"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
@@ -459,11 +460,18 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 		})
 	case particle.Custom:
-		s.writePacket(&packet.SpawnParticleEffect{
+		pk := packet.SpawnParticleEffect{
 			EntityUniqueID: -1,
 			Position:       vec64To32(pos),
 			ParticleName:   pa.Identifier,
-		})
+		}
+
+		vars, err := json.Marshal(pa.MoLangVariables)
+		if err == nil {
+			pk.MoLangVariables = protocol.Option(vars)
+		}
+
+		s.writePacket(&pk)
 	}
 }
 
@@ -843,7 +851,7 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		}
 
 		s.writePacket(&packet.PlaySound{
-			SoundName: so.Identifier,
+			SoundName: so.Definition,
 			Position:  vec64To32(pos),
 			Volume:    volume,
 			Pitch:     pitch,
