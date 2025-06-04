@@ -232,6 +232,11 @@ func (tx *Tx) close() {
 	tx.closed = true
 }
 
+// Closed returns whether the Tx has been closed.
+func (tx *Tx) Closed() bool {
+	return tx.closed
+}
+
 // normalTransaction is added to the transaction queue for transactions created
 // using World.Exec().
 type normalTransaction struct {
