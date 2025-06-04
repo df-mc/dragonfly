@@ -28,7 +28,7 @@ type Viewer interface {
 	ViewEntityVelocity(e Entity, vel mgl64.Vec3)
 	// ViewEntityTeleport views the teleportation of an Entity. The Entity is immediately moved to a different
 	// target position.
-	ViewEntityTeleport(e Entity, pos mgl64.Vec3)
+	ViewEntityTeleport(e Entity, pos mgl64.Vec3, rot cube.Rotation)
 	// ViewFurnaceUpdate updates a furnace for the associated session based on previous times.
 	ViewFurnaceUpdate(prevCookTime, cookTime, prevRemainingFuelTime, remainingFuelTime, prevMaxFuelTime, maxFuelTime time.Duration)
 	// ViewBrewingUpdate updates a brewing stand for the associated session based on previous times.
@@ -84,7 +84,7 @@ func (NopViewer) HideEntity(Entity)                                             
 func (NopViewer) ViewEntityGameMode(Entity)                                                  {}
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, cube.Rotation, bool)                 {}
 func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                                      {}
-func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                                      {}
+func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3, cube.Rotation)                       {}
 func (NopViewer) ViewChunk(ChunkPos, Dimension, map[cube.Pos]Block, *chunk.Chunk)            {}
 func (NopViewer) ViewTime(int)                                                               {}
 func (NopViewer) ViewEntityItems(Entity)                                                     {}

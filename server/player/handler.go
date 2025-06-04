@@ -24,7 +24,7 @@ type Handler interface {
 	// HandleJump handles the player jumping.
 	HandleJump(p *Player)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
-	HandleTeleport(ctx *Context, pos mgl64.Vec3)
+	HandleTeleport(ctx *Context, pos mgl64.Vec3, rot cube.Rotation)
 	// HandleChangeWorld handles when the player is added to a new world. before may be nil.
 	HandleChangeWorld(p *Player, before, after *world.World)
 	// HandleToggleSprint handles when the player starts or stops sprinting.
@@ -167,7 +167,7 @@ func (NopHandler) HandleItemDrop(*Context, item.Stack)                          
 func (NopHandler) HandleHeldSlotChange(*Context, int, int)                                 {}
 func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                          {}
 func (NopHandler) HandleJump(*Player)                                                      {}
-func (NopHandler) HandleTeleport(*Context, mgl64.Vec3)                                     {}
+func (NopHandler) HandleTeleport(*Context, mgl64.Vec3, cube.Rotation)                      {}
 func (NopHandler) HandleChangeWorld(*Player, *world.World, *world.World)                   {}
 func (NopHandler) HandleToggleSprint(*Context, bool)                                       {}
 func (NopHandler) HandleToggleSneak(*Context, bool)                                        {}
@@ -186,7 +186,7 @@ func (NopHandler) HandleItemPickup(*Context, *item.Stack)                       
 func (NopHandler) HandleItemUse(*Context)                                                  {}
 func (NopHandler) HandleItemUseOnBlock(*Context, cube.Pos, cube.Face, mgl64.Vec3)          {}
 func (NopHandler) HandleItemUseOnEntity(*Context, world.Entity)                            {}
-func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Duration)      {}
+func (NopHandler) HandleItemRelease(*Context, item.Stack, time.Duration)                   {}
 func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
 func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                              {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
