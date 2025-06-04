@@ -736,12 +736,12 @@ func (p *Player) setAttackImmunity(d time.Duration, dmg float64) {
 	p.lastDamage = dmg
 }
 
-// SetAttackImmunity ...
+// SetAttackImmunity sets the duration for which the player is immune to attacks.
 func (p *Player) SetAttackImmunity(d time.Duration) {
 	p.immuneUntil = time.Now().Add(d)
 }
 
-// AttackImmune ...
+// AttackImmune returns whether the player is currently immune to attacks.
 func (p *Player) AttackImmune() bool {
 	return p.immuneUntil.After(time.Now())
 }
@@ -1568,7 +1568,7 @@ func (p *Player) UsingItem() bool {
 	return p.usingItem
 }
 
-// SetUsingItem ...
+// SetUsingItem sets whether the player is currently using an item.
 func (p *Player) SetUsingItem(usingItem bool) {
 	p.usingItem = usingItem
 }
@@ -2198,7 +2198,7 @@ func (p *Player) Rotation() cube.Rotation {
 	return p.data.Rot
 }
 
-// SetRotation ...
+// SetRotation sets the player's current rotation.
 func (p *Player) SetRotation(r cube.Rotation) {
 	p.data.Rot = r
 	rot := p.Rotation()
@@ -2866,7 +2866,7 @@ func (p *Player) updateState() {
 	}
 }
 
-// UpdateState ...
+// UpdateState is a public wrapper that calls updateState.
 func (p *Player) UpdateState() {
 	p.updateState()
 }
@@ -3060,7 +3060,7 @@ func (p *Player) session() *session.Session {
 	return session.Nop
 }
 
-// Session ...
+// Session is a public wrapper that calls session.
 func (p *Player) Session() *session.Session {
 	return p.session()
 }

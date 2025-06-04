@@ -1,6 +1,11 @@
 package entity
 
 import (
+	"iter"
+	"math"
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
@@ -9,10 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"iter"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
 // ProjectileBehaviourConfig allows the configuration of projectiles. Calling
@@ -134,7 +135,7 @@ func (lt *ProjectileBehaviour) Critical() bool {
 	return lt.conf.Critical && !lt.collided
 }
 
-// Collided ...
+// Collided returns whether the projectile has collided with an entity or block.
 func (lt *ProjectileBehaviour) Collided() bool {
 	return lt.collided
 }

@@ -518,7 +518,7 @@ func (s *Session) registerHandlers() {
 	}
 }
 
-// RegisterHandler ...
+// RegisterHandler registers a packet handler for the given packet ID.
 func (s *Session) RegisterHandler(id uint32, h packetHandler) {
 	s.handlers[id] = h
 }
@@ -534,12 +534,13 @@ func (s *Session) writePacket(pk packet.Packet) {
 	}
 }
 
-// WritePacket ...
+// WritePacket is a public wrapper that calls writePacket.
 func (s *Session) WritePacket(pk packet.Packet) {
 	s.writePacket(pk)
 }
 
-// Flush ...
+// Flush flushes the packets buffered by the Conn, sending all of them out immediately.
+// If the session is a no-op session, Flush does nothing.
 func (s *Session) Flush() error {
 	if s == Nop {
 		return nil
@@ -547,7 +548,7 @@ func (s *Session) Flush() error {
 	return s.conn.Flush()
 }
 
-// Conn ...
+// Conn returns the underlying connection of the session.
 func (s *Session) Conn() Conn {
 	return s.conn
 }

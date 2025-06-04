@@ -90,7 +90,8 @@ type Config struct {
 	// ReadOnlyWorld specifies if the standard worlds should be read only. If
 	// set to true, the WorldProvider won't be saved to at all.
 	ReadOnlyWorld bool
-	// Notifier ...
+	// Notifier is called when a panic occurs in the default world, allowing for
+	// easy error reporting.
 	Notifier world.Notifier
 	// Generator should return a function that specifies the world.Generator to
 	// use for every world.Dimension (world.Overworld, world.Nether and

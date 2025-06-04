@@ -12,7 +12,8 @@ type Config struct {
 	// Log is the Logger that will be used to log errors and debug messages to.
 	// If set to nil, slog.Default() is set.
 	Log *slog.Logger
-	// Notifier ...
+	// Notifier is called when a panic occurs in the world, allowing for
+	// easy error reporting.
 	Notifier Notifier
 	// Dim is the Dimension of the World. If set to nil, the World will use
 	// Overworld as its dimension. The dimension set here influences, among

@@ -1258,7 +1258,7 @@ func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 	return s.handleRuntimeID(e.H())
 }
 
-// EntityRuntimeID ...
+// EntityRuntimeID is a public wrapper that calls entityRuntimeID.
 func (s *Session) EntityRuntimeID(e world.Entity) uint64 {
 	return s.handleRuntimeID(e.H())
 }
