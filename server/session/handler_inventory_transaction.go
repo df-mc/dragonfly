@@ -9,10 +9,16 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"sync/atomic"
+	"time"
 )
 
 // InventoryTransactionHandler handles the InventoryTransaction packet.
-type InventoryTransactionHandler struct{}
+type InventoryTransactionHandler struct {
+	lastTransaction atomic.Pointer[time.Time]
+}
+
+var InventoryTransactionCoolDown = time.Millisecond * 180
 
 // Handle ...
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) (err error) {
@@ -22,7 +28,27 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		return fmt.Errorf("too many slot sync requests in inventory transaction")
 	}
 
+	cooldownExceeded := false
+
+	switch pk.TransactionData.(type) {
+	case *protocol.NormalTransactionData, *protocol.UseItemTransactionData:
+		if last := h.lastTransaction.Load(); last != nil {
+			if time.Since(*last) <= InventoryTransactionCoolDown {
+				// Too many transactions.
+				cooldownExceeded = true
+				return nil
+			}
+		}
+
+		now := time.Now()
+		h.lastTransaction.Store(&now)
+	}
+
 	defer func() {
+		if cooldownExceeded {
+			return
+		}
+
 		// The client has requested the server to resend the specified slots even if they haven't changed server-side.
 		// Handling these requests is necessary to ensure the client's inventory remains in sync with the server.
 		for _, slot := range pk.LegacySetItemSlots {
