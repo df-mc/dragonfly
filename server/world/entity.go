@@ -81,6 +81,16 @@ func (e *EntityHandle) DeleteValue(key string) {
 	e.valuesMu.Unlock()
 }
 
+// ClearValues clears all entity handle values.
+func (e *EntityHandle) ClearValues() {
+	e.valuesMu.Lock()
+	for key := range e.values {
+		delete(e.values, key)
+	}
+	e.values = nil
+	e.valuesMu.Unlock()
+}
+
 // EntitySpawnOpts holds spawning related options for entities created.
 type EntitySpawnOpts struct {
 	// Position is the position that an Entity should be spawned at.

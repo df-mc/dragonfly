@@ -466,8 +466,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			ParticleName:   pa.Identifier,
 		}
 
-		vars, err := json.Marshal(pa.MoLangVariables)
-		if err == nil {
+		if vars, err := json.Marshal(pa.MoLangVariables); err == nil {
 			pk.MoLangVariables = protocol.Option(vars)
 		}
 
