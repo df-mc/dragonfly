@@ -170,6 +170,7 @@ func (conf Config) New(conn Conn) *Session {
 		heldSlot:               new(uint32),
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
+		userHandler:            NopUserHandler{},
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
@@ -217,25 +218,21 @@ func (s *Session) Entities() map[uint64]*world.EntityHandle {
 	return maps.Clone(s.entities)
 }
 
-// UserHandler returns Session UserPacketHandler.
+// UserHandler returns current Session UserPacketHandler.
 func (s *Session) UserHandler() UserPacketHandler {
 	s.userHandlerMu.Lock()
 	defer s.userHandlerMu.Unlock()
-	if s.userHandler == nil {
-		return NopUserHandler{}
-	}
 	return s.userHandler
 }
 
 // Handle ...
 func (s *Session) Handle(h UserPacketHandler) {
-	if h == nil {
-		return
-	}
-
 	s.userHandlerMu.Lock()
+	defer s.userHandlerMu.Unlock()
+	if h == nil {
+		h = NopUserHandler{}
+	}
 	s.userHandler = h
-	s.userHandlerMu.Unlock()
 }
 
 // SetHandle sets the world.EntityHandle of the Session and attaches a skin to

@@ -111,6 +111,10 @@ type Player struct {
 	*playerData
 }
 
+func (p *Player) EntityData() *world.EntityData {
+	return p.data
+}
+
 func (p *Player) DeleteValue(key string) {
 	p.handle.DeleteValue(key)
 }
@@ -2110,10 +2114,10 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		}
 		return
 	}
+
 	for _, v := range p.viewers() {
 		v.ViewEntityMovement(p, res, resRot, p.OnGround())
 	}
-
 	p.data.Pos = res
 	p.data.Rot = resRot
 	if deltaPos.Len() <= 3 {
@@ -2978,6 +2982,7 @@ func (p *Player) quit(msg string) {
 	// session will remove the player once ready.
 	p.tx.RemoveEntity(p)
 	_ = p.handle.Close()
+
 }
 
 // Data returns the player data that needs to be saved. This is used when the player

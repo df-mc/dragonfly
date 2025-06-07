@@ -32,6 +32,10 @@ func Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) *Ent
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
+func (e *Ent) EntityData() *world.EntityData {
+	return e.data
+}
+
 func (e *Ent) Tx() *world.Tx {
 	return e.tx
 }

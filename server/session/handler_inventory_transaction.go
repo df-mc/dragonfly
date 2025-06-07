@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"sync/atomic"
@@ -30,8 +31,15 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 
 	cooldownExceeded := false
 
-	switch pk.TransactionData.(type) {
-	case *protocol.NormalTransactionData, *protocol.UseItemTransactionData:
+	switch dat := pk.TransactionData.(type) {
+	case *protocol.UseItemTransactionData:
+		if dat.ActionType != protocol.UseItemActionClickBlock {
+			break
+		}
+		if dat.ClickedPosition == (mgl32.Vec3{}) {
+			break
+		}
+
 		if last := h.lastTransaction.Load(); last != nil {
 			if time.Since(*last) <= InventoryTransactionCoolDown {
 				// Too many transactions.

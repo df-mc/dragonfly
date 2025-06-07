@@ -195,7 +195,7 @@ func (t ticker) anyWithinDistance(pos ChunkPos, loaded []ChunkPos, r int32) bool
 func (t ticker) tickEntities(tx *Tx, tick int64) {
 	for handle, lastPos := range tx.World().entities {
 		e := handle.mustEntity(tx)
-		chunkPos := chunkPosFromVec3(handle.data.Pos)
+		chunkPos := chunkPosFromVec3(handle.Data.Pos)
 
 		c, ok := tx.World().chunks[chunkPos]
 		if !ok {
