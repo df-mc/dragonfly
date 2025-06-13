@@ -34,10 +34,13 @@ type Session struct {
 	conf           Config
 	once, connOnce sync.Once
 
-	ent      *world.EntityHandle
-	conn     Conn
-	handlers map[uint32]packetHandler
-	packets  chan packet.Packet
+	ent  *world.EntityHandle
+	conn Conn
+
+	handlerMutex sync.RWMutex
+	handlers     map[uint32]packetHandler
+
+	packets chan packet.Packet
 
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
@@ -446,7 +449,11 @@ func (s *Session) handleWorldSwitch(w *world.World, tx *world.Tx, c Controllable
 // immediately.
 func (s *Session) changeDimension(dim int32, silent bool, c Controllable) {
 	s.changingDimension.Store(true)
+
+	s.handlerMutex.RLock()
 	h := s.handlers[packet.IDServerBoundLoadingScreen].(*ServerBoundLoadingScreenHandler)
+	s.handlerMutex.RUnlock()
+
 	id := h.currentID.Add(1)
 	h.expectedID.Store(id)
 
@@ -474,7 +481,9 @@ func (s *Session) ChangingDimension() bool {
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
 func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
+	s.handlerMutex.RLock()
 	handler, ok := s.handlers[pk.ID()]
+	s.handlerMutex.RUnlock()
 	if !ok {
 		s.conf.Log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
 		return nil
@@ -491,6 +500,8 @@ func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (
 
 // registerHandlers registers all packet handlers found in the packetHandler package.
 func (s *Session) registerHandlers() {
+	s.handlerMutex.Lock()
+	defer s.handlerMutex.Unlock()
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:                nil,
 		packet.IDAdventureSettings:         nil, // Deprecated, the client still sends this though.
@@ -531,6 +542,8 @@ func (s *Session) registerHandlers() {
 
 // RegisterHandler registers a packet handler for the given packet ID.
 func (s *Session) RegisterHandler(id uint32, h packetHandler) {
+	s.handlerMutex.Lock()
+	defer s.handlerMutex.Unlock()
 	s.handlers[id] = h
 }
 

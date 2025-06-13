@@ -392,7 +392,10 @@ func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 func (s *Session) SendDialogue(d dialogue.Dialogue, e world.Entity) {
 	b, _ := json.Marshal(d)
 
+	s.handlerMutex.RLock()
 	h := s.handlers[packet.IDNPCRequest].(*NPCRequestHandler)
+	s.handlerMutex.RUnlock()
+	
 	h.dialogue = d
 	h.entityRuntimeID = s.entityRuntimeID(e)
 
@@ -419,7 +422,10 @@ func (s *Session) SendDialogue(d dialogue.Dialogue, e world.Entity) {
 }
 
 func (s *Session) CloseDialogue() {
+	s.handlerMutex.RLock()
 	h := s.handlers[packet.IDNPCRequest].(*NPCRequestHandler)
+	s.handlerMutex.RUnlock()
+
 	if h.entityRuntimeID == 0 {
 		return
 	}
@@ -436,7 +442,10 @@ func (s *Session) CloseDialogue() {
 func (s *Session) SendForm(f form.Form) {
 	b, _ := json.Marshal(f)
 
+	s.handlerMutex.RLock()
 	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
+	s.handlerMutex.RUnlock()
+
 	id := h.currentID.Add(1)
 
 	h.mu.Lock()
@@ -472,7 +481,10 @@ func (s *Session) SendServerSettingsForm() {
 	f := *s.serverSettings.Load()
 	b, _ := json.Marshal(f)
 
+	s.handlerMutex.RLock()
 	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
+	s.handlerMutex.RUnlock()
+
 	id := h.currentID.Add(1)
 
 	h.mu.Lock()

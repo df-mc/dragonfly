@@ -1,12 +1,13 @@
 package session
 
 import (
+	"math"
+
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"golang.org/x/text/language"
-	"math"
 )
 
 // SendCommandOutput sends the output of a command to the player. It will be shown to the caller of the
@@ -31,8 +32,12 @@ func (s *Session) SendCommandOutput(output *cmd.Output, l language.Tag) {
 		messages = append(messages, om)
 	}
 
+	s.handlerMutex.RLock()
+	h := s.handlers[packet.IDCommandRequest].(*CommandRequestHandler)
+	s.handlerMutex.RUnlock()
+	
 	s.writePacket(&packet.CommandOutput{
-		CommandOrigin:  s.handlers[packet.IDCommandRequest].(*CommandRequestHandler).origin,
+		CommandOrigin:  h.origin,
 		OutputType:     packet.CommandOutputTypeAllOutput,
 		SuccessCount:   uint32(output.MessageCount()),
 		OutputMessages: messages,

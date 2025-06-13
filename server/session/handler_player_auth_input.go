@@ -89,8 +89,11 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 		s.inTransaction.Store(true)
 		defer s.inTransaction.Store(false)
 
+		s.handlerMutex.RLock()
 		// As of 1.18 this is now used for sending item stack requests such as when mining a block.
 		sh := s.handlers[packet.IDItemStackRequest].(*ItemStackRequestHandler)
+		s.handlerMutex.RUnlock()
+		
 		if err := sh.handleRequest(pk.ItemStackRequest, s, tx, c); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
