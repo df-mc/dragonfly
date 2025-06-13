@@ -33,4 +33,4 @@ require (
 
 replace github.com/sandertv/go-raknet => github.com/aerisnetwork/aeris-raknet v0.1.0
 
-replace github.com/sandertv/gophertunnel => github.com/aerisnetwork/aeris-gophertunnel v0.2.0
+replace github.com/sandertv/gophertunnel => github.com/aerisnetwork/aeris-gophertunnel v0.2.1

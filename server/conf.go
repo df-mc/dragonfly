@@ -74,6 +74,8 @@ type Config struct {
 	// EnableVibrantVisuals specifies if the vibrant visuals experiment
 	// should be enabled or not.
 	EnableVibrantVisuals bool
+	// DisableEmoteChat specifies if the emote chat should be disabled or not.
+	DisableEmoteChat bool
 	// StatusProvider provides the server status shown to players in the server
 	// list. By default, StatusProvider will show the server name from the Name
 	// field and the current player count and maximum players.
@@ -208,6 +210,8 @@ type UserConfig struct {
 		// EnableVibrantVisuals specifies if the vibrant visuals experiment
 		// should be enabled or not.
 		EnableVibrantVisuals bool
+		// DisableEmoteChat specifies if the emote chat should be disabled or not.
+		DisableEmoteChat bool
 	}
 	World struct {
 		// SaveData controls whether a world's data will be saved and loaded.
@@ -269,6 +273,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		conf.JoinMessage, conf.QuitMessage = chat.MessageJoin, chat.MessageQuit
 	}
 	conf.EnableVibrantVisuals = uc.Server.EnableVibrantVisuals
+	conf.DisableEmoteChat = uc.Server.DisableEmoteChat
 	if uc.World.SaveData {
 		conf.WorldProvider, err = mcdb.Config{Log: log}.Open(uc.World.Folder)
 		if err != nil {
@@ -329,6 +334,7 @@ func DefaultConfig() UserConfig {
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.Server.EnableVibrantVisuals = true
+	c.Server.DisableEmoteChat = false
 	c.World.SaveData = true
 	c.World.Folder = "world"
 	c.Players.MaximumChunkRadius = 32

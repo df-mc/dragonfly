@@ -14,6 +14,8 @@
   DisableJoinQuitMessages = false
   # EnableVibrantVisuals specifies if the vibrant visuals experiment should be enabled or not.
   EnableVibrantVisuals = true
+  # DisableEmoteChat specifies if the emote chat should be disabled or not.
+  DisableEmoteChat = false
 
 [World]
   # The folder that the world files (will) reside in, relative to the working directory. If not currently
