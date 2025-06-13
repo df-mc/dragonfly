@@ -5,7 +5,8 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
-// ServerSettingsRequestHandler ...
+// ServerSettingsRequestHandler handles a server settings request from the client.
+// If the session has a server settings form attached, it sends the form to the client.
 type ServerSettingsRequestHandler struct{}
 
 // Handle ...
