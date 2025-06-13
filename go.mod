@@ -19,7 +19,6 @@ require (
 )
 
 require (
-	github.com/df-mc/atomic v1.10.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
@@ -32,6 +31,6 @@ require (
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 
-replace github.com/sandertv/go-raknet => github.com/gopherhaven/haven-raknet v0.0.4-0.20250313113632-403fc8e0a292
+replace github.com/sandertv/go-raknet => github.com/aerisnetwork/aeris-raknet v0.1.0
 
-replace github.com/sandertv/gophertunnel => github.com/gopherhaven/haven-gophertunnel v0.0.7-0.20250510114445-db41c6f77124
+replace github.com/sandertv/gophertunnel => github.com/aerisnetwork/aeris-gophertunnel v0.2.0
