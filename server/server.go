@@ -434,7 +434,9 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	dim, _ := world.DimensionID(w.Dimension())
 	data.Dimension = int32(dim)
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
+
 	data.EmoteChatMuted = srv.conf.DisableEmoteChat
+	data.ServerAuthoritativeSound = true
 
 	var experiments []protocol.ExperimentData
 	if srv.conf.EnableVibrantVisuals {
