@@ -549,11 +549,12 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	srv.pwg.Add(1)
 
 	s := session.Config{
-		Log:            srv.conf.Log,
-		MaxChunkRadius: srv.conf.MaxChunkRadius,
-		JoinMessage:    srv.conf.JoinMessage,
-		QuitMessage:    srv.conf.QuitMessage,
-		HandleStop:     srv.handleSessionClose,
+		Log:                srv.conf.Log,
+		MaxChunkRadius:     srv.conf.MaxChunkRadius,
+		JoinMessage:        srv.conf.JoinMessage,
+		QuitMessage:        srv.conf.QuitMessage,
+		ServerSettingsForm: srv.conf.ServerSettingsForm,
+		HandleStop:         srv.handleSessionClose,
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName

@@ -456,6 +456,42 @@ func (s *Session) SendForm(f form.Form) {
 	})
 }
 
+// SetServerSettingsForm sets the server settings form for the session.
+func (s *Session) SetServerSettingsForm(f form.ServerSettings) {
+	s.serverSettings.Store(&f)
+}
+
+// HasServerSettingsForm returns whether the session has a server settings form attached to it or not.
+func (s *Session) HasServerSettingsForm() bool {
+	return s.serverSettings.Load() != nil
+}
+
+// SendServerSettingsForm sends a server settings form to the client in response to a ServerSettingsRequest
+// packet from it.
+func (s *Session) SendServerSettingsForm() {
+	f := *s.serverSettings.Load()
+	b, _ := json.Marshal(f)
+
+	h := s.handlers[packet.IDModalFormResponse].(*ModalFormResponseHandler)
+	id := h.currentID.Add(1)
+
+	h.mu.Lock()
+	if len(h.forms) > 10 {
+		// debug; s.conf.Log.Debug("SendServerSettingsForm: more than 10 active forms: dropping an existing one")
+		for k := range h.forms {
+			delete(h.forms, k)
+			break
+		}
+	}
+	h.forms[id] = f
+	h.mu.Unlock()
+
+	s.writePacket(&packet.ServerSettingsResponse{
+		FormID:   id,
+		FormData: b,
+	})
+}
+
 // CloseForm closes any forms that the player currently has open. If the player has no forms open, nothing
 // happens.
 func (s *Session) CloseForm() {

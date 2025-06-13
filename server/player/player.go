@@ -387,6 +387,11 @@ func (p *Player) CloseDialogue() {
 	p.session().CloseDialogue()
 }
 
+// SetServerSettingsForm sets the server settings form for the player.
+func (p *Player) SetServerSettingsForm(f form.ServerSettings) {
+	p.session().SetServerSettingsForm(f)
+}
+
 // SendForm sends a form to the player for the client to fill out. Once the client fills it out, the Submit
 // method of the form will be called.
 // Note that the client may also close the form instead of filling it out, which will result in the form not

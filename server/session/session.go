@@ -42,6 +42,8 @@ type Session struct {
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
 
+	serverSettings atomic.Pointer[form.ServerSettings]
+
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
@@ -137,6 +139,8 @@ type Config struct {
 
 	JoinMessage, QuitMessage chat.Translation
 
+	ServerSettingsForm form.ServerSettings
+
 	HandleStop func(*world.Tx, Controllable)
 }
 
@@ -169,6 +173,12 @@ func (conf Config) New(conn Conn) *Session {
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
 	}
+
+	var nopServerSettings form.ServerSettings
+	if conf.ServerSettingsForm != nopServerSettings {
+		s.serverSettings.Store(&conf.ServerSettingsForm)
+	}
+
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 
@@ -514,6 +524,7 @@ func (s *Session) registerHandlers() {
 		packet.IDSubChunkRequest:           &SubChunkRequestHandler{},
 		packet.IDText:                      &TextHandler{},
 		packet.IDServerBoundLoadingScreen:  &ServerBoundLoadingScreenHandler{},
+		packet.IDServerSettingsRequest:     &ServerSettingsRequestHandler{},
 		packet.IDServerBoundDiagnostics:    &ServerBoundDiagnosticsHandler{},
 	}
 }

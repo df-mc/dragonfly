@@ -222,34 +222,61 @@ func (StepSlider) ReadOnly() bool {
 	return false
 }
 
+const (
+	ImageTypePath  = "path"
+	ImageTypeImage = "image"
+)
+
+// Image represents an image attached to a form element such as a button.
+type Image struct {
+	// Type is the type of the image. It is always one of the constants above. If left empty, it will be inferred.
+	Type string
+	// Path holds the path to the image. It can be a URL like "https://example.com/image.png"
+	// or a local path like "textures/blocks/grass_carried".
+	Path string
+}
+
+// NewImage creates and returns new Image using the values passed.
+func NewImage(path string) Image {
+	return Image{Path: path}
+}
+
+// MarshalJSON ...
+func (img Image) MarshalJSON() ([]byte, error) {
+	imgType := img.Type
+	if imgType == "" {
+		imgType = ImageTypePath
+		if strings.HasPrefix(img.Path, "http:") || strings.HasPrefix(img.Path, "https:") {
+			imgType = ImageTypeImage
+		}
+	}
+	return json.Marshal(map[string]any{
+		"type": imgType,
+		"data": img.Path,
+	})
+}
+
 // Button represents a button added to a Menu or Modal form. The button has text on it and an optional image,
 // which may be either retrieved from a website or the local assets of the game.
 type Button struct {
 	// Text holds the text displayed on the button. It may use Minecraft formatting codes and may have
 	// newlines.
 	Text string
-	// Image holds a path to an image for the button. The Image may either be a URL pointing to an image,
-	// such as 'https://someimagewebsite.com/someimage.png', or a path pointing to a local asset, such as
-	// 'textures/blocks/grass_carried'.
-	Image string
+	// Image holds the image displayed on the button.
+	Image Image
 }
 
 // NewButton creates and returns a new Button using the text and image passed.
-func NewButton(text, image string) Button {
+func NewButton(text string, image Image) Button {
 	return Button{Text: text, Image: image}
 }
 
 // MarshalJSON ...
 func (b Button) MarshalJSON() ([]byte, error) {
-	m := map[string]any{"text": b.Text}
-	if b.Image != "" {
-		buttonType := "path"
-		if strings.HasPrefix(b.Image, "http:") || strings.HasPrefix(b.Image, "https:") {
-			buttonType = "url"
-		}
-		m["image"] = map[string]any{"type": buttonType, "data": b.Image}
-	}
-	return json.Marshal(m)
+	return json.Marshal(map[string]any{
+		"text":  b.Text,
+		"image": b.Image,
+	})
 }
 
 func (Label) elem()      {}

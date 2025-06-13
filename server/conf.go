@@ -13,6 +13,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
@@ -71,6 +72,8 @@ type Config struct {
 	// joining or quitting.
 	// ShutdownMessage is set to chat.MessageServerDisconnect if empty.
 	JoinMessage, QuitMessage, ShutdownMessage chat.Translation
+	// ServerSettingsForm ...
+	ServerSettingsForm form.ServerSettings
 	// EnableVibrantVisuals specifies if the vibrant visuals experiment
 	// should be enabled or not.
 	EnableVibrantVisuals bool
