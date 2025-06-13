@@ -442,14 +442,12 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 			Enabled: true,
 		})
 	}
-
 	if len(experiments) > 0 {
 		data.Experiments = experiments
 	}
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
-
 		srv.conf.Log.Debug("spawn failed: " + err.Error())
 		return
 	}
