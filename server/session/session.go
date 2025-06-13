@@ -540,11 +540,18 @@ func (s *Session) registerHandlers() {
 	}
 }
 
-// RegisterHandler registers a packet handler for the given packet ID.
+// RegisterHandler registers the packet handler for the specified packet ID.
 func (s *Session) RegisterHandler(id uint32, h packetHandler) {
 	s.handlerMutex.Lock()
 	defer s.handlerMutex.Unlock()
 	s.handlers[id] = h
+}
+
+// DeregisterHandler removes the packet handler for the specified packet ID.
+func (s *Session) DeregisterHandler(id uint32) {
+	s.handlerMutex.Lock()
+	defer s.handlerMutex.Unlock()
+	delete(s.handlers, id)
 }
 
 // writePacket writes a packet to the session's connection if it is not Nop.
