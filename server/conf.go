@@ -72,7 +72,7 @@ type Config struct {
 	// joining or quitting.
 	// ShutdownMessage is set to chat.MessageServerDisconnect if empty.
 	JoinMessage, QuitMessage, ShutdownMessage chat.Translation
-	// ServerSettingsForm ...
+	// ServerSettingsForm is the server settings form sent by default to all players.
 	ServerSettingsForm form.ServerSettings
 	// EnableVibrantVisuals specifies if the vibrant visuals experiment
 	// should be enabled or not.
