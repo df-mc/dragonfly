@@ -574,7 +574,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 // are moved to when passing through the respective portals.
 func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *world.World {
 	logger := srv.conf.Log.With("dimension", strings.ToLower(fmt.Sprint(dim)))
-	logger.Debug("Loading dimension...")
+	// debug; logger.Debug("Loading dimension...")
 
 	conf := world.Config{
 		Log:             logger,

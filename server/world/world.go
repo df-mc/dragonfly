@@ -1018,7 +1018,7 @@ func (w *World) close() {
 	if w.set.ref.Add(-1); !w.advance {
 		return
 	}
-	w.conf.Log.Debug("Closing provider...")
+	// debug; w.conf.Log.Debug("Closing provider...")
 	if err := w.conf.Provider.Close(); err != nil {
 		w.conf.Log.Error("close world provider: " + err.Error())
 	}
