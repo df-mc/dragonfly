@@ -595,7 +595,9 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		},
 	}
 	w := conf.New()
-	logger.Info("Opened dimension.", "name", w.Name())
+	if dim == world.Overworld {
+		logger.Info("Loaded world.", "name", w.Name())
+	}
 	return w
 }
 
