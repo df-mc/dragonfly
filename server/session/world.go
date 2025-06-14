@@ -230,9 +230,23 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 	return mgl64.Vec3{}
 }
 
+// SetWorldTime sets a custom time for the session.
+func (s *Session) SetWorldTime(time int32) {
+	s.worldTime.Store(time)
+}
+
+// WorldTime returns the custom time, or -1 if none is set.
+func (s *Session) WorldTime() int32 {
+	return s.worldTime.Load()
+}
+
 // ViewTime ...
-func (s *Session) ViewTime(time int) {
-	s.writePacket(&packet.SetTime{Time: int32(time)})
+func (s *Session) ViewTime(defaultTime int) {
+	t := int32(defaultTime)
+	if custom := s.WorldTime(); custom != -1 {
+		t = custom
+	}
+	s.writePacket(&packet.SetTime{Time: t})
 }
 
 // ViewEntityTeleport ...

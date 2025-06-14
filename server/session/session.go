@@ -46,6 +46,7 @@ type Session struct {
 	currentLines      atomic.Pointer[[]string]
 
 	serverSettings atomic.Pointer[form.ServerSettings]
+	worldTime      atomic.Int32
 
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
@@ -181,6 +182,7 @@ func (conf Config) New(conn Conn) *Session {
 	if conf.ServerSettingsForm != nopServerSettings {
 		s.serverSettings.Store(&conf.ServerSettingsForm)
 	}
+	s.worldTime.Store(-1)
 
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
