@@ -280,13 +280,10 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 	}
 
 	mainHand, offHand := c.HeldItems()
-
-	// Show the main hand item.
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: runtimeID,
 		NewItem:         instanceFromItem(mainHand),
 	})
-	// Show the off-hand item.
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: runtimeID,
 		NewItem:         instanceFromItem(offHand),
@@ -309,8 +306,6 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 	}
 
 	inv := armoured.Armour()
-
-	// Show the main hand item.
 	s.writePacket(&packet.MobArmourEquipment{
 		EntityRuntimeID: runtimeID,
 		Helmet:          instanceFromItem(inv.Helmet()),
