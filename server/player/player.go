@@ -367,6 +367,11 @@ func (p *Player) Transfer(address string) error {
 	return nil
 }
 
+// SetWorldTime sets a custom time for the player.
+func (p *Player) SetWorldTime(time int32) {
+	p.session().SetWorldTime(time)
+}
+
 // SendCommandOutput sends the output of a command to the player.
 func (p *Player) SendCommandOutput(output *cmd.Output) {
 	p.session().SendCommandOutput(output, p.locale)
