@@ -2379,8 +2379,9 @@ func (p *Player) mendItems(xp int) int {
 // or 0 if dropping the item.Stack was cancelled.
 func (p *Player) Drop(s item.Stack) int {
 	ctx := event.C(p)
-	if p.Handler().HandleItemDrop(ctx, s); ctx.Cancelled() {
-		return 0
+	var count int
+	if p.Handler().HandleItemDrop(ctx, s, &count); ctx.Cancelled() {
+		return count
 	}
 	opts := world.EntitySpawnOpts{Position: p.Position().Add(mgl64.Vec3{0, 1.4}), Velocity: p.Rotation().Vec3().Mul(0.4)}
 	p.tx.AddEntity(entity.NewItemPickupDelay(opts, s, time.Second*2))
