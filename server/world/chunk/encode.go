@@ -3,6 +3,8 @@ package chunk
 import (
 	"bytes"
 	"sync"
+
+	"github.com/sandertv/gophertunnel/minecraft"
 )
 
 const (
@@ -47,18 +49,18 @@ type (
 // Encode encodes Chunk to an intermediate representation SerialisedData. An Encoding may be passed to encode either for
 // network or disk purposed, the most notable difference being that the network encoding generally uses varints and no
 // NBT.
-func Encode(c *Chunk, e Encoding) SerialisedData {
+func Encode(c *Chunk, e Encoding, enc minecraft.ChunkEncoder) SerialisedData {
 	d := SerialisedData{SubChunks: make([][]byte, len(c.sub))}
 	for i := range c.sub {
-		d.SubChunks[i] = EncodeSubChunk(c, e, i)
+		d.SubChunks[i] = EncodeSubChunk(c, e, i, enc)
 	}
-	d.Biomes = EncodeBiomes(c, e)
+	d.Biomes = EncodeBiomes(c, e, enc)
 	return d
 }
 
 // EncodeSubChunk encodes a sub-chunk from a chunk into bytes. An Encoding may be passed to encode either for network or
 // disk purposed, the most notable difference being that the network encoding generally uses varints and no NBT.
-func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
+func EncodeSubChunk(c *Chunk, e Encoding, ind int, enc minecraft.ChunkEncoder) []byte {
 	buf := pool.Get().(*bytes.Buffer)
 	defer func() {
 		buf.Reset()
@@ -68,7 +70,7 @@ func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
 	s := c.sub[ind]
 	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), uint8(ind + (c.r[0] >> 4))})
 	for _, storage := range s.storages {
-		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding)
+		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding, enc)
 	}
 	sub := make([]byte, buf.Len())
 	_, _ = buf.Read(sub)
@@ -77,7 +79,7 @@ func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
 
 // EncodeBiomes encodes the biomes of a chunk into bytes. An Encoding may be passed to encode either for network or
 // disk purposed, the most notable difference being that the network encoding generally uses varints and no NBT.
-func EncodeBiomes(c *Chunk, e Encoding) []byte {
+func EncodeBiomes(c *Chunk, e Encoding, enc minecraft.ChunkEncoder) []byte {
 	buf := pool.Get().(*bytes.Buffer)
 	defer func() {
 		buf.Reset()
@@ -86,7 +88,7 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 
 	var previous *PalettedStorage
 	for _, b := range c.biomes {
-		encodePalettedStorage(buf, b, previous, e, BiomePaletteEncoding)
+		encodePalettedStorage(buf, b, previous, e, BiomePaletteEncoding, enc)
 		previous = b
 	}
 	biomes := make([]byte, buf.Len())
@@ -96,7 +98,7 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 
 // encodePalettedStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette
 // of the PalettedStorage.
-func encodePalettedStorage(buf *bytes.Buffer, storage, previous *PalettedStorage, e Encoding, pe paletteEncoding) {
+func encodePalettedStorage(buf *bytes.Buffer, storage, previous *PalettedStorage, e Encoding, pe paletteEncoding, enc minecraft.ChunkEncoder) {
 	if storage.Equal(previous) {
 		_, _ = buf.Write([]byte{0x7f<<1 | e.network()})
 		return
@@ -110,5 +112,5 @@ func encodePalettedStorage(buf *bytes.Buffer, storage, previous *PalettedStorage
 	}
 	_, _ = buf.Write(b)
 
-	e.encodePalette(buf, storage.palette, pe)
+	e.encodePalette(buf, storage.palette, pe, enc)
 }

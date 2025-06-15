@@ -3,7 +3,9 @@ package chunk
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/sandertv/gophertunnel/minecraft"
 )
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
@@ -13,7 +15,7 @@ var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uin
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
+func NetworkDecode(air uint32, data []byte, count int, r cube.Range, enc minecraft.ChunkEncoder) (*Chunk, error) {
 	var (
 		c   = New(air, r)
 		buf = bytes.NewBuffer(data)
@@ -21,14 +23,14 @@ func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, er
 	)
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
+		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding, enc)
 		if err != nil {
 			return nil, err
 		}
 	}
 	var last *PalettedStorage
 	for i := 0; i < len(c.sub); i++ {
-		b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
+		b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding, enc)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +52,7 @@ func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, er
 
 // DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
 // invalid, an error is returned.
-func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
+func DiskDecode(data SerialisedData, r cube.Range, enc minecraft.ChunkEncoder) (*Chunk, error) {
 	air, ok := StateToRuntimeID("minecraft:air", nil)
 	if !ok {
 		panic("cannot find air runtime ID")
@@ -58,7 +60,7 @@ func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 
 	c := New(air, r)
 
-	err := decodeBiomes(bytes.NewBuffer(data.Biomes), c, DiskEncoding)
+	err := decodeBiomes(bytes.NewBuffer(data.Biomes), c, DiskEncoding, enc)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +70,7 @@ func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 			continue
 		}
 		index := uint8(i)
-		if c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c, &index, DiskEncoding); err != nil {
+		if c.sub[index], err = decodeSubChunk(bytes.NewBuffer(sub), c, &index, DiskEncoding, enc); err != nil {
 			return nil, err
 		}
 	}
@@ -77,7 +79,7 @@ func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
 
 // decodeSubChunk decodes a SubChunk from a bytes.Buffer. The Encoding passed defines how the block storages of the
 // SubChunk are decoded.
-func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubChunk, error) {
+func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding, enc minecraft.ChunkEncoder) (*SubChunk, error) {
 	ver, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %w", err)
@@ -88,7 +90,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding)
+		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding, enc)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +113,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding)
+			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding, enc)
 			if err != nil {
 				return nil, err
 			}
@@ -121,11 +123,11 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 }
 
 // decodeBiomes reads the paletted storages holding biomes from buf and stores it into the Chunk passed.
-func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
+func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding, enc minecraft.ChunkEncoder) error {
 	var last *PalettedStorage
 	if buf.Len() != 0 {
 		for i := 0; i < len(c.sub); i++ {
-			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding)
+			b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding, enc)
 			if err != nil {
 				return err
 			}
@@ -150,7 +152,7 @@ func decodeBiomes(buf *bytes.Buffer, c *Chunk, e Encoding) error {
 
 // decodePalettedStorage decodes a PalettedStorage from a bytes.Buffer. The Encoding passed is used to read either a
 // network or disk block storage.
-func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*PalettedStorage, error) {
+func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding, enc minecraft.ChunkEncoder) (*PalettedStorage, error) {
 	blockSize, err := buf.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("error reading block size: %w", err)
@@ -177,6 +179,6 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
 		uint32s[i] = uint32(data[i*4]) | uint32(data[i*4+1])<<8 | uint32(data[i*4+2])<<16 | uint32(data[i*4+3])<<24
 	}
-	p, err := e.decodePalette(buf, paletteSize(blockSize), pe)
+	p, err := e.decodePalette(buf, paletteSize(blockSize), pe, enc)
 	return newPalettedStorage(uint32s, p), err
 }

@@ -5,18 +5,20 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/rand/v2"
+	"os"
+	"path/filepath"
+	"slices"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/dragonfly/server/world/mcdb/leveldat"
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"math/rand/v2"
-	"os"
-	"path/filepath"
-	"slices"
-	"time"
 )
 
 // DB implements a world provider for the Minecraft world format, which
@@ -159,7 +161,7 @@ func (db *DB) column(k dbKey) (*chunk.Column, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read sub chunks: %w", err)
 	}
-	col.Chunk, err = chunk.DiskDecode(cdata, k.dim.Range())
+	col.Chunk, err = chunk.DiskDecode(cdata, k.dim.Range(), minecraft.NopChunkEncoder{})
 	if err != nil {
 		return nil, fmt.Errorf("decode chunk data: %w", err)
 	}
@@ -335,7 +337,7 @@ func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *chunk.Co
 }
 
 func (db *DB) storeColumn(k dbKey, col *chunk.Column) error {
-	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
+	data := chunk.Encode(col.Chunk, chunk.DiskEncoding, minecraft.NopChunkEncoder{})
 	n := 7 + len(data.SubChunks) + len(col.Entities)
 	batch := leveldb.MakeBatch(n)
 

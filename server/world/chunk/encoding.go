@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
 	"github.com/df-mc/worldupgrader/blockupgrader"
+	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -13,8 +15,8 @@ type (
 	// Encoding is an encoding type used for Chunk encoding. Implementations of this interface are DiskEncoding and
 	// NetworkEncoding, which can be used to encode a Chunk to an intermediate disk or network representation respectively.
 	Encoding interface {
-		encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding)
-		decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error)
+		encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding, enc minecraft.ChunkEncoder)
+		decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding, enc minecraft.ChunkEncoder) (*Palette, error)
 		network() byte
 	}
 	// paletteEncoding is an encoding type used for Chunk encoding. It is used to encode different types of palettes
@@ -118,7 +120,7 @@ func (blockPaletteEncoding) DecodeBlockState(m map[string]any) (uint32, error) {
 type diskEncoding struct{}
 
 func (diskEncoding) network() byte { return 0 }
-func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding) {
+func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncoding, _ minecraft.ChunkEncoder) {
 	if p.size != 0 {
 		_ = binary.Write(buf, binary.LittleEndian, uint32(p.Len()))
 	}
@@ -126,7 +128,7 @@ func (diskEncoding) encodePalette(buf *bytes.Buffer, p *Palette, e paletteEncodi
 		e.encode(buf, v)
 	}
 }
-func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding) (*Palette, error) {
+func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e paletteEncoding, _ minecraft.ChunkEncoder) (*Palette, error) {
 	paletteCount := uint32(1)
 	if blockSize != 0 {
 		if err := binary.Read(buf, binary.LittleEndian, &paletteCount); err != nil {
@@ -152,15 +154,15 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 type networkEncoding struct{}
 
 func (networkEncoding) network() byte { return 1 }
-func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEncoding) {
+func (networkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ paletteEncoding, enc minecraft.ChunkEncoder) {
 	if p.size != 0 {
 		_ = protocol.WriteVarint32(buf, int32(p.Len()))
 	}
 	for _, val := range p.values {
-		_ = protocol.WriteVarint32(buf, int32(val))
+		_ = protocol.WriteVarint32(buf, int32(enc.EncodeRuntimeID(val)))
 	}
 }
-func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding) (*Palette, error) {
+func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _ paletteEncoding, enc minecraft.ChunkEncoder) (*Palette, error) {
 	var paletteCount int32 = 1
 	if blockSize != 0 {
 		if err := protocol.Varint32(buf, &paletteCount); err != nil {
@@ -176,7 +178,7 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _
 		if err := protocol.Varint32(buf, &temp); err != nil {
 			return nil, fmt.Errorf("error decoding palette entry: %w", err)
 		}
-		blocks[i] = uint32(temp)
+		blocks[i] = enc.DecodeRuntimeID(uint32(temp))
 	}
 	return &Palette{values: blocks, size: blockSize}, nil
 }
