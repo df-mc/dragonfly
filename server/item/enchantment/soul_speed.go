@@ -28,7 +28,7 @@ func (soulSpeed) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (soulSpeed) Rarity() item.EnchantmentRarity {
+func (soulSpeed) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
@@ -38,7 +38,7 @@ func (soulSpeed) Treasure() bool {
 }
 
 // CompatibleWithEnchantment ...
-func (soulSpeed) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (soulSpeed) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

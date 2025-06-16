@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"time"
+
+	handles "github.com/royalmcpe/golang-handles-map"
 )
 
 // Config may be used to create a new World. It holds a variety of fields that
@@ -86,6 +88,7 @@ func (conf Config) New() *World {
 	w := &World{
 		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
 		entities:         make(map[*EntityHandle]ChunkPos),
+		inventories:      handles.NewMap[Inventory](1024), // TODO: Make an unsized map
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		queueClosing:     make(chan struct{}),

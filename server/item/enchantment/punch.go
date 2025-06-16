@@ -27,7 +27,7 @@ func (punch) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (punch) Rarity() item.EnchantmentRarity {
+func (punch) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityRare
 }
 
@@ -37,7 +37,7 @@ func (punch) KnockBackMultiplier() float64 {
 }
 
 // CompatibleWithEnchantment ...
-func (punch) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (punch) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

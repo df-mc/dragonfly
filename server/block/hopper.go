@@ -2,6 +2,9 @@ package block
 
 import (
 	"fmt"
+	"strings"
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -9,8 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"strings"
-	"sync"
 )
 
 // Hopper is a low-capacity storage block that can be used to collect item entities directly above it, as well as to
@@ -45,7 +46,7 @@ func NewHopper() Hopper {
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{}, 1)
 	return Hopper{
-		inventory: inventory.New(5, func(slot int, _, item item.Stack) {
+		inventory: inventory.New(5, func(slot int, _, item world.ItemStack) {
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {

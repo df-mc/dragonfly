@@ -2,7 +2,6 @@ package player
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -23,7 +22,7 @@ func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 	if pd.s != nil {
 		pd.s.HandleInventories(tx, p, pd.inv, pd.offHand, pd.enderChest, pd.ui, pd.armour, pd.heldSlot)
 	} else {
-		pd.inv.SlotFunc(func(slot int, before, after item.Stack) {
+		pd.inv.SlotFunc(func(slot int, before, after world.ItemStack) {
 			if slot == int(*p.heldSlot) {
 				p.broadcastItems(slot, before, after)
 			}

@@ -1,9 +1,10 @@
 package enchantment
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand/v2"
 )
 
 // Unbreaking is an enchantment that gives a chance for an item to avoid
@@ -30,12 +31,12 @@ func (unbreaking) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (unbreaking) Rarity() item.EnchantmentRarity {
+func (unbreaking) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
 // CompatibleWithEnchantment ...
-func (unbreaking) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (unbreaking) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

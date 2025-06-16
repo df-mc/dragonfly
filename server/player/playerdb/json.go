@@ -1,14 +1,14 @@
 package playerdb
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"time"
 )
 
 func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world.World) (player.Config, *world.World) {
@@ -40,7 +40,7 @@ func (p *Provider) fromJson(d jsonData, lookupWorld func(world.Dimension) *world
 		OffHand:             inventory.New(1, nil),
 		Armour:              inventory.NewArmour(nil),
 	}
-	echest := make([]item.Stack, 27)
+	echest := make([]world.ItemStack, 27)
 	decodeItems(d.EnderChestInventory, echest)
 	invData := dataToInv(d.Inventory)
 

@@ -3,14 +3,15 @@ package nbtconv
 import (
 	"bytes"
 	"encoding/gob"
+	"sort"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
-	"sort"
 )
 
 // WriteItem encodes an item stack into a map that can be encoded using NBT.
-func WriteItem(s item.Stack, disk bool) map[string]any {
+func WriteItem(s world.ItemStack, disk bool) map[string]any {
 	tag := make(map[string]any)
 	if s.Empty() {
 		return tag
@@ -49,7 +50,7 @@ func WriteBlock(b world.Block) map[string]any {
 }
 
 // writeItemStack writes the name, metadata value, count and NBT of an item to a map ready for NBT encoding.
-func writeItemStack(m, t map[string]any, s item.Stack) {
+func writeItemStack(m, t map[string]any, s world.ItemStack) {
 	m["Name"], m["Damage"] = s.Item().EncodeItem()
 	if b, ok := s.Item().(world.Block); ok {
 		v := map[string]any{}
@@ -69,7 +70,7 @@ func writeBlock(m map[string]any, b world.Block) {
 }
 
 // writeDragonflyData writes additional data associated with an item.Stack to a map for NBT encoding.
-func writeDragonflyData(m map[string]any, s item.Stack) {
+func writeDragonflyData(m map[string]any, s world.ItemStack) {
 	if v := s.Values(); len(v) != 0 {
 		buf := new(bytes.Buffer)
 		if err := gob.NewEncoder(buf).Encode(mapToSlice(v)); err != nil {
@@ -100,7 +101,7 @@ type mapValue struct {
 }
 
 // writeEnchantments writes the enchantments of an item to a map for NBT encoding.
-func writeEnchantments(m map[string]any, s item.Stack) {
+func writeEnchantments(m map[string]any, s world.ItemStack) {
 	if len(s.Enchantments()) != 0 {
 		var enchantments []map[string]any
 		for _, e := range s.Enchantments() {
@@ -116,7 +117,7 @@ func writeEnchantments(m map[string]any, s item.Stack) {
 }
 
 // writeDisplay writes the display name and lore of an item to a map for NBT encoding.
-func writeDisplay(m map[string]any, s item.Stack) {
+func writeDisplay(m map[string]any, s world.ItemStack) {
 	name, lore := s.CustomName(), s.Lore()
 	v := map[string]any{}
 	if name != "" {
@@ -132,7 +133,7 @@ func writeDisplay(m map[string]any, s item.Stack) {
 
 // writeDamage writes the damage to an item.Stack (either an int16 for disk or int32 for network) to a map for NBT
 // encoding.
-func writeDamage(m map[string]any, s item.Stack, disk bool) {
+func writeDamage(m map[string]any, s world.ItemStack, disk bool) {
 	if v, ok := m["Damage"]; !ok || v.(int16) == 0 {
 		if _, ok := s.Item().(item.Durable); ok {
 			if disk {
@@ -145,14 +146,14 @@ func writeDamage(m map[string]any, s item.Stack, disk bool) {
 }
 
 // writeAnvilCost ...
-func writeAnvilCost(m map[string]any, s item.Stack) {
+func writeAnvilCost(m map[string]any, s world.ItemStack) {
 	if cost := s.AnvilCost(); cost > 0 {
 		m["RepairCost"] = int32(cost)
 	}
 }
 
 // writeUnbreakable writes the unbreakable tag to an item stack if it is unbreakable.
-func writeUnbreakable(m map[string]any, s item.Stack) {
+func writeUnbreakable(m map[string]any, s world.ItemStack) {
 	if s.Unbreakable() {
 		m["Unbreakable"] = byte(1)
 	}

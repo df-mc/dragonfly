@@ -27,7 +27,7 @@ func (protection) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (protection) Rarity() item.EnchantmentRarity {
+func (protection) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
@@ -37,7 +37,7 @@ func (protection) Modifier() float64 {
 }
 
 // CompatibleWithEnchantment ...
-func (protection) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+func (protection) CompatibleWithEnchantment(t world.EnchantmentType) bool {
 	return t != BlastProtection && t != FireProtection && t != ProjectileProtection
 }
 

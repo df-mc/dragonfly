@@ -28,7 +28,7 @@ func (featherFalling) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (featherFalling) Rarity() item.EnchantmentRarity {
+func (featherFalling) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
@@ -38,7 +38,7 @@ func (featherFalling) Modifier() float64 {
 }
 
 // CompatibleWithEnchantment ...
-func (featherFalling) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (featherFalling) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

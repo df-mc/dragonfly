@@ -1,5 +1,7 @@
 package item
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // Durable represents an item that has durability, and may therefore be broken. Some durable items, when
 // broken, create a new item, such as an elytra.
 type Durable interface {
@@ -26,7 +28,7 @@ type DurabilityInfo struct {
 // Repairable represents a durable item that can be repaired by other items.
 type Repairable interface {
 	Durable
-	RepairableBy(i Stack) bool
+	RepairableBy(i world.ItemStack) bool
 }
 
 // simpleItem is a convenience function to return an item stack as BrokenItem.

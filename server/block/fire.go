@@ -3,13 +3,13 @@ package block
 //lint:file-ignore ST1022 Exported variables in this package have compiler directives. These variables are not otherwise exposed to users.
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/enchantment"
-	"github.com/df-mc/dragonfly/server/world"
 	"math/rand/v2"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Fire is a non-solid block that can spread to nearby flammable blocks.
@@ -287,6 +287,6 @@ type FireDamageSource struct{}
 func (FireDamageSource) ReducedByResistance() bool { return true }
 func (FireDamageSource) ReducedByArmour() bool     { return true }
 func (FireDamageSource) Fire() bool                { return true }
-func (FireDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
+func (FireDamageSource) AffectedByEnchantment(e world.EnchantmentType) bool {
 	return e == enchantment.FireProtection
 }

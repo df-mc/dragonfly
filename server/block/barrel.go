@@ -2,6 +2,10 @@ package block
 
 import (
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -9,9 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Barrel is a fisherman's job site block, used to store items. It functions like a single chest, although
@@ -38,7 +39,7 @@ func NewBarrel() Barrel {
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{}, 1)
 	return Barrel{
-		inventory: inventory.New(27, func(slot int, _, item item.Stack) {
+		inventory: inventory.New(27, func(slot int, _, item world.ItemStack) {
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {

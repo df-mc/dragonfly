@@ -12,7 +12,7 @@ import (
 // as ammunition.
 type Crossbow struct {
 	// Item is the item the crossbow is charged with.
-	Item Stack
+	Item world.ItemStack
 }
 
 // Charge starts the charging process and checks if the charge duration meets
@@ -75,7 +75,7 @@ func (c Crossbow) ContinueCharge(releaser Releaser, tx *world.Tx, ctx *UseContex
 
 // chargeDuration calculates the duration required to charge the crossbow and
 // the quick charge enchantment level, if any.
-func (c Crossbow) chargeDuration(s Stack) (dur time.Duration, quickChargeLvl int) {
+func (c Crossbow) chargeDuration(s world.ItemStack) (dur time.Duration, quickChargeLvl int) {
 	dur, lvl := time.Duration(1.25*float64(time.Second)), 0
 	for _, enchant := range s.Enchantments() {
 		if q, ok := enchant.Type().(interface{ ChargeDuration(int) time.Duration }); ok {
@@ -91,14 +91,14 @@ func (c Crossbow) chargeDuration(s Stack) (dur time.Duration, quickChargeLvl int
 // arrows, and searches the rest of the inventory for arrows if no valid
 // projectile was in the left hand. False is returned if no valid projectile was
 // anywhere in the inventory.
-func (c Crossbow) findProjectile(r Releaser, ctx *UseContext) (Stack, bool) {
+func (c Crossbow) findProjectile(r Releaser, ctx *UseContext) (world.ItemStack, bool) {
 	_, left := r.HeldItems()
 	_, isFirework := left.Item().(Firework)
 	_, isArrow := left.Item().(Arrow)
 	if isFirework || isArrow {
 		return left, true
 	}
-	if res, ok := ctx.FirstFunc(func(stack Stack) bool {
+	if res, ok := ctx.FirstFunc(func(stack world.ItemStack) bool {
 		_, ok := stack.Item().(Arrow)
 		return ok
 	}); ok {
@@ -195,9 +195,9 @@ func (c Crossbow) EncodeNBT() map[string]any {
 // noinspection ALL
 //
 //go:linkname writeItem github.com/df-mc/dragonfly/server/internal/nbtconv.WriteItem
-func writeItem(s Stack, disk bool) map[string]any
+func writeItem(s world.ItemStack, disk bool) map[string]any
 
 // noinspection ALL
 //
 //go:linkname mapItem github.com/df-mc/dragonfly/server/internal/nbtconv.MapItem
-func mapItem(x map[string]any, k string) Stack
+func mapItem(x map[string]any, k string) world.ItemStack

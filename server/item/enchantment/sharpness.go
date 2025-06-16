@@ -28,7 +28,7 @@ func (sharpness) Cost(level int) (int, int) {
 }
 
 // Rarity ...
-func (sharpness) Rarity() item.EnchantmentRarity {
+func (sharpness) Rarity() world.EnchantmentRarity {
 	return item.EnchantmentRarityCommon
 }
 
@@ -38,7 +38,7 @@ func (sharpness) Addend(level int) float64 {
 }
 
 // CompatibleWithEnchantment ...
-func (sharpness) CompatibleWithEnchantment(item.EnchantmentType) bool {
+func (sharpness) CompatibleWithEnchantment(world.EnchantmentType) bool {
 	return true
 }
 

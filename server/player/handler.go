@@ -1,6 +1,9 @@
 package player
 
 import (
+	"net"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/event"
@@ -9,8 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"net"
-	"time"
 )
 
 type Context = event.Context[*Player]
@@ -72,7 +73,7 @@ type Handler interface {
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered
 	// to change what items will actually be dropped.
-	HandleBlockBreak(ctx *Context, pos cube.Pos, drops *[]item.Stack, xp *int)
+	HandleBlockBreak(ctx *Context, pos cube.Pos, drops *[]world.ItemStack, xp *int)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
 	HandleBlockPlace(ctx *Context, pos cube.Pos, b world.Block)
@@ -96,10 +97,10 @@ type Handler interface {
 	HandleItemUseOnEntity(ctx *Context, e world.Entity)
 	// HandleItemRelease handles the player releasing an item after using it for
 	// a particular duration. These include items such as bows.
-	HandleItemRelease(ctx *Context, item item.Stack, dur time.Duration)
+	HandleItemRelease(ctx *Context, item world.ItemStack, dur time.Duration)
 	// HandleItemConsume handles the player consuming an item. This is called whenever a consumable such as
 	// food is consumed.
-	HandleItemConsume(ctx *Context, item item.Stack)
+	HandleItemConsume(ctx *Context, item world.ItemStack)
 	// HandleAttackEntity handles the player attacking an entity using the item held in its hand. ctx.Cancel()
 	// may be called to cancel the attack, which will cancel damage dealt to the target and will stop the
 	// entity from being knocked back.
@@ -128,7 +129,7 @@ type Handler interface {
 	// damage through usage.
 	// The type of the item may be checked to determine whether it was armour or a tool used. The damage to
 	// the item is passed.
-	HandleItemDamage(ctx *Context, i item.Stack, damage int)
+	HandleItemDamage(ctx *Context, i world.ItemStack, damage int)
 	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
 	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
 	HandleItemPickup(ctx *Context, i *item.Stack)
@@ -137,7 +138,7 @@ type Handler interface {
 	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
-	HandleItemDrop(ctx *Context, s item.Stack)
+	HandleItemDrop(ctx *Context, s world.ItemStack)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *Context, addr *net.UDPAddr)
@@ -161,7 +162,7 @@ type NopHandler struct{}
 // Compile time check to make sure NopHandler implements Handler.
 var _ Handler = NopHandler{}
 
-func (NopHandler) HandleItemDrop(*Context, item.Stack)                                     {}
+func (NopHandler) HandleItemDrop(*Context, world.ItemStack)                                {}
 func (NopHandler) HandleHeldSlotChange(*Context, int, int)                                 {}
 func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                          {}
 func (NopHandler) HandleJump(*Player)                                                      {}
@@ -175,7 +176,7 @@ func (NopHandler) HandleChat(*Context, *string)                                 
 func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
 func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
 func (NopHandler) HandleStartBreak(*Context, cube.Pos)                                     {}
-func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)                {}
+func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]world.ItemStack, *int)           {}
 func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
 func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}
 func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)                 {}
@@ -184,9 +185,9 @@ func (NopHandler) HandleItemPickup(*Context, *item.Stack)                       
 func (NopHandler) HandleItemUse(*Context)                                                  {}
 func (NopHandler) HandleItemUseOnBlock(*Context, cube.Pos, cube.Face, mgl64.Vec3)          {}
 func (NopHandler) HandleItemUseOnEntity(*Context, world.Entity)                            {}
-func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Duration)      {}
-func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
-func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                              {}
+func (NopHandler) HandleItemRelease(ctx *Context, item world.ItemStack, dur time.Duration) {}
+func (NopHandler) HandleItemConsume(*Context, world.ItemStack)                             {}
+func (NopHandler) HandleItemDamage(*Context, world.ItemStack, int)                         {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}

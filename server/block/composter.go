@@ -1,14 +1,15 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand/v2"
-	"time"
 )
 
 // Composter is a block that can turn biological matter in to compost which can then produce bone meal. It is also the
@@ -109,7 +110,7 @@ func (c Composter) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 }
 
 // Fill fills up the composter.
-func (c Composter) fill(it item.Stack, pos cube.Pos, tx *world.Tx) bool {
+func (c Composter) fill(it world.ItemStack, pos cube.Pos, tx *world.Tx) bool {
 	compostable, ok := it.Item().(item.Compostable)
 	if !ok {
 		return false

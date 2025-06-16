@@ -2,6 +2,8 @@ package block
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -9,7 +11,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // Lectern is a librarian's job site block found in villages. It is used to hold books for multiple players to read in
@@ -22,7 +23,7 @@ type Lectern struct {
 	// Facing represents the direction the Lectern is facing.
 	Facing cube.Direction
 	// Book is the book currently held by the Lectern.
-	Book item.Stack
+	Book world.ItemStack
 	// Page is the page the Lectern is currently on in the book.
 	Page int
 }
@@ -44,7 +45,7 @@ func (Lectern) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (l Lectern) BreakInfo() BreakInfo {
-	d := []item.Stack{item.NewStack(Lectern{}, 1)}
+	d := []world.ItemStack{item.NewStack(Lectern{}, 1)}
 	if !l.Book.Empty() {
 		d = append(d, l.Book)
 	}

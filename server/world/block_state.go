@@ -4,14 +4,15 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"maps"
 	"math"
 	"slices"
 	"sort"
 	"strings"
 	"unsafe"
+
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
 var (
@@ -28,7 +29,8 @@ var (
 	stateRuntimeIDs = map[stateHash]uint32{}
 	// nbtBlocks holds a list of NBTer implementations for blocks registered that implement the NBTer interface.
 	// These are indexed by their runtime IDs. Blocks that do not implement NBTer have a false value in this slice.
-	nbtBlocks []bool
+	nbtBlocks       []bool
+	inventoryHolder []bool
 	// randomTickBlocks holds a list of RandomTicker implementations for blocks registered that implement the RandomTicker interface.
 	// These are indexed by their runtime IDs. Blocks that do not implement RandomTicker have a false value in this slice.
 	randomTickBlocks []bool
@@ -89,6 +91,7 @@ func registerBlockState(s blockState) {
 	}
 
 	nbtBlocks = slices.Insert(nbtBlocks, int(rid), false)
+	inventoryHolder = slices.Insert(inventoryHolder, int(rid), false)
 	randomTickBlocks = slices.Insert(randomTickBlocks, int(rid), false)
 	liquidBlocks = slices.Insert(liquidBlocks, int(rid), false)
 	liquidDisplacingBlocks = slices.Insert(liquidDisplacingBlocks, int(rid), false)
