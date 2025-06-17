@@ -189,6 +189,12 @@ func (tx *Tx) AddEntity(e *EntityHandle) Entity {
 	return tx.World().addEntity(tx, e)
 }
 
+// AddEntityWithViewers adds an EntityHandle to a World. The Entity will be visible
+// only to the provided viewers.
+func (tx *Tx) AddEntityWithViewers(e *EntityHandle, viewers []Viewer) Entity {
+	return tx.World().addEntityWithViewers(tx, e, viewers)
+}
+
 // RemoveEntity removes an Entity from the World that is currently present in
 // it. Any viewers of the Entity will no longer be able to see it.
 // RemoveEntity returns the EntityHandle of the Entity. After removing an Entity
