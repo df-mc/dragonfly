@@ -4,13 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/df-mc/goleveldb/leveldb"
-	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"iter"
 	"maps"
 	"math/rand/v2"
@@ -18,6 +11,14 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/df-mc/goleveldb/leveldb"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players
@@ -678,6 +679,24 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 	e := handle.mustEntity(tx)
 	for _, v := range c.viewers {
 		// Show the entity to all viewers in the chunk of the entity.
+		showEntity(e, v)
+	}
+	w.Handler().HandleEntitySpawn(tx, e)
+	return e
+}
+
+// addEntityWithViewers adds an EntityHandle to a World. The Entity will be visible
+// only to the provided viewers.
+func (w *World) addEntityWithViewers(tx *Tx, handle *EntityHandle, viewers []Viewer) Entity {
+	handle.setAndUnlockWorld(w)
+	pos := chunkPosFromVec3(handle.data.Pos)
+	w.entities[handle] = pos
+
+	c := w.chunk(pos)
+	c.Entities, c.modified = append(c.Entities, handle), true
+
+	e := handle.mustEntity(tx)
+	for _, v := range viewers {
 		showEntity(e, v)
 	}
 	w.Handler().HandleEntitySpawn(tx, e)
