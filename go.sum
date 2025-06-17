@@ -1,5 +1,5 @@
-github.com/aerisnetwork/aeris-gophertunnel v0.2.8 h1:VkCuZN5QUVu+HKoZ8cn2PVQuI2S6GkeIp3dxQtm9RBk=
-github.com/aerisnetwork/aeris-gophertunnel v0.2.8/go.mod h1:aNrYKhFWIp9mMpSaG8YotmIlw8jcmgiEEHsgjFLG4u0=
+github.com/aerisnetwork/aeris-gophertunnel v0.2.9 h1:3Z/z0cBHgrv5gVb5F5Pm5YKUrFoXNK5pjhEZ2Y8q0+U=
+github.com/aerisnetwork/aeris-gophertunnel v0.2.9/go.mod h1:YbEJwC/alB325+3SNYNLc5QJeCipnfnjDk3hBxalTso=
 github.com/aerisnetwork/aeris-raknet v0.1.0 h1:ESzUkjAxcQ+Hd5bv6VYBzMtGwIBLOR4qwO59nRR8uEw=
 github.com/aerisnetwork/aeris-raknet v0.1.0/go.mod h1:C7FN4Q+zLWLwEtm0aOX1pinSvuWdFmhdMBKy2zsq25o=
 github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9 h1:/G0ghZwrhou0Wq21qc1vXXMm/t/aKWkALWwITptKbE0=

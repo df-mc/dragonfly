@@ -489,7 +489,6 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 
 		ServerAuthoritativeInventory: true,
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
-			MovementType:                     protocol.PlayerMovementModeServer,
 			ServerAuthoritativeBlockBreaking: true,
 		},
 	}
