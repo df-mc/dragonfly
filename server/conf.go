@@ -2,6 +2,12 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"slices"
+	_ "unsafe"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
@@ -15,11 +21,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"slices"
-	_ "unsafe"
 )
 
 // Config contains options for starting a Minecraft server.
@@ -163,6 +164,7 @@ func (conf Config) New() *Server {
 		srv.listeners = append(srv.listeners, l)
 	}
 
+	creative_registerCreativeItems()
 	world_finaliseBlockRegistry()
 	recipe_registerVanilla()
 
@@ -324,6 +326,11 @@ func DefaultConfig() UserConfig {
 	c.Resources.Required = false
 	return c
 }
+
+// noinspection ALL
+//
+//go:linkname creative_registerCreativeItems github.com/df-mc/dragonfly/server/item/creative.registerCreativeItems
+func creative_registerCreativeItems()
 
 // noinspection ALL
 //
