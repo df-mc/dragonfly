@@ -58,6 +58,8 @@ type Config struct {
 	// local games. Allowing players to join without authentication is generally
 	// a security hazard.
 	AuthDisabled bool
+	// MuteEmoteChat specifies if the player emote chat should be muted or not.
+	MuteEmoteChat bool
 	// EnableLocatorBar specifies if the locator bar should be enabled or not.
 	EnableLocatorBar bool
 	// MaxPlayers is the maximum amount of players allowed to join the server at
@@ -198,6 +200,8 @@ type UserConfig struct {
 		// DisableJoinQuitMessages specifies if default join and quit messages
 		// for players should be disabled.
 		DisableJoinQuitMessages bool
+		// MuteEmoteChat specifies if the player emote chat should be muted or not.
+		MuteEmoteChat bool
 		// EnableLocatorBar specifies if the locator bar should be enabled or not.
 		EnableLocatorBar bool
 	}
@@ -253,6 +257,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		Name:                    uc.Server.Name,
 		ResourcesRequired:       uc.Resources.Required,
 		AuthDisabled:            !uc.Server.AuthEnabled,
+		MuteEmoteChat:           uc.Server.MuteEmoteChat,
 		EnableLocatorBar:        uc.Server.EnableLocatorBar,
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
