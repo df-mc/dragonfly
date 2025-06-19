@@ -12,6 +12,8 @@
   AuthEnabled = true
   # DisableJoinQuitMessages specifies if join/quit messages should be broadcast when players join the server.
   DisableJoinQuitMessages = false
+  # EnableLocatorBar specifies if the locator bar should be enabled or not.
+  EnableLocatorBar = false
 
 [World]
   # The folder that the world files (will) reside in, relative to the working directory. If not currently

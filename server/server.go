@@ -435,6 +435,10 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	data.Dimension = int32(dim)
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
 
+	if srv.conf.EnableLocatorBar {
+		setGameRule(data.GameRules, "locatorBar", true)
+	}
+
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 
@@ -472,7 +476,10 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 
 		Items:        srv.itemEntries(),
 		CustomBlocks: srv.customBlocks,
-		GameRules:    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+		GameRules: []protocol.GameRule{
+			{Name: "naturalregeneration", Value: false},
+			{Name: "locatorBar", Value: false},
+		},
 
 		ServerAuthoritativeInventory: true,
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
@@ -641,6 +648,19 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 	}
 	entries = append(entries, srv.customItems...)
 	return entries
+}
+
+// setGameRule is a helper function that assigns a value to a specific gamerule.
+// It updates the value if the gamerule already exists, or creates a new entry
+// if it does not.
+func setGameRule(gameRules []protocol.GameRule, name string, value any) {
+	for i := range gameRules {
+		if gameRules[i].Name == name {
+			gameRules[i].Value = value
+			return
+		}
+	}
+	gameRules = append(gameRules, protocol.GameRule{Name: name, Value: value})
 }
 
 var (
