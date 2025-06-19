@@ -436,7 +436,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
 
 	if srv.conf.EnableLocatorBar {
-		setGameRule(data.GameRules, "locatorBar", true)
+		data.GameRules = setGameRule(data.GameRules, "locatorBar", true)
 	}
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
@@ -653,14 +653,14 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 // setGameRule is a helper function that assigns a value to a specific gamerule.
 // It updates the value if the gamerule already exists, or creates a new entry
 // if it does not.
-func setGameRule(gameRules []protocol.GameRule, name string, value any) {
+func setGameRule(gameRules []protocol.GameRule, name string, value any) []protocol.GameRule {
 	for i := range gameRules {
 		if gameRules[i].Name == name {
 			gameRules[i].Value = value
-			return
+			return gameRules
 		}
 	}
-	gameRules = append(gameRules, protocol.GameRule{Name: name, Value: value})
+	return append(gameRules, protocol.GameRule{Name: name, Value: value})
 }
 
 var (
