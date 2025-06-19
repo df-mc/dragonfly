@@ -410,6 +410,7 @@ type EntityRegistryConfig struct {
 	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
 	Lightning          func(opts EntitySpawnOpts) *EntityHandle
+	WindCharge         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 }
 
 // New creates an EntityRegistry using conf and the EntityTypes passed.

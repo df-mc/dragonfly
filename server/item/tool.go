@@ -19,6 +19,8 @@ var (
 	TypeShears = ToolType{4}
 	// TypeSword is the ToolType for swords.
 	TypeSword = ToolType{5}
+	// TypeMace is the ToolType for mace.
+	TypeMace = ToolType{6}
 
 	// ToolTierWood is the ToolTier of wood tools. This is the lowest possible tier.
 	ToolTierWood = ToolTier{HarvestLevel: 1, Durability: 59, BaseMiningEfficiency: 2, BaseAttackDamage: 1, EnchantmentValue: 15, Name: "wooden"}

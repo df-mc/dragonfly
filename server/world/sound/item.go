@@ -96,3 +96,12 @@ type FireCharge struct{ sound }
 
 // Totem is a sound played when a player uses a totem.
 type Totem struct{ sound }
+
+// MaceSmashGround is sound, that played, when mace smashes with the ground.
+type MaceSmashGround struct {
+	sound
+	Heavy bool
+}
+
+// MaceSmashAir is sound, that played, when mace smashes with the air.
+type MaceSmashAir struct{ sound }

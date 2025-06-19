@@ -589,6 +589,10 @@ func (p *Player) fall(distance float64) {
 // final damage dealt to the Player and if the Player was vulnerable to this
 // kind of damage.
 func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
+	return p.hurt(dmg, nil, src)
+}
+
+func (p *Player) hurt(dmg float64, stack *item.Stack, src world.DamageSource) (float64, bool) {
 	if _, ok := p.Effect(effect.FireResistance); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() || dmg < 0 {
 		return 0, false
 	}
@@ -603,8 +607,9 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	}
 
 	immunity := time.Second / 2
+
 	ctx := event.C(p)
-	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
+	if p.Handler().HandleHurt(ctx, stack, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
 		return 0, false
 	}
 	p.setAttackImmunity(immunity, totalDamage)
@@ -616,6 +621,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	if p.Health()-damageLeft <= mgl64.Epsilon {
 		hand, offHand := p.HeldItems()
+
 		if _, ok := offHand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
 			p.SetHeldItems(hand, offHand.Grow(-1))
@@ -628,7 +634,6 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	}
 
 	p.addHealth(-damageLeft)
-
 	if src.ReducedByArmour() {
 		p.Exhaust(0.1)
 		p.Armour().Damage(dmg, p.damageItem)
@@ -639,6 +644,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		} else if s, ok := src.(entity.ProjectileDamageSource); ok {
 			origin = s.Owner
 		}
+
 		if l, ok := origin.(entity.Living); ok {
 			if thornsDmg := p.Armour().ThornsDamage(p.damageItem); thornsDmg > 0 {
 				l.Hurt(thornsDmg, enchantment.ThornsDamageSource{Owner: p})
@@ -659,6 +665,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	if p.Dead() {
 		p.kill(src)
 	}
+
 	return totalDamage, true
 }
 
@@ -1675,17 +1682,8 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		critical       = !p.Sprinting() && !p.Flying() && p.FallDistance() > 0 && !slowFalling && !blind
 	)
 
-	ctx := event.C(p)
-	if p.Handler().HandleAttackEntity(ctx, e, &force, &height, &critical); ctx.Cancelled() {
-		return false
-	}
-	p.SwingArm()
-
-	i, _ := p.HeldItems()
-	living, ok := e.(entity.Living)
-	if !ok {
-		return false
-	}
+	i, offHand := p.HeldItems()
+	old := i
 
 	dmg := i.AttackDamage()
 	if strength, ok := p.Effect(effect.Strength); ok {
@@ -1697,17 +1695,52 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	if s, ok := i.Enchantment(enchantment.Sharpness); ok {
 		dmg += enchantment.Sharpness.Addend(s.Level())
 	}
+
+	ctx := event.C(p)
+	if p.Handler().HandleAttackEntity(ctx, e, &i, &dmg, &force, &height, &critical); ctx.Cancelled() {
+		return false
+	}
+
+	if !i.Equal(old) {
+		// Handler changed item
+		p.SetHeldItems(i, offHand)
+	}
+
 	if critical {
 		dmg *= 1.5
 	}
 
-	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
+	p.SwingArm()
+
+	living, ok := e.(entity.Living)
+	if !ok {
+		return false
+	}
+
+	var (
+		n          float64
+		vulnerable bool
+	)
+
+	src := entity.AttackDamageSource{Attacker: p}
+
+	if pl, ok := living.(*Player); ok {
+		n, vulnerable = pl.hurt(dmg, &i, src)
+		if !i.Equal(old) {
+			// Handler changed item
+			p.SetHeldItems(i, offHand)
+		}
+	} else {
+		n, vulnerable = living.Hurt(dmg, src)
+	}
+
 	i, left := p.HeldItems()
 
 	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
 	if !vulnerable {
 		return true
 	}
+
 	if critical {
 		for _, v := range p.tx.Viewers(living.Position()) {
 			v.ViewEntityAction(living, entity.CriticalHitAction{})

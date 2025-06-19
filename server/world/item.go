@@ -21,8 +21,6 @@ type CustomItem interface {
 	Item
 	// Name is the name that will be displayed on the item to all clients.
 	Name() string
-	// TexturePath is the path to the texture for this item in resource pack.
-	TexturePath() string // TODO implement it
 	// Category is the category the item will be listed under in the creative inventory.
 	Category() category.Category
 }

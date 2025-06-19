@@ -41,4 +41,5 @@ func init() {
 	item.RegisterEnchantment(35, QuickCharge)
 	item.RegisterEnchantment(36, SoulSpeed)
 	item.RegisterEnchantment(37, SwiftSneak)
+	item.RegisterEnchantment(38, WindBurst)
 }

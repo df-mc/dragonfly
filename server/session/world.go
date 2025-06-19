@@ -838,6 +838,18 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		return
 	case sound.DecoratedPotInsertFailed:
 		pk.SoundType = packet.SoundEventDecoratedPotInsertFail
+	case sound.MaceSmashGround:
+		pk.SoundType = packet.SoundEventMaceSmashGround
+		if so.Heavy {
+			pk.SoundType = packet.SoundEventMaceHeavySmashGround
+		}
+	case sound.MaceSmashAir:
+		pk.SoundType = packet.SoundEventMaceSmashAir
+	case sound.WindBurst:
+		pk.SoundType = packet.SoundEventWindChargeBurst
+		if so.Breeze {
+			pk.SoundType = packet.SoundEventBreezeWindChargeBurst
+		}
 	case sound.Custom:
 		var volume, pitch float32
 		volume, pitch = float32(so.Volume), float32(so.Pitch)

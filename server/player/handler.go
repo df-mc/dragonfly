@@ -51,7 +51,7 @@ type Handler interface {
 	// if the player was hurt during an immunity frame with higher damage than
 	// the original cause of the immunity frame. In this case, the damage is
 	// reduced but the player is still knocked back.
-	HandleHurt(ctx *Context, damage *float64, immune bool, attackImmunity *time.Duration, src world.DamageSource)
+	HandleHurt(ctx *Context, attackItem *item.Stack, damage *float64, immune bool, attackImmunity *time.Duration, src world.DamageSource)
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(p *Player, src world.DamageSource, keepInv *bool)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
@@ -110,8 +110,8 @@ type Handler interface {
 	// The knock back force and height is also provided which can be modified.
 	// The attack can be a critical attack, which would increase damage by a factor of 1.5 and
 	// spawn critical hit particles around the target entity. These particles will not be displayed
-	// if no damage is dealt.
-	HandleAttackEntity(ctx *Context, e world.Entity, force, height *float64, critical *bool)
+	// if no damage is dealt. Damage provided is not accurate, if critical is true.
+	HandleAttackEntity(ctx *Context, e world.Entity, attackedItem *item.Stack, rawDamage, force, height *float64, critical *bool)
 	// HandleExperienceGain handles the player gaining experience. ctx.Cancel() may be called to cancel
 	// the gain.
 	// The amount is also provided which can be modified.
@@ -163,40 +163,42 @@ type NopHandler struct{}
 // Compile time check to make sure NopHandler implements Handler.
 var _ Handler = NopHandler{}
 
-func (NopHandler) HandleItemDrop(*Context, item.Stack)                                     {}
-func (NopHandler) HandleHeldSlotChange(*Context, int, int)                                 {}
-func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                          {}
-func (NopHandler) HandleJump(*Player)                                                      {}
-func (NopHandler) HandleTeleport(*Context, mgl64.Vec3, cube.Rotation)                      {}
-func (NopHandler) HandleChangeWorld(*Player, *world.World, *world.World)                   {}
-func (NopHandler) HandleToggleSprint(*Context, bool)                                       {}
-func (NopHandler) HandleToggleSneak(*Context, bool)                                        {}
-func (NopHandler) HandleCommandExecution(*Context, cmd.Command, []string)                  {}
-func (NopHandler) HandleTransfer(*Context, *net.UDPAddr)                                   {}
-func (NopHandler) HandleChat(*Context, *string)                                            {}
-func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
-func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
-func (NopHandler) HandleStartBreak(*Context, cube.Pos)                                     {}
-func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)                {}
-func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
-func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}
-func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)                 {}
-func (NopHandler) HandleLecternPageTurn(*Context, cube.Pos, int, *int)                     {}
-func (NopHandler) HandleItemPickup(*Context, *item.Stack)                                  {}
-func (NopHandler) HandleItemUse(*Context)                                                  {}
-func (NopHandler) HandleItemUseOnBlock(*Context, cube.Pos, cube.Face, mgl64.Vec3)          {}
-func (NopHandler) HandleItemUseOnEntity(*Context, world.Entity)                            {}
-func (NopHandler) HandleItemRelease(*Context, item.Stack, time.Duration)                   {}
-func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
-func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                              {}
-func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
-func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
-func (NopHandler) HandlePunchAir(*Context)                                                 {}
-func (NopHandler) HandleHurt(*Context, *float64, bool, *time.Duration, world.DamageSource) {}
-func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource)                      {}
-func (NopHandler) HandleFoodLoss(*Context, int, *int)                                      {}
-func (NopHandler) HandleDeath(*Player, world.DamageSource, *bool)                          {}
-func (NopHandler) HandleRespawn(*Player, *mgl64.Vec3, **world.World)                       {}
-func (NopHandler) HandleQuit(*Player)                                                      {}
-func (NopHandler) HandleDiagnostics(*Player, session.Diagnostics)                          {}
-func (NopHandler) HandleTick(*Player, int64)                                               {}
+func (NopHandler) HandleItemDrop(*Context, item.Stack)                            {}
+func (NopHandler) HandleHeldSlotChange(*Context, int, int)                        {}
+func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                 {}
+func (NopHandler) HandleJump(*Player)                                             {}
+func (NopHandler) HandleTeleport(*Context, mgl64.Vec3, cube.Rotation)             {}
+func (NopHandler) HandleChangeWorld(*Player, *world.World, *world.World)          {}
+func (NopHandler) HandleToggleSprint(*Context, bool)                              {}
+func (NopHandler) HandleToggleSneak(*Context, bool)                               {}
+func (NopHandler) HandleCommandExecution(*Context, cmd.Command, []string)         {}
+func (NopHandler) HandleTransfer(*Context, *net.UDPAddr)                          {}
+func (NopHandler) HandleChat(*Context, *string)                                   {}
+func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                          {}
+func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                        {}
+func (NopHandler) HandleStartBreak(*Context, cube.Pos)                            {}
+func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)       {}
+func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)               {}
+func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                {}
+func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)        {}
+func (NopHandler) HandleLecternPageTurn(*Context, cube.Pos, int, *int)            {}
+func (NopHandler) HandleItemPickup(*Context, *item.Stack)                         {}
+func (NopHandler) HandleItemUse(*Context)                                         {}
+func (NopHandler) HandleItemUseOnBlock(*Context, cube.Pos, cube.Face, mgl64.Vec3) {}
+func (NopHandler) HandleItemUseOnEntity(*Context, world.Entity)                   {}
+func (NopHandler) HandleItemRelease(*Context, item.Stack, time.Duration)          {}
+func (NopHandler) HandleItemConsume(*Context, item.Stack)                         {}
+func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                     {}
+func (NopHandler) HandleAttackEntity(*Context, world.Entity, *item.Stack, *float64, *float64, *float64, *bool) {
+}
+func (NopHandler) HandleExperienceGain(*Context, *int) {}
+func (NopHandler) HandlePunchAir(*Context)             {}
+func (NopHandler) HandleHurt(*Context, *item.Stack, *float64, bool, *time.Duration, world.DamageSource) {
+}
+func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource) {}
+func (NopHandler) HandleFoodLoss(*Context, int, *int)                 {}
+func (NopHandler) HandleDeath(*Player, world.DamageSource, *bool)     {}
+func (NopHandler) HandleRespawn(*Player, *mgl64.Vec3, **world.World)  {}
+func (NopHandler) HandleQuit(*Player)                                 {}
+func (NopHandler) HandleDiagnostics(*Player, session.Diagnostics)     {}
+func (NopHandler) HandleTick(*Player, int64)                          {}

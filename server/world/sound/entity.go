@@ -58,3 +58,9 @@ type FireworkBlast struct{ sound }
 
 // FireworkTwinkle is a sound played when a firework explodes and should twinkle.
 type FireworkTwinkle struct{ sound }
+
+// WindBurst is a sound, played when wind charge collides with something.
+type WindBurst struct {
+	sound
+	Breeze bool
+}
