@@ -93,6 +93,7 @@ func (conf Config) New() *World {
 		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
+		queueClosing:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
 		r:                rand.New(conf.RandSource),
@@ -105,7 +106,8 @@ func (conf Config) New() *World {
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
-	w.running.Add(3)
+	w.queueing.Add(1)
+	w.running.Add(2)
 
 	getTickFunc := w.getTickFunc
 	t := ticker{interval: time.Second / 20, additional: &getTickFunc}

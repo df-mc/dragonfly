@@ -29,7 +29,9 @@ type World struct {
 	conf Config
 	ra   cube.Range
 
-	queue chan transaction
+	queue        chan transaction
+	queueClosing chan struct{}
+	queueing     sync.WaitGroup
 
 	// advance is a bool that specifies if this World should advance the current
 	// tick, time and weather saved in the Settings struct held by the World.
@@ -132,8 +134,8 @@ func (w *World) handleTransactions() {
 		select {
 		case tx := <-w.queue:
 			tx.Run(w)
-		case <-w.closing:
-			w.running.Done()
+		case <-w.queueClosing:
+			w.queueing.Done()
 			return
 		}
 	}
@@ -1017,6 +1019,9 @@ func (w *World) close() {
 
 	close(w.closing)
 	w.running.Wait()
+
+	close(w.queueClosing)
+	w.queueing.Wait()
 
 	if w.set.ref.Add(-1); !w.advance {
 		return
