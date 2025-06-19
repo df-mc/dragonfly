@@ -436,9 +436,6 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
 
 	data.EmoteChatMuted = srv.conf.MuteEmoteChat
-	if srv.conf.EnableLocatorBar {
-		data.GameRules = setGameRule(data.GameRules, "locatorBar", true)
-	}
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
@@ -649,19 +646,6 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 	}
 	entries = append(entries, srv.customItems...)
 	return entries
-}
-
-// setGameRule is a helper function that assigns a value to a specific gamerule.
-// It updates the value if the gamerule already exists, or creates a new entry
-// if it does not.
-func setGameRule(gameRules []protocol.GameRule, name string, value any) []protocol.GameRule {
-	for i := range gameRules {
-		if gameRules[i].Name == name {
-			gameRules[i].Value = value
-			return gameRules
-		}
-	}
-	return append(gameRules, protocol.GameRule{Name: name, Value: value})
 }
 
 var (

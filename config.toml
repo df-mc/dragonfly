@@ -14,8 +14,6 @@
   DisableJoinQuitMessages = false
   # MuteEmoteChat specifies if the player emote chat should be muted or not.
   MuteEmoteChat = false
-  # EnableLocatorBar specifies if the locator bar should be enabled or not.
-  EnableLocatorBar = false
 
 [World]
   # The folder that the world files (will) reside in, relative to the working directory. If not currently

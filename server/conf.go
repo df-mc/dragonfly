@@ -60,8 +60,6 @@ type Config struct {
 	AuthDisabled bool
 	// MuteEmoteChat specifies if the player emote chat should be muted or not.
 	MuteEmoteChat bool
-	// EnableLocatorBar specifies if the locator bar should be enabled or not.
-	EnableLocatorBar bool
 	// MaxPlayers is the maximum amount of players allowed to join the server at
 	// once.
 	MaxPlayers int
@@ -202,8 +200,6 @@ type UserConfig struct {
 		DisableJoinQuitMessages bool
 		// MuteEmoteChat specifies if the player emote chat should be muted or not.
 		MuteEmoteChat bool
-		// EnableLocatorBar specifies if the locator bar should be enabled or not.
-		EnableLocatorBar bool
 	}
 	World struct {
 		// SaveData controls whether a world's data will be saved and loaded.
@@ -258,7 +254,6 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		ResourcesRequired:       uc.Resources.Required,
 		AuthDisabled:            !uc.Server.AuthEnabled,
 		MuteEmoteChat:           uc.Server.MuteEmoteChat,
-		EnableLocatorBar:        uc.Server.EnableLocatorBar,
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
