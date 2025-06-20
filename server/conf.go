@@ -166,6 +166,7 @@ func (conf Config) New() *Server {
 		srv.listeners = append(srv.listeners, l)
 	}
 
+	creative_registerCreativeItems()
 	world_finaliseBlockRegistry()
 	recipe_registerVanilla()
 
@@ -330,6 +331,11 @@ func DefaultConfig() UserConfig {
 	c.Resources.Required = false
 	return c
 }
+
+// noinspection ALL
+//
+//go:linkname creative_registerCreativeItems github.com/df-mc/dragonfly/server/item/creative.registerCreativeItems
+func creative_registerCreativeItems()
 
 // noinspection ALL
 //
