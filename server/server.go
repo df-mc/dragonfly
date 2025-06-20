@@ -435,6 +435,8 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	data.Dimension = int32(dim)
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
 
+	data.EmoteChatMuted = srv.conf.MuteEmoteChat
+
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 
@@ -472,11 +474,13 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 
 		Items:        srv.itemEntries(),
 		CustomBlocks: srv.customBlocks,
-		GameRules:    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+		GameRules: []protocol.GameRule{
+			{Name: "naturalregeneration", Value: false},
+			{Name: "locatorBar", Value: false},
+		},
 
 		ServerAuthoritativeInventory: true,
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
-			MovementType:                     protocol.PlayerMovementModeServer,
 			ServerAuthoritativeBlockBreaking: true,
 		},
 	}
