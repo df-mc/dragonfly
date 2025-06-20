@@ -1,7 +1,6 @@
 package debug
 
 import (
-	"fmt"
 	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
 	"sync/atomic"
@@ -26,7 +25,6 @@ type shape struct {
 func (s *shape) ShapeID() int {
 	if s.id == nil {
 		id := int(nextShapeID.Add(1))
-		fmt.Println("Assigning shape ID:", id)
 		s.id = &id
 	}
 	return *s.id

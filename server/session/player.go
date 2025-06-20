@@ -764,9 +764,7 @@ func (s *Session) RemoveDebugShape(shape debug.Shape) {
 	s.debugShapesMu.RLock()
 	defer s.debugShapesMu.RUnlock()
 
-	fmt.Println(shape.ShapeID())
 	if _, ok := s.debugShapes[shape.ShapeID()]; ok {
-		fmt.Println("Removing shape", shape.ShapeID())
 		s.debugShapesRemove <- shape.ShapeID()
 	}
 }
