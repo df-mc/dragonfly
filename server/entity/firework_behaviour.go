@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"math"
 	"time"
@@ -77,21 +76,10 @@ func (f *FireworkBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 // or based on the owner's position and velocity if attached.
 func (f *FireworkBehaviour) tick(e *Ent, tx *world.Tx) {
 	owner, ok := f.conf.Owner.Entity(tx)
-
-	var ownerVel mgl64.Vec3
-	if o, ok := owner.(interface {
-		Velocity() mgl64.Vec3
-	}); ok {
-		ownerVel = o.Velocity()
-	}
-
 	if f.conf.Attached && ok {
-		dV := owner.Rotation().Vec3()
-
 		// The client will propel itself to match the firework's velocity since
 		// we set the appropriate metadata.
 		e.data.Pos = owner.Position()
-		e.data.Vel = e.data.Vel.Add(ownerVel.Add(dV.Mul(0.1).Add(dV.Mul(1.5).Sub(ownerVel).Mul(0.5))))
 	} else {
 		e.data.Vel[0] *= f.conf.SidewaysVelocityMultiplier
 		e.data.Vel[1] += f.conf.UpwardsAcceleration
