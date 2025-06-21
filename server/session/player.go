@@ -789,6 +789,8 @@ func (s *Session) RemoveAllDebugShapes() {
 	}
 }
 
+// SendDebugShapes sends any pending additions/removals of debug shapes to the player. Shapes should be sent
+// every tick to allow for batching and time-efficient updates.
 func (s *Session) SendDebugShapes() {
 	s.debugShapesMu.Lock()
 	defer s.debugShapesMu.Unlock()
@@ -814,6 +816,8 @@ loop:
 	s.writePacket(&packet.ServerScriptDebugDrawer{Shapes: shapes})
 }
 
+// debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
+// for some fields such as colour, scale and other per-shape properties.
 func (s *Session) debugShapeToProtocol(shape debug.Shape) packet.DebugDrawerShape {
 	ps := packet.DebugDrawerShape{NetworkID: uint64(shape.ShapeID())}
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
@@ -860,6 +864,8 @@ func (s *Session) debugShapeToProtocol(shape debug.Shape) packet.DebugDrawerShap
 	return ps
 }
 
+// valueOrDefault returns the value passed if it is not the zero value of the type T, otherwise it returns
+// the default value provided.
 func valueOrDefault[T comparable](v, def T) T {
 	var zero T
 	if v == zero {
