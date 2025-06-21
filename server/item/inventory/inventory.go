@@ -21,14 +21,14 @@ type Inventory struct {
 	slots []item.Stack
 
 	f         SlotFunc
-	validator SlotValidator
+	validator SlotValidatorFunc
 }
 
 // SlotFunc is a function called for each item changed in an Inventory.
 type SlotFunc func(slot int, before, after item.Stack)
 
-// SlotValidator is a function that limits changes in the Inventory slot.
-type SlotValidator func(s item.Stack, slot int) bool
+// SlotValidatorFunc is a function that limits changes in the Inventory slot.
+type SlotValidatorFunc func(s item.Stack, slot int) bool
 
 // ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
@@ -64,8 +64,8 @@ func (inv *Inventory) SlotFunc(f SlotFunc) {
 	inv.f = f
 }
 
-// SlotValidator changes the function that limits item placement in the inventory slot.
-func (inv *Inventory) SlotValidator(f SlotValidator) {
+// SlotValidatorFunc changes the function that limits item placement in the inventory slot.
+func (inv *Inventory) SlotValidatorFunc(f SlotValidatorFunc) {
 	inv.mu.Lock()
 	defer inv.mu.Unlock()
 	inv.validator = f

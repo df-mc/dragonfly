@@ -20,7 +20,7 @@ func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 		playerData: pd,
 	}
 
-	pd.offHand.SlotValidator(func(s item.Stack, _ int) bool {
+	pd.offHand.SlotValidatorFunc(func(s item.Stack, _ int) bool {
 		if s.Empty() {
 			return true
 		}
