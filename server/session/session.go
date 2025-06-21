@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"io"
 	"log/slog"
 	"net"
@@ -84,6 +85,11 @@ type Session struct {
 	blobs                 map[uint64][]byte
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
+
+	debugShapesMu     sync.RWMutex
+	debugShapes       map[int]debug.Shape
+	debugShapesAdd    chan debug.Shape
+	debugShapesRemove chan int
 
 	closeBackground chan struct{}
 }
@@ -166,6 +172,9 @@ func (conf Config) New(conn Conn) *Session {
 		heldSlot:               new(uint32),
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
+		debugShapes:            make(map[int]debug.Shape),
+		debugShapesAdd:         make(chan debug.Shape, 256),
+		debugShapesRemove:      make(chan int, 256),
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
