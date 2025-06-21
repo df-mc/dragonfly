@@ -35,6 +35,11 @@ func (EnchantingTable) LightEmissionLevel() uint8 {
 	return 7
 }
 
+// PistonImmovable ...
+func (EnchantingTable) PistonImmovable() bool {
+	return true
+}
+
 // Activate ...
 func (EnchantingTable) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
