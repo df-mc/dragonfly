@@ -24,8 +24,8 @@ func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 		if s.Empty() {
 			return true
 		}
-		off, allowedInOffhand := s.Item().(item.OffHand)
-		return allowedInOffhand && off.OffHand()
+		it, allowedInOffhand := s.Item().(item.OffHand)
+		return allowedInOffhand && it.OffHand()
 	})
 
 	if pd.s != nil {
