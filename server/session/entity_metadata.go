@@ -83,9 +83,6 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		if g.GameMode().HasCollision() {
 			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasCollision)
 		}
-		if !g.GameMode().Visible() {
-			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
-		}
 	}
 	if o, ok := e.(orb); ok {
 		m[protocol.EntityDataKeyValue] = int32(o.Experience())
