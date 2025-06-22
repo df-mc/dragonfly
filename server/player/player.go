@@ -1740,7 +1740,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	if _, ok := p.tx.Block(pos.Side(face)).(block.Fire); ok {
 		ctx := event.C(p)
 		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
-			// resendList the block because on client side that was extinguished
+			// Resend the block because on client side that was extinguished
 			p.resendBlocks(pos, face)
 			return
 		}
