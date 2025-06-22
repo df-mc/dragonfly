@@ -3,6 +3,7 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cespare/xxhash/v2"
 	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/go-gl/mathgl/mgl32"
 	"golang.org/x/exp/rand"
@@ -1076,11 +1077,12 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 }
 
 // randomColour returns random colour.
-func randomColour() color.RGBA {
+func randomColour(displayName string) color.RGBA {
+	r := rand.New(rand.NewSource(xxhash.Sum64String(displayName)))
 	return color.RGBA{
-		R: byte(rand.Int31n(255)),
-		G: byte(rand.Int31n(255)),
-		B: byte(rand.Int31n(255)),
+		R: byte(r.Int31n(255)),
+		G: byte(r.Int31n(255)),
+		B: byte(r.Int31n(255)),
 		A: 0xFF,
 	}
 }

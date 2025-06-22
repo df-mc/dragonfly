@@ -179,7 +179,7 @@ func (conf Config) New(conn Conn) *Session {
 		debugShapesAdd:         make(chan debug.Shape, 256),
 		debugShapesRemove:      make(chan int, 256),
 	}
-	colour := randomColour()
+	colour := randomColour(conn.IdentityData().DisplayName)
 	s.colour.Store(&colour)
 
 	s.openedWindow.Store(inventory.New(1, nil))
