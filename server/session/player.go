@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/go-gl/mathgl/mgl32"
 	"image/color"
 	"maps"
@@ -752,6 +753,71 @@ func (s *Session) SendChargeItemComplete() {
 		EntityRuntimeID: selfEntityRuntimeID,
 		EventType:       packet.ActorEventFinishedChargingItem,
 	})
+}
+
+// ShowHudElement shows a HUD element to the player if it is not already shown. If the element is waiting to
+// be hidden, it will be removed from the updates and remain visible to the player.
+func (s *Session) ShowHudElement(e hud.Element) {
+	s.hudMu.Lock()
+	defer s.hudMu.Unlock()
+
+	if _, ok := s.hiddenHud[e]; ok {
+		s.hudUpdates[e] = true
+	} else if _, ok = s.hudUpdates[e]; ok {
+		delete(s.hudUpdates, e)
+	}
+}
+
+// HideHudElement hides a HUD element from the player if it is not already hidden. If the element is waiting
+// to be shown, it will be removed from the updates and remain hidden from the player.
+func (s *Session) HideHudElement(e hud.Element) {
+	s.hudMu.Lock()
+	defer s.hudMu.Unlock()
+
+	if _, ok := s.hiddenHud[e]; !ok {
+		s.hudUpdates[e] = false
+	} else if _, ok = s.hudUpdates[e]; ok {
+		delete(s.hudUpdates, e)
+	}
+}
+
+// HudElementHidden checks if a HUD element is currently hidden from the player.
+func (s *Session) HudElementHidden(e hud.Element) bool {
+	s.hudMu.RLock()
+	defer s.hudMu.RUnlock()
+
+	if _, ok := s.hiddenHud[e]; ok {
+		return true
+	}
+	vis, ok := s.hudUpdates[e]
+	return ok && !vis
+}
+
+// SendHudUpdates sends any pending HUD updates to the player. The updates are batched to reduce the number
+// of packets being sent. Up to 2 packets will be sent, one for showing elements and one for hiding elements.
+func (s *Session) SendHudUpdates() {
+	s.hudMu.Lock()
+	defer s.hudMu.Unlock()
+	if len(s.hudUpdates) == 0 {
+		return
+	}
+	var show, hide []int32
+	for e, vis := range s.hudUpdates {
+		if vis {
+			show = append(show, int32(e.Uint8()))
+			delete(s.hiddenHud, e)
+		} else {
+			hide = append(hide, int32(e.Uint8()))
+			s.hiddenHud[e] = struct{}{}
+		}
+	}
+	s.hudUpdates = make(map[hud.Element]bool)
+	if len(show) > 0 {
+		s.writePacket(&packet.SetHud{Elements: show, Visibility: packet.HudVisibilityReset})
+	}
+	if len(hide) > 0 {
+		s.writePacket(&packet.SetHud{Elements: hide, Visibility: packet.HudVisibilityHide})
+	}
 }
 
 // AddDebugShape adds a debug shape to be rendered to the player. If the shape already exists, it will be

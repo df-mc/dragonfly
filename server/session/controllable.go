@@ -10,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -28,6 +29,7 @@ type Controllable interface {
 	form.Submitter
 	cmd.Source
 	chat.Subscriber
+	hud.Renderer
 	debug.Renderer
 
 	Locale() language.Tag
