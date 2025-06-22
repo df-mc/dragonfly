@@ -1078,9 +1078,9 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 // randomColour returns random colour.
 func randomColour() color.RGBA {
 	return color.RGBA{
-		R: byte(rand.Int31n(255)),
-		G: byte(rand.Int31n(255)),
-		B: byte(rand.Int31n(255)),
+		R: byte(rand.Int31n(256)),
+		G: byte(rand.Int31n(256)),
+		B: byte(rand.Int31n(256)),
 		A: 0xFF,
 	}
 }
