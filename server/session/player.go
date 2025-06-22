@@ -1076,7 +1076,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	return
 }
 
-// randomColour returns random colour.
+// randomColour returns random colour based on displayName's hash.
 func randomColour(displayName string) color.RGBA {
 	r := rand.New(rand.NewSource(xxhash.Sum64String(displayName)))
 	return color.RGBA{
