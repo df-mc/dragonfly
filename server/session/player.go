@@ -1080,9 +1080,9 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 func randomColour(displayName string) color.RGBA {
 	r := rand.New(rand.NewSource(xxhash.Sum64String(displayName)))
 	return color.RGBA{
-		R: byte(r.Int31n(255)),
-		G: byte(r.Int31n(255)),
-		B: byte(r.Int31n(255)),
+		R: byte(r.Int31n(256)),
+		G: byte(r.Int31n(256)),
+		B: byte(r.Int31n(256)),
 		A: 0xFF,
 	}
 }
