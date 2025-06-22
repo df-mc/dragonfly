@@ -23,14 +23,12 @@ import (
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
-	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -1198,6 +1196,7 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 }
 
 // randomColour returns random colour.
+// randomColour returns random colour based on displayName's hash.
 func randomColour(displayName string) color.RGBA {
 	r := rand.New(rand.NewSource(xxhash.Sum64String(displayName)))
 	return color.RGBA{
