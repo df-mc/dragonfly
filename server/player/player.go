@@ -2,7 +2,7 @@ package player
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"image/color"
 	"math"
 	"math/rand/v2"
@@ -25,10 +25,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/debug"
-	"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
-ithub.com/df-mc/dragonfly/server/player/form"
-	"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/df-mc/dragonfly/server/player/skin"
