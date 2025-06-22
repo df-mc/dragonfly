@@ -42,6 +42,16 @@ func (l *sessionList) Remove(s *Session) {
 	l.s = sliceutil.DeleteVal(l.s, s)
 }
 
+func (l *sessionList) resendList(s *Session) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	for _, other := range l.s {
+		l.unsendSessionFrom(s, other)
+		l.sendSessionTo(other, s)
+	}
+}
+
 func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -74,6 +84,7 @@ func (l *sessionList) sendSessionTo(s, to *Session) {
 			Username:       s.conn.IdentityData().DisplayName,
 			XUID:           s.conn.IdentityData().XUID,
 			Skin:           skinToProtocol(s.joinSkin),
+			PlayerColour:   s.Colour(),
 		}},
 	})
 }

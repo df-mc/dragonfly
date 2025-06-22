@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/go-gl/mathgl/mgl32"
+	"golang.org/x/exp/rand"
 	"image/color"
 	"maps"
 	"math"
@@ -578,6 +579,12 @@ func (s *Session) sendGameRules(gameRules []protocol.GameRule) {
 	s.writePacket(&packet.GameRulesChanged{GameRules: gameRules})
 }
 
+// EnableLocatorBar will either enable or disable locator bar for the player depending on the value given.
+func (s *Session) EnableLocatorBar(enable bool) {
+	//noinspection SpellCheckingInspection
+	s.sendGameRules([]protocol.GameRule{{Name: "locatorbar", Value: enable}})
+}
+
 // EnableCoordinates will either enable or disable coordinates for the player depending on the value given.
 func (s *Session) EnableCoordinates(enable bool) {
 	//noinspection SpellCheckingInspection
@@ -588,6 +595,21 @@ func (s *Session) EnableCoordinates(enable bool) {
 func (s *Session) EnableInstantRespawn(enable bool) {
 	//noinspection SpellCheckingInspection
 	s.sendGameRules([]protocol.GameRule{{Name: "doimmediaterespawn", Value: enable}})
+}
+
+// Colour returns the colour of player. Colour is used to indicate a player in the locator bar.
+func (s *Session) Colour() color.RGBA {
+	colour := s.colour.Load()
+	if colour == nil {
+		return color.RGBA{A: 0xFF}
+	}
+	return *colour
+}
+
+// SetColour sets the player colour. Colour is used to indicate a player in the locator bar.
+func (s *Session) SetColour(colour color.RGBA) {
+	s.colour.Store(&colour)
+	sessions.resendList(s)
 }
 
 // HandleInventories starts handling the inventories of the Controllable entity of the session. It sends packets when
@@ -1051,6 +1073,16 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 		s.Animations = append(s.Animations, animation)
 	}
 	return
+}
+
+// randomColour returns random colour.
+func randomColour() color.RGBA {
+	return color.RGBA{
+		R: byte(rand.Int31n(255)),
+		G: byte(rand.Int31n(255)),
+		B: byte(rand.Int31n(255)),
+		A: 0xFF,
+	}
 }
 
 // gameTypeFromMode returns the game type ID from the game mode passed.

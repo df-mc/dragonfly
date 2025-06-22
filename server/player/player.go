@@ -3,6 +3,7 @@ package player
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/debug"
+	"image/color"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -401,6 +402,16 @@ func (p *Player) SendForm(f form.Form) {
 // happens.
 func (p *Player) CloseForm() {
 	p.session().CloseForm()
+}
+
+// ShowLocatorBar enables the vanilla locator bar for the player.
+func (p *Player) ShowLocatorBar() {
+	p.session().EnableLocatorBar(true)
+}
+
+// HideLocatorBar disables the vanilla locator bar for the player.
+func (p *Player) HideLocatorBar() {
+	p.session().EnableLocatorBar(false)
 }
 
 // ShowCoordinates enables the vanilla coordinates for the player.
@@ -1729,7 +1740,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	if _, ok := p.tx.Block(pos.Side(face)).(block.Fire); ok {
 		ctx := event.C(p)
 		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
-			// Resend the block because on client side that was extinguished
+			// resendList the block because on client side that was extinguished
 			p.resendBlocks(pos, face)
 			return
 		}
@@ -2186,6 +2197,16 @@ func (p *Player) Collect(s item.Stack) (int, bool) {
 		added += n
 	}
 	return added, true
+}
+
+// Colour returns the player's colour in the locator bar.
+func (p *Player) Colour() color.RGBA {
+	return p.session().Colour()
+}
+
+// SetColour changes the player's colour in the locator bar.
+func (p *Player) SetColour(colour color.RGBA) {
+	p.session().SetColour(colour)
 }
 
 // Experience returns the amount of experience the player has.
