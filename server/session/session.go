@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"io"
 	"log/slog"
 	"net"
@@ -85,6 +86,10 @@ type Session struct {
 	blobs                 map[uint64][]byte
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
+
+	hudMu      sync.RWMutex
+	hudUpdates map[hud.Element]bool
+	hiddenHud  map[hud.Element]struct{}
 
 	debugShapesMu     sync.RWMutex
 	debugShapes       map[int]debug.Shape
@@ -172,6 +177,8 @@ func (conf Config) New(conn Conn) *Session {
 		heldSlot:               new(uint32),
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
+		hudUpdates:             make(map[hud.Element]bool),
+		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
 		debugShapesAdd:         make(chan debug.Shape, 256),
 		debugShapesRemove:      make(chan int, 256),
