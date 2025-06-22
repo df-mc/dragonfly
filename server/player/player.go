@@ -1644,12 +1644,12 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 // have.
 // If the player cannot reach the entity at its position, the method returns immediately.
 func (p *Player) AttackEntity(e world.Entity) bool {
-	if !p.canReach(e.Position()) || p.Dead() {
+	if !p.canReach(e.Position()) {
 		return false
 	}
 
 	living, ok := e.(entity.Living)
-	if !ok || living.Dead() {
+	if ok && living.Dead() {
 		return false
 	}
 
