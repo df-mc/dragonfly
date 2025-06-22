@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/debug"
+	"image/color"
 	"io"
 	"log/slog"
 	"net"
@@ -100,6 +102,8 @@ type Session struct {
 	debugShapesAdd    chan debug.Shape
 	debugShapesRemove chan int
 
+	colour atomic.Pointer[color.RGBA]
+
 	closeBackground chan struct{}
 }
 
@@ -190,6 +194,9 @@ func (conf Config) New(conn Conn) *Session {
 		debugShapesAdd:         make(chan debug.Shape, 256),
 		debugShapesRemove:      make(chan int, 256),
 	}
+	colour := randomColour()
+	s.colour.Store(&colour)
+
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 

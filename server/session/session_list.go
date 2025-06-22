@@ -49,7 +49,7 @@ func (l *sessionList) resendList(s *Session) {
 
 	for _, other := range l.s {
 		l.unsendSessionFrom(s, other)
-		l.sendSessionTo(s, other)
+		l.sendSessionTo(other, s)
 	}
 }
 
