@@ -1648,8 +1648,8 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		return false
 	}
 
-	living, ok := e.(entity.Living)
-	if !ok || living.Dead() {
+	living, isLiving := e.(entity.Living)
+	if isLiving && living.Dead() {
 		return false
 	}
 
@@ -1667,6 +1667,9 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	p.SwingArm()
 
 	i, _ := p.HeldItems()
+	if !isLiving {
+		return false
+	}
 
 	dmg := i.AttackDamage()
 	if strength, ok := p.Effect(effect.Strength); ok {
