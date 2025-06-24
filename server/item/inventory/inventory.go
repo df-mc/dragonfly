@@ -20,12 +20,15 @@ type Inventory struct {
 	h     Handler
 	slots []item.Stack
 
-	f      SlotFunc
-	canAdd func(s item.Stack, slot int) bool
+	f         SlotFunc
+	validator SlotValidatorFunc
 }
 
 // SlotFunc is a function called for each item changed in an Inventory.
 type SlotFunc func(slot int, before, after item.Stack)
+
+// SlotValidatorFunc is a function that limits changes in the Inventory slot.
+type SlotValidatorFunc func(s item.Stack, slot int) bool
 
 // ErrSlotOutOfRange is returned by any methods on inventory when a slot is passed which is not within the
 // range of valid values for the inventory.
@@ -42,7 +45,7 @@ func New(size int, f SlotFunc) *Inventory {
 	if f == nil {
 		f = func(slot int, before, after item.Stack) {}
 	}
-	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+	return &Inventory{h: NopHandler{}, slots: make([]item.Stack, size), f: f, validator: func(s item.Stack, slot int) bool { return true }}
 }
 
 // Clone copies an Inventory and returns it, calling the SlotFunc passed for any
@@ -51,7 +54,7 @@ func (inv *Inventory) Clone(f SlotFunc) *Inventory {
 	if f == nil {
 		f = func(slot int, before, after item.Stack) {}
 	}
-	return &Inventory{h: NopHandler{}, slots: inv.Slots(), f: f, canAdd: func(s item.Stack, slot int) bool { return true }}
+	return &Inventory{h: NopHandler{}, slots: inv.Slots(), f: f, validator: func(s item.Stack, slot int) bool { return true }}
 }
 
 // SlotFunc changes the function called when a slot in the inventory is changed.
@@ -59,6 +62,13 @@ func (inv *Inventory) SlotFunc(f SlotFunc) {
 	inv.mu.Lock()
 	defer inv.mu.Unlock()
 	inv.f = f
+}
+
+// SlotValidatorFunc changes the function that limits item placement in the inventory slot.
+func (inv *Inventory) SlotValidatorFunc(f SlotValidatorFunc) {
+	inv.mu.Lock()
+	defer inv.mu.Unlock()
+	inv.validator = f
 }
 
 // Item attempts to obtain an item from a specific slot in the inventory. If an item was present in that slot,
@@ -356,7 +366,7 @@ func (inv *Inventory) Handler() Handler {
 // setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is
 // called for every item change and does so without locking the inventory.
 func (inv *Inventory) setItem(slot int, it item.Stack) func() {
-	if !inv.canAdd(it, slot) {
+	if !inv.validator(it, slot) {
 		return func() {}
 	}
 	if it.Count() > it.MaxCount() {

@@ -21,7 +21,7 @@ type Armour struct {
 // The function passed is called when a slot is changed. It may be nil to not call anything.
 func NewArmour(f func(slot int, before, after item.Stack)) *Armour {
 	inv := New(4, f)
-	inv.canAdd = canAddArmour
+	inv.validator = canAddArmour
 	return &Armour{inv: inv}
 }
 

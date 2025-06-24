@@ -32,3 +32,4 @@ type InstantDamageSource struct{}
 func (InstantDamageSource) ReducedByArmour() bool     { return false }
 func (InstantDamageSource) ReducedByResistance() bool { return true }
 func (InstantDamageSource) Fire() bool                { return false }
+func (InstantDamageSource) IgnoreTotem() bool         { return false }
