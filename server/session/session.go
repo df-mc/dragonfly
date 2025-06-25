@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -22,7 +23,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"runtime/debug"
+	rdebug "runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -557,7 +558,7 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 func (s *Session) recover(pk packet.Packet) {
 	if s.conf.Recovery != nil {
 		if err := recover(); err != nil {
-			stackTrace := debug.Stack()
+			stackTrace := rdebug.Stack()
 			s.conf.Log.Error("panic recovered", "error:", err, "packet:", fmt.Sprintf("%T", pk), "stack:", string(stackTrace))
 			s.conf.Recovery(err, s)
 		}
