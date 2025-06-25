@@ -139,3 +139,4 @@ type StarvationDamageSource struct{}
 func (StarvationDamageSource) ReducedByArmour() bool     { return false }
 func (StarvationDamageSource) ReducedByResistance() bool { return false }
 func (StarvationDamageSource) Fire() bool                { return false }
+func (StarvationDamageSource) IgnoreTotem() bool         { return false }

@@ -2,6 +2,7 @@ package player
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -598,7 +599,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		damageLeft = max(0, damageLeft-a)
 	}
 
-	if p.Health()-damageLeft <= mgl64.Epsilon {
+	if p.Health()-damageLeft <= mgl64.Epsilon && !src.IgnoreTotem() {
 		hand, offHand := p.HeldItems()
 		if _, ok := offHand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
@@ -1903,7 +1904,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 		case entity.ItemType, entity.ArrowType:
 			continue
 		default:
-			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-6)) {
+			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-4)) {
 				obstructed = true
 				if e.H() == p.handle {
 					continue
@@ -2126,7 +2127,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		p.session().ViewEntityState(p)
 	}
 
-	p.onGround = p.checkOnGround()
+	p.onGround = p.checkOnGround(deltaPos)
 	p.updateFallState(deltaPos[1])
 
 	if p.Swimming() {
@@ -2384,7 +2385,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	}
 
 	p.checkBlockCollisions(p.data.Vel)
-	p.onGround = p.checkOnGround()
+	p.onGround = p.checkOnGround(mgl64.Vec3{})
 
 	p.effects.Tick(p, p.tx)
 
@@ -2432,6 +2433,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			delete(p.cooldowns, it)
 		}
 	}
+
+	p.session().SendDebugShapes()
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
 		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
@@ -2673,8 +2676,8 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 }
 
 // checkOnGround checks if the player is currently considered to be on the ground.
-func (p *Player) checkOnGround() bool {
-	box := Type.BBox(p).Translate(p.Position()).Extend(mgl64.Vec3{0, -0.05})
+func (p *Player) checkOnGround(deltaPos mgl64.Vec3) bool {
+	box := Type.BBox(p).Translate(p.Position()).Extend(mgl64.Vec3{0, -0.05}).Extend(deltaPos.Mul(-1.0))
 	b := box.Grow(1)
 
 	epsilon := mgl64.Vec3{mgl64.Epsilon, mgl64.Epsilon, mgl64.Epsilon}
@@ -2854,6 +2857,28 @@ func (p *Player) PunchAir() {
 // UpdateDiagnostics updates the diagnostics of the player.
 func (p *Player) UpdateDiagnostics(d session.Diagnostics) {
 	p.Handler().HandleDiagnostics(p, d)
+}
+
+// AddDebugShape adds a debug shape to be rendered to the player. If the shape already exists, it will be
+// updated with the new information.
+func (p *Player) AddDebugShape(shape debug.Shape) {
+	p.session().AddDebugShape(shape)
+}
+
+// RemoveDebugShape removes a debug shape from the player by its unique identifier.
+func (p *Player) RemoveDebugShape(shape debug.Shape) {
+	p.session().RemoveDebugShape(shape)
+}
+
+// VisibleDebugShapes returns a slice of all debug shapes that are currently being shown to the player.
+func (p *Player) VisibleDebugShapes() []debug.Shape {
+	return p.session().VisibleDebugShapes()
+}
+
+// RemoveAllDebugShapes removes all rendered debug shapes from the player, as well as any shapes that have
+// not yet been rendered.
+func (p *Player) RemoveAllDebugShapes() {
+	p.session().RemoveAllDebugShapes()
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item

@@ -37,6 +37,7 @@ type Session struct {
 	ent      *world.EntityHandle
 	conn     Conn
 	handlers map[uint32]packetHandler
+	packets  chan packet.Packet
 
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
@@ -83,6 +84,11 @@ type Session struct {
 	blobs                 map[uint64][]byte
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
+
+	debugShapesMu     sync.RWMutex
+	debugShapes       map[int]debug.Shape
+	debugShapesAdd    chan debug.Shape
+	debugShapesRemove chan int
 
 	closeBackground chan struct{}
 }
@@ -155,6 +161,7 @@ func (conf Config) New(conn Conn) *Session {
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
 		handlers:               map[uint32]packetHandler{},
+		packets:                make(chan packet.Packet, 256),
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
 		hiddenEntities:         map[uuid.UUID]struct{}{},
@@ -166,6 +173,9 @@ func (conf Config) New(conn Conn) *Session {
 		heldSlot:               new(uint32),
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
+		debugShapes:            make(map[int]debug.Shape),
+		debugShapesAdd:         make(chan debug.Shape, 256),
+		debugShapesRemove:      make(chan int, 256),
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
@@ -176,11 +186,22 @@ func (conf Config) New(conn Conn) *Session {
 	s.currentLines.Store(&scoreboardLines)
 
 	s.registerHandlers()
+	s.sendBiomes()
 	groups, items := creativeContent()
 	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
 	s.sendArmourTrimData()
 	s.SendSpeed(0.1)
+	go func() {
+		for {
+			select {
+			case <-s.closeBackground:
+				return
+			case pk := <-s.packets:
+				_ = conn.WritePacket(pk)
+			}
+		}
+	}()
 	return s
 }
 
@@ -497,7 +518,6 @@ func (s *Session) registerHandlers() {
 		packet.IDSetPlayerInventoryOptions: nil,
 		packet.IDSubChunkRequest:           &SubChunkRequestHandler{},
 		packet.IDText:                      &TextHandler{},
-		packet.IDTickSync:                  nil,
 		packet.IDServerBoundLoadingScreen:  &ServerBoundLoadingScreenHandler{},
 		packet.IDServerBoundDiagnostics:    &ServerBoundDiagnosticsHandler{},
 	}
@@ -508,7 +528,10 @@ func (s *Session) writePacket(pk packet.Packet) {
 	if s == Nop {
 		return
 	}
-	_ = s.conn.WritePacket(pk)
+	select {
+	case s.packets <- pk:
+	case <-s.closeBackground:
+	}
 }
 
 // actorIdentifier represents the structure of an actor identifier sent over the network.

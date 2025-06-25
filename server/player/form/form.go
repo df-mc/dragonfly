@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Form represents a form that may be sent to a Submitter. The three types of forms, custom forms, menu forms
@@ -100,10 +101,11 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 		if !fieldV.CanSet() {
 			continue
 		}
+		e := fieldV.Interface().(Element)
 		if len(data) == 0 {
 			return fmt.Errorf("form JSON data array does not have enough values")
 		}
-		elem, err := f.parseValue(fieldV.Interface().(Element), data[0])
+		elem, err := f.parseValue(e, data[0])
 		if err != nil {
 			return fmt.Errorf("error parsing form response value: %w", err)
 		}

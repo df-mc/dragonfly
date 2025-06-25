@@ -6,6 +6,20 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"iter"
+	"maps"
+	"os"
+	"os/exec"
+	"os/signal"
+	"runtime"
+	"runtime/debug"
+	"slices"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"syscall"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/internal/blockinternal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -24,19 +38,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"golang.org/x/text/language"
-	"iter"
-	"maps"
-	"os"
-	"os/exec"
-	"os/signal"
-	"runtime"
-	"runtime/debug"
-	"slices"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"syscall"
-	"time"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and
@@ -323,7 +324,6 @@ func (srv *Server) close() {
 			srv.conf.Log.Error("Close listener: " + err.Error())
 		}
 	}
-	srv.conf.Log.Info("Server closed.", "uptime", time.Since(*srv.started.Load()).String())
 }
 
 // listen makes the Server listen for new connections from the Listener passed.
@@ -413,6 +413,7 @@ func (srv *Server) makeItemComponents() {
 // to listen and closed the players channel once that happens.
 func (srv *Server) wait() {
 	srv.wg.Wait()
+	srv.conf.Log.Info("Server closed.", "uptime", time.Since(*srv.started.Load()).String())
 	close(srv.incoming)
 }
 
@@ -433,6 +434,8 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	dim, _ := world.DimensionID(w.Dimension())
 	data.Dimension = int32(dim)
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
+
+	data.EmoteChatMuted = srv.conf.MuteEmoteChat
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
@@ -471,11 +474,13 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 
 		Items:        srv.itemEntries(),
 		CustomBlocks: srv.customBlocks,
-		GameRules:    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+		GameRules: []protocol.GameRule{
+			{Name: "naturalregeneration", Value: false},
+			{Name: "locatorBar", Value: false},
+		},
 
 		ServerAuthoritativeInventory: true,
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
-			MovementType:                     protocol.PlayerMovementModeServer,
 			ServerAuthoritativeBlockBreaking: true,
 		},
 	}
@@ -642,42 +647,6 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 	}
 	entries = append(entries, srv.customItems...)
 	return entries
-}
-
-// ashyBiome represents a biome that has any form of ash.
-type ashyBiome interface {
-	// Ash returns the ash and white ash of the biome.
-	Ash() (ash float64, whiteAsh float64)
-}
-
-// sporingBiome represents a biome that has blue or red spores.
-type sporingBiome interface {
-	// Spores returns the blue and red spores of the biome.
-	Spores() (blueSpores float64, redSpores float64)
-}
-
-// biomes builds a mapping of all biome definitions of the server, ready to be
-// set in the biomes field of the server listener.
-func biomes() map[string]any {
-	definitions := make(map[string]any)
-	for _, b := range world.Biomes() {
-		definition := map[string]any{
-			"name_hash":   b.String(), // Not actually a hash despite the name.
-			"temperature": float32(b.Temperature()),
-			"downfall":    float32(b.Rainfall()),
-			"rain":        b.Rainfall() > 0,
-		}
-		if a, ok := b.(ashyBiome); ok {
-			ash, whiteAsh := a.Ash()
-			definition["ash"], definition["white_ash"] = float32(ash), float32(whiteAsh)
-		}
-		if s, ok := b.(sporingBiome); ok {
-			blueSpores, redSpores := s.Spores()
-			definition["blue_spores"], definition["red_spores"] = float32(blueSpores), float32(redSpores)
-		}
-		definitions[b.String()] = definition
-	}
-	return definitions
 }
 
 var (

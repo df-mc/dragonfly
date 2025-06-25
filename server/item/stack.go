@@ -172,7 +172,11 @@ func (s Stack) AsBreakable() Stack {
 
 // Empty checks if the stack is empty (has a count of 0).
 func (s Stack) Empty() bool {
-	return s.Count() == 0 || s.item == nil
+	if s.Count() == 0 || s.item == nil {
+		return true
+	}
+	name, _ := s.item.EncodeItem()
+	return name == "minecraft:air"
 }
 
 // Item returns the item that the stack holds. If the stack is considered empty (Stack.Empty()), Item will
@@ -240,6 +244,9 @@ func (s Stack) WithValue(key string, val any) Stack {
 		s.data[key] = val
 	} else {
 		delete(s.data, key)
+		if len(s.data) == 0 {
+			s.data = nil
+		}
 	}
 	return s
 }

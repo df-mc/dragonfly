@@ -2,6 +2,12 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"slices"
+	_ "unsafe"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
@@ -16,11 +22,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"slices"
-	_ "unsafe"
 )
 
 // Config contains options for starting a Minecraft server.
@@ -58,6 +59,8 @@ type Config struct {
 	// local games. Allowing players to join without authentication is generally
 	// a security hazard.
 	AuthDisabled bool
+	// MuteEmoteChat specifies if the player emote chat should be muted or not.
+	MuteEmoteChat bool
 	// MaxPlayers is the maximum amount of players allowed to join the server at
 	// once.
 	MaxPlayers int
@@ -166,6 +169,7 @@ func (conf Config) New() *Server {
 		srv.listeners = append(srv.listeners, l)
 	}
 
+	creative_registerCreativeItems()
 	world_finaliseBlockRegistry()
 	recipe_registerVanilla()
 
@@ -198,6 +202,8 @@ type UserConfig struct {
 		// DisableJoinQuitMessages specifies if default join and quit messages
 		// for players should be disabled.
 		DisableJoinQuitMessages bool
+		// MuteEmoteChat specifies if the player emote chat should be muted or not.
+		MuteEmoteChat bool
 	}
 	World struct {
 		// SaveData controls whether a world's data will be saved and loaded.
@@ -251,6 +257,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		Name:                    uc.Server.Name,
 		ResourcesRequired:       uc.Resources.Required,
 		AuthDisabled:            !uc.Server.AuthEnabled,
+		MuteEmoteChat:           uc.Server.MuteEmoteChat,
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
@@ -327,6 +334,11 @@ func DefaultConfig() UserConfig {
 	c.Resources.Required = false
 	return c
 }
+
+// noinspection ALL
+//
+//go:linkname creative_registerCreativeItems github.com/df-mc/dragonfly/server/item/creative.registerCreativeItems
+func creative_registerCreativeItems()
 
 // noinspection ALL
 //
