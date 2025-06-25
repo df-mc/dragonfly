@@ -3,6 +3,7 @@ package player
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/debug"
+	"image/color"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -401,6 +402,16 @@ func (p *Player) SendForm(f form.Form) {
 // happens.
 func (p *Player) CloseForm() {
 	p.session().CloseForm()
+}
+
+// ShowLocatorBar enables the vanilla locator bar for the player.
+func (p *Player) ShowLocatorBar() {
+	p.session().EnableLocatorBar(true)
+}
+
+// HideLocatorBar disables the vanilla locator bar for the player.
+func (p *Player) HideLocatorBar() {
+	p.session().EnableLocatorBar(false)
 }
 
 // ShowCoordinates enables the vanilla coordinates for the player.
@@ -2186,6 +2197,16 @@ func (p *Player) Collect(s item.Stack) (int, bool) {
 		added += n
 	}
 	return added, true
+}
+
+// Colour returns the player's colour in the locator bar.
+func (p *Player) Colour() color.RGBA {
+	return p.session().Colour()
+}
+
+// SetColour changes the player's colour in the locator bar.
+func (p *Player) SetColour(colour color.RGBA) {
+	p.session().SetColour(colour)
 }
 
 // Experience returns the amount of experience the player has.
