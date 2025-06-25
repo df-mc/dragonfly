@@ -4,19 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"io"
-	"log/slog"
-	"net"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
@@ -27,6 +20,13 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"io"
+	"log/slog"
+	"net"
+	rdebug "runtime/debug"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 // Session handles incoming packets from connections and sends outgoing packets by providing a thin layer
@@ -142,6 +142,8 @@ type Config struct {
 	JoinMessage, QuitMessage chat.Translation
 
 	HandleStop func(*world.Tx, Controllable)
+
+	Recovery func(err any, sess *Session)
 }
 
 func (conf Config) New(conn Conn) *Session {
@@ -466,6 +468,8 @@ func (s *Session) ChangingDimension() bool {
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
 func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
+	defer s.recover(pk)
+
 	handler, ok := s.handlers[pk.ID()]
 	if !ok {
 		s.conf.Log.Debug("unhandled packet", "packet", fmt.Sprintf("%T", pk), "data", fmt.Sprintf("%+v", pk)[1:])
@@ -548,4 +552,15 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 		panic("should never happen")
 	}
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
+}
+
+// recover recovers panic if Recovery != nil.
+func (s *Session) recover(pk packet.Packet) {
+	if s.conf.Recovery != nil {
+		if err := recover(); err != nil {
+			stackTrace := rdebug.Stack()
+			s.conf.Log.Error("panic recovered", "error:", err, "packet:", fmt.Sprintf("%T", pk), "stack:", string(stackTrace))
+			s.conf.Recovery(err, s)
+		}
+	}
 }
