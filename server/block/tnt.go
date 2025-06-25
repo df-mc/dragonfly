@@ -40,6 +40,18 @@ func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	return true
 }
 
+// NeighbourUpdateTick ...
+func (t TNT) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	t.RedstoneUpdate(pos, tx)
+}
+
+// RedstoneUpdate ...
+func (t TNT) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	if receivedRedstonePower(pos, tx) {
+		t.Ignite(pos, tx, nil)
+	}
+}
+
 // Explode ...
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, _ ExplosionConfig) {
 	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))))

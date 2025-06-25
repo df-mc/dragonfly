@@ -71,6 +71,11 @@ func (w Water) WithDepth(depth int, falling bool) world.Liquid {
 	return w
 }
 
+// PistonBreakable ...
+func (Water) PistonBreakable() bool {
+	return true
+}
+
 // LiquidFalling returns Water.Falling.
 func (w Water) LiquidFalling() bool {
 	return w.Falling

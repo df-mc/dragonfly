@@ -185,6 +185,24 @@ type ComposterReady struct{ sound }
 // PotionBrewed is a sound played when a potion is brewed.
 type PotionBrewed struct{ sound }
 
+// PowerOn is a sound played when a redstone component is powered on.
+type PowerOn struct{ sound }
+
+// PowerOff is a sound played when a redstone component is powered off.
+type PowerOff struct{ sound }
+
+// PistonExtend is a sound played when a piston extends.
+type PistonExtend struct{ sound }
+
+// PistonRetract is a sound played when a piston retracts.
+type PistonRetract struct{ sound }
+
+// DispenseFail is a sound played when a dispenser fails to dispense an item.
+type DispenseFail struct{ sound }
+
+// Dispense is a sound played when a dispenser dispenses an item.
+type Dispense struct{ sound }
+
 // LecternBookPlace is a sound played when a book is placed in a lectern.
 type LecternBookPlace struct{ sound }
 

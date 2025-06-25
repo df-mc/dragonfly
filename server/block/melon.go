@@ -20,6 +20,11 @@ func (Melon) CompostChance() float64 {
 	return 0.65
 }
 
+// PistonBreakable ...
+func (Melon) PistonBreakable() bool {
+	return true
+}
+
 // EncodeItem ...
 func (Melon) EncodeItem() (name string, meta int16) {
 	return "minecraft:melon_block", 0

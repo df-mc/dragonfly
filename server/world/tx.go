@@ -224,6 +224,33 @@ func (tx *Tx) World() *World {
 	return tx.w
 }
 
+// RedstonePower returns the level of redstone power being emitted from a position to the provided face.
+func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
+	b := tx.Block(pos)
+	if c, ok := b.(Conductor); ok {
+		power = c.WeakPower(pos, face, tx, accountForDust)
+	}
+	if b, ok := b.(redstoneBlocking); ok && b.RedstoneBlocking() {
+		return power
+	}
+	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() == 0 {
+		return power
+	}
+	for _, f := range cube.Faces() {
+		if !b.Model().FaceSolid(pos, f, tx) {
+			return power
+		}
+	}
+	for _, f := range cube.Faces() {
+		c, ok := tx.Block(pos.Side(f)).(Conductor)
+		if !ok {
+			continue
+		}
+		power = max(power, c.StrongPower(pos.Side(f), f, tx, accountForDust))
+	}
+	return power
+}
+
 // close finishes the Tx, causing any following call on the Tx to panic.
 func (tx *Tx) close() {
 	tx.closed = true
