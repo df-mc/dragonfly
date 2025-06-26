@@ -238,7 +238,9 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			// we return the command usage.
 			return nil, MessageUsage.F(cmd.Usage())
 		}
-		argFrags = record
+		argFrags = slices.DeleteFunc(record, func(s string) bool {
+			return s == ""
+		})
 	}
 	parser := parser{}
 	arguments := &Line{args: argFrags, src: source, seen: []string{"/" + cmd.name}, cmd: cmd}
