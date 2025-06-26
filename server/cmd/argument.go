@@ -46,6 +46,10 @@ func (line *Line) Next() (string, bool) {
 	if !ok {
 		return "", false
 	}
+	if v[0] == "" {
+		line.RemoveNext()
+		return line.Next()
+	}
 	return v[0], true
 }
 
