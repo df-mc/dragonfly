@@ -93,6 +93,7 @@ type Session struct {
 	debugShapesRemove chan int
 
 	closeBackground chan struct{}
+	closeRead       chan struct{}
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -160,6 +161,7 @@ func (conf Config) New(conn Conn) *Session {
 	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
+		closeRead:              make(chan struct{}),
 		handlers:               map[uint32]packetHandler{},
 		outgoingPackets:        make(chan packet.Packet, 256),
 		incomingPackets:        make(chan packet.Packet, 256),
@@ -227,7 +229,11 @@ func (conf Config) New(conn Conn) *Session {
 
 				if err != nil {
 					s.conf.Log.Debug("process packet: " + err.Error())
-					s.CloseConnection() // TODO: improve closing behavior
+					select {
+					case <-s.closeRead:
+					default:
+						close(s.closeRead)
+					}
 				}
 			}
 		}
@@ -372,7 +378,7 @@ func (s *Session) handlePackets() {
 		}
 
 		select {
-		case <-s.closeBackground:
+		case <-s.closeRead:
 			return
 		case s.incomingPackets <- pk:
 		}
