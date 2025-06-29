@@ -268,6 +268,7 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	}
 
 	c.modified = true
+	c.InvalidateNetworkCache(int16(pos[1]) >> 4)
 	c.SetBlock(x, y, z, 0, rid)
 	if nbtBlocks[rid] {
 		c.BlockEntities[pos] = b
@@ -326,6 +327,7 @@ func (w *World) setBiome(pos cube.Pos, b Biome) {
 	}
 	c := w.chunk(chunkPosFromBlockPos(pos))
 	c.modified = true
+	c.InvalidateNetworkCache(int16(pos[1]) >> 4)
 	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
 }
 
@@ -405,6 +407,7 @@ func (w *World) buildStructure(pos cube.Pos, s Structure) {
 			}
 			c.SetBlock(0, 0, 0, 0, c.Block(0, 0, 0, 0)) // Make sure the heightmap is recalculated.
 			c.modified = true
+			c.InvalidateAllNetworkCache()
 
 			// After setting all blocks of the structure within a single chunk,
 			// we show the new chunk to all viewers once.
@@ -483,6 +486,7 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 		}
 	}
 	c.modified = true
+	c.InvalidateNetworkCache(y >> 4)
 
 	w.doBlockUpdatesAround(pos)
 }
@@ -1226,6 +1230,12 @@ func (w *World) closeUnusedChunks(tx *Tx) {
 type Column struct {
 	modified bool
 
+	// networkEncodedCache is a cache of the encoded chunk data that can be sent
+	// over the network. This is used to avoid re-encoding the chunk every time
+	// it is sent to a viewer. The cache is invalidated when the chunk is
+	// modified, so that the next time it is sent, it is re-encoded.
+	networkEncodedCache map[int16][]byte
+
 	*chunk.Chunk
 	Entities      []*EntityHandle
 	BlockEntities map[cube.Pos]Block
@@ -1236,7 +1246,7 @@ type Column struct {
 
 // newColumn returns a new Column wrapper around the chunk.Chunk passed.
 func newColumn(c *chunk.Chunk) *Column {
-	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}}
+	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}, networkEncodedCache: make(map[int16][]byte, 24)}
 }
 
 // columnTo converts a Column to a chunk.Column so that it can be written to
@@ -1307,4 +1317,30 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	}
 	w.scheduledUpdates.add(scheduled)
 	return col
+}
+
+// InvalidateAllNetworkCache invalidates the network encoded cache of the chunk.
+func (c *Column) InvalidateAllNetworkCache() {
+	for ind := range c.networkEncodedCache {
+		delete(c.networkEncodedCache, ind)
+	}
+}
+
+// InvalidateNetworkCache invalidates the network encoded cache.
+func (c *Column) InvalidateNetworkCache(ind int16) {
+	delete(c.networkEncodedCache, ind)
+}
+
+// StoreNetworkCache stores the network-encoded cache of the chunk.
+func (c *Column) StoreNetworkCache(ind int16, data []byte) {
+	c.networkEncodedCache[ind] = append([]byte(nil), data...)
+}
+
+// NetworkEncodedCache returns the network-encoded cache of the chunk.
+func (c *Column) NetworkEncodedCache(ind int16) ([]byte, bool) {
+	v, ok := c.networkEncodedCache[ind]
+	if !ok {
+		return nil, false
+	}
+	return append([]byte(nil), v...), true
 }
