@@ -1282,6 +1282,8 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 		Chunk:         c.Chunk,
 		Entities:      make([]*EntityHandle, 0, len(c.Entities)),
 		BlockEntities: make(map[cube.Pos]Block, len(c.BlockEntities)),
+
+		networkEncodedCache: make(map[int16][]byte, 24),
 	}
 	for _, e := range c.Entities {
 		eid, ok := e.Data["identifier"].(string)
