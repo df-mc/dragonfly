@@ -2442,7 +2442,6 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	p.session().SendDebugShapes()
 	p.session().SendHudUpdates()
-	p.session().SendDebugShapes()
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
 		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
