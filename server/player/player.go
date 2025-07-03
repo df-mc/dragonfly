@@ -2441,8 +2441,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	}
 
 	p.session().SendDebugShapes()
-	p.s.SendHudUpdates()
-	p.s.SendDebugShapes()
+	p.session().SendHudUpdates()
+	p.session().SendDebugShapes()
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
 		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
@@ -2869,17 +2869,17 @@ func (p *Player) UpdateDiagnostics(d session.Diagnostics) {
 
 // ShowHudElement shows a HUD element to the player if it is not already shown.
 func (p *Player) ShowHudElement(e hud.Element) {
-	p.s.ShowHudElement(e)
+	p.session().ShowHudElement(e)
 }
 
 // HideHudElement hides a HUD element from the player if it is not already hidden.
 func (p *Player) HideHudElement(e hud.Element) {
-	p.s.HideHudElement(e)
+	p.session().HideHudElement(e)
 }
 
 // HudElementHidden checks if a HUD element is currently hidden from the player.
 func (p *Player) HudElementHidden(e hud.Element) bool {
-	return p.s.HudElementHidden(e)
+	return p.session().HudElementHidden(e)
 }
 
 // AddDebugShape adds a debug shape to be rendered to the player. If the shape already exists, it will be
