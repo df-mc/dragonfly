@@ -36,10 +36,11 @@ type Session struct {
 	conf           Config
 	once, connOnce sync.Once
 
-	ent      *world.EntityHandle
-	conn     Conn
-	handlers map[uint32]packetHandler
-	packets  chan packet.Packet
+	ent             *world.EntityHandle
+	conn            Conn
+	handlers        map[uint32]packetHandler
+	outgoingPackets chan packet.Packet
+	incomingPackets chan packet.Packet
 
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
@@ -97,6 +98,7 @@ type Session struct {
 	debugShapesRemove chan int
 
 	closeBackground chan struct{}
+	closeRead       chan struct{}
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -164,8 +166,10 @@ func (conf Config) New(conn Conn) *Session {
 	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
+		closeRead:              make(chan struct{}),
 		handlers:               map[uint32]packetHandler{},
-		packets:                make(chan packet.Packet, 256),
+		outgoingPackets:        make(chan packet.Packet, 256),
+		incomingPackets:        make(chan packet.Packet, 256),
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
 		hiddenEntities:         map[uuid.UUID]struct{}{},
@@ -203,8 +207,41 @@ func (conf Config) New(conn Conn) *Session {
 			select {
 			case <-s.closeBackground:
 				return
-			case pk := <-s.packets:
+			case pk := <-s.outgoingPackets:
 				_ = conn.WritePacket(pk)
+			case first := <-s.incomingPackets:
+				var err error
+				s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+					err = s.handlePacket(first, tx, e.(Controllable))
+					if err != nil {
+						return
+					}
+
+					total := len(s.incomingPackets)
+				receive:
+					for i := 0; i < total; i++ {
+						select {
+						case <-s.closeBackground:
+							break receive
+						case pk := <-s.incomingPackets:
+							err = s.handlePacket(pk, tx, e.(Controllable))
+							if err != nil {
+								break receive
+							}
+						default:
+							break receive
+						}
+					}
+				})
+
+				if err != nil {
+					s.conf.Log.Debug("process packet: " + err.Error())
+					select {
+					case <-s.closeRead:
+					default:
+						close(s.closeRead)
+					}
+				}
 			}
 		}
 	}()
@@ -346,12 +383,11 @@ func (s *Session) handlePackets() {
 		if err != nil {
 			return
 		}
-		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			err = s.handlePacket(pk, tx, e.(Controllable))
-		})
-		if err != nil {
-			s.conf.Log.Debug("process packet: " + err.Error())
+
+		select {
+		case <-s.closeRead:
 			return
+		case s.incomingPackets <- pk:
 		}
 	}
 }
@@ -533,7 +569,7 @@ func (s *Session) writePacket(pk packet.Packet) {
 		return
 	}
 	select {
-	case s.packets <- pk:
+	case s.outgoingPackets <- pk:
 	case <-s.closeBackground:
 	}
 }
