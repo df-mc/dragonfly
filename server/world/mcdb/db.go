@@ -308,7 +308,7 @@ func (db *DB) scheduledUpdates(k dbKey) ([]chunk.ScheduledBlockUpdate, int64, er
 	}
 	var m scheduledUpdates
 	if err := nbt.UnmarshalEncoding(data, &m, nbt.LittleEndian); err != nil {
-		return nil, 0, fmt.Errorf("read nbt: " + err.Error())
+		return nil, 0, fmt.Errorf("read nbt: %s", err.Error())
 	}
 	updates := make([]chunk.ScheduledBlockUpdate, len(m.TickList))
 	for i, tick := range m.TickList {
