@@ -101,29 +101,6 @@ func updateDirectionalRedstone(pos cube.Pos, tx *world.Tx, face cube.Face) {
 	updateAroundRedstone(pos.Side(face), tx, face.Opposite())
 }
 
-// updateGateRedstone is used to update redstone gates on each face of the given offset centre position.
-func updateGateRedstone(centre cube.Pos, tx *world.Tx, face cube.Face) {
-	pos := centre.Side(face.Opposite())
-	if r, ok := tx.Block(pos).(RedstoneUpdater); ok {
-		r.RedstoneUpdate(pos, tx)
-	}
-
-	updateAroundRedstone(pos, tx, face)
-}
-
-// receivedRedstonePower returns true if the given position is receiving power from any faces that aren't ignored.
-func receivedRedstonePower(pos cube.Pos, w *world.Tx, ignoredFaces ...cube.Face) bool {
-	for _, face := range cube.Faces() {
-		if slices.Contains(ignoredFaces, face) {
-			continue
-		}
-		if w.RedstonePower(pos.Side(face), face, true) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
 // identifyNeighbours identifies the neighbouring positions of a given node, determines their types, and links them into
 // the graph. After that, based on what nodes in the graph have been visited, the neighbours are reordered left-to-right
 // relative to the direction of information flow.
