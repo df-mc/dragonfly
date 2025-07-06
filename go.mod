@@ -1,6 +1,8 @@
 module github.com/df-mc/dragonfly
 
-go 1.23
+go 1.24
+
+toolchain go1.24.4
 
 require (
 	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
@@ -10,7 +12,7 @@ require (
 	github.com/go-gl/mathgl v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/sandertv/gophertunnel v1.47.4
+	github.com/sandertv/gophertunnel v1.48.0
 	github.com/segmentio/fasthash v1.0.3
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
 	golang.org/x/mod v0.22.0
@@ -19,7 +21,7 @@ require (
 )
 
 require (
-	github.com/go-jose/go-jose/v4 v4.0.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect

@@ -105,12 +105,22 @@ func DiscPrecipice() DiscType {
 	return DiscType{18}
 }
 
+// DiscTears returns the music disc "Tears".
+func DiscTears() DiscType {
+	return DiscType{19}
+}
+
+// DiscLavaChicken returns the music disc "Lava Chicken".
+func DiscLavaChicken() DiscType {
+	return DiscType{20}
+}
+
 // MusicDiscs returns a list of all existing music discs.
 func MusicDiscs() []DiscType {
 	return []DiscType{
 		Disc13(), DiscCat(), DiscBlocks(), DiscChirp(), DiscFar(), DiscMall(), DiscMellohi(), DiscStal(),
 		DiscStrad(), DiscWard(), Disc11(), DiscWait(), DiscOtherside(), DiscPigstep(), Disc5(), DiscRelic(),
-		DiscCreator(), DiscCreatorMusicBox(), DiscPrecipice(),
+		DiscCreator(), DiscCreatorMusicBox(), DiscPrecipice(), DiscTears(), DiscLavaChicken(),
 	}
 }
 
@@ -163,6 +173,10 @@ func (d disc) String() string {
 		return "creator_music_box"
 	case 18:
 		return "precipice"
+	case 19:
+		return "tears"
+	case 20:
+		return "lava_chicken"
 	}
 	panic("unknown record type")
 }
@@ -191,6 +205,10 @@ func (d disc) Author() string {
 		return "Samuel Åberg"
 	case 15, 18:
 		return "Aaron Cherof"
+	case 19:
+		return "Amos Roddy"
+	case 20:
+		return "Hyper Potions"
 	}
 	panic("unknown record type")
 }

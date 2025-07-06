@@ -3,6 +3,7 @@ package player
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -1648,6 +1649,12 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	if !p.canReach(e.Position()) {
 		return false
 	}
+
+	living, isLiving := e.(entity.Living)
+	if isLiving && living.Dead() {
+		return false
+	}
+
 	var (
 		force, height  = 0.45, 0.3608
 		_, slowFalling = p.Effect(effect.SlowFalling)
@@ -1662,8 +1669,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	p.SwingArm()
 
 	i, _ := p.HeldItems()
-	living, ok := e.(entity.Living)
-	if !ok {
+	if !isLiving {
 		return false
 	}
 
@@ -2435,6 +2441,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	}
 
 	p.session().SendDebugShapes()
+	p.session().SendHudUpdates()
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
 		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
@@ -2857,6 +2864,21 @@ func (p *Player) PunchAir() {
 // UpdateDiagnostics updates the diagnostics of the player.
 func (p *Player) UpdateDiagnostics(d session.Diagnostics) {
 	p.Handler().HandleDiagnostics(p, d)
+}
+
+// ShowHudElement shows a HUD element to the player if it is not already shown.
+func (p *Player) ShowHudElement(e hud.Element) {
+	p.session().ShowHudElement(e)
+}
+
+// HideHudElement hides a HUD element from the player if it is not already hidden.
+func (p *Player) HideHudElement(e hud.Element) {
+	p.session().HideHudElement(e)
+}
+
+// HudElementHidden checks if a HUD element is currently hidden from the player.
+func (p *Player) HudElementHidden(e hud.Element) bool {
+	return p.session().HudElementHidden(e)
 }
 
 // AddDebugShape adds a debug shape to be rendered to the player. If the shape already exists, it will be
