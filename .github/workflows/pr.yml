@@ -1,12 +1,9 @@
 name: Build
-on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, closed]
+on: [pull_request]
 jobs:
 
   build:
     name: Build
-    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
 
@@ -37,43 +34,3 @@ jobs:
         uses: dominikh/staticcheck-action@v1
         with:
           install-go: false
-
-  deploy:
-    name: Deploy
-    if: github.event.action != 'closed'
-    runs-on: ubuntu-latest
-    steps:
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
-
-      - name: Set up Go 1.24
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.24
-        id: go
-
-      - name: Get dependencies
-        run: |
-          mkdir -p $GOPATH/bin
-          export PATH=$PATH:$GOPATH/bin
-
-      - name: Build
-        run: go build -o dragonfly_exe -v .
-
-      - name: Deploy test server
-        run: |
-          curl -X POST https://df-mc.dev/pullrequest \
-            -H "X-API-Key: ${{ secrets.API_KEY }}" \
-            -F "pr=${{ github.event.pull_request.number }}" \
-            -F "binary=@dragonfly_exe"
-
-  cleanup:
-    name: Cleanup
-    if: github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete test server
-        run: |
-          curl -X DELETE https://df-mc.dev/pullrequest/${{ github.event.pull_request.number }} \
-            -H "X-API-Key: ${{ secrets.API_KEY }}"
