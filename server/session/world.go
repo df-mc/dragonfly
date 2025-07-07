@@ -795,7 +795,7 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		case sound.DiscTears():
 			pk.SoundType = packet.SoundEventRecordTears
 		case sound.DiscLavaChicken():
-			pk.SoundType = 561 // TODO: packet.SoundEventRecordLavaChicken
+			pk.SoundType = packet.SoundEventRecordLavaChicken
 		default:
 			panic(fmt.Errorf("disc (%v) does not have sound", so.DiscType.String()))
 		}
