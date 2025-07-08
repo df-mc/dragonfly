@@ -3,6 +3,11 @@ package session
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
+	"github.com/go-gl/mathgl/mgl32"
+	"image/color"
+	"maps"
 	"math"
 	"net"
 	"slices"
@@ -665,6 +670,7 @@ func (s *Session) uiInventoryFunc(tx *world.Tx, c Controllable) inventory.SlotFu
 				s.sendEnchantmentOptions(tx, c, pos, after)
 			}
 		}
+		s.sendInv(s.ui, protocol.WindowIDUI)
 	}
 }
 
@@ -747,6 +753,192 @@ func (s *Session) SendChargeItemComplete() {
 		EntityRuntimeID: selfEntityRuntimeID,
 		EventType:       packet.ActorEventFinishedChargingItem,
 	})
+}
+
+// ShowHudElement shows a HUD element to the player if it is not already shown. If the element is waiting to
+// be hidden, it will be removed from the updates and remain visible to the player.
+func (s *Session) ShowHudElement(e hud.Element) {
+	s.hudMu.Lock()
+	defer s.hudMu.Unlock()
+
+	if _, ok := s.hiddenHud[e]; ok {
+		s.hudUpdates[e] = true
+	} else if _, ok = s.hudUpdates[e]; ok {
+		delete(s.hudUpdates, e)
+	}
+}
+
+// HideHudElement hides a HUD element from the player if it is not already hidden. If the element is waiting
+// to be shown, it will be removed from the updates and remain hidden from the player.
+func (s *Session) HideHudElement(e hud.Element) {
+	s.hudMu.Lock()
+	defer s.hudMu.Unlock()
+
+	if _, ok := s.hiddenHud[e]; !ok {
+		s.hudUpdates[e] = false
+	} else if _, ok = s.hudUpdates[e]; ok {
+		delete(s.hudUpdates, e)
+	}
+}
+
+// HudElementHidden checks if a HUD element is currently hidden from the player.
+func (s *Session) HudElementHidden(e hud.Element) bool {
+	s.hudMu.RLock()
+	defer s.hudMu.RUnlock()
+
+	if _, ok := s.hiddenHud[e]; ok {
+		return true
+	}
+	vis, ok := s.hudUpdates[e]
+	return ok && !vis
+}
+
+// SendHudUpdates sends any pending HUD updates to the player. The updates are batched to reduce the number
+// of packets being sent. Up to 2 packets will be sent, one for showing elements and one for hiding elements.
+func (s *Session) SendHudUpdates() {
+	s.hudMu.Lock()
+	defer s.hudMu.Unlock()
+	if len(s.hudUpdates) == 0 {
+		return
+	}
+	var show, hide []int32
+	for e, vis := range s.hudUpdates {
+		if vis {
+			show = append(show, int32(e.Uint8()))
+			delete(s.hiddenHud, e)
+		} else {
+			hide = append(hide, int32(e.Uint8()))
+			s.hiddenHud[e] = struct{}{}
+		}
+	}
+	s.hudUpdates = make(map[hud.Element]bool)
+	if len(show) > 0 {
+		s.writePacket(&packet.SetHud{Elements: show, Visibility: packet.HudVisibilityReset})
+	}
+	if len(hide) > 0 {
+		s.writePacket(&packet.SetHud{Elements: hide, Visibility: packet.HudVisibilityHide})
+	}
+}
+
+// AddDebugShape adds a debug shape to be rendered to the player. If the shape already exists, it will be
+// updated with the new information.
+func (s *Session) AddDebugShape(shape debug.Shape) {
+	s.debugShapesAdd <- shape
+}
+
+// RemoveDebugShape removes a debug shape from the player by its unique identifier.
+func (s *Session) RemoveDebugShape(shape debug.Shape) {
+	s.debugShapesMu.RLock()
+	defer s.debugShapesMu.RUnlock()
+
+	if _, ok := s.debugShapes[shape.ShapeID()]; ok {
+		s.debugShapesRemove <- shape.ShapeID()
+	}
+}
+
+// VisibleDebugShapes returns a slice of all debug shapes that are currently being shown to the player.
+func (s *Session) VisibleDebugShapes() []debug.Shape {
+	s.debugShapesMu.RLock()
+	defer s.debugShapesMu.RUnlock()
+
+	return slices.Collect(maps.Values(s.debugShapes))
+}
+
+// RemoveAllDebugShapes removes all rendered debug shapes from the player, as well as any shapes that have
+// not yet been rendered.
+func (s *Session) RemoveAllDebugShapes() {
+	s.debugShapesMu.Lock()
+	defer s.debugShapesMu.Unlock()
+
+	s.debugShapesAdd = make(chan debug.Shape, 256)
+	for id := range s.debugShapes {
+		s.debugShapesRemove <- id
+	}
+}
+
+// SendDebugShapes sends any pending additions/removals of debug shapes to the player. Shapes should be sent
+// every tick to allow for batching and time-efficient updates.
+func (s *Session) SendDebugShapes() {
+	s.debugShapesMu.Lock()
+	defer s.debugShapesMu.Unlock()
+
+	if len(s.debugShapesAdd) == 0 && len(s.debugShapesRemove) == 0 {
+		return
+	}
+
+	shapes := make([]packet.DebugDrawerShape, 0, len(s.debugShapesAdd)+len(s.debugShapesRemove))
+loop:
+	for {
+		select {
+		case shape := <-s.debugShapesAdd:
+			s.debugShapes[shape.ShapeID()] = shape
+			shapes = append(shapes, s.debugShapeToProtocol(shape))
+		case id := <-s.debugShapesRemove:
+			delete(s.debugShapes, id)
+			shapes = append(shapes, packet.DebugDrawerShape{NetworkID: uint64(id)})
+		default:
+			break loop
+		}
+	}
+	s.writePacket(&packet.ServerScriptDebugDrawer{Shapes: shapes})
+}
+
+// debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
+// for some fields such as colour, scale and other per-shape properties.
+func (s *Session) debugShapeToProtocol(shape debug.Shape) packet.DebugDrawerShape {
+	ps := packet.DebugDrawerShape{NetworkID: uint64(shape.ShapeID())}
+	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	switch shape := shape.(type) {
+	case *debug.Arrow:
+		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeArrow))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.LineEndLocation = protocol.Option(vec64To32(shape.EndPosition))
+		ps.ArrowHeadLength = protocol.Option(valueOrDefault(float32(shape.HeadLength), 1))
+		ps.ArrowHeadRadius = protocol.Option(valueOrDefault(float32(shape.HeadRadius), 0.5))
+		ps.Segments = protocol.Option(valueOrDefault(uint8(shape.HeadSegments), 4))
+	case *debug.Box:
+		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeBox))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.BoxBound = protocol.Option(valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1}))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+	case *debug.Circle:
+		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeCircle))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.Segments = protocol.Option(valueOrDefault(uint8(shape.Segments), 20))
+	case *debug.Line:
+		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeLine))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.LineEndLocation = protocol.Option(vec64To32(shape.EndPosition))
+	case *debug.Sphere:
+		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeSphere))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.Segments = protocol.Option(valueOrDefault(uint8(shape.Segments), 20))
+	case *debug.Text:
+		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeText))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Text = protocol.Option(shape.Text)
+	default:
+		panic(fmt.Sprintf("unknown debug shape type %T", shape))
+	}
+	return ps
+}
+
+// valueOrDefault returns the value passed if it is not the zero value of the type T, otherwise it returns
+// the default value provided.
+func valueOrDefault[T comparable](v, def T) T {
+	var zero T
+	if v == zero {
+		return def
+	}
+	return v
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.

@@ -20,6 +20,14 @@ func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 		playerData: pd,
 	}
 
+	pd.offHand.SlotValidatorFunc(func(s item.Stack, _ int) bool {
+		if s.Empty() {
+			return true
+		}
+		it, allowedInOffhand := s.Item().(item.OffHand)
+		return allowedInOffhand && it.OffHand()
+	})
+
 	if pd.s != nil {
 		pd.s.HandleInventories(tx, p, pd.inv, pd.offHand, pd.enderChest, pd.ui, pd.armour, pd.heldSlot)
 	} else {

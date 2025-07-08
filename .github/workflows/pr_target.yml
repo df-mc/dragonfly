@@ -1,0 +1,47 @@
+name: Deploy
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, closed]
+jobs:
+
+  deploy:
+    name: Deploy
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+
+      - name: Set up Go 1.24
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+        id: go
+
+      - name: Get dependencies
+        run: |
+          mkdir -p $GOPATH/bin
+          export PATH=$PATH:$GOPATH/bin
+
+      - name: Build
+        run: go build -o dragonfly_exe -v .
+
+      - name: Deploy test server
+        run: |
+          curl -X POST https://df-mc.dev/pullrequest \
+            -H "X-API-Key: ${{ secrets.API_KEY }}" \
+            -F "pr=${{ github.event.pull_request.number }}" \
+            -F "binary=@dragonfly_exe"
+
+  cleanup:
+    name: Cleanup
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete test server
+        run: |
+          curl -X DELETE https://df-mc.dev/pullrequest/${{ github.event.pull_request.number }} \
+            -H "X-API-Key: ${{ secrets.API_KEY }}"

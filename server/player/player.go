@@ -2,6 +2,8 @@ package player
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -598,7 +600,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		damageLeft = max(0, damageLeft-a)
 	}
 
-	if p.Health()-damageLeft <= mgl64.Epsilon {
+	if p.Health()-damageLeft <= mgl64.Epsilon && !src.IgnoreTotem() {
 		hand, offHand := p.HeldItems()
 		if _, ok := offHand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
@@ -1647,6 +1649,12 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	if !p.canReach(e.Position()) {
 		return false
 	}
+
+	living, isLiving := e.(entity.Living)
+	if isLiving && living.Dead() {
+		return false
+	}
+
 	var (
 		force, height  = 0.45, 0.3608
 		_, slowFalling = p.Effect(effect.SlowFalling)
@@ -1661,8 +1669,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	p.SwingArm()
 
 	i, _ := p.HeldItems()
-	living, ok := e.(entity.Living)
-	if !ok {
+	if !isLiving {
 		return false
 	}
 
@@ -1903,7 +1910,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 		case entity.ItemType, entity.ArrowType:
 			continue
 		default:
-			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-6)) {
+			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-4)) {
 				obstructed = true
 				if e.H() == p.handle {
 					continue
@@ -2433,6 +2440,9 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
+	p.session().SendDebugShapes()
+	p.session().SendHudUpdates()
+
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
 		p.Handler().HandleChangeWorld(p, p.prevWorld, tx.World())
 	}
@@ -2854,6 +2864,43 @@ func (p *Player) PunchAir() {
 // UpdateDiagnostics updates the diagnostics of the player.
 func (p *Player) UpdateDiagnostics(d session.Diagnostics) {
 	p.Handler().HandleDiagnostics(p, d)
+}
+
+// ShowHudElement shows a HUD element to the player if it is not already shown.
+func (p *Player) ShowHudElement(e hud.Element) {
+	p.session().ShowHudElement(e)
+}
+
+// HideHudElement hides a HUD element from the player if it is not already hidden.
+func (p *Player) HideHudElement(e hud.Element) {
+	p.session().HideHudElement(e)
+}
+
+// HudElementHidden checks if a HUD element is currently hidden from the player.
+func (p *Player) HudElementHidden(e hud.Element) bool {
+	return p.session().HudElementHidden(e)
+}
+
+// AddDebugShape adds a debug shape to be rendered to the player. If the shape already exists, it will be
+// updated with the new information.
+func (p *Player) AddDebugShape(shape debug.Shape) {
+	p.session().AddDebugShape(shape)
+}
+
+// RemoveDebugShape removes a debug shape from the player by its unique identifier.
+func (p *Player) RemoveDebugShape(shape debug.Shape) {
+	p.session().RemoveDebugShape(shape)
+}
+
+// VisibleDebugShapes returns a slice of all debug shapes that are currently being shown to the player.
+func (p *Player) VisibleDebugShapes() []debug.Shape {
+	return p.session().VisibleDebugShapes()
+}
+
+// RemoveAllDebugShapes removes all rendered debug shapes from the player, as well as any shapes that have
+// not yet been rendered.
+func (p *Player) RemoveAllDebugShapes() {
+	p.session().RemoveAllDebugShapes()
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item

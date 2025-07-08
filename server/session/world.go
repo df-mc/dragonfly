@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
@@ -305,7 +306,7 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 
 	inv := armoured.Armour()
 
-	// Show the main hand item.
+	// Show the entity's armour
 	s.writePacket(&packet.MobArmourEquipment{
 		EntityRuntimeID: runtimeID,
 		Helmet:          instanceFromItem(inv.Helmet()),
@@ -791,6 +792,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = packet.SoundEventRecordCreatorMusicBox
 		case sound.DiscPrecipice():
 			pk.SoundType = packet.SoundEventRecordPrecipice
+		case sound.DiscTears():
+			pk.SoundType = packet.SoundEventRecordTears
+		case sound.DiscLavaChicken():
+			pk.SoundType = packet.SoundEventRecordLavaChicken
+		default:
+			panic(fmt.Errorf("disc (%v) does not have sound", so.DiscType.String()))
 		}
 	case sound.MusicDiscEnd:
 		pk.SoundType = packet.SoundEventRecordNull
@@ -825,6 +832,20 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		return
 	case sound.DecoratedPotInsertFailed:
 		pk.SoundType = packet.SoundEventDecoratedPotInsertFail
+	case sound.LightningExplode:
+		s.writePacket(&packet.PlaySound{
+			SoundName: "ambient.weather.lightning.impact",
+			Position:  vec64To32(pos),
+			Volume:    1,
+			Pitch:     0.7,
+		})
+	case sound.LightningThunder:
+		s.writePacket(&packet.PlaySound{
+			SoundName: "ambient.weather.thunder",
+			Position:  vec64To32(pos),
+			Volume:    1,
+			Pitch:     1.0,
+		})
 	}
 	s.writePacket(pk)
 }
