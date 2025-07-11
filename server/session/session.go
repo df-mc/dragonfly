@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
 	"io"
 	"log/slog"
 	"net"
@@ -18,7 +16,9 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -207,8 +207,6 @@ func (conf Config) New(conn Conn) *Session {
 			select {
 			case <-s.closeBackground:
 				return
-			case pk := <-s.outgoingPackets:
-				_ = conn.WritePacket(pk)
 			case first := <-s.incomingPackets:
 				var err error
 				s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
@@ -241,6 +239,7 @@ func (conf Config) New(conn Conn) *Session {
 					default:
 						close(s.closeRead)
 					}
+					return
 				}
 			}
 		}
@@ -379,6 +378,12 @@ func (s *Session) handlePackets() {
 		})
 	}()
 	for {
+		select {
+		case <-s.closeRead:
+			return
+		default:
+		}
+
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
 			return
@@ -386,13 +391,12 @@ func (s *Session) handlePackets() {
 
 		select {
 		case <-s.closeRead:
-			return
 		case s.incomingPackets <- pk:
 		}
 	}
 }
 
-// background performs background tasks of the Session. This includes chunk sending and automatic command updating.
+// background performs background tasks of the Session. This includes chunk sending, automatic command updating, and packet writing.
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {
 	var (
@@ -430,6 +434,8 @@ func (s *Session) background() {
 				}
 				s.sendChunks(tx, c)
 			})
+		case pk := <-s.outgoingPackets:
+			_ = s.conn.WritePacket(pk)
 		case <-s.closeBackground:
 			return
 		}
