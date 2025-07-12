@@ -39,7 +39,9 @@ type World struct {
 
 	o sync.Once
 
-	set     *Settings
+	set  *Settings
+	tick int64
+
 	handler atomic.Pointer[Handler]
 
 	weather
