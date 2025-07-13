@@ -975,6 +975,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
 		})
+	case entity.EnchantedHitAction:
+		s.writePacket(&packet.Animate{
+			ActionType:      packet.AnimateActionMagicCriticalHit,
+			EntityRuntimeID: s.entityRuntimeID(e),
+		})
 	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
