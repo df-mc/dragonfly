@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
@@ -791,6 +792,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = packet.SoundEventRecordCreatorMusicBox
 		case sound.DiscPrecipice():
 			pk.SoundType = packet.SoundEventRecordPrecipice
+		case sound.DiscTears():
+			pk.SoundType = packet.SoundEventRecordTears
+		case sound.DiscLavaChicken():
+			pk.SoundType = packet.SoundEventRecordLavaChicken
+		default:
+			panic(fmt.Errorf("disc (%v) does not have sound", so.DiscType.String()))
 		}
 	case sound.MusicDiscEnd:
 		pk.SoundType = packet.SoundEventRecordNull
