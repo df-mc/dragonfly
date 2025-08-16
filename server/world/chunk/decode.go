@@ -3,20 +3,26 @@ package chunk
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
 var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uint32, found bool)
 
-// NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
+// NetworkDecode ...
+// noinspection GoUnusedExportedFunction
+func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
+	return NetworkDecodeBuffer(air, bytes.NewBuffer(data), count, r)
+}
+
+// NetworkDecodeBuffer decodes the network serialised data from buf passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
+func NetworkDecodeBuffer(air uint32, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
 	var (
 		c   = New(air, r)
-		buf = bytes.NewBuffer(data)
 		err error
 	)
 	for i := 0; i < count; i++ {
