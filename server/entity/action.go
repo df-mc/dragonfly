@@ -16,6 +16,10 @@ type HurtAction struct{ action }
 // around the entity.
 type CriticalHitAction struct{ action }
 
+// EnchantedHitAction is a world.Action that makes an entity display enchanted hit particles. This will show circles
+// around the entity.
+type EnchantedHitAction struct{ action }
+
 // DeathAction is a world.EntityAction that makes an entity display the death animation. After this animation, the
 // entity disappears from viewers watching it.
 type DeathAction struct{ action }
