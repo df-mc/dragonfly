@@ -100,6 +100,9 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	for pos, b := range col.BlockEntities {
 		if n, ok := b.(world.NBTer); ok && col.Chunk.SubIndex(int16(pos.Y())) == ind {
 			d := n.EncodeNBT()
+			if d == nil {
+				continue
+			}
 			d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 			_ = enc.Encode(d)
 		}
@@ -178,6 +181,9 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chu
 	for bp, b := range blockEntities {
 		if n, ok := b.(world.NBTer); ok {
 			d := n.EncodeNBT()
+			if d == nil {
+				continue
+			}
 			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
 			_ = enc.Encode(d)
 		}
@@ -220,6 +226,9 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, dim world.Dimension, c *c
 	for bp, b := range blockEntities {
 		if n, ok := b.(world.NBTer); ok {
 			d := n.EncodeNBT()
+			if d == nil {
+				continue
+			}
 			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
 			_ = enc.Encode(d)
 		}
