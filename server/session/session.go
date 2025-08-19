@@ -282,6 +282,8 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	s.chunkLoader.Close(tx)
 
+	c.Wake()
+
 	if !s.conf.QuitMessage.Zero() {
 		chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
 	}
