@@ -11,9 +11,10 @@ import (
 // Scoreboard implements the io.Writer and io.StringWriter interfaces. fmt.Fprintf and fmt.Fprint may be used
 // to write formatted text to the scoreboard.
 type Scoreboard struct {
-	name    string
-	lines   []string
-	padding bool
+	name       string
+	lines      []string
+	padding    bool
+	descending bool
 }
 
 // New returns a new scoreboard with the display name passed. Once returned, lines may be added to the
@@ -87,4 +88,14 @@ func (board *Scoreboard) Lines() []string {
 		}
 	}
 	return lines
+}
+
+// Descending returns whether the scoreboard is sorted in descending order.
+func (board *Scoreboard) Descending() bool {
+	return board.descending
+}
+
+// SetDescending sets the scoreboard sort order to descending.
+func (board *Scoreboard) SetDescending() {
+	board.descending = true
 }
