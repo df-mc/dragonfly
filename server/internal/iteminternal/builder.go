@@ -53,7 +53,7 @@ func (builder *ComponentBuilder) Construct() map[string]any {
 func (builder *ComponentBuilder) applyDefaultProperties(x map[string]any) {
 	x["minecraft:icon"] = map[string]any{
 		"textures": map[string]any{
-			"default": strings.Split(builder.identifier, ":")[1],
+			"default": builder.identifier,
 		},
 	}
 	x["creative_group"] = builder.category.Group()
