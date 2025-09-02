@@ -1559,12 +1559,12 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 	if _, ok := p.tx.Block(pos).(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that does not exist server-side or one it couldn't reach. Stop trying
 		// to use the item immediately.
-		p.resendBlocks(pos, face)
+		p.resendNearbyBlocks(pos, face)
 		return
 	}
 	ctx := event.C(p)
 	if p.Handler().HandleItemUseOnBlock(ctx, pos, face, clickPos); ctx.Cancelled() {
-		p.resendBlocks(pos, face)
+		p.resendNearbyBlocks(pos, face)
 		return
 	}
 	i, left := p.HeldItems()
@@ -1739,7 +1739,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		ctx := event.C(p)
 		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
 			// Resend the block because on client side that was extinguished
-			p.resendBlocks(pos, face)
+			p.resendNearbyBlocks(pos, face)
 			return
 		}
 
@@ -1807,7 +1807,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 // FinishBreaking will stop the animation and break the block.
 func (p *Player) FinishBreaking() {
 	if !p.breaking {
-		p.resendBlock(p.breakingPos)
+		p.resendNearbyBlock(p.breakingPos)
 		return
 	}
 	p.AbortBreaking()
@@ -1871,7 +1871,7 @@ func (p *Player) PlaceBlock(pos cube.Pos, b world.Block, ctx *item.UseContext) {
 // of the player. A bool is returned indicating if a block was placed successfully.
 func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
-		p.resendBlocks(pos, cube.Faces()...)
+		p.resendNearbyBlocks(pos, cube.Faces()...)
 		return false
 	}
 	if obstructed, selfOnly := p.obstructedPos(pos, b); obstructed && !ignoreBBox {
@@ -1879,14 +1879,14 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 			// Only resend blocks if there were other entities blocking the
 			// placement than the player itself. Resending blocks placed inside
 			// the player itself leads to synchronisation issues.
-			p.resendBlocks(pos, cube.Faces()...)
+			p.resendNearbyBlocks(pos, cube.Faces()...)
 		}
 		return false
 	}
 
 	ctx := event.C(p)
 	if p.Handler().HandleBlockPlace(ctx, pos, b); ctx.Cancelled() {
-		p.resendBlocks(pos, cube.Faces()...)
+		p.resendNearbyBlocks(pos, cube.Faces()...)
 		return false
 	}
 	p.tx.SetBlock(pos, b, nil)
@@ -1934,11 +1934,11 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		return
 	}
 	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
-		p.resendBlocks(pos)
+		p.resendNearbyBlocks(pos)
 		return
 	}
 	if _, breakable := b.(block.Breakable); !breakable && !p.GameMode().CreativeInventory() {
-		p.resendBlocks(pos)
+		p.resendNearbyBlocks(pos)
 		return
 	}
 	held, _ := p.HeldItems()
@@ -1951,7 +1951,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 	ctx := event.C(p)
 	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
-		p.resendBlocks(pos)
+		p.resendNearbyBlocks(pos)
 		return
 	}
 	held, left := p.HeldItems()
@@ -2789,14 +2789,14 @@ func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
 	ctx := event.C(p)
 	if frontText != sign.Front.Text {
 		if p.Handler().HandleSignEdit(ctx, pos, true, sign.Front.Text, frontText); ctx.Cancelled() {
-			p.resendBlock(pos)
+			p.resendNearbyBlock(pos)
 			return nil
 		}
 		sign.Front.Text = frontText
 		sign.Front.Owner = p.XUID()
 	} else {
 		if p.Handler().HandleSignEdit(ctx, pos, false, sign.Back.Text, backText); ctx.Cancelled() {
-			p.resendBlock(pos)
+			p.resendNearbyBlock(pos)
 			return nil
 		}
 		sign.Back.Text = backText
@@ -3134,24 +3134,31 @@ func (p *Player) viewers() []world.Viewer {
 	return viewers
 }
 
-// resendBlocks resends blocks in a world.World at the cube.Pos passed and the block next to it at the cube.Face passed.
-func (p *Player) resendBlocks(pos cube.Pos, faces ...cube.Face) {
+// resendNearbyBlocks resends nearby blocks in a world.World at the cube.Pos passed and the block next to it at the cube.Face passed.
+func (p *Player) resendNearbyBlocks(pos cube.Pos, w *world.World, faces ...cube.Face) {
 	if p.session() == session.Nop {
 		return
 	}
-	p.resendBlock(pos)
+	p.resendNearbyBlock(pos, w)
 	for _, f := range faces {
-		p.resendBlock(pos.Side(f))
+		p.resendNearbyBlock(pos.Side(f), w)
 	}
 }
 
-// resendBlock resends the block at a cube.Pos in the world.World passed.
-func (p *Player) resendBlock(pos cube.Pos) {
-	b := p.tx.Block(pos)
+// resendNearbyBlock resends the nearby block at a cube.Pos in the world.World passed.
+func (p *Player) resendNearbyBlock(pos cube.Pos, w *world.World) {
+	if p.Position().Sub(pos).Len() > 100 {
+		// This is a safety check. Without it, clients could request block resends for arbitrary world positions 
+		// (including unloaded chunks). A malicious client could repeatedly trigger such requests and force the server 
+		// to allocate memory for chunks, potentially exhausting RAM.
+		return
+	}
+	b := w.Block(pos)
 	p.session().ViewBlockUpdate(pos, b, 0)
-	if _, ok := b.(world.LiquidDisplacer); ok {
-		liq, _ := p.tx.Liquid(pos)
-		p.session().ViewBlockUpdate(pos, liq, 1)
+	if _, ok := b.(world.Liquid); !ok {
+		if liq, ok := w.Liquid(pos); ok {
+			p.session().ViewBlockUpdate(pos, liq, 1)
+		}
 	}
 }
 
