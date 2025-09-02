@@ -87,6 +87,9 @@ func (board *Scoreboard) Lines() []string {
 			lines[i] = " " + line + strings.Repeat(" ", len(board.name)-len(line)-2)
 		}
 	}
+	if board.descending {
+		slices.Reverse(lines)
+	}
 	return lines
 }
 
@@ -96,6 +99,7 @@ func (board *Scoreboard) Descending() bool {
 }
 
 // SetDescending sets the scoreboard sort order to descending.
+// When sending the scoreboard to the player, it will reverse the order of the lines to match when it's ascending.
 func (board *Scoreboard) SetDescending() {
 	board.descending = true
 }
