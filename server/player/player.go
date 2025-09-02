@@ -3135,30 +3135,29 @@ func (p *Player) viewers() []world.Viewer {
 }
 
 // resendNearbyBlocks resends nearby blocks in a world.World at the cube.Pos passed and the block next to it at the cube.Face passed.
-func (p *Player) resendNearbyBlocks(pos cube.Pos, w *world.World, faces ...cube.Face) {
+func (p *Player) resendNearbyBlocks(pos cube.Pos, faces ...cube.Face) {
 	if p.session() == session.Nop {
 		return
 	}
-	p.resendNearbyBlock(pos, w)
+	p.resendBlock(pos)
 	for _, f := range faces {
-		p.resendNearbyBlock(pos.Side(f), w)
+		p.resendBlock(pos.Side(f))
 	}
 }
 
 // resendNearbyBlock resends the nearby block at a cube.Pos in the world.World passed.
-func (p *Player) resendNearbyBlock(pos cube.Pos, w *world.World) {
+func (p *Player) resendBlock(pos cube.Pos) {
 	if p.Position().Sub(pos).Len() > 100 {
 		// This is a safety check. Without it, clients could request block resends for arbitrary world positions 
 		// (including unloaded chunks). A malicious client could repeatedly trigger such requests and force the server 
 		// to allocate memory for chunks, potentially exhausting RAM.
 		return
 	}
-	b := w.Block(pos)
+	b := p.tx.Block(pos)
 	p.session().ViewBlockUpdate(pos, b, 0)
-	if _, ok := b.(world.Liquid); !ok {
-		if liq, ok := w.Liquid(pos); ok {
-			p.session().ViewBlockUpdate(pos, liq, 1)
-		}
+	if _, ok := b.(world.LiquidDisplacer); ok {
+		liq, _ := p.tx.Liquid(pos)
+		p.session().ViewBlockUpdate(pos, liq, 1)
 	}
 }
 
