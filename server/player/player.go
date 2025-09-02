@@ -2,8 +2,6 @@ package player
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -11,6 +9,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -3148,8 +3149,8 @@ func (p *Player) resendNearbyBlocks(pos cube.Pos, faces ...cube.Face) {
 // resendNearbyBlock resends the nearby block at a cube.Pos in the world.World passed.
 func (p *Player) resendNearbyBlock(pos cube.Pos) {
 	if p.Position().Sub(pos.Vec3()).Len() > 100 {
-		// This is a safety check. Without it, clients could request block resends for arbitrary world positions 
-		// (including unloaded chunks). A malicious client could repeatedly trigger such requests and force the server 
+		// This is a safety check. Without it, clients could request block resends for arbitrary world positions
+		// (including unloaded chunks). A malicious client could repeatedly trigger such requests and force the server
 		// to allocate memory for chunks, potentially exhausting RAM.
 		return
 	}
