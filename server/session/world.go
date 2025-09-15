@@ -1206,10 +1206,14 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 
 // ViewEmote ...
 func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
+	flags := byte(packet.EmoteFlagServerSide)
+	if s.emoteChatMuted {
+		flags |= packet.EmoteFlagMuteChat
+	}
 	s.writePacket(&packet.Emote{
 		EntityRuntimeID: s.entityRuntimeID(player),
 		EmoteID:         emote.String(),
-		Flags:           packet.EmoteFlagServerSide,
+		Flags:           flags,
 	})
 }
 
