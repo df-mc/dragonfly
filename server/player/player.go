@@ -2,7 +2,6 @@ package player
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -10,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/player/debug"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -347,6 +348,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 			break
 		}
 	}
+	index++
 
 	command, ok := cmd.ByAlias(name)
 	if !ok {
@@ -355,7 +357,6 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		p.SendCommandOutput(o)
 		return
 	}
-	index++
 	ctx := event.C(p)
 	if p.Handler().HandleCommandExecution(ctx, command, args[index:]); ctx.Cancelled() {
 		return
