@@ -3,11 +3,12 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"go/ast"
 	"reflect"
 	"slices"
 	"strings"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Runnable represents a Command that may be run by a Command source. The Command must be a struct type and
@@ -238,9 +239,7 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 			// we return the command usage.
 			return nil, MessageUsage.F(cmd.Usage())
 		}
-		argFrags = slices.DeleteFunc(record, func(s string) bool {
-			return s == ""
-		})
+		argFrags = record
 	}
 	parser := parser{}
 	arguments := &Line{args: argFrags, src: source, seen: []string{"/" + cmd.name}, cmd: cmd}
@@ -248,9 +247,11 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 	// We iterate over all the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
 	signature := v.Elem()
-	for _, t := range exportedFields(signature) {
+	fields := exportedFields(signature)
+	for i, t := range fields {
 		field := signature.FieldByName(t.Name)
 		parser.currentField = t.Name
+		parser.fields = len(fields) - i
 		opt := optional(field)
 
 		val := field
