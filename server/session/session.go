@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
 	"io"
 	"log/slog"
 	"net"
@@ -17,7 +16,9 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -45,6 +46,8 @@ type Session struct {
 
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
+
+	emoteChatMuted bool
 
 	teleportPos atomic.Pointer[mgl64.Vec3]
 
@@ -85,6 +88,10 @@ type Session struct {
 	blobs                 map[uint64][]byte
 	openChunkTransactions []map[uint64]struct{}
 	invOpened             bool
+
+	hudMu      sync.RWMutex
+	hudUpdates map[hud.Element]bool
+	hiddenHud  map[hud.Element]struct{}
 
 	debugShapesMu     sync.RWMutex
 	debugShapes       map[int]debug.Shape
@@ -139,6 +146,8 @@ type Config struct {
 
 	MaxChunkRadius int
 
+	EmoteChatMuted bool
+
 	JoinMessage, QuitMessage chat.Translation
 
 	HandleStop func(*world.Tx, Controllable)
@@ -167,11 +176,14 @@ func (conf Config) New(conn Conn) *Session {
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
+		emoteChatMuted:         conf.EmoteChatMuted,
 		conn:                   conn,
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
 		recipes:                make(map[uint32]recipe.Recipe),
 		conf:                   conf,
+		hudUpdates:             make(map[hud.Element]bool),
+		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
 		debugShapesAdd:         make(chan debug.Shape, 256),
 		debugShapesRemove:      make(chan int, 256),
