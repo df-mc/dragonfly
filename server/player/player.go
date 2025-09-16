@@ -2,6 +2,8 @@ package player
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -9,9 +11,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -3135,7 +3134,8 @@ func (p *Player) viewers() []world.Viewer {
 	return viewers
 }
 
-// resendNearbyBlocks resends nearby blocks in a world.World at the cube.Pos passed and the block next to it at the cube.Face passed.
+// resendNearbyBlocks resends the block at cube.Pos and its adjacent blocks (if faces provided),
+// but only if they are within the player's render distance.
 func (p *Player) resendNearbyBlocks(pos cube.Pos, faces ...cube.Face) {
 	if p.session() == session.Nop {
 		return
@@ -3146,7 +3146,7 @@ func (p *Player) resendNearbyBlocks(pos cube.Pos, faces ...cube.Face) {
 	}
 }
 
-// resendNearbyBlock resends the nearby block at a cube.Pos in the world.World passed.
+// resendNearbyBlock resends a block at cube.Pos if it is within the player's render distance.
 func (p *Player) resendNearbyBlock(pos cube.Pos) {
 	if p.session() == session.Nop {
 		return
