@@ -47,6 +47,8 @@ type Session struct {
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
 
+	emoteChatMuted bool
+
 	teleportPos atomic.Pointer[mgl64.Vec3]
 
 	entityMutex sync.RWMutex
@@ -144,6 +146,8 @@ type Config struct {
 
 	MaxChunkRadius int
 
+	EmoteChatMuted bool
+
 	JoinMessage, QuitMessage chat.Translation
 
 	HandleStop func(*world.Tx, Controllable)
@@ -172,6 +176,7 @@ func (conf Config) New(conn Conn) *Session {
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
+		emoteChatMuted:         conf.EmoteChatMuted,
 		conn:                   conn,
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
