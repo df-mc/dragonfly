@@ -35,6 +35,8 @@ func (h *InteractHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Con
 				int32(pos[2]),
 			},
 		})
+	case packet.InteractActionLeaveVehicle:
+		c.DismountEntity()
 	default:
 		return fmt.Errorf("unexpected interact packet action %v", pk.ActionType)
 	}

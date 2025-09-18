@@ -54,6 +54,9 @@ type playerData struct {
 	armour                       *inventory.Armour
 	heldSlot                     *uint32
 
+	rideable     entity.Rideable
+	seatPosition mgl64.Vec3
+
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
 	usingSince time.Time
@@ -2554,6 +2557,56 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 	p.updateState()
 }
 
+// RidingEntity returns the entity the player is currently riding.
+func (p *Player) RidingEntity() entity.Rideable {
+	return p.rideable
+}
+
+// SeatPosition returns the position of where the player is sitting.
+func (p *Player) SeatPosition() mgl64.Vec3 {
+	return p.seatPosition
+}
+
+// MountEntity mounts the player to an entity if the entity is rideable and if there is a seat available.
+func (p *Player) MountEntity(r entity.Rideable, seatPos mgl64.Vec3, driver bool) {
+	ctx := event.C(p)
+	if p.h.HandleMount(ctx, r, &seatPos, &driver); ctx.Cancelled() {
+		return
+	}
+
+	if rd := p.RidingEntity(); rd != nil {
+		p.DismountEntity()
+	}
+
+	p.rideable = r
+	p.seatPosition = seatPos
+
+	p.updateState()
+	for _, v := range p.viewers() {
+		v.ViewEntityMount(p, r, driver)
+	}
+}
+
+// DismountEntity dismounts the player from an entity.
+func (p *Player) DismountEntity() {
+	ctx := event.C(p)
+	r := p.RidingEntity()
+	if r == nil {
+		return
+	}
+	if p.h.HandleDismount(ctx, r); ctx.Cancelled() {
+		return
+	}
+
+	p.rideable = nil
+	p.seatPosition = mgl64.Vec3{}
+
+	p.updateState()
+	for _, v := range p.viewers() {
+		v.ViewEntityDismount(p, r)
+	}
+}
+
 // canBreathe returns true if the player can currently breathe.
 func (p *Player) canBreathe() bool {
 	canTakeDamage := p.GameMode().AllowsTakingDamage()
@@ -2985,6 +3038,7 @@ func (p *Player) Close() error {
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close(msg string) {
+	p.DismountEntity()
 	// If the player is being disconnected while they are dead, we respawn the player
 	// so that the player logic works correctly the next time they join.
 	if p.Dead() && p.session() != nil {

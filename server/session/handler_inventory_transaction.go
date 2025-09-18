@@ -3,10 +3,12 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -158,6 +160,9 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	var valid bool
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
+		if r, ok := e.(entity.Rideable); ok {
+			c.MountEntity(r, mgl64.Vec3{}, true)
+		}
 		valid = c.UseItemOnEntity(e)
 	case protocol.UseItemOnEntityActionAttack:
 		valid = c.AttackEntity(e)
