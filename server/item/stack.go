@@ -275,7 +275,8 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	return s
 }
 
-// WithIncompatibleEnchantments returns the current stack with the passed enchantments (it ignores item compatability with enchantments).
+// WithIncompatibleEnchantments returns the current stack with the passed enchantments, allowing incompatible
+// enchantments to be applied.
 func (s Stack) WithIncompatibleEnchantments(enchants ...Enchantment) Stack {
 	s.enchantments = cloneMap(s.enchantments)
 	for _, enchant := range enchants {
