@@ -164,7 +164,7 @@ func itemStackFromEntry(data creativeItemEntry) (item.Stack, bool) {
 					invalid = true
 					break
 				}
-				st = st.WithEnchantments(item.NewEnchantment(t, int(nbtconv.Int16(v, "lvl"))))
+				st = st.WithIncompatibleEnchantment(item.NewEnchantment(t, int(nbtconv.Int16(v, "lvl"))))
 			}
 		}
 		if invalid {

@@ -275,6 +275,13 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	return s
 }
 
+// WithIncompatibleEnchantment returns the current stack with the passed enchantment (it ignores item compatability with enchantment).
+func (s Stack) WithIncompatibleEnchantment(enchant Enchantment) Stack {
+	s.enchantments = cloneMap(s.enchantments)
+	s.enchantments[enchant.t] = enchant
+	return s
+}
+
 // WithoutEnchantments returns the current stack but with the passed enchantments removed.
 func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
 	s.enchantments = cloneMap(s.enchantments)
