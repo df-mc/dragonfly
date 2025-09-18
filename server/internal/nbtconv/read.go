@@ -226,7 +226,7 @@ func readEnchantments(m map[string]any, s *item.Stack) {
 	}
 	for _, ench := range enchantments {
 		if t, ok := item.EnchantmentByID(int(Int16(ench, "id"))); ok {
-			*s = s.WithIncompatibleEnchantments(item.NewEnchantment(t, int(Int16(ench, "lvl"))))
+			*s = s.ForceEnchantments(item.NewEnchantment(t, int(Int16(ench, "lvl"))))
 		}
 	}
 }
