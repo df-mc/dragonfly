@@ -606,7 +606,6 @@ func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	playerSkin.Model, _ = base64.StdEncoding.DecodeString(data.SkinGeometry)
 	playerSkin.ModelConfig, _ = skin.DecodeModelConfig(skinResourcePatch)
 	playerSkin.PlayFabID = data.PlayFabID
-	// The clients full skin identifier is provided in SkinID during login.
 	playerSkin.FullID = data.SkinID
 
 	playerSkin.Cape = skin.NewCape(data.CapeImageWidth, data.CapeImageHeight)
