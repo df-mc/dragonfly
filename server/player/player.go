@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/hud"
-	"github.com/go-gl/mathgl/mgl32"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -55,8 +54,8 @@ type playerData struct {
 	armour                       *inventory.Armour
 	heldSlot                     *uint32
 
-	rideable     entity.Rideable
-	seatPosition mgl32.Vec3
+	rideable  entity.Rideable
+	seatIndex int
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
@@ -2558,49 +2557,71 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 	p.updateState()
 }
 
-// RidingEntity returns the entity the player is currently riding.
+// RidingEntity returns the entity that the rider is currently sitting on.
 func (p *Player) RidingEntity() entity.Rideable {
 	return p.rideable
 }
 
-// SeatPosition returns the position of where the player is sitting.
-func (p *Player) SeatPosition() mgl32.Vec3 {
-	return p.seatPosition
+// SeatIndex returns the position of where the rider is sitting.
+func (p *Player) SeatIndex() int {
+	return p.seatIndex
 }
 
-// MountEntity mounts the player to an entity if the entity is rideable and if there is a seat available.
-func (p *Player) MountEntity(r entity.Rideable, seatPos mgl32.Vec3, driver bool) {
+// ChangeSeat sets the seat index of the player if it is currently riding an entity and if the seat index
+// is valid.
+func (p *Player) ChangeSeat(seatIndex int) {
+	if p.rideable == nil || seatIndex < 0 || len(p.rideable.SeatPositions()) <= seatIndex {
+		return
+	}
+	p.seatIndex = seatIndex
+	p.updateState()
+	for _, v := range p.viewers() {
+		v.ViewEntityMount(p, p.rideable, p.seatIndex == 0)
+	}
+}
+
+// SeatPosition returns the position of the seat the player is currently sitting on. If the player is not
+// currently riding an entity, the second return value is false.
+func (p *Player) SeatPosition() (mgl64.Vec3, bool) {
+	if p.rideable == nil || p.seatIndex == -1 || len(p.rideable.SeatPositions()) <= p.seatIndex {
+		return mgl64.Vec3{}, false
+	}
+	return p.rideable.SeatPositions()[p.seatIndex], true
+}
+
+// MountEntity mounts the Rider to an entity if the entity is Rideable and if there is a seat available.
+func (p *Player) MountEntity(rideable entity.Rideable, seatIndex int) {
 	ctx := event.C(p)
-	if p.h.HandleMount(ctx, r, &seatPos, &driver); ctx.Cancelled() {
+	if p.h.HandleMountEntity(ctx, rideable, &seatIndex); ctx.Cancelled() {
 		return
 	}
 
-	if rd := p.RidingEntity(); rd != nil {
+	if rd := p.rideable; rd != nil {
 		p.DismountEntity()
 	}
 
-	p.rideable = r
-	p.seatPosition = seatPos
+	p.rideable = rideable
+	p.seatIndex = seatIndex
 
 	p.updateState()
 	for _, v := range p.viewers() {
-		v.ViewEntityMount(p, r, driver)
+		v.ViewEntityMount(p, rideable, seatIndex == 0)
 	}
 }
 
 // DismountEntity dismounts the player from an entity.
 func (p *Player) DismountEntity() {
 	ctx := event.C(p)
-	r := p.RidingEntity()
+	r := p.rideable
 	if r == nil {
 		return
 	}
-	if p.h.HandleDismount(ctx, r); ctx.Cancelled() {
+	if p.h.HandleDismountEntity(ctx, r); ctx.Cancelled() {
 		return
 	}
 
 	p.rideable = nil
-	p.seatPosition = mgl32.Vec3{}
+	p.seatIndex = -1
 
 	p.updateState()
 	for _, v := range p.viewers() {

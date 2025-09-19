@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -160,8 +159,10 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	var valid bool
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
-		if r, ok := e.(entity.Rideable); ok {
-			c.MountEntity(r, mgl32.Vec3{}, true)
+		if rideable, ok := e.(entity.Rideable); ok {
+			if nextSeatIndex, ok := rideable.NextFreeSeatIndex(); ok {
+				c.MountEntity(rideable, nextSeatIndex)
+			}
 		}
 		valid = c.UseItemOnEntity(e)
 	case protocol.UseItemOnEntityActionAttack:

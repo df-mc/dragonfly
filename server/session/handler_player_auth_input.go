@@ -43,8 +43,8 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	}
 
 	if rd := c.RidingEntity(); rd != nil {
-		if c == rd.Driver() {
-			rd.Move(pk.MoveVector, pk.Yaw, pk.Pitch)
+		if c == rd.ControllingRider() {
+			rd.MoveInput(mgl64.Vec2{float64(pk.MoveVector.X()), float64(pk.MoveVector.Y())}, pk.Yaw, pk.Pitch)
 		}
 	}
 

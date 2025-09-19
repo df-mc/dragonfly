@@ -2,18 +2,18 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Rider is an interface for entities that can ride other entities.
 type Rider interface {
 	world.Entity
-	// RidingEntity returns the entity the player is currently riding.
+	// RidingEntity returns the entity that the rider is currently sitting on.
 	RidingEntity() Rideable
-	// SeatPosition returns the position of where the player is sitting.
-	SeatPosition() mgl32.Vec3
+	// SeatIndex returns the position of where the rider is sitting.
+	SeatIndex() int
 	// MountEntity mounts the Rider to an entity if the entity is Rideable and if there is a seat available.
-	MountEntity(e Rideable, position mgl32.Vec3, driver bool)
+	MountEntity(rideable Rideable, seatIndex int)
 	// DismountEntity dismounts the rider from the entity they are currently riding.
 	DismountEntity()
 }
@@ -21,6 +21,12 @@ type Rider interface {
 // Rideable is an interface for entities that can be ridden.
 type Rideable interface {
 	world.Entity
-	Driver() Rider
-	Move(vector mgl32.Vec2, yaw, pitch float32)
+	// SeatPositions returns a map of seat indices to their positions relative to the entity's position.
+	SeatPositions() []mgl64.Vec3
+	// NextFreeSeatIndex returns the index of the next free seat and whether a free seat was found.
+	NextFreeSeatIndex() (int, bool)
+	// ControllingRider returns the rider that is controlling the entity, if any.
+	ControllingRider() Rider
+	// MoveInput moves the entity based on input from the controlling rider.
+	MoveInput(vector mgl64.Vec2, yaw, pitch float32)
 }

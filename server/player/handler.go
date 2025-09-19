@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"net"
 	"time"
@@ -140,12 +139,12 @@ type Handler interface {
 	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
 	// e.Item() may be called to obtain the item stack dropped.
 	HandleItemDrop(ctx *Context, s item.Stack)
-	// HandleMount handles when a player mounts an entity. ctx.Cancel() may be called to cancel the player mounting
+	// HandleMountEntity handles when a player mounts an entity. ctx.Cancel() may be called to cancel the player mounting
 	// an entity.
-	HandleMount(ctx *Context, r entity.Rideable, seatPos *mgl32.Vec3, driver *bool)
-	// HandleDismount handles when a player mounts an entity. ctx.Cancel() may be called to force the player
+	HandleMountEntity(ctx *Context, rideable entity.Rideable, seatIndex *int)
+	// HandleDismountEntity handles when a player mounts an entity. ctx.Cancel() may be called to force the player
 	// to re-mount the entity.
-	HandleDismount(ctx *Context, r entity.Rideable)
+	HandleDismountEntity(ctx *Context, rideable entity.Rideable)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *Context, addr *net.UDPAddr)
@@ -196,8 +195,8 @@ func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Dura
 func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
 func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                              {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
-func (NopHandler) HandleMount(*Context, entity.Rideable, *mgl32.Vec3, *bool)               {}
-func (NopHandler) HandleDismount(*Context, entity.Rideable)                                {}
+func (NopHandler) HandleMountEntity(*Context, entity.Rideable, *int)                       {}
+func (NopHandler) HandleDismountEntity(*Context, entity.Rideable)                          {}
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
 func (NopHandler) HandleHurt(*Context, *float64, bool, *time.Duration, world.DamageSource) {}

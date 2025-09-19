@@ -98,9 +98,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if sc, ok := e.(scaled); ok {
 		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
 	}
-	if r, ok := e.(entity.Rider); ok {
-		if rd := r.RidingEntity(); rd != nil {
-			m[protocol.EntityDataKeySeatOffset] = r.SeatPosition()
+	if r, ok := e.(rider); ok {
+		if pos, ok := r.SeatPosition(); ok {
+			m[protocol.EntityDataKeySeatOffset] = vec64To32(pos)
 			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
 		}
 	}
@@ -264,6 +264,10 @@ type firework interface {
 
 type gameMode interface {
 	GameMode() world.GameMode
+}
+
+type rider interface {
+	SeatPosition() (mgl64.Vec3, bool)
 }
 
 type tnt interface {
