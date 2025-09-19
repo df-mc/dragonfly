@@ -1,13 +1,14 @@
 package session
 
 import (
+	"slices"
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"slices"
-	"sync"
 )
 
 var sessions = new(sessionList)
@@ -125,7 +126,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		SkinGeometry:              s.Model,
 		PersonaSkin:               s.Persona,
 		CapeID:                    uuid.New().String(),
-		FullID:                    uuid.New().String(),
+		FullID:                    s.FullID,
 		Animations:                animations,
 		Trusted:                   true,
 		OverrideAppearance:        true,
