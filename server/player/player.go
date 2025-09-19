@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/hud"
+	"github.com/go-gl/mathgl/mgl32"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -55,7 +56,7 @@ type playerData struct {
 	heldSlot                     *uint32
 
 	rideable     entity.Rideable
-	seatPosition mgl64.Vec3
+	seatPosition mgl32.Vec3
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
@@ -2563,12 +2564,12 @@ func (p *Player) RidingEntity() entity.Rideable {
 }
 
 // SeatPosition returns the position of where the player is sitting.
-func (p *Player) SeatPosition() mgl64.Vec3 {
+func (p *Player) SeatPosition() mgl32.Vec3 {
 	return p.seatPosition
 }
 
 // MountEntity mounts the player to an entity if the entity is rideable and if there is a seat available.
-func (p *Player) MountEntity(r entity.Rideable, seatPos mgl64.Vec3, driver bool) {
+func (p *Player) MountEntity(r entity.Rideable, seatPos mgl32.Vec3, driver bool) {
 	ctx := event.C(p)
 	if p.h.HandleMount(ctx, r, &seatPos, &driver); ctx.Cancelled() {
 		return
@@ -2599,7 +2600,7 @@ func (p *Player) DismountEntity() {
 	}
 
 	p.rideable = nil
-	p.seatPosition = mgl64.Vec3{}
+	p.seatPosition = mgl32.Vec3{}
 
 	p.updateState()
 	for _, v := range p.viewers() {

@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"net"
 	"time"
@@ -141,7 +142,7 @@ type Handler interface {
 	HandleItemDrop(ctx *Context, s item.Stack)
 	// HandleMount handles when a player mounts an entity. ctx.Cancel() may be called to cancel the player mounting
 	// an entity.
-	HandleMount(ctx *Context, r entity.Rideable, seatPos *mgl64.Vec3, driver *bool)
+	HandleMount(ctx *Context, r entity.Rideable, seatPos *mgl32.Vec3, driver *bool)
 	// HandleDismount handles when a player mounts an entity. ctx.Cancel() may be called to force the player
 	// to re-mount the entity.
 	HandleDismount(ctx *Context, r entity.Rideable)
@@ -195,7 +196,7 @@ func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Dura
 func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
 func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                              {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
-func (NopHandler) HandleMount(*Context, entity.Rideable, *mgl64.Vec3, *bool)               {}
+func (NopHandler) HandleMount(*Context, entity.Rideable, *mgl32.Vec3, *bool)               {}
 func (NopHandler) HandleDismount(*Context, entity.Rideable)                                {}
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
