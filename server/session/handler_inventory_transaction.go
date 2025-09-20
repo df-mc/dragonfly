@@ -160,7 +160,7 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
 		if rideable, ok := e.(entity.Rideable); ok {
-			if nextSeatIndex, ok := rideable.NextFreeSeatIndex(); ok {
+			if nextSeatIndex, ok := rideable.NextFreeSeatIndex(vec32To64(data.ClickedPosition)); ok {
 				c.MountEntity(rideable, nextSeatIndex)
 			}
 		}

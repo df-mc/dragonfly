@@ -24,7 +24,7 @@ type Rideable interface {
 	// SeatPositions returns a map of seat indices to their positions relative to the entity's position.
 	SeatPositions() []mgl64.Vec3
 	// NextFreeSeatIndex returns the index of the next free seat and whether a free seat was found.
-	NextFreeSeatIndex() (int, bool)
+	NextFreeSeatIndex(clickPos mgl64.Vec3) (int, bool)
 	// ControllingRider returns the rider that is controlling the entity, if any.
 	ControllingRider() Rider
 	// MoveInput moves the entity based on input from the controlling rider.
