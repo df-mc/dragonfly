@@ -46,22 +46,18 @@ type SignText struct {
 	Owner string
 }
 
-// SideClosed ...
 func (s Sign) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// MaxCount ...
 func (s Sign) MaxCount() int {
 	return 16
 }
 
-// FlammabilityInfo ...
 func (s Sign) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
-// FuelInfo ...
 func (s Sign) FuelInfo() item.FuelInfo {
 	if !s.Wood.Flammable() {
 		return item.FuelInfo{}
@@ -69,12 +65,10 @@ func (s Sign) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 10)
 }
 
-// EncodeItem ...
 func (s Sign) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Wood.String() + "_sign", 0
 }
 
-// BreakInfo ...
 func (s Sign) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(Sign{Wood: s.Wood}))
 }
@@ -120,7 +114,6 @@ func (s Sign) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
 	return s, true
 }
 
-// Activate ...
 func (s Sign) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if editor, ok := u.(SignEditor); ok && !s.Waxed {
 		editor.OpenSign(pos, s.EditingFrontSide(pos, u.Position()))
@@ -141,7 +134,6 @@ type SignEditor interface {
 	OpenSign(pos cube.Pos, frontSide bool)
 }
 
-// UseOnBlock ...
 func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, s)
 	if !used || face == cube.FaceDown {
@@ -160,7 +152,6 @@ func (s Sign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if s.Attach.hanging {
 		if _, ok := tx.Block(pos.Side(s.Attach.facing.Opposite().Face())).(Air); ok {
@@ -171,7 +162,6 @@ func (s Sign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// EncodeBlock ...
 func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 	woodType := s.Wood.String() + "_"
 	switch s.Wood {
@@ -186,7 +176,6 @@ func (s Sign) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + woodType + "standing_sign", map[string]any{"ground_sign_direction": int32(s.Attach.o)}
 }
 
-// DecodeNBT ...
 func (s Sign) DecodeNBT(data map[string]any) any {
 	if nbtconv.String(data, "Text") != "" {
 		// The NBT format changed in 1.19.80 to have separate data for each side of the sign. The old format must still
@@ -216,7 +205,6 @@ func (s Sign) DecodeNBT(data map[string]any) any {
 	return s
 }
 
-// EncodeNBT ...
 func (s Sign) EncodeNBT() map[string]any {
 	m := map[string]any{
 		"id":      "Sign",
@@ -237,7 +225,6 @@ func (s Sign) EncodeNBT() map[string]any {
 	return m
 }
 
-// allSigns ...
 func allSigns() (signs []world.Block) {
 	for _, w := range WoodTypes() {
 		for _, d := range cube.Directions() {

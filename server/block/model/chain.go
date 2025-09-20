@@ -11,12 +11,10 @@ type Chain struct {
 	Axis cube.Axis
 }
 
-// BBox ...
 func (c Chain) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{cube.Box(0.40625, 0.40625, 0.40625, 0.59375, 0.59375, 0.59375).Stretch(c.Axis, 0.40625)}
 }
 
-// FaceSolid ...
 func (Chain) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

@@ -22,7 +22,6 @@ func (conduitPower) Multiplier(lvl int) float64 {
 	return v
 }
 
-// RGBA ...
 func (conduitPower) RGBA() color.RGBA {
 	return color.RGBA{R: 0x1d, G: 0xc2, B: 0xd1, A: 0xff}
 }

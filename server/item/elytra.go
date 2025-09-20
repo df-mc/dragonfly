@@ -11,7 +11,6 @@ func (Elytra) Use(_ *world.Tx, _ User, ctx *UseContext) bool {
 	return false
 }
 
-// DurabilityInfo ...
 func (Elytra) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: 433,
@@ -20,7 +19,6 @@ func (Elytra) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// RepairableBy ...
 func (Elytra) RepairableBy(i Stack) bool {
 	_, ok := i.Item().(PhantomMembrane)
 	return ok
@@ -31,27 +29,22 @@ func (Elytra) MaxCount() int {
 	return 1
 }
 
-// Chestplate ...
 func (Elytra) Chestplate() bool {
 	return true
 }
 
-// DefencePoints ...
 func (Elytra) DefencePoints() float64 {
 	return 0
 }
 
-// Toughness ...
 func (e Elytra) Toughness() float64 {
 	return 0
 }
 
-// KnockBackResistance ...
 func (e Elytra) KnockBackResistance() float64 {
 	return 0
 }
 
-// EncodeItem ...
 func (Elytra) EncodeItem() (name string, meta int16) {
 	return "minecraft:elytra", 0
 }

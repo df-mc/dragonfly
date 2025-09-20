@@ -16,14 +16,12 @@ type TNT struct {
 	solid
 }
 
-// ProjectileHit ...
 func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
 	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
 		t.Ignite(pos, tx, nil)
 	}
 }
 
-// Activate ...
 func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
@@ -34,33 +32,27 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx 
 	return false
 }
 
-// Ignite ...
 func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	spawnTnt(pos, tx, time.Second*4)
 	return true
 }
 
-// Explode ...
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, _ ExplosionConfig) {
 	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))))
 }
 
-// BreakInfo ...
 func (t TNT) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t))
 }
 
-// FlammabilityInfo ...
 func (t TNT) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(15, 100, true)
 }
 
-// EncodeItem ...
 func (t TNT) EncodeItem() (name string, meta int16) {
 	return "minecraft:tnt", 0
 }
 
-// EncodeBlock ...
 func (t TNT) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:tnt", map[string]interface{}{"explode_bit": false}
 }

@@ -10,7 +10,6 @@ import (
 // LecternUpdateHandler handles the LecternUpdate packet, sent when a player interacts with a lectern.
 type LecternUpdateHandler struct{}
 
-// Handle ...
 func (LecternUpdateHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.LecternUpdate)
 	pos := blockPosFromProtocol(pk.Position)

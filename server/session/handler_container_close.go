@@ -9,7 +9,6 @@ import (
 // ContainerCloseHandler handles the ContainerClose packet.
 type ContainerCloseHandler struct{}
 
-// Handle ...
 func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ContainerClose)
 

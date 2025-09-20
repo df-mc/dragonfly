@@ -23,7 +23,6 @@ type Wood struct {
 	Axis cube.Axis
 }
 
-// FlammabilityInfo ...
 func (w Wood) FlammabilityInfo() FlammabilityInfo {
 	if !w.Wood.Flammable() {
 		return newFlammabilityInfo(0, 0, false)
@@ -31,17 +30,14 @@ func (w Wood) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 5, true)
 }
 
-// BreakInfo ...
 func (w Wood) BreakInfo() BreakInfo {
 	return newBreakInfo(2.0, alwaysHarvestable, axeEffective, oneOf(w))
 }
 
-// SmeltInfo ...
 func (Wood) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(item.Charcoal{}, 1), 0.15)
 }
 
-// FuelInfo ...
 func (w Wood) FuelInfo() item.FuelInfo {
 	if !w.Wood.Flammable() {
 		return item.FuelInfo{}
@@ -49,7 +45,6 @@ func (w Wood) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// UseOnBlock ...
 func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, w)
 	if !used {
@@ -61,12 +56,10 @@ func (w Wood) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 	return placed(ctx)
 }
 
-// Strip ...
 func (w Wood) Strip() (world.Block, world.Sound, bool) {
 	return Wood{Axis: w.Axis, Wood: w.Wood, Stripped: true}, nil, !w.Stripped
 }
 
-// EncodeItem ...
 func (w Wood) EncodeItem() (name string, meta int16) {
 	switch w.Wood {
 	case CrimsonWood(), WarpedWood():
@@ -82,7 +75,6 @@ func (w Wood) EncodeItem() (name string, meta int16) {
 	}
 }
 
-// EncodeBlock ...
 func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 	switch w.Wood {
 	case CrimsonWood(), WarpedWood():

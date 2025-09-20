@@ -42,7 +42,6 @@ type changeInfo struct {
 	before item.Stack
 }
 
-// Handle ...
 func (h *ItemStackRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ItemStackRequest)
 	h.current = time.Now()

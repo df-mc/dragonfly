@@ -19,7 +19,6 @@ type Wall struct {
 	Post bool
 }
 
-// BBox ...
 func (w Wall) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	postHeight := 0.8125
 	if w.Post {

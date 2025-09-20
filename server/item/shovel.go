@@ -59,22 +59,18 @@ func (s Shovel) ToolType() ToolType {
 	return TypeShovel
 }
 
-// HarvestLevel ...
 func (s Shovel) HarvestLevel() int {
 	return s.Tier.HarvestLevel
 }
 
-// BaseMiningEfficiency ...
 func (s Shovel) BaseMiningEfficiency(world.Block) float64 {
 	return s.Tier.BaseMiningEfficiency
 }
 
-// EnchantmentValue ...
 func (s Shovel) EnchantmentValue() int {
 	return s.Tier.EnchantmentValue
 }
 
-// DurabilityInfo ...
 func (s Shovel) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability:    s.Tier.Durability,
@@ -84,7 +80,6 @@ func (s Shovel) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// SmeltInfo ...
 func (s Shovel) SmeltInfo() SmeltInfo {
 	switch s.Tier {
 	case ToolTierIron:
@@ -95,7 +90,6 @@ func (s Shovel) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
-// FuelInfo ...
 func (s Shovel) FuelInfo() FuelInfo {
 	if s.Tier == ToolTierWood {
 		return newFuelInfo(time.Second * 10)
@@ -103,12 +97,10 @@ func (s Shovel) FuelInfo() FuelInfo {
 	return FuelInfo{}
 }
 
-// RepairableBy ...
 func (s Shovel) RepairableBy(i Stack) bool {
 	return toolTierRepairable(s.Tier)(i)
 }
 
-// EncodeItem ...
 func (s Shovel) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Tier.Name + "_shovel", 0
 }

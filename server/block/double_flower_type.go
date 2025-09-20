@@ -32,7 +32,6 @@ func (d doubleFlower) Uint8() uint8 {
 	return uint8(d)
 }
 
-// Name ...
 func (d doubleFlower) Name() string {
 	switch d {
 	case 0:
@@ -47,7 +46,6 @@ func (d doubleFlower) Name() string {
 	panic("unknown double plant type")
 }
 
-// String ...
 func (d doubleFlower) String() string {
 	switch d {
 	case 0:
@@ -62,7 +60,6 @@ func (d doubleFlower) String() string {
 	panic("unknown double plant type")
 }
 
-// DoubleFlowerTypes ...
 func DoubleFlowerTypes() []DoubleFlowerType {
 	return []DoubleFlowerType{Sunflower(), Lilac(), RoseBush(), Peony()}
 }

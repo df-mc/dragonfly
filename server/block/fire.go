@@ -80,7 +80,6 @@ func rainingAround(pos cube.Pos, tx *world.Tx) bool {
 	return raining
 }
 
-// tick ...
 func (f Fire) tick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if f.Type == SoulFire() {
 		return
@@ -189,7 +188,6 @@ func (f Fire) spread(from, to cube.Pos, tx *world.Tx, r *rand.Rand) {
 	tx.ScheduleBlockUpdate(to, spread, time.Duration(30+r.IntN(10))*time.Second/20)
 }
 
-// EntityInside ...
 func (f Fire) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if flammable, ok := e.(flammableEntity); ok {
 		if l, ok := e.(livingEntity); ok {
@@ -201,17 +199,14 @@ func (f Fire) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	}
 }
 
-// ScheduledTick ...
 func (f Fire) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	f.tick(pos, tx, r)
 }
 
-// RandomTick ...
 func (f Fire) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	f.tick(pos, tx, r)
 }
 
-// NeighbourUpdateTick ...
 func (f Fire) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
 	below := tx.Block(pos.Side(cube.FaceDown))
 	if diffuser, ok := below.(LightDiffuser); (ok && diffuser.LightDiffusionLevel() != 15) && (!neighboursFlammable(pos, tx) || f.Type == SoulFire()) {
@@ -234,17 +229,14 @@ func (f Fire) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) 
 	}
 }
 
-// HasLiquidDrops ...
 func (f Fire) HasLiquidDrops() bool {
 	return false
 }
 
-// LightEmissionLevel ...
 func (f Fire) LightEmissionLevel() uint8 {
 	return f.Type.LightLevel()
 }
 
-// EncodeBlock ...
 func (f Fire) EncodeBlock() (name string, properties map[string]any) {
 	switch f.Type {
 	case NormalFire():
@@ -272,7 +264,6 @@ func (f Fire) Start(tx *world.Tx, pos cube.Pos) {
 	}
 }
 
-// allFire ...
 func allFire() (b []world.Block) {
 	for i := 0; i < 16; i++ {
 		b = append(b, Fire{Age: i, Type: NormalFire()})

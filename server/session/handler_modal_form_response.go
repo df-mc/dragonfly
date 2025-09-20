@@ -16,7 +16,6 @@ type ModalFormResponseHandler struct {
 	currentID atomic.Uint32
 }
 
-// Handle ...
 func (h *ModalFormResponseHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ModalFormResponse)
 

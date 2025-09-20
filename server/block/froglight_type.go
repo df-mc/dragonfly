@@ -22,12 +22,10 @@ func Ochre() FroglightType {
 	return FroglightType{2}
 }
 
-// Uint8 ...
 func (f froglight) Uint8() uint8 {
 	return uint8(f)
 }
 
-// Name ...
 func (f froglight) Name() string {
 	switch f {
 	case 0:
@@ -40,7 +38,6 @@ func (f froglight) Name() string {
 	panic("unknown froglight type")
 }
 
-// String ...
 func (f froglight) String() string {
 	switch f {
 	case 0:
@@ -53,7 +50,6 @@ func (f froglight) String() string {
 	panic("unknown froglight type")
 }
 
-// FroglightTypes ...
 func FroglightTypes() []FroglightType {
 	return []FroglightType{Pearlescent(), Verdant(), Ochre()}
 }

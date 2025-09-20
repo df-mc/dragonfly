@@ -25,7 +25,6 @@ type Custom struct {
 	submittable Submittable
 }
 
-// MarshalJSON ...
 func (f Custom) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type":    "custom_form",

@@ -15,12 +15,10 @@ type Fern struct {
 	empty
 }
 
-// FlammabilityInfo ...
 func (g Fern) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(60, 100, false)
 }
 
-// BreakInfo ...
 func (g Fern) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
@@ -44,24 +42,20 @@ func (g Fern) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// CompostChance ...
 func (g Fern) CompostChance() float64 {
 	return 0.3
 }
 
-// NeighbourUpdateTick ...
 func (g Fern) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(g, tx.Block(pos.Side(cube.FaceDown))) {
 		breakBlock(g, pos, tx)
 	}
 }
 
-// HasLiquidDrops ...
 func (g Fern) HasLiquidDrops() bool {
 	return true
 }
 
-// UseOnBlock ...
 func (g Fern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, g)
 	if !used || !supportsVegetation(g, tx.Block(pos.Side(cube.FaceDown))) {
@@ -72,12 +66,10 @@ func (g Fern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 	return placed(ctx)
 }
 
-// EncodeItem ...
 func (g Fern) EncodeItem() (name string, meta int16) {
 	return "minecraft:fern", 0
 }
 
-// EncodeBlock ...
 func (g Fern) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:fern", nil
 }

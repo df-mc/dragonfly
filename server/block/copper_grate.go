@@ -22,7 +22,6 @@ type CopperGrate struct {
 	Waxed bool
 }
 
-// BreakInfo ...
 func (c CopperGrate) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
@@ -66,7 +65,6 @@ func (c CopperGrate) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	attemptOxidation(pos, tx, r, c)
 }
 
-// EncodeItem ...
 func (c CopperGrate) EncodeItem() (name string, meta int16) {
 	name = "copper_grate"
 	if c.Oxidation != UnoxidisedOxidation() {
@@ -78,7 +76,6 @@ func (c CopperGrate) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + name, 0
 }
 
-// EncodeBlock ...
 func (c CopperGrate) EncodeBlock() (string, map[string]any) {
 	name := "copper_grate"
 	if c.Oxidation != UnoxidisedOxidation() {

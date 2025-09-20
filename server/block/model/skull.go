@@ -13,7 +13,6 @@ type Skull struct {
 	Hanging bool
 }
 
-// BBox ...
 func (s Skull) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	box := cube.Box(0.25, 0, 0.25, 0.75, 0.5, 0.75)
 	if !s.Hanging {
@@ -22,7 +21,6 @@ func (s Skull) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{box.TranslateTowards(s.Direction.Opposite(), 0.25).TranslateTowards(cube.FaceUp, 0.25)}
 }
 
-// FaceSolid ...
 func (Skull) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

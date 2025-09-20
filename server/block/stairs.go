@@ -39,18 +39,15 @@ func (s Stairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx
 	return placed(ctx)
 }
 
-// Model ...
 func (s Stairs) Model() world.BlockModel {
 	return model.Stair{Facing: s.Facing, UpsideDown: s.UpsideDown}
 }
 
-// BreakInfo ...
 func (s Stairs) BreakInfo() BreakInfo {
 	breakInfo := s.Block.(Breakable).BreakInfo()
 	return newBreakInfo(breakInfo.Hardness, breakInfo.Harvestable, breakInfo.Effective, oneOf(s)).withBlastResistance(breakInfo.BlastResistance)
 }
 
-// Instrument ...
 func (s Stairs) Instrument() sound.Instrument {
 	if _, ok := s.Block.(Planks); ok {
 		return sound.Bass()
@@ -58,7 +55,6 @@ func (s Stairs) Instrument() sound.Instrument {
 	return sound.BassDrum()
 }
 
-// FlammabilityInfo ...
 func (s Stairs) FlammabilityInfo() FlammabilityInfo {
 	if flammable, ok := s.Block.(Flammable); ok {
 		return flammable.FlammabilityInfo()
@@ -66,7 +62,6 @@ func (s Stairs) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, false)
 }
 
-// FuelInfo ...
 func (s Stairs) FuelInfo() item.FuelInfo {
 	if fuel, ok := s.Block.(item.Fuel); ok {
 		return fuel.FuelInfo()
@@ -74,12 +69,10 @@ func (s Stairs) FuelInfo() item.FuelInfo {
 	return item.FuelInfo{}
 }
 
-// EncodeItem ...
 func (s Stairs) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + encodeStairsBlock(s.Block) + "_stairs", 0
 }
 
-// EncodeBlock ...
 func (s Stairs) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + encodeStairsBlock(s.Block) + "_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 }
@@ -89,7 +82,6 @@ func toStairsDirection(v cube.Direction) int32 {
 	return int32(3 - v)
 }
 
-// SideClosed ...
 func (s Stairs) SideClosed(pos, side cube.Pos, tx *world.Tx) bool {
 	return s.Model().FaceSolid(pos, pos.Face(side), tx)
 }

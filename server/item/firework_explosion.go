@@ -16,7 +16,6 @@ type FireworkExplosion struct {
 	Trail bool
 }
 
-// EncodeNBT ...
 func (f FireworkExplosion) EncodeNBT() map[string]any {
 	data := map[string]any{
 		"FireworkType":    f.Shape.Uint8(),
@@ -31,7 +30,6 @@ func (f FireworkExplosion) EncodeNBT() map[string]any {
 	return data
 }
 
-// DecodeNBT ...
 func (f FireworkExplosion) DecodeNBT(data map[string]any) any {
 	f.Shape = FireworkShapes()[data["FireworkType"].(uint8)]
 	f.Twinkle = data["FireworkFlicker"].(uint8) == 1

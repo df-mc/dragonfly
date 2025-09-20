@@ -7,7 +7,6 @@ type Mud struct {
 	solid
 }
 
-// SoilFor ...
 func (Mud) SoilFor(block world.Block) bool {
 	switch block.(type) {
 	case ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, PinkPetals, DeadBush:
@@ -16,17 +15,14 @@ func (Mud) SoilFor(block world.Block) bool {
 	return false
 }
 
-// BreakInfo ...
 func (m Mud) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(m))
 }
 
-// EncodeItem ...
 func (Mud) EncodeItem() (name string, meta int16) {
 	return "minecraft:mud", 0
 }
 
-// EncodeBlock ...
 func (Mud) EncodeBlock() (string, map[string]any) {
 	return "minecraft:mud", nil
 }

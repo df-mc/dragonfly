@@ -46,7 +46,6 @@ func (a Axe) MaxCount() int {
 	return 1
 }
 
-// DurabilityInfo ...
 func (a Axe) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability:    a.Tier.Durability,
@@ -56,7 +55,6 @@ func (a Axe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// SmeltInfo ...
 func (a Axe) SmeltInfo() SmeltInfo {
 	switch a.Tier {
 	case ToolTierIron:
@@ -67,7 +65,6 @@ func (a Axe) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
-// FuelInfo ...
 func (a Axe) FuelInfo() FuelInfo {
 	if a.Tier == ToolTierWood {
 		return newFuelInfo(time.Second * 10)
@@ -75,37 +72,30 @@ func (a Axe) FuelInfo() FuelInfo {
 	return FuelInfo{}
 }
 
-// AttackDamage ...
 func (a Axe) AttackDamage() float64 {
 	return a.Tier.BaseAttackDamage + 2
 }
 
-// ToolType ...
 func (a Axe) ToolType() ToolType {
 	return TypeAxe
 }
 
-// HarvestLevel ...
 func (a Axe) HarvestLevel() int {
 	return a.Tier.HarvestLevel
 }
 
-// BaseMiningEfficiency ...
 func (a Axe) BaseMiningEfficiency(world.Block) float64 {
 	return a.Tier.BaseMiningEfficiency
 }
 
-// RepairableBy ...
 func (a Axe) RepairableBy(i Stack) bool {
 	return toolTierRepairable(a.Tier)(i)
 }
 
-// EnchantmentValue ...
 func (a Axe) EnchantmentValue() int {
 	return a.Tier.EnchantmentValue
 }
 
-// EncodeItem ...
 func (a Axe) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + a.Tier.Name + "_axe", 0
 }

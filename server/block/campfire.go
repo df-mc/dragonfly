@@ -38,17 +38,14 @@ type CampfireItem struct {
 	Time time.Duration
 }
 
-// Model ...
 func (Campfire) Model() world.BlockModel {
 	return model.Campfire{}
 }
 
-// SideClosed ...
 func (Campfire) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// BreakInfo ...
 func (c Campfire) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if hasSilkTouch(enchantments) {
@@ -70,7 +67,6 @@ func (c Campfire) BreakInfo() BreakInfo {
 	})
 }
 
-// LightEmissionLevel ...
 func (c Campfire) LightEmissionLevel() uint8 {
 	if c.Extinguished {
 		return 0
@@ -78,7 +74,6 @@ func (c Campfire) LightEmissionLevel() uint8 {
 	return c.Type.LightLevel()
 }
 
-// Ignite ...
 func (c Campfire) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	tx.PlaySound(pos.Vec3(), sound.Ignite{})
 	if !c.Extinguished {
@@ -93,7 +88,6 @@ func (c Campfire) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	return true
 }
 
-// Splash ...
 func (c Campfire) Splash(tx *world.Tx, pos cube.Pos) {
 	if c.Extinguished {
 		return
@@ -114,7 +108,6 @@ func (c Campfire) extinguish(pos cube.Pos, tx *world.Tx) {
 	tx.SetBlock(pos, c, nil)
 }
 
-// Activate ...
 func (c Campfire) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if held.Empty() {
@@ -153,7 +146,6 @@ func (c Campfire) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User,
 	return false
 }
 
-// UseOnBlock ...
 func (c Campfire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
@@ -199,7 +191,6 @@ func (c Campfire) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
-// NeighbourUpdateTick ...
 func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Liquid(pos); ok {
 		var updated bool
@@ -221,7 +212,6 @@ func (c Campfire) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// EntityInside ...
 func (c Campfire) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	if flammable, ok := e.(flammableEntity); ok {
 		if flammable.OnFireDuration() > 0 && c.Extinguished {
@@ -237,7 +227,6 @@ func (c Campfire) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	}
 }
 
-// EncodeNBT ...
 func (c Campfire) EncodeNBT() map[string]any {
 	m := map[string]any{"id": "Campfire"}
 	for i, v := range c.Items {
@@ -250,7 +239,6 @@ func (c Campfire) EncodeNBT() map[string]any {
 	return m
 }
 
-// DecodeNBT ...
 func (c Campfire) DecodeNBT(data map[string]any) any {
 	for i := 0; i < 4; i++ {
 		id := strconv.Itoa(i + 1)
@@ -262,7 +250,6 @@ func (c Campfire) DecodeNBT(data map[string]any) any {
 	return c
 }
 
-// EncodeItem ...
 func (c Campfire) EncodeItem() (name string, meta int16) {
 	switch c.Type {
 	case NormalFire():
@@ -273,7 +260,6 @@ func (c Campfire) EncodeItem() (name string, meta int16) {
 	panic("invalid fire type")
 }
 
-// EncodeBlock ...
 func (c Campfire) EncodeBlock() (name string, properties map[string]any) {
 	switch c.Type {
 	case NormalFire():
@@ -287,7 +273,6 @@ func (c Campfire) EncodeBlock() (name string, properties map[string]any) {
 	}
 }
 
-// allCampfires ...
 func allCampfires() (campfires []world.Block) {
 	for _, d := range cube.Directions() {
 		for _, f := range FireTypes() {

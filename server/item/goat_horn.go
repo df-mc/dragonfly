@@ -15,17 +15,14 @@ type GoatHorn struct {
 	Type sound.Horn
 }
 
-// MaxCount ...
 func (GoatHorn) MaxCount() int {
 	return 1
 }
 
-// Cooldown ...
 func (GoatHorn) Cooldown() time.Duration {
 	return time.Second * 7
 }
 
-// Use ...
 func (g GoatHorn) Use(tx *world.Tx, user User, _ *UseContext) bool {
 	tx.PlaySound(user.Position(), sound.GoatHorn{Horn: g.Type})
 	time.AfterFunc(time.Second, func() {
@@ -52,7 +49,6 @@ func (g GoatHorn) releaseItem(_ *world.Tx, e world.Entity) {
 	user.ReleaseItem()
 }
 
-// EncodeItem ...
 func (g GoatHorn) EncodeItem() (name string, meta int16) {
 	return "minecraft:goat_horn", int16(g.Type.Uint8())
 }

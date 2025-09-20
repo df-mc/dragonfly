@@ -16,7 +16,6 @@ import (
 // but also solves issues with block entities such as item frames and lecterns as of v1.19.10.
 const subChunkRequests = true
 
-// ViewChunk ...
 func (s *Session) ViewChunk(pos world.ChunkPos, dim world.Dimension, blockEntities map[cube.Pos]world.Block, c *chunk.Chunk) {
 	if !s.conn.ClientCacheEnabled() {
 		s.sendNetworkChunk(pos, dim, c, blockEntities)
@@ -25,7 +24,6 @@ func (s *Session) ViewChunk(pos world.ChunkPos, dim world.Dimension, blockEntiti
 	s.sendBlobHashes(pos, dim, c, blockEntities)
 }
 
-// ViewSubChunks ...
 func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.SubChunkOffset, tx *world.Tx) {
 	r := tx.Range()
 

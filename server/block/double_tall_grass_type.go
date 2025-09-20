@@ -22,12 +22,10 @@ func DoubleTallGrassTypes() []DoubleTallGrassType {
 
 type doubleTallGrass uint8
 
-// Uint8 ...
 func (t doubleTallGrass) Uint8() uint8 {
 	return uint8(t)
 }
 
-// Name ...
 func (t doubleTallGrass) Name() string {
 	switch t {
 	case 0:
@@ -38,7 +36,6 @@ func (t doubleTallGrass) Name() string {
 	panic("unknown double tall grass type")
 }
 
-// String ...
 func (t doubleTallGrass) String() string {
 	switch t {
 	case 0:

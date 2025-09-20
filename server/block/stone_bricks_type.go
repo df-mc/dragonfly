@@ -32,7 +32,6 @@ func (s stoneBricks) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Name ...
 func (s stoneBricks) Name() string {
 	switch s {
 	case 0:
@@ -47,7 +46,6 @@ func (s stoneBricks) Name() string {
 	panic("unknown stone bricks type")
 }
 
-// String ...
 func (s stoneBricks) String() string {
 	switch s {
 	case 0:
@@ -62,7 +60,6 @@ func (s stoneBricks) String() string {
 	panic("unknown stone bricks type")
 }
 
-// StoneBricksTypes ...
 func StoneBricksTypes() []StoneBricksType {
 	return []StoneBricksType{NormalStoneBricks(), MossyStoneBricks(), CrackedStoneBricks(), ChiseledStoneBricks()}
 }

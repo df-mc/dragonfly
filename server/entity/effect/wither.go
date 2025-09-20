@@ -13,7 +13,6 @@ type wither struct {
 	nopLasting
 }
 
-// Apply ...
 func (wither) Apply(e world.Entity, eff Effect) {
 	interval := max(80>>eff.Level(), 1)
 	if eff.Tick()%interval == 0 {
@@ -23,7 +22,6 @@ func (wither) Apply(e world.Entity, eff Effect) {
 	}
 }
 
-// RGBA ...
 func (wither) RGBA() color.RGBA {
 	return color.RGBA{R: 0x73, G: 0x61, B: 0x56, A: 0xff}
 }

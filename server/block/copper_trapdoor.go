@@ -29,7 +29,6 @@ type CopperTrapdoor struct {
 	Top bool
 }
 
-// Model ...
 func (t CopperTrapdoor) Model() world.BlockModel {
 	return model.Trapdoor{Facing: t.Facing, Top: t.Top, Open: t.Open}
 }
@@ -96,19 +95,16 @@ func (t CopperTrapdoor) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	attemptOxidation(pos, tx, r, t)
 }
 
-// BreakInfo ...
 func (t CopperTrapdoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
 	}, pickaxeEffective, oneOf(t))
 }
 
-// SideClosed ...
 func (t CopperTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (t CopperTrapdoor) EncodeItem() (name string, meta int16) {
 	name = "copper_trapdoor"
 	if t.Oxidation != UnoxidisedOxidation() {
@@ -120,7 +116,6 @@ func (t CopperTrapdoor) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + name, 0
 }
 
-// EncodeBlock ...
 func (t CopperTrapdoor) EncodeBlock() (name string, properties map[string]any) {
 	name = "copper_trapdoor"
 	if t.Oxidation != UnoxidisedOxidation() {

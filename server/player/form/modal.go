@@ -39,7 +39,6 @@ func NoButton() Button {
 	return Button{Text: "gui.no"}
 }
 
-// MarshalJSON ...
 func (m Modal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type":    "modal",

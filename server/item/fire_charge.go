@@ -13,12 +13,10 @@ import (
 // fireball.
 type FireCharge struct{}
 
-// EncodeItem ...
 func (f FireCharge) EncodeItem() (name string, meta int16) {
 	return "minecraft:fire_charge", 0
 }
 
-// UseOnBlock ...
 func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
 	if l, ok := tx.Block(pos).(ignitable); ok && l.Ignite(pos, tx, user) {
 		ctx.SubtractFromCount(1)

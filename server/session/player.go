@@ -346,7 +346,6 @@ func (s *Session) SendSpeed(speed float64) {
 	})
 }
 
-// SendFood ...
 func (s *Session) SendFood(food int, saturation, exhaustion float64) {
 	s.writePacket(&packet.UpdateAttributes{
 		EntityRuntimeID: selfEntityRuntimeID,

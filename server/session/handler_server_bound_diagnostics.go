@@ -8,7 +8,6 @@ import (
 // ServerBoundDiagnosticsHandler handles diagnostic updates from the client.
 type ServerBoundDiagnosticsHandler struct{}
 
-// Handle ...
 func (h *ServerBoundDiagnosticsHandler) Handle(p packet.Packet, _ *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.ServerBoundDiagnostics)
 	c.UpdateDiagnostics(Diagnostics{

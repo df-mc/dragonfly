@@ -14,29 +14,24 @@ type Carrot struct {
 	crop
 }
 
-// SameCrop ...
 func (Carrot) SameCrop(c Crop) bool {
 	_, ok := c.(Carrot)
 	return ok
 }
 
-// AlwaysConsumable ...
 func (c Carrot) AlwaysConsumable() bool {
 	return false
 }
 
-// ConsumeDuration ...
 func (c Carrot) ConsumeDuration() time.Duration {
 	return item.DefaultConsumeDuration
 }
 
-// Consume ...
 func (c Carrot) Consume(_ *world.Tx, co item.Consumer) item.Stack {
 	co.Saturate(3, 3.6)
 	return item.Stack{}
 }
 
-// BoneMeal ...
 func (c Carrot) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if c.Growth == 7 {
 		return false
@@ -46,7 +41,6 @@ func (c Carrot) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// UseOnBlock ...
 func (c Carrot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
@@ -61,7 +55,6 @@ func (c Carrot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (c Carrot) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if c.Growth < 7 {
@@ -71,17 +64,14 @@ func (c Carrot) BreakInfo() BreakInfo {
 	})
 }
 
-// CompostChance ...
 func (Carrot) CompostChance() float64 {
 	return 0.65
 }
 
-// EncodeItem ...
 func (c Carrot) EncodeItem() (name string, meta int16) {
 	return "minecraft:carrot", 0
 }
 
-// RandomTick ...
 func (c Carrot) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 8 {
 		breakBlock(c, pos, tx)
@@ -91,12 +81,10 @@ func (c Carrot) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
-// EncodeBlock ...
 func (c Carrot) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:carrots", map[string]any{"growth": int32(c.Growth)}
 }
 
-// allCarrots ...
 func allCarrots() (carrots []world.Block) {
 	for growth := 0; growth < 8; growth++ {
 		carrots = append(carrots, Carrot{crop{Growth: growth}})

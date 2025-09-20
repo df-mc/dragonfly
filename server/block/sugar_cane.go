@@ -31,14 +31,12 @@ func (c SugarCane) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (c SugarCane) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !c.canGrowHere(pos, tx, true) {
 		breakBlock(c, pos, tx)
 	}
 }
 
-// RandomTick ...
 func (c SugarCane) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !c.canGrowHere(pos, tx, true) {
 		breakBlock(c, pos, tx)
@@ -62,7 +60,6 @@ func (c SugarCane) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	tx.SetBlock(pos, c, nil)
 }
 
-// BoneMeal ...
 func (c SugarCane) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	for _, ok := tx.Block(pos.Side(cube.FaceDown)).(SugarCane); ok; _, ok = tx.Block(pos.Side(cube.FaceDown)).(SugarCane) {
 		pos = pos.Side(cube.FaceDown)
@@ -96,22 +93,18 @@ func (c SugarCane) canGrowHere(pos cube.Pos, tx *world.Tx, recursive bool) bool 
 	return false
 }
 
-// HasLiquidDrops ...
 func (c SugarCane) HasLiquidDrops() bool {
 	return true
 }
 
-// BreakInfo ...
 func (c SugarCane) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(c))
 }
 
-// EncodeItem ...
 func (c SugarCane) EncodeItem() (name string, meta int16) {
 	return "minecraft:sugar_cane", 0
 }
 
-// EncodeBlock ...
 func (c SugarCane) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:reeds", map[string]any{"age": int32(c.Age)}
 }

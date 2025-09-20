@@ -34,7 +34,6 @@ func neighboursLavaFlammable(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// ReplaceableBy ...
 func (l Lava) ReplaceableBy(b world.Block) bool {
 	if _, ok := b.(LiquidRemovable); ok {
 		_, displacer := b.(world.LiquidDisplacer)
@@ -44,7 +43,6 @@ func (l Lava) ReplaceableBy(b world.Block) bool {
 	return true
 }
 
-// EntityInside ...
 func (l Lava) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
@@ -57,7 +55,6 @@ func (l Lava) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	}
 }
 
-// RandomTick ...
 func (l Lava) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	i := r.IntN(3)
 	if i > 0 {
@@ -81,7 +78,6 @@ func (l Lava) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
-// HasLiquidDrops ...
 func (Lava) HasLiquidDrops() bool {
 	return false
 }
@@ -96,14 +92,12 @@ func (Lava) LightEmissionLevel() uint8 {
 	return 15
 }
 
-// NeighbourUpdateTick ...
 func (l Lava) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !l.Harden(pos, tx, nil) {
 		tx.ScheduleBlockUpdate(pos, l, tx.World().Dimension().LavaSpreadDuration())
 	}
 }
 
-// ScheduledTick ...
 func (l Lava) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !l.Harden(pos, tx, nil) {
 		tickLiquid(l, pos, tx)
@@ -200,7 +194,6 @@ func (l Lava) Harden(pos cube.Pos, tx *world.Tx, flownIntoBy *cube.Pos) bool {
 	return true
 }
 
-// EncodeBlock ...
 func (l Lava) EncodeBlock() (name string, properties map[string]any) {
 	if l.Depth < 1 || l.Depth > 8 {
 		panic("invalid lava depth, must be between 1 and 8")

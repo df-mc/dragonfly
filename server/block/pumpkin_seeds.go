@@ -16,13 +16,11 @@ type PumpkinSeeds struct {
 	Direction cube.Face
 }
 
-// SameCrop ...
 func (PumpkinSeeds) SameCrop(c Crop) bool {
 	_, ok := c.(PumpkinSeeds)
 	return ok
 }
 
-// NeighbourUpdateTick ...
 func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		breakBlock(p, pos, tx)
@@ -34,7 +32,6 @@ func (p PumpkinSeeds) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// RandomTick ...
 func (p PumpkinSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if r.Float64() <= p.CalculateGrowthChance(pos, tx) && tx.Light(pos) >= 8 {
 		if p.Growth < 7 {
@@ -61,7 +58,6 @@ func (p PumpkinSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
-// BoneMeal ...
 func (p PumpkinSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if p.Growth == 7 {
 		return false
@@ -71,7 +67,6 @@ func (p PumpkinSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// UseOnBlock ...
 func (p PumpkinSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, p)
 	if !used {
@@ -86,22 +81,18 @@ func (p PumpkinSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (p PumpkinSeeds) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(p))
 }
 
-// CompostChance ...
 func (PumpkinSeeds) CompostChance() float64 {
 	return 0.3
 }
 
-// EncodeItem ...
 func (p PumpkinSeeds) EncodeItem() (name string, meta int16) {
 	return "minecraft:pumpkin_seeds", 0
 }
 
-// EncodeBlock ...
 func (p PumpkinSeeds) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:pumpkin_stem", map[string]any{"facing_direction": int32(p.Direction), "growth": int32(p.Growth)}
 }

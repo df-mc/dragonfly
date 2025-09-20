@@ -46,12 +46,10 @@ func (s Smoker) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
-// EncodeItem ...
 func (s Smoker) EncodeItem() (name string, meta int16) {
 	return "minecraft:smoker", 0
 }
 
-// EncodeBlock ...
 func (s Smoker) EncodeBlock() (name string, properties map[string]interface{}) {
 	if s.Lit {
 		return "minecraft:lit_smoker", map[string]interface{}{"minecraft:cardinal_direction": s.Facing.String()}
@@ -59,7 +57,6 @@ func (s Smoker) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:smoker", map[string]interface{}{"minecraft:cardinal_direction": s.Facing.String()}
 }
 
-// UseOnBlock ...
 func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
@@ -70,7 +67,6 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (s Smoker) BreakInfo() BreakInfo {
 	xp := s.Experience()
 	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(s)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
@@ -80,7 +76,6 @@ func (s Smoker) BreakInfo() BreakInfo {
 	})
 }
 
-// Activate ...
 func (s Smoker) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -89,7 +84,6 @@ func (s Smoker) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _
 	return false
 }
 
-// EncodeNBT ...
 func (s Smoker) EncodeNBT() map[string]interface{} {
 	if s.smelter == nil {
 		//noinspection GoAssignmentToReceiver
@@ -106,7 +100,6 @@ func (s Smoker) EncodeNBT() map[string]interface{} {
 	}
 }
 
-// DecodeNBT ...
 func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
 	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
@@ -124,7 +117,6 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 	return s
 }
 
-// allSmokers ...
 func allSmokers() (smokers []world.Block) {
 	for _, face := range cube.Directions() {
 		smokers = append(smokers, Smoker{Facing: face})

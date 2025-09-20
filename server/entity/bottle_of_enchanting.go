@@ -9,7 +9,6 @@ import (
 	"math/rand/v2"
 )
 
-// NewBottleOfEnchanting ...
 func NewBottleOfEnchanting(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := bottleOfEnchantingConf
 	conf.Owner = owner.H()

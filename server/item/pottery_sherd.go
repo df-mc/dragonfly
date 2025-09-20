@@ -5,12 +5,10 @@ type PotterySherd struct {
 	Type SherdType
 }
 
-// EncodeItem ...
 func (s PotterySherd) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Type.String() + "_pottery_sherd", 0
 }
 
-// PotDecoration ...
 func (PotterySherd) PotDecoration() bool {
 	return true
 }

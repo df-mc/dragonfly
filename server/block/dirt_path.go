@@ -11,7 +11,6 @@ type DirtPath struct {
 	transparent
 }
 
-// Till ...
 func (p DirtPath) Till() (world.Block, bool) {
 	return Farmland{}, true
 }
@@ -25,17 +24,14 @@ func (p DirtPath) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// BreakInfo ...
 func (p DirtPath) BreakInfo() BreakInfo {
 	return newBreakInfo(0.65, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, p))
 }
 
-// EncodeItem ...
 func (DirtPath) EncodeItem() (name string, meta int16) {
 	return "minecraft:grass_path", 0
 }
 
-// EncodeBlock ...
 func (DirtPath) EncodeBlock() (string, map[string]any) {
 	return "minecraft:grass_path", nil
 }

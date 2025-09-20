@@ -213,5 +213,4 @@ type DecoratedPotInsertFailed struct{ sound }
 // sound implements the world.Sound interface.
 type sound struct{}
 
-// Play ...
 func (sound) Play(*world.World, mgl64.Vec3) {}

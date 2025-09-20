@@ -18,12 +18,10 @@ type Torch struct {
 	Type FireType
 }
 
-// BreakInfo ...
 func (t Torch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t))
 }
 
-// LightEmissionLevel ...
 func (t Torch) LightEmissionLevel() uint8 {
 	switch t.Type {
 	case NormalFire():
@@ -33,7 +31,6 @@ func (t Torch) LightEmissionLevel() uint8 {
 	}
 }
 
-// UseOnBlock ...
 func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, t)
 	if !used {
@@ -61,19 +58,16 @@ func (t Torch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (t Torch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
 		breakBlock(t, pos, tx)
 	}
 }
 
-// HasLiquidDrops ...
 func (t Torch) HasLiquidDrops() bool {
 	return true
 }
 
-// EncodeItem ...
 func (t Torch) EncodeItem() (name string, meta int16) {
 	switch t.Type {
 	case NormalFire():
@@ -84,7 +78,6 @@ func (t Torch) EncodeItem() (name string, meta int16) {
 	panic("invalid fire type")
 }
 
-// EncodeBlock ...
 func (t Torch) EncodeBlock() (name string, properties map[string]any) {
 	var face string
 	if t.Facing == cube.FaceDown {
@@ -104,7 +97,6 @@ func (t Torch) EncodeBlock() (name string, properties map[string]any) {
 	panic("invalid fire type")
 }
 
-// allTorches ...
 func allTorches() (torch []world.Block) {
 	for _, face := range cube.Faces() {
 		if face == cube.FaceUp {

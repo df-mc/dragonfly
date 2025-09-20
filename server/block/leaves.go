@@ -36,7 +36,6 @@ func (l Leaves) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// findLog ...
 func findLog(pos cube.Pos, tx *world.Tx, visited *[]cube.Pos, distance int) bool {
 	for _, v := range *visited {
 		if v == pos {
@@ -60,7 +59,6 @@ func findLog(pos cube.Pos, tx *world.Tx, visited *[]cube.Pos, distance int) bool
 	return logFound
 }
 
-// RandomTick ...
 func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !l.Persistent && l.ShouldUpdate {
 		if findLog(pos, tx, &[]cube.Pos{}, 0) {
@@ -82,7 +80,6 @@ func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 }
 
-// NeighbourUpdateTick ...
 func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !l.Persistent && !l.ShouldUpdate {
 		l.ShouldUpdate = true
@@ -90,12 +87,10 @@ func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// FlammabilityInfo ...
 func (l Leaves) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(30, 60, true)
 }
 
-// BreakInfo ...
 func (l Leaves) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, func(t item.Tool) bool {
 		return t.ToolType() == item.TypeShears || t.ToolType() == item.TypeHoe
@@ -115,27 +110,22 @@ func (l Leaves) BreakInfo() BreakInfo {
 	})
 }
 
-// CompostChance ...
 func (Leaves) CompostChance() float64 {
 	return 0.3
 }
 
-// EncodeItem ...
 func (l Leaves) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + l.Wood.String() + "_leaves", 0
 }
 
-// LightDiffusionLevel ...
 func (Leaves) LightDiffusionLevel() uint8 {
 	return 1
 }
 
-// SideClosed ...
 func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeBlock ...
 func (l Leaves) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + l.Wood.String() + "_leaves", map[string]any{"persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 }

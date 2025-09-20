@@ -27,7 +27,6 @@ func (s prismarine) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Name ...
 func (s prismarine) Name() string {
 	switch s {
 	case 0:
@@ -40,7 +39,6 @@ func (s prismarine) Name() string {
 	panic("unknown prismarine type")
 }
 
-// String ...
 func (s prismarine) String() string {
 	switch s {
 	case 0:
@@ -53,7 +51,6 @@ func (s prismarine) String() string {
 	panic("unknown prismarine type")
 }
 
-// PrismarineTypes ...
 func PrismarineTypes() []PrismarineType {
 	return []PrismarineType{NormalPrismarine(), DarkPrismarine(), BrickPrismarine()}
 }

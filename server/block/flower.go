@@ -20,7 +20,6 @@ type Flower struct {
 	Type FlowerType
 }
 
-// EntityInside ...
 func (f Flower) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if f.Type == WitherRose() {
 		if living, ok := e.(interface {
@@ -31,7 +30,6 @@ func (f Flower) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	}
 }
 
-// BoneMeal ...
 func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 	if f.Type == WitherRose() {
 		return
@@ -59,14 +57,12 @@ func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 	return
 }
 
-// NeighbourUpdateTick ...
 func (f Flower) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
 		breakBlock(f, pos, tx)
 	}
 }
 
-// UseOnBlock ...
 func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, f)
 	if !used || !supportsVegetation(f, tx.Block(pos.Side(cube.FaceDown))) {
@@ -77,37 +73,30 @@ func (f Flower) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// HasLiquidDrops ...
 func (Flower) HasLiquidDrops() bool {
 	return true
 }
 
-// FlammabilityInfo ...
 func (f Flower) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(60, 100, false)
 }
 
-// BreakInfo ...
 func (f Flower) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(f))
 }
 
-// CompostChance ...
 func (Flower) CompostChance() float64 {
 	return 0.65
 }
 
-// EncodeItem ...
 func (f Flower) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + f.Type.String(), 0
 }
 
-// EncodeBlock ...
 func (f Flower) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + f.Type.String(), nil
 }
 
-// allFlowers ...
 func allFlowers() (b []world.Block) {
 	for _, f := range FlowerTypes() {
 		b = append(b, Flower{Type: f})

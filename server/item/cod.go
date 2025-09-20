@@ -10,7 +10,6 @@ type Cod struct {
 	Cooked bool
 }
 
-// Consume ...
 func (c Cod) Consume(_ *world.Tx, co Consumer) Stack {
 	if c.Cooked {
 		co.Saturate(5, 6)
@@ -20,7 +19,6 @@ func (c Cod) Consume(_ *world.Tx, co Consumer) Stack {
 	return Stack{}
 }
 
-// SmeltInfo ...
 func (c Cod) SmeltInfo() SmeltInfo {
 	if c.Cooked {
 		return SmeltInfo{}
@@ -28,7 +26,6 @@ func (c Cod) SmeltInfo() SmeltInfo {
 	return newFoodSmeltInfo(NewStack(Cod{Cooked: true}, 1), 0.35)
 }
 
-// EncodeItem ...
 func (c Cod) EncodeItem() (name string, meta int16) {
 	if c.Cooked {
 		return "minecraft:cooked_cod", 0

@@ -52,10 +52,8 @@ type Explodable interface {
 	Explode(explosionPos mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig)
 }
 
-// rays ...
 var rays = make([]mgl64.Vec3, 0, 1352)
 
-// init ...
 func init() {
 	for x := 0.0; x < 16; x++ {
 		for y := 0.0; y < 16; y++ {

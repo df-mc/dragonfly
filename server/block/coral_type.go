@@ -63,7 +63,6 @@ func (c coral) Colour() item.Colour {
 	panic("unknown coral type")
 }
 
-// Name ...
 func (c coral) Name() string {
 	switch c {
 	case 0:
@@ -80,7 +79,6 @@ func (c coral) Name() string {
 	panic("unknown coral type")
 }
 
-// String ...
 func (c coral) String() string {
 	switch c {
 	case 0:

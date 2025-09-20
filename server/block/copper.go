@@ -33,7 +33,6 @@ func (c Copper) Strip() (world.Block, world.Sound, bool) {
 	return c, nil, false
 }
 
-// BreakInfo ...
 func (c Copper) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
@@ -64,7 +63,6 @@ func (c Copper) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	attemptOxidation(pos, tx, r, c)
 }
 
-// EncodeItem ...
 func (c Copper) EncodeItem() (name string, meta int16) {
 	if c.Type == NormalCopper() && c.Oxidation == UnoxidisedOxidation() && !c.Waxed {
 		return "minecraft:copper_block", 0
@@ -82,7 +80,6 @@ func (c Copper) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + name, 0
 }
 
-// EncodeBlock ...
 func (c Copper) EncodeBlock() (string, map[string]any) {
 	if c.Type == NormalCopper() && c.Oxidation == UnoxidisedOxidation() && !c.Waxed {
 		return "minecraft:copper_block", nil

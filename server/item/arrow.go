@@ -9,7 +9,6 @@ type Arrow struct {
 	Tip potion.Potion
 }
 
-// EncodeItem ...
 func (a Arrow) EncodeItem() (name string, meta int16) {
 	if tip := a.Tip.Uint8(); tip > 4 {
 		return "minecraft:arrow", int16(tip + 1)
@@ -17,7 +16,6 @@ func (a Arrow) EncodeItem() (name string, meta int16) {
 	return "minecraft:arrow", 0
 }
 
-// OffHand ...
 func (Arrow) OffHand() bool {
 	return true
 }

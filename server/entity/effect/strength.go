@@ -17,7 +17,6 @@ func (strength) Multiplier(lvl int) float64 {
 	return 0.3 * float64(lvl)
 }
 
-// RGBA ...
 func (strength) RGBA() color.RGBA {
 	return color.RGBA{R: 0xff, G: 0xc7, B: 0x00, A: 0xff}
 }

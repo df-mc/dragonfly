@@ -9,7 +9,6 @@ import (
 // TextHandler handles the Text packet.
 type TextHandler struct{}
 
-// Handle ...
 func (TextHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.Text)
 
