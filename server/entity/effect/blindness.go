@@ -12,7 +12,6 @@ type blindness struct {
 	nopLasting
 }
 
-// RGBA ...
 func (blindness) RGBA() color.RGBA {
 	return color.RGBA{R: 0x1f, G: 0x1f, B: 0x23, A: 0xff}
 }

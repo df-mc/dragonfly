@@ -12,22 +12,18 @@ type Cobblestone struct {
 	Mossy bool
 }
 
-// BreakInfo ...
 func (c Cobblestone) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
 }
 
-// SmeltInfo ...
 func (Cobblestone) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(Stone{}, 1), 0.1)
 }
 
-// RepairsStoneTools ...
 func (c Cobblestone) RepairsStoneTools() bool {
 	return !c.Mossy
 }
 
-// EncodeItem ...
 func (c Cobblestone) EncodeItem() (name string, meta int16) {
 	if c.Mossy {
 		return "minecraft:mossy_cobblestone", 0
@@ -35,7 +31,6 @@ func (c Cobblestone) EncodeItem() (name string, meta int16) {
 	return "minecraft:cobblestone", 0
 }
 
-// EncodeBlock ...
 func (c Cobblestone) EncodeBlock() (string, map[string]any) {
 	if c.Mossy {
 		return "minecraft:mossy_cobblestone", nil

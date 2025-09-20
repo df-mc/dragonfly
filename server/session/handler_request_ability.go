@@ -8,7 +8,6 @@ import (
 // RequestAbilityHandler handles the RequestAbility packet.
 type RequestAbilityHandler struct{}
 
-// Handle ...
 func (a RequestAbilityHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.RequestAbility)
 	if pk.Ability == packet.AbilityFlying {

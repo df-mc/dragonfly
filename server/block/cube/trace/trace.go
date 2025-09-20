@@ -52,7 +52,6 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 	}
 }
 
-// safeDivideVec3 ...
 func safeDivideVec3(dividend, divisor mgl64.Vec3) mgl64.Vec3 {
 	return mgl64.Vec3{
 		safeDivide(dividend[0], divisor[0]),
@@ -69,7 +68,6 @@ func safeDivide(dividend, divisor float64) float64 {
 	return dividend / divisor
 }
 
-// boundaryVec3 ...
 func boundaryVec3(v1, v2 mgl64.Vec3) mgl64.Vec3 {
 	return mgl64.Vec3{boundary(v1[0], v2[0]), boundary(v1[1], v2[1]), boundary(v1[2], v2[2])}
 }
@@ -91,12 +89,10 @@ func boundary(start, dir float64) float64 {
 	return (1 - (start - math.Floor(start))) / dir
 }
 
-// signVec3 ...
 func signVec3(v1 mgl64.Vec3) mgl64.Vec3 {
 	return mgl64.Vec3{sign(v1[0]), sign(v1[1]), sign(v1[2])}
 }
 
-// sign ...
 func sign(f float64) float64 {
 	switch {
 	case f > 0.0:

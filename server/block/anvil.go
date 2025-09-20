@@ -20,17 +20,14 @@ type Anvil struct {
 	Facing cube.Direction
 }
 
-// Model ...
 func (a Anvil) Model() world.BlockModel {
 	return model.Anvil{Facing: a.Facing}
 }
 
-// BreakInfo ...
 func (a Anvil) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(a)).withBlastResistance(6000)
 }
 
-// Activate ...
 func (Anvil) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -39,7 +36,6 @@ func (Anvil) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 	return false
 }
 
-// UseOnBlock ...
 func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, a)
 	if !used {
@@ -50,7 +46,6 @@ func (a Anvil) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (a Anvil) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	a.fall(a, pos, tx)
 }
@@ -79,19 +74,16 @@ func (Anvil) Landed(tx *world.Tx, pos cube.Pos) {
 	tx.PlaySound(pos.Vec3Centre(), sound.AnvilLand{})
 }
 
-// EncodeItem ...
 func (a Anvil) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + a.Type.String(), 0
 }
 
-// EncodeBlock ...
 func (a Anvil) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + a.Type.String(), map[string]any{
 		"minecraft:cardinal_direction": a.Facing.String(),
 	}
 }
 
-// allAnvils ...
 func allAnvils() (anvils []world.Block) {
 	for _, t := range AnvilTypes() {
 		for _, d := range cube.Directions() {

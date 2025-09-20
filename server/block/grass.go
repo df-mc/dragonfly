@@ -34,7 +34,6 @@ func init() {
 	}
 }
 
-// SoilFor ...
 func (g Grass) SoilFor(block world.Block) bool {
 	switch block.(type) {
 	case ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, PinkPetals, SugarCane, DeadBush:
@@ -77,7 +76,6 @@ func (g Grass) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
-// BoneMeal ...
 func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	for i := 0; i < 14; i++ {
 		c := pos.Add(cube.Pos{rand.IntN(6) - 3, 0, rand.IntN(6) - 3})
@@ -92,32 +90,26 @@ func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// BreakInfo ...
 func (g Grass) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, silkTouchOneOf(Dirt{}, g))
 }
 
-// CompostChance ...
 func (Grass) CompostChance() float64 {
 	return 0.3
 }
 
-// EncodeItem ...
 func (Grass) EncodeItem() (name string, meta int16) {
 	return "minecraft:grass_block", 0
 }
 
-// EncodeBlock ...
 func (Grass) EncodeBlock() (string, map[string]any) {
 	return "minecraft:grass_block", nil
 }
 
-// Till ...
 func (g Grass) Till() (world.Block, bool) {
 	return Farmland{}, true
 }
 
-// Shovel ...
 func (g Grass) Shovel() (world.Block, bool) {
 	return DirtPath{}, true
 }

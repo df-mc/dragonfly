@@ -18,12 +18,10 @@ type Cake struct {
 	Bites int
 }
 
-// SideClosed ...
 func (c Cake) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// UseOnBlock ...
 func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
@@ -38,14 +36,12 @@ func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, air := tx.Block(pos.Side(cube.FaceDown)).(Air); air {
 		breakBlock(c, pos, tx)
 	}
 }
 
-// Activate ...
 func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if i, ok := u.(interface {
 		Saturate(food int, saturation float64)
@@ -63,27 +59,22 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *
 	return false
 }
 
-// BreakInfo ...
 func (c Cake) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, neverHarvestable, nothingEffective, simpleDrops())
 }
 
-// EncodeItem ...
 func (c Cake) EncodeItem() (name string, meta int16) {
 	return "minecraft:cake", 0
 }
 
-// EncodeBlock ...
 func (c Cake) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:cake", map[string]any{"bite_counter": int32(c.Bites)}
 }
 
-// Model ...
 func (c Cake) Model() world.BlockModel {
 	return model.Cake{Bites: c.Bites}
 }
 
-// allCake ...
 func allCake() (cake []world.Block) {
 	for bites := 0; bites < 7; bites++ {
 		cake = append(cake, Cake{Bites: bites})

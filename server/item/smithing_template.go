@@ -8,7 +8,6 @@ type SmithingTemplate struct {
 	Template SmithingTemplateType
 }
 
-// EncodeItem ...
 func (t SmithingTemplate) EncodeItem() (name string, meta int16) {
 	if t.Template == TemplateNetheriteUpgrade() {
 		return "minecraft:netherite_upgrade_smithing_template", 0

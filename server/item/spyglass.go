@@ -10,7 +10,6 @@ func (Spyglass) MaxCount() int {
 	return 1
 }
 
-// EncodeItem ...
 func (Spyglass) EncodeItem() (name string, meta int16) {
 	return "minecraft:spyglass", 0
 }

@@ -30,7 +30,6 @@ func NewProvider(path string) (*Provider, error) {
 	return &Provider{db: db}, nil
 }
 
-// Save ...
 func (p *Provider) Save(id uuid.UUID, d player.Config, w *world.World) error {
 	b, err := json.Marshal(p.toJson(d, w))
 	if err != nil {
@@ -39,7 +38,6 @@ func (p *Provider) Save(id uuid.UUID, d player.Config, w *world.World) error {
 	return p.db.Put(id[:], b, nil)
 }
 
-// Load ...
 func (p *Provider) Load(id uuid.UUID, world func(world.Dimension) *world.World) (player.Config, *world.World, error) {
 	b, err := p.db.Get(id[:], nil)
 	if err != nil {
@@ -55,7 +53,6 @@ func (p *Provider) Load(id uuid.UUID, world func(world.Dimension) *world.World) 
 	return conf, w, nil
 }
 
-// Close ...
 func (p *Provider) Close() error {
 	return p.db.Close()
 }

@@ -14,12 +14,10 @@ type SplashPotion struct {
 	Type potion.Potion
 }
 
-// MaxCount ...
 func (s SplashPotion) MaxCount() int {
 	return 1
 }
 
-// Use ...
 func (s SplashPotion) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().SplashPotion
 	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: throwableOffset(user.Rotation()).Vec3().Mul(0.5)}
@@ -43,7 +41,6 @@ func throwableOffset(r cube.Rotation) cube.Rotation {
 	return r
 }
 
-// EncodeItem ...
 func (s SplashPotion) EncodeItem() (name string, meta int16) {
 	return "minecraft:splash_potion", int16(s.Type.Uint8())
 }

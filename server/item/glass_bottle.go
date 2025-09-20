@@ -18,7 +18,6 @@ type bottleFiller interface {
 	FillBottle() (world.Block, Stack, bool)
 }
 
-// UseOnBlock ...
 func (g GlassBottle) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
 	bl := tx.Block(pos)
 	if b, ok := bl.(bottleFiller); ok {
@@ -35,7 +34,6 @@ func (g GlassBottle) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *wor
 	return false
 }
 
-// EncodeItem ...
 func (g GlassBottle) EncodeItem() (name string, meta int16) {
 	return "minecraft:glass_bottle", 0
 }

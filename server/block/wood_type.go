@@ -73,7 +73,6 @@ func (w wood) Uint8() uint8 {
 	return uint8(w)
 }
 
-// Name ...
 func (w wood) Name() string {
 	switch w {
 	case 0:
@@ -102,7 +101,6 @@ func (w wood) Name() string {
 	panic("unknown wood type")
 }
 
-// String ...
 func (w wood) String() string {
 	switch w {
 	case 0:

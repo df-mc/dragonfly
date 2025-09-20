@@ -77,12 +77,10 @@ func (e *Ent) Age() time.Duration {
 	return e.data.Age
 }
 
-// OnFireDuration ...
 func (e *Ent) OnFireDuration() time.Duration {
 	return e.data.FireDuration
 }
 
-// SetOnFire ...
 func (e *Ent) SetOnFire(duration time.Duration) {
 	duration = max(duration, 0)
 	stateChanged := (e.data.FireDuration > 0) != (duration > 0)
@@ -95,7 +93,6 @@ func (e *Ent) SetOnFire(duration time.Duration) {
 	}
 }
 
-// Extinguish ...
 func (e *Ent) Extinguish() {
 	e.SetOnFire(0)
 }

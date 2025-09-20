@@ -31,12 +31,10 @@ type StdoutSubscriber struct{}
 
 var id = uuid.New()
 
-// UUID ...
 func (c StdoutSubscriber) UUID() uuid.UUID {
 	return id
 }
 
-// Message ...
 func (c StdoutSubscriber) Message(a ...any) {
 	s := make([]string, len(a))
 	for i, b := range a {

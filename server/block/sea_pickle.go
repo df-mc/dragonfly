@@ -23,7 +23,6 @@ type SeaPickle struct {
 	Dead bool
 }
 
-// canSurvive ...
 func (SeaPickle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
 	below := tx.Block(pos.Side(cube.FaceDown))
 	if !below.Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
@@ -40,7 +39,6 @@ func (SeaPickle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// BoneMeal ...
 func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if s.Dead {
 		return false
@@ -77,7 +75,6 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// UseOnBlock ...
 func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if existing, ok := tx.Block(pos).(SeaPickle); ok {
 		if existing.AdditionalCount >= 3 {
@@ -107,7 +104,6 @@ func (s SeaPickle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !s.canSurvive(pos, tx) {
 		breakBlock(s, pos, tx)
@@ -124,17 +120,14 @@ func (s SeaPickle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// HasLiquidDrops ...
 func (SeaPickle) HasLiquidDrops() bool {
 	return true
 }
 
-// SideClosed ...
 func (SeaPickle) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// LightEmissionLevel ...
 func (s SeaPickle) LightEmissionLevel() uint8 {
 	if s.Dead {
 		return 0
@@ -142,37 +135,30 @@ func (s SeaPickle) LightEmissionLevel() uint8 {
 	return uint8(6 + s.AdditionalCount*3)
 }
 
-// BreakInfo ...
 func (s SeaPickle) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.AdditionalCount+1)))
 }
 
-// FlammabilityInfo ...
 func (SeaPickle) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(15, 100, true)
 }
 
-// SmeltInfo ...
 func (SeaPickle) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(item.Dye{Colour: item.ColourLime()}, 1), 0.1)
 }
 
-// CompostChance ...
 func (SeaPickle) CompostChance() float64 {
 	return 0.65
 }
 
-// EncodeItem ...
 func (SeaPickle) EncodeItem() (name string, meta int16) {
 	return "minecraft:sea_pickle", 0
 }
 
-// EncodeBlock ...
 func (s SeaPickle) EncodeBlock() (string, map[string]any) {
 	return "minecraft:sea_pickle", map[string]any{"cluster_count": int32(s.AdditionalCount), "dead_bit": s.Dead}
 }
 
-// allSeaPickles ...
 func allSeaPickles() (b []world.Block) {
 	for i := 0; i <= 3; i++ {
 		b = append(b, SeaPickle{AdditionalCount: i})

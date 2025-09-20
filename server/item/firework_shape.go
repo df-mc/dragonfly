@@ -37,7 +37,6 @@ func (f fireworkShape) Uint8() uint8 {
 	return uint8(f)
 }
 
-// Name ...
 func (f fireworkShape) Name() string {
 	switch f {
 	case 0:
@@ -54,7 +53,6 @@ func (f fireworkShape) Name() string {
 	panic("unknown firework type")
 }
 
-// String ...
 func (f fireworkShape) String() string {
 	switch f {
 	case 0:
@@ -71,7 +69,6 @@ func (f fireworkShape) String() string {
 	panic("unknown firework type")
 }
 
-// FireworkShapes ...
 func FireworkShapes() []FireworkShape {
 	return []FireworkShape{FireworkShapeSmallSphere(), FireworkShapeHugeSphere(), FireworkShapeStar(), FireworkShapeCreeperHead(), FireworkShapeBurst()}
 }

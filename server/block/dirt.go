@@ -14,7 +14,6 @@ type Dirt struct {
 	Coarse bool
 }
 
-// SoilFor ...
 func (d Dirt) SoilFor(block world.Block) bool {
 	switch block.(type) {
 	case ShortGrass, Fern, DoubleTallGrass, DeadBush:
@@ -25,12 +24,10 @@ func (d Dirt) SoilFor(block world.Block) bool {
 	return false
 }
 
-// BreakInfo ...
 func (d Dirt) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(d))
 }
 
-// Till ...
 func (d Dirt) Till() (world.Block, bool) {
 	if d.Coarse {
 		return Dirt{Coarse: false}, true
@@ -38,12 +35,10 @@ func (d Dirt) Till() (world.Block, bool) {
 	return Farmland{}, true
 }
 
-// Shovel ...
 func (d Dirt) Shovel() (world.Block, bool) {
 	return DirtPath{}, true
 }
 
-// EncodeItem ...
 func (d Dirt) EncodeItem() (name string, meta int16) {
 	if d.Coarse {
 		return "minecraft:coarse_dirt", 0
@@ -51,7 +46,6 @@ func (d Dirt) EncodeItem() (name string, meta int16) {
 	return "minecraft:dirt", 0
 }
 
-// EncodeBlock ...
 func (d Dirt) EncodeBlock() (string, map[string]any) {
 	if d.Coarse {
 		return "minecraft:coarse_dirt", nil

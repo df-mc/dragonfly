@@ -27,12 +27,10 @@ type WoodFenceGate struct {
 	Lowered bool
 }
 
-// BreakInfo ...
 func (f WoodFenceGate) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(f)).withBlastResistance(15)
 }
 
-// FlammabilityInfo ...
 func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 	if !f.Wood.Flammable() {
 		return newFlammabilityInfo(0, 0, false)
@@ -40,7 +38,6 @@ func (f WoodFenceGate) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 20, true)
 }
 
-// FuelInfo ...
 func (f WoodFenceGate) FuelInfo() item.FuelInfo {
 	if !f.Wood.Flammable() {
 		return item.FuelInfo{}
@@ -48,7 +45,6 @@ func (f WoodFenceGate) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// UseOnBlock ...
 func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, f)
 	if !used {
@@ -61,7 +57,6 @@ func (f WoodFenceGate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (f WoodFenceGate) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if f.shouldBeLowered(pos, tx) != f.Lowered {
 		f.Lowered = !f.Lowered
@@ -77,7 +72,6 @@ func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, tx *world.Tx) bool {
 	return left || right
 }
 
-// Activate ...
 func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	f.Open = !f.Open
 	if f.Open && f.Facing.Opposite() == u.Rotation().Direction() {
@@ -92,12 +86,10 @@ func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.
 	return true
 }
 
-// SideClosed ...
 func (f WoodFenceGate) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (f WoodFenceGate) EncodeItem() (name string, meta int16) {
 	if f.Wood == OakWood() {
 		return "minecraft:fence_gate", 0
@@ -105,7 +97,6 @@ func (f WoodFenceGate) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + f.Wood.String() + "_fence_gate", 0
 }
 
-// EncodeBlock ...
 func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]any) {
 	if f.Wood == OakWood() {
 		return "minecraft:fence_gate", map[string]any{"minecraft:cardinal_direction": f.Facing.String(), "open_bit": f.Open, "in_wall_bit": f.Lowered}
@@ -113,7 +104,6 @@ func (f WoodFenceGate) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + f.Wood.String() + "_fence_gate", map[string]any{"minecraft:cardinal_direction": f.Facing.String(), "open_bit": f.Open, "in_wall_bit": f.Lowered}
 }
 
-// Model ...
 func (f WoodFenceGate) Model() world.BlockModel {
 	return model.FenceGate{Facing: f.Facing, Open: f.Open}
 }

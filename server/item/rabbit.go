@@ -10,7 +10,6 @@ type Rabbit struct {
 	Cooked bool
 }
 
-// Consume ...
 func (r Rabbit) Consume(_ *world.Tx, c Consumer) Stack {
 	if r.Cooked {
 		c.Saturate(5, 6)
@@ -20,7 +19,6 @@ func (r Rabbit) Consume(_ *world.Tx, c Consumer) Stack {
 	return Stack{}
 }
 
-// SmeltInfo ...
 func (r Rabbit) SmeltInfo() SmeltInfo {
 	if r.Cooked {
 		return SmeltInfo{}
@@ -28,7 +26,6 @@ func (r Rabbit) SmeltInfo() SmeltInfo {
 	return newFoodSmeltInfo(NewStack(Rabbit{Cooked: true}, 1), 0.35)
 }
 
-// EncodeItem ...
 func (r Rabbit) EncodeItem() (name string, meta int16) {
 	if r.Cooked {
 		return "minecraft:cooked_rabbit", 0

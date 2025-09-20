@@ -16,7 +16,6 @@ type Sand struct {
 	Red bool
 }
 
-// SoilFor ...
 func (s Sand) SoilFor(block world.Block) bool {
 	switch block.(type) {
 	case Cactus, DeadBush, SugarCane:
@@ -25,22 +24,18 @@ func (s Sand) SoilFor(block world.Block) bool {
 	return false
 }
 
-// NeighbourUpdateTick ...
 func (s Sand) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	s.fall(s, pos, tx)
 }
 
-// BreakInfo ...
 func (s Sand) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(s))
 }
 
-// SmeltInfo ...
 func (Sand) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(Glass{}, 1), 0.1)
 }
 
-// EncodeItem ...
 func (s Sand) EncodeItem() (name string, meta int16) {
 	if s.Red {
 		return "minecraft:red_sand", 0
@@ -48,7 +43,6 @@ func (s Sand) EncodeItem() (name string, meta int16) {
 	return "minecraft:sand", 0
 }
 
-// EncodeBlock ...
 func (s Sand) EncodeBlock() (string, map[string]any) {
 	if s.Red {
 		return "minecraft:red_sand", nil

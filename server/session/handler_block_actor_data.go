@@ -16,7 +16,6 @@ import (
 // signs when they are edited.
 type BlockActorDataHandler struct{}
 
-// Handle ...
 func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.BlockActorData)
 	if id, ok := pk.NBTData["id"]; ok {

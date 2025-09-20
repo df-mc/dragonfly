@@ -15,27 +15,22 @@ type EnchantingTable struct {
 	sourceWaterDisplacer
 }
 
-// Model ...
 func (e EnchantingTable) Model() world.BlockModel {
 	return model.EnchantingTable{}
 }
 
-// BreakInfo ...
 func (e EnchantingTable) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(e)).withBlastResistance(6000)
 }
 
-// SideClosed ...
 func (EnchantingTable) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// LightEmissionLevel ...
 func (EnchantingTable) LightEmissionLevel() uint8 {
 	return 7
 }
 
-// Activate ...
 func (EnchantingTable) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -44,12 +39,10 @@ func (EnchantingTable) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.
 	return false
 }
 
-// EncodeItem ...
 func (EnchantingTable) EncodeItem() (name string, meta int16) {
 	return "minecraft:enchanting_table", 0
 }
 
-// EncodeBlock ...
 func (EnchantingTable) EncodeBlock() (string, map[string]any) {
 	return "minecraft:enchanting_table", nil
 }

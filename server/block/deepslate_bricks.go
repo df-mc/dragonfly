@@ -11,12 +11,10 @@ type DeepslateBricks struct {
 	Cracked bool
 }
 
-// BreakInfo ...
 func (d DeepslateBricks) BreakInfo() BreakInfo {
 	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(30)
 }
 
-// SmeltInfo ...
 func (d DeepslateBricks) SmeltInfo() item.SmeltInfo {
 	if d.Cracked {
 		return item.SmeltInfo{}
@@ -24,7 +22,6 @@ func (d DeepslateBricks) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(DeepslateBricks{Cracked: true}, 1), 0.1)
 }
 
-// EncodeItem ...
 func (d DeepslateBricks) EncodeItem() (name string, meta int16) {
 	if d.Cracked {
 		return "minecraft:cracked_deepslate_bricks", 0
@@ -32,7 +29,6 @@ func (d DeepslateBricks) EncodeItem() (name string, meta int16) {
 	return "minecraft:deepslate_bricks", 0
 }
 
-// EncodeBlock ...
 func (d DeepslateBricks) EncodeBlock() (string, map[string]any) {
 	if d.Cracked {
 		return "minecraft:cracked_deepslate_bricks", nil

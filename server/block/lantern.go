@@ -19,12 +19,10 @@ type Lantern struct {
 	Type FireType
 }
 
-// Model ...
 func (l Lantern) Model() world.BlockModel {
 	return model.Lantern{Hanging: l.Hanging}
 }
 
-// NeighbourUpdateTick ...
 func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if l.Hanging {
 		up := pos.Side(cube.FaceUp)
@@ -39,12 +37,10 @@ func (l Lantern) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// LightEmissionLevel ...
 func (l Lantern) LightEmissionLevel() uint8 {
 	return l.Type.LightLevel()
 }
 
-// UseOnBlock ...
 func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, l)
 	if !used {
@@ -68,17 +64,14 @@ func (l Lantern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *worl
 	return placed(ctx)
 }
 
-// SideClosed ...
 func (l Lantern) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// BreakInfo ...
 func (l Lantern) BreakInfo() BreakInfo {
 	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(l))
 }
 
-// EncodeItem ...
 func (l Lantern) EncodeItem() (name string, meta int16) {
 	switch l.Type {
 	case NormalFire():
@@ -89,7 +82,6 @@ func (l Lantern) EncodeItem() (name string, meta int16) {
 	panic("invalid fire type")
 }
 
-// EncodeBlock ...
 func (l Lantern) EncodeBlock() (name string, properties map[string]any) {
 	switch l.Type {
 	case NormalFire():
@@ -100,7 +92,6 @@ func (l Lantern) EncodeBlock() (name string, properties map[string]any) {
 	panic("invalid fire type")
 }
 
-// allLanterns ...
 func allLanterns() (lanterns []world.Block) {
 	for _, f := range FireTypes() {
 		lanterns = append(lanterns, Lantern{Hanging: false, Type: f})

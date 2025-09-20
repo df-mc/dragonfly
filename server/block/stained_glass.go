@@ -15,17 +15,14 @@ type StainedGlass struct {
 	Colour item.Colour
 }
 
-// BreakInfo ...
 func (g StainedGlass) BreakInfo() BreakInfo {
 	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(g))
 }
 
-// EncodeItem ...
 func (g StainedGlass) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + g.Colour.String() + "_stained_glass", 0
 }
 
-// EncodeBlock ...
 func (g StainedGlass) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + g.Colour.String() + "_stained_glass", nil
 }

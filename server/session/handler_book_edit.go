@@ -10,7 +10,6 @@ import (
 // BookEditHandler handles the BookEdit packet.
 type BookEditHandler struct{}
 
-// Handle ...
 func (b BookEditHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, _ Controllable) error {
 	pk := p.(*packet.BookEdit)
 

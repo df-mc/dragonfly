@@ -11,12 +11,10 @@ type Anvil struct {
 	Facing cube.Direction
 }
 
-// BBox ...
 func (a Anvil) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{full.Stretch(a.Facing.RotateLeft().Face().Axis(), -0.125)}
 }
 
-// FaceSolid ...
 func (Anvil) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

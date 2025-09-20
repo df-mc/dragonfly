@@ -34,7 +34,6 @@ type inkable interface {
 	Ink(pos cube.Pos, userPos mgl64.Vec3, glowing bool) (world.Block, bool)
 }
 
-// EncodeItem ...
 func (i InkSac) EncodeItem() (name string, meta int16) {
 	if i.Glowing {
 		return "minecraft:glow_ink_sac", 0

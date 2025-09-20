@@ -141,7 +141,6 @@ func (p parser) parseArgument(line *Line, v reflect.Value, optional bool, name s
 	return err, err == nil
 }
 
-// int ...
 func (p parser) int(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
@@ -155,7 +154,6 @@ func (p parser) int(line *Line, v reflect.Value) error {
 	return nil
 }
 
-// uint ...
 func (p parser) uint(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
@@ -169,7 +167,6 @@ func (p parser) uint(line *Line, v reflect.Value) error {
 	return nil
 }
 
-// float ...
 func (p parser) float(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
@@ -183,7 +180,6 @@ func (p parser) float(line *Line, v reflect.Value) error {
 	return nil
 }
 
-// string ...
 func (p parser) string(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
@@ -193,7 +189,6 @@ func (p parser) string(line *Line, v reflect.Value) error {
 	return nil
 }
 
-// bool ...
 func (p parser) bool(line *Line, v reflect.Value) error {
 	arg, ok := line.Next()
 	if !ok {
@@ -207,7 +202,6 @@ func (p parser) bool(line *Line, v reflect.Value) error {
 	return nil
 }
 
-// enum ...
 func (p parser) enum(line *Line, val reflect.Value, v Enum, source Source) error {
 	arg, ok := line.Next()
 	if !ok {
@@ -236,7 +230,6 @@ func (p parser) sub(line *Line, name string) error {
 	return MessageParameterInvalid.F(arg)
 }
 
-// vec3 ...
 func (p parser) vec3(line *Line, v reflect.Value) error {
 	if err := p.float(line, v.Index(0)); err != nil {
 		return err
@@ -249,13 +242,11 @@ func (p parser) vec3(line *Line, v reflect.Value) error {
 	return p.float(line, v.Index(2))
 }
 
-// varargs ...
 func (p parser) varargs(line *Line, v reflect.Value) error {
 	v.SetString(strings.Join(line.Leftover(), " "))
 	return nil
 }
 
-// targets ...
 func (p parser) targets(line *Line, v reflect.Value, tx *world.Tx) error {
 	targets, err := p.parseTargets(line, tx)
 	if err != nil {

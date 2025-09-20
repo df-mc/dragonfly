@@ -150,7 +150,6 @@ func (c colour) SignRGBA() color.RGBA {
 	return c.RGBA()
 }
 
-// String ...
 func (c colour) String() string {
 	switch c {
 	default:
@@ -196,7 +195,6 @@ func (c colour) SilverString() string {
 	return c.String()
 }
 
-// Uint8 ...
 func (c colour) Uint8() uint8 {
 	return uint8(c)
 }

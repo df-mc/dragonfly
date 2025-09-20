@@ -42,7 +42,6 @@ func (d CopperDoor) Strip() (world.Block, world.Sound, bool) {
 	return d, nil, false
 }
 
-// Model ...
 func (d CopperDoor) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
 }
@@ -69,7 +68,6 @@ func (d CopperDoor) WithOxidationLevel(o OxidationType) Oxidisable {
 	return d
 }
 
-// NeighbourUpdateTick ...
 func (d CopperDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
 	if pos == changedNeighbour {
 		return
@@ -153,19 +151,16 @@ func (d CopperDoor) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	attemptOxidation(pos, tx, r, d)
 }
 
-// BreakInfo ...
 func (d CopperDoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
 	}, pickaxeEffective, oneOf(d))
 }
 
-// SideClosed ...
 func (d CopperDoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (d CopperDoor) EncodeItem() (name string, meta int16) {
 	name = "copper_door"
 	if d.Oxidation != UnoxidisedOxidation() {
@@ -177,7 +172,6 @@ func (d CopperDoor) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + name, 0
 }
 
-// EncodeBlock ...
 func (d CopperDoor) EncodeBlock() (name string, properties map[string]any) {
 	name = "copper_door"
 	if d.Oxidation != UnoxidisedOxidation() {

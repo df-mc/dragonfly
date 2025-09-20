@@ -16,7 +16,6 @@ func (Bow) MaxCount() int {
 	return 1
 }
 
-// DurabilityInfo ...
 func (Bow) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: 385,
@@ -24,12 +23,10 @@ func (Bow) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// FuelInfo ...
 func (Bow) FuelInfo() FuelInfo {
 	return newFuelInfo(time.Second * 10)
 }
 
-// Release ...
 func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
 	creative := releaser.GameMode().CreativeInventory()
 	ticks := duration.Milliseconds() / 50
@@ -92,7 +89,6 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 	tx.PlaySound(releaser.Position(), sound.BowShoot{})
 }
 
-// EnchantmentValue ...
 func (Bow) EnchantmentValue() int {
 	return 1
 }
@@ -102,7 +98,6 @@ func (Bow) Requirements() []Stack {
 	return []Stack{NewStack(Arrow{}, 1)}
 }
 
-// EncodeItem ...
 func (Bow) EncodeItem() (name string, meta int16) {
 	return "minecraft:bow", 0
 }

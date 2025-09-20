@@ -18,7 +18,6 @@ type Basalt struct {
 	Axis cube.Axis
 }
 
-// UseOnBlock ...
 func (b Basalt) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, b)
 	if !used {
@@ -30,12 +29,10 @@ func (b Basalt) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (b Basalt) BreakInfo() BreakInfo {
 	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(b)).withBlastResistance(21)
 }
 
-// EncodeItem ...
 func (b Basalt) EncodeItem() (name string, meta int16) {
 	if b.Polished {
 		return "minecraft:polished_basalt", 0
@@ -43,7 +40,6 @@ func (b Basalt) EncodeItem() (name string, meta int16) {
 	return "minecraft:basalt", 0
 }
 
-// EncodeBlock ...
 func (b Basalt) EncodeBlock() (name string, properties map[string]any) {
 	if b.Polished {
 		return "minecraft:polished_basalt", map[string]any{"pillar_axis": b.Axis.String()}
@@ -51,7 +47,6 @@ func (b Basalt) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:basalt", map[string]any{"pillar_axis": b.Axis.String()}
 }
 
-// allBasalt ...
 func allBasalt() (basalt []world.Block) {
 	for _, axis := range cube.Axes() {
 		basalt = append(basalt, Basalt{Axis: axis, Polished: false})

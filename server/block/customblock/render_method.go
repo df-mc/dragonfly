@@ -37,7 +37,6 @@ func (m renderMethod) Uint8() uint8 {
 	return uint8(m)
 }
 
-// String ...
 func (m renderMethod) String() string {
 	switch m {
 	case 0:

@@ -24,7 +24,6 @@ func (regeneration) Apply(e world.Entity, eff Effect) {
 	}
 }
 
-// RGBA ...
 func (regeneration) RGBA() color.RGBA {
 	return color.RGBA{R: 0xcd, G: 0x5c, B: 0xab, A: 0xff}
 }

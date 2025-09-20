@@ -13,7 +13,6 @@ type slowness struct {
 	nopLasting
 }
 
-// Start ...
 func (slowness) Start(e world.Entity, lvl int) {
 	slowness := 1 - float64(lvl)*0.15
 	if slowness <= 0 {
@@ -24,7 +23,6 @@ func (slowness) Start(e world.Entity, lvl int) {
 	}
 }
 
-// End ...
 func (slowness) End(e world.Entity, lvl int) {
 	slowness := 1 - float64(lvl)*0.15
 	if slowness <= 0 {
@@ -35,7 +33,6 @@ func (slowness) End(e world.Entity, lvl int) {
 	}
 }
 
-// RGBA ...
 func (slowness) RGBA() color.RGBA {
 	return color.RGBA{R: 0x8b, G: 0xaf, B: 0xe0, A: 0xff}
 }

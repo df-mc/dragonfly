@@ -18,22 +18,18 @@ type Light struct {
 	Level int
 }
 
-// SideClosed ...
 func (Light) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (l Light) EncodeItem() (name string, meta int16) {
 	return "minecraft:light_block_" + strconv.Itoa(l.Level), 0
 }
 
-// LightEmissionLevel ...
 func (l Light) LightEmissionLevel() uint8 {
 	return uint8(l.Level)
 }
 
-// EncodeBlock ...
 func (l Light) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:light_block_" + strconv.Itoa(l.Level), nil
 }

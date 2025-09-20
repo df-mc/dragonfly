@@ -19,12 +19,10 @@ type Grindstone struct {
 	Facing cube.Direction
 }
 
-// BreakInfo ...
 func (g Grindstone) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(g)).withBlastResistance(30)
 }
 
-// Activate ...
 func (g Grindstone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -33,7 +31,6 @@ func (g Grindstone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.Use
 	return false
 }
 
-// UseOnBlock ...
 func (g Grindstone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, g)
 	if !used {
@@ -50,7 +47,6 @@ func (g Grindstone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (g Grindstone) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	supportFace := g.Facing.Face().Opposite()
 	if g.Attach == HangingGrindstoneAttachment() {
@@ -65,7 +61,6 @@ func (g Grindstone) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// Model ...
 func (g Grindstone) Model() world.BlockModel {
 	axis := cube.Y
 	if g.Attach == WallGrindstoneAttachment() {
@@ -74,7 +69,6 @@ func (g Grindstone) Model() world.BlockModel {
 	return model.Grindstone{Axis: axis}
 }
 
-// EncodeBlock ...
 func (g Grindstone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:grindstone", map[string]any{
 		"attachment": g.Attach.String(),
@@ -82,12 +76,10 @@ func (g Grindstone) EncodeBlock() (string, map[string]any) {
 	}
 }
 
-// EncodeItem ...
 func (g Grindstone) EncodeItem() (name string, meta int16) {
 	return "minecraft:grindstone", 0
 }
 
-// allGrindstones ...
 func allGrindstones() (grindstones []world.Block) {
 	for _, a := range GrindstoneAttachments() {
 		for _, d := range cube.Directions() {

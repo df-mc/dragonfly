@@ -16,7 +16,6 @@ type Blackstone struct {
 	Type BlackstoneType
 }
 
-// BreakInfo ...
 func (b Blackstone) BreakInfo() BreakInfo {
 	drops := oneOf(b)
 	hardness := 1.5
@@ -36,12 +35,10 @@ func (b Blackstone) BreakInfo() BreakInfo {
 	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, drops).withBlastResistance(30)
 }
 
-// EncodeItem ...
 func (b Blackstone) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + b.Type.String(), 0
 }
 
-// EncodeBlock ...
 func (b Blackstone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + b.Type.String(), nil
 }

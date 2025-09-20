@@ -8,13 +8,11 @@ type GoldenCarrot struct {
 	defaultFood
 }
 
-// Consume ...
 func (GoldenCarrot) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(6, 14.4)
 	return Stack{}
 }
 
-// EncodeItem ...
 func (GoldenCarrot) EncodeItem() (name string, meta int16) {
 	return "minecraft:golden_carrot", 0
 }

@@ -133,7 +133,6 @@ func SherdTypes() []SherdType {
 // sherdType is the underlying value of a SherdType struct.
 type sherdType uint8
 
-// String ...
 func (c sherdType) String() string {
 	switch c {
 	case 0:
@@ -186,7 +185,6 @@ func (c sherdType) String() string {
 	panic("unknown sherd type")
 }
 
-// Uint8 ...
 func (c sherdType) Uint8() uint8 {
 	return uint8(c)
 }

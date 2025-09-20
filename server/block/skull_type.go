@@ -47,12 +47,10 @@ func SkullTypes() []SkullType {
 
 type skull uint8
 
-// Uint8 ...
 func (s skull) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Name ...
 func (s skull) Name() string {
 	switch s {
 	case 0:
@@ -73,7 +71,6 @@ func (s skull) Name() string {
 	panic("unknown skull type")
 }
 
-// String ...
 func (s skull) String() string {
 	switch s {
 	case 0:

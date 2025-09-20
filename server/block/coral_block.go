@@ -18,7 +18,6 @@ type CoralBlock struct {
 	Dead bool
 }
 
-// NeighbourUpdateTick ...
 func (c CoralBlock) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if c.Dead {
 		return
@@ -26,7 +25,6 @@ func (c CoralBlock) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	tx.ScheduleBlockUpdate(pos, c, time.Second*5/2)
 }
 
-// ScheduledTick ...
 func (c CoralBlock) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	adjacentWater := false
 	pos.Neighbours(func(neighbour cube.Pos) {
@@ -42,12 +40,10 @@ func (c CoralBlock) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 }
 
-// BreakInfo ...
 func (c CoralBlock) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(CoralBlock{Type: c.Type, Dead: true}, c)).withBlastResistance(30)
 }
 
-// EncodeBlock ...
 func (c CoralBlock) EncodeBlock() (name string, properties map[string]any) {
 	if c.Dead {
 		return "minecraft:dead_" + c.Type.String() + "_coral_block", nil
@@ -55,7 +51,6 @@ func (c CoralBlock) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + c.Type.String() + "_coral_block", nil
 }
 
-// EncodeItem ...
 func (c CoralBlock) EncodeItem() (name string, meta int16) {
 	if c.Dead {
 		return "minecraft:dead_" + c.Type.String() + "_coral_block", 0

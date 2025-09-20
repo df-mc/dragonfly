@@ -44,7 +44,6 @@ func (f fire) Damage() float64 {
 	panic("unknown fire type")
 }
 
-// Name ...
 func (f fire) Name() string {
 	switch f {
 	case 0:
@@ -55,7 +54,6 @@ func (f fire) Name() string {
 	panic("unknown fire type")
 }
 
-// String ...
 func (f fire) String() string {
 	switch f {
 	case 0:
@@ -66,7 +64,6 @@ func (f fire) String() string {
 	panic("unknown fire type")
 }
 
-// FireTypes ...
 func FireTypes() []FireType {
 	return []FireType{NormalFire(), SoulFire()}
 }

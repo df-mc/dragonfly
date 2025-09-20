@@ -99,7 +99,6 @@ func (b Barrel) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	}
 }
 
-// Activate ...
 func (b Barrel) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -108,7 +107,6 @@ func (b Barrel) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _
 	return false
 }
 
-// UseOnBlock ...
 func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, b)
 	if !used {
@@ -122,7 +120,6 @@ func (b Barrel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (b Barrel) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, i := range b.Inventory(tx, pos).Clear() {
@@ -131,17 +128,14 @@ func (b Barrel) BreakInfo() BreakInfo {
 	})
 }
 
-// FlammabilityInfo ...
 func (b Barrel) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
-// FuelInfo ...
 func (Barrel) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// DecodeNBT ...
 func (b Barrel) DecodeNBT(data map[string]any) any {
 	facing := b.Facing
 	//noinspection GoAssignmentToReceiver
@@ -152,7 +146,6 @@ func (b Barrel) DecodeNBT(data map[string]any) any {
 	return b
 }
 
-// EncodeNBT ...
 func (b Barrel) EncodeNBT() map[string]any {
 	if b.inventory == nil {
 		facing, customName := b.Facing, b.CustomName
@@ -170,17 +163,14 @@ func (b Barrel) EncodeNBT() map[string]any {
 	return m
 }
 
-// EncodeBlock ...
 func (b Barrel) EncodeBlock() (string, map[string]any) {
 	return "minecraft:barrel", map[string]any{"open_bit": boolByte(b.Open), "facing_direction": int32(b.Facing)}
 }
 
-// EncodeItem ...
 func (b Barrel) EncodeItem() (name string, meta int16) {
 	return "minecraft:barrel", 0
 }
 
-// allBarrels ...
 func allBarrels() (b []world.Block) {
 	for i := cube.Face(0); i < 6; i++ {
 		b = append(b, Barrel{Facing: i})

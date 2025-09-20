@@ -18,12 +18,10 @@ type Kelp struct {
 	Age int
 }
 
-// SmeltInfo ...
 func (k Kelp) SmeltInfo() item.SmeltInfo {
 	return newFoodSmeltInfo(item.NewStack(item.DriedKelp{}, 1), 0.1)
 }
 
-// BoneMeal ...
 func (k Kelp) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	for y := pos.Y(); y <= tx.Range()[1]; y++ {
 		currentPos := cube.Pos{pos.X(), y, pos.Z()}
@@ -43,22 +41,18 @@ func (k Kelp) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// BreakInfo ...
 func (k Kelp) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(k))
 }
 
-// CompostChance ...
 func (Kelp) CompostChance() float64 {
 	return 0.3
 }
 
-// EncodeItem ...
 func (Kelp) EncodeItem() (name string, meta int16) {
 	return "minecraft:kelp", 0
 }
 
-// EncodeBlock ...
 func (k Kelp) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:kelp", map[string]any{"kelp_age": int32(k.Age)}
 }
@@ -74,7 +68,6 @@ func (k Kelp) withRandomAge() Kelp {
 	return k
 }
 
-// UseOnBlock ...
 func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, k)
 	if !used {
@@ -101,7 +94,6 @@ func (k Kelp) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (k Kelp) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Liquid(pos); !ok {
 		breakBlock(k, pos, tx)
@@ -121,7 +113,6 @@ func (k Kelp) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) 
 	}
 }
 
-// RandomTick ...
 func (k Kelp) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	// Every random tick, there's a 14% chance for Kelp to grow if its age is below 25.
 	if r.IntN(100) < 15 && k.Age < 25 {

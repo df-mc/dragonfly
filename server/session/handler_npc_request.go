@@ -13,7 +13,6 @@ type NPCRequestHandler struct {
 	entityRuntimeID uint64
 }
 
-// Handle ...
 func (h *NPCRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.NPCRequest)
 	if pk.RequestType == packet.NPCRequestActionExecuteAction {

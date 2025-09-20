@@ -10,7 +10,6 @@ import (
 // the requested sub-chunks.
 type SubChunkRequestHandler struct{}
 
-// Handle ...
 func (*SubChunkRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, _ Controllable) error {
 	pk := p.(*packet.SubChunkRequest)
 	if dimID, _ := world.DimensionID(tx.World().Dimension()); pk.Dimension != int32(dimID) {

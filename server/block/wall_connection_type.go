@@ -32,7 +32,6 @@ func (w wallConnectionType) Uint8() uint8 {
 	return uint8(w)
 }
 
-// String ...
 func (w wallConnectionType) String() string {
 	switch w {
 	case 0:

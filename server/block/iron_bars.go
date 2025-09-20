@@ -12,22 +12,18 @@ type IronBars struct {
 	sourceWaterDisplacer
 }
 
-// BreakInfo ...
 func (i IronBars) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i)).withBlastResistance(30)
 }
 
-// SideClosed ...
 func (i IronBars) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (IronBars) EncodeItem() (name string, meta int16) {
 	return "minecraft:iron_bars", 0
 }
 
-// EncodeBlock ...
 func (IronBars) EncodeBlock() (string, map[string]any) {
 	return "minecraft:iron_bars", nil
 }

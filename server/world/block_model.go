@@ -17,12 +17,10 @@ type BlockModel interface {
 // unknownModel is the model used for unknown blocks. It is the equivalent of a fully solid model.
 type unknownModel struct{}
 
-// BBox ...
 func (u unknownModel) BBox(cube.Pos, BlockSource) []cube.BBox {
 	return []cube.BBox{cube.Box(0, 0, 0, 1, 1, 1)}
 }
 
-// FaceSolid ...
 func (u unknownModel) FaceSolid(cube.Pos, cube.Face, BlockSource) bool {
 	return true
 }

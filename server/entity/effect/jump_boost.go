@@ -12,7 +12,6 @@ type jumpBoost struct {
 	nopLasting
 }
 
-// RGBA ...
 func (jumpBoost) RGBA() color.RGBA {
 	return color.RGBA{R: 0xfd, G: 0xff, B: 0x84, A: 0xff}
 }

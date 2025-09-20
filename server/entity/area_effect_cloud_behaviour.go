@@ -76,7 +76,6 @@ func (a *AreaEffectCloudBehaviour) Effects() []effect.Effect {
 	return a.conf.Potion.Effects()
 }
 
-// Tick ...
 func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	a.stationary.Tick(e, tx)
 	if a.stationary.close || e.Age() < time.Second/2 {

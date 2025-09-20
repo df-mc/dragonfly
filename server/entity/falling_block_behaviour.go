@@ -121,17 +121,14 @@ type replaceable interface {
 	ReplaceableBy(b world.Block) bool
 }
 
-// damager ...
 type damager interface {
 	Damage() (damagePerBlock, maxDamage float64)
 }
 
-// breakable ...
 type breakable interface {
 	Break() world.Block
 }
 
-// landable ...
 type landable interface {
 	Landed(tx *world.Tx, pos cube.Pos)
 }

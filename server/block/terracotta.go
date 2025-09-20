@@ -9,23 +9,19 @@ type Terracotta struct {
 	bassDrum
 }
 
-// SoilFor ...
 func (Terracotta) SoilFor(block world.Block) bool {
 	_, ok := block.(DeadBush)
 	return ok
 }
 
-// BreakInfo ...
 func (t Terracotta) BreakInfo() BreakInfo {
 	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withBlastResistance(21)
 }
 
-// EncodeItem ...
 func (Terracotta) EncodeItem() (name string, meta int16) {
 	return "minecraft:hardened_clay", meta
 }
 
-// EncodeBlock ...
 func (Terracotta) EncodeBlock() (string, map[string]any) {
 	return "minecraft:hardened_clay", nil
 }

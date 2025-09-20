@@ -46,12 +46,10 @@ func (b BlastFurnace) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
-// EncodeItem ...
 func (b BlastFurnace) EncodeItem() (name string, meta int16) {
 	return "minecraft:blast_furnace", 0
 }
 
-// EncodeBlock ...
 func (b BlastFurnace) EncodeBlock() (name string, properties map[string]interface{}) {
 	if b.Lit {
 		return "minecraft:lit_blast_furnace", map[string]interface{}{"minecraft:cardinal_direction": b.Facing.String()}
@@ -59,7 +57,6 @@ func (b BlastFurnace) EncodeBlock() (name string, properties map[string]interfac
 	return "minecraft:blast_furnace", map[string]interface{}{"minecraft:cardinal_direction": b.Facing.String()}
 }
 
-// UseOnBlock ...
 func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, b)
 	if !used {
@@ -70,7 +67,6 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (b BlastFurnace) BreakInfo() BreakInfo {
 	xp := b.Experience()
 	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(b)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
@@ -80,7 +76,6 @@ func (b BlastFurnace) BreakInfo() BreakInfo {
 	})
 }
 
-// Activate ...
 func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -89,7 +84,6 @@ func (b BlastFurnace) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.U
 	return false
 }
 
-// EncodeNBT ...
 func (b BlastFurnace) EncodeNBT() map[string]interface{} {
 	if b.smelter == nil {
 		//noinspection GoAssignmentToReceiver
@@ -106,7 +100,6 @@ func (b BlastFurnace) EncodeNBT() map[string]interface{} {
 	}
 }
 
-// DecodeNBT ...
 func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
 	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
 	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
@@ -124,7 +117,6 @@ func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
 	return b
 }
 
-// allBlastFurnaces ...
 func allBlastFurnaces() (furnaces []world.Block) {
 	for _, face := range cube.Directions() {
 		furnaces = append(furnaces, BlastFurnace{Facing: face})

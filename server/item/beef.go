@@ -10,7 +10,6 @@ type Beef struct {
 	Cooked bool
 }
 
-// Consume ...
 func (b Beef) Consume(_ *world.Tx, c Consumer) Stack {
 	if b.Cooked {
 		c.Saturate(8, 12.8)
@@ -20,7 +19,6 @@ func (b Beef) Consume(_ *world.Tx, c Consumer) Stack {
 	return Stack{}
 }
 
-// SmeltInfo ...
 func (b Beef) SmeltInfo() SmeltInfo {
 	if b.Cooked {
 		return SmeltInfo{}
@@ -28,7 +26,6 @@ func (b Beef) SmeltInfo() SmeltInfo {
 	return newFoodSmeltInfo(NewStack(Beef{Cooked: true}, 1), 0.35)
 }
 
-// EncodeItem ...
 func (b Beef) EncodeItem() (name string, meta int16) {
 	if b.Cooked {
 		return "minecraft:cooked_beef", 0

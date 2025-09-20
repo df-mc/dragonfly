@@ -38,7 +38,6 @@ func newSmelter() *smelter {
 	return s
 }
 
-// InsertItem ...
 func (s *smelter) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range h.inventory.Slots() {
 		var slot int
@@ -81,7 +80,6 @@ func (s *smelter) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// ExtractItem ...
 func (s *smelter) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range s.inventory.Slots() {
 		if sourceStack.Empty() {

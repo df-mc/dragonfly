@@ -88,7 +88,6 @@ func (c Chest) WithName(a ...any) world.Item {
 	return c
 }
 
-// SideClosed ...
 func (Chest) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
@@ -145,7 +144,6 @@ func (c Chest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	}
 }
 
-// Activate ...
 func (c Chest) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		if c.paired {
@@ -161,7 +159,6 @@ func (c Chest) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ 
 	return false
 }
 
-// UseOnBlock ...
 func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
@@ -184,7 +181,6 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if c.paired {
@@ -201,12 +197,10 @@ func (c Chest) BreakInfo() BreakInfo {
 	})
 }
 
-// FuelInfo ...
 func (Chest) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// FlammabilityInfo ...
 func (c Chest) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
@@ -294,7 +288,6 @@ func (c Chest) pairPos(pos cube.Pos) cube.Pos {
 	return cube.Pos{c.pairX, pos[1], c.pairZ}
 }
 
-// DecodeNBT ...
 func (c Chest) DecodeNBT(data map[string]any) any {
 	facing := c.Facing
 	//noinspection GoAssignmentToReceiver
@@ -317,7 +310,6 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 	return c
 }
 
-// EncodeNBT ...
 func (c Chest) EncodeNBT() map[string]any {
 	if c.inventory == nil {
 		facing, customName := c.Facing, c.CustomName
@@ -340,17 +332,14 @@ func (c Chest) EncodeNBT() map[string]any {
 	return m
 }
 
-// EncodeItem ...
 func (Chest) EncodeItem() (name string, meta int16) {
 	return "minecraft:chest", 0
 }
 
-// EncodeBlock ...
 func (c Chest) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:chest", map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
 }
 
-// allChests ...
 func allChests() (chests []world.Block) {
 	for _, direction := range cube.Directions() {
 		chests = append(chests, Chest{Facing: direction})

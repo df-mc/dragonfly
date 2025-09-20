@@ -12,7 +12,6 @@ type RottenFlesh struct {
 	defaultFood
 }
 
-// Consume ...
 func (RottenFlesh) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(4, 0.8)
 	if rand.Float64() < 0.8 {
@@ -21,7 +20,6 @@ func (RottenFlesh) Consume(_ *world.Tx, c Consumer) Stack {
 	return Stack{}
 }
 
-// EncodeItem ...
 func (RottenFlesh) EncodeItem() (name string, meta int16) {
 	return "minecraft:rotten_flesh", 0
 }

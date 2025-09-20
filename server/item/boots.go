@@ -25,7 +25,6 @@ func (b Boots) MaxCount() int {
 	return 1
 }
 
-// DurabilityInfo ...
 func (b Boots) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: int(b.Tier.BaseDurability() + b.Tier.BaseDurability()/5.5),
@@ -33,7 +32,6 @@ func (b Boots) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// SmeltInfo ...
 func (b Boots) SmeltInfo() SmeltInfo {
 	switch b.Tier.(type) {
 	case ArmourTierIron, ArmourTierChain:
@@ -44,12 +42,10 @@ func (b Boots) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
-// RepairableBy ...
 func (b Boots) RepairableBy(i Stack) bool {
 	return armourTierRepairable(b.Tier)(i)
 }
 
-// DefencePoints ...
 func (b Boots) DefencePoints() float64 {
 	switch b.Tier.Name() {
 	case "leather", "golden", "chainmail":
@@ -62,38 +58,31 @@ func (b Boots) DefencePoints() float64 {
 	panic("invalid boots tier")
 }
 
-// Toughness ...
 func (b Boots) Toughness() float64 {
 	return b.Tier.Toughness()
 }
 
-// KnockBackResistance ...
 func (b Boots) KnockBackResistance() float64 {
 	return b.Tier.KnockBackResistance()
 }
 
-// EnchantmentValue ...
 func (b Boots) EnchantmentValue() int {
 	return b.Tier.EnchantmentValue()
 }
 
-// Boots ...
 func (b Boots) Boots() bool {
 	return true
 }
 
-// WithTrim ...
 func (b Boots) WithTrim(trim ArmourTrim) world.Item {
 	b.Trim = trim
 	return b
 }
 
-// EncodeItem ...
 func (b Boots) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + b.Tier.Name() + "_boots", 0
 }
 
-// DecodeNBT ...
 func (b Boots) DecodeNBT(data map[string]any) any {
 	if t, ok := b.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
@@ -105,7 +94,6 @@ func (b Boots) DecodeNBT(data map[string]any) any {
 	return b
 }
 
-// EncodeNBT ...
 func (b Boots) EncodeNBT() map[string]any {
 	m := map[string]any{}
 	if t, ok := b.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {

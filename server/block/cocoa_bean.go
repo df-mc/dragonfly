@@ -19,7 +19,6 @@ type CocoaBean struct {
 	Age int
 }
 
-// BoneMeal ...
 func (c CocoaBean) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if c.Age == 2 {
 		return false
@@ -29,12 +28,10 @@ func (c CocoaBean) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// HasLiquidDrops ...
 func (c CocoaBean) HasLiquidDrops() bool {
 	return true
 }
 
-// NeighbourUpdateTick ...
 func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	var woodType WoodType
 	switch b := tx.Block(pos.Side(c.Facing.Face())).(type) {
@@ -48,7 +45,6 @@ func (c CocoaBean) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// UseOnBlock ...
 func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
@@ -77,7 +73,6 @@ func (c CocoaBean) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 	return false
 }
 
-// RandomTick ...
 func (c CocoaBean) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if c.Age < 2 && r.IntN(5) == 0 {
 		c.Age++
@@ -85,7 +80,6 @@ func (c CocoaBean) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
-// BreakInfo ...
 func (c CocoaBean) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if c.Age == 2 {
@@ -95,27 +89,22 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 	}).withBlastResistance(15)
 }
 
-// CompostChance ...
 func (CocoaBean) CompostChance() float64 {
 	return 0.65
 }
 
-// EncodeItem ...
 func (c CocoaBean) EncodeItem() (name string, meta int16) {
 	return "minecraft:cocoa_beans", 0
 }
 
-// EncodeBlock ...
 func (c CocoaBean) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:cocoa", map[string]any{"age": int32(c.Age), "direction": int32(horizontalDirection(c.Facing))}
 }
 
-// Model ...
 func (c CocoaBean) Model() world.BlockModel {
 	return model.CocoaBean{Facing: c.Facing, Age: c.Age}
 }
 
-// allCocoaBeans ...
 func allCocoaBeans() (cocoa []world.Block) {
 	for i := cube.Direction(0); i <= 3; i++ {
 		cocoa = append(cocoa, CocoaBean{Facing: i, Age: 0})

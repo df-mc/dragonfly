@@ -32,7 +32,6 @@ func (n netherBricks) Uint8() uint8 {
 	return uint8(n)
 }
 
-// Name ...
 func (n netherBricks) Name() string {
 	switch n {
 	case 0:
@@ -47,7 +46,6 @@ func (n netherBricks) Name() string {
 	panic("unknown nether brick type")
 }
 
-// String ...
 func (n netherBricks) String() string {
 	switch n {
 	case 0:

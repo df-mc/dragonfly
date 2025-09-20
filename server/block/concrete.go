@@ -15,17 +15,14 @@ type Concrete struct {
 	Colour item.Colour
 }
 
-// BreakInfo ...
 func (c Concrete) BreakInfo() BreakInfo {
 	return newBreakInfo(1.8, pickaxeHarvestable, pickaxeEffective, oneOf(c))
 }
 
-// EncodeItem ...
 func (c Concrete) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + c.Colour.String() + "_concrete", 0
 }
 
-// EncodeBlock ...
 func (c Concrete) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + c.Colour.String() + "_concrete", nil
 }

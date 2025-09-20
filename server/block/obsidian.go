@@ -13,7 +13,6 @@ type Obsidian struct {
 	Crying bool
 }
 
-// LightEmissionLevel ...
 func (o Obsidian) LightEmissionLevel() uint8 {
 	if o.Crying {
 		return 10
@@ -21,7 +20,6 @@ func (o Obsidian) LightEmissionLevel() uint8 {
 	return 0
 }
 
-// EncodeItem ...
 func (o Obsidian) EncodeItem() (name string, meta int16) {
 	if o.Crying {
 		return "minecraft:crying_obsidian", 0
@@ -29,7 +27,6 @@ func (o Obsidian) EncodeItem() (name string, meta int16) {
 	return "minecraft:obsidian", 0
 }
 
-// EncodeBlock ...
 func (o Obsidian) EncodeBlock() (string, map[string]any) {
 	if o.Crying {
 		return "minecraft:crying_obsidian", nil
@@ -37,7 +34,6 @@ func (o Obsidian) EncodeBlock() (string, map[string]any) {
 	return "minecraft:obsidian", nil
 }
 
-// BreakInfo ...
 func (o Obsidian) BreakInfo() BreakInfo {
 	return newBreakInfo(35, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel

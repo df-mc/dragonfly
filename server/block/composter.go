@@ -22,7 +22,6 @@ type Composter struct {
 	Level int
 }
 
-// InsertItem ...
 func (c Composter) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	if c.Level >= 7 || h.Facing != cube.FaceDown {
 		return false
@@ -42,7 +41,6 @@ func (c Composter) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// ExtractItem ...
 func (c Composter) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	if c.Level == 8 {
 		_, err := h.inventory.AddItem(item.NewStack(item.BoneMeal{}, 1))
@@ -60,27 +58,22 @@ func (c Composter) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// Model ...
 func (c Composter) Model() world.BlockModel {
 	return model.Composter{Level: c.Level}
 }
 
-// FuelInfo ...
 func (c Composter) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// FlammabilityInfo ...
 func (c Composter) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 20, true)
 }
 
-// SideClosed ...
 func (c Composter) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// BreakInfo ...
 func (c Composter) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if c.Level == 8 {
@@ -89,7 +82,6 @@ func (c Composter) BreakInfo() BreakInfo {
 	})
 }
 
-// Activate ...
 func (c Composter) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if c.Level >= 7 {
 		if c.Level == 8 {
@@ -129,7 +121,6 @@ func (c Composter) fill(it item.Stack, pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// ScheduledTick ...
 func (c Composter) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Level == 7 {
 		c.Level = 8
@@ -138,17 +129,14 @@ func (c Composter) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 }
 
-// EncodeItem ...
 func (c Composter) EncodeItem() (name string, meta int16) {
 	return "minecraft:composter", 0
 }
 
-// EncodeBlock ...
 func (c Composter) EncodeBlock() (string, map[string]any) {
 	return "minecraft:composter", map[string]any{"composter_fill_level": int32(c.Level)}
 }
 
-// allComposters ...
 func allComposters() (all []world.Block) {
 	for i := 0; i < 9; i++ {
 		all = append(all, Composter{Level: i})

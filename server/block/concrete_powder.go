@@ -17,13 +17,11 @@ type ConcretePowder struct {
 	Colour item.Colour
 }
 
-// Solidifies ...
 func (c ConcretePowder) Solidifies(pos cube.Pos, tx *world.Tx) bool {
 	_, water := tx.Block(pos).(Water)
 	return water
 }
 
-// NeighbourUpdateTick ...
 func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	for i := cube.Face(0); i < 6; i++ {
 		if _, ok := tx.Block(pos.Side(i)).(Water); ok {
@@ -34,17 +32,14 @@ func (c ConcretePowder) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	c.fall(c, pos, tx)
 }
 
-// BreakInfo ...
 func (c ConcretePowder) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, shovelEffective, oneOf(c))
 }
 
-// EncodeItem ...
 func (c ConcretePowder) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + c.Colour.String() + "_concrete_powder", 0
 }
 
-// EncodeBlock ...
 func (c ConcretePowder) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + c.Colour.String() + "_concrete_powder", nil
 }

@@ -126,7 +126,6 @@ func SmithingTemplates() []SmithingTemplateType {
 
 type smithingTemplateType uint8
 
-// String ...
 func (s smithingTemplateType) String() string {
 	switch s {
 	case 0:

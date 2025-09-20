@@ -12,17 +12,14 @@ type Barrier struct {
 	solid
 }
 
-// SideClosed ...
 func (Barrier) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (Barrier) EncodeItem() (name string, meta int16) {
 	return "minecraft:barrier", 0
 }
 
-// EncodeBlock ...
 func (Barrier) EncodeBlock() (string, map[string]any) {
 	return "minecraft:barrier", nil
 }

@@ -47,7 +47,6 @@ func (s *Session) entityHidden(e world.Entity) bool {
 	return ok
 }
 
-// ViewEntity ...
 func (s *Session) ViewEntity(e world.Entity) {
 	if e.H() == s.ent {
 		s.ViewEntityState(e)
@@ -153,7 +152,6 @@ func (s *Session) ViewEntity(e world.Entity) {
 	})
 }
 
-// ViewEntityGameMode ...
 func (s *Session) ViewEntityGameMode(e world.Entity) {
 	if s.entityHidden(e) {
 		return
@@ -168,7 +166,6 @@ func (s *Session) ViewEntityGameMode(e world.Entity) {
 	})
 }
 
-// HideEntity ...
 func (s *Session) HideEntity(e world.Entity) {
 	if s.entityRuntimeID(e) == selfEntityRuntimeID {
 		return
@@ -188,7 +185,6 @@ func (s *Session) HideEntity(e world.Entity) {
 	s.writePacket(&packet.RemoveActor{EntityUniqueID: int64(id)})
 }
 
-// ViewEntityMovement ...
 func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
 	id := s.entityRuntimeID(e)
 	if (id == selfEntityRuntimeID && s.moving) || s.entityHidden(e) {
@@ -207,7 +203,6 @@ func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, rot cube.Ro
 	})
 }
 
-// ViewEntityVelocity ...
 func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 	if s.entityHidden(e) {
 		return
@@ -226,12 +221,10 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 	return mgl64.Vec3{}
 }
 
-// ViewTime ...
 func (s *Session) ViewTime(time int) {
 	s.writePacket(&packet.SetTime{Time: int32(time)})
 }
 
-// ViewEntityTeleport ...
 func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	id := s.entityRuntimeID(e)
 	if s.entityHidden(e) {
@@ -263,7 +256,6 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	})
 }
 
-// ViewEntityItems ...
 func (s *Session) ViewEntityItems(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)
 	if runtimeID == selfEntityRuntimeID || s.entityHidden(e) {
@@ -290,7 +282,6 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 	})
 }
 
-// ViewEntityArmour ...
 func (s *Session) ViewEntityArmour(e world.Entity) {
 	runtimeID := s.entityRuntimeID(e)
 	if runtimeID == selfEntityRuntimeID || s.entityHidden(e) {
@@ -316,7 +307,6 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 	})
 }
 
-// ViewItemCooldown ...
 func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
 	name, _ := item.EncodeItem()
 	s.writePacket(&packet.ClientStartItemCooldown{
@@ -325,7 +315,6 @@ func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
 	})
 }
 
-// ViewParticle ...
 func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 	switch pa := p.(type) {
 	case particle.DragonEggTeleport:
@@ -859,12 +848,10 @@ func (s *Session) PlaySound(t world.Sound, pos mgl64.Vec3) {
 	s.playSound(pos, t, true)
 }
 
-// ViewSound ...
 func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	s.playSound(pos, soundType, false)
 }
 
-// OpenSign ...
 func (s *Session) OpenSign(pos cube.Pos, frontSide bool) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.OpenSign{
@@ -927,7 +914,6 @@ func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFu
 	}
 }
 
-// ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.UpdateBlock{
@@ -947,7 +933,6 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	}
 }
 
-// ViewEntityAction ...
 func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 	switch act := a.(type) {
 	case entity.SwingArmAction:
@@ -1030,7 +1015,6 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 	}
 }
 
-// ViewEntityState ...
 func (s *Session) ViewEntityState(e world.Entity) {
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
@@ -1038,7 +1022,6 @@ func (s *Session) ViewEntityState(e world.Entity) {
 	})
 }
 
-// ViewEntityAnimation ...
 func (s *Session) ViewEntityAnimation(e world.Entity, a world.EntityAnimation) {
 	s.writePacket(&packet.AnimateEntity{
 		Animation:     a.Name(),
@@ -1051,7 +1034,6 @@ func (s *Session) ViewEntityAnimation(e world.Entity, a world.EntityAnimation) {
 	})
 }
 
-// OpenBlockContainer ...
 func (s *Session) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 	if s.containerOpened.Load() && *s.openedPos.Load() == pos {
 		return
@@ -1144,7 +1126,6 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world
 	s.sendInv(b.Inventory(tx, pos), uint32(nextID))
 }
 
-// ViewSlotChange ...
 func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 	if !s.containerOpened.Load() {
 		return
@@ -1160,7 +1141,6 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 	})
 }
 
-// ViewBlockAction ...
 func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	switch t := a.(type) {
@@ -1204,7 +1184,6 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 	}
 }
 
-// ViewEmote ...
 func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 	flags := byte(packet.EmoteFlagServerSide)
 	if s.emoteChatMuted {
@@ -1217,7 +1196,6 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 	})
 }
 
-// ViewSkin ...
 func (s *Session) ViewSkin(e world.Entity) {
 	switch v := e.(type) {
 	case Controllable:
@@ -1228,7 +1206,6 @@ func (s *Session) ViewSkin(e world.Entity) {
 	}
 }
 
-// ViewWorldSpawn ...
 func (s *Session) ViewWorldSpawn(pos cube.Pos) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.SetSpawnPosition{
@@ -1239,7 +1216,6 @@ func (s *Session) ViewWorldSpawn(pos cube.Pos) {
 	})
 }
 
-// ViewWeather ...
 func (s *Session) ViewWeather(raining, thunder bool) {
 	pk := &packet.LevelEvent{
 		EventType: packet.LevelEventStopRaining,
@@ -1313,7 +1289,6 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
 
-// blockPosFromProtocol ...
 func blockPosFromProtocol(pos protocol.BlockPos) cube.Pos {
 	return cube.Pos{int(pos.X()), int(pos.Y()), int(pos.Z())}
 }
@@ -1326,7 +1301,6 @@ func boolByte(b bool) uint8 {
 	return 0
 }
 
-// abs ...
 func abs(a int) int {
 	if a < 0 {
 		return -a

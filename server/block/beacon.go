@@ -33,7 +33,6 @@ type BeaconSource interface {
 	PowersBeacon() bool
 }
 
-// BreakInfo ...
 func (b Beacon) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, nothingEffective, oneOf(b))
 }
@@ -47,7 +46,6 @@ func (b Beacon) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _
 	return true
 }
 
-// DecodeNBT ...
 func (b Beacon) DecodeNBT(data map[string]any) any {
 	b.level = int(nbtconv.Int32(data, "Levels"))
 	if primary, ok := effect.ByID(int(nbtconv.Int32(data, "Primary"))); ok {
@@ -59,7 +57,6 @@ func (b Beacon) DecodeNBT(data map[string]any) any {
 	return b
 }
 
-// EncodeNBT ...
 func (b Beacon) EncodeNBT() map[string]any {
 	m := map[string]any{
 		"id":     "Beacon",
@@ -74,12 +71,10 @@ func (b Beacon) EncodeNBT() map[string]any {
 	return m
 }
 
-// SideClosed ...
 func (b Beacon) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// LightEmissionLevel ...
 func (Beacon) LightEmissionLevel() uint8 {
 	return 15
 }
@@ -208,12 +203,10 @@ type beaconAffected interface {
 	BeaconAffected() bool
 }
 
-// EncodeItem ...
 func (Beacon) EncodeItem() (name string, meta int16) {
 	return "minecraft:beacon", 0
 }
 
-// EncodeBlock ...
 func (Beacon) EncodeBlock() (string, map[string]any) {
 	return "minecraft:beacon", nil
 }

@@ -28,7 +28,6 @@ var areaEffectCloudConf = AreaEffectCloudBehaviourConfig{
 	ReapplicationDelay: time.Second * 2,
 }
 
-// NewAreaEffectCloudWith ...
 func NewAreaEffectCloudWith(opts world.EntitySpawnOpts, t potion.Potion, duration, reapplicationDelay, durationOnUse time.Duration, radius, radiusOnUse, radiusGrowth float64) *world.EntityHandle {
 	config := AreaEffectCloudBehaviourConfig{
 		Potion:             t,

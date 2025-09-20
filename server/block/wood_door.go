@@ -30,7 +30,6 @@ type WoodDoor struct {
 	Right bool
 }
 
-// FlammabilityInfo ...
 func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 	if !d.Wood.Flammable() {
 		return newFlammabilityInfo(0, 0, false)
@@ -38,7 +37,6 @@ func (d WoodDoor) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
-// FuelInfo ...
 func (d WoodDoor) FuelInfo() item.FuelInfo {
 	if !d.Wood.Flammable() {
 		return item.FuelInfo{}
@@ -46,12 +44,10 @@ func (d WoodDoor) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 10)
 }
 
-// Model ...
 func (d WoodDoor) Model() world.BlockModel {
 	return model.Door{Facing: d.Facing, Open: d.Open, Right: d.Right}
 }
 
-// NeighbourUpdateTick ...
 func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.Top {
 		if _, ok := tx.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
@@ -100,7 +96,6 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 	return placed(ctx)
 }
 
-// Activate ...
 func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	d.Open = !d.Open
 	tx.SetBlock(pos, d, nil)
@@ -119,17 +114,14 @@ func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User,
 	return true
 }
 
-// BreakInfo ...
 func (d WoodDoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(d))
 }
 
-// SideClosed ...
 func (d WoodDoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (d WoodDoor) EncodeItem() (name string, meta int16) {
 	if d.Wood == OakWood() {
 		return "minecraft:wooden_door", 0
@@ -137,7 +129,6 @@ func (d WoodDoor) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + d.Wood.String() + "_door", 0
 }
 
-// EncodeBlock ...
 func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
 	if d.Wood == OakWood() {
 		return "minecraft:wooden_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}

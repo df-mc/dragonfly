@@ -17,22 +17,18 @@ type StainedGlassPane struct {
 	Colour item.Colour
 }
 
-// SideClosed ...
 func (p StainedGlassPane) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// BreakInfo ...
 func (p StainedGlassPane) BreakInfo() BreakInfo {
 	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(p))
 }
 
-// EncodeItem ...
 func (p StainedGlassPane) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + p.Colour.String() + "_stained_glass_pane", 0
 }
 
-// EncodeBlock ...
 func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + p.Colour.String() + "_stained_glass_pane", nil
 }

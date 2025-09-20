@@ -87,7 +87,6 @@ func (b BookAndQuill) SwapPages(pageOne, pageTwo int) BookAndQuill {
 	return b
 }
 
-// DecodeNBT ...
 func (b BookAndQuill) DecodeNBT(data map[string]any) any {
 	pages, _ := data["pages"].([]any)
 	for _, page := range pages {
@@ -100,7 +99,6 @@ func (b BookAndQuill) DecodeNBT(data map[string]any) any {
 	return b
 }
 
-// EncodeNBT ...
 func (b BookAndQuill) EncodeNBT() map[string]any {
 	if len(b.Pages) == 0 {
 		return nil
@@ -112,7 +110,6 @@ func (b BookAndQuill) EncodeNBT() map[string]any {
 	return map[string]any{"pages": pages}
 }
 
-// EncodeItem ...
 func (BookAndQuill) EncodeItem() (name string, meta int16) {
 	return "minecraft:writable_book", 0
 }

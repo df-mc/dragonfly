@@ -13,7 +13,6 @@ type speed struct {
 	nopLasting
 }
 
-// Start ...
 func (speed) Start(e world.Entity, lvl int) {
 	speed := 1 + float64(lvl)*0.2
 	if l, ok := e.(living); ok {
@@ -21,7 +20,6 @@ func (speed) Start(e world.Entity, lvl int) {
 	}
 }
 
-// End ...
 func (speed) End(e world.Entity, lvl int) {
 	speed := 1 + float64(lvl)*0.2
 	if l, ok := e.(living); ok {
@@ -29,7 +27,6 @@ func (speed) End(e world.Entity, lvl int) {
 	}
 }
 
-// RGBA ...
 func (speed) RGBA() color.RGBA {
 	return color.RGBA{R: 0x33, G: 0xeb, B: 0xff, A: 0xff}
 }

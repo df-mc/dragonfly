@@ -27,7 +27,6 @@ func NewMenu(submittable MenuSubmittable, title ...any) Menu {
 	return m
 }
 
-// MarshalJSON ...
 func (m Menu) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type":    "form",

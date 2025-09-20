@@ -45,12 +45,10 @@ func (f Furnace) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
-// EncodeItem ...
 func (f Furnace) EncodeItem() (name string, meta int16) {
 	return "minecraft:furnace", 0
 }
 
-// EncodeBlock ...
 func (f Furnace) EncodeBlock() (name string, properties map[string]interface{}) {
 	if f.Lit {
 		return "minecraft:lit_furnace", map[string]interface{}{"minecraft:cardinal_direction": f.Facing.String()}
@@ -58,7 +56,6 @@ func (f Furnace) EncodeBlock() (name string, properties map[string]interface{}) 
 	return "minecraft:furnace", map[string]interface{}{"minecraft:cardinal_direction": f.Facing.String()}
 }
 
-// UseOnBlock ...
 func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, f)
 	if !used {
@@ -69,7 +66,6 @@ func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *worl
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (f Furnace) BreakInfo() BreakInfo {
 	xp := f.Experience()
 	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(f)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
@@ -79,7 +75,6 @@ func (f Furnace) BreakInfo() BreakInfo {
 	})
 }
 
-// Activate ...
 func (f Furnace) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -88,7 +83,6 @@ func (f Furnace) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, 
 	return false
 }
 
-// EncodeNBT ...
 func (f Furnace) EncodeNBT() map[string]interface{} {
 	if f.smelter == nil {
 		//noinspection GoAssignmentToReceiver
@@ -105,7 +99,6 @@ func (f Furnace) EncodeNBT() map[string]interface{} {
 	}
 }
 
-// DecodeNBT ...
 func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
 	remaining := nbtconv.TickDuration[int16](data, "BurnTime")
 	maximum := nbtconv.TickDuration[int16](data, "BurnDuration")
@@ -123,7 +116,6 @@ func (f Furnace) DecodeNBT(data map[string]interface{}) interface{} {
 	return f
 }
 
-// allFurnaces ...
 func allFurnaces() (furnaces []world.Block) {
 	for _, face := range cube.Directions() {
 		furnaces = append(furnaces, Furnace{Facing: face})

@@ -24,27 +24,22 @@ type Banner struct {
 	Illager bool
 }
 
-// Pick ...
 func (b Banner) Pick() item.Stack {
 	return item.NewStack(Banner{Colour: b.Colour, Patterns: b.Patterns, Illager: b.Illager}, 1)
 }
 
-// MaxCount ...
 func (Banner) MaxCount() int {
 	return 16
 }
 
-// BreakInfo ...
 func (b Banner) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(b))
 }
 
-// FuelInfo ...
 func (Banner) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// UseOnBlock ...
 func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, b)
 	if !used || face == cube.FaceDown {
@@ -61,7 +56,6 @@ func (b Banner) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (b Banner) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if b.Attach.hanging {
 		if _, ok := tx.Block(pos.Side(b.Attach.facing.Opposite().Face())).(Air); ok {
@@ -72,12 +66,10 @@ func (b Banner) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// EncodeItem ...
 func (b Banner) EncodeItem() (name string, meta int16) {
 	return "minecraft:banner", invertColour(b.Colour)
 }
 
-// EncodeBlock ...
 func (b Banner) EncodeBlock() (name string, properties map[string]any) {
 	if b.Attach.hanging {
 		return "minecraft:wall_banner", map[string]any{"facing_direction": int32(b.Attach.facing + 2)}
@@ -85,7 +77,6 @@ func (b Banner) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:standing_banner", map[string]any{"ground_sign_direction": int32(b.Attach.o)}
 }
 
-// EncodeNBT ...
 func (b Banner) EncodeNBT() map[string]any {
 	patterns := make([]any, 0, len(b.Patterns))
 	for _, p := range b.Patterns {
@@ -99,7 +90,6 @@ func (b Banner) EncodeNBT() map[string]any {
 	}
 }
 
-// DecodeNBT ...
 func (b Banner) DecodeNBT(m map[string]any) any {
 	if _, ok := m["Base"]; ok {
 		// Banner items do not have the Base NBT.

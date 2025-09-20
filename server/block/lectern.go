@@ -27,22 +27,18 @@ type Lectern struct {
 	Page int
 }
 
-// Model ...
 func (Lectern) Model() world.BlockModel {
 	return model.Lectern{}
 }
 
-// FuelInfo ...
 func (Lectern) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// SideClosed ...
 func (Lectern) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// BreakInfo ...
 func (l Lectern) BreakInfo() BreakInfo {
 	d := []item.Stack{item.NewStack(Lectern{}, 1)}
 	if !l.Book.Empty() {
@@ -51,7 +47,6 @@ func (l Lectern) BreakInfo() BreakInfo {
 	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, simpleDrops(d...))
 }
 
-// UseOnBlock ...
 func (l Lectern) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, l)
 	if !used {
@@ -71,7 +66,6 @@ type readableBook interface {
 	Page(page int) (string, bool)
 }
 
-// Activate ...
 func (l Lectern) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if !l.Book.Empty() {
 		if opener, ok := u.(ContainerOpener); ok {
@@ -95,7 +89,6 @@ func (l Lectern) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, 
 	return true
 }
 
-// Punch ...
 func (l Lectern) Punch(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User) {
 	if l.Book.Empty() {
 		// We can't remove a book from the lectern if there isn't one.
@@ -126,7 +119,6 @@ func (l Lectern) TurnPage(pos cube.Pos, tx *world.Tx, page int) error {
 	return nil
 }
 
-// EncodeNBT ...
 func (l Lectern) EncodeNBT() map[string]any {
 	m := map[string]any{
 		"hasBook": boolByte(!l.Book.Empty()),
@@ -140,19 +132,16 @@ func (l Lectern) EncodeNBT() map[string]any {
 	return m
 }
 
-// DecodeNBT ...
 func (l Lectern) DecodeNBT(m map[string]any) any {
 	l.Page = int(nbtconv.Int32(m, "page"))
 	l.Book = nbtconv.MapItem(m, "book")
 	return l
 }
 
-// EncodeItem ...
 func (Lectern) EncodeItem() (name string, meta int16) {
 	return "minecraft:lectern", 0
 }
 
-// EncodeBlock ...
 func (l Lectern) EncodeBlock() (string, map[string]any) {
 	return "minecraft:lectern", map[string]any{
 		"minecraft:cardinal_direction": l.Facing.String(),
@@ -160,7 +149,6 @@ func (l Lectern) EncodeBlock() (string, map[string]any) {
 	}
 }
 
-// allLecterns ...
 func allLecterns() (lecterns []world.Block) {
 	for _, f := range cube.Directions() {
 		lecterns = append(lecterns, Lectern{Facing: f})

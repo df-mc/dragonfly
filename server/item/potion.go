@@ -12,22 +12,18 @@ type Potion struct {
 	Type potion.Potion
 }
 
-// MaxCount ...
 func (p Potion) MaxCount() int {
 	return 1
 }
 
-// AlwaysConsumable ...
 func (p Potion) AlwaysConsumable() bool {
 	return true
 }
 
-// ConsumeDuration ...
 func (p Potion) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
 }
 
-// Consume ...
 func (p Potion) Consume(_ *world.Tx, c Consumer) Stack {
 	for _, effect := range p.Type.Effects() {
 		c.AddEffect(effect)
@@ -35,7 +31,6 @@ func (p Potion) Consume(_ *world.Tx, c Consumer) Stack {
 	return NewStack(GlassBottle{}, 1)
 }
 
-// EncodeItem ...
 func (p Potion) EncodeItem() (name string, meta int16) {
 	return "minecraft:potion", int16(p.Type.Uint8())
 }

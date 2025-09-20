@@ -146,22 +146,18 @@ type recipe struct {
 	priority uint32
 }
 
-// Input ...
 func (r recipe) Input() []Item {
 	return r.input
 }
 
-// Output ...
 func (r recipe) Output() []item.Stack {
 	return r.output
 }
 
-// Block ...
 func (r recipe) Block() string {
 	return r.block
 }
 
-// Priority ...
 func (r recipe) Priority() uint32 {
 	return r.priority
 }

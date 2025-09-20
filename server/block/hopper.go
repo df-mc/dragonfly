@@ -57,17 +57,14 @@ func NewHopper() Hopper {
 	}
 }
 
-// Model ...
 func (Hopper) Model() world.BlockModel {
 	return model.Hopper{}
 }
 
-// SideClosed ...
 func (Hopper) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// BreakInfo ...
 func (h Hopper) BreakInfo() BreakInfo {
 	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(h)).withBlastResistance(24).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, i := range h.Inventory(tx, pos).Clear() {
@@ -101,7 +98,6 @@ func (h Hopper) RemoveViewer(v ContainerViewer, _ *world.Tx, _ cube.Pos) {
 	delete(h.viewers, v)
 }
 
-// Activate ...
 func (Hopper) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -110,7 +106,6 @@ func (Hopper) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *
 	return false
 }
 
-// UseOnBlock ...
 func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, h)
 	if !used {
@@ -128,7 +123,6 @@ func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// Tick ...
 func (h Hopper) Tick(currentTick int64, pos cube.Pos, tx *world.Tx) {
 	h.TransferCooldown--
 	h.CollectCooldown--
@@ -226,12 +220,10 @@ func (h Hopper) extractItem(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (Hopper) EncodeItem() (name string, meta int16) {
 	return "minecraft:hopper", 0
 }
 
-// EncodeBlock ...
 func (h Hopper) EncodeBlock() (string, map[string]any) {
 	return "minecraft:hopper", map[string]any{
 		"facing_direction": int32(h.Facing),
@@ -239,7 +231,6 @@ func (h Hopper) EncodeBlock() (string, map[string]any) {
 	}
 }
 
-// EncodeNBT ...
 func (h Hopper) EncodeNBT() map[string]any {
 	if h.inventory == nil {
 		facing, powered, customName := h.Facing, h.Powered, h.CustomName
@@ -258,7 +249,6 @@ func (h Hopper) EncodeNBT() map[string]any {
 	return m
 }
 
-// DecodeNBT ...
 func (h Hopper) DecodeNBT(data map[string]any) any {
 	facing, powered := h.Facing, h.Powered
 	//noinspection GoAssignmentToReceiver
@@ -271,7 +261,6 @@ func (h Hopper) DecodeNBT(data map[string]any) any {
 	return h
 }
 
-// allHoppers ...
 func allHoppers() (hoppers []world.Block) {
 	for _, f := range cube.Faces() {
 		hoppers = append(hoppers, Hopper{Facing: f})

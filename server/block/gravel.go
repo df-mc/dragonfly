@@ -14,12 +14,10 @@ type Gravel struct {
 	snare
 }
 
-// NeighbourUpdateTick ...
 func (g Gravel) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	g.fall(g, pos, tx)
 }
 
-// BreakInfo ...
 func (g Gravel) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if !hasSilkTouch(enchantments) && rand.Float64() < 0.1 {
@@ -29,12 +27,10 @@ func (g Gravel) BreakInfo() BreakInfo {
 	})
 }
 
-// EncodeItem ...
 func (Gravel) EncodeItem() (name string, meta int16) {
 	return "minecraft:gravel", 0
 }
 
-// EncodeBlock ...
 func (Gravel) EncodeBlock() (string, map[string]any) {
 	return "minecraft:gravel", nil
 }

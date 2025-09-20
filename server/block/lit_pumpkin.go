@@ -15,12 +15,10 @@ type LitPumpkin struct {
 	Facing cube.Direction
 }
 
-// LightEmissionLevel ...
 func (l LitPumpkin) LightEmissionLevel() uint8 {
 	return 15
 }
 
-// UseOnBlock ...
 func (l LitPumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, l)
 	if !used {
@@ -32,17 +30,14 @@ func (l LitPumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (l LitPumpkin) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(l))
 }
 
-// EncodeItem ...
 func (l LitPumpkin) EncodeItem() (name string, meta int16) {
 	return "minecraft:lit_pumpkin", 0
 }
 
-// EncodeBlock ...
 func (l LitPumpkin) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:lit_pumpkin", map[string]any{"minecraft:cardinal_direction": l.Facing.String()}
 }

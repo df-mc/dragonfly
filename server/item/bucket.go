@@ -62,22 +62,18 @@ func (b Bucket) MaxCount() int {
 	return 1
 }
 
-// AlwaysConsumable ...
 func (b Bucket) AlwaysConsumable() bool {
 	return b.Content.milk
 }
 
-// CanConsume ...
 func (b Bucket) CanConsume() bool {
 	return b.Content.milk
 }
 
-// ConsumeDuration ...
 func (b Bucket) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
 }
 
-// Consume ...
 func (b Bucket) Consume(_ *world.Tx, c Consumer) Stack {
 	for _, effect := range c.Effects() {
 		c.RemoveEffect(effect.Type())
@@ -90,7 +86,6 @@ func (b Bucket) Empty() bool {
 	return b.Content.liquid == nil && !b.Content.milk
 }
 
-// FuelInfo ...
 func (b Bucket) FuelInfo() FuelInfo {
 	if liq := b.Content.liquid; liq != nil && liq.LiquidType() == "lava" {
 		return newFuelInfo(time.Second * 1000).WithResidue(NewStack(Bucket{}, 1))
@@ -142,7 +137,6 @@ func (b Bucket) fillFrom(pos cube.Pos, tx *world.Tx, ctx *UseContext) bool {
 	return true
 }
 
-// EncodeItem ...
 func (b Bucket) EncodeItem() (name string, meta int16) {
 	if !b.Empty() {
 		return "minecraft:" + b.Content.String() + "_bucket", 0

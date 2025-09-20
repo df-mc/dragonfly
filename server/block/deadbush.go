@@ -16,14 +16,12 @@ type DeadBush struct {
 	sourceWaterDisplacer
 }
 
-// NeighbourUpdateTick ...
 func (d DeadBush) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
 		breakBlock(d, pos, tx)
 	}
 }
 
-// UseOnBlock ...
 func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, d)
 	if !used || !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
@@ -34,22 +32,18 @@ func (d DeadBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 	return placed(ctx)
 }
 
-// SideClosed ...
 func (d DeadBush) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// HasLiquidDrops ...
 func (d DeadBush) HasLiquidDrops() bool {
 	return true
 }
 
-// FlammabilityInfo ...
 func (d DeadBush) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(60, 100, true)
 }
 
-// BreakInfo ...
 func (d DeadBush) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if t.ToolType() == item.TypeShears {
@@ -62,12 +56,10 @@ func (d DeadBush) BreakInfo() BreakInfo {
 	})
 }
 
-// EncodeItem ...
 func (d DeadBush) EncodeItem() (name string, meta int16) {
 	return "minecraft:deadbush", 0
 }
 
-// EncodeBlock ...
 func (d DeadBush) EncodeBlock() (string, map[string]any) {
 	return "minecraft:deadbush", nil
 }

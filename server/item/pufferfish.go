@@ -11,7 +11,6 @@ type Pufferfish struct {
 	defaultFood
 }
 
-// Consume ...
 func (p Pufferfish) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(1, 0.2)
 	c.AddEffect(effect.New(effect.Hunger, 3, 15*time.Second))
@@ -20,7 +19,6 @@ func (p Pufferfish) Consume(_ *world.Tx, c Consumer) Stack {
 	return Stack{}
 }
 
-// EncodeItem ...
 func (p Pufferfish) EncodeItem() (name string, meta int16) {
 	return "minecraft:pufferfish", 0
 }

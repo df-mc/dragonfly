@@ -14,7 +14,6 @@ type fatalPoison struct {
 	nopLasting
 }
 
-// Apply ...
 func (fatalPoison) Apply(e world.Entity, eff Effect) {
 	interval := max(50>>(eff.Level()-1), 1)
 	if eff.Tick()%interval == 0 {
@@ -24,7 +23,6 @@ func (fatalPoison) Apply(e world.Entity, eff Effect) {
 	}
 }
 
-// RGBA ...
 func (fatalPoison) RGBA() color.RGBA {
 	return color.RGBA{R: 0x4e, G: 0x93, B: 0x31, A: 0xff}
 }

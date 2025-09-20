@@ -8,12 +8,10 @@ import (
 // Snowball is a throwable combat item obtained through shovelling snow.
 type Snowball struct{}
 
-// MaxCount ...
 func (s Snowball) MaxCount() int {
 	return 16
 }
 
-// Use ...
 func (s Snowball) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().Snowball
 	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: user.Rotation().Vec3().Mul(1.5)}
@@ -24,7 +22,6 @@ func (s Snowball) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	return true
 }
 
-// EncodeItem ...
 func (s Snowball) EncodeItem() (name string, meta int16) {
 	return "minecraft:snowball", 0
 }

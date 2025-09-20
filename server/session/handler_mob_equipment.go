@@ -10,7 +10,6 @@ import (
 // MobEquipmentHandler handles the MobEquipment packet.
 type MobEquipmentHandler struct{}
 
-// Handle ...
 func (*MobEquipmentHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.MobEquipment)
 

@@ -208,7 +208,6 @@ func readDamage(m map[string]any, s *item.Stack, disk bool) {
 	*s = s.Damage(int(Int32(m, "Damage")))
 }
 
-// readAnvilCost ...
 func readAnvilCost(m map[string]any, s *item.Stack) {
 	*s = s.WithAnvilCost(int(Int32(m, "RepairCost")))
 }

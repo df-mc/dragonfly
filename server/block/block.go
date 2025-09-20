@@ -206,7 +206,6 @@ func boolByte(b bool) uint8 {
 // replaceable is a struct that may be embedded to make a block replaceable by any other block.
 type replaceable struct{}
 
-// ReplaceableBy ...
 func (replaceable) ReplaceableBy(world.Block) bool {
 	return true
 }
@@ -215,7 +214,6 @@ func (replaceable) ReplaceableBy(world.Block) bool {
 // pass through this block freely.
 type transparent struct{}
 
-// LightDiffusionLevel ...
 func (transparent) LightDiffusionLevel() uint8 {
 	return 0
 }
@@ -223,7 +221,6 @@ func (transparent) LightDiffusionLevel() uint8 {
 // gravityAffected is a struct that may be embedded for blocks affected by gravity.
 type gravityAffected struct{}
 
-// Solidifies ...
 func (g gravityAffected) Solidifies(cube.Pos, *world.Tx) bool {
 	return false
 }
@@ -262,7 +259,6 @@ func newFlammabilityInfo(encouragement, flammability int, lavaFlammable bool) Fl
 	}
 }
 
-// livingEntity ...
 type livingEntity interface {
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
 	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
@@ -272,7 +268,6 @@ type livingEntity interface {
 	Hurt(damage float64, src world.DamageSource) (n float64, vulnerable bool)
 }
 
-// flammableEntity ...
 type flammableEntity interface {
 	// OnFireDuration returns duration of fire in ticks.
 	OnFireDuration() time.Duration
@@ -282,7 +277,6 @@ type flammableEntity interface {
 	Extinguish()
 }
 
-// dropItem ...
 func dropItem(tx *world.Tx, it item.Stack, pos mgl64.Vec3) {
 	create := tx.World().EntityRegistry().Config().Item
 	opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
@@ -292,7 +286,6 @@ func dropItem(tx *world.Tx, it item.Stack, pos mgl64.Vec3) {
 // bass is a struct that may be embedded for blocks that create a bass sound.
 type bass struct{}
 
-// Instrument ...
 func (bass) Instrument() sound.Instrument {
 	return sound.Bass()
 }
@@ -300,7 +293,6 @@ func (bass) Instrument() sound.Instrument {
 // snare is a struct that may be embedded for blocks that create a snare drum sound.
 type snare struct{}
 
-// Instrument ...
 func (snare) Instrument() sound.Instrument {
 	return sound.Snare()
 }
@@ -308,7 +300,6 @@ func (snare) Instrument() sound.Instrument {
 // clicksAndSticks is a struct that may be embedded for blocks that create a clicks and sticks sound.
 type clicksAndSticks struct{}
 
-// Instrument ...
 func (clicksAndSticks) Instrument() sound.Instrument {
 	return sound.ClicksAndSticks()
 }
@@ -316,7 +307,6 @@ func (clicksAndSticks) Instrument() sound.Instrument {
 // bassDrum is a struct that may be embedded for blocks that create a bass drum sound.
 type bassDrum struct{}
 
-// Instrument ...
 func (bassDrum) Instrument() sound.Instrument {
 	return sound.BassDrum()
 }

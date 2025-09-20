@@ -17,19 +17,16 @@ type HayBale struct {
 	Axis cube.Axis
 }
 
-// Instrument ...
 func (HayBale) Instrument() sound.Instrument {
 	return sound.Banjo()
 }
 
-// EntityLand ...
 func (h HayBale) EntityLand(_ cube.Pos, _ *world.Tx, e world.Entity, distance *float64) {
 	if _, ok := e.(fallDistanceEntity); ok {
 		*distance *= 0.2
 	}
 }
 
-// UseOnBlock ...
 func (h HayBale) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, h)
 	if !used {
@@ -41,32 +38,26 @@ func (h HayBale) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *worl
 	return placed(ctx)
 }
 
-// FlammabilityInfo ...
 func (HayBale) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(60, 20, false)
 }
 
-// BreakInfo ...
 func (h HayBale) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, hoeEffective, oneOf(h))
 }
 
-// CompostChance ...
 func (HayBale) CompostChance() float64 {
 	return 0.85
 }
 
-// EncodeItem ...
 func (HayBale) EncodeItem() (name string, meta int16) {
 	return "minecraft:hay_block", 0
 }
 
-// EncodeBlock ...
 func (h HayBale) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:hay_block", map[string]interface{}{"pillar_axis": h.Axis.String(), "deprecated": int32(0)}
 }
 
-// allHayBales ...
 func allHayBales() (haybale []world.Block) {
 	for _, a := range cube.Axes() {
 		haybale = append(haybale, HayBale{Axis: a})

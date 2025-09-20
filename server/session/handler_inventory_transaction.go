@@ -14,7 +14,6 @@ import (
 // InventoryTransactionHandler handles the InventoryTransaction packet.
 type InventoryTransactionHandler struct{}
 
-// Handle ...
 func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) (err error) {
 	pk := p.(*packet.InventoryTransaction)
 
@@ -83,7 +82,6 @@ func (h *InventoryTransactionHandler) resendInventories(s *Session) {
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 }
 
-// handleNormalTransaction ...
 func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.InventoryTransaction, s *Session, c Controllable) error {
 	if len(pk.Actions) != 2 {
 		return fmt.Errorf("expected two actions for dropping an item, got %d", len(pk.Actions))
@@ -134,7 +132,6 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 	return nil
 }
 
-// handleUseItemOnEntityTransaction ...
 func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *protocol.UseItemOnEntityTransactionData, s *Session, tx *world.Tx, c Controllable) error {
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
@@ -172,7 +169,6 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	return nil
 }
 
-// handleUseItemTransaction ...
 func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.UseItemTransactionData, s *Session, c Controllable) error {
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
 	s.swingingArm.Store(true)
@@ -197,7 +193,6 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	return nil
 }
 
-// handleReleaseItemTransaction ...
 func (h *InventoryTransactionHandler) handleReleaseItemTransaction(c Controllable) error {
 	c.ReleaseItem()
 	return nil

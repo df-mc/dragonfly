@@ -32,7 +32,6 @@ func (s Sword) HarvestLevel() int {
 	return s.Tier.HarvestLevel
 }
 
-// EnchantmentValue ...
 func (s Sword) EnchantmentValue() int {
 	return s.Tier.EnchantmentValue
 }
@@ -43,7 +42,6 @@ func (s Sword) BaseMiningEfficiency(world.Block) float64 {
 	return 1.5
 }
 
-// DurabilityInfo ...
 func (s Sword) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability:    s.Tier.Durability,
@@ -53,7 +51,6 @@ func (s Sword) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// SmeltInfo ...
 func (s Sword) SmeltInfo() SmeltInfo {
 	switch s.Tier {
 	case ToolTierIron:
@@ -64,7 +61,6 @@ func (s Sword) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
-// FuelInfo ...
 func (s Sword) FuelInfo() FuelInfo {
 	if s.Tier == ToolTierWood {
 		return newFuelInfo(time.Second * 10)
@@ -72,12 +68,10 @@ func (s Sword) FuelInfo() FuelInfo {
 	return FuelInfo{}
 }
 
-// RepairableBy ...
 func (s Sword) RepairableBy(i Stack) bool {
 	return toolTierRepairable(s.Tier)(i)
 }
 
-// EncodeItem ...
 func (s Sword) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Tier.Name + "_sword", 0
 }

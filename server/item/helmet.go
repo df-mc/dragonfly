@@ -25,7 +25,6 @@ func (h Helmet) MaxCount() int {
 	return 1
 }
 
-// DefencePoints ...
 func (h Helmet) DefencePoints() float64 {
 	switch h.Tier.Name() {
 	case "leather":
@@ -38,22 +37,18 @@ func (h Helmet) DefencePoints() float64 {
 	panic("invalid helmet tier")
 }
 
-// KnockBackResistance ...
 func (h Helmet) KnockBackResistance() float64 {
 	return h.Tier.KnockBackResistance()
 }
 
-// Toughness ...
 func (h Helmet) Toughness() float64 {
 	return h.Tier.Toughness()
 }
 
-// EnchantmentValue ...
 func (h Helmet) EnchantmentValue() int {
 	return h.Tier.EnchantmentValue()
 }
 
-// DurabilityInfo ...
 func (h Helmet) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: int(h.Tier.BaseDurability()),
@@ -61,7 +56,6 @@ func (h Helmet) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// SmeltInfo ...
 func (h Helmet) SmeltInfo() SmeltInfo {
 	switch h.Tier.(type) {
 	case ArmourTierIron, ArmourTierChain:
@@ -72,28 +66,23 @@ func (h Helmet) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
-// RepairableBy ...
 func (h Helmet) RepairableBy(i Stack) bool {
 	return armourTierRepairable(h.Tier)(i)
 }
 
-// Helmet ...
 func (h Helmet) Helmet() bool {
 	return true
 }
 
-// WithTrim ...
 func (h Helmet) WithTrim(trim ArmourTrim) world.Item {
 	h.Trim = trim
 	return h
 }
 
-// EncodeItem ...
 func (h Helmet) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + h.Tier.Name() + "_helmet", 0
 }
 
-// DecodeNBT ...
 func (h Helmet) DecodeNBT(data map[string]any) any {
 	if t, ok := h.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
@@ -105,7 +94,6 @@ func (h Helmet) DecodeNBT(data map[string]any) any {
 	return h
 }
 
-// EncodeNBT ...
 func (h Helmet) EncodeNBT() map[string]any {
 	m := map[string]any{}
 	if t, ok := h.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {

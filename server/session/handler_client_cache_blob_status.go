@@ -10,7 +10,6 @@ import (
 type ClientCacheBlobStatusHandler struct {
 }
 
-// Handle ...
 func (c *ClientCacheBlobStatusHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, _ Controllable) error {
 	pk := p.(*packet.ClientCacheBlobStatus)
 

@@ -14,7 +14,6 @@ type Composter struct {
 	Level int
 }
 
-// BBox ...
 func (c Composter) BBox(_ cube.Pos, _ world.BlockSource) []cube.BBox {
 	compostHeight := math.Abs(math.Min(float64(c.Level), 7)*0.125 - 0.0625)
 	return []cube.BBox{

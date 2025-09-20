@@ -26,34 +26,28 @@ type Vines struct {
 	WestDirection bool
 }
 
-// CompostChance ...
 func (Vines) CompostChance() float64 {
 	return 0.5
 }
 
-// SideClosed ...
 func (Vines) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// HasLiquidDrops ...
 func (Vines) HasLiquidDrops() bool {
 	return false
 }
 
-// FlammabilityInfo ...
 func (Vines) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(15, 100, true)
 }
 
-// BreakInfo ...
 func (v Vines) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, func(t item.Tool) bool {
 		return t.ToolType() == item.TypeShears
 	}, axeEffective, oneOf(v))
 }
 
-// EntityInside ...
 func (Vines) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
@@ -104,7 +98,6 @@ func (v Vines) Attachments() (attachments []cube.Direction) {
 	return
 }
 
-// UseOnBlock ...
 func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if _, ok := tx.Block(pos).Model().(model.Solid); !ok || face.Axis() == cube.Y {
 		return false
@@ -124,7 +117,6 @@ func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	above, updated := tx.Block(pos.Side(cube.FaceUp)), false
 	for _, d := range v.Attachments() {
@@ -146,7 +138,6 @@ func (v Vines) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	tx.SetBlock(pos, v, nil)
 }
 
-// RandomTick ...
 func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if r.Float64() > 0.25 {
 		// Vines have a 25% chance of spreading.
@@ -261,12 +252,10 @@ func (v Vines) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
-// EncodeItem ...
 func (Vines) EncodeItem() (name string, meta int16) {
 	return "minecraft:vine", 0
 }
 
-// EncodeBlock ...
 func (v Vines) EncodeBlock() (string, map[string]any) {
 	var bits int
 	for i, ok := range []bool{v.SouthDirection, v.WestDirection, v.NorthDirection, v.EastDirection} {
@@ -305,7 +294,6 @@ func (v Vines) canSpread(tx *world.Tx, pos cube.Pos) bool {
 	return true
 }
 
-// allVines ...
 func allVines() (b []world.Block) {
 	for _, north := range []bool{true, false} {
 		for _, east := range []bool{true, false} {

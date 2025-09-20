@@ -18,7 +18,6 @@ type Firework struct {
 	Explosions []FireworkExplosion
 }
 
-// Use ...
 func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	if g, ok := user.(interface {
 		Gliding() bool
@@ -37,7 +36,6 @@ func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	return true
 }
 
-// UseOnBlock ...
 func (f Firework) UseOnBlock(pos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
 	fpos := pos.Vec3().Add(clickPos)
 	create := tx.World().EntityRegistry().Config().Firework
@@ -49,7 +47,6 @@ func (f Firework) UseOnBlock(pos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, tx 
 	return true
 }
 
-// EncodeNBT ...
 func (f Firework) EncodeNBT() map[string]any {
 	explosions := make([]any, 0, len(f.Explosions))
 	for _, explosion := range f.Explosions {
@@ -61,7 +58,6 @@ func (f Firework) EncodeNBT() map[string]any {
 	}}
 }
 
-// DecodeNBT ...
 func (f Firework) DecodeNBT(data map[string]any) any {
 	if fireworks, ok := data["Fireworks"].(map[string]any); ok {
 		if explosions, ok := fireworks["Explosions"].([]any); ok {
@@ -82,12 +78,10 @@ func (f Firework) RandomisedDuration() time.Duration {
 	return f.Duration + time.Duration(rand.IntN(int(time.Millisecond*600)))
 }
 
-// OffHand ...
 func (Firework) OffHand() bool {
 	return true
 }
 
-// EncodeItem ...
 func (Firework) EncodeItem() (name string, meta int16) {
 	return "minecraft:firework_rocket", 0
 }

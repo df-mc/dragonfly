@@ -144,7 +144,6 @@ func writeDamage(m map[string]any, s item.Stack, disk bool) {
 	}
 }
 
-// writeAnvilCost ...
 func writeAnvilCost(m map[string]any, s item.Stack) {
 	if cost := s.AnvilCost(); cost > 0 {
 		m["RepairCost"] = int32(cost)

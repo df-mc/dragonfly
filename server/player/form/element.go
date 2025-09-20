@@ -24,7 +24,6 @@ func NewLabel(text string) Label {
 	return Label{Text: text}
 }
 
-// MarshalJSON ...
 func (l Label) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type": "label",
@@ -52,7 +51,6 @@ func NewInput(text, defaultValue, placeholder string) Input {
 	return Input{Text: text, Default: defaultValue, Placeholder: placeholder}
 }
 
-// MarshalJSON ...
 func (i Input) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type":        "input",
@@ -83,7 +81,6 @@ func NewToggle(text string, defaultValue bool) Toggle {
 	return Toggle{Text: text, Default: defaultValue}
 }
 
-// MarshalJSON ...
 func (t Toggle) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type":    "toggle",
@@ -119,7 +116,6 @@ func NewSlider(text string, min, max, stepSize, defaultValue float64) Slider {
 	return Slider{Text: text, Min: min, Max: max, StepSize: stepSize, Default: defaultValue}
 }
 
-// MarshalJSON ...
 func (s Slider) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type":    "slider",
@@ -156,7 +152,6 @@ func NewDropdown(text string, options []string, defaultIndex int) Dropdown {
 	return Dropdown{Text: text, Options: options, DefaultIndex: defaultIndex}
 }
 
-// MarshalJSON ...
 func (d Dropdown) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type":    "dropdown",
@@ -181,7 +176,6 @@ func NewStepSlider(text string, options []string, defaultIndex int) StepSlider {
 	return StepSlider{Text: text, Options: options, DefaultIndex: defaultIndex}
 }
 
-// MarshalJSON ...
 func (s StepSlider) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"type":    "step_slider",
@@ -214,7 +208,6 @@ func NewButton(text, image string) Button {
 	return Button{Text: text, Image: image}
 }
 
-// MarshalJSON ...
 func (b Button) MarshalJSON() ([]byte, error) {
 	m := map[string]any{"text": b.Text}
 	if b.Image != "" {

@@ -4,7 +4,6 @@ package item
 // nine of them in a crafting table makes a music disc named, "5".
 type DiscFragment struct{}
 
-// EncodeItem ...
 func (DiscFragment) EncodeItem() (name string, meta int16) {
 	return "minecraft:disc_fragment_5", 0
 }

@@ -21,7 +21,6 @@ type shape struct {
 	id *int
 }
 
-// ShapeID ...
 func (s *shape) ShapeID() int {
 	if s.id == nil {
 		id := int(nextShapeID.Add(1))

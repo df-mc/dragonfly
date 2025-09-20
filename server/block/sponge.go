@@ -17,12 +17,10 @@ type Sponge struct {
 	Wet bool
 }
 
-// BreakInfo ...
 func (s Sponge) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, nothingEffective, oneOf(s))
 }
 
-// SmeltInfo ...
 func (s Sponge) SmeltInfo() item.SmeltInfo {
 	if s.Wet {
 		return newSmeltInfo(item.NewStack(Sponge{}, 1), 0.15)
@@ -30,7 +28,6 @@ func (s Sponge) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{}
 }
 
-// EncodeItem ...
 func (s Sponge) EncodeItem() (name string, meta int16) {
 	if s.Wet {
 		return "minecraft:wet_sponge", 0
@@ -38,7 +35,6 @@ func (s Sponge) EncodeItem() (name string, meta int16) {
 	return "minecraft:sponge", 0
 }
 
-// EncodeBlock ...
 func (s Sponge) EncodeBlock() (string, map[string]any) {
 	if s.Wet {
 		return "minecraft:wet_sponge", nil

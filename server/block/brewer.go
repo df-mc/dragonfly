@@ -36,7 +36,6 @@ func newBrewer() *brewer {
 	return b
 }
 
-// InsertItem ...
 func (b *brewer) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range h.inventory.Slots() {
 		var slot int
@@ -101,7 +100,6 @@ func (b *brewer) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// ExtractItem ...
 func (b *brewer) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range b.inventory.Slots() {
 		if sourceStack.Empty() || sourceSlot == 0 || sourceSlot == 4 {

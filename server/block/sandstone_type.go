@@ -32,7 +32,6 @@ func (s sandstone) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Name ...
 func (s sandstone) Name() string {
 	switch s {
 	case 0:
@@ -47,7 +46,6 @@ func (s sandstone) Name() string {
 	panic("unknown sandstone type")
 }
 
-// String ...
 func (s sandstone) String() string {
 	switch s {
 	case 0:
@@ -62,7 +60,6 @@ func (s sandstone) String() string {
 	panic("unknown sandstone type")
 }
 
-// SandstoneTypes ...
 func SandstoneTypes() []SandstoneType {
 	return []SandstoneType{NormalSandstone(), CutSandstone(), ChiseledSandstone(), SmoothSandstone()}
 }

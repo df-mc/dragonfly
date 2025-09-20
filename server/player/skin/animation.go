@@ -58,12 +58,10 @@ func (a Animation) Type() AnimationType {
 	return a.aType
 }
 
-// ColorModel ...
 func (a Animation) ColorModel() color.Model {
 	return color.RGBAModel
 }
 
-// Bounds ...
 func (a Animation) Bounds() image.Rectangle {
 	return image.Rectangle{
 		Max: image.Point{X: a.w, Y: a.h},

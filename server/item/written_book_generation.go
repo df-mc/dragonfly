@@ -27,7 +27,6 @@ func (g generation) Uint8() uint8 {
 	return uint8(g)
 }
 
-// String ...
 func (g generation) String() string {
 	switch g {
 	case 0:

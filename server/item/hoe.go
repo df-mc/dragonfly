@@ -42,17 +42,14 @@ type tillable interface {
 	Till() (world.Block, bool)
 }
 
-// MaxCount ...
 func (h Hoe) MaxCount() int {
 	return 1
 }
 
-// AttackDamage ...
 func (h Hoe) AttackDamage() float64 {
 	return h.Tier.BaseAttackDamage + 1
 }
 
-// ToolType ...
 func (h Hoe) ToolType() ToolType {
 	return TypeHoe
 }
@@ -63,17 +60,14 @@ func (h Hoe) HarvestLevel() int {
 	return h.Tier.HarvestLevel
 }
 
-// BaseMiningEfficiency ...
 func (h Hoe) BaseMiningEfficiency(world.Block) float64 {
 	return h.Tier.BaseMiningEfficiency
 }
 
-// EnchantmentValue ...
 func (h Hoe) EnchantmentValue() int {
 	return h.Tier.EnchantmentValue
 }
 
-// DurabilityInfo ...
 func (h Hoe) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability:    h.Tier.Durability,
@@ -83,7 +77,6 @@ func (h Hoe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// SmeltInfo ...
 func (h Hoe) SmeltInfo() SmeltInfo {
 	switch h.Tier {
 	case ToolTierIron:
@@ -94,7 +87,6 @@ func (h Hoe) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
-// FuelInfo ...
 func (h Hoe) FuelInfo() FuelInfo {
 	if h.Tier == ToolTierWood {
 		return newFuelInfo(time.Second * 10)
@@ -102,12 +94,10 @@ func (h Hoe) FuelInfo() FuelInfo {
 	return FuelInfo{}
 }
 
-// RepairableBy ...
 func (h Hoe) RepairableBy(i Stack) bool {
 	return toolTierRepairable(h.Tier)(i)
 }
 
-// EncodeItem ...
 func (h Hoe) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + h.Tier.Name + "_hoe", 0
 }

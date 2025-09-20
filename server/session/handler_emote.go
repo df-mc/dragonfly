@@ -12,7 +12,6 @@ type EmoteHandler struct {
 	LastEmote time.Time
 }
 
-// Handle ...
 func (h *EmoteHandler) Handle(p packet.Packet, _ *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.Emote)
 

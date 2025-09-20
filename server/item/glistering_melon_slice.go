@@ -4,7 +4,6 @@ package item
 // ingredients that can be used to make mundane potions.
 type GlisteringMelonSlice struct{}
 
-// EncodeItem ...
 func (GlisteringMelonSlice) EncodeItem() (name string, meta int16) {
 	return "minecraft:glistering_melon_slice", 0
 }

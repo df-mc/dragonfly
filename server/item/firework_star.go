@@ -5,7 +5,6 @@ type FireworkStar struct {
 	FireworkExplosion
 }
 
-// EncodeNBT ...
 func (f FireworkStar) EncodeNBT() map[string]any {
 	return map[string]any{
 		"FireworksItem": f.FireworkExplosion.EncodeNBT(),
@@ -13,7 +12,6 @@ func (f FireworkStar) EncodeNBT() map[string]any {
 	}
 }
 
-// DecodeNBT ...
 func (f FireworkStar) DecodeNBT(data map[string]any) any {
 	if i, ok := data["FireworksItem"].(map[string]any); ok {
 		f.FireworkExplosion = f.FireworkExplosion.DecodeNBT(i).(FireworkExplosion)
@@ -21,7 +19,6 @@ func (f FireworkStar) DecodeNBT(data map[string]any) any {
 	return f
 }
 
-// EncodeItem ...
 func (f FireworkStar) EncodeItem() (name string, meta int16) {
 	return "minecraft:firework_star", invertColour(f.FireworkExplosion.Colour)
 }

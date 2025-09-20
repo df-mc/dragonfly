@@ -10,217 +10,174 @@ type Potion struct {
 	potion
 }
 
-// Water ...
 func Water() Potion {
 	return Potion{}
 }
 
-// Mundane ...
 func Mundane() Potion {
 	return Potion{1}
 }
 
-// LongMundane ...
 func LongMundane() Potion {
 	return Potion{2}
 }
 
-// Thick ...
 func Thick() Potion {
 	return Potion{3}
 }
 
-// Awkward ...
 func Awkward() Potion {
 	return Potion{4}
 }
 
-// NightVision ...
 func NightVision() Potion {
 	return Potion{5}
 }
 
-// LongNightVision ...
 func LongNightVision() Potion {
 	return Potion{6}
 }
 
-// Invisibility ...
 func Invisibility() Potion {
 	return Potion{7}
 }
 
-// LongInvisibility ...
 func LongInvisibility() Potion {
 	return Potion{8}
 }
 
-// Leaping ...
 func Leaping() Potion {
 	return Potion{9}
 }
 
-// LongLeaping ...
 func LongLeaping() Potion {
 	return Potion{10}
 }
 
-// StrongLeaping ...
 func StrongLeaping() Potion {
 	return Potion{11}
 }
 
-// FireResistance ...
 func FireResistance() Potion {
 	return Potion{12}
 }
 
-// LongFireResistance ...
 func LongFireResistance() Potion {
 	return Potion{13}
 }
 
-// Swiftness ...
 func Swiftness() Potion {
 	return Potion{14}
 }
 
-// LongSwiftness ...
 func LongSwiftness() Potion {
 	return Potion{15}
 }
 
-// StrongSwiftness ...
 func StrongSwiftness() Potion {
 	return Potion{16}
 }
 
-// Slowness ...
 func Slowness() Potion {
 	return Potion{17}
 }
 
-// LongSlowness ...
 func LongSlowness() Potion {
 	return Potion{18}
 }
 
-// WaterBreathing ...
 func WaterBreathing() Potion {
 	return Potion{19}
 }
 
-// LongWaterBreathing ...
 func LongWaterBreathing() Potion {
 	return Potion{20}
 }
 
-// Healing ...
 func Healing() Potion {
 	return Potion{21}
 }
 
-// StrongHealing ...
 func StrongHealing() Potion {
 	return Potion{22}
 }
 
-// Harming ...
 func Harming() Potion {
 	return Potion{23}
 }
 
-// StrongHarming ...
 func StrongHarming() Potion {
 	return Potion{24}
 }
 
-// Poison ...
 func Poison() Potion {
 	return Potion{25}
 }
 
-// LongPoison ...
 func LongPoison() Potion {
 	return Potion{26}
 }
 
-// StrongPoison ...
 func StrongPoison() Potion {
 	return Potion{27}
 }
 
-// Regeneration ...
 func Regeneration() Potion {
 	return Potion{28}
 }
 
-// LongRegeneration ...
 func LongRegeneration() Potion {
 	return Potion{29}
 }
 
-// StrongRegeneration ...
 func StrongRegeneration() Potion {
 	return Potion{30}
 }
 
-// Strength ...
 func Strength() Potion {
 	return Potion{31}
 }
 
-// LongStrength ...
 func LongStrength() Potion {
 	return Potion{32}
 }
 
-// StrongStrength ...
 func StrongStrength() Potion {
 	return Potion{33}
 }
 
-// Weakness ...
 func Weakness() Potion {
 	return Potion{34}
 }
 
-// LongWeakness ...
 func LongWeakness() Potion {
 	return Potion{35}
 }
 
-// Wither ...
 func Wither() Potion {
 	return Potion{36}
 }
 
-// TurtleMaster ...
 func TurtleMaster() Potion {
 	return Potion{37}
 }
 
-// LongTurtleMaster ...
 func LongTurtleMaster() Potion {
 	return Potion{38}
 }
 
-// StrongTurtleMaster ...
 func StrongTurtleMaster() Potion {
 	return Potion{39}
 }
 
-// SlowFalling ...
 func SlowFalling() Potion {
 	return Potion{40}
 }
 
-// LongSlowFalling ...
 func LongSlowFalling() Potion {
 	return Potion{41}
 }
 
-// StrongSlowness ...
 func StrongSlowness() Potion {
 	return Potion{42}
 }
@@ -329,7 +286,6 @@ func (p potion) Uint8() uint8 {
 	return uint8(p)
 }
 
-// All ...
 func All() []Potion {
 	return []Potion{
 		Water(), Mundane(), LongMundane(), Thick(), Awkward(), NightVision(), LongNightVision(), Invisibility(),

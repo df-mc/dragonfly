@@ -31,7 +31,6 @@ func New(submittable Submittable, title ...any) Dialogue {
 	return m
 }
 
-// MarshalJSON ...
 func (m Dialogue) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m.Buttons())
 }

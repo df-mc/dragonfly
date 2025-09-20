@@ -12,7 +12,6 @@ var InstantDamage instantDamage
 
 type instantDamage struct{}
 
-// Apply ...
 func (i instantDamage) Apply(e world.Entity, eff Effect) {
 	base := 3 << eff.Level()
 	if l, ok := e.(living); ok {
@@ -20,7 +19,6 @@ func (i instantDamage) Apply(e world.Entity, eff Effect) {
 	}
 }
 
-// RGBA ...
 func (instantDamage) RGBA() color.RGBA {
 	return color.RGBA{R: 0xa9, G: 0x65, B: 0x6a, A: 0xff}
 }

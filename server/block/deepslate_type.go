@@ -32,7 +32,6 @@ func (s deepslate) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Name ...
 func (s deepslate) Name() string {
 	switch s {
 	case 0:
@@ -47,7 +46,6 @@ func (s deepslate) Name() string {
 	panic("unknown deepslate type")
 }
 
-// String ...
 func (s deepslate) String() string {
 	switch s {
 	case 0:
@@ -62,7 +60,6 @@ func (s deepslate) String() string {
 	panic("unknown deepslate type")
 }
 
-// DeepslateTypes ...
 func DeepslateTypes() []DeepslateType {
 	return []DeepslateType{NormalDeepslate(), CobbledDeepslate(), PolishedDeepslate(), ChiseledDeepslate()}
 }

@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// SendMessage ...
 func (s *Session) SendMessage(message string) {
 	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeRaw,
@@ -28,7 +27,6 @@ func (s *Session) SendTranslation(t chat.Translation, l language.Tag, a []any) {
 	})
 }
 
-// SendTip ...
 func (s *Session) SendTip(message string) {
 	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeTip,
@@ -36,7 +34,6 @@ func (s *Session) SendTip(message string) {
 	})
 }
 
-// SendAnnouncement ...
 func (s *Session) SendAnnouncement(message string) {
 	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeAnnouncement,
@@ -44,7 +41,6 @@ func (s *Session) SendAnnouncement(message string) {
 	})
 }
 
-// SendPopup ...
 func (s *Session) SendPopup(message string) {
 	s.writePacket(&packet.Text{
 		TextType: packet.TextTypePopup,
@@ -52,7 +48,6 @@ func (s *Session) SendPopup(message string) {
 	})
 }
 
-// SendJukeboxPopup ...
 func (s *Session) SendJukeboxPopup(message string) {
 	s.writePacket(&packet.Text{
 		TextType: packet.TextTypeJukeboxPopup,
@@ -60,7 +55,6 @@ func (s *Session) SendJukeboxPopup(message string) {
 	})
 }
 
-// SendToast ...
 func (s *Session) SendToast(title, message string) {
 	s.writePacket(&packet.ToastRequest{
 		Title:   title,
@@ -68,7 +62,6 @@ func (s *Session) SendToast(title, message string) {
 	})
 }
 
-// SendScoreboard ...
 func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 	if s == Nop {
 		return
@@ -127,7 +120,6 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 // colours holds a list of colour codes to be filled out for empty lines in a scoreboard.
 var colours = [15]string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"}
 
-// RemoveScoreboard ...
 func (s *Session) RemoveScoreboard() {
 	s.writePacket(&packet.RemoveObjective{ObjectiveName: *s.currentScoreboard.Load()})
 	var name string
@@ -159,7 +151,6 @@ func (s *Session) RemoveBossBar() {
 
 const tickLength = time.Second / 20
 
-// SetTitleDurations ...
 func (s *Session) SetTitleDurations(fadeInDuration, remainDuration, fadeOutDuration time.Duration) {
 	s.writePacket(&packet.SetTitle{
 		ActionType:      packet.TitleActionSetDurations,
@@ -169,17 +160,14 @@ func (s *Session) SetTitleDurations(fadeInDuration, remainDuration, fadeOutDurat
 	})
 }
 
-// SendTitle ...
 func (s *Session) SendTitle(text string) {
 	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetTitle, Text: text})
 }
 
-// SendSubtitle ...
 func (s *Session) SendSubtitle(text string) {
 	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetSubtitle, Text: text})
 }
 
-// SendActionBarMessage ...
 func (s *Session) SendActionBarMessage(text string) {
 	s.writePacket(&packet.SetTitle{ActionType: packet.TitleActionSetActionBar, Text: text})
 }

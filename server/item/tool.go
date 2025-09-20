@@ -81,13 +81,10 @@ func ToolTiers() []ToolTier {
 	return []ToolTier{ToolTierWood, ToolTierGold, ToolTierStone, ToolTierIron, ToolTierDiamond, ToolTierNetherite}
 }
 
-// ToolType ...
 func (n ToolNone) ToolType() ToolType { return TypeNone }
 
-// HarvestLevel ...
 func (n ToolNone) HarvestLevel() int { return 0 }
 
-// BaseMiningEfficiency ...
 func (n ToolNone) BaseMiningEfficiency(world.Block) float64 { return 1 }
 
 // toolTierRepairable returns true if the ToolTier passed is repairable.

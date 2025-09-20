@@ -20,7 +20,6 @@ type PinkPetals struct {
 	Facing cube.Direction
 }
 
-// BoneMeal ...
 func (p PinkPetals) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if p.AdditionalCount < 3 {
 		p.AdditionalCount++
@@ -31,7 +30,6 @@ func (p PinkPetals) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// UseOnBlock ...
 func (p PinkPetals) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if existing, ok := tx.Block(pos).(PinkPetals); ok {
 		if existing.AdditionalCount >= 3 {
@@ -56,44 +54,36 @@ func (p PinkPetals) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (p PinkPetals) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(p, tx.Block(pos.Side(cube.FaceDown))) {
 		breakBlock(p, pos, tx)
 	}
 }
 
-// HasLiquidDrops ...
 func (PinkPetals) HasLiquidDrops() bool {
 	return true
 }
 
-// BreakInfo ...
 func (p PinkPetals) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(p, p.AdditionalCount+1)))
 }
 
-// FlammabilityInfo ...
 func (p PinkPetals) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(30, 100, true)
 }
 
-// CompostChance ...
 func (PinkPetals) CompostChance() float64 {
 	return 0.3
 }
 
-// EncodeItem ...
 func (PinkPetals) EncodeItem() (name string, meta int16) {
 	return "minecraft:pink_petals", 0
 }
 
-// EncodeBlock ...
 func (p PinkPetals) EncodeBlock() (string, map[string]any) {
 	return "minecraft:pink_petals", map[string]any{"growth": int32(p.AdditionalCount), "minecraft:cardinal_direction": p.Facing.String()}
 }
 
-// allPinkPetals ...
 func allPinkPetals() (b []world.Block) {
 	for i := 0; i <= 7; i++ {
 		for _, d := range cube.Directions() {

@@ -33,7 +33,6 @@ func (w WrittenBook) Page(page int) (string, bool) {
 	return w.Pages[page], true
 }
 
-// DecodeNBT ...
 func (w WrittenBook) DecodeNBT(data map[string]any) any {
 	if pages, ok := data["pages"].([]any); ok {
 		w.Pages = make([]string, len(pages))
@@ -56,7 +55,6 @@ func (w WrittenBook) DecodeNBT(data map[string]any) any {
 	return w
 }
 
-// EncodeNBT ...
 func (w WrittenBook) EncodeNBT() map[string]any {
 	pages := make([]any, 0, len(w.Pages))
 	for _, page := range w.Pages {
@@ -70,7 +68,6 @@ func (w WrittenBook) EncodeNBT() map[string]any {
 	}
 }
 
-// EncodeItem ...
 func (WrittenBook) EncodeItem() (name string, meta int16) {
 	return "minecraft:written_book", 0
 }

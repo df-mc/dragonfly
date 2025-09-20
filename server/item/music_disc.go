@@ -15,7 +15,6 @@ func (MusicDisc) MaxCount() int {
 	return 1
 }
 
-// EncodeItem ...
 func (m MusicDisc) EncodeItem() (name string, meta int16) {
 	return "minecraft:music_disc_" + m.DiscType.String(), 0
 }

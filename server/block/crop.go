@@ -22,14 +22,12 @@ type crop struct {
 	Growth int
 }
 
-// NeighbourUpdateTick ...
 func (c crop) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Farmland); !ok {
 		breakBlock(tx.Block(pos), pos, tx)
 	}
 }
 
-// HasLiquidDrops ...
 func (c crop) HasLiquidDrops() bool {
 	return true
 }

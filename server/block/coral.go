@@ -22,7 +22,6 @@ type Coral struct {
 	Dead bool
 }
 
-// UseOnBlock ...
 func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, c)
 	if !used {
@@ -43,17 +42,14 @@ func (c Coral) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	return placed(ctx)
 }
 
-// HasLiquidDrops ...
 func (c Coral) HasLiquidDrops() bool {
 	return false
 }
 
-// SideClosed ...
 func (c Coral) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// NeighbourUpdateTick ...
 func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx) {
 		breakBlock(c, pos, tx)
@@ -64,7 +60,6 @@ func (c Coral) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	tx.ScheduleBlockUpdate(pos, c, time.Second*5/2)
 }
 
-// ScheduledTick ...
 func (c Coral) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	adjacentWater := false
 	pos.Neighbours(func(neighbour cube.Pos) {
@@ -80,12 +75,10 @@ func (c Coral) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 }
 
-// BreakInfo ...
 func (c Coral) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(c))
 }
 
-// EncodeBlock ...
 func (c Coral) EncodeBlock() (name string, properties map[string]any) {
 	if c.Dead {
 		return "minecraft:dead_" + c.Type.String() + "_coral", nil
@@ -93,7 +86,6 @@ func (c Coral) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + c.Type.String() + "_coral", nil
 }
 
-// EncodeItem ...
 func (c Coral) EncodeItem() (name string, meta int16) {
 	if c.Dead {
 		return "minecraft:dead_" + c.Type.String() + "_coral", 0

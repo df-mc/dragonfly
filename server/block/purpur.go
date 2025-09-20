@@ -23,22 +23,18 @@ type (
 	}
 )
 
-// BreakInfo ...
 func (p Purpur) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p)).withBlastResistance(30)
 }
 
-// EncodeItem ...
 func (p Purpur) EncodeItem() (name string, meta int16) {
 	return "minecraft:purpur_block", 0
 }
 
-// EncodeBlock ...
 func (p Purpur) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:purpur_block", map[string]interface{}{"pillar_axis": "y"}
 }
 
-// UseOnBlock ...
 func (p PurpurPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, p)
 	if !used {
@@ -50,22 +46,18 @@ func (p PurpurPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (p PurpurPillar) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p)).withBlastResistance(30)
 }
 
-// EncodeItem ...
 func (p PurpurPillar) EncodeItem() (name string, meta int16) {
 	return "minecraft:purpur_pillar", 0
 }
 
-// EncodeBlock ...
 func (p PurpurPillar) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:purpur_pillar", map[string]interface{}{"pillar_axis": p.Axis.String()}
 }
 
-// allPurpurs ...
 func allPurpurs() (purpur []world.Block) {
 	purpur = append(purpur, Purpur{})
 	for _, axis := range cube.Axes() {

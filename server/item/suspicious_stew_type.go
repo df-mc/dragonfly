@@ -76,7 +76,6 @@ func NauseaStew() StewType {
 	return StewType{12}
 }
 
-// StewTypes ...
 func StewTypes() []StewType {
 	return []StewType{NightVisionPoppyStew(), JumpBoostStew(), WeaknessStew(), BlindnessBluetStew(), PoisonStew(), SaturationDandelionStew(), SaturationOrchidStew(), FireResistanceStew(), RegenerationStew(), WitherStew(), NightVisionTorchflowerStew(), BlindnessEyeblossomStew(), NauseaStew()}
 }

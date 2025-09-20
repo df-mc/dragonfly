@@ -14,7 +14,6 @@ type invisibility struct {
 	nopLasting
 }
 
-// Start ...
 func (invisibility) Start(e world.Entity, _ int) {
 	if i, ok := e.(interface {
 		SetInvisible()
@@ -24,7 +23,6 @@ func (invisibility) Start(e world.Entity, _ int) {
 	}
 }
 
-// End ...
 func (invisibility) End(e world.Entity, _ int) {
 	if i, ok := e.(interface {
 		SetInvisible()
@@ -34,7 +32,6 @@ func (invisibility) End(e world.Entity, _ int) {
 	}
 }
 
-// RGBA ...
 func (invisibility) RGBA() color.RGBA {
 	return color.RGBA{R: 0xf6, G: 0xf6, B: 0xf6, A: 0xff}
 }

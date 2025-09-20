@@ -21,7 +21,6 @@ func (r BlockResult) BBox() cube.BBox {
 	return r.bb
 }
 
-// Position ...
 func (r BlockResult) Position() mgl64.Vec3 {
 	return r.pos
 }

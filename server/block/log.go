@@ -24,7 +24,6 @@ type Log struct {
 	Axis cube.Axis
 }
 
-// FlammabilityInfo ...
 func (l Log) FlammabilityInfo() FlammabilityInfo {
 	if !l.Wood.Flammable() {
 		return newFlammabilityInfo(0, 0, false)
@@ -32,17 +31,14 @@ func (l Log) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 5, true)
 }
 
-// BreakInfo ...
 func (l Log) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
 }
 
-// SmeltInfo ...
 func (Log) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(item.Charcoal{}, 1), 0.15)
 }
 
-// FuelInfo ...
 func (l Log) FuelInfo() item.FuelInfo {
 	if !l.Wood.Flammable() {
 		return item.FuelInfo{}
@@ -62,12 +58,10 @@ func (l Log) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx
 	return placed(ctx)
 }
 
-// Strip ...
 func (l Log) Strip() (world.Block, world.Sound, bool) {
 	return Log{Axis: l.Axis, Wood: l.Wood, Stripped: true}, nil, !l.Stripped
 }
 
-// EncodeItem ...
 func (l Log) EncodeItem() (name string, meta int16) {
 	if !l.Stripped {
 		switch l.Wood {
@@ -85,7 +79,6 @@ func (l Log) EncodeItem() (name string, meta int16) {
 	}
 }
 
-// EncodeBlock ...
 func (l Log) EncodeBlock() (name string, properties map[string]any) {
 	if !l.Stripped {
 		switch l.Wood {

@@ -20,12 +20,10 @@ type DoubleTallGrass struct {
 	Type DoubleTallGrassType
 }
 
-// HasLiquidDrops ...
 func (d DoubleTallGrass) HasLiquidDrops() bool {
 	return true
 }
 
-// NeighbourUpdateTick ...
 func (d DoubleTallGrass) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.UpperPart {
 		if bottom, ok := tx.Block(pos.Side(cube.FaceDown)).(DoubleTallGrass); !ok || bottom.Type != d.Type || bottom.UpperPart {
@@ -38,7 +36,6 @@ func (d DoubleTallGrass) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// UseOnBlock ...
 func (d DoubleTallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, d)
 	if !used || !replaceableWith(tx, pos.Side(cube.FaceUp), d) || !supportsVegetation(d, tx.Block(pos.Side(cube.FaceDown))) {
@@ -50,12 +47,10 @@ func (d DoubleTallGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, 
 	return placed(ctx)
 }
 
-// FlammabilityInfo ...
 func (d DoubleTallGrass) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(60, 100, true)
 }
 
-// BreakInfo ...
 func (d DoubleTallGrass) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
@@ -68,7 +63,6 @@ func (d DoubleTallGrass) BreakInfo() BreakInfo {
 	})
 }
 
-// CompostChance ...
 func (d DoubleTallGrass) CompostChance() float64 {
 	if d.Type == FernDoubleTallGrass() {
 		return 0.65
@@ -76,17 +70,14 @@ func (d DoubleTallGrass) CompostChance() float64 {
 	return 0.5
 }
 
-// EncodeItem ...
 func (d DoubleTallGrass) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + d.Type.String(), 0
 }
 
-// EncodeBlock ...
 func (d DoubleTallGrass) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + d.Type.String(), map[string]any{"upper_block_bit": d.UpperPart}
 }
 
-// allDoubleTallGrass ...
 func allDoubleTallGrass() (b []world.Block) {
 	for _, g := range DoubleTallGrassTypes() {
 		b = append(b, DoubleTallGrass{Type: g})

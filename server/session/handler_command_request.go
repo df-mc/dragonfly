@@ -12,7 +12,6 @@ type CommandRequestHandler struct {
 	origin protocol.CommandOrigin
 }
 
-// Handle ...
 func (h *CommandRequestHandler) Handle(p packet.Packet, _ *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.CommandRequest)
 	if pk.Internal {

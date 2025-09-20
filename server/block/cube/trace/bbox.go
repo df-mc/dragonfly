@@ -13,17 +13,14 @@ type BBoxResult struct {
 	face cube.Face
 }
 
-// BBox ...
 func (r BBoxResult) BBox() cube.BBox {
 	return r.bb
 }
 
-// Position ...
 func (r BBoxResult) Position() mgl64.Vec3 {
 	return r.pos
 }
 
-// Face ...
 func (r BBoxResult) Face() cube.Face {
 	return r.face
 }

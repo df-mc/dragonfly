@@ -41,7 +41,6 @@ func (c Crossbow) Charge(releaser Releaser, _ *world.Tx, ctx *UseContext, durati
 	return true
 }
 
-// ContinueCharge ...
 func (c Crossbow) ContinueCharge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
 	if !c.Item.Empty() {
 		return
@@ -155,7 +154,6 @@ func (Crossbow) MaxCount() int {
 	return 1
 }
 
-// DurabilityInfo ...
 func (Crossbow) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: 464,
@@ -163,28 +161,23 @@ func (Crossbow) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// FuelInfo ...
 func (Crossbow) FuelInfo() FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// EnchantmentValue ...
 func (Crossbow) EnchantmentValue() int {
 	return 1
 }
 
-// EncodeItem ...
 func (Crossbow) EncodeItem() (name string, meta int16) {
 	return "minecraft:crossbow", 0
 }
 
-// DecodeNBT ...
 func (c Crossbow) DecodeNBT(data map[string]any) any {
 	c.Item = mapItem(data, "chargedItem")
 	return c
 }
 
-// EncodeNBT ...
 func (c Crossbow) EncodeNBT() map[string]any {
 	if !c.Item.Empty() {
 		return map[string]any{"chargedItem": writeItem(c.Item, true)}

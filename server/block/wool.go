@@ -14,27 +14,22 @@ type Wool struct {
 	Colour item.Colour
 }
 
-// Instrument ...
 func (w Wool) Instrument() sound.Instrument {
 	return sound.Guitar()
 }
 
-// FlammabilityInfo ...
 func (w Wool) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(30, 60, true)
 }
 
-// BreakInfo ...
 func (w Wool) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, alwaysHarvestable, shearsEffective, oneOf(w))
 }
 
-// EncodeItem ...
 func (w Wool) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + w.Colour.String() + "_wool", 0
 }
 
-// EncodeBlock ...
 func (w Wool) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + w.Colour.String() + "_wool", nil
 }

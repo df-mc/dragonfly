@@ -32,7 +32,6 @@ func (s oxidation) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Name ...
 func (s oxidation) Name() string {
 	switch s {
 	case 0:
@@ -65,7 +64,6 @@ func (s oxidation) Increase() (OxidationType, bool) {
 	return OxidisedOxidation(), false
 }
 
-// String ...
 func (s oxidation) String() string {
 	switch s {
 	case 0:
@@ -80,7 +78,6 @@ func (s oxidation) String() string {
 	panic("unknown oxidation type")
 }
 
-// OxidationTypes ...
 func OxidationTypes() []OxidationType {
 	return []OxidationType{UnoxidisedOxidation(), ExposedOxidation(), WeatheredOxidation(), OxidisedOxidation()}
 }

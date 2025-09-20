@@ -12,22 +12,18 @@ type SuspiciousStew struct {
 	Type StewType
 }
 
-// MaxCount ...
 func (SuspiciousStew) MaxCount() int {
 	return 1
 }
 
-// AlwaysConsumable ...
 func (SuspiciousStew) AlwaysConsumable() bool {
 	return true
 }
 
-// EncodeItem ...
 func (s SuspiciousStew) EncodeItem() (name string, meta int16) {
 	return "minecraft:suspicious_stew", int16(s.Type.Uint8())
 }
 
-// Consume ...
 func (s SuspiciousStew) Consume(_ *world.Tx, c Consumer) Stack {
 	for _, effect := range s.Type.Effects() {
 		c.AddEffect(effect)

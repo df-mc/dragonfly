@@ -13,33 +13,27 @@ var Unbreaking unbreaking
 
 type unbreaking struct{}
 
-// Name ...
 func (unbreaking) Name() string {
 	return "Unbreaking"
 }
 
-// MaxLevel ...
 func (unbreaking) MaxLevel() int {
 	return 3
 }
 
-// Cost ...
 func (unbreaking) Cost(level int) (int, int) {
 	minCost := 5 + 8*(level-1)
 	return minCost, minCost + 50
 }
 
-// Rarity ...
 func (unbreaking) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityUncommon
 }
 
-// CompatibleWithEnchantment ...
 func (unbreaking) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
-// CompatibleWithItem ...
 func (unbreaking) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Durable)
 	return ok

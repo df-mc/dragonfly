@@ -30,7 +30,6 @@ type ItemFrame struct {
 	Glowing bool
 }
 
-// Activate ...
 func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if !i.Item.Empty() {
 		// TODO: Item frames with maps can only be rotated four times.
@@ -49,7 +48,6 @@ func (i ItemFrame) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 	return true
 }
 
-// Punch ...
 func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User) {
 	if i.Item.Empty() {
 		return
@@ -67,7 +65,6 @@ func (i ItemFrame) Punch(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User) {
 	tx.SetBlock(pos, i, nil)
 }
 
-// UseOnBlock ...
 func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, i)
 	if !used {
@@ -84,7 +81,6 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (i ItemFrame) BreakInfo() BreakInfo {
 	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, oneOf(ItemFrame{Glowing: i.Glowing})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		if !i.Item.Empty() {
@@ -93,7 +89,6 @@ func (i ItemFrame) BreakInfo() BreakInfo {
 	})
 }
 
-// EncodeItem ...
 func (i ItemFrame) EncodeItem() (name string, meta int16) {
 	if i.Glowing {
 		return "minecraft:glow_frame", 0
@@ -101,7 +96,6 @@ func (i ItemFrame) EncodeItem() (name string, meta int16) {
 	return "minecraft:frame", 0
 }
 
-// EncodeBlock ...
 func (i ItemFrame) EncodeBlock() (name string, properties map[string]any) {
 	name = "minecraft:frame"
 	if i.Glowing {
@@ -114,7 +108,6 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]any) {
 	}
 }
 
-// DecodeNBT ...
 func (i ItemFrame) DecodeNBT(data map[string]any) any {
 	i.DropChance = float64(nbtconv.Float32(data, "ItemDropChance"))
 	i.Rotations = int(nbtconv.Uint8(data, "ItemRotation"))
@@ -122,7 +115,6 @@ func (i ItemFrame) DecodeNBT(data map[string]any) any {
 	return i
 }
 
-// EncodeNBT ...
 func (i ItemFrame) EncodeNBT() map[string]any {
 	m := map[string]any{
 		"ItemDropChance": float32(i.DropChance),
@@ -146,12 +138,10 @@ func (i ItemFrame) Pick() item.Stack {
 	return i.Item.Grow(-i.Item.Count() + 1)
 }
 
-// SideClosed ...
 func (ItemFrame) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// NeighbourUpdateTick ...
 func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, ok := tx.Block(pos.Side(i.Facing)).Model().(model.Empty); ok {
 		// TODO: Allow exceptions for pressure plates.
@@ -159,7 +149,6 @@ func (i ItemFrame) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// allItemFrames ...
 func allItemFrames() (frames []world.Block) {
 	for _, f := range cube.Faces() {
 		frames = append(frames, ItemFrame{Facing: f, Glowing: true})
