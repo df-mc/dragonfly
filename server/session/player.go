@@ -502,31 +502,20 @@ func (s *Session) SendAbilities(c Controllable) {
 	if mode.AllowsInteraction() {
 		abilities |= protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
 	}
-	layers := []protocol.AbilityLayer{
-		{
-			Type:             protocol.AbilityLayerTypeBase,
-			Abilities:        protocol.AbilityCount - 1,
-			Values:           abilities,
-			FlySpeed:         float32(c.FlightSpeed()),
-			VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
-			WalkSpeed:        protocol.AbilityBaseWalkSpeed,
-		},
-	}
-	if !mode.HasCollision() {
-		layers = append(layers, protocol.AbilityLayer{
-			Type: protocol.AbilityLayerTypeSpectator,
-			Abilities: protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches |
-				protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs |
-				protocol.AbilityInvulnerable | protocol.AbilityFlying | protocol.AbilityMayFly |
-				protocol.AbilityInstantBuild | protocol.AbilityNoClip,
-			Values: protocol.AbilityNoClip | protocol.AbilityFlying | protocol.AbilityInvulnerable,
-		})
-	}
 	s.writePacket(&packet.UpdateAbilities{AbilityData: protocol.AbilityData{
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: packet.CommandPermissionLevelNormal,
-		Layers:             layers,
+		Layers: []protocol.AbilityLayer{
+			{
+				Type:             protocol.AbilityLayerTypeBase,
+				Abilities:        protocol.AbilityCount - 1,
+				Values:           abilities,
+				FlySpeed:         float32(c.FlightSpeed()),
+				VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
+				WalkSpeed:        protocol.AbilityBaseWalkSpeed,
+			},
+		},
 	}})
 }
 
@@ -1137,7 +1126,7 @@ func gameTypeFromMode(mode world.GameMode) int32 {
 		return packet.GameTypeCreative
 	}
 	if !mode.Visible() && !mode.HasCollision() {
-		return packet.GameTypeSpectator
+		return packet.GameTypeSurvivalSpectator
 	}
 	return packet.GameTypeSurvival
 }
