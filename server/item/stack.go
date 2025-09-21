@@ -244,6 +244,9 @@ func (s Stack) WithValue(key string, val any) Stack {
 		s.data[key] = val
 	} else {
 		delete(s.data, key)
+		if len(s.data) == 0 {
+			s.data = nil
+		}
 	}
 	return s
 }

@@ -64,10 +64,10 @@ func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 			tagIndices[i] = uint16(intern(tag))
 		}
 
-		var biomeID protocol.Optional[uint16]
+		var biomeID int16 = -1
 		id := b.EncodeBiome()
 		if id > maxVanillaBiomeID {
-			biomeID = protocol.Option[uint16](uint16(id))
+			biomeID = int16(id)
 		}
 
 		def := protocol.BiomeDefinition{

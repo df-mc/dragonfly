@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"math"
 	"time"
@@ -77,21 +76,10 @@ func (f *FireworkBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 // or based on the owner's position and velocity if attached.
 func (f *FireworkBehaviour) tick(e *Ent, tx *world.Tx) {
 	owner, ok := f.conf.Owner.Entity(tx)
-
-	var ownerVel mgl64.Vec3
-	if o, ok := owner.(interface {
-		Velocity() mgl64.Vec3
-	}); ok {
-		ownerVel = o.Velocity()
-	}
-
 	if f.conf.Attached && ok {
-		dV := owner.Rotation().Vec3()
-
 		// The client will propel itself to match the firework's velocity since
 		// we set the appropriate metadata.
 		e.data.Pos = owner.Position()
-		e.data.Vel = e.data.Vel.Add(ownerVel.Add(dV.Mul(0.1).Add(dV.Mul(1.5).Sub(ownerVel).Mul(0.5))))
 	} else {
 		e.data.Vel[0] *= f.conf.SidewaysVelocityMultiplier
 		e.data.Vel[1] += f.conf.UpwardsAcceleration
@@ -124,8 +112,8 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 	}
 
 	force := float64(len(explosions)*2) + 5.0
-	for e := range filterLiving(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(5.25))) {
-		tpos := e.Position()
+	for victim := range filterLiving(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(5.25))) {
+		tpos := victim.Position()
 		dist := pos.Sub(tpos).Len()
 		if dist > 5.0 {
 			// The maximum distance allowed is 5.0 blocks.
@@ -135,11 +123,11 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 		src := ProjectileDamageSource{Owner: owner, Projectile: e}
 
 		if pos == tpos {
-			e.(Living).Hurt(dmg, src)
+			victim.(Living).Hurt(dmg, src)
 			continue
 		}
-		if _, ok := trace.Perform(pos, tpos, tx, e.H().Type().BBox(e).Grow(0.3), nil); ok {
-			e.(Living).Hurt(dmg, src)
+		if _, ok := trace.Perform(pos, tpos, tx, victim.H().Type().BBox(victim).Grow(0.3), nil); ok {
+			victim.(Living).Hurt(dmg, src)
 		}
 	}
 }
