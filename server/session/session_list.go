@@ -113,6 +113,10 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		animations = append(animations, protocolAnim)
 	}
 
+	fullID := s.FullID
+	if fullID == "" {
+		fullID = uuid.New().String()
+	}
 	return protocol.Skin{
 		PlayFabID:                 s.PlayFabID,
 		SkinID:                    uuid.New().String(),
@@ -126,7 +130,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		SkinGeometry:              s.Model,
 		PersonaSkin:               s.Persona,
 		CapeID:                    uuid.New().String(),
-		FullID:                    s.FullID,
+		FullID:                    fullID,
 		Animations:                animations,
 		Trusted:                   true,
 		OverrideAppearance:        true,
