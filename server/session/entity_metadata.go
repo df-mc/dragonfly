@@ -1,6 +1,9 @@
 package session
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -10,8 +13,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
-	"time"
 )
 
 // parseEntityMetadata returns an entity metadata object with default values. It is equivalent to setting
@@ -144,21 +145,22 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		}
 	}
 	if eff, ok := e.(effectBearer); ok {
-		var packedEffects int64
-
-		for _, ef := range eff.Effects() {
-			if !ef.ParticlesHidden() {
-				id, found := effect.ID(ef.Type())
-				if !found {
-					continue
-				}
-				packedEffects = (packedEffects << 7) | int64(id<<1)
-				if ef.Ambient() {
-					packedEffects |= 1
+		if !m.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible) {
+			var packedEffects int64
+			for _, ef := range eff.Effects() {
+				if !ef.ParticlesHidden() {
+					id, found := effect.ID(ef.Type())
+					if !found {
+						continue
+					}
+					packedEffects = (packedEffects << 7) | int64(id<<1)
+					if ef.Ambient() {
+						packedEffects |= 1
+					}
 				}
 			}
+			m[protocol.EntityDataKeyVisibleMobEffects] = packedEffects
 		}
-		m[protocol.EntityDataKeyVisibleMobEffects] = packedEffects
 	}
 	if v, ok := e.(variable); ok {
 		m[protocol.EntityDataKeyVariant] = v.Variant()
