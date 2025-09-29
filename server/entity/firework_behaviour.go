@@ -112,8 +112,8 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 	}
 
 	force := float64(len(explosions)*2) + 5.0
-	for e := range filterLiving(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(5.25))) {
-		tpos := e.Position()
+	for victim := range filterLiving(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(5.25))) {
+		tpos := victim.Position()
 		dist := pos.Sub(tpos).Len()
 		if dist > 5.0 {
 			// The maximum distance allowed is 5.0 blocks.
@@ -123,11 +123,11 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 		src := ProjectileDamageSource{Owner: owner, Projectile: e}
 
 		if pos == tpos {
-			e.(Living).Hurt(dmg, src)
+			victim.(Living).Hurt(dmg, src)
 			continue
 		}
-		if _, ok := trace.Perform(pos, tpos, tx, e.H().Type().BBox(e).Grow(0.3), nil); ok {
-			e.(Living).Hurt(dmg, src)
+		if _, ok := trace.Perform(pos, tpos, tx, victim.H().Type().BBox(victim).Grow(0.3), nil); ok {
+			victim.(Living).Hurt(dmg, src)
 		}
 	}
 }

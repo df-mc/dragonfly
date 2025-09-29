@@ -399,11 +399,16 @@ func (srv *Server) makeItemComponents() {
 	for _, it := range custom {
 		name, _ := it.EncodeItem()
 		rid, _, _ := world.ItemRuntimeID(it)
+		_, isCustomBlock := it.(world.CustomBlock)
+		var entryVersion int32 = protocol.ItemEntryVersionDataDriven
+		if isCustomBlock {
+			entryVersion = protocol.ItemEntryVersionNone
+		}
 		srv.customItems = append(srv.customItems, protocol.ItemEntry{
 			Name:           name,
-			ComponentBased: true,
+			ComponentBased: !isCustomBlock,
 			RuntimeID:      int16(rid),
-			Version:        protocol.ItemEntryVersionDataDriven,
+			Version:        entryVersion,
 			Data:           iteminternal.Components(it),
 		})
 	}
@@ -542,6 +547,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	s := session.Config{
 		Log:            srv.conf.Log,
 		MaxChunkRadius: srv.conf.MaxChunkRadius,
+		EmoteChatMuted: srv.conf.MuteEmoteChat,
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
 		HandleStop:     srv.handleSessionClose,
@@ -588,7 +594,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	return w
 }
 
-// parseSkin parses a skin from the login.ClientData  and returns it.
+// parseSkin parses a skin from the login.ClientData and returns it.
 func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	// Gophertunnel guarantees the following values are valid data and are of
 	// the correct size.
@@ -600,6 +606,7 @@ func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	playerSkin.Model, _ = base64.StdEncoding.DecodeString(data.SkinGeometry)
 	playerSkin.ModelConfig, _ = skin.DecodeModelConfig(skinResourcePatch)
 	playerSkin.PlayFabID = data.PlayFabID
+	playerSkin.FullID = data.SkinID
 
 	playerSkin.Cape = skin.NewCape(data.CapeImageWidth, data.CapeImageHeight)
 	playerSkin.Cape.Pix, _ = base64.StdEncoding.DecodeString(data.CapeData)

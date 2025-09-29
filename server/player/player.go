@@ -1682,6 +1682,9 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 	if s, ok := i.Enchantment(enchantment.Sharpness); ok {
 		dmg += enchantment.Sharpness.Addend(s.Level())
+		for _, v := range p.tx.Viewers(living.Position()) {
+			v.ViewEntityAction(living, entity.EnchantedHitAction{})
+		}
 	}
 	if critical {
 		dmg *= 1.5

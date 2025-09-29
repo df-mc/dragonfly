@@ -3,9 +3,6 @@ package session
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
-	"github.com/go-gl/mathgl/mgl32"
 	"image/color"
 	"maps"
 	"math"
@@ -21,10 +18,13 @@ import (
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -1084,6 +1084,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	s.Pix = sk.SkinData
 	s.Model = sk.SkinGeometry
 	s.PlayFabID = sk.PlayFabID
+	s.FullID = sk.FullID
 
 	s.Cape = skin.NewCape(int(sk.CapeImageWidth), int(sk.CapeImageHeight))
 	s.Cape.Pix = sk.CapeData
