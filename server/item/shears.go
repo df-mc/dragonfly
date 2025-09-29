@@ -9,7 +9,6 @@ import (
 // Shears is a tool used to shear sheep, mine a few types of blocks, and carve pumpkins.
 type Shears struct{}
 
-// UseOnBlock ...
 func (s Shears) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
 	if face == cube.FaceUp || face == cube.FaceDown {
 		// Pumpkins can only be carved when one of the horizontal faces is clicked.
@@ -33,22 +32,18 @@ type carvable interface {
 	Carve(f cube.Face) (world.Block, bool)
 }
 
-// ToolType ...
 func (s Shears) ToolType() ToolType {
 	return TypeShears
 }
 
-// HarvestLevel ...
 func (s Shears) HarvestLevel() int {
 	return 1
 }
 
-// BaseMiningEfficiency ...
 func (s Shears) BaseMiningEfficiency(world.Block) float64 {
 	return 1.5
 }
 
-// DurabilityInfo ...
 func (s Shears) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability:    238,
@@ -58,12 +53,10 @@ func (s Shears) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// MaxCount ...
 func (s Shears) MaxCount() int {
 	return 1
 }
 
-// EncodeItem ...
 func (s Shears) EncodeItem() (name string, meta int16) {
 	return "minecraft:shears", 0
 }

@@ -8,7 +8,6 @@ import (
 // BrewingStand is a model used by brewing stands.
 type BrewingStand struct{}
 
-// BBox ...
 func (b BrewingStand) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	return []cube.BBox{
 		full.ExtendTowards(cube.FaceDown, 0.875),
@@ -16,7 +15,6 @@ func (b BrewingStand) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	}
 }
 
-// FaceSolid ...
 func (b BrewingStand) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
 	return false
 }

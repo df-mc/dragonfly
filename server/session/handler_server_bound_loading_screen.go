@@ -14,7 +14,6 @@ type ServerBoundLoadingScreenHandler struct {
 	expectedID atomic.Uint32
 }
 
-// Handle ...
 func (h *ServerBoundLoadingScreenHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, _ Controllable) error {
 	pk := p.(*packet.ServerBoundLoadingScreen)
 	v, ok := pk.LoadingScreenID.Value()

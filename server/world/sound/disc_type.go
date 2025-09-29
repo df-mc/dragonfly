@@ -132,7 +132,6 @@ func (d disc) Uint8() uint8 {
 	return uint8(d)
 }
 
-// String ...
 func (d disc) String() string {
 	switch d {
 	case 0:
@@ -181,7 +180,6 @@ func (d disc) String() string {
 	panic("unknown record type")
 }
 
-// DisplayName ...
 func (d disc) DisplayName() string {
 	switch d {
 	case 17:
@@ -195,7 +193,6 @@ func (d disc) DisplayName() string {
 	return d.String()
 }
 
-// Author ...
 func (d disc) Author() string {
 	if d <= 11 {
 		return "C418"

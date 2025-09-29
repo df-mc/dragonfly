@@ -13,7 +13,6 @@ type saturation struct {
 	nopLasting
 }
 
-// Apply ...
 func (saturation) Apply(e world.Entity, eff Effect) {
 	if i, ok := e.(interface {
 		Saturate(food int, saturation float64)
@@ -22,7 +21,6 @@ func (saturation) Apply(e world.Entity, eff Effect) {
 	}
 }
 
-// RGBA ...
 func (saturation) RGBA() color.RGBA {
 	return color.RGBA{R: 0xf8, G: 0x24, B: 0x23, A: 0xff}
 }

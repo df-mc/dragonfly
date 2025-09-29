@@ -32,7 +32,6 @@ func NewFlat(biome world.Biome, layers []world.Block) Flat {
 	return f
 }
 
-// GenerateChunk ...
 func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 	min, max := int16(chunk.Range().Min()), int16(chunk.Range().Max())
 

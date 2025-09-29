@@ -77,7 +77,6 @@ func (f flower) Uint8() uint8 {
 	return uint8(f)
 }
 
-// Name ...
 func (f flower) Name() string {
 	switch f {
 	case 0:
@@ -110,7 +109,6 @@ func (f flower) Name() string {
 	panic("unknown flower type")
 }
 
-// String ...
 func (f flower) String() string {
 	switch f {
 	case 0:
@@ -143,7 +141,6 @@ func (f flower) String() string {
 	panic("unknown flower type")
 }
 
-// FlowerTypes ...
 func FlowerTypes() []FlowerType {
 	return []FlowerType{Dandelion(), Poppy(), BlueOrchid(), Allium(), AzureBluet(), RedTulip(), OrangeTulip(), WhiteTulip(), PinkTulip(), OxeyeDaisy(), Cornflower(), LilyOfTheValley(), WitherRose()}
 }

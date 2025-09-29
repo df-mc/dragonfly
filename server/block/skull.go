@@ -25,32 +25,26 @@ type Skull struct {
 	Attach Attachment
 }
 
-// Helmet ...
 func (Skull) Helmet() bool {
 	return true
 }
 
-// DefencePoints ...
 func (Skull) DefencePoints() float64 {
 	return 0
 }
 
-// Toughness ...
 func (Skull) Toughness() float64 {
 	return 0
 }
 
-// KnockBackResistance ...
 func (Skull) KnockBackResistance() float64 {
 	return 0
 }
 
-// Model ...
 func (s Skull) Model() world.BlockModel {
 	return model.Skull{Direction: s.Attach.facing.Face(), Hanging: s.Attach.hanging}
 }
 
-// UseOnBlock ...
 func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, s)
 	if !used || face == cube.FaceDown {
@@ -66,27 +60,22 @@ func (s Skull) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	return placed(ctx)
 }
 
-// SideClosed ...
 func (Skull) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// HasLiquidDrops ...
 func (Skull) HasLiquidDrops() bool {
 	return true
 }
 
-// BreakInfo ...
 func (s Skull) BreakInfo() BreakInfo {
 	return newBreakInfo(1, alwaysHarvestable, nothingEffective, oneOf(Skull{Type: s.Type}))
 }
 
-// EncodeItem ...
 func (s Skull) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Type.String(), 0
 }
 
-// DecodeNBT ...
 func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
 	if t := skull(nbtconv.Uint8(data, "SkullType")); t != 255 {
 		// Used to upgrade pre-1.21.40 skulls after their flattening. Any skull placed since will set
@@ -100,12 +89,10 @@ func (s Skull) DecodeNBT(data map[string]interface{}) interface{} {
 	return s
 }
 
-// EncodeNBT ...
 func (s Skull) EncodeNBT() map[string]interface{} {
 	return map[string]interface{}{"id": "Skull", "SkullType": uint8(255), "Rotation": float32(s.Attach.o.Yaw())}
 }
 
-// EncodeBlock ...
 func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 	if s.Attach.hanging {
 		if s.Attach.facing == unknownDirection {
@@ -116,7 +103,6 @@ func (s Skull) EncodeBlock() (string, map[string]interface{}) {
 	return "minecraft:" + s.Type.String(), map[string]interface{}{"facing_direction": int32(1)}
 }
 
-// allSkulls ...
 func allSkulls() (skulls []world.Block) {
 	for _, t := range SkullTypes() {
 		for _, d := range append(cube.Directions(), unknownDirection) {

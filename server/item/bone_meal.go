@@ -16,7 +16,6 @@ type BoneMealAffected interface {
 	BoneMeal(pos cube.Pos, tx *world.Tx) bool
 }
 
-// UseOnBlock ...
 func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
 	if bm, ok := tx.Block(pos).(BoneMealAffected); ok && bm.BoneMeal(pos, tx) {
 		ctx.SubtractFromCount(1)
@@ -26,7 +25,6 @@ func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.
 	return false
 }
 
-// EncodeItem ...
 func (b BoneMeal) EncodeItem() (name string, meta int16) {
 	return "minecraft:bone_meal", 0
 }

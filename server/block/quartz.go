@@ -42,7 +42,6 @@ func (q QuartzPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (q Quartz) BreakInfo() BreakInfo {
 	if q.Smooth {
 		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(q)).withBlastResistance(30)
@@ -50,17 +49,14 @@ func (q Quartz) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(q))
 }
 
-// BreakInfo ...
 func (c ChiseledQuartz) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, simpleDrops(item.NewStack(c, 1)))
 }
 
-// BreakInfo ...
 func (q QuartzPillar) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, simpleDrops(item.NewStack(q, 1)))
 }
 
-// SmeltInfo ...
 func (q Quartz) SmeltInfo() item.SmeltInfo {
 	if q.Smooth {
 		return item.SmeltInfo{}
@@ -68,7 +64,6 @@ func (q Quartz) SmeltInfo() item.SmeltInfo {
 	return newSmeltInfo(item.NewStack(Quartz{Smooth: true}, 1), 0.1)
 }
 
-// EncodeItem ...
 func (q Quartz) EncodeItem() (name string, meta int16) {
 	if q.Smooth {
 		return "minecraft:smooth_quartz", 0
@@ -76,17 +71,14 @@ func (q Quartz) EncodeItem() (name string, meta int16) {
 	return "minecraft:quartz_block", 0
 }
 
-// EncodeItem ...
 func (c ChiseledQuartz) EncodeItem() (name string, meta int16) {
 	return "minecraft:chiseled_quartz_block", 0
 }
 
-// EncodeItem ...
 func (q QuartzPillar) EncodeItem() (name string, meta int16) {
 	return "minecraft:quartz_pillar", 0
 }
 
-// EncodeBlock ...
 func (q Quartz) EncodeBlock() (name string, properties map[string]any) {
 	if q.Smooth {
 		return "minecraft:smooth_quartz", map[string]any{"pillar_axis": "y"}
@@ -94,17 +86,14 @@ func (q Quartz) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:quartz_block", map[string]any{"pillar_axis": "y"}
 }
 
-// EncodeBlock ...
 func (ChiseledQuartz) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:chiseled_quartz_block", map[string]any{"pillar_axis": "y"}
 }
 
-// EncodeBlock ...
 func (q QuartzPillar) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:quartz_pillar", map[string]any{"pillar_axis": q.Axis.String()}
 }
 
-// allQuartz ...
 func allQuartz() (quartz []world.Block) {
 	quartz = append(quartz, Quartz{})
 	quartz = append(quartz, Quartz{Smooth: true})

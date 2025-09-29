@@ -7,13 +7,11 @@ type TropicalFish struct {
 	defaultFood
 }
 
-// Consume ...
 func (TropicalFish) Consume(_ *world.Tx, c Consumer) Stack {
 	c.Saturate(1, 0.2)
 	return Stack{}
 }
 
-// EncodeItem ...
 func (TropicalFish) EncodeItem() (name string, meta int16) {
 	return "minecraft:tropical_fish", 0
 }

@@ -6,17 +6,14 @@ type EndBricks struct {
 	bassDrum
 }
 
-// BreakInfo ...
 func (e EndBricks) BreakInfo() BreakInfo {
 	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(e)).withBlastResistance(45)
 }
 
-// EncodeItem ...
 func (EndBricks) EncodeItem() (name string, meta int16) {
 	return "minecraft:end_bricks", 0
 }
 
-// EncodeBlock ...
 func (EndBricks) EncodeBlock() (string, map[string]any) {
 	return "minecraft:end_bricks", nil
 }

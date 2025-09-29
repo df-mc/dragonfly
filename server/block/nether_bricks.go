@@ -15,12 +15,10 @@ type NetherBricks struct {
 	Type NetherBricksType
 }
 
-// BreakInfo ...
 func (n NetherBricks) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n)).withBlastResistance(30)
 }
 
-// SmeltInfo ...
 func (n NetherBricks) SmeltInfo() item.SmeltInfo {
 	if n.Type == NormalNetherBricks() {
 		return newSmeltInfo(item.NewStack(NetherBricks{Type: CrackedNetherBricks()}, 1), 0.1)
@@ -28,12 +26,10 @@ func (n NetherBricks) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{}
 }
 
-// EncodeItem ...
 func (n NetherBricks) EncodeItem() (id string, meta int16) {
 	return "minecraft:" + n.Type.String(), 0
 }
 
-// EncodeBlock ...
 func (n NetherBricks) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + n.Type.String(), nil
 }

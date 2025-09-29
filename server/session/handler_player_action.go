@@ -11,7 +11,6 @@ import (
 // PlayerActionHandler handles the PlayerAction packet.
 type PlayerActionHandler struct{}
 
-// Handle ...
 func (*PlayerActionHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerAction)
 

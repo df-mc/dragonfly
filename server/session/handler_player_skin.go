@@ -9,7 +9,6 @@ import (
 // PlayerSkinHandler handles the PlayerSkin packet.
 type PlayerSkinHandler struct{}
 
-// Handle ...
 func (PlayerSkinHandler) Handle(p packet.Packet, _ *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerSkin)
 

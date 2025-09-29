@@ -14,34 +14,28 @@ type Potato struct {
 	crop
 }
 
-// SmeltInfo ...
 func (p Potato) SmeltInfo() item.SmeltInfo {
 	return newFoodSmeltInfo(item.NewStack(item.BakedPotato{}, 1), 0.35)
 }
 
-// SameCrop ...
 func (Potato) SameCrop(c Crop) bool {
 	_, ok := c.(Potato)
 	return ok
 }
 
-// AlwaysConsumable ...
 func (p Potato) AlwaysConsumable() bool {
 	return false
 }
 
-// ConsumeDuration ...
 func (p Potato) ConsumeDuration() time.Duration {
 	return item.DefaultConsumeDuration
 }
 
-// Consume ...
 func (p Potato) Consume(_ *world.Tx, c item.Consumer) item.Stack {
 	c.Saturate(1, 0.6)
 	return item.Stack{}
 }
 
-// BoneMeal ...
 func (p Potato) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if p.Growth == 7 {
 		return false
@@ -51,7 +45,6 @@ func (p Potato) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// UseOnBlock ...
 func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, p)
 	if !used {
@@ -66,7 +59,6 @@ func (p Potato) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (p Potato) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		n := 1
@@ -80,17 +72,14 @@ func (p Potato) BreakInfo() BreakInfo {
 	})
 }
 
-// CompostChance ...
 func (Potato) CompostChance() float64 {
 	return 0.65
 }
 
-// EncodeItem ...
 func (p Potato) EncodeItem() (name string, meta int16) {
 	return "minecraft:potato", 0
 }
 
-// RandomTick ...
 func (p Potato) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 8 {
 		breakBlock(p, pos, tx)
@@ -100,12 +89,10 @@ func (p Potato) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
-// EncodeBlock ...
 func (p Potato) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:potatoes", map[string]any{"growth": int32(p.Growth)}
 }
 
-// allPotato ...
 func allPotato() (potato []world.Block) {
 	for i := 0; i <= 7; i++ {
 		potato = append(potato, Potato{crop{Growth: i}})

@@ -27,7 +27,6 @@ func (s copper) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Name ...
 func (s copper) Name() string {
 	switch s {
 	case 0:
@@ -40,7 +39,6 @@ func (s copper) Name() string {
 	panic("unknown copper type")
 }
 
-// String ...
 func (s copper) String() string {
 	switch s {
 	case 0:
@@ -53,7 +51,6 @@ func (s copper) String() string {
 	panic("unknown copper type")
 }
 
-// CopperTypes ...
 func CopperTypes() []CopperType {
 	return []CopperType{NormalCopper(), CutCopper(), ChiseledCopper()}
 }

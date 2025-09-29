@@ -58,7 +58,6 @@ func (s Slab) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx *
 	return placed(ctx)
 }
 
-// Instrument ...
 func (s Slab) Instrument() sound.Instrument {
 	if _, ok := s.Block.(Planks); ok {
 		return sound.Bass()
@@ -66,7 +65,6 @@ func (s Slab) Instrument() sound.Instrument {
 	return sound.BassDrum()
 }
 
-// FlammabilityInfo ...
 func (s Slab) FlammabilityInfo() FlammabilityInfo {
 	if flammable, ok := s.Block.(Flammable); ok {
 		return flammable.FlammabilityInfo()
@@ -74,7 +72,6 @@ func (s Slab) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, false)
 }
 
-// FuelInfo ...
 func (s Slab) FuelInfo() item.FuelInfo {
 	if fuel, ok := s.Block.(item.Fuel); ok {
 		return fuel.FuelInfo()
@@ -82,13 +79,11 @@ func (s Slab) FuelInfo() item.FuelInfo {
 	return item.FuelInfo{}
 }
 
-// CanDisplace ...
 func (s Slab) CanDisplace(b world.Liquid) bool {
 	water, ok := b.(Water)
 	return !s.Double && ok && water.Depth == 8
 }
 
-// SideClosed ...
 func (s Slab) SideClosed(pos, side cube.Pos, _ *world.Tx) bool {
 	// Only returns true if the side is below the slab and if the slab is not upside down.
 	return !s.Top && side[1] == pos[1]-1
@@ -102,7 +97,6 @@ func (s Slab) LightDiffusionLevel() uint8 {
 	return 0
 }
 
-// BreakInfo ...
 func (s Slab) BreakInfo() BreakInfo {
 	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
 
@@ -125,18 +119,15 @@ func (s Slab) BreakInfo() BreakInfo {
 	}).withBlastResistance(blastResistance)
 }
 
-// Model ...
 func (s Slab) Model() world.BlockModel {
 	return model.Slab{Double: s.Double, Top: s.Top}
 }
 
-// EncodeItem ...
 func (s Slab) EncodeItem() (string, int16) {
 	name, suffix := encodeSlabBlock(s.Block, false)
 	return "minecraft:" + name + suffix, 0
 }
 
-// EncodeBlock ...
 func (s Slab) EncodeBlock() (string, map[string]any) {
 	side := "bottom"
 	if s.Top {
@@ -146,7 +137,6 @@ func (s Slab) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + name + suffix, map[string]any{"minecraft:vertical_half": side}
 }
 
-// allSlabs ...
 func allSlabs() (b []world.Block) {
 	for _, s := range SlabBlocks() {
 		b = append(b, Slab{Block: s, Double: true})

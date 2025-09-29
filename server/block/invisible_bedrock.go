@@ -7,12 +7,10 @@ type InvisibleBedrock struct {
 	solid
 }
 
-// EncodeItem ...
 func (InvisibleBedrock) EncodeItem() (name string, meta int16) {
 	return "minecraft:invisible_bedrock", 0
 }
 
-// EncodeBlock ...
 func (InvisibleBedrock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:invisible_bedrock", nil
 }

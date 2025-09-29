@@ -681,7 +681,6 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 	return dmg
 }
 
-// Explode ...
 func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
 	diff := p.Position().Sub(explosionPos)
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size*2+1), entity.ExplosionDamageSource{})
@@ -791,7 +790,6 @@ func (p *Player) Effects() []effect.Effect {
 	return p.effects.Effects()
 }
 
-// BeaconAffected ...
 func (*Player) BeaconAffected() bool {
 	return true
 }
@@ -1225,12 +1223,10 @@ func (p *Player) FireProof() bool {
 	return !p.GameMode().AllowsTakingDamage()
 }
 
-// OnFireDuration ...
 func (p *Player) OnFireDuration() time.Duration {
 	return time.Duration(p.fireTicks) * time.Second / 20
 }
 
-// SetOnFire ...
 func (p *Player) SetOnFire(duration time.Duration) {
 	ticks := int64(duration.Seconds() * 20)
 	if level := p.Armour().HighestEnchantmentLevel(enchantment.FireProtection); level > 0 {
@@ -1240,7 +1236,6 @@ func (p *Player) SetOnFire(duration time.Duration) {
 	p.updateState()
 }
 
-// Extinguish ...
 func (p *Player) Extinguish() {
 	p.SetOnFire(0)
 }

@@ -87,5 +87,4 @@ type DustPlume struct{ particle }
 // particle serves as a base for all particles in this package.
 type particle struct{}
 
-// Spawn ...
 func (particle) Spawn(*world.World, mgl64.Vec3) {}

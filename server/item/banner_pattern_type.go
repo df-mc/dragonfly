@@ -78,7 +78,6 @@ func (b bannerPatternType) Uint8() uint8 {
 	return uint8(b)
 }
 
-// String ...
 func (b bannerPatternType) String() string {
 	switch b {
 	case 0:

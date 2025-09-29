@@ -13,12 +13,10 @@ type LingeringPotion struct {
 	Type potion.Potion
 }
 
-// MaxCount ...
 func (l LingeringPotion) MaxCount() int {
 	return 1
 }
 
-// Use ...
 func (l LingeringPotion) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().LingeringPotion
 	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: throwableOffset(user.Rotation()).Vec3().Mul(0.5)}
@@ -29,7 +27,6 @@ func (l LingeringPotion) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	return true
 }
 
-// EncodeItem ...
 func (l LingeringPotion) EncodeItem() (name string, meta int16) {
 	return "minecraft:lingering_potion", int16(l.Type.Uint8())
 }

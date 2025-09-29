@@ -33,12 +33,10 @@ type DecoratedPot struct {
 	Decorations [4]PotDecoration
 }
 
-// SideClosed ...
 func (p DecoratedPot) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// ProjectileHit ...
 func (p DecoratedPot) ProjectileHit(pos cube.Pos, tx *world.Tx, _ world.Entity, _ cube.Face) {
 	for _, d := range p.Decorations {
 		if d == nil {
@@ -50,12 +48,10 @@ func (p DecoratedPot) ProjectileHit(pos cube.Pos, tx *world.Tx, _ world.Entity, 
 	breakBlockNoDrops(p, pos, tx)
 }
 
-// Pick ...
 func (p DecoratedPot) Pick() item.Stack {
 	return item.NewStack(DecoratedPot{Decorations: p.Decorations}, 1)
 }
 
-// ExtractItem ...
 func (p DecoratedPot) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	if p.Item.Empty() {
 		return false
@@ -68,7 +64,6 @@ func (p DecoratedPot) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// InsertItem ...
 func (p DecoratedPot) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range h.inventory.Slots() {
 		if !sourceStack.Empty() && sourceStack.Comparable(p.Item) {
@@ -85,7 +80,6 @@ func (p DecoratedPot) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// wobble ...
 func (p DecoratedPot) wobble(pos cube.Pos, tx *world.Tx, success bool) {
 	for _, v := range tx.Viewers(pos.Vec3Centre()) {
 		v.ViewBlockAction(pos, DecoratedPotWobbleAction{DecoratedPot: p, Success: success})
@@ -99,7 +93,6 @@ func (p DecoratedPot) wobble(pos cube.Pos, tx *world.Tx, success bool) {
 	}
 }
 
-// Activate ...
 func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if held.Empty() || !p.Item.Comparable(held) || p.Item.Count() == p.Item.MaxCount() {
@@ -118,7 +111,6 @@ func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.U
 	return true
 }
 
-// BreakInfo ...
 func (p DecoratedPot) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(DecoratedPot{Decorations: p.Decorations})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if !p.Item.Empty() {
@@ -127,22 +119,18 @@ func (p DecoratedPot) BreakInfo() BreakInfo {
 	})
 }
 
-// EncodeItem ...
 func (p DecoratedPot) EncodeItem() (name string, meta int16) {
 	return "minecraft:decorated_pot", 0
 }
 
-// EncodeBlock ...
 func (p DecoratedPot) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:decorated_pot", map[string]any{"direction": int32(horizontalDirection(p.Facing))}
 }
 
-// Model ...
 func (p DecoratedPot) Model() world.BlockModel {
 	return model.DecoratedPot{}
 }
 
-// UseOnBlock ...
 func (p DecoratedPot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, p)
 	if !used {
@@ -154,7 +142,6 @@ func (p DecoratedPot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	return placed(ctx)
 }
 
-// EncodeNBT ...
 func (p DecoratedPot) EncodeNBT() map[string]any {
 	var sherds []any
 	for _, decoration := range p.Decorations {
@@ -176,7 +163,6 @@ func (p DecoratedPot) EncodeNBT() map[string]any {
 	return m
 }
 
-// DecodeNBT ...
 func (p DecoratedPot) DecodeNBT(data map[string]any) any {
 	p.Item = nbtconv.MapItem(data, "item")
 	p.Decorations = [4]PotDecoration{}
@@ -196,7 +182,6 @@ func (p DecoratedPot) DecodeNBT(data map[string]any) any {
 	return p
 }
 
-// allDecoratedPots ...
 func allDecoratedPots() (pots []world.Block) {
 	for _, f := range cube.Directions() {
 		pots = append(pots, DecoratedPot{Facing: f})

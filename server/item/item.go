@@ -207,12 +207,10 @@ func (nopReleasable) Requirements() []Stack {
 // defaultFood represents a consumable item with a default consumption duration.
 type defaultFood struct{}
 
-// AlwaysConsumable ...
 func (defaultFood) AlwaysConsumable() bool {
 	return false
 }
 
-// ConsumeDuration ...
 func (d defaultFood) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration
 }

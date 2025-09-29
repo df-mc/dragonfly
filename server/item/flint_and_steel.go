@@ -12,12 +12,10 @@ import (
 // FlintAndSteel is an item used to light blocks on fire.
 type FlintAndSteel struct{}
 
-// MaxCount ...
 func (f FlintAndSteel) MaxCount() int {
 	return 1
 }
 
-// DurabilityInfo ...
 func (f FlintAndSteel) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: 65,
@@ -31,7 +29,6 @@ type ignitable interface {
 	Ignite(pos cube.Pos, tx *world.Tx, igniter world.Entity) bool
 }
 
-// UseOnBlock ...
 func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
 	if l, ok := tx.Block(pos).(ignitable); ok && l.Ignite(pos, tx, user) {
@@ -47,7 +44,6 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	return false
 }
 
-// EncodeItem ...
 func (f FlintAndSteel) EncodeItem() (name string, meta int16) {
 	return "minecraft:flint_and_steel", 0
 }

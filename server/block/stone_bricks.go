@@ -15,12 +15,10 @@ type StoneBricks struct {
 	Type StoneBricksType
 }
 
-// BreakInfo ...
 func (s StoneBricks) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(30)
 }
 
-// SmeltInfo ...
 func (s StoneBricks) SmeltInfo() item.SmeltInfo {
 	if s.Type == NormalStoneBricks() {
 		return newSmeltInfo(item.NewStack(StoneBricks{Type: CrackedStoneBricks()}, 1), 0.1)
@@ -28,12 +26,10 @@ func (s StoneBricks) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{}
 }
 
-// EncodeItem ...
 func (s StoneBricks) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + s.Type.String(), 0
 }
 
-// EncodeBlock ...
 func (s StoneBricks) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + s.Type.String(), nil
 }

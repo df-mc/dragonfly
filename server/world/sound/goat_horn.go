@@ -75,7 +75,6 @@ func (g goatHornType) Name() string {
 	panic("should never happen")
 }
 
-// GoatHorns ...
 func GoatHorns() []Horn {
 	return []Horn{Ponder(), Sing(), Seek(), Feel(), Admire(), Call(), Yearn(), Dream()}
 }

@@ -27,7 +27,6 @@ func (o ore) Uint8() uint8 {
 	return uint8(o)
 }
 
-// Name ...
 func (o ore) Name() string {
 	switch o {
 	case 0:
@@ -38,7 +37,6 @@ func (o ore) Name() string {
 	panic("unknown ore type")
 }
 
-// String ...
 func (o ore) String() string {
 	switch o {
 	case 0:
@@ -49,7 +47,6 @@ func (o ore) String() string {
 	panic("unknown ore type")
 }
 
-// Prefix ...
 func (o ore) Prefix() string {
 	switch o {
 	case 0:
@@ -60,7 +57,6 @@ func (o ore) Prefix() string {
 	panic("unknown ore type")
 }
 
-// Hardness ...
 func (o ore) Hardness() float64 {
 	switch o {
 	case 0:

@@ -15,12 +15,10 @@ type MuddyMangroveRoots struct {
 	Axis cube.Axis
 }
 
-// BreakInfo ...
 func (m MuddyMangroveRoots) BreakInfo() BreakInfo {
 	return newBreakInfo(0.7, alwaysHarvestable, shovelEffective, oneOf(m))
 }
 
-// SoilFor ...
 func (MuddyMangroveRoots) SoilFor(block world.Block) bool {
 	switch block.(type) {
 	case ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, PinkPetals:
@@ -29,7 +27,6 @@ func (MuddyMangroveRoots) SoilFor(block world.Block) bool {
 	return false
 }
 
-// UseOnBlock ...
 func (m MuddyMangroveRoots) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, m)
 	if !used {
@@ -41,17 +38,14 @@ func (m MuddyMangroveRoots) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec
 	return placed(ctx)
 }
 
-// EncodeItem ...
 func (MuddyMangroveRoots) EncodeItem() (name string, meta int16) {
 	return "minecraft:muddy_mangrove_roots", 0
 }
 
-// EncodeBlock ...
 func (m MuddyMangroveRoots) EncodeBlock() (string, map[string]any) {
 	return "minecraft:muddy_mangrove_roots", map[string]any{"pillar_axis": m.Axis.String()}
 }
 
-// allMuddyMangroveRoots ...
 func allMuddyMangroveRoots() (roots []world.Block) {
 	for _, axis := range cube.Axes() {
 		roots = append(roots, MuddyMangroveRoots{Axis: axis})

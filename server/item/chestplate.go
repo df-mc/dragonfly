@@ -25,7 +25,6 @@ func (c Chestplate) MaxCount() int {
 	return 1
 }
 
-// DefencePoints ...
 func (c Chestplate) DefencePoints() float64 {
 	switch c.Tier.Name() {
 	case "leather":
@@ -40,22 +39,18 @@ func (c Chestplate) DefencePoints() float64 {
 	panic("invalid chestplate tier")
 }
 
-// Toughness ...
 func (c Chestplate) Toughness() float64 {
 	return c.Tier.Toughness()
 }
 
-// KnockBackResistance ...
 func (c Chestplate) KnockBackResistance() float64 {
 	return c.Tier.KnockBackResistance()
 }
 
-// EnchantmentValue ...
 func (c Chestplate) EnchantmentValue() int {
 	return c.Tier.EnchantmentValue()
 }
 
-// DurabilityInfo ...
 func (c Chestplate) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability: int(c.Tier.BaseDurability() + c.Tier.BaseDurability()/2.2),
@@ -63,7 +58,6 @@ func (c Chestplate) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// SmeltInfo ...
 func (c Chestplate) SmeltInfo() SmeltInfo {
 	switch c.Tier.(type) {
 	case ArmourTierIron, ArmourTierChain:
@@ -74,28 +68,23 @@ func (c Chestplate) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
-// RepairableBy ...
 func (c Chestplate) RepairableBy(i Stack) bool {
 	return armourTierRepairable(c.Tier)(i)
 }
 
-// Chestplate ...
 func (c Chestplate) Chestplate() bool {
 	return true
 }
 
-// WithTrim ...
 func (c Chestplate) WithTrim(trim ArmourTrim) world.Item {
 	c.Trim = trim
 	return c
 }
 
-// EncodeItem ...
 func (c Chestplate) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + c.Tier.Name() + "_chestplate", 0
 }
 
-// DecodeNBT ...
 func (c Chestplate) DecodeNBT(data map[string]any) any {
 	if t, ok := c.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
@@ -107,7 +96,6 @@ func (c Chestplate) DecodeNBT(data map[string]any) any {
 	return c
 }
 
-// EncodeNBT ...
 func (c Chestplate) EncodeNBT() map[string]any {
 	m := map[string]any{}
 	if t, ok := c.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {

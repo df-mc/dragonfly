@@ -31,13 +31,11 @@ type Wall struct {
 	Post bool
 }
 
-// EncodeItem ...
 func (w Wall) EncodeItem() (string, int16) {
 	name := encodeWallBlock(w.Block)
 	return "minecraft:" + name + "_wall", 0
 }
 
-// EncodeBlock ...
 func (w Wall) EncodeBlock() (string, map[string]any) {
 	properties := map[string]any{
 		"wall_connection_type_north": w.NorthConnection.String(),
@@ -50,7 +48,6 @@ func (w Wall) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + name + "_wall", properties
 }
 
-// Model ...
 func (w Wall) Model() world.BlockModel {
 	return model.Wall{
 		NorthConnection: w.NorthConnection.Height(),
@@ -61,7 +58,6 @@ func (w Wall) Model() world.BlockModel {
 	}
 }
 
-// BreakInfo ...
 func (w Wall) BreakInfo() BreakInfo {
 	breakable, ok := w.Block.(Breakable)
 	if !ok {
@@ -70,7 +66,6 @@ func (w Wall) BreakInfo() BreakInfo {
 	return newBreakInfo(breakable.BreakInfo().Hardness, pickaxeHarvestable, pickaxeEffective, oneOf(w)).withBlastResistance(breakable.BreakInfo().BlastResistance)
 }
 
-// NeighbourUpdateTick ...
 func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	w, connectionsUpdated := w.calculateConnections(tx, pos)
 	w, postUpdated := w.calculatePost(tx, pos)
@@ -79,7 +74,6 @@ func (w Wall) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// UseOnBlock ...
 func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, w)
 	if !used {
@@ -91,7 +85,6 @@ func (w Wall) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 	return placed(ctx)
 }
 
-// SideClosed ...
 func (Wall) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }

@@ -10,7 +10,6 @@ import (
 // InteractHandler handles the packet.Interact.
 type InteractHandler struct{}
 
-// Handle ...
 func (h *InteractHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
 	pk := p.(*packet.Interact)
 	pos := c.Position()

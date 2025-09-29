@@ -21,7 +21,6 @@ func (i instantHealth) Apply(e world.Entity, eff Effect) {
 	}
 }
 
-// RGBA ...
 func (instantHealth) RGBA() color.RGBA {
 	return color.RGBA{R: 0xf8, G: 0x24, B: 0x23, A: 0xff}
 }

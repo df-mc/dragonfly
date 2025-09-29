@@ -13,13 +13,11 @@ type WheatSeeds struct {
 	crop
 }
 
-// SameCrop ...
 func (WheatSeeds) SameCrop(c Crop) bool {
 	_, ok := c.(WheatSeeds)
 	return ok
 }
 
-// BoneMeal ...
 func (s WheatSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if s.Growth == 7 {
 		return false
@@ -29,7 +27,6 @@ func (s WheatSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return true
 }
 
-// UseOnBlock ...
 func (s WheatSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
@@ -44,7 +41,6 @@ func (s WheatSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (s WheatSeeds) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
 		if s.Growth < 7 {
@@ -54,17 +50,14 @@ func (s WheatSeeds) BreakInfo() BreakInfo {
 	})
 }
 
-// CompostChance ...
 func (WheatSeeds) CompostChance() float64 {
 	return 0.3
 }
 
-// EncodeItem ...
 func (s WheatSeeds) EncodeItem() (name string, meta int16) {
 	return "minecraft:wheat_seeds", 0
 }
 
-// RandomTick ...
 func (s WheatSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 8 {
 		breakBlock(s, pos, tx)
@@ -74,12 +67,10 @@ func (s WheatSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
-// EncodeBlock ...
 func (s WheatSeeds) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:wheat", map[string]any{"growth": int32(s.Growth)}
 }
 
-// allWheat ...
 func allWheat() (wheat []world.Block) {
 	for i := 0; i <= 7; i++ {
 		wheat = append(wheat, WheatSeeds{crop{Growth: i}})

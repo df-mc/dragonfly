@@ -18,7 +18,6 @@ type Farmland struct {
 	Hydration int
 }
 
-// SoilFor ...
 func (f Farmland) SoilFor(block world.Block) bool {
 	switch block.(type) {
 	case ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, PinkPetals:
@@ -27,14 +26,12 @@ func (f Farmland) SoilFor(block world.Block) bool {
 	return false
 }
 
-// NeighbourUpdateTick ...
 func (f Farmland) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if solid := tx.Block(pos.Side(cube.FaceUp)).Model().FaceSolid(pos.Side(cube.FaceUp), cube.FaceDown, tx); solid {
 		tx.SetBlock(pos, Dirt{}, nil)
 	}
 }
 
-// RandomTick ...
 func (f Farmland) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !f.hydrated(pos, tx) {
 		if f.Hydration > 0 {
@@ -69,7 +66,6 @@ func (f Farmland) hydrated(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// EntityLand ...
 func (f Farmland) EntityLand(pos cube.Pos, tx *world.Tx, e world.Entity, _ *float64) {
 	if living, ok := e.(livingEntity); ok {
 		if fall, ok := living.(fallDistanceEntity); ok && rand.Float64() < fall.FallDistance()-0.5 {
@@ -89,17 +85,14 @@ type fallDistanceEntity interface {
 	FallDistance() float64
 }
 
-// BreakInfo ...
 func (f Farmland) BreakInfo() BreakInfo {
 	return newBreakInfo(0.6, alwaysHarvestable, shovelEffective, oneOf(Dirt{}))
 }
 
-// EncodeBlock ...
 func (f Farmland) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:farmland", map[string]any{"moisturized_amount": int32(f.Hydration)}
 }
 
-// EncodeItem ...
 func (f Farmland) EncodeItem() (name string, meta int16) {
 	return "minecraft:farmland", 0
 }

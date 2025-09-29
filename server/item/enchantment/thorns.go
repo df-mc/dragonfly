@@ -10,33 +10,27 @@ var Thorns thorns
 
 type thorns struct{}
 
-// Name ...
 func (thorns) Name() string {
 	return "Thorns"
 }
 
-// MaxLevel ...
 func (thorns) MaxLevel() int {
 	return 3
 }
 
-// Cost ...
 func (thorns) Cost(level int) (int, int) {
 	minCost := 10 + 20*(level-1)
 	return minCost, minCost + 50
 }
 
-// Rarity ...
 func (thorns) Rarity() item.EnchantmentRarity {
 	return item.EnchantmentRarityVeryRare
 }
 
-// CompatibleWithEnchantment ...
 func (thorns) CompatibleWithEnchantment(item.EnchantmentType) bool {
 	return true
 }
 
-// CompatibleWithItem ...
 func (thorns) CompatibleWithItem(i world.Item) bool {
 	_, ok := i.(item.Armour)
 	return ok

@@ -30,12 +30,10 @@ func NewBrewingStand() BrewingStand {
 	return BrewingStand{brewer: newBrewer()}
 }
 
-// Model ...
 func (b BrewingStand) Model() world.BlockModel {
 	return model.BrewingStand{}
 }
 
-// SideClosed ...
 func (b BrewingStand) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
@@ -58,7 +56,6 @@ func (b BrewingStand) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	b.tickBrewing("brewing_stand", pos, tx)
 }
 
-// Activate ...
 func (b BrewingStand) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		opener.OpenBlockContainer(pos, tx)
@@ -67,7 +64,6 @@ func (b BrewingStand) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.U
 	return false
 }
 
-// UseOnBlock ...
 func (b BrewingStand) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, b)
 	if !used {
@@ -80,7 +76,6 @@ func (b BrewingStand) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	return placed(ctx)
 }
 
-// EncodeNBT ...
 func (b BrewingStand) EncodeNBT() map[string]any {
 	if b.brewer == nil {
 		//noinspection GoAssignmentToReceiver
@@ -97,7 +92,6 @@ func (b BrewingStand) EncodeNBT() map[string]any {
 	}
 }
 
-// DecodeNBT ...
 func (b BrewingStand) DecodeNBT(data map[string]any) any {
 	brew := time.Duration(nbtconv.Int16(data, "CookTime")) * time.Millisecond * 50
 
@@ -112,7 +106,6 @@ func (b BrewingStand) DecodeNBT(data map[string]any) any {
 	return b
 }
 
-// BreakInfo ...
 func (b BrewingStand) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(BrewingStand{})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, i := range b.Inventory(tx, pos).Clear() {
@@ -121,7 +114,6 @@ func (b BrewingStand) BreakInfo() BreakInfo {
 	})
 }
 
-// EncodeBlock ...
 func (b BrewingStand) EncodeBlock() (string, map[string]any) {
 	return "minecraft:brewing_stand", map[string]any{
 		"brewing_stand_slot_a_bit": b.LeftSlot,
@@ -130,12 +122,10 @@ func (b BrewingStand) EncodeBlock() (string, map[string]any) {
 	}
 }
 
-// EncodeItem ...
 func (b BrewingStand) EncodeItem() (name string, meta int16) {
 	return "minecraft:brewing_stand", 0
 }
 
-// allBrewingStands ...
 func allBrewingStands() (stands []world.Block) {
 	for _, left := range []bool{false, true} {
 		for _, middle := range []bool{false, true} {

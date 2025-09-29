@@ -104,27 +104,22 @@ type unknownBlock struct {
 	data map[string]any
 }
 
-// EncodeBlock ...
 func (b unknownBlock) EncodeBlock() (string, map[string]any) {
 	return b.Name, b.Properties
 }
 
-// Model ...
 func (unknownBlock) Model() BlockModel {
 	return unknownModel{}
 }
 
-// Hash ...
 func (b unknownBlock) Hash() (uint64, uint64) {
 	return 0, math.MaxUint64
 }
 
-// EncodeNBT ...
 func (b unknownBlock) EncodeNBT() map[string]any {
 	return maps.Clone(b.data)
 }
 
-// DecodeNBT ...
 func (b unknownBlock) DecodeNBT(data map[string]any) any {
 	b.data = maps.Clone(data)
 	return b

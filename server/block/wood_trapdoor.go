@@ -28,7 +28,6 @@ type WoodTrapdoor struct {
 	Top bool
 }
 
-// FlammabilityInfo ...
 func (t WoodTrapdoor) FlammabilityInfo() FlammabilityInfo {
 	if !t.Wood.Flammable() {
 		return newFlammabilityInfo(0, 0, false)
@@ -36,7 +35,6 @@ func (t WoodTrapdoor) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(0, 0, true)
 }
 
-// Model ...
 func (t WoodTrapdoor) Model() world.BlockModel {
 	return model.Trapdoor{Facing: t.Facing, Top: t.Top, Open: t.Open}
 }
@@ -55,7 +53,6 @@ func (t WoodTrapdoor) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Ve
 	return placed(ctx)
 }
 
-// Activate ...
 func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	t.Open = !t.Open
 	tx.SetBlock(pos, t, nil)
@@ -67,12 +64,10 @@ func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.U
 	return true
 }
 
-// BreakInfo ...
 func (t WoodTrapdoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(t))
 }
 
-// FuelInfo ...
 func (t WoodTrapdoor) FuelInfo() item.FuelInfo {
 	if !t.Wood.Flammable() {
 		return item.FuelInfo{}
@@ -80,12 +75,10 @@ func (t WoodTrapdoor) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// SideClosed ...
 func (t WoodTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// EncodeItem ...
 func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
 	if t.Wood == OakWood() {
 		return "minecraft:trapdoor", 0
@@ -93,7 +86,6 @@ func (t WoodTrapdoor) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + t.Wood.String() + "_trapdoor", 0
 }
 
-// EncodeBlock ...
 func (t WoodTrapdoor) EncodeBlock() (name string, properties map[string]any) {
 	if t.Wood == OakWood() {
 		return "minecraft:trapdoor", map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}

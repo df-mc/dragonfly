@@ -9,12 +9,10 @@ type TuffBricks struct {
 	Chiseled bool
 }
 
-// BreakInfo ...
 func (t TuffBricks) BreakInfo() BreakInfo {
 	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(t)).withBlastResistance(30)
 }
 
-// EncodeItem ...
 func (t TuffBricks) EncodeItem() (name string, meta int16) {
 	if t.Chiseled {
 		return "minecraft:chiseled_tuff_bricks", 0
@@ -22,7 +20,6 @@ func (t TuffBricks) EncodeItem() (name string, meta int16) {
 	return "minecraft:tuff_bricks", 0
 }
 
-// EncodeBlock ...
 func (t TuffBricks) EncodeBlock() (string, map[string]any) {
 	if t.Chiseled {
 		return "minecraft:chiseled_tuff_bricks", nil

@@ -10,7 +10,6 @@ type Button struct {
 	Text string
 }
 
-// MarshalJSON ...
 func (b Button) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"button_name": b.Text,

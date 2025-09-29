@@ -32,7 +32,6 @@ func (s blackstone) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Name ...
 func (s blackstone) Name() string {
 	switch s {
 	case 0:
@@ -47,7 +46,6 @@ func (s blackstone) Name() string {
 	panic("unknown blackstone type")
 }
 
-// String ...
 func (s blackstone) String() string {
 	switch s {
 	case 0:
@@ -62,7 +60,6 @@ func (s blackstone) String() string {
 	panic("unknown blackstone type")
 }
 
-// BlackstoneTypes ...
 func BlackstoneTypes() []BlackstoneType {
 	return []BlackstoneType{NormalBlackstone(), GildedBlackstone(), PolishedBlackstone(), ChiseledPolishedBlackstone()}
 }

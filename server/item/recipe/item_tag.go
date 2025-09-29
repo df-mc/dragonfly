@@ -34,12 +34,10 @@ func NewItemTag(tag string, count int) ItemTag {
 	return ItemTag{tag: tag, count: count, items: itemTags[tag]}
 }
 
-// Count ...
 func (i ItemTag) Count() int {
 	return i.count
 }
 
-// Empty ...
 func (i ItemTag) Empty() bool {
 	return i.count == 0 || i.tag == ""
 }

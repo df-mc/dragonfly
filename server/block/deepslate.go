@@ -18,7 +18,6 @@ type Deepslate struct {
 	Axis cube.Axis
 }
 
-// BreakInfo ...
 func (d Deepslate) BreakInfo() BreakInfo {
 	if d.Type == NormalDeepslate() {
 		return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(Deepslate{Type: CobbledDeepslate()}, d)).withBlastResistance(30)
@@ -26,7 +25,6 @@ func (d Deepslate) BreakInfo() BreakInfo {
 	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(d)).withBlastResistance(30)
 }
 
-// SmeltInfo ...
 func (d Deepslate) SmeltInfo() item.SmeltInfo {
 	if d.Type == CobbledDeepslate() {
 		return newSmeltInfo(item.NewStack(Deepslate{}, 1), 0.1)
@@ -34,7 +32,6 @@ func (d Deepslate) SmeltInfo() item.SmeltInfo {
 	return item.SmeltInfo{}
 }
 
-// UseOnBlock ...
 func (d Deepslate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, d)
 	if !used {
@@ -48,12 +45,10 @@ func (d Deepslate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 	return placed(ctx)
 }
 
-// EncodeItem ...
 func (d Deepslate) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + d.Type.String(), 0
 }
 
-// EncodeBlock ...
 func (d Deepslate) EncodeBlock() (string, map[string]any) {
 	if d.Type == NormalDeepslate() {
 		return "minecraft:deepslate", map[string]any{"pillar_axis": d.Axis.String()}

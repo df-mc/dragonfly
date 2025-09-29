@@ -17,7 +17,6 @@ type EndRod struct {
 	Facing cube.Face
 }
 
-// UseOnBlock ...
 func (e EndRod) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, e)
 	if !used {
@@ -34,32 +33,26 @@ func (e EndRod) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// SideClosed ...
 func (EndRod) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// Model ...
 func (e EndRod) Model() world.BlockModel {
 	return model.EndRod{Axis: e.Facing.Axis()}
 }
 
-// LightEmissionLevel ...
 func (EndRod) LightEmissionLevel() uint8 {
 	return 14
 }
 
-// BreakInfo ...
 func (e EndRod) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(e))
 }
 
-// EncodeItem ...
 func (EndRod) EncodeItem() (name string, meta int16) {
 	return "minecraft:end_rod", 0
 }
 
-// EncodeBlock ...
 func (e EndRod) EncodeBlock() (string, map[string]any) {
 	if e.Facing.Axis() == cube.Y {
 		return "minecraft:end_rod", map[string]any{"facing_direction": int32(e.Facing)}
@@ -67,7 +60,6 @@ func (e EndRod) EncodeBlock() (string, map[string]any) {
 	return "minecraft:end_rod", map[string]any{"facing_direction": int32(e.Facing.Opposite())}
 }
 
-// allEndRods ...
 func allEndRods() (b []world.Block) {
 	for _, f := range cube.Faces() {
 		b = append(b, EndRod{Facing: f})

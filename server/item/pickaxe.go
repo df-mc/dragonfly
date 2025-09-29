@@ -39,12 +39,10 @@ func (p Pickaxe) AttackDamage() float64 {
 	return p.Tier.BaseAttackDamage + 1
 }
 
-// EnchantmentValue ...
 func (p Pickaxe) EnchantmentValue() int {
 	return p.Tier.EnchantmentValue
 }
 
-// DurabilityInfo ...
 func (p Pickaxe) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
 		MaxDurability:    p.Tier.Durability,
@@ -54,12 +52,10 @@ func (p Pickaxe) DurabilityInfo() DurabilityInfo {
 	}
 }
 
-// RepairableBy ...
 func (p Pickaxe) RepairableBy(i Stack) bool {
 	return toolTierRepairable(p.Tier)(i)
 }
 
-// SmeltInfo ...
 func (p Pickaxe) SmeltInfo() SmeltInfo {
 	switch p.Tier {
 	case ToolTierIron:
@@ -70,7 +66,6 @@ func (p Pickaxe) SmeltInfo() SmeltInfo {
 	return SmeltInfo{}
 }
 
-// FuelInfo ...
 func (p Pickaxe) FuelInfo() FuelInfo {
 	if p.Tier == ToolTierWood {
 		return newFuelInfo(time.Second * 10)
@@ -78,7 +73,6 @@ func (p Pickaxe) FuelInfo() FuelInfo {
 	return FuelInfo{}
 }
 
-// EncodeItem ...
 func (p Pickaxe) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + p.Tier.Name + "_pickaxe", 0
 }

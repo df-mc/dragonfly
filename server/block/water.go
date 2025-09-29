@@ -25,7 +25,6 @@ type Water struct {
 	Falling bool
 }
 
-// ReplaceableBy ...
 func (w Water) ReplaceableBy(b world.Block) bool {
 	if _, ok := b.(LiquidRemovable); ok {
 		_, displacer := b.(world.LiquidDisplacer)
@@ -35,7 +34,6 @@ func (w Water) ReplaceableBy(b world.Block) bool {
 	return true
 }
 
-// EntityInside ...
 func (w Water) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
@@ -45,7 +43,6 @@ func (w Water) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	}
 }
 
-// FillBottle ...
 func (w Water) FillBottle() (world.Block, item.Stack, bool) {
 	if w.Depth == 8 {
 		return w, item.NewStack(item.Potion{Type: potion.Water()}, 1), true
@@ -81,17 +78,14 @@ func (Water) BlastResistance() float64 {
 	return 500
 }
 
-// HasLiquidDrops ...
 func (Water) HasLiquidDrops() bool {
 	return false
 }
 
-// LightDiffusionLevel ...
 func (Water) LightDiffusionLevel() uint8 {
 	return 2
 }
 
-// ScheduledTick ...
 func (w Water) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if w.Depth == 7 {
 		// Attempt to form new water source blocks.
@@ -121,7 +115,6 @@ func (w Water) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	tickLiquid(w, pos, tx)
 }
 
-// NeighbourUpdateTick ...
 func (w Water) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if tx.World().Dimension().WaterEvaporates() {
 		// Particles are spawned client-side.
@@ -131,7 +124,6 @@ func (w Water) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	tx.ScheduleBlockUpdate(pos, w, time.Second/4)
 }
 
-// LiquidType ...
 func (Water) LiquidType() string {
 	return "water"
 }
@@ -161,7 +153,6 @@ func (w Water) Harden(pos cube.Pos, tx *world.Tx, flownIntoBy *cube.Pos) bool {
 	return false
 }
 
-// EncodeBlock ...
 func (w Water) EncodeBlock() (name string, properties map[string]any) {
 	if w.Depth < 1 || w.Depth > 8 {
 		panic("invalid water depth, must be between 1 and 8")

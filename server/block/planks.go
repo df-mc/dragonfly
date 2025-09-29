@@ -16,7 +16,6 @@ type Planks struct {
 	Wood WoodType
 }
 
-// FlammabilityInfo ...
 func (p Planks) FlammabilityInfo() FlammabilityInfo {
 	if !p.Wood.Flammable() {
 		return newFlammabilityInfo(0, 0, false)
@@ -24,17 +23,14 @@ func (p Planks) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(5, 20, true)
 }
 
-// BreakInfo ...
 func (p Planks) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(p)).withBlastResistance(15)
 }
 
-// RepairsWoodTools ...
 func (p Planks) RepairsWoodTools() bool {
 	return true
 }
 
-// FuelInfo ...
 func (p Planks) FuelInfo() item.FuelInfo {
 	if !p.Wood.Flammable() {
 		return item.FuelInfo{}
@@ -42,12 +38,10 @@ func (p Planks) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// EncodeItem ...
 func (p Planks) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + p.Wood.String() + "_planks", 0
 }
 
-// EncodeBlock ...
 func (p Planks) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:" + p.Wood.String() + "_planks", nil
 }

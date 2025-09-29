@@ -19,7 +19,6 @@ type Jukebox struct {
 	Item item.Stack
 }
 
-// InsertItem ...
 func (j Jukebox) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	if !j.Item.Empty() {
 		return false
@@ -42,18 +41,15 @@ func (j Jukebox) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// ExtractItem ...
 func (j Jukebox) ExtractItem(_ Hopper, _ cube.Pos, _ *world.Tx) bool {
 	// TODO: This functionality requires redstone to be implemented.
 	return false
 }
 
-// FuelInfo ...
 func (j Jukebox) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// BreakInfo ...
 func (j Jukebox) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(Jukebox{})).withBlastResistance(30).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if _, hasDisc := j.Disc(); hasDisc {
@@ -70,7 +66,6 @@ type jukeboxUser interface {
 	SendJukeboxPopup(a ...any)
 }
 
-// Activate ...
 func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	if _, hasDisc := j.Disc(); hasDisc {
 		dropItem(tx, j.Item, pos.Side(cube.FaceUp).Vec3Middle())
@@ -105,7 +100,6 @@ func (j Jukebox) Disc() (sound.DiscType, bool) {
 	return sound.DiscType{}, false
 }
 
-// EncodeNBT ...
 func (j Jukebox) EncodeNBT() map[string]any {
 	m := map[string]any{"id": "Jukebox"}
 	if _, hasDisc := j.Disc(); hasDisc {
@@ -114,7 +108,6 @@ func (j Jukebox) EncodeNBT() map[string]any {
 	return m
 }
 
-// DecodeNBT ...
 func (j Jukebox) DecodeNBT(data map[string]any) any {
 	s := nbtconv.MapItem(data, "RecordItem")
 	if _, ok := s.Item().(item.MusicDisc); ok {
@@ -123,12 +116,10 @@ func (j Jukebox) DecodeNBT(data map[string]any) any {
 	return j
 }
 
-// EncodeItem ...
 func (Jukebox) EncodeItem() (name string, meta int16) {
 	return "minecraft:jukebox", 0
 }
 
-// EncodeBlock ...
 func (Jukebox) EncodeBlock() (string, map[string]any) {
 	return "minecraft:jukebox", nil
 }

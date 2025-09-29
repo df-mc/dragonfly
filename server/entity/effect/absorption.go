@@ -13,7 +13,6 @@ type absorption struct {
 	nopLasting
 }
 
-// Start ...
 func (absorption) Start(e world.Entity, lvl int) {
 	if i, ok := e.(interface {
 		SetAbsorption(health float64)
@@ -22,7 +21,6 @@ func (absorption) Start(e world.Entity, lvl int) {
 	}
 }
 
-// End ...
 func (absorption) End(e world.Entity, _ int) {
 	if i, ok := e.(interface {
 		SetAbsorption(health float64)
@@ -31,7 +29,6 @@ func (absorption) End(e world.Entity, _ int) {
 	}
 }
 
-// RGBA ...
 func (absorption) RGBA() color.RGBA {
 	return color.RGBA{R: 0x25, G: 0x52, B: 0xa5, A: 0xff}
 }

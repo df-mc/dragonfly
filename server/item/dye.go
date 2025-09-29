@@ -31,7 +31,6 @@ type dyeable interface {
 	Dye(pos cube.Pos, userPos mgl64.Vec3, c Colour) (world.Block, bool)
 }
 
-// EncodeItem ...
 func (d Dye) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + d.Colour.String() + "_dye", 0
 }

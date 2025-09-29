@@ -22,7 +22,6 @@ func NewCape(width, height int) Cape {
 	return Cape{w: width, h: height, Pix: make([]uint8, width*height*4)}
 }
 
-// ColorModel ...
 func (c Cape) ColorModel() color.Model {
 	return color.RGBAModel
 }

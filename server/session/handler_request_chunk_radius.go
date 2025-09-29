@@ -8,7 +8,6 @@ import (
 // RequestChunkRadiusHandler handles the RequestChunkRadius packet.
 type RequestChunkRadiusHandler struct{}
 
-// Handle ...
 func (*RequestChunkRadiusHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, _ Controllable) error {
 	pk := p.(*packet.RequestChunkRadius)
 

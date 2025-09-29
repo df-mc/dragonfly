@@ -13,7 +13,6 @@ type hunger struct {
 	nopLasting
 }
 
-// Apply ...
 func (hunger) Apply(e world.Entity, eff Effect) {
 	if i, ok := e.(interface {
 		Exhaust(points float64)
@@ -22,7 +21,6 @@ func (hunger) Apply(e world.Entity, eff Effect) {
 	}
 }
 
-// RGBA ...
 func (hunger) RGBA() color.RGBA {
 	return color.RGBA{R: 0x58, G: 0x76, B: 0x53, A: 0xff}
 }

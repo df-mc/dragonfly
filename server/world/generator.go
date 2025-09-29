@@ -16,5 +16,4 @@ type Generator interface {
 // world.
 type NopGenerator struct{}
 
-// GenerateChunk ...
 func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}

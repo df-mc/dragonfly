@@ -28,14 +28,12 @@ func (c Cactus) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// NeighbourUpdateTick ...
 func (c Cactus) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !c.canGrowHere(pos, tx, true) {
 		breakBlock(c, pos, tx)
 	}
 }
 
-// RandomTick ...
 func (c Cactus) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if c.Age < 15 {
 		c.Age++
@@ -68,34 +66,28 @@ func (c Cactus) canGrowHere(pos cube.Pos, tx *world.Tx, recursive bool) bool {
 	return supportsVegetation(c, tx.Block(pos.Sub(cube.Pos{0, 1})))
 }
 
-// EntityInside ...
 func (c Cactus) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if l, ok := e.(livingEntity); ok {
 		l.Hurt(0.5, DamageSource{Block: c})
 	}
 }
 
-// BreakInfo ...
 func (c Cactus) BreakInfo() BreakInfo {
 	return newBreakInfo(0.4, alwaysHarvestable, nothingEffective, oneOf(c))
 }
 
-// CompostChance ...
 func (Cactus) CompostChance() float64 {
 	return 0.5
 }
 
-// EncodeItem ...
 func (c Cactus) EncodeItem() (name string, meta int16) {
 	return "minecraft:cactus", 0
 }
 
-// EncodeBlock ...
 func (c Cactus) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:cactus", map[string]any{"age": int32(c.Age)}
 }
 
-// Model ...
 func (c Cactus) Model() world.BlockModel {
 	return model.Cactus{}
 }

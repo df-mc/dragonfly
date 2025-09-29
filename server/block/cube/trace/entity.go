@@ -20,12 +20,10 @@ func (r EntityResult) BBox() cube.BBox {
 	return r.bb
 }
 
-// Position ...
 func (r EntityResult) Position() mgl64.Vec3 {
 	return r.pos
 }
 
-// Face ...
 func (r EntityResult) Face() cube.Face {
 	return r.face
 }

@@ -16,7 +16,6 @@ type Bone struct {
 	Axis cube.Axis
 }
 
-// Instrument ...
 func (b Bone) Instrument() sound.Instrument {
 	return sound.Xylophone()
 }
@@ -33,22 +32,18 @@ func (b Bone) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 	return placed(ctx)
 }
 
-// BreakInfo ...
 func (b Bone) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(b))
 }
 
-// EncodeItem ...
 func (b Bone) EncodeItem() (name string, meta int16) {
 	return "minecraft:bone_block", 0
 }
 
-// EncodeBlock ...
 func (b Bone) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:bone_block", map[string]any{"pillar_axis": b.Axis.String(), "deprecated": int32(0)}
 }
 
-// allBoneBlock ...
 func allBoneBlock() (boneBlocks []world.Block) {
 	for _, axis := range cube.Axes() {
 		boneBlocks = append(boneBlocks, Bone{Axis: axis})
