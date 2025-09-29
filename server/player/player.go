@@ -54,8 +54,8 @@ type playerData struct {
 	armour                       *inventory.Armour
 	heldSlot                     *uint32
 
-	rideable  entity.Rideable
-	seatIndex int
+	riddenEntity entity.Rideable
+	seatIndex    int
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
@@ -2559,7 +2559,7 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 
 // RidingEntity returns the entity that the rider is currently sitting on.
 func (p *Player) RidingEntity() entity.Rideable {
-	return p.rideable
+	return p.riddenEntity
 }
 
 // SeatIndex returns the position of where the rider is sitting.
@@ -2570,23 +2570,23 @@ func (p *Player) SeatIndex() int {
 // ChangeSeat sets the seat index of the player if it is currently riding an entity and if the seat index
 // is valid.
 func (p *Player) ChangeSeat(seatIndex int) {
-	if p.rideable == nil || seatIndex < 0 || len(p.rideable.SeatPositions()) <= seatIndex {
+	if p.riddenEntity == nil || seatIndex < 0 || len(p.riddenEntity.SeatPositions()) <= seatIndex {
 		return
 	}
 	p.seatIndex = seatIndex
 	p.updateState()
 	for _, v := range p.viewers() {
-		v.ViewEntityMount(p, p.rideable, p.seatIndex == 0)
+		v.ViewEntityMount(p, p.riddenEntity, p.seatIndex == 0)
 	}
 }
 
 // SeatPosition returns the position of the seat the player is currently sitting on. If the player is not
 // currently riding an entity, the second return value is false.
 func (p *Player) SeatPosition() (mgl64.Vec3, bool) {
-	if p.rideable == nil || p.seatIndex == -1 || len(p.rideable.SeatPositions()) <= p.seatIndex {
+	if p.riddenEntity == nil || p.seatIndex == -1 || len(p.riddenEntity.SeatPositions()) <= p.seatIndex {
 		return mgl64.Vec3{}, false
 	}
-	return p.rideable.SeatPositions()[p.seatIndex], true
+	return p.riddenEntity.SeatPositions()[p.seatIndex], true
 }
 
 // MountEntity mounts the Rider to an entity if the entity is Rideable and if there is a seat available.
@@ -2596,11 +2596,11 @@ func (p *Player) MountEntity(rideable entity.Rideable, seatIndex int) {
 		return
 	}
 
-	if rd := p.rideable; rd != nil {
+	if rd := p.riddenEntity; rd != nil {
 		p.DismountEntity()
 	}
 
-	p.rideable = rideable
+	p.riddenEntity = rideable
 	p.seatIndex = seatIndex
 
 	p.updateState()
@@ -2612,7 +2612,7 @@ func (p *Player) MountEntity(rideable entity.Rideable, seatIndex int) {
 // DismountEntity dismounts the player from an entity.
 func (p *Player) DismountEntity() {
 	ctx := event.C(p)
-	r := p.rideable
+	r := p.riddenEntity
 	if r == nil {
 		return
 	}
@@ -2620,7 +2620,7 @@ func (p *Player) DismountEntity() {
 		return
 	}
 
-	p.rideable = nil
+	p.riddenEntity = nil
 	p.seatIndex = -1
 
 	p.updateState()
