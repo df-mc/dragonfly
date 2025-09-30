@@ -194,7 +194,6 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	isBurnedOut := data.burnedOut
 	data.mu.RUnlock()
 
-	// Check if the torch should recover from burnout
 	if isBurnedOut {
 		counter := data.counter(currentTime)
 		if counter < BurnoutThreshold {
@@ -206,6 +205,7 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 			shouldBeLit := t.inputStrength(pos, tx) == 0
 			t.Lit = shouldBeLit
 			tx.SetBlock(pos, t, nil)
+			updateStrongRedstone(pos, tx)
 		}
 		return
 	}
@@ -226,6 +226,22 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	data.mu.RUnlock()
 
 	if isBurnedOut {
+		counter := data.counter(currentTime)
+		if counter < BurnoutThreshold {
+			data.mu.Lock()
+			data.burnedOut = false
+			data.gameTicks = make([]int64, 0, BurnoutThreshold+1)
+			data.mu.Unlock()
+
+			shouldBeLit := t.inputStrength(pos, tx) == 0
+			if t.Lit != shouldBeLit {
+				t.Lit = shouldBeLit
+				tx.SetBlock(pos, t, nil)
+				updateStrongRedstone(pos, tx)
+			}
+		} else {
+			tx.ScheduleBlockUpdate(pos, t, time.Second*1)
+		}
 		return
 	}
 
@@ -234,7 +250,6 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 
 	data.countStateChange(currentTime, BurnoutTimeout)
-
 	counter := data.counter(currentTime)
 	if counter > BurnoutThreshold {
 		t.burnOut(pos, tx, data, currentTime)
