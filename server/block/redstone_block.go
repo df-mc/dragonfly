@@ -54,5 +54,5 @@ func (r RedstoneBlock) WeakPower(_ cube.Pos, _ cube.Face, _ *world.Tx, _ bool) i
 
 // StrongPower ...
 func (r RedstoneBlock) StrongPower(_ cube.Pos, _ cube.Face, _ *world.Tx, _ bool) int {
-	return 0
+	return 15
 }
