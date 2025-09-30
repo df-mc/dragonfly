@@ -32,9 +32,6 @@ const (
 	// BurnoutTimeout is the time window (in game ticks) during which state changes are counted.
 	// 60 game ticks equals 3 seconds of game time.
 	BurnoutTimeout = 60
-	// BurnoutRecoveryTime is the duration a torch stays in burnout before recovering.
-	// 70 game ticks equals 3.5 seconds of game time.
-	BurnoutRecoveryTime = time.Millisecond * 3500
 )
 
 // RedstoneTorch is a non-solid block that emits light and provides a full-strength redstone signal when lit.
@@ -225,31 +222,18 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	isBurnedOut := data.burnedOut
 	data.mu.RUnlock()
 
+	// If burned out, ignore scheduled ticks
 	if isBurnedOut {
-		counter := data.counter(currentTime)
-		if counter < BurnoutThreshold {
-			data.mu.Lock()
-			data.burnedOut = false
-			data.gameTicks = make([]int64, 0, BurnoutThreshold+1)
-			data.mu.Unlock()
-
-			shouldBeLit := t.inputStrength(pos, tx) == 0
-			if t.Lit != shouldBeLit {
-				t.Lit = shouldBeLit
-				tx.SetBlock(pos, t, nil)
-				updateStrongRedstone(pos, tx)
-			}
-		} else {
-			tx.ScheduleBlockUpdate(pos, t, time.Second*1)
-		}
 		return
 	}
 
+	// Normal state change logic
 	if t.inputStrength(pos, tx) > 0 != t.Lit {
 		return
 	}
 
 	data.countStateChange(currentTime, BurnoutTimeout)
+
 	counter := data.counter(currentTime)
 	if counter > BurnoutThreshold {
 		t.burnOut(pos, tx, data, currentTime)
@@ -271,14 +255,9 @@ func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx, data *burnoutData, cu
 	data.mu.Unlock()
 
 	t.Lit = false
-
-	//TODO: dont know which particle to use.
 	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-
 	tx.SetBlock(pos, t, nil)
 	updateStrongRedstone(pos, tx)
-
-	tx.ScheduleBlockUpdate(pos, t, BurnoutRecoveryTime)
 }
 
 // EncodeItem ...
