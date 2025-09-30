@@ -32,6 +32,9 @@ const (
 	// BurnoutTimeout is the time window (in game ticks) during which state changes are counted.
 	// 60 game ticks equals 3 seconds of game time.
 	BurnoutTimeout = 60
+	// BurnoutRecoveryTime is the duration a torch stays in burnout before recovering.
+	// 70 game ticks equals 3.5 seconds of game time.
+	BurnoutRecoveryTime = time.Millisecond * 3500
 )
 
 // RedstoneTorch is a non-solid block that emits light and provides a full-strength redstone signal when lit.
@@ -100,8 +103,8 @@ func (data *burnoutData) counter(currentTime int64) int {
 	return count
 }
 
-// cleanUp removes expired state change entries.
-func (data *burnoutData) cleanUp(currentTime int64) {
+// removeExpired removes expired state change entries.
+func (data *burnoutData) removeExpired(currentTime int64) {
 	data.mu.Lock()
 	defer data.mu.Unlock()
 
@@ -238,7 +241,7 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 		return
 	}
 
-	data.cleanUp(currentTime)
+	data.removeExpired(currentTime)
 
 	t.Lit = !t.Lit
 	tx.SetBlock(pos, t, nil)
@@ -254,11 +257,13 @@ func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx, data *burnoutData, cu
 
 	t.Lit = false
 
-	//TODO: add smoke particle.
+	//TODO: dont know which particle to use.
 	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 
 	tx.SetBlock(pos, t, nil)
 	updateStrongRedstone(pos, tx)
+
+	tx.ScheduleBlockUpdate(pos, t, BurnoutRecoveryTime)
 }
 
 // EncodeItem ...
