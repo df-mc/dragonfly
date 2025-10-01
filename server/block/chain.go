@@ -41,12 +41,12 @@ func (c Chain) BreakInfo() BreakInfo {
 
 // EncodeItem ...
 func (Chain) EncodeItem() (name string, meta int16) {
-	return "minecraft:chain", 0
+	return "minecraft:iron_chain", 0
 }
 
 // EncodeBlock ...
 func (c Chain) EncodeBlock() (string, map[string]any) {
-	return "minecraft:chain", map[string]any{"pillar_axis": c.Axis.String()}
+	return "minecraft:iron_chain", map[string]any{"pillar_axis": c.Axis.String()}
 }
 
 // Model ...
