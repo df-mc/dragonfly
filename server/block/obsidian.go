@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Obsidian is a dark purple block known for its high blast resistance and strength, most commonly found when
@@ -35,6 +36,11 @@ func (o Obsidian) EncodeBlock() (string, map[string]any) {
 		return "minecraft:crying_obsidian", nil
 	}
 	return "minecraft:obsidian", nil
+}
+
+// Frame ...
+func (o Obsidian) Frame(dimension world.Dimension) bool {
+	return dimension == world.Nether
 }
 
 // BreakInfo ...
