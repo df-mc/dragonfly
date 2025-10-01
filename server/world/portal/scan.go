@@ -33,7 +33,6 @@ func scan(axis cube.Axis, framePos cube.Pos, tx *world.Tx, matchers []string) ([
 	completed := true
 	queue := list.New()
 	queue.PushBack(scanIteration{lastPos: framePos, first: true})
-
 	for queue.Len() > 0 {
 		e := queue.Front()
 		queue.Remove(e)
@@ -75,8 +74,7 @@ func scan(axis cube.Axis, framePos cube.Pos, tx *world.Tx, matchers []string) ([
 			}
 			queue.PushBack(scanIteration{lastPos: pos, face: cube.FaceUp})
 			queue.PushBack(scanIteration{lastPos: pos, face: cube.FaceDown})
-		} else if !ok && b != obsidian() {
-			// Found a block that's not in our portal area and not part of the frame
+		} else if _, ok = positionsMap[pos]; !(ok || b == obsidian()) {
 			completed = false
 		}
 	}

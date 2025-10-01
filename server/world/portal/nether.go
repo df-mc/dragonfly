@@ -86,10 +86,9 @@ func FindNetherPortal(tx *world.Tx, pos cube.Pos, radius int) (Nether, bool) {
 			r := tx.World().Dimension().Range()
 			for y := r.Max(); y >= r.Min(); y-- {
 				selectedPos := cube.Pos{x, y, z}
-				// Just check if it's a portal block, don't check destination dimension
-				if _, ok := tx.Block(selectedPos).(portalBlock); ok {
-					// Verify the portal is valid by checking if we can get portal info from it
-					if portal, portalOk := NetherPortalFromPos(tx, selectedPos); portalOk && portal.Framed() {
+				if p, ok := tx.Block(selectedPos).(portalBlock); ok && p.Portal() == world.Nether {
+					belowPos := selectedPos.Side(cube.FaceDown)
+					if f, ok := tx.Block(belowPos).(frameBlock); ok && f.Frame(world.Nether) {
 						dist := selectedPos.Vec3().Sub(pos.Vec3()).Len()
 						if dist < closestDist {
 							closestDist, closestPos, found = dist, selectedPos, true
