@@ -2,13 +2,14 @@ package session
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
 )
 
 // PlayerAuthInputHandler handles the PlayerAuthInput packet.
@@ -134,6 +135,17 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Sessi
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 		c.PunchAir()
+	}
+	if flags.Load(packet.InputFlagStartFlying) {
+		if !c.GameMode().AllowsFlying() {
+			s.conf.Log.Debug("process packet: PlayerAuthInput: flying flag enabled while unable to fly")
+			s.SendAbilities(c)
+		} else {
+			c.StartFlying()
+		}
+	}
+	if flags.Load(packet.InputFlagStopFlying) {
+		c.StopFlying()
 	}
 }
 

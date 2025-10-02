@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
@@ -791,6 +792,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = packet.SoundEventRecordCreatorMusicBox
 		case sound.DiscPrecipice():
 			pk.SoundType = packet.SoundEventRecordPrecipice
+		case sound.DiscTears():
+			pk.SoundType = packet.SoundEventRecordTears
+		case sound.DiscLavaChicken():
+			pk.SoundType = packet.SoundEventRecordLavaChicken
+		default:
+			panic(fmt.Errorf("disc (%v) does not have sound", so.DiscType.String()))
 		}
 	case sound.MusicDiscEnd:
 		pk.SoundType = packet.SoundEventRecordNull
@@ -971,6 +978,11 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 	case entity.CriticalHitAction:
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionCriticalHit,
+			EntityRuntimeID: s.entityRuntimeID(e),
+		})
+	case entity.EnchantedHitAction:
+		s.writePacket(&packet.Animate{
+			ActionType:      packet.AnimateActionMagicCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
 		})
 	case entity.DeathAction:
@@ -1199,10 +1211,14 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 
 // ViewEmote ...
 func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
+	flags := byte(packet.EmoteFlagServerSide)
+	if s.emoteChatMuted {
+		flags |= packet.EmoteFlagMuteChat
+	}
 	s.writePacket(&packet.Emote{
 		EntityRuntimeID: s.entityRuntimeID(player),
 		EmoteID:         emote.String(),
-		Flags:           packet.EmoteFlagServerSide,
+		Flags:           flags,
 	})
 }
 
