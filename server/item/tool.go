@@ -26,6 +26,8 @@ var (
 	ToolTierGold = ToolTier{HarvestLevel: 1, Durability: 32, BaseMiningEfficiency: 12, BaseAttackDamage: 1, EnchantmentValue: 22, Name: "golden"}
 	// ToolTierStone is the ToolTier of stone tools.
 	ToolTierStone = ToolTier{HarvestLevel: 2, Durability: 131, BaseMiningEfficiency: 4, BaseAttackDamage: 2, EnchantmentValue: 5, Name: "stone"}
+	// ToolTierCopper is the ToolTier of copper tools.
+	ToolTierCopper = ToolTier{HarvestLevel: 2, Durability: 190, BaseMiningEfficiency: 5, BaseAttackDamage: 2, EnchantmentValue: 13, Name: "copper"}
 	// ToolTierIron is the ToolTier of iron tools.
 	ToolTierIron = ToolTier{HarvestLevel: 3, Durability: 250, BaseMiningEfficiency: 6, BaseAttackDamage: 3, EnchantmentValue: 14, Name: "iron"}
 	// ToolTierDiamond is the ToolTier of diamond tools.
@@ -78,7 +80,7 @@ type (
 
 // ToolTiers returns a ToolTier slice containing all available tiers.
 func ToolTiers() []ToolTier {
-	return []ToolTier{ToolTierWood, ToolTierGold, ToolTierStone, ToolTierIron, ToolTierDiamond, ToolTierNetherite}
+	return []ToolTier{ToolTierWood, ToolTierGold, ToolTierStone, ToolTierCopper, ToolTierIron, ToolTierDiamond, ToolTierNetherite}
 }
 
 // ToolType ...
@@ -104,6 +106,9 @@ func toolTierRepairable(tier ToolTier) func(Stack) bool {
 			}
 		case ToolTierGold:
 			_, ok := stack.Item().(GoldIngot)
+			return ok
+		case ToolTierCopper:
+			_, ok := stack.Item().(CopperIngot)
 			return ok
 		case ToolTierIron:
 			_, ok := stack.Item().(IronIngot)

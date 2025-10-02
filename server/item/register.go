@@ -40,6 +40,7 @@ func init() {
 	world.RegisterItem(Compass{})
 	world.RegisterItem(Cookie{})
 	world.RegisterItem(CopperIngot{})
+	world.RegisterItem(CopperNugget{})
 	world.RegisterItem(Crossbow{})
 	world.RegisterItem(Diamond{})
 	world.RegisterItem(DiscFragment{})

@@ -60,6 +60,8 @@ func (s Sword) SmeltInfo() SmeltInfo {
 		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
 	case ToolTierGold:
 		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	case ToolTierCopper:
+		return newOreSmeltInfo(NewStack(CopperNugget{}, 1), 0.1)
 	}
 	return SmeltInfo{}
 }
