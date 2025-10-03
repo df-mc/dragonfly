@@ -147,7 +147,7 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 func (t RedstoneTorch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		removeBurnoutData(pos, tx.World())
-		updateStrongRedstone(pos, tx)
+		updateAroundRedstone(pos, tx)
 	})
 }
 
@@ -183,7 +183,7 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	if placed(ctx) {
 		getBurnoutData(pos, tx.World())
 		t.RedstoneUpdate(pos, tx)
-		updateStrongRedstone(pos, tx)
+		updateAroundRedstone(pos, tx)
 		return true
 	}
 	return false
@@ -219,7 +219,7 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 			shouldBeLit := t.inputStrength(pos, tx) == 0
 			t.Lit = shouldBeLit
 			tx.SetBlock(pos, t, nil)
-			updateStrongRedstone(pos, tx)
+			updateAroundRedstone(pos, tx)
 		}
 		return
 	}
@@ -260,7 +260,7 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 
 	t.Lit = !t.Lit
 	tx.SetBlock(pos, t, nil)
-	updateStrongRedstone(pos, tx)
+	updateAroundRedstone(pos, tx)
 }
 
 // burnOut puts the redstone torch into burnout state, turning it off and playing effects.
@@ -273,7 +273,7 @@ func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx, data *burnoutData, cu
 	t.Lit = false
 	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 	tx.SetBlock(pos, t, nil)
-	updateStrongRedstone(pos, tx)
+	updateAroundRedstone(pos, tx)
 }
 
 // EncodeItem encodes the redstone torch as an item.

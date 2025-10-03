@@ -73,7 +73,7 @@ func updateStrongRedstone(pos cube.Pos, tx *world.Tx) {
 	n.breadthFirstWalk(tx)
 }
 
-// updateAroundRedstone updates redstone components around the given centre position. It will also ignore any faces
+// updateAroundRedstone updates redstone components around the given center position. It will also ignore any faces
 // provided within the ignoredFaces parameter. This implementation is based off of RedstoneCircuit and Java 1.19.
 func updateAroundRedstone(centre cube.Pos, tx *world.Tx, ignoredFaces ...cube.Face) {
 	for _, face := range []cube.Face{
@@ -87,10 +87,21 @@ func updateAroundRedstone(centre cube.Pos, tx *world.Tx, ignoredFaces ...cube.Fa
 		if slices.Contains(ignoredFaces, face) {
 			continue
 		}
-
 		pos := centre.Side(face)
 		if r, ok := tx.Block(pos).(RedstoneUpdater); ok {
 			r.RedstoneUpdate(pos, tx)
+		}
+
+		if face == cube.FaceNorth || face == cube.FaceEast || face == cube.FaceWest || face == cube.FaceSouth {
+			abovePos := pos.Side(cube.FaceUp)
+			if r, ok := tx.Block(abovePos).(RedstoneUpdater); ok {
+				r.RedstoneUpdate(abovePos, tx)
+			}
+
+			belowPos := pos.Side(cube.FaceDown)
+			if r, ok := tx.Block(belowPos).(RedstoneUpdater); ok {
+				r.RedstoneUpdate(belowPos, tx)
+			}
 		}
 	}
 }
