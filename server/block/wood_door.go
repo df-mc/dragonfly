@@ -1,13 +1,14 @@
 package block
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // WoodDoor is a block that can be used as an openable 1x2 barrier.
@@ -56,12 +57,70 @@ func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.Top {
 		if _, ok := tx.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
 			breakBlockNoDrops(d, pos, tx)
+			return
 		}
 	} else if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
 		breakBlock(d, pos, tx)
+		return
 	} else if _, ok := tx.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
 		breakBlockNoDrops(d, pos, tx)
+		return
 	}
+
+	d.checkRedstonePower(pos, tx)
+}
+
+// RedstoneUpdate ...
+func (d WoodDoor) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	d.checkRedstonePower(pos, tx)
+}
+
+// checkRedstonePower checks if the door should open or close based on redstone power.
+func (d WoodDoor) checkRedstonePower(pos cube.Pos, tx *world.Tx) {
+	powered := d.powered(pos, tx)
+	if powered == d.Open {
+		return
+	}
+
+	d.Open = powered
+	tx.SetBlock(pos, d, nil)
+
+	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
+	if other, ok := tx.Block(otherPos).(WoodDoor); ok {
+		other.Open = powered
+		tx.SetBlock(otherPos, other, nil)
+	}
+
+	if d.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+	} else {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
+	}
+}
+
+// Powered checks if the door is receiving redstone power from any adjacent block.
+func (d WoodDoor) powered(pos cube.Pos, tx *world.Tx) bool {
+	for _, face := range cube.Faces() {
+		adjacentPos := pos.Side(face)
+		if power := tx.RedstonePower(adjacentPos, face.Opposite(), true); power > 0 {
+			return true
+		}
+
+		if power := tx.RedstonePower(adjacentPos, face.Opposite(), false); power > 0 {
+			return true
+		}
+	}
+	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
+	for _, face := range cube.Faces() {
+		adjacentPos := otherPos.Side(face)
+		if power := tx.RedstonePower(adjacentPos, face.Opposite(), true); power > 0 {
+			return true
+		}
+		if power := tx.RedstonePower(adjacentPos, face.Opposite(), false); power > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // UseOnBlock handles the directional placing of doors
@@ -97,7 +156,12 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 	place(tx, pos, d, user, ctx)
 	place(tx, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
 	ctx.CountSub = 1
-	return placed(ctx)
+
+	if placed(ctx) {
+		d.checkRedstonePower(pos, tx)
+		return true
+	}
+	return false
 }
 
 // Activate ...
