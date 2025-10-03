@@ -26,18 +26,13 @@ func (n Note) playNote(pos cube.Pos, tx *world.Tx) {
 	tx.AddParticle(pos.Vec3(), particle.Note{Instrument: n.Instrument(), Pitch: n.Pitch})
 }
 
-// instrument ...
+// updateInstrument ...
 func (n Note) instrument(pos cube.Pos, tx *world.Tx) sound.Instrument {
 	if instrumentBlock, ok := tx.Block(pos.Side(cube.FaceDown)).(interface {
 		Instrument() sound.Instrument
 	}); ok {
 		return instrumentBlock.Instrument()
 	}
-	return sound.Piano()
-}
-
-// Instrument ...
-func (n Note) Instrument() sound.Instrument {
 	return sound.Piano()
 }
 
