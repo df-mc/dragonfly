@@ -4,13 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/df-mc/goleveldb/leveldb"
-	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"iter"
 	"maps"
 	"math/rand/v2"
@@ -18,6 +11,14 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/df-mc/goleveldb/leveldb"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players
@@ -255,6 +256,13 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	}
 	if opts == nil {
 		opts = &SetOpts{}
+	}
+
+	if p, ok := b.(interface {
+		Place(pos cube.Pos, w *World) bool
+	}); ok && !p.Place(pos, w) {
+		// Don't place the block.
+		return
 	}
 
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
