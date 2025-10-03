@@ -2,17 +2,18 @@ package world
 
 import (
 	"fmt"
-	"github.com/brentp/intintmap"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/customblock"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/segmentio/fasthash/fnv1"
 	"image"
 	"math"
 	"math/bits"
 	"math/rand/v2"
 	"slices"
 	"sort"
+
+	"github.com/brentp/intintmap"
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/customblock"
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/segmentio/fasthash/fnv1"
 )
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
@@ -315,11 +316,6 @@ type lightEmitter interface {
 // lightDiffuser is identical to a block.LightDiffuser.
 type lightDiffuser interface {
 	LightDiffusionLevel() uint8
-}
-
-// redstoneBlocking is identical to a block.RedstoneBlocking.
-type redstoneBlocking interface {
-	RedstoneBlocking() bool
 }
 
 // replaceableBlock represents a block that may be replaced by another block automatically. An example is
