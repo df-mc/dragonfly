@@ -1,10 +1,11 @@
 package block
 
 import (
+	"slices"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/world"
-	"slices"
 )
 
 // RedstoneUpdater represents a block that can be updated through a change in redstone signal.
@@ -108,7 +109,7 @@ func (n *wireNetwork) identifyNeighbours(tx *world.Tx, node *wireNode) {
 	neighbours := computeRedstoneNeighbours(node.pos)
 	neighboursVisited := make([]bool, 0, 24)
 	neighbourNodes := make([]*wireNode, 0, 24)
-	for _, neighbourPos := range neighbours[:24] {
+	for _, neighbourPos := range neighbours {
 		neighbour, ok := n.nodeCache[neighbourPos]
 		if !ok {
 			neighbour = &wireNode{
@@ -165,7 +166,7 @@ func (n *wireNetwork) identifyNeighbours(tx *world.Tx, node *wireNode) {
 		}
 	}
 
-	n.orientNeighbours(&neighbourNodes, node, heading)
+	n.orientNeighbours(neighbourNodes, node, heading)
 }
 
 // reordering contains lookup tables that completely remap neighbour positions into a left-to-right ordering, based on
@@ -178,11 +179,11 @@ var redstoneReordering = [][]uint32{
 }
 
 // orientNeighbours reorders the neighbours of a node based on the direction that is determined to be forward.
-func (n *wireNetwork) orientNeighbours(src *[]*wireNode, dst *wireNode, heading uint32) {
+func (n *wireNetwork) orientNeighbours(src []*wireNode, dst *wireNode, heading uint32) {
 	dst.oriented = true
 	dst.neighbours = make([]*wireNode, 0, 24)
 	for _, i := range redstoneReordering[heading] {
-		dst.neighbours = append(dst.neighbours, (*src)[i])
+		dst.neighbours = append(dst.neighbours, (src)[i])
 	}
 }
 
@@ -194,7 +195,7 @@ func (n *wireNetwork) propagateChanges(tx *world.Tx, node *wireNode, layer uint3
 	}
 
 	layerOne := layer + 1
-	for _, neighbour := range node.neighbours[:24] {
+	for _, neighbour := range node.neighbours {
 		if layerOne > neighbour.layer {
 			neighbour.layer = layerOne
 			n.updateQueue[1] = append(n.updateQueue[1], neighbour)
@@ -288,7 +289,7 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 			if !neighbourSolid {
 				neighbourDown := node.neighbours[rsNeighboursDn[m]].block
 				blockPower = n.maxCurrentStrength(neighbourDown, blockPower)
-			} else if d, ok := neighbour.(LightDiffuser); (!ok || d.LightDiffusionLevel() > 0) && !centerUpSolid {
+			} else if d, ok := neighbour.(LightDiffuser); (!ok || d.LightDiffusionLevel() == 15) && !centerUpSolid {
 				neighbourUp := node.neighbours[rsNeighboursUp[m]].block
 				blockPower = n.maxCurrentStrength(neighbourUp, blockPower)
 			}
