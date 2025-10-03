@@ -1,12 +1,13 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Tx represents a synchronised transaction performed on a World. Most
@@ -219,12 +220,9 @@ func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
 func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
 	b := tx.Block(pos)
 	if c, ok := b.(Conductor); ok {
-		power = c.WeakPower(pos, face, tx, accountForDust)
+		return c.WeakPower(pos, face, tx, accountForDust)
 	}
-	if b, ok := b.(redstoneBlocking); ok && b.RedstoneBlocking() {
-		return power
-	}
-	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() == 0 {
+	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
 		return power
 	}
 	for _, f := range cube.Faces() {
