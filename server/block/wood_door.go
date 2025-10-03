@@ -57,17 +57,12 @@ func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if d.Top {
 		if _, ok := tx.Block(pos.Side(cube.FaceDown)).(WoodDoor); !ok {
 			breakBlockNoDrops(d, pos, tx)
-			return
 		}
 	} else if solid := tx.Block(pos.Side(cube.FaceDown)).Model().FaceSolid(pos.Side(cube.FaceDown), cube.FaceUp, tx); !solid {
 		breakBlock(d, pos, tx)
-		return
 	} else if _, ok := tx.Block(pos.Side(cube.FaceUp)).(WoodDoor); !ok {
 		breakBlockNoDrops(d, pos, tx)
-		return
 	}
-
-	d.checkRedstonePower(pos, tx)
 }
 
 // RedstoneUpdate ...
