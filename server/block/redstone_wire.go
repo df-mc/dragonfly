@@ -50,9 +50,6 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	if !used {
 		return
 	}
-	if _, ok := tx.Liquid(pos); ok {
-		return false
-	}
 	belowPos := pos.Side(cube.FaceDown)
 	if !tx.Block(belowPos).Model().FaceSolid(belowPos, cube.FaceUp, tx) {
 		return
