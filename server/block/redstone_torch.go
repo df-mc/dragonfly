@@ -12,9 +12,15 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// redstoneTorchBurnoutData stores burnout tracking data indexed by block position.
+// burnoutKey uniquely identifies a torch position within a specific world.
+type burnoutKey struct {
+	worldName string
+	pos       cube.Pos
+}
+
+// redstoneTorchBurnoutData stores burnout tracking data indexed by world and block position.
 var (
-	redstoneTorchBurnoutData   = make(map[cube.Pos]*burnoutData)
+	redstoneTorchBurnoutData   = make(map[burnoutKey]*burnoutData)
 	redstoneTorchBurnoutDataMu sync.RWMutex
 )
 
@@ -45,10 +51,15 @@ type RedstoneTorch struct {
 	Lit bool
 }
 
-// getBurnoutData retrieves or creates burnout tracking data for the given position.
-func getBurnoutData(pos cube.Pos) *burnoutData {
+// getBurnoutData retrieves or creates burnout tracking data for the given position and world.
+func getBurnoutData(pos cube.Pos, w *world.World) *burnoutData {
+	key := burnoutKey{
+		worldName: w.Name(),
+		pos:       pos,
+	}
+
 	redstoneTorchBurnoutDataMu.RLock()
-	data, exists := redstoneTorchBurnoutData[pos]
+	data, exists := redstoneTorchBurnoutData[key]
 	redstoneTorchBurnoutDataMu.RUnlock()
 
 	if exists {
@@ -58,7 +69,7 @@ func getBurnoutData(pos cube.Pos) *burnoutData {
 	redstoneTorchBurnoutDataMu.Lock()
 	defer redstoneTorchBurnoutDataMu.Unlock()
 
-	if d, ok := redstoneTorchBurnoutData[pos]; ok {
+	if d, ok := redstoneTorchBurnoutData[key]; ok {
 		return d
 	}
 
@@ -66,15 +77,20 @@ func getBurnoutData(pos cube.Pos) *burnoutData {
 		gameTicks: make([]int64, 0, BurnoutThreshold+1),
 		burnedOut: false,
 	}
-	redstoneTorchBurnoutData[pos] = data
+	redstoneTorchBurnoutData[key] = data
 	return data
 }
 
-// removeBurnoutData cleans up burnout tracking data for the given position.
-func removeBurnoutData(pos cube.Pos) {
+// removeBurnoutData cleans up burnout tracking data for the given position and world.
+func removeBurnoutData(pos cube.Pos, w *world.World) {
+	key := burnoutKey{
+		worldName: w.Name(),
+		pos:       pos,
+	}
+
 	redstoneTorchBurnoutDataMu.Lock()
 	defer redstoneTorchBurnoutDataMu.Unlock()
-	delete(redstoneTorchBurnoutData, pos)
+	delete(redstoneTorchBurnoutData, key)
 }
 
 // countStateChange records a new state change with an expiration time.
@@ -114,12 +130,12 @@ func (data *burnoutData) removeExpired(currentTime int64) {
 	data.gameTicks = newGameTicks
 }
 
-// HasLiquidDrops ...
+// HasLiquidDrops returns whether the redstone torch drops its item when flowing liquid breaks it.
 func (RedstoneTorch) HasLiquidDrops() bool {
 	return true
 }
 
-// LightEmissionLevel ...
+// LightEmissionLevel returns the light level emitted by the redstone torch (7 when lit, 0 when unlit).
 func (t RedstoneTorch) LightEmissionLevel() uint8 {
 	if t.Lit {
 		return 7
@@ -127,15 +143,15 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 	return 0
 }
 
-// BreakInfo ...
+// BreakInfo returns information about breaking the redstone torch.
 func (t RedstoneTorch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
-		removeBurnoutData(pos)
+		removeBurnoutData(pos, tx.World())
 		updateStrongRedstone(pos, tx)
 	})
 }
 
-// UseOnBlock ...
+// UseOnBlock handles the placement of a redstone torch on a block surface.
 func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, t)
 	if !used {
@@ -165,7 +181,7 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 
 	place(tx, pos, t, user, ctx)
 	if placed(ctx) {
-		getBurnoutData(pos)
+		getBurnoutData(pos, tx.World())
 		t.RedstoneUpdate(pos, tx)
 		updateStrongRedstone(pos, tx)
 		return true
@@ -173,18 +189,19 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	return false
 }
 
-// NeighbourUpdateTick ...
+// NeighbourUpdateTick is called when a neighboring block is updated.
 func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
-		removeBurnoutData(pos)
+		removeBurnoutData(pos, tx.World())
 		breakBlock(t, pos, tx)
 		updateDirectionalRedstone(pos, tx, t.Facing.Opposite())
 	}
 }
 
-// RedstoneUpdate ...
+// RedstoneUpdate is called when the redstone power state changes nearby.
+// This method handles burnout recovery and schedules state changes.
 func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
-	data := getBurnoutData(pos)
+	data := getBurnoutData(pos, tx.World())
 	currentTime := int64(tx.World().Time())
 
 	data.mu.RLock()
@@ -213,21 +230,20 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	tx.ScheduleBlockUpdate(pos, t, time.Millisecond*100)
 }
 
-// ScheduledTick ...
+// ScheduledTick is called when a scheduled block update occurs.
+// This method handles state changes and checks for burnout conditions.
 func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
-	data := getBurnoutData(pos)
+	data := getBurnoutData(pos, tx.World())
 	currentTime := int64(tx.World().Time())
 
 	data.mu.RLock()
 	isBurnedOut := data.burnedOut
 	data.mu.RUnlock()
 
-	// If burned out, ignore scheduled ticks
 	if isBurnedOut {
 		return
 	}
 
-	// Normal state change logic
 	if t.inputStrength(pos, tx) > 0 != t.Lit {
 		return
 	}
@@ -247,7 +263,7 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	updateStrongRedstone(pos, tx)
 }
 
-// burnOut puts the redstone torch into burnout state, turning it off.
+// burnOut puts the redstone torch into burnout state, turning it off and playing effects.
 func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx, data *burnoutData, currentTime int64) {
 	data.mu.Lock()
 	data.burnedOut = true
@@ -260,12 +276,12 @@ func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx, data *burnoutData, cu
 	updateStrongRedstone(pos, tx)
 }
 
-// EncodeItem ...
+// EncodeItem encodes the redstone torch as an item.
 func (RedstoneTorch) EncodeItem() (name string, meta int16) {
 	return "minecraft:redstone_torch", 0
 }
 
-// EncodeBlock ...
+// EncodeBlock encodes the redstone torch as a block for network transmission.
 func (t RedstoneTorch) EncodeBlock() (name string, properties map[string]any) {
 	face := "unknown"
 	if t.Facing != unknownFace {
@@ -280,12 +296,12 @@ func (t RedstoneTorch) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:unlit_redstone_torch", map[string]any{"torch_facing_direction": face}
 }
 
-// RedstoneSource ...
+// RedstoneSource returns whether the redstone torch is currently providing redstone power.
 func (t RedstoneTorch) RedstoneSource() bool {
 	return t.Lit
 }
 
-// WeakPower ...
+// WeakPower returns the weak redstone power level provided to adjacent blocks.
 func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bool) int {
 	if !t.Lit {
 		return 0
@@ -296,7 +312,7 @@ func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bool
 	return 0
 }
 
-// StrongPower ...
+// StrongPower returns the strong redstone power level provided to blocks above the torch.
 func (t RedstoneTorch) StrongPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bool) int {
 	if t.Lit && face == cube.FaceDown {
 		return 15
@@ -304,12 +320,12 @@ func (t RedstoneTorch) StrongPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bo
 	return 0
 }
 
-// inputStrength ...
+// inputStrength returns the redstone power level received by the block the torch is attached to.
 func (t RedstoneTorch) inputStrength(pos cube.Pos, tx *world.Tx) int {
 	return tx.RedstonePower(pos.Side(t.Facing), t.Facing, true)
 }
 
-// allRedstoneTorches ...
+// allRedstoneTorches returns all possible redstone torch block states.
 func allRedstoneTorches() (all []world.Block) {
 	for _, f := range append(cube.Faces(), unknownFace) {
 		if f == cube.FaceUp {

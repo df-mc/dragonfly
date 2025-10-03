@@ -159,15 +159,15 @@ func (RedstoneWire) maxCurrentStrength(power int, pos cube.Pos, tx *world.Tx) in
 func (r RedstoneWire) connection(pos cube.Pos, face cube.Face, tx *world.Tx) bool {
 	sidePos := pos.Side(face)
 	sideBlock := tx.Block(sidePos)
-	if _, solidAbove := tx.Block(pos.Side(cube.FaceUp)).Model().(model.Solid); !solidAbove && r.canRunOnTop(tx, sidePos, sideBlock) && r.connectsTo(tx.Block(sidePos.Side(cube.FaceUp)), face, false) {
+	if _, solidAbove := tx.Block(pos.Side(cube.FaceUp)).Model().(model.Solid); !solidAbove && r.canRunOnTop(tx, sidePos, sideBlock) && r.connectsTo(tx.Block(sidePos.Side(cube.FaceUp)), false) {
 		return true
 	}
 	_, sideSolid := sideBlock.Model().(model.Solid)
-	return r.connectsTo(sideBlock, face, true) || !sideSolid && r.connectsTo(tx.Block(sidePos.Side(cube.FaceDown)), face, false)
+	return r.connectsTo(sideBlock, true) || !sideSolid && r.connectsTo(tx.Block(sidePos.Side(cube.FaceDown)), false)
 }
 
 // connectsTo ...
-func (RedstoneWire) connectsTo(block world.Block, face cube.Face, allowDirectSources bool) bool {
+func (RedstoneWire) connectsTo(block world.Block, allowDirectSources bool) bool {
 	if _, ok := block.(RedstoneWire); ok {
 		return true
 	}

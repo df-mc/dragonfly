@@ -7,6 +7,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// RedstoneBlock is a mineral block equivalent to nine redstone dust.
+// It acts as a permanently powered redstone power source that can be pushed by pistons.
 type RedstoneBlock struct {
 	solid
 }

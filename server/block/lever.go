@@ -19,7 +19,7 @@ type Lever struct {
 	// Facing is the face of the block that the lever is attached to.
 	Facing cube.Face
 	// Direction is the direction the lever is pointing. This is only used for levers that are attached on up or down
-	// faces.
+	// faces. Currently, only North and West directions are supported due to Bedrock Edition limitations.
 	Direction cube.Direction
 }
 
