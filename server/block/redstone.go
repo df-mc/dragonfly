@@ -14,12 +14,6 @@ type RedstoneUpdater interface {
 	RedstoneUpdate(pos cube.Pos, tx *world.Tx)
 }
 
-// RedstoneBlocking represents a block that blocks redstone signals.
-type RedstoneBlocking interface {
-	// RedstoneBlocking returns true if the block blocks redstone signals.
-	RedstoneBlocking() bool
-}
-
 // wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
 // wires in order to more efficiently and compute new redstone wire power levels and determine the order in which other
 // blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo and MCHPRS.
@@ -92,16 +86,14 @@ func updateAroundRedstone(centre cube.Pos, tx *world.Tx, ignoredFaces ...cube.Fa
 			r.RedstoneUpdate(pos, tx)
 		}
 
-		if face == cube.FaceNorth || face == cube.FaceEast || face == cube.FaceWest || face == cube.FaceSouth {
-			abovePos := pos.Side(cube.FaceUp)
-			if r, ok := tx.Block(abovePos).(RedstoneUpdater); ok {
-				r.RedstoneUpdate(abovePos, tx)
-			}
+		abovePos := pos.Side(cube.FaceUp)
+		if r, ok := tx.Block(abovePos).(RedstoneUpdater); ok {
+			r.RedstoneUpdate(abovePos, tx)
+		}
 
-			belowPos := pos.Side(cube.FaceDown)
-			if r, ok := tx.Block(belowPos).(RedstoneUpdater); ok {
-				r.RedstoneUpdate(belowPos, tx)
-			}
+		belowPos := pos.Side(cube.FaceDown)
+		if r, ok := tx.Block(belowPos).(RedstoneUpdater); ok {
+			r.RedstoneUpdate(belowPos, tx)
 		}
 	}
 }

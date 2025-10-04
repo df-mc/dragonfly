@@ -223,11 +223,11 @@ func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (
 		return c.WeakPower(pos, face, tx, accountForDust)
 	}
 	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
-		return power
+		return 0
 	}
 	for _, f := range cube.Faces() {
 		if !b.Model().FaceSolid(pos, f, tx) {
-			return power
+			return 0
 		}
 	}
 	for _, f := range cube.Faces() {

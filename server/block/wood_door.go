@@ -77,48 +77,46 @@ func (d WoodDoor) checkRedstonePower(pos cube.Pos, tx *world.Tx) {
 		return
 	}
 
-	d.Open = powered
-	tx.SetBlock(pos, d, nil)
-
-	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
-	if other, ok := tx.Block(otherPos).(WoodDoor); ok {
-		other.Open = powered
-		tx.SetBlock(otherPos, other, nil)
-	}
-
-	if d.Open {
-		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
-	} else {
-		tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
-	}
+	d.activate(pos, tx, powered)
 }
 
 // Powered checks if the door is receiving redstone power from any adjacent block.
 func (d WoodDoor) powered(pos cube.Pos, tx *world.Tx) bool {
 	for _, face := range cube.Faces() {
 		adjacentPos := pos.Side(face)
-		if power := tx.RedstonePower(adjacentPos, face.Opposite(), true); power > 0 {
-			return true
-		}
-
-		if power := tx.RedstonePower(adjacentPos, face.Opposite(), false); power > 0 {
+		if tx.RedstonePower(adjacentPos, face.Opposite(), false) > 0 {
 			return true
 		}
 	}
 	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
 	for _, face := range cube.Faces() {
 		adjacentPos := otherPos.Side(face)
-		if power := tx.RedstonePower(adjacentPos, face.Opposite(), true); power > 0 {
-			return true
-		}
-		if power := tx.RedstonePower(adjacentPos, face.Opposite(), false); power > 0 {
+		if tx.RedstonePower(adjacentPos, face.Opposite(), false) > 0 {
 			return true
 		}
 	}
 	return false
 }
 
-// UseOnBlock handles the directional placing of doors
+// activate ...
+func (d WoodDoor) activate(pos cube.Pos, tx *world.Tx, open bool) {
+	d.Open = open
+	tx.SetBlock(pos, d, nil)
+
+	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
+	other := tx.Block(otherPos)
+	if door, ok := other.(WoodDoor); ok {
+		door.Open = d.Open
+		tx.SetBlock(otherPos, door, nil)
+	}
+	if d.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+		return
+	}
+	tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
+}
+
+// UseOnBlock ...
 func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if face != cube.FaceUp {
 		// Doors can only be placed when clicking the top face.
@@ -161,20 +159,7 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 
 // Activate ...
 func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
-	d.Open = !d.Open
-	tx.SetBlock(pos, d, nil)
-
-	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
-	other := tx.Block(otherPos)
-	if door, ok := other.(WoodDoor); ok {
-		door.Open = d.Open
-		tx.SetBlock(otherPos, door, nil)
-	}
-	if d.Open {
-		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
-		return true
-	}
-	tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
+	d.activate(pos, tx, !d.Open)
 	return true
 }
 
