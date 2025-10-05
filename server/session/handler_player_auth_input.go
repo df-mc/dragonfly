@@ -42,6 +42,12 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		}
 	}
 
+	if rd := c.RidingEntity(); rd != nil {
+		if c == rd.ControllingRider() {
+			rd.MoveInput(mgl64.Vec2{float64(pk.MoveVector.X()), float64(pk.MoveVector.Y())}, pk.Yaw, pk.Pitch)
+		}
+	}
+
 	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Sub the base offset of players from the pos.
 
 	newPos := vec32To64(pk.Position)
