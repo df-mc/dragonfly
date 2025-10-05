@@ -41,7 +41,7 @@ func (b baseChest) pairPos(pos cube.Pos) cube.Pos {
 	return cube.Pos{b.pairX, pos[1], b.pairZ}
 }
 
-// open opens the chest with animation and sound.
+// open opens the chest, displaying the animation and playing a sound.
 func (b baseChest) open(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		if b.paired {
@@ -52,7 +52,7 @@ func (b baseChest) open(tx *world.Tx, pos cube.Pos) {
 	tx.PlaySound(pos.Vec3Centre(), sound.ChestOpen{})
 }
 
-// close closes the chest with animation and sound.
+// close closes the chest, displaying the animation and playing a sound.
 func (b baseChest) close(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		if b.paired {
@@ -63,7 +63,7 @@ func (b baseChest) close(tx *world.Tx, pos cube.Pos) {
 	tx.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
 }
 
-// addViewer adds a viewer to the chest.
+// addViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.
 func (b baseChest) addViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
@@ -73,7 +73,7 @@ func (b baseChest) addViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewers[v] = struct{}{}
 }
 
-// removeViewer removes a viewer from the chest.
+// removeViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to it.
 func (b baseChest) removeViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
@@ -116,7 +116,7 @@ func mergeInventories(c1Inv, c2Inv *inventory.Inventory, pos, pairPos cube.Pos, 
 	return left, right, double, mu, viewers
 }
 
-// unpairChests contains the common unpairing logic
+// unpairChests unpairs the chests from each other.
 func unpairChests(b *baseChest, tx *world.Tx, pos cube.Pos) {
 	if len(b.viewers) != 0 {
 		b.close(tx, pos)
