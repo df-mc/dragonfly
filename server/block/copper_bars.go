@@ -75,26 +75,12 @@ func (c CopperBars) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // EncodeItem ...
 func (c CopperBars) EncodeItem() (name string, meta int16) {
-	name = "copper_bars"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, 0
+	return copperBlockName("copper_bars", c.Oxidation, c.Waxed), 0
 }
 
 // EncodeBlock ...
 func (c CopperBars) EncodeBlock() (name string, properties map[string]any) {
-	name = "copper_bars"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, nil
+	return copperBlockName("copper_bars", c.Oxidation, c.Waxed), nil
 }
 
 // allCopperBars ...

@@ -392,26 +392,12 @@ func (c CopperChest) EncodeNBT() map[string]any {
 
 // EncodeItem ...
 func (c CopperChest) EncodeItem() (name string, meta int16) {
-	name = "copper_chest"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, 0
+	return copperBlockName("copper_chest", c.Oxidation, c.Waxed), 0
 }
 
 // EncodeBlock ...
 func (c CopperChest) EncodeBlock() (name string, properties map[string]any) {
-	name = "copper_chest"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
+	return copperBlockName("copper_chest", c.Oxidation, c.Waxed), map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
 }
 
 // allCopperChests ...

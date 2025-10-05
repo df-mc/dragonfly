@@ -1,14 +1,15 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -350,4 +351,16 @@ func newOreSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
 // newFuelInfo returns a new FuelInfo with the given values.
 func newFuelInfo(duration time.Duration) item.FuelInfo {
 	return item.FuelInfo{Duration: duration}
+}
+
+// copperBlockName returns the name of a copper block with the given oxidation and waxed status.
+func copperBlockName(blockName string, oxidation OxidationType, waxed bool) string {
+	name := blockName
+	if oxidation != UnoxidisedOxidation() {
+		name = oxidation.String() + "_" + name
+	}
+	if waxed {
+		name = "waxed_" + name
+	}
+	return "minecraft:" + name
 }

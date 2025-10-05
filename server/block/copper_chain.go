@@ -43,7 +43,7 @@ func (c CopperChain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *
 
 // BreakInfo ...
 func (c CopperChain) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(6)
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
 }
 
 // Wax waxes the copper chain to stop it from oxidising further.
@@ -90,26 +90,12 @@ func (c CopperChain) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // EncodeItem ...
 func (c CopperChain) EncodeItem() (name string, meta int16) {
-	name = "copper_chain"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, 0
+	return copperBlockName("copper_chain", c.Oxidation, c.Waxed), 0
 }
 
 // EncodeBlock ...
 func (c CopperChain) EncodeBlock() (name string, properties map[string]any) {
-	name = "copper_chain"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, map[string]any{"pillar_axis": c.Axis.String()}
+	return copperBlockName("copper_chain", c.Oxidation, c.Waxed), map[string]any{"pillar_axis": c.Axis.String()}
 }
 
 // Model ...

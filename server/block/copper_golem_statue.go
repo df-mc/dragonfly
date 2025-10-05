@@ -28,7 +28,7 @@ type CopperGolemStatue struct {
 
 // BreakInfo ...
 func (c CopperGolemStatue) BreakInfo() BreakInfo {
-	return newBreakInfo(3, alwaysHarvestable, pickaxeEffective, oneOf(c))
+	return newBreakInfo(3, alwaysHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
 }
 
 // Activate ...
@@ -112,34 +112,19 @@ func (c CopperGolemStatue) DecodeNBT(data map[string]any) any {
 // EncodeNBT ...
 func (c CopperGolemStatue) EncodeNBT() map[string]any {
 	return map[string]any{
-		"Pose":      int32(c.Pose.Uint8()),
-		"id":        "CopperGolemStatue",
-		"isMovable": byte(1),
+		"Pose": int32(c.Pose.Uint8()),
+		"id":   "CopperGolemStatue",
 	}
 }
 
 // EncodeItem ...
 func (c CopperGolemStatue) EncodeItem() (name string, meta int16) {
-	name = "copper_golem_statue"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, 0
+	return copperBlockName("copper_golem_statue", c.Oxidation, c.Waxed), 0
 }
 
 // EncodeBlock ...
 func (c CopperGolemStatue) EncodeBlock() (string, map[string]any) {
-	name := "copper_golem_statue"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
+	return copperBlockName("copper_golem_statue", c.Oxidation, c.Waxed), map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
 }
 
 // allCopperGolemStatues ...
