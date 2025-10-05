@@ -2,8 +2,6 @@ package player
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -11,6 +9,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -87,6 +88,7 @@ type playerData struct {
 	enchantSeed int64
 
 	mc *entity.MovementComputer
+	tc *entity.TravelComputer
 
 	collidedVertically, collidedHorizontally bool
 
@@ -2460,6 +2462,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	} else {
 		p.data.Vel = mgl64.Vec3{}
 	}
+
+	p.tc.TickTravelling(p, tx)
 }
 
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.

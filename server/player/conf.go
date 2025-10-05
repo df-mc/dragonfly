@@ -1,6 +1,9 @@
 package player
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -11,8 +14,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/text/language"
-	"math/rand/v2"
-	"time"
 )
 
 // Config holds options that a Player can be created with.
@@ -68,6 +69,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 		locale:              conf.Locale,
 		cooldowns:           make(map[string]time.Time),
 		mc:                  &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
+		tc:                  &entity.TravelComputer{Instantaneous: func() bool { return cfg.GameMode == world.GameModeCreative }},
 		heldSlot:            &slot,
 		gameMode:            conf.GameMode,
 		skin:                conf.Skin,
