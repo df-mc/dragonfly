@@ -467,6 +467,8 @@ func tierToSoundEvent(tier item.ArmourTier) uint32 {
 	switch tier.(type) {
 	case item.ArmourTierLeather:
 		return packet.SoundEventEquipLeather
+	case item.ArmourTierCopper:
+		return packet.SoundEventEquipCopper
 	case item.ArmourTierGold:
 		return packet.SoundEventEquipGold
 	case item.ArmourTierChain:
