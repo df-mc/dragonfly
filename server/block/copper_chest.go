@@ -120,6 +120,7 @@ func (c CopperChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *
 	oxidation := c.Oxidation
 	waxed := c.Waxed
 
+	//noinspection GoAssignmentToReceiver
 	c = NewCopperChest()
 	c.Facing = user.Rotation().Direction().Opposite()
 	c.Oxidation = oxidation
@@ -246,6 +247,8 @@ func (c CopperChest) DecodeNBT(data map[string]any) any {
 	facing := c.Facing
 	oxidation := c.Oxidation
 	waxed := c.Waxed
+
+	//noinspection GoAssignmentToReceiver
 	c = NewCopperChest()
 	c.Facing = facing
 	c.CustomName = nbtconv.String(data, "CustomName")
@@ -271,6 +274,8 @@ func (c CopperChest) DecodeNBT(data map[string]any) any {
 func (c CopperChest) EncodeNBT() map[string]any {
 	if c.inventory == nil {
 		facing, customName, oxidation, waxed := c.Facing, c.CustomName, c.Oxidation, c.Waxed
+
+		//noinspection GoAssignmentToReceiver
 		c = NewCopperChest()
 		c.Facing, c.CustomName, c.Oxidation, c.Waxed = facing, customName, oxidation, waxed
 	}
