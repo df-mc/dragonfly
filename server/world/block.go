@@ -2,17 +2,18 @@ package world
 
 import (
 	"fmt"
-	"github.com/brentp/intintmap"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/customblock"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/segmentio/fasthash/fnv1"
 	"image"
 	"math"
 	"math/bits"
 	"math/rand/v2"
 	"slices"
 	"sort"
+
+	"github.com/brentp/intintmap"
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/customblock"
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/segmentio/fasthash/fnv1"
 )
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
@@ -74,6 +75,17 @@ type Liquid interface {
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
 	Harden(pos cube.Pos, tx *Tx, flownIntoBy *cube.Pos) bool
+}
+
+// Conductor represents a block that can conduct a redstone signal.
+type Conductor interface {
+	Block
+	// RedstoneSource returns true if the conductor is a signal source.
+	RedstoneSource() bool
+	// WeakPower returns the power from a partial source and has limited usage.
+	WeakPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
+	// StrongPower returns the power from a full source and can be passed to any redstone component.
+	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
 }
 
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
