@@ -12,6 +12,14 @@ var MessageJoin = Translate(str("%multiplayer.player.joined"), 1, `%v joined the
 var MessageQuit = Translate(str("%multiplayer.player.left"), 1, `%v left the game`).Enc("<yellow>%v</yellow>")
 var MessageServerDisconnect = Translate(str("%disconnect.disconnected"), 0, `Disconnected by Server`).Enc("<yellow>%v</yellow>")
 
+var MessageBedTooFar = Translate(str("%tile.bed.tooFar"), 0, `Bed is too far away`).Enc("<grey>%v</grey>")
+var MessageRespawnPointSet = Translate(str("%tile.bed.respawnSet"), 0, `Respawn point set`).Enc("<grey>%v</grey>")
+var MessageNoSleep = Translate(str("%tile.bed.noSleep"), 0, `You can only sleep at night and during thunderstorms`).Enc("<grey>%v</grey>")
+var MessageBedIsOccupied = Translate(str("%tile.bed.occupied"), 0, `This bed is occupied`).Enc("<grey>%v</grey>")
+var MessageSleeping = Translate(str("%chat.type.sleeping"), 2, `%v is sleeping in a bed. To skip to dawn, %v more users need to sleep in beds at the same time.`)
+var MessageRespawnAnchorNotValid = Translate(str("%tile.respawn_anchor.notValid"), 0, `Your respawn anchor was out of charges, missing or obstructed`).Enc("<grey>%v</grey>")
+var MessageBedNotValid = Translate(str("%tile.bed.notValid"), 0, `Your home bed was missing or obstructed`)
+
 type str string
 
 // Resolve returns the translation identifier as a string.
