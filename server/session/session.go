@@ -475,6 +475,11 @@ func (s *Session) ChangingDimension() bool {
 	return s.changingDimension.Load()
 }
 
+// ChunkRadius returns the chunk radius of the session.
+func (s *Session) ChunkRadius() int32 {
+	return s.chunkRadius
+}
+
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
 // otherwise not valid in its context, an error is returned.
 func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (err error) {
