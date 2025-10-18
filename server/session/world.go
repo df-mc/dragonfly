@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -270,6 +270,21 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 		// Don't view the items of the entity if the entity is the Controllable entity of the session.
 		return
 	}
+
+	if c, ok := e.(Controllable); ok && !c.GameMode().Visible() {
+		empty := instanceFromItem(item.Stack{})
+		s.writePacket(&packet.MobEquipment{
+			EntityRuntimeID: runtimeID,
+			NewItem:         empty,
+		})
+		s.writePacket(&packet.MobEquipment{
+			EntityRuntimeID: runtimeID,
+			NewItem:         empty,
+			WindowID:        protocol.WindowIDOffHand,
+		})
+		return
+	}
+
 	c, ok := e.(item.Carrier)
 	if !ok {
 		return
@@ -297,6 +312,19 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 		// Don't view the items of the entity if the entity is the Controllable entity of the session.
 		return
 	}
+
+	if c, ok := e.(Controllable); ok && !c.GameMode().Visible() {
+		empty := instanceFromItem(item.Stack{})
+		s.writePacket(&packet.MobArmourEquipment{
+			EntityRuntimeID: runtimeID,
+			Helmet:          empty,
+			Chestplate:      empty,
+			Leggings:        empty,
+			Boots:           empty,
+		})
+		return
+	}
+
 	armoured, ok := e.(interface {
 		Armour() *inventory.Armour
 	})
