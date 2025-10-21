@@ -46,7 +46,11 @@ func (line *Line) Next() (string, bool) {
 	if !ok {
 		return "", false
 	}
-	return v[0], true
+	val := v[0]
+	if val == "" {
+		return line.Next()
+	}
+	return val, true
 }
 
 // NextN reads the next N arguments from the command line and returns them. If there were not enough arguments
@@ -90,6 +94,7 @@ func (line *Line) Len() int {
 // struct fields.
 type parser struct {
 	currentField string
+	fields       int
 }
 
 // parseArgument parses the next argument from the command line passed and sets it to value v passed. If
@@ -185,11 +190,27 @@ func (p parser) float(line *Line, v reflect.Value) error {
 
 // string ...
 func (p parser) string(line *Line, v reflect.Value) error {
+	if p.fields == 1 {
+		return p.restAsString(line, v)
+	}
+
 	arg, ok := line.Next()
 	if !ok {
 		return line.UsageError()
 	}
 	v.SetString(arg)
+	return nil
+}
+
+// restAsString ...
+func (p parser) restAsString(line *Line, v reflect.Value) error {
+	args := line.Leftover()
+	val := strings.Join(args, " ")
+	// check if value is empty.
+	if strings.TrimSpace(val) == "" {
+		return line.UsageError()
+	}
+	v.SetString(val)
 	return nil
 }
 
