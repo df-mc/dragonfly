@@ -11,6 +11,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// CopperGolemStatue is the result of a copper golem fully oxidizing and petrifying into a block.
+// It can be posed in four different ways.
 type CopperGolemStatue struct {
 	transparent
 	sourceWaterDisplacer

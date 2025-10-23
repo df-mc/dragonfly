@@ -12,18 +12,18 @@ func StandingPose() CopperGolemPose {
 	return CopperGolemPose{0}
 }
 
-// PointingPose is the pointing pose.
-func PointingPose() CopperGolemPose {
+// SittingPose is the sitting pose.
+func SittingPose() CopperGolemPose {
 	return CopperGolemPose{1}
 }
 
-// CrouchingPose is the crouching pose.
-func CrouchingPose() CopperGolemPose {
+// RunningPose is the running pose.
+func RunningPose() CopperGolemPose {
 	return CopperGolemPose{2}
 }
 
-// HeadButtonPose is the head button pressing pose.
-func HeadButtonPose() CopperGolemPose {
+// StarPose is the head button pressing pose.
+func StarPose() CopperGolemPose {
 	return CopperGolemPose{3}
 }
 
@@ -38,16 +38,16 @@ func (p pose) Name() string {
 	case 0:
 		return "Standing"
 	case 1:
-		return "Pointing"
+		return "Sitting"
 	case 2:
-		return "Crouching"
+		return "Running"
 	case 3:
-		return "Head Button"
+		return "Star"
 	}
 	panic("unknown copper golem pose")
 }
 
 // CopperGolemPoses returns all copper golem poses.
 func CopperGolemPoses() []CopperGolemPose {
-	return []CopperGolemPose{StandingPose(), PointingPose(), CrouchingPose(), HeadButtonPose()}
+	return []CopperGolemPose{StandingPose(), SittingPose(), RunningPose(), StarPose()}
 }
