@@ -1,11 +1,12 @@
 package world
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
-	"time"
 )
 
 // Viewer is a viewer in the world. It can view changes that are made in the world, such as the addition of
@@ -38,7 +39,7 @@ type Viewer interface {
 	ViewChunk(pos ChunkPos, dim Dimension, blockEntities map[cube.Pos]Block, c *chunk.Chunk)
 	// ViewTime views the time of the world. It is called every time the time is changed or otherwise every
 	// second.
-	ViewTime(t int)
+	ViewTime(t int, doDayLightCycle bool)
 	// ViewEntityItems views the items currently held by an Entity that is able to equip items.
 	ViewEntityItems(e Entity)
 	// ViewEntityArmour views the items currently equipped as armour by the Entity.
@@ -86,7 +87,7 @@ func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, cube.Rotation, bool)    
 func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                                      {}
 func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                                      {}
 func (NopViewer) ViewChunk(ChunkPos, Dimension, map[cube.Pos]Block, *chunk.Chunk)            {}
-func (NopViewer) ViewTime(int)                                                               {}
+func (NopViewer) ViewTime(int, bool)                                                         {}
 func (NopViewer) ViewEntityItems(Entity)                                                     {}
 func (NopViewer) ViewEntityArmour(Entity)                                                    {}
 func (NopViewer) ViewEntityAction(Entity, EntityAction)                                      {}
