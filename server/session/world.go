@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/df-mc/dragonfly/server/entity/effect"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -227,8 +229,9 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 }
 
 // ViewTime ...
-func (s *Session) ViewTime(time int) {
+func (s *Session) ViewTime(time int, doDayLightCycle bool) {
 	s.writePacket(&packet.SetTime{Time: int32(time)})
+	s.sendGameRules([]protocol.GameRule{{Name: "dodaylightcycle", Value: doDayLightCycle}})
 }
 
 // ViewEntityTeleport ...
