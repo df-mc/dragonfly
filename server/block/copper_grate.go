@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // CopperGrate is a solid block commonly found in deserts and beaches underneath sand.
@@ -68,26 +69,12 @@ func (c CopperGrate) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // EncodeItem ...
 func (c CopperGrate) EncodeItem() (name string, meta int16) {
-	name = "copper_grate"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, 0
+	return copperBlockName("copper_grate", c.Oxidation, c.Waxed), 0
 }
 
 // EncodeBlock ...
 func (c CopperGrate) EncodeBlock() (string, map[string]any) {
-	name := "copper_grate"
-	if c.Oxidation != UnoxidisedOxidation() {
-		name = c.Oxidation.String() + "_" + name
-	}
-	if c.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, nil
+	return copperBlockName("copper_grate", c.Oxidation, c.Waxed), nil
 }
 
 // allCopperGrates returns a list of all copper grate variants.
