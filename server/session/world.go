@@ -973,7 +973,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventHurt,
 		})
 	case entity.CriticalHitAction:
-		if act.Count == 0 {
+		if act.Count <= 0 {
 			act.Count = 55
 		}
 		s.writePacket(&packet.Animate{
@@ -982,7 +982,7 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			Data:            float32(act.Count),
 		})
 	case entity.EnchantedHitAction:
-		if act.Count == 0 {
+		if act.Count <= 0 {
 			act.Count = 15
 		}
 		s.writePacket(&packet.Animate{
