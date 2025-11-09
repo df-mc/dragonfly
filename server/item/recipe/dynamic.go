@@ -25,10 +25,10 @@ type potDecoration interface {
 
 // Match checks if the given input items match the decorated pot recipe pattern.
 // The pattern requires exactly 4 PotDecoration items (bricks or pottery sherds) in a diamond/plus shape:
-// - Slot 1 (top center)
+// - Slot 1 (top centre)
 // - Slot 3 (middle left)
 // - Slot 5 (middle right)
-// - Slot 7 (bottom center)
+// - Slot 7 (bottom centre)
 // All other slots must be empty.
 func (r DecoratedPotRecipe) Match(input []Item) (output []item.Stack, ok bool) {
 	// For a 3x3 crafting grid, we need exactly 9 slots
