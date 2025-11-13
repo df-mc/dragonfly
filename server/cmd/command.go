@@ -3,11 +3,12 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"go/ast"
 	"reflect"
 	"slices"
 	"strings"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Runnable represents a Command that may be run by a Command source. The Command must be a struct type and
@@ -178,13 +179,19 @@ type ParamInfo struct {
 func (cmd Command) Params(src Source) [][]ParamInfo {
 	params := make([][]ParamInfo, 0, len(cmd.v))
 	for _, runnable := range cmd.v {
-		elem := reflect.New(runnable.Type()).Elem()
-		elem.Set(runnable)
-
 		if allower, ok := runnable.Interface().(Allower); ok && !allower.Allow(src) {
 			// This source cannot execute this runnable.
 			continue
 		}
+
+		// If the runnable can describe its own parameters, prefer that over reflection.
+		if d, ok := runnable.Interface().(ParamDescriber); ok {
+			params = append(params, d.DescribeParams(src))
+			continue
+		}
+
+		elem := reflect.New(runnable.Type()).Elem()
+		elem.Set(runnable)
 
 		var fields []ParamInfo
 		for _, t := range exportedFields(elem) {
