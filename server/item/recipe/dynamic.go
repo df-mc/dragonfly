@@ -41,42 +41,40 @@ func (r DecoratedPotRecipe) Match(input []Item) (output []item.Stack, ok bool) {
 	//          3 4 5
 	//          6 7 8
 	// We need items at: 1 (top), 3 (left), 5 (right), 7 (bottom)
-	requiredSlots := []int{1, 3, 5, 7}
-	emptySlots := []int{0, 2, 4, 6, 8}
+	// Odd indices should have items, even indices should be empty
 
-	// Check that empty slots are actually empty
-	for _, slot := range emptySlots {
-		if !input[slot].Empty() {
-			return nil, false
-		}
-	}
-
-	// Collect decorations from the required slots
 	decorations := [4]world.Item{}
-	for i, slot := range requiredSlots {
-		it := input[slot]
-		if it.Empty() {
-			return nil, false
-		}
+	decorationIndex := 0
+	for i := range input {
+		it := input[i]
+		if i%2 == 0 {
+			// Even slots (0, 2, 4, 6, 8) should be empty
+			if !it.Empty() {
+				return nil, false
+			}
+		} else {
+			// Odd slots (1, 3, 5, 7) should have items
+			if it.Empty() {
+				return nil, false
+			}
 
-		// Extract the actual item from the Item interface
-		var actualItem item.Stack
-		switch v := it.(type) {
-		case item.Stack:
-			actualItem = v
-		case ItemTag:
-			// ItemTag is not valid for decorated pots
-			return nil, false
-		default:
-			return nil, false
-		}
+			// Extract the actual item from the Item interface
+			var actualItem item.Stack
+			if v, ok := it.(item.Stack); ok {
+				actualItem = v
+			} else {
+				// ItemTag or other types are not valid for decorated pots
+				return nil, false
+			}
 
-		// Check if the item implements PotDecoration
-		decoration, ok := actualItem.Item().(potDecoration)
-		if !ok {
-			return nil, false
+			// Check if the item implements PotDecoration
+			decoration, ok := actualItem.Item().(potDecoration)
+			if !ok {
+				return nil, false
+			}
+			decorations[decorationIndex] = decoration
+			decorationIndex++
 		}
-		decorations[i] = decoration
 	}
 
 	// Create the decorated pot by encoding the decorations into NBT
