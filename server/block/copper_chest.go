@@ -2,21 +2,22 @@ package block
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"strings"
-	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Chest is a container block which may be used to store items. Chests may also be paired to create a bigger
+// CopperChest is a container block which may be used to store items. Chests may also be paired to create a bigger
 // single container.
-// The empty value of Chest is not valid. It must be created using block.NewChest().
-type Chest struct {
+// The empty value of CopperChest is not valid. It must be created using block.NewCopperChest().
+type CopperChest struct {
 	baseChest
 	chest
 	transparent
@@ -28,24 +29,28 @@ type Chest struct {
 	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
 	// include colour codes.
 	CustomName string
+	// Oxidation is the level of oxidation of the copper chest.
+	Oxidation OxidationType
+	// Waxed bool is whether the copper chest has been waxed with honeycomb.
+	Waxed bool
 }
 
-// NewChest creates a new initialised chest. The inventory is properly initialised.
-func NewChest() Chest {
-	return Chest{
+// NewCopperChest creates a new initialised chest. The inventory is properly initialised.
+func NewCopperChest() CopperChest {
+	return CopperChest{
 		baseChest: newBaseChest(),
 	}
 }
 
 // Inventory returns the inventory of the chest. The size of the inventory will be 27 or 54, depending on
 // whether the chest is single or double.
-func (c Chest) Inventory(tx *world.Tx, pos cube.Pos) *inventory.Inventory {
+func (c CopperChest) Inventory(tx *world.Tx, pos cube.Pos) *inventory.Inventory {
 	inv, _ := c.tryPair(tx, pos)
 	return inv
 }
 
 // tryPair attempts to pair the inventories of this chest with a potential paired chest next to it.
-func (c Chest) tryPair(tx *world.Tx, pos cube.Pos) (*inventory.Inventory, bool) {
+func (c CopperChest) tryPair(tx *world.Tx, pos cube.Pos) (*inventory.Inventory, bool) {
 	if c.paired {
 		if c.pairInv == nil {
 			if ch, pair, ok := c.pair(tx, pos, c.pairPos(pos)); ok {
@@ -63,34 +68,34 @@ func (c Chest) tryPair(tx *world.Tx, pos cube.Pos) (*inventory.Inventory, bool) 
 }
 
 // WithName returns the chest after applying a specific name to the block.
-func (c Chest) WithName(a ...any) world.Item {
+func (c CopperChest) WithName(a ...any) world.Item {
 	c.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return c
 }
 
 // SideClosed ...
-func (Chest) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
+func (CopperChest) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // AddViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.
-func (c Chest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+func (c CopperChest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	if _, changed := c.tryPair(tx, pos); changed {
-		c = tx.Block(pos).(Chest)
+		c = tx.Block(pos).(CopperChest)
 	}
 	c.baseChest.addViewer(v, tx, pos)
 }
 
 // RemoveViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to it.
-func (c Chest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+func (c CopperChest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	if _, changed := c.tryPair(tx, pos); changed {
-		c = tx.Block(pos).(Chest)
+		c = tx.Block(pos).(CopperChest)
 	}
 	c.baseChest.removeViewer(v, tx, pos)
 }
 
 // Activate ...
-func (c Chest) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
+func (c CopperChest) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	if opener, ok := u.(ContainerOpener); ok {
 		if c.paired {
 			if d, ok := tx.Block(c.pairPos(pos).Side(cube.FaceUp)).(LightDiffuser); !ok || d.LightDiffusionLevel() > 2 {
@@ -106,14 +111,20 @@ func (c Chest) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ 
 }
 
 // UseOnBlock ...
-func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (c CopperChest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
 	}
+
+	oxidation := c.Oxidation
+	waxed := c.Waxed
+
 	//noinspection GoAssignmentToReceiver
-	c = NewChest()
+	c = NewCopperChest()
 	c.Facing = user.Rotation().Direction().Opposite()
+	c.Oxidation = oxidation
+	c.Waxed = waxed
 
 	// Check both sides of the chest to see if it is possible to pair with another chest.
 	for _, dir := range []cube.Direction{c.Facing.RotateLeft(), c.Facing.RotateRight()} {
@@ -129,8 +140,10 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 }
 
 // BreakInfo ...
-func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+func (c CopperChest) BreakInfo() BreakInfo {
+	return newBreakInfo(3, func(t item.Tool) bool {
+		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
+	}, pickaxeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if c.paired {
 			pairPos := c.pairPos(pos)
 			if _, pair, ok := c.unpair(tx, pos); ok {
@@ -145,24 +158,14 @@ func (c Chest) BreakInfo() BreakInfo {
 	})
 }
 
-// FuelInfo ...
-func (Chest) FuelInfo() item.FuelInfo {
-	return newFuelInfo(time.Second * 15)
-}
-
-// FlammabilityInfo ...
-func (c Chest) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(0, 0, true)
-}
-
 // Paired returns whether the chest is paired with another chest.
-func (c Chest) Paired() bool {
+func (c CopperChest) Paired() bool {
 	return c.paired
 }
 
 // pair pairs this chest with the given chest position.
-func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok bool) {
-	pair, ok = tx.Block(pairPos).(Chest)
+func (c CopperChest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair CopperChest, ok bool) {
+	pair, ok = tx.Block(pairPos).(CopperChest)
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
 	}
@@ -182,12 +185,12 @@ func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok boo
 }
 
 // unpair unpairs this chest from the chest it is currently paired with.
-func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
+func (c CopperChest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair CopperChest, ok bool) {
 	if !c.paired {
-		return c, Chest{}, false
+		return c, CopperChest{}, false
 	}
 
-	pair, ok = tx.Block(c.pairPos(pos)).(Chest)
+	pair, ok = tx.Block(c.pairPos(pos)).(CopperChest)
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
 	}
@@ -197,13 +200,60 @@ func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
 	return c, pair, true
 }
 
+// Wax waxes the copper chest to stop it from oxidising further.
+func (c CopperChest) Wax(cube.Pos, mgl64.Vec3) (world.Block, bool) {
+	if c.Waxed {
+		return c, false
+	}
+	c.Waxed = true
+	return c, true
+}
+
+// Strip ...
+func (c CopperChest) Strip() (world.Block, world.Sound, bool) {
+	if c.Waxed {
+		c.Waxed = false
+		return c, sound.WaxRemoved{}, true
+	} else if ot, ok := c.Oxidation.Decrease(); ok {
+		c.Oxidation = ot
+		return c, sound.CopperScraped{}, true
+	}
+	return c, nil, false
+}
+
+// CanOxidate ...
+func (c CopperChest) CanOxidate() bool {
+	return !c.Waxed
+}
+
+// OxidationLevel ...
+func (c CopperChest) OxidationLevel() OxidationType {
+	return c.Oxidation
+}
+
+// WithOxidationLevel ...
+func (c CopperChest) WithOxidationLevel(o OxidationType) Oxidisable {
+	c.Oxidation = o
+	return c
+}
+
+// RandomTick ...
+func (c CopperChest) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	attemptOxidation(pos, tx, r, c)
+}
+
 // DecodeNBT ...
-func (c Chest) DecodeNBT(data map[string]any) any {
+func (c CopperChest) DecodeNBT(data map[string]any) any {
 	facing := c.Facing
+	oxidation := c.Oxidation
+	waxed := c.Waxed
+
 	//noinspection GoAssignmentToReceiver
-	c = NewChest()
+	c = NewCopperChest()
 	c.Facing = facing
 	c.CustomName = nbtconv.String(data, "CustomName")
+	c.Oxidation = oxidation
+	c.Waxed = waxed
 
 	pairX, ok := data["pairx"]
 	pairZ, ok2 := data["pairz"]
@@ -221,16 +271,17 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 }
 
 // EncodeNBT ...
-func (c Chest) EncodeNBT() map[string]any {
+func (c CopperChest) EncodeNBT() map[string]any {
 	if c.inventory == nil {
-		facing, customName := c.Facing, c.CustomName
+		facing, customName, oxidation, waxed := c.Facing, c.CustomName, c.Oxidation, c.Waxed
+
 		//noinspection GoAssignmentToReceiver
-		c = NewChest()
-		c.Facing, c.CustomName = facing, customName
+		c = NewCopperChest()
+		c.Facing, c.CustomName, c.Oxidation, c.Waxed = facing, customName, oxidation, waxed
 	}
 	m := map[string]any{
 		"Items": nbtconv.InvToNBT(c.inventory),
-		"id":    "Chest",
+		"id":    "CopperChest",
 	}
 	if c.CustomName != "" {
 		m["CustomName"] = c.CustomName
@@ -244,19 +295,25 @@ func (c Chest) EncodeNBT() map[string]any {
 }
 
 // EncodeItem ...
-func (Chest) EncodeItem() (name string, meta int16) {
-	return "minecraft:chest", 0
+func (c CopperChest) EncodeItem() (name string, meta int16) {
+	return copperBlockName("copper_chest", c.Oxidation, c.Waxed), 0
 }
 
 // EncodeBlock ...
-func (c Chest) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:chest", map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
+func (c CopperChest) EncodeBlock() (name string, properties map[string]any) {
+	return copperBlockName("copper_chest", c.Oxidation, c.Waxed), map[string]any{"minecraft:cardinal_direction": c.Facing.String()}
 }
 
-// allChests ...
-func allChests() (chests []world.Block) {
-	for _, direction := range cube.Directions() {
-		chests = append(chests, Chest{Facing: direction})
+// allCopperChests ...
+func allCopperChests() (chests []world.Block) {
+	f := func(waxed bool) {
+		for _, o := range OxidationTypes() {
+			for _, direction := range cube.Directions() {
+				chests = append(chests, CopperChest{Facing: direction, Oxidation: o, Waxed: waxed})
+			}
+		}
 	}
+	f(true)
+	f(false)
 	return
 }
