@@ -30,7 +30,7 @@ func (h Helmet) DefencePoints() float64 {
 	switch h.Tier.Name() {
 	case "leather":
 		return 1
-	case "golden", "chainmail", "iron":
+	case "copper", "golden", "chainmail", "iron":
 		return 2
 	case "diamond", "netherite":
 		return 3
