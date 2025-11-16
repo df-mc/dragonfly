@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -973,14 +973,22 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventHurt,
 		})
 	case entity.CriticalHitAction:
+		if act.Count <= 0 {
+			act.Count = 55
+		}
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
+			Data:            float32(act.Count),
 		})
 	case entity.EnchantedHitAction:
+		if act.Count <= 0 {
+			act.Count = 15
+		}
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionMagicCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
+			Data:            float32(act.Count),
 		})
 	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{

@@ -204,4 +204,7 @@ func registerVanilla() {
 			block:  "brewing_stand",
 		}})
 	}
+
+	// Register dynamic recipes
+	RegisterDynamic(NewDecoratedPotRecipe())
 }
