@@ -3,13 +3,15 @@ package block
 //lint:file-ignore ST1022 Exported variables in this package have compiler directives. These variables are not otherwise exposed to users.
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand/v2"
-	"time"
+	"github.com/df-mc/dragonfly/server/world/portal"
 )
 
 // Fire is a non-solid block that can spread to nearby flammable blocks.
@@ -270,6 +272,25 @@ func (f Fire) Start(tx *world.Tx, pos cube.Pos) {
 			tx.ScheduleBlockUpdate(pos, f, time.Duration(30+rand.IntN(10))*time.Second/20)
 		}
 	}
+}
+
+// Place ...
+func (Fire) Place(pos cube.Pos, w *world.World) bool {
+	portalActivated := false
+	for _, f := range cube.Faces() {
+		if portalActivated {
+			break
+		}
+		w.Exec(func(tx *world.Tx) {
+			if o, ok := tx.Block(pos.Side(f)).(Obsidian); ok && !o.Crying {
+				if p, ok := portal.NetherPortalFromPos(tx, pos); ok && p.Framed() && !p.Activated() {
+					p.Activate()
+					portalActivated = true
+				}
+			}
+		})
+	}
+	return true
 }
 
 // allFire ...
