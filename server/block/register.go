@@ -126,6 +126,7 @@ func init() {
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
+	registerAll(allBeds())
 	registerAll(allBeetroot())
 	registerAll(allBlackstone())
 	registerAll(allBlastFurnaces())
@@ -142,8 +143,13 @@ func init() {
 	registerAll(allComposters())
 	registerAll(allConcrete())
 	registerAll(allConcretePowder())
+	registerAll(allCopper())
+	registerAll(allCopperDoors())
+	registerAll(allCopperGrates())
+	registerAll(allCopperTrapdoors())
 	registerAll(allCoral())
 	registerAll(allCoralBlocks())
+	registerAll(allDecoratedPots())
 	registerAll(allDeepslate())
 	registerAll(allDoors())
 	registerAll(allDoubleFlowers())
@@ -184,6 +190,7 @@ func init() {
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
+	registerAll(allRespawnAnchors())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
@@ -205,11 +212,6 @@ func init() {
 	registerAll(allWheat())
 	registerAll(allWood())
 	registerAll(allWool())
-	registerAll(allDecoratedPots())
-	registerAll(allCopper())
-	registerAll(allCopperDoors())
-	registerAll(allCopperGrates())
-	registerAll(allCopperTrapdoors())
 }
 
 func init() {
@@ -334,6 +336,7 @@ func init() {
 	world.RegisterItem(ResinBricks{Chiseled: true})
 	world.RegisterItem(ResinBricks{})
 	world.RegisterItem(Resin{})
+	world.RegisterItem(RespawnAnchor{})
 	world.RegisterItem(Sand{Red: true})
 	world.RegisterItem(Sand{})
 	world.RegisterItem(SeaLantern{})
@@ -388,6 +391,7 @@ func init() {
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
+		world.RegisterItem(Bed{Colour: c})
 		world.RegisterItem(Carpet{Colour: c})
 		world.RegisterItem(ConcretePowder{Colour: c})
 		world.RegisterItem(Concrete{Colour: c})
