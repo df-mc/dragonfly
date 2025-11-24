@@ -880,7 +880,7 @@ loop:
 			break loop
 		}
 	}
-	s.writePacket(&packet.ServerScriptDebugDrawer{Shapes: shapes})
+	s.writePacket(&packet.DebugDrawer{Shapes: shapes})
 }
 
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
