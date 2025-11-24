@@ -82,9 +82,20 @@ type Conductor interface {
 	Block
 	// RedstoneSource returns true if the conductor is a signal source.
 	RedstoneSource() bool
-	// WeakPower returns the power from a partial source and has limited usage.
+
+	// WeakPower returns the weak power level emitted by this conductor through the specified face.
+	// Weak power can pass through the specified face of a solid block to power redstone components
+	// on the other side, but cannot power solid blocks themselves or travel further.
+	// The accountForDust parameter indicates whether redstone dust should be considered when
+	// calculating power levels.
 	WeakPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
-	// StrongPower returns the power from a full source and can be passed to any redstone component.
+
+	// StrongPower returns the strong power level emitted by this conductor through the specified face.
+	// Strong power can be transmitted through solid blocks - when a solid block receives strong power
+	// through one of its faces, it can provide weak power to adjacent redstone components on all other
+	// faces. Strong power can also directly power any redstone component.
+	// The accountForDust parameter indicates whether redstone dust should be considered when
+	// calculating power levels.
 	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
 }
 

@@ -336,7 +336,6 @@ func init() {
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
 	world.RegisterItem(RedstoneBlock{})
-	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(RedstoneTorch{})
 	world.RegisterItem(ReinforcedDeepslate{})
 	world.RegisterItem(ResinBricks{Chiseled: true})

@@ -27,14 +27,9 @@ func (RedstoneWire) HasLiquidDrops() bool {
 
 // BreakInfo ...
 func (r RedstoneWire) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(r)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(item.RedstoneWire{})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		updateStrongRedstone(pos, tx)
 	})
-}
-
-// EncodeItem ...
-func (RedstoneWire) EncodeItem() (name string, meta int16) {
-	return "minecraft:redstone", 0
 }
 
 // EncodeBlock ...
