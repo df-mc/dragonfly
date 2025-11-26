@@ -49,6 +49,9 @@ func (t ticker) tick(tx *Tx) {
 		w.set.Unlock()
 		return
 	}
+
+	var tick int64
+
 	if w.advance {
 		w.set.CurrentTick++
 		if w.set.TimeCycle {
@@ -57,9 +60,13 @@ func (t ticker) tick(tx *Tx) {
 		if w.set.WeatherCycle {
 			w.advanceWeather()
 		}
+		tick = w.set.CurrentTick
+	} else {
+		w.tick++
+		tick = w.tick
 	}
 
-	rain, thunder, tick, tim := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time)
+	rain, thunder, tim := w.set.Raining, w.set.Thundering && w.set.Raining, int(w.set.Time)
 	w.set.Unlock()
 
 	if tick%20 == 0 {
