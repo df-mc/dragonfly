@@ -1,14 +1,15 @@
 package entity
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"time"
 )
 
 // ItemBehaviourConfig holds optional parameters for an ItemBehaviour.
@@ -94,6 +95,11 @@ func (i *ItemBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		tx.SetBlock(blockPos, bl, nil)
 	}
 	return i.passive.Tick(e, tx)
+}
+
+// Explode explodes item, item will be removed from the world.
+func (i *ItemBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
+	_ = e.Close()
 }
 
 // tick checks if the item can be picked up or merged with nearby item stacks.
