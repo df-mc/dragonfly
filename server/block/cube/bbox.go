@@ -1,6 +1,8 @@
 package cube
 
 import (
+	"iter"
+
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -161,6 +163,11 @@ func (box BBox) intersectsWith(other BBox, epsilon float64) bool {
 		}
 	}
 	return false
+}
+
+// Iter returns iterator that iterates all positions inside BBox.
+func (box BBox) Iter() iter.Seq[Pos] {
+	return Range3D(PosFromVec3(box.max), PosFromVec3(box.min))
 }
 
 // AnyIntersections checks if any of boxes intersect with search.
