@@ -2443,7 +2443,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
-	p.session().SendDebugShapes()
+	p.session().SendDebugShapes(tx.World().Dimension())
 	p.session().SendHudUpdates()
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
