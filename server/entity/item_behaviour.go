@@ -99,7 +99,9 @@ func (i *ItemBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 // Explode explodes item, item will be removed from the world.
 func (i *ItemBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
-	_ = e.Close()
+	if impact > 0 {
+		_ = e.Close()
+	}
 }
 
 // tick checks if the item can be picked up or merged with nearby item stacks.
