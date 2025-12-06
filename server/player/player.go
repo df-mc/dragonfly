@@ -1472,9 +1472,7 @@ func (p *Player) UseItem() {
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
-	if p.usingItem {
-		defer p.updateState()
-	}
+	defer p.updateState()
 	p.usingItem = false
 	if !p.usingItem || !p.canRelease() || !p.GameMode().AllowsInteraction() {
 		return
