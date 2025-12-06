@@ -1474,7 +1474,7 @@ func (p *Player) UseItem() {
 func (p *Player) ReleaseItem() {
 	defer p.updateState()
 	p.usingItem = false
-	if !p.usingItem || !p.canRelease() || !p.GameMode().AllowsInteraction() {
+	if !p.canRelease() || !p.GameMode().AllowsInteraction() {
 		return
 	}
 
