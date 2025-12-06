@@ -59,6 +59,8 @@ type playerData struct {
 	invisible, immobile, onGround, usingItem bool
 	usingSince time.Time
 
+	serverChargedItem time.Time
+
 	glideTicks   int64
 	fireTicks    int64
 	fallDistance float64
@@ -1402,9 +1404,13 @@ func (p *Player) UseItem() {
 	switch usable := it.(type) {
 	case item.Chargeable:
 		if p.usingItem {
-			p.tryChargeItem(usable)
+			p.tryChargeItem(usable, false)
+			return
+		} else if time.Since(p.serverChargedItem) <= time.Millisecond*100 {
+			// preventing auto release.
 			return
 		}
+
 		useCtx := p.useContext()
 		if !usable.ReleaseCharge(p, p.tx, useCtx) {
 			// If the item was not charged yet, start charging.
@@ -1450,12 +1456,15 @@ func (p *Player) ReleaseItem() {
 }
 
 // tryChargeItem attempts to charge the item.
-func (p *Player) tryChargeItem(usable item.Chargeable) {
+func (p *Player) tryChargeItem(usable item.Chargeable, tick bool) {
 	useCtx, dur := p.useContext(), p.useDuration()
 	if usable.Charge(p, p.tx, useCtx, dur) {
 		// Stop charging and determine if the item is ready.
 		p.usingItem = false
 		p.session().SendChargeItemComplete()
+		if tick {
+			p.serverChargedItem = time.Now()
+		}
 	}
 	p.handleUseContext(useCtx)
 	p.updateState()
@@ -2477,7 +2486,7 @@ func (p *Player) tickItemUse(current int64) {
 	case item.Chargeable:
 		it.ContinueCharge(p, p.tx, p.useContext(), p.useDuration())
 		// ensuring that item will be charged even if player is lagging.
-		p.tryChargeItem(it)
+		p.tryChargeItem(it, true)
 	}
 }
 
