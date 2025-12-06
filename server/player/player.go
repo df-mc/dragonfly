@@ -1299,6 +1299,9 @@ func (p *Player) SetHeldSlot(to int) error {
 		return nil
 	}
 	*p.heldSlot = uint32(to)
+	if p.usingItem {
+		defer p.updateState()
+	}
 	p.usingItem = false
 
 	for _, viewer := range p.viewers() {
