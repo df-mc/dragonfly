@@ -164,7 +164,8 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
-	releaser.SetHeldItems(held.WithItem(c), left)
+	crossbow := held.WithItem(c)
+	releaser.SetHeldItems(crossbow, left)
 	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
 	return true
 }
