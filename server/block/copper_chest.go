@@ -25,7 +25,7 @@ type CopperChest struct {
 
 	// Facing is the direction that the chest is facing.
 	Facing cube.Direction
-	// CustomName is the custom name of the chest. This name is displayed when the chest is opened, and may
+	// CustomName is the custom name of the chest. This name is displayed when the chest is opened and may
 	// include colour codes.
 	CustomName string
 	// Oxidation is the level of oxidation of the copper chest.
@@ -34,7 +34,7 @@ type CopperChest struct {
 	Waxed bool
 }
 
-// NewCopperChest creates a new initialised chest. The inventory is properly initialised.
+// NewCopperChest creates a new initialized chest. The inventory is properly initialized.
 func NewCopperChest() CopperChest {
 	return CopperChest{
 		chest: newBaseChest(),

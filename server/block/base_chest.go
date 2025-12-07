@@ -21,7 +21,7 @@ type chest struct {
 	viewers      map[ContainerViewer]struct{}
 }
 
-// newBaseChest creates a new initialized base chest with inventory
+// newBaseChest creates a new initialized base chest with inventory.
 func newBaseChest() chest {
 	b := chest{
 		viewerMu: new(sync.RWMutex),
@@ -69,7 +69,7 @@ func (b chest) close(tx *world.Tx, pos cube.Pos) {
 	tx.PlaySound(pos.Vec3Centre(), sound.ChestClose{})
 }
 
-// addViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.
+// addViewer adds a viewer to the chest so that it is updated whenever the inventory of the chest is changed.
 func (b chest) addViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
