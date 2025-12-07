@@ -1300,9 +1300,9 @@ func (p *Player) SetHeldSlot(to int) error {
 	}
 	*p.heldSlot = uint32(to)
 	if p.usingItem {
-		defer p.updateState()
+		p.usingItem = false
+		p.updateState()
 	}
-	p.usingItem = false
 
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
@@ -1442,8 +1442,8 @@ func (p *Player) UseItem() {
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
-	defer p.updateState()
 	p.usingItem = false
+	p.updateState()
 	if !p.canRelease() || !p.GameMode().AllowsInteraction() {
 		return
 	}
