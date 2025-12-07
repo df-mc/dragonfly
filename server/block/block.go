@@ -352,15 +352,3 @@ func newOreSmeltInfo(product item.Stack, experience float64) item.SmeltInfo {
 func newFuelInfo(duration time.Duration) item.FuelInfo {
 	return item.FuelInfo{Duration: duration}
 }
-
-// copperBlockName returns the name of a copper block with the given oxidation and waxed status.
-func copperBlockName(blockName string, oxidation OxidationType, waxed bool) string {
-	name := blockName
-	if oxidation != UnoxidisedOxidation() {
-		name = oxidation.String() + "_" + name
-	}
-	if waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name
-}

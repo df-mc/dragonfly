@@ -43,7 +43,6 @@ const (
 	hashCopper
 	hashCopperBars
 	hashCopperChain
-	hashCopperChest
 	hashCopperDoor
 	hashCopperGolemStatue
 	hashCopperGrate
@@ -356,10 +355,6 @@ func (c CopperBars) Hash() (uint64, uint64) {
 
 func (c CopperChain) Hash() (uint64, uint64) {
 	return hashCopperChain, uint64(c.Axis) | uint64(c.Oxidation.Uint8())<<2 | uint64(boolByte(c.Waxed))<<4
-}
-
-func (c CopperChest) Hash() (uint64, uint64) {
-	return hashCopperChest, uint64(c.Facing) | uint64(c.Oxidation.Uint8())<<2 | uint64(boolByte(c.Waxed))<<4
 }
 
 func (d CopperDoor) Hash() (uint64, uint64) {
