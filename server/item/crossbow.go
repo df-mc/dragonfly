@@ -1,11 +1,13 @@
 package item
 
 import (
+	"math"
 	"time"
 	_ "unsafe"
 
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Crossbow is a ranged weapon similar to a bow that uses arrows or fireworks
@@ -118,36 +120,89 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		return false
 	}
 
+	held, _ := releaser.HeldItems()
 	creative := releaser.GameMode().CreativeInventory()
-	rot := releaser.Rotation().Neg()
-	dirVec := releaser.Rotation().Vec3().Normalize()
 
-	if firework, isFirework := c.Item.Item().(Firework); isFirework {
-		createFirework := tx.World().EntityRegistry().Config().Firework
-		fireworkEntity := createFirework(world.EntitySpawnOpts{
-			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(0.8),
-			Rotation: rot,
-		}, firework, releaser, 1.0, 0, false)
-		tx.AddEntity(fireworkEntity)
+	multishot := false
+	for _, enchant := range held.Enchantments() {
+		if _, ok := enchant.Type().(interface{ MultipleProjectiles() bool }); ok {
+			multishot = true
+			break
+		}
+	}
+
+	if multishot {
+		c.shootMultiple(releaser, tx, creative)
+	} else {
+		rot := releaser.Rotation()
+		dirVec := rot.Vec3().Normalize()
+
+		if firework, isFirework := c.Item.Item().(Firework); isFirework {
+			createFirework := tx.World().EntityRegistry().Config().Firework
+			projectile := createFirework(world.EntitySpawnOpts{
+				Position: torsoPosition(releaser),
+				Velocity: dirVec.Mul(0.8),
+				Rotation: rot.Neg(),
+			}, firework, releaser, 1.0, 0, false)
+			tx.AddEntity(projectile)
+		} else {
+			createArrow := tx.World().EntityRegistry().Config().Arrow
+			arrow := createArrow(world.EntitySpawnOpts{
+				Position: torsoPosition(releaser),
+				Velocity: dirVec.Mul(5.15),
+				Rotation: rot.Neg(),
+			}, 9, releaser, false, false, !creative, 0, c.Item.Item().(Arrow).Tip)
+			tx.AddEntity(arrow)
+		}
+	}
+
+	if _, isFirework := c.Item.Item().(Firework); isFirework {
 		ctx.DamageItem(3)
 	} else {
-		createArrow := tx.World().EntityRegistry().Config().Arrow
-		arrow := createArrow(world.EntitySpawnOpts{
-			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(5.15),
-			Rotation: rot,
-		}, 9, releaser, false, false, !creative, 0, c.Item.Item().(Arrow).Tip)
-		tx.AddEntity(arrow)
 		ctx.DamageItem(1)
 	}
 
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
-	crossbow := held.WithItem(c)
-	releaser.SetHeldItems(crossbow, left)
+	releaser.SetHeldItems(held.WithItem(c), left)
 	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
 	return true
+}
+
+// shootMultiple ...
+func (c Crossbow) shootMultiple(releaser Releaser, tx *world.Tx, creative bool) {
+	rot := releaser.Rotation()
+	angles := []float64{0, -10, 10}
+
+	for _, angle := range angles {
+		adjustedYaw := rot.Yaw() + angle
+		yawRad := adjustedYaw * (math.Pi / 180.0)
+		pitchRad := rot.Pitch() * (math.Pi / 180.0)
+
+		dirVec := mgl64.Vec3{
+			-math.Sin(yawRad) * math.Cos(pitchRad),
+			-math.Sin(pitchRad),
+			math.Cos(yawRad) * math.Cos(pitchRad),
+		}.Normalize()
+
+		if firework, isFirework := c.Item.Item().(Firework); isFirework {
+			createFirework := tx.World().EntityRegistry().Config().Firework
+			projectile := createFirework(world.EntitySpawnOpts{
+				Position: torsoPosition(releaser),
+				Velocity: dirVec.Mul(0.8),
+				Rotation: rot.Neg(),
+			}, firework, releaser, 1.0, 0, false)
+			tx.AddEntity(projectile)
+		} else {
+			createArrow := tx.World().EntityRegistry().Config().Arrow
+			arrow := createArrow(world.EntitySpawnOpts{
+				Position: torsoPosition(releaser),
+				Velocity: dirVec.Mul(5.15),
+				Rotation: rot.Neg(),
+			}, 9, releaser, false, false, !creative && angle == 0, 0, c.Item.Item().(Arrow).Tip)
+			tx.AddEntity(arrow)
+		}
+	}
 }
 
 // MaxCount always returns 1.
