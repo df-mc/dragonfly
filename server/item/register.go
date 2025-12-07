@@ -106,7 +106,6 @@ func init() {
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
 	world.RegisterItem(RecoveryCompass{})
-	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(ResinBrick{})
 	world.RegisterItem(RottenFlesh{})
 	world.RegisterItem(Salmon{Cooked: true})

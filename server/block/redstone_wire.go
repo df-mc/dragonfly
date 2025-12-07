@@ -39,6 +39,11 @@ func (r RedstoneWire) EncodeBlock() (string, map[string]any) {
 	}
 }
 
+// EncodeItem ...
+func (RedstoneWire) EncodeItem() (name string, meta int16) {
+	return "minecraft:redstone", 0
+}
+
 // UseOnBlock ...
 func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, r)

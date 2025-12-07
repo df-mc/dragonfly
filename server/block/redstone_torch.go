@@ -14,8 +14,9 @@ import (
 
 // burnoutKey uniquely identifies a torch position within a specific world.
 type burnoutKey struct {
-	worldName string
-	pos       cube.Pos
+	world *world.World
+	dim   world.Dimension
+	pos   cube.Pos
 }
 
 // redstoneTorchBurnoutData stores burnout tracking data indexed by world and block position.
@@ -54,8 +55,9 @@ type RedstoneTorch struct {
 // getBurnoutData retrieves or creates burnout tracking data for the given position and world.
 func getBurnoutData(pos cube.Pos, w *world.World) *burnoutData {
 	key := burnoutKey{
-		worldName: w.Name(),
-		pos:       pos,
+		world: w,
+		dim:   w.Dimension(),
+		pos:   pos,
 	}
 
 	redstoneTorchBurnoutDataMu.RLock()
@@ -84,8 +86,9 @@ func getBurnoutData(pos cube.Pos, w *world.World) *burnoutData {
 // removeBurnoutData cleans up burnout tracking data for the given position and world.
 func removeBurnoutData(pos cube.Pos, w *world.World) {
 	key := burnoutKey{
-		worldName: w.Name(),
-		pos:       pos,
+		world: w,
+		dim:   w.Dimension(),
+		pos:   pos,
 	}
 
 	redstoneTorchBurnoutDataMu.Lock()
