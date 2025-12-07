@@ -8,7 +8,7 @@ func (NetherStar) EncodeItem() (name string, meta int16) {
 	return "minecraft:nether_star", 0
 }
 
-// ExplosionProof indicates that item will withstand explosion as entity.
-func (NetherStar) ExplosionProof() bool {
+// BlastProof indicates that the item will withstand an explosion as an item entity.
+func (NetherStar) BlastProof() bool {
 	return true
 }
