@@ -4,14 +4,15 @@ import (
 	"sync"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-// baseChest contains common chest functionality.
-type baseChest struct {
+// chest contains common Chest functionality.
+type chest struct {
 	paired       bool
 	pairX, pairZ int
 	pairInv      *inventory.Inventory
@@ -21,8 +22,8 @@ type baseChest struct {
 }
 
 // newBaseChest creates a new initialized base chest with inventory
-func newBaseChest() baseChest {
-	b := baseChest{
+func newBaseChest() chest {
+	b := chest{
 		viewerMu: new(sync.RWMutex),
 		viewers:  make(map[ContainerViewer]struct{}, 1),
 	}
@@ -36,13 +37,18 @@ func newBaseChest() baseChest {
 	return b
 }
 
+// Model ...
+func (chest) Model() world.BlockModel {
+	return model.Chest{}
+}
+
 // pairPos returns the position of the paired chest.
-func (b baseChest) pairPos(pos cube.Pos) cube.Pos {
+func (b chest) pairPos(pos cube.Pos) cube.Pos {
 	return cube.Pos{b.pairX, pos[1], b.pairZ}
 }
 
 // open opens the chest, displaying the animation and playing a sound.
-func (b baseChest) open(tx *world.Tx, pos cube.Pos) {
+func (b chest) open(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		if b.paired {
 			v.ViewBlockAction(b.pairPos(pos), OpenAction{})
@@ -53,7 +59,7 @@ func (b baseChest) open(tx *world.Tx, pos cube.Pos) {
 }
 
 // close closes the chest, displaying the animation and playing a sound.
-func (b baseChest) close(tx *world.Tx, pos cube.Pos) {
+func (b chest) close(tx *world.Tx, pos cube.Pos) {
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		if b.paired {
 			v.ViewBlockAction(b.pairPos(pos), CloseAction{})
@@ -64,7 +70,7 @@ func (b baseChest) close(tx *world.Tx, pos cube.Pos) {
 }
 
 // addViewer adds a viewer to the chest, so that it is updated whenever the inventory of the chest is changed.
-func (b baseChest) addViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+func (b chest) addViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
 	if len(b.viewers) == 0 {
@@ -74,7 +80,7 @@ func (b baseChest) addViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 }
 
 // removeViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to it.
-func (b baseChest) removeViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
+func (b chest) removeViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	b.viewerMu.Lock()
 	defer b.viewerMu.Unlock()
 	if len(b.viewers) == 0 {
@@ -117,7 +123,7 @@ func mergeInventories(c1Inv, c2Inv *inventory.Inventory, pos, pairPos cube.Pos, 
 }
 
 // unpairChests unpairs the chests from each other.
-func unpairChests(b *baseChest, tx *world.Tx, pos cube.Pos) {
+func unpairChests(b *chest, tx *world.Tx, pos cube.Pos) {
 	if len(b.viewers) != 0 {
 		b.close(tx, pos)
 	}

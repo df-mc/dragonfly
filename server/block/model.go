@@ -22,14 +22,6 @@ func (empty) Model() world.BlockModel {
 	return model.Empty{}
 }
 
-// chest represents a block that has a model of a chest.
-type chest struct{}
-
-// Model ...
-func (chest) Model() world.BlockModel {
-	return model.Chest{}
-}
-
 // carpet represents a block that has a model of a carpet.
 type carpet struct{}
 

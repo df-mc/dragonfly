@@ -17,7 +17,6 @@ import (
 // single container.
 // The empty value of Chest is not valid. It must be created using block.NewChest().
 type Chest struct {
-	baseChest
 	chest
 	transparent
 	bass
@@ -33,7 +32,7 @@ type Chest struct {
 // NewChest creates a new initialised chest. The inventory is properly initialised.
 func NewChest() Chest {
 	return Chest{
-		baseChest: newBaseChest(),
+		chest: newBaseChest(),
 	}
 }
 
@@ -78,7 +77,7 @@ func (c Chest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	if _, changed := c.tryPair(tx, pos); changed {
 		c = tx.Block(pos).(Chest)
 	}
-	c.baseChest.addViewer(v, tx, pos)
+	c.chest.addViewer(v, tx, pos)
 }
 
 // RemoveViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to it.
@@ -86,7 +85,7 @@ func (c Chest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	if _, changed := c.tryPair(tx, pos); changed {
 		c = tx.Block(pos).(Chest)
 	}
-	c.baseChest.removeViewer(v, tx, pos)
+	c.chest.removeViewer(v, tx, pos)
 }
 
 // Activate ...
@@ -192,8 +191,8 @@ func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
 		return c, pair, false
 	}
 
-	unpairChests(&c.baseChest, tx, pos)
-	unpairChests(&pair.baseChest, tx, pos)
+	unpairChests(&c.chest, tx, pos)
+	unpairChests(&pair.chest, tx, pos)
 	return c, pair, true
 }
 

@@ -18,7 +18,6 @@ import (
 // single container.
 // The empty value of CopperChest is not valid. It must be created using block.NewCopperChest().
 type CopperChest struct {
-	baseChest
 	chest
 	transparent
 	bass
@@ -38,7 +37,7 @@ type CopperChest struct {
 // NewCopperChest creates a new initialised chest. The inventory is properly initialised.
 func NewCopperChest() CopperChest {
 	return CopperChest{
-		baseChest: newBaseChest(),
+		chest: newBaseChest(),
 	}
 }
 
@@ -83,7 +82,7 @@ func (c CopperChest) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	if _, changed := c.tryPair(tx, pos); changed {
 		c = tx.Block(pos).(CopperChest)
 	}
-	c.baseChest.addViewer(v, tx, pos)
+	c.chest.addViewer(v, tx, pos)
 }
 
 // RemoveViewer removes a viewer from the chest, so that slot updates in the inventory are no longer sent to it.
@@ -91,7 +90,7 @@ func (c CopperChest) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos)
 	if _, changed := c.tryPair(tx, pos); changed {
 		c = tx.Block(pos).(CopperChest)
 	}
-	c.baseChest.removeViewer(v, tx, pos)
+	c.chest.removeViewer(v, tx, pos)
 }
 
 // Activate ...
@@ -195,8 +194,8 @@ func (c CopperChest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair CopperChest, o
 		return c, pair, false
 	}
 
-	unpairChests(&c.baseChest, tx, pos)
-	unpairChests(&pair.baseChest, tx, pos)
+	unpairChests(&c.chest, tx, pos)
+	unpairChests(&pair.chest, tx, pos)
 	return c, pair, true
 }
 
