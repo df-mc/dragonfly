@@ -858,7 +858,7 @@ func (s *Session) RemoveAllDebugShapes() {
 
 // SendDebugShapes sends any pending additions/removals of debug shapes to the player. Shapes should be sent
 // every tick to allow for batching and time-efficient updates.
-func (s *Session) SendDebugShapes() {
+func (s *Session) SendDebugShapes(dim world.Dimension) {
 	s.debugShapesMu.Lock()
 	defer s.debugShapesMu.Unlock()
 
@@ -866,16 +866,16 @@ func (s *Session) SendDebugShapes() {
 		return
 	}
 
-	shapes := make([]packet.DebugDrawerShape, 0, len(s.debugShapesAdd)+len(s.debugShapesRemove))
+	shapes := make([]protocol.DebugDrawerShape, 0, len(s.debugShapesAdd)+len(s.debugShapesRemove))
 loop:
 	for {
 		select {
 		case shape := <-s.debugShapesAdd:
 			s.debugShapes[shape.ShapeID()] = shape
-			shapes = append(shapes, s.debugShapeToProtocol(shape))
+			shapes = append(shapes, s.debugShapeToProtocol(shape, dim))
 		case id := <-s.debugShapesRemove:
 			delete(s.debugShapes, id)
-			shapes = append(shapes, packet.DebugDrawerShape{NetworkID: uint64(id)})
+			shapes = append(shapes, protocol.DebugDrawerShape{NetworkID: uint64(id), DimensionID: s.dimensionID(dim)})
 		default:
 			break loop
 		}
@@ -885,46 +885,51 @@ loop:
 
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
 // for some fields such as colour, scale and other per-shape properties.
-func (s *Session) debugShapeToProtocol(shape debug.Shape) packet.DebugDrawerShape {
-	ps := packet.DebugDrawerShape{NetworkID: uint64(shape.ShapeID())}
+func (s *Session) debugShapeToProtocol(shape debug.Shape, dim world.Dimension) protocol.DebugDrawerShape {
+	ps := protocol.DebugDrawerShape{
+		NetworkID:   uint64(shape.ShapeID()),
+		DimensionID: s.dimensionID(dim),
+	}
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	switch shape := shape.(type) {
 	case *debug.Arrow:
-		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeArrow))
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeArrow))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.LineEndLocation = protocol.Option(vec64To32(shape.EndPosition))
-		ps.ArrowHeadLength = protocol.Option(valueOrDefault(float32(shape.HeadLength), 1))
-		ps.ArrowHeadRadius = protocol.Option(valueOrDefault(float32(shape.HeadRadius), 0.5))
-		ps.Segments = protocol.Option(valueOrDefault(uint8(shape.HeadSegments), 4))
+		ps.ExtraShapeData = &protocol.ArrowShape{
+			ArrowEndLocation: protocol.Option(vec64To32(shape.EndPosition)),
+			ArrowHeadLength:  protocol.Option(valueOrDefault(float32(shape.HeadLength), 1)),
+			ArrowHeadRadius:  protocol.Option(valueOrDefault(float32(shape.HeadRadius), 0.5)),
+			Segments:         protocol.Option(valueOrDefault(uint8(shape.HeadSegments), 4)),
+		}
 	case *debug.Box:
-		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeBox))
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeBox))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
-		ps.BoxBound = protocol.Option(valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1}))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.ExtraShapeData = &protocol.BoxShape{BoxBound: valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1})}
 	case *debug.Circle:
-		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeCircle))
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeCircle))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.Segments = protocol.Option(valueOrDefault(uint8(shape.Segments), 20))
+		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
 	case *debug.Line:
-		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeLine))
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeLine))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.LineEndLocation = protocol.Option(vec64To32(shape.EndPosition))
+		ps.ExtraShapeData = &protocol.LineShape{LineEndLocation: vec64To32(shape.EndPosition)}
 	case *debug.Sphere:
-		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeSphere))
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeSphere))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.Segments = protocol.Option(valueOrDefault(uint8(shape.Segments), 20))
+		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
 	case *debug.Text:
-		ps.Type = protocol.Option(uint8(packet.ScriptDebugShapeText))
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeText))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.Text = protocol.Option(shape.Text)
+		ps.ExtraShapeData = &protocol.TextShape{Text: shape.Text}
 	default:
 		panic(fmt.Sprintf("unknown debug shape type %T", shape))
 	}
