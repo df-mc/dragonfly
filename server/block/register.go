@@ -207,8 +207,13 @@ func init() {
 	registerAll(allWool())
 	registerAll(allDecoratedPots())
 	registerAll(allCopper())
+	registerAll(allCopperBars())
+	registerAll(allCopperChains())
 	registerAll(allCopperDoors())
+	registerAll(allCopperGolemStatues())
 	registerAll(allCopperGrates())
+	registerAll(allCopperLanterns())
+	registerAll(allCopperTorches())
 	registerAll(allCopperTrapdoors())
 }
 
@@ -244,6 +249,7 @@ func init() {
 	world.RegisterItem(Cobblestone{})
 	world.RegisterItem(CocoaBean{})
 	world.RegisterItem(Composter{})
+	world.RegisterItem(CopperTorch{})
 	world.RegisterItem(CraftingTable{})
 	world.RegisterItem(DeadBush{})
 	world.RegisterItem(DeepslateBricks{Cracked: true})
@@ -463,10 +469,18 @@ func init() {
 		world.RegisterItem(Deepslate{Type: t})
 	}
 	for _, o := range OxidationTypes() {
+		world.RegisterItem(CopperBars{Oxidation: o})
+		world.RegisterItem(CopperBars{Oxidation: o, Waxed: true})
+		world.RegisterItem(CopperChain{Oxidation: o})
+		world.RegisterItem(CopperChain{Oxidation: o, Waxed: true})
 		world.RegisterItem(CopperDoor{Oxidation: o})
 		world.RegisterItem(CopperDoor{Oxidation: o, Waxed: true})
+		world.RegisterItem(CopperGolemStatue{Oxidation: o})
+		world.RegisterItem(CopperGolemStatue{Oxidation: o, Waxed: true})
 		world.RegisterItem(CopperGrate{Oxidation: o})
 		world.RegisterItem(CopperGrate{Oxidation: o, Waxed: true})
+		world.RegisterItem(CopperLantern{Oxidation: o})
+		world.RegisterItem(CopperLantern{Oxidation: o, Waxed: true})
 		world.RegisterItem(CopperTrapdoor{Oxidation: o})
 		world.RegisterItem(CopperTrapdoor{Oxidation: o, Waxed: true})
 
