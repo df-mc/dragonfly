@@ -65,8 +65,8 @@ func (t ticker) tick(tx *Tx) {
 
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
-			if w.Dimension().TimeCycle() {
-				viewer.ViewTime(tim, cycle)
+			if w.Dimension().TimeCycle() && cycle {
+				viewer.ViewTime(tim)
 			}
 			if w.Dimension().WeatherCycle() {
 				viewer.ViewWeather(rain, thunder)

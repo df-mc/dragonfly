@@ -227,8 +227,12 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 }
 
 // ViewTime ...
-func (s *Session) ViewTime(time int, doDayLightCycle bool) {
+func (s *Session) ViewTime(time int) {
 	s.writePacket(&packet.SetTime{Time: int32(time)})
+}
+
+// ViewTimeCycle ...
+func (s *Session) ViewTimeCycle(doDayLightCycle bool) {
 	s.sendGameRules([]protocol.GameRule{{Name: "dodaylightcycle", Value: doDayLightCycle}})
 }
 

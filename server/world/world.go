@@ -598,12 +598,11 @@ func (w *World) SetTime(new int) {
 	}
 	w.set.Lock()
 	w.set.Time = int64(new)
-	timeCycle := w.set.TimeCycle
 	w.set.Unlock()
 
 	viewers, _ := w.allViewers()
 	for _, viewer := range viewers {
-		viewer.ViewTime(new, timeCycle)
+		viewer.ViewTime(new)
 	}
 }
 
@@ -639,6 +638,10 @@ func (w *World) enableTimeCycle(v bool) {
 	w.set.Lock()
 	defer w.set.Unlock()
 	w.set.TimeCycle = v
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
+		viewer.ViewTimeCycle(v)
+	}
 }
 
 // temperature returns the temperature in the World at a specific position.
@@ -1062,7 +1065,8 @@ func (w *World) addWorldViewer(l *Loader) {
 	w.viewers[l] = l.viewer
 	w.viewerMu.Unlock()
 
-	l.viewer.ViewTime(w.Time(), w.TimeCycle())
+	l.viewer.ViewTime(w.Time())
+	l.viewer.ViewTimeCycle(w.TimeCycle())
 	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
 	w.set.Unlock()
