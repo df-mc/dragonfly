@@ -128,10 +128,11 @@ func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.
 			}
 		}
 		pk.Commands = append(pk.Commands, protocol.Command{
-			Name:          c.Name(),
-			Description:   c.Description(),
-			AliasesOffset: aliasesIndex,
-			Overloads:     overloads,
+			Name:            c.Name(),
+			Description:     c.Description(),
+			AliasesOffset:   aliasesIndex,
+			PermissionLevel: protocol.CommandPermissionLevelAny,
+			Overloads:       overloads,
 		})
 	}
 	pk.DynamicEnums = make([]protocol.DynamicEnum, 0, len(dynamicEnums))
