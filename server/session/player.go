@@ -557,6 +557,7 @@ func (s *Session) SendEffect(e effect.Effect) {
 		Amplifier:       int32(e.Level() - 1),
 		Particles:       !e.ParticlesHidden(),
 		Duration:        int32(dur),
+		Ambient:         e.Ambient(),
 	})
 }
 
