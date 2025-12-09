@@ -231,6 +231,11 @@ func (s *Session) ViewTime(time int) {
 	s.writePacket(&packet.SetTime{Time: int32(time)})
 }
 
+// ViewTimeCycle ...
+func (s *Session) ViewTimeCycle(doDayLightCycle bool) {
+	s.sendGameRules([]protocol.GameRule{{Name: "dodaylightcycle", Value: doDayLightCycle}})
+}
+
 // ViewEntityTeleport ...
 func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	id := s.entityRuntimeID(e)
