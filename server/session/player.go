@@ -660,7 +660,7 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.Sl
 			viewer.ViewEntityArmour(c)
 		}
 
-		if after.Item() != before.Item() {
+		if after.Item() != before.Item() && s.inTransaction.Load() {
 			s.PlaySound(sound.EquipItem{Item: after.Item()}, entity.EyePosition(c))
 		}
 	}
