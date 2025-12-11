@@ -40,7 +40,7 @@ func (t ticker) tick(tx *Tx) {
 	w := tx.World()
 
 	w.set.Lock()
-	if s := w.set.Spawn; s[1] > tx.Range()[1] {
+	if s := w.set.Spawn; s[1] > tx.Range()[1] && w.Dimension() == Overworld {
 		// Vanilla will set the spawn position's Y value to max to indicate that
 		// the player should spawn at the highest position in the world.
 		w.set.Spawn[1] = w.highestObstructingBlock(s[0], s[2]) + 1
