@@ -174,8 +174,6 @@ func (conf Config) New() *Server {
 	srv.nether = srv.createWorld(world.Nether, &srv.world, &srv.end)
 	srv.end = srv.createWorld(world.End, &srv.nether, &srv.world)
 
-	srv.checkNetIsolation()
-
 	return srv
 }
 

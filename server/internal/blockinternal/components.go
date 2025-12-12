@@ -55,10 +55,10 @@ func Components(identifier string, b world.CustomBlock, blockID int32) map[strin
 func componentsFromProperties(props customblock.Properties) map[string]any {
 	components := make(map[string]any)
 	if props.CollisionBox != (cube.BBox{}) {
-		components["minecraft:collision_box"] = bboxComponent(props.CollisionBox)
+		components["minecraft:collision_box"] = collisionBoxComponent(props.CollisionBox)
 	}
 	if props.SelectionBox != (cube.BBox{}) {
-		components["minecraft:selection_box"] = bboxComponent(props.SelectionBox)
+		components["minecraft:selection_box"] = selectionBoxComponent(props.SelectionBox)
 	}
 	if props.Geometry != "" {
 		components["minecraft:geometry"] = map[string]any{"identifier": props.Geometry}
@@ -104,9 +104,27 @@ func componentsFromProperties(props customblock.Properties) map[string]any {
 	return components
 }
 
-// bboxComponent returns the component data for a bounding box. It translates the coordinates to the origin and size
-// format that the client expects.
-func bboxComponent(box cube.BBox) map[string]any {
+// collisionBoxComponent returns the component data for a collision box, using absolute min/max coordinates in pixels.
+func collisionBoxComponent(box cube.BBox) map[string]any {
+	min, max := box.Min(), box.Max()
+	return map[string]any{
+		"enabled": true,
+		"boxes": []map[string]any{
+			{
+				"minX": float32(min.X() * 16),
+				"minY": float32(min.Y() * 16),
+				"minZ": float32(min.Z() * 16),
+				"maxX": float32(max.X() * 16),
+				"maxY": float32(max.Y() * 16),
+				"maxZ": float32(max.Z() * 16),
+			},
+		},
+	}
+}
+
+// selectionBoxComponent returns the component data for a selection box, translating coordinates to the origin/size
+// format the client expects.
+func selectionBoxComponent(box cube.BBox) map[string]any {
 	min, max := box.Min(), box.Max()
 	originX, originY, originZ := min.X()*16, min.Y()*16, min.Z()*16
 	sizeX, sizeY, sizeZ := (max.X()-min.X())*16, (max.Y()-min.Y())*16, (max.Z()-min.Z())*16

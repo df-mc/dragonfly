@@ -31,3 +31,5 @@ require (
 	golang.org/x/sync v0.12.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
+
+replace github.com/sandertv/gophertunnel => C:\Users\x\Projects\cooldogedev-gophertunnel
