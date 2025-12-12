@@ -829,6 +829,11 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			EventType: packet.LevelEventSoundTotemUsed,
 			Position:  vec64To32(pos),
 		})
+		return
+	case sound.ShulkerBoxClose:
+		pk.SoundType = packet.SoundEventShulkerBoxClosed
+	case sound.ShulkerBoxOpen:
+		pk.SoundType = packet.SoundEventShulkerBoxOpen
 	case sound.DecoratedPotInserted:
 		s.writePacket(&packet.PlaySound{
 			SoundName: "block.decorated_pot.insert",
