@@ -649,7 +649,8 @@ func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) inventory.S
 
 func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
 	return func(slot int, before, after item.Stack) {
-		if !s.inTransaction.Load() {
+		inTransaction := s.inTransaction.Load()
+		if !inTransaction {
 			s.sendItem(after, slot, protocol.WindowIDArmour)
 		}
 		if before.Comparable(after) && before.Empty() == after.Empty() {
@@ -660,7 +661,7 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.Sl
 			viewer.ViewEntityArmour(c)
 		}
 
-		if after.Item() != before.Item() && s.inTransaction.Load() {
+		if inTransaction {
 			s.PlaySound(sound.EquipItem{Item: after.Item()}, entity.EyePosition(c))
 		}
 	}
