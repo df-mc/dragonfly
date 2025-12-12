@@ -3,12 +3,13 @@ package nbtconv
 import (
 	"bytes"
 	"encoding/gob"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/constraints"
-	"time"
 )
 
 // Bool reads a uint8 value from a map at key k and returns true if it equals 1.
@@ -225,7 +226,7 @@ func readEnchantments(m map[string]any, s *item.Stack) {
 	}
 	for _, ench := range enchantments {
 		if t, ok := item.EnchantmentByID(int(Int16(ench, "id"))); ok {
-			*s = s.WithEnchantments(item.NewEnchantment(t, int(Int16(ench, "lvl"))))
+			*s = s.ForceEnchantments(item.NewEnchantment(t, int(Int16(ench, "lvl"))))
 		}
 	}
 }
