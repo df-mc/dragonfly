@@ -4,6 +4,7 @@ import (
 	"time"
 	_ "unsafe"
 
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
@@ -118,27 +119,22 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		return false
 	}
 
+	held, _ := releaser.HeldItems()
 	creative := releaser.GameMode().CreativeInventory()
-	rot := releaser.Rotation().Neg()
-	dirVec := releaser.Rotation().Vec3().Normalize()
 
-	if firework, isFirework := c.Item.Item().(Firework); isFirework {
-		createFirework := tx.World().EntityRegistry().Config().Firework
-		fireworkEntity := createFirework(world.EntitySpawnOpts{
-			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(0.8),
-			Rotation: rot,
-		}, firework, releaser, 1.0, 0, false)
-		tx.AddEntity(fireworkEntity)
+	multishot := false
+	for _, enchant := range held.Enchantments() {
+		if _, ok := enchant.Type().(interface{ MultipleProjectiles() bool }); ok {
+			multishot = true
+			break
+		}
+	}
+
+	c.shoot(releaser, tx, creative, multishot)
+
+	if _, isFirework := c.Item.Item().(Firework); isFirework {
 		ctx.DamageItem(3)
 	} else {
-		createArrow := tx.World().EntityRegistry().Config().Arrow
-		arrow := createArrow(world.EntitySpawnOpts{
-			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(5.15),
-			Rotation: rot,
-		}, 9, releaser, false, false, !creative, 0, c.Item.Item().(Arrow).Tip)
-		tx.AddEntity(arrow)
 		ctx.DamageItem(1)
 	}
 
@@ -148,6 +144,38 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	releaser.SetHeldItems(crossbow, left)
 	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
 	return true
+}
+
+// shoot fires the crossbow's loaded projectiles.
+func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multishot bool) {
+	rot := releaser.Rotation()
+	angles := []float64{0, -10, 10}
+
+	for _, angle := range angles {
+		if !multishot && angle != 0 {
+			continue
+		}
+
+		dirVec := cube.Rotation{rot[0] + angle, rot[1]}.Vec3()
+
+		if firework, isFirework := c.Item.Item().(Firework); isFirework {
+			createFirework := tx.World().EntityRegistry().Config().Firework
+			projectile := createFirework(world.EntitySpawnOpts{
+				Position: torsoPosition(releaser),
+				Velocity: dirVec.Mul(0.8),
+				Rotation: rot.Neg(),
+			}, firework, releaser, 1.0, 0, false)
+			tx.AddEntity(projectile)
+		} else {
+			createArrow := tx.World().EntityRegistry().Config().Arrow
+			arrow := createArrow(world.EntitySpawnOpts{
+				Position: torsoPosition(releaser),
+				Velocity: dirVec.Mul(5.15),
+				Rotation: rot.Neg(),
+			}, 9, releaser, false, false, !creative && angle == 0, 0, c.Item.Item().(Arrow).Tip)
+			tx.AddEntity(arrow)
+		}
+	}
 }
 
 // MaxCount always returns 1.
