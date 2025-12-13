@@ -5,7 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Multishot is an enchantment for crossbows that shoots 3 arrows at once.
+// Multishot is an enchantment for crossbows that allow them to shoot three arrows or firework rockets at the cost of one.
 var Multishot multishot
 
 type multishot struct{}

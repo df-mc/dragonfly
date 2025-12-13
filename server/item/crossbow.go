@@ -131,30 +131,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		}
 	}
 
-	if multishot {
-		c.shootMultiple(releaser, tx, creative)
-	} else {
-		rot := releaser.Rotation()
-		dirVec := rot.Vec3().Normalize()
-
-		if firework, isFirework := c.Item.Item().(Firework); isFirework {
-			createFirework := tx.World().EntityRegistry().Config().Firework
-			projectile := createFirework(world.EntitySpawnOpts{
-				Position: torsoPosition(releaser),
-				Velocity: dirVec.Mul(0.8),
-				Rotation: rot.Neg(),
-			}, firework, releaser, 1.0, 0, false)
-			tx.AddEntity(projectile)
-		} else {
-			createArrow := tx.World().EntityRegistry().Config().Arrow
-			arrow := createArrow(world.EntitySpawnOpts{
-				Position: torsoPosition(releaser),
-				Velocity: dirVec.Mul(5.15),
-				Rotation: rot.Neg(),
-			}, 9, releaser, false, false, !creative, 0, c.Item.Item().(Arrow).Tip)
-			tx.AddEntity(arrow)
-		}
-	}
+	c.shoot(releaser, tx, creative, multishot)
 
 	if _, isFirework := c.Item.Item().(Firework); isFirework {
 		ctx.DamageItem(3)
@@ -170,12 +147,16 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	return true
 }
 
-// shootMultiple ...
-func (c Crossbow) shootMultiple(releaser Releaser, tx *world.Tx, creative bool) {
+// shoot fires the crossbow's loaded projectiles.
+func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multishot bool) {
 	rot := releaser.Rotation()
 	angles := []float64{0, -10, 10}
 
 	for _, angle := range angles {
+		if !multishot && angle != 0 {
+			continue
+		}
+
 		adjustedYaw := rot.Yaw() + angle
 		yawRad := adjustedYaw * (math.Pi / 180.0)
 		pitchRad := rot.Pitch() * (math.Pi / 180.0)
