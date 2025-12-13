@@ -1,13 +1,14 @@
 package block
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"time"
 )
 
 // Note is a musical block that emits sounds when powered with redstone.
@@ -48,13 +49,40 @@ func (n Note) EncodeNBT() map[string]any {
 
 // Activate ...
 func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
-	if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); !ok {
-		return false
+	n.trigger(pos, tx, true)
+	return true
+}
+
+// RedstoneUpdate ...
+func (n Note) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	if n.powered(pos, tx) {
+		n.trigger(pos, tx, false)
 	}
-	n.Pitch = (n.Pitch + 1) % 25
+}
+
+// trigger plays the note if there's space above the note block.
+func (n Note) trigger(pos cube.Pos, tx *world.Tx, changePitch bool) {
+	// Can only tune if there's air above
+	if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); !ok {
+		return
+	}
+	// only change the pitch when manually activated not redstone activated.
+	if changePitch {
+		n.Pitch = (n.Pitch + 1) % 25
+	}
 	n.playNote(pos, tx)
 	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
-	return true
+}
+
+// powered checks if the note block is receiving redstone power.
+func (n Note) powered(pos cube.Pos, tx *world.Tx) bool {
+	for _, face := range cube.Faces() {
+		adjacentPos := pos.Side(face)
+		if power := tx.RedstonePower(adjacentPos, face.Opposite(), true); power > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // BreakInfo ...
