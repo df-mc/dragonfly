@@ -4,6 +4,7 @@ import (
 	"time"
 	_ "unsafe"
 
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
@@ -155,9 +156,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multisho
 			continue
 		}
 
-		adjustedRot := rot
-		adjustedRot[0] += angle
-		dirVec := adjustedRot.Vec3()
+		dirVec := cube.Rotation{rot[0] + angle, rot[1]}.Vec3()
 
 		if firework, isFirework := c.Item.Item().(Firework); isFirework {
 			createFirework := tx.World().EntityRegistry().Config().Firework
