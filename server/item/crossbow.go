@@ -1,13 +1,11 @@
 package item
 
 import (
-	"math"
 	"time"
 	_ "unsafe"
 
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Crossbow is a ranged weapon similar to a bow that uses arrows or fireworks
@@ -157,15 +155,9 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multisho
 			continue
 		}
 
-		adjustedYaw := rot.Yaw() + angle
-		yawRad := adjustedYaw * (math.Pi / 180.0)
-		pitchRad := rot.Pitch() * (math.Pi / 180.0)
-
-		dirVec := mgl64.Vec3{
-			-math.Sin(yawRad) * math.Cos(pitchRad),
-			-math.Sin(pitchRad),
-			math.Cos(yawRad) * math.Cos(pitchRad),
-		}.Normalize()
+		adjustedRot := rot
+		adjustedRot[0] += angle
+		dirVec := adjustedRot.Vec3()
 
 		if firework, isFirework := c.Item.Item().(Firework); isFirework {
 			createFirework := tx.World().EntityRegistry().Config().Firework
