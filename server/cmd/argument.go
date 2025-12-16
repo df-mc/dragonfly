@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math/rand/v2"
 	"reflect"
 	"slices"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Line represents a command line holding command arguments that were passed upon the execution of the
@@ -48,6 +49,7 @@ func (line *Line) Next() (string, bool) {
 	}
 	val := v[0]
 	if val == "" {
+		line.RemoveNext()
 		return line.Next()
 	}
 	return val, true
@@ -87,7 +89,13 @@ func (line *Line) Leftover() []string {
 
 // Len returns the leftover length of the arguments in the command line.
 func (line *Line) Len() int {
-	return len(line.args)
+	count := 0
+	for _, arg := range line.args {
+		if arg != "" {
+			count++
+		}
+	}
+	return count
 }
 
 // parser manages the parsing of a Line, turning the raw arguments into values which are then stored in the
