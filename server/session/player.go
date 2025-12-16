@@ -661,7 +661,7 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.Sl
 			viewer.ViewEntityArmour(c)
 		}
 
-		if inTransaction {
+		if !after.Empty() && inTransaction {
 			s.PlaySound(sound.EquipItem{Item: after.Item()}, entity.EyePosition(c))
 		}
 	}
