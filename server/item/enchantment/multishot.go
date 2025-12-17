@@ -32,7 +32,7 @@ func (multishot) Rarity() item.EnchantmentRarity {
 
 // CompatibleWithEnchantment ...
 func (multishot) CompatibleWithEnchantment(t item.EnchantmentType) bool {
-	// multishot is incompatible with Piercing
+	// TODO: Multishot is incompatible with Piercing
 	return true
 }
 

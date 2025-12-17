@@ -130,8 +130,12 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		}
 	}
 
-	damage := c.shoot(releaser, tx, creative, multishot)
-	ctx.DamageItem(damage)
+	c.shoot(releaser, tx, 0, !creative)
+	if multishot {
+		c.shoot(releaser, tx, -10, false)
+		c.shoot(releaser, tx, 10, false)
+	}
+	c.applyDamage(ctx)
 
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
@@ -142,41 +146,37 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 }
 
 // shoot fires the crossbow's loaded projectiles.
-func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multishot bool) int {
+func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, canObtainPickup bool) {
 	rot := releaser.Rotation()
-	angles := []float64{0, -10, 10}
+	dirVec := cube.Rotation{rot[0] + offsetAngle, rot[1]}.Vec3()
 
-	damage := 1
-	firework, isFirework := c.Item.Item().(Firework)
-	if isFirework {
-		damage = 3
+	if firework, ok := c.Item.Item().(Firework); ok {
+		createFirework := tx.World().EntityRegistry().Config().Firework
+		projectile := createFirework(world.EntitySpawnOpts{
+			Position: torsoPosition(releaser),
+			Velocity: dirVec.Mul(0.8),
+			Rotation: rot.Neg(),
+		}, firework, releaser, 1.0, 0, false)
+		tx.AddEntity(projectile)
+	} else {
+		createArrow := tx.World().EntityRegistry().Config().Arrow
+		arrow := createArrow(world.EntitySpawnOpts{
+			Position: torsoPosition(releaser),
+			Velocity: dirVec.Mul(5.15),
+			Rotation: rot.Neg(),
+		}, 9, releaser, false, false, canObtainPickup, 0, c.Item.Item().(Arrow).Tip)
+		tx.AddEntity(arrow)
 	}
+}
 
-	for _, angle := range angles {
-		if !multishot && angle != 0 {
-			continue
-		}
-
-		dirVec := cube.Rotation{rot[0] + angle, rot[1]}.Vec3()
-		if isFirework {
-			createFirework := tx.World().EntityRegistry().Config().Firework
-			projectile := createFirework(world.EntitySpawnOpts{
-				Position: torsoPosition(releaser),
-				Velocity: dirVec.Mul(0.8),
-				Rotation: rot.Neg(),
-			}, firework, releaser, 1.0, 0, false)
-			tx.AddEntity(projectile)
-		} else {
-			createArrow := tx.World().EntityRegistry().Config().Arrow
-			arrow := createArrow(world.EntitySpawnOpts{
-				Position: torsoPosition(releaser),
-				Velocity: dirVec.Mul(5.15),
-				Rotation: rot.Neg(),
-			}, 9, releaser, false, false, !creative && angle == 0, 0, c.Item.Item().(Arrow).Tip)
-			tx.AddEntity(arrow)
-		}
+// applyDamage applies damage on a UseContext based on the projectile loaded
+// in the crossboww.
+func (c Crossbow) applyDamage(ctx *UseContext) {
+	if _, ok := c.Item.Item().(Firework); ok {
+		ctx.DamageItem(3)
+	} else {
+		ctx.DamageItem(1)
 	}
-	return damage
 }
 
 // MaxCount always returns 1.
