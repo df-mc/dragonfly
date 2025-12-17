@@ -662,7 +662,7 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.Sl
 		}
 
 		if !after.Empty() && inTransaction {
-			s.PlaySound(sound.EquipItem{Item: after.Item()}, entity.EyePosition(c))
+			tx.PlaySound(entity.EyePosition(c), sound.EquipItem{Item: after.Item()})
 		}
 	}
 }
