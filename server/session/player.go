@@ -12,6 +12,7 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -24,6 +25,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -647,7 +649,8 @@ func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) inventory.S
 
 func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
 	return func(slot int, before, after item.Stack) {
-		if !s.inTransaction.Load() {
+		inTransaction := s.inTransaction.Load()
+		if !inTransaction {
 			s.sendItem(after, slot, protocol.WindowIDArmour)
 		}
 		if before.Comparable(after) && before.Empty() == after.Empty() {
@@ -656,6 +659,10 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.Sl
 		}
 		for _, viewer := range tx.Viewers(c.Position()) {
 			viewer.ViewEntityArmour(c)
+		}
+
+		if !after.Empty() && inTransaction {
+			tx.PlaySound(entity.EyePosition(c), sound.EquipItem{Item: after.Item()})
 		}
 	}
 }
