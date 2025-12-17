@@ -12,7 +12,7 @@ type multishot struct{}
 
 // Name ...
 func (multishot) Name() string {
-	return "multishot"
+	return "Multishot"
 }
 
 // MaxLevel ...
