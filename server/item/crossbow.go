@@ -130,13 +130,8 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		}
 	}
 
-	c.shoot(releaser, tx, creative, multishot)
-
-	if _, isFirework := c.Item.Item().(Firework); isFirework {
-		ctx.DamageItem(3)
-	} else {
-		ctx.DamageItem(1)
-	}
+	damage := c.shoot(releaser, tx, creative, multishot)
+	ctx.DamageItem(damage)
 
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
@@ -147,9 +142,15 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 }
 
 // shoot fires the crossbow's loaded projectiles.
-func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multishot bool) {
+func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multishot bool) int {
 	rot := releaser.Rotation()
 	angles := []float64{0, -10, 10}
+
+	damage := 1
+	firework, isFirework := c.Item.Item().(Firework)
+	if isFirework {
+		damage = 3
+	}
 
 	for _, angle := range angles {
 		if !multishot && angle != 0 {
@@ -157,8 +158,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multisho
 		}
 
 		dirVec := cube.Rotation{rot[0] + angle, rot[1]}.Vec3()
-
-		if firework, isFirework := c.Item.Item().(Firework); isFirework {
+		if isFirework {
 			createFirework := tx.World().EntityRegistry().Config().Firework
 			projectile := createFirework(world.EntitySpawnOpts{
 				Position: torsoPosition(releaser),
@@ -176,6 +176,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, creative bool, multisho
 			tx.AddEntity(arrow)
 		}
 	}
+	return damage
 }
 
 // MaxCount always returns 1.
