@@ -18,6 +18,16 @@ type Recipe interface {
 	Priority() uint32
 }
 
+// DynamicRecipe represents a recipe whose output depends on the specific items used in crafting.
+// These recipes are not sent to the client and are validated server-side.
+type DynamicRecipe interface {
+	// Match checks if the given input items match this dynamic recipe pattern.
+	// It returns true if the pattern matches, along with the computed output items.
+	Match(input []Item) (output []item.Stack, ok bool)
+	// Block returns the block that is used to craft the recipe.
+	Block() string
+}
+
 // Shapeless is a recipe that has no particular shape.
 type Shapeless struct {
 	recipe
