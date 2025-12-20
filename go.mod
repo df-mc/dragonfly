@@ -32,4 +32,4 @@ require (
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
 
-replace github.com/sandertv/gophertunnel => C:\Users\x\Projects\cooldogedev-gophertunnel
+replace github.com/sandertv/gophertunnel => github.com/cooldogedev/gophertunnel v0.0.0-20251216175446-7b35fac7a626
