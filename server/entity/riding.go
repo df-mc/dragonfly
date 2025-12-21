@@ -27,6 +27,12 @@ type Rideable interface {
 	NextFreeSeatIndex(clickPos mgl64.Vec3) (int, bool)
 	// ControllingRider returns the rider that is controlling the entity, if any.
 	ControllingRider() Rider
+	// Riders returns a slice of all riders currently riding the entity.
+	Riders() []Rider
+	// AddRider adds a rider to the entity.
+	AddRider(rider Rider)
+	// RemoveRider removes a rider from the entity.
+	RemoveRider(rider Rider)
 	// MoveInput moves the entity based on input from the controlling rider.
 	MoveInput(vector mgl64.Vec2, yaw, pitch float32)
 }
