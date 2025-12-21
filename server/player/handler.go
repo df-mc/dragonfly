@@ -1,6 +1,9 @@
 package player
 
 import (
+	"net"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -10,8 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"net"
-	"time"
 )
 
 type Context = event.Context[*Player]
@@ -129,7 +130,7 @@ type Handler interface {
 	// damage through usage.
 	// The type of the item may be checked to determine whether it was armour or a tool used. The damage to
 	// the item is passed.
-	HandleItemDamage(ctx *Context, i item.Stack, damage int)
+	HandleItemDamage(ctx *Context, i item.Stack, damage *int)
 	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
 	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
 	HandleItemPickup(ctx *Context, i *item.Stack)
@@ -193,7 +194,7 @@ func (NopHandler) HandleItemUseOnBlock(*Context, cube.Pos, cube.Face, mgl64.Vec3
 func (NopHandler) HandleItemUseOnEntity(*Context, world.Entity)                            {}
 func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Duration)      {}
 func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
-func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                              {}
+func (NopHandler) HandleItemDamage(*Context, item.Stack, *int)                             {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
 func (NopHandler) HandleMountEntity(*Context, entity.Rideable, *int)                       {}
 func (NopHandler) HandleDismountEntity(*Context, entity.Rideable)                          {}
