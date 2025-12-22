@@ -144,14 +144,7 @@ func (c Cake) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 
 // BreakInfo ...
 func (c Cake) BreakInfo() BreakInfo {
-	drops := simpleDrops()
-	if c.Candle {
-		drops = func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-			candle := Candle{coloured: c.coloured, Candles: 0, Lit: false}
-			return []item.Stack{item.NewStack(candle, 1)}
-		}
-	}
-	return newBreakInfo(0.5, neverHarvestable, nothingEffective, drops)
+	return newBreakInfo(0.5, neverHarvestable, nothingEffective, simpleDrops())
 }
 
 // EncodeItem ...
