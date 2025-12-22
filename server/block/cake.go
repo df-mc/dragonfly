@@ -13,9 +13,27 @@ import (
 type Cake struct {
 	transparent
 	sourceWaterDisplacer
+	coloured
 
 	// Bites is the amount of bites taken out of the cake.
 	Bites int
+	// Candle is true if the cake has a candle on top.
+	Candle bool
+	// Lit is whether the candle is lit.
+	Lit bool
+}
+
+// MaxCount ...
+func (Cake) MaxCount() int {
+	return 1
+}
+
+// LightEmissionLevel returns 3 if the candle is lit.
+func (c Cake) LightEmissionLevel() uint8 {
+	if c.Candle && c.Lit {
+		return 3
+	}
+	return 0
 }
 
 // SideClosed ...
@@ -43,15 +61,62 @@ func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, air := tx.Block(pos.Side(cube.FaceDown)).(Air); air {
 		breakBlock(c, pos, tx)
 	}
+
+	// Extinguish candle if water is nearby
+	if c.Candle && c.Lit {
+		if liquid, ok := tx.Liquid(pos); ok {
+			if liquid.LiquidType() == "water" {
+				c.Lit = false
+				tx.SetBlock(pos, c, nil)
+				tx.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+			}
+		}
+	}
 }
 
-// Activate ...
-func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
-	if i, ok := u.(interface {
+// Activate handles eating the cake or lighting/extinguishing the candle.
+func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+	held, _ := u.HeldItems()
+	if c.Bites == 0 && !c.Candle {
+		if candle, ok := held.Item().(Candle); ok {
+			c.Candle = true
+			c.coloured = candle.coloured
+			c.Lit = false
+			tx.SetBlock(pos, c, nil)
+			tx.PlaySound(pos.Vec3Centre(), sound.ItemUseOn{Block: c})
+			ctx.SubtractFromCount(1)
+			return true
+		}
+	}
+
+	if _, ok := held.Item().(item.FlintAndSteel); ok {
+		return false
+	}
+
+	if c.Candle {
+		if c.Lit {
+			c.Lit = false
+			tx.SetBlock(pos, c, nil)
+			return true
+		}
+	}
+
+	// Eat the cake
+	if consumer, ok := u.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {
-		i.Saturate(2, 0.4)
+		consumer.Saturate(2, 0.4)
 		tx.PlaySound(u.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
+
+		if c.Candle {
+			candle := Candle{coloured: c.coloured}
+			dropItem(tx, item.NewStack(candle, 1), pos.Vec3Centre())
+
+			c.Candle = false
+			c.Lit = false
+			c.coloured = coloured{}
+		}
+
 		c.Bites++
 		if c.Bites > 6 {
 			tx.SetBlock(pos, nil, nil)
@@ -63,18 +128,59 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *
 	return false
 }
 
+// Ignite ...
+func (c Cake) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
+	if !c.Candle {
+		return false
+	}
+
+	if c.Lit {
+		return false
+	}
+
+	if _, ok := tx.Liquid(pos); ok {
+		return false
+	}
+
+	c.Lit = true
+	tx.SetBlock(pos, c, nil)
+	tx.PlaySound(pos.Vec3(), sound.Ignite{})
+	return true
+}
+
 // BreakInfo ...
 func (c Cake) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, neverHarvestable, nothingEffective, simpleDrops())
+	drops := simpleDrops()
+	if c.Candle {
+		drops = func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+			candle := Candle{coloured: c.coloured, Candles: 0, Lit: false}
+			return []item.Stack{item.NewStack(candle, 1)}
+		}
+	}
+	return newBreakInfo(0.5, neverHarvestable, nothingEffective, drops)
 }
 
 // EncodeItem ...
 func (c Cake) EncodeItem() (name string, meta int16) {
+	if c.Candle {
+		if c.Coloured {
+			return "minecraft:" + c.Colour.String() + "_candle_cake", 0
+		}
+		return "minecraft:candle_cake", 0
+	}
 	return "minecraft:cake", 0
 }
 
 // EncodeBlock ...
 func (c Cake) EncodeBlock() (name string, properties map[string]any) {
+	if c.Candle {
+		if c.Coloured {
+			name = "minecraft:" + c.Colour.String() + "_candle_cake"
+		} else {
+			name = "minecraft:candle_cake"
+		}
+		return name, map[string]any{"lit": c.Lit}
+	}
 	return "minecraft:cake", map[string]any{"bite_counter": int32(c.Bites)}
 }
 
@@ -87,6 +193,14 @@ func (c Cake) Model() world.BlockModel {
 func allCake() (cake []world.Block) {
 	for bites := 0; bites < 7; bites++ {
 		cake = append(cake, Cake{Bites: bites})
+	}
+
+	// Regular candle cake (with zero value coloured)
+	cake = append(cake, Cake{Candle: true, Lit: false})
+	cake = append(cake, Cake{Candle: true, Lit: true})
+	for _, c := range item.Colours() {
+		cake = append(cake, Cake{coloured: coloured{Colour: c, Coloured: true}, Candle: true})
+		cake = append(cake, Cake{coloured: coloured{Colour: c, Coloured: true}, Candle: true, Lit: true})
 	}
 	return
 }
