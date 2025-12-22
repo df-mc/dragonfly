@@ -23,12 +23,7 @@ type Cake struct {
 	Lit bool
 }
 
-// MaxCount ...
-func (Cake) MaxCount() int {
-	return 1
-}
-
-// LightEmissionLevel returns 3 if the candle is lit.
+// LightEmissionLevel ...
 func (c Cake) LightEmissionLevel() uint8 {
 	if c.Candle && c.Lit {
 		return 3
@@ -74,7 +69,7 @@ func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// Activate handles eating the cake or lighting/extinguishing the candle.
+// Activate ...
 func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if c.Bites == 0 && !c.Candle {
@@ -101,7 +96,6 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 		}
 	}
 
-	// Eat the cake
 	if consumer, ok := u.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {
@@ -195,8 +189,7 @@ func allCake() (cake []world.Block) {
 		cake = append(cake, Cake{Bites: bites})
 	}
 
-	// Regular candle cake (with zero value coloured)
-	cake = append(cake, Cake{Candle: true, Lit: false})
+	cake = append(cake, Cake{Candle: true})
 	cake = append(cake, Cake{Candle: true, Lit: true})
 	for _, c := range item.Colours() {
 		cake = append(cake, Cake{coloured: coloured{Colour: c, Coloured: true}, Candle: true})

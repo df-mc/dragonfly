@@ -119,11 +119,11 @@ func (c Candle) EncodeBlock() (name string, properties map[string]any) {
 func allCandles() []world.Block {
 	b := make([]world.Block, 0)
 	for i := 0; i <= 3; i++ {
-		b = append(b, Candle{Candles: i, Lit: false})
+		b = append(b, Candle{Candles: i})
 		b = append(b, Candle{Candles: i, Lit: true})
 
 		for _, c := range item.Colours() {
-			b = append(b, Candle{coloured: coloured{Colour: c, Coloured: true}, Candles: i, Lit: false})
+			b = append(b, Candle{coloured: coloured{Colour: c, Coloured: true}, Candles: i})
 			b = append(b, Candle{coloured: coloured{Colour: c, Coloured: true}, Candles: i, Lit: true})
 		}
 	}
