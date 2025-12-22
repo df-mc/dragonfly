@@ -507,7 +507,7 @@ func (s *Session) SendAbilities(c Controllable) {
 	s.writePacket(&packet.UpdateAbilities{AbilityData: protocol.AbilityData{
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
-		CommandPermissions: packet.CommandPermissionLevelNormal,
+		CommandPermissions: protocol.CommandPermissionLevelAny,
 		Layers: []protocol.AbilityLayer{
 			{
 				Type:             protocol.AbilityLayerTypeBase,
@@ -559,6 +559,7 @@ func (s *Session) SendEffect(e effect.Effect) {
 		Amplifier:       int32(e.Level() - 1),
 		Particles:       !e.ParticlesHidden(),
 		Duration:        int32(dur),
+		Ambient:         e.Ambient(),
 	})
 }
 
