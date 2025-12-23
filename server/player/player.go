@@ -3171,7 +3171,7 @@ func (p *Player) resendNearbyBlock(pos cube.Pos) {
 		return
 	}
 
-	if p.withinChunkRadius(pos.Vec3()) {
+	if !p.withinChunkRadius(pos.Vec3()) {
 		// This is a safety check. Without it, clients could request block resends for arbitrary world positions
 		// (including unloaded chunks). A malicious client could repeatedly trigger such requests and force the server
 		// to allocate memory for chunks, potentially exhausting RAM.
