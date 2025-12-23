@@ -14,8 +14,9 @@ import (
 type Candle struct {
 	transparent
 	sourceWaterDisplacer
-	coloured
 
+	// Colour is the colour of the candle.
+	Colour OptionalColour
 	// Candles is the number of candles.
 	Candles int
 	// Lit is whether the candles are lit.
@@ -48,7 +49,7 @@ func (Candle) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 // UseOnBlock ...
 func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	if existing, ok := tx.Block(pos.Add(cube.Pos{0, 1, 0})).(Candle); ok {
-		if existing.Colour != c.Colour || existing.Coloured != c.Coloured {
+		if existing.Colour.Uint8() != c.Colour.Uint8() {
 			return false
 		}
 
@@ -101,30 +102,29 @@ func (c Candle) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 
 // EncodeItem ...
 func (c Candle) EncodeItem() (name string, meta int16) {
-	if !c.Coloured {
+	color, ok := c.Colour.Colour()
+	if !ok {
 		return "minecraft:candle", 0
 	}
-	return "minecraft:" + c.Colour.String() + "_candle", 0
+	return "minecraft:" + color.String() + "_candle", 0
 }
 
 // EncodeBlock ...
 func (c Candle) EncodeBlock() (name string, properties map[string]any) {
-	if !c.Coloured {
+	color, ok := c.Colour.Colour()
+	if !ok {
 		return "minecraft:candle", map[string]any{"candles": int32(c.Candles), "lit": c.Lit}
 	}
-	return "minecraft:" + c.Colour.String() + "_candle", map[string]any{"candles": int32(c.Candles), "lit": c.Lit}
+	return "minecraft:" + color.String() + "_candle", map[string]any{"candles": int32(c.Candles), "lit": c.Lit}
 }
 
 // allCandles returns candle blocks with all possible colours.
 func allCandles() []world.Block {
 	b := make([]world.Block, 0)
 	for i := 0; i <= 3; i++ {
-		b = append(b, Candle{Candles: i})
-		b = append(b, Candle{Candles: i, Lit: true})
-
-		for _, c := range item.Colours() {
-			b = append(b, Candle{coloured: coloured{Colour: c, Coloured: true}, Candles: i})
-			b = append(b, Candle{coloured: coloured{Colour: c, Coloured: true}, Candles: i, Lit: true})
+		for _, c := range OptionalColours() {
+			b = append(b, Candle{Colour: c, Candles: i})
+			b = append(b, Candle{Colour: c, Candles: i, Lit: true})
 		}
 	}
 	return b

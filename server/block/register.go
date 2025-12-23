@@ -393,12 +393,8 @@ func init() {
 	for _, t := range AnvilTypes() {
 		world.RegisterItem(Anvil{Type: t})
 	}
-
-	world.RegisterItem(Candle{})
-
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
-		world.RegisterItem(Candle{coloured: coloured{Colour: c, Coloured: true}})
 		world.RegisterItem(Carpet{Colour: c})
 		world.RegisterItem(ConcretePowder{Colour: c})
 		world.RegisterItem(Concrete{Colour: c})
@@ -431,6 +427,9 @@ func init() {
 		world.RegisterItem(GoldOre{Type: ore})
 		world.RegisterItem(IronOre{Type: ore})
 		world.RegisterItem(LapisOre{Type: ore})
+	}
+	for _, c := range OptionalColours() {
+		world.RegisterItem(Candle{Colour: c})
 	}
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
