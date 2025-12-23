@@ -88,9 +88,6 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 	if i, ok := u.(interface {
 		Saturate(food int, saturation float64)
 	}); ok {
-		i.Saturate(2, 0.4)
-		tx.PlaySound(u.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
-
 		if c.Candle {
 			candle := Candle{Colour: c.Colour}
 			dropItem(tx, item.NewStack(candle, 1), pos.Vec3Centre())
@@ -98,7 +95,13 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 			c.Candle = false
 			c.Colour = c.Colour.Empty()
 			c.Lit = false
+
+			tx.SetBlock(pos, c, nil)
+			return true
 		}
+
+		i.Saturate(2, 0.4)
+		tx.PlaySound(u.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 
 		c.Bites++
 		if c.Bites > 6 {
