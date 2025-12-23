@@ -25,18 +25,6 @@ func finaliseBiomeRegistry() {
 	}
 }
 
-// ashyBiome represents a biome that has any form of ash.
-type ashyBiome interface {
-	// Ash returns the ash and white ash of the biome.
-	Ash() (ash float64, whiteAsh float64)
-}
-
-// sporingBiome represents a biome that has blue or red spores.
-type sporingBiome interface {
-	// Spores returns the blue and red spores of the biome.
-	Spores() (blueSpores float64, redSpores float64)
-}
-
 // BiomeDefinitions returns the list of biome definitions along with the associated StringList.
 func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 	var (
@@ -85,18 +73,6 @@ func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 			})),
 			Rain: b.Rainfall() > 0,
 			Tags: protocol.Option[[]uint16](tagIndices),
-		}
-
-		if a, ok := b.(ashyBiome); ok {
-			ash, whiteAsh := a.Ash()
-			def.AshDensity = float32(ash)
-			def.WhiteAshDensity = float32(whiteAsh)
-		}
-
-		if s, ok := b.(sporingBiome); ok {
-			blueSpores, redSpores := s.Spores()
-			def.BlueSporeDensity = float32(blueSpores)
-			def.RedSporeDensity = float32(redSpores)
 		}
 
 		encodedBiomes = append(encodedBiomes, def)
