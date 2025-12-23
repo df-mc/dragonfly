@@ -14,10 +14,10 @@ type Cake struct {
 	transparent
 	sourceWaterDisplacer
 
-	// Colour is the colour of the candle.
-	Colour OptionalColour
 	// Bites is the amount of bites taken out of the cake.
 	Bites int
+	// Colour is the colour of the candle.
+	Colour OptionalColour
 	// Candle is true if the cake has a candle on top.
 	Candle bool
 	// Lit is whether the candle is lit.
@@ -125,11 +125,10 @@ func (c Cake) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 
 // BreakInfo ...
 func (c Cake) BreakInfo() BreakInfo {
-	drops := simpleDrops()
 	if c.Candle {
-		drops = oneOf(Candle{Colour: c.Colour})
+		return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(Candle{Colour: c.Colour}))
 	}
-	return newBreakInfo(0.5, neverHarvestable, nothingEffective, drops)
+	return newBreakInfo(0.5, neverHarvestable, nothingEffective, simpleDrops())
 }
 
 // EncodeItem ...
