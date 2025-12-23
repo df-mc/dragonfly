@@ -62,7 +62,7 @@ func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 		return placed(ctx)
 	}
 
-	pos, face, used = firstReplaceable(tx, pos, face, c)
+	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return false
 	}
