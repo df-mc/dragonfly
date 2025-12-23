@@ -3139,18 +3139,14 @@ func (p *Player) viewers() []world.Viewer {
 // withinChunkRadius checks if the position provided is within the chunk radius of the player.
 func (p *Player) withinChunkRadius(pos mgl64.Vec3) bool {
 	playerChunkX, playerChunkZ := int(p.Position().X())>>4, int(p.Position().Z())>>4
-	blockChunkX, blockChunkZ := int(pos.X())>>4, int(pos.Z())>>4
-
-	dx := playerChunkX - blockChunkX
+	posChunkX, posChunkZ := int(pos.X())>>4, int(pos.Z())>>4
+	dx, dz := playerChunkX-posChunkX, playerChunkZ-posChunkZ
 	if dx < 0 {
 		dx = -dx
 	}
-
-	dz := playerChunkZ - blockChunkZ
 	if dz < 0 {
 		dz = -dz
 	}
-
 	r := int(p.session().ChunkRadius())
 	return dx <= r && dz <= r
 }
@@ -3172,14 +3168,12 @@ func (p *Player) resendNearbyBlock(pos cube.Pos) {
 	if p.session() == session.Nop {
 		return
 	}
-
 	if !p.withinChunkRadius(pos.Vec3()) {
 		// This is a safety check. Without it, clients could request block resends for arbitrary world positions
 		// (including unloaded chunks). A malicious client could repeatedly trigger such requests and force the server
 		// to allocate memory for chunks, potentially exhausting RAM.
 		return
 	}
-
 	b := p.tx.Block(pos)
 	p.session().ViewBlockUpdate(pos, b, 0)
 	if _, ok := b.(world.LiquidDisplacer); ok {
