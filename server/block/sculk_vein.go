@@ -26,7 +26,7 @@ func (s SculkVein) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(s, 1)}
 		}
 		return nil
-	}).withXPDropRange(1, 1).withBlastResistance(1)
+	}).withBlastResistance(1)
 }
 
 // EncodeItem ...
