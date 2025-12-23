@@ -89,8 +89,7 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 		Saturate(food int, saturation float64)
 	}); ok {
 		if c.Candle {
-			candle := Candle{Colour: c.Colour}
-			dropItem(tx, item.NewStack(candle, 1), pos.Vec3Centre())
+			dropItem(tx, item.NewStack(Candle{Colour: c.Colour}, 1), pos.Vec3Centre())
 
 			c.Candle = false
 			c.Colour = c.Colour.Empty()
