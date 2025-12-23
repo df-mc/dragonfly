@@ -2,7 +2,6 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -229,6 +229,11 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 // ViewTime ...
 func (s *Session) ViewTime(time int) {
 	s.writePacket(&packet.SetTime{Time: int32(time)})
+}
+
+// ViewTimeCycle ...
+func (s *Session) ViewTimeCycle(doDayLightCycle bool) {
+	s.sendGameRules([]protocol.GameRule{{Name: "dodaylightcycle", Value: doDayLightCycle}})
 }
 
 // ViewEntityTeleport ...
@@ -467,6 +472,8 @@ func tierToSoundEvent(tier item.ArmourTier) uint32 {
 	switch tier.(type) {
 	case item.ArmourTierLeather:
 		return packet.SoundEventEquipLeather
+	case item.ArmourTierCopper:
+		return packet.SoundEventEquipCopper
 	case item.ArmourTierGold:
 		return packet.SoundEventEquipGold
 	case item.ArmourTierChain:
@@ -971,14 +978,22 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventHurt,
 		})
 	case entity.CriticalHitAction:
+		if act.Count <= 0 {
+			act.Count = 55
+		}
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
+			Data:            float32(act.Count),
 		})
 	case entity.EnchantedHitAction:
+		if act.Count <= 0 {
+			act.Count = 15
+		}
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionMagicCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
+			Data:            float32(act.Count),
 		})
 	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{
@@ -1206,10 +1221,14 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 
 // ViewEmote ...
 func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
+	flags := byte(packet.EmoteFlagServerSide)
+	if s.emoteChatMuted {
+		flags |= packet.EmoteFlagMuteChat
+	}
 	s.writePacket(&packet.Emote{
 		EntityRuntimeID: s.entityRuntimeID(player),
 		EmoteID:         emote.String(),
-		Flags:           packet.EmoteFlagServerSide,
+		Flags:           flags,
 	})
 }
 
