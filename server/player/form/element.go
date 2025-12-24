@@ -12,6 +12,48 @@ type Element interface {
 	elem()
 }
 
+// MenuElement represents an element that may be added to a Menu form. This includes buttons, dividers,
+// headers, and labels.
+type MenuElement interface {
+	json.Marshaler
+	menuElem()
+}
+
+// Divider represents a visual separator element on a form. It displays a horizontal line.
+type Divider struct{}
+
+// NewDivider creates and returns a new Divider.
+func NewDivider() Divider {
+	return Divider{}
+}
+
+// MarshalJSON ...
+func (d Divider) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type": "divider",
+		"text": "",
+	})
+}
+
+// Header represents a header element on a form. It displays larger, emphasised text for section titles.
+type Header struct {
+	// Text is the text held by the header. The text may contain Minecraft formatting codes.
+	Text string
+}
+
+// NewHeader creates and returns a new Header with the text passed.
+func NewHeader(text string) Header {
+	return Header{Text: text}
+}
+
+// MarshalJSON ...
+func (h Header) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"type": "header",
+		"text": h.Text,
+	})
+}
+
 // Label represents a static label on a form. It serves only to display a box of text, and users cannot
 // submit values to it.
 type Label struct {
@@ -216,7 +258,10 @@ func NewButton(text, image string) Button {
 
 // MarshalJSON ...
 func (b Button) MarshalJSON() ([]byte, error) {
-	m := map[string]any{"text": b.Text}
+	m := map[string]any{
+		"type": "button",
+		"text": b.Text,
+	}
 	if b.Image != "" {
 		buttonType := "path"
 		if strings.HasPrefix(b.Image, "http:") || strings.HasPrefix(b.Image, "https:") {
@@ -227,9 +272,16 @@ func (b Button) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+func (Divider) elem()    {}
+func (Header) elem()     {}
 func (Label) elem()      {}
 func (Input) elem()      {}
 func (Toggle) elem()     {}
 func (Slider) elem()     {}
 func (Dropdown) elem()   {}
 func (StepSlider) elem() {}
+
+func (Divider) menuElem() {}
+func (Header) menuElem()  {}
+func (Label) menuElem()   {}
+func (Button) menuElem()  {}
