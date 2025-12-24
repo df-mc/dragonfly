@@ -231,6 +231,11 @@ func (s *Session) ViewTime(time int) {
 	s.writePacket(&packet.SetTime{Time: int32(time)})
 }
 
+// ViewTimeCycle ...
+func (s *Session) ViewTimeCycle(doDayLightCycle bool) {
+	s.sendGameRules([]protocol.GameRule{{Name: "dodaylightcycle", Value: doDayLightCycle}})
+}
+
 // ViewEntityTeleport ...
 func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	id := s.entityRuntimeID(e)
@@ -973,16 +978,22 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventHurt,
 		})
 	case entity.CriticalHitAction:
+		if act.Count <= 0 {
+			act.Count = 55
+		}
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
-			Data:            55,
+			Data:            float32(act.Count),
 		})
 	case entity.EnchantedHitAction:
+		if act.Count <= 0 {
+			act.Count = 15
+		}
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionMagicCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
-			Data:            15,
+			Data:            float32(act.Count),
 		})
 	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{

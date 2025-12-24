@@ -30,7 +30,7 @@ func (l Leggings) DefencePoints() float64 {
 	switch l.Tier.Name() {
 	case "leather":
 		return 2
-	case "golden":
+	case "copper", "golden":
 		return 3
 	case "chainmail":
 		return 4

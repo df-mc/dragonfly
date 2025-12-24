@@ -12,6 +12,7 @@ import (
 	_ "unsafe" // Imported for compiler directives.
 
 	"github.com/df-mc/dragonfly/server/block"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -24,6 +25,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -505,7 +507,7 @@ func (s *Session) SendAbilities(c Controllable) {
 	s.writePacket(&packet.UpdateAbilities{AbilityData: protocol.AbilityData{
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
-		CommandPermissions: packet.CommandPermissionLevelNormal,
+		CommandPermissions: protocol.CommandPermissionLevelAny,
 		Layers: []protocol.AbilityLayer{
 			{
 				Type:             protocol.AbilityLayerTypeBase,
@@ -557,6 +559,7 @@ func (s *Session) SendEffect(e effect.Effect) {
 		Amplifier:       int32(e.Level() - 1),
 		Particles:       !e.ParticlesHidden(),
 		Duration:        int32(dur),
+		Ambient:         e.Ambient(),
 	})
 }
 
@@ -647,7 +650,8 @@ func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) inventory.S
 
 func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
 	return func(slot int, before, after item.Stack) {
-		if !s.inTransaction.Load() {
+		inTransaction := s.inTransaction.Load()
+		if !inTransaction {
 			s.sendItem(after, slot, protocol.WindowIDArmour)
 		}
 		if before.Comparable(after) && before.Empty() == after.Empty() {
@@ -656,6 +660,10 @@ func (s *Session) broadcastArmourFunc(tx *world.Tx, c Controllable) inventory.Sl
 		}
 		for _, viewer := range tx.Viewers(c.Position()) {
 			viewer.ViewEntityArmour(c)
+		}
+
+		if !after.Empty() && inTransaction {
+			tx.PlaySound(entity.EyePosition(c), sound.EquipItem{Item: after.Item()})
 		}
 	}
 }
@@ -858,7 +866,7 @@ func (s *Session) RemoveAllDebugShapes() {
 
 // SendDebugShapes sends any pending additions/removals of debug shapes to the player. Shapes should be sent
 // every tick to allow for batching and time-efficient updates.
-func (s *Session) SendDebugShapes() {
+func (s *Session) SendDebugShapes(dim world.Dimension) {
 	s.debugShapesMu.Lock()
 	defer s.debugShapesMu.Unlock()
 
@@ -872,10 +880,10 @@ loop:
 		select {
 		case shape := <-s.debugShapesAdd:
 			s.debugShapes[shape.ShapeID()] = shape
-			shapes = append(shapes, s.debugShapeToProtocol(shape))
+			shapes = append(shapes, s.debugShapeToProtocol(shape, dim))
 		case id := <-s.debugShapesRemove:
 			delete(s.debugShapes, id)
-			shapes = append(shapes, protocol.DebugDrawerShape{NetworkID: uint64(id)})
+			shapes = append(shapes, protocol.DebugDrawerShape{NetworkID: uint64(id), DimensionID: s.dimensionID(dim)})
 		default:
 			break loop
 		}
@@ -885,8 +893,11 @@ loop:
 
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
 // for some fields such as colour, scale and other per-shape properties.
-func (s *Session) debugShapeToProtocol(shape debug.Shape) protocol.DebugDrawerShape {
-	ps := protocol.DebugDrawerShape{NetworkID: uint64(shape.ShapeID())}
+func (s *Session) debugShapeToProtocol(shape debug.Shape, dim world.Dimension) protocol.DebugDrawerShape {
+	ps := protocol.DebugDrawerShape{
+		NetworkID:   uint64(shape.ShapeID()),
+		DimensionID: s.dimensionID(dim),
+	}
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	switch shape := shape.(type) {
 	case *debug.Arrow:
@@ -904,39 +915,29 @@ func (s *Session) debugShapeToProtocol(shape debug.Shape) protocol.DebugDrawerSh
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.ExtraShapeData = &protocol.BoxShape{
-			BoxBound: valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1}),
-		}
-	// case *debug.Circle:
-	// 	ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeCircle))
-	// 	ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
-	// 	ps.Location = protocol.Option(vec64To32(shape.Position))
-	// 	ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-	// 	ps.ExtraShapeData = &protocol.SphereShape{
-	// 		Segments: valueOrDefault(uint8(shape.Segments), 20),
-	// 	}
+		ps.ExtraShapeData = &protocol.BoxShape{BoxBound: valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1})}
+	case *debug.Circle:
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeCircle))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
 	case *debug.Line:
 		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeLine))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.ExtraShapeData = &protocol.LineShape{
-			LineEndLocation: vec64To32(shape.EndPosition),
-		}
+		ps.ExtraShapeData = &protocol.LineShape{LineEndLocation: vec64To32(shape.EndPosition)}
 	case *debug.Sphere:
 		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeSphere))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.ExtraShapeData = &protocol.SphereShape{
-			Segments: valueOrDefault(uint8(shape.Segments), 20),
-		}
+		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
 	case *debug.Text:
 		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeText))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.ExtraShapeData = &protocol.TextShape{
-			Text: shape.Text,
-		}
+		ps.ExtraShapeData = &protocol.TextShape{Text: shape.Text}
 	default:
 		panic(fmt.Sprintf("unknown debug shape type %T", shape))
 	}

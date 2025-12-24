@@ -1,12 +1,13 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"maps"
 	"math/rand/v2"
 	"slices"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 )
 
 // ticker implements World ticking methods.
@@ -59,12 +60,12 @@ func (t ticker) tick(tx *Tx) {
 		}
 	}
 
-	rain, thunder, tick, tim := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time)
+	rain, thunder, tick, tim, cycle := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time), w.set.TimeCycle
 	w.set.Unlock()
 
 	if tick%20 == 0 {
 		for _, viewer := range viewers {
-			if w.Dimension().TimeCycle() {
+			if w.Dimension().TimeCycle() && cycle {
 				viewer.ViewTime(tim)
 			}
 			if w.Dimension().WeatherCycle() {

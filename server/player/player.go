@@ -2,8 +2,6 @@ package player
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
 	"math"
 	"math/rand/v2"
 	"net"
@@ -11,6 +9,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/player/debug"
+	"github.com/df-mc/dragonfly/server/player/hud"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -1662,13 +1663,19 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		critical       = !p.Sprinting() && !p.Flying() && p.FallDistance() > 0 && !slowFalling && !blind
 	)
 
+	i, _ := p.HeldItems()
+	if k, ok := i.Enchantment(enchantment.Knockback); ok {
+		inc := enchantment.Knockback.Force(k.Level())
+		force += inc
+		height += inc
+	}
+
 	ctx := event.C(p)
 	if p.Handler().HandleAttackEntity(ctx, e, &force, &height, &critical); ctx.Cancelled() {
 		return false
 	}
 	p.SwingArm()
 
-	i, _ := p.HeldItems()
 	if !isLiving {
 		return false
 	}
@@ -1705,11 +1712,6 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 
 	p.Exhaust(0.1)
 
-	if k, ok := i.Enchantment(enchantment.Knockback); ok {
-		inc := enchantment.Knockback.Force(k.Level())
-		force += inc
-		height += inc
-	}
 	living.KnockBack(p.Position(), force, height)
 
 	if f, ok := i.Enchantment(enchantment.FireAspect); ok {
@@ -2443,7 +2445,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
-	p.session().SendDebugShapes()
+	p.session().SendDebugShapes(tx.World().Dimension())
 	p.session().SendHudUpdates()
 
 	if p.prevWorld != tx.World() && p.prevWorld != nil {
@@ -2914,7 +2916,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 		return s
 	}
 	ctx := event.C(p)
-	if p.Handler().HandleItemDamage(ctx, s, d); ctx.Cancelled() {
+	if p.Handler().HandleItemDamage(ctx, s, &d); ctx.Cancelled() || d <= 0 {
 		return s
 	}
 	if e, ok := s.Enchantment(enchantment.Unbreaking); ok {

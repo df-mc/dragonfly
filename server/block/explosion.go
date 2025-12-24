@@ -140,6 +140,13 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		return
 	}
 
+	for _, e := range affectedEntities {
+		if explodable, ok := e.(ExplodableEntity); ok {
+			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
+			explodable.Explode(explosionPos, impact, c)
+		}
+	}
+
 	for _, pos := range affectedBlocks {
 		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
@@ -155,13 +162,6 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 					dropItem(tx, drop, pos.Vec3Centre())
 				}
 			}
-		}
-	}
-
-	for _, e := range affectedEntities {
-		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
-			explodable.Explode(explosionPos, impact, c)
 		}
 	}
 

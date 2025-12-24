@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/base64"
@@ -9,9 +8,7 @@ import (
 	"iter"
 	"maps"
 	"os"
-	"os/exec"
 	"os/signal"
-	"runtime"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -501,22 +498,6 @@ func (srv *Server) dimension(dimension world.Dimension) *world.World {
 	case world.End:
 		return srv.end
 	}
-}
-
-// checkNetIsolation checks if a loopback exempt is in place to allow the
-// hosting device to join the server. This is only relevant on Windows. It will
-// never log anything for anything but Windows.
-func (srv *Server) checkNetIsolation() {
-	if runtime.GOOS != "windows" {
-		// Only an issue on Windows.
-		return
-	}
-	data, _ := exec.Command("CheckNetIsolation", "LoopbackExempt", "-s", `-n="microsoft.minecraftuwp_8wekyb3d8bbwe"`).CombinedOutput()
-	if bytes.Contains(data, []byte("microsoft.minecraftuwp_8wekyb3d8bbwe")) {
-		return
-	}
-	const loopbackExemptCmd = `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`
-	srv.conf.Log.Info("You are currently unable to join the server on this machine. Run " + loopbackExemptCmd + " in an admin PowerShell session to resolve.")
 }
 
 // handleSessionClose handles the closing of a session. It removes the player

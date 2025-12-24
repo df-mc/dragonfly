@@ -17,7 +17,7 @@ require (
 	github.com/go-gl/mathgl v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/sandertv/gophertunnel v1.51.0
+	github.com/sandertv/gophertunnel v1.52.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
@@ -55,7 +55,7 @@ require (
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/oauth2 v0.32.0 // indirect
+	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect

@@ -1,14 +1,15 @@
 package block
 
 import (
+	"math"
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand/v2"
 )
 
 // CopperTrapdoor is a block that can be used as an openable 1x1 barrier.
@@ -110,26 +111,12 @@ func (t CopperTrapdoor) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // EncodeItem ...
 func (t CopperTrapdoor) EncodeItem() (name string, meta int16) {
-	name = "copper_trapdoor"
-	if t.Oxidation != UnoxidisedOxidation() {
-		name = t.Oxidation.String() + "_" + name
-	}
-	if t.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, 0
+	return copperBlockName("copper_trapdoor", t.Oxidation, t.Waxed), 0
 }
 
 // EncodeBlock ...
 func (t CopperTrapdoor) EncodeBlock() (name string, properties map[string]any) {
-	name = "copper_trapdoor"
-	if t.Oxidation != UnoxidisedOxidation() {
-		name = t.Oxidation.String() + "_" + name
-	}
-	if t.Waxed {
-		name = "waxed_" + name
-	}
-	return "minecraft:" + name, map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
+	return copperBlockName("copper_trapdoor", t.Oxidation, t.Waxed), map[string]any{"direction": int32(math.Abs(float64(t.Facing) - 3)), "open_bit": t.Open, "upside_down_bit": t.Top}
 }
 
 // allCopperTrapdoors returns a list of all copper trapdoor types
