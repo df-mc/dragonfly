@@ -67,12 +67,12 @@ func (s SculkVein) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 		return false
 	}
 
-	s = s.withFace(face.Opposite())
+	s = s.WithFace(face.Opposite())
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
-func (s SculkVein) withFace(f cube.Face) SculkVein {
+func (s SculkVein) WithFace(f cube.Face) SculkVein {
 	switch f {
 	case cube.FaceUp:
 		s.Up = true
