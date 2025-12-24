@@ -207,6 +207,39 @@ func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, rot cube.Ro
 	})
 }
 
+// ViewEntityDelta ...
+func (s *Session) ViewEntityDelta(e world.Entity, pos mgl64.Vec3, rot cube.Rotation) {
+	if s.entityHidden(e) {
+		return
+	}
+
+	flags := uint16(0)
+	if !mgl64.FloatEqual(pos.X(), 0) {
+		flags |= packet.MoveActorDeltaFlagHasX
+	}
+	if !mgl64.FloatEqual(pos.Y(), 0) {
+		flags |= packet.MoveActorDeltaFlagHasY
+	}
+	if !mgl64.FloatEqual(pos.Z(), 0) {
+		flags |= packet.MoveActorDeltaFlagHasZ
+	}
+	if !mgl64.FloatEqual(rot.Pitch(), 0) {
+		flags |= packet.MoveActorDeltaFlagHasRotX
+	}
+	if !mgl64.FloatEqual(rot.Yaw(), 0) {
+		flags |= packet.MoveActorDeltaFlagHasRotY
+	}
+
+	flags |= packet.MoveActorDeltaFlagForceMove
+
+	s.writePacket(&packet.MoveActorDelta{
+		Flags:           flags,
+		EntityRuntimeID: s.entityRuntimeID(e),
+		Position:        vec64To32(pos.Add(entityOffset(e))),
+		Rotation:        vec64To32(mgl64.Vec3{rot.Pitch(), rot.Yaw(), rot.Yaw()}),
+	})
+}
+
 // ViewEntityVelocity ...
 func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 	if s.entityHidden(e) {

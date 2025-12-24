@@ -2,6 +2,11 @@ package block
 
 import (
 	"fmt"
+	"math/rand/v2"
+	"strings"
+	"sync"
+	"sync/atomic"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
@@ -10,10 +15,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"strings"
-	"sync"
-	"sync/atomic"
 )
 
 const (
@@ -40,6 +41,8 @@ type ShulkerBox struct {
 	viewers   map[ContainerViewer]struct{}
 	// progress is the openness of the shulker box opening or closing. It is a float between 0 and 1.
 	progress *atomic.Int32
+	// prevProgress is the previous tick's progress, used to calculate push delta.
+	prevProgress *atomic.Int32
 	// animationStatus is the current openness state of the shulker box (whether its opened, closing, etc.).
 	animationStatus *atomic.Int32
 }
@@ -50,6 +53,7 @@ func NewShulkerBox() ShulkerBox {
 		viewerMu:        new(sync.RWMutex),
 		viewers:         make(map[ContainerViewer]struct{}, 1),
 		progress:        new(atomic.Int32),
+		prevProgress:    new(atomic.Int32),
 		animationStatus: new(atomic.Int32),
 	}
 
@@ -115,7 +119,6 @@ func (s ShulkerBox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.Use
 		}
 		return true
 	}
-
 	return false
 }
 
@@ -140,20 +143,20 @@ func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 
 // open opens the shulker box, displaying the animation and playing a sound.
 func (s ShulkerBox) open(tx *world.Tx, pos cube.Pos) {
+	s.animationStatus.Store(StateOpening)
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, OpenAction{})
 	}
-	s.animationStatus.Store(StateOpening)
 	tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxOpen{})
 	tx.ScheduleBlockUpdate(pos, s, 0)
 }
 
 // close closes the shulker box, displaying the animation and playing a sound.
 func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
+	s.animationStatus.Store(StateClosing)
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, CloseAction{})
 	}
-	s.animationStatus.Store(StateClosing)
 	tx.ScheduleBlockUpdate(pos, s, 0)
 }
 
@@ -163,7 +166,10 @@ func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	case StateClosed:
 		s.progress.Store(0)
 	case StateOpening:
+		s.prevProgress.Store(s.progress.Load())
 		s.progress.Add(1)
+
+		s.pushEntities(pos, tx)
 		if s.progress.Load() >= 10 {
 			s.progress.Store(10)
 			s.animationStatus.Store(StateOpened)
@@ -179,6 +185,80 @@ func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 			s.animationStatus.Store(StateClosed)
 		}
 		tx.ScheduleBlockUpdate(pos, s, 0)
+	}
+}
+
+// pushEntities pushes all entities touching the shulker box lid during opening.
+func (s ShulkerBox) pushEntities(pos cube.Pos, tx *world.Tx) {
+	shulkerBBoxes := s.Model().BBox(pos, tx)
+	if len(shulkerBBoxes) == 0 {
+		return
+	}
+	searchBox := shulkerBBoxes[0].Translate(pos.Vec3()).Grow(0.35)
+	for e := range tx.EntitiesWithin(searchBox) {
+		s.push(pos, tx, e)
+	}
+}
+
+// push pushes entities when the shulker box lid is opening.
+func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
+	if s.animationStatus.Load() != StateOpening {
+		return
+	}
+	living, ok := e.(interface {
+		MoveDelta(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+	})
+	if !ok {
+		return
+	}
+	shulkerBBoxes := s.Model().BBox(pos, tx)
+	if len(shulkerBBoxes) == 0 {
+		return
+	}
+	shulkerBBox := shulkerBBoxes[0].Translate(pos.Vec3())
+	entityBBox := e.H().Type().BBox(e).Translate(e.Position())
+	if !shulkerBBox.IntersectsWith(entityBBox) {
+		return
+	}
+
+	offset := s.Facing.Offset()
+	entityPos := e.Position()
+
+	if offset.Y() > 0 {
+		targetY := shulkerBBox.Max().Y()
+		if entityPos.Y() < targetY {
+			living.MoveDelta(mgl64.Vec3{0, targetY - entityPos.Y(), 0}, 0, 0)
+		}
+		return
+	}
+
+	if offset.Y() != 0 {
+		return
+	}
+
+	halfW := entityBBox.Width() / 2
+	halfL := entityBBox.Length() / 2
+	switch {
+	case offset.X() > 0:
+		target := shulkerBBox.Max().X() + halfW
+		if x := entityPos.X(); x < target {
+			living.MoveDelta(mgl64.Vec3{target - x, 0, 0}, 0, 0)
+		}
+	case offset.X() < 0:
+		target := shulkerBBox.Min().X() - halfW
+		if x := entityPos.X(); x > target {
+			living.MoveDelta(mgl64.Vec3{target - x, 0, 0}, 0, 0)
+		}
+	case offset.Z() > 0:
+		target := shulkerBBox.Max().Z() + halfL
+		if z := entityPos.Z(); z < target {
+			living.MoveDelta(mgl64.Vec3{0, 0, target - z}, 0, 0)
+		}
+	case offset.Z() < 0:
+		target := shulkerBBox.Min().Z() - halfL
+		if z := entityPos.Z(); z > target {
+			living.MoveDelta(mgl64.Vec3{0, 0, target - z}, 0, 0)
+		}
 	}
 }
 
@@ -222,24 +302,21 @@ func (s ShulkerBox) EncodeNBT() map[string]any {
 		s = NewShulkerBox()
 		s.Type, s.Facing, s.CustomName = typ, facing, customName
 	}
-
 	m := map[string]any{
 		"Items":  nbtconv.InvToNBT(s.inventory),
 		"id":     "ShulkerBox",
 		"facing": uint8(s.Facing),
 	}
-
 	if s.CustomName != "" {
 		m["CustomName"] = s.CustomName
 	}
 	return m
 }
 
-// allShulkerBoxes ...e
-func allShulkerBoxes() (shulkerboxes []world.Block) {
+// allShulkerBoxes ...
+func allShulkerBoxes() (boxes []world.Block) {
 	for _, t := range ShulkerBoxTypes() {
-		shulkerboxes = append(shulkerboxes, ShulkerBox{Type: t})
+		boxes = append(boxes, ShulkerBox{Type: t})
 	}
-
 	return
 }

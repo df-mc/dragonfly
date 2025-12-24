@@ -1,5 +1,7 @@
 package cube
 
+import "github.com/go-gl/mathgl/mgl64"
+
 const (
 	// FaceDown represents the bottom face of a block.
 	FaceDown Face = iota
@@ -87,6 +89,25 @@ func (f Face) RotateLeft() Face {
 		return FaceSouth
 	}
 	return f
+}
+
+// Offset returns the position offset of the Face.
+func (f Face) Offset() mgl64.Vec3 {
+	switch f {
+	case FaceUp:
+		return mgl64.Vec3{0, 1, 0}
+	case FaceDown:
+		return mgl64.Vec3{0, -1, 0}
+	case FaceNorth:
+		return mgl64.Vec3{0, 0, -1}
+	case FaceSouth:
+		return mgl64.Vec3{0, 0, 1}
+	case FaceWest:
+		return mgl64.Vec3{-1, -0, 0}
+	case FaceEast:
+		return mgl64.Vec3{1, 0, 0}
+	}
+	panic("invalid face")
 }
 
 // String returns the Face as a string.

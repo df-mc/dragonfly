@@ -135,8 +135,7 @@ func (s shulkerBox) Name() string {
 	case 16:
 		return "Black Shulker Box"
 	}
-
-	panic("unknown shulker box type")
+	panic("unknown skulker box type")
 }
 
 // String ...
@@ -177,8 +176,7 @@ func (s shulkerBox) String() string {
 	case 16:
 		return "black_shulker_box"
 	}
-
-	panic("unkown shulker box type")
+	panic("unknown shulker box type")
 }
 
 // ShulkerBoxTypes returns all shulker box types.
