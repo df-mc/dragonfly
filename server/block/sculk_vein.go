@@ -21,7 +21,7 @@ type SculkVein struct {
 
 // BreakInfo ...
 func (s SculkVein) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, hoeEffective, silkTouchOnlyDrop(s)).withXPDropRange(1, 1)
+	return newBreakInfo(0.2, alwaysHarvestable, hoeEffective, silkTouchOnlyDrop(s))
 }
 
 // EncodeItem ...
