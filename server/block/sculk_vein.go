@@ -95,6 +95,44 @@ func (s SculkVein) withFace(f cube.Face) SculkVein {
 	return s
 }
 
+// NeighbourUpdateTick checks if the sculk vein is still supported by the blocks it is attached to.
+func (s SculkVein) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	changed := false
+
+	checkSupport := func(face cube.Face, attached *bool) {
+		if !*attached {
+			return
+		}
+		supportPos := pos.Side(face)
+		// We check if the neighbour's face facing us (Opposite) is solid.
+		if !tx.Block(supportPos).Model().FaceSolid(supportPos, face.Opposite(), tx) {
+			*attached = false
+			changed = true
+		}
+	}
+
+	// Check all 6 directions
+	checkSupport(cube.FaceDown, &s.Down)
+	checkSupport(cube.FaceUp, &s.Up)
+	checkSupport(cube.FaceNorth, &s.North)
+	checkSupport(cube.FaceSouth, &s.South)
+	checkSupport(cube.FaceWest, &s.West)
+	checkSupport(cube.FaceEast, &s.East)
+
+	if !changed {
+		return
+	}
+
+	// If the vein has no attachments left, it breaks.
+	if !s.Down && !s.Up && !s.North && !s.South && !s.West && !s.East {
+		breakBlock(s, pos, tx)
+		return
+	}
+
+	// Otherwise, update the block with the new state (some faces removed).
+	tx.SetBlock(pos, s, nil)
+}
+
 // allSculkVeins generates all 64 possible states (2^6).
 func allSculkVeins() (b []world.Block) {
 	for i := 0; i < 64; i++ {
