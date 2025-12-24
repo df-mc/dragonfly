@@ -1,12 +1,14 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Tx represents a synchronised transaction performed on a World. Most
@@ -213,6 +215,34 @@ func (tx *Tx) Players() iter.Seq[Entity] {
 // Viewers returns all viewers viewing the position passed.
 func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
 	return tx.World().viewersOf(pos)
+}
+
+// RedstonePower returns the level of redstone power being emitted from a position to the provided face.
+func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
+	b := tx.Block(pos)
+	ctx := event.C(tx)
+	if tx.World().Handler().HandleRedstoneUpdate(ctx, pos); ctx.Cancelled() {
+		return 0
+	}
+	if c, ok := b.(Conductor); ok {
+		return c.WeakPower(pos, face, tx, accountForDust)
+	}
+	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
+		return 0
+	}
+	for _, f := range cube.Faces() {
+		if !b.Model().FaceSolid(pos, f, tx) {
+			return 0
+		}
+	}
+	for _, f := range cube.Faces() {
+		c, ok := tx.Block(pos.Side(f)).(Conductor)
+		if !ok {
+			continue
+		}
+		power = max(power, c.StrongPower(pos.Side(f), f, tx, accountForDust))
+	}
+	return power
 }
 
 // World returns the World of the Tx. It panics if the transaction was already

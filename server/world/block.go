@@ -2,17 +2,18 @@ package world
 
 import (
 	"fmt"
-	"github.com/brentp/intintmap"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/customblock"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/segmentio/fasthash/fnv1"
 	"image"
 	"math"
 	"math/bits"
 	"math/rand/v2"
 	"slices"
 	"sort"
+
+	"github.com/brentp/intintmap"
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/customblock"
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/segmentio/fasthash/fnv1"
 )
 
 // Block is a block that may be placed or found in a world. In addition, the block may also be added to an
@@ -74,6 +75,28 @@ type Liquid interface {
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
 	Harden(pos cube.Pos, tx *Tx, flownIntoBy *cube.Pos) bool
+}
+
+// Conductor represents a block that can conduct a redstone signal.
+type Conductor interface {
+	Block
+	// RedstoneSource returns true if the conductor is a signal source.
+	RedstoneSource() bool
+
+	// WeakPower returns the weak power level emitted by this conductor through the specified face.
+	// Weak power can pass through the specified face of a solid block to power redstone components
+	// on the other side, but cannot power solid blocks themselves or travel further.
+	// The accountForDust parameter indicates whether redstone dust should be considered when
+	// calculating power levels.
+	WeakPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
+
+	// StrongPower returns the strong power level emitted by this conductor through the specified face.
+	// Strong power can be transmitted through solid blocks - when a solid block receives strong power
+	// through one of its faces, it can provide weak power to adjacent redstone components on all other
+	// faces. Strong power can also directly power any redstone component.
+	// The accountForDust parameter indicates whether redstone dust should be considered when
+	// calculating power levels.
+	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
 }
 
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
