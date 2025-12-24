@@ -4,13 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/world/chunk"
-	"github.com/df-mc/goleveldb/leveldb"
-	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"iter"
 	"maps"
 	"math/rand/v2"
@@ -18,6 +11,14 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world/chunk"
+	"github.com/df-mc/goleveldb/leveldb"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players
@@ -619,6 +620,16 @@ func (w *World) StartTime() {
 	w.enableTimeCycle(true)
 }
 
+// TimeCycle returns whether time cycle is enabled.
+func (w *World) TimeCycle() bool {
+	if w == nil {
+		return false
+	}
+	w.set.Lock()
+	defer w.set.Unlock()
+	return w.set.TimeCycle
+}
+
 // enableTimeCycle enables or disables the time cycling of the World.
 func (w *World) enableTimeCycle(v bool) {
 	if w == nil {
@@ -627,6 +638,10 @@ func (w *World) enableTimeCycle(v bool) {
 	w.set.Lock()
 	defer w.set.Unlock()
 	w.set.TimeCycle = v
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
+		viewer.ViewTimeCycle(v)
+	}
 }
 
 // temperature returns the temperature in the World at a specific position.
@@ -1051,6 +1066,7 @@ func (w *World) addWorldViewer(l *Loader) {
 	w.viewerMu.Unlock()
 
 	l.viewer.ViewTime(w.Time())
+	l.viewer.ViewTimeCycle(w.TimeCycle())
 	w.set.Lock()
 	raining, thundering := w.set.Raining, w.set.Raining && w.set.Thundering
 	w.set.Unlock()
