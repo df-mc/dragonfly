@@ -21,12 +21,7 @@ type SculkVein struct {
 
 // BreakInfo ...
 func (s SculkVein) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, hoeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(s, 1)}
-		}
-		return nil
-	})
+	return newBreakInfo(0.2, alwaysHarvestable, hoeEffective, silkTouchOnlyDrop(s)).withXPDropRange(1, 1)
 }
 
 // EncodeItem ...
