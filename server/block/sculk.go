@@ -14,7 +14,7 @@ func (s Sculk) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(s, 1)}
 		}
 		return nil
-	}).withXPDropRange(1, 1).withBlastResistance(1)
+	}).withXPDropRange(1, 1)
 }
 
 // EncodeItem ...
