@@ -1,6 +1,11 @@
 package entity
 
 import (
+	"iter"
+	"math"
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
@@ -9,10 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"iter"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
 // ProjectileBehaviourConfig allows the configuration of projectiles. Calling
@@ -30,6 +31,10 @@ type ProjectileBehaviourConfig struct {
 	// back. The base damage is multiplied with the velocity of the projectile
 	// to calculate the final damage of the projectile.
 	Damage float64
+	// FixedDamage specifies if the projectile deals fixed damage regardless of
+	// velocity. If true, the Damage field is used directly without velocity
+	// scaling.
+	FixedDamage bool
 	// Potion is the potion effect that is applied to an entity when the
 	// projectile hits it.
 	Potion potion.Potion
@@ -260,7 +265,10 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
 	owner, _ := lt.conf.Owner.Entity(e.tx)
 	src := ProjectileDamageSource{Projectile: e, Owner: owner}
-	dmg := math.Ceil(lt.conf.Damage * vel.Len())
+	dmg := lt.conf.Damage
+	if !lt.conf.FixedDamage {
+		dmg = math.Ceil(lt.conf.Damage * vel.Len())
+	}
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}

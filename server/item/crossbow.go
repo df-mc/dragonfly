@@ -164,7 +164,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ca
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(5.15),
 			Rotation: rot.Neg(),
-		}, 9, releaser, false, false, canObtainPickup, 0, c.Item.Item().(Arrow).Tip)
+		}, 9, releaser, false, false, canObtainPickup, true, 0, c.Item.Item().(Arrow).Tip)
 		tx.AddEntity(arrow)
 	}
 }

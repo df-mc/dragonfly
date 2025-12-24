@@ -2,15 +2,16 @@ package world
 
 import (
 	"encoding/binary"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"io"
 	"maps"
 	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 )
 
 // EntityType is the type of Entity. It specifies the name, encoded Entity
@@ -365,7 +366,7 @@ type EntityRegistryConfig struct {
 	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
 	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
+	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup, fixedDamage bool, punchLevel int, tip any) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	EnderPearl         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Firework           func(opts EntitySpawnOpts, firework Item, owner Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *EntityHandle
