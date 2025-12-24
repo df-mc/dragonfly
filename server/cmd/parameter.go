@@ -28,6 +28,10 @@ type Parameter interface {
 //
 // Their values will then automatically be set to whichever option returned in Enum.Options is selected by
 // the user.
+//
+// By default, Enum implementations are sent as static enums, which display their type name in the command
+// usage (e.g., <mode: GameMode>). If an enum's options may change at runtime, implement the DynamicEnum
+// interface instead.
 type Enum interface {
 	// Type returns the type of the enum. This type shows up client-side in the command usage, in the spot
 	// where parameter types otherwise are.
@@ -38,6 +42,15 @@ type Enum interface {
 	// the argument passed to the enum parameter will be equal to one of these options. The provided Source
 	// can also be used to change the enums for each player.
 	Options(source Source) []string
+}
+
+// DynamicEnum is an optional interface that Enum implementations may implement to indicate that their
+// options can change at runtime. Enums implementing this interface will be sent as soft/dynamic enums,
+// allowing runtime updates.
+type DynamicEnum interface {
+	Enum
+	// Dynamic returns true if this enum's options may change at runtime.
+	Dynamic() bool
 }
 
 // ParamDescriber may be implemented by a Runnable to programmatically describe its parameters

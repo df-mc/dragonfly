@@ -84,32 +84,9 @@ func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.
 		for i, params := range params {
 			for _, paramInfo := range params {
 				t, enum := valueToParamType(paramInfo, co)
-				t |= protocol.CommandArgValid
 				suffix := paramInfo.Suffix
 
 				opt := byte(0)
-				if _, ok := paramInfo.Value.(bool); ok {
-					opt |= protocol.ParamOptionCollapseEnum
-				}
-				if len(enum.Options) > 0 || enum.Type != "" {
-					if !enum.Dynamic {
-						index, ok := enumIndices[enum.Type]
-						if !ok {
-							index = uint32(len(enums))
-							enumIndices[enum.Type] = index
-							enums = append(enums, enum)
-						}
-						t |= protocol.CommandArgEnum | index
-					} else {
-						index, ok := dynamicEnumIndices[enum.Type]
-						if !ok {
-							index = uint32(len(dynamicEnums))
-							dynamicEnumIndices[enum.Type] = index
-							dynamicEnums = append(dynamicEnums, enum)
-						}
-						t |= protocol.CommandArgSoftEnum | index
-					}
-				}
 				if suffix != "" {
 					index, ok := suffixIndices[suffix]
 					if !ok {
@@ -117,7 +94,28 @@ func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.
 						suffixIndices[suffix] = index
 						pk.Suffixes = append(pk.Suffixes, suffix)
 					}
-					t |= protocol.CommandArgSuffixed | index
+					t = protocol.CommandArgSuffixed | index
+				} else {
+					t |= protocol.CommandArgValid
+					if len(enum.Options) > 0 || enum.Type != "" {
+						if !enum.Dynamic {
+							index, ok := enumIndices[enum.Type]
+							if !ok {
+								index = uint32(len(enums))
+								enumIndices[enum.Type] = index
+								enums = append(enums, enum)
+							}
+							t |= protocol.CommandArgEnum | index
+						} else {
+							index, ok := dynamicEnumIndices[enum.Type]
+							if !ok {
+								index = uint32(len(dynamicEnums))
+								dynamicEnumIndices[enum.Type] = index
+								dynamicEnums = append(dynamicEnums, enum)
+							}
+							t |= protocol.CommandArgSoftEnum | index
+						}
+					}
 				}
 				overloads[i].Parameters = append(overloads[i].Parameters, protocol.CommandParameter{
 					Name:     paramInfo.Name,
@@ -183,8 +181,8 @@ func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum comman
 		return protocol.CommandArgTypeTarget, enum
 	case bool:
 		return 0, commandEnum{
-			Type:    "bool",
-			Options: []string{"true", "1", "false", "0"},
+			Type:    "Boolean",
+			Options: []string{"true", "false"},
 		}
 	case mgl64.Vec3:
 		return protocol.CommandArgTypePosition, enum
@@ -195,10 +193,14 @@ func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum comman
 		}
 	}
 	if enum, ok := i.Value.(cmd.Enum); ok {
+		dynamic := false
+		if d, ok := i.Value.(cmd.DynamicEnum); ok {
+			dynamic = d.Dynamic()
+		}
 		return 0, commandEnum{
 			Type:    enum.Type(),
 			Options: enum.Options(source),
-			Dynamic: true,
+			Dynamic: dynamic,
 		}
 	}
 	return protocol.CommandArgTypeValue, enum
