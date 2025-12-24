@@ -6,7 +6,7 @@ toolchain go1.24.4
 
 replace (
 	github.com/df-mc/go-nethernet => github.com/lumineproxy/go-nethernet v0.0.0-20251024044000-f3860133179b
-	github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20251102194152-6f382d16eb4c
+	github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20251223092521-d8bd2358315e
 )
 
 require (
@@ -55,7 +55,7 @@ require (
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/oauth2 v0.27.0 // indirect
+	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
