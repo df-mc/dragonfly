@@ -1948,7 +1948,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 	xp := 0
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
-		xp = breakable.BreakInfo().XPDrops.RandomValue()
+		if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
+			xp = breakable.BreakInfo().XPDrops.RandomValue()
+		}
 	}
 
 	ctx := event.C(p)
