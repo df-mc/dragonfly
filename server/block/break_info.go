@@ -1,15 +1,16 @@
 package block
 
 import (
+	"math"
+	"math/rand/v2"
+	"slices"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
-	"math"
-	"math/rand/v2"
-	"slices"
-	"time"
 )
 
 // Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks
@@ -233,6 +234,99 @@ func silkTouchOnlyDrop(it world.Item) func(t item.Tool, enchantments []item.Ench
 			return []item.Stack{item.NewStack(it, 1)}
 		}
 		return nil
+	}
+}
+
+// fortuneLevel returns the level of the fortune enchantment in enchantments, or 0 if it isn't present.
+func fortuneLevel(enchantments []item.Enchantment) int {
+	index := slices.IndexFunc(enchantments, func(i item.Enchantment) bool {
+		return i.Type() == enchantment.Fortune
+	})
+	if index == -1 {
+		return 0
+	}
+	return enchantments[index].Level()
+}
+
+// hasFortune checks if an item has the fortune enchantment.
+func hasFortune(enchantments []item.Enchantment) bool {
+	return slices.IndexFunc(enchantments, func(i item.Enchantment) bool {
+		return i.Type() == enchantment.Fortune
+	}) != -1
+}
+
+func fortuneOreCount(base int, enchantments []item.Enchantment) int {
+	if !hasFortune(enchantments) {
+		return base
+	}
+	fortune := fortuneLevel(enchantments)
+	if rand.IntN(fortune+2) < 2 {
+		return base
+	}
+	multiplier := rand.IntN(fortune) + 2
+	return base * multiplier
+}
+
+func fortuneDiscreteCount(minCount, maxCount, capCount int, enchantments []item.Enchantment) int {
+	fortune := 0
+	if hasFortune(enchantments) {
+		fortune = fortuneLevel(enchantments)
+	}
+	maxWithFortune := maxCount + fortune
+	if maxWithFortune > capCount {
+		maxWithFortune = capCount
+	}
+	return rand.IntN(maxWithFortune-minCount+1) + minCount
+}
+
+func fortuneBinomial(attempts int) int {
+	count := 0
+	for range attempts {
+		if rand.IntN(15) < 8 {
+			count++
+		}
+	}
+	return count
+}
+
+func oreDrops(drop, block world.Item) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if hasSilkTouch(enchantments) {
+			return []item.Stack{item.NewStack(block, 1)}
+		}
+		return []item.Stack{item.NewStack(drop, fortuneOreCount(1, enchantments))}
+	}
+}
+
+func multiOreDrops(drop, block world.Item, minCount, maxCount int) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if hasSilkTouch(enchantments) {
+			return []item.Stack{item.NewStack(block, 1)}
+		}
+		baseCount := rand.IntN(maxCount-minCount+1) + minCount
+		return []item.Stack{item.NewStack(drop, fortuneOreCount(baseCount, enchantments))}
+	}
+}
+
+func discreteDrops(drop, block world.Item, minCount, maxCount, capCount int) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if hasSilkTouch(enchantments) {
+			return []item.Stack{item.NewStack(block, 1)}
+		}
+		return []item.Stack{item.NewStack(drop, fortuneDiscreteCount(minCount, maxCount, capCount, enchantments))}
+	}
+}
+
+func cropSeedDrops(seed, crop world.Item, growth int) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if growth < 7 {
+			return []item.Stack{item.NewStack(seed, 1)}
+		}
+		seedCount := fortuneBinomial(3 + fortuneLevel(enchantments))
+		if seedCount == 0 {
+			return []item.Stack{item.NewStack(crop, 1)}
+		}
+		return []item.Stack{item.NewStack(crop, 1), item.NewStack(seed, seedCount)}
 	}
 }
 
