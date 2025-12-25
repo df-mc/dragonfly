@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
-
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/pelletier/go-toml"
+	"log/slog"
+	"os"
 )
 
 func main() {
@@ -24,7 +22,6 @@ func main() {
 
 	srv.Listen()
 	for p := range srv.Accept() {
-		p.SetGameMode(world.GameModeCreative)
 		_ = p
 	}
 }
