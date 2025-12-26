@@ -248,19 +248,9 @@ func fortuneLevel(enchantments []item.Enchantment) int {
 	return enchantments[index].Level()
 }
 
-// hasFortune checks if an item has the fortune enchantment.
-func hasFortune(enchantments []item.Enchantment) bool {
-	return slices.IndexFunc(enchantments, func(i item.Enchantment) bool {
-		return i.Type() == enchantment.Fortune
-	}) != -1
-}
-
 func fortuneOreCount(base int, enchantments []item.Enchantment) int {
-	if !hasFortune(enchantments) {
-		return base
-	}
 	fortune := fortuneLevel(enchantments)
-	if rand.IntN(fortune+2) < 2 {
+	if fortune == 0 || rand.IntN(fortune+2) < 2 {
 		return base
 	}
 	multiplier := rand.IntN(fortune) + 2
