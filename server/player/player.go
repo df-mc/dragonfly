@@ -25,8 +25,10 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/player/title"
@@ -1330,6 +1332,9 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 	p.session().SendGameMode(p)
 	for _, v := range p.viewers() {
 		v.ViewEntityGameMode(p)
+		v.ViewEntityItems(p)
+		v.ViewEntityArmour(p)
+		v.ViewEntityState(p)
 	}
 	if mode.AllowsTakingDamage() {
 		p.session().SendHealth(p.Health(), p.MaxHealth(), p.absorptionHealth)
