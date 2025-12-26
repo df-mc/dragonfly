@@ -10,7 +10,7 @@ type NetherQuartzOre struct {
 
 // BreakInfo ...
 func (q NetherQuartzOre) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(item.NetherQuartz{}, q)).withXPDropRange(0, 3)
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oreDrops(item.NetherQuartz{}, q)).withXPDropRange(0, 3)
 }
 
 // SmeltInfo ...

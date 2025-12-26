@@ -32,9 +32,8 @@ func (silkTouch) Rarity() item.EnchantmentRarity {
 }
 
 // CompatibleWithEnchantment ...
-func (silkTouch) CompatibleWithEnchantment(item.EnchantmentType) bool {
-	// TODO: Fortune.
-	return true
+func (silkTouch) CompatibleWithEnchantment(t item.EnchantmentType) bool {
+	return t != Fortune
 }
 
 // CompatibleWithItem ...
