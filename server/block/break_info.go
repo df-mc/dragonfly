@@ -258,10 +258,7 @@ func fortuneOreCount(base int, enchantments []item.Enchantment) int {
 }
 
 func fortuneDiscreteCount(minCount, maxCount, capCount int, enchantments []item.Enchantment) int {
-	fortune := 0
-	if hasFortune(enchantments) {
-		fortune = fortuneLevel(enchantments)
-	}
+	fortune := fortuneLevel(enchantments)
 	maxWithFortune := maxCount + fortune
 	if maxWithFortune > capCount {
 		maxWithFortune = capCount
