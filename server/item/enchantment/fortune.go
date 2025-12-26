@@ -23,7 +23,7 @@ func (fortune) MaxLevel() int {
 // Cost ...
 func (fortune) Cost(level int) (int, int) {
 	minCost := 15 + (level-1)*9
-	return minCost, minCost + 45 + level
+	return minCost, minCost + 50 + level
 }
 
 // Rarity ...
