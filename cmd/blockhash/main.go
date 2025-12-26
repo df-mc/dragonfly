@@ -5,13 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"golang.org/x/tools/go/packages"
 	"io"
 	"log"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 func main() {
@@ -240,6 +241,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 			log.Println("Found directive: 'facing_only'")
 			return "uint64(" + s + ".FaceUint8())", 3
 		}
+		return "uint64(" + s + ".Uint8())", 5
+	case "OptionalColour":
 		return "uint64(" + s + ".Uint8())", 5
 	case "GrindstoneAttachment":
 		return "uint64(" + s + ".Uint8())", 2
