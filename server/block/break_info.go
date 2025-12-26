@@ -260,10 +260,7 @@ func fortuneOreCount(base int, enchantments []item.Enchantment) int {
 func fortuneDiscreteCount(minCount, maxCount, capCount int, enchantments []item.Enchantment) int {
 	fortune := fortuneLevel(enchantments)
 	maxWithFortune := maxCount + fortune
-	if maxWithFortune > capCount {
-		maxWithFortune = capCount
-	}
-	return rand.IntN(maxWithFortune-minCount+1) + minCount
+	return min(capCount, rand.IntN(maxWithFortune-minCount+1)+minCount)
 }
 
 func fortuneBinomial(attempts int) int {
