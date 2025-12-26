@@ -1,11 +1,12 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // WheatSeeds are a crop that can be harvested to craft bread, cake, & cookies.
@@ -46,12 +47,7 @@ func (s WheatSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 
 // BreakInfo ...
 func (s WheatSeeds) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
-		if s.Growth < 7 {
-			return []item.Stack{item.NewStack(s, 1)}
-		}
-		return []item.Stack{item.NewStack(item.Wheat{}, 1), item.NewStack(s, rand.IntN(4)+1)}
-	})
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, cropSeedDrops(s, item.Wheat{}, s.Growth))
 }
 
 // CompostChance ...
