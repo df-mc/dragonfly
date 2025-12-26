@@ -11,7 +11,7 @@ type NetherGoldOre struct {
 
 // BreakInfo ...
 func (n NetherGoldOre) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, discreteDrops(item.GoldNugget{}, n, 2, 6, 6)).withXPDropRange(0, 1)
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, multiOreDrops(item.GoldNugget{}, n, 2, 6)).withXPDropRange(0, 1)
 }
 
 // SmeltInfo ...
