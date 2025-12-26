@@ -30,6 +30,8 @@ func (c Chestplate) DefencePoints() float64 {
 	switch c.Tier.Name() {
 	case "leather":
 		return 3
+	case "copper":
+		return 4
 	case "golden", "chainmail":
 		return 5
 	case "iron":
@@ -70,6 +72,8 @@ func (c Chestplate) SmeltInfo() SmeltInfo {
 		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
 	case ArmourTierGold:
 		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	case ArmourTierCopper:
+		return newOreSmeltInfo(NewStack(CopperNugget{}, 1), 0.1)
 	}
 	return SmeltInfo{}
 }
