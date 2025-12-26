@@ -1,8 +1,6 @@
 package block
 
 import (
-	"math/rand/v2"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -23,19 +21,7 @@ func (g Fern) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (g Fern) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(g, 1)}
-		}
-		if rand.Float32() < 0.125 {
-			count := 1
-			if fortune := fortuneLevel(enchantments); fortune > 0 {
-				count += rand.IntN(fortune*2 + 1)
-			}
-			return []item.Stack{item.NewStack(WheatSeeds{}, count)}
-		}
-		return nil
-	})
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, grassDrops(g))
 }
 
 // BoneMeal attempts to affect the block using a bone meal item.
