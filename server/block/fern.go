@@ -27,7 +27,7 @@ func (g Fern) BreakInfo() BreakInfo {
 		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(g, 1)}
 		}
-		if rand.Float32() > 0.57 {
+		if rand.Float32() < 0.125 {
 			count := 1
 			if fortune := fortuneLevel(enchantments); fortune > 0 {
 				count += rand.IntN(fortune*2 + 1)
