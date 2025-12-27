@@ -333,12 +333,23 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	if p.Dead() {
 		return
 	}
-	args := strings.Split(commandLine, " ")
-
-	name, ok := strings.CutPrefix(args[0], "/")
+	commandLine, ok := strings.CutPrefix(commandLine, "/")
 	if !ok {
 		return
 	}
+
+	args := strings.Split(commandLine, " ")
+
+	var (
+		name  string
+		index int
+	)
+	for index, name = range args {
+		if name != "" {
+			break
+		}
+	}
+	index++
 
 	command, ok := cmd.ByAlias(name)
 	if !ok {
@@ -348,10 +359,10 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		return
 	}
 	ctx := event.C(p)
-	if p.Handler().HandleCommandExecution(ctx, command, args[1:]); ctx.Cancelled() {
+	if p.Handler().HandleCommandExecution(ctx, command, args[index:]); ctx.Cancelled() {
 		return
 	}
-	command.Execute(strings.Join(args[1:], " "), p, p.tx)
+	command.Execute(strings.Join(args[index:], " "), p, p.tx)
 }
 
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
