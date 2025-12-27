@@ -22,11 +22,6 @@ type MenuElement interface {
 // Divider represents a visual separator element on a form. It displays a horizontal line.
 type Divider struct{}
 
-// NewDivider creates and returns a new Divider.
-func NewDivider() Divider {
-	return Divider{}
-}
-
 // MarshalJSON ...
 func (d Divider) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
