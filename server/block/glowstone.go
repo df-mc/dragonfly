@@ -3,7 +3,6 @@ package block
 import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand/v2"
 )
 
 // Glowstone is commonly found on the ceiling of the nether dimension.
@@ -18,7 +17,7 @@ func (g Glowstone) Instrument() sound.Instrument {
 
 // BreakInfo ...
 func (g Glowstone) BreakInfo() BreakInfo {
-	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, silkTouchDrop(item.NewStack(item.GlowstoneDust{}, rand.IntN(3)+2), item.NewStack(g, 1)))
+	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, discreteDrops(item.GlowstoneDust{}, g, 2, 4, 4))
 }
 
 // EncodeItem ...
