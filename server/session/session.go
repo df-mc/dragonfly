@@ -240,14 +240,10 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
 	s.chunkLoader.Move(tx, pos)
 
-	chunkPos := world.ChunkPos{int32(pos[0]) << 4, int32(pos[2]) << 4}
-	if s.lastChunkPos != chunkPos {
-		s.lastChunkPos = chunkPos
-		s.writePacket(&packet.NetworkChunkPublisherUpdate{
-			Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
-			Radius:   uint32(s.chunkRadius) << 4,
-		})
-	}
+	s.writePacket(&packet.NetworkChunkPublisherUpdate{
+		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+		Radius:   uint32(s.chunkRadius) << 4,
+	})
 
 	s.sendAvailableEntities(tx.World())
 
@@ -420,10 +416,14 @@ func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
 	}
 	pos := c.Position()
 	s.chunkLoader.Move(tx, pos)
-	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
-		Radius:   uint32(s.chunkRadius) << 4,
-	})
+	chunkPos := world.ChunkPos{int32(pos[0]) << 4, int32(pos[2]) << 4}
+	if s.lastChunkPos != chunkPos {
+		s.lastChunkPos = chunkPos
+		s.writePacket(&packet.NetworkChunkPublisherUpdate{
+			Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+			Radius:   uint32(s.chunkRadius) << 4,
+		})
+	}
 
 	s.blobMu.Lock()
 	const maxChunkTransactions = 8
