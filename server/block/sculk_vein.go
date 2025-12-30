@@ -54,21 +54,32 @@ func (s SculkVein) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:sculk_vein", map[string]any{"multi_face_direction_bits": bits}
 }
 
-// UseOnBlock allows placing the vein on any solid face.
+// UseOnBlock allows placing the vein and automatically connects it to all adjacent solid faces.
 func (s SculkVein) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
-	if _, ok := tx.Block(pos).Model().(model.Solid); !ok {
-		return false
-	}
-	pos, face, used := firstReplaceable(tx, pos, face, s)
+	// 1. Find the actual position we are placing the block in.
+	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
-	if _, ok := tx.Block(pos).(SculkVein); ok {
+
+	// 2. Check every face around this position.
+	foundSupport := false
+	for _, f := range cube.Faces() {
+		supportPos := pos.Side(f)
+		supportBlock := tx.Block(supportPos)
+
+		// 3. If the neighbor's face facing us is solid, attach the vein to it.
+		if supportBlock.Model().FaceSolid(supportPos, f.Opposite(), tx) {
+			s = s.withFace(f)
+			foundSupport = true
+		}
+	}
+
+	// 4. Only place if we actually found at least one surface to stick to.
+	if !foundSupport {
 		return false
 	}
 
-	s = s.withFace(face.Opposite())
-	s = s.WithFace(face.Opposite())
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
