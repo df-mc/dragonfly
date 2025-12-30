@@ -890,11 +890,7 @@ func finishDying(_ *world.Tx, e world.Entity) {
 		// position server side so that in the future, the client won't respawn
 		// on the death location when disconnecting. The client should not see
 		// the movement itself yet, though.
-		pos, w, spawnObstructed, _ := p.spawnLocation()
-
-		if spawnObstructed {
-			w.SetPlayerSpawn(p.UUID(), pos)
-		}
+		pos, _, _, _ := p.spawnLocation()
 
 		p.data.Pos = pos.Vec3()
 	}
@@ -947,10 +943,13 @@ func (p *Player) respawn(f func(p *Player)) {
 	if !p.Dead() || p.session() == session.Nop {
 		return
 	}
-	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
-	// always bring us back to the overworld.
-	w := p.tx.World().PortalDestination(p.tx.World().Dimension())
-	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
+
+	blockPos, w, spawnObstructed, _ := p.spawnLocation()
+	pos := blockPos.Vec3Middle()
+
+	if spawnObstructed {
+		p.Messaget(chat.MessageBedNotValid)
+	}
 
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
@@ -983,8 +982,6 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 		if ok {
 			return pos, w, false, previousDimension
 		}
-
-		p.Messaget(chat.MessageBedNotValid)
 	}
 
 	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
