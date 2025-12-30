@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -21,7 +20,7 @@ type SculkVein struct {
 
 // BreakInfo ...
 func (s SculkVein) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, hoeEffective, silkTouchOnlyDrop(s))
+	return newBreakInfo(0.2, alwaysHarvestable, hoeEffective, silkTouchOnlyDrop(s)).withXPDropRange(1, 1)
 }
 
 // EncodeItem ...
@@ -54,25 +53,37 @@ func (s SculkVein) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:sculk_vein", map[string]any{"multi_face_direction_bits": bits}
 }
 
-// UseOnBlock allows placing the vein on any solid face.
+// UseOnBlock allows placing the vein and automatically connects it to all adjacent solid faces.
 func (s SculkVein) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
-	if _, ok := tx.Block(pos).Model().(model.Solid); !ok {
-		return false
-	}
-	pos, face, used := firstReplaceable(tx, pos, face, s)
+	// 1. Find the actual position we are placing the block in.
+	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
-	if _, ok := tx.Block(pos).(SculkVein); ok {
+
+	// 2. Check every face around this position.
+	foundSupport := false
+	for _, f := range cube.Faces() {
+		supportPos := pos.Side(f)
+		supportBlock := tx.Block(supportPos)
+
+		// 3. If the neighbor's face facing us is solid, attach the vein to it.
+		if supportBlock.Model().FaceSolid(supportPos, f.Opposite(), tx) {
+			s = s.withFace(f)
+			foundSupport = true
+		}
+	}
+
+	// 4. Only place if we actually found at least one surface to stick to.
+	if !foundSupport {
 		return false
 	}
 
-	s = s.WithFace(face.Opposite())
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
-func (s SculkVein) WithFace(f cube.Face) SculkVein {
+func (s SculkVein) withFace(f cube.Face) SculkVein {
 	switch f {
 	case cube.FaceUp:
 		s.Up = true
