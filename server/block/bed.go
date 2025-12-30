@@ -124,6 +124,12 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 	if !ok {
 		return false
 	}
+
+	if _, safeSpawn := b.SafeSpawn(headPos.Side(b.Facing.Opposite().Face()), tx); !safeSpawn {
+		s.Messaget(chat.MessageBedObstructed)
+		return false
+	}
+
 	if _, ok = tx.Liquid(headPos); ok {
 		return false
 	}
