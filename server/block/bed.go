@@ -126,7 +126,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 		return false
 	}
 
-	if _, safeSpawn := b.SafeSpawn(headPos.Side(b.Facing.Opposite().Face()), tx); !safeSpawn {
+	if _, safeSpawn := b.SafeSpawn(pos, tx); !safeSpawn {
 		s.Messaget(chat.MessageBedObstructed)
 		return false
 	}
@@ -265,9 +265,16 @@ var bedOffsets = map[cube.Face][]cube.Pos{
 }
 
 // SafeSpawn ...
-func (b Bed) SafeSpawn(p cube.Pos, tx *world.Tx) (cube.Pos, bool) {
+func (b Bed) SafeSpawn(pos cube.Pos, tx *world.Tx) (cube.Pos, bool) {
+	_, headPos, ok := b.head(pos, tx)
+	if !ok {
+		return cube.Pos{}, false
+	}
+
+	heelPos := headPos.Side(b.Facing.Opposite().Face())
+
 	for _, offset := range bedOffsets[b.Facing.Face()] {
-		offsetPos := p.Add(offset)
+		offsetPos := heelPos.Add(offset)
 
 		if _, solidBlock := tx.Block(offsetPos).Model().(model.Solid); solidBlock {
 			if diffuser, ok := tx.Block(offsetPos).(LightDiffuser); !ok || diffuser.LightDiffusionLevel() != 0 {
@@ -279,7 +286,7 @@ func (b Bed) SafeSpawn(p cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 			continue
 		}
 
-		return p.Add(offset), true
+		return heelPos.Add(offset), true
 	}
 	return cube.Pos{}, false
 }
