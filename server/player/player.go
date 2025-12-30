@@ -1233,6 +1233,8 @@ func (p *Player) Sleep(pos cube.Pos) {
 	p.sleeping = true
 	p.sleepPos = pos
 
+	p.session().SendPlayerSpawn(pos.Vec3())
+
 	if sendReminder {
 		tx.BroadcastSleepingReminder(p)
 	}
