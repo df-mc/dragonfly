@@ -1,6 +1,7 @@
 package session
 
 import (
+	"bytes"
 	"fmt"
 	"image/color"
 	"math/rand/v2"
@@ -20,6 +21,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -332,9 +334,18 @@ func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
 
 // ViewSleepingPlayers ...
 func (s *Session) ViewSleepingPlayers(sleeping, max int) {
-	s.writePacket(&packet.LevelEvent{
-		EventType: packet.LevelEventSleepingPlayers,
-		EventData: int32((max << 16) | sleeping),
+	buf := bytes.NewBuffer(nil)
+	_ = nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian).Encode(map[string]any{
+		"ableToSleep":          int32(max),
+		"overworldPlayerCount": int32(max),
+		"sleepingPlayerCount":  int32(sleeping),
+	})
+
+	eventData := buf.Bytes()
+
+	s.writePacket(&packet.LevelEventGeneric{
+		EventID:             packet.LevelEventSleepingPlayers,
+		SerialisedEventData: eventData[2 : len(eventData)-1],
 	})
 }
 
