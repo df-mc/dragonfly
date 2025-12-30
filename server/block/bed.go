@@ -10,7 +10,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Bed is a block, allowing players to sleep to set their spawns and skip the night.
+// Bed is a dyeable utility block that allows a player in the Overworld to sleep through the night and reset
+// their spawn point to within a few blocks of the bed, as long as it is not broken or obstructed.
 type Bed struct {
 	transparent
 	sourceWaterDisplacer
