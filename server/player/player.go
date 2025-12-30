@@ -974,21 +974,39 @@ func (p *Player) respawn(f func(p *Player)) {
 // spawnLocation designates a players safe spawn location.
 func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
 	tx := p.tx
-	w = tx.World()
-	previousDimension = w.Dimension()
-	playerSpawn = w.PlayerSpawn(p.UUID())
-	if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
-		pos, ok := b.SafeSpawn(playerSpawn, tx)
-		if ok {
-			return pos, w, false, previousDimension
+	currentWorld := tx.World()
+	previousDimension = currentWorld.Dimension()
+
+	// Beds only work in the Overworld, so we always check there for bed spawns.
+	// PortalDestination returns the destination for a portal of the given dimension,
+	// which effectively takes us back to the Overworld from Nether/End.
+	overworld := currentWorld.PortalDestination(currentWorld.Dimension())
+	playerSpawn = overworld.PlayerSpawn(p.UUID())
+
+	if currentWorld == overworld {
+		// We're in the Overworld, can check the bed directly.
+		if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
+			pos, ok := b.SafeSpawn(playerSpawn, tx)
+			if ok {
+				return pos, overworld, false, previousDimension
+			}
+		}
+	} else {
+		// We're in another dimension, need to check the Overworld for the bed.
+		var safePos cube.Pos
+		var found bool
+		overworld.Exec(func(otx *world.Tx) {
+			if b, ok := otx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
+				safePos, found = b.SafeSpawn(playerSpawn, otx)
+			}
+		})
+		if found {
+			return safePos, overworld, false, previousDimension
 		}
 	}
 
-	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
-	// always bring us back to the overworld.
-	w = w.PortalDestination(w.Dimension())
-	worldSpawn := w.Spawn()
-	return worldSpawn, w, playerSpawn != worldSpawn, previousDimension
+	worldSpawn := overworld.Spawn()
+	return worldSpawn, overworld, playerSpawn != worldSpawn, previousDimension
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making

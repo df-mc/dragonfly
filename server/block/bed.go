@@ -43,10 +43,17 @@ func (Bed) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (b Bed) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
-		headSide, _, ok := b.head(pos, tx)
+	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, oneOf(b)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+		headSide, headPos, ok := b.head(pos, tx)
 		if !ok {
 			return
+		}
+
+		// If the breaker has their spawn set to this bed, reset it.
+		w := tx.World()
+		breakerSpawn := w.PlayerSpawn(u.H().UUID())
+		if breakerSpawn == headPos {
+			w.SetPlayerSpawn(u.H().UUID(), w.Spawn())
 		}
 
 		s := headSide.Sleeper
