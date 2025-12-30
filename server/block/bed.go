@@ -115,7 +115,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 	}
 
 	userPos := s.Position()
-	if sidePos.Vec3Middle().Sub(userPos).Len() > 4 && pos.Vec3Middle().Sub(userPos).Len() > 4 {
+	if sidePos.Vec3Middle().Sub(userPos).Len() > 2 && pos.Vec3Middle().Sub(userPos).Len() > 2 {
 		s.Messaget(chat.MessageBedTooFar)
 		return true
 	}
