@@ -23,10 +23,10 @@ type Sleeper interface {
 
 // Time constants for sleep usage.
 const (
-	TimeSleep         = 12010
-	TimeWake          = 23991
-	TimeSleepWithRain = 12542
-	TimeWakeWithRain  = 23459
+	TimeSleep         = 12542
+	TimeWake          = 23459
+	TimeSleepWithRain = 12010
+	TimeWakeWithRain  = 23991
 	TimeFull          = 24000
 )
 
