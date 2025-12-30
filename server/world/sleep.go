@@ -37,14 +37,11 @@ func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 	time := tx.w.Time() % TimeFull
 
 	for s := range sleepers {
-		pos := cube.PosFromVec3(s.Position())
-
-		if !tx.ThunderingAt(pos) {
-			if time <= TimeSleep || time >= TimeWake {
+		if !tx.Thundering() {
+			if !tx.Raining() && (time <= TimeSleep || time >= TimeWake) {
 				return
 			}
-
-			if !tx.RainingAt(pos) && (time <= TimeSleepWithRain || time >= TimeWakeWithRain) {
+			if time <= TimeSleepWithRain || time >= TimeWakeWithRain {
 				return
 			}
 		}

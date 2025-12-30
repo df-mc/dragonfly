@@ -159,6 +159,16 @@ func (tx *Tx) ThunderingAt(pos cube.Pos) bool {
 	return tx.World().thunderingAt(pos)
 }
 
+// Raining checks if it is raining anywhere in the World.
+func (tx *Tx) Raining() bool {
+	return tx.World().raining()
+}
+
+// Thundering checks if it is thundering anywhere in the World.
+func (tx *Tx) Thundering() bool {
+	return tx.World().thundering()
+}
+
 // AddParticle spawns a Particle at a given position in the World. Viewers that
 // are viewing the chunk will be shown the particle.
 func (tx *Tx) AddParticle(pos mgl64.Vec3, p Particle) {
