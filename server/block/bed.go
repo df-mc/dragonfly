@@ -260,9 +260,19 @@ var bedOffsets = map[cube.Face][]cube.Pos{
 // SafeSpawn ...
 func (b Bed) SafeSpawn(p cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	for _, offset := range bedOffsets[b.Facing.Face()] {
-		if _, ok := tx.Block(p.Add(offset)).(Air); ok {
-			return p.Add(offset), true
+		offsetPos := p.Add(offset)
+
+		if _, solidBlock := tx.Block(offsetPos).Model().(model.Solid); solidBlock {
+			if diffuser, ok := tx.Block(offsetPos).(LightDiffuser); !ok || diffuser.LightDiffusionLevel() != 0 {
+				continue
+			}
 		}
+
+		if _, emptyBlock := tx.Block(offsetPos.Side(cube.FaceDown)).Model().(model.Empty); emptyBlock {
+			continue
+		}
+
+		return p.Add(offset), true
 	}
 	return cube.Pos{}, false
 }
