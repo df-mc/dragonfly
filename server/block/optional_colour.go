@@ -2,15 +2,15 @@ package block
 
 import "github.com/df-mc/dragonfly/server/item"
 
-// OptionalColour is an optional colour that can be used to represent a block's colour.'
+// OptionalColour is an optional colour for certain blocks.
 type OptionalColour uint8
 
-// NewOptionalColour creates a new OptionalColour from a Colour.
+// NewOptionalColour returns a new OptionalColour from an item.Colour.
 func NewOptionalColour(c item.Colour) OptionalColour {
 	return OptionalColour(c.Uint8() + 1)
 }
 
-// Colour returns the colour of the OptionalColour.
+// Colour returns the item.Colour of the OptionalColour.
 func (oc OptionalColour) Colour() (item.Colour, bool) {
 	if oc == 0 {
 		return item.Colour{}, false
@@ -23,7 +23,7 @@ func (oc OptionalColour) Empty() OptionalColour {
 	return 0
 }
 
-// Uint8 returns the uint8 representation of the OptionalColour.
+// Uint8 returns the OptionalColour as an uint8.
 func (oc OptionalColour) Uint8() uint8 {
 	return uint8(oc)
 }
