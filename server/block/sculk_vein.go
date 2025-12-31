@@ -67,13 +67,12 @@ func (s SculkVein) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 		return false
 	}
 
-	s = s.withFace(face.Opposite())
 	s = s.WithFace(face.Opposite())
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
-func (s SculkVein) withFace(f cube.Face) SculkVein {
+// WithFace returns a SculkVein with the specified face set to true.
 func (s SculkVein) WithFace(f cube.Face) SculkVein {
 	switch f {
 	case cube.FaceUp:
@@ -108,7 +107,7 @@ func (s SculkVein) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 		}
 	}
 
-	// Check all 6 directions
+	// Check all 6 directions.
 	checkSupport(cube.FaceDown, &s.Down)
 	checkSupport(cube.FaceUp, &s.Up)
 	checkSupport(cube.FaceNorth, &s.North)
