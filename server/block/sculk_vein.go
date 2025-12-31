@@ -182,7 +182,7 @@ func (s SculkVein) attemptMerge(pos cube.Pos, existing SculkVein, face cube.Face
 		return false
 	}
 	tx.SetBlock(pos, newVein, nil)
-	tx.PlaySound(pos.Vec3Centre(), sound.BlockPlace{})
+	tx.PlaySound(pos.Vec3Centre(), sound.BlockPlace{Block: SculkVein{}})
 	ctx.SubtractFromCount(1)
 	return true
 }
