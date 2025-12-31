@@ -225,6 +225,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		name = t.Name
 	case *ast.SelectorExpr:
 		name = t.Sel.Name
+	case *ast.StarExpr:
+		return "", 0 // Ignore this field
 	default:
 		log.Fatalf("unknown field type %#v\n", expr)
 		return "", 0
