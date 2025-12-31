@@ -25,7 +25,7 @@ type Candle struct {
 
 // BreakInfo ...
 func (c Candle) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, shearsEffective, oneOf(c))
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(c))
 }
 
 // Model ...
