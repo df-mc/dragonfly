@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -19,9 +20,38 @@ type SculkVein struct {
 	North, East, South, West, Up, Down bool
 }
 
-// BreakInfo ...
+// BreakInfo returns the break properties, dropping an item for every face if silk touched.
 func (s SculkVein) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, hoeEffective, silkTouchOnlyDrop(s))
+	return newBreakInfo(0.2, alwaysHarvestable, hoeEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		for _, ench := range enchantments {
+			if ench.Type() == enchantment.SilkTouch {
+				// Calculate active faces to determine the drop amount.
+				count := 0
+				if s.North {
+					count++
+				}
+				if s.East {
+					count++
+				}
+				if s.South {
+					count++
+				}
+				if s.West {
+					count++
+				}
+				if s.Up {
+					count++
+				}
+				if s.Down {
+					count++
+				}
+
+				// Drop the 'clean' version of the block (all faces false) with the count.
+				return []item.Stack{item.NewStack(SculkVein{}, count)}
+			}
+		}
+		return nil
+	})
 }
 
 // EncodeItem ...
@@ -63,8 +93,15 @@ func (s SculkVein) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 	if !used {
 		return false
 	}
-	if _, ok := tx.Block(pos).(SculkVein); ok {
-		return false
+
+	// Handle merging with existing veins.
+	if existing, ok := tx.Block(pos).(SculkVein); ok {
+		newVein := existing.WithFace(face.Opposite())
+		if newVein == existing {
+			return false
+		}
+		place(tx, pos, newVein, user, ctx)
+		return placed(ctx)
 	}
 
 	s = s.WithFace(face.Opposite())
@@ -91,23 +128,20 @@ func (s SculkVein) WithFace(f cube.Face) SculkVein {
 	return s
 }
 
-// NeighbourUpdateTick checks if the sculk vein is still supported by the blocks it is attached to.
+// NeighbourUpdateTick checks if the sculk vein is still supported.
 func (s SculkVein) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	changed := false
-
 	checkSupport := func(face cube.Face, attached *bool) {
 		if !*attached {
 			return
 		}
 		supportPos := pos.Side(face)
-		// We check if the neighbour's face facing us (Opposite) is solid.
 		if !tx.Block(supportPos).Model().FaceSolid(supportPos, face.Opposite(), tx) {
 			*attached = false
 			changed = true
 		}
 	}
 
-	// Check all 6 directions.
 	checkSupport(cube.FaceDown, &s.Down)
 	checkSupport(cube.FaceUp, &s.Up)
 	checkSupport(cube.FaceNorth, &s.North)
@@ -119,17 +153,15 @@ func (s SculkVein) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 		return
 	}
 
-	// If the vein has no attachments left, it breaks.
 	if !s.Down && !s.Up && !s.North && !s.South && !s.West && !s.East {
 		breakBlock(s, pos, tx)
 		return
 	}
 
-	// Otherwise, update the block with the new state (some faces removed).
 	tx.SetBlock(pos, s, nil)
 }
 
-// allSculkVeins generates all 64 possible states (2^6).
+// allSculkVeins generates all 64 possible states.
 func allSculkVeins() (b []world.Block) {
 	for i := 0; i < 64; i++ {
 		b = append(b, SculkVein{
