@@ -2,10 +2,10 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -84,29 +84,107 @@ func (s SculkVein) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:sculk_vein", map[string]any{"multi_face_direction_bits": bits}
 }
 
-// UseOnBlock allows placing the vein on any solid face.
 func (s SculkVein) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
-	if _, ok := tx.Block(pos).Model().(model.Solid); !ok {
-		return false
+	clickedBlock := tx.Block(pos)
+	targetFace := face.Opposite()
+
+	// 1. If we clicked an existing vein, try to add a face to IT.
+	if existing, ok := clickedBlock.(SculkVein); ok {
+		// First try the specific face clicked.
+		if !existing.hasFace(targetFace) {
+			if s.attemptMerge(pos, existing, targetFace, tx, ctx) {
+				return true
+			}
+		}
+		// Vanilla Logic: If clicking an occupied face, try to find ANY other
+		// available face in this same block that has a solid support.
+		if s.attemptMergeAny(pos, existing, tx, ctx) {
+			return true
+		}
+
+		// If the current block is "full" for all available supports,
+		// move to the air block next to it (wrap-around).
+		pos = pos.Side(face)
 	}
-	pos, face, used := firstReplaceable(tx, pos, face, s)
+
+	// 2. Resolve position for a brand new block or wrap-around.
+	actualPos, actualFace, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
 
-	// Handle merging with existing veins.
-	if existing, ok := tx.Block(pos).(SculkVein); ok {
-		newVein := existing.WithFace(face.Opposite())
-		if newVein == existing {
-			return false
+	targetBlock := tx.Block(actualPos)
+	newTargetFace := actualFace.Opposite()
+
+	// 3. Merge if we landed on another vein.
+	if existing, ok := targetBlock.(SculkVein); ok {
+		if s.attemptMerge(actualPos, existing, newTargetFace, tx, ctx) {
+			return true
 		}
-		place(tx, pos, newVein, user, ctx)
-		return placed(ctx)
+		return s.attemptMergeAny(actualPos, existing, tx, ctx)
 	}
 
-	s = s.WithFace(face.Opposite())
-	place(tx, pos, s, user, ctx)
+	// 4. Place a new block.
+	supportPos := actualPos.Side(newTargetFace)
+	if !tx.Block(supportPos).Model().FaceSolid(supportPos, actualFace, tx) {
+		return false
+	}
+
+	newVein := SculkVein{}.WithFace(newTargetFace)
+	place(tx, actualPos, newVein, user, ctx)
 	return placed(ctx)
+}
+
+// attemptMergeAny searches all faces of the current block to find a valid
+// empty face with a solid support block behind it.
+func (s SculkVein) attemptMergeAny(pos cube.Pos, existing SculkVein, tx *world.Tx, ctx *item.UseContext) bool {
+	for _, f := range cube.Faces() {
+		if !existing.hasFace(f) {
+			supportPos := pos.Side(f)
+			// Check if the neighbor block is solid on the face touching us.
+			if tx.Block(supportPos).Model().FaceSolid(supportPos, f.Opposite(), tx) {
+				if s.attemptMerge(pos, existing, f, tx, ctx) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// hasFace is a helper to check if a specific face is already active.
+func (s SculkVein) hasFace(f cube.Face) bool {
+	switch f {
+	case cube.FaceUp:
+		return s.Up
+	case cube.FaceDown:
+		return s.Down
+	case cube.FaceNorth:
+		return s.North
+	case cube.FaceSouth:
+		return s.South
+	case cube.FaceWest:
+		return s.West
+	case cube.FaceEast:
+		return s.East
+	}
+	return false
+}
+
+// attemptMerge handles adding a face and syncing inventory.
+func (s SculkVein) attemptMerge(pos cube.Pos, existing SculkVein, face cube.Face, tx *world.Tx, ctx *item.UseContext) bool {
+	newVein := existing.WithFace(face)
+	if newVein == existing {
+		return false
+	}
+	supportPos := pos.Side(face)
+	if !tx.Block(supportPos).Model().FaceSolid(supportPos, face.Opposite(), tx) {
+		return false
+	}
+	tx.SetBlock(pos, newVein, nil)
+	tx.PlaySound(pos.Vec3Centre(), sound.BlockPlace{})
+	ctx.SubtractFromCount(1)
+	return true
 }
 
 // WithFace returns a SculkVein with the specified face set to true.
