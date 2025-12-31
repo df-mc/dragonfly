@@ -35,10 +35,7 @@ func (c Candle) Model() world.BlockModel {
 
 // LightEmissionLevel ...
 func (c Candle) LightEmissionLevel() uint8 {
-	if c.Candles == 0 {
-		return 3
-	}
-	return uint8(c.Candles + 1*3)
+	return uint8((c.Candles + 1) * 3)
 }
 
 // SideClosed ...
