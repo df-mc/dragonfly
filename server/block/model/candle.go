@@ -7,6 +7,7 @@ import (
 
 // Candle is the model for candle blocks.
 type Candle struct {
+	// Count is the number of candles.
 	Count int
 }
 
@@ -15,9 +16,9 @@ func (c Candle) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	switch c.Count {
 	case 2:
 		return []cube.BBox{cube.Box(0.3125, 0, 0.4375, 0.6875, 0.375, 0.625)}
-	case 3: // 3 candles
+	case 3:
 		return []cube.BBox{cube.Box(0.3125, 0, 0.375, 0.625, 0.375, 0.6875)}
-	case 4: // 4 candles
+	case 4:
 		return []cube.BBox{cube.Box(0.3125, 0, 0.3125, 0.6875, 0.375, 0.625)}
 	default:
 		return []cube.BBox{cube.Box(0.4375, 0, 0.4375, 0.5625, 0.375, 0.5625)}
