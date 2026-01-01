@@ -117,7 +117,7 @@ type ArmourTierNetherite struct{}
 
 func (ArmourTierNetherite) BaseDurability() float64      { return 408 }
 func (ArmourTierNetherite) Toughness() float64           { return 3 }
-func (ArmourTierNetherite) KnockBackResistance() float64 { return 0.1 }
+func (ArmourTierNetherite) KnockBackResistance() float64 { return 0 }
 func (ArmourTierNetherite) EnchantmentValue() int        { return 15 }
 func (ArmourTierNetherite) Name() string                 { return "netherite" }
 
