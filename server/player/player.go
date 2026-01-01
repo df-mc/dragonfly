@@ -729,7 +729,7 @@ func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
 	}
 	velocity[1] = height
 
-	p.SetVelocity(velocity)
+	p.SetVelocity(velocity.Mul(1 - p.Armour().KnockBackResistance()))
 }
 
 // setAttackImmunity sets the duration the player is immune to entity attacks.
