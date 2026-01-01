@@ -588,14 +588,9 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	immune := time.Now().Before(p.immuneUntil)
 	if immune {
-		// Calculate if this new hit is stronger than the last one.
-		// If it's NOT stronger, we cancel the entire function right now.
-		// This stops the sound and animation from being sent to other players.
-		if damageLeft-p.lastDamage <= 0 {
-			return 0, false 
+		if damageLeft = damageLeft - p.lastDamage; damageLeft <= 0 {
+			return 0, false
 		}
-		// If it IS stronger, we subtract the previous damage (Vanilla behavior)
-		damageLeft -= p.lastDamage
 	}
 
 	immunity := time.Second / 2
