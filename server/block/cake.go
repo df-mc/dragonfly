@@ -17,7 +17,7 @@ type Cake struct {
 	// Bites is the amount of bites taken out of the cake.
 	Bites int
 	// Colour is the colour of the candle.
-	Colour OptionalColour
+	Colour item.OptionalColour
 	// Candle is true if the cake has a candle on top.
 	Candle bool
 	// Lit is whether the candle is lit.
@@ -169,7 +169,7 @@ func allCake() (cake []world.Block) {
 	for bites := 0; bites < 7; bites++ {
 		cake = append(cake, Cake{Bites: bites})
 	}
-	for _, c := range OptionalColours() {
+	for _, c := range item.OptionalColours() {
 		cake = append(cake, Cake{Colour: c, Candle: true})
 		cake = append(cake, Cake{Colour: c, Candle: true, Lit: true})
 	}

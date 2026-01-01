@@ -16,7 +16,7 @@ type Candle struct {
 	sourceWaterDisplacer
 
 	// Colour is the colour of the candle.
-	Colour OptionalColour
+	Colour item.OptionalColour
 	// Candles is the number of candles.
 	Candles int
 	// Lit is whether the candles are lit.
@@ -119,7 +119,7 @@ func (c Candle) EncodeBlock() (name string, properties map[string]any) {
 func allCandles() []world.Block {
 	b := make([]world.Block, 0)
 	for i := 0; i <= 3; i++ {
-		for _, c := range OptionalColours() {
+		for _, c := range item.OptionalColours() {
 			b = append(b, Candle{Colour: c, Candles: i})
 			b = append(b, Candle{Colour: c, Candles: i, Lit: true})
 		}

@@ -430,7 +430,7 @@ func init() {
 		world.RegisterItem(IronOre{Type: ore})
 		world.RegisterItem(LapisOre{Type: ore})
 	}
-	for _, c := range OptionalColours() {
+	for _, c := range item.OptionalColours() {
 		world.RegisterItem(Candle{Colour: c})
 	}
 	for _, f := range FireTypes() {
