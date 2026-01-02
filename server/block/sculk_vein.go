@@ -254,39 +254,33 @@ func allSculkVeins() (b []world.Block) {
 	return
 }
 
-// DecodeNBT returns a SculkVein with the properties decoded from the NBT map.
+// DecodeNBT decodes the NBT data. We return nil if there's no data to change, 
+// but to stop the error, we must implement this and return the block.
 func (s SculkVein) DecodeNBT(data map[string]any) any {
-	// Bedrock often uses lowercase or specific bitmasks for multi-face blocks.
-	// We check for both common Dragonfly-style keys and potential vanilla keys.
-	s.Down = s.readBool(data, "Down") || s.readBool(data, "down")
-	s.Up = s.readBool(data, "Up") || s.readBool(data, "up")
-	s.North = s.readBool(data, "North") || s.readBool(data, "north")
-	s.South = s.readBool(data, "South") || s.readBool(data, "south")
-	s.West = s.readBool(data, "West") || s.readBool(data, "west")
-	s.East = s.readBool(data, "East") || s.readBool(data, "east")
+	// Bedrock often stores these in 'multi_face_direction_bits' (int32) 
+	// or individual boolean tags. We handle the bits first.
+	if v, ok := data["multi_face_direction_bits"]; ok {
+		bits := v.(int32)
+		s.Down = bits&1 != 0
+		s.Up = bits&2 != 0
+		s.South = bits&4 != 0
+		s.West = bits&8 != 0
+		s.North = bits&16 != 0
+		s.East = bits&32 != 0
+	}
 	return s
 }
 
-// readBool is a helper to safely extract boolean values from NBT tags.
-func (SculkVein) readBool(data map[string]any, key string) bool {
-	if v, ok := data[key]; ok {
-		if b, ok := v.(uint8); ok {
-			return b != 0
-		}
-		if b, ok := v.(int32); ok {
-			return b != 0
-		}
-	}
-	return false
-}
-
 func (s SculkVein) EncodeNBT() map[string]any {
+	var bits int32
+	if s.Down { bits |= 1 }
+	if s.Up { bits |= 2 }
+	if s.South { bits |= 4 }
+	if s.West { bits |= 8 }
+	if s.North { bits |= 16 }
+	if s.East { bits |= 32 }
+
 	return map[string]any{
-		"Down":  boolByte(s.Down),
-		"Up":    boolByte(s.Up),
-		"North": boolByte(s.North),
-		"South": boolByte(s.South),
-		"West":  boolByte(s.West),
-		"East":  boolByte(s.East),
+		"multi_face_direction_bits": bits,
 	}
 }
