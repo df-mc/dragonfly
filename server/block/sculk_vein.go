@@ -256,16 +256,30 @@ func allSculkVeins() (b []world.Block) {
 
 // DecodeNBT returns a SculkVein with the properties decoded from the NBT map.
 func (s SculkVein) DecodeNBT(data map[string]any) any {
-	s.Down = data["Down"].(uint8) != 0
-	s.Up = data["Up"].(uint8) != 0
-	s.North = data["North"].(uint8) != 0
-	s.South = data["South"].(uint8) != 0
-	s.West = data["West"].(uint8) != 0
-	s.East = data["East"].(uint8) != 0
+	// Bedrock often uses lowercase or specific bitmasks for multi-face blocks.
+	// We check for both common Dragonfly-style keys and potential vanilla keys.
+	s.Down = s.readBool(data, "Down") || s.readBool(data, "down")
+	s.Up = s.readBool(data, "Up") || s.readBool(data, "up")
+	s.North = s.readBool(data, "North") || s.readBool(data, "north")
+	s.South = s.readBool(data, "South") || s.readBool(data, "south")
+	s.West = s.readBool(data, "West") || s.readBool(data, "west")
+	s.East = s.readBool(data, "East") || s.readBool(data, "east")
 	return s
 }
 
-// EncodeNBT encodes the properties of the SculkVein into an NBT map.
+// readBool is a helper to safely extract boolean values from NBT tags.
+func (SculkVein) readBool(data map[string]any, key string) bool {
+	if v, ok := data[key]; ok {
+		if b, ok := v.(uint8); ok {
+			return b != 0
+		}
+		if b, ok := v.(int32); ok {
+			return b != 0
+		}
+	}
+	return false
+}
+
 func (s SculkVein) EncodeNBT() map[string]any {
 	return map[string]any{
 		"Down":  boolByte(s.Down),
@@ -275,12 +289,4 @@ func (s SculkVein) EncodeNBT() map[string]any {
 		"West":  boolByte(s.West),
 		"East":  boolByte(s.East),
 	}
-}
-
-// boolByte is a helper function to convert a bool to a uint8 for NBT.
-func boolByte(b bool) uint8 {
-	if b {
-		return 1
-	}
-	return 0
 }
