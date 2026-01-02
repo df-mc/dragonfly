@@ -191,6 +191,7 @@ const (
 	hashWall
 	hashWater
 	hashWheatSeeds
+	hashWildFlowers
 	hashWood
 	hashWoodDoor
 	hashWoodFence
@@ -951,6 +952,10 @@ func (w Water) Hash() (uint64, uint64) {
 
 func (s WheatSeeds) Hash() (uint64, uint64) {
 	return hashWheatSeeds, uint64(s.Growth)
+}
+
+func (w WildFlowers) Hash() (uint64, uint64) {
+	return hashWildFlowers, uint64(w.AdditionalCount) | uint64(w.Facing)<<8
 }
 
 func (w Wood) Hash() (uint64, uint64) {
