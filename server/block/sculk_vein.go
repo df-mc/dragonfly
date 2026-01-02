@@ -253,3 +253,34 @@ func allSculkVeins() (b []world.Block) {
 	}
 	return
 }
+
+// DecodeNBT returns a SculkVein with the properties decoded from the NBT map.
+func (s SculkVein) DecodeNBT(data map[string]any) any {
+	s.Down = data["Down"].(uint8) != 0
+	s.Up = data["Up"].(uint8) != 0
+	s.North = data["North"].(uint8) != 0
+	s.South = data["South"].(uint8) != 0
+	s.West = data["West"].(uint8) != 0
+	s.East = data["East"].(uint8) != 0
+	return s
+}
+
+// EncodeNBT encodes the properties of the SculkVein into an NBT map.
+func (s SculkVein) EncodeNBT() map[string]any {
+	return map[string]any{
+		"Down":  boolByte(s.Down),
+		"Up":    boolByte(s.Up),
+		"North": boolByte(s.North),
+		"South": boolByte(s.South),
+		"West":  boolByte(s.West),
+		"East":  boolByte(s.East),
+	}
+}
+
+// boolByte is a helper function to convert a bool to a uint8 for NBT.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
+}
