@@ -80,6 +80,7 @@ const (
 	hashFarmland
 	hashFern
 	hashFire
+	hashFireflyBush
 	hashFletchingTable
 	hashFlower
 	hashFroglight
@@ -509,6 +510,10 @@ func (Fern) Hash() (uint64, uint64) {
 
 func (f Fire) Hash() (uint64, uint64) {
 	return hashFire, uint64(f.Type.Uint8()) | uint64(f.Age)<<1
+}
+
+func (FireflyBush) Hash() (uint64, uint64) {
+	return hashFireflyBush, 0
 }
 
 func (FletchingTable) Hash() (uint64, uint64) {
