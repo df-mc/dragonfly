@@ -17,7 +17,7 @@ type SculkVein struct {
 	sourceWaterDisplacer
 
 	// North, East, South, West, Up, Down represent the faces the vein is attached to.
-	North, East, South, West, Up, Down bool
+	Down, Up, North, South, West, East bool
 }
 
 // BreakInfo returns the break properties, dropping an item for every face if silk touched.
