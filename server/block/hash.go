@@ -625,8 +625,8 @@ func (l Lava) Hash() (uint64, uint64) {
 	return hashLava, uint64(boolByte(l.Still)) | uint64(l.Depth)<<1 | uint64(boolByte(l.Falling))<<9
 }
 
-func (LeafLitter) Hash() (uint64, uint64) {
-	return hashLeafLitter, 0
+func (l LeafLitter) Hash() (uint64, uint64) {
+	return hashLeafLitter, uint64(l.AdditionalCount) | uint64(l.Facing)<<8
 }
 
 func (l Leaves) Hash() (uint64, uint64) {

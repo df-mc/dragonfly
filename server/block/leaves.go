@@ -163,3 +163,8 @@ func allLeaves() (leaves []world.Block) {
 	f(false, false)
 	return
 }
+
+// SmeltInfo ...
+func (leaves) SmeltInfo() item.SmeltInfo {
+	return newSmeltInfo(item.NewStack(LeafLitter{}, 1), 0.1)
+}
