@@ -254,31 +254,29 @@ func allSculkVeins() (b []world.Block) {
 	return
 }
 
-// DecodeNBT decodes the NBT data from the world save. 
-// It MUST have this exact signature to satisfy world.NBTer.
+// DecodeNBT decodes the bitmask from the world save into the struct fields.
 func (s SculkVein) DecodeNBT(data map[string]any) any {
 	if v, ok := data["multi_face_direction_bits"]; ok {
-		// multi_face_direction_bits is an int32 bitmask used by Bedrock.
 		bits := v.(int32)
-		s.Down = bits&1 != 0
-		s.Up = bits&2 != 0
-		s.South = bits&4 != 0
-		s.West = bits&8 != 0
-		s.North = bits&16 != 0
-		s.East = bits&32 != 0
+		s.Down  = bits&0x1 != 0
+		s.Up    = bits&0x2 != 0
+		s.North = bits&0x4 != 0
+		s.South = bits&0x8 != 0
+		s.West  = bits&0x10 != 0
+		s.East  = bits&0x20 != 0
 	}
 	return s
 }
 
-// EncodeNBT encodes the SculkVein properties back into NBT for saving.
+// EncodeNBT converts the struct fields back into the bitmask for saving.
 func (s SculkVein) EncodeNBT() map[string]any {
 	var bits int32
-	if s.Down { bits |= 1 }
-	if s.Up { bits |= 2 }
-	if s.South { bits |= 4 }
-	if s.West { bits |= 8 }
-	if s.North { bits |= 16 }
-	if s.East { bits |= 32 }
+	if s.Down  { bits |= 0x1 }
+	if s.Up    { bits |= 0x2 }
+	if s.North { bits |= 0x4 }
+	if s.South { bits |= 0x8 }
+	if s.West  { bits |= 0x10 }
+	if s.East  { bits |= 0x20 }
 
 	return map[string]any{
 		"multi_face_direction_bits": bits,
