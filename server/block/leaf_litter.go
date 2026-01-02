@@ -1,6 +1,6 @@
 package block
 
-// LeafLitter is a bioluminescent block found abundantly in the deep dark
+// LeafLitter is a block found abundantly in forests
 type LeafLitter struct {
 	solid
 }
