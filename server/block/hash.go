@@ -109,6 +109,7 @@ const (
 	hashLapis
 	hashLapisOre
 	hashLava
+	hashLeafLitter
 	hashLeaves
 	hashLectern
 	hashLight
@@ -624,6 +625,10 @@ func (l Lava) Hash() (uint64, uint64) {
 	return hashLava, uint64(boolByte(l.Still)) | uint64(l.Depth)<<1 | uint64(boolByte(l.Falling))<<9
 }
 
+func (LeafLitter) Hash() (uint64, uint64) {
+	return hashLeafLitter, 0
+}
+
 func (l Leaves) Hash() (uint64, uint64) {
 	return hashLeaves, uint64(l.Wood.Uint8()) | uint64(boolByte(l.Persistent))<<4 | uint64(boolByte(l.ShouldUpdate))<<5
 }
@@ -821,7 +826,7 @@ func (Sculk) Hash() (uint64, uint64) {
 }
 
 func (s SculkVein) Hash() (uint64, uint64) {
-	return hashSculkVein, uint64(boolByte(s.North)) | uint64(boolByte(s.East))<<1 | uint64(boolByte(s.South))<<2 | uint64(boolByte(s.West))<<3 | uint64(boolByte(s.Up))<<4 | uint64(boolByte(s.Down))<<5
+	return hashSculkVein, uint64(boolByte(s.Down)) | uint64(boolByte(s.Up))<<1 | uint64(boolByte(s.North))<<2 | uint64(boolByte(s.South))<<3 | uint64(boolByte(s.West))<<4 | uint64(boolByte(s.East))<<5
 }
 
 func (SeaLantern) Hash() (uint64, uint64) {
