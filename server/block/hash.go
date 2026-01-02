@@ -164,6 +164,7 @@ const (
 	hashSculkVein
 	hashSeaLantern
 	hashSeaPickle
+	hashShortDryGrass
 	hashShortGrass
 	hashShroomlight
 	hashSign
@@ -185,6 +186,7 @@ const (
 	hashStonecutter
 	hashSugarCane
 	hashTNT
+	hashTallDryGrass
 	hashTerracotta
 	hashTorch
 	hashTuff
@@ -848,6 +850,10 @@ func (s SeaPickle) Hash() (uint64, uint64) {
 	return hashSeaPickle, uint64(s.AdditionalCount) | uint64(boolByte(s.Dead))<<8
 }
 
+func (ShortDryGrass) Hash() (uint64, uint64) {
+	return hashShortDryGrass, 0
+}
+
 func (ShortGrass) Hash() (uint64, uint64) {
 	return hashShortGrass, 0
 }
@@ -930,6 +936,10 @@ func (c SugarCane) Hash() (uint64, uint64) {
 
 func (TNT) Hash() (uint64, uint64) {
 	return hashTNT, 0
+}
+
+func (TallDryGrass) Hash() (uint64, uint64) {
+	return hashTallDryGrass, 0
 }
 
 func (Terracotta) Hash() (uint64, uint64) {
