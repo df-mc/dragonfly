@@ -254,12 +254,11 @@ func allSculkVeins() (b []world.Block) {
 	return
 }
 
-// DecodeNBT decodes the NBT data. We return nil if there's no data to change, 
-// but to stop the error, we must implement this and return the block.
+// DecodeNBT decodes the NBT data from the world save. 
+// It MUST have this exact signature to satisfy world.NBTer.
 func (s SculkVein) DecodeNBT(data map[string]any) any {
-	// Bedrock often stores these in 'multi_face_direction_bits' (int32) 
-	// or individual boolean tags. We handle the bits first.
 	if v, ok := data["multi_face_direction_bits"]; ok {
+		// multi_face_direction_bits is an int32 bitmask used by Bedrock.
 		bits := v.(int32)
 		s.Down = bits&1 != 0
 		s.Up = bits&2 != 0
@@ -271,6 +270,7 @@ func (s SculkVein) DecodeNBT(data map[string]any) any {
 	return s
 }
 
+// EncodeNBT encodes the SculkVein properties back into NBT for saving.
 func (s SculkVein) EncodeNBT() map[string]any {
 	var bits int32
 	if s.Down { bits |= 1 }
