@@ -77,12 +77,10 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 		return false
 	}
 
-	if c.Candle {
-		if c.CandleLit {
-			c.CandleLit = false
-			tx.SetBlock(pos, c, nil)
-			return true
-		}
+	if c.Candle && c.CandleLit {
+		c.CandleLit = false
+		tx.SetBlock(pos, c, nil)
+		return true
 	}
 
 	if i, ok := u.(interface {

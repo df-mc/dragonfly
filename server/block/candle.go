@@ -46,11 +46,7 @@ func (Candle) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 // UseOnBlock ...
 func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	if existing, ok := tx.Block(pos.Add(cube.Pos{0, 1, 0})).(Candle); ok {
-		if existing.Colour.Uint8() != c.Colour.Uint8() {
-			return false
-		}
-
-		if existing.Candles >= 3 {
+		if existing.Colour != c.Colour || existing.Candles >= 3 {
 			return false
 		}
 
@@ -70,24 +66,17 @@ func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 
 // NeighbourUpdateTick ...
 func (c Candle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if liquid, ok := tx.Liquid(pos); ok {
-		if liquid.LiquidType() == "water" {
-			if !c.Lit {
-				c.Lit = false
-				tx.SetBlock(pos, c, nil)
-				tx.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
-			}
-		}
+	liquid, _ := tx.Liquid(pos)
+	if _, ok := liquid.(Water); ok && c.Lit {
+		c.Lit = false
+		tx.SetBlock(pos, c, nil)
+		tx.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 	}
 }
 
 // Ignite ...
 func (c Candle) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
-	if c.Lit {
-		return false
-	}
-
-	if _, ok := tx.Liquid(pos); ok {
+	if _, ok := tx.Liquid(pos); ok || c.Lit {
 		return false
 	}
 
