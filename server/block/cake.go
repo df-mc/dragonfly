@@ -16,17 +16,17 @@ type Cake struct {
 
 	// Bites is the amount of bites taken out of the cake.
 	Bites int
-	// Colour is the colour of the candle.
-	Colour item.OptionalColour
+	// CandleColour is the colour of the candle.
+	CandleColour item.OptionalColour
 	// Candle is true if the cake has a candle on top.
 	Candle bool
-	// Lit is whether the candle is lit.
-	Lit bool
+	// CandleLit is whether the candle is lit.
+	CandleLit bool
 }
 
 // LightEmissionLevel ...
 func (c Cake) LightEmissionLevel() uint8 {
-	if c.Candle && c.Lit {
+	if c.Candle && c.CandleLit {
 		return 3
 	}
 	return 0
@@ -65,7 +65,7 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 	if c.Bites == 0 && !c.Candle {
 		if candle, ok := held.Item().(Candle); ok {
 			c.Candle = true
-			c.Colour = candle.Colour
+			c.CandleColour = candle.Colour
 			tx.SetBlock(pos, c, nil)
 			tx.PlaySound(pos.Vec3Centre(), sound.ItemUseOn{Block: c})
 			ctx.SubtractFromCount(1)
@@ -78,8 +78,8 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 	}
 
 	if c.Candle {
-		if c.Lit {
-			c.Lit = false
+		if c.CandleLit {
+			c.CandleLit = false
 			tx.SetBlock(pos, c, nil)
 			return true
 		}
@@ -89,11 +89,11 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 		Saturate(food int, saturation float64)
 	}); ok {
 		if c.Candle {
-			dropItem(tx, item.NewStack(Candle{Colour: c.Colour}, 1), pos.Vec3Centre())
+			dropItem(tx, item.NewStack(Candle{Colour: c.CandleColour}, 1), pos.Vec3Centre())
 
 			c.Candle = false
-			c.Colour = c.Colour.Empty()
-			c.Lit = false
+			c.CandleColour = item.OptionalColour(0)
+			c.CandleLit = false
 
 			tx.SetBlock(pos, c, nil)
 			return true
@@ -115,11 +115,11 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 
 // Ignite ...
 func (c Cake) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
-	if !c.Candle || c.Lit {
+	if !c.Candle || c.CandleLit {
 		return false
 	}
 
-	c.Lit = true
+	c.CandleLit = true
 	tx.SetBlock(pos, c, nil)
 	tx.PlaySound(pos.Vec3(), sound.Ignite{})
 	return true
@@ -128,7 +128,7 @@ func (c Cake) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 // BreakInfo ...
 func (c Cake) BreakInfo() BreakInfo {
 	if c.Candle {
-		return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(Candle{Colour: c.Colour}))
+		return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(Candle{Colour: c.CandleColour}))
 	}
 	return newBreakInfo(0.5, neverHarvestable, nothingEffective, simpleDrops())
 }
@@ -136,11 +136,7 @@ func (c Cake) BreakInfo() BreakInfo {
 // EncodeItem ...
 func (c Cake) EncodeItem() (name string, meta int16) {
 	if c.Candle {
-		color, ok := c.Colour.Colour()
-		if ok {
-			return "minecraft:" + color.String() + "_candle_cake", 0
-		}
-		return "minecraft:candle_cake", 0
+		return "minecraft:" + c.CandleColour.Prepend("candle_cake"), 0
 	}
 	return "minecraft:cake", 0
 }
@@ -148,13 +144,7 @@ func (c Cake) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (c Cake) EncodeBlock() (name string, properties map[string]any) {
 	if c.Candle {
-		color, ok := c.Colour.Colour()
-		if ok {
-			name = "minecraft:" + color.String() + "_candle_cake"
-		} else {
-			name = "minecraft:candle_cake"
-		}
-		return name, map[string]any{"lit": c.Lit}
+		return "minecraft:" + c.CandleColour.Prepend("candle_cake"), map[string]any{"lit": c.CandleLit}
 	}
 	return "minecraft:cake", map[string]any{"bite_counter": int32(c.Bites)}
 }
@@ -170,8 +160,8 @@ func allCake() (cake []world.Block) {
 		cake = append(cake, Cake{Bites: bites})
 	}
 	for _, c := range item.OptionalColours() {
-		cake = append(cake, Cake{Colour: c, Candle: true})
-		cake = append(cake, Cake{Colour: c, Candle: true, Lit: true})
+		cake = append(cake, Cake{CandleColour: c, Candle: true})
+		cake = append(cake, Cake{CandleColour: c, Candle: true, CandleLit: true})
 	}
 	return
 }

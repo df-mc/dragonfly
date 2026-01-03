@@ -99,20 +99,12 @@ func (c Candle) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 
 // EncodeItem ...
 func (c Candle) EncodeItem() (name string, meta int16) {
-	color, ok := c.Colour.Colour()
-	if !ok {
-		return "minecraft:candle", 0
-	}
-	return "minecraft:" + color.String() + "_candle", 0
+	return "minecraft:" + c.Colour.Prepend("candle"), 0
 }
 
 // EncodeBlock ...
 func (c Candle) EncodeBlock() (name string, properties map[string]any) {
-	color, ok := c.Colour.Colour()
-	if !ok {
-		return "minecraft:candle", map[string]any{"candles": int32(c.Candles), "lit": c.Lit}
-	}
-	return "minecraft:" + color.String() + "_candle", map[string]any{"candles": int32(c.Candles), "lit": c.Lit}
+	return "minecraft:" + c.Colour.Prepend("candle"), map[string]any{"candles": int32(c.Candles), "lit": c.Lit}
 }
 
 // allCandles returns candle blocks with all possible colours.

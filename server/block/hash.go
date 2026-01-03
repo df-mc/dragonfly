@@ -292,7 +292,7 @@ func (c Cactus) Hash() (uint64, uint64) {
 }
 
 func (c Cake) Hash() (uint64, uint64) {
-	return hashCake, uint64(c.Bites) | uint64(c.Colour.Uint8())<<8 | uint64(boolByte(c.Candle))<<13 | uint64(boolByte(c.Lit))<<14
+	return hashCake, uint64(c.Bites) | uint64(c.CandleColour.Uint8())<<8 | uint64(boolByte(c.Candle))<<13 | uint64(boolByte(c.CandleLit))<<14
 }
 
 func (Calcite) Hash() (uint64, uint64) {
