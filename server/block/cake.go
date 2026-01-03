@@ -80,7 +80,7 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 	if c.Candle && c.CandleLit {
 		c.CandleLit = false
 		tx.SetBlock(pos, c, nil)
-		return true
+		return false
 	}
 
 	if i, ok := u.(interface {
@@ -89,12 +89,8 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 		if c.Candle {
 			dropItem(tx, item.NewStack(Candle{Colour: c.CandleColour}, 1), pos.Vec3Centre())
 
-			c.Candle = false
+			c.Candle, c.CandleLit = false, false
 			c.CandleColour = item.OptionalColour(0)
-			c.CandleLit = false
-
-			tx.SetBlock(pos, c, nil)
-			return true
 		}
 
 		i.Saturate(2, 0.4)
