@@ -234,19 +234,6 @@ func (l *Loader) ChangeStrategy(tx *Tx, strategy LoadStrategy) {
 	l.populateLoadQueue()
 }
 
-// ChangeRadius changes the maximum chunk radius of the Loader if it uses LoadRadius. For other strategies,
-// this method has no effect.
-func (l *Loader) ChangeRadius(tx *Tx, new int) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if _, ok := l.strategy.(LoadRadius); ok {
-		l.strategy = LoadRadius{Radius: new}
-		l.evictUnused(tx)
-		l.populateLoadQueue()
-	}
-}
-
 // Refresh re-evaluates the current strategy, unloading chunks that should no longer be loaded and queuing
 // new chunks for loading. This is useful after modifying a LoadManual.
 func (l *Loader) Refresh(tx *Tx) {
