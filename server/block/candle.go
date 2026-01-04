@@ -45,13 +45,13 @@ func (Candle) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // UseOnBlock ...
 func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
-	if existing, ok := tx.Block(pos.Add(cube.Pos{0, 1, 0})).(Candle); ok {
+	if existing, ok := tx.Block(pos).(Candle); ok {
 		if existing.Colour != c.Colour || existing.Candles >= 3 {
 			return false
 		}
 
 		existing.Candles++
-		place(tx, pos.Add(cube.Pos{0, 1, 0}), existing, user, ctx)
+		place(tx, pos, existing, user, ctx)
 		return placed(ctx)
 	}
 
