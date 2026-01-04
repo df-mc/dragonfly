@@ -1223,8 +1223,11 @@ func (w *World) autoSave() {
 		save = time.NewTicker(w.conf.SaveInterval)
 		defer save.Stop()
 	}
-	closeUnused := time.NewTicker(time.Minute * 2)
-	defer closeUnused.Stop()
+	closeUnused := &time.Ticker{C: make(<-chan time.Time)}
+	if w.conf.ChunkUnloadInterval > 0 {
+		closeUnused = time.NewTicker(w.conf.ChunkUnloadInterval)
+		defer closeUnused.Stop()
+	}
 
 	for {
 		select {
