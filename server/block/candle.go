@@ -1,8 +1,6 @@
 package block
 
 import (
-	"fmt"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
@@ -48,19 +46,28 @@ func (Candle) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // UseOnBlock ...
 func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
-	if existing, ok := tx.Block(pos).(Candle); ok {
-		if existing.Colour != c.Colour || existing.Candles >= 3 {
-			return false
+	addCandle := func(checkPos cube.Pos) bool {
+		if existing, ok := tx.Block(checkPos).(Candle); ok {
+			if existing.Colour != c.Colour || existing.Candles >= 3 {
+				return false
+			}
+			existing.Candles++
+			place(tx, checkPos, existing, user, ctx)
+			return true
 		}
+		return false
+	}
 
-		existing.Candles++
-		place(tx, pos, existing, user, ctx)
+	if added := addCandle(pos); added {
+		return placed(ctx)
+	}
+
+	if added := addCandle(pos.Side(cube.FaceUp)); added && face == cube.FaceUp {
 		return placed(ctx)
 	}
 
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
-		fmt.Println("NOT USED")
 		return false
 	}
 
