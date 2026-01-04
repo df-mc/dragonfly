@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -73,6 +74,12 @@ func (c Cake) Activate(pos cube.Pos, face cube.Face, tx *world.Tx, u item.User, 
 		}
 	}
 
+	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
+		c.Ignite(pos, tx, nil)
+		ctx.DamageItem(1)
+		return true
+	}
+
 	if _, ok := held.Item().(item.FlintAndSteel); ok {
 		return false
 	}
@@ -117,6 +124,15 @@ func (c Cake) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	tx.SetBlock(pos, c, nil)
 	tx.PlaySound(pos.Vec3(), sound.Ignite{})
 	return true
+}
+
+// EntityInside ...
+func (c Cake) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+	if flammable, ok := e.(flammableEntity); ok {
+		if flammable.OnFireDuration() > 0 {
+			c.Ignite(pos, tx, e)
+		}
+	}
 }
 
 // BreakInfo ...

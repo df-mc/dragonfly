@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -74,6 +75,17 @@ func (c Candle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// Activate ...
+func (c Candle) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+	held, _ := u.HeldItems()
+	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
+		c.Ignite(pos, tx, nil)
+		ctx.DamageItem(1)
+		return true
+	}
+	return false
+}
+
 // Ignite ...
 func (c Candle) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	if _, ok := tx.Liquid(pos); ok || c.Lit {
@@ -84,6 +96,15 @@ func (c Candle) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	tx.SetBlock(pos, c, nil)
 	tx.PlaySound(pos.Vec3(), sound.Ignite{})
 	return true
+}
+
+// EntityInside ...
+func (c Candle) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+	if flammable, ok := e.(flammableEntity); ok {
+		if flammable.OnFireDuration() > 0 {
+			c.Ignite(pos, tx, e)
+		}
+	}
 }
 
 // EncodeItem ...
