@@ -40,7 +40,7 @@ func (s LoadRadius) Load(pos ChunkPos) []ChunkPos {
 	}
 
 	result := make([]ChunkPos, 0)
-	for i := int32(0); i <= r; i++ {
+	for i := range r {
 		result = append(result, queue[i]...)
 	}
 	return result
@@ -75,7 +75,7 @@ func (s LoadArea) Load(pos ChunkPos) []ChunkPos {
 
 	maxDist := int32(math.Sqrt(float64(halfW*halfW) + float64(halfD*halfD)))
 	result := make([]ChunkPos, 0)
-	for i := int32(0); i <= maxDist; i++ {
+	for i := range maxDist {
 		result = append(result, queue[i]...)
 	}
 	return result
