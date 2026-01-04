@@ -8,23 +8,20 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// LoadStrategy determines which chunks should be loaded and when they should
-// be unloaded.
+// LoadStrategy determines which chunks should be loaded and when they should be unloaded.
 type LoadStrategy interface {
-	// Load returns the chunks that should be loaded, ordered by priority
-	// (closest first).
+	// Load returns the chunks that should be loaded, ordered by priority (closest first).
 	Load(pos ChunkPos) []ChunkPos
 	// Unload returns whether a chunk at the given position should be unloaded.
 	Unload(chunk ChunkPos, pos ChunkPos) bool
 }
 
-// LoadRadius is a LoadStrategy that loads chunks in a circular radius around
-// the current position.
+// LoadRadius is a LoadStrategy that loads chunks in a circular radius around the current position.
 type LoadRadius struct {
 	Radius int
 }
 
-// Load returns chunks within the radius, ordered from centre outwards.
+// Load returns chunks within the radius, ordered from center outwards.
 func (s LoadRadius) Load(pos ChunkPos) []ChunkPos {
 	queue := map[int32][]ChunkPos{}
 	r := int32(s.Radius)
@@ -34,6 +31,7 @@ func (s LoadRadius) Load(pos ChunkPos) []ChunkPos {
 			distance := math.Sqrt(float64(x*x) + float64(z*z))
 			chunkDistance := int32(math.Round(distance))
 			if chunkDistance > r {
+				// The chunk was outside the chunk radius.
 				continue
 			}
 			chunkPos := ChunkPos{x + pos[0], z + pos[1]}
@@ -55,14 +53,13 @@ func (s LoadRadius) Unload(chunk ChunkPos, pos ChunkPos) bool {
 	return int(dist) > s.Radius
 }
 
-// LoadArea is a LoadStrategy that loads chunks in a rectangular area around
-// the current position.
+// LoadArea is a LoadStrategy that loads chunks in a rectangular area around the current position.
 type LoadArea struct {
 	Width int
 	Depth int
 }
 
-// Load returns chunks within the rectangular area, ordered from centre outwards.
+// Load returns chunks within the rectangular area, ordered from center outwards.
 func (s LoadArea) Load(pos ChunkPos) []ChunkPos {
 	queue := map[int32][]ChunkPos{}
 	halfW, halfD := int32(s.Width/2), int32(s.Depth/2)
@@ -97,9 +94,8 @@ func (s LoadArea) Unload(chunk ChunkPos, pos ChunkPos) bool {
 	return diffX > halfW || diffZ > halfD
 }
 
-// LoadRegion is a LoadStrategy that loads chunks within a fixed rectangular
-// area defined by Min and Max chunk positions. It does not follow the current
-// position and never unloads chunks.
+// LoadRegion is a LoadStrategy that loads chunks within a fixed rectangular area defined by Min and Max
+// chunk positions. It does not follow the current position and never unloads chunks.
 type LoadRegion struct {
 	Min, Max ChunkPos
 }
@@ -120,8 +116,7 @@ func (s LoadRegion) Unload(chunk ChunkPos, pos ChunkPos) bool {
 	return false
 }
 
-// LoadManual is a LoadStrategy that allows manual control over which chunks to
-// load and unload.
+// LoadManual is a LoadStrategy that allows manual control over which chunks to load and unload.
 type LoadManual struct {
 	mu     sync.RWMutex
 	chunks map[ChunkPos]struct{}
@@ -166,10 +161,9 @@ func (s *LoadManual) Unload(chunk ChunkPos, pos ChunkPos) bool {
 	return !ok
 }
 
-// Loader implements the loading of the world. A Loader can typically be moved
-// around the world to load different parts of the world. An example usage is
-// the player, which uses a Loader to load chunks around it so that it can view
-// them.
+// Loader implements the loading of the world. A loader can typically be moved around the world to load
+// different parts of the world. An example usage is the player, which uses a loader to load chunks around it
+// so that it can view them.
 type Loader struct {
 	strategy LoadStrategy
 	w        *World
@@ -183,10 +177,10 @@ type Loader struct {
 	closed bool
 }
 
-// NewLoader creates a new Loader using the LoadStrategy passed. The strategy
-// determines which chunks should be loaded and when they should be unloaded.
-// The Viewer passed will handle the loading of chunks, including the viewing of
-// entities that were loaded in those chunks.
+// NewLoader creates a new loader using the LoadStrategy passed. The strategy determines which chunks should
+// be loaded and when they should be unloaded.
+// The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
+// those chunks.
 func NewLoader(strategy LoadStrategy, world *World, v Viewer) *Loader {
 	l := &Loader{strategy: strategy, loaded: make(map[ChunkPos]*Column), viewer: v}
 	l.world(world)
@@ -207,31 +201,8 @@ func (l *Loader) Strategy() LoadStrategy {
 	return l.strategy
 }
 
-// ChangeStrategy changes the LoadStrategy of the Loader. Chunks that should no
-// longer be loaded according to the new strategy will be unloaded, and new
-// chunks will be queued for loading.
-func (l *Loader) ChangeStrategy(tx *Tx, strategy LoadStrategy) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	l.strategy = strategy
-	l.evictUnused(tx)
-	l.populateLoadQueue()
-}
-
-// Refresh re-evaluates the current strategy, unloading chunks that should no
-// longer be loaded and queuing new chunks for loading. This is useful after
-// modifying a LoadManual.
-func (l *Loader) Refresh(tx *Tx) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	l.evictUnused(tx)
-	l.populateLoadQueue()
-}
-
-// ChangeWorld changes the World of the Loader. The currently loaded chunks are
-// reset and any future loading is done from the new World.
+// ChangeWorld changes the World of the Loader. The currently loaded chunks are reset and any future loading
+// is done from the new World.
 func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -250,8 +221,19 @@ func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	l.world(new)
 }
 
-// ChangeRadius changes the radius of the Loader if it uses LoadRadius. For
-// other strategies, this method has no effect.
+// ChangeStrategy changes the LoadStrategy of the Loader. Chunks that should no longer be loaded according to
+// the new strategy will be unloaded, and new chunks will be queued for loading.
+func (l *Loader) ChangeStrategy(tx *Tx, strategy LoadStrategy) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.strategy = strategy
+	l.evictUnused(tx)
+	l.populateLoadQueue()
+}
+
+// ChangeRadius changes the maximum chunk radius of the Loader if it uses LoadRadius. For other strategies,
+// this method has no effect.
 func (l *Loader) ChangeRadius(tx *Tx, new int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -263,8 +245,17 @@ func (l *Loader) ChangeRadius(tx *Tx, new int) {
 	}
 }
 
-// Move moves the Loader to the position passed. The position is translated to a
-// chunk position to load.
+// Refresh re-evaluates the current strategy, unloading chunks that should no longer be loaded and queuing
+// new chunks for loading. This is useful after modifying a LoadManual.
+func (l *Loader) Refresh(tx *Tx) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.evictUnused(tx)
+	l.populateLoadQueue()
+}
+
+// Move moves the loader to the position passed. The position is translated to a chunk position to load
 func (l *Loader) Move(tx *Tx, pos mgl64.Vec3) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -278,9 +269,9 @@ func (l *Loader) Move(tx *Tx, pos mgl64.Vec3) {
 	l.populateLoadQueue()
 }
 
-// Load loads n chunks around the centre of the chunk, starting with the middle
-// and working outwards. For every chunk loaded, the Viewer passed has its
-// ViewChunk method called.
+// Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
+// every chunk loaded, the Viewer passed through construction in New has its ViewChunk method called.
+// Load does nothing for n <= 0.
 func (l *Loader) Load(tx *Tx, n int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -307,8 +298,8 @@ func (l *Loader) Load(tx *Tx, n int) {
 	}
 }
 
-// Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not
-// loaded, the second return value will be false.
+// Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
+// be false.
 func (l *Loader) Chunk(pos ChunkPos) (*Column, bool) {
 	l.mu.RLock()
 	c, ok := l.loaded[pos]
@@ -316,8 +307,8 @@ func (l *Loader) Chunk(pos ChunkPos) (*Column, bool) {
 	return c, ok
 }
 
-// Close closes the Loader. It unloads all chunks currently loaded for the
-// Viewer, and hides all entities that are currently shown to it.
+// Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that
+// are currently shown to it.
 func (l *Loader) Close(tx *Tx) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -335,16 +326,16 @@ func (l *Loader) Close(tx *Tx) {
 	l.viewer = nil
 }
 
-// world sets the Loader's world, adds them to the world's viewer list, then
-// starts populating the load queue.
+// world sets the loader's world, adds them to the world's viewer list, then starts populating the load queue.
+// This is only here to get rid of duplicated code, ChangeWorld should be used instead of this.
 func (l *Loader) world(new *World) {
 	l.w = new
 	l.w.addWorldViewer(l)
 	l.populateLoadQueue()
 }
 
-// evictUnused gets rid of chunks in the loaded map which should no longer be
-// loaded according to the strategy, and should therefore be removed.
+// evictUnused gets rid of chunks in the loaded map which should no longer be loaded according to the strategy,
+// and should therefore be removed.
 func (l *Loader) evictUnused(tx *Tx) {
 	for pos := range l.loaded {
 		if l.strategy.Unload(pos, l.pos) {
@@ -354,8 +345,8 @@ func (l *Loader) evictUnused(tx *Tx) {
 	}
 }
 
-// populateLoadQueue populates the load queue of the Loader using the current
-// strategy. Chunks that are already loaded are filtered out.
+// populateLoadQueue populates the load queue of the loader using the current strategy. Chunks that are
+// already loaded are filtered out.
 func (l *Loader) populateLoadQueue() {
 	chunks := l.strategy.Load(l.pos)
 
