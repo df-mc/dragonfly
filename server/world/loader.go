@@ -10,18 +10,19 @@ import (
 
 // LoadStrategy determines which chunks should be loaded and when they should be unloaded.
 type LoadStrategy interface {
-	// Load returns the chunks that should be loaded, ordered by priority (closest first).
+	// Load returns the chunks that should be loaded.
 	Load(pos ChunkPos) []ChunkPos
 	// Unload returns whether a chunk at the given position should be unloaded.
 	Unload(chunk ChunkPos, pos ChunkPos) bool
 }
 
 // LoadRadius is a LoadStrategy that loads chunks in a circular radius around the current position.
+// Chunks are ordered from center outwards.
 type LoadRadius struct {
 	Radius int
 }
 
-// Load returns chunks within the radius, ordered from center outwards.
+// Load returns chunks within the radius.
 func (s LoadRadius) Load(pos ChunkPos) []ChunkPos {
 	queue := map[int32][]ChunkPos{}
 	r := int32(s.Radius)
@@ -54,12 +55,13 @@ func (s LoadRadius) Unload(chunk ChunkPos, pos ChunkPos) bool {
 }
 
 // LoadArea is a LoadStrategy that loads chunks in a rectangular area around the current position.
+// Chunks are ordered from center outwards.
 type LoadArea struct {
 	Width int
 	Depth int
 }
 
-// Load returns chunks within the rectangular area, ordered from center outwards.
+// Load returns chunks within the rectangular area.
 func (s LoadArea) Load(pos ChunkPos) []ChunkPos {
 	queue := map[int32][]ChunkPos{}
 	halfW, halfD := int32(s.Width/2), int32(s.Depth/2)
