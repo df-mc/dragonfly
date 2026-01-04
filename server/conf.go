@@ -109,8 +109,9 @@ type Config struct {
 	// a negative number disables automatic saving entirely.
 	SaveInterval time.Duration
 	// ChunkUnloadInterval specifies how often unused chunks should be unloaded
-	// from memory. By default, this is set to 2 minutes. Setting this to a
-	// negative number disables automatic chunk unloading entirely.
+	// from memory when no longer in use. By default, this is set to 2 minutes.
+	// ChunkUnloadInterval should not be used to prevent chunks from unloading
+	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
 	// Entities is a world.EntityRegistry with all entity types registered that
 	// may be added to the Server's worlds. If no entity types are registered,
