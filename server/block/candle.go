@@ -1,6 +1,8 @@
 package block
 
 import (
+	"fmt"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
@@ -26,7 +28,7 @@ type Candle struct {
 
 // BreakInfo ...
 func (c Candle) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(c))
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(c, c.Candles+1)))
 }
 
 // Model ...
@@ -58,6 +60,7 @@ func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
+		fmt.Println("NOT USED")
 		return false
 	}
 
