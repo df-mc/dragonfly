@@ -60,7 +60,7 @@ func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 }
 
 // Activate ...
-func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
+func (c Cake) Activate(pos cube.Pos, face cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if c.Bites == 0 && !c.Candle {
 		if candle, ok := held.Item().(Candle); ok {
@@ -77,7 +77,7 @@ func (c Cake) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx
 		return false
 	}
 
-	if c.Candle && c.CandleLit {
+	if c.Candle && c.CandleLit && face == cube.FaceUp && held.Empty() {
 		c.CandleLit = false
 		tx.SetBlock(pos, c, nil)
 		return true
