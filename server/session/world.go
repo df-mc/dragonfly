@@ -1,8 +1,8 @@
 package session
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/entity/effect"
 	"image/color"
 	"math/rand/v2"
 	"strings"
@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -20,6 +21,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -231,6 +233,11 @@ func (s *Session) ViewTime(time int) {
 	s.writePacket(&packet.SetTime{Time: int32(time)})
 }
 
+// ViewTimeCycle ...
+func (s *Session) ViewTimeCycle(doDayLightCycle bool) {
+	s.sendGameRules([]protocol.GameRule{{Name: "dodaylightcycle", Value: doDayLightCycle}})
+}
+
 // ViewEntityTeleport ...
 func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	id := s.entityRuntimeID(e)
@@ -322,6 +329,23 @@ func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
 	s.writePacket(&packet.ClientStartItemCooldown{
 		Category: strings.Split(name, ":")[1],
 		Duration: int32(duration.Milliseconds() / 50),
+	})
+}
+
+// ViewSleepingPlayers ...
+func (s *Session) ViewSleepingPlayers(sleeping, max int) {
+	buf := bytes.NewBuffer(nil)
+	_ = nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian).Encode(map[string]any{
+		"ableToSleep":          int32(max),
+		"overworldPlayerCount": int32(max),
+		"sleepingPlayerCount":  int32(sleeping),
+	})
+
+	eventData := buf.Bytes()
+
+	s.writePacket(&packet.LevelEventGeneric{
+		EventID:             packet.LevelEventSleepingPlayers,
+		SerialisedEventData: eventData[2 : len(eventData)-1],
 	})
 }
 
@@ -467,6 +491,8 @@ func tierToSoundEvent(tier item.ArmourTier) uint32 {
 	switch tier.(type) {
 	case item.ArmourTierLeather:
 		return packet.SoundEventEquipLeather
+	case item.ArmourTierCopper:
+		return packet.SoundEventEquipCopper
 	case item.ArmourTierGold:
 		return packet.SoundEventEquipGold
 	case item.ArmourTierChain:
@@ -971,14 +997,22 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventHurt,
 		})
 	case entity.CriticalHitAction:
+		if act.Count <= 0 {
+			act.Count = 55
+		}
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
+			Data:            float32(act.Count),
 		})
 	case entity.EnchantedHitAction:
+		if act.Count <= 0 {
+			act.Count = 15
+		}
 		s.writePacket(&packet.Animate{
 			ActionType:      packet.AnimateActionMagicCriticalHit,
 			EntityRuntimeID: s.entityRuntimeID(e),
+			Data:            float32(act.Count),
 		})
 	case entity.DeathAction:
 		s.writePacket(&packet.ActorEvent{
@@ -1256,6 +1290,14 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 		pk.EventType, pk.EventData = packet.LevelEventStartThunderstorm, int32(rand.IntN(50000)+10000)
 	}
 	s.writePacket(pk)
+}
+
+// ViewEntityWake ...
+func (s *Session) ViewEntityWake(e world.Entity) {
+	s.writePacket(&packet.Animate{
+		EntityRuntimeID: s.entityRuntimeID(e),
+		ActionType:      packet.AnimateActionStopSleep,
+	})
 }
 
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.

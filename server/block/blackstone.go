@@ -1,9 +1,10 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand/v2"
 )
 
 // Blackstone is a naturally generating block in the nether that can be used to craft stone tools, brewing stands and
@@ -23,8 +24,12 @@ func (b Blackstone) BreakInfo() BreakInfo {
 
 	switch b.Type {
 	case GildedBlackstone():
-		drops = func(item.Tool, []item.Enchantment) []item.Stack {
-			if rand.Float64() < 0.1 {
+		drops = func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+			if hasSilkTouch(enchantments) {
+				return []item.Stack{item.NewStack(b, 1)}
+			}
+			nuggetChances := []float64{0.1, 1.0 / 7.0, 0.25, 1.0}
+			if rand.Float64() < nuggetChances[min(fortuneLevel(enchantments), 3)] {
 				return []item.Stack{item.NewStack(item.GoldNugget{}, rand.IntN(4)+2)}
 			}
 			return []item.Stack{item.NewStack(b, 1)}

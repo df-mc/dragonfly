@@ -1,6 +1,9 @@
 package player
 
 import (
+	"net"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
 	"github.com/df-mc/dragonfly/server/event"
@@ -9,8 +12,6 @@ import (
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"net"
-	"time"
 )
 
 type Context = event.Context[*Player]
@@ -121,6 +122,8 @@ type Handler interface {
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
 	HandleSignEdit(ctx *Context, pos cube.Pos, frontSide bool, oldText, newText string)
+	// HandleSleep handles the player beginning the sleep action. ctx.Cancel() may be called to cancel the action.
+	HandleSleep(ctx *Context, sendReminder *bool)
 	// HandleLecternPageTurn handles the player turning a page in a lectern. ctx.Cancel() may be called to cancel the
 	// page turn. The page number may be changed by assigning to *page.
 	HandleLecternPageTurn(ctx *Context, pos cube.Pos, oldPage int, newPage *int)
@@ -128,7 +131,7 @@ type Handler interface {
 	// damage through usage.
 	// The type of the item may be checked to determine whether it was armour or a tool used. The damage to
 	// the item is passed.
-	HandleItemDamage(ctx *Context, i item.Stack, damage int)
+	HandleItemDamage(ctx *Context, i item.Stack, damage *int)
 	// HandleItemPickup handles the player picking up an item from the ground. The item stack laying on the
 	// ground is passed. ctx.Cancel() may be called to prevent the player from picking up the item.
 	HandleItemPickup(ctx *Context, i *item.Stack)
@@ -179,6 +182,7 @@ func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)     
 func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
 func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}
 func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)                 {}
+func (NopHandler) HandleSleep(*Context, *bool)                                             {}
 func (NopHandler) HandleLecternPageTurn(*Context, cube.Pos, int, *int)                     {}
 func (NopHandler) HandleItemPickup(*Context, *item.Stack)                                  {}
 func (NopHandler) HandleItemUse(*Context)                                                  {}
@@ -186,7 +190,7 @@ func (NopHandler) HandleItemUseOnBlock(*Context, cube.Pos, cube.Face, mgl64.Vec3
 func (NopHandler) HandleItemUseOnEntity(*Context, world.Entity)                            {}
 func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Duration)      {}
 func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
-func (NopHandler) HandleItemDamage(*Context, item.Stack, int)                              {}
+func (NopHandler) HandleItemDamage(*Context, item.Stack, *int)                             {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
