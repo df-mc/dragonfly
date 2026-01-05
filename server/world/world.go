@@ -1223,7 +1223,7 @@ func (w *World) autoSave() {
 		save = time.NewTicker(w.conf.SaveInterval)
 		defer save.Stop()
 	}
-	closeUnused := time.NewTicker(time.Minute * 2)
+	closeUnused := time.NewTicker(w.conf.ChunkUnloadInterval)
 	defer closeUnused.Stop()
 
 	for {
@@ -1239,7 +1239,7 @@ func (w *World) autoSave() {
 	}
 }
 
-// closeUnusedChunk is called every 5 minutes by autoSave.
+// closeUnusedChunk closes all chunks currently not in use by any viewer.
 func (w *World) closeUnusedChunks(tx *Tx) {
 	for pos, c := range w.chunks {
 		if len(c.viewers) == 0 {
