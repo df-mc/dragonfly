@@ -16,7 +16,7 @@ type Data struct {
 	BaseGameVersion                string `nbt:"baseGameVersion"`
 	BiomeOverride                  string
 	ConfirmedPlatformLockedContent bool
-	CentreMapsToOrigin             bool  `nbt:"CentreMapsToOrigin"`
+	CentreMapsToOrigin             bool  `nbt:"CenterMapsToOrigin"`
 	CheatsEnabled                  bool  `nbt:"cheatsEnabled"`
 	DaylightCycle                  int32 `nbt:"daylightCycle"`
 	Difficulty                     int32
