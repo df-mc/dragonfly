@@ -1,6 +1,6 @@
 package item
 
-// Leather is an animal skin used to make item frames, armor and books.
+// Leather is an animal skin used to make item frames, armour and books.
 type Leather struct{}
 
 // EncodeItem ...

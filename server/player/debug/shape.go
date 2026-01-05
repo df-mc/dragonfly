@@ -16,7 +16,7 @@ type Shape interface {
 }
 
 // shape is a base type for all shapes that implements the Shape interface. It contains a unique identifier
-// that is lazily initialized when the ShapeID method is called for the first time.
+// that is lazily initialised when the ShapeID method is called for the first time.
 type shape struct {
 	id *int
 }
