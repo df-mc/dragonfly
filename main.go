@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
@@ -23,6 +24,7 @@ func main() {
 	srv.Listen()
 	for p := range srv.Accept() {
 		_ = p
+		p.SetGameMode(world.GameModeSurvival)
 	}
 }
 

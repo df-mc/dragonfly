@@ -44,7 +44,11 @@ func (s Shears) HarvestLevel() int {
 }
 
 // BaseMiningEfficiency ...
-func (s Shears) BaseMiningEfficiency(world.Block) float64 {
+func (s Shears) BaseMiningEfficiency(b world.Block) float64 {
+	// Shears mine webs quickly.
+	if name, _ := b.EncodeBlock(); name == "minecraft:web" {
+		return 15
+	}
 	return 1.5
 }
 

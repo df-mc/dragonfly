@@ -36,6 +36,7 @@ const (
 	hashChiseledQuartz
 	hashClay
 	hashCoal
+	hashWeb
 	hashCoalOre
 	hashCobblestone
 	hashCocoaBean
@@ -336,6 +337,10 @@ func (Clay) Hash() (uint64, uint64) {
 
 func (Coal) Hash() (uint64, uint64) {
 	return hashCoal, 0
+}
+
+func (Web) Hash() (uint64, uint64) {
+	return hashWeb, 0
 }
 
 func (c CoalOre) Hash() (uint64, uint64) {

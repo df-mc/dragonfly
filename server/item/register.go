@@ -124,6 +124,8 @@ func init() {
 	world.RegisterItem(TurtleShell{})
 	world.RegisterItem(WarpedFungusOnAStick{})
 	world.RegisterItem(Wheat{})
+	world.RegisterItem(WindCharge{})
+	world.RegisterItem(BreezeRod{})
 	world.RegisterItem(WrittenBook{})
 	for _, t := range ArmourTiers() {
 		world.RegisterItem(Helmet{Tier: t})

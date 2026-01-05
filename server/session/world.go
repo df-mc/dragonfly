@@ -380,6 +380,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticlesExplosion,
 			Position:  vec64To32(pos),
 		})
+	case particle.WindCharge:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticlesWindExplosion,
+			Position:  vec64To32(pos),
+		})
 	case particle.BoneMeal:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleCropGrowth,
@@ -542,6 +547,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		return
 	case sound.Explosion:
 		pk.SoundType = packet.SoundEventExplode
+	case sound.WindCharge:
+		pk.SoundType = packet.SoundEventWindChargeBurst
 	case sound.Thunder:
 		pk.SoundType, pk.EntityType = packet.SoundEventThunder, "minecraft:lightning_bolt"
 	case sound.Click:

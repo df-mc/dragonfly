@@ -6,7 +6,7 @@ import (
 )
 
 // Sword is a tool generally used to attack enemies. In addition, it may be used to mine any block slightly
-// faster than without tool and to break cobwebs rapidly.
+// faster than without tool and to break webs rapidly.
 type Sword struct {
 	// Tier is the tier of the sword.
 	Tier ToolTier
@@ -37,9 +37,12 @@ func (s Sword) EnchantmentValue() int {
 	return s.Tier.EnchantmentValue
 }
 
-// BaseMiningEfficiency always returns 1.5, unless the block passed is cobweb, in which case 15 is returned.
-func (s Sword) BaseMiningEfficiency(world.Block) float64 {
-	// TODO: Implement cobwebs and return 15 here.
+// BaseMiningEfficiency returns the mining efficiency for the sword.
+func (s Sword) BaseMiningEfficiency(b world.Block) float64 {
+	// Swords mine webs quickly.
+	if name, _ := b.EncodeBlock(); name == "minecraft:web" {
+		return 15
+	}
 	return 1.5
 }
 

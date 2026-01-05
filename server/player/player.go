@@ -66,6 +66,9 @@ type playerData struct {
 	glideTicks   int64
 	fireTicks    int64
 	fallDistance float64
+	windBurstY float64
+	windChargeProtected bool
+	launchY float64
 
 	breathing         bool
 	airSupplyTicks    int
@@ -561,7 +564,20 @@ func (p *Player) fall(distance float64) {
 	if h, ok := b.(block.EntityLander); ok {
 		h.EntityLand(pos, p.tx, p, &distance)
 	}
-	dmg := distance - 3
+
+	currentY := p.Position()[1]
+	var effectiveFallDistance float64
+	if p.launchY != 0 && currentY >= p.launchY {
+		effectiveFallDistance = 0
+		p.launchY = 0 // Reset
+	} else if p.launchY != 0 {
+		effectiveFallDistance = p.launchY - currentY
+		p.launchY = 0 // Reset
+	} else {
+		effectiveFallDistance = distance
+	}
+
+	dmg := effectiveFallDistance - 3
 	if boost, ok := p.Effect(effect.JumpBoost); ok {
 		dmg -= float64(boost.Level())
 	}
@@ -706,6 +722,27 @@ func (p *Player) SetAbsorption(health float64) {
 // Absorption returns the absorption health that the player has.
 func (p *Player) Absorption() float64 {
 	return p.absorptionHealth
+}
+
+// SetWindChargeProtection sets the wind charge protection.
+func (p *Player) SetWindChargeProtection(y float64) {
+	p.windBurstY = y
+	p.windChargeProtected = true
+}
+
+// IsWindChargeProtected returns if the player is protected from fall damage.
+func (p *Player) IsWindChargeProtected() bool {
+	return p.windChargeProtected
+}
+
+// GetWindBurstY returns the wind burst Y.
+func (p *Player) GetWindBurstY() float64 {
+	return p.windBurstY
+}
+
+// SetLaunchY sets the launch Y for fall damage calculation.
+func (p *Player) SetLaunchY(y float64) {
+	p.launchY = y
 }
 
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
