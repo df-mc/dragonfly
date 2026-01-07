@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/base64"
@@ -9,9 +8,7 @@ import (
 	"iter"
 	"maps"
 	"os"
-	"os/exec"
 	"os/signal"
-	"runtime"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -503,22 +500,6 @@ func (srv *Server) dimension(dimension world.Dimension) *world.World {
 	}
 }
 
-// checkNetIsolation checks if a loopback exempt is in place to allow the
-// hosting device to join the server. This is only relevant on Windows. It will
-// never log anything for anything but Windows.
-func (srv *Server) checkNetIsolation() {
-	if runtime.GOOS != "windows" {
-		// Only an issue on Windows.
-		return
-	}
-	data, _ := exec.Command("CheckNetIsolation", "LoopbackExempt", "-s", `-n="microsoft.minecraftuwp_8wekyb3d8bbwe"`).CombinedOutput()
-	if bytes.Contains(data, []byte("microsoft.minecraftuwp_8wekyb3d8bbwe")) {
-		return
-	}
-	const loopbackExemptCmd = `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`
-	srv.conf.Log.Info("You are currently unable to join the server on this machine. Run " + loopbackExemptCmd + " in an admin PowerShell session to resolve.")
-}
-
 // handleSessionClose handles the closing of a session. It removes the player
 // of the session from the server.
 func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
@@ -573,13 +554,15 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	logger.Debug("Loading dimension...")
 
 	conf := world.Config{
-		Log:             logger,
-		Dim:             dim,
-		Provider:        srv.conf.WorldProvider,
-		Generator:       srv.conf.Generator(dim),
-		RandomTickSpeed: srv.conf.RandomTickSpeed,
-		ReadOnly:        srv.conf.ReadOnlyWorld,
-		Entities:        srv.conf.Entities,
+		Log:                 logger,
+		Dim:                 dim,
+		Provider:            srv.conf.WorldProvider,
+		Generator:           srv.conf.Generator(dim),
+		RandomTickSpeed:     srv.conf.RandomTickSpeed,
+		ReadOnly:            srv.conf.ReadOnlyWorld,
+		SaveInterval:        srv.conf.SaveInterval,
+		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		Entities:            srv.conf.Entities,
 		PortalDestination: func(dim world.Dimension) *world.World {
 			if dim == world.Nether {
 				return *nether

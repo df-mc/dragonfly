@@ -82,6 +82,8 @@ type Session struct {
 	changingDimension              atomic.Bool
 	moving                         bool
 
+	lastChunkPos world.ChunkPos
+
 	recipes map[uint32]recipe.Recipe
 
 	blobMu                sync.Mutex
@@ -413,10 +415,14 @@ func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
 	}
 	pos := c.Position()
 	s.chunkLoader.Move(tx, pos)
-	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
-		Radius:   uint32(s.chunkRadius) << 4,
-	})
+	chunkPos := world.ChunkPos{int32(pos[0]) << 4, int32(pos[2]) << 4}
+	if s.lastChunkPos != chunkPos {
+		s.lastChunkPos = chunkPos
+		s.writePacket(&packet.NetworkChunkPublisherUpdate{
+			Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+			Radius:   uint32(s.chunkRadius) << 4,
+		})
+	}
 
 	s.blobMu.Lock()
 	const maxChunkTransactions = 8
@@ -473,6 +479,11 @@ func (s *Session) changeDimension(dim int32, silent bool, c Controllable) {
 // ChangingDimension returns whether the session is currently changing dimension or not.
 func (s *Session) ChangingDimension() bool {
 	return s.changingDimension.Load()
+}
+
+// ChunkRadius returns the chunk radius of the session.
+func (s *Session) ChunkRadius() int32 {
+	return s.chunkRadius
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
