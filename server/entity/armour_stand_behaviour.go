@@ -152,6 +152,15 @@ func (a *ArmourStandBehaviour) AcceptItem(e *Ent, from world.Entity, tx *world.T
 	dropOffset = armourStandDropOffset(dropItem)
 	ctx.SubtractFromCount(1)
 	if !dropItem.Empty() {
+		if p, ok := from.(interface {
+			HeldItems() (mainHand, offHand item.Stack)
+			SetHeldItems(mainHand, offHand item.Stack)
+		}); ok {
+			i, left := p.HeldItems()
+			s1, s2 := i.AddStack(dropItem)
+			p.SetHeldItems(s1, left)
+			dropItem = s2
+		}
 		tx.AddEntity(NewItem(world.EntitySpawnOpts{Position: e.Position().Add(dropOffset)}, dropItem))
 	}
 	return true
