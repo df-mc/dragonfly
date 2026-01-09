@@ -9,7 +9,7 @@ type (
 	Armour interface {
 		// DefencePoints returns the defence points that the armour provides when worn.
 		DefencePoints() float64
-		// Toughness returns the toughness that the armor provides when worn. The toughness reduces defense reduction
+		// Toughness returns the toughness that the armour provides when worn. The toughness reduces defence reduction
 		// caused by increased damage.
 		Toughness() float64
 		// KnockBackResistance returns a number from 0-1 that decides the amount of knock back force that is
@@ -22,7 +22,7 @@ type (
 		// BaseDurability is the base durability of armour with this tier. This is otherwise the durability of
 		// the helmet with this tier.
 		BaseDurability() float64
-		// Toughness reduces the defense reduction caused by damage increases.
+		// Toughness reduces the defence reduction caused by damage increases.
 		Toughness() float64
 		// KnockBackResistance is a number from 0-1 that decides the amount of knock back force that is resisted
 		// upon being attacked. 1 knock back resistance point client-side translates to 10% knock back reduction.
