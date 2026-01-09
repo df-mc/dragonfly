@@ -176,6 +176,12 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if mv, ok := e.(markVariable); ok {
 		m[protocol.EntityDataKeyMarkVariant] = mv.MarkVariant()
 	}
+	if iv, ok := e.(invulnerableDuration); ok {
+		m[protocol.EntityDataKeyInvulnerableTicks] = uint8(iv.InvulnerableDuration().Milliseconds() / 50)
+	}
+	if pi, ok := e.(armourStand); ok {
+		m[protocol.EntityDataKeyPoseIndex] = int32(pi.PoseIndex())
+	}
 }
 
 type sneaker interface {
@@ -289,4 +295,12 @@ type variable interface {
 
 type markVariable interface {
 	MarkVariant() int32
+}
+
+type armourStand interface {
+	PoseIndex() int
+}
+
+type invulnerableDuration interface {
+	InvulnerableDuration() time.Duration
 }
