@@ -1746,7 +1746,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 		}
 	}
 	if !used {
-		return false
+		return true
 	}
 	p.SwingArm()
 	p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
