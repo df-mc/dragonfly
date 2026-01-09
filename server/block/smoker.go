@@ -73,7 +73,7 @@ func (s Smoker) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 // BreakInfo ...
 func (s Smoker) BreakInfo() BreakInfo {
 	xp := s.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(s)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(Smoker{})).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, i := range s.Inventory(tx, pos).Clear() {
 			dropItem(tx, i, pos.Vec3())
 		}
