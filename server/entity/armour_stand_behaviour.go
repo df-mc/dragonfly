@@ -102,7 +102,7 @@ func (a *ArmourStandBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, c
 }
 
 // AcceptItem ...
-func (a *ArmourStandBehaviour) AcceptItem(e *Ent, from world.Entity, tx *world.Tx, ctx *item.UseContext) bool {
+func (a *ArmourStandBehaviour) AcceptItem(e *Ent, from world.Entity, _ *world.Tx, ctx *item.UseContext) bool {
 	if sneaker, ok := from.(interface {
 		Sneaking() bool
 	}); ok && sneaker.Sneaking() {
@@ -121,9 +121,8 @@ func (a *ArmourStandBehaviour) AcceptItem(e *Ent, from world.Entity, tx *world.T
 		return false
 	}
 	var (
-		dropItem   item.Stack
-		dropOffset mgl64.Vec3
-		add        = mainHand.Grow(-mainHand.Count() + 1)
+		dropItem item.Stack
+		add      = mainHand.Grow(-mainHand.Count() + 1)
 	)
 	i := add.Item()
 	inv := a.armours
@@ -149,20 +148,8 @@ func (a *ArmourStandBehaviour) AcceptItem(e *Ent, from world.Entity, tx *world.T
 		a.SetHeldItems(e, add, left)
 	}
 
-	dropOffset = armourStandDropOffset(dropItem)
 	ctx.SubtractFromCount(1)
-	if !dropItem.Empty() {
-		if p, ok := from.(interface {
-			HeldItems() (mainHand, offHand item.Stack)
-			SetHeldItems(mainHand, offHand item.Stack)
-		}); ok {
-			i, left := p.HeldItems()
-			s1, s2 := i.AddStack(dropItem)
-			p.SetHeldItems(s1, left)
-			dropItem = s2
-		}
-		tx.AddEntity(NewItem(world.EntitySpawnOpts{Position: e.Position().Add(dropOffset)}, dropItem))
-	}
+	ctx.NewItem, ctx.NewItemSurvivalOnly = dropItem, true
 	return true
 }
 
