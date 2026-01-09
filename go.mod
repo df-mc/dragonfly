@@ -5,8 +5,8 @@ go 1.24.0
 toolchain go1.24.4
 
 replace (
-	github.com/df-mc/go-nethernet => github.com/hashimthearab/go-nethernet v0.0.0-20251227165514-1a78f223d850
-	github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20251223092521-d8bd2358315e
+	github.com/df-mc/go-nethernet => github.com/lactyy/go-nethernet v1.0.0-alpha.2.0.20260107091143-efab6f57a8d4
+	github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260109194613-651a159faf55
 )
 
 require (
