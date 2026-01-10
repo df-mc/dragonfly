@@ -18,7 +18,7 @@ type ArmourStandBehaviourConfig struct {
 	MainHand item.Stack
 	// OffHand is the item equipped in the offhand slot of the armour stand.
 	OffHand item.Stack
-	// PoseIndex is the pose index of the armor stand. Possible values range
+	// PoseIndex is the pose index of the armour stand. Possible values range
 	// from 0 to 12 (inclusive).
 	PoseIndex int
 }
@@ -47,9 +47,9 @@ func (conf ArmourStandBehaviourConfig) New() *ArmourStandBehaviour {
 type ArmourStandBehaviour struct {
 	conf ArmourStandBehaviourConfig
 
-	passive      *PassiveBehaviour
-	invulnerable time.Duration
-	armours      *inventory.Armour
+	passive *PassiveBehaviour
+	hurt    time.Duration
+	armours *inventory.Armour
 
 	lastOnGround bool
 }
@@ -80,10 +80,10 @@ func (a *ArmourStandBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 // tick ...
 func (a *ArmourStandBehaviour) tick(e *Ent, tx *world.Tx) {
-	if a.invulnerable > 0 {
-		a.invulnerable -= time.Millisecond * 50
-		if a.invulnerable < 0 {
-			a.invulnerable = 0
+	if a.hurt > 0 {
+		a.hurt -= time.Millisecond * 50
+		if a.hurt < 0 {
+			a.hurt = 0
 		}
 		a.updateState(e)
 	}
@@ -155,12 +155,12 @@ func (a *ArmourStandBehaviour) AcceptItem(e *Ent, from world.Entity, _ *world.Tx
 
 // Attack ...
 func (a *ArmourStandBehaviour) Attack(e *Ent, _ world.Entity, tx *world.Tx) {
-	if a.invulnerable > 0 {
+	if a.hurt > 0 {
 		a.destroy(e, tx)
 		return
 	}
 	tx.PlaySound(e.Position(), sound.ArmourStandPlace{})
-	a.invulnerable = time.Second / 2
+	a.hurt = time.Millisecond * 300
 	a.updateState(e)
 }
 
@@ -171,9 +171,9 @@ func (a *ArmourStandBehaviour) destroy(e *Ent, tx *world.Tx) {
 	_ = e.Close()
 }
 
-// InvulnerableDuration returns the duration for which the armour stand is invulnerable.
-func (a *ArmourStandBehaviour) InvulnerableDuration() time.Duration {
-	return a.invulnerable
+// HurtDuration returns the remaining hurt duration of the armour stand.
+func (a *ArmourStandBehaviour) HurtDuration() time.Duration {
+	return a.hurt
 }
 
 // dropAll drops all equipped items of the armour stand.

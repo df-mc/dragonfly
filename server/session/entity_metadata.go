@@ -176,8 +176,8 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if mv, ok := e.(markVariable); ok {
 		m[protocol.EntityDataKeyMarkVariant] = mv.MarkVariant()
 	}
-	if iv, ok := e.(invulnerableDuration); ok {
-		m[protocol.EntityDataKeyInvulnerableTicks] = uint8(iv.InvulnerableDuration().Milliseconds() / 50)
+	if iv, ok := e.(hurtDuration); ok {
+		m[protocol.EntityDataKeyHurt] = uint8(iv.HurtDuration().Milliseconds() / 50)
 	}
 	if pi, ok := e.(armourStand); ok {
 		m[protocol.EntityDataKeyPoseIndex] = int32(pi.PoseIndex())
@@ -301,6 +301,6 @@ type armourStand interface {
 	PoseIndex() int
 }
 
-type invulnerableDuration interface {
-	InvulnerableDuration() time.Duration
+type hurtDuration interface {
+	HurtDuration() time.Duration
 }
