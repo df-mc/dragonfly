@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/internal/sliceutil"
-	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math/rand/v2"
 	"reflect"
 	"slices"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Line represents a command line holding command arguments that were passed upon the execution of the
@@ -46,7 +47,12 @@ func (line *Line) Next() (string, bool) {
 	if !ok {
 		return "", false
 	}
-	return v[0], true
+	val := v[0]
+	if val == "" {
+		line.RemoveNext()
+		return line.Next()
+	}
+	return val, true
 }
 
 // NextN reads the next N arguments from the command line and returns them. If there were not enough arguments
@@ -83,13 +89,20 @@ func (line *Line) Leftover() []string {
 
 // Len returns the leftover length of the arguments in the command line.
 func (line *Line) Len() int {
-	return len(line.args)
+	count := 0
+	for _, arg := range line.args {
+		if arg != "" {
+			count++
+		}
+	}
+	return count
 }
 
 // parser manages the parsing of a Line, turning the raw arguments into values which are then stored in the
 // struct fields.
 type parser struct {
 	currentField string
+	fields       int
 }
 
 // parseArgument parses the next argument from the command line passed and sets it to value v passed. If
@@ -185,11 +198,27 @@ func (p parser) float(line *Line, v reflect.Value) error {
 
 // string ...
 func (p parser) string(line *Line, v reflect.Value) error {
+	if p.fields == 1 {
+		return p.restAsString(line, v)
+	}
+
 	arg, ok := line.Next()
 	if !ok {
 		return line.UsageError()
 	}
 	v.SetString(arg)
+	return nil
+}
+
+// restAsString ...
+func (p parser) restAsString(line *Line, v reflect.Value) error {
+	args := line.Leftover()
+	val := strings.Join(args, " ")
+	// check if value is empty.
+	if strings.TrimSpace(val) == "" {
+		return line.UsageError()
+	}
+	v.SetString(val)
 	return nil
 }
 
