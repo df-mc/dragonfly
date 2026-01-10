@@ -1,3 +1,6 @@
+//go:build ignore_web_go
+// +build ignore_web_go
+
 package block
 
 import (
@@ -39,7 +42,10 @@ func (w Web) dropFunc(t item.Tool, _ []item.Enchantment) []item.Stack {
 // EntityInside slows down entities inside the web.
 func (w Web) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	// Use a minimal interface so we don't import entity package and cause cycles.
-	if l, ok := e.(interface{ Velocity() mgl64.Vec3; SetVelocity(mgl64.Vec3) }); ok {
+	if l, ok := e.(interface {
+		Velocity() mgl64.Vec3
+		SetVelocity(mgl64.Vec3)
+	}); ok {
 		v := l.Velocity()
 		// Damp horizontal velocity strongly.
 		vx, vz := v.X()*0.15, v.Z()*0.15

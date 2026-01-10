@@ -63,12 +63,12 @@ type playerData struct {
 
 	usingSince time.Time
 
-	glideTicks   int64
-	fireTicks    int64
-	fallDistance float64
-	windBurstY float64
+	glideTicks          int64
+	fireTicks           int64
+	fallDistance        float64
+	windBurstY          float64
 	windChargeProtected bool
-	launchY float64
+	launchY             float64
 
 	breathing         bool
 	airSupplyTicks    int
@@ -563,6 +563,13 @@ func (p *Player) fall(distance float64) {
 	}
 	if h, ok := b.(block.EntityLander); ok {
 		h.EntityLand(pos, p.tx, p, &distance)
+	}
+
+	// Landing in a web cancels fall damage: web slows entities and should be
+	// treated as a safe landing. Reset fall distance and return early.
+	if _, ok := b.(block.Web); ok {
+		p.ResetFallDistance()
+		return
 	}
 
 	currentY := p.Position()[1]
@@ -1836,9 +1843,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 			v.ViewEntityAction(living, entity.EnchantedHitAction{})
 		}
 	}
-	if critical {
-		dmg *= 1.5
-	}
+	// Removed critical hit damage multiplier.
 
 	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
 	i, left := p.HeldItems()
@@ -1847,11 +1852,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	if !vulnerable {
 		return true
 	}
-	if critical {
-		for _, v := range p.tx.Viewers(living.Position()) {
-			v.ViewEntityAction(living, entity.CriticalHitAction{})
-		}
-	}
+	// Removed sending of critical hit particles/animation.
 
 	p.Exhaust(0.1)
 

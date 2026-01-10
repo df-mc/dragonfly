@@ -1,13 +1,14 @@
 package entity
 
 import (
+	"math"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math"
 )
 
 // NewWindCharge creates a wind charge entity at a position with an owner entity.
@@ -32,10 +33,10 @@ func windChargeHit(e *Ent, tx *world.Tx, target trace.Result) {
 
 	const (
 		explosionRadius = 3.0
-		knockbackForce  = 0.6
+		knockbackForce  = 0.7
 		// Tweakable modifiers. Change these to adjust behavior:
-		verticalBias   = 1.8 // higher = more vertical lift
-		horizontalDamp = 0.5 // lower = less horizontal displacement
+		verticalBias   = 1.7 // higher = more vertical lift
+		horizontalDamp = 0.6 // lower = less horizontal displacement
 	)
 
 	nearby := tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(explosionRadius))

@@ -25,6 +25,7 @@ const (
 	hashBookshelf
 	hashBrewingStand
 	hashBricks
+	hashBrownMushroom
 	hashBush
 	hashCactus
 	hashCake
@@ -36,7 +37,6 @@ const (
 	hashChiseledQuartz
 	hashClay
 	hashCoal
-	hashWeb
 	hashCoalOre
 	hashCobblestone
 	hashCocoaBean
@@ -156,6 +156,9 @@ const (
 	hashRawCopper
 	hashRawGold
 	hashRawIron
+	hashRedMushroom
+	hashRedstoneBlock
+	hashRedstoneOre
 	hashReinforcedDeepslate
 	hashResin
 	hashResinBricks
@@ -195,6 +198,7 @@ const (
 	hashVines
 	hashWall
 	hashWater
+	hashWeb
 	hashWheatSeeds
 	hashWildFlowers
 	hashWood
@@ -295,6 +299,10 @@ func (Bricks) Hash() (uint64, uint64) {
 	return hashBricks, 0
 }
 
+func (BrownMushroom) Hash() (uint64, uint64) {
+	return hashBrownMushroom, 0
+}
+
 func (Bush) Hash() (uint64, uint64) {
 	return hashBush, 0
 }
@@ -337,10 +345,6 @@ func (Clay) Hash() (uint64, uint64) {
 
 func (Coal) Hash() (uint64, uint64) {
 	return hashCoal, 0
-}
-
-func (Web) Hash() (uint64, uint64) {
-	return hashWeb, 0
 }
 
 func (c CoalOre) Hash() (uint64, uint64) {
@@ -819,6 +823,18 @@ func (RawIron) Hash() (uint64, uint64) {
 	return hashRawIron, 0
 }
 
+func (RedMushroom) Hash() (uint64, uint64) {
+	return hashRedMushroom, 0
+}
+
+func (RedstoneBlock) Hash() (uint64, uint64) {
+	return hashRedstoneBlock, 0
+}
+
+func (r RedstoneOre) Hash() (uint64, uint64) {
+	return hashRedstoneOre, uint64(r.Type.Uint8())
+}
+
 func (ReinforcedDeepslate) Hash() (uint64, uint64) {
 	return hashReinforcedDeepslate, 0
 }
@@ -973,6 +989,10 @@ func (w Wall) Hash() (uint64, uint64) {
 
 func (w Water) Hash() (uint64, uint64) {
 	return hashWater, uint64(boolByte(w.Still)) | uint64(w.Depth)<<1 | uint64(boolByte(w.Falling))<<9
+}
+
+func (Web) Hash() (uint64, uint64) {
+	return hashWeb, 0
 }
 
 func (s WheatSeeds) Hash() (uint64, uint64) {
