@@ -1733,12 +1733,19 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 		return false
 	}
 	i, left := p.HeldItems()
-	usable, ok := i.Item().(item.UsableOnEntity)
-	if !ok {
-		return true
-	}
 	useCtx := p.useContext()
-	if !usable.UseOnEntity(e, p.tx, p, useCtx) {
+	used := false
+	if usable, ok := i.Item().(item.UsableOnEntity); ok {
+		if usable.UseOnEntity(e, p.tx, p, useCtx) {
+			used = true
+		}
+	}
+	if acceptor, ok := e.(entity.ItemAcceptor); ok {
+		if acceptor.AcceptItem(p, p.tx, useCtx) {
+			used = true
+		}
+	}
+	if !used {
 		return true
 	}
 	p.SwingArm()
@@ -1781,6 +1788,10 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		return false
 	}
 	p.SwingArm()
+
+	if attackable, ok := e.(entity.Attackable); ok {
+		attackable.Attack(p, p.tx)
+	}
 
 	if !isLiving {
 		return false
