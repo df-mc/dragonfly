@@ -12,6 +12,7 @@ import (
 // LeafLitter is a decorative block that generates in forest biomes.
 type LeafLitter struct {
 	empty
+	replaceable
 	transparent
 
 	// AdditionalCount is the amount of additional leaf litter. This can range
