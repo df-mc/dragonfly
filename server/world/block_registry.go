@@ -7,6 +7,7 @@ import (
 	"math/bits"
 	"slices"
 	"sort"
+	"sync"
 
 	"github.com/df-mc/dragonfly/server/internal/intintmap"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -104,6 +105,8 @@ func (b blockInfo) getLightFilter() uint8 {
 }
 
 type BlockRegistryImpl struct {
+	mu sync.Mutex
+
 	finalized         bool
 	bitSize           int
 	hashes            *intintmap.Map
@@ -193,6 +196,9 @@ func (br *BlockRegistryImpl) HashToRuntimeID(hash uint32) (rid uint32, ok bool) 
 }
 
 func (br *BlockRegistryImpl) Clone() BlockRegistry {
+	br.mu.Lock()
+	defer br.mu.Unlock()
+
 	br2 := &BlockRegistryImpl{
 		blockProperties: make(map[string]map[string]any, len(br.blockProperties)),
 		stateRuntimeIDs: make(map[stateHash]uint32, len(br.stateRuntimeIDs)),
@@ -245,6 +251,9 @@ func NewBlockRegistry() BlockRegistry {
 // RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
 // block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
 func (br *BlockRegistryImpl) RegisterBlock(b Block) {
+	br.mu.Lock()
+	defer br.mu.Unlock()
+
 	if br.finalized {
 		panic("BlockRegistry.RegisterBlock called on finalized BlockRegistry")
 	}
@@ -275,6 +284,9 @@ func (br *BlockRegistryImpl) RegisterBlock(b Block) {
 // RegisterBlockState registers a blockStates to the states slice. The function panics if the properties the
 // blockState hold are invalid or if the blockState was already registered.
 func (br *BlockRegistryImpl) RegisterBlockState(s BlockState) {
+	br.mu.Lock()
+	defer br.mu.Unlock()
+
 	if br.finalized {
 		panic("BlockRegistry.RegisterBlockState called on finalized BlockRegistry")
 	}
@@ -291,12 +303,14 @@ func (br *BlockRegistryImpl) RegisterBlockState(s BlockState) {
 }
 
 func (br *BlockRegistryImpl) Finalize() {
+	br.mu.Lock()
+	defer br.mu.Unlock()
+
 	if br.finalized {
 		// Finalize is intentionally idempotent so code can defensively call it when a registry is provided through
 		// config. RegisterBlock/RegisterBlockState still panic after finalization.
 		return
 	}
-	br.finalized = true
 
 	br.bitSize = bits.Len64(uint64(len(br.blocks)))
 	sort.SliceStable(br.blocks, func(i, j int) bool {
@@ -372,6 +386,7 @@ func (br *BlockRegistryImpl) Finalize() {
 	if !foundAir {
 		panic("BlockRegistry.Finalize: no minecraft:air block state registered")
 	}
+	br.finalized = true
 }
 
 // AirRuntimeID returns the runtime ID of the air block.
