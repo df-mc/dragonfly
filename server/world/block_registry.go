@@ -262,7 +262,7 @@ func (br *BlockRegistryImpl) RegisterBlock(b Block) {
 	}
 	name, properties := b.EncodeBlock()
 	if _, ok := b.(CustomBlock); ok {
-		br.RegisterBlockState(BlockState{Name: name, Properties: properties})
+		br.registerBlockStateLocked(BlockState{Name: name, Properties: properties})
 	}
 	rid, ok := br.stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 	if !ok {
@@ -287,6 +287,11 @@ func (br *BlockRegistryImpl) RegisterBlockState(s BlockState) {
 	br.mu.Lock()
 	defer br.mu.Unlock()
 
+	br.registerBlockStateLocked(s)
+}
+
+// registerBlockStateLocked is the implementation of RegisterBlockState. br.mu must be held by the caller.
+func (br *BlockRegistryImpl) registerBlockStateLocked(s BlockState) {
 	if br.finalized {
 		panic("BlockRegistry.RegisterBlockState called on finalized BlockRegistry")
 	}
