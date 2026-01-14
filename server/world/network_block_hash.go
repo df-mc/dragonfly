@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"hash/fnv"
 	"sort"
-	"strings"
 )
 
 // networkBlockHash produces the canonical "network block hash" for a (name, properties) block state.
@@ -91,10 +90,4 @@ func networkBlockHash(name string, properties map[string]any, scratch []byte) (u
 	h := fnv.New32a()
 	h.Write(data)
 	return h.Sum32(), data
-}
-
-// splitNamespace splits an identifier such as "minecraft:stone" into namespace and name.
-func splitNamespace(identifier string) (ns, name string) {
-	ns_name := strings.Split(identifier, ":")
-	return ns_name[0], ns_name[len(ns_name)-1]
 }
