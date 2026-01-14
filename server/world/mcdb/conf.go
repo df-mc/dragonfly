@@ -21,6 +21,8 @@ type Config struct {
 	// or compression used in the database.
 	LDBOptions *opt.Options
 
+	// Blocks is the BlockRegistry used for chunk decoding/encoding. If nil, world.DefaultBlockRegistry is used.
+	// When using a non-default registry, pass the same registry used by the World.
 	Blocks world.BlockRegistry
 }
 

@@ -61,7 +61,9 @@ type Config struct {
 	// be added to the World.
 	Entities EntityRegistry
 
-	// Blocks is the BlockRegistry used by the World. If left nil, DefaultBlockRegistry is used.
+	// Blocks is the BlockRegistry used by the World.
+	// If left nil, DefaultBlockRegistry is used. For a non-default registry,
+	// use NewBlockRegistry(), register blocks/states, and call Finalize().
 	Blocks BlockRegistry
 }
 

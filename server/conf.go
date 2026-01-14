@@ -118,6 +118,8 @@ type Config struct {
 	// Entities will be set to entity.DefaultRegistry.
 	Entities world.EntityRegistry
 	// Blocks is the BlockRegistry template used for newly created worlds. If nil, world.DefaultBlockRegistry is used.
+	// For a non-default registry, set this to world.NewBlockRegistry(), register blocks on that instance, and ensure
+	// it is finalized before use.
 	Blocks world.BlockRegistry
 }
 

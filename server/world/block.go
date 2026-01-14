@@ -69,8 +69,13 @@ type Liquid interface {
 	Harden(pos cube.Pos, tx *Tx, flownIntoBy *cube.Pos) bool
 }
 
-// RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
-// block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
+// RegisterBlock registers the Block passed in the DefaultBlockRegistry.
+//
+// This function exists for backwards compatibility and works well for the common "single server per process" setup,
+// where all worlds share the global default registry.
+//
+// If you run multiple servers/registries in a single process, prefer creating a registry using NewBlockRegistry() and
+// registering blocks on that instance (e.g. conf.Blocks.RegisterBlock(...)) before calling Finalize().
 func RegisterBlock(b Block) {
 	DefaultBlockRegistry.RegisterBlock(b)
 }
@@ -79,6 +84,9 @@ func RegisterBlock(b Block) {
 // This function is used internally to convert a block to a single integer which can be used in map lookups. The hash
 // produced therefore does not need to match anything in the game, but it must be unique among all registered blocks.
 // The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
+//
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's BlockHash(...) instead so the
+// hash is consistent with that registry.
 func BlockHash(b Block) uint64 {
 	return DefaultBlockRegistry.BlockHash(b)
 }
@@ -86,28 +94,33 @@ func BlockHash(b Block) uint64 {
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock() on the
 // DefaultBlockRegistry.
 // If the runtime ID cannot be found because the Block wasn't registered, BlockRuntimeID will panic.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's BlockRuntimeID(...) instead.
 func BlockRuntimeID(b Block) uint32 {
 	return DefaultBlockRegistry.BlockRuntimeID(b)
 }
 
-// BlockByRuntimeID attempts to return a Block by its runtime ID using the DefaultBlockRegistry. If not found, the bool returned is
-// false. If found, the block is non-nil and the bool true.
+// BlockByRuntimeID attempts to return a Block by its runtime ID using the DefaultBlockRegistry. If not found, the bool
+// returned is false. If found, the block is non-nil and the bool true.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's BlockByRuntimeID(...) instead.
 func BlockByRuntimeID(rid uint32) (Block, bool) {
 	return DefaultBlockRegistry.BlockByRuntimeID(rid)
 }
 
-// BlockByName attempts to return a Block by its name and properties using the DefaultBlockRegistry. If not found, the bool returned is
-// false.
+// BlockByName attempts to return a Block by its name and properties using the DefaultBlockRegistry. If not found, the
+// bool returned is false.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's BlockByName(...) instead.
 func BlockByName(name string, properties map[string]any) (Block, bool) {
 	return DefaultBlockRegistry.BlockByName(name, properties)
 }
 
 // Blocks returns a slice of all blocks registered in the DefaultBlockRegistry.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's Blocks() instead.
 func Blocks() []Block {
 	return DefaultBlockRegistry.Blocks()
 }
 
 // CustomBlocks returns a map of all custom blocks registered with their names as keys in the DefaultBlockRegistry.
+// If you use a non-default registry (NewBlockRegistry), use your registry instance's CustomBlocks() instead.
 func CustomBlocks() map[string]CustomBlock {
 	return DefaultBlockRegistry.CustomBlocks()
 }
