@@ -919,7 +919,7 @@ func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) 
 	if pos.OutOfBounds(w.Range()) {
 		return
 	}
-	w.scheduledUpdates.schedule(pos, b, delay)
+	w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the
@@ -1338,7 +1338,12 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	scheduled, savedTick := make([]scheduledTick, 0, len(c.ScheduledBlocks)), c.Tick
 	for _, t := range c.ScheduledBlocks {
 		bl := w.conf.Blocks.BlockByRuntimeIDOrAir(t.Block)
-		scheduled = append(scheduled, scheduledTick{pos: t.Pos, b: bl, bhash: BlockHash(bl), t: w.scheduledUpdates.currentTick + (t.Tick - savedTick)})
+		scheduled = append(scheduled, scheduledTick{
+			pos:   t.Pos,
+			b:     bl,
+			bhash: w.conf.Blocks.BlockHash(bl),
+			t:     w.scheduledUpdates.currentTick + (t.Tick - savedTick),
+		})
 	}
 	w.scheduledUpdates.add(scheduled)
 	return col
