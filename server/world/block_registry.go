@@ -15,27 +15,56 @@ import (
 	"github.com/segmentio/fasthash/fnv1"
 )
 
+// DefaultBlockRegistry is the default (vanilla) block registry used by Dragonfly when no custom registry is provided.
+//
+// The registry is populated during package init (block states + block implementations) and is finalized on first use
+// by `server.Config.New()`, `world.Config.New()`, or `mcdb.Config.Open()`. Callers that need custom blocks should
+// create a new registry using `NewBlockRegistry()` and pass it through config instead of mutating this value.
 var DefaultBlockRegistry BlockRegistry = &BlockRegistryImpl{
 	blockProperties: make(map[string]map[string]any),
 	stateRuntimeIDs: make(map[stateHash]uint32),
 	customBlocks:    make(map[string]CustomBlock),
 }
 
-// BlockRegistry interface is split into 2 because chunk package cant import world.Block
+// BlockRegistry converts between runtime IDs and block states/implementations.
+//
+// A BlockRegistry has a build/finalize lifecycle:
+//   - During setup, blocks and block states may be registered using RegisterBlockState/RegisterBlock.
+//   - After calling Finalize, the registry becomes immutable and is ready for use in chunk encoding/decoding and
+//     network serialization. RegisterBlock/RegisterBlockState will panic after finalization.
+//
+// The interface is split because the chunk package cannot import world.Block.
 type BlockRegistry interface {
 	chunk.BlockRegistry
+
+	// BlockByRuntimeID looks up a Block by runtime ID. If the runtime ID is unknown/out of range, ok is false.
 	BlockByRuntimeID(rid uint32) (Block, bool)
+	// BlockByRuntimeIDOrAir looks up a Block by runtime ID. If not found, an air block is returned.
 	BlockByRuntimeIDOrAir(rid uint32) Block
+	// BlockRuntimeID looks up the runtime ID of a previously registered Block.
 	BlockRuntimeID(block Block) (rid uint32)
+	// RegisterBlock registers a Block implementation for a previously registered block state.
 	RegisterBlock(block Block)
+	// RegisterBlockState registers a block state that blocks may encode to.
 	RegisterBlockState(blockState BlockState)
+	// CustomBlocks returns custom blocks registered in this registry, keyed by identifier.
 	CustomBlocks() map[string]CustomBlock
+	// BlockByName looks up a Block by full identifier and properties.
 	BlockByName(name string, properties map[string]any) (Block, bool)
+	// Blocks returns all blocks registered in the registry, indexed by runtime ID.
 	Blocks() []Block
+	// Air returns the air block registered in the registry.
 	Air() Block
+	// Clone returns an independent copy of the registry. If the source registry is finalized, the clone is also
+	// finalized. If the source is not finalized, the clone remains mutable.
 	Clone() BlockRegistry
+	// Finalize finalizes the registry, building derived lookup tables required for runtime usage. Finalize is
+	// idempotent.
 	Finalize()
+	// BitSize returns the number of bits used by BlockHash (depends on the number of registered blocks).
 	BitSize() int
+	// BlockHash returns a unique identifier of the block including the block states. The hash is internal to Dragonfly
+	// and is used for fast map lookups; it does not need to match any in-game identifiers.
 	BlockHash(b Block) uint64
 }
 
