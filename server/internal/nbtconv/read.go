@@ -175,7 +175,7 @@ func Block(m map[string]any, k string) world.Block {
 	if mk, ok := m[k].(map[string]any); ok {
 		name, _ := mk["name"].(string)
 		properties, _ := mk["states"].(map[string]any)
-		b, _ := world.DefaultBlockRegistry.BlockByName(name, properties)
+		b, _ := world.BlockByName(name, properties)
 		return b
 	}
 	return nil
