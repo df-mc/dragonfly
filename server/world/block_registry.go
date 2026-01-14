@@ -78,7 +78,7 @@ const (
 type blockInfo uint16
 
 func (b *blockInfo) set(flag uint16) {
-	*b ^= blockInfo(flag)
+	*b |= blockInfo(flag)
 }
 
 func (b blockInfo) get(flag uint16) bool {
@@ -86,11 +86,15 @@ func (b blockInfo) get(flag uint16) bool {
 }
 
 func (b *blockInfo) setLight(light uint8) {
-	*b ^= blockInfo(light) << 8
+	// Overwrite the 4-bit light emission field.
+	*b &^= blockInfo(0xF) << 8
+	*b |= blockInfo(light) << 8
 }
 
 func (b *blockInfo) setLightFilter(light uint8) {
-	*b ^= blockInfo(light) << 12
+	// Overwrite the 4-bit light filtering field.
+	*b &^= blockInfo(0xF) << 12
+	*b |= blockInfo(light) << 12
 }
 
 func (b blockInfo) getLight() uint8 {
@@ -317,6 +321,8 @@ func (br *BlockRegistryImpl) Finalize() {
 	br.hashes = intintmap.New(len(br.blocks), 0.999)
 	br.networkhashToRids = make(map[uint32]uint32, len(br.blocks))
 	br.stateRuntimeIDs = make(map[stateHash]uint32, len(br.blocks))
+	networkHashScratch := make([]byte, 0, 0xff)
+	foundAir := false
 
 	for idx, b := range br.blocks {
 		rid := uint32(idx)
@@ -324,6 +330,7 @@ func (br *BlockRegistryImpl) Finalize() {
 		h := stateHash{name: name, properties: hashProperties(properties)}
 		if name == "minecraft:air" {
 			br.airRID = rid
+			foundAir = true
 		}
 		if _, ok := br.stateRuntimeIDs[h]; ok {
 			panic(fmt.Sprintf("cannot register the same state twice (%s %+v)", name, properties))
@@ -331,6 +338,8 @@ func (br *BlockRegistryImpl) Finalize() {
 		br.stateRuntimeIDs[h] = rid
 
 		var info blockInfo
+		// Default to fully opaque. Blocks that implement lightDiffuser may override this (e.g., air -> 0, leaves -> 1-14).
+		info.setLightFilter(15)
 		if diffuser, ok := b.(lightDiffuser); ok {
 			info.setLightFilter(diffuser.LightDiffusionLevel())
 		}
@@ -358,7 +367,12 @@ func (br *BlockRegistryImpl) Finalize() {
 			}
 			br.hashes.Put(h, int64(rid))
 		}
-		br.networkhashToRids[networkBlockHash(name, properties)] = rid
+		var netHash uint32
+		netHash, networkHashScratch = networkBlockHash(name, properties, networkHashScratch)
+		br.networkhashToRids[netHash] = rid
+	}
+	if !foundAir {
+		panic("BlockRegistry.Finalize: no minecraft:air block state registered")
 	}
 }
 
@@ -447,18 +461,6 @@ func (br *BlockRegistryImpl) BlockByRuntimeID(rid uint32) (Block, bool) {
 	return br.blocks[rid], true
 }
 
-// BlockByNetworkID attempts to return a Block by its static network ID. If not found, the bool returned is
-// false. If found, the block is non-nil and the bool true.
-func (br *BlockRegistryImpl) BlockByNetworkID(rid uint32) (Block, bool) {
-	if !br.finalized {
-		panic("BlockRegistry.BlockByNetworkID called on non finalized BlockRegistry")
-	}
-	if rid >= uint32(len(br.blocks)) {
-		return br.Air(), false
-	}
-	return br.blocks[rid], true
-}
-
 // BlockByName attempts to return a Block by its name and properties. If not found, the bool returned is
 // false.
 func (br *BlockRegistryImpl) BlockByName(name string, properties map[string]any) (Block, bool) {
@@ -479,8 +481,14 @@ func (br *BlockRegistryImpl) CustomBlocks() map[string]CustomBlock {
 
 // Air returns an air block.
 func (br *BlockRegistryImpl) Air() Block {
-	b, _ := br.BlockByRuntimeID(br.airRID)
-	return b
+	if !br.finalized {
+		panic("BlockRegistry.Air called on non finalized BlockRegistry")
+	}
+	if br.airRID >= uint32(len(br.blocks)) {
+		// This should never happen for a valid registry (Finalize enforces air exists).
+		panic("BlockRegistry.Air: air runtime ID out of range")
+	}
+	return br.blocks[br.airRID]
 }
 
 var traitLookup = map[string][]any{
