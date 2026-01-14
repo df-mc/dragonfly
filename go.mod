@@ -5,7 +5,6 @@ go 1.24
 toolchain go1.24.4
 
 require (
-	github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/df-mc/goleveldb v1.1.9
 	github.com/df-mc/worldupgrader v1.0.20
