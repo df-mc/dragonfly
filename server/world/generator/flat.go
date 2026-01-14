@@ -31,7 +31,11 @@ func NewFlat(biome world.Biome, layers []world.Block) Flat {
 
 // GenerateChunk ...
 func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
-	br := chunk.BlockRegistry.(world.BlockRegistry)
+	br, ok := chunk.BlockRegistry.(world.BlockRegistry)
+	if !ok {
+		panic("flat generator requires a world.BlockRegistry implementation")
+	}
+
 	// Resolve runtime IDs once per chunk generation call. Runtime IDs are registry-specific,
 	// so this can't be done in NewFlat.
 	layerRIDs := make([]uint32, len(f.layers))
