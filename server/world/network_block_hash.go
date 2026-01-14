@@ -2,6 +2,7 @@ package world
 
 import (
 	"encoding/binary"
+	"fmt"
 	"hash/fnv"
 	"sort"
 )
@@ -81,7 +82,7 @@ func networkBlockHash(name string, properties map[string]any, scratch []byte) (u
 			writeString(k)
 			data = binary.LittleEndian.AppendUint32(data, uint32(v))
 		default:
-			panic("unhandled nbt type")
+			panic(fmt.Sprintf("unhandled nbt type: %T", v))
 		}
 	}
 	data = append(data, 0) // end
