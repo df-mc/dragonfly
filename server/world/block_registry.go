@@ -74,6 +74,14 @@ const (
 	blockFlagLiquidDisplacing
 )
 
+// blockInfo is a packed set of per-runtime-ID properties used in hot paths (lighting, ticking, fluid checks, etc.).
+//
+// Layout (uint16):
+// - bits 0..3: boolean flags (blockFlag*).
+// - bits 8..11: 4-bit light emission level (0-15).
+// - bits 12..15: 4-bit light filtering level (0-15).
+//
+// Values are computed during BlockRegistry.Finalize() and stored in BlockRegistryImpl.blockInfos, indexed by runtime ID.
 type blockInfo uint16
 
 func (b *blockInfo) set(flag uint16) {
