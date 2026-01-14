@@ -42,7 +42,12 @@ func (conf Config) Open(dir string) (*DB, error) {
 	if conf.Blocks == nil {
 		conf.Blocks = world.DefaultBlockRegistry
 	}
+
+	// Initialize the passed block registry and also initialize the default block registry which
+	// is used in some vanilla paths.
 	conf.Blocks.Finalize()
+	world.DefaultBlockRegistry.Finalize()
+
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
 	db := &DB{conf: conf, dir: dir, ldat: &leveldat.Data{}}

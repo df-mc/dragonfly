@@ -92,7 +92,12 @@ func (conf Config) New() *World {
 	if conf.Blocks == nil {
 		conf.Blocks = DefaultBlockRegistry
 	}
+
+	// Initialize the passed block registry and also initialize the default block registry which
+	// is used in some vanilla paths.
 	conf.Blocks.Finalize()
+	DefaultBlockRegistry.Finalize()
+
 	if conf.RandSource == nil {
 		t := uint64(time.Now().UnixNano())
 		conf.RandSource = rand.NewPCG(t, t)

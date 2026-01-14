@@ -161,7 +161,12 @@ func (conf Config) New() *Server {
 	if conf.Blocks == nil {
 		conf.Blocks = world.DefaultBlockRegistry
 	}
+
+	// Initialize the passed block registry and also initialize the default block registry which
+	// is used in some vanilla paths.
 	conf.Blocks.Finalize()
+	world.DefaultBlockRegistry.Finalize()
+
 	if !conf.DisableResourceBuilding {
 		if pack, ok := packbuilder.BuildResourcePack(conf.Blocks); ok {
 			conf.Resources = append(conf.Resources, pack)
