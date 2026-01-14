@@ -11,6 +11,8 @@ import (
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // NetworkDecode creates a new buffer and calls NetworkDecodeBuffer.
+//
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
 // noinspection GoUnusedExportedFunction
 func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, error) {
 	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r)
@@ -54,8 +56,10 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 	return c, nil
 }
 
-// DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
-// invalid, an error is returned.
+// DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was invalid,
+// an error is returned.
+//
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
 func DiskDecode(br BlockRegistry, data SerialisedData, r cube.Range) (*Chunk, error) {
 	c := New(br, r)
 

@@ -27,6 +27,7 @@ type Chunk struct {
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk's storages.
 func New(br BlockRegistry, r cube.Range) *Chunk {
 	n := (r.Height() >> 4) + 1
 	sub, biomes := make([]*SubChunk, n), make([]*PalettedStorage, n)

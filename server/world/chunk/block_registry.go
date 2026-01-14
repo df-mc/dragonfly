@@ -1,5 +1,9 @@
 package chunk
 
+// BlockRegistry provides the minimal block registry API required by the chunk package.
+//
+// Implementations must be safe for concurrent read access after construction/finalization, as chunks and chunk
+// encoding/decoding may happen from multiple goroutines.
 type BlockRegistry interface {
 	BlockCount() int
 	AirRuntimeID() uint32
