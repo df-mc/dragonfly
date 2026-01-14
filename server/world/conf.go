@@ -60,6 +60,9 @@ type Config struct {
 	// Entities is an EntityRegistry with all Entity types registered that may
 	// be added to the World.
 	Entities EntityRegistry
+
+	// Blocks is the BlockRegistry used by the World. If left nil, DefaultBlockRegistry is used.
+	Blocks BlockRegistry
 }
 
 // New creates a new World using the Config conf. The World returned will start
@@ -86,6 +89,10 @@ func (conf Config) New() *World {
 	if conf.RandomTickSpeed == 0 {
 		conf.RandomTickSpeed = 3
 	}
+	if conf.Blocks == nil {
+		conf.Blocks = DefaultBlockRegistry
+	}
+	conf.Blocks.Finalize()
 	if conf.RandSource == nil {
 		t := uint64(time.Now().UnixNano())
 		conf.RandSource = rand.NewPCG(t, t)

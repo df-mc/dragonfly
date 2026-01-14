@@ -155,7 +155,7 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 	defer s.swingingArm.Store(false)
 
 	held, _ := c.HeldItems()
-	if !held.Equal(stackToItem(data.HeldItem.Stack)) {
+	if !held.Equal(stackToItem(s.br, data.HeldItem.Stack)) {
 		s.conf.Log.Debug("process packet: PlayerAuthInput: UseItemTransaction: mismatch between actual held item and client held item")
 		return nil
 	}

@@ -16,8 +16,6 @@ const (
 )
 
 var (
-	// RuntimeIDToState must hold a function to convert a runtime ID to a name and its state properties.
-	RuntimeIDToState func(runtimeID uint32) (name string, properties map[string]any, found bool)
 	// pool is used to pool byte buffers used for encoding chunks.
 	pool = sync.Pool{
 		New: func() any {
@@ -68,7 +66,7 @@ func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
 	s := c.sub[ind]
 	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), uint8(ind + (c.r[0] >> 4))})
 	for _, storage := range s.storages {
-		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding)
+		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
 	}
 	sub := make([]byte, buf.Len())
 	_, _ = buf.Read(sub)

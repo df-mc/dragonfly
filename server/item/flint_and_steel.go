@@ -54,7 +54,7 @@ func (f FlintAndSteel) EncodeItem() (name string, meta int16) {
 
 // air returns an air block.
 func air() world.Block {
-	a, ok := world.BlockByName("minecraft:air", nil)
+	a, ok := world.DefaultBlockRegistry.BlockByName("minecraft:air", nil)
 	if !ok {
 		panic("could not find air block")
 	}
@@ -63,7 +63,7 @@ func air() world.Block {
 
 // fire returns a fire block.
 func fire() world.Block {
-	f, ok := world.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
+	f, ok := world.DefaultBlockRegistry.BlockByName("minecraft:fire", map[string]any{"age": int32(0)})
 	if !ok {
 		panic("could not find fire block")
 	}

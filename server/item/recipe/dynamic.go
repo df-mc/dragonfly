@@ -83,7 +83,7 @@ func (r DecoratedPotRecipe) Match(input []Item) (output []item.Stack, ok bool) {
 	// For the pot NBT: [back, left, front, right] based on facing direction
 
 	// Get a decorated pot block instance
-	pot, ok := world.BlockByName("minecraft:decorated_pot", map[string]any{"direction": int32(2)})
+	pot, ok := world.DefaultBlockRegistry.BlockByName("minecraft:decorated_pot", map[string]any{"direction": int32(2)})
 	if !ok {
 		return nil, false
 	}

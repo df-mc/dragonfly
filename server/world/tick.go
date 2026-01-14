@@ -157,7 +157,7 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
+				if rid := sub.Layers()[0].At(x, y, z); c.BlockRegistry.RandomTickBlock(rid) {
 					subY := (i + (tx.Range().Min() >> 4)) << 4
 					randomBlocks = append(randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
 

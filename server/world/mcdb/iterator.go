@@ -45,6 +45,7 @@ func newColumnIterator(db *DB, r *IteratorRange) *ColumnIterator {
 // Next moves the iterator to the next key/value pair.
 // It returns false if the iterator is exhausted.
 func (iter *ColumnIterator) Next() bool {
+	iter.current = nil
 	if iter.err != nil || !iter.dbIter.Next() {
 		iter.current = nil
 		iter.dim = nil
@@ -77,17 +78,20 @@ func (iter *ColumnIterator) Next() bool {
 		// multiple version keys.
 		return iter.Next()
 	}
-	iter.current, iter.err = iter.db.LoadColumn(iter.pos, iter.dim)
-	if iter.err != nil {
-		iter.err = fmt.Errorf("load chunk %v: %w", iter.pos, iter.err)
-		return false
-	}
 	iter.seen[key] = struct{}{}
 	return true
 }
 
 // Column returns the value of the current position/column pair, or nil if none.
 func (iter *ColumnIterator) Column() *chunk.Column {
+	if iter.current != nil {
+		return iter.current
+	}
+	iter.current, iter.err = iter.db.LoadColumn(iter.pos, iter.dim)
+	if iter.err != nil {
+		iter.err = fmt.Errorf("load chunk %v: %w", iter.pos, iter.err)
+		return nil
+	}
 	return iter.current
 }
 
