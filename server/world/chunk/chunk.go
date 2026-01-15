@@ -10,7 +10,7 @@ import (
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
-	// BlockRegistry is the block registry used for this chunk
+	// BlockRegistry is the block registry used for this chunk.
 	BlockRegistry BlockRegistry
 	// r holds the (vertical) range of the Chunk. It includes both the minimum and maximum coordinates.
 	r cube.Range
