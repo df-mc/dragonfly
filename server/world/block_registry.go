@@ -294,7 +294,6 @@ func (br *BlockRegistryImpl) RegisterBlock(b Block) {
 func (br *BlockRegistryImpl) RegisterBlockState(s BlockState) {
 	br.mu.Lock()
 	defer br.mu.Unlock()
-
 	br.registerBlockStateLocked(s)
 }
 
