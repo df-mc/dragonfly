@@ -127,7 +127,7 @@ type BlockRegistryImpl struct {
 	// blocks holds a list of all registered Blocks indexed by their runtime ID. Blocks that were not explicitly
 	// registered are of the type unknownBlock.
 	blocks []Block
-	// customBlocks maps a custom block's identifier to a slice of custom blocks.
+	// customBlocks maps a custom block's identifier to the custom block.
 	customBlocks map[string]CustomBlock
 
 	blockInfos []blockInfo
@@ -289,8 +289,8 @@ func (br *BlockRegistryImpl) RegisterBlock(b Block) {
 	}
 }
 
-// RegisterBlockState registers a blockStates to the states slice. The function panics if the properties the
-// blockState hold are invalid or if the blockState was already registered.
+// RegisterBlockState registers a BlockState to the registry. The function panics if the properties the
+// BlockState holds are invalid or if the BlockState was already registered.
 func (br *BlockRegistryImpl) RegisterBlockState(s BlockState) {
 	br.mu.Lock()
 	defer br.mu.Unlock()
