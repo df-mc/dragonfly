@@ -157,7 +157,7 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
+				if rid := sub.Layers()[0].At(x, y, z); c.BlockRegistry.RandomTickBlock(rid) {
 					subY := (i + (tx.Range().Min() >> 4)) << 4
 					randomBlocks = append(randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
 
@@ -302,9 +302,9 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 			continue
 		}
 		b := tx.Block(t.pos)
-		if ticker, ok := b.(ScheduledTicker); ok && BlockHash(b) == t.bhash {
+		if ticker, ok := b.(ScheduledTicker); ok && w.conf.Blocks.BlockHash(b) == t.bhash {
 			ticker.ScheduledTick(t.pos, tx, w.r)
-		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && BlockHash(liquid) == t.bhash {
+		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && w.conf.Blocks.BlockHash(liquid) == t.bhash {
 			if ticker, ok := liquid.(ScheduledTicker); ok {
 				ticker.ScheduledTick(t.pos, tx, w.r)
 			}
@@ -324,9 +324,9 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 // passed after a specific delay. A block update is only scheduled if no block
 // update with the same position and block type is already scheduled at a later
 // time than the newly scheduled update.
-func (queue *scheduledTickQueue) schedule(pos cube.Pos, b Block, delay time.Duration) {
+func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Block, delay time.Duration) {
 	resTick := queue.currentTick + int64(max(delay/(time.Second/20), 1))
-	index := scheduledTickIndex{pos: pos, hash: BlockHash(b)}
+	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(b)}
 	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
 		// Already have a tick scheduled for this position that will occur after
 		// the delay passed. Block updates can only be scheduled if they are

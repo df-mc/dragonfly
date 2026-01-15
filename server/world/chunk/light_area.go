@@ -3,27 +3,37 @@ package chunk
 import (
 	"bytes"
 	"container/list"
-	"github.com/df-mc/dragonfly/server/block/cube"
+
 	"iter"
 	"math"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // lightArea represents a square area of N*N chunks. It is used for light calculation specifically.
 type lightArea struct {
+	br           BlockRegistry
 	baseX, baseZ int
 	c            []*Chunk
 	w            int
 	r            cube.Range
 }
 
-// LightArea creates a lightArea with the lower corner of the lightArea at baseX and baseY. The length of the Chunk
+// LightArea creates a lightArea with the lower corner of the lightArea at baseX and baseZ. The length of the Chunk
 // slice must be a square of a number, so 1, 4, 9 etc.
-func LightArea(c []*Chunk, baseX, baseY int) *lightArea {
+func LightArea(c []*Chunk, baseX, baseZ int) *lightArea {
 	w := int(math.Sqrt(float64(len(c))))
 	if len(c) != w*w {
 		panic("area must have a square chunk area")
 	}
-	return &lightArea{c: c, w: w, baseX: baseX << 4, baseZ: baseY << 4, r: c[0].r}
+	return &lightArea{
+		br:    c[0].BlockRegistry,
+		c:     c,
+		w:     w,
+		baseX: baseX << 4,
+		baseZ: baseZ << 4,
+		r:     c[0].r,
+	}
 }
 
 // Fill executes the light 'filling' stage, where the lightArea is filled with light coming only from the
@@ -165,9 +175,9 @@ func (a *lightArea) iterSubChunk(f func(x, y, z int)) {
 	}
 }
 
-// highest looks up through the blocks at first and second layer at the cube.Pos passed and runs their runtime IDs
-// through the slice m passed, finding the highest value in this slice between those runtime IDs and returning it.
-func (a *lightArea) highest(pos cube.Pos, m []uint8) uint8 {
+// highest looks up through the blocks at first and second layer at the cube.Pos passed, calls the lightBlocking
+// function for each runtime ID, and returns the highest value.
+func (a *lightArea) highest(pos cube.Pos, lightBlocking func(rid uint32) uint8) uint8 {
 	x, y, z, sub := uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), a.sub(pos)
 	storages, l := sub.storages, len(sub.storages)
 
@@ -175,10 +185,10 @@ func (a *lightArea) highest(pos cube.Pos, m []uint8) uint8 {
 	case 0:
 		return 0
 	case 1:
-		return m[storages[0].At(x, y, z)]
+		return lightBlocking(storages[0].At(x, y, z))
 	default:
-		level := m[storages[0].At(x, y, z)]
-		if v := m[storages[1].At(x, y, z)]; v > level {
+		level := lightBlocking(storages[0].At(x, y, z))
+		if v := lightBlocking(storages[1].At(x, y, z)); v > level {
 			return v
 		}
 		return level

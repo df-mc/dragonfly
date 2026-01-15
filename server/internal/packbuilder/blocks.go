@@ -3,18 +3,19 @@ package packbuilder
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"image"
 	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
 	_ "unsafe" // Imported for compiler directives.
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // buildBlocks builds all the block-related files for the resource pack. This includes textures, geometries, language
 // entries and terrain texture atlas.
-func buildBlocks(dir string) (count int, lang []string) {
+func buildBlocks(reg world.BlockRegistry, dir string) (count int, lang []string) {
 	if err := os.MkdirAll(filepath.Join(dir, "models/blocks"), os.ModePerm); err != nil {
 		panic(err)
 	}
@@ -23,7 +24,7 @@ func buildBlocks(dir string) (count int, lang []string) {
 	}
 
 	textureData := make(map[string]any)
-	for identifier, blk := range world.CustomBlocks() {
+	for identifier, blk := range reg.CustomBlocks() {
 		b, ok := blk.(world.CustomBlockBuildable)
 		if !ok {
 			continue

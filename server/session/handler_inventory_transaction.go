@@ -57,17 +57,17 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		h.resendInventories(s)
 		return
 	case *protocol.UseItemOnEntityTransactionData:
-		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
+		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
 		return h.handleUseItemOnEntityTransaction(data, s, tx, c)
 	case *protocol.UseItemTransactionData:
-		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
+		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
 		return h.handleUseItemTransaction(data, s, c)
 	case *protocol.ReleaseItemTransactionData:
-		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
+		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
 		return h.handleReleaseItemTransaction(c)
@@ -96,12 +96,12 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 	)
 	for _, action := range pk.Actions {
 		if action.SourceType == protocol.InventoryActionSourceWorld && action.InventorySlot == 0 {
-			if old := stackToItem(action.OldItem.Stack); !old.Empty() {
+			if old := stackToItem(s.br, action.OldItem.Stack); !old.Empty() {
 				return fmt.Errorf("unexpected non-empty old item in transaction action: %#v", action.OldItem)
 			}
 			count = int(action.NewItem.Stack.Count)
 		} else if action.SourceType == protocol.InventoryActionSourceContainer && action.WindowID == protocol.WindowIDInventory {
-			if expected = stackToItem(action.OldItem.Stack); expected.Empty() {
+			if expected = stackToItem(s.br, action.OldItem.Stack); expected.Empty() {
 				return fmt.Errorf("unexpected empty old item in transaction action: %#v", action.OldItem)
 			}
 			slot = int(action.InventorySlot)
