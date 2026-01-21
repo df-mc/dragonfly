@@ -114,7 +114,8 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 
 // maxHeight ...
 func (b Bamboo) maxHeight(pos cube.Pos) int {
-	return 12 + int(b.Model().(model.Bamboo).OffsetSeed(cube.Pos{pos.X(), 0, pos.Z()})%5)
+	// TODO: The RNG algorithm does not match vanilla's.
+	return 12 + int(rand.NewPCG(uint64(pos.X()), uint64(pos.Z())).Uint64()%5)
 }
 
 // top ...
