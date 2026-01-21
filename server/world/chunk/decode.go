@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
 // StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
@@ -55,6 +56,104 @@ func NetworkDecodeBuffer(air uint32, buf *bytes.Buffer, count int, r cube.Range)
 		c.biomes[i] = b
 	}
 	return c, nil
+}
+
+// NetworkDecodeWithBlockNBTs decodes a network serialised Chunk and any trailing block entity NBT data.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeWithBlockNBTs(air uint32, data []byte, count int, r cube.Range) (*Chunk, []map[string]any, error) {
+	return NetworkDecodeBufferWithBlockNBTs(air, bytes.NewBuffer(data), count, r)
+}
+
+// NetworkDecodeBufferWithBlockNBTs decodes a network serialised Chunk and any trailing block entity NBT data.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeBufferWithBlockNBTs(air uint32, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, []map[string]any, error) {
+	c, err := NetworkDecodeBuffer(air, buf, count, r)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The LevelChunk payload may include extra data right after biomes. If there are no remaining bytes,
+	// there are no extras to decode.
+	borderBlocks, err := buf.ReadByte()
+	if err != nil {
+		// bytes.Buffer only errors on ReadByte when empty: treat that as "no extras".
+		if buf.Len() == 0 {
+			return c, nil, nil
+		}
+		return nil, nil, fmt.Errorf("error reading border blocks byte: %w", err)
+	}
+	if borderBlocks > 0 {
+		skipped := buf.Next(int(borderBlocks))
+		if len(skipped) != int(borderBlocks) {
+			return nil, nil, fmt.Errorf("not enough border blocks data present: expected %d bytes, got %d", borderBlocks, len(skipped))
+		}
+	}
+
+	blockNBTs, err := DecodeBlockNBTs(buf)
+	if err != nil {
+		return nil, nil, err
+	}
+	return c, blockNBTs, nil
+}
+
+// NetworkDecodeWithBlockEntities decodes a network serialised Chunk and any trailing block entities, returning them in
+// the canonical chunk.BlockEntity type.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeWithBlockEntities(air uint32, data []byte, count int, r cube.Range) (*Chunk, []BlockEntity, error) {
+	return NetworkDecodeBufferWithBlockEntities(air, bytes.NewBuffer(data), count, r)
+}
+
+// NetworkDecodeBufferWithBlockEntities decodes a network serialised Chunk and any trailing block entities, returning
+// them in the canonical chunk.BlockEntity type.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeBufferWithBlockEntities(air uint32, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, []BlockEntity, error) {
+	c, blockNBTs, err := NetworkDecodeBufferWithBlockNBTs(air, buf, count, r)
+	if err != nil {
+		return nil, nil, err
+	}
+	blockEntities := make([]BlockEntity, 0, len(blockNBTs))
+	for _, blockNBT := range blockNBTs {
+		x, okX := blockNBT["x"].(int32)
+		y, okY := blockNBT["y"].(int32)
+		z, okZ := blockNBT["z"].(int32)
+		// If x/y/z are missing (or have an unexpected type), keep the entry out: it can't be indexed into the world.
+		if !okX || !okY || !okZ {
+			continue
+		}
+		blockEntities = append(blockEntities, BlockEntity{
+			Pos:  cube.Pos{int(x), int(y), int(z)},
+			Data: blockNBT,
+		})
+	}
+	return c, blockEntities, nil
+}
+
+// DecodeBlockNBTs decodes a list of NBT compounds from buf until it is fully consumed.
+// noinspection GoUnusedExportedFunction
+func DecodeBlockNBTs(buf *bytes.Buffer) ([]map[string]any, error) {
+	if buf.Len() == 0 {
+		return nil, nil
+	}
+
+	var blockNBTs []map[string]any
+
+	dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
+	dec.AllowZero = true
+	for buf.Len() > 0 {
+		blockNBT := make(map[string]any)
+		if err := dec.Decode(&blockNBT); err != nil {
+			return nil, err
+		}
+		if len(blockNBT) > 0 {
+			blockNBTs = append(blockNBTs, blockNBT)
+		}
+	}
+
+	return blockNBTs, nil
 }
 
 // DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
