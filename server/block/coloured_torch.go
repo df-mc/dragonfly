@@ -70,7 +70,7 @@ func (t ColouredTorch) HasLiquidDrops() bool {
 
 // EncodeItem ...
 func (t ColouredTorch) EncodeItem() (name string, meta int16) {
-	return "minecraft:colored_" + t.Colour.String() + "_torch", 0
+	return "minecraft:colored_torch_" + t.Colour.String(), 0
 }
 
 // EncodeBlock ...
@@ -84,7 +84,7 @@ func (t ColouredTorch) EncodeBlock() (name string, properties map[string]any) {
 		face = t.Facing.String()
 	}
 
-	return "minecraft:colored_" + t.Colour.String() + "_torch", map[string]any{"torch_facing_direction": face}
+	return "minecraft:colored_torch_" + t.Colour.String(), map[string]any{"torch_facing_direction": face}
 }
 
 // allColouredTorches ...
