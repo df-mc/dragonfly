@@ -13,6 +13,7 @@ type Bamboo struct {
 	Thick bool
 }
 
+// BBox ...
 func (b Bamboo) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
 	width := 2.0
 	if b.Thick {
@@ -27,6 +28,7 @@ func (b Bamboo) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
 	return []cube.BBox{full.ExtendTowards(cube.FaceSouth, -inset).ExtendTowards(cube.FaceEast, -inset).GrowVec3(mgl64.Vec3{offsetX, 0, offsetZ})}
 }
 
+// OffsetSeed returns a seed based on the position of the bamboo to offset its model.
 func (b Bamboo) OffsetSeed(pos cube.Pos) int {
 	p1 := pos.Z() * 116129781
 	p2 := pos.X() * 3129871
@@ -34,6 +36,7 @@ func (b Bamboo) OffsetSeed(pos cube.Pos) int {
 	return (((xord * 42317861) + 11) * xord) & math.MaxUint32
 }
 
+// FaceSolid ...
 func (b Bamboo) FaceSolid(pos cube.Pos, face cube.Face, s world.BlockSource) bool {
 	return false
 }

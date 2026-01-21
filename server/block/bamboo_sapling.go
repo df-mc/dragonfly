@@ -22,6 +22,7 @@ func (b BambooSapling) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return b.grow(pos, tx)
 }
 
+// NeighbourUpdateTick ...
 func (b BambooSapling) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	down := tx.Block(pos.Side(cube.FaceDown))
 	if supportsVegetation(b, down) {
