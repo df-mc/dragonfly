@@ -8,7 +8,7 @@ import (
 )
 
 // EnchantingTable is a block that allows players to spend their experience point levels to enchant tools, weapons,
-// books, armor, and certain other items.
+// books, armour, and certain other items.
 type EnchantingTable struct {
 	transparent
 	bassDrum

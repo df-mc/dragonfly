@@ -26,20 +26,20 @@ func (s *Session) ViewChunk(pos world.ChunkPos, dim world.Dimension, blockEntiti
 }
 
 // ViewSubChunks ...
-func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.SubChunkOffset, tx *world.Tx) {
+func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.SubChunkOffset, tx *world.Tx) {
 	r := tx.Range()
 
 	entries := make([]protocol.SubChunkEntry, 0, len(offsets))
 	transaction := make(map[uint64]struct{})
 	for _, offset := range offsets {
-		ind := int16(center.Y()) + int16(offset[1]) - int16(r[0])>>4
+		ind := int16(centre.Y()) + int16(offset[1]) - int16(r[0])>>4
 		if ind < 0 || ind > int16(r.Height()>>4) {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
 			continue
 		}
 		col, ok := s.chunkLoader.Chunk(world.ChunkPos{
-			center.X() + int32(offset[0]),
-			center.Z() + int32(offset[2]),
+			centre.X() + int32(offset[0]),
+			centre.Z() + int32(offset[2]),
 		})
 		if !ok {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
@@ -55,7 +55,7 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.Sub
 	dim, _ := world.DimensionID(tx.World().Dimension())
 	s.writePacket(&packet.SubChunk{
 		Dimension:       int32(dim),
-		Position:        protocol.SubChunkPos(center),
+		Position:        protocol.SubChunkPos(centre),
 		CacheEnabled:    s.conn.ClientCacheEnabled(),
 		SubChunkEntries: entries,
 	})
