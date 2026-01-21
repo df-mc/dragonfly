@@ -66,6 +66,12 @@ func (chunk *Chunk) BlockEntityData(pos cube.Pos) (map[string]any, bool) {
 
 // SetBlockEntityData stores raw block entity NBT at the position passed. If data is nil, the entry is deleted.
 func (chunk *Chunk) SetBlockEntityData(pos cube.Pos, data map[string]any) {
+	// Only Y is relevant for a chunk's range check. (cube.Pos.OutOfBounds only checks Y.)
+	// We allow deletes regardless of bounds, but ignore inserts that are out of range.
+	if data != nil && pos.OutOfBounds(chunk.r) {
+		return
+	}
+
 	chunk.blockEntitiesMu.Lock()
 	defer chunk.blockEntitiesMu.Unlock()
 	if data == nil { // Clear block entities if nil data is passed
