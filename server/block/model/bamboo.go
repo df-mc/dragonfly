@@ -21,18 +21,18 @@ func (b Bamboo) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
 	}
 	inset := 1.0 - (width / 16.0)
 
-	seed := b.OffsetSeed(pos)
+	seed := b.OffsetSeed(cube.Pos{pos.X(), 0, pos.Z()})
 	offsetX := float64((seed%12)+1) / 16.0
 	offsetZ := float64(((seed>>8)%12)+1) / 16.0
 
-	return []cube.BBox{full.ExtendTowards(cube.FaceSouth, -inset).ExtendTowards(cube.FaceEast, -inset).GrowVec3(mgl64.Vec3{offsetX, 0, offsetZ})}
+	return []cube.BBox{full.ExtendTowards(cube.FaceSouth, -inset).ExtendTowards(cube.FaceEast, -inset).Translate(mgl64.Vec3{offsetX, 0, offsetZ})}
 }
 
 // OffsetSeed returns a seed based on the position of the bamboo to offset its model.
-func (b Bamboo) OffsetSeed(pos cube.Pos) int {
-	p1 := pos.Z() * 116129781
-	p2 := pos.X() * 3129871
-	xord := (p1 ^ p2) ^ pos.Y()
+func (b Bamboo) OffsetSeed(pos cube.Pos) uint32 {
+	p1 := uint32(pos.Z()) * 116129781
+	p2 := uint32(pos.X()) * 3129871
+	xord := (p1 ^ p2) ^ uint32(pos.Y())
 	return (((xord * 42317861) + 11) * xord) & math.MaxUint32
 }
 

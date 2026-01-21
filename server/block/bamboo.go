@@ -1,6 +1,7 @@
 package block
 
 import (
+	"math"
 	"math/rand/v2"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 // Bamboo is a versatile, fast-growing plant found primarily in jungles.
 type Bamboo struct {
 	transparent
-	sourceWaterDisplacer
 	bass
 
 	Ready    bool
@@ -35,7 +35,7 @@ func (b Bamboo) EncodeItem() (name string, meta int16) {
 // BoneMeal ...
 func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	top := b.top(pos, tx)
-	return tx.Block(top).(Bamboo).grow(top, rand.IntN(2)+1, tx)
+	return tx.Block(top).(Bamboo).grow(top, rand.IntN(2)+1, b.maxHeight(top), tx)
 }
 
 // BreakInfo ...
@@ -64,7 +64,7 @@ func (b Bamboo) Model() world.BlockModel {
 // RandomTick ...
 func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if b.Ready {
-		if tx.Light(pos) < 9 || !b.grow(pos, 1, tx) {
+		if tx.Light(pos) < 9 || !b.grow(pos, 1, b.maxHeight(pos), tx) {
 			b.Ready = false
 			tx.SetBlock(pos, b, nil)
 		}
@@ -93,7 +93,7 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 		switch x := tx.Block(pos).(type) {
 		case Bamboo:
 			top := x.top(pos, tx)
-			return b.grow(top, 1, tx)
+			return b.grow(top, 1, math.MaxInt, tx)
 		case BambooSapling:
 			return x.grow(pos, tx)
 		default:
@@ -109,12 +109,12 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 		return false
 	}
 	place(tx, pos, s, user, ctx)
-	return true
+	return placed(ctx)
 }
 
 // maxHeight ...
 func (b Bamboo) maxHeight(pos cube.Pos) int {
-	return 12 + (b.Model().(model.Bamboo).OffsetSeed(cube.Pos{pos.X(), 0, pos.Z()}) % 5)
+	return 12 + int(b.Model().(model.Bamboo).OffsetSeed(cube.Pos{pos.X(), 0, pos.Z()})%5)
 }
 
 // top ...
@@ -130,12 +130,12 @@ func (b Bamboo) top(pos cube.Pos, tx *world.Tx) (top cube.Pos) {
 }
 
 // grow ...
-func (b Bamboo) grow(pos cube.Pos, amount int, tx *world.Tx) bool {
+func (b Bamboo) grow(pos cube.Pos, amount int, maxHeight int, tx *world.Tx) bool {
 	if !replaceableWith(tx, pos.Side(cube.FaceUp), b) {
 		return false
 	}
 
-	height, maxHeight := 1, b.maxHeight(pos)
+	height := 1
 	for {
 		if _, ok := tx.Block(pos.Sub(cube.Pos{0, height})).(Bamboo); !ok {
 			break

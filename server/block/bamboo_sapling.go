@@ -11,7 +11,6 @@ import (
 type BambooSapling struct {
 	empty
 	transparent
-	sourceWaterDisplacer
 	bass
 
 	Ready bool
@@ -47,6 +46,11 @@ func (b BambooSapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 // BreakInfo ...
 func (b BambooSapling) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, axeEffective, oneOf(Bamboo{}))
+}
+
+// HasLiquidDrops ...
+func (b BambooSapling) HasLiquidDrops() bool {
+	return true
 }
 
 // EncodeBlock ...
