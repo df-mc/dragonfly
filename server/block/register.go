@@ -138,6 +138,7 @@ func init() {
 	registerAll(allCampfires())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
+	registerAll(allColouredTorches())
 	registerAll(allIronChains())
 	registerAll(allChests())
 	registerAll(allCocoaBeans())
@@ -492,6 +493,9 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
+	}
+	for _, c := range TorchColours() {
+		world.RegisterItem(ColouredTorch{Colour: c})
 	}
 }
 
