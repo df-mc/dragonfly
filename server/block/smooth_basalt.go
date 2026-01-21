@@ -18,5 +18,5 @@ func (SmoothBasalt) EncodeItem() (name string, meta int16) {
 
 // BreakInfo ...
 func (s SmoothBasalt) BreakInfo() BreakInfo {
-	return newBreakInfo(1.25, alwaysHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(21)
+	return newBreakInfo(1.25, pickaxeHarvestable, pickaxeEffective, oneOf(s)).withBlastResistance(21)
 }
