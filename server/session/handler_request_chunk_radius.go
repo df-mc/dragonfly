@@ -17,7 +17,7 @@ func (*RequestChunkRadiusHandler) Handle(p packet.Packet, s *Session, tx *world.
 	}
 	s.chunkRadius = pk.ChunkRadius
 
-	s.chunkLoader.ChangeRadius(tx, int(pk.ChunkRadius))
+	s.chunkLoader.ChangeStrategy(tx, world.LoadRadius{Radius: int(pk.ChunkRadius)})
 
 	s.writePacket(&packet.ChunkRadiusUpdated{ChunkRadius: s.chunkRadius})
 	return nil
