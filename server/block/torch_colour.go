@@ -9,22 +9,22 @@ type colouredTorch uint8
 
 // TorchColourPurple ...
 func TorchColourPurple() TorchColour {
-	return TorchColour{colouredTorch(0)}
+	return TorchColour{0}
 }
 
 // TorchColourBlue ...
 func TorchColourBlue() TorchColour {
-	return TorchColour{colouredTorch(1)}
+	return TorchColour{1}
 }
 
 // TorchColourGreen ...
 func TorchColourGreen() TorchColour {
-	return TorchColour{colouredTorch(2)}
+	return TorchColour{2}
 }
 
 // TorchColourRed ...
 func TorchColourRed() TorchColour {
-	return TorchColour{colouredTorch(3)}
+	return TorchColour{3}
 }
 
 // Name ...
