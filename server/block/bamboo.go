@@ -27,6 +27,7 @@ func (b Bamboo) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Millisecond * 2500)
 }
 
+// EncodeItem ...
 func (b Bamboo) EncodeItem() (name string, meta int16) {
 	return "minecraft:bamboo", 0
 }
@@ -73,6 +74,7 @@ func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	}
 }
 
+// NeighbourUpdateTick ...
 func (b Bamboo) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	down := tx.Block(pos.Side(cube.FaceDown))
 	switch down.(type) {
