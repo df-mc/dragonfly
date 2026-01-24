@@ -213,7 +213,11 @@ func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum comman
 // resendCommands resends all commands that a Session has access to if the map of runnable commands passed does not
 // match with the commands that the Session is currently allowed to execute.
 // True is returned if the commands were resent.
-func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable, co Controllable, softEnums map[string]struct{}) (map[string]map[int]cmd.Runnable, bool) {
+func (s *Session) resendCommands(
+	before map[string]map[int]cmd.Runnable,
+	co Controllable,
+	softEnums map[string]struct{},
+) (map[string]map[int]cmd.Runnable, bool) {
 	commands := cmd.Commands()
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
@@ -267,7 +271,13 @@ func (s *Session) enums(co Controllable) (map[string]cmd.Enum, map[string][]stri
 // resendEnums checks the options of the enums passed against the values that were previously recorded. If they do not
 // match, and the enum is in softEnums, the enum is resent via UpdateSoftEnum. If the enum is not yet in softEnums,
 // it is added and the full AvailableCommands packet is resent.
-func (s *Session) resendEnums(enums map[string]cmd.Enum, before map[string][]string, softEnums map[string]struct{}, r map[string]map[int]cmd.Runnable, c Controllable) map[string]map[int]cmd.Runnable {
+func (s *Session) resendEnums(
+	enums map[string]cmd.Enum,
+	before map[string][]string,
+	softEnums map[string]struct{},
+	r map[string]map[int]cmd.Runnable,
+	c Controllable,
+) map[string]map[int]cmd.Runnable {
 	for name, enum := range enums {
 		valuesBefore := before[name]
 		values := enum.Options(c)
