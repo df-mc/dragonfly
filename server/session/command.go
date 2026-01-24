@@ -98,7 +98,16 @@ func (s *Session) sendAvailableCommands(co Controllable, softEnums map[string]st
 				} else {
 					t |= protocol.CommandArgValid
 					if len(enum.Options) > 0 || enum.Type != "" {
+						// cmd.Enum parameters are dynamic by nature (their options can vary per Source and over time),
+						// so they must be encoded as soft enums from the first AvailableCommands packet.
+						_, isCmdEnum := paramInfo.Value.(cmd.Enum)
+						if isCmdEnum && softEnums != nil {
+							softEnums[enum.Type] = struct{}{}
+						}
 						_, dynamic := softEnums[enum.Type]
+						if isCmdEnum {
+							dynamic = true
+						}
 						if !dynamic {
 							index, ok := enumIndices[enum.Type]
 							if !ok {
