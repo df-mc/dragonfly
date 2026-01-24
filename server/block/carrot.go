@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Carrot is a crop that can be consumed raw.
@@ -63,11 +64,13 @@ func (c Carrot) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 
 // BreakInfo ...
 func (c Carrot) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if c.Growth < 7 {
 			return []item.Stack{item.NewStack(c, 1)}
 		}
-		return []item.Stack{item.NewStack(c, rand.IntN(4)+2)}
+		fortune := fortuneLevel(enchantments)
+		count := rand.IntN(fortune+1) + 1 + fortuneBinomial(3+fortune)
+		return []item.Stack{item.NewStack(c, count)}
 	})
 }
 

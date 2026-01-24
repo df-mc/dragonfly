@@ -1,15 +1,16 @@
 package block
 
 import (
+	"math"
+	"math/rand/v2"
+	"slices"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
-	"math"
-	"math/rand/v2"
-	"slices"
-	"time"
 )
 
 // Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks
@@ -233,6 +234,122 @@ func silkTouchOnlyDrop(it world.Item) func(t item.Tool, enchantments []item.Ench
 			return []item.Stack{item.NewStack(it, 1)}
 		}
 		return nil
+	}
+}
+
+// fortuneLevel returns the level of the fortune enchantment in enchantments, or 0 if it isn't present.
+func fortuneLevel(enchantments []item.Enchantment) int {
+	index := slices.IndexFunc(enchantments, func(i item.Enchantment) bool {
+		return i.Type() == enchantment.Fortune
+	})
+	if index == -1 {
+		return 0
+	}
+	return enchantments[index].Level()
+}
+
+// fortuneOreCount computes the drop count for an ore after applying the Fortune ore multiplier to a given base
+// drop count. The Fortune enchantment has a 2/(level + 2) chance of applying an integer bonus multiplier between
+// 2x up to (level + 1)x to the drop count.
+func fortuneOreCount(base int, enchantments []item.Enchantment) int {
+	fortune := fortuneLevel(enchantments)
+	if fortune == 0 || rand.IntN(fortune+2) < 2 {
+		return base
+	}
+	multiplier := rand.IntN(fortune) + 2
+	return base * multiplier
+}
+
+// fortuneDiscreteCount computes the drop count for a block with a discrete uniform distribution. A drop count is
+// chosen with equal likelihood between min and max. Every level of Fortune will increase the max by one. The final
+// drop count is then limited by the cap count.
+func fortuneDiscreteCount(minCount, maxCount, capCount int, enchantments []item.Enchantment) int {
+	fortune := fortuneLevel(enchantments)
+	maxWithFortune := maxCount + fortune
+	return min(capCount, rand.IntN(maxWithFortune-minCount+1)+minCount)
+}
+
+// fortuneBinomial computes the binomial distribution B(n=attempts, p=8/15) for crop seed drops.
+func fortuneBinomial(attempts int) int {
+	count := 0
+	for range attempts {
+		if rand.IntN(15) < 8 {
+			count++
+		}
+	}
+	return count
+}
+
+// oreDrops returns a drop function for ores that drop a single item, such as diamond. Silk touch tools will
+// cause the ore block itself to always drop. Otherwise, a single item is dropped. The Fortune enchantment has a
+// 2/(level + 2) chance of applying an integer bonus multiplier between 2x up to (level + 1)x to the drop count.
+func oreDrops(drop, block world.Item) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if hasSilkTouch(enchantments) {
+			return []item.Stack{item.NewStack(block, 1)}
+		}
+		return []item.Stack{item.NewStack(drop, fortuneOreCount(1, enchantments))}
+	}
+}
+
+// multiOreDrops returns a drop function for ores that drop multiple items, such as copper. Silk touch tools will
+// cause the ore block itself to always drop. Otherwise, a drop count is chosen with equal likelihood between min
+// and max. The Fortune enchantment has a 2/(level + 2) chance of applying an integer bonus multiplier between 2x
+// up to (level + 1)x to the drop count.
+func multiOreDrops(drop, block world.Item, minCount, maxCount int) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if hasSilkTouch(enchantments) {
+			return []item.Stack{item.NewStack(block, 1)}
+		}
+		baseCount := rand.IntN(maxCount-minCount+1) + minCount
+		return []item.Stack{item.NewStack(drop, fortuneOreCount(baseCount, enchantments))}
+	}
+}
+
+// discreteDrops returns a drop function for blocks with discrete uniform random drops, such as glowstone or melon
+// blocks. Silk touch tools will cause the block itself to always drop. Otherwise, a drop count is chosen with equal
+// likelihood between min and max. Every level of Fortune will increase the max by one. The final drop count is then
+// limited by the cap count.
+func discreteDrops(drop, block world.Item, minCount, maxCount, capCount int) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if hasSilkTouch(enchantments) {
+			return []item.Stack{item.NewStack(block, 1)}
+		}
+		return []item.Stack{item.NewStack(drop, fortuneDiscreteCount(minCount, maxCount, capCount, enchantments))}
+	}
+}
+
+// grassDrops returns a drop function for grass/fern blocks. Shears or silk touch tools will cause the grass block
+// itself to always drop. Otherwise, there is a 12.5% chance of dropping a wheat seed. Every level of Fortune will
+// increase the max drop count by 2, with each possible drop count being equally likely.
+func grassDrops(grass world.Item) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
+			return []item.Stack{item.NewStack(grass, 1)}
+		}
+		if rand.Float32() < 0.125 {
+			count := 1
+			if fortune := fortuneLevel(enchantments); fortune > 0 {
+				count += rand.IntN(fortune*2 + 1)
+			}
+			return []item.Stack{item.NewStack(WheatSeeds{}, count)}
+		}
+		return nil
+	}
+}
+
+// cropSeedDrops returns a drop function for wheat/beetroot seeds.
+// Uses binomial distribution B(3+fortune, 8/15), seeds may not drop.
+func cropSeedDrops(seed, crop world.Item, growth int) func(item.Tool, []item.Enchantment) []item.Stack {
+	return func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if growth < 7 {
+			return []item.Stack{item.NewStack(seed, 1)}
+		}
+		seedCount := fortuneBinomial(3 + fortuneLevel(enchantments))
+		if seedCount == 0 {
+			return []item.Stack{item.NewStack(crop, 1)}
+		}
+		return []item.Stack{item.NewStack(crop, 1), item.NewStack(seed, seedCount)}
 	}
 }
 

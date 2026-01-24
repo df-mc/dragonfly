@@ -2,12 +2,13 @@ package session
 
 import (
 	"fmt"
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math/rand/v2"
 )
 
 const (
@@ -266,20 +267,4 @@ func mergeEnchantments(input item.Stack, material item.Stack, result item.Stack,
 		}
 	}
 	return result, hasCompatible, hasIncompatible, cost
-}
-
-// max returns the max of two integers.
-func max(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-// min returns the min of two integers.
-func min(x, y int) int {
-	if x > y {
-		return y
-	}
-	return x
 }

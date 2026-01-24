@@ -21,7 +21,7 @@ func init() {
 	item.RegisterEnchantment(15, Efficiency)
 	item.RegisterEnchantment(16, SilkTouch)
 	item.RegisterEnchantment(17, Unbreaking)
-	// TODO: (18) Fortune.
+	item.RegisterEnchantment(18, Fortune)
 	item.RegisterEnchantment(19, Power)
 	item.RegisterEnchantment(20, Punch)
 	item.RegisterEnchantment(21, Flame)

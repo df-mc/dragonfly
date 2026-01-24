@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
@@ -103,13 +104,20 @@ func (l Leaves) BreakInfo() BreakInfo {
 		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(l, 1)}
 		}
+		fortune := fortuneLevel(enchantments)
 		var drops []item.Stack
+
 		// TODO: Drop saplings.
-		if rand.Float64() < 0.02 {
+
+		stickChances := []float64{0.02, 0.022222222, 0.025, 0.033333333}
+		if rand.Float64() < stickChances[min(fortune, 3)] {
 			drops = append(drops, item.NewStack(item.Stick{}, rand.IntN(2)+1))
 		}
-		if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 0.005 {
-			drops = append(drops, item.NewStack(item.Apple{}, 1))
+		if l.Wood == OakWood() || l.Wood == DarkOakWood() {
+			appleChances := []float64{0.005, 0.005555556, 0.00625, 0.008333333}
+			if rand.Float64() < appleChances[min(fortune, 3)] {
+				drops = append(drops, item.NewStack(item.Apple{}, 1))
+			}
 		}
 		return drops
 	})

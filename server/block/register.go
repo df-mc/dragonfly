@@ -94,6 +94,7 @@ func init() {
 	world.RegisterBlock(SeaLantern{})
 	world.RegisterBlock(Shroomlight{})
 	world.RegisterBlock(SmithingTable{})
+	world.RegisterBlock(SmoothBasalt{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(SoulSand{})
 	world.RegisterBlock(SoulSoil{})
@@ -126,6 +127,7 @@ func init() {
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
+	registerAll(allBeds())
 	registerAll(allBeetroot())
 	registerAll(allBlackstone())
 	registerAll(allBlastFurnaces())
@@ -347,6 +349,7 @@ func init() {
 	world.RegisterItem(Shroomlight{})
 	world.RegisterItem(SmithingTable{})
 	world.RegisterItem(Smoker{})
+	world.RegisterItem(SmoothBasalt{})
 	world.RegisterItem(Snow{})
 	world.RegisterItem(SoulSand{})
 	world.RegisterItem(SoulSoil{})
@@ -394,6 +397,7 @@ func init() {
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
+		world.RegisterItem(Bed{Colour: c})
 		world.RegisterItem(Carpet{Colour: c})
 		world.RegisterItem(ConcretePowder{Colour: c})
 		world.RegisterItem(Concrete{Colour: c})

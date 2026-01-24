@@ -554,13 +554,15 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	logger.Debug("Loading dimension...")
 
 	conf := world.Config{
-		Log:             logger,
-		Dim:             dim,
-		Provider:        srv.conf.WorldProvider,
-		Generator:       srv.conf.Generator(dim),
-		RandomTickSpeed: srv.conf.RandomTickSpeed,
-		ReadOnly:        srv.conf.ReadOnlyWorld,
-		Entities:        srv.conf.Entities,
+		Log:                 logger,
+		Dim:                 dim,
+		Provider:            srv.conf.WorldProvider,
+		Generator:           srv.conf.Generator(dim),
+		RandomTickSpeed:     srv.conf.RandomTickSpeed,
+		ReadOnly:            srv.conf.ReadOnlyWorld,
+		SaveInterval:        srv.conf.SaveInterval,
+		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		Entities:            srv.conf.Entities,
 		PortalDestination: func(dim world.Dimension) *world.World {
 			if dim == world.Nether {
 				return *nether

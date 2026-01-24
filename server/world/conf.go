@@ -38,6 +38,11 @@ type Config struct {
 	// By default, SaveInterval is set to 10 minutes. Setting SaveInterval to
 	// a negative number disables automatic saving entirely.
 	SaveInterval time.Duration
+	// ChunkUnloadInterval specifies how often unused chunks should be unloaded
+	// from memory when no longer in use. By default, this is set to 2 minutes.
+	// ChunkUnloadInterval should not be used to prevent chunks from unloading
+	// altogether. This should be done using a Loader with a custom Viewer.
+	ChunkUnloadInterval time.Duration
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per
 	// sub chunk, so the default value is 3. Setting this value to -1 or lower
@@ -71,6 +76,9 @@ func (conf Config) New() *World {
 	}
 	if conf.SaveInterval == 0 {
 		conf.SaveInterval = time.Minute * 10
+	}
+	if conf.ChunkUnloadInterval <= 0 {
+		conf.ChunkUnloadInterval = time.Minute * 2
 	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}

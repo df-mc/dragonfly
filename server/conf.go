@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"time"
 	_ "unsafe"
 
 	"github.com/df-mc/dragonfly/server/block"
@@ -101,6 +102,17 @@ type Config struct {
 	// left as 0, the RandomTickSpeed will default to a speed of 3 blocks per
 	// sub chunk per tick (normal ticking speed).
 	RandomTickSpeed int
+	// SaveInterval specifies how often a World should be automatically saved to
+	// disk. This includes chunks, entities and level.dat data. If ReadOnlyWorld
+	// is set to true, changing SaveInterval will have no effect.
+	// By default, SaveInterval is set to 10 minutes. Setting SaveInterval to
+	// a negative number disables automatic saving entirely.
+	SaveInterval time.Duration
+	// ChunkUnloadInterval specifies how often unused chunks should be unloaded
+	// from memory when no longer in use. By default, this is set to 2 minutes.
+	// ChunkUnloadInterval should not be used to prevent chunks from unloading
+	// altogether. This should be done using a Loader with a custom Viewer.
+	ChunkUnloadInterval time.Duration
 	// Entities is a world.EntityRegistry with all entity types registered that
 	// may be added to the Server's worlds. If no entity types are registered,
 	// Entities will be set to entity.DefaultRegistry.
