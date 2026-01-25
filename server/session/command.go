@@ -48,6 +48,15 @@ type translation interface {
 // BuildAvailableCommands builds an AvailableCommands packet for the commands passed.
 // The input map may contain aliases. Only commands that the Source can execute are included.
 func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) *packet.AvailableCommands {
+	pk, _ := BuildAvailableCommandsForSource(commands, src)
+	return pk
+}
+
+// BuildAvailableCommandsForSource builds an AvailableCommands packet and the runnable command map for the Source
+// passed. The input map may contain aliases.
+func BuildAvailableCommandsForSource(commands map[string]cmd.Command, src cmd.Source) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
+	m := make(map[string]map[int]cmd.Runnable, len(commands))
+
 	pk := &packet.AvailableCommands{}
 
 	var enums []commandEnum
@@ -63,7 +72,10 @@ func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) *pa
 			// Don't add duplicate entries for aliases.
 			continue
 		}
-		if run := c.Runnables(src); len(run) == 0 {
+
+		if run := c.Runnables(src); len(run) > 0 {
+			m[alias] = run
+		} else {
 			continue
 		}
 
@@ -154,21 +166,15 @@ func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) *pa
 		}
 		pk.Enums = append(pk.Enums, protoEnum)
 	}
-	return pk
+	return pk, m
 }
 
 // sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
 // /help list and will be auto-completed.
 func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.Runnable {
 	commands := cmd.Commands()
-	m := make(map[string]map[int]cmd.Runnable, len(commands))
-
-	for alias, c := range commands {
-		if run := c.Runnables(co); len(run) > 0 {
-			m[alias] = run
-		}
-	}
-	s.writePacket(BuildAvailableCommands(commands, co))
+	pk, m := BuildAvailableCommandsForSource(commands, co)
+	s.writePacket(pk)
 	return m
 }
 
@@ -178,8 +184,8 @@ type commandEnum struct {
 	Dynamic bool
 }
 
-// valueToParamType finds the command argument type of the value passed and returns it, in addition to creating an enum
-// if applicable.
+// valueToParamType finds the command argument type of the value passed and returns it, in addition to creating
+// an enum if applicable.
 func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum commandEnum) {
 	switch i.Value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
