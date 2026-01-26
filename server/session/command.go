@@ -56,6 +56,11 @@ func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) *pa
 // passed. The input map may contain aliases. It returns the AvailableCommands packet and the runnable command map
 // for the commands that the Source can execute.
 func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cmd.Source) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
+	return buildAvailableCommands(commands, src, nil)
+}
+
+// buildAvailableCommands is the internal implementation that accepts softEnums for session-level tracking.
+func buildAvailableCommands(commands map[string]cmd.Command, src cmd.Source, softEnums map[string]struct{}) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
 	pk := &packet.AvailableCommands{}
@@ -97,28 +102,6 @@ func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cm
 				suffix := paramInfo.Suffix
 
 				opt := byte(0)
-				if _, ok := paramInfo.Value.(bool); ok {
-					opt |= protocol.ParamOptionCollapseEnum
-				}
-				if len(enum.Options) > 0 || enum.Type != "" {
-					if !enum.Dynamic {
-						index, ok := enumIndices[enum.Type]
-						if !ok {
-							index = uint32(len(enums))
-							enumIndices[enum.Type] = index
-							enums = append(enums, enum)
-						}
-						t |= protocol.CommandArgEnum | index
-					} else {
-						index, ok := dynamicEnumIndices[enum.Type]
-						if !ok {
-							index = uint32(len(dynamicEnums))
-							dynamicEnumIndices[enum.Type] = index
-							dynamicEnums = append(dynamicEnums, enum)
-						}
-						t |= protocol.CommandArgSoftEnum | index
-					}
-				}
 				if suffix != "" {
 					index, ok := suffixIndices[suffix]
 					if !ok {
@@ -126,7 +109,29 @@ func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cm
 						suffixIndices[suffix] = index
 						pk.Suffixes = append(pk.Suffixes, suffix)
 					}
-					t |= protocol.CommandArgSuffixed | index
+					t = protocol.CommandArgSuffixed | index
+				} else {
+					t |= protocol.CommandArgValid
+					if len(enum.Options) > 0 || enum.Type != "" {
+						_, dynamic := softEnums[enum.Type]
+						if !dynamic {
+							index, ok := enumIndices[enum.Type]
+							if !ok {
+								index = uint32(len(enums))
+								enumIndices[enum.Type] = index
+								enums = append(enums, enum)
+							}
+							t |= protocol.CommandArgEnum | index
+						} else {
+							index, ok := dynamicEnumIndices[enum.Type]
+							if !ok {
+								index = uint32(len(dynamicEnums))
+								dynamicEnumIndices[enum.Type] = index
+								dynamicEnums = append(dynamicEnums, enum)
+							}
+							t |= protocol.CommandArgSoftEnum | index
+						}
+					}
 				}
 				overloads[i].Parameters = append(overloads[i].Parameters, protocol.CommandParameter{
 					Name:     paramInfo.Name,
@@ -172,9 +177,9 @@ func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cm
 
 // sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
 // /help list and will be auto-completed.
-func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.Runnable {
+func (s *Session) sendAvailableCommands(co Controllable, softEnums map[string]struct{}) map[string]map[int]cmd.Runnable {
 	commands := cmd.Commands()
-	pk, m := BuildAvailableCommandsWithRunnables(commands, co)
+	pk, m := buildAvailableCommands(commands, co, softEnums)
 	s.writePacket(pk)
 	return m
 }
@@ -182,7 +187,6 @@ func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.
 type commandEnum struct {
 	Type    string
 	Options []string
-	Dynamic bool
 }
 
 // valueToParamType finds the command argument type of the value passed and returns it, in addition to creating
@@ -201,8 +205,8 @@ func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum comman
 		return protocol.CommandArgTypeTarget, enum
 	case bool:
 		return 0, commandEnum{
-			Type:    "bool",
-			Options: []string{"true", "1", "false", "0"},
+			Type:    "Boolean",
+			Options: []string{"true", "false"},
 		}
 	case mgl64.Vec3:
 		return protocol.CommandArgTypePosition, enum
@@ -216,7 +220,6 @@ func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum comman
 		return 0, commandEnum{
 			Type:    enum.Type(),
 			Options: enum.Options(source),
-			Dynamic: true,
 		}
 	}
 	return protocol.CommandArgTypeValue, enum
@@ -225,7 +228,11 @@ func valueToParamType(i cmd.ParamInfo, source cmd.Source) (t uint32, enum comman
 // resendCommands resends all commands that a Session has access to if the map of runnable commands passed does not
 // match with the commands that the Session is currently allowed to execute.
 // True is returned if the commands were resent.
-func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable, co Controllable) (map[string]map[int]cmd.Runnable, bool) {
+func (s *Session) resendCommands(
+	before map[string]map[int]cmd.Runnable,
+	co Controllable,
+	softEnums map[string]struct{},
+) (map[string]map[int]cmd.Runnable, bool) {
 	commands := cmd.Commands()
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
@@ -237,13 +244,13 @@ func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable, co Cont
 		}
 	}
 	if len(before) != len(m) {
-		return s.sendAvailableCommands(co), true
+		return s.sendAvailableCommands(co, softEnums), true
 	}
 	// First check for commands that were newly added.
 	for name, r := range m {
 		for k := range r {
 			if _, ok := before[name][k]; !ok {
-				return s.sendAvailableCommands(co), true
+				return s.sendAvailableCommands(co, softEnums), true
 			}
 		}
 	}
@@ -251,7 +258,7 @@ func (s *Session) resendCommands(before map[string]map[int]cmd.Runnable, co Cont
 	for name, r := range before {
 		for k := range r {
 			if _, ok := m[name][k]; !ok {
-				return s.sendAvailableCommands(co), true
+				return s.sendAvailableCommands(co, softEnums), true
 			}
 		}
 	}
@@ -277,22 +284,41 @@ func (s *Session) enums(co Controllable) (map[string]cmd.Enum, map[string][]stri
 }
 
 // resendEnums checks the options of the enums passed against the values that were previously recorded. If they do not
-// match, the enum is resent to the client and the values are updated in the before map.
-func (s *Session) resendEnums(enums map[string]cmd.Enum, before map[string][]string, c Controllable) {
+// match, and the enum is in softEnums, the enum is resent via UpdateSoftEnum. If the enum is not yet in softEnums,
+// it is added and the full AvailableCommands packet is resent.
+func (s *Session) resendEnums(
+	enums map[string]cmd.Enum,
+	before map[string][]string,
+	softEnums map[string]struct{},
+	r map[string]map[int]cmd.Runnable,
+	c Controllable,
+) map[string]map[int]cmd.Runnable {
 	for name, enum := range enums {
 		valuesBefore := before[name]
 		values := enum.Options(c)
 		before[name] = values
 
+		changed := false
 		if len(valuesBefore) != len(values) {
-			s.writePacket(&packet.UpdateSoftEnum{EnumType: name, Options: values, ActionType: packet.SoftEnumActionSet})
-			continue
-		}
-		for k, v := range values {
-			if valuesBefore[k] != v {
-				s.writePacket(&packet.UpdateSoftEnum{EnumType: name, Options: values, ActionType: packet.SoftEnumActionSet})
-				break
+			changed = true
+		} else {
+			for k, v := range values {
+				if valuesBefore[k] != v {
+					changed = true
+					break
+				}
 			}
 		}
+		if !changed {
+			continue
+		}
+
+		if _, dynamic := softEnums[name]; dynamic {
+			s.writePacket(&packet.UpdateSoftEnum{EnumType: name, Options: values, ActionType: packet.SoftEnumActionSet})
+		} else {
+			softEnums[name] = struct{}{}
+			r = s.sendAvailableCommands(c, softEnums)
+		}
 	}
+	return r
 }
