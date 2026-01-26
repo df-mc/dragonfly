@@ -370,13 +370,14 @@ func (s *Session) background() {
 		r          map[string]map[int]cmd.Runnable
 		enums      map[string]cmd.Enum
 		enumValues map[string][]string
+		softEnums  = make(map[string]struct{})
 		ok         bool
 		i          int
 	)
 
 	s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
 		co := e.(Controllable)
-		r = s.sendAvailableCommands(co)
+		r = s.sendAvailableCommands(co, softEnums)
 		enums, enumValues = s.enums(co)
 	})
 
@@ -391,11 +392,11 @@ func (s *Session) background() {
 				if i++; i%20 == 0 {
 					// Enum resending happens relatively often and frequent updates are more important than with full
 					// command changes. Those are generally only related to permission changes, which doesn't happen often.
-					s.resendEnums(enums, enumValues, c)
+					r = s.resendEnums(enums, enumValues, softEnums, r, c)
 				}
 				if i%100 == 0 {
 					// Try to resend commands only every 5 seconds.
-					if r, ok = s.resendCommands(r, c); ok {
+					if r, ok = s.resendCommands(r, c, softEnums); ok {
 						enums, enumValues = s.enums(c)
 					}
 				}
