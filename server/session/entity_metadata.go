@@ -69,6 +69,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if i, ok := e.(invisible); ok && i.Invisible() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
 	}
+	if b, ok := e.(baby); ok && b.IsBaby() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagBaby)
+	}
 	if i, ok := e.(immobile); ok && i.Immobile() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagNoAI)
 	}
@@ -99,6 +102,12 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 	if sc, ok := e.(scaled); ok {
 		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
+	}
+	if r, ok := e.(rider); ok {
+		if pos, ok := r.SeatPosition(); ok {
+			m[protocol.EntityDataKeySeatOffset] = vec64To32(pos)
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
+		}
 	}
 	if t, ok := e.(tnt); ok {
 		m[protocol.EntityDataKeyFuseTime] = int32(t.Fuse().Milliseconds() / 50)
@@ -212,6 +221,10 @@ type invisible interface {
 	Invisible() bool
 }
 
+type baby interface {
+	IsBaby() bool
+}
+
 type scaled interface {
 	Scale() float64
 }
@@ -268,6 +281,10 @@ type firework interface {
 
 type gameMode interface {
 	GameMode() world.GameMode
+}
+
+type rider interface {
+	SeatPosition() (mgl64.Vec3, bool)
 }
 
 type sleeper interface {
