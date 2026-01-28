@@ -116,6 +116,9 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 // tickBlocksRandomly executes random block ticks in each sub chunk in the world that has at least one viewer
 // registered from the viewers passed.
 func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
+	if tx.World().conf.RandomTickSpeed <= 0 {
+		return
+	}
 	var (
 		r             = int32(tx.World().tickRange())
 		g             randUint4
