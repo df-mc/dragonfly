@@ -2,15 +2,17 @@ package world
 
 import (
 	"encoding/binary"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"io"
 	"maps"
 	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
 // EntityType is the type of Entity. It specifies the name, encoded Entity
@@ -309,6 +311,11 @@ type Entity interface {
 	// Rotation returns the yaw (horizontal rotation) and pitch (vertical
 	// rotation) of the entity in degrees.
 	Rotation() cube.Rotation
+}
+
+// MetadataEntity represents an Entity that has a Metadata.
+type MetadataEntity interface {
+	Metadata() protocol.EntityMetadata
 }
 
 // TickerEntity represents an Entity that has a Tick method which should be called every time the Entity is
