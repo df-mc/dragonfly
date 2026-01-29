@@ -20,12 +20,7 @@ import (
 // all properties to their default values and disabling all flags.
 func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	bb := e.H().Type().BBox(e)
-	var m protocol.EntityMetadata
-	if meta, ok := e.(world.MetadataEntity); ok {
-		m = meta.Metadata()
-	} else {
-		m = protocol.NewEntityMetadata()
-	}
+	m := protocol.NewEntityMetadata()
 
 	m[protocol.EntityDataKeyWidth] = float32(bb.Width())
 	m[protocol.EntityDataKeyHeight] = float32(bb.Height())
@@ -63,6 +58,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 	if gl, ok := e.(glider); ok && gl.Gliding() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagGliding)
+	}
+	if bb, ok := e.(baby); ok && bb.Baby() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagBaby)
 	}
 	if b, ok := e.(breather); ok {
 		m[protocol.EntityDataKeyAirSupply] = int16(b.AirSupply().Milliseconds() / 50)
@@ -201,6 +199,10 @@ type crawler interface {
 
 type glider interface {
 	Gliding() bool
+}
+
+type baby interface {
+	Baby() bool
 }
 
 type breather interface {
