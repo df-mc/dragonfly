@@ -20,7 +20,12 @@ import (
 // all properties to their default values and disabling all flags.
 func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	bb := e.H().Type().BBox(e)
-	m := protocol.NewEntityMetadata()
+	var m protocol.EntityMetadata
+	if meta, ok := e.(world.MetadataEntity); ok {
+		m = meta.Metadata()
+	} else {
+		m = protocol.NewEntityMetadata()
+	}
 
 	m[protocol.EntityDataKeyWidth] = float32(bb.Width())
 	m[protocol.EntityDataKeyHeight] = float32(bb.Height())
