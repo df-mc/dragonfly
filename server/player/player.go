@@ -2670,8 +2670,10 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 
 // RidingEntity returns the entity that the rider is currently sitting on.
 func (p *Player) RidingEntity(tx *world.Tx) (entity.Rideable, bool) {
-	rideable, ok := p.riddenEntity.Entity(tx)
-	return rideable.(entity.Rideable), ok
+	if rideable, ok := p.riddenEntity.Entity(tx); ok {
+		return rideable.(entity.Rideable), true
+	}
+	return nil, false
 }
 
 // SeatIndex returns the position of where the rider is sitting.
