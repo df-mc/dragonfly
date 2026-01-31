@@ -55,7 +55,7 @@ type playerData struct {
 	armour                       *inventory.Armour
 	heldSlot                     *uint32
 
-	riddenEntity entity.Rideable
+	riddenEntity *world.EntityHandle
 	seatIndex    int
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
@@ -2669,8 +2669,9 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 }
 
 // RidingEntity returns the entity that the rider is currently sitting on.
-func (p *Player) RidingEntity() entity.Rideable {
-	return p.riddenEntity
+func (p *Player) RidingEntity(tx *world.Tx) entity.Rideable {
+	rideable, _ := p.riddenEntity.Entity(tx)
+	return rideable.(entity.Rideable)
 }
 
 // SeatIndex returns the position of where the rider is sitting.
@@ -2680,38 +2681,38 @@ func (p *Player) SeatIndex() int {
 
 // ChangeSeat sets the seat index of the player if it is currently riding an entity and if the seat index
 // is valid.
-func (p *Player) ChangeSeat(seatIndex int) {
-	if p.riddenEntity == nil || seatIndex < 0 || len(p.riddenEntity.SeatPositions()) <= seatIndex {
+func (p *Player) ChangeSeat(tx *world.Tx, seatIndex int) {
+	if p.riddenEntity == nil || seatIndex < 0 || len(p.RidingEntity(tx).SeatPositions()) <= seatIndex {
 		return
 	}
 	p.seatIndex = seatIndex
 	p.updateState()
 	for _, v := range p.viewers() {
-		v.ViewEntityMount(p, p.riddenEntity, p.seatIndex == 0)
+		v.ViewEntityMount(p, p.RidingEntity(tx), p.seatIndex == 0)
 	}
 }
 
 // SeatPosition returns the position of the seat the player is currently sitting on. If the player is not
 // currently riding an entity, the second return value is false.
-func (p *Player) SeatPosition() (mgl64.Vec3, bool) {
-	if p.riddenEntity == nil || p.seatIndex == -1 || len(p.riddenEntity.SeatPositions()) <= p.seatIndex {
+func (p *Player) SeatPosition(tx *world.Tx) (mgl64.Vec3, bool) {
+	if p.riddenEntity == nil || p.seatIndex == -1 || len(p.RidingEntity(tx).SeatPositions()) <= p.seatIndex {
 		return mgl64.Vec3{}, false
 	}
-	return p.riddenEntity.SeatPositions()[p.seatIndex], true
+	return p.RidingEntity(tx).SeatPositions()[p.seatIndex], true
 }
 
 // MountEntity mounts the Rider to an entity if the entity is Rideable and if there is a seat available.
-func (p *Player) MountEntity(rideable entity.Rideable, seatIndex int) {
+func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex int) {
 	ctx := event.C(p)
 	if p.h.HandleMountEntity(ctx, rideable, &seatIndex); ctx.Cancelled() {
 		return
 	}
 
 	if rd := p.riddenEntity; rd != nil {
-		p.DismountEntity()
+		p.DismountEntity(tx)
 	}
 
-	p.riddenEntity = rideable
+	p.riddenEntity = rideable.H()
 	p.seatIndex = seatIndex
 
 	p.updateState()
@@ -2721,9 +2722,9 @@ func (p *Player) MountEntity(rideable entity.Rideable, seatIndex int) {
 }
 
 // DismountEntity dismounts the player from an entity.
-func (p *Player) DismountEntity() {
+func (p *Player) DismountEntity(tx *world.Tx) {
 	ctx := event.C(p)
-	r := p.riddenEntity
+	r := p.RidingEntity(tx)
 	if r == nil {
 		return
 	}
@@ -3171,7 +3172,7 @@ func (p *Player) Close() error {
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close(msg string) {
-	p.DismountEntity()
+	p.DismountEntity(p.tx)
 	// If the player is being disconnected while they are dead, we respawn the player
 	// so that the player logic works correctly the next time they join.
 	if p.Dead() && p.session() != nil {
