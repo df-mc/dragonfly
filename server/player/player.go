@@ -2669,9 +2669,9 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 }
 
 // RidingEntity returns the entity that the rider is currently sitting on.
-func (p *Player) RidingEntity(tx *world.Tx) entity.Rideable {
-	rideable, _ := p.riddenEntity.Entity(tx)
-	return rideable.(entity.Rideable)
+func (p *Player) RidingEntity(tx *world.Tx) (entity.Rideable, bool) {
+	rideable, ok := p.riddenEntity.Entity(tx)
+	return rideable.(entity.Rideable), ok
 }
 
 // SeatIndex returns the position of where the rider is sitting.
@@ -2682,23 +2682,25 @@ func (p *Player) SeatIndex() int {
 // ChangeSeat sets the seat index of the player if it is currently riding an entity and if the seat index
 // is valid.
 func (p *Player) ChangeSeat(tx *world.Tx, seatIndex int) {
-	if p.riddenEntity == nil || seatIndex < 0 || len(p.RidingEntity(tx).SeatPositions()) <= seatIndex {
+	riddenEntity, ok := p.RidingEntity(tx)
+	if !ok || seatIndex < 0 || len(riddenEntity.SeatPositions()) <= seatIndex {
 		return
 	}
 	p.seatIndex = seatIndex
 	p.updateState()
 	for _, v := range p.viewers() {
-		v.ViewEntityMount(p, p.RidingEntity(tx), p.seatIndex == 0)
+		v.ViewEntityMount(p, riddenEntity, p.seatIndex == 0)
 	}
 }
 
 // SeatPosition returns the position of the seat the player is currently sitting on. If the player is not
 // currently riding an entity, the second return value is false.
 func (p *Player) SeatPosition(tx *world.Tx) (mgl64.Vec3, bool) {
-	if p.riddenEntity == nil || p.seatIndex == -1 || len(p.RidingEntity(tx).SeatPositions()) <= p.seatIndex {
+	riddenEntity, ok := p.RidingEntity(tx)
+	if !ok || p.seatIndex == -1 || len(riddenEntity.SeatPositions()) <= p.seatIndex {
 		return mgl64.Vec3{}, false
 	}
-	return p.RidingEntity(tx).SeatPositions()[p.seatIndex], true
+	return riddenEntity.SeatPositions()[p.seatIndex], true
 }
 
 // MountEntity mounts the Rider to an entity if the entity is Rideable and if there is a seat available.
@@ -2724,11 +2726,11 @@ func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex i
 // DismountEntity dismounts the player from an entity.
 func (p *Player) DismountEntity(tx *world.Tx) {
 	ctx := event.C(p)
-	r := p.RidingEntity(tx)
-	if r == nil {
+	riddenEntity, ok := p.RidingEntity(tx)
+	if !ok {
 		return
 	}
-	if p.h.HandleDismountEntity(ctx, r); ctx.Cancelled() {
+	if p.h.HandleDismountEntity(ctx, riddenEntity); ctx.Cancelled() {
 		return
 	}
 
@@ -2737,7 +2739,7 @@ func (p *Player) DismountEntity(tx *world.Tx) {
 
 	p.updateState()
 	for _, v := range p.viewers() {
-		v.ViewEntityDismount(p, r)
+		v.ViewEntityDismount(p, riddenEntity)
 	}
 }
 

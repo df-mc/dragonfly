@@ -443,7 +443,7 @@ Seat offset lookup from a rider (returns offset relative to rideable origin):
 type Rider interface {
 	world.Entity
 	// RidingEntity returns the entity that the rider is currently sitting on.
-	RidingEntity(tx *world.Tx) Rideable
+	RidingEntity(tx *world.Tx) (Rideable, bool)
 	// SeatIndex returns the position of where the rider is sitting.
 	SeatIndex() int
 	// MountEntity mounts the Rider to an entity if the entity is Rideable and if there is a seat available.
