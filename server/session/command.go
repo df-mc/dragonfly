@@ -45,13 +45,21 @@ type translation interface {
 	Params(l language.Tag) []string
 }
 
-// sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
-// /help list and will be auto-completed.
-func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.Runnable {
-	commands := cmd.Commands()
+// BuildAvailableCommands builds an AvailableCommands packet for the commands passed.
+// The input map may contain aliases. Only commands that the Source can execute are included.
+func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) *packet.AvailableCommands {
+	pk, _ := BuildAvailableCommandsWithRunnables(commands, src)
+	return pk
+}
+
+// BuildAvailableCommandsWithRunnables builds an AvailableCommands packet and the runnable command map for the Source
+// passed. The input map may contain aliases. It returns the AvailableCommands packet and the runnable command map
+// for the commands that the Source can execute.
+func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cmd.Source) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
 	pk := &packet.AvailableCommands{}
+
 	var enums []commandEnum
 	enumIndices := map[string]uint32{}
 
@@ -65,13 +73,14 @@ func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.
 			// Don't add duplicate entries for aliases.
 			continue
 		}
-		if run := c.Runnables(co); len(run) > 0 {
+
+		if run := c.Runnables(src); len(run) > 0 {
 			m[alias] = run
 		} else {
 			continue
 		}
 
-		params := c.Params(co)
+		params := c.Params(src)
 		overloads := make([]protocol.CommandOverload, len(params))
 
 		aliasesIndex := uint32(math.MaxUint32)
@@ -83,7 +92,7 @@ func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.
 
 		for i, params := range params {
 			for _, paramInfo := range params {
-				t, enum := valueToParamType(paramInfo, co)
+				t, enum := valueToParamType(paramInfo, src)
 				t |= protocol.CommandArgValid
 				suffix := paramInfo.Suffix
 
@@ -135,6 +144,7 @@ func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.
 			Overloads:       overloads,
 		})
 	}
+
 	pk.DynamicEnums = make([]protocol.DynamicEnum, 0, len(dynamicEnums))
 	for _, e := range dynamicEnums {
 		pk.DynamicEnums = append(pk.DynamicEnums, protocol.DynamicEnum{Type: e.Type, Values: e.Options})
@@ -157,6 +167,14 @@ func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.
 		}
 		pk.Enums = append(pk.Enums, protoEnum)
 	}
+	return pk, m
+}
+
+// sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
+// /help list and will be auto-completed.
+func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.Runnable {
+	commands := cmd.Commands()
+	pk, m := BuildAvailableCommandsWithRunnables(commands, co)
 	s.writePacket(pk)
 	return m
 }
