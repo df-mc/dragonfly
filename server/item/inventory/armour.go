@@ -125,8 +125,8 @@ func (a *Armour) DamageReduction(dmg float64, src world.DamageSource) float64 {
 	dmg -= dmg * enchantment.ProtectionFactor(src, enchantments)
 	if src.ReducedByArmour() {
 		// Armour in Bedrock edition reduces the damage taken by 4% for each effective armour point. Effective
-		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defense
-		// reduction is decreased by the toughness armor value. Effective armour points will at minimum be 20% of
+		// armour point decreases as damage increases, with 1 point lost for every 2 HP of damage. The defence
+		// reduction is decreased by the toughness armour value. Effective armour points will at minimum be 20% of
 		// armour points.
 		dmg -= dmg * 0.04 * math.Max(defencePoints*0.2, defencePoints-dmg/(2+toughness/4))
 	}

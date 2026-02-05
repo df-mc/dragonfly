@@ -567,9 +567,9 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 	for _, t := range w.EntityRegistry().Types() {
 		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
-	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
+	serialisedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {
 		panic("should never happen")
 	}
-	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
+	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serialisedEntityData})
 }
