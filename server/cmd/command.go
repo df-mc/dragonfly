@@ -253,9 +253,11 @@ func (cmd Command) executeRunnable(v reflect.Value, args string, source Source, 
 	// We iterate over all the fields of the struct: Each of the fields will have an argument parsed to
 	// produce its value.
 	signature := v.Elem()
-	for _, t := range exportedFields(signature) {
+	fields := exportedFields(signature)
+	for i, t := range fields {
 		field := signature.FieldByName(t.Name)
 		parser.currentField = t.Name
+		parser.fields = len(fields) - i
 		opt := optional(field)
 
 		val := field
