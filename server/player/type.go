@@ -44,10 +44,7 @@ func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 
 func (ptype) EncodeEntity() string   { return "minecraft:player" }
 func (ptype) NetworkOffset() float64 { return 1.621 }
-func (ptype) BBox(e world.Entity) (box cube.BBox) {
-	defer func() {
-		box = box.Stretch(cube.X, 1e-4)
-	}()
+func (ptype) BBox(e world.Entity) cube.BBox {
 	p := e.(*Player)
 	s := p.Scale()
 	switch {
