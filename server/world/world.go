@@ -780,10 +780,9 @@ func (w *World) Spawn() cube.Pos {
 		return cube.Pos{}
 	}
 
-	switch w.Dimension() {
-	case End:
+	if w.Dimension() == End {
 		return cube.Pos{100, 50}
-	case Nether:
+	} else if w.Dimension() == Nether {
 		return cube.Pos{}
 	}
 
@@ -800,8 +799,7 @@ func (w *World) SetSpawn(pos cube.Pos) {
 	}
 
 	// nether has no spawn point and end spawn point is always 100 50 0.
-	switch w.Dimension() {
-	case Nether, End:
+	if w.Dimension() == Nether || w.Dimension() == End {
 		return
 	}
 
