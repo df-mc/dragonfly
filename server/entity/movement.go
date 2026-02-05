@@ -1,10 +1,11 @@
 package entity
 
 import (
+	"math"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
 )
 
 // MovementComputer is used to compute movement of an entity. When constructed, the Gravity of the entity
@@ -123,7 +124,7 @@ func (c *MovementComputer) checkCollision(tx *world.Tx, e world.Entity, pos, vel
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
 	// Entities only ever have a single bounding box.
-	entityBBox := e.H().Type().BBox(e).Translate(pos)
+	entityBBox := e.H().Type().BBox(e).Translate(pos).Stretch(cube.X, 1e-4)
 	blocks := blockBBoxsAround(tx, entityBBox.Extend(vel))
 
 	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
