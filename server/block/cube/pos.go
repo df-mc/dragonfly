@@ -151,14 +151,14 @@ func Max(p1, p2 Pos) Pos {
 	return Pos{max(p1[0], p2[0]), max(p1[1], p2[1]), max(p1[2], p2[2])}
 }
 
-// Range3D returns iterator that iterates all points between p1 & p2.
+// Range3D returns iterator that iterates all points between minimum and maximum of p1 & p2.
 func Range3D(p1, p2 Pos) iter.Seq[Pos] {
 	max := Max(p1, p2)
 	min := Min(p1, p2)
 	return func(yield func(Pos) bool) {
-		for x := range max[0] - min[0] + 1 {
-			for y := range max[1] - min[1] + 1 {
-				for z := range max[2] - min[2] + 1 {
+		for x := min[0]; x <= max[0]; x++ {
+			for y := min[1]; y <= max[1]; y++ {
+				for z := min[2]; z <= min[2]; z++ {
 					if !yield(min.Add(Pos{x, y, z})) {
 						return
 					}
