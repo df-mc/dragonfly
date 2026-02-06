@@ -2018,7 +2018,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 	for e := range p.tx.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3())) {
 		t := e.H().Type()
 		switch t {
-		case entity.ItemType, entity.ArrowType:
+		case entity.ItemType, entity.ArrowType, entity.ExperienceOrbType:
 			continue
 		default:
 			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-4)) {
