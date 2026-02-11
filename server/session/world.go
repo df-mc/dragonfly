@@ -41,6 +41,16 @@ type OffsetEntity interface {
 	NetworkOffset() float64
 }
 
+// ItemHelder is an entity that can hold an item.
+type ItemHelder interface {
+	HeldItems() (mainHand, offHand item.Stack)
+}
+
+// ArmourWearer is an entity that can wear armour.
+type ArmourWearer interface {
+	Armour() *inventory.Armour
+}
+
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
@@ -277,9 +287,13 @@ func (s *Session) ViewEntityItems(e world.Entity) {
 		// Don't view the items of the entity if the entity is the Controllable entity of the session.
 		return
 	}
-	c, ok := e.(item.Carrier)
+	c, ok := e.(interface{ ItemHelder })
 	if !ok {
-		return
+		if b, ok2 := e.(*entity.Ent); ok2 {
+			if c, ok = b.Behaviour().(ItemHelder); !ok {
+				return
+			}
+		}
 	}
 
 	mainHand, offHand := c.HeldItems()
@@ -304,13 +318,14 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 		// Don't view the items of the entity if the entity is the Controllable entity of the session.
 		return
 	}
-	armoured, ok := e.(interface {
-		Armour() *inventory.Armour
-	})
+	armoured, ok := e.(ArmourWearer)
 	if !ok {
-		return
+		if b, ok2 := e.(*entity.Ent); ok2 {
+			if armoured, ok = b.Behaviour().(ArmourWearer); !ok {
+				return
+			}
+		}
 	}
-
 	inv := armoured.Armour()
 
 	// Show the entity's armour
@@ -872,6 +887,30 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Volume:    1,
 			Pitch:     1.0,
 		})
+	case sound.ArmourStandHit:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundArmorStandHit,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.ArmourStandBreak:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundArmorStandBreak,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.ArmourStandPlace:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundArmorStandPlace,
+			Position:  vec64To32(pos),
+		})
+		return
+	case sound.ArmourStandLand:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundArmorStandLand,
+			Position:  vec64To32(pos),
+		})
+		return
 	}
 	s.writePacket(pk)
 }
