@@ -1,12 +1,10 @@
 module github.com/df-mc/dragonfly
 
-go 1.24.0
-
-toolchain go1.24.4
+go 1.25
 
 replace (
-	github.com/df-mc/go-nethernet => github.com/lactyy/go-nethernet v1.0.0-alpha.2.0.20260107091143-efab6f57a8d4
-	github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260109194613-651a159faf55
+	github.com/df-mc/go-nethernet => github.com/lactyy/go-nethernet v1.0.0-alpha.4.0.20260210235527-e6ddd96f8e64
+	github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260211022802-c94bd2cb2628
 )
 
 require (
@@ -27,11 +25,12 @@ require (
 )
 
 require (
+	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
 	github.com/df-mc/go-nethernet v0.0.0-00010101000000-000000000000 // indirect
 	github.com/df-mc/go-playfab v1.0.0 // indirect
 	github.com/df-mc/go-xsapi v1.0.1 // indirect
 	github.com/df-mc/jsonc v1.0.5 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.0 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
@@ -51,11 +50,11 @@ require (
 	github.com/pion/transport/v3 v3.1.1 // indirect
 	github.com/pion/turn/v4 v4.1.3 // indirect
 	github.com/pion/webrtc/v4 v4.1.8 // indirect
-	github.com/sandertv/go-raknet v1.14.3-0.20250823121252-325aeea25d25 // indirect
+	github.com/sandertv/go-raknet v1.15.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/oauth2 v0.32.0 // indirect
+	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
