@@ -721,6 +721,11 @@ func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
 // knockBack is an unexported function that is used to knock the player back. This function does not check if the player
 // can take damage or not.
 func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
+	ctx := event.C(p)
+	if p.Handler().HandleKnockBack(ctx, &src, &force, &height); ctx.Cancelled() {
+		return
+	}
+
 	velocity := p.Position().Sub(src)
 	velocity[1] = 0
 
