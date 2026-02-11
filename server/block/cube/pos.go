@@ -2,8 +2,10 @@ package cube
 
 import (
 	"fmt"
-	"github.com/go-gl/mathgl/mgl64"
+	"iter"
 	"math"
+
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Pos holds the position of a block. The position is represented as an array
@@ -135,4 +137,33 @@ func (p Pos) Neighbours(f func(neighbour Pos), r Range) {
 // adequately.
 func PosFromVec3(vec3 mgl64.Vec3) Pos {
 	return Pos{int(math.Floor(vec3[0])), int(math.Floor(vec3[1])), int(math.Floor(vec3[2]))}
+}
+
+// Min returns a new position where each coordinate is the minimum
+// of input positions p1 and p2.
+func Min(p1, p2 Pos) Pos {
+	return Pos{min(p1[0], p2[0]), min(p1[1], p2[1]), min(p1[2], p2[2])}
+}
+
+// Max returns a new position where each coordinate is the maximum
+// of input positions p1 and p2.
+func Max(p1, p2 Pos) Pos {
+	return Pos{max(p1[0], p2[0]), max(p1[1], p2[1]), max(p1[2], p2[2])}
+}
+
+// Range3D returns iterator that iterates all points between minimum and maximum of p1 & p2.
+func Range3D(p1, p2 Pos) iter.Seq[Pos] {
+	max := Max(p1, p2)
+	min := Min(p1, p2)
+	return func(yield func(Pos) bool) {
+		for x := min[0]; x <= max[0]; x++ {
+			for y := min[1]; y <= max[1]; y++ {
+				for z := min[2]; z <= min[2]; z++ {
+					if !yield(min.Add(Pos{x, y, z})) {
+						return
+					}
+				}
+			}
+		}
+	}
 }

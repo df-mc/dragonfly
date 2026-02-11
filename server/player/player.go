@@ -157,7 +157,7 @@ func (p *Player) DeviceID() string {
 	if p.session() == session.Nop {
 		return ""
 	}
-	return p.session().ClientData().DeviceID
+	return string(p.session().ClientData().DeviceID)
 }
 
 // DeviceModel returns the device model of the player. If the Player is not connected to a network session, an empty

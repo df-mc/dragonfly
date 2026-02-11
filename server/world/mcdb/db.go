@@ -136,7 +136,7 @@ func (db *DB) LoadColumn(pos world.ChunkPos, dim world.Dimension) (*chunk.Column
 	return col, nil
 }
 
-const chunkVersion = 41
+const chunkVersion = 42
 
 func (db *DB) column(k dbKey) (*chunk.Column, error) {
 	var cdata chunk.SerialisedData
