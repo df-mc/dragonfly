@@ -32,7 +32,7 @@ func (DeepLukewarmOcean) WaterColour() color.RGBA {
 
 // Tags ...
 func (DeepLukewarmOcean) Tags() []string {
-	return []string{"deep", "lukewarm", "monster", "ocean", "overworld", "spawns_warm_variant_farm_animals"}
+	return []string{"deep", "lukewarm", "monster", "ocean", "overworld", "spawns_warm_variant_farm_animals", "fast_fishing", "high_seas"}
 }
 
 // String ...
