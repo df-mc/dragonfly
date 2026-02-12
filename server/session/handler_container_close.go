@@ -1,7 +1,6 @@
 package session
 
 import (
-	"fmt"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -13,18 +12,39 @@ type ContainerCloseHandler struct{}
 func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ContainerClose)
 
+	if s.pendingCloseWindowID.CompareAndSwap(int32(pk.WindowID), -1) {
+		s.writePacket(&packet.ContainerClose{
+			WindowID:      pk.WindowID,
+			ContainerType: byte(s.pendingCloseContainerType.Load()),
+		})
+		s.pendingCloseContainerType.Store(0)
+		return nil
+	}
+
 	c.MoveItemsToInventory()
+
+	var containerType byte
 	switch pk.WindowID {
 	case 0:
 		// Closing of the normal inventory.
-		s.writePacket(&packet.ContainerClose{})
 		s.invOpened = false
 	case byte(s.openedWindowID.Load()):
-		s.closeCurrentContainer(tx)
+		containerType = byte(s.openedContainerID.Load())
+		s.closeCurrentContainer(tx, true)
 	case 0xff:
-		// TODO: Handle closing the crafting grid.
+		s.pendingCloseWindowID.Store(-1)
+		s.pendingCloseContainerType.Store(0)
+		s.invOpened = false
+		if s.containerOpened.Load() {
+			s.closeCurrentContainer(tx, false)
+		}
+		return nil
 	default:
-		return fmt.Errorf("unexpected close request for unopened container %v", pk.WindowID)
+		containerType = pk.ContainerType
 	}
+	s.writePacket(&packet.ContainerClose{
+		WindowID:      pk.WindowID,
+		ContainerType: containerType,
+	})
 	return nil
 }
