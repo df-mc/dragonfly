@@ -16,7 +16,6 @@ func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx
 		s.writePacket(&packet.ContainerClose{
 			WindowID:      pk.WindowID,
 			ContainerType: byte(s.pendingCloseContainerType.Load()),
-			ServerSide:    false,
 		})
 		s.pendingCloseContainerType.Store(0)
 		return nil
