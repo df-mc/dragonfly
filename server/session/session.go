@@ -77,6 +77,8 @@ type Session struct {
 	openedContainerID              atomic.Uint32
 	openedWindow                   atomic.Pointer[inventory.Inventory]
 	openedPos                      atomic.Pointer[cube.Pos]
+	pendingCloseWindowID           atomic.Int32
+	pendingCloseContainerType      atomic.Uint32
 	swingingArm                    atomic.Bool
 	changingSlot                   atomic.Bool
 	changingDimension              atomic.Bool
@@ -192,6 +194,7 @@ func (conf Config) New(conn Conn) *Session {
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
+	s.pendingCloseWindowID.Store(-1)
 
 	var scoreboardName string
 	var scoreboardLines []string
@@ -278,7 +281,7 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 // manages.
 func (s *Session) close(tx *world.Tx, c Controllable) {
 	c.MoveItemsToInventory()
-	s.closeCurrentContainer(tx)
+	s.closeCurrentContainer(tx, false)
 
 	s.conf.HandleStop(tx, c)
 
