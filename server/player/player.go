@@ -92,6 +92,7 @@ type playerData struct {
 	enchantSeed int64
 
 	mc *entity.MovementComputer
+	tc *entity.TravelComputer
 
 	collidedVertically, collidedHorizontally bool
 
@@ -2571,6 +2572,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	} else {
 		p.data.Vel = mgl64.Vec3{}
 	}
+
+	p.tc.TickTravelling(p, tx)
 }
 
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.

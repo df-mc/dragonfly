@@ -258,6 +258,13 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		opts = &SetOpts{}
 	}
 
+	if p, ok := b.(interface {
+		Place(pos cube.Pos, w *World) bool
+	}); ok && !p.Place(pos, w) {
+		// Don't place the block.
+		return
+	}
+
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := w.chunk(chunkPosFromBlockPos(pos))
 

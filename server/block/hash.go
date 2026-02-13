@@ -140,6 +140,7 @@ const (
 	hashPodzol
 	hashPolishedBlackstoneBrick
 	hashPolishedTuff
+	hashPortal
 	hashPotato
 	hashPrismarine
 	hashPumpkin
@@ -745,6 +746,10 @@ func (b PolishedBlackstoneBrick) Hash() (uint64, uint64) {
 
 func (PolishedTuff) Hash() (uint64, uint64) {
 	return hashPolishedTuff, 0
+}
+
+func (p Portal) Hash() (uint64, uint64) {
+	return hashPortal, uint64(p.Axis)
 }
 
 func (p Potato) Hash() (uint64, uint64) {
