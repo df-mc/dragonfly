@@ -23,6 +23,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/hud"
+	"github.com/df-mc/dragonfly/server/player/input"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -901,6 +902,46 @@ loop:
 		}
 	}
 	s.writePacket(&packet.DebugDrawer{Shapes: shapes})
+}
+
+// LockInput applies an input lock to the player, disabling the specified input. If the lock is already
+// applied, this is a no-op.
+func (s *Session) LockInput(l input.Lock) {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks |= l.Uint32()
+}
+
+// UnlockInput removes an input lock from the player, re-enabling the specified input. If the lock is not
+// currently applied, this is a no-op.
+func (s *Session) UnlockInput(l input.Lock) {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks &^= l.Uint32()
+}
+
+// ClearInputLocks removes all input locks from the player, re-enabling all inputs.
+func (s *Session) ClearInputLocks() {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks = 0
+}
+
+// InputLocked checks if a specific input lock is currently applied to the player.
+func (s *Session) InputLocked(l input.Lock) bool {
+	s.inputLocksMu.RLock()
+	defer s.inputLocksMu.RUnlock()
+	return s.inputLocks&l.Uint32() != 0
+}
+
+// SendInputLocks sends the current input lock state to the client.
+func (s *Session) SendInputLocks(c Controllable) {
+	s.inputLocksMu.RLock()
+	defer s.inputLocksMu.RUnlock()
+	s.writePacket(&packet.UpdateClientInputLocks{
+		Locks:    s.inputLocks,
+		Position: vec64To32(c.Position().Add(mgl64.Vec3{0, 1.62})),
+	})
 }
 
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults

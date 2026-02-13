@@ -100,6 +100,9 @@ type Session struct {
 	debugShapesAdd    chan debug.Shape
 	debugShapesRemove chan int
 
+	inputLocksMu sync.RWMutex
+	inputLocks   uint32
+
 	closeBackground chan struct{}
 }
 
