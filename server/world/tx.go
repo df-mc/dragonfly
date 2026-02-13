@@ -91,7 +91,7 @@ func (tx *Tx) ScheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
 // HighestLightBlocker gets the Y value of the highest fully light blocking
 // block at the x and z values passed in the World.
 func (tx *Tx) HighestLightBlocker(x, z int) int {
-	return tx.World().highestLightBlocker(x, z)
+	return tx.World().HighestLightBlocker(x, z)
 }
 
 // HighestBlock looks up the highest non-air block in the World at a specific x
