@@ -2,15 +2,16 @@ package world
 
 import (
 	"encoding/binary"
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 	"io"
 	"maps"
 	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/go-gl/mathgl/mgl64"
+	"github.com/google/uuid"
 )
 
 // EntityType is the type of Entity. It specifies the name, encoded Entity
