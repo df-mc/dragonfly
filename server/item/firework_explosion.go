@@ -33,19 +33,74 @@ func (f FireworkExplosion) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (f FireworkExplosion) DecodeNBT(data map[string]any) any {
-	f.Shape = FireworkShapes()[data["FireworkType"].(uint8)]
-	f.Twinkle = data["FireworkFlicker"].(uint8) == 1
-	f.Trail = data["FireworkTrail"].(uint8) == 1
-
-	colours := data["FireworkColor"]
-	if diskColour, ok := colours.([1]uint8); ok {
-		f.Colour = invertColourID(int16(diskColour[0]))
-	} else if networkColours, ok := colours.([]any); ok {
-		f.Colour = invertColourID(int16(networkColours[0].(uint8)))
+	if data == nil {
+		return f
 	}
 
-	if fades, ok := data["FireworkFade"].([1]uint8); ok {
+	if shapeID, ok := fireworkNBTUint8(data["FireworkType"]); ok {
+		shapes := FireworkShapes()
+		if int(shapeID) < len(shapes) {
+			f.Shape = shapes[shapeID]
+		}
+	}
+	if twinkle, ok := fireworkNBTUint8(data["FireworkFlicker"]); ok {
+		f.Twinkle = twinkle == 1
+	}
+	if trail, ok := fireworkNBTUint8(data["FireworkTrail"]); ok {
+		f.Trail = trail == 1
+	}
+
+	switch colours := data["FireworkColor"].(type) {
+	case [1]uint8:
+		f.Colour = invertColourID(int16(colours[0]))
+	case []uint8:
+		if len(colours) > 0 {
+			f.Colour = invertColourID(int16(colours[0]))
+		}
+	case []any:
+		if len(colours) > 0 {
+			if c, ok := fireworkNBTUint8(colours[0]); ok {
+				f.Colour = invertColourID(int16(c))
+			}
+		}
+	}
+
+	switch fades := data["FireworkFade"].(type) {
+	case [1]uint8:
 		f.Fade, f.Fades = invertColourID(int16(fades[0])), true
+	case []uint8:
+		if len(fades) > 0 {
+			f.Fade, f.Fades = invertColourID(int16(fades[0])), true
+		}
+	case []any:
+		if len(fades) > 0 {
+			if fade, ok := fireworkNBTUint8(fades[0]); ok {
+				f.Fade, f.Fades = invertColourID(int16(fade)), true
+			}
+		}
 	}
 	return f
+}
+
+func fireworkNBTUint8(v any) (uint8, bool) {
+	switch value := v.(type) {
+	case uint8:
+		return value, true
+	case int8:
+		return uint8(value), true
+	case int16:
+		return uint8(value), true
+	case uint16:
+		return uint8(value), true
+	case int32:
+		return uint8(value), true
+	case uint32:
+		return uint8(value), true
+	case int:
+		return uint8(value), true
+	case uint:
+		return uint8(value), true
+	default:
+		return 0, false
+	}
 }

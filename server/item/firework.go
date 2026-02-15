@@ -63,14 +63,24 @@ func (f Firework) EncodeNBT() map[string]any {
 
 // DecodeNBT ...
 func (f Firework) DecodeNBT(data map[string]any) any {
+	if data == nil {
+		return f
+	}
 	if fireworks, ok := data["Fireworks"].(map[string]any); ok {
 		if explosions, ok := fireworks["Explosions"].([]any); ok {
-			f.Explosions = make([]FireworkExplosion, len(explosions))
-			for i, explosion := range f.Explosions {
-				f.Explosions[i] = explosion.DecodeNBT(explosions[i].(map[string]any)).(FireworkExplosion)
+			decoded := make([]FireworkExplosion, 0, len(explosions))
+			for _, explosion := range explosions {
+				m, ok := explosion.(map[string]any)
+				if !ok {
+					continue
+				}
+				if explosionValue, ok := (FireworkExplosion{}).DecodeNBT(m).(FireworkExplosion); ok {
+					decoded = append(decoded, explosionValue)
+				}
 			}
+			f.Explosions = decoded
 		}
-		if durationTicks, ok := fireworks["Flight"].(uint8); ok {
+		if durationTicks, ok := fireworkNBTUint8(fireworks["Flight"]); ok {
 			f.Duration = (time.Duration(durationTicks)*time.Millisecond*50 + time.Millisecond*50) * 10
 		}
 	}
