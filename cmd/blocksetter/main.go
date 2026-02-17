@@ -102,7 +102,10 @@ func (b *builder) writePackage(w io.Writer) {
 	if _, err := fmt.Fprintln(w, "\t\"github.com/df-mc/dragonfly/server/world\""); err != nil {
 		log.Fatalln(err)
 	}
-	if _, err := fmt.Fprintln(w, ")\n"); err != nil {
+	if _, err := fmt.Fprintln(w, ")"); err != nil {
+		log.Fatalln(err)
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
 		log.Fatalln(err)
 	}
 }
@@ -120,7 +123,10 @@ func (b *builder) writeInterfaces(w io.Writer) {
 	if _, err := fmt.Fprintln(w, "\tWithFacing(facing cube.Direction) world.Block"); err != nil {
 		log.Fatalln(err)
 	}
-	if _, err := fmt.Fprintln(w, "}\n"); err != nil {
+	if _, err := fmt.Fprintln(w, "}"); err != nil {
+		log.Fatalln(err)
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
 		log.Fatalln(err)
 	}
 	if _, err := fmt.Fprintln(w, "// HasAxis represents a block with an axis."); err != nil {
@@ -135,7 +141,10 @@ func (b *builder) writeInterfaces(w io.Writer) {
 	if _, err := fmt.Fprintln(w, "\tWithAxis(axis cube.Axis) world.Block"); err != nil {
 		log.Fatalln(err)
 	}
-	if _, err := fmt.Fprintln(w, "}\n"); err != nil {
+	if _, err := fmt.Fprintln(w, "}"); err != nil {
+		log.Fatalln(err)
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
 		log.Fatalln(err)
 	}
 	if _, err := fmt.Fprintln(w, "// HasColour represents a block with a colour."); err != nil {
@@ -150,7 +159,10 @@ func (b *builder) writeInterfaces(w io.Writer) {
 	if _, err := fmt.Fprintln(w, "\tWithColour(colour item.Colour) world.Block"); err != nil {
 		log.Fatalln(err)
 	}
-	if _, err := fmt.Fprintln(w, "}\n"); err != nil {
+	if _, err := fmt.Fprintln(w, "}"); err != nil {
+		log.Fatalln(err)
+	}
+	if _, err := fmt.Fprintln(w); err != nil {
 		log.Fatalln(err)
 	}
 }
@@ -169,7 +181,10 @@ func (b *builder) writeMethods(w io.Writer) {
 		if _, err := fmt.Fprintln(w, "\treturn b"); err != nil {
 			log.Fatalln(err)
 		}
-		if _, err := fmt.Fprintln(w, "}\n"); err != nil {
+		if _, err := fmt.Fprintln(w, "}"); err != nil {
+			log.Fatalln(err)
+		}
+		if _, err := fmt.Fprintln(w); err != nil {
 			log.Fatalln(err)
 		}
 	}
@@ -186,7 +201,10 @@ func (b *builder) writeMethods(w io.Writer) {
 		if _, err := fmt.Fprintln(w, "\treturn b"); err != nil {
 			log.Fatalln(err)
 		}
-		if _, err := fmt.Fprintln(w, "}\n"); err != nil {
+		if _, err := fmt.Fprintln(w, "}"); err != nil {
+			log.Fatalln(err)
+		}
+		if _, err := fmt.Fprintln(w); err != nil {
 			log.Fatalln(err)
 		}
 	}
@@ -203,7 +221,10 @@ func (b *builder) writeMethods(w io.Writer) {
 		if _, err := fmt.Fprintln(w, "\treturn b"); err != nil {
 			log.Fatalln(err)
 		}
-		if _, err := fmt.Fprintln(w, "}\n"); err != nil {
+		if _, err := fmt.Fprintln(w, "}"); err != nil {
+			log.Fatalln(err)
+		}
+		if _, err := fmt.Fprintln(w); err != nil {
 			log.Fatalln(err)
 		}
 	}
