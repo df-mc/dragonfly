@@ -6,7 +6,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Slime is a sticky block that reduces fall damage and has increased slipperiness.
+// Slime is a storage block equivalent to nine slimeballs. It has both sticky and bouncy properties,
+// making it useful in conjunction with pistons to move both blocks and entities.
 type Slime struct {
 	solid
 }
