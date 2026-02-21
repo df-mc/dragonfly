@@ -10,6 +10,7 @@ import (
 // making it useful in conjunction with pistons to move both blocks and entities.
 type Slime struct {
 	solid
+	transparent
 }
 
 // EntityLand ...
@@ -20,10 +21,7 @@ func (Slime) EntityLand(_ cube.Pos, _ *world.Tx, e world.Entity, distance *float
 	if s, ok := e.(interface{ Sneaking() bool }); ok && s.Sneaking() {
 		return
 	}
-	if v, ok := e.(interface {
-		Velocity() mgl64.Vec3
-		SetVelocity(mgl64.Vec3)
-	}); ok {
+	if v, ok := e.(velocityEntity); ok {
 		vel := v.Velocity()
 		if vel[1] < 0 {
 			vel[1] = -vel[1]
