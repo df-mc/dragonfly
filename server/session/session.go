@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
 	"image/color"
 	"io"
 	"log/slog"
