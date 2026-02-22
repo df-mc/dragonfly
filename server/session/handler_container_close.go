@@ -12,15 +12,6 @@ type ContainerCloseHandler struct{}
 func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.ContainerClose)
 
-	if s.pendingCloseWindowID.CompareAndSwap(int32(pk.WindowID), -1) {
-		s.writePacket(&packet.ContainerClose{
-			WindowID:      pk.WindowID,
-			ContainerType: byte(s.pendingCloseContainerType.Load()),
-		})
-		s.pendingCloseContainerType.Store(0)
-		return nil
-	}
-
 	c.MoveItemsToInventory()
 
 	var containerType byte
@@ -32,8 +23,7 @@ func (h *ContainerCloseHandler) Handle(p packet.Packet, s *Session, tx *world.Tx
 		containerType = byte(s.openedContainerID.Load())
 		s.closeCurrentContainer(tx, true)
 	case 0xff:
-		s.pendingCloseWindowID.Store(-1)
-		s.pendingCloseContainerType.Store(0)
+		// Sent when an inventory/container is opened at the same time as chat.
 		s.invOpened = false
 		if s.containerOpened.Load() {
 			s.closeCurrentContainer(tx, false)
