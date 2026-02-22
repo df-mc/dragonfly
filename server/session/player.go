@@ -892,10 +892,10 @@ loop:
 		select {
 		case shape := <-s.debugShapesAdd:
 			s.debugShapes[shape.ShapeID()] = shape
-			shapes = append(shapes, debugShapeToProtocol(shape, dim))
+			shapes = append(shapes, debugShapeToProtocol(shape, dim, s.shapeAttachedEntityRuntimeID(shape)))
 		case id := <-s.debugShapesRemove:
 			delete(s.debugShapes, id)
-			shapes = append(shapes, protocol.DebugDrawerShape{NetworkID: uint64(id), DimensionID: protocol.Option(s.dimensionID(dim))})
+			shapes = append(shapes, protocol.DebugDrawerShape{NetworkID: uint64(id), DimensionID: protocol.Option(s.dimensionID(dim)), ExtraShapeData: &protocol.LastShape{}})
 		default:
 			break loop
 		}
@@ -1092,13 +1092,39 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	return
 }
 
+// shapeAttachedEntityRuntimeID returns the runtime ID of the entity attached to a debug shape.
+func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) int64 {
+	var handle *world.EntityHandle
+	switch shape := shape.(type) {
+	case *debug.Arrow:
+		handle = shape.Entity
+	case *debug.Box:
+		handle = shape.Entity
+	case *debug.Circle:
+		handle = shape.Entity
+	case *debug.Line:
+		handle = shape.Entity
+	case *debug.Sphere:
+		handle = shape.Entity
+	case *debug.Text:
+		handle = shape.Entity
+	}
+	if handle == nil {
+		return 0
+	}
+	return int64(s.handleRuntimeID(handle))
+}
+
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
 // for some fields such as colour, scale and other per-shape properties.
-func debugShapeToProtocol(shape debug.Shape, dim world.Dimension) protocol.DebugDrawerShape {
+func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID int64) protocol.DebugDrawerShape {
 	dimID, _ := world.DimensionID(dim)
 	ps := protocol.DebugDrawerShape{
 		NetworkID:   uint64(shape.ShapeID()),
 		DimensionID: protocol.Option(int32(dimID)),
+	}
+	if attachedEntityID > 0 {
+		ps.AttachedToEntityID = protocol.Option(uint64(attachedEntityID))
 	}
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	switch shape := shape.(type) {
