@@ -41,8 +41,6 @@ type Arrow struct {
 	Colour color.RGBA
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
-	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
-	Scale float64
 	// EndPosition is the end position of the arrow in the world. The arrow will be drawn from Position to
 	// EndPosition, with the head being drawn at EndPosition.
 	EndPosition mgl64.Vec3
@@ -102,8 +100,6 @@ type Line struct {
 	Colour color.RGBA
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
-	// Scale is the width of the line. If zero, it will default to 1.0.
-	Scale float64
 	// EndPosition is the end position of the line in the world. The line will be drawn from Position to
 	// EndPosition.
 	EndPosition mgl64.Vec3
