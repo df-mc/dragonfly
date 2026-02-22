@@ -41,6 +41,8 @@ type Arrow struct {
 	Colour color.RGBA
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
 	// EndPosition is the end position of the arrow in the world. The arrow will be drawn from Position to
 	// EndPosition, with the head being drawn at EndPosition.
 	EndPosition mgl64.Vec3
@@ -63,13 +65,13 @@ type Box struct {
 
 	// Colour is the colour that will be used for the outline. If empty, it will default to white.
 	Colour color.RGBA
-	// Bounds is the size of the box in the world, acting as an offset from the Position. If empty,
-	// it will default to a 1x1x1 box.
-	Bounds mgl64.Vec3
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
 	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
 	Scale float64
+	// Bounds is the size of the box in the world, acting as an offset from the Position. If empty,
+	// it will default to a 1x1x1 box.
+	Bounds mgl64.Vec3
 	// Entity is an optional entity handle to attach the shape to.
 	Entity *world.EntityHandle
 }
@@ -100,6 +102,8 @@ type Line struct {
 	Colour color.RGBA
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
+	// Scale is the width of the line. If zero, it will default to 1.0.
+	Scale float64
 	// EndPosition is the end position of the line in the world. The line will be drawn from Position to
 	// EndPosition.
 	EndPosition mgl64.Vec3
@@ -135,6 +139,8 @@ type Text struct {
 	Colour color.RGBA
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
+	// Scale is the size of the text. If zero, it will default to 1.0.
+	Scale float64
 	// Text is the text to be displayed on the shape. The background automatically scales to fit the text.
 	Text string
 	// Entity is an optional entity handle to attach the shape to.

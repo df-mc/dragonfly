@@ -1131,6 +1131,7 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeArrow))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.ArrowShape{
 			ArrowEndLocation: protocol.Option(vec64To32(shape.EndPosition)),
 			ArrowHeadLength:  protocol.Option(valueOrDefault(float32(shape.HeadLength), 1)),
@@ -1153,6 +1154,7 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeLine))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.LineShape{LineEndLocation: vec64To32(shape.EndPosition)}
 	case *debug.Sphere:
 		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeSphere))
@@ -1164,6 +1166,7 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeText))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.TextShape{Text: shape.Text}
 	default:
 		panic(fmt.Sprintf("unknown debug shape type %T", shape))
