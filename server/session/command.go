@@ -45,17 +45,10 @@ type translation interface {
 	Params(l language.Tag) []string
 }
 
-// BuildAvailableCommands builds an AvailableCommands packet for the commands passed.
-// The input map may contain aliases. Only commands that the Source can execute are included.
-func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) *packet.AvailableCommands {
-	pk, _ := BuildAvailableCommandsWithRunnables(commands, src)
-	return pk
-}
-
-// BuildAvailableCommandsWithRunnables builds an AvailableCommands packet and the runnable command map for the Source
+// BuildAvailableCommands builds an AvailableCommands packet and the runnable command map for the Source
 // passed. The input map may contain aliases. It returns the AvailableCommands packet and the runnable command map
 // for the commands that the Source can execute.
-func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cmd.Source) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
+func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
 	pk := &packet.AvailableCommands{}
@@ -92,7 +85,7 @@ func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cm
 
 		for i, params := range params {
 			for _, paramInfo := range params {
-				t, enum := valueToParamType(paramInfo, co)
+				t, enum := valueToParamType(paramInfo, src)
 				suffix := paramInfo.Suffix
 
 				opt := byte(0)
@@ -173,7 +166,7 @@ func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cm
 // /help list and will be auto-completed.
 func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.Runnable {
 	commands := cmd.Commands()
-	pk, m := BuildAvailableCommandsWithRunnables(commands, co)
+	pk, m := BuildAvailableCommands(commands, co)
 	s.writePacket(pk)
 	return m
 }
