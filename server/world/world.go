@@ -779,17 +779,30 @@ func (w *World) Spawn() cube.Pos {
 	if w == nil {
 		return cube.Pos{}
 	}
+
+	if w.Dimension() == End {
+		return cube.Pos{100, 50}
+	} else if w.Dimension() == Nether {
+		return cube.Pos{}
+	}
+
 	w.set.Lock()
 	defer w.set.Unlock()
 	return w.set.Spawn
 }
 
 // SetSpawn sets the spawn of the world to a different position. The player
-// will be spawned in the center of this position when newly joining.
+// will be spawned in the centre of this position when newly joining.
 func (w *World) SetSpawn(pos cube.Pos) {
 	if w == nil {
 		return
 	}
+
+	// nether has no spawn point and end spawn point is always 100 50 0.
+	if w.Dimension() == Nether || w.Dimension() == End {
+		return
+	}
+
 	w.set.Lock()
 	w.set.Spawn = pos
 	w.set.Unlock()

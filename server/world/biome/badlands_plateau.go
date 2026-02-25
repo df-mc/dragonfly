@@ -32,7 +32,7 @@ func (BadlandsPlateau) WaterColour() color.RGBA {
 
 // Tags ...
 func (BadlandsPlateau) Tags() []string {
-	return []string{"animal", "mesa", "monster", "overworld", "plateau", "rare", "spawns_mesa_mobs", "spawns_warm_variant_farm_animals"}
+	return []string{"animal", "mesa", "monster", "overworld", "plateau", "rare", "spawns_mesa_mobs", "spawns_warm_variant_farm_animals", "surface_mineshaft"}
 }
 
 // String ...

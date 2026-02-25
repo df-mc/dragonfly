@@ -32,7 +32,7 @@ func (ModifiedWoodedBadlandsPlateau) WaterColour() color.RGBA {
 
 // Tags ...
 func (ModifiedWoodedBadlandsPlateau) Tags() []string {
-	return []string{"animal", "mesa", "monster", "mutated", "overworld", "plateau", "spawns_mesa_mobs", "spawns_warm_variant_farm_animals"}
+	return []string{"animal", "mesa", "monster", "mutated", "overworld", "plateau", "spawns_mesa_mobs", "spawns_warm_variant_farm_animals", "surface_mineshaft"}
 }
 
 // String ...

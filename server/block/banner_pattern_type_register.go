@@ -5,7 +5,7 @@ var (
 	bannerPatternIDs  = map[BannerPatternType]string{}
 )
 
-// init initializes all default banner patterns to the registry.
+// init initialises all default banner patterns to the registry.
 func init() {
 	registerBannerPattern("bo", BorderBannerPattern())
 	registerBannerPattern("bri", BricksBannerPattern())
@@ -34,7 +34,7 @@ func init() {
 	registerBannerPattern("tr", SquareTopRightBannerPattern())
 	registerBannerPattern("sc", StraightCrossBannerPattern())
 	registerBannerPattern("bs", StripeBottomBannerPattern())
-	registerBannerPattern("cs", StripeCenterBannerPattern())
+	registerBannerPattern("cs", StripeCentreBannerPattern())
 	registerBannerPattern("dls", StripeDownLeftBannerPattern())
 	registerBannerPattern("drs", StripeDownRightBannerPattern())
 	registerBannerPattern("ls", StripeLeftBannerPattern())
