@@ -10,7 +10,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Banner is a tall decorative block that can be customized.
+// Banner is a tall decorative block that can be customised.
 type Banner struct {
 	empty
 	transparent

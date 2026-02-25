@@ -370,7 +370,7 @@ func (srv *Server) startListening() {
 	}
 }
 
-// makeBlockEntries initializes the server's block components map using the
+// makeBlockEntries initialises the server's block components map using the
 // registered custom blocks. It allows block components to be created only once
 // at startup.
 func (srv *Server) makeBlockEntries() {
@@ -386,7 +386,7 @@ func (srv *Server) makeBlockEntries() {
 	}
 }
 
-// makeItemComponents initializes the server's item components map using the
+// makeItemComponents initialises the server's item components map using the
 // registered custom items. It allows item components to be created only once
 // at startup
 func (srv *Server) makeItemComponents() {

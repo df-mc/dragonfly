@@ -792,7 +792,7 @@ func (w *World) Spawn() cube.Pos {
 }
 
 // SetSpawn sets the spawn of the world to a different position. The player
-// will be spawned in the center of this position when newly joining.
+// will be spawned in the centre of this position when newly joining.
 func (w *World) SetSpawn(pos cube.Pos) {
 	if w == nil {
 		return

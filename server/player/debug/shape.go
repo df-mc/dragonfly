@@ -1,9 +1,11 @@
 package debug
 
 import (
-	"github.com/go-gl/mathgl/mgl64"
 	"image/color"
 	"sync/atomic"
+
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 var nextShapeID atomic.Int32
@@ -16,7 +18,7 @@ type Shape interface {
 }
 
 // shape is a base type for all shapes that implements the Shape interface. It contains a unique identifier
-// that is lazily initialized when the ShapeID method is called for the first time.
+// that is lazily initialised when the ShapeID method is called for the first time.
 type shape struct {
 	id *int
 }
@@ -51,6 +53,8 @@ type Arrow struct {
 	// HeadSegments is the number of segments that the head of the arrow will be drawn with. The more
 	// segments, the smoother the head will look. If zero, it will default to 4.
 	HeadSegments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
 }
 
 // Box represents a hollow box that can be drawn at any point in the world, with a bounds that can be set.
@@ -59,13 +63,15 @@ type Box struct {
 
 	// Colour is the colour that will be used for the outline. If empty, it will default to white.
 	Colour color.RGBA
-	// Bounds is the size of the box in the world, acting as an offset from the Position. If empty,
-	// it will default to a 1x1x1 box.
-	Bounds mgl64.Vec3
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
 	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
 	Scale float64
+	// Bounds is the size of the box in the world, acting as an offset from the Position. If empty,
+	// it will default to a 1x1x1 box.
+	Bounds mgl64.Vec3
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
 }
 
 // Circle represents a hollow circle that can be drawn at any point in the world, with the scale being used
@@ -82,6 +88,8 @@ type Circle struct {
 	// Segments is the number of segments that the circle will be drawn with. The more segments, the smoother
 	// the circle will look. If empty, it will default to 20.
 	Segments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
 }
 
 // Line represents a line that can be drawn at any point in the world, with a start and end position.
@@ -95,6 +103,8 @@ type Line struct {
 	// EndPosition is the end position of the line in the world. The line will be drawn from Position to
 	// EndPosition.
 	EndPosition mgl64.Vec3
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
 }
 
 // Sphere represents a hollow sphere that can be drawn at any point in the world, with one line in each axis.
@@ -111,6 +121,8 @@ type Sphere struct {
 	// Segments is the number of segments that the circle will be drawn with. The more segments, the smoother
 	// the circle will look. If empty, it will default to 20.
 	Segments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
 }
 
 // Text represents text that can be drawn at any point in the world, looking like a normal entity nametag
@@ -123,6 +135,10 @@ type Text struct {
 	Colour color.RGBA
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
+	// Scale is the size of the text. If zero, it will default to 1.0.
+	Scale float64
 	// Text is the text to be displayed on the shape. The background automatically scales to fit the text.
 	Text string
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
 }
