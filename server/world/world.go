@@ -1158,8 +1158,7 @@ func (w *World) chunk(pos ChunkPos) *Column {
 		return c
 	}
 	c, err := w.loadChunk(pos)
-	single := [1]*chunk.Chunk{c.Chunk}
-	chunk.LightArea(single[:], int(pos[0]), int(pos[1])).Fill()
+	chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
 	if err != nil {
 		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 		return c
@@ -1214,8 +1213,7 @@ func (w *World) calculateLight(centre ChunkPos) {
 // spreadLight spreads the light from the chunk passed at the position passed
 // to all neighbours if each of them is loaded.
 func (w *World) spreadLight(pos ChunkPos) {
-	var chunks [9]*chunk.Chunk
-	i := 0
+	c := make([]*chunk.Chunk, 0, 9)
 	for z := int32(-1); z <= 1; z++ {
 		for x := int32(-1); x <= 1; x++ {
 			neighbour, ok := w.chunks[ChunkPos{pos[0] + x, pos[1] + z}]
@@ -1223,12 +1221,11 @@ func (w *World) spreadLight(pos ChunkPos) {
 				// Not all surrounding chunks existed: Stop spreading light.
 				return
 			}
-			chunks[i] = neighbour.Chunk
-			i++
+			c = append(c, neighbour.Chunk)
 		}
 	}
 	// All chunks surrounding the current one are present, so we can spread.
-	chunk.LightArea(chunks[:], int(pos[0])-1, int(pos[1])-1).Spread()
+	chunk.LightArea(c, int(pos[0])-1, int(pos[1])-1).Spread()
 }
 
 // autoSave runs until the world is running, saving and removing chunks that
