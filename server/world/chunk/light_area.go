@@ -14,6 +14,7 @@ type lightArea struct {
 	r            cube.Range
 }
 
+// lightQueue is a FIFO ring buffer used during light propagation.
 type lightQueue struct {
 	nodes []lightNode
 	head  int
@@ -21,6 +22,7 @@ type lightQueue struct {
 	size  int
 }
 
+// newLightQueue creates an empty queue sized to capacity (at least 1).
 func newLightQueue(capacity int) *lightQueue {
 	if capacity < 1 {
 		capacity = 1
@@ -28,6 +30,7 @@ func newLightQueue(capacity int) *lightQueue {
 	return &lightQueue{nodes: make([]lightNode, capacity)}
 }
 
+// push appends a node to the tail, growing storage if full.
 func (q *lightQueue) push(n lightNode) {
 	if q.size == len(q.nodes) {
 		q.grow()
@@ -37,6 +40,7 @@ func (q *lightQueue) push(n lightNode) {
 	q.size++
 }
 
+// pop removes and returns the oldest queued node.
 func (q *lightQueue) pop() (lightNode, bool) {
 	if q.size == 0 {
 		return lightNode{}, false
@@ -47,10 +51,12 @@ func (q *lightQueue) pop() (lightNode, bool) {
 	return n, true
 }
 
+// empty returns true when no nodes are queued.
 func (q *lightQueue) empty() bool {
 	return q.size == 0
 }
 
+// grow expands the ring buffer and reorders elements to start at index 0.
 func (q *lightQueue) grow() {
 	nodes := make([]lightNode, len(q.nodes)<<1)
 	if q.head < q.tail {
