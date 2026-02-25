@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -279,18 +280,74 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 		return nil, fmt.Errorf("cannot read paletted storage (size=%v) %T: size too large", blockSize, pe)
 	}
 	uint32Count := size.uint32s()
-
-	uint32s := make([]uint32, uint32Count)
 	byteCount := uint32Count * 4
 
 	data := buf.Next(byteCount)
 	if len(data) != byteCount {
 		return nil, fmt.Errorf("cannot read paletted storage (size=%v) %T: not enough block data present: expected %v bytes, got %v", blockSize, pe, byteCount, len(data))
 	}
-	for i := 0; i < uint32Count; i++ {
-		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
-		uint32s[i] = uint32(data[i*4]) | uint32(data[i*4+1])<<8 | uint32(data[i*4+2])<<16 | uint32(data[i*4+3])<<24
+	if _, isPersistent := e.(networkPersistentEncoding); !isPersistent {
+		if paletteCount, ok := peekPaletteCount(buf, size, e); ok && paletteCount == 1 {
+			p, err := e.decodePalette(buf, size, pe)
+			if err != nil {
+				return nil, err
+			}
+			// Some servers encode a single-value palette using non-zero bits per block. Canonicalise it to a 0-bit
+			// storage and skip allocating index words.
+			p.size = 0
+			return newPalettedStorage(nil, p), nil
+		}
 	}
-	p, err := e.decodePalette(buf, paletteSize(blockSize), pe)
-	return newPalettedStorage(uint32s, p), err
+
+	uint32s := make([]uint32, uint32Count)
+	for i, j := 0, 0; i < uint32Count; i, j = i+1, j+4 {
+		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
+		uint32s[i] = uint32(data[j]) | uint32(data[j+1])<<8 | uint32(data[j+2])<<16 | uint32(data[j+3])<<24
+	}
+	p, err := e.decodePalette(buf, size, pe)
+	if err != nil {
+		return nil, err
+	}
+	return newPalettedStorage(uint32s, p), nil
+}
+
+// peekPaletteCount peeks the amount of palette entries that follow in buf for this encoding and block size without
+// consuming the buffer.
+func peekPaletteCount(buf *bytes.Buffer, size paletteSize, e Encoding) (int32, bool) {
+	if size == 0 {
+		return 1, true
+	}
+
+	switch e.(type) {
+	case diskEncoding:
+		b := buf.Bytes()
+		if len(b) < 4 {
+			return 0, false
+		}
+		return int32(binary.LittleEndian.Uint32(b[:4])), true
+	case networkEncoding:
+		return peekVarint32(buf.Bytes())
+	default:
+		return 0, false
+	}
+}
+
+func peekVarint32(b []byte) (int32, bool) {
+	var v uint32
+	for i := uint(0); i < 35; i += 7 {
+		index := int(i / 7)
+		if index >= len(b) {
+			return 0, false
+		}
+		c := b[index]
+		v |= uint32(c&0x7f) << i
+		if c&0x80 == 0 {
+			x := int32(v >> 1)
+			if v&1 != 0 {
+				x = ^x
+			}
+			return x, true
+		}
+	}
+	return 0, false
 }
