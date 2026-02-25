@@ -45,22 +45,14 @@ type translation interface {
 	Params(l language.Tag) []string
 }
 
-// BuildAvailableCommands builds an AvailableCommands packet for the commands passed.
-// The input map may contain aliases. Only commands that the Source can execute are included.
-func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) *packet.AvailableCommands {
-	pk, _ := BuildAvailableCommandsWithRunnables(commands, src)
-	return pk
-}
-
-// BuildAvailableCommandsWithRunnables builds an AvailableCommands packet and the runnable command map for the Source
+// BuildAvailableCommands builds an AvailableCommands packet and the runnable command map for the Source
 // passed. The input map may contain aliases. It returns the AvailableCommands packet and the runnable command map
 // for the commands that the Source can execute.
-func BuildAvailableCommandsWithRunnables(commands map[string]cmd.Command, src cmd.Source) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
-	return buildAvailableCommands(commands, src, nil)
-}
-
-// buildAvailableCommands is the internal implementation that accepts softEnums for session-level tracking.
-func buildAvailableCommands(commands map[string]cmd.Command, src cmd.Source, softEnums map[string]struct{}) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
+func BuildAvailableCommands(
+	commands map[string]cmd.Command,
+	src cmd.Source,
+	softEnums map[string]struct{},
+) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
 	pk := &packet.AvailableCommands{}
@@ -98,7 +90,6 @@ func buildAvailableCommands(commands map[string]cmd.Command, src cmd.Source, sof
 		for i, params := range params {
 			for _, paramInfo := range params {
 				t, enum := valueToParamType(paramInfo, src)
-				t |= protocol.CommandArgValid
 				suffix := paramInfo.Suffix
 
 				opt := byte(0)
@@ -179,7 +170,7 @@ func buildAvailableCommands(commands map[string]cmd.Command, src cmd.Source, sof
 // /help list and will be auto-completed.
 func (s *Session) sendAvailableCommands(co Controllable, softEnums map[string]struct{}) map[string]map[int]cmd.Runnable {
 	commands := cmd.Commands()
-	pk, m := buildAvailableCommands(commands, co, softEnums)
+	pk, m := BuildAvailableCommands(commands, co, softEnums)
 	s.writePacket(pk)
 	return m
 }
