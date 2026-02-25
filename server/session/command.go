@@ -48,7 +48,7 @@ type translation interface {
 // BuildAvailableCommands builds an AvailableCommands packet and the runnable command map for the Source
 // passed. The input map may contain aliases. It returns the AvailableCommands packet and the runnable command map
 // for the commands that the Source can execute.
-func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
+func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source, softEnums map[string]struct{}) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
 	pk := &packet.AvailableCommands{}
@@ -164,9 +164,9 @@ func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source) (*p
 
 // sendAvailableCommands sends all available commands of the server. Once sent, they will be visible in the
 // /help list and will be auto-completed.
-func (s *Session) sendAvailableCommands(co Controllable) map[string]map[int]cmd.Runnable {
+func (s *Session) sendAvailableCommands(co Controllable, softEnums map[string]struct{}) map[string]map[int]cmd.Runnable {
 	commands := cmd.Commands()
-	pk, m := BuildAvailableCommands(commands, co)
+	pk, m := BuildAvailableCommands(commands, co, softEnums)
 	s.writePacket(pk)
 	return m
 }
