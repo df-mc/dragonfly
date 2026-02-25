@@ -48,7 +48,11 @@ type translation interface {
 // BuildAvailableCommands builds an AvailableCommands packet and the runnable command map for the Source
 // passed. The input map may contain aliases. It returns the AvailableCommands packet and the runnable command map
 // for the commands that the Source can execute.
-func BuildAvailableCommands(commands map[string]cmd.Command, src cmd.Source, softEnums map[string]struct{}) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
+func BuildAvailableCommands(
+	commands map[string]cmd.Command,
+	src cmd.Source,
+	softEnums map[string]struct{},
+) (*packet.AvailableCommands, map[string]map[int]cmd.Runnable) {
 	m := make(map[string]map[int]cmd.Runnable, len(commands))
 
 	pk := &packet.AvailableCommands{}
