@@ -1,16 +1,15 @@
 package chunk
 
 import (
-	"container/list"
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
 // If one is found, a node is added for it to the node queue.
-func (a *lightArea) insertBlockLightNodes(queue *list.List) {
+func (a *lightArea) insertBlockLightNodes(queue *lightQueue) {
 	a.iterSubChunks(anyLightBlocks, func(pos cube.Pos) {
 		if level := a.highest(pos, LightBlocks); level > 0 {
-			queue.PushBack(node(pos, level, BlockLight))
+			queue.push(node(pos, level, BlockLight))
 		}
 	})
 }
@@ -29,7 +28,7 @@ func anyLightBlocks(sub *SubChunk) bool {
 
 // insertSkyLightNodes iterates over the chunk and inserts a light node anywhere at the highest block in the
 // chunk. In addition, any skylight above those nodes will be set to 15.
-func (a *lightArea) insertSkyLightNodes(queue *list.List) {
+func (a *lightArea) insertSkyLightNodes(queue *lightQueue) {
 	a.iterHeightmap(func(x, z int, height, highestNeighbour, highestY, lowestY int) {
 		pos := cube.Pos{x, height, z}
 		if height <= a.r.Max() {
@@ -40,7 +39,7 @@ func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 				if level := a.highest(pos.Sub(cube.Pos{0, 1}), FilteringBlocks); level != 15 && level != 0 {
 					// If we hit a block like water or leaves (something that diffuses but does not block light), we
 					// need a node above this block regardless of the neighbours.
-					queue.PushBack(node(pos, 15, SkyLight))
+					queue.push(node(pos, 15, SkyLight))
 				}
 			}
 		}
@@ -49,7 +48,7 @@ func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 			// lower than the current one, on the same Y level, or one level higher, because light in
 			// this column can't spread below that anyway.
 			if pos[1]++; pos[1] < highestNeighbour {
-				queue.PushBack(node(pos, 15, SkyLight))
+				queue.push(node(pos, 15, SkyLight))
 				continue
 			}
 			// Fill the rest with full skylight.
@@ -60,7 +59,7 @@ func (a *lightArea) insertSkyLightNodes(queue *list.List) {
 
 // insertLightSpreadingNodes inserts light nodes into the node queue passed which, when propagated, will
 // spread into the neighbouring chunks.
-func (a *lightArea) insertLightSpreadingNodes(queue *list.List, lt light) {
+func (a *lightArea) insertLightSpreadingNodes(queue *lightQueue, lt light) {
 	a.iterEdges(a.nodesNeeded(lt), func(pa, pb cube.Pos) {
 		la, lb := a.light(pa, lt), a.light(pb, lt)
 		if la == lb || la-1 == lb || lb-1 == la {
@@ -68,9 +67,9 @@ func (a *lightArea) insertLightSpreadingNodes(queue *list.List, lt light) {
 			return
 		}
 		if filter := a.highest(pb, FilteringBlocks) + 1; la > filter && la-filter > lb {
-			queue.PushBack(node(pb, la-filter, lt))
+			queue.push(node(pb, la-filter, lt))
 		} else if filter = a.highest(pa, FilteringBlocks) + 1; lb > filter && lb-filter > la {
-			queue.PushBack(node(pa, lb-filter, lt))
+			queue.push(node(pa, lb-filter, lt))
 		}
 	})
 }
@@ -91,19 +90,33 @@ func (a *lightArea) nodesNeeded(lt light) func(sa, sb *SubChunk) bool {
 
 // propagate spreads the next light node in the node queue passed through the lightArea a. propagate adds the neighbours
 // of the node to the queue for as long as it is able to spread.
-func (a *lightArea) propagate(queue *list.List) {
-	n := queue.Remove(queue.Front()).(lightNode)
+func (a *lightArea) propagate(queue *lightQueue) {
+	n, ok := queue.pop()
+	if !ok {
+		return
+	}
 	if a.light(n.pos, n.lt) >= n.level {
 		return
 	}
 	a.setLight(n.pos, n.lt, n.level)
 
-	for neighbour := range a.neighbours(n) {
-		filter := a.highest(neighbour.pos, FilteringBlocks) + 1
-		if n.level > filter && a.light(neighbour.pos, n.lt) < n.level-filter {
-			neighbour.level = n.level - filter
-			queue.PushBack(neighbour)
-		}
+	x, y, z := n.pos[0], n.pos[1], n.pos[2]
+	a.propagateNeighbour(queue, n.lt, n.level, x+1, y, z)
+	a.propagateNeighbour(queue, n.lt, n.level, x-1, y, z)
+	a.propagateNeighbour(queue, n.lt, n.level, x, y+1, z)
+	a.propagateNeighbour(queue, n.lt, n.level, x, y-1, z)
+	a.propagateNeighbour(queue, n.lt, n.level, x, y, z+1)
+	a.propagateNeighbour(queue, n.lt, n.level, x, y, z-1)
+}
+
+func (a *lightArea) propagateNeighbour(queue *lightQueue, lt light, level uint8, x, y, z int) {
+	if y < a.r.Min() || y > a.r.Max() || x < a.baseX || z < a.baseZ || x >= a.baseX+a.w*16 || z >= a.baseZ+a.w*16 {
+		return
+	}
+	pos := cube.Pos{x, y, z}
+	filter := a.highest(pos, FilteringBlocks) + 1
+	if level > filter && a.light(pos, lt) < level-filter {
+		queue.push(node(pos, level-filter, lt))
 	}
 }
 
