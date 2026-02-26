@@ -164,7 +164,7 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 // relatively heavy task which should only happen right before the sub chunk holding this PalettedStorage is
 // saved to disk. compact also shrinks the palette size if possible.
 func (storage *PalettedStorage) compact() {
-	if storage.palette == nil || storage.palette.Len() == 0 {
+	if storage.palette.Len() == 0 {
 		return
 	}
 	if storage.palette.Len() == 1 {
