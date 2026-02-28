@@ -168,7 +168,7 @@ func (storage *PalettedStorage) compact() {
 		return
 	}
 	if storage.palette.Len() == 1 {
-		// Fast path: A single unique value can always be represented using 0 bits per index. This avoids scanning the
+		// A single unique value can always be represented using 0 bits per index. This avoids scanning the
 		// entire storage and drops any backing indices slice.
 		storage.bitsPerIndex = 0
 		storage.filledBitsPerIndex = 0
