@@ -32,7 +32,7 @@ func (MangroveSwamp) WaterColour() color.RGBA {
 
 // Tags ...
 func (MangroveSwamp) Tags() []string {
-	return []string{"mangrove_swamp", "overworld", "monster", "spawns_slimes_on_surface", "spawns_warm_variant_farm_animals", "spawns_warm_variant_frogs"}
+	return []string{"mangrove_swamp", "overworld", "monster", "spawns_slimes_on_surface", "spawns_warm_variant_farm_animals", "spawns_warm_variant_frogs", "slime"}
 }
 
 // String ...

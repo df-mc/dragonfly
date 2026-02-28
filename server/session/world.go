@@ -1090,7 +1090,7 @@ func (s *Session) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 	if s.containerOpened.Load() && *s.openedPos.Load() == pos {
 		return
 	}
-	s.closeCurrentContainer(tx)
+	s.closeCurrentContainer(tx, false)
 
 	b := tx.Block(pos)
 	if container, ok := b.(block.Container); ok {
@@ -1169,6 +1169,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world
 		containerType = protocol.ContainerTypeHopper
 	}
 
+	s.openedContainerID.Store(uint32(containerType))
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
 		ContainerType:           containerType,
@@ -1310,13 +1311,23 @@ func (s *Session) nextWindowID() byte {
 
 // closeWindow closes the container window currently opened. If no window is open, closeWindow will do
 // nothing.
-func (s *Session) closeWindow() {
+func (s *Session) closeWindow(clientRequested bool) bool {
 	if !s.containerOpened.CompareAndSwap(true, false) {
-		return
+		return false
 	}
+	containerType := byte(s.openedContainerID.Load())
+	windowID := byte(s.openedWindowID.Load())
+
 	s.openedContainerID.Store(0)
 	s.openedWindow.Store(inventory.New(1, nil))
-	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
+	if !clientRequested {
+		s.writePacket(&packet.ContainerClose{
+			WindowID:      windowID,
+			ContainerType: containerType,
+			ServerSide:    true,
+		})
+	}
+	return true
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.

@@ -137,9 +137,8 @@ type Handler interface {
 	HandleItemPickup(ctx *Context, i *item.Stack)
 	// HandleHeldSlotChange handles the player changing the slot they are currently holding.
 	HandleHeldSlotChange(ctx *Context, from, to int)
-	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
-	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
-	// e.Item() may be called to obtain the item stack dropped.
+	// HandleItemDrop handles the player dropping an item on the ground.
+	// ctx.Cancel() may be called to prevent the player from dropping the item.Stack passed on the ground.
 	HandleItemDrop(ctx *Context, s item.Stack)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.

@@ -7,12 +7,12 @@ type WindsweptSavanna struct{}
 
 // Temperature ...
 func (WindsweptSavanna) Temperature() float64 {
-	return 1.1
+	return 2
 }
 
 // Rainfall ...
 func (WindsweptSavanna) Rainfall() float64 {
-	return 0.5
+	return 0
 }
 
 // Depth ...
