@@ -16,6 +16,13 @@ type Item interface {
 	EncodeItem() (name string, meta int16)
 }
 
+// BlockRuntimeRepresentable represents an item that should advertise a specific block runtime ID to clients.
+// This is useful for items that place a block state different from the item itself.
+type BlockRuntimeRepresentable interface {
+	// BlockForRuntimeID returns the block state that should be encoded in the item's BlockRuntimeID field.
+	BlockForRuntimeID() Block
+}
+
 // CustomItem represents an item that is non-vanilla and requires a resource pack and extra steps to show it
 // to the client.
 type CustomItem interface {
