@@ -86,24 +86,22 @@ func (s SweetBerryBush) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if s.Age == 0 {
 		return
 	}
-	if v, ok := e.(interface {
-		Velocity() mgl64.Vec3
-		SetVelocity(mgl64.Vec3)
-	}); ok {
-		vel := v.Velocity()
-		vel[0] *= 0.8
-		vel[1] *= 0.75
-		vel[2] *= 0.8
-		v.SetVelocity(vel)
-	}
-	if sneaking, ok := e.(interface{ Sneaking() bool }); ok && sneaking.Sneaking() {
-		return
-	}
-	v, ok := e.(interface{ Velocity() mgl64.Vec3 })
+	v, ok := e.(velocityEntity)
 	if !ok {
 		return
 	}
+
 	vel := v.Velocity()
+	slowed := vel
+	slowed[0] *= 0.8
+	slowed[1] *= 0.75
+	slowed[2] *= 0.8
+	v.SetVelocity(slowed)
+
+	if sneaking, ok := e.(interface{ Sneaking() bool }); ok && sneaking.Sneaking() {
+		return
+	}
+
 	vel[1] = 0
 	if mgl64.FloatEqualThreshold(vel.Len(), 0, 0.003) || rand.IntN(20) != 0 {
 		return
