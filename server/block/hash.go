@@ -116,6 +116,7 @@ const (
 	hashLitPumpkin
 	hashLog
 	hashLoom
+	hashMagma
 	hashMelon
 	hashMelonSeeds
 	hashMossCarpet
@@ -650,6 +651,10 @@ func (l Log) Hash() (uint64, uint64) {
 
 func (l Loom) Hash() (uint64, uint64) {
 	return hashLoom, uint64(l.Facing)
+}
+
+func (Magma) Hash() (uint64, uint64) {
+	return hashMagma, 0
 }
 
 func (Melon) Hash() (uint64, uint64) {
