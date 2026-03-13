@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -33,6 +34,9 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomInput},
 		Slot:      loomInputSlot,
 	}, s, tx)
+	if err := ensureUnlockedForCrafting(input); err != nil {
+		return err
+	}
 	if input.Count() < timesCrafted {
 		return fmt.Errorf("input item count is less than times crafted")
 	}
@@ -49,6 +53,9 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomDye},
 		Slot:      loomDyeSlot,
 	}, s, tx)
+	if err := ensureUnlockedForCrafting(dye); err != nil {
+		return err
+	}
 	if dye.Count() < timesCrafted {
 		return fmt.Errorf("dye item count is less than times crafted")
 	}
@@ -67,6 +74,11 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomMaterial},
 		Slot:      loomPatternSlot,
 	}, s, tx)
+	if !pattern.Empty() {
+		if err := ensureUnlockedForCrafting(pattern); err != nil {
+			return err
+		}
+	}
 	if expectedPatternItem, hasPatternItem := expectedPattern.Item(); hasPatternItem {
 		if pattern.Empty() {
 			return fmt.Errorf("pattern item is empty but the pattern is required")

@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
@@ -39,6 +40,9 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerSmithingTableInput},
 		Slot:      smithingInputSlot,
 	}, s, tx)
+	if err := ensureUnlockedForCrafting(input); err != nil {
+		return err
+	}
 	if !matchingStacks(input, expectedInputs[0]) {
 		return fmt.Errorf("input item is not the same as expected input")
 	}
@@ -46,6 +50,9 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerSmithingTableMaterial},
 		Slot:      smithingMaterialSlot,
 	}, s, tx)
+	if err := ensureUnlockedForCrafting(material); err != nil {
+		return err
+	}
 	if !matchingStacks(material, expectedInputs[1]) {
 		return fmt.Errorf("material item is not the same as expected material")
 	}
@@ -53,6 +60,9 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerSmithingTableTemplate},
 		Slot:      smithingTemplateSlot,
 	}, s, tx)
+	if err := ensureUnlockedForCrafting(template); err != nil {
+		return err
+	}
 	if !matchingStacks(template, expectedInputs[2]) {
 		return fmt.Errorf("template item is not the same as expected template")
 	}

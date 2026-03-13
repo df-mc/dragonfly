@@ -39,6 +39,9 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilInput},
 		Slot:      anvilInputSlot,
 	}, s, tx)
+	if err := ensureUnlockedForAnvil(input); err != nil {
+		return err
+	}
 	if input.Empty() {
 		return fmt.Errorf("no item in input input slot")
 	}
@@ -46,6 +49,11 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerAnvilMaterial},
 		Slot:      anvilMaterialSlot,
 	}, s, tx)
+	if !material.Empty() {
+		if err := ensureUnlockedForAnvil(material); err != nil {
+			return err
+		}
+	}
 	result := input
 
 	// The sum of the input's anvil cost as well as the material's anvil cost.

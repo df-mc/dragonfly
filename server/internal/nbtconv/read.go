@@ -3,12 +3,13 @@ package nbtconv
 import (
 	"bytes"
 	"encoding/gob"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/constraints"
-	"time"
 )
 
 // Bool reads a uint8 value from a map at key k and returns true if it equals 1.
@@ -166,6 +167,7 @@ func Item(data map[string]any, s *item.Stack) item.Stack {
 	readDisplay(tag, s)
 	readDragonflyData(tag, s)
 	readEnchantments(tag, s)
+	readItemLock(tag, s)
 	readUnbreakable(tag, s)
 	return *s
 }

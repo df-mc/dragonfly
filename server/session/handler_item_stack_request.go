@@ -2,6 +2,9 @@ package session
 
 import (
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
@@ -10,8 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
-	"time"
 )
 
 // ItemStackRequestHandler handles the ItemStackRequest packet. It handles the actions done within the
@@ -147,6 +148,9 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	}
 	i, _ := h.itemInSlot(from, s, tx)
 	dest, _ := h.itemInSlot(to, s, tx)
+	if err := ensureUnlockedForInventoryMove(i, from, to, s, tx); err != nil {
+		return err
+	}
 	if !i.Comparable(dest) {
 		return fmt.Errorf("client tried transferring %v to %v, but the stacks are incomparable", i, dest)
 	}
@@ -183,6 +187,12 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 	}
 	i, _ := h.itemInSlot(a.Source, s, tx)
 	dest, _ := h.itemInSlot(a.Destination, s, tx)
+	if err := ensureUnlockedForInventoryMove(i, a.Source, a.Destination, s, tx); err != nil {
+		return err
+	}
+	if err := ensureUnlockedForInventoryMove(dest, a.Destination, a.Source, s, tx); err != nil {
+		return err
+	}
 
 	invA, _ := s.invByID(int32(a.Source.Container.ContainerID), tx)
 	invB, _ := s.invByID(int32(a.Destination.Container.ContainerID), tx)
@@ -227,6 +237,9 @@ func (h *ItemStackRequestHandler) handleDestroy(a *protocol.DestroyStackRequestA
 		return fmt.Errorf("source slot out of sync: %w", err)
 	}
 	i, _ := h.itemInSlot(a.Source, s, tx)
+	if err := ensureUnlockedForInventoryRemoval(i, a.Source); err != nil {
+		return err
+	}
 	if i.Count() < int(a.Count) {
 		return fmt.Errorf("client attempted to destroy %v items, but only %v present", a.Count, i.Count())
 	}
@@ -242,6 +255,9 @@ func (h *ItemStackRequestHandler) handleDrop(a *protocol.DropStackRequestAction,
 		return fmt.Errorf("source slot out of sync: %w", err)
 	}
 	i, _ := h.itemInSlot(a.Source, s, tx)
+	if err := ensureUnlockedForInventoryRemoval(i, a.Source); err != nil {
+		return err
+	}
 	if i.Count() < int(a.Count) {
 		return fmt.Errorf("client attempted to drop %v items, but only %v present", a.Count, i.Count())
 	}

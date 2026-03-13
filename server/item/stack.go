@@ -25,6 +25,7 @@ type Stack struct {
 
 	damage      int
 	unbreakable bool
+	lockMode    LockMode
 
 	anvilCost int
 
@@ -167,6 +168,28 @@ func (s Stack) AsBreakable() Stack {
 		return s
 	}
 	s.unbreakable = false
+	return s
+}
+
+// LockMode returns the Bedrock item_lock mode applied to the stack.
+func (s Stack) LockMode() LockMode {
+	return s.lockMode
+}
+
+// Locked reports if the stack has an item_lock mode applied.
+func (s Stack) Locked() bool {
+	return s.lockMode != NotLocked
+}
+
+// WithLockMode returns a copy of the stack with the Bedrock item_lock mode applied.
+func (s Stack) WithLockMode(mode LockMode) Stack {
+	s.lockMode = mode
+	return s
+}
+
+// WithoutLock returns a copy of the stack without an item_lock mode applied.
+func (s Stack) WithoutLock() Stack {
+	s.lockMode = NotLocked
 	return s
 }
 
@@ -346,7 +369,8 @@ func (s Stack) WithItem(t world.Item) Stack {
 		WithCustomName(s.customName).
 		WithLore(s.lore...).
 		WithEnchantments(s.Enchantments()...).
-		WithAnvilCost(s.anvilCost)
+		WithAnvilCost(s.anvilCost).
+		WithLockMode(s.lockMode)
 	cp.unbreakable = s.unbreakable && s.MaxDurability() != -1
 	cp.data = s.data
 	return cp
@@ -395,6 +419,9 @@ func (s Stack) Comparable(s2 Stack) bool {
 	if name != name2 || meta != meta2 || s.anvilCost != s2.anvilCost || s.customName != s2.customName {
 		return false
 	}
+	if s.lockMode != s2.lockMode {
+		return false
+	}
 	for !slices.Equal(s.lore, s2.lore) {
 		return false
 	}
@@ -421,7 +448,7 @@ func (s Stack) String() string {
 	if s.item == nil {
 		return fmt.Sprintf("Stack<nil> x%v", s.count)
 	}
-	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v', damage=%v, anvilCost=%v) x%v", s.item, s.item, s.customName, s.lore, s.damage, s.anvilCost, s.count)
+	return fmt.Sprintf("Stack<%T%+v>(custom name='%v', lore='%v', damage=%v, anvilCost=%v, lockMode=%q) x%v", s.item, s.item, s.customName, s.lore, s.damage, s.anvilCost, s.lockMode.String(), s.count)
 }
 
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:

@@ -2138,11 +2138,15 @@ func (p *Player) PickBlock(pos cube.Pos) {
 	if p.Handler().HandleBlockPick(ctx, pos, b); ctx.Cancelled() {
 		return
 	}
-	_, offhand := p.HeldItems()
+	held, offhand := p.HeldItems()
 
 	if found {
+		foundItem, _ := p.Inventory().Item(slot)
 		if slot < 9 {
 			_ = p.SetHeldSlot(slot)
+			return
+		}
+		if held.LockMode() == item.LockInSlot || foundItem.LockMode() == item.LockInSlot {
 			return
 		}
 		_ = p.Inventory().Swap(slot, int(*p.heldSlot))
@@ -2151,12 +2155,18 @@ func (p *Player) PickBlock(pos cube.Pos) {
 
 	firstEmpty, emptyFound := p.Inventory().FirstEmpty()
 	if !emptyFound {
+		if held.Locked() {
+			return
+		}
 		p.SetHeldItems(pickedItem, offhand)
 		return
 	}
 	if firstEmpty < 9 {
 		_ = p.SetHeldSlot(firstEmpty)
 		_ = p.Inventory().SetItem(firstEmpty, pickedItem)
+		return
+	}
+	if held.LockMode() == item.LockInSlot {
 		return
 	}
 	_ = p.Inventory().Swap(firstEmpty, int(*p.heldSlot))
@@ -3185,6 +3195,9 @@ func (p *Player) useContext() *item.UseContext {
 			src, dst, srcInv, dstInv := int(*p.heldSlot), i, p.inv, p.armour.Inventory()
 			srcIt, _ := srcInv.Item(src)
 			dstIt, _ := dstInv.Item(dst)
+			if srcIt.LockMode() == item.LockInSlot || dstIt.LockMode() == item.LockInSlot {
+				return
+			}
 
 			ctx := event.C(inventory.Holder(p))
 			_ = call(ctx, src, srcIt, srcInv.Handler().HandleTake)

@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -33,6 +34,9 @@ func (h *ItemStackRequestHandler) handleStonecutting(a *protocol.CraftRecipeStac
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerStonecutterInput},
 		Slot:      stonecutterInputSlot,
 	}, s, tx)
+	if err := ensureUnlockedForCrafting(input); err != nil {
+		return err
+	}
 	if input.Count() < timesCrafted {
 		return fmt.Errorf("input item count is less than number of crafts")
 	}

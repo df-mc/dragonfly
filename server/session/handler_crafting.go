@@ -2,14 +2,15 @@ package session
 
 import (
 	"fmt"
+	"math"
+	"slices"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
-	"math"
-	"slices"
 )
 
 // handleCraft handles the CraftRecipe request action.
@@ -37,7 +38,10 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	offset := s.craftingOffset()
 	consumed := make([]bool, size)
 	for _, expected := range craft.Input() {
-		var processed bool
+		var (
+			processed bool
+			lockedErr error
+		)
 		for slot := offset; slot < offset+size; slot++ {
 			if consumed[slot-offset] {
 				// We've already consumed this slot, skip it.
@@ -52,6 +56,10 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				// Not the same item.
 				continue
 			}
+			if err := ensureUnlockedForCrafting(has); err != nil {
+				lockedErr = err
+				continue
+			}
 			processed, consumed[slot-offset] = true, true
 			st := has.Grow(-expected.Count() * timesCrafted)
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
@@ -61,6 +69,9 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			break
 		}
 		if !processed {
+			if lockedErr != nil {
+				return lockedErr
+			}
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
@@ -106,6 +117,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 
 	for _, expected := range flattenedInputs {
 		remaining := expected.Count() * timesCrafted
+		var lockedErr error
 
 		for id, inv := range map[byte]*inventory.Inventory{
 			protocol.ContainerCraftingInput:              s.ui,
@@ -118,6 +130,10 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 				}
 				if !matchingStacks(has, expected) {
 					// Not the same item.
+					continue
+				}
+				if err := ensureUnlockedForCrafting(has); err != nil {
+					lockedErr = err
 					continue
 				}
 
@@ -143,6 +159,9 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 			}
 		}
 		if remaining != 0 {
+			if lockedErr != nil {
+				return lockedErr
+			}
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
@@ -296,6 +315,9 @@ func (h *ItemStackRequestHandler) tryDynamicCraft(s *Session, tx *world.Tx, time
 			slot := offset + i
 			it, _ := s.ui.Item(int(slot))
 			if !it.Empty() {
+				if err := ensureUnlockedForCrafting(it); err != nil {
+					return err
+				}
 				// Consume one item from this slot per craft
 				st := it.Grow(-1 * timesCrafted)
 				h.setItemInSlot(protocol.StackRequestSlotInfo{

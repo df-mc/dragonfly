@@ -2,9 +2,10 @@ package session
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"math"
 	"math/rand/v2"
+
+	"github.com/df-mc/dragonfly/server/world"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
@@ -34,10 +35,20 @@ func (h *ItemStackRequestHandler) handleGrindstoneCraft(s *Session, tx *world.Tx
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneInput},
 		Slot:      grindstoneFirstInputSlot,
 	}, s, tx)
+	if !firstInput.Empty() {
+		if err := ensureUnlockedForCrafting(firstInput); err != nil {
+			return err
+		}
+	}
 	secondInput, _ := h.itemInSlot(protocol.StackRequestSlotInfo{
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerGrindstoneAdditional},
 		Slot:      grindstoneSecondInputSlot,
 	}, s, tx)
+	if !secondInput.Empty() {
+		if err := ensureUnlockedForCrafting(secondInput); err != nil {
+			return err
+		}
+	}
 	if firstInput.Empty() && secondInput.Empty() {
 		return fmt.Errorf("input item(s) are empty")
 	}

@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
@@ -119,6 +120,12 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 	}
 	if !expected.Equal(actual) {
 		return fmt.Errorf("different item thrown than held in slot: %#v was thrown but held %#v", expected, actual)
+	}
+	if err := ensureUnlockedForInventoryRemoval(actual, protocol.StackRequestSlotInfo{
+		Container: protocol.FullContainerName{ContainerID: protocol.ContainerInventory},
+		Slot:      byte(slot),
+	}); err != nil {
+		return err
 	}
 
 	// Explicitly don't re-use the thrown variable. This item was supplied by the user, and if some
