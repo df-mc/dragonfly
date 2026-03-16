@@ -13,7 +13,7 @@ type WindCharge struct{}
 // Use ...
 func (WindCharge) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().WindCharge
-	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: user.Rotation().Vec3().Mul(1.5)}
+	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: user.Rotation().Vec3().Mul(3.0)}
 	tx.AddEntity(create(opts, user))
 	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
