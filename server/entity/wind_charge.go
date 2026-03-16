@@ -7,17 +7,11 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
-const (
-	// windChargeBurstRadius is the radius within which entities are knocked
-	// back by a wind charge burst.
-	windChargeBurstRadius = 2.0
-	// windChargeBurstForce is the force applied to entities in the direction
-	// from the impact point to the entity.
-	windChargeBurstForce = 1.1
-)
+// windChargeBurstRadius is the maximum radius within which entities are
+// knocked back by a wind charge burst.
+const windChargeBurstRadius = 2.5
 
 // NewWindCharge creates a wind charge entity at a position with an owner
 // entity. Wind charges fly in a straight line (no gravity) and create a burst
@@ -52,10 +46,9 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 		}
 	}
 
-	// Apply directional knockback to all living entities within the burst
-	// radius. The force is applied in the direction from impact to entity,
-	// so pointing straight down launches vertically while hitting a wall
-	// pushes horizontally.
+	// Apply knockback to all living entities within the burst radius. Impact
+	// scales with distance (closer = stronger) and is split into horizontal
+	// and vertical components.
 	box := e.H().Type().BBox(e).Translate(pos).Grow(windChargeBurstRadius)
 	for other := range tx.EntitiesWithin(box) {
 		if other.H() == e.H() {
@@ -65,18 +58,28 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 		if !ok {
 			continue
 		}
-		// Use the entity's BBox center for direction so that ground-level
-		// impacts always have an upward component.
-		bb := other.H().Type().BBox(other)
-		center := other.Position().Add(mgl64.Vec3{0, (bb.Min()[1] + bb.Max()[1]) / 2, 0})
-		dir := center.Sub(pos)
-		if dir.LenSqr() > windChargeBurstRadius*windChargeBurstRadius {
+		entityPos := other.Position()
+		dist := entityPos.Sub(pos).Len()
+		impact := 1.3 - dist/windChargeBurstRadius
+		if impact <= 0 {
 			continue
 		}
-		if dir.LenSqr() == 0 {
-			dir = mgl64.Vec3{0, 1, 0}
+
+		vel := l.Velocity()
+		// If the entity is directly above the impact, apply a flat upward
+		// boost. Otherwise split into horizontal and vertical components.
+		dx := entityPos[0] - pos[0]
+		dz := entityPos[2] - pos[2]
+		if dx*dx+dz*dz < 0.01 {
+			vel[1] += 1.1
+		} else {
+			dir := entityPos.Sub(pos)
+			dir[1] = 0
+			dir = dir.Normalize()
+			vel = vel.Add(dir.Mul(impact))
+			vel[1] += impact * 0.4
 		}
-		l.SetVelocity(l.Velocity().Add(dir.Normalize().Mul(windChargeBurstForce)))
+		l.SetVelocity(vel)
 	}
 
 	// Toggle interactive blocks at the impact point.
