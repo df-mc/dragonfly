@@ -921,6 +921,8 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
 		blockRuntimeID = world.BlockRuntimeID(b)
+	} else if b, ok := it.Item().(world.BlockRuntimeRepresentable); ok {
+		blockRuntimeID = world.BlockRuntimeID(b.BlockForRuntimeID())
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())
