@@ -91,6 +91,24 @@ func (chunk *Chunk) SetBlockEntityData(pos cube.Pos, data map[string]any) {
 	chunk.blockEntities[pos] = data
 }
 
+// ClearBlockEntityDataInRange clears raw block entity NBT entries within the inclusive position range passed.
+func (chunk *Chunk) ClearBlockEntityDataInRange(min, max cube.Pos) {
+	chunk.blockEntitiesMu.Lock()
+	defer chunk.blockEntitiesMu.Unlock()
+	if chunk.blockEntities == nil {
+		return
+	}
+	for pos := range chunk.blockEntities {
+		if !pos.Within(min, max) {
+			continue
+		}
+		delete(chunk.blockEntities, pos)
+	}
+	if len(chunk.blockEntities) == 0 {
+		chunk.blockEntities = nil
+	}
+}
+
 // Equals returns if the chunk passed is equal to the current one
 func (chunk *Chunk) Equals(c *Chunk) bool {
 	if !chunk.recalculateHeightMap && !c.recalculateHeightMap && !slices.Equal(c.heightMap, chunk.heightMap) {
