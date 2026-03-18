@@ -101,6 +101,9 @@ type Handler interface {
 	// HandleItemConsume handles the player consuming an item. This is called whenever a consumable such as
 	// food is consumed.
 	HandleItemConsume(ctx *Context, item item.Stack)
+	// HandleCraftItem handles the player crafting items using the input recipes passed. ctx.Cancel() may
+	// be called to cancel the crafting action before inputs are consumed and the results are created.
+	HandleCraftItem(ctx *Context, recipes []item.Stack, results []item.Stack)
 	// HandleAttackEntity handles the player attacking an entity using the item held in its hand. ctx.Cancel()
 	// may be called to cancel the attack, which will cancel damage dealt to the target and will stop the
 	// entity from being knocked back.
@@ -189,6 +192,7 @@ func (NopHandler) HandleItemUseOnBlock(*Context, cube.Pos, cube.Face, mgl64.Vec3
 func (NopHandler) HandleItemUseOnEntity(*Context, world.Entity)                            {}
 func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Duration)      {}
 func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
+func (NopHandler) HandleCraftItem(*Context, []item.Stack, []item.Stack)                    {}
 func (NopHandler) HandleItemDamage(*Context, item.Stack, *int)                             {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
