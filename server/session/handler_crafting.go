@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"math"
 )
 
 // handleCraft handles the CraftRecipe request action.
@@ -58,6 +59,56 @@ func (h *ItemStackRequestHandler) handleCreativeCraft(a *protocol.CraftCreativeS
 	it := creative.Items()[index].Stack
 	it = it.Grow(it.MaxCount() - 1)
 	return h.createResults(s, tx, it)
+}
+
+// matchingStacks returns true if the two stacks are the same in a crafting scenario.
+func matchingStacks(has, expected recipe.Item) bool {
+	switch expected := expected.(type) {
+	case item.Stack:
+		switch has := has.(type) {
+		case recipe.ItemTag:
+			name, _ := expected.Item().EncodeItem()
+			return has.Contains(name)
+		case item.Stack:
+			_, variants := expected.Value("variants")
+			if !variants {
+				return has.Comparable(expected)
+			}
+			nameOne, _ := has.Item().EncodeItem()
+			nameTwo, _ := expected.Item().EncodeItem()
+			return nameOne == nameTwo
+		}
+		panic(fmt.Errorf("client has unexpected recipe item %T", has))
+	case recipe.ItemTag:
+		switch has := has.(type) {
+		case item.Stack:
+			name, _ := has.Item().EncodeItem()
+			return expected.Contains(name)
+		case recipe.ItemTag:
+			return has.Tag() == expected.Tag()
+		}
+		panic(fmt.Errorf("client has unexpected recipe item %T", has))
+	}
+	panic(fmt.Errorf("tried to match with unexpected recipe item %T", expected))
+}
+
+// repeatStacks multiplies the count of all item stacks provided by the number of repetitions provided. Item
+// stacks where the new count would exceed the item's max count are split into multiple item stacks.
+func repeatStacks(items []item.Stack, repetitions int) []item.Stack {
+	output := make([]item.Stack, 0, len(items))
+	for _, o := range items {
+		count, maxCount := o.Count(), o.MaxCount()
+		total := count * repetitions
+
+		stacks := int(math.Ceil(float64(total) / float64(maxCount)))
+		for i := 0; i < stacks; i++ {
+			inc := min(total, maxCount)
+			total -= inc
+
+			output = append(output, o.Grow(inc-count))
+		}
+	}
+	return output
 }
 
 // applyCraftingPlan applies a crafting plan returned by a controllable and creates the resulting output items.
