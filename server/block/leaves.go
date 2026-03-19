@@ -107,7 +107,15 @@ func (l Leaves) BreakInfo() BreakInfo {
 		fortune := fortuneLevel(enchantments)
 		var drops []item.Stack
 
-		// TODO: Drop saplings.
+		if sapling, ok := l.saplingDrop(); ok {
+			chances := []float64{0.05, 0.0625, 0.083333336, 0.1}
+			if l.Wood == JungleWood() {
+				chances = []float64{0.025, 0.027777778, 0.03125, 0.041666668, 0.1}
+			}
+			if rand.Float64() < chances[min(fortune, len(chances)-1)] {
+				drops = append(drops, item.NewStack(sapling, 1))
+			}
+		}
 
 		stickChances := []float64{0.02, 0.022222222, 0.025, 0.033333333}
 		if rand.Float64() < stickChances[min(fortune, 3)] {
@@ -121,6 +129,16 @@ func (l Leaves) BreakInfo() BreakInfo {
 		}
 		return drops
 	})
+}
+
+// saplingDrop returns the sapling dropped by these leaves if they have one.
+func (l Leaves) saplingDrop() (Sapling, bool) {
+	switch l.Wood {
+	case MangroveWood():
+		return Sapling{}, false
+	default:
+		return Sapling{Wood: l.Wood}, true
+	}
 }
 
 // CompostChance ...
