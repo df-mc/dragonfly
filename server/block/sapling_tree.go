@@ -490,14 +490,6 @@ func (p *saplingTreeLayout) leafSquare(origin cube.Pos, radius int, wood WoodTyp
 	p.leafLayer(origin.Add(cube.Pos{1, 0, 1}), radius, wood, trimCorners)
 }
 
-// flatCanopy adds a flat-topped canopy around a center point.
-func (p *saplingTreeLayout) flatCanopy(center cube.Pos, radius int, wood WoodType) {
-	p.leafLayer(center, radius, wood, true)
-	if radius > 0 {
-		p.leafLayer(center.Add(cube.Pos{0, 1, 0}), radius-1, wood, true)
-	}
-}
-
 // acaciaFoliage places foliage using the acacia row layout.
 func (p *saplingTreeLayout) acaciaFoliage(top cube.Pos, radiusOffset int, wood WoodType) {
 	p.acaciaLeavesRow(top, 2+radiusOffset, -1, wood)
