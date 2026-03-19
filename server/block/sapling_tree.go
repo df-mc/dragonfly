@@ -81,24 +81,23 @@ func (s Sapling) growFancyOak(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	return layout.apply()
 }
 
-// growSpruce places the narrow conical spruce grown from a single spruce sapling.
+// growSpruce places a single spruce using the exact Java straight-trunk and spruce-foliage placer rules.
 func (s Sapling) growSpruce(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	height := treeHeight(r, 5, 2, 1)
-	crownBase := max(1, height-4-r.IntN(2))
+	foliageHeight := max(4, height-(1+r.IntN(2)))
+	leafRadius := 2 + r.IntN(2)
+	offset := r.IntN(3)
 	layout := newSaplingTreeLayout(tx)
 	layout.verticalTrunk(pos, height, s.Wood)
-	for y := crownBase; y <= height; y++ {
-		radius := min(2, 1+(height-y+1)/2)
-		if y == height {
-			radius = 0
-		}
-		layout.leafLayer(pos.Add(cube.Pos{0, y, 0}), radius, s.Wood, true)
+	layout.spruceFoliage(pos.Add(cube.Pos{0, height, 0}), foliageHeight, leafRadius, offset, s.Wood, r)
+	if !layout.apply() {
+		return false
 	}
-	layout.leafLayer(pos.Add(cube.Pos{0, height + 1, 0}), 0, s.Wood, false)
-	return layout.apply()
+	s.placeBelowOverworldTrunk(pos.Side(cube.FaceDown), tx)
+	return true
 }
 
-// growAcacia places a leaning acacia trunk with an optional second fork based on Java's forking trunk placer.
+// growAcacia places an acacia using the exact Java forking trunk and acacia foliage placer rules.
 func (s Sapling) growAcacia(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	height := treeHeight(r, 5, 2, 2)
 	leanDirection := cube.Directions()[r.IntN(len(cube.Directions()))]
@@ -106,35 +105,40 @@ func (s Sapling) growAcacia(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	leanSteps := 3 - r.IntN(3)
 	layout := newSaplingTreeLayout(tx)
 
-	current := pos
+	currentX, currentZ := pos[0], pos[2]
+	var mainAttachment cube.Pos
 	for y := 0; y < height; y++ {
 		if y >= leanHeight && leanSteps > 0 {
-			current = current.Add(offset(leanDirection, 1))
+			step := offset(leanDirection, 1)
+			currentX += step[0]
+			currentZ += step[2]
 			leanSteps--
 		}
-		layout.set(cube.Pos{current[0], pos[1] + y, current[2]}, Log{Wood: s.Wood, Axis: cube.Y})
+		layout.set(cube.Pos{currentX, pos[1] + y, currentZ}, Log{Wood: s.Wood, Axis: cube.Y})
+		mainAttachment = cube.Pos{currentX, pos[1] + y + 1, currentZ}
 	}
-
-	mainTop := cube.Pos{current[0], pos[1] + height, current[2]}
-	layout.flatCanopy(mainTop, 2, s.Wood)
+	layout.acaciaFoliage(mainAttachment, 1, s.Wood)
 
 	branchDirection := cube.Directions()[r.IntN(len(cube.Directions()))]
 	if branchDirection != leanDirection {
 		branchY := leanHeight - r.IntN(2) - 1
 		branchSteps := 1 + r.IntN(3)
-		branchPos := pos
-		var branchTop cube.Pos
-		for y := branchY; y < height && branchSteps > 0; y++ {
+		currentX, currentZ = pos[0], pos[2]
+		var branchAttachment cube.Pos
+		for y := branchY; y < height && branchSteps > 0; branchSteps-- {
 			if y < 1 {
+				y++
 				continue
 			}
-			branchPos = branchPos.Add(offset(branchDirection, 1))
-			branchTop = cube.Pos{branchPos[0], pos[1] + y, branchPos[2]}
-			layout.set(branchTop, Log{Wood: s.Wood, Axis: cube.Y})
-			branchSteps--
+			step := offset(branchDirection, 1)
+			currentX += step[0]
+			currentZ += step[2]
+			layout.set(cube.Pos{currentX, pos[1] + y, currentZ}, Log{Wood: s.Wood, Axis: cube.Y})
+			branchAttachment = cube.Pos{currentX, pos[1] + y + 1, currentZ}
+			y++
 		}
-		if branchTop != (cube.Pos{}) {
-			layout.flatCanopy(branchTop.Add(cube.Pos{0, 1, 0}), 1, s.Wood)
+		if branchAttachment != (cube.Pos{}) {
+			layout.acaciaFoliage(branchAttachment, 0, s.Wood)
 		}
 	}
 	return layout.apply()
@@ -198,49 +202,32 @@ func (s Sapling) growCherry(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	return layout.apply()
 }
 
-// growMegaSpruce places the broader-crowned mega spruce selected by half of 2x2 spruce growth attempts.
+// growMegaSpruce places the literal Java mega spruce shape selected by half of 2x2 spruce growth attempts.
 func (s Sapling) growMegaSpruce(origin cube.Pos, tx *world.Tx, r *rand.Rand) bool {
-	return s.growMegaConifer(origin, tx, r, 13, 2, 14, 13, 17, 3)
+	return s.growMegaConifer(origin, tx, r, 13, 2, 14, 13, 17)
 }
 
-// growMegaPine places the narrower mega pine selected by the other half of 2x2 spruce growth attempts.
+// growMegaPine places the literal Java mega pine shape selected by the other half of 2x2 spruce growth attempts.
 func (s Sapling) growMegaPine(origin cube.Pos, tx *world.Tx, r *rand.Rand) bool {
-	return s.growMegaConifer(origin, tx, r, 13, 2, 14, 3, 7, 2)
+	return s.growMegaConifer(origin, tx, r, 13, 2, 14, 3, 7)
 }
 
-// growMegaConifer places a 2x2 giant spruce-family tree and converts nearby ground to podzol.
-func (s Sapling) growMegaConifer(origin cube.Pos, tx *world.Tx, r *rand.Rand, baseHeight, heightRandA, heightRandB, crownMin, crownMax, maxRadius int) bool {
+// growMegaConifer places a giant spruce-family tree using Java's giant-trunk, mega-pine foliage, and podzol decorator rules.
+func (s Sapling) growMegaConifer(origin cube.Pos, tx *world.Tx, r *rand.Rand, baseHeight, heightRandA, heightRandB, crownMin, crownMax int) bool {
 	height := treeHeight(r, baseHeight, heightRandA, heightRandB)
 	crownHeight := crownMin + r.IntN(crownMax-crownMin+1)
 	layout := newSaplingTreeLayout(tx)
-	layout.twoByTwoTrunk(origin, height, s.Wood)
-
-	topY := origin[1] + height
-	bottomY := max(origin[1]+height-crownHeight, origin[1]+1)
-	for y := topY; y >= bottomY; y-- {
-		progress := topY - y
-		radius := min(maxRadius, progress/2)
-		if y >= topY-1 {
-			radius = 0
-		} else if radius == 0 {
-			radius = 1
-		}
-		layout.leafSquare(cube.Pos{origin[0], y, origin[2]}, radius, s.Wood, true)
+	layout.giantTrunk(origin, height, s.Wood)
+	layout.megaPineFoliage(origin.Add(cube.Pos{0, height, 0}), crownHeight, 0, s.Wood)
+	if !layout.apply() {
+		return false
 	}
-
-	for x := -2; x <= 3; x++ {
-		for z := -2; z <= 3; z++ {
-			if abs(x) == 3 && abs(z) == 3 {
-				continue
-			}
-			ground := origin.Add(cube.Pos{x, -1, z})
-			switch tx.Block(ground).(type) {
-			case Dirt, Grass:
-				layout.set(ground, Podzol{})
-			}
-		}
-	}
-	return layout.apply()
+	s.placeBelowOverworldTrunk(origin.Side(cube.FaceDown), tx)
+	s.placeBelowOverworldTrunk(origin.Add(cube.Pos{1, 0, 0}).Side(cube.FaceDown), tx)
+	s.placeBelowOverworldTrunk(origin.Add(cube.Pos{0, 0, 1}).Side(cube.FaceDown), tx)
+	s.placeBelowOverworldTrunk(origin.Add(cube.Pos{1, 0, 1}).Side(cube.FaceDown), tx)
+	s.placeMegaConiferPodzol(origin, tx, r)
+	return true
 }
 
 // growMegaJungle places a giant jungle tree with side canopies and added trunk vines.
@@ -388,6 +375,26 @@ func axisForDirection(dir cube.Direction) cube.Axis {
 	return cube.X
 }
 
+// isPodzolReplaceable reports whether a block may be converted to podzol by the mega spruce decorator.
+func isPodzolReplaceable(b world.Block) bool {
+	switch b.(type) {
+	case Dirt, Grass, Mud:
+		return true
+	default:
+		return false
+	}
+}
+
+// placeBelowOverworldTrunk applies Java's default below-trunk provider for overworld trees.
+func (s Sapling) placeBelowOverworldTrunk(pos cube.Pos, tx *world.Tx) {
+	switch tx.Block(pos).(type) {
+	case Dirt, Mud, Podzol:
+		return
+	default:
+		tx.SetBlock(pos, Dirt{}, nil)
+	}
+}
+
 // saplingTreeLayout stores a staged set of block placements for tree generation.
 type saplingTreeLayout struct {
 	// tx is the world transaction the tree is generated in.
@@ -424,6 +431,18 @@ func (p *saplingTreeLayout) verticalTrunk(pos cube.Pos, height int, wood WoodTyp
 func (p *saplingTreeLayout) twoByTwoTrunk(origin cube.Pos, height int, wood WoodType) {
 	for y := 0; y < height; y++ {
 		p.twoByTwoLayer(origin.Add(cube.Pos{0, y, 0}), wood)
+	}
+}
+
+// giantTrunk adds the Java giant trunk shape, where the topmost log layer only keeps the north-west column.
+func (p *saplingTreeLayout) giantTrunk(origin cube.Pos, height int, wood WoodType) {
+	for y := 0; y < height; y++ {
+		p.set(origin.Add(cube.Pos{0, y, 0}), Log{Wood: wood, Axis: cube.Y})
+		if y < height-1 {
+			p.set(origin.Add(cube.Pos{1, y, 0}), Log{Wood: wood, Axis: cube.Y})
+			p.set(origin.Add(cube.Pos{1, y, 1}), Log{Wood: wood, Axis: cube.Y})
+			p.set(origin.Add(cube.Pos{0, y, 1}), Log{Wood: wood, Axis: cube.Y})
+		}
 	}
 }
 
@@ -479,6 +498,89 @@ func (p *saplingTreeLayout) flatCanopy(center cube.Pos, radius int, wood WoodTyp
 	}
 }
 
+// acaciaFoliage places foliage using Java's AcaciaFoliagePlacer row layout.
+func (p *saplingTreeLayout) acaciaFoliage(top cube.Pos, radiusOffset int, wood WoodType) {
+	p.acaciaLeavesRow(top, 2+radiusOffset, -1, wood)
+	p.acaciaLeavesRow(top, 1, 0, wood)
+	p.acaciaLeavesRow(top, 1+radiusOffset, 0, wood)
+}
+
+// acaciaLeavesRow places a single acacia foliage row using Java's per-layer skip rules.
+func (p *saplingTreeLayout) acaciaLeavesRow(center cube.Pos, radius, y int, wood WoodType) {
+	leaf := Leaves{Wood: wood, ShouldUpdate: true}
+	for dx := -radius; dx <= radius; dx++ {
+		for dz := -radius; dz <= radius; dz++ {
+			skipDX, skipDZ := abs(dx), abs(dz)
+			if y == 0 {
+				if (skipDX > 1 || skipDZ > 1) && skipDX != 0 && skipDZ != 0 {
+					continue
+				}
+			} else if skipDX == radius && skipDZ == radius && radius > 0 {
+				continue
+			}
+			p.set(center.Add(cube.Pos{dx, y, dz}), leaf)
+		}
+	}
+}
+
+// coniferLeavesRow places a foliage row using Java's signed skip logic for spruce-family foliage placers.
+func (p *saplingTreeLayout) coniferLeavesRow(center cube.Pos, radius int, doubleTrunk bool, wood WoodType, skip func(dx, dz, radius int) bool) {
+	offset := 0
+	if doubleTrunk {
+		offset = 1
+	}
+	leaf := Leaves{Wood: wood, ShouldUpdate: true}
+	for dx := -radius; dx <= radius+offset; dx++ {
+		for dz := -radius; dz <= radius+offset; dz++ {
+			skipDX, skipDZ := abs(dx), abs(dz)
+			if doubleTrunk {
+				skipDX = min(abs(dx), abs(dx-1))
+				skipDZ = min(abs(dz), abs(dz-1))
+			}
+			if skip(skipDX, skipDZ, radius) {
+				continue
+			}
+			p.set(center.Add(cube.Pos{dx, 0, dz}), leaf)
+		}
+	}
+}
+
+// spruceFoliage places foliage using Java's SpruceFoliagePlacer state machine.
+func (p *saplingTreeLayout) spruceFoliage(top cube.Pos, foliageHeight, leafRadius, offset int, wood WoodType, r *rand.Rand) {
+	currentRadius := r.IntN(2)
+	maxRadius := 1
+	minRadius := 0
+	for yo := offset; yo >= -foliageHeight; yo-- {
+		p.coniferLeavesRow(top.Add(cube.Pos{0, yo, 0}), currentRadius, false, wood, func(dx, dz, radius int) bool {
+			return dx == radius && dz == radius && radius > 0
+		})
+		if currentRadius >= maxRadius {
+			currentRadius = minRadius
+			minRadius = 1
+			maxRadius = min(maxRadius+1, leafRadius)
+		} else {
+			currentRadius++
+		}
+	}
+}
+
+// megaPineFoliage places foliage using Java's MegaPineFoliagePlacer for both mega spruce variants.
+func (p *saplingTreeLayout) megaPineFoliage(top cube.Pos, foliageHeight, leafRadius int, wood WoodType) {
+	prevRadius := 0
+	for y := top[1] - foliageHeight; y <= top[1]; y++ {
+		yo := top[1] - y
+		smoothRadius := leafRadius + int(float64(yo)/float64(foliageHeight)*3.5)
+		jaggedRadius := smoothRadius
+		if yo > 0 && smoothRadius == prevRadius && (y&1) == 0 {
+			jaggedRadius = smoothRadius + 1
+		}
+		p.coniferLeavesRow(cube.Pos{top[0], y, top[2]}, jaggedRadius, true, wood, func(dx, dz, radius int) bool {
+			return dx+dz >= 7 || dx*dx+dz*dz > radius*radius
+		})
+		prevRadius = smoothRadius
+	}
+}
+
 // blobCanopy adds the four foliage rows used by Java's blob foliage placer.
 func (p *saplingTreeLayout) blobCanopy(top cube.Pos, radius int, wood WoodType) {
 	for i := 0; i < 4; i++ {
@@ -519,6 +621,56 @@ func (p *saplingTreeLayout) apply() bool {
 		p.tx.SetBlock(pos, block, nil)
 	}
 	return true
+}
+
+// placeMegaConiferPodzol runs Java's AlterGroundDecorator around the base of a mega spruce-family tree.
+func (s Sapling) placeMegaConiferPodzol(origin cube.Pos, tx *world.Tx, r *rand.Rand) {
+	bases := []cube.Pos{
+		origin,
+		origin.Add(cube.Pos{1, 0, 0}),
+		origin.Add(cube.Pos{0, 0, 1}),
+		origin.Add(cube.Pos{1, 0, 1}),
+	}
+	for _, base := range bases {
+		s.placePodzolCircle(base.Add(cube.Pos{-1, 0, -1}), tx)
+		s.placePodzolCircle(base.Add(cube.Pos{2, 0, -1}), tx)
+		s.placePodzolCircle(base.Add(cube.Pos{-1, 0, 2}), tx)
+		s.placePodzolCircle(base.Add(cube.Pos{2, 0, 2}), tx)
+		for i := 0; i < 5; i++ {
+			placement := r.IntN(64)
+			x := placement % 8
+			z := placement / 8
+			if x == 0 || x == 7 || z == 0 || z == 7 {
+				s.placePodzolCircle(base.Add(cube.Pos{-3 + x, 0, -3 + z}), tx)
+			}
+		}
+	}
+}
+
+// placePodzolCircle places the 5x5 rounded podzol circle used by the Java ground decorator.
+func (s Sapling) placePodzolCircle(pos cube.Pos, tx *world.Tx) {
+	for x := -2; x <= 2; x++ {
+		for z := -2; z <= 2; z++ {
+			if abs(x) == 2 && abs(z) == 2 {
+				continue
+			}
+			s.placePodzolAt(pos.Add(cube.Pos{x, 0, z}), tx)
+		}
+	}
+}
+
+// placePodzolAt searches downward using Java's decorator scan rules and converts the first replaceable ground to podzol.
+func (s Sapling) placePodzolAt(pos cube.Pos, tx *world.Tx) {
+	for dy := 2; dy >= -3; dy-- {
+		cursor := pos.Add(cube.Pos{0, dy, 0})
+		if isPodzolReplaceable(tx.Block(cursor)) {
+			tx.SetBlock(cursor, Podzol{}, nil)
+			return
+		}
+		if _, ok := tx.Block(cursor).(Air); !ok && dy < 0 {
+			return
+		}
+	}
 }
 
 // canReplaceTreeBlock reports if an existing block may be replaced during tree growth.
