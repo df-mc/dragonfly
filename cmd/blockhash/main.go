@@ -258,6 +258,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		return "uint64(" + s + ".Uint8())", 1
 	case "Direction", "Axis":
 		return "uint64(" + s + ")", 2
+	case "Orientation":
+		return "uint64(" + s + ")", 4
 	case "Face":
 		return "uint64(" + s + ")", 3
 	default:

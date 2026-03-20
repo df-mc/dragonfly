@@ -2886,34 +2886,49 @@ func (p *Player) OpenSign(pos cube.Pos, frontSide bool) {
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
 // present, an error is returned.
 func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
-	sign, ok := p.tx.Block(pos).(block.Sign)
-	if !ok {
+	switch sign := p.tx.Block(pos).(type) {
+	case block.Sign:
+		return p.editSign(pos, frontText, backText, sign.Front, sign.Back, sign.Waxed, func(front, back block.SignText) world.Block {
+			sign.Front = front
+			sign.Back = back
+			return sign
+		})
+	case block.HangingSign:
+		return p.editSign(pos, frontText, backText, sign.Front, sign.Back, sign.Waxed, func(front, back block.SignText) world.Block {
+			sign.Front = front
+			sign.Back = back
+			return sign
+		})
+	default:
 		return fmt.Errorf("edit sign: no sign at position %v", pos)
 	}
+}
 
-	if sign.Waxed {
+// editSign applies validated sign text changes to either a regular sign or a hanging sign.
+func (p *Player) editSign(pos cube.Pos, frontText, backText string, front, back block.SignText, waxed bool, update func(front, back block.SignText) world.Block) error {
+	if waxed {
 		return nil
-	} else if frontText == sign.Front.Text && backText == sign.Back.Text {
+	} else if frontText == front.Text && backText == back.Text {
 		return nil
 	}
 
 	ctx := event.C(p)
-	if frontText != sign.Front.Text {
-		if p.Handler().HandleSignEdit(ctx, pos, true, sign.Front.Text, frontText); ctx.Cancelled() {
+	if frontText != front.Text {
+		if p.Handler().HandleSignEdit(ctx, pos, true, front.Text, frontText); ctx.Cancelled() {
 			p.resendNearbyBlock(pos)
 			return nil
 		}
-		sign.Front.Text = frontText
-		sign.Front.Owner = p.XUID()
+		front.Text = frontText
+		front.Owner = p.XUID()
 	} else {
-		if p.Handler().HandleSignEdit(ctx, pos, false, sign.Back.Text, backText); ctx.Cancelled() {
+		if p.Handler().HandleSignEdit(ctx, pos, false, back.Text, backText); ctx.Cancelled() {
 			p.resendNearbyBlock(pos)
 			return nil
 		}
-		sign.Back.Text = backText
-		sign.Back.Owner = p.XUID()
+		back.Text = backText
+		back.Owner = p.XUID()
 	}
-	p.tx.SetBlock(pos, sign, nil)
+	p.tx.SetBlock(pos, update(front, back), nil)
 	return nil
 }
 
