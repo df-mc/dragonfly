@@ -21,7 +21,7 @@ func (BeetrootSeeds) SameCrop(c Crop) bool {
 }
 
 // BoneMeal ...
-func (b BeetrootSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (b BeetrootSeeds) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	if b.Growth == 7 {
 		return false
 	}

@@ -189,6 +189,7 @@ func init() {
 	registerAll(allQuartz())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
+	registerAll(allSaplings())
 	registerAll(allSigns())
 	registerAll(allSkulls())
 	registerAll(allSlabs())
@@ -412,6 +413,7 @@ func init() {
 	for _, w := range WoodTypes() {
 		if w != WarpedWood() && w != CrimsonWood() {
 			world.RegisterItem(Leaves{Wood: w, Persistent: true})
+			world.RegisterItem(Sapling{Wood: w})
 		}
 		world.RegisterItem(Log{Wood: w, Stripped: true})
 		world.RegisterItem(Log{Wood: w})

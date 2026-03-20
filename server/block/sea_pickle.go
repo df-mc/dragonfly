@@ -41,7 +41,7 @@ func (SeaPickle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // BoneMeal ...
-func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (s SeaPickle) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	if s.Dead {
 		return false
 	}

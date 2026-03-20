@@ -278,9 +278,12 @@ func (v Vines) EncodeBlock() (string, map[string]any) {
 }
 
 // canSpreadTo returns true if the vines can spread onto the block at the
-// given position. Vines may only spread onto fully solid blocks.
+// given position. Vines may attach to solid blocks and leaves.
 func (Vines) canSpreadTo(tx *world.Tx, pos cube.Pos) bool {
-	_, ok := tx.Block(pos).Model().(model.Solid)
+	if _, ok := tx.Block(pos).Model().(model.Solid); ok {
+		return true
+	}
+	_, ok := tx.Block(pos).(Leaves)
 	return ok
 }
 
