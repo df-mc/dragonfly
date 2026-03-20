@@ -23,6 +23,8 @@ func NewWindCharge(opts world.EntitySpawnOpts, owner world.Entity) *world.Entity
 	return opts.New(WindChargeType, conf)
 }
 
+// TODO: Wind charges should have increased drag when travelling through water
+// or lava, but per-medium drag is not yet supported by ProjectileBehaviour.
 var windChargeConf = ProjectileBehaviourConfig{
 	Gravity:  0,
 	Drag:     0,
@@ -89,8 +91,8 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 }
 
 // toggleWindChargeBlock toggles a block at pos if it is a door, trapdoor or
-// fence gate. Other activatable blocks (chests, crafting tables, etc.) are not
-// affected.
+// fence gate.
+// TODO: Buttons, levers, bells and candles should also be toggled.
 func toggleWindChargeBlock(pos cube.Pos, face cube.Face, tx *world.Tx) {
 	b := tx.Block(pos)
 	switch b.(type) {
