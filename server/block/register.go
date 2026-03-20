@@ -364,7 +364,6 @@ func init() {
 	world.RegisterItem(Stone{})
 	world.RegisterItem(SugarCane{})
 	world.RegisterItem(SweetBerries{})
-	world.RegisterItem(SweetBerryBush{})
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
