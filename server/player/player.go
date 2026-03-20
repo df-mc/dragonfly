@@ -2720,7 +2720,7 @@ func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
 	entityBBox := Type.BBox(p).Translate(p.Position())
 	deltaX, deltaY, deltaZ := vel[0], vel[1], vel[2]
 
-	p.checkEntityInsiders(entityBBox)
+	entity.CheckEntityInsiders(p.tx, entityBBox.Grow(-0.0001), p)
 
 	grown := entityBBox.Extend(vel).Grow(0.25)
 	low, high := grown.Min(), grown.Max()
@@ -2767,33 +2767,6 @@ func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
 
 	p.collidedHorizontally = !mgl64.FloatEqual(deltaX, vel[0]) || !mgl64.FloatEqual(deltaZ, vel[2])
 	p.collidedVertically = !mgl64.FloatEqual(deltaY, vel[1])
-}
-
-// checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
-func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
-	box := entityBBox.Grow(-0.0001)
-	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
-
-	for y := low[1]; y <= high[1]; y++ {
-		for x := low[0]; x <= high[0]; x++ {
-			for z := low[2]; z <= high[2]; z++ {
-				blockPos := cube.Pos{x, y, z}
-				b := p.tx.Block(blockPos)
-				if collide, ok := b.(block.EntityInsider); ok {
-					collide.EntityInside(blockPos, p.tx, p)
-					if _, liquid := b.(world.Liquid); liquid {
-						continue
-					}
-				}
-
-				if l, ok := p.tx.Liquid(blockPos); ok {
-					if collide, ok := l.(block.EntityInsider); ok {
-						collide.EntityInside(blockPos, p.tx, p)
-					}
-				}
-			}
-		}
-	}
 }
 
 // checkOnGround checks if the player is currently considered to be on the ground.
