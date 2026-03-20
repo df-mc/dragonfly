@@ -301,7 +301,7 @@ func (s Sapling) growMangroveVariant(pos cube.Pos, tx *world.Tx, r *rand.Rand, b
 func (s Sapling) twoByTwoOrigin(pos cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	for dx := 0; dx >= -1; dx-- {
 		for dz := 0; dz >= -1; dz-- {
-			if s.isTwoByTwo(pos.Add(cube.Pos{dx, 0, dz}), tx) {
+			if s.twoByTwo(pos.Add(cube.Pos{dx, 0, dz}), tx) {
 				return pos.Add(cube.Pos{dx, 0, dz}), true
 			}
 		}
@@ -309,8 +309,8 @@ func (s Sapling) twoByTwoOrigin(pos cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	return cube.Pos{}, false
 }
 
-// isTwoByTwo checks if a 2x2 square from the origin contains matching saplings.
-func (s Sapling) isTwoByTwo(origin cube.Pos, tx *world.Tx) bool {
+// twoByTwo checks if a 2x2 square from the origin contains matching saplings.
+func (s Sapling) twoByTwo(origin cube.Pos, tx *world.Tx) bool {
 	for dx := 0; dx < 2; dx++ {
 		for dz := 0; dz < 2; dz++ {
 			other, ok := tx.Block(origin.Add(cube.Pos{dx, 0, dz})).(Sapling)
