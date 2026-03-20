@@ -202,7 +202,7 @@ func (s Sapling) growAcacia(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	bendLength := 3 - r.IntN(3)
 
 	currentX, currentZ := pos[0], pos[2]
-	lastPlacedY := pos[1]
+	lastPlacedPos := pos
 	for dy := 0; dy < maxFreeHeight; dy++ {
 		logY := pos[1] + dy
 		if dy >= bendStart && bendLength > 0 {
@@ -212,17 +212,18 @@ func (s Sapling) growAcacia(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 			bendLength--
 		}
 		if layout.setIfValid(cube.Pos{currentX, logY, currentZ}, Log{Wood: s.Wood, Axis: cube.Y}) {
-			lastPlacedY = logY + 1
+			lastPlacedPos = cube.Pos{currentX, logY, currentZ}
 		}
 	}
-	attachments = append(attachments, foliageAttachment{pos: cube.Pos{currentX, lastPlacedY, currentZ}, radiusOffset: 1})
+	attachments = append(attachments, foliageAttachment{pos: lastPlacedPos.Add(cube.Pos{0, 1, 0}), radiusOffset: 1})
 
 	secondaryDirection := horizontal[r.IntN(len(horizontal))]
 	if secondaryDirection != primaryDirection {
 		secondaryStart := bendStart - r.IntN(2) - 1
 		secondaryLength := 1 + r.IntN(3)
 		currentX, currentZ = pos[0], pos[2]
-		secondaryTopY := -1
+		var secondaryTopPos cube.Pos
+		secondaryPlaced := false
 		for dy := secondaryStart; dy < maxFreeHeight && secondaryLength > 0; secondaryLength, dy = secondaryLength-1, dy+1 {
 			if dy >= 1 {
 				logY := pos[1] + dy
@@ -230,12 +231,13 @@ func (s Sapling) growAcacia(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 				currentX += step[0]
 				currentZ += step[2]
 				if layout.setIfValid(cube.Pos{currentX, logY, currentZ}, Log{Wood: s.Wood, Axis: cube.Y}) {
-					secondaryTopY = logY + 1
+					secondaryTopPos = cube.Pos{currentX, logY, currentZ}
+					secondaryPlaced = true
 				}
 			}
 		}
-		if secondaryTopY >= 0 {
-			attachments = append(attachments, foliageAttachment{pos: cube.Pos{currentX, secondaryTopY, currentZ}})
+		if secondaryPlaced {
+			attachments = append(attachments, foliageAttachment{pos: secondaryTopPos.Add(cube.Pos{0, 1, 0})})
 		}
 	}
 	for _, attachment := range attachments {
@@ -1162,6 +1164,15 @@ func (p *saplingTreeLayout) apply() bool {
 		}
 	}
 	for pos, block := range p.blocks {
+		if _, ok := block.(Leaves); ok {
+			continue
+		}
+		p.tx.SetBlock(pos, block, nil)
+	}
+	for pos, block := range p.blocks {
+		if _, ok := block.(Leaves); !ok {
+			continue
+		}
 		p.tx.SetBlock(pos, block, nil)
 	}
 	return true
