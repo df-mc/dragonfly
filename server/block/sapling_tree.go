@@ -816,7 +816,7 @@ func (p *saplingTreeLayout) branch(start cube.Pos, dir cube.Direction, length, r
 
 // leafLayer adds a leaf disk around the provided center position.
 func (p *saplingTreeLayout) leafLayer(center cube.Pos, radius int, wood WoodType, trimCorners bool) {
-	leaf := Leaves{Wood: wood, ShouldUpdate: true}
+	leaf := Leaves{Wood: wood}
 	for x := -radius; x <= radius; x++ {
 		for z := -radius; z <= radius; z++ {
 			if trimCorners && radius > 0 && abs(x) == radius && abs(z) == radius {
@@ -862,7 +862,7 @@ func (p *saplingTreeLayout) placeLeavesRow(center cube.Pos, radius, localY int, 
 	if large {
 		extra = 1
 	}
-	leaf := Leaves{Wood: wood, ShouldUpdate: true}
+	leaf := Leaves{Wood: wood}
 	for signedX := -radius; signedX <= radius+extra; signedX++ {
 		for signedZ := -radius; signedZ <= radius+extra; signedZ++ {
 			localX, localZ := abs(signedX), abs(signedZ)
@@ -1115,7 +1115,7 @@ func (p *saplingTreeLayout) tryLeafExtension(pos, origin cube.Pos, chance float6
 	if abs(pos[0]-origin[0])+abs(pos[1]-origin[1])+abs(pos[2]-origin[2]) >= 7 || r.Float64() > chance {
 		return false
 	}
-	return p.setIfValid(pos, Leaves{Wood: wood, ShouldUpdate: true})
+	return p.setIfValid(pos, Leaves{Wood: wood})
 }
 
 // logAxisForLimb returns the dominant axis of a limb segment.
