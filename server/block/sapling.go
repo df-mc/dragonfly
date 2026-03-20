@@ -50,7 +50,7 @@ func (s Sapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // BoneMeal advances the sapling or propagule using bone meal.
-func (s Sapling) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (s Sapling) BoneMeal(pos cube.Pos, creative bool, tx *world.Tx) bool {
 	if s.Wood == MangroveWood() && s.Hanging {
 		if s.Age >= 4 {
 			return false
@@ -59,10 +59,13 @@ func (s Sapling) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 		tx.SetBlock(pos, s, nil)
 		return true
 	}
-	if rand.Float64() >= 0.45 {
-		return false
+	if !creative && rand.Float64() >= 0.45 {
+		return true
 	}
 	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+	if creative && s.Wood != MangroveWood() && s.Stage == 0 {
+		return s.growTree(pos, tx, r)
+	}
 	return s.advanceTree(pos, tx, r)
 }
 

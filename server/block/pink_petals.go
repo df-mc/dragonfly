@@ -21,7 +21,7 @@ type PinkPetals struct {
 }
 
 // BoneMeal ...
-func (p PinkPetals) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (p PinkPetals) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	if p.AdditionalCount < 3 {
 		p.AdditionalCount++
 		tx.SetBlock(pos, p, nil)
