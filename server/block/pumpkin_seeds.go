@@ -62,7 +62,7 @@ func (p PumpkinSeeds) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // BoneMeal ...
-func (p PumpkinSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (p PumpkinSeeds) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	if p.Growth == 7 {
 		return false
 	}

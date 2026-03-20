@@ -78,7 +78,7 @@ func (g Grass) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // BoneMeal ...
-func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (g Grass) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	for i := 0; i < 14; i++ {
 		c := pos.Add(cube.Pos{rand.IntN(6) - 3, 0, rand.IntN(6) - 3})
 		above := c.Side(cube.FaceUp)

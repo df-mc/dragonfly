@@ -59,11 +59,15 @@ func (SweetBerries) Pick() item.Stack {
 }
 
 // BoneMeal ...
-func (s SweetBerries) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (s SweetBerries) BoneMeal(pos cube.Pos, creative bool, tx *world.Tx) bool {
 	if s.Growth == 7 {
 		return false
 	}
-	s.Growth++
+	if creative {
+		s.Growth = 7
+	} else {
+		s.Growth++
+	}
 	tx.SetBlock(pos, s, nil)
 	return true
 }
@@ -79,11 +83,7 @@ func (SweetBerries) HasLiquidDrops() bool {
 }
 
 // Activate ...
-func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
-	held, _ := u.HeldItems()
-	if _, ok := held.Item().(item.BoneMeal); ok && s.Growth < 7 {
-		return false
-	}
+func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	if s.Growth < 4 {
 		return false
 	}

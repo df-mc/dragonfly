@@ -20,7 +20,7 @@ type CocoaBean struct {
 }
 
 // BoneMeal ...
-func (c CocoaBean) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (c CocoaBean) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	if c.Age == 2 {
 		return false
 	}
