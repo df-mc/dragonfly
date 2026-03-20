@@ -786,13 +786,6 @@ func (p *saplingTreeLayout) verticalTrunk(pos cube.Pos, height int, wood WoodTyp
 	}
 }
 
-// twoByTwoTrunk adds a 2x2 vertical trunk to the layout.
-func (p *saplingTreeLayout) twoByTwoTrunk(origin cube.Pos, height int, wood WoodType) {
-	for y := 0; y < height; y++ {
-		p.twoByTwoLayer(origin.Add(cube.Pos{0, y, 0}), wood)
-	}
-}
-
 // giantTrunk adds the giant trunk shape, where the topmost log layer only keeps the north-west column.
 func (p *saplingTreeLayout) giantTrunk(origin cube.Pos, height int, wood WoodType) {
 	for y := 0; y < height; y++ {
@@ -801,15 +794,6 @@ func (p *saplingTreeLayout) giantTrunk(origin cube.Pos, height int, wood WoodTyp
 			p.set(origin.Add(cube.Pos{1, y, 0}), Log{Wood: wood, Axis: cube.Y})
 			p.set(origin.Add(cube.Pos{1, y, 1}), Log{Wood: wood, Axis: cube.Y})
 			p.set(origin.Add(cube.Pos{0, y, 1}), Log{Wood: wood, Axis: cube.Y})
-		}
-	}
-}
-
-// twoByTwoLayer adds a single 2x2 trunk layer at the y-level of the origin passed.
-func (p *saplingTreeLayout) twoByTwoLayer(origin cube.Pos, wood WoodType) {
-	for dx := 0; dx < 2; dx++ {
-		for dz := 0; dz < 2; dz++ {
-			p.set(origin.Add(cube.Pos{dx, 0, dz}), Log{Wood: wood, Axis: cube.Y})
 		}
 	}
 }
@@ -839,14 +823,6 @@ func (p *saplingTreeLayout) leafLayer(center cube.Pos, radius int, wood WoodType
 			p.setIfValid(center.Add(cube.Pos{x, 0, z}), leaf)
 		}
 	}
-}
-
-// leafSquare adds overlapping leaf layers around a 2x2 trunk top.
-func (p *saplingTreeLayout) leafSquare(origin cube.Pos, radius int, wood WoodType, trimCorners bool) {
-	p.leafLayer(origin, radius, wood, trimCorners)
-	p.leafLayer(origin.Add(cube.Pos{1, 0, 0}), radius, wood, trimCorners)
-	p.leafLayer(origin.Add(cube.Pos{0, 0, 1}), radius, wood, trimCorners)
-	p.leafLayer(origin.Add(cube.Pos{1, 0, 1}), radius, wood, trimCorners)
 }
 
 // limb either checks or places the branch path between two positions.
