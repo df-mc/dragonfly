@@ -12,7 +12,6 @@ import (
 
 // SweetBerryBush is a plant block that slows entities and can be harvested for sweet berries.
 type SweetBerryBush struct {
-	replaceable
 	transparent
 	empty
 
@@ -43,6 +42,17 @@ func (SweetBerryBush) FlammabilityInfo() FlammabilityInfo {
 // HasLiquidDrops ...
 func (SweetBerryBush) HasLiquidDrops() bool {
 	return true
+}
+
+// UseOnBlock ...
+func (b SweetBerryBush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, b)
+	if !used || !supportsVegetation(b, tx.Block(pos.Side(cube.FaceDown))) {
+		return false
+	}
+
+	place(tx, pos, b, user, ctx)
+	return placed(ctx)
 }
 
 // Activate ...
@@ -93,7 +103,7 @@ func (b SweetBerryBush) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 
 // NeighbourUpdateTick ...
 func (b SweetBerryBush) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if !b.canGrowOn(tx.Block(pos.Side(cube.FaceDown))) {
+	if !supportsVegetation(b, tx.Block(pos.Side(cube.FaceDown))) {
 		breakBlock(b, pos, tx)
 	}
 }
@@ -131,14 +141,6 @@ func (SweetBerryBush) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (b SweetBerryBush) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:sweet_berry_bush", map[string]any{"growth": int32(b.Growth)}
-}
-
-func (SweetBerryBush) canGrowOn(block world.Block) bool {
-	switch block.(type) {
-	case Farmland, Grass, Dirt, Podzol, Mud, MuddyMangroveRoots:
-		return true
-	}
-	return false
 }
 
 // allSweetBerryBushes ...

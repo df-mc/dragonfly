@@ -37,7 +37,7 @@ func (SweetBerries) CompostChance() float64 {
 func (s SweetBerries) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	bush := SweetBerryBush{}
 	pos, _, used := firstReplaceable(tx, pos, face, bush)
-	if !used || !bush.canGrowOn(tx.Block(pos.Side(cube.FaceDown))) {
+	if !used || !supportsVegetation(bush, tx.Block(pos.Side(cube.FaceDown))) {
 		return false
 	}
 
