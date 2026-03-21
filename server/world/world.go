@@ -170,7 +170,7 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 		nbtB := blockByRuntimeIDOrAir(rid).(NBTer).DecodeNBT(map[string]any{}).(Block)
 		c.BlockEntities[pos] = nbtB
 		for _, v := range c.viewers {
-			v.ViewBlockUpdate(pos, nbtB, 0)
+			v.ViewBlockUpdate(pos, nbtB, 0, false)
 		}
 		return nbtB
 	}
@@ -303,13 +303,13 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 		if secondLayer != nil {
 			for _, viewer := range viewers {
-				viewer.ViewBlockUpdate(pos, secondLayer, 1)
+				viewer.ViewBlockUpdate(pos, secondLayer, 1, false)
 			}
 		}
 	}
 
 	for _, viewer := range viewers {
-		viewer.ViewBlockUpdate(pos, b, 0)
+		viewer.ViewBlockUpdate(pos, b, 0, rid == before)
 	}
 
 	if !opts.DisableBlockUpdates {
@@ -475,12 +475,12 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 	if w.removeLiquids(c, pos) {
 		c.SetBlock(x, y, z, 0, rid)
 		for _, v := range c.viewers {
-			v.ViewBlockUpdate(pos, b, 0)
+			v.ViewBlockUpdate(pos, b, 0, false)
 		}
 	} else {
 		c.SetBlock(x, y, z, 1, rid)
 		for _, v := range c.viewers {
-			v.ViewBlockUpdate(pos, b, 1)
+			v.ViewBlockUpdate(pos, b, 1, false)
 		}
 	}
 	c.modified = true
@@ -498,14 +498,14 @@ func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
 	if noLeft, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
 		if changed {
 			for _, v := range c.viewers {
-				v.ViewBlockUpdate(pos, air(), 0)
+				v.ViewBlockUpdate(pos, air(), 0, false)
 			}
 		}
 		noneLeft = true
 	}
 	if _, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); changed {
 		for _, v := range c.viewers {
-			v.ViewBlockUpdate(pos, air(), 1)
+			v.ViewBlockUpdate(pos, air(), 1, false)
 		}
 	}
 	return noneLeft

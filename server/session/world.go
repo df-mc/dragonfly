@@ -858,6 +858,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		return
 	case sound.DecoratedPotInsertFailed:
 		pk.SoundType = packet.SoundEventDecoratedPotInsertFail
+	case sound.BellRing:
+		pk.SoundType = packet.SoundEventBell
 	case sound.LightningExplode:
 		s.writePacket(&packet.PlaySound{
 			SoundName: "ambient.weather.lightning.impact",
@@ -954,14 +956,16 @@ func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFu
 }
 
 // ViewBlockUpdate ...
-func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
+func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int, nbtOnly bool) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
-	s.writePacket(&packet.UpdateBlock{
-		Position:          blockPos,
-		NewBlockRuntimeID: world.BlockRuntimeID(b),
-		Flags:             packet.BlockUpdateNetwork,
-		Layer:             uint32(layer),
-	})
+	if !nbtOnly {
+		s.writePacket(&packet.UpdateBlock{
+			Position:          blockPos,
+			NewBlockRuntimeID: world.BlockRuntimeID(b),
+			Flags:             packet.BlockUpdateNetwork,
+			Layer:             uint32(layer),
+		})
+	}
 	if v, ok := b.(world.NBTer); ok {
 		if nbtData := v.EncodeNBT(); nbtData != nil {
 			nbtData["x"], nbtData["y"], nbtData["z"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
