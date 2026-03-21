@@ -55,7 +55,7 @@ func (s SweetBerries) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 
 // BoneMeal ...
 func (s SweetBerries) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
-	if s.Growth == 3 {
+	if s.Growth >= 3 {
 		return false
 	}
 	s.Growth++
@@ -80,7 +80,7 @@ func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.U
 	}
 
 	count := rand.IntN(2) + 1
-	if s.Growth == 3 {
+	if s.Growth >= 3 {
 		count++
 	}
 	dropItem(tx, item.NewStack(SweetBerries{}, count), pos.Vec3Centre())
@@ -124,7 +124,7 @@ func (s SweetBerries) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 
 // RandomTick ...
 func (s SweetBerries) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	if s.Growth == 3 || tx.Light(pos.Side(cube.FaceUp)) < 9 || r.IntN(5) != 0 {
+	if s.Growth >= 3 || tx.Light(pos.Side(cube.FaceUp)) < 9 || r.IntN(5) != 0 {
 		return
 	}
 	s.Growth++
@@ -136,7 +136,7 @@ func (s SweetBerries) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		var count int
 		switch {
-		case s.Growth == 3:
+		case s.Growth >= 3:
 			count = rand.IntN(2+fortuneLevel(enchantments)) + 2
 		case s.Growth >= 2:
 			count = rand.IntN(2+fortuneLevel(enchantments)) + 1
