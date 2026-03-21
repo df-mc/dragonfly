@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // Cactus is a plant block that generates naturally in dry areas and causes damage.
@@ -69,9 +70,9 @@ func (c Cactus) canGrowHere(pos cube.Pos, tx *world.Tx, recursive bool) bool {
 }
 
 // EntityInside ...
-func (c Cactus) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
-	if l, ok := e.(livingEntity); ok {
-		l.Hurt(0.5, DamageSource{Block: c})
+func (c Cactus) EntityInside(pos cube.Pos, _ *world.Tx, e world.Entity) {
+	if p, ok := e.(PrickableEntity); ok {
+		p.Prick(pos)
 	}
 }
 
@@ -106,6 +107,11 @@ func allCactus() (b []world.Block) {
 		b = append(b, Cactus{Age: i})
 	}
 	return
+}
+
+// PrickableEntity represents an entity that can be pricked.
+type PrickableEntity interface {
+	Prick(pos cube.Pos)
 }
 
 // DamageSource is passed as world.DamageSource for damage caused by a block,

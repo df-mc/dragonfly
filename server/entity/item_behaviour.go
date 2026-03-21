@@ -108,6 +108,17 @@ func (i *ItemBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, conf blo
 	}
 }
 
+// Prick reacts to contact with cactus. The item entity is destroyed, unless the item
+// type is prick proof.
+func (i *ItemBehaviour) Prick(e *Ent, blockPos cube.Pos) {
+	if _, destroy := e.tx.Block(blockPos).(block.Cactus); destroy {
+		if p, ok := i.Item().Item().(interface{ PrickProof() bool }); ok && p.PrickProof() {
+			return
+		}
+		_ = e.Close()
+	}
+}
+
 // CheckBlocks ...
 func (i *ItemBehaviour) CheckBlocks(e *Ent, tx *world.Tx) bool {
 	return true

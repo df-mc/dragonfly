@@ -695,6 +695,11 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
 }
 
+// Prick ...
+func (p *Player) Prick(pos cube.Pos) {
+	p.Hurt(0.5, block.DamageSource{Block: p.tx.Block(pos)})
+}
+
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
 // actually increase the maximum health. Once the hearts are lost, they will not regenerate.
 // Nothing happens if a negative number is passed.

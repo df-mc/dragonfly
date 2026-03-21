@@ -50,6 +50,15 @@ func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig
 	}
 }
 
+// Prick propagates the prick behaviour of the underlying Behaviour
+func (e *Ent) Prick(blockPos cube.Pos) {
+	if expl, ok := e.Behaviour().(interface {
+		Prick(e *Ent, blockPos cube.Pos)
+	}); ok {
+		expl.Prick(e, blockPos)
+	}
+}
+
 // Position returns the current position of the entity.
 func (e *Ent) Position() mgl64.Vec3 {
 	return e.data.Pos
