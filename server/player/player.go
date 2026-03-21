@@ -622,7 +622,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	if src.ReducedByArmour() {
 		p.Exhaust(0.1)
-		p.Armour().Damage(dmg, p.damageItem)
+		p.Armour().Damage(dmg, src.Fire(), p.damageItem)
 
 		var origin world.Entity
 		if s, ok := src.(entity.AttackDamageSource); ok {

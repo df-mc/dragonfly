@@ -1,8 +1,9 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Sword is a tool generally used to attack enemies. In addition, it may be used to mine any block slightly
@@ -77,6 +78,11 @@ func (s Sword) FuelInfo() FuelInfo {
 // RepairableBy ...
 func (s Sword) RepairableBy(i Stack) bool {
 	return toolTierRepairable(s.Tier)(i)
+}
+
+// FireProof ...
+func (s Sword) FireProof() bool {
+	return s.Tier == ToolTierNetherite
 }
 
 // EncodeItem ...

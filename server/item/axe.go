@@ -1,11 +1,12 @@
 package item
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // Axe is a tool generally used for mining wood-like blocks. It may also be used to break some plant-like
@@ -100,6 +101,11 @@ func (a Axe) BaseMiningEfficiency(world.Block) float64 {
 // RepairableBy ...
 func (a Axe) RepairableBy(i Stack) bool {
 	return toolTierRepairable(a.Tier)(i)
+}
+
+// FireProof ...
+func (a Axe) FireProof() bool {
+	return a.Tier == ToolTierNetherite
 }
 
 // EnchantmentValue ...

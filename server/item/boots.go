@@ -1,8 +1,9 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Boots are a defensive item that may be equipped in the boots armour slot. They come in several tiers, like
@@ -49,6 +50,12 @@ func (b Boots) SmeltInfo() SmeltInfo {
 // RepairableBy ...
 func (b Boots) RepairableBy(i Stack) bool {
 	return armourTierRepairable(b.Tier)(i)
+}
+
+// FireProof ...
+func (b Boots) FireProof() bool {
+	_, netherite := b.Tier.(ArmourTierNetherite)
+	return netherite
 }
 
 // DefencePoints ...

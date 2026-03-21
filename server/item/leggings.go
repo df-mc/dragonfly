@@ -1,8 +1,9 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Leggings are a defensive item that may be equipped in the leggings armour slot. They come in several tiers,
@@ -73,6 +74,12 @@ func (l Leggings) DurabilityInfo() DurabilityInfo {
 // RepairableBy ...
 func (l Leggings) RepairableBy(i Stack) bool {
 	return armourTierRepairable(l.Tier)(i)
+}
+
+// FireProof ...
+func (l Leggings) FireProof() bool {
+	_, netherite := l.Tier.(ArmourTierNetherite)
+	return netherite
 }
 
 // SmeltInfo ...

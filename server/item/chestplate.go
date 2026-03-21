@@ -1,8 +1,9 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Chestplate is a defensive item that may be equipped in the chestplate slot. Generally, chestplates provide
@@ -81,6 +82,12 @@ func (c Chestplate) SmeltInfo() SmeltInfo {
 // RepairableBy ...
 func (c Chestplate) RepairableBy(i Stack) bool {
 	return armourTierRepairable(c.Tier)(i)
+}
+
+// FireProof ...
+func (c Chestplate) FireProof() bool {
+	_, netherite := c.Tier.(ArmourTierNetherite)
+	return netherite
 }
 
 // Chestplate ...

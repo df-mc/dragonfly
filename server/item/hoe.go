@@ -1,11 +1,12 @@
 package item
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // Hoe is a tool generally used to till dirt and grass blocks into farmland blocks for planting crops.
@@ -107,6 +108,11 @@ func (h Hoe) FuelInfo() FuelInfo {
 // RepairableBy ...
 func (h Hoe) RepairableBy(i Stack) bool {
 	return toolTierRepairable(h.Tier)(i)
+}
+
+// FireProof ...
+func (h Hoe) FireProof() bool {
+	return h.Tier == ToolTierNetherite
 }
 
 // EncodeItem ...

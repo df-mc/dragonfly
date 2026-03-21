@@ -2,11 +2,12 @@ package inventory
 
 import (
 	"fmt"
+	"math"
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
-	"math"
-	"math/rand/v2"
 )
 
 // Armour represents an inventory for armour. It has 4 slots, one for a helmet, chestplate, leggings and
@@ -153,9 +154,14 @@ type DamageFunc func(s item.Stack, d int) item.Stack
 
 // Damage deals damage (hearts) to Armour. The resulting item damage depends on the
 // dmg passed and the DamageFunc used.
-func (a *Armour) Damage(dmg float64, f DamageFunc) {
+func (a *Armour) Damage(dmg float64, fire bool, f DamageFunc) {
 	armourDamage := int(math.Max(math.Floor(dmg/4), 1))
 	for slot, it := range a.Slots() {
+		if fire {
+			if fireproof, ok := it.Item().(item.FireProof); ok && fireproof.FireProof() {
+				continue
+			}
+		}
 		_ = a.inv.SetItem(slot, f(it, armourDamage))
 	}
 }
