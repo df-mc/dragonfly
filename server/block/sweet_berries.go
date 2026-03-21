@@ -54,11 +54,15 @@ func (s SweetBerries) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 }
 
 // BoneMeal ...
-func (s SweetBerries) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
+func (s SweetBerries) BoneMeal(pos cube.Pos, creative bool, tx *world.Tx) bool {
 	if s.Growth >= 3 {
 		return false
 	}
-	s.Growth++
+	if creative {
+		s.Growth = 3
+	} else {
+		s.Growth++
+	}
 	tx.SetBlock(pos, s, nil)
 	return true
 }
