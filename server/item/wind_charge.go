@@ -1,9 +1,10 @@
 package item
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"time"
 )
 
 // WindCharge is a throwable item that creates a burst of wind on impact, knocking back nearby entities and
@@ -24,11 +25,6 @@ func (WindCharge) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 // Cooldown ...
 func (WindCharge) Cooldown() time.Duration {
 	return time.Millisecond * 500
-}
-
-// MaxCount ...
-func (WindCharge) MaxCount() int {
-	return 64
 }
 
 // EncodeItem ...

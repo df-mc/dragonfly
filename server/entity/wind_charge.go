@@ -86,18 +86,10 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 
 	// Toggle interactive blocks at the impact point.
 	if r, ok := target.(trace.BlockResult); ok {
-		toggleWindChargeBlock(r.BlockPosition(), r.Face(), tx)
-	}
-}
-
-// toggleWindChargeBlock toggles a block at pos if it is a door, trapdoor or
-// fence gate.
-// TODO: Buttons, levers, bells and candles should also be toggled.
-func toggleWindChargeBlock(pos cube.Pos, face cube.Face, tx *world.Tx) {
-	b := tx.Block(pos)
-	switch b.(type) {
-	case block.WoodDoor, block.CopperDoor, block.WoodTrapdoor, block.CopperTrapdoor, block.WoodFenceGate:
-		b.(block.Activatable).Activate(pos, face, tx, nil, nil)
+		pos := r.BlockPosition()
+		if b, ok := tx.Block(pos).(block.WindChargeAffected); ok {
+			b.Activate(pos, r.Face(), tx, nil, nil)
+		}
 	}
 }
 
