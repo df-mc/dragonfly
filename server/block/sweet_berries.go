@@ -16,7 +16,7 @@ type SweetBerries struct {
 	transparent
 	empty
 
-	// Growth is the current growth stage of the bush when placed as a block. 7 is fully grown.
+	// Growth is the current growth stage of the bush when placed as a block. 3 is fully grown.
 	Growth int
 }
 
@@ -53,21 +53,12 @@ func (s SweetBerries) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	return placed(ctx)
 }
 
-// Pick ...
-func (SweetBerries) Pick() item.Stack {
-	return item.NewStack(SweetBerries{}, 1)
-}
-
 // BoneMeal ...
-func (s SweetBerries) BoneMeal(pos cube.Pos, creative bool, tx *world.Tx) bool {
-	if s.Growth == 7 {
+func (s SweetBerries) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
+	if s.Growth == 3 {
 		return false
 	}
-	if creative {
-		s.Growth = 7
-	} else {
-		s.Growth++
-	}
+	s.Growth++
 	tx.SetBlock(pos, s, nil)
 	return true
 }
@@ -84,12 +75,12 @@ func (SweetBerries) HasLiquidDrops() bool {
 
 // Activate ...
 func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
-	if s.Growth < 4 {
+	if s.Growth < 2 {
 		return false
 	}
 
 	count := rand.IntN(2) + 1
-	if s.Growth == 7 {
+	if s.Growth == 3 {
 		count++
 	}
 	dropItem(tx, item.NewStack(SweetBerries{}, count), pos.Vec3Centre())
@@ -116,7 +107,7 @@ func (s SweetBerries) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 		v.SetVelocity(vel)
 	}
 
-	if s.Growth < 2 {
+	if s.Growth < 1 {
 		return
 	}
 	if math.Abs(movement[0]) >= 0.003 || math.Abs(movement[2]) >= 0.003 {
@@ -133,7 +124,7 @@ func (s SweetBerries) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 
 // RandomTick ...
 func (s SweetBerries) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	if s.Growth == 7 || tx.Light(pos.Side(cube.FaceUp)) < 9 || r.IntN(5) != 0 {
+	if s.Growth == 3 || tx.Light(pos.Side(cube.FaceUp)) < 9 || r.IntN(5) != 0 {
 		return
 	}
 	s.Growth++
@@ -145,9 +136,9 @@ func (s SweetBerries) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		var count int
 		switch {
-		case s.Growth == 7:
+		case s.Growth == 3:
 			count = rand.IntN(2+fortuneLevel(enchantments)) + 2
-		case s.Growth >= 4:
+		case s.Growth >= 2:
 			count = rand.IntN(2+fortuneLevel(enchantments)) + 1
 		default:
 			return nil
