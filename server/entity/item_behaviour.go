@@ -108,6 +108,11 @@ func (i *ItemBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, conf blo
 	}
 }
 
+// CheckBlocks ...
+func (i *ItemBehaviour) CheckBlocks(e *Ent, tx *world.Tx) bool {
+	return true
+}
+
 // tick checks if the item can be picked up or merged with nearby item stacks.
 func (i *ItemBehaviour) tick(e *Ent, tx *world.Tx) {
 	if i.pickupDelay == 0 {

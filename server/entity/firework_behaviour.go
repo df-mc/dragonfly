@@ -1,13 +1,14 @@
 package entity
 
 import (
+	"iter"
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"iter"
-	"math"
-	"time"
 )
 
 // FireworkBehaviourConfig holds optional parameters for a FireworkBehaviour.
@@ -64,6 +65,11 @@ func (f *FireworkBehaviour) Attached() bool {
 // Owner returns the world.Entity that launched the firework.
 func (f *FireworkBehaviour) Owner() *world.EntityHandle {
 	return f.conf.Owner
+}
+
+// CheckBlocks ...
+func (f *FireworkBehaviour) CheckBlocks(e *Ent, tx *world.Tx) bool {
+	return true
 }
 
 // Tick moves the firework and makes it explode when it reaches its maximum

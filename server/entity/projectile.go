@@ -1,6 +1,11 @@
 package entity
 
 import (
+	"iter"
+	"math"
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
@@ -9,10 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"iter"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
 // ProjectileBehaviourConfig allows the configuration of projectiles. Calling
@@ -120,6 +121,11 @@ func (lt *ProjectileBehaviour) Owner() *world.EntityHandle {
 // source.
 func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
 	e.data.Vel = e.Velocity().Add(e.Position().Sub(src).Normalize().Mul(impact))
+}
+
+// CheckBlocks ...
+func (lt *ProjectileBehaviour) CheckBlocks(e *Ent, tx *world.Tx) bool {
+	return true
 }
 
 // Potion returns the potion.Potion that is applied to an entity if hit by the
