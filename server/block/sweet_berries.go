@@ -74,7 +74,7 @@ func (s SweetBerries) BoneMeal(pos cube.Pos, creative bool, tx *world.Tx) bool {
 
 // FlammabilityInfo ...
 func (SweetBerries) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(60, 100, false)
+	return newFlammabilityInfo(30, 100, false)
 }
 
 // HasLiquidDrops ...
