@@ -111,6 +111,7 @@ func allCactus() (b []world.Block) {
 
 // PrickableEntity represents an entity that can be pricked.
 type PrickableEntity interface {
+	// Prick is called when ever block on positions passed (for example cactus) tries to prick this entity.
 	Prick(pos cube.Pos)
 }
 

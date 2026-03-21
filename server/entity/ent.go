@@ -134,10 +134,10 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 		return
 	}
 
-	beh := e.Behaviour()
+	b := e.Behaviour()
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
-	e.checkBlockCollisions(beh)
-	if m := beh.Tick(e, tx); m != nil {
+	e.checkBlockCollisions(b)
+	if m := b.Tick(e, tx); m != nil {
 		m.Send()
 	}
 	e.data.Age += time.Second / 20
