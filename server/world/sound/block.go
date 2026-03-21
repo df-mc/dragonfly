@@ -210,6 +210,9 @@ type DecoratedPotInserted struct {
 // DecoratedPotInsertFailed is a sound played when an item fails to be inserted into a decorated pot.
 type DecoratedPotInsertFailed struct{ sound }
 
+// BellRing is a sound played when a bell is rung.
+type BellRing struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

@@ -61,7 +61,7 @@ type Viewer interface {
 	ViewSound(pos mgl64.Vec3, s Sound)
 	// ViewBlockUpdate views the updating of a block. It is called when a block is set at the position passed
 	// to the method.
-	ViewBlockUpdate(pos cube.Pos, b Block, layer int)
+	ViewBlockUpdate(pos cube.Pos, b Block, layer int, nbtOnly bool)
 	// ViewBlockAction views an action performed by a block. Available actions may be found in the `action`
 	// package, and include things such as a chest opening.
 	ViewBlockAction(pos cube.Pos, a BlockAction)
@@ -100,7 +100,7 @@ func (NopViewer) ViewEntityState(Entity)                                        
 func (NopViewer) ViewEntityAnimation(Entity, EntityAnimation)                                {}
 func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                                          {}
 func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                                {}
-func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                                       {}
+func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int, bool)                                 {}
 func (NopViewer) ViewBlockAction(cube.Pos, BlockAction)                                      {}
 func (NopViewer) ViewEmote(Entity, uuid.UUID)                                                {}
 func (NopViewer) ViewSkin(Entity)                                                            {}

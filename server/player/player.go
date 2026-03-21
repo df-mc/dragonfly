@@ -3293,10 +3293,10 @@ func (p *Player) resendNearbyBlock(pos cube.Pos) {
 		return
 	}
 	b := p.tx.Block(pos)
-	p.session().ViewBlockUpdate(pos, b, 0)
+	p.session().ViewBlockUpdate(pos, b, 0, false)
 	if _, ok := b.(world.LiquidDisplacer); ok {
 		liq, _ := p.tx.Liquid(pos)
-		p.session().ViewBlockUpdate(pos, liq, 1)
+		p.session().ViewBlockUpdate(pos, liq, 1, false)
 	}
 }
 
