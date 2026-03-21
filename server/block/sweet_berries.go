@@ -94,7 +94,7 @@ func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.U
 	}
 	dropItem(tx, item.NewStack(SweetBerries{}, count), pos.Vec3Centre())
 
-	s.Growth = 2
+	s.Growth = 1
 	tx.SetBlock(pos, s, nil)
 	return true
 }
