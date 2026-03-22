@@ -2000,6 +2000,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 	p.tx.SetBlock(pos, b, nil)
 	p.tx.PlaySound(pos.Vec3(), sound.BlockPlace{Block: b})
 	p.SwingArm()
+	p.ReleaseItem()
 	return true
 }
 

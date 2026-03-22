@@ -43,7 +43,7 @@ func (p Potato) Consume(_ *world.Tx, c item.Consumer) item.Stack {
 }
 
 // BoneMeal ...
-func (p Potato) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (p Potato) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	if p.Growth == 7 {
 		return false
 	}

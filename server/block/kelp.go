@@ -24,7 +24,7 @@ func (k Kelp) SmeltInfo() item.SmeltInfo {
 }
 
 // BoneMeal ...
-func (k Kelp) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (k Kelp) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	for y := pos.Y(); y <= tx.Range()[1]; y++ {
 		currentPos := cube.Pos{pos.X(), y, pos.Z()}
 		block := tx.Block(currentPos)

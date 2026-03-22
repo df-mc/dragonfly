@@ -37,7 +37,7 @@ func init() {
 // SoilFor ...
 func (g Grass) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, PinkPetals, SugarCane, DeadBush:
+	case ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, NetherSprouts, PinkPetals, SugarCane, DeadBush, SweetBerries:
 		return true
 	}
 	return false
@@ -78,7 +78,7 @@ func (g Grass) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // BoneMeal ...
-func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (g Grass) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	for i := 0; i < 14; i++ {
 		c := pos.Add(cube.Pos{rand.IntN(6) - 3, 0, rand.IntN(6) - 3})
 		above := c.Side(cube.FaceUp)

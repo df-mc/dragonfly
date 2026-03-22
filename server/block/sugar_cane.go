@@ -63,7 +63,7 @@ func (c SugarCane) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 }
 
 // BoneMeal ...
-func (c SugarCane) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (c SugarCane) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
 	for _, ok := tx.Block(pos.Side(cube.FaceDown)).(SugarCane); ok; _, ok = tx.Block(pos.Side(cube.FaceDown)).(SugarCane) {
 		pos = pos.Side(cube.FaceDown)
 	}
