@@ -736,7 +736,8 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 					// The chunk wasn't loaded, so there are no entities here.
 					continue
 				}
-				for _, handle := range c.Entities {
+				for i := 0; i < len(c.Entities); i++ {
+					handle := c.Entities[i]
 					if !box.Vec3Within(handle.data.Pos) {
 						continue
 					}
