@@ -159,7 +159,7 @@ func Range3D(p1, p2 Pos) iter.Seq[Pos] {
 		for x := min[0]; x <= max[0]; x++ {
 			for y := min[1]; y <= max[1]; y++ {
 				for z := min[2]; z <= max[2]; z++ {
-					if !yield(min.Add(Pos{x, y, z})) {
+					if !yield(Pos{x, y, z}) {
 						return
 					}
 				}

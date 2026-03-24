@@ -625,7 +625,7 @@ func (l Lava) Hash() (uint64, uint64) {
 }
 
 func (l Leaves) Hash() (uint64, uint64) {
-	return hashLeaves, uint64(l.Wood.Uint8()) | uint64(boolByte(l.Persistent))<<4 | uint64(boolByte(l.ShouldUpdate))<<5
+	return hashLeaves, uint64(l.Type.Uint8()) | uint64(boolByte(l.Persistent))<<4 | uint64(boolByte(l.ShouldUpdate))<<5
 }
 
 func (l Lectern) Hash() (uint64, uint64) {
