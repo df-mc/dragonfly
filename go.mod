@@ -4,7 +4,7 @@ go 1.25
 
 replace (
 	github.com/df-mc/go-nethernet => github.com/lactyy/go-nethernet v1.0.2
-	github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260211022802-c94bd2cb2628
+	github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260325161325-226072b6c699
 )
 
 require (
