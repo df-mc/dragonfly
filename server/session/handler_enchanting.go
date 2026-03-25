@@ -267,7 +267,7 @@ func searchBookshelves(tx *world.Tx, pos cube.Pos) (shelves int) {
 		for z := -1; z <= 1; z++ {
 			for y := 0; y <= 1; y++ {
 				if x == 0 && z == 0 {
-					// Ignore the center block.
+					// Ignore the centre block.
 					continue
 				}
 				if _, ok := tx.Block(pos.Add(cube.Pos{x, y, z})).(block.Air); !ok {

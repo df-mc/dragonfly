@@ -278,7 +278,7 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 // manages.
 func (s *Session) close(tx *world.Tx, c Controllable) {
 	c.MoveItemsToInventory()
-	s.closeCurrentContainer(tx)
+	s.closeCurrentContainer(tx, false)
 
 	s.conf.HandleStop(tx, c)
 
@@ -411,13 +411,15 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
+	var worldSwitched bool
 	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
+		worldSwitched = true
 		s.handleWorldSwitch(w, tx, c)
 	}
 	pos := c.Position()
 	s.chunkLoader.Move(tx, pos)
 	chunkPos := world.ChunkPos{int32(pos[0]) << 4, int32(pos[2]) << 4}
-	if s.lastChunkPos != chunkPos {
+	if s.lastChunkPos != chunkPos || worldSwitched {
 		s.lastChunkPos = chunkPos
 		s.writePacket(&packet.NetworkChunkPublisherUpdate{
 			Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
@@ -567,9 +569,9 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 	for _, t := range w.EntityRegistry().Types() {
 		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
-	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
+	serialisedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {
 		panic("should never happen")
 	}
-	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
+	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serialisedEntityData})
 }

@@ -25,7 +25,7 @@ type smelter struct {
 	experience        int
 }
 
-// newSmelter initializes a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
+// newSmelter initialises a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
 func newSmelter() *smelter {
 	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
 	s.inventory = inventory.New(3, func(slot int, _, item item.Stack) {
@@ -189,13 +189,13 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 	fuel, _ := s.inventory.Item(1)
 	product, _ := s.inventory.Item(2)
 
-	// Initialize some default smelt info, and update it if we can smelt the item.
+	// Initialise some default smelt info, and update it if we can smelt the item.
 	var inputInfo item.SmeltInfo
 	if i, ok := input.Item().(item.Smeltable); ok && supported(i.SmeltInfo()) {
 		inputInfo = i.SmeltInfo()
 	}
 
-	// Initialize some default fuel info, and update it if it can be used as fuel.
+	// Initialise some default fuel info, and update it if it can be used as fuel.
 	var fuelInfo item.FuelInfo
 	if f, ok := fuel.Item().(item.Fuel); ok {
 		fuelInfo = f.FuelInfo()
