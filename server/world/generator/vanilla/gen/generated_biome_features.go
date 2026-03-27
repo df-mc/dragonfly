@@ -945,8 +945,7 @@ var biomePlacedFeaturesByName = map[string]map[GenerationStep][]string{
 			"freeze_top_layer",
 		},
 	},
-	"end_barrens": {
-	},
+	"end_barrens": {},
 	"end_highlands": {
 		GenerationStepSurfaceStructures: []string{
 			"end_gateway_return",
@@ -955,8 +954,7 @@ var biomePlacedFeaturesByName = map[string]map[GenerationStep][]string{
 			"chorus_plant",
 		},
 	},
-	"end_midlands": {
-	},
+	"end_midlands": {},
 	"eroded_badlands": {
 		GenerationStepLakes: []string{
 			"lake_lava_underground",

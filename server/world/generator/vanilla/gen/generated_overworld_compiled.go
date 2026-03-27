@@ -24,8 +24,14 @@ func ComputeFinalDensity(ctx FunctionContext, noises NoiseSource, flat *FlatCach
 	v17 := ((v14 + (v14 * v15)) * (-0.4 + math.Abs(v16)))
 	v18 := noises.Sample(NoiseSpaghetti3dRarity, float64(ctx.BlockX)*2.0, float64(ctx.BlockY)*1.0, float64(ctx.BlockZ)*2.0)
 	v19 := v18
-	v20 := func() float64 { rarity := rarityValue(RarityType1, v19); return rarity * math.Abs(noises.Sample(NoiseSpaghetti3d1, float64(ctx.BlockX)/rarity, float64(ctx.BlockY)/rarity, float64(ctx.BlockZ)/rarity)) }()
-	v21 := func() float64 { rarity := rarityValue(RarityType1, v19); return rarity * math.Abs(noises.Sample(NoiseSpaghetti3d2, float64(ctx.BlockX)/rarity, float64(ctx.BlockY)/rarity, float64(ctx.BlockZ)/rarity)) }()
+	v20 := func() float64 {
+		rarity := rarityValue(RarityType1, v19)
+		return rarity * math.Abs(noises.Sample(NoiseSpaghetti3d1, float64(ctx.BlockX)/rarity, float64(ctx.BlockY)/rarity, float64(ctx.BlockZ)/rarity))
+	}()
+	v21 := func() float64 {
+		rarity := rarityValue(RarityType1, v19)
+		return rarity * math.Abs(noises.Sample(NoiseSpaghetti3d2, float64(ctx.BlockX)/rarity, float64(ctx.BlockY)/rarity, float64(ctx.BlockZ)/rarity))
+	}()
 	v22 := noises.Sample(NoiseSpaghetti3dThickness, float64(ctx.BlockX)*1.0, float64(ctx.BlockY)*1.0, float64(ctx.BlockZ)*1.0)
 	v23 := clampFloat((maxFloat(v20, v21) + (-0.0765 + (-0.011499999999999996 * v22))), -1.0, 1.0)
 	v24 := minFloat(((0.37 + v13) + yClampedGradient(ctx.BlockY, -10, 30, 0.3, 0.0)), (v17 + v23))
@@ -33,15 +39,18 @@ func ComputeFinalDensity(ctx FunctionContext, noises NoiseSource, flat *FlatCach
 	v26 := noises.Sample(NoiseCaveLayer, float64(ctx.BlockX)*1.0, float64(ctx.BlockY)*8.0, float64(ctx.BlockZ)*1.0)
 	v27 := noises.Sample(NoiseCaveCheese, float64(ctx.BlockX)*1.0, float64(ctx.BlockY)*0.6666666666666666, float64(ctx.BlockZ)*1.0)
 	v28 := 1.5
-	v29 := (clampFloat((0.27 + v27), -1.0, 1.0) + clampFloat((v28 + (-0.64 * v12)), 0.0, 0.5))
+	v29 := (clampFloat((0.27+v27), -1.0, 1.0) + clampFloat((v28+(-0.64*v12)), 0.0, 0.5))
 	v30 := noises.Sample(NoiseSpaghetti2dModulator, float64(ctx.BlockX)*2.0, float64(ctx.BlockY)*1.0, float64(ctx.BlockZ)*2.0)
-	v31 := func() float64 { rarity := rarityValue(RarityType2, v30); return rarity * math.Abs(noises.Sample(NoiseSpaghetti2d, float64(ctx.BlockX)/rarity, float64(ctx.BlockY)/rarity, float64(ctx.BlockZ)/rarity)) }()
+	v31 := func() float64 {
+		rarity := rarityValue(RarityType2, v30)
+		return rarity * math.Abs(noises.Sample(NoiseSpaghetti2d, float64(ctx.BlockX)/rarity, float64(ctx.BlockY)/rarity, float64(ctx.BlockZ)/rarity))
+	}()
 	v32 := noises.Sample(NoiseSpaghetti2dThickness, float64(ctx.BlockX)*2.0, float64(ctx.BlockY)*1.0, float64(ctx.BlockZ)*2.0)
 	v33 := (-0.95 + (-0.35000000000000003 * v32))
 	v34 := 0.0
 	v35 := noises.Sample(NoiseSpaghetti2dElevation, float64(ctx.BlockX)*1.0, float64(ctx.BlockY)*0.0, float64(ctx.BlockZ)*1.0)
 	v36 := math.Abs(((v34 + (8.0 * v35)) + yClampedGradient(ctx.BlockY, -64, 320, 8.0, -40.0)))
-	v37 := clampFloat(maxFloat((v31 + (0.083 * v33)), ((v36 + v33) * (v36 + v33) * (v36 + v33))), -1.0, 1.0)
+	v37 := clampFloat(maxFloat((v31+(0.083*v33)), ((v36+v33)*(v36+v33)*(v36+v33))), -1.0, 1.0)
 	v38 := noises.Sample(NoisePillar, float64(ctx.BlockX)*25.0, float64(ctx.BlockY)*0.3, float64(ctx.BlockZ)*25.0)
 	v39 := -1.0
 	v40 := noises.Sample(NoisePillarRareness, float64(ctx.BlockX)*1.0, float64(ctx.BlockY)*1.0, float64(ctx.BlockZ)*1.0)
@@ -49,21 +58,62 @@ func ComputeFinalDensity(ctx FunctionContext, noises NoiseSource, flat *FlatCach
 	v42 := noises.Sample(NoisePillarThickness, float64(ctx.BlockX)*1.0, float64(ctx.BlockY)*1.0, float64(ctx.BlockZ)*1.0)
 	v43 := (((2.0 * v38) + (v39 + (v39 * v40))) * ((v41 + (v41 * v42)) * (v41 + (v41 * v42)) * (v41 + (v41 * v42))))
 	v44 := v43
-	v45 := func() float64 { inp := v44; if inp >= -1000000.0 && inp < 0.03 { return -1000000.0 }; return v44 }()
-	v46 := func() float64 { inp := v12; if inp >= -1000000.0 && inp < 1.5625 { return minFloat(v12, (5.0 * v25)) }; return maxFloat(minFloat(minFloat(((v6 * (v26 * v26)) + v29), v25), (v37 + v17)), v45) }()
+	v45 := func() float64 {
+		inp := v44
+		if inp >= -1000000.0 && inp < 0.03 {
+			return -1000000.0
+		}
+		return v44
+	}()
+	v46 := func() float64 {
+		inp := v12
+		if inp >= -1000000.0 && inp < 1.5625 {
+			return minFloat(v12, (5.0 * v25))
+		}
+		return maxFloat(minFloat(minFloat(((v6*(v26*v26))+v29), v25), (v37+v17)), v45)
+	}()
 	v47 := yClampedGradient(ctx.BlockY, -4064, 4062, -4064.0, 4062.0)
 	v48 := noises.Sample(NoiseNoodle, float64(ctx.BlockX)*1.0, float64(ctx.BlockY)*1.0, float64(ctx.BlockZ)*1.0)
-	v49 := func() float64 { inp := v47; if inp >= -60.0 && inp < 321.0 { return v48 }; return v39 }()
+	v49 := func() float64 {
+		inp := v47
+		if inp >= -60.0 && inp < 321.0 {
+			return v48
+		}
+		return v39
+	}()
 	v50 := noises.Sample(NoiseNoodleThickness, float64(ctx.BlockX)*1.0, float64(ctx.BlockY)*1.0, float64(ctx.BlockZ)*1.0)
-	v51 := func() float64 { inp := v47; if inp >= -60.0 && inp < 321.0 { return (-0.07500000000000001 + (-0.025 * v50)) }; return v34 }()
+	v51 := func() float64 {
+		inp := v47
+		if inp >= -60.0 && inp < 321.0 {
+			return (-0.07500000000000001 + (-0.025 * v50))
+		}
+		return v34
+	}()
 	v52 := noises.Sample(NoiseNoodleRidgeA, float64(ctx.BlockX)*2.6666666666666665, float64(ctx.BlockY)*2.6666666666666665, float64(ctx.BlockZ)*2.6666666666666665)
-	v53 := func() float64 { inp := v47; if inp >= -60.0 && inp < 321.0 { return v52 }; return v34 }()
+	v53 := func() float64 {
+		inp := v47
+		if inp >= -60.0 && inp < 321.0 {
+			return v52
+		}
+		return v34
+	}()
 	v54 := noises.Sample(NoiseNoodleRidgeB, float64(ctx.BlockX)*2.6666666666666665, float64(ctx.BlockY)*2.6666666666666665, float64(ctx.BlockZ)*2.6666666666666665)
-	v55 := func() float64 { inp := v47; if inp >= -60.0 && inp < 321.0 { return v54 }; return v34 }()
-	v56 := func() float64 { inp := v49; if inp >= -1000000.0 && inp < 0.0 { return 64.0 }; return (v51 + (v28 * maxFloat(math.Abs(v53), math.Abs(v55)))) }()
+	v55 := func() float64 {
+		inp := v47
+		if inp >= -60.0 && inp < 321.0 {
+			return v54
+		}
+		return v34
+	}()
+	v56 := func() float64 {
+		inp := v49
+		if inp >= -1000000.0 && inp < 0.0 {
+			return 64.0
+		}
+		return (v51 + (v28 * maxFloat(math.Abs(v53), math.Abs(v55))))
+	}()
 	return minFloat(squeeze((0.64 * (v0 + (v1 * (v2 + (v3 + (v4 * (v5 + v46)))))))), v56)
 }
-
 
 func computePreliminarySurfaceLevelInnerDensity(ctx FunctionContext, noises NoiseSource, flat *FlatCacheGrid, col *ColumnContext) float64 {
 	v0 := 0.1171875
@@ -78,7 +128,6 @@ func computePreliminarySurfaceLevelInnerDensity(ctx FunctionContext, noises Nois
 	return (-0.390625 + (v0 + (v1 * (v2 + (v3 + (v4 * (v5 + v8)))))))
 }
 
-
 func ComputePreliminarySurfaceLevel(ctx FunctionContext, noises NoiseSource, flat *FlatCacheGrid, col *ColumnContext) float64 {
 	v0 := -1.0
 	v1 := clampFloat((128.0 + (-128.0 * ((0.2734375 * (-col.values[6])) + (v0 * col.values[5])))), -40.0, 320.0)
@@ -89,7 +138,6 @@ func ComputePreliminarySurfaceLevel(ctx FunctionContext, noises NoiseSource, fla
 	})
 }
 
-
 func ComputeFinalDensity4(ctx FunctionContext4, noises NoiseSource, flat *FlatCacheGrid, col *ColumnContext) [4]float64 {
 	return [4]float64{
 		ComputeFinalDensity(FunctionContext{BlockX: ctx.BlockX, BlockY: ctx.BlockY[0], BlockZ: ctx.BlockZ}, noises, flat, col),
@@ -98,4 +146,3 @@ func ComputeFinalDensity4(ctx FunctionContext4, noises NoiseSource, flat *FlatCa
 		ComputeFinalDensity(FunctionContext{BlockX: ctx.BlockX, BlockY: ctx.BlockY[3], BlockZ: ctx.BlockZ}, noises, flat, col),
 	}
 }
-
