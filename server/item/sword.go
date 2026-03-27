@@ -1,9 +1,16 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
+
+// swordMineable represents a block that specifies a custom mining efficiency when mined using a sword.
+type swordMineable interface {
+	// SwordMiningEfficiency returns the efficiency swords should use when mining the block.
+	SwordMiningEfficiency() float64
+}
 
 // Sword is a tool generally used to attack enemies. In addition, it may be used to mine any block slightly
 // faster than without tool and to break cobwebs rapidly.
@@ -38,8 +45,10 @@ func (s Sword) EnchantmentValue() int {
 }
 
 // BaseMiningEfficiency always returns 1.5, unless the block passed is cobweb, in which case 15 is returned.
-func (s Sword) BaseMiningEfficiency(world.Block) float64 {
-	// TODO: Implement cobwebs and return 15 here.
+func (s Sword) BaseMiningEfficiency(b world.Block) float64 {
+	if m, ok := b.(swordMineable); ok {
+		return m.SwordMiningEfficiency()
+	}
 	return 1.5
 }
 

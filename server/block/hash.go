@@ -37,6 +37,7 @@ const (
 	hashCoal
 	hashCoalOre
 	hashCobblestone
+	hashCobweb
 	hashCocoaBean
 	hashComposter
 	hashConcrete
@@ -334,6 +335,10 @@ func (c CoalOre) Hash() (uint64, uint64) {
 
 func (c Cobblestone) Hash() (uint64, uint64) {
 	return hashCobblestone, uint64(boolByte(c.Mossy))
+}
+
+func (Cobweb) Hash() (uint64, uint64) {
+	return hashCobweb, 0
 }
 
 func (c CocoaBean) Hash() (uint64, uint64) {
