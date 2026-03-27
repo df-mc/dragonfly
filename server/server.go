@@ -26,6 +26,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
+	vanillagen "github.com/df-mc/dragonfly/server/world/generator/vanilla"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -46,6 +47,8 @@ type Server struct {
 	started atomic.Pointer[time.Time]
 
 	world, nether, end *world.World
+
+	spawnWarmupLoader *world.Loader
 
 	customBlocks []protocol.BlockEntry
 	customItems  []protocol.ItemEntry
@@ -308,6 +311,14 @@ func (srv *Server) close() {
 		srv.conf.Log.Error("Close player provider: " + err.Error())
 	}
 
+	if srv.spawnWarmupLoader != nil && srv.world != nil {
+		srv.conf.Log.Debug("Closing spawn warmup loader...")
+		<-srv.world.Exec(func(tx *world.Tx) {
+			srv.spawnWarmupLoader.Close(tx)
+		})
+		srv.spawnWarmupLoader = nil
+	}
+
 	srv.conf.Log.Debug("Closing worlds...")
 	for _, w := range []*world.World{srv.end, srv.nether, srv.world} {
 		if err := w.Close(); err != nil {
@@ -526,12 +537,13 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	srv.pwg.Add(1)
 
 	s := session.Config{
-		Log:            srv.conf.Log,
-		MaxChunkRadius: srv.conf.MaxChunkRadius,
-		EmoteChatMuted: srv.conf.MuteEmoteChat,
-		JoinMessage:    srv.conf.JoinMessage,
-		QuitMessage:    srv.conf.QuitMessage,
-		HandleStop:     srv.handleSessionClose,
+		Log:                 srv.conf.Log,
+		MaxChunkRadius:      srv.conf.MaxChunkRadius,
+		EmoteChatMuted:      srv.conf.MuteEmoteChat,
+		JoinMessage:         srv.conf.JoinMessage,
+		QuitMessage:         srv.conf.QuitMessage,
+		MetricsLogThreshold: srv.conf.MetricsLogThreshold,
+		HandleStop:          srv.handleSessionClose,
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName
@@ -553,26 +565,50 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	logger := srv.conf.Log.With("dimension", strings.ToLower(fmt.Sprint(dim)))
 	logger.Debug("Loading dimension...")
 
+	generator := srv.conf.Generator(dim)
 	conf := world.Config{
 		Log:                 logger,
 		Dim:                 dim,
 		Provider:            srv.conf.WorldProvider,
-		Generator:           srv.conf.Generator(dim),
+		Generator:           generator,
 		RandomTickSpeed:     srv.conf.RandomTickSpeed,
 		ReadOnly:            srv.conf.ReadOnlyWorld,
 		SaveInterval:        srv.conf.SaveInterval,
 		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		MetricsLogThreshold: srv.conf.MetricsLogThreshold,
 		Entities:            srv.conf.Entities,
-		PortalDestination: func(dim world.Dimension) *world.World {
-			if dim == world.Nether {
+		PortalDestination: func(portalDim world.Dimension) *world.World {
+			switch portalDim {
+			case world.Nether:
+				if dim == world.Nether {
+					return srv.world
+				}
 				return *nether
-			} else if dim == world.End {
+			case world.End:
+				if dim == world.End {
+					return srv.world
+				}
 				return *end
+			case world.Overworld:
+				return srv.world
+			default:
+				return nil
 			}
-			return nil
 		},
 	}
 	w := conf.New()
+	if dim == world.Overworld {
+		if g, ok := generator.(vanillagen.Generator); ok {
+			if chunkPos, ok := g.FindSpawnChunk(128); ok && srv.adjustOverworldSpawnHint(w, chunkPos) {
+				logger.Info("Relocated overworld spawn.", "chunk", chunkPos, "spawn", w.Spawn())
+			} else {
+				srv.adjustOverworldSpawn(w)
+			}
+		} else {
+			srv.adjustOverworldSpawn(w)
+		}
+		srv.spawnWarmupLoader = srv.warmupSpawnArea(w)
+	}
 	logger.Info("Opened dimension.", "name", w.Name())
 	return w
 }
@@ -631,11 +667,41 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 			RuntimeID:      int16(e.RuntimeID),
 			ComponentBased: e.ComponentBased,
 			Version:        e.Version,
-			Data:           e.Data,
+			Data:           vanillaItemEntryData(name, e.Data),
 		})
 	}
 	entries = append(entries, srv.customItems...)
 	return entries
+}
+
+func vanillaItemEntryData(name string, data map[string]any) map[string]any {
+	it, ok := world.ItemByName(name, 0)
+	if !ok {
+		return data
+	}
+	counter, ok := it.(interface{ MaxCount() int })
+	if !ok {
+		return data
+	}
+
+	components := cloneAnyMap(data)
+	itemComponents := cloneAnyMap(components["components"])
+	itemProperties := cloneAnyMap(itemComponents["item_properties"])
+	itemProperties["max_stack_size"] = int32(counter.MaxCount())
+	itemComponents["item_properties"] = itemProperties
+	components["components"] = itemComponents
+	return components
+}
+
+func cloneAnyMap(value any) map[string]any {
+	if value == nil {
+		return map[string]any{}
+	}
+	m, ok := value.(map[string]any)
+	if !ok {
+		return map[string]any{}
+	}
+	return maps.Clone(m)
 }
 
 var (

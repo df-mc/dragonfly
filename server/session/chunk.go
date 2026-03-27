@@ -20,6 +20,7 @@ const subChunkRequests = true
 func (s *Session) ViewChunk(pos world.ChunkPos, dim world.Dimension, blockEntities map[cube.Pos]world.Block, c *chunk.Chunk) {
 	if !s.conn.ClientCacheEnabled() {
 		s.sendNetworkChunk(pos, dim, c, blockEntities)
+		s.observeChunkVisibility(pos)
 		return
 	}
 	s.sendBlobHashes(pos, dim, c, blockEntities)
@@ -59,6 +60,52 @@ func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.Sub
 		CacheEnabled:    s.conn.ClientCacheEnabled(),
 		SubChunkEntries: entries,
 	})
+	for _, entry := range entries {
+		if !shouldObserveChunkVisibility(entry.Result) {
+			continue
+		}
+		pos := world.ChunkPos{
+			centre.X() + int32(entry.Offset[0]),
+			centre.Z() + int32(entry.Offset[2]),
+		}
+		if s.conn.ClientCacheEnabled() && entry.BlobHash != 0 {
+			s.deferChunkVisibilityForBlob(entry.BlobHash, pos)
+			continue
+		}
+		s.observeChunkVisibility(pos)
+	}
+}
+
+func shouldObserveChunkVisibility(result byte) bool {
+	return result == protocol.SubChunkResultSuccess
+}
+
+func (s *Session) deferChunkVisibilityForBlob(hash uint64, pos world.ChunkPos) {
+	s.blobMu.Lock()
+	defer s.blobMu.Unlock()
+
+	if s.pendingChunkVisibilityByBlob == nil {
+		s.pendingChunkVisibilityByBlob = map[uint64]map[world.ChunkPos]struct{}{}
+	}
+	positions, ok := s.pendingChunkVisibilityByBlob[hash]
+	if !ok {
+		positions = make(map[world.ChunkPos]struct{}, 1)
+		s.pendingChunkVisibilityByBlob[hash] = positions
+	}
+	positions[pos] = struct{}{}
+}
+
+func (s *Session) resolveChunkVisibilityForBlobLocked(hash uint64) []world.ChunkPos {
+	positions, ok := s.pendingChunkVisibilityByBlob[hash]
+	if !ok {
+		return nil
+	}
+	out := make([]world.ChunkPos, 0, len(positions))
+	for pos := range positions {
+		out = append(out, pos)
+	}
+	delete(s.pendingChunkVisibilityByBlob, hash)
+	return out
 }
 
 func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *world.Column, transaction map[uint64]struct{}) protocol.SubChunkEntry {

@@ -84,12 +84,16 @@ type Session struct {
 
 	lastChunkPos world.ChunkPos
 
+	chunkMetricsMu sync.Mutex
+	chunkMetrics   chunkVisibilityTracker
+
 	recipes map[uint32]recipe.Recipe
 
-	blobMu                sync.Mutex
-	blobs                 map[uint64][]byte
-	openChunkTransactions []map[uint64]struct{}
-	invOpened             bool
+	blobMu                       sync.Mutex
+	blobs                        map[uint64][]byte
+	openChunkTransactions        []map[uint64]struct{}
+	pendingChunkVisibilityByBlob map[uint64]map[world.ChunkPos]struct{}
+	invOpened                    bool
 
 	hudMu      sync.RWMutex
 	hudUpdates map[hud.Element]bool
@@ -152,6 +156,8 @@ type Config struct {
 
 	JoinMessage, QuitMessage chat.Translation
 
+	MetricsLogThreshold time.Duration
+
 	HandleStop func(*world.Tx, Controllable)
 }
 
@@ -168,27 +174,28 @@ func (conf Config) New(conn Conn) *Session {
 
 	s := &Session{}
 	*s = Session{
-		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
-		closeBackground:        make(chan struct{}),
-		handlers:               map[uint32]packetHandler{},
-		packets:                make(chan packet.Packet, 256),
-		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
-		entities:               map[uint64]*world.EntityHandle{},
-		hiddenEntities:         map[uuid.UUID]struct{}{},
-		blobs:                  map[uint64][]byte{},
-		chunkRadius:            int32(r),
-		maxChunkRadius:         int32(conf.MaxChunkRadius),
-		emoteChatMuted:         conf.EmoteChatMuted,
-		conn:                   conn,
-		currentEntityRuntimeID: 1,
-		heldSlot:               new(uint32),
-		recipes:                make(map[uint32]recipe.Recipe),
-		conf:                   conf,
-		hudUpdates:             make(map[hud.Element]bool),
-		hiddenHud:              make(map[hud.Element]struct{}),
-		debugShapes:            make(map[int]debug.Shape),
-		debugShapesAdd:         make(chan debug.Shape, 256),
-		debugShapesRemove:      make(chan int, 256),
+		openChunkTransactions:        make([]map[uint64]struct{}, 0, 8),
+		pendingChunkVisibilityByBlob: map[uint64]map[world.ChunkPos]struct{}{},
+		closeBackground:              make(chan struct{}),
+		handlers:                     map[uint32]packetHandler{},
+		packets:                      make(chan packet.Packet, 256),
+		entityRuntimeIDs:             map[*world.EntityHandle]uint64{},
+		entities:                     map[uint64]*world.EntityHandle{},
+		hiddenEntities:               map[uuid.UUID]struct{}{},
+		blobs:                        map[uint64][]byte{},
+		chunkRadius:                  int32(r),
+		maxChunkRadius:               int32(conf.MaxChunkRadius),
+		emoteChatMuted:               conf.EmoteChatMuted,
+		conn:                         conn,
+		currentEntityRuntimeID:       1,
+		heldSlot:                     new(uint32),
+		recipes:                      make(map[uint32]recipe.Recipe),
+		conf:                         conf,
+		hudUpdates:                   make(map[hud.Element]bool),
+		hiddenHud:                    make(map[hud.Element]struct{}),
+		debugShapes:                  make(map[int]debug.Shape),
+		debugShapesAdd:               make(chan debug.Shape, 256),
+		debugShapesRemove:            make(chan int, 256),
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
@@ -243,6 +250,7 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
 		Radius:   uint32(s.chunkRadius) << 4,
 	})
+	s.beginChunkVisibilityTracking(tx.World(), pos, "join")
 
 	s.sendAvailableEntities(tx.World())
 
@@ -288,6 +296,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	_ = s.armour.Close()
 
 	s.chunkLoader.Close(tx)
+	s.clearChunkVisibilityTracking()
 
 	if !s.conf.QuitMessage.Zero() {
 		chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
@@ -453,6 +462,7 @@ func (s *Session) handleWorldSwitch(w *world.World, tx *world.Tx, c Controllable
 	}
 	s.ViewEntityTeleport(c, c.Position())
 	s.chunkLoader.ChangeWorld(tx, w)
+	s.beginChunkVisibilityTracking(w, c.Position(), "world-switch")
 }
 
 // changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped

@@ -47,10 +47,20 @@ type World struct {
 
 	closing chan struct{}
 	running sync.WaitGroup
+	metrics worldMetrics
 
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
 	chunks map[ChunkPos]*Column
+
+	// prefetchRequests queues chunk positions for asynchronous loading and
+	// generation so chunk misses don't block the transaction goroutine.
+	prefetchRequests chan ChunkPos
+	prefetchMu       sync.Mutex
+	prefetchInFlight map[ChunkPos]struct{}
+	// genMu serialises generator use for background prefetch workers because
+	// generators are not guaranteed to be goroutine-safe.
+	genMu sync.Mutex
 
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
@@ -1157,39 +1167,125 @@ func (w *World) chunk(pos ChunkPos) *Column {
 	if ok {
 		return c
 	}
+	start := time.Now()
 	c, err := w.loadChunk(pos)
-	chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
-	if err != nil {
-		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+	if err == nil {
+		w.observeSyncChunkLoad(pos, time.Since(start))
 		return c
 	}
-	w.calculateLight(pos)
+
+	fillStart := time.Now()
+	chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
+	w.observeLighting(pos, "sync-error", time.Since(fillStart))
+	w.observeSyncChunkLoad(pos, time.Since(start))
+	w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 	return c
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk
 // if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
+	loaded := w.loadColumnData(pos, "sync")
+	if loaded.column == nil {
+		loaded.column = &chunk.Column{Chunk: chunk.New(airRID, w.Range())}
+	}
+	if loaded.err != nil {
+		return newColumn(loaded.column.Chunk), loaded.err
+	}
+
+	fillStart := time.Now()
+	chunk.LightArea([]*chunk.Chunk{loaded.column.Chunk}, int(pos[0]), int(pos[1])).Fill()
+	w.observeLighting(pos, "sync", time.Since(fillStart))
+
+	start := time.Now()
+	col := w.columnFrom(loaded.column, pos)
+	col.modified = loaded.generated
+	w.chunks[pos] = col
+	for _, e := range col.Entities {
+		w.entities[e] = pos
+		e.w = w
+	}
+	w.calculateLight(pos)
+	w.observeInstallation(pos, "sync", time.Since(start))
+	return col, nil
+}
+
+// loadExistingChunk loads a chunk if it is already present in memory or stored
+// in the provider. Missing chunks are reported without generating them.
+func (w *World) loadExistingChunk(pos ChunkPos) (*Column, bool, error) {
+	if c, ok := w.chunks[pos]; ok {
+		return c, true, nil
+	}
+
+	start := time.Now()
 	column, err := w.conf.Provider.LoadColumn(pos, w.conf.Dim)
+	w.observeProviderLoad(pos, "existing", time.Since(start), err)
 	switch {
 	case err == nil:
-		col := w.columnFrom(column, pos)
-		w.chunks[pos] = col
-		for _, e := range col.Entities {
-			w.entities[e] = pos
-			e.w = w
-		}
-		return col, nil
 	case errors.Is(err, leveldb.ErrNotFound):
-		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		col := newColumn(chunk.New(airRID, w.Range()))
-		w.chunks[pos] = col
-
-		w.conf.Generator.GenerateChunk(pos, col.Chunk)
-		return col, nil
+		return nil, false, nil
 	default:
-		return newColumn(chunk.New(airRID, w.Range())), err
+		return nil, false, err
 	}
+
+	fillStart := time.Now()
+	chunk.LightArea([]*chunk.Chunk{column.Chunk}, int(pos[0]), int(pos[1])).Fill()
+	w.observeLighting(pos, "existing", time.Since(fillStart))
+
+	installStart := time.Now()
+	col := w.columnFrom(column, pos)
+	w.chunks[pos] = col
+	for _, e := range col.Entities {
+		w.entities[e] = pos
+		e.w = w
+	}
+	w.calculateLight(pos)
+	w.observeInstallation(pos, "existing", time.Since(installStart))
+	return col, true, nil
+}
+
+type loadedColumn struct {
+	column    *chunk.Column
+	err       error
+	generated bool
+	fillTime  time.Duration
+}
+
+func (w *World) loadColumnData(pos ChunkPos, source string) loadedColumn {
+	start := time.Now()
+	column, err := w.conf.Provider.LoadColumn(pos, w.conf.Dim)
+	w.observeProviderLoad(pos, source, time.Since(start), err)
+	switch {
+	case err == nil:
+		return loadedColumn{column: column}
+	case errors.Is(err, leveldb.ErrNotFound):
+		return loadedColumn{column: w.generateColumnData(pos, source), generated: true}
+	default:
+		return loadedColumn{
+			column: &chunk.Column{Chunk: chunk.New(airRID, w.Range())},
+			err:    err,
+		}
+	}
+}
+
+func (w *World) generateColumnData(pos ChunkPos, source string) *chunk.Column {
+	start := time.Now()
+	raw := &chunk.Column{Chunk: chunk.New(airRID, w.Range())}
+	generate := func() {
+		if cg, ok := w.conf.Generator.(ColumnGenerator); ok {
+			cg.GenerateColumn(pos, raw)
+			return
+		}
+		w.conf.Generator.GenerateChunk(pos, raw.Chunk)
+	}
+
+	if concurrent, ok := w.conf.Generator.(ConcurrentGenerator); !ok || !concurrent.ConcurrentChunkGeneration() {
+		w.genMu.Lock()
+		defer w.genMu.Unlock()
+	}
+	generate()
+	w.observeGeneration(pos, source, time.Since(start))
+	return raw
 }
 
 // calculateLight calculates the light in the chunk passed and spreads the
@@ -1267,8 +1363,10 @@ type Column struct {
 	modified bool
 
 	*chunk.Chunk
-	Entities      []*EntityHandle
-	BlockEntities map[cube.Pos]Block
+	Entities        []*EntityHandle
+	BlockEntities   map[cube.Pos]Block
+	StructureStarts []chunk.StructureStart
+	StructureRefs   []chunk.StructureReference
 
 	viewers []Viewer
 	loaders []*Loader
@@ -1289,6 +1387,8 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 		BlockEntities:   make([]chunk.BlockEntity, 0, len(col.BlockEntities)),
 		ScheduledBlocks: make([]chunk.ScheduledBlockUpdate, 0, len(scheduled)),
 		Tick:            w.scheduledUpdates.currentTick,
+		StructureStarts: append([]chunk.StructureStart(nil), col.StructureStarts...),
+		StructureRefs:   append([]chunk.StructureReference(nil), col.StructureRefs...),
 	}
 	for _, e := range col.Entities {
 		data := e.encodeNBT()
@@ -1309,9 +1409,11 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 // provider.
 func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	col := &Column{
-		Chunk:         c.Chunk,
-		Entities:      make([]*EntityHandle, 0, len(c.Entities)),
-		BlockEntities: make(map[cube.Pos]Block, len(c.BlockEntities)),
+		Chunk:           c.Chunk,
+		Entities:        make([]*EntityHandle, 0, len(c.Entities)),
+		BlockEntities:   make(map[cube.Pos]Block, len(c.BlockEntities)),
+		StructureStarts: append([]chunk.StructureStart(nil), c.StructureStarts...),
+		StructureRefs:   append([]chunk.StructureReference(nil), c.StructureRefs...),
 	}
 	for _, e := range c.Entities {
 		eid, ok := e.Data["identifier"].(string)

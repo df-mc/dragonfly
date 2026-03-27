@@ -47,3 +47,7 @@ func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 		}
 	}
 }
+
+// ConcurrentChunkGeneration always returns true because Flat has no mutable
+// shared state.
+func (f Flat) ConcurrentChunkGeneration() bool { return true }

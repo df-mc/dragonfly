@@ -9,15 +9,13 @@ import (
 	"time"
 	_ "unsafe"
 
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/biome"
-	"github.com/df-mc/dragonfly/server/world/generator"
+	"github.com/df-mc/dragonfly/server/world/generator/vanilla"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -113,6 +111,15 @@ type Config struct {
 	// ChunkUnloadInterval should not be used to prevent chunks from unloading
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
+	// SpawnWarmupRadius controls how many chunks around the overworld spawn are
+	// pregenerated and kept hot in memory on startup. If set to 0, a default
+	// radius of 2 is used. Setting it below 0 disables spawn warmup.
+	SpawnWarmupRadius int
+	// MetricsLogThreshold specifies the duration at or above which chunk-load
+	// stage timings are logged. The same threshold is also used for player
+	// chunk-stream milestones. If set to 0, a default of 250ms is used. If set
+	// below 0, these logs are disabled.
+	MetricsLogThreshold time.Duration
 	// Entities is a world.EntityRegistry with all entity types registered that
 	// may be added to the Server's worlds. If no entity types are registered,
 	// Entities will be set to entity.DefaultRegistry.
@@ -153,6 +160,12 @@ func (conf Config) New() *Server {
 	if conf.ShutdownMessage.Zero() {
 		conf.ShutdownMessage = chat.MessageServerDisconnect
 	}
+	if conf.SpawnWarmupRadius == 0 {
+		conf.SpawnWarmupRadius = 2
+	}
+	if conf.MetricsLogThreshold == 0 {
+		conf.MetricsLogThreshold = 250 * time.Millisecond
+	}
 	if len(conf.Entities.Types()) == 0 {
 		conf.Entities = entity.DefaultRegistry
 	}
@@ -174,6 +187,7 @@ func (conf Config) New() *Server {
 		l, err := lf(conf)
 		if err != nil {
 			conf.Log.Error("create listener: " + err.Error())
+			continue
 		}
 		srv.listeners = append(srv.listeners, l)
 	}
@@ -221,6 +235,16 @@ type UserConfig struct {
 		SaveData bool
 		// Folder is the folder that the data of the world resides in.
 		Folder string
+		// Seed configures the procedural world seed used for newly generated chunks.
+		Seed int64
+		// SpawnWarmupRadius controls how many chunks around the overworld spawn
+		// are pregenerated and pinned in memory at startup. If set to 0, a
+		// default radius of 2 is used. Setting it below 0 disables spawn warmup.
+		SpawnWarmupRadius int
+		// MetricsLogThreshold specifies the duration at or above which chunk
+		// stage timings and join chunk-stream milestones are logged. If set to
+		// 0, a default of 250ms is used. Setting it below 0 disables these logs.
+		MetricsLogThreshold time.Duration
 	}
 	Players struct {
 		// MaxCount is the maximum amount of players allowed to join the server
@@ -268,6 +292,8 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
+		SpawnWarmupRadius:       uc.World.SpawnWarmupRadius,
+		MetricsLogThreshold:     uc.World.MetricsLogThreshold,
 	}
 	if !uc.Server.DisableJoinQuitMessages {
 		conf.JoinMessage, conf.QuitMessage = chat.MessageJoin, chat.MessageQuit
@@ -278,6 +304,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 			return conf, fmt.Errorf("create world provider: %w", err)
 		}
 	}
+	conf.Generator = loadGeneratorWithSeed(uc.World.Seed)
 	conf.Resources, err = loadResources(uc.Resources.Folder)
 	if err != nil {
 		return conf, fmt.Errorf("load resources: %w", err)
@@ -314,15 +341,13 @@ func loadResources(dir string) ([]*resource.Pack, error) {
 // generators returned are flat generators with grass/dirt, netherrack or end
 // stone depending on the dimension passed.
 func loadGenerator(dim world.Dimension) world.Generator {
-	switch dim {
-	case world.Overworld:
-		return generator.NewFlat(biome.Plains{}, []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}, block.Bedrock{}})
-	case world.Nether:
-		return generator.NewFlat(biome.NetherWastes{}, []world.Block{block.Netherrack{}, block.Netherrack{}, block.Netherrack{}, block.Bedrock{}})
-	case world.End:
-		return generator.NewFlat(biome.End{}, []world.Block{block.EndStone{}, block.EndStone{}, block.EndStone{}, block.Bedrock{}})
+	return loadGeneratorWithSeed(0)(dim)
+}
+
+func loadGeneratorWithSeed(seed int64) func(dim world.Dimension) world.Generator {
+	return func(dim world.Dimension) world.Generator {
+		return vanilla.NewForDimension(seed, dim)
 	}
-	panic("should never happen")
 }
 
 // DefaultConfig returns a configuration with the default values filled out.
@@ -333,6 +358,9 @@ func DefaultConfig() UserConfig {
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true
 	c.World.Folder = "world"
+	c.World.Seed = 0
+	c.World.SpawnWarmupRadius = 2
+	c.World.MetricsLogThreshold = 250 * time.Millisecond
 	c.Players.MaximumChunkRadius = 32
 	c.Players.SaveData = true
 	c.Players.Folder = "players"

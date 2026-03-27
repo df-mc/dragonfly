@@ -4,6 +4,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"maps"
 	"math"
+	"slices"
 	"sync"
 )
 
@@ -91,26 +92,44 @@ func (l *Loader) Load(tx *Tx, n int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if l.closed || l.w == nil {
+	if n <= 0 || l.closed || l.w == nil {
 		return
 	}
-	for i := 0; i < n; i++ {
-		if len(l.loadQueue) == 0 {
-			break
-		}
+	prefetchBudget := l.prefetchBudget(n)
+	frontier := prefetchBudget
+	if frontier < n {
+		frontier = n
+	}
+	if frontier > len(l.loadQueue) {
+		frontier = len(l.loadQueue)
+	}
 
-		pos := l.loadQueue[0]
-		c := tx.w.chunk(pos)
+	prefetched := 0
+	for i := 0; i < frontier && prefetched < prefetchBudget; i++ {
+		pos := l.loadQueue[i]
+		if _, ok := tx.w.chunks[pos]; ok {
+			continue
+		}
+		if tx.w.requestPrefetch(pos) {
+			prefetched++
+		}
+	}
+
+	loaded := 0
+	keep := l.loadQueue[:0]
+	for _, pos := range l.loadQueue {
+		c, ok := tx.w.chunks[pos]
+		if !ok || loaded >= n {
+			keep = append(keep, pos)
+			continue
+		}
 
 		l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
 		l.w.addViewer(tx, c, l)
-
 		l.loaded[pos] = c
-
-		// Shift the first element from the load queue off so that we can take a new one during the next
-		// iteration.
-		l.loadQueue = l.loadQueue[1:]
+		loaded++
 	}
+	l.loadQueue = keep
 }
 
 // Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
@@ -166,34 +185,76 @@ func (l *Loader) evictUnused(tx *Tx) {
 // which chunks around the position the loader is now in should be loaded. Chunks are ordered to be loaded
 // from the middle outwards.
 func (l *Loader) populateLoadQueue() {
-	// We'll first load the chunk positions to load in a map indexed by the distance to the centre (basically,
-	// what precedence it should have), and put them in the loadQueue in that order.
-	queue := map[int32][]ChunkPos{}
-
+	l.loadQueue = l.loadQueue[:0]
 	r := int32(l.r)
+	queue := make([]ChunkPos, 0, (2*r+1)*(2*r+1))
 	for x := -r; x <= r; x++ {
 		for z := -r; z <= r; z++ {
-			distance := math.Sqrt(float64(x*x) + float64(z*z))
-			chunkDistance := int32(math.Round(distance))
-			if chunkDistance > r {
-				// The chunk was outside the chunk radius.
+			if x*x+z*z > r*r {
 				continue
 			}
 			pos := ChunkPos{x + l.pos[0], z + l.pos[1]}
 			if _, ok := l.loaded[pos]; ok {
-				// The chunk was already loaded, so we don't need to do anything.
 				continue
 			}
-			if m, ok := queue[chunkDistance]; ok {
-				queue[chunkDistance] = append(m, pos)
-				continue
-			}
-			queue[chunkDistance] = []ChunkPos{pos}
+			queue = append(queue, pos)
 		}
 	}
+	slices.SortFunc(queue, func(a, b ChunkPos) int {
+		return compareChunkLoadPriority(l.pos, a, b)
+	})
+	l.loadQueue = append(l.loadQueue, queue...)
+}
 
-	l.loadQueue = l.loadQueue[:0]
-	for i := int32(0); i < r; i++ {
-		l.loadQueue = append(l.loadQueue, queue[i]...)
+func compareChunkLoadPriority(origin, a, b ChunkPos) int {
+	ax, az := int64(a[0]-origin[0]), int64(a[1]-origin[1])
+	bx, bz := int64(b[0]-origin[0]), int64(b[1]-origin[1])
+
+	if cmp := compareInt64(ax*ax+az*az, bx*bx+bz*bz); cmp != 0 {
+		return cmp
 	}
+	if cmp := compareInt64(absInt64(ax)+absInt64(az), absInt64(bx)+absInt64(bz)); cmp != 0 {
+		return cmp
+	}
+	if cmp := compareInt64(absInt64(ax), absInt64(bx)); cmp != 0 {
+		return cmp
+	}
+	if cmp := compareInt64(absInt64(az), absInt64(bz)); cmp != 0 {
+		return cmp
+	}
+	if cmp := compareInt64(ax, bx); cmp != 0 {
+		return cmp
+	}
+	return compareInt64(az, bz)
+}
+
+func compareInt64(a, b int64) int {
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func absInt64(v int64) int64 {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
+func (l *Loader) prefetchBudget(n int) int {
+	const minimumInitialPrefetch = 9
+
+	budget := n
+	if len(l.loaded) == 0 && budget < minimumInitialPrefetch {
+		budget = minimumInitialPrefetch
+	}
+	if budget > len(l.loadQueue) {
+		return len(l.loadQueue)
+	}
+	return budget
 }

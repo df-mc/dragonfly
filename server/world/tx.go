@@ -101,6 +101,19 @@ func (tx *Tx) HighestBlock(x, z int) int {
 	return tx.World().highestBlock(x, z)
 }
 
+// Chunk loads and returns the column at the chunk position passed. If the
+// chunk is not yet loaded, it is loaded from the provider or generated first.
+func (tx *Tx) Chunk(pos ChunkPos) *Column {
+	return tx.World().chunk(pos)
+}
+
+// LoadExistingChunk loads and returns the column at the chunk position passed
+// if it already exists in memory or in the provider. Unlike Chunk, it does not
+// generate missing chunks. The bool returned reports if the chunk exists.
+func (tx *Tx) LoadExistingChunk(pos ChunkPos) (*Column, bool, error) {
+	return tx.World().loadExistingChunk(pos)
+}
+
 // Light returns the light level at the position passed. This is the highest of
 // the sky- and block light. The light value returned is a value in the range
 // 0-15, where 0 means there is no light present, whereas 15 means the block is

@@ -73,6 +73,16 @@ type playerData struct {
 
 	cooldowns map[string]time.Time
 
+	portalCooldownUntil time.Time
+	netherPortalTicks   int
+	netherPortalPos     cube.Pos
+	netherPortalAxis    cube.Axis
+	endPortalPos        cube.Pos
+	endGatewayPos       cube.Pos
+	inNetherPortal      bool
+	inEndPortal         bool
+	inEndGateway        bool
+
 	speed               float64
 	flightSpeed         float64
 	verticalFlightSpeed float64
@@ -2496,6 +2506,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	if p.Dead() {
 		return
 	}
+	p.inNetherPortal = false
+	p.inEndPortal = false
 	if _, ok := p.tx.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -2515,6 +2527,9 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	p.checkBlockCollisions(p.data.Vel)
 	p.onGround = p.checkOnGround(mgl64.Vec3{})
+	if p.processPortals() {
+		return
+	}
 
 	p.effects.Tick(p, p.tx)
 

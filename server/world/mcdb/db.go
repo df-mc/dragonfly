@@ -177,6 +177,10 @@ func (db *DB) column(k dbKey) (*chunk.Column, error) {
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		return nil, fmt.Errorf("read scheduled updates: %w", err)
 	}
+	col.StructureStarts, col.StructureRefs, err = db.structureData(k)
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
+		return nil, fmt.Errorf("read structure data: %w", err)
+	}
 	return col, nil
 }
 
@@ -324,6 +328,18 @@ func (db *DB) scheduledUpdates(k dbKey) ([]chunk.ScheduledBlockUpdate, int64, er
 	return updates, int64(m.CurrentTick), nil
 }
 
+func (db *DB) structureData(k dbKey) ([]chunk.StructureStart, []chunk.StructureReference, error) {
+	data, err := db.ldb.Get(k.Sum(keyStructureData), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	var s structureData
+	if err := nbt.UnmarshalEncoding(data, &s, nbt.LittleEndian); err != nil {
+		return nil, nil, fmt.Errorf("read nbt: %w", err)
+	}
+	return s.Starts, s.References, nil
+}
+
 // StoreColumn stores a world.Column at a position and dimension in the DB. An
 // error is returned if storing was unsuccessful.
 func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *chunk.Column) error {
@@ -336,7 +352,7 @@ func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *chunk.Co
 
 func (db *DB) storeColumn(k dbKey, col *chunk.Column) error {
 	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
-	n := 7 + len(data.SubChunks) + len(col.Entities)
+	n := 8 + len(data.SubChunks) + len(col.Entities)
 	batch := leveldb.MakeBatch(n)
 
 	db.storeVersion(batch, k, chunkVersion)
@@ -346,6 +362,7 @@ func (db *DB) storeColumn(k dbKey, col *chunk.Column) error {
 	db.storeEntities(batch, k, col.Entities)
 	db.storeBlockEntities(batch, k, col.BlockEntities)
 	db.storeScheduledUpdates(batch, k, col.Tick, col.ScheduledBlocks)
+	db.storeStructureData(batch, k, col.StructureStarts, col.StructureRefs)
 
 	return db.ldb.Write(batch, nil)
 }
@@ -461,9 +478,27 @@ func (db *DB) storeScheduledUpdates(batch *leveldb.Batch, k dbKey, tick int64, u
 	batch.Put(k.Sum(keyPendingScheduledTicks), b)
 }
 
+func (db *DB) storeStructureData(batch *leveldb.Batch, k dbKey, starts []chunk.StructureStart, refs []chunk.StructureReference) {
+	if len(starts) == 0 && len(refs) == 0 {
+		batch.Delete(k.Sum(keyStructureData))
+		return
+	}
+	b, err := nbt.MarshalEncoding(structureData{Starts: starts, References: refs}, nbt.LittleEndian)
+	if err != nil {
+		db.conf.Log.Error("store structure data: encode nbt: " + err.Error())
+		return
+	}
+	batch.Put(k.Sum(keyStructureData), b)
+}
+
 type scheduledUpdates struct {
 	CurrentTick int32            `nbt:"currentTick"`
 	TickList    []map[string]any `nbt:"tickList"`
+}
+
+type structureData struct {
+	Starts     []chunk.StructureStart     `nbt:"starts"`
+	References []chunk.StructureReference `nbt:"references"`
 }
 
 // NewColumnIterator returns a ColumnIterator that may be used to iterate over all

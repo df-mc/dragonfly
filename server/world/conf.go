@@ -60,6 +60,10 @@ type Config struct {
 	// Entities is an EntityRegistry with all Entity types registered that may
 	// be added to the World.
 	Entities EntityRegistry
+	// MetricsLogThreshold specifies the duration at or above which chunk load
+	// stage timings are logged. If set to 0, a default of 250ms is used. If
+	// set below 0, slow-operation logging is disabled.
+	MetricsLogThreshold time.Duration
 }
 
 // New creates a new World using the Config conf. The World returned will start
@@ -90,12 +94,17 @@ func (conf Config) New() *World {
 		t := uint64(time.Now().UnixNano())
 		conf.RandSource = rand.NewPCG(t, t)
 	}
+	if conf.MetricsLogThreshold == 0 {
+		conf.MetricsLogThreshold = defaultMetricsLogThreshold
+	}
 	s := conf.Provider.Settings()
 	w := &World{
 		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
 		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
+		prefetchRequests: make(chan ChunkPos, 128),
+		prefetchInFlight: make(map[ChunkPos]struct{}),
 		queueClosing:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
@@ -103,6 +112,7 @@ func (conf Config) New() *World {
 		advance:          s.ref.Add(1) == 1,
 		conf:             conf,
 		ra:               conf.Dim.Range(),
+		metrics:          worldMetrics{},
 		set:              s,
 	}
 	w.weather = weather{w: w}
@@ -110,11 +120,14 @@ func (conf Config) New() *World {
 	w.handler.Store(&h)
 
 	w.queueing.Add(1)
-	w.running.Add(2)
+	w.running.Add(2 + prefetchWorkers)
 
 	t := ticker{interval: time.Second / 20}
 	go t.tickLoop(w)
 	go w.autoSave()
+	for i := 0; i < prefetchWorkers; i++ {
+		go w.prefetchLoop()
+	}
 	go w.handleTransactions()
 
 	<-w.Exec(t.tick)

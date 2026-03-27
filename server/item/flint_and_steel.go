@@ -41,6 +41,9 @@ func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 
 		flame := fire()
 		tx.SetBlock(s, flame, nil)
+		if activateNetherPortalAt(tx, s) {
+			return true
+		}
 		tx.ScheduleBlockUpdate(s, flame, time.Duration(30+rand.IntN(10))*time.Second/20)
 		return true
 	}

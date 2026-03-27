@@ -23,6 +23,8 @@ const (
 	// keyPendingScheduledTicks holds an NBT structure containing all scheduled
 	// ticks that were pending in the chunk.
 	keyPendingScheduledTicks = '3'
+	// keyStructureData stores Dragonfly worldgen structure start/reference bookkeeping.
+	keyStructureData = '4'
 	// keyFinalisation contains a single LE int32 that indicates the state of generation of the chunk. If 0, the chunk
 	// needs to be ticked. If 1, the chunk needs to be populated and if 2 (which is the state generally found in world
 	// saves from vanilla), the chunk is fully finalised.

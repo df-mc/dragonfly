@@ -19,6 +19,8 @@
   # The folder that the world files (will) reside in, relative to the working directory. If not currently
   # present, the folder will be made.
   Folder = "world"
+  # Seed configures the procedural seed used for newly generated overworld chunks.
+  Seed = 0
   # Whether the worlds' data will be saved and loaded. If true, the server will use the
   # default LevelDB data provider and if false, an empty provider will be used. To use your
   # own provider, turn this value to false, as you will still be able to pass your own provider.

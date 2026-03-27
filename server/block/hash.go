@@ -33,6 +33,8 @@ const (
 	hashCarrot
 	hashChest
 	hashChiseledQuartz
+	hashChorusFlower
+	hashChorusPlant
 	hashClay
 	hashCoal
 	hashCoalOre
@@ -73,6 +75,9 @@ const (
 	hashEmeraldOre
 	hashEnchantingTable
 	hashEndBricks
+	hashEndGateway
+	hashEndPortal
+	hashEndPortalFrame
 	hashEndRod
 	hashEndStone
 	hashEnderChest
@@ -82,6 +87,7 @@ const (
 	hashFletchingTable
 	hashFlower
 	hashFroglight
+	hashFungus
 	hashFurnace
 	hashGlass
 	hashGlassPane
@@ -127,11 +133,13 @@ const (
 	hashNetherGoldOre
 	hashNetherQuartzOre
 	hashNetherSprouts
+	hashNetherVines
 	hashNetherWart
 	hashNetherWartBlock
 	hashNetherite
 	hashNetherrack
 	hashNote
+	hashNylium
 	hashObsidian
 	hashPackedIce
 	hashPackedMud
@@ -140,6 +148,7 @@ const (
 	hashPodzol
 	hashPolishedBlackstoneBrick
 	hashPolishedTuff
+	hashPortal
 	hashPotato
 	hashPrismarine
 	hashPumpkin
@@ -155,6 +164,7 @@ const (
 	hashReinforcedDeepslate
 	hashResin
 	hashResinBricks
+	hashRoots
 	hashSand
 	hashSandstone
 	hashSeaLantern
@@ -320,6 +330,14 @@ func (ChiseledQuartz) Hash() (uint64, uint64) {
 	return hashChiseledQuartz, 0
 }
 
+func (c ChorusFlower) Hash() (uint64, uint64) {
+	return hashChorusFlower, uint64(c.Age)
+}
+
+func (ChorusPlant) Hash() (uint64, uint64) {
+	return hashChorusPlant, 0
+}
+
 func (Clay) Hash() (uint64, uint64) {
 	return hashClay, 0
 }
@@ -480,6 +498,18 @@ func (EndBricks) Hash() (uint64, uint64) {
 	return hashEndBricks, 0
 }
 
+func (EndGateway) Hash() (uint64, uint64) {
+	return hashEndGateway, 0
+}
+
+func (EndPortal) Hash() (uint64, uint64) {
+	return hashEndPortal, 0
+}
+
+func (f EndPortalFrame) Hash() (uint64, uint64) {
+	return hashEndPortalFrame, uint64(f.Facing) | uint64(boolByte(f.Eye))<<2
+}
+
 func (e EndRod) Hash() (uint64, uint64) {
 	return hashEndRod, uint64(e.Facing)
 }
@@ -514,6 +544,10 @@ func (f Flower) Hash() (uint64, uint64) {
 
 func (f Froglight) Hash() (uint64, uint64) {
 	return hashFroglight, uint64(f.Type.Uint8()) | uint64(f.Axis)<<2
+}
+
+func (f Fungus) Hash() (uint64, uint64) {
+	return hashFungus, uint64(boolByte(f.Warped))
 }
 
 func (f Furnace) Hash() (uint64, uint64) {
@@ -696,6 +730,10 @@ func (NetherSprouts) Hash() (uint64, uint64) {
 	return hashNetherSprouts, 0
 }
 
+func (v NetherVines) Hash() (uint64, uint64) {
+	return hashNetherVines, uint64(boolByte(v.Twisting)) | uint64(v.Age)<<1
+}
+
 func (n NetherWart) Hash() (uint64, uint64) {
 	return hashNetherWart, uint64(n.Age)
 }
@@ -714,6 +752,10 @@ func (Netherrack) Hash() (uint64, uint64) {
 
 func (Note) Hash() (uint64, uint64) {
 	return hashNote, 0
+}
+
+func (n Nylium) Hash() (uint64, uint64) {
+	return hashNylium, uint64(boolByte(n.Warped))
 }
 
 func (o Obsidian) Hash() (uint64, uint64) {
@@ -746,6 +788,10 @@ func (b PolishedBlackstoneBrick) Hash() (uint64, uint64) {
 
 func (PolishedTuff) Hash() (uint64, uint64) {
 	return hashPolishedTuff, 0
+}
+
+func (p Portal) Hash() (uint64, uint64) {
+	return hashPortal, uint64(p.Axis)
 }
 
 func (p Potato) Hash() (uint64, uint64) {
@@ -806,6 +852,10 @@ func (Resin) Hash() (uint64, uint64) {
 
 func (r ResinBricks) Hash() (uint64, uint64) {
 	return hashResinBricks, uint64(boolByte(r.Chiseled))
+}
+
+func (r Roots) Hash() (uint64, uint64) {
+	return hashRoots, uint64(boolByte(r.Warped))
 }
 
 func (s Sand) Hash() (uint64, uint64) {
