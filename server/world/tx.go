@@ -302,6 +302,7 @@ type normalTransaction struct {
 // ntx.c.
 func (ntx normalTransaction) Run(w *World) {
 	tx := &Tx{w: w}
+	w.currentTx = tx
 	ntx.f(tx)
 	tx.close()
 	close(ntx.c)
@@ -323,6 +324,7 @@ func (wtx weakTransaction) Run(w *World) {
 	valid := !wtx.invalid.Load()
 	if valid {
 		tx := &Tx{w: w}
+		w.currentTx = tx
 		wtx.f(tx)
 		tx.close()
 	}
