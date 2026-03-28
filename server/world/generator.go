@@ -1,8 +1,6 @@
 package world
 
 import (
-	"sync/atomic"
-
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
 
@@ -27,9 +25,9 @@ type generationRequest struct {
 	callbacks  []chunkCallback
 	generating bool
 
-	close       chan struct{}
-	immediateTx atomic.Pointer[Tx]
-	col         *Column
+	close chan struct{}
+	done  bool
+	col   *Column
 }
 
 // Do adds callback to list of all callbacks.
@@ -42,10 +40,10 @@ func (r *generationRequest) Do(tx *Tx, receiver chunkCallback) {
 	}
 }
 
-// doImmediate adds callback and waits till chunk is generated.
+// doImmediate waits till chunk is generated and returns it.
 func (r *generationRequest) doImmediate(tx *Tx) *Column {
-	r.immediateTx.Store(tx)
 	<-r.close
+	r.signal(tx)
 	return r.col
 }
 
@@ -53,16 +51,16 @@ func (r *generationRequest) doImmediate(tx *Tx) *Column {
 func (r *generationRequest) generate(w *World) {
 	r.col = newColumn(chunk.New(airRID, w.Range()))
 	w.conf.Generator.GenerateChunk(r.pos, r.col.Chunk)
-	close(r.close)
-	if tx := r.immediateTx.Load(); tx != nil {
-		r.signal(tx)
-		return
-	}
+	defer close(r.close)
 	w.Exec(r.signal)
 }
 
 // signal calls all callbacks and adds chunk to the world.
 func (r *generationRequest) signal(tx *Tx) {
+	if r.done {
+		return
+	}
+	r.done = true
 	w := tx.World()
 	pos := r.pos
 
