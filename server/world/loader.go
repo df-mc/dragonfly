@@ -111,6 +111,9 @@ func (l *Loader) Load(tx *Tx, n int) {
 }
 
 func (l *Loader) viewChunk(tx *Tx, pos ChunkPos, c *Column) {
+	if l.viewer == nil {
+		return
+	}
 	l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
 	l.w.addViewer(tx, c, l)
 
