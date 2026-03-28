@@ -27,6 +27,7 @@ type generationRequest struct {
 	callbacks  []chunkCallback
 	generating bool
 
+	close       chan struct{}
 	immediateTx atomic.Pointer[Tx]
 	col         *Column
 }
@@ -43,12 +44,8 @@ func (r *generationRequest) Do(tx *Tx, receiver chunkCallback) {
 
 // doImmediate adds callback and waits till chunk is generated.
 func (r *generationRequest) doImmediate(tx *Tx) *Column {
-	wait := make(chan struct{})
 	r.immediateTx.Store(tx)
-	r.callbacks = append(r.callbacks, func(*Tx, *Column) {
-		close(wait)
-	})
-	<-wait
+	<-r.close
 	return r.col
 }
 
@@ -56,6 +53,7 @@ func (r *generationRequest) doImmediate(tx *Tx) *Column {
 func (r *generationRequest) generate(w *World) {
 	r.col = newColumn(chunk.New(airRID, w.Range()))
 	w.conf.Generator.GenerateChunk(r.pos, r.col.Chunk)
+	close(r.close)
 	if tx := r.immediateTx.Load(); tx != nil {
 		r.signal(tx)
 		return

@@ -1226,7 +1226,7 @@ func (w *World) generateChunkAsync(pos ChunkPos, callback chunkCallback) {
 		req.Do(w.currentTx, callback)
 		return
 	}
-	req = &generationRequest{pos: pos}
+	req = &generationRequest{pos: pos, close: make(chan struct{})}
 	req.Do(w.currentTx, callback)
 	w.chunkRequests[pos] = req
 }
