@@ -161,6 +161,7 @@ const (
 	hashSeaPickle
 	hashShortGrass
 	hashShroomlight
+	hashShulkerBox
 	hashSign
 	hashSkull
 	hashSlab
@@ -831,6 +832,10 @@ func (ShortGrass) Hash() (uint64, uint64) {
 
 func (Shroomlight) Hash() (uint64, uint64) {
 	return hashShroomlight, 0
+}
+
+func (s ShulkerBox) Hash() (uint64, uint64) {
+	return hashShulkerBox, uint64(boolByte(s.Dyed)) | uint64(s.Colour.Uint8())<<1
 }
 
 func (s Sign) Hash() (uint64, uint64) {
