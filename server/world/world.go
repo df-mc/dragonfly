@@ -1205,9 +1205,6 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) {
 
 // addChunk ...
 func (w *World) addChunk(pos ChunkPos, column *Column) {
-	if _, has := w.chunks[pos]; has {
-		panic("fuck")
-	}
 	w.chunks[pos] = column
 	chunk.LightArea([]*chunk.Chunk{column.Chunk}, int(pos[0]), int(pos[1])).Fill()
 	w.calculateLight(pos)
