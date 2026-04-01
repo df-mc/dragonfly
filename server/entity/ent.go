@@ -1,12 +1,13 @@
 package entity
 
 import (
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"sync"
-	"time"
 )
 
 // Behaviour implements the behaviour of an Ent.
@@ -46,6 +47,15 @@ func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig
 		Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig)
 	}); ok {
 		expl.Explode(e, src, impact, conf)
+	}
+}
+
+// Prick propagates the prick behaviour of the underlying Behaviour
+func (e *Ent) Prick(blockPos cube.Pos) {
+	if expl, ok := e.Behaviour().(interface {
+		Prick(e *Ent, blockPos cube.Pos)
+	}); ok {
+		expl.Prick(e, blockPos)
 	}
 }
 
@@ -123,12 +133,23 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 		_ = e.Close()
 		return
 	}
-	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
-	if m := e.Behaviour().Tick(e, tx); m != nil {
+	b := e.Behaviour()
+	e.SetOnFire(e.OnFireDuration() - time.Second/20)
+	e.checkBlockCollisions(b)
+	if m := b.Tick(e, tx); m != nil {
 		m.Send()
 	}
 	e.data.Age += time.Second / 20
+}
+
+// checkBlockCollisions checks block collisions for the entity.
+func (e *Ent) checkBlockCollisions(beh Behaviour) {
+	if bl, ok := beh.(interface {
+		CheckBlocks(e *Ent, tx *world.Tx) bool
+	}); ok && bl.CheckBlocks(e, e.tx) {
+		CheckEntityInsiders(e.tx, e.H().Type().BBox(e).Translate(e.Position()), e)
+	}
 }
 
 // Close closes the Ent and removes the associated entity from the world.

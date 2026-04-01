@@ -2,12 +2,13 @@ package item
 
 import (
 	"encoding/binary"
+	"image/color"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
-	"time"
 )
 
 // MaxCounter represents an item that has a specific max count. By default, each item will be expected to have
@@ -129,6 +130,12 @@ type Weapon interface {
 type Cooldown interface {
 	// Cooldown is the duration of the cooldown.
 	Cooldown() time.Duration
+}
+
+// FireProof indicates an item that cannot be destroyed by fire and does not take damage from fire.
+type FireProof interface {
+	// FireProof returns true if item is fireproof.
+	FireProof() bool
 }
 
 // nameable represents a block that may be named. These are often containers such as chests, which have a

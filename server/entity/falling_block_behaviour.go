@@ -1,13 +1,14 @@
 package entity
 
 import (
+	"math"
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand/v2"
 )
 
 // FallingBlockBehaviourConfig holds optional parameters for
@@ -51,6 +52,11 @@ type FallingBlockBehaviour struct {
 // Block returns the world.Block of the entity.
 func (f *FallingBlockBehaviour) Block() world.Block {
 	return f.block
+}
+
+// CheckBlocks ...
+func (f *FallingBlockBehaviour) CheckBlocks(e *Ent, tx *world.Tx) bool {
+	return true
 }
 
 // Tick implements the movement and solidification behaviour of falling blocks.

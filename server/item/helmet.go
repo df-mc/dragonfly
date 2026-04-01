@@ -1,8 +1,9 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Helmet is a defensive item that may be worn in the head slot. It comes in several tiers, each with
@@ -77,6 +78,12 @@ func (h Helmet) SmeltInfo() SmeltInfo {
 // RepairableBy ...
 func (h Helmet) RepairableBy(i Stack) bool {
 	return armourTierRepairable(h.Tier)(i)
+}
+
+// FireProof ...
+func (h Helmet) FireProof() bool {
+	_, netherite := h.Tier.(ArmourTierNetherite)
+	return netherite
 }
 
 // Helmet ...

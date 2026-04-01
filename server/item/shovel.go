@@ -1,11 +1,12 @@
 package item
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // Shovel is a tool generally used for mining ground-like blocks, such as sand, gravel and dirt. Additionally,
@@ -108,6 +109,11 @@ func (s Shovel) FuelInfo() FuelInfo {
 // RepairableBy ...
 func (s Shovel) RepairableBy(i Stack) bool {
 	return toolTierRepairable(s.Tier)(i)
+}
+
+// FireProof ...
+func (s Shovel) FireProof() bool {
+	return s.Tier == ToolTierNetherite
 }
 
 // EncodeItem ...
