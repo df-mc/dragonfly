@@ -69,7 +69,7 @@ func (Hopper) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (h Hopper) BreakInfo() BreakInfo {
-	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(h)).withBlastResistance(24).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(Hopper{})).withBlastResistance(24).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, i := range h.Inventory(tx, pos).Clear() {
 			dropItem(tx, i, pos.Vec3())
 		}

@@ -239,11 +239,11 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
 
 // Flammable is an interface for blocks that can catch on fire.
 type Flammable interface {
-	// FlammabilityInfo returns information about a block's behavior involving fire.
+	// FlammabilityInfo returns information about a block's behaviour involving fire.
 	FlammabilityInfo() FlammabilityInfo
 }
 
-// FlammabilityInfo contains values related to block behaviors involving fire.
+// FlammabilityInfo contains values related to block behaviours involving fire.
 type FlammabilityInfo struct {
 	// Encouragement is the chance a block will catch on fire during attempted fire spread.
 	Encouragement int

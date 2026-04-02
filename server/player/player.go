@@ -157,7 +157,7 @@ func (p *Player) DeviceID() string {
 	if p.session() == session.Nop {
 		return ""
 	}
-	return p.session().ClientData().DeviceID
+	return string(p.session().ClientData().DeviceID)
 }
 
 // DeviceModel returns the device model of the player. If the Player is not connected to a network session, an empty
@@ -2018,7 +2018,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 	for e := range p.tx.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3())) {
 		t := e.H().Type()
 		switch t {
-		case entity.ItemType, entity.ArrowType:
+		case entity.ItemType, entity.ArrowType, entity.ExperienceOrbType:
 			continue
 		default:
 			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-4)) {
@@ -2370,14 +2370,23 @@ func (p *Player) SetExperienceProgress(progress float64) {
 	p.session().SendExperience(p.ExperienceLevel(), p.ExperienceProgress())
 }
 
-// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
-// is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
-// experience collection or if the player was dead or in a game mode that doesn't allow collection.
-func (p *Player) CollectExperience(value int) bool {
+// CanCollectExperience checks if the player can collect experience, which is true if the player is not dead,
+// is in a game mode that allows interaction and if 100ms have passed since the last experience collection.
+func (p *Player) CanCollectExperience() bool {
 	if p.Dead() || !p.GameMode().AllowsInteraction() {
 		return false
 	}
 	if last := p.lastXPPickup; last != nil && time.Since(*last) < time.Millisecond*100 {
+		return false
+	}
+	return true
+}
+
+// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
+// is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
+// experience collection or if the player was dead or in a game mode that doesn't allow collection.
+func (p *Player) CollectExperience(value int) bool {
+	if !p.CanCollectExperience() {
 		return false
 	}
 	value = p.mendItems(value)
