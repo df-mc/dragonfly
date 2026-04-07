@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+type blockRegistrySetter interface {
+	SetBlockRegistry(BlockRegistry)
+}
+
 // Config may be used to create a new World. It holds a variety of fields that
 // influence the World.
 type Config struct {
@@ -99,6 +103,9 @@ func (conf Config) New() *World {
 	// is used in some vanilla paths.
 	conf.Blocks.Finalize()
 	DefaultBlockRegistry.Finalize()
+	if provider, ok := conf.Provider.(blockRegistrySetter); ok {
+		provider.SetBlockRegistry(conf.Blocks)
+	}
 
 	if conf.RandSource == nil {
 		t := uint64(time.Now().UnixNano())
