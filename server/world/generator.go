@@ -19,56 +19,53 @@ type NopGenerator struct{}
 // GenerateChunk ...
 func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
 
-// generationRequest ...
-type generationRequest struct {
+// chunkRequest ...
+type chunkRequest struct {
 	pos        ChunkPos
 	callbacks  []chunkCallback
 	generating bool
 
-	close chan struct{}
-	done  bool
-	col   *Column
+	close  chan struct{}
+	col    *chunk.Column
+	result *Column
 }
 
 // Do adds callback to list of all callbacks.
-func (r *generationRequest) Do(tx *Tx, receiver chunkCallback) {
+func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) {
 	r.callbacks = append(r.callbacks, receiver)
 	if !r.generating {
 		r.generating = true
 		w := tx.World()
-		go r.generate(w)
+		go r.load(w)
 	}
 }
 
-// doImmediate waits till chunk is generated and returns it.
-func (r *generationRequest) doImmediate(tx *Tx) *Column {
+// doImmediate waits till chunk is loaded and returns it.
+func (r *chunkRequest) doImmediate(tx *Tx) *Column {
 	<-r.close
 	r.signal(tx)
-	return r.col
+	return r.result
 }
 
-// generate starts chunk generation.
-func (r *generationRequest) generate(w *World) {
-	r.col = newColumn(chunk.New(airRID, w.Range()))
-	w.conf.Generator.GenerateChunk(r.pos, r.col.Chunk)
-	defer close(r.close)
+// load loads chunk or generates it.
+func (r *chunkRequest) load(w *World) {
+	r.col = w.loadChunk(r.pos)
 	w.Exec(r.signal)
+	close(r.close)
 }
 
 // signal calls all callbacks and adds chunk to the world.
-func (r *generationRequest) signal(tx *Tx) {
-	if r.done {
+func (r *chunkRequest) signal(tx *Tx) {
+	if r.result != nil {
 		return
 	}
-	r.done = true
 	w := tx.World()
 	pos := r.pos
 
-	// chunks has been generated.
 	delete(w.chunkRequests, pos)
-	w.addChunk(pos, r.col)
+	r.result = w.addChunk(pos, r.col)
 	for _, recv := range r.callbacks {
-		recv(tx, r.col)
+		recv(tx, r.result)
 	}
 }
 

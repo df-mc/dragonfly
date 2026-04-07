@@ -51,7 +51,7 @@ type World struct {
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
 	chunks        map[ChunkPos]*Column
-	chunkRequests map[ChunkPos]*generationRequest
+	chunkRequests map[ChunkPos]*chunkRequest
 
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
@@ -1160,34 +1160,28 @@ func (w *World) chunk(pos ChunkPos) *Column {
 	if ok {
 		return c
 	}
-	c, ok = w.loadChunk(pos, true)
-	if !ok {
-		c = newColumn(chunk.New(airRID, w.Range()))
-		w.conf.Generator.GenerateChunk(pos, c.Chunk)
-		w.addChunk(pos, c)
+	c, ok = w.chunkFromAsyncPool(w.currentTx, pos)
+	if ok {
+		return c
 	}
-	return c
+	return w.addChunk(pos, w.loadChunk(pos))
 }
 
-// loadChunk loads chunk from the provider.
-func (w *World) loadChunk(pos ChunkPos, asyncPool bool) (*Column, bool) {
+// loadChunk attempts to load a chunk from the provider, or generates a chunk
+// if one doesn't currently exist.
+func (w *World) loadChunk(pos ChunkPos) *chunk.Column {
 	column, err := w.conf.Provider.LoadColumn(pos, w.conf.Dim)
-	if err != nil {
-		if !errors.Is(err, leveldb.ErrNotFound) {
-			w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
-		}
-		if asyncPool {
-			return w.chunkFromAsyncPool(w.currentTx, pos)
-		}
-		return nil, false
+	switch {
+	case err == nil:
+		return column
+	case errors.Is(err, leveldb.ErrNotFound):
+		ch := chunk.New(airRID, w.Range())
+		w.conf.Generator.GenerateChunk(pos, ch)
+		return &chunk.Column{Chunk: ch}
+	default:
+		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+		return &chunk.Column{Chunk: chunk.New(airRID, w.Range())}
 	}
-	col := w.columnFrom(column, pos)
-	for _, e := range col.Entities {
-		w.entities[e] = pos
-		e.w = w
-	}
-	w.addChunk(pos, col)
-	return col, true
 }
 
 // loadChunkAsync ...
@@ -1196,18 +1190,28 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) {
 		callback(tx, c)
 		return
 	}
-	if c, ok := w.loadChunk(pos, false); ok {
-		callback(tx, c)
+	req, ok := w.chunkRequests[pos]
+	if ok {
+		req.Do(w.currentTx, callback)
 		return
 	}
-	w.generateChunkAsync(pos, callback)
+	req = &chunkRequest{pos: pos, close: make(chan struct{})}
+	req.Do(w.currentTx, callback)
+	w.chunkRequests[pos] = req
 }
 
 // addChunk ...
-func (w *World) addChunk(pos ChunkPos, column *Column) {
+func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
+	column := w.columnFrom(c, pos)
+	w.chunks[pos] = column
+	for _, e := range column.Entities {
+		w.entities[e] = pos
+		e.w = w
+	}
 	w.chunks[pos] = column
 	chunk.LightArea([]*chunk.Chunk{column.Chunk}, int(pos[0]), int(pos[1])).Fill()
 	w.calculateLight(pos)
+	return column
 }
 
 // chunkFromAsyncPool ...
@@ -1217,18 +1221,6 @@ func (w *World) chunkFromAsyncPool(tx *Tx, pos ChunkPos) (*Column, bool) {
 		return req.doImmediate(tx), true
 	}
 	return nil, false
-}
-
-// generateChunkAsync ...
-func (w *World) generateChunkAsync(pos ChunkPos, callback chunkCallback) {
-	req, ok := w.chunkRequests[pos]
-	if ok {
-		req.Do(w.currentTx, callback)
-		return
-	}
-	req = &generationRequest{pos: pos, close: make(chan struct{})}
-	req.Do(w.currentTx, callback)
-	w.chunkRequests[pos] = req
 }
 
 // calculateLight calculates the light in the chunk passed and spreads the

@@ -96,7 +96,7 @@ func (conf Config) New() *World {
 		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
-		chunkRequests:    make(map[ChunkPos]*generationRequest),
+		chunkRequests:    make(map[ChunkPos]*chunkRequest),
 		queueClosing:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
