@@ -95,13 +95,13 @@ func (b blockInfo) get(flag uint16) bool {
 func (b *blockInfo) setLight(light uint8) {
 	// Overwrite the 4-bit light emission field.
 	*b &^= blockInfo(0xF) << 8
-	*b |= blockInfo(light) << 8
+	*b |= blockInfo(light&0xF) << 8
 }
 
 func (b *blockInfo) setLightFilter(light uint8) {
 	// Overwrite the 4-bit light filtering field.
 	*b &^= blockInfo(0xF) << 12
-	*b |= blockInfo(light) << 12
+	*b |= blockInfo(light&0xF) << 12
 }
 
 func (b blockInfo) getLight() uint8 {
