@@ -110,6 +110,7 @@ func (l *Loader) Load(tx *Tx, n int) {
 	}
 }
 
+// viewChunk adds chunk to the Viewer.
 func (l *Loader) viewChunk(tx *Tx, pos ChunkPos, c *Column) {
 	if l.viewer == nil {
 		return
