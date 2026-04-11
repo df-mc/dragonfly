@@ -1305,11 +1305,6 @@ type Column struct {
 	loaders []*Loader
 }
 
-// newColumn returns a new Column wrapper around the chunk.Chunk passed.
-func newColumn(c *chunk.Chunk) *Column {
-	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}}
-}
-
 // columnTo converts a Column to a chunk.Column so that it can be written to
 // a provider.
 func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
