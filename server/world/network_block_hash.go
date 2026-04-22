@@ -3,8 +3,9 @@ package world
 import (
 	"encoding/binary"
 	"fmt"
-	"hash/fnv"
 	"sort"
+
+	"github.com/segmentio/fasthash/fnv1a"
 )
 
 // networkBlockHash produces the canonical "network block hash" for a (name, properties) block state.
@@ -88,7 +89,5 @@ func networkBlockHash(name string, properties map[string]any, scratch []byte) (u
 	data = append(data, 0) // end
 	data = append(data, 0) // end
 
-	h := fnv.New32a()
-	h.Write(data)
-	return h.Sum32(), data
+	return fnv1a.HashBytes32(data), data
 }
