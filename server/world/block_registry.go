@@ -9,7 +9,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/df-mc/dragonfly/server/internal/intintmap"
+	"github.com/brentp/intintmap"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/segmentio/fasthash/fnv1"
 )
