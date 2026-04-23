@@ -46,7 +46,6 @@ func (db *DB) SetBlockRegistry(br world.BlockRegistry) {
 		br = world.DefaultBlockRegistry
 	}
 	br.Finalize()
-	world.DefaultBlockRegistry.Finalize()
 	db.conf.Blocks = br
 }
 

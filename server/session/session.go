@@ -247,7 +247,6 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.SendFood(c.Food(), 0, 0)
 
 	pos := c.Position()
-	s.br = tx.World().BlockRegistry()
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
 	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{

@@ -192,6 +192,9 @@ func (br *BlockRegistryImpl) LiquidBlock(rid uint32) bool {
 }
 
 func (br *BlockRegistryImpl) Blocks() []Block {
+	if !br.finalized {
+		panic("BlockRegistry.Blocks called on non finalized BlockRegistry")
+	}
 	return slices.Clone(br.blocks)
 }
 
@@ -264,9 +267,6 @@ func (br *BlockRegistryImpl) RegisterBlock(b Block) {
 
 	if br.finalized {
 		panic("BlockRegistry.RegisterBlock called on finalized BlockRegistry")
-	}
-	if br.bitSize > 0 {
-		panic(fmt.Errorf("tried to register a block after the block registry was finalised"))
 	}
 	name, properties := b.EncodeBlock()
 	if _, ok := b.(CustomBlock); ok {
@@ -393,6 +393,10 @@ func (br *BlockRegistryImpl) Finalize() {
 		}
 		var netHash uint32
 		netHash, networkHashScratch = networkBlockHash(name, properties, networkHashScratch)
+		if other, ok := br.networkhashToRids[netHash]; ok {
+			otherName, otherProperties := br.blocks[other].EncodeBlock()
+			panic(fmt.Sprintf("network block hash collision for (%s %+v) and (%s %+v)", name, properties, otherName, otherProperties))
+		}
 		br.networkhashToRids[netHash] = rid
 	}
 	if !foundAir {
@@ -403,6 +407,9 @@ func (br *BlockRegistryImpl) Finalize() {
 
 // AirRuntimeID returns the runtime ID of the air block.
 func (br *BlockRegistryImpl) AirRuntimeID() uint32 {
+	if !br.finalized {
+		panic("BlockRegistry.AirRuntimeID called on non finalized BlockRegistry")
+	}
 	return br.airRID
 }
 
