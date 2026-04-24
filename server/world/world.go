@@ -1208,7 +1208,6 @@ func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 		w.entities[e] = pos
 		e.w = w
 	}
-	w.chunks[pos] = column
 	chunk.LightArea([]*chunk.Chunk{column.Chunk}, int(pos[0]), int(pos[1])).Fill()
 	w.calculateLight(pos)
 	return column
