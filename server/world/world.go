@@ -742,7 +742,10 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 					}
 					if !yield(handle.mustEntity(tx)) {
 						return
-					}
+ent, ok := handle.Entity(tx)
+if ok && !yield(ent) {
+	return
+}
 				}
 			}
 		}
