@@ -1481,17 +1481,15 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
-	var (
-		i, left = p.HeldItems()
-		ctx     = event.C(p)
-	)
+	i, _ := p.HeldItems()
+	ctx := event.C(p)
 	if p.HasCooldown(i.Item()) {
 		return
 	}
 	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
 		return
 	}
-	i, left = p.HeldItems()
+	i, left := p.HeldItems()
 	it := i.Item()
 
 	if cd, ok := it.(item.Cooldown); ok {
