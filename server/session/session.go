@@ -100,6 +100,8 @@ type Session struct {
 	debugShapesAdd    chan debug.Shape
 	debugShapesRemove chan int
 
+	viewLayer *world.ViewLayer
+
 	closeBackground chan struct{}
 }
 
@@ -189,6 +191,7 @@ func (conf Config) New(conn Conn) *Session {
 		debugShapes:            make(map[int]debug.Shape),
 		debugShapesAdd:         make(chan debug.Shape, 256),
 		debugShapesRemove:      make(chan int, 256),
+		viewLayer:              world.NewViewLayer(),
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
@@ -279,6 +282,9 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 func (s *Session) close(tx *world.Tx, c Controllable) {
 	c.MoveItemsToInventory()
 	s.closeCurrentContainer(tx, false)
+	if s.viewLayer != nil {
+		_ = s.viewLayer.Close()
+	}
 
 	s.conf.HandleStop(tx, c)
 

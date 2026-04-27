@@ -2581,6 +2581,11 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	}
 }
 
+// ViewLayer returns the ViewLayer attached to the player's session.
+func (p *Player) ViewLayer() *world.ViewLayer {
+	return p.session().ViewLayer()
+}
+
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
 func (p *Player) tickAirSupply() {
 	if !p.canBreathe() {

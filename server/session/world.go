@@ -1066,9 +1066,31 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 
 // ViewEntityState ...
 func (s *Session) ViewEntityState(e world.Entity) {
+	metadata := s.parseEntityMetadata(e)
+	if v, ok := e.(LayerViewer); ok {
+		if nt, ok := s.viewLayer.NameTag(v); ok {
+			metadata[protocol.EntityDataKeyName] = nt
+			if nt == "" {
+				metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
+				if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
+					metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+				}
+				if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
+					metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+				}
+			}
+		}
+		if visibility := s.viewLayer.Visibility(v); visibility.EnforceVisibility() {
+			invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+			if (visibility == world.EnforceVisible() && invisibleFlag) ||
+				visibility == world.EnforceInvisible() && !invisibleFlag {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+			}
+		}
+	}
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
-		EntityMetadata:  s.parseEntityMetadata(e),
+		EntityMetadata:  metadata,
 	})
 }
 
