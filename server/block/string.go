@@ -26,11 +26,11 @@ type String struct {
 // UseOnBlock places the string as a tripwire on the target surface.
 func (s String) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, s)
-	if !used {
+func (s String) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, canPlace := firstReplaceable(tx, pos, face, s)
+	if !canPlace {
 		return false
 	}
-	below := pos.Side(cube.FaceDown)
-	s.Suspended = !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
