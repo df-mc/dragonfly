@@ -29,6 +29,8 @@ func (s String) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	if !used {
 		return false
 	}
+	below := pos.Side(cube.FaceDown)
+	s.Suspended = !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
