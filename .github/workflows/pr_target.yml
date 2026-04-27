@@ -15,10 +15,10 @@ jobs:
         with:
           ref: refs/pull/${{ github.event.pull_request.number }}/merge
 
-      - name: Set up Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.24
+          go-version-file: go.mod
         id: go
 
       - name: Get dependencies
