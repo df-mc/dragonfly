@@ -59,20 +59,14 @@ func (s String) EncodeBlock() (name string, properties map[string]any) {
 }
 
 // allString ...
-func allString() (strings []world.Block) {
-	for _, attached := range []bool{false, true} {
-		for _, disarmed := range []bool{false, true} {
-			for _, powered := range []bool{false, true} {
-				for _, suspended := range []bool{false, true} {
-					strings = append(strings, String{
-						Attached:  attached,
-						Disarmed:  disarmed,
-						Powered:   powered,
-						Suspended: suspended,
-					})
-				}
-			}
-		}
+func allString() (blocks []world.Block) {
+	for meta := 0; meta < 16; meta++ {
+		blocks = append(blocks, String{
+			Powered:   meta&0x1 != 0,
+			Suspended: meta&0x2 != 0,
+			Attached:  meta&0x4 != 0,
+			Disarmed:  meta&0x8 != 0,
+		})
 	}
-	return
+	return blocks
 }
