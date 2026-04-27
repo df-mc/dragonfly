@@ -203,10 +203,7 @@ func calculateLiquidPaths(b world.Liquid, pos cube.Pos, tx *world.Tx, displacer 
 	paths := make([]liquidPath, 0, 3)
 	first := true
 
-	for {
-		if queue.Len() == 0 {
-			break
-		}
+	for queue.Len() != 0 {
 		node := queue.Front()
 		neighA, neighB, neighC, neighD := node.neighbours(decay * 2)
 		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighA.x, pos[1], neighA.z}, tx)) {

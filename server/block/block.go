@@ -73,6 +73,12 @@ type EntityInsider interface {
 	EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity)
 }
 
+// EntityStepper represents a block that reacts to an entity standing on top of it.
+type EntityStepper interface {
+	// EntityStepOn is called every tick while an entity is standing on the top face of the block.
+	EntityStepOn(pos cube.Pos, tx *world.Tx, e world.Entity)
+}
+
 // ProjectileHitter represents a block that handles being hit by a projectile.
 type ProjectileHitter interface {
 	// ProjectileHit is called when a projectile hits the block.
