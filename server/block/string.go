@@ -35,6 +35,15 @@ func (s String) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
+func (s String) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	below := pos.Side(cube.FaceDown)
+	suspended := !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
+	if suspended != s.Suspended {
+		s.Suspended = suspended
+		tx.SetBlock(pos, s, nil)
+	}
+}
+
 // HasLiquidDrops ...
 func (s String) HasLiquidDrops() bool {
 	return true
