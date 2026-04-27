@@ -170,7 +170,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, tx *world.Tx, falling bool) boo
 		if _, air := existing.(Air); !air {
 			tx.SetBlock(pos, nil, nil)
 		}
-		if _, water := b.(Water); water && removable.HasLiquidDrops() {
+		if _, lava := b.(Lava); !lava && removable.HasLiquidDrops() {
 			if b, ok := existing.(Breakable); ok {
 				for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(tx, d, pos.Vec3Centre())
