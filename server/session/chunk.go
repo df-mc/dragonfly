@@ -62,19 +62,19 @@ func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.Sub
 }
 
 func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *world.Column, transaction map[uint64]struct{}) protocol.SubChunkEntry {
-	chunkMap := col.Chunk.HeightMap()
+	chunkMap := col.HeightMap()
 	subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]int8, 256)
 	higher, lower := true, true
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
-			otherInd := col.Chunk.SubIndex(y)
+			otherInd := col.SubIndex(y)
 			if otherInd > ind {
 				subMap[i], lower = 16, false
 			} else if otherInd < ind {
 				subMap[i], higher = -1, false
 			} else {
-				subMap[i], lower, higher = int8(y-col.Chunk.SubY(otherInd)), false, false
+				subMap[i], lower, higher = int8(y-col.SubY(otherInd)), false, false
 			}
 		}
 	}
@@ -84,7 +84,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		subMapType, subMap = protocol.HeightMapDataTooLow, nil
 	}
 
-	sub := col.Chunk.Sub()[ind]
+	sub := col.Sub()[ind]
 	if sub.Empty() {
 		return protocol.SubChunkEntry{
 			Result:              protocol.SubChunkResultSuccessAllAir,
@@ -101,7 +101,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	blockEntityBuf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
 	for pos, b := range col.BlockEntities {
-		if n, ok := b.(world.NBTer); ok && col.Chunk.SubIndex(int16(pos.Y())) == ind {
+		if n, ok := b.(world.NBTer); ok && col.SubIndex(int16(pos.Y())) == ind {
 			d := n.EncodeNBT()
 			d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 			_ = enc.Encode(d)

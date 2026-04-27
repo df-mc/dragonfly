@@ -16,24 +16,11 @@ jobs:
           go-version: 1.24
         id: go
 
-      - name: Get dependencies
-        run: |
-          mkdir -p $GOPATH/bin
-          export PATH=$PATH:$GOPATH/bin
-
       - name: Build
         run: go build -o dragonfly_exe -v .
 
-      - name: Vet
-        run: go vet ./...
-
-      - name: Formatting
-        run: test -z $(go fmt ./...)
-
-      - name: Staticcheck
-        uses: dominikh/staticcheck-action@v1
-        with:
-          install-go: false
+      - name: Lint
+        run: make lint
 
   deploy:
     name: Deploy
