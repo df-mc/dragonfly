@@ -9,6 +9,7 @@ import (
 
 // String is an item obtained from spiders and cobwebs. When placed, it creates a tripwire that
 // detects entities passing through it.
+// TODO: Redstone functionality (entity detection, tripwire hook circuits, shears-disarm propagation).
 type String struct {
 	empty
 	transparent
