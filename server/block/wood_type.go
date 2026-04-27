@@ -135,3 +135,29 @@ func (w wood) String() string {
 func (w wood) Flammable() bool {
 	return w != CrimsonWood().wood && w != WarpedWood().wood
 }
+
+// Leaves returns the leaves type belonging to the wood type.
+func (w WoodType) Leaves() (LeavesType, bool) {
+	switch w {
+	case OakWood():
+		return OakLeaves(), true
+	case SpruceWood():
+		return SpruceLeaves(), true
+	case BirchWood():
+		return BirchLeaves(), true
+	case JungleWood():
+		return JungleLeaves(), true
+	case AcaciaWood():
+		return AcaciaLeaves(), true
+	case DarkOakWood():
+		return DarkOakLeaves(), true
+	case MangroveWood():
+		return MangroveLeaves(), true
+	case CherryWood():
+		return CherryLeaves(), true
+	case PaleOakWood():
+		return PaleOakLeaves(), true
+	default:
+		return LeavesType{}, false
+	}
+}

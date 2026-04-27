@@ -87,11 +87,12 @@ func (t Torch) EncodeItem() (name string, meta int16) {
 // EncodeBlock ...
 func (t Torch) EncodeBlock() (name string, properties map[string]any) {
 	var face string
-	if t.Facing == cube.FaceDown {
+	switch t.Facing {
+	case cube.FaceDown:
 		face = "top"
-	} else if t.Facing == unknownFace {
+	case unknownFace:
 		face = "unknown"
-	} else {
+	default:
 		face = t.Facing.String()
 	}
 
