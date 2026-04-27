@@ -79,8 +79,15 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.PUSH_APPID }}
+          private-key: ${{ secrets.PUSH_SECRET }}
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
       - name: Fetch Contributors
         run: |
           CONTRIBUTOR_DATA=$(curl -H "Accept: application/vnd.github+json" https://api.github.com/repos/df-mc/dragonfly/contributors?per_page=9999)
