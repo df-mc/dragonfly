@@ -10,10 +10,10 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v6
 
-      - name: Set up Go 1.26
+      - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.26
+          go-version-file: go.mod
         id: go
 
       - name: Build
@@ -28,14 +28,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Set up Go 1.26
-        uses: actions/setup-go@v6
-        with:
-          go-version: 1.26
-        id: go
-
       - name: Check out code into the Go module directory
         uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+        id: go
 
       - name: Get dependencies
         run: |
