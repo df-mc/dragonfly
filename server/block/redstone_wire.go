@@ -175,12 +175,12 @@ func (RedstoneWire) canRunOnTop(tx *world.Tx, pos cube.Pos, block world.Block) b
 	return block.Model().FaceSolid(pos, cube.FaceUp, tx)
 }
 
-// TrimMaterial returns the material name used for reading and writing trim data.
+// TrimMaterial ...
 func (RedstoneWire) TrimMaterial() string {
 	return item.RedstoneWire{}.TrimMaterial()
 }
 
-// MaterialColour returns the colour code used for internal text formatting.
+// MaterialColour ...
 func (RedstoneWire) MaterialColour() string {
 	return item.RedstoneWire{}.MaterialColour()
 }
