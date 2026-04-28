@@ -277,7 +277,8 @@ func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
 	}
 }
 
-// RedstonePower returns the level of redstone power being emitted from a position to the provided face.
+// RedstonePower returns the redstone power emitted by the block at pos toward a neighbouring receiver.
+// The face argument is relative to the receiving block.
 func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
 	b := tx.Block(pos)
 	if c, ok := b.(Conductor); ok {

@@ -327,13 +327,13 @@ func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bool
 	if !t.Lit {
 		return 0
 	}
-	if face == t.Facing {
+	if face.Opposite() == t.Facing {
 		return 0
 	}
 	return 15
 }
 
-// StrongPower returns the strong redstone power level provided to blocks above the torch.
+// StrongPower returns the strong redstone power level provided to the block above the torch.
 func (t RedstoneTorch) StrongPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bool) int {
 	if t.Lit && face == cube.FaceDown {
 		return 15

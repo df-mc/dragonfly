@@ -84,14 +84,14 @@ func (d WoodDoor) checkRedstonePower(pos cube.Pos, tx *world.Tx) {
 func (d WoodDoor) powered(pos cube.Pos, tx *world.Tx) bool {
 	for _, face := range cube.Faces() {
 		adjacentPos := pos.Side(face)
-		if tx.RedstonePower(adjacentPos, face.Opposite(), true) > 0 {
+		if tx.RedstonePower(adjacentPos, face, true) > 0 {
 			return true
 		}
 	}
 	otherPos := d.otherHalfPos(pos)
 	for _, face := range cube.Faces() {
 		adjacentPos := otherPos.Side(face)
-		if tx.RedstonePower(adjacentPos, face.Opposite(), true) > 0 {
+		if tx.RedstonePower(adjacentPos, face, true) > 0 {
 			return true
 		}
 	}

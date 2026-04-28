@@ -85,7 +85,7 @@ func (n Note) canPlay(pos cube.Pos, tx *world.Tx) bool {
 func (n Note) powered(pos cube.Pos, tx *world.Tx) bool {
 	for _, face := range cube.Faces() {
 		adjacentPos := pos.Side(face)
-		if power := tx.RedstonePower(adjacentPos, face.Opposite(), true); power > 0 {
+		if power := tx.RedstonePower(adjacentPos, face, true); power > 0 {
 			return true
 		}
 	}
