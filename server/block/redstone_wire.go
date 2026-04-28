@@ -127,7 +127,7 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 		neighbour := tx.Block(neighbourPos)
 
 		wirePower = r.maxCurrentStrength(wirePower, neighbourPos, tx)
-		blockPower = max(blockPower, tx.RedstonePower(neighbourPos, side, false))
+		blockPower = max(blockPower, tx.RedstonePower(neighbourPos, side.Opposite(), false))
 
 		if side.Axis() == cube.Y {
 			// Only check horizontal neighbors from here on.
