@@ -47,11 +47,6 @@ func (r RedstoneOre) EntityStepOn(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	r.light(pos, tx)
 }
 
-// NeighbourUpdateTick lights the redstone ore when a neighbouring block changes.
-func (r RedstoneOre) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	r.light(pos, tx)
-}
-
 // RandomTick turns lit redstone ore off again.
 func (r RedstoneOre) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	r.fade(pos, tx)
