@@ -69,7 +69,8 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, neighbour cube.Pos, tx *world.Tx)
 		// Ignore neighbour updates on ourself.
 		return
 	}
-	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Air); ok {
+	below := pos.Side(cube.FaceDown)
+	if !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx) {
 		breakBlock(r, pos, tx)
 		return
 	}

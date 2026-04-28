@@ -124,6 +124,8 @@ func init() {
 		world.RegisterBlock(GoldOre{Type: ore})
 		world.RegisterBlock(IronOre{Type: ore})
 		world.RegisterBlock(LapisOre{Type: ore})
+		world.RegisterBlock(RedstoneOre{Type: ore})
+		world.RegisterBlock(RedstoneOre{Type: ore, Lit: true})
 	}
 
 	registerAll(allAnvils())
@@ -447,6 +449,7 @@ func init() {
 		world.RegisterItem(GoldOre{Type: ore})
 		world.RegisterItem(IronOre{Type: ore})
 		world.RegisterItem(LapisOre{Type: ore})
+		world.RegisterItem(RedstoneOre{Type: ore})
 	}
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
