@@ -736,11 +736,12 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 					// The chunk wasn't loaded, so there are no entities here.
 					continue
 				}
-				for _, handle := range c.Entities {
+				for _, handle := range slices.Clone(c.Entities) {
 					if !box.Vec3Within(handle.data.Pos) {
 						continue
 					}
-					if !yield(handle.mustEntity(tx)) {
+					ent, ok := handle.Entity(tx)
+					if ok && !yield(ent) {
 						return
 					}
 				}
