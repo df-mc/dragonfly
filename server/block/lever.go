@@ -51,7 +51,8 @@ func (l Lever) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // NeighbourUpdateTick ...
 func (l Lever) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if !tx.Block(pos.Side(l.Facing.Opposite())).Model().FaceSolid(pos.Side(l.Facing.Opposite()), l.Facing, tx) {
+	supportPos := pos.Side(l.Facing.Opposite())
+	if !tx.Block(supportPos).Model().FaceSolid(supportPos, l.Facing, tx) {
 		breakBlock(l, pos, tx)
 		updateDirectionalRedstone(pos, tx, l.Facing.Opposite())
 	}
@@ -63,7 +64,8 @@ func (l Lever) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	if !used {
 		return false
 	}
-	if !tx.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, tx) {
+	supportPos := pos.Side(face.Opposite())
+	if !tx.Block(supportPos).Model().FaceSolid(supportPos, face, tx) {
 		return false
 	}
 

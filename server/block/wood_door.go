@@ -84,18 +84,23 @@ func (d WoodDoor) checkRedstonePower(pos cube.Pos, tx *world.Tx) {
 func (d WoodDoor) powered(pos cube.Pos, tx *world.Tx) bool {
 	for _, face := range cube.Faces() {
 		adjacentPos := pos.Side(face)
-		if tx.RedstonePower(adjacentPos, face.Opposite(), false) > 0 {
+		if tx.RedstonePower(adjacentPos, face.Opposite(), true) > 0 {
 			return true
 		}
 	}
-	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
+	otherPos := d.otherHalfPos(pos)
 	for _, face := range cube.Faces() {
 		adjacentPos := otherPos.Side(face)
-		if tx.RedstonePower(adjacentPos, face.Opposite(), false) > 0 {
+		if tx.RedstonePower(adjacentPos, face.Opposite(), true) > 0 {
 			return true
 		}
 	}
 	return false
+}
+
+// otherHalfPos returns the position of the matching top or bottom half of the door.
+func (d WoodDoor) otherHalfPos(pos cube.Pos) cube.Pos {
+	return pos.Side(cube.Face(boolByte(!d.Top)))
 }
 
 // activate ...
@@ -103,7 +108,7 @@ func (d WoodDoor) activate(pos cube.Pos, tx *world.Tx, open bool) {
 	d.Open = open
 	tx.SetBlock(pos, d, nil)
 
-	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
+	otherPos := d.otherHalfPos(pos)
 	other := tx.Block(otherPos)
 	if door, ok := other.(WoodDoor); ok {
 		door.Open = d.Open
@@ -183,10 +188,16 @@ func (d WoodDoor) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
+	name = "minecraft:" + d.Wood.String() + "_door"
 	if d.Wood == OakWood() {
-		return "minecraft:wooden_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+		name = "minecraft:wooden_door"
 	}
-	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
+	return name, map[string]any{
+		"minecraft:cardinal_direction": d.Facing.RotateRight().String(),
+		"door_hinge_bit":               d.Right,
+		"open_bit":                     d.Open,
+		"upper_block_bit":              d.Top,
+	}
 }
 
 // allDoors returns a list of all door types

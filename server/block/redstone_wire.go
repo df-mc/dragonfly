@@ -146,10 +146,7 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 
 // maxCurrentStrength ...
 func (RedstoneWire) maxCurrentStrength(power int, pos cube.Pos, tx *world.Tx) int {
-	if wire, ok := tx.Block(pos).(RedstoneWire); ok {
-		return max(wire.Power, power)
-	}
-	return power
+	return maxRedstoneWirePower(tx.Block(pos), power)
 }
 
 // connection returns true if the dust connects to the given face.

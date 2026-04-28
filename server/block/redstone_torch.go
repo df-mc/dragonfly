@@ -27,10 +27,9 @@ var (
 
 // burnoutData holds the burnout state and state change history for a redstone torch.
 type burnoutData struct {
-	gameTicks   []int64
-	burnedOut   bool
-	burnoutTime int64
-	mu          sync.RWMutex
+	gameTicks []int64
+	burnedOut bool
+	mu        sync.RWMutex
 }
 
 const (
@@ -227,7 +226,8 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 		return
 	}
 
-	if t.inputStrength(pos, tx) > 0 != t.Lit {
+	shouldBeLit := t.inputStrength(pos, tx) == 0
+	if shouldBeLit == t.Lit {
 		return
 	}
 	tx.ScheduleBlockUpdate(pos, t, time.Millisecond*100)
@@ -247,7 +247,8 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 		return
 	}
 
-	if t.inputStrength(pos, tx) > 0 != t.Lit {
+	shouldBeLit := t.inputStrength(pos, tx) == 0
+	if shouldBeLit == t.Lit {
 		return
 	}
 
@@ -270,7 +271,6 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx, data *burnoutData, currentTime int64) {
 	data.mu.Lock()
 	data.burnedOut = true
-	data.burnoutTime = currentTime
 	data.mu.Unlock()
 
 	t.Lit = false
@@ -309,10 +309,10 @@ func (t RedstoneTorch) WeakPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bool
 	if !t.Lit {
 		return 0
 	}
-	if face != t.Facing.Opposite() {
-		return 15
+	if face == t.Facing {
+		return 0
 	}
-	return 0
+	return 15
 }
 
 // StrongPower returns the strong redstone power level provided to blocks above the torch.

@@ -18,6 +18,8 @@ type Note struct {
 
 	// Pitch is the current pitch the note block is set to. Value ranges from 0-24.
 	Pitch int
+	// Powered is whether the note block was powered during its last redstone update.
+	Powered bool
 }
 
 // playNote ...
@@ -39,39 +41,44 @@ func (n Note) instrument(pos cube.Pos, tx *world.Tx) sound.Instrument {
 // DecodeNBT ...
 func (n Note) DecodeNBT(data map[string]any) any {
 	n.Pitch = int(nbtconv.Uint8(data, "note"))
+	n.Powered = nbtconv.Bool(data, "powered")
 	return n
 }
 
 // EncodeNBT ...
 func (n Note) EncodeNBT() map[string]any {
-	return map[string]any{"note": byte(n.Pitch)}
+	return map[string]any{"note": byte(n.Pitch), "powered": byte(boolByte(n.Powered))}
 }
 
-// Activate ...
+// Activate tunes and plays the note block when there is room above it.
 func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
-	n.trigger(pos, tx, true)
+	if !n.canPlay(pos, tx) {
+		return false
+	}
+	n.Pitch = (n.Pitch + 1) % 25
+	n.playNote(pos, tx)
+	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
 	return true
 }
 
-// RedstoneUpdate ...
+// RedstoneUpdate updates the note block's powered state and plays the note when it first becomes powered.
 func (n Note) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
-	if n.powered(pos, tx) {
-		n.trigger(pos, tx, false)
-	}
-}
-
-// trigger plays the note if there's space above the note block.
-func (n Note) trigger(pos cube.Pos, tx *world.Tx, changePitch bool) {
-	// Can only tune if there's air above
-	if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); !ok {
+	powered := n.powered(pos, tx)
+	if powered == n.Powered {
 		return
 	}
-	// only change the pitch when manually activated not redstone activated.
-	if changePitch {
-		n.Pitch = (n.Pitch + 1) % 25
+	n.Powered = powered
+	if powered && n.canPlay(pos, tx) {
+		n.playNote(pos, tx)
 	}
-	n.playNote(pos, tx)
 	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
+}
+
+// canPlay checks if there is room above the note block to play.
+// Returns true if the block above the note block is air.
+func (n Note) canPlay(pos cube.Pos, tx *world.Tx) bool {
+	_, ok := tx.Block(pos.Side(cube.FaceUp)).(Air)
+	return ok
 }
 
 // powered checks if the note block is receiving redstone power.

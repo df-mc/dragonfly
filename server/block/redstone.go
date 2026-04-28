@@ -5,6 +5,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -82,20 +83,23 @@ func updateAroundRedstone(centre cube.Pos, tx *world.Tx, ignoredFaces ...cube.Fa
 			continue
 		}
 		pos := centre.Side(face)
-		if r, ok := tx.Block(pos).(RedstoneUpdater); ok {
-			r.RedstoneUpdate(pos, tx)
-		}
-
-		abovePos := pos.Side(cube.FaceUp)
-		if r, ok := tx.Block(abovePos).(RedstoneUpdater); ok {
-			r.RedstoneUpdate(abovePos, tx)
-		}
-
-		belowPos := pos.Side(cube.FaceDown)
-		if r, ok := tx.Block(belowPos).(RedstoneUpdater); ok {
-			r.RedstoneUpdate(belowPos, tx)
-		}
+		updateRedstone(pos, tx)
+		updateRedstone(pos.Side(cube.FaceUp), tx)
+		updateRedstone(pos.Side(cube.FaceDown), tx)
 	}
+}
+
+// updateRedstone dispatches a cancellable redstone update to the block at pos, if it handles redstone updates.
+func updateRedstone(pos cube.Pos, tx *world.Tx) {
+	r, ok := tx.Block(pos).(RedstoneUpdater)
+	if !ok {
+		return
+	}
+	ctx := event.C(tx)
+	if tx.World().Handler().HandleRedstoneUpdate(ctx, pos); ctx.Cancelled() {
+		return
+	}
+	r.RedstoneUpdate(pos, tx)
 }
 
 // updateDirectionalRedstone updates redstone components through the given face. This implementation is based off of
@@ -226,9 +230,7 @@ func (n *wireNetwork) breadthFirstWalk(tx *world.Tx) {
 				n.updateNode(tx, node, n.currentWalkLayer)
 				continue
 			}
-			if t, ok := node.block.(RedstoneUpdater); ok {
-				t.RedstoneUpdate(node.pos, tx)
-			}
+			updateRedstone(node.pos, tx)
 		}
 
 		n.shiftQueue()
@@ -313,7 +315,12 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 
 // maxCurrentStrength computes a redstone wire's power level based on a cached state.
 func (n *wireNetwork) maxCurrentStrength(neighbour world.Block, strength int) int {
-	if wire, ok := neighbour.(RedstoneWire); ok {
+	return maxRedstoneWirePower(neighbour, strength)
+}
+
+// maxRedstoneWirePower returns the greater of strength and the power level of b if it is redstone wire.
+func maxRedstoneWirePower(b world.Block, strength int) int {
+	if wire, ok := b.(RedstoneWire); ok {
 		return max(wire.Power, strength)
 	}
 	return strength
@@ -362,23 +369,13 @@ func computeRedstoneNeighbours(pos cube.Pos) []cube.Pos {
 func computeRedstoneHeading(rX, rZ int32) uint32 {
 	code := (rX + 1) + 3*(rZ+1)
 	switch code {
-	case 0:
+	case 0, 1:
 		return wireHeadingNorth
-	case 1:
-		return wireHeadingNorth
-	case 2:
+	case 2, 5:
 		return wireHeadingEast
-	case 3:
+	case 3, 4:
 		return wireHeadingWest
-	case 4:
-		return wireHeadingWest
-	case 5:
-		return wireHeadingEast
-	case 6:
-		return wireHeadingSouth
-	case 7:
-		return wireHeadingSouth
-	case 8:
+	case 6, 7, 8:
 		return wireHeadingSouth
 	}
 	panic("should never happen")
