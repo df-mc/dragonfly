@@ -27,7 +27,7 @@ func (RedstoneWire) HasLiquidDrops() bool {
 
 // BreakInfo ...
 func (r RedstoneWire) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(item.RedstoneWire{})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(RedstoneWire{})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		updateStrongRedstone(pos, tx)
 	})
 }
@@ -173,6 +173,16 @@ func (RedstoneWire) connectsTo(block world.Block, allowDirectSources bool) bool 
 // canRunOnTop ...
 func (RedstoneWire) canRunOnTop(tx *world.Tx, pos cube.Pos, block world.Block) bool {
 	return block.Model().FaceSolid(pos, cube.FaceUp, tx)
+}
+
+// TrimMaterial returns the material name used for reading and writing trim data.
+func (RedstoneWire) TrimMaterial() string {
+	return item.RedstoneWire{}.TrimMaterial()
+}
+
+// MaterialColour returns the colour code used for internal text formatting.
+func (RedstoneWire) MaterialColour() string {
+	return item.RedstoneWire{}.MaterialColour()
 }
 
 // allRedstoneWires returns a list of all redstone dust states.
