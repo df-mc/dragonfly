@@ -138,3 +138,27 @@ func (t leavesType) Wood() (WoodType, bool) {
 		return WoodType{}, false
 	}
 }
+
+// Sapling returns the sapling type dropped by the leaves if there is one.
+func (t LeavesType) Sapling() (SaplingType, bool) {
+	switch t {
+	case OakLeaves():
+		return OakSapling(), true
+	case SpruceLeaves():
+		return SpruceSapling(), true
+	case BirchLeaves():
+		return BirchSapling(), true
+	case JungleLeaves():
+		return JungleSapling(), true
+	case AcaciaLeaves():
+		return AcaciaSapling(), true
+	case DarkOakLeaves():
+		return DarkOakSapling(), true
+	case CherryLeaves():
+		return CherrySapling(), true
+	case PaleOakLeaves():
+		return PaleOakSapling(), true
+	default:
+		return SaplingType{}, false
+	}
+}

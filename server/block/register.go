@@ -190,6 +190,7 @@ func init() {
 	registerAll(allQuartz())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
+	registerAll(allSaplings())
 	registerAll(allSigns())
 	registerAll(allSkulls())
 	registerAll(allSlabs())
@@ -447,6 +448,9 @@ func init() {
 	}
 	for _, f := range FlowerTypes() {
 		world.RegisterItem(Flower{Type: f})
+	}
+	for _, s := range SaplingTypes() {
+		world.RegisterItem(Sapling{Type: s})
 	}
 	for _, f := range DoubleFlowerTypes() {
 		world.RegisterItem(DoubleFlower{Type: f})
