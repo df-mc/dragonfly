@@ -61,6 +61,7 @@ func init() {
 	world.RegisterBlock(Jukebox{})
 	world.RegisterBlock(Lapis{})
 	world.RegisterBlock(LilyPad{})
+	world.RegisterBlock(Magma{})
 	world.RegisterBlock(Melon{})
 	world.RegisterBlock(MossCarpet{})
 	world.RegisterBlock(MudBricks{})
@@ -94,7 +95,9 @@ func init() {
 	world.RegisterBlock(Sand{})
 	world.RegisterBlock(SeaLantern{})
 	world.RegisterBlock(Shroomlight{})
+	world.RegisterBlock(Slime{})
 	world.RegisterBlock(SmithingTable{})
+	world.RegisterBlock(SmoothBasalt{})
 	world.RegisterBlock(Snow{})
 	world.RegisterBlock(SoulSand{})
 	world.RegisterBlock(SoulSoil{})
@@ -127,6 +130,7 @@ func init() {
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
+	registerAll(allBeds())
 	registerAll(allBeetroot())
 	registerAll(allBlackstone())
 	registerAll(allBlastFurnaces())
@@ -200,6 +204,7 @@ func init() {
 	registerAll(allStairs())
 	registerAll(allStoneBricks())
 	registerAll(allStonecutters())
+	registerAll(allString())
 	registerAll(allSugarCane())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
@@ -302,6 +307,7 @@ func init() {
 	world.RegisterItem(Lectern{})
 	world.RegisterItem(Lever{})
 	world.RegisterItem(LilyPad{})
+	world.RegisterItem(Magma{})
 	world.RegisterItem(LitPumpkin{})
 	world.RegisterItem(Loom{})
 	world.RegisterItem(MelonSeeds{})
@@ -353,8 +359,10 @@ func init() {
 	world.RegisterItem(SeaLantern{})
 	world.RegisterItem(SeaPickle{})
 	world.RegisterItem(Shroomlight{})
+	world.RegisterItem(Slime{})
 	world.RegisterItem(SmithingTable{})
 	world.RegisterItem(Smoker{})
+	world.RegisterItem(SmoothBasalt{})
 	world.RegisterItem(Snow{})
 	world.RegisterItem(SoulSand{})
 	world.RegisterItem(SoulSoil{})
@@ -364,6 +372,7 @@ func init() {
 	world.RegisterItem(Stonecutter{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
+	world.RegisterItem(String{})
 	world.RegisterItem(SugarCane{})
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
@@ -402,6 +411,7 @@ func init() {
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
+		world.RegisterItem(Bed{Colour: c})
 		world.RegisterItem(Carpet{Colour: c})
 		world.RegisterItem(ConcretePowder{Colour: c})
 		world.RegisterItem(Concrete{Colour: c})
@@ -413,7 +423,8 @@ func init() {
 	}
 	for _, w := range WoodTypes() {
 		if w != WarpedWood() && w != CrimsonWood() {
-			world.RegisterItem(Leaves{Wood: w, Persistent: true})
+			t, _ := w.Leaves()
+			world.RegisterItem(Leaves{Type: t, Persistent: true})
 		}
 		world.RegisterItem(Log{Wood: w, Stripped: true})
 		world.RegisterItem(Log{Wood: w})
@@ -426,6 +437,8 @@ func init() {
 		world.RegisterItem(Wood{Wood: w, Stripped: true})
 		world.RegisterItem(Wood{Wood: w})
 	}
+	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
+	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
 		world.RegisterItem(CopperOre{Type: ore})

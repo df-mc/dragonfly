@@ -2,7 +2,7 @@ package block
 
 import "github.com/df-mc/dragonfly/server/item"
 
-// BannerPatternType represents a type of banner pattern, used to customize banners.
+// BannerPatternType represents a type of banner pattern, used to customise banners.
 type BannerPatternType struct {
 	bannerPatternType
 }
@@ -142,8 +142,8 @@ func StripeBottomBannerPattern() BannerPatternType {
 	return BannerPatternType{26}
 }
 
-// StripeCenterBannerPattern represents the 'Stripe Center' banner pattern type.
-func StripeCenterBannerPattern() BannerPatternType {
+// StripeCentreBannerPattern represents the 'Stripe Center' banner pattern type.
+func StripeCentreBannerPattern() BannerPatternType {
 	return BannerPatternType{27}
 }
 
@@ -247,7 +247,7 @@ func BannerPatternTypes() []BannerPatternType {
 		SquareTopRightBannerPattern(),
 		StraightCrossBannerPattern(),
 		StripeBottomBannerPattern(),
-		StripeCenterBannerPattern(),
+		StripeCentreBannerPattern(),
 		StripeDownLeftBannerPattern(),
 		StripeDownRightBannerPattern(),
 		StripeLeftBannerPattern(),

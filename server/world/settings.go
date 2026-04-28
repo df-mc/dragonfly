@@ -1,9 +1,10 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"sync"
 	"sync/atomic"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // Settings holds the settings of a World. These are typically saved to a level.dat file. It is safe to pass the same
@@ -30,6 +31,8 @@ type Settings struct {
 	Thundering bool
 	// WeatherCycle specifies if weather should be enabled in this world. If set to false, weather will be disabled.
 	WeatherCycle bool
+	// RequiredSleepTicks is the number of ticks that players must sleep for in order for the time to change to day.
+	RequiredSleepTicks int64
 	// CurrentTick is the current tick of the world. This is similar to the Time, except that it has no visible effect
 	// to the client. It can also not be changed through commands and will only ever go up.
 	CurrentTick int64

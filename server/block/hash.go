@@ -15,6 +15,7 @@ const (
 	hashBarrier
 	hashBasalt
 	hashBeacon
+	hashBed
 	hashBedrock
 	hashBeetrootSeeds
 	hashBlackstone
@@ -116,6 +117,7 @@ const (
 	hashLitPumpkin
 	hashLog
 	hashLoom
+	hashMagma
 	hashMelon
 	hashMelonSeeds
 	hashMossCarpet
@@ -167,8 +169,10 @@ const (
 	hashSign
 	hashSkull
 	hashSlab
+	hashSlime
 	hashSmithingTable
 	hashSmoker
+	hashSmoothBasalt
 	hashSnow
 	hashSoulSand
 	hashSoulSoil
@@ -181,6 +185,7 @@ const (
 	hashStone
 	hashStoneBricks
 	hashStonecutter
+	hashString
 	hashSugarCane
 	hashTNT
 	hashTerracotta
@@ -247,6 +252,10 @@ func (b Basalt) Hash() (uint64, uint64) {
 
 func (Beacon) Hash() (uint64, uint64) {
 	return hashBeacon, 0
+}
+
+func (b Bed) Hash() (uint64, uint64) {
+	return hashBed, uint64(b.Facing) | uint64(boolByte(b.Head))<<2
 }
 
 func (b Bedrock) Hash() (uint64, uint64) {
@@ -622,7 +631,7 @@ func (l Lava) Hash() (uint64, uint64) {
 }
 
 func (l Leaves) Hash() (uint64, uint64) {
-	return hashLeaves, uint64(l.Wood.Uint8()) | uint64(boolByte(l.Persistent))<<4 | uint64(boolByte(l.ShouldUpdate))<<5
+	return hashLeaves, uint64(l.Type.Uint8()) | uint64(boolByte(l.Persistent))<<4 | uint64(boolByte(l.ShouldUpdate))<<5
 }
 
 func (l Lectern) Hash() (uint64, uint64) {
@@ -651,6 +660,10 @@ func (l Log) Hash() (uint64, uint64) {
 
 func (l Loom) Hash() (uint64, uint64) {
 	return hashLoom, uint64(l.Facing)
+}
+
+func (Magma) Hash() (uint64, uint64) {
+	return hashMagma, 0
 }
 
 func (Melon) Hash() (uint64, uint64) {
@@ -857,12 +870,20 @@ func (s Slab) Hash() (uint64, uint64) {
 	return hashSlab, world.BlockHash(s.Block) | uint64(boolByte(s.Top))<<32 | uint64(boolByte(s.Double))<<33
 }
 
+func (Slime) Hash() (uint64, uint64) {
+	return hashSlime, 0
+}
+
 func (SmithingTable) Hash() (uint64, uint64) {
 	return hashSmithingTable, 0
 }
 
 func (s Smoker) Hash() (uint64, uint64) {
 	return hashSmoker, uint64(s.Facing) | uint64(boolByte(s.Lit))<<2
+}
+
+func (SmoothBasalt) Hash() (uint64, uint64) {
+	return hashSmoothBasalt, 0
 }
 
 func (Snow) Hash() (uint64, uint64) {
@@ -911,6 +932,10 @@ func (s StoneBricks) Hash() (uint64, uint64) {
 
 func (s Stonecutter) Hash() (uint64, uint64) {
 	return hashStonecutter, uint64(s.Facing)
+}
+
+func (s String) Hash() (uint64, uint64) {
+	return hashString, uint64(boolByte(s.Attached)) | uint64(boolByte(s.Disarmed))<<1 | uint64(boolByte(s.Powered))<<2 | uint64(boolByte(s.Suspended))<<3
 }
 
 func (c SugarCane) Hash() (uint64, uint64) {

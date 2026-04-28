@@ -10,9 +10,9 @@ import (
 // InventoryData is a struct that contains all data of the player inventories.
 type InventoryData struct {
 	// Items contains all the items in the player's main inventory.
-	// This excludes armor and offhand.
+	// This excludes armour and offhand.
 	Items []item.Stack
-	// Boots, Leggings, Chestplate, Helmet are armor pieces that belong to the slot corresponding to the name.
+	// Boots, Leggings, Chestplate, Helmet are armour pieces that belong to the slot corresponding to the name.
 	Boots      item.Stack
 	Leggings   item.Stack
 	Chestplate item.Stack

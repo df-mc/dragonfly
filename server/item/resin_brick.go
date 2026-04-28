@@ -3,7 +3,7 @@ package item
 import "github.com/sandertv/gophertunnel/minecraft/text"
 
 // ResinBrick is an item used to create resin bricks. It can also be used as a
-// smithing ingredient, giving orange details to pieces of armor.
+// smithing ingredient, giving orange details to pieces of armour.
 type ResinBrick struct{}
 
 // EncodeItem ...

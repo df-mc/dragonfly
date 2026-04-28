@@ -57,6 +57,10 @@ type playerData struct {
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
+
+	sleeping bool
+	sleepPos cube.Pos
+
 	usingSince time.Time
 
 	glideTicks   int64
@@ -153,7 +157,7 @@ func (p *Player) DeviceID() string {
 	if p.session() == session.Nop {
 		return ""
 	}
-	return p.session().ClientData().DeviceID
+	return string(p.session().ClientData().DeviceID)
 }
 
 // DeviceModel returns the device model of the player. If the Player is not connected to a network session, an empty
@@ -643,6 +647,8 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		p.tx.PlaySound(pos, sound.Drowning{})
 	}
 
+	p.Wake()
+
 	if p.Dead() {
 		p.kill(src)
 	}
@@ -884,7 +890,9 @@ func finishDying(_ *world.Tx, e world.Entity) {
 		// position server side so that in the future, the client won't respawn
 		// on the death location when disconnecting. The client should not see
 		// the movement itself yet, though.
-		p.data.Pos = p.tx.World().Spawn().Vec3()
+		pos, _, _, _ := p.spawnLocation()
+
+		p.data.Pos = pos.Vec3()
 	}
 }
 
@@ -935,10 +943,13 @@ func (p *Player) respawn(f func(p *Player)) {
 	if !p.Dead() || p.session() == session.Nop {
 		return
 	}
-	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
-	// always bring us back to the overworld.
-	w := p.tx.World().PortalDestination(p.tx.World().Dimension())
-	pos := w.PlayerSpawn(p.UUID()).Vec3Middle()
+
+	blockPos, w, spawnObstructed, _ := p.spawnLocation()
+	pos := blockPos.Vec3Middle()
+
+	if spawnObstructed {
+		p.Messaget(chat.MessageBedNotValid)
+	}
 
 	p.addHealth(p.MaxHealth())
 	p.hunger.Reset()
@@ -958,6 +969,26 @@ func (p *Player) respawn(f func(p *Player)) {
 			f(np)
 		}
 	})
+}
+
+// spawnLocation designates a players safe spawn location.
+func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
+	tx := p.tx
+	w = tx.World()
+	previousDimension = w.Dimension()
+	playerSpawn = w.PlayerSpawn(p.UUID())
+	if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
+		pos, ok := b.SafeSpawn(playerSpawn, tx)
+		if ok {
+			return pos, w, false, previousDimension
+		}
+	}
+
+	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
+	// always bring us back to the overworld.
+	w = w.PortalDestination(w.Dimension())
+	worldSpawn := w.Spawn()
+	return worldSpawn, w, playerSpawn != worldSpawn, previousDimension
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
@@ -1170,6 +1201,81 @@ func (p *Player) Jump() {
 	}
 }
 
+// Sleep makes the player sleep at the given position. If the position does not map to a bed (specifically the head side),
+// the player will not sleep.
+func (p *Player) Sleep(pos cube.Pos) {
+	if p.sleeping {
+		// The player is already sleeping.
+		return
+	}
+
+	tx := p.tx
+	b, ok := tx.Block(pos).(block.Bed)
+	if !ok || b.Sleeper != nil {
+		// The player cannot sleep here.
+		return
+	}
+
+	ctx, sendReminder := event.C(p), true
+	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
+		return
+	}
+
+	b.Sleeper = p.H()
+	tx.SetBlock(pos, b, nil)
+
+	tx.World().SetRequiredSleepDuration(time.Millisecond * 5050)
+
+	p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
+	p.sleeping = true
+	p.sleepPos = pos
+
+	p.session().SendPlayerSpawn(pos.Vec3())
+
+	if sendReminder {
+		tx.BroadcastSleepingReminder(p)
+	}
+
+	tx.BroadcastSleepingIndicator()
+	p.updateState()
+}
+
+// Wake forces the player out of bed if they are sleeping.
+func (p *Player) Wake() {
+	if !p.sleeping {
+		return
+	}
+	p.sleeping = false
+
+	tx := p.tx
+	tx.BroadcastSleepingIndicator()
+
+	for _, v := range p.viewers() {
+		v.ViewEntityWake(p)
+	}
+	p.updateState()
+
+	pos := p.sleepPos
+	if b, ok := tx.Block(pos).(block.Bed); ok {
+		b.Sleeper = nil
+		tx.SetBlock(pos, b, nil)
+	}
+}
+
+// Sleeping returns true if the player is currently sleeping, along with the position of the bed the player is sleeping
+// on.
+func (p *Player) Sleeping() (cube.Pos, bool) {
+	if !p.sleeping {
+		return cube.Pos{}, false
+	}
+	return p.sleepPos, true
+}
+
+// SendSleepingIndicator displays a notification to the player on the amount of sleeping players in the world.
+func (p *Player) SendSleepingIndicator(sleeping, max int) {
+	p.session().ViewSleepingPlayers(sleeping, max)
+}
+
 // SetInvisible sets the player invisible, so that other players will not be able to see it.
 func (p *Player) SetInvisible() {
 	if p.Invisible() {
@@ -1375,17 +1481,15 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
-	var (
-		i, left = p.HeldItems()
-		ctx     = event.C(p)
-	)
+	i, _ := p.HeldItems()
+	ctx := event.C(p)
 	if p.HasCooldown(i.Item()) {
 		return
 	}
 	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
 		return
 	}
-	i, left = p.HeldItems()
+	i, left := p.HeldItems()
 	it := i.Item()
 
 	if cd, ok := it.(item.Cooldown); ok {
@@ -1912,7 +2016,7 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 	for e := range p.tx.EntitiesWithin(cube.Box(-3, -3, -3, 3, 3, 3).Translate(pos.Vec3())) {
 		t := e.H().Type()
 		switch t {
-		case entity.ItemType, entity.ArrowType:
+		case entity.ItemType, entity.ArrowType, entity.ExperienceOrbType:
 			continue
 		default:
 			if cube.AnyIntersections(blockBoxes, t.BBox(e).Translate(e.Position()).Grow(-1e-4)) {
@@ -1948,7 +2052,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 
 	xp := 0
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
-		xp = breakable.BreakInfo().XPDrops.RandomValue()
+		if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
+			xp = breakable.BreakInfo().XPDrops.RandomValue()
+		}
 	}
 
 	ctx := event.C(p)
@@ -2062,6 +2168,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
+	p.Wake()
 	p.teleport(pos)
 }
 
@@ -2261,14 +2368,23 @@ func (p *Player) SetExperienceProgress(progress float64) {
 	p.session().SendExperience(p.ExperienceLevel(), p.ExperienceProgress())
 }
 
-// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
-// is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
-// experience collection or if the player was dead or in a game mode that doesn't allow collection.
-func (p *Player) CollectExperience(value int) bool {
+// CanCollectExperience checks if the player can collect experience, which is true if the player is not dead,
+// is in a game mode that allows interaction and if 100ms have passed since the last experience collection.
+func (p *Player) CanCollectExperience() bool {
 	if p.Dead() || !p.GameMode().AllowsInteraction() {
 		return false
 	}
 	if last := p.lastXPPickup; last != nil && time.Since(*last) < time.Millisecond*100 {
+		return false
+	}
+	return true
+}
+
+// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
+// is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
+// experience collection or if the player was dead or in a game mode that doesn't allow collection.
+func (p *Player) CollectExperience(value int) bool {
+	if !p.CanCollectExperience() {
 		return false
 	}
 	value = p.mendItems(value)
@@ -2397,6 +2513,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	p.checkBlockCollisions(p.data.Vel)
 	p.onGround = p.checkOnGround(mgl64.Vec3{})
+	p.checkEntitySteppers()
 
 	p.effects.Tick(p, p.tx)
 
@@ -2682,6 +2799,26 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 						collide.EntityInside(blockPos, p.tx, p)
 					}
 				}
+			}
+		}
+	}
+}
+
+// checkEntitySteppers checks if the player is standing on any EntityStepper blocks.
+func (p *Player) checkEntitySteppers() {
+	if !p.OnGround() {
+		return
+	}
+	box := Type.BBox(p).Translate(p.Position()).Grow(-0.0001)
+	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+	y := int(math.Floor(box.Min()[1] - 0.0001))
+
+	for x := low[0]; x <= high[0]; x++ {
+		for z := low[2]; z <= high[2]; z++ {
+			pos := cube.Pos{x, y, z}
+			if stepper, ok := p.tx.Block(pos).(block.EntityStepper); ok {
+				stepper.EntityStepOn(pos, p.tx, p)
+				return
 			}
 		}
 	}

@@ -166,7 +166,7 @@ func (l *Loader) evictUnused(tx *Tx) {
 // which chunks around the position the loader is now in should be loaded. Chunks are ordered to be loaded
 // from the middle outwards.
 func (l *Loader) populateLoadQueue() {
-	// We'll first load the chunk positions to load in a map indexed by the distance to the center (basically,
+	// We'll first load the chunk positions to load in a map indexed by the distance to the centre (basically,
 	// what precedence it should have), and put them in the loadQueue in that order.
 	queue := map[int32][]ChunkPos{}
 

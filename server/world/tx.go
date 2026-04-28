@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -159,6 +159,16 @@ func (tx *Tx) ThunderingAt(pos cube.Pos) bool {
 	return tx.World().thunderingAt(pos)
 }
 
+// Raining checks if it is raining anywhere in the World.
+func (tx *Tx) Raining() bool {
+	return tx.World().raining()
+}
+
+// Thundering checks if it is thundering anywhere in the World.
+func (tx *Tx) Thundering() bool {
+	return tx.World().thundering()
+}
+
 // AddParticle spawns a Particle at a given position in the World. Viewers that
 // are viewing the chunk will be shown the particle.
 func (tx *Tx) AddParticle(pos mgl64.Vec3, p Particle) {
@@ -217,13 +227,59 @@ func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
 	return tx.World().viewersOf(pos)
 }
 
+// Sleepers returns an iterator that yields all sleeping entities currently added to the World.
+func (tx *Tx) Sleepers() iter.Seq[Sleeper] {
+	ent := tx.Entities()
+	return func(yield func(Sleeper) bool) {
+		for e := range ent {
+			if sleeper, ok := e.(Sleeper); ok {
+				if !yield(sleeper) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// BroadcastSleepingIndicator broadcasts a sleeping indicator to all sleepers in the world.
+func (tx *Tx) BroadcastSleepingIndicator() {
+	sleepers := tx.Sleepers()
+
+	var sleeping, allSleepers int
+	for s := range sleepers {
+		allSleepers++
+		if _, ok := s.Sleeping(); ok {
+			sleeping++
+		}
+	}
+
+	for s := range sleepers {
+		s.SendSleepingIndicator(sleeping, allSleepers)
+	}
+}
+
+// BroadcastSleepingReminder broadcasts a sleeping reminder message to all sleepers in the world, excluding the sleeper
+// passed.
+func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
+	sleepers := tx.Sleepers()
+
+	var notSleeping int
+	for s := range sleepers {
+		if _, ok := s.Sleeping(); !ok {
+			notSleeping++
+		}
+	}
+
+	for s := range sleepers {
+		if _, ok := s.Sleeping(); !ok {
+			s.Messaget(chat.MessageSleeping, sleeper.Name(), notSleeping)
+		}
+	}
+}
+
 // RedstonePower returns the level of redstone power being emitted from a position to the provided face.
 func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
 	b := tx.Block(pos)
-	ctx := event.C(tx)
-	if tx.World().Handler().HandleRedstoneUpdate(ctx, pos); ctx.Cancelled() {
-		return 0
-	}
 	if c, ok := b.(Conductor); ok {
 		return c.WeakPower(pos, face, tx, accountForDust)
 	}
