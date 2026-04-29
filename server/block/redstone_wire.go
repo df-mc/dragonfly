@@ -142,6 +142,9 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 		if canRedstoneWireStepDown(pos, neighbourPos, neighbour, tx) && !aboveBlocksVerticalTravel {
 			wirePower = r.maxCurrentStrength(wirePower, neighbourPos.Side(cube.FaceUp), tx)
 		}
+		if canRedstoneWireStepDown(neighbourPos.Side(cube.FaceDown), neighbourPos, neighbour, tx) && !blocksRedstoneWireVerticalTravel(neighbour) {
+			wirePower = r.maxCurrentStrength(wirePower, neighbourPos.Side(cube.FaceDown), tx)
+		}
 
 		if _, neighbourSolid := neighbour.Model().(model.Solid); !neighbourSolid {
 			wirePower = r.maxCurrentStrength(wirePower, neighbourPos.Side(cube.FaceDown), tx)
