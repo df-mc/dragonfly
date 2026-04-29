@@ -66,7 +66,8 @@ func (p *saplingTreePlan) apply(tx *world.Tx) {
 		}
 	}
 	for _, pos := range p.podzol {
-		if _, ok := tx.Block(pos).(Grass); ok {
+		switch tx.Block(pos).(type) {
+		case Grass, Dirt, Mud, MuddyMangroveRoots:
 			tx.SetBlock(pos, Podzol{}, nil)
 		}
 	}
@@ -82,7 +83,18 @@ func saplingGrowthReplaceable(tx *world.Tx, pos cube.Pos, with world.Block) bool
 	if _, ok := tx.Liquid(pos); ok {
 		return false
 	}
+	if saplingTreeReplaceable(tx.Block(pos)) {
+		return true
+	}
 	return replaceableWith(tx, pos, with)
+}
+
+func saplingTreeReplaceable(b world.Block) bool {
+	switch b.(type) {
+	case Air, Sapling, Leaves, ShortGrass, Fern, DoubleTallGrass, Flower, DoubleFlower, PinkPetals, Vines, MossCarpet:
+		return true
+	}
+	return false
 }
 
 func saplingGrowthAllowed(pos cube.Pos, tx *world.Tx) bool {
@@ -173,6 +185,132 @@ func saplingAllowType(typ SaplingType) func(cube.Pos, world.Block) bool {
 	return func(_ cube.Pos, b world.Block) bool {
 		s, ok := b.(Sapling)
 		return ok && s.Type == typ
+	}
+}
+
+func saplingBaseClear(tx *world.Tx, base cube.Pos, typ SaplingType) bool {
+	return saplingSameLevelClear(tx, base, func(_ cube.Pos, b world.Block) bool {
+		s, ok := b.(Sapling)
+		return ok && s.Type == typ
+	})
+}
+
+func jungleBaseClear(tx *world.Tx, base cube.Pos) bool {
+	return saplingSameLevelClear(tx, base, func(pos cube.Pos, b world.Block) bool {
+		if s, ok := b.(Sapling); ok && s.Type == JungleSapling() {
+			return true
+		}
+		if pos[0] <= base[0] || pos[2] <= base[2] {
+			switch b.(type) {
+			case Log, Wood, Leaves:
+				return true
+			}
+		}
+		return false
+	})
+}
+
+func saplingSameLevelClear(tx *world.Tx, base cube.Pos, allow func(cube.Pos, world.Block) bool) bool {
+	for x := base[0] - 1; x <= base[0]+1; x++ {
+		for z := base[2] - 1; z <= base[2]+1; z++ {
+			pos := cube.Pos{x, base[1], z}
+			if _, ok := tx.Liquid(pos); ok {
+				return false
+			}
+			b := tx.Block(pos)
+			if allow != nil && allow(pos, b) {
+				continue
+			}
+			if _, ok := b.(Air); !ok {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (p *saplingTreePlan) addLeafPlus(center cube.Pos, leaves LeavesType) {
+	p.setLeaves(center, leaves)
+	for _, face := range cube.HorizontalFaces() {
+		p.setLeaves(center.Side(face), leaves)
+	}
+}
+
+func (p *saplingTreePlan) addSmallTreeCanopy(pos cube.Pos, trunkHeight int, leaves LeavesType, r *rand.Rand) {
+	top := pos.Add(cube.Pos{0, trunkHeight, 0})
+	p.addLeafPlus(top, leaves)
+
+	second := pos.Add(cube.Pos{0, trunkHeight - 1, 0})
+	p.addLeafPlus(second, leaves)
+	corners := []cube.Pos{{-1, 0, -1}, {-1, 0, 1}, {1, 0, -1}, {1, 0, 1}}
+	cornerCount := 1 + r.IntN(3)
+	for i, c := range r.Perm(len(corners)) {
+		if i >= cornerCount {
+			break
+		}
+		p.setLeaves(second.Add(corners[c]), leaves)
+	}
+
+	for y := trunkHeight - 2; y >= trunkHeight-3; y-- {
+		layer := pos.Add(cube.Pos{0, y, 0})
+		p.addLeafSquare(layer, 2, leaves, true)
+		for _, c := range corners {
+			if r.IntN(4) == 0 {
+				p.setLeaves(layer.Add(cube.Pos{c[0] * 2, c[1] * 2, c[2] * 2}), leaves)
+			}
+		}
+	}
+}
+
+func (p *saplingTreePlan) addSpruceCanopy(pos cube.Pos, height int, leaves LeavesType, r *rand.Rand) {
+	// Bedrock spruce crowns are layered and conical, with discrete rows.
+	top := pos.Add(cube.Pos{0, height, 0})
+	p.setLeaves(top, leaves)
+	p.addLeafDisc(top.Side(cube.FaceDown), 1, leaves, false)
+	p.addLeafDisc(top.Side(cube.FaceDown).Side(cube.FaceDown), 2, leaves, true)
+
+	rowRadius := 1 + r.IntN(2)
+	for y := height - 3; y >= 2+r.IntN(2); y-- {
+		p.addLeafDisc(pos.Add(cube.Pos{0, y, 0}), rowRadius, leaves, true)
+		if rowRadius == 1 {
+			rowRadius = 2
+			continue
+		}
+		if r.IntN(3) != 0 {
+			rowRadius = 1
+		}
+	}
+}
+
+func (p *saplingTreePlan) addMegaSpruceCanopy(base cube.Pos, height int, leaves LeavesType, r *rand.Rand) {
+	// 2x2 spruce in Bedrock has a broad lower crown and tighter top layers.
+	for y := height - 9; y <= height+1; y++ {
+		d := height - y
+		radius := 1
+		switch {
+		case d >= 7:
+			radius = 3
+		case d >= 4:
+			radius = 2
+		case d >= 1:
+			radius = 2
+		}
+		for x := -radius; x <= 1+radius; x++ {
+			for z := -radius; z <= 1+radius; z++ {
+				edgeX, edgeZ := abs(x) == radius, abs(z) == radius
+				if edgeX && edgeZ {
+					// Keep lower layers rougher and the top tighter.
+					skipChance := 2
+					if d <= 2 {
+						skipChance = 3
+					}
+					if r.IntN(skipChance) == 0 {
+						continue
+					}
+				}
+				p.setLeaves(base.Add(cube.Pos{x, y, z}), leaves)
+			}
+		}
 	}
 }
 
@@ -281,7 +419,7 @@ func growOakTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	if !saplingClearVolume(tx, pos.Add(cube.Pos{-1, 1, -1}), pos.Add(cube.Pos{1, 4, 1}), nil) {
 		return false
 	}
-	if !saplingClearVolume(tx, pos.Add(cube.Pos{-2, 4, -2}), pos.Add(cube.Pos{2, 6, 2}), nil) {
+	if !saplingClearVolume(tx, pos.Add(cube.Pos{-2, 3, -2}), pos.Add(cube.Pos{2, 7, 2}), nil) {
 		return false
 	}
 
@@ -290,10 +428,7 @@ func growOakTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	for y := 0; y < height; y++ {
 		plan.setLog(pos.Add(cube.Pos{0, y, 0}), OakWood(), cube.Y)
 	}
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height - 1, 0}), 2, OakLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height, 0}), 2, OakLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height + 1, 0}), 1, OakLeaves(), true)
-	plan.setLeaves(pos.Add(cube.Pos{0, height + 2, 0}), OakLeaves())
+	plan.addSmallTreeCanopy(pos, height, OakLeaves(), r)
 	plan.markDirt(pos.Side(cube.FaceDown))
 	if !plan.fits(tx) {
 		return false
@@ -306,7 +441,7 @@ func growBirchTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	if !saplingClearVolume(tx, pos.Add(cube.Pos{-1, 1, -1}), pos.Add(cube.Pos{1, 3, 1}), nil) {
 		return false
 	}
-	if !saplingClearVolume(tx, pos.Add(cube.Pos{-2, 4, -2}), pos.Add(cube.Pos{2, 7, 2}), nil) {
+	if !saplingClearVolume(tx, pos.Add(cube.Pos{-2, 4, -2}), pos.Add(cube.Pos{2, 8, 2}), nil) {
 		return false
 	}
 
@@ -315,11 +450,7 @@ func growBirchTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	for y := 0; y < height; y++ {
 		plan.setLog(pos.Add(cube.Pos{0, y, 0}), BirchWood(), cube.Y)
 	}
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height - 2, 0}), 2, BirchLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height - 1, 0}), 2, BirchLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height, 0}), 2, BirchLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height + 1, 0}), 1, BirchLeaves(), true)
-	plan.setLeaves(pos.Add(cube.Pos{0, height + 1, 0}), BirchLeaves())
+	plan.addSmallTreeCanopy(pos, height, BirchLeaves(), r)
 	plan.markDirt(pos.Side(cube.FaceDown))
 	if !plan.fits(tx) {
 		return false
@@ -329,8 +460,11 @@ func growBirchTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 }
 
 func growSpruceTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
-	if base, ok := saplingSquare(pos, tx, SpruceSapling()); ok && saplingGrowthSquareValid(base, tx) {
-		if !saplingClearVolume(tx, base.Add(cube.Pos{-1, 1, -1}), base.Add(cube.Pos{3, 16, 3}), saplingAllowType(SpruceSapling())) {
+	if base, ok := saplingSquare(pos, tx, SpruceSapling()); ok {
+		if !saplingGrowthSquareValid(base, tx) || !saplingBaseClear(tx, base, SpruceSapling()) {
+			return false
+		}
+		if !saplingClearVolume(tx, base.Add(cube.Pos{-1, 1, -1}), base.Add(cube.Pos{3, 30, 3}), saplingAllowType(SpruceSapling())) {
 			return false
 		}
 		return growMegaSpruceTree(base, tx, r)
@@ -341,26 +475,11 @@ func growSpruceTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 
 	plan := newSaplingTreePlan()
 	height := 6 + r.IntN(4)
-	var trunk []cube.Pos
 	for y := 0; y < height; y++ {
-		p := pos.Add(cube.Pos{0, y, 0})
-		plan.setLog(p, SpruceWood(), cube.Y)
-		trunk = append(trunk, p)
+		plan.setLog(pos.Add(cube.Pos{0, y, 0}), SpruceWood(), cube.Y)
 	}
-	bare := 2 + r.IntN(2)
-	for y := bare; y <= height; y++ {
-		d := height - y
-		radius := 1
-		if d >= 2 {
-			radius = 2
-		}
-		plan.addLeafDisc(pos.Add(cube.Pos{0, y, 0}), radius, SpruceLeaves(), false)
-	}
-	plan.setLeaves(pos.Add(cube.Pos{0, height + 1, 0}), SpruceLeaves())
+	plan.addSpruceCanopy(pos, height, SpruceLeaves(), r)
 	plan.markDirt(pos.Side(cube.FaceDown))
-	if r.IntN(6) == 0 {
-		plan.addTrunkVines(trunk[:max(0, len(trunk)-2)], r)
-	}
 	if !plan.fits(tx) {
 		return false
 	}
@@ -369,12 +488,15 @@ func growSpruceTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 }
 
 func growMegaSpruceTree(base cube.Pos, tx *world.Tx, r *rand.Rand) bool {
-	if !saplingClearVolume(tx, base.Add(cube.Pos{-1, 1, -1}), base.Add(cube.Pos{3, 21, 3}), saplingAllowType(SpruceSapling())) {
+	if !saplingBaseClear(tx, base, SpruceSapling()) {
+		return false
+	}
+	if !saplingClearVolume(tx, base.Add(cube.Pos{-1, 1, -1}), base.Add(cube.Pos{3, 30, 3}), saplingAllowType(SpruceSapling())) {
 		return false
 	}
 
 	plan := newSaplingTreePlan()
-	height := 14 + r.IntN(7)
+	height := 14 + r.IntN(17)
 	for dx := 0; dx < 2; dx++ {
 		for dz := 0; dz < 2; dz++ {
 			for y := 0; y < height; y++ {
@@ -383,22 +505,12 @@ func growMegaSpruceTree(base cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 			plan.markDirt(base.Add(cube.Pos{dx, -1, dz}))
 		}
 	}
-	for y := height - 6; y <= height+1; y++ {
-		radius := 2
-		if y >= height {
-			radius = 1
-		}
-		for x := -radius; x <= 1+radius; x++ {
-			for z := -radius; z <= 1+radius; z++ {
-				if abs(x) == radius && abs(z) == radius && y < height {
-					continue
-				}
-				plan.setLeaves(base.Add(cube.Pos{x, y, z}), SpruceLeaves())
+	plan.addMegaSpruceCanopy(base, height, SpruceLeaves(), r)
+	for x := -6; x <= 7; x++ {
+		for z := -6; z <= 7; z++ {
+			if x*x+z*z > 49 {
+				continue
 			}
-		}
-	}
-	for x := -2; x <= 3; x++ {
-		for z := -2; z <= 3; z++ {
 			if abs(x-0) <= 1 && abs(z-0) <= 1 {
 				continue
 			}
@@ -413,7 +525,10 @@ func growMegaSpruceTree(base cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 }
 
 func growJungleTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
-	if base, ok := saplingSquare(pos, tx, JungleSapling()); ok && saplingGrowthSquareValid(base, tx) {
+	if base, ok := saplingSquare(pos, tx, JungleSapling()); ok {
+		if !saplingGrowthSquareValid(base, tx) || !jungleBaseClear(tx, base) {
+			return false
+		}
 		return growMegaJungleTree(base, tx, r)
 	}
 	if !saplingClearVolume(tx, pos.Add(cube.Pos{-1, 1, -1}), pos.Add(cube.Pos{1, 3, 1}), nil) {
@@ -428,10 +543,7 @@ func growJungleTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	for y := 0; y < height; y++ {
 		plan.setLog(pos.Add(cube.Pos{0, y, 0}), JungleWood(), cube.Y)
 	}
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height - 1, 0}), 2, JungleLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height, 0}), 2, JungleLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height + 1, 0}), 1, JungleLeaves(), true)
-	plan.setLeaves(pos.Add(cube.Pos{0, height + 2, 0}), JungleLeaves())
+	plan.addSmallTreeCanopy(pos, height, JungleLeaves(), r)
 	plan.markDirt(pos.Side(cube.FaceDown))
 	if !plan.fits(tx) {
 		return false
@@ -441,12 +553,15 @@ func growJungleTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 }
 
 func growMegaJungleTree(base cube.Pos, tx *world.Tx, r *rand.Rand) bool {
-	if !saplingClearVolume(tx, base.Add(cube.Pos{-1, 1, -1}), base.Add(cube.Pos{3, 20, 3}), saplingAllowType(JungleSapling())) {
+	if !jungleBaseClear(tx, base) {
+		return false
+	}
+	if !saplingClearVolume(tx, base.Add(cube.Pos{-1, 1, -1}), base.Add(cube.Pos{3, 32, 3}), saplingAllowType(JungleSapling())) {
 		return false
 	}
 
 	plan := newSaplingTreePlan()
-	height := 11 + r.IntN(10)
+	height := 11 + r.IntN(21)
 	for dx := 0; dx < 2; dx++ {
 		for dz := 0; dz < 2; dz++ {
 			for y := 0; y < height; y++ {
@@ -458,11 +573,11 @@ func growMegaJungleTree(base cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	plan.addLeafDisc(base.Add(cube.Pos{0, height - 1, 0}), 3, JungleLeaves(), false)
 	plan.addLeafDisc(base.Add(cube.Pos{0, height, 0}), 3, JungleLeaves(), false)
 	plan.addLeafDisc(base.Add(cube.Pos{0, height + 1, 0}), 2, JungleLeaves(), false)
-	for i := 0; i < 1+r.IntN(4); i++ {
+	for i := 0; i < 1+r.IntN(6); i++ {
 		dir := cube.Directions()[r.IntN(len(cube.Directions()))]
 		branchStart := base.Add(cube.Pos{0, height - 3 - i, 0})
 		branchEnd := branchStart
-		for j := 0; j < 2+r.IntN(3); j++ {
+		for j := 0; j < 1+r.IntN(6); j++ {
 			branchEnd = branchEnd.Side(dir.Face())
 			plan.setLog(branchEnd, JungleWood(), directionAxis(dir))
 			if j%2 == 1 && branchEnd[1] < base[1]+height+1 {
@@ -490,49 +605,58 @@ func growMegaJungleTree(base cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 }
 
 func growAcaciaTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
-	if !saplingClearVolume(tx, pos.Add(cube.Pos{-1, 1, -1}), pos.Add(cube.Pos{1, 4, 1}), nil) {
+	if !saplingClearVolume(tx, pos.Add(cube.Pos{-1, 1, -1}), pos.Add(cube.Pos{1, 3, 1}), nil) {
 		return false
 	}
-	if !saplingClearVolume(tx, pos.Add(cube.Pos{-2, 4, -2}), pos.Add(cube.Pos{2, 9, 2}), nil) {
+	if !saplingClearVolume(tx, pos.Add(cube.Pos{-2, 3, -2}), pos.Add(cube.Pos{2, 10, 2}), nil) {
 		return false
 	}
 
 	plan := newSaplingTreePlan()
-	height := 7 + r.IntN(3)
+	height := 5 + r.IntN(4)
 	dir := cube.Directions()[r.IntN(len(cube.Directions()))]
-	turnAt := 2 + r.IntN(2)
-	variant := r.IntN(3)
-	for y := 0; y < turnAt; y++ {
-		plan.setLog(pos.Add(cube.Pos{0, y, 0}), AcaciaWood(), cube.Y)
-	}
-	branchBase := pos.Add(cube.Pos{0, turnAt, 0})
-	branchEnd := branchBase
-	for i := 0; i < height-turnAt; i++ {
-		branchEnd = branchEnd.Side(dir.Face())
-		plan.setLog(branchEnd.Add(cube.Pos{0, i, 0}), AcaciaWood(), directionAxis(dir))
-	}
-	top := branchEnd.Add(cube.Pos{0, height - turnAt, 0})
-	plan.setLog(top, AcaciaWood(), cube.Y)
-	plan.addLeafSquare(top, 2, AcaciaLeaves(), true)
-	plan.addLeafSquare(top.Side(cube.FaceUp), 1, AcaciaLeaves(), false)
-	if variant != 0 {
-		otherDir := dir.RotateLeft()
-		if variant == 2 {
-			otherDir = dir.RotateRight()
+	leanStart := 2 + r.IntN(2)
+	leanSteps := 1 + r.IntN(2)
+
+	trunk := pos
+	for y := 0; y < height; y++ {
+		if y >= leanStart && y < leanStart+leanSteps {
+			trunk = trunk.Side(dir.Face())
 		}
-		otherBase := branchBase.Add(cube.Pos{0, 1 + r.IntN(2), 0})
-		otherEnd := otherBase.Side(otherDir.Face())
-		plan.setLog(otherEnd, AcaciaWood(), directionAxis(otherDir))
-		if variant == 1 {
-			plan.setLog(otherEnd.Side(cube.FaceUp), AcaciaWood(), cube.Y)
-			plan.addLeafSquare(otherEnd.Side(cube.FaceUp), 2, AcaciaLeaves(), true)
-		} else {
-			mid := top.Side(cube.FaceUp)
-			plan.setLog(mid, AcaciaWood(), cube.Y)
-			plan.addLeafSquare(otherEnd, 1, AcaciaLeaves(), false)
-			plan.addLeafSquare(mid, 1, AcaciaLeaves(), false)
+		plan.setLog(cube.Pos{trunk[0], pos[1] + y, trunk[2]}, AcaciaWood(), cube.Y)
+	}
+
+	mainTop := cube.Pos{trunk[0], pos[1] + height, trunk[2]}
+	plan.setLog(mainTop, AcaciaWood(), cube.Y)
+	plan.addLeafSquare(mainTop, 2, AcaciaLeaves(), true)
+	plan.addLeafSquare(mainTop.Side(cube.FaceUp), 1, AcaciaLeaves(), false)
+	for _, side := range cube.HorizontalFaces() {
+		if r.IntN(3) == 0 {
+			plan.setLeaves(mainTop.Side(side).Side(cube.FaceUp), AcaciaLeaves())
 		}
 	}
+
+	// Bedrock acacia can occasionally fork into a second canopy.
+	if r.IntN(2) == 0 {
+		secondDir := dir.RotateLeft()
+		if r.IntN(2) == 0 {
+			secondDir = dir.RotateRight()
+		}
+		branchStartY := max(2, height-2-r.IntN(2))
+		second := cube.Pos{pos[0], pos[1] + branchStartY, pos[2]}
+		length := 1 + r.IntN(2)
+		for i := 0; i < length; i++ {
+			second = second.Side(secondDir.Face())
+			axis := directionAxis(secondDir)
+			if i == length-1 {
+				axis = cube.Y
+			}
+			plan.setLog(second, AcaciaWood(), axis)
+		}
+		plan.addLeafSquare(second, 2, AcaciaLeaves(), true)
+		plan.addLeafSquare(second.Side(cube.FaceUp), 1, AcaciaLeaves(), false)
+	}
+
 	plan.markDirt(pos.Side(cube.FaceDown))
 	if !plan.fits(tx) {
 		return false
@@ -614,15 +738,40 @@ func growCherryTree(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	}
 
 	plan := newSaplingTreePlan()
-	height := 7 + r.IntN(3)
+	height := 5 + r.IntN(4)
+	branchStart := 2 + r.IntN(3)
 	for y := 0; y < height; y++ {
 		plan.setLog(pos.Add(cube.Pos{0, y, 0}), CherryWood(), cube.Y)
 	}
-	plan.addLeafDisc(pos.Add(cube.Pos{0, height - 1, 0}), 3, CherryLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{-1, height, 0}), 3, CherryLeaves(), false)
-	plan.addLeafDisc(pos.Add(cube.Pos{1, height, 0}), 3, CherryLeaves(), false)
+	for _, dir := range cube.Directions() {
+		if r.IntN(4) == 0 {
+			continue
+		}
+		branch := pos.Add(cube.Pos{0, branchStart + r.IntN(max(1, height-branchStart)), 0})
+		length := 2 + r.IntN(3)
+		for i := 0; i < length; i++ {
+			branch = branch.Side(dir.Face())
+			plan.setLog(branch, CherryWood(), directionAxis(dir))
+			if i == length-1 || r.IntN(3) == 0 {
+				plan.addLeafDisc(branch, 3, CherryLeaves(), false)
+				plan.addLeafDisc(branch.Side(cube.FaceUp), 2, CherryLeaves(), false)
+				if r.IntN(2) == 0 {
+					plan.addLeafDisc(branch.Side(cube.FaceDown), 2, CherryLeaves(), false)
+				}
+			}
+		}
+	}
+	plan.addLeafDisc(pos.Add(cube.Pos{0, height - 1, 0}), 4, CherryLeaves(), false)
+	plan.addLeafDisc(pos.Add(cube.Pos{0, height, 0}), 4, CherryLeaves(), false)
 	plan.addLeafDisc(pos.Add(cube.Pos{0, height + 1, 0}), 2, CherryLeaves(), false)
-	plan.setLeaves(pos.Add(cube.Pos{0, height + 2, 0}), CherryLeaves())
+	for x := -3; x <= 3; x++ {
+		for z := -3; z <= 3; z++ {
+			if abs(x)+abs(z) < 3 || r.IntN(3) != 0 {
+				continue
+			}
+			plan.setLeaves(pos.Add(cube.Pos{x, height - 2, z}), CherryLeaves())
+		}
+	}
 	plan.markDirt(pos.Side(cube.FaceDown))
 	if !plan.fits(tx) {
 		return false

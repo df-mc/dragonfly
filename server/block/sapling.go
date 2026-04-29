@@ -44,12 +44,16 @@ func (s Sapling) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if !saplingGrowthBaseValid(pos, tx) {
 		return false
 	}
+	if rand.Float64() >= 0.45 {
+		return true
+	}
 	if !s.Aged {
 		s.Aged = true
 		tx.SetBlock(pos, s, nil)
 		return true
 	}
-	return growSaplingTree(pos, tx, s.Type, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())))
+	_ = growSaplingTree(pos, tx, s.Type, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())))
+	return true
 }
 
 // RandomTick ...
