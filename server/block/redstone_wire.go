@@ -131,7 +131,7 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 		neighbourPos := pos.Side(side)
 		neighbour := tx.Block(neighbourPos)
 
-		wirePower = r.maxCurrentStrength(wirePower, neighbourPos, tx)
+		wirePower = maxRedstoneWirePower(tx.Block(neighbourPos), wirePower)
 		blockPower = max(blockPower, tx.RedstonePower(neighbourPos, side, false))
 
 		if side.Axis() == cube.Y {
@@ -140,22 +140,17 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 		}
 
 		if canRedstoneWireStepDown(pos, neighbourPos, neighbour, tx) && !aboveBlocksVerticalTravel {
-			wirePower = r.maxCurrentStrength(wirePower, neighbourPos.Side(cube.FaceUp), tx)
+			wirePower = maxRedstoneWirePower(tx.Block(neighbourPos.Side(cube.FaceUp)), wirePower)
 		}
 		if canRedstoneWireStepDown(neighbourPos.Side(cube.FaceDown), neighbourPos, neighbour, tx) && !blocksRedstoneWireVerticalTravel(neighbour) {
-			wirePower = r.maxCurrentStrength(wirePower, neighbourPos.Side(cube.FaceDown), tx)
+			wirePower = maxRedstoneWirePower(tx.Block(neighbourPos.Side(cube.FaceDown)), wirePower)
 		}
 
 		if _, neighbourSolid := neighbour.Model().(model.Solid); !neighbourSolid {
-			wirePower = r.maxCurrentStrength(wirePower, neighbourPos.Side(cube.FaceDown), tx)
+			wirePower = maxRedstoneWirePower(tx.Block(neighbourPos.Side(cube.FaceDown)), wirePower)
 		}
 	}
 	return max(blockPower, wirePower-1)
-}
-
-// maxCurrentStrength ...
-func (RedstoneWire) maxCurrentStrength(power int, pos cube.Pos, tx *world.Tx) int {
-	return maxRedstoneWirePower(tx.Block(pos), power)
 }
 
 // hasHorizontalRedstoneConnection checks if the dust connects horizontally to redstone wire or a redstone source. It
@@ -174,11 +169,24 @@ func (r RedstoneWire) hasHorizontalRedstoneConnection(pos cube.Pos, tx *world.Tx
 func (r RedstoneWire) connection(pos cube.Pos, face cube.Face, tx *world.Tx) bool {
 	sidePos := pos.Side(face)
 	sideBlock := tx.Block(sidePos)
-	if !blocksRedstoneWireVerticalTravel(tx.Block(pos.Side(cube.FaceUp))) && r.canRunOnTop(tx, sidePos, sideBlock) && r.connectsTo(tx.Block(sidePos.Side(cube.FaceUp)), false) {
+	if r.connectsAbove(pos, sidePos, sideBlock, tx) || r.connectsTo(sideBlock, true) {
 		return true
 	}
+	return r.connectsBelow(sidePos, sideBlock, tx)
+}
+
+// connectsAbove checks if the redstone wire can connect to the block above it.
+func (r RedstoneWire) connectsAbove(pos, sidePos cube.Pos, sideBlock world.Block, tx *world.Tx) bool {
+	if blocksRedstoneWireVerticalTravel(tx.Block(pos.Side(cube.FaceUp))) || !r.canRunOnTop(tx, sidePos, sideBlock) {
+		return false
+	}
+	return r.connectsTo(tx.Block(sidePos.Side(cube.FaceUp)), false)
+}
+
+// connectsBelow checks if the redstone wire can connect to the block below it.
+func (r RedstoneWire) connectsBelow(sidePos cube.Pos, sideBlock world.Block, tx *world.Tx) bool {
 	_, sideSolid := sideBlock.Model().(model.Solid)
-	return r.connectsTo(sideBlock, true) || !sideSolid && r.connectsTo(tx.Block(sidePos.Side(cube.FaceDown)), false)
+	return !sideSolid && r.connectsTo(tx.Block(sidePos.Side(cube.FaceDown)), false)
 }
 
 // connectsTo reports whether a block is part of the redstone wire connection graph. Passive redstone receivers are not
@@ -218,12 +226,12 @@ func canRedstoneWireStepDown(from, side cube.Pos, block world.Block, tx *world.T
 	return true
 }
 
-// TrimMaterial ...
+// TrimMaterial delegates to item.RedstoneWire so the block form stays valid for smithing trim decoding too.
 func (RedstoneWire) TrimMaterial() string {
 	return item.RedstoneWire{}.TrimMaterial()
 }
 
-// MaterialColour ...
+// MaterialColour delegates to item.RedstoneWire to keep trim metadata defined in one place.
 func (RedstoneWire) MaterialColour() string {
 	return item.RedstoneWire{}.MaterialColour()
 }
