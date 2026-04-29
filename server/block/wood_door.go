@@ -1,14 +1,13 @@
 package block
 
 import (
-	"time"
-
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
+	"time"
 )
 
 // WoodDoor is a block that can be used as an openable 1x2 barrier.
@@ -65,63 +64,7 @@ func (d WoodDoor) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// RedstoneUpdate ...
-func (d WoodDoor) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
-	d.checkRedstonePower(pos, tx)
-}
-
-// checkRedstonePower checks if the door should open or close based on redstone power.
-func (d WoodDoor) checkRedstonePower(pos cube.Pos, tx *world.Tx) {
-	powered := d.powered(pos, tx)
-	if powered == d.Open {
-		return
-	}
-
-	d.activate(pos, tx, powered)
-}
-
-// Powered checks if the door is receiving redstone power from any adjacent block.
-func (d WoodDoor) powered(pos cube.Pos, tx *world.Tx) bool {
-	for _, face := range cube.HorizontalFaces() {
-		adjacentPos := pos.Side(face)
-		if tx.RedstonePower(adjacentPos, face, true) > 0 {
-			return true
-		}
-	}
-	otherPos := d.otherHalfPos(pos)
-	for _, face := range cube.HorizontalFaces() {
-		adjacentPos := otherPos.Side(face)
-		if tx.RedstonePower(adjacentPos, face, true) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
-// otherHalfPos returns the position of the matching top or bottom half of the door.
-func (d WoodDoor) otherHalfPos(pos cube.Pos) cube.Pos {
-	return pos.Side(cube.Face(boolByte(!d.Top)))
-}
-
-// activate ...
-func (d WoodDoor) activate(pos cube.Pos, tx *world.Tx, open bool) {
-	d.Open = open
-	tx.SetBlock(pos, d, nil)
-
-	otherPos := d.otherHalfPos(pos)
-	other := tx.Block(otherPos)
-	if door, ok := other.(WoodDoor); ok {
-		door.Open = d.Open
-		tx.SetBlock(otherPos, door, nil)
-	}
-	if d.Open {
-		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
-		return
-	}
-	tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
-}
-
-// UseOnBlock ...
+// UseOnBlock handles the directional placing of doors
 func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	if face != cube.FaceUp {
 		// Doors can only be placed when clicking the top face.
@@ -154,17 +97,25 @@ func (d WoodDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 	place(tx, pos, d, user, ctx)
 	place(tx, pos.Side(cube.FaceUp), WoodDoor{Wood: d.Wood, Facing: d.Facing, Top: true, Right: d.Right}, user, ctx)
 	ctx.CountSub = 1
-
-	if placed(ctx) {
-		d.checkRedstonePower(pos, tx)
-		return true
-	}
-	return false
+	return placed(ctx)
 }
 
 // Activate ...
 func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
-	d.activate(pos, tx, !d.Open)
+	d.Open = !d.Open
+	tx.SetBlock(pos, d, nil)
+
+	otherPos := pos.Side(cube.Face(boolByte(!d.Top)))
+	other := tx.Block(otherPos)
+	if door, ok := other.(WoodDoor); ok {
+		door.Open = d.Open
+		tx.SetBlock(otherPos, door, nil)
+	}
+	if d.Open {
+		tx.PlaySound(pos.Vec3Centre(), sound.DoorOpen{Block: d})
+		return true
+	}
+	tx.PlaySound(pos.Vec3Centre(), sound.DoorClose{Block: d})
 	return true
 }
 
@@ -188,16 +139,10 @@ func (d WoodDoor) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (d WoodDoor) EncodeBlock() (name string, properties map[string]any) {
-	name = "minecraft:" + d.Wood.String() + "_door"
 	if d.Wood == OakWood() {
-		name = "minecraft:wooden_door"
+		return "minecraft:wooden_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 	}
-	return name, map[string]any{
-		"minecraft:cardinal_direction": d.Facing.RotateRight().String(),
-		"door_hinge_bit":               d.Right,
-		"open_bit":                     d.Open,
-		"upper_block_bit":              d.Top,
-	}
+	return "minecraft:" + d.Wood.String() + "_door", map[string]any{"minecraft:cardinal_direction": d.Facing.RotateRight().String(), "door_hinge_bit": d.Right, "open_bit": d.Open, "upper_block_bit": d.Top}
 }
 
 // allDoors returns a list of all door types
