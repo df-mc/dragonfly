@@ -82,14 +82,14 @@ func (d WoodDoor) checkRedstonePower(pos cube.Pos, tx *world.Tx) {
 
 // Powered checks if the door is receiving redstone power from any adjacent block.
 func (d WoodDoor) powered(pos cube.Pos, tx *world.Tx) bool {
-	for _, face := range cube.Faces() {
+	for _, face := range cube.HorizontalFaces() {
 		adjacentPos := pos.Side(face)
 		if tx.RedstonePower(adjacentPos, face, true) > 0 {
 			return true
 		}
 	}
 	otherPos := d.otherHalfPos(pos)
-	for _, face := range cube.Faces() {
+	for _, face := range cube.HorizontalFaces() {
 		adjacentPos := otherPos.Side(face)
 		if tx.RedstonePower(adjacentPos, face, true) > 0 {
 			return true
