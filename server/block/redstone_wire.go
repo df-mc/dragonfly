@@ -66,7 +66,7 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 // NeighbourUpdateTick ...
 func (r RedstoneWire) NeighbourUpdateTick(pos, neighbour cube.Pos, tx *world.Tx) {
 	if pos == neighbour {
-		// Ignore neighbour updates on ourself.
+		// Ignore the self-update sent after this wire's block state changes.
 		return
 	}
 	below := pos.Side(cube.FaceDown)
