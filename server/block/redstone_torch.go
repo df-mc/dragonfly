@@ -56,17 +56,11 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 		return false
 	}
 	if !tx.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, tx) {
-		found := false
-		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceWest, cube.FaceNorth, cube.FaceEast, cube.FaceDown} {
-			if tx.Block(pos.Side(i)).Model().FaceSolid(pos.Side(i), i.Opposite(), tx) {
-				found = true
-				face = i.Opposite()
-				break
-			}
-		}
-		if !found {
+		fallbackFace, ok := findTorchPlacementFace(pos, tx)
+		if !ok {
 			return false
 		}
+		face = fallbackFace
 	}
 	t.Facing = face.Opposite()
 	t.Lit = true
@@ -95,7 +89,7 @@ func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 // schedules state changes.
 func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	currentTick := tx.CurrentTick()
-	if _, burnedOut, recoverable := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
+	if burnedOut, recoverable := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
 		if recoverable {
 			tx.Redstone().ClearTorchBurnout(pos)
 
@@ -119,7 +113,7 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 // This method handles state changes and checks for burnout conditions.
 func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	currentTick := tx.CurrentTick()
-	if tx.Redstone().TorchBurnoutScheduledTick(pos, currentTick) {
+	if burnedOut, _ := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
 		return
 	}
 
@@ -150,9 +144,9 @@ func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx) {
 
 // updateTorchRedstone updates receivers around the torch and behind the block it strongly powers above.
 func updateTorchRedstone(pos cube.Pos, tx *world.Tx) {
-	tx.Redstone().BeginTorchUpdate(pos)
-	defer tx.Redstone().EndTorchUpdate(pos)
-	updateDirectionalRedstone(pos, tx, cube.FaceUp)
+	tx.Redstone().WithActiveTorchUpdate(pos, func() {
+		updateDirectionalRedstone(pos, tx, cube.FaceUp)
+	})
 }
 
 // EncodeItem encodes the redstone torch as an item.
@@ -202,6 +196,26 @@ func (t RedstoneTorch) StrongPower(_ cube.Pos, face cube.Face, _ *world.Tx, _ bo
 // inputStrength returns the redstone power level received by the block the torch is attached to.
 func (t RedstoneTorch) inputStrength(pos cube.Pos, tx *world.Tx) int {
 	return tx.RedstonePower(pos.Side(t.Facing), t.Facing, true)
+}
+
+// redstoneTorchFallbackSides lists the faces to check for placing a redstone torch on a non-solid block.
+var redstoneTorchFallbackSides = [...]cube.Face{
+	cube.FaceSouth,
+	cube.FaceWest,
+	cube.FaceNorth,
+	cube.FaceEast,
+	cube.FaceDown,
+}
+
+// findTorchPlacementFace finds a valid face for placing a redstone torch on a non-solid block.
+// It returns the face the torch should be placed on and whether it was found.
+func findTorchPlacementFace(pos cube.Pos, tx *world.Tx) (cube.Face, bool) {
+	for _, side := range redstoneTorchFallbackSides {
+		if tx.Block(pos.Side(side)).Model().FaceSolid(pos.Side(side), side.Opposite(), tx) {
+			return side.Opposite(), true
+		}
+	}
+	return 0, false
 }
 
 // allRedstoneTorches returns all possible redstone torch block states.

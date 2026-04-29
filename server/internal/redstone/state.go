@@ -29,22 +29,12 @@ type torchBurnout struct {
 
 // TorchBurnoutStatus returns the current transient burnout state for a redstone torch. Expired state-change
 // history is pruned before the state is returned.
-func (s *State) TorchBurnoutStatus(pos cube.Pos, currentTick int64) (exists, burnedOut, recoverable bool) {
+func (s *State) TorchBurnoutStatus(pos cube.Pos, currentTick int64) (burnedOut, recoverable bool) {
 	data, ok := s.pruneTorchBurnoutData(pos, currentTick)
 	if !ok {
-		return false, false, false
+		return false, false
 	}
-	return true, data.burnedOut, len(data.expirationTicks) < torchBurnoutThreshold
-}
-
-// TorchBurnoutScheduledTick prepares burnout state for a redstone torch scheduled tick and reports whether the torch is
-// currently burned out.
-func (s *State) TorchBurnoutScheduledTick(pos cube.Pos, currentTick int64) (burnedOut bool) {
-	data, ok := s.pruneTorchBurnoutData(pos, currentTick)
-	if !ok {
-		return false
-	}
-	return data.burnedOut
+	return data.burnedOut, len(data.expirationTicks) < torchBurnoutThreshold
 }
 
 // PruneTorchBurnout removes idle redstone torch burnout state once all tracked state changes have expired.
@@ -94,21 +84,20 @@ func (s *State) ClearTorchBurnout(pos cube.Pos) {
 	delete(s.torchBurnout, pos)
 }
 
-// BeginTorchUpdate marks redstone propagation as originating from the redstone torch at pos.
-func (s *State) BeginTorchUpdate(pos cube.Pos) {
+// WithActiveTorchUpdate marks redstone propagation as originating from the redstone torch at pos for the duration of fn.
+func (s *State) WithActiveTorchUpdate(pos cube.Pos, fn func()) {
 	if s.activeTorchUpdates == nil {
 		s.activeTorchUpdates = make(map[cube.Pos]int)
 	}
 	s.activeTorchUpdates[pos]++
-}
-
-// EndTorchUpdate clears a redstone propagation origin marker for the redstone torch at pos.
-func (s *State) EndTorchUpdate(pos cube.Pos) {
-	if s.activeTorchUpdates[pos] <= 1 {
-		delete(s.activeTorchUpdates, pos)
-		return
-	}
-	s.activeTorchUpdates[pos]--
+	defer func() {
+		if s.activeTorchUpdates[pos] <= 1 {
+			delete(s.activeTorchUpdates, pos)
+			return
+		}
+		s.activeTorchUpdates[pos]--
+	}()
+	fn()
 }
 
 // MarkTorchSelfTriggeredIfActive marks the next scheduled tick for the redstone torch at pos as self-triggered if the
