@@ -74,7 +74,7 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, neighbour cube.Pos, tx *world.Tx)
 		breakBlock(r, pos, tx)
 		return
 	}
-	r.RedstoneUpdate(pos, tx)
+	updateRedstone(pos, tx)
 }
 
 // RedstoneUpdate ...

@@ -267,6 +267,10 @@ func (n *wireNetwork) shiftQueue() {
 // updateNode processes a node which has had neighbouring redstone wires that have experienced value changes.
 func (n *wireNetwork) updateNode(tx *world.Tx, node *wireNode, layer uint32) {
 	node.visited = true
+	ctx := event.C(tx)
+	if tx.World().Handler().HandleRedstoneUpdate(ctx, node.pos); ctx.Cancelled() {
+		return
+	}
 
 	oldWire := node.block.(RedstoneWire)
 	newWire := n.calculateCurrentChanges(tx, node)
