@@ -21,26 +21,31 @@ type Flat struct {
 // list of block layers placed by the Flat generator. The layers are ordered in a way where the last element in the
 // slice is placed as the bottom-most block of the chunk.
 func NewFlat(biome world.Biome, layers []world.Block) Flat {
+	return NewFlatWithRegistry(biome, layers, world.DefaultBlockRegistry)
+}
+
+// NewFlatWithRegistry creates a new Flat generator using the block registry passed to resolve layers to runtime IDs.
+// Use this constructor when the generator is used in a World with a non-default block registry.
+func NewFlatWithRegistry(biome world.Biome, layers []world.Block, br world.BlockRegistry) Flat {
 	f := Flat{
 		biome:  uint32(biome.EncodeBiome()),
 		layers: make([]uint32, len(layers)),
 		n:      int16(len(layers)),
 	}
 	for i, b := range layers {
-		f.layers[i] = world.BlockRuntimeID(b)
+		f.layers[i] = br.BlockRuntimeID(b)
 	}
 	return f
 }
 
 // GenerateChunk ...
-func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
+func (f Flat) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
 	min, max := int16(chunk.Range().Min()), int16(chunk.Range().Max())
-
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			for y := int16(0); y <= max; y++ {
 				if y < f.n {
-					chunk.SetBlock(x, min+y, z, 0, f.layers[f.n-y-1])
+					chunk.SetBlock(x, min+y, z, 0, f.layers[int(f.n-y-1)])
 				}
 				chunk.SetBiome(x, min+y, z, f.biome)
 			}
