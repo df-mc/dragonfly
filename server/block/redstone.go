@@ -328,7 +328,7 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 		}
 	}
 
-	j := blockPower - 1
+	j := max(blockPower-1, 0)
 	if wirePower > j {
 		j = wirePower
 	}
