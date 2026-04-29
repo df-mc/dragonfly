@@ -152,6 +152,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		if explodable, ok := bl.(Explodable); ok {
 			explodable.Explode(explosionPos, pos, tx, c)
 		} else if breakable, ok := bl.(Breakable); ok {
+			// Match regular breaking so explosion break handlers also observe the block as already gone.
 			tx.SetBlock(pos, nil, nil)
 			breakHandler := breakable.BreakInfo().BreakHandler
 			if breakHandler != nil {

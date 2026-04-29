@@ -47,7 +47,7 @@ func (n Note) DecodeNBT(data map[string]any) any {
 
 // EncodeNBT ...
 func (n Note) EncodeNBT() map[string]any {
-	return map[string]any{"note": byte(n.Pitch), "powered": byte(boolByte(n.Powered))}
+	return map[string]any{"note": byte(n.Pitch), "powered": boolByte(n.Powered)}
 }
 
 // Activate tunes and plays the note block when there is room above it.
@@ -57,7 +57,7 @@ func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *
 	}
 	n.Pitch = (n.Pitch + 1) % 25
 	n.playNote(pos, tx)
-	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
+	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true})
 	return true
 }
 
@@ -72,12 +72,11 @@ func (n Note) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	if powered && n.canPlay(pos, tx) {
 		n.playNote(pos, tx)
 	}
-	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
+	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true})
 	updateAroundRedstone(pos, tx, poweredFaces...)
 }
 
-// canPlay checks if there is room above the note block to play.
-// Returns true if the block above the note block is air.
+// canPlay reports whether the block above the note block is air.
 func (n Note) canPlay(pos cube.Pos, tx *world.Tx) bool {
 	_, ok := tx.Block(pos.Side(cube.FaceUp)).(Air)
 	return ok

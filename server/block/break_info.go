@@ -365,6 +365,7 @@ func breakBlock(b world.Block, pos cube.Pos, tx *world.Tx) {
 }
 
 func breakBlockNoDrops(b world.Block, pos cube.Pos, tx *world.Tx) {
+	// Clear the block first so neighbour-sensitive break handlers observe the post-break world state.
 	tx.SetBlock(pos, nil, nil)
 	if breakable, ok := b.(Breakable); ok {
 		breakHandler := breakable.BreakInfo().BreakHandler
