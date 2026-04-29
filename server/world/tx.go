@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/internal/redstone"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -309,6 +310,19 @@ func (tx *Tx) World() *World {
 		panic("world.Tx: use of transaction after transaction finishes is not permitted")
 	}
 	return tx.w
+}
+
+// CurrentTick returns the current tick of the transaction's world.
+func (tx *Tx) CurrentTick() int64 {
+	w := tx.World()
+	w.set.Lock()
+	defer w.set.Unlock()
+	return w.set.CurrentTick
+}
+
+// Redstone returns the transient redstone runtime state owned by the transaction's world.
+func (tx *Tx) Redstone() *redstone.State {
+	return &tx.World().redstone
 }
 
 // close finishes the Tx, causing any following call on the Tx to panic.

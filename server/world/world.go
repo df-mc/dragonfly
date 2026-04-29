@@ -14,6 +14,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
+	"github.com/df-mc/dragonfly/server/internal/redstone"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb"
@@ -65,6 +66,8 @@ type World struct {
 	// be removed from the map.
 	scheduledUpdates *scheduledTickQueue
 	neighbourUpdates []neighbourUpdate
+
+	redstone redstone.State
 
 	viewerMu sync.Mutex
 	viewers  map[*Loader]Viewer

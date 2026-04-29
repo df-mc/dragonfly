@@ -2,7 +2,6 @@ package block
 
 import (
 	"math/rand/v2"
-	"sync"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -10,34 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-)
-
-// burnoutKey uniquely identifies a torch position within a specific world.
-type burnoutKey struct {
-	world *world.World
-	dim   world.Dimension
-	pos   cube.Pos
-}
-
-// redstoneTorchBurnoutData stores burnout tracking data indexed by world and block position.
-var (
-	redstoneTorchBurnoutData   = make(map[burnoutKey]*burnoutData)
-	redstoneTorchBurnoutDataMu sync.RWMutex
-)
-
-// burnoutData holds the burnout state and state change history for a redstone torch.
-type burnoutData struct {
-	gameTicks []int64
-	burnedOut bool
-	mu        sync.RWMutex
-}
-
-const (
-	// BurnoutThreshold is the maximum number of state changes allowed before burnout occurs.
-	BurnoutThreshold = 8
-	// BurnoutTimeout is the time window (in game ticks) during which state changes are counted.
-	// 60 game ticks equals 3 seconds of game time.
-	BurnoutTimeout = 60
 )
 
 // RedstoneTorch is a non-solid block that emits light and provides a full-strength redstone signal when lit.
@@ -49,104 +20,6 @@ type RedstoneTorch struct {
 	Facing cube.Face
 	// Lit indicates whether the redstone torch is currently lit and emitting power.
 	Lit bool
-}
-
-// getBurnoutData retrieves or creates burnout tracking data for the given position and world.
-func getBurnoutData(pos cube.Pos, w *world.World) *burnoutData {
-	key := newBurnoutKey(pos, w)
-
-	redstoneTorchBurnoutDataMu.RLock()
-	data, exists := redstoneTorchBurnoutData[key]
-	redstoneTorchBurnoutDataMu.RUnlock()
-
-	if exists {
-		return data
-	}
-
-	redstoneTorchBurnoutDataMu.Lock()
-	defer redstoneTorchBurnoutDataMu.Unlock()
-
-	if d, ok := redstoneTorchBurnoutData[key]; ok {
-		return d
-	}
-
-	data = &burnoutData{
-		gameTicks: make([]int64, 0, BurnoutThreshold+1),
-		burnedOut: false,
-	}
-	redstoneTorchBurnoutData[key] = data
-	return data
-}
-
-// existingBurnoutData returns burnout data for a torch without creating a new map entry.
-func existingBurnoutData(pos cube.Pos, w *world.World) (*burnoutData, bool) {
-	redstoneTorchBurnoutDataMu.RLock()
-	data, ok := redstoneTorchBurnoutData[newBurnoutKey(pos, w)]
-	redstoneTorchBurnoutDataMu.RUnlock()
-	return data, ok
-}
-
-// newBurnoutKey returns the map key used for a torch's transient burnout state.
-func newBurnoutKey(pos cube.Pos, w *world.World) burnoutKey {
-	return burnoutKey{world: w, dim: w.Dimension(), pos: pos}
-}
-
-// removeBurnoutData cleans up burnout tracking data for the given position and world.
-func removeBurnoutData(pos cube.Pos, w *world.World) {
-	redstoneTorchBurnoutDataMu.Lock()
-	defer redstoneTorchBurnoutDataMu.Unlock()
-	delete(redstoneTorchBurnoutData, newBurnoutKey(pos, w))
-}
-
-// countStateChange records a new state change with an expiration time.
-func (data *burnoutData) countStateChange(currentTime int64, timeout int64) {
-	data.mu.Lock()
-	defer data.mu.Unlock()
-
-	expirationTime := currentTime + timeout
-	data.gameTicks = append(data.gameTicks, expirationTime)
-}
-
-// counter returns the number of active non-expired state changes.
-func (data *burnoutData) counter(currentTime int64) int {
-	data.mu.RLock()
-	defer data.mu.RUnlock()
-
-	count := 0
-	for _, expirationTime := range data.gameTicks {
-		if expirationTime >= currentTime {
-			count++
-		}
-	}
-	return count
-}
-
-// removeExpired removes expired state change entries and returns the number of entries that remain.
-func (data *burnoutData) removeExpired(currentTime int64) int {
-	data.mu.Lock()
-	defer data.mu.Unlock()
-
-	newGameTicks := make([]int64, 0, len(data.gameTicks))
-	for _, expirationTime := range data.gameTicks {
-		if expirationTime >= currentTime {
-			newGameTicks = append(newGameTicks, expirationTime)
-		}
-	}
-	data.gameTicks = newGameTicks
-	return len(data.gameTicks)
-}
-
-// pruneBurnoutData removes an idle burnout entry after all tracked state changes have expired.
-func pruneBurnoutData(pos cube.Pos, w *world.World, data *burnoutData, currentTime int64) {
-	remaining := data.removeExpired(currentTime)
-
-	data.mu.RLock()
-	burnedOut := data.burnedOut
-	data.mu.RUnlock()
-
-	if remaining == 0 && !burnedOut {
-		removeBurnoutData(pos, w)
-	}
 }
 
 // HasLiquidDrops returns whether the redstone torch drops its item when flowing liquid breaks it.
@@ -165,7 +38,7 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 // BreakInfo returns information about breaking the redstone torch.
 func (t RedstoneTorch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
-		removeBurnoutData(pos, tx.World())
+		tx.Redstone().ClearTorchBurnout(pos)
 		updateAroundRedstone(pos, tx)
 	})
 }
@@ -210,7 +83,7 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 // NeighbourUpdateTick is called when a neighboring block is updated.
 func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
-		removeBurnoutData(pos, tx.World())
+		tx.Redstone().ClearTorchBurnout(pos)
 		breakBlock(t, pos, tx)
 		updateDirectionalRedstone(pos, tx, t.Facing.Opposite())
 	}
@@ -219,28 +92,17 @@ func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 // RedstoneUpdate is called when the redstone power state changes nearby.
 // This method handles burnout recovery and schedules state changes.
 func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
-	w := tx.World()
-	currentTime := int64(w.Time())
+	currentTick := tx.CurrentTick()
+	if _, burnedOut, recoverable := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
+		if recoverable {
+			tx.Redstone().ClearTorchBurnout(pos)
 
-	if data, ok := existingBurnoutData(pos, w); ok {
-		pruneBurnoutData(pos, w, data, currentTime)
-
-		data.mu.RLock()
-		isBurnedOut := data.burnedOut
-		data.mu.RUnlock()
-
-		if isBurnedOut {
-			counter := data.counter(currentTime)
-			if counter < BurnoutThreshold {
-				removeBurnoutData(pos, w)
-
-				shouldBeLit := t.inputStrength(pos, tx) == 0
-				t.Lit = shouldBeLit
-				tx.SetBlock(pos, t, nil)
-				updateAroundRedstone(pos, tx)
-			}
-			return
+			shouldBeLit := t.inputStrength(pos, tx) == 0
+			t.Lit = shouldBeLit
+			tx.SetBlock(pos, t, nil)
+			updateAroundRedstone(pos, tx)
 		}
+		return
 	}
 
 	shouldBeLit := t.inputStrength(pos, tx) == 0
@@ -253,30 +115,19 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 // ScheduledTick is called when a scheduled block update occurs.
 // This method handles state changes and checks for burnout conditions.
 func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
-	w := tx.World()
-	data := getBurnoutData(pos, w)
-	currentTime := int64(w.Time())
-	data.removeExpired(currentTime)
-
-	data.mu.RLock()
-	isBurnedOut := data.burnedOut
-	data.mu.RUnlock()
-
-	if isBurnedOut {
+	currentTick := tx.CurrentTick()
+	if tx.Redstone().TorchBurnoutScheduledTick(pos, currentTick) {
 		return
 	}
 
 	shouldBeLit := t.inputStrength(pos, tx) == 0
 	if shouldBeLit == t.Lit {
-		pruneBurnoutData(pos, w, data, currentTime)
+		tx.Redstone().PruneTorchBurnout(pos, currentTick)
 		return
 	}
 
-	data.countStateChange(currentTime, BurnoutTimeout)
-
-	counter := data.counter(currentTime)
-	if counter > BurnoutThreshold {
-		t.burnOut(pos, tx, data)
+	if tx.Redstone().RecordTorchStateChange(pos, currentTick) {
+		t.burnOut(pos, tx)
 		return
 	}
 
@@ -286,11 +137,8 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 }
 
 // burnOut puts the redstone torch into burnout state, turning it off and playing effects.
-func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx, data *burnoutData) {
-	data.mu.Lock()
-	data.burnedOut = true
-	data.mu.Unlock()
-
+func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx) {
+	tx.Redstone().BurnOutTorch(pos)
 	t.Lit = false
 	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 	tx.SetBlock(pos, t, nil)
