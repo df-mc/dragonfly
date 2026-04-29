@@ -101,6 +101,13 @@ type Conductor interface {
 	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
 }
 
+// RedstoneUpdater represents a block that reacts to nearby redstone power changes.
+type RedstoneUpdater interface {
+	Block
+	// RedstoneUpdate is called when a change in redstone signal is computed.
+	RedstoneUpdate(pos cube.Pos, tx *Tx)
+}
+
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
 // runtime IDs. It is used to look up a block's runtime ID quickly.
 var (

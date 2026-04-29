@@ -9,12 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// RedstoneUpdater represents a block that can be updated through a change in redstone signal.
-type RedstoneUpdater interface {
-	// RedstoneUpdate is called when a change in redstone signal is computed.
-	RedstoneUpdate(pos cube.Pos, tx *world.Tx)
-}
-
 // wireNetwork implements a minimally-invasive bolt-on accelerator that performs a breadth-first search through redstone
 // wires in order to more efficiently and compute new redstone wire power levels and determine the order in which other
 // blocks should be updated. This implementation is heavily based off of RedstoneWireTurbo and MCHPRS.
@@ -106,8 +100,11 @@ func updateReceiversAroundPoweredBlock(pos cube.Pos, tx *world.Tx, ignoredFaces 
 }
 
 // updateRedstone dispatches a cancellable redstone update to the block at pos, if it handles redstone updates.
+// Prefer updateRedstone over calling RedstoneUpdate directly so HandleRedstoneUpdate gets a chance to observe
+// and optionally cancel the update. Direct RedstoneUpdate calls are reserved for internal state initialisation
+// (e.g. seeding a freshly placed block) where handler cancellation isn't appropriate.
 func updateRedstone(pos cube.Pos, tx *world.Tx) {
-	r, ok := tx.Block(pos).(RedstoneUpdater)
+	r, ok := tx.Block(pos).(world.RedstoneUpdater)
 	if !ok {
 		return
 	}
