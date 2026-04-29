@@ -46,8 +46,7 @@ const (
 // triggered. This is the main entry point for the redstone update algorithm.
 func updateStrongRedstone(pos cube.Pos, tx *world.Tx) {
 	n := &wireNetwork{
-		nodeCache:   make(map[cube.Pos]*wireNode),
-		updateQueue: [3][]*wireNode{},
+		nodeCache: make(map[cube.Pos]*wireNode),
 	}
 
 	root := &wireNode{
@@ -65,6 +64,7 @@ func updateStrongRedstone(pos cube.Pos, tx *world.Tx) {
 // updateAroundRedstone updates redstone components around the given center position. It will also ignore any faces
 // provided within the ignoredFaces parameter. This implementation is based off of RedstoneCircuit and Java 1.19.
 func updateAroundRedstone(centre cube.Pos, tx *world.Tx, ignoredFaces ...cube.Face) {
+	// Order matches Java 1.19's RedstoneCircuit traversal.
 	for _, face := range []cube.Face{
 		cube.FaceWest,
 		cube.FaceEast,
@@ -108,11 +108,17 @@ func updateRedstone(pos cube.Pos, tx *world.Tx) {
 	if !ok {
 		return
 	}
-	ctx := event.C(tx)
-	if tx.World().Handler().HandleRedstoneUpdate(ctx, pos); ctx.Cancelled() {
+	if redstoneUpdateCancelled(pos, tx) {
 		return
 	}
 	r.RedstoneUpdate(pos, tx)
+}
+
+// redstoneUpdateCancelled checks if the redstone update has been cancelled by the HandleRedstoneUpdate handler.
+func redstoneUpdateCancelled(pos cube.Pos, tx *world.Tx) bool {
+	ctx := event.C(tx)
+	tx.World().Handler().HandleRedstoneUpdate(ctx, pos)
+	return ctx.Cancelled()
 }
 
 // updateDirectionalRedstone updates redstone components through the given face. This implementation is based off of
@@ -126,10 +132,10 @@ func updateDirectionalRedstone(pos cube.Pos, tx *world.Tx, face cube.Face) {
 // the graph. After that, based on what nodes in the graph have been visited, the neighbours are reordered left-to-right
 // relative to the direction of information flow.
 func (n *wireNetwork) identifyNeighbours(tx *world.Tx, node *wireNode) {
-	neighbours := computeRedstoneNeighbours(node.pos)
-	neighboursVisited := make([]bool, 0, 24)
-	neighbourNodes := make([]*wireNode, 0, 24)
-	for _, neighbourPos := range neighbours {
+	var neighboursVisited [24]bool
+	var neighbourNodes [24]*wireNode
+	for i, offset := range redstoneNeighbourOffsets {
+		neighbourPos := node.pos.Add(offset)
 		neighbour, ok := n.nodeCache[neighbourPos]
 		if !ok {
 			neighbour = &wireNode{
@@ -139,9 +145,8 @@ func (n *wireNetwork) identifyNeighbours(tx *world.Tx, node *wireNode) {
 			n.nodeCache[neighbourPos] = neighbour
 			n.nodes = append(n.nodes, neighbour)
 		}
-
-		neighbourNodes = append(neighbourNodes, neighbour)
-		neighboursVisited = append(neighboursVisited, neighbour.visited)
+		neighbourNodes[i] = neighbour
+		neighboursVisited[i] = neighbour.visited
 	}
 
 	fromWest := neighboursVisited[0] || neighboursVisited[7] || neighboursVisited[8]
@@ -189,9 +194,46 @@ func (n *wireNetwork) identifyNeighbours(tx *world.Tx, node *wireNode) {
 	n.orientNeighbours(neighbourNodes, node, heading)
 }
 
-// reordering contains lookup tables that completely remap neighbour positions into a left-to-right ordering, based on
-// the cardinal direction that is determined to be forward.
-var redstoneReordering = [][]uint32{
+// redstoneNeighbourOffsets lists the 24 positions visited around a redstone wire node: the 6 immediate neighbours
+// followed by the unique neighbours-of-neighbours, in the order west, east, down, up, north, south. The fixed
+// indices here are referenced directly by identifyNeighbours and the redstoneReordering tables below.
+var redstoneNeighbourOffsets = [...]cube.Pos{
+	// Immediate neighbours, in the order of west, east, down, up, north, and south.
+	{-1, 0, 0},
+	{1, 0, 0},
+	{0, -1, 0},
+	{0, 1, 0},
+	{0, 0, -1},
+	{0, 0, 1},
+
+	// Neighbours of neighbours, in the same order, except that duplicates are omitted.
+	{-2, 0, 0},
+	{-1, -1, 0},
+	{-1, 1, 0},
+	{-1, 0, -1},
+	{-1, 0, 1},
+
+	{2, 0, 0},
+	{1, -1, 0},
+	{1, 1, 0},
+	{1, 0, -1},
+	{1, 0, 1},
+
+	{0, -2, 0},
+	{0, -1, -1},
+	{0, -1, 1},
+
+	{0, 2, 0},
+	{0, 1, -1},
+	{0, 1, 1},
+
+	{0, 0, -2},
+	{0, 0, 2},
+}
+
+// redstoneReordering contains lookup tables that completely remap neighbour positions into a left-to-right ordering,
+// based on the cardinal direction that is determined to be forward.
+var redstoneReordering = [...][24]uint32{
 	{2, 3, 16, 19, 0, 4, 1, 5, 7, 8, 17, 20, 12, 13, 18, 21, 6, 9, 22, 14, 11, 10, 23, 15},
 	{2, 3, 16, 19, 4, 1, 5, 0, 17, 20, 12, 13, 18, 21, 7, 8, 22, 14, 11, 15, 23, 9, 6, 10},
 	{2, 3, 16, 19, 1, 5, 0, 4, 12, 13, 18, 21, 7, 8, 17, 20, 11, 15, 23, 10, 6, 14, 22, 9},
@@ -199,11 +241,11 @@ var redstoneReordering = [][]uint32{
 }
 
 // orientNeighbours reorders the neighbours of a node based on the direction that is determined to be forward.
-func (n *wireNetwork) orientNeighbours(src []*wireNode, dst *wireNode, heading uint32) {
+func (n *wireNetwork) orientNeighbours(src [24]*wireNode, dst *wireNode, heading uint32) {
 	dst.oriented = true
 	dst.neighbours = make([]*wireNode, 0, 24)
 	for _, i := range redstoneReordering[heading] {
-		dst.neighbours = append(dst.neighbours, (src)[i])
+		dst.neighbours = append(dst.neighbours, src[i])
 	}
 }
 
@@ -264,18 +306,16 @@ func (n *wireNetwork) shiftQueue() {
 // updateNode processes a node which has had neighbouring redstone wires that have experienced value changes.
 func (n *wireNetwork) updateNode(tx *world.Tx, node *wireNode, layer uint32) {
 	node.visited = true
-	ctx := event.C(tx)
-	if tx.World().Handler().HandleRedstoneUpdate(ctx, node.pos); ctx.Cancelled() {
+	if redstoneUpdateCancelled(node.pos, tx) {
 		return
 	}
 
-	oldWire := node.block.(RedstoneWire)
-	newWire := n.calculateCurrentChanges(tx, node)
-	if oldWire.Power != newWire.Power {
-		node.block = newWire
-
-		n.propagateChanges(tx, node, layer)
+	newWire, changed := n.calculateCurrentChanges(tx, node)
+	if !changed {
+		return
 	}
+	node.block = newWire
+	n.propagateChanges(tx, node, layer)
 }
 
 var (
@@ -286,7 +326,8 @@ var (
 
 // calculateCurrentChanges computes redstone wire power levels from neighboring blocks. Modifications cut the number of
 // power level changes by about 45% from vanilla, and also synergies well with the breadth-first search implementation.
-func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) RedstoneWire {
+// It returns the new redstone wire block and a boolean indicating whether the power level changed.
+func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) (RedstoneWire, bool) {
 	wire := node.block.(RedstoneWire)
 	i := wire.Power
 
@@ -330,11 +371,12 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 
 	j := max(blockPower-1, 0, wirePower)
 
-	if i != j {
-		wire.Power = j
-		tx.SetBlock(node.pos, wire, &world.SetOpts{DisableBlockUpdates: true})
+	if i == j {
+		return wire, false
 	}
-	return wire
+	wire.Power = j
+	tx.SetBlock(node.pos, wire, &world.SetOpts{DisableBlockUpdates: true})
+	return wire, true
 }
 
 // maxRedstoneWirePower returns the greater of strength and the power level of b if it is redstone wire.
@@ -343,44 +385,6 @@ func maxRedstoneWirePower(b world.Block, strength int) int {
 		return max(wire.Power, strength)
 	}
 	return strength
-}
-
-// computeRedstoneNeighbours computes the neighbours of a redstone wire node, ignoring neighbours that don't necessarily
-// need to be updated, but are in vanilla.
-func computeRedstoneNeighbours(pos cube.Pos) []cube.Pos {
-	return []cube.Pos{
-		// Immediate neighbours, in the order of west, east, down, up, north, and finally south.
-		pos.Side(cube.FaceWest),
-		pos.Side(cube.FaceEast),
-		pos.Side(cube.FaceDown),
-		pos.Side(cube.FaceUp),
-		pos.Side(cube.FaceNorth),
-		pos.Side(cube.FaceSouth),
-
-		// Neighbours of neighbours, in the same order, except that duplicates are not included.
-		pos.Side(cube.FaceWest).Side(cube.FaceWest),
-		pos.Side(cube.FaceWest).Side(cube.FaceDown),
-		pos.Side(cube.FaceWest).Side(cube.FaceUp),
-		pos.Side(cube.FaceWest).Side(cube.FaceNorth),
-		pos.Side(cube.FaceWest).Side(cube.FaceSouth),
-
-		pos.Side(cube.FaceEast).Side(cube.FaceEast),
-		pos.Side(cube.FaceEast).Side(cube.FaceDown),
-		pos.Side(cube.FaceEast).Side(cube.FaceUp),
-		pos.Side(cube.FaceEast).Side(cube.FaceNorth),
-		pos.Side(cube.FaceEast).Side(cube.FaceSouth),
-
-		pos.Side(cube.FaceDown).Side(cube.FaceDown),
-		pos.Side(cube.FaceDown).Side(cube.FaceNorth),
-		pos.Side(cube.FaceDown).Side(cube.FaceSouth),
-
-		pos.Side(cube.FaceUp).Side(cube.FaceUp),
-		pos.Side(cube.FaceUp).Side(cube.FaceNorth),
-		pos.Side(cube.FaceUp).Side(cube.FaceSouth),
-
-		pos.Side(cube.FaceNorth).Side(cube.FaceNorth),
-		pos.Side(cube.FaceSouth).Side(cube.FaceSouth),
-	}
 }
 
 // computeRedstoneHeading computes the cardinal direction that is "forward" given which redstone wires have been visited
