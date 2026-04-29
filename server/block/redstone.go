@@ -325,6 +325,9 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 					blockPower = n.maxCurrentStrength(neighbourDown, blockPower)
 				}
 			}
+			if blockPower == 15 {
+				break
+			}
 		}
 	}
 
