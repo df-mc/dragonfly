@@ -86,6 +86,22 @@ func updateAroundRedstone(centre cube.Pos, tx *world.Tx, ignoredFaces ...cube.Fa
 		updateRedstone(pos, tx)
 		updateRedstone(pos.Side(cube.FaceUp), tx)
 		updateRedstone(pos.Side(cube.FaceDown), tx)
+		updateReceiversAroundPoweredBlock(pos, tx, face.Opposite())
+	}
+}
+
+// updateReceiversAroundPoweredBlock updates redstone receivers directly adjacent to an indirectly powered solid block.
+// This keeps mechanisms behind the powered block in sync without walking corner positions around the original update.
+// For example, this covers the following vertical path: torch -> stone -> note block.
+func updateReceiversAroundPoweredBlock(pos cube.Pos, tx *world.Tx, ignoredFaces ...cube.Face) {
+	if _, ok := tx.Block(pos).Model().(model.Solid); !ok {
+		return
+	}
+	for _, face := range cube.Faces() {
+		if slices.Contains(ignoredFaces, face) || tx.RedstonePower(pos, face, true) == 0 {
+			continue
+		}
+		updateRedstone(pos.Side(face), tx)
 	}
 }
 
@@ -287,14 +303,15 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 		centerUp := node.neighbours[1].block
 		_, centerUpSolid := centerUp.Model().(model.Solid)
 		for m := 0; m < 4; m++ {
-			neighbour := node.neighbours[rsNeighbours[m]].block
-			_, neighbourSolid := neighbour.Model().(model.Solid)
+			neighbour := node.neighbours[rsNeighbours[m]]
+			neighbourBlock := neighbour.block
+			_, neighbourSolid := neighbourBlock.Model().(model.Solid)
 
-			blockPower = n.maxCurrentStrength(neighbour, blockPower)
+			blockPower = n.maxCurrentStrength(neighbourBlock, blockPower)
 			if !neighbourSolid {
 				neighbourDown := node.neighbours[rsNeighboursDn[m]].block
 				blockPower = n.maxCurrentStrength(neighbourDown, blockPower)
-			} else if d, ok := neighbour.(LightDiffuser); (!ok || d.LightDiffusionLevel() == 15) && !centerUpSolid {
+			} else if canRedstoneWireStepDown(node.pos, neighbour.pos, neighbourBlock, tx) && !centerUpSolid {
 				neighbourUp := node.neighbours[rsNeighboursUp[m]].block
 				blockPower = n.maxCurrentStrength(neighbourUp, blockPower)
 			}

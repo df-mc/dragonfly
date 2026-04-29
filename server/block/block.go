@@ -53,6 +53,14 @@ type LightDiffuser interface {
 	LightDiffusionLevel() uint8
 }
 
+// RedstoneWireStepDowner represents a block with custom behaviour for redstone wire providing power when travelling
+// down it.
+type RedstoneWireStepDowner interface {
+	// CanRedstoneWireStepDown returns whether redstone wire may provide power while travelling down the block at
+	// pos from the wire position passed.
+	CanRedstoneWireStepDown(pos, from cube.Pos, tx *world.Tx) bool
+}
+
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,
 // which may be replaced by clicking it with another block.
 type Replaceable interface {

@@ -67,6 +67,11 @@ func (Hopper) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
+// CanRedstoneWireStepDown ...
+func (Hopper) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
+}
+
 // BreakInfo ...
 func (h Hopper) BreakInfo() BreakInfo {
 	return newBreakInfo(3, pickaxeHarvestable, pickaxeEffective, oneOf(Hopper{})).withBlastResistance(24).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
