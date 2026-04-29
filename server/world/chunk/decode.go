@@ -87,7 +87,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %w", err)
 	}
-	sub := NewSubChunk(c.br)
+	sub := NewSubChunk(c.air)
 	switch ver {
 	default:
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)

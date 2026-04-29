@@ -33,14 +33,15 @@ type Chunk struct {
 func New(br BlockRegistry, r cube.Range) *Chunk {
 	n := (r.Height() >> 4) + 1
 	sub, biomes := make([]*SubChunk, n), make([]*PalettedStorage, n)
+	air := br.AirRuntimeID()
 	for i := 0; i < n; i++ {
-		sub[i] = NewSubChunk(br)
+		sub[i] = NewSubChunk(air)
 		biomes[i] = emptyStorage(0)
 	}
 	return &Chunk{
 		r:                    r,
 		br:                   br,
-		air:                  br.AirRuntimeID(),
+		air:                  air,
 		sub:                  sub,
 		biomes:               biomes,
 		recalculateHeightMap: true,

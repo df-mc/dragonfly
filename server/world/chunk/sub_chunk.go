@@ -24,9 +24,9 @@ func (sub *SubChunk) Equals(s *SubChunk) bool {
 	return true
 }
 
-// NewSubChunk creates a new sub chunk. All sub chunks should be created through this function
-func NewSubChunk(br BlockRegistry) *SubChunk {
-	return &SubChunk{air: br.AirRuntimeID()}
+// NewSubChunk creates a new sub chunk. All sub chunks should be created through this function.
+func NewSubChunk(air uint32) *SubChunk {
+	return &SubChunk{air: air}
 }
 
 // Empty checks if the SubChunk is considered empty. This is the case if the SubChunk has 0 block storages or if it has
