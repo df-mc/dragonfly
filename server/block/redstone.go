@@ -303,23 +303,23 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 	if wirePower < 15 {
 		centerUp := node.neighbours[1].block
 		centerUpBlocksVerticalTravel := blocksRedstoneWireVerticalTravel(centerUp)
-		for m := 0; m < 4; m++ {
+		for m := range 4 {
 			neighbour := node.neighbours[rsNeighbours[m]]
 			neighbourBlock := neighbour.block
 			_, neighbourSolid := neighbourBlock.Model().(model.Solid)
 
-			blockPower = n.maxCurrentStrength(neighbourBlock, blockPower)
+			blockPower = maxRedstoneWirePower(neighbourBlock, blockPower)
 			if !neighbourSolid {
 				neighbourDown := node.neighbours[rsNeighboursDn[m]].block
-				blockPower = n.maxCurrentStrength(neighbourDown, blockPower)
+				blockPower = maxRedstoneWirePower(neighbourDown, blockPower)
 			} else {
 				if canRedstoneWireStepDown(node.pos, neighbour.pos, neighbourBlock, tx) && !centerUpBlocksVerticalTravel {
 					neighbourUp := node.neighbours[rsNeighboursUp[m]].block
-					blockPower = n.maxCurrentStrength(neighbourUp, blockPower)
+					blockPower = maxRedstoneWirePower(neighbourUp, blockPower)
 				}
 				if canRedstoneWireStepDown(neighbour.pos.Side(cube.FaceDown), neighbour.pos, neighbourBlock, tx) && !blocksRedstoneWireVerticalTravel(neighbourBlock) {
 					neighbourDown := node.neighbours[rsNeighboursDn[m]].block
-					blockPower = n.maxCurrentStrength(neighbourDown, blockPower)
+					blockPower = maxRedstoneWirePower(neighbourDown, blockPower)
 				}
 			}
 			if blockPower == 15 {
@@ -328,21 +328,13 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 		}
 	}
 
-	j := max(blockPower-1, 0)
-	if wirePower > j {
-		j = wirePower
-	}
+	j := max(blockPower-1, 0, wirePower)
 
 	if i != j {
 		wire.Power = j
 		tx.SetBlock(node.pos, wire, &world.SetOpts{DisableBlockUpdates: true})
 	}
 	return wire
-}
-
-// maxCurrentStrength computes a redstone wire's power level based on a cached state.
-func (n *wireNetwork) maxCurrentStrength(neighbour world.Block, strength int) int {
-	return maxRedstoneWirePower(neighbour, strength)
 }
 
 // maxRedstoneWirePower returns the greater of strength and the power level of b if it is redstone wire.

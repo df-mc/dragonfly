@@ -9,8 +9,8 @@ import (
 )
 
 // RedstoneWire is a block that is used to transfer a charge between objects. Charged objects can be used to open doors
-// or activate certain items. This block is the placed form of redstone which can be found by mining Redstone Ore with
-// an Iron Pickaxe or better. Deactivated redstone wire will appear dark red, but activated redstone wire will appear
+// or activate certain items. This block is the placed form of redstone which can be found by mining redstone ore with
+// an iron pickaxe or better. Deactivated redstone wire will appear dark red, but activated redstone wire will appear
 // bright red with a sparkling particle effect.
 type RedstoneWire struct {
 	empty
@@ -230,7 +230,7 @@ func (RedstoneWire) MaterialColour() string {
 
 // allRedstoneWires returns a list of all redstone dust states.
 func allRedstoneWires() (all []world.Block) {
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		all = append(all, RedstoneWire{Power: i})
 	}
 	return

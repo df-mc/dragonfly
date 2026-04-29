@@ -39,7 +39,7 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 func (t RedstoneTorch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		tx.Redstone().ClearTorchBurnout(pos)
-		updateAroundRedstone(pos, tx)
+		updateTorchRedstone(pos, tx)
 	})
 }
 
@@ -73,8 +73,9 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 
 	place(tx, pos, t, user, ctx)
 	if placed(ctx) {
+		// Initialise the freshly placed torch state before propagating its output.
 		t.RedstoneUpdate(pos, tx)
-		updateAroundRedstone(pos, tx)
+		updateTorchRedstone(pos, tx)
 		return true
 	}
 	return false
@@ -85,12 +86,13 @@ func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
 		tx.Redstone().ClearTorchBurnout(pos)
 		breakBlock(t, pos, tx)
-		updateDirectionalRedstone(pos, tx, t.Facing.Opposite())
+		return
 	}
+	updateRedstone(pos, tx)
 }
 
-// RedstoneUpdate is called when the redstone power state changes nearby.
-// This method handles burnout recovery and schedules state changes.
+// RedstoneUpdate is called when the redstone power state changes nearby. This method handles burnout recovery and
+// schedules state changes.
 func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	currentTick := tx.CurrentTick()
 	if _, burnedOut, recoverable := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
@@ -100,7 +102,7 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 			shouldBeLit := t.inputStrength(pos, tx) == 0
 			t.Lit = shouldBeLit
 			tx.SetBlock(pos, t, nil)
-			updateAroundRedstone(pos, tx)
+			updateTorchRedstone(pos, tx)
 		}
 		return
 	}
@@ -109,6 +111,7 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	if shouldBeLit == t.Lit {
 		return
 	}
+	tx.Redstone().MarkTorchSelfTriggeredIfActive(pos)
 	tx.ScheduleBlockUpdate(pos, t, time.Millisecond*100)
 }
 
@@ -126,14 +129,14 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 		return
 	}
 
-	if tx.Redstone().RecordTorchStateChange(pos, currentTick) {
+	if tx.Redstone().RecordTorchToggle(pos, currentTick) {
 		t.burnOut(pos, tx)
 		return
 	}
 
 	t.Lit = !t.Lit
 	tx.SetBlock(pos, t, nil)
-	updateAroundRedstone(pos, tx)
+	updateTorchRedstone(pos, tx)
 }
 
 // burnOut puts the redstone torch into burnout state, turning it off and playing effects.
@@ -142,7 +145,14 @@ func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx) {
 	t.Lit = false
 	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 	tx.SetBlock(pos, t, nil)
-	updateAroundRedstone(pos, tx)
+	updateTorchRedstone(pos, tx)
+}
+
+// updateTorchRedstone updates receivers around the torch and behind the block it strongly powers above.
+func updateTorchRedstone(pos cube.Pos, tx *world.Tx) {
+	tx.Redstone().BeginTorchUpdate(pos)
+	defer tx.Redstone().EndTorchUpdate(pos)
+	updateDirectionalRedstone(pos, tx, cube.FaceUp)
 }
 
 // EncodeItem encodes the redstone torch as an item.

@@ -83,11 +83,6 @@ func (n Note) canPlay(pos cube.Pos, tx *world.Tx) bool {
 	return ok
 }
 
-// powered checks if the note block is receiving redstone power.
-func (n Note) powered(pos cube.Pos, tx *world.Tx) bool {
-	return len(n.poweredFaces(pos, tx)) > 0
-}
-
 func (n Note) poweredFaces(pos cube.Pos, tx *world.Tx) []cube.Face {
 	var faces []cube.Face
 	for _, face := range cube.Faces() {
