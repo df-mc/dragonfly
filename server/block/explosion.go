@@ -152,11 +152,11 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		if explodable, ok := bl.(Explodable); ok {
 			explodable.Explode(explosionPos, pos, tx, c)
 		} else if breakable, ok := bl.(Breakable); ok {
+			tx.SetBlock(pos, nil, nil)
 			breakHandler := breakable.BreakInfo().BreakHandler
 			if breakHandler != nil {
 				breakHandler(pos, tx, nil)
 			}
-			tx.SetBlock(pos, nil, nil)
 			if itemDropChance > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(tx, drop, pos.Vec3Centre())
