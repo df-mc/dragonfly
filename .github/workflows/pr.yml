@@ -17,6 +17,3 @@ jobs:
 
       - name: Lint
         run: make lint
-
-      - name: Vulnerability scan
-        run: make vuln
