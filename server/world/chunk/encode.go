@@ -66,7 +66,7 @@ func EncodeSubChunk(c *Chunk, e Encoding, ind int) []byte {
 	s := c.sub[ind]
 	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), uint8(ind + (c.r[0] >> 4))})
 	for _, storage := range s.storages {
-		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
+		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding{Blocks: c.br})
 	}
 	sub := make([]byte, buf.Len())
 	_, _ = buf.Read(sub)

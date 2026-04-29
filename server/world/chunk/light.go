@@ -9,7 +9,7 @@ import (
 // insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
 // If one is found, a node is added for it to the node queue.
 func (a *lightArea) insertBlockLightNodes(queue *list.List) {
-	a.iterSubChunks(anyLightBlocks, func(pos cube.Pos) {
+	a.iterSubChunks(a.anyLightBlocks, func(pos cube.Pos) {
 		if level := a.highest(pos, a.br.LightBlock); level > 0 {
 			queue.PushBack(node(pos, level, BlockLight))
 		}
@@ -17,10 +17,10 @@ func (a *lightArea) insertBlockLightNodes(queue *list.List) {
 }
 
 // anyLightBlocks checks if there are any blocks in the SubChunk passed that emit light.
-func anyLightBlocks(sub *SubChunk) bool {
+func (a *lightArea) anyLightBlocks(sub *SubChunk) bool {
 	for _, layer := range sub.storages {
 		for _, id := range layer.palette.values {
-			if sub.br.LightBlock(id) != 0 {
+			if a.br.LightBlock(id) != 0 {
 				return true
 			}
 		}

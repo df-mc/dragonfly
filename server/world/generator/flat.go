@@ -12,7 +12,7 @@ type Flat struct {
 	biome uint32
 	// layers is a list of block runtime ID layers placed by the Flat generator. The layers are ordered in a way where
 	// the last element in the slice is placed as the bottom-most block of the chunk.
-	layers []world.Block
+	layers []uint32
 	// n is the amount of layers in the slice above.
 	n int16
 }
@@ -21,34 +21,31 @@ type Flat struct {
 // list of block layers placed by the Flat generator. The layers are ordered in a way where the last element in the
 // slice is placed as the bottom-most block of the chunk.
 func NewFlat(biome world.Biome, layers []world.Block) Flat {
+	return NewFlatWithRegistry(biome, layers, world.DefaultBlockRegistry)
+}
+
+// NewFlatWithRegistry creates a new Flat generator using the block registry passed to resolve layers to runtime IDs.
+// Use this constructor when the generator is used in a World with a non-default block registry.
+func NewFlatWithRegistry(biome world.Biome, layers []world.Block, br world.BlockRegistry) Flat {
 	f := Flat{
 		biome:  uint32(biome.EncodeBiome()),
-		layers: layers,
+		layers: make([]uint32, len(layers)),
 		n:      int16(len(layers)),
+	}
+	for i, b := range layers {
+		f.layers[i] = br.BlockRuntimeID(b)
 	}
 	return f
 }
 
 // GenerateChunk ...
-func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
-	br, ok := chunk.BlockRegistry.(world.BlockRegistry)
-	if !ok {
-		panic("flat generator requires a world.BlockRegistry implementation")
-	}
-
-	// Resolve runtime IDs once per chunk generation call. Runtime IDs are registry-specific,
-	// so this can't be done in NewFlat.
-	layerRIDs := make([]uint32, len(f.layers))
-	for i, b := range f.layers {
-		layerRIDs[i] = br.BlockRuntimeID(b)
-	}
-
+func (f Flat) GenerateChunk(pos world.ChunkPos, chunk *chunk.Chunk) {
 	min, max := int16(chunk.Range().Min()), int16(chunk.Range().Max())
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			for y := int16(0); y <= max; y++ {
 				if y < f.n {
-					chunk.SetBlock(x, min+y, z, 0, layerRIDs[int(f.n-y-1)])
+					chunk.SetBlock(x, min+y, z, 0, f.layers[int(f.n-y-1)])
 				}
 				chunk.SetBiome(x, min+y, z, f.biome)
 			}

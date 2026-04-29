@@ -10,10 +10,12 @@ import (
 // and stores other information such as biomes.
 // It is not safe to call methods on Chunk simultaneously from multiple goroutines.
 type Chunk struct {
-	// BlockRegistry is the block registry used for this chunk.
-	BlockRegistry BlockRegistry
 	// r holds the (vertical) range of the Chunk. It includes both the minimum and maximum coordinates.
 	r cube.Range
+	// br is the block registry used for this chunk.
+	br BlockRegistry
+	// air is the runtime ID of air.
+	air uint32
 	// recalculateHeightMap is true if the chunk's height map should be recalculated on the next call to the HeightMap
 	// function.
 	recalculateHeightMap bool
@@ -36,8 +38,9 @@ func New(br BlockRegistry, r cube.Range) *Chunk {
 		biomes[i] = emptyStorage(0)
 	}
 	return &Chunk{
-		BlockRegistry:        br,
 		r:                    r,
+		br:                   br,
+		air:                  br.AirRuntimeID(),
 		sub:                  sub,
 		biomes:               biomes,
 		recalculateHeightMap: true,
@@ -51,7 +54,7 @@ func (chunk *Chunk) Equals(c *Chunk) bool {
 		return false
 	}
 
-	if c.r != chunk.r || c.BlockRegistry.AirRuntimeID() != chunk.BlockRegistry.AirRuntimeID() || len(c.sub) != len(chunk.sub) {
+	if c.r != chunk.r || c.air != chunk.air || len(c.sub) != len(chunk.sub) {
 		return false
 	}
 
@@ -79,7 +82,7 @@ func (chunk *Chunk) Sub() []*SubChunk {
 func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
 	sub := chunk.SubChunk(y)
 	if sub.Empty() || uint8(len(sub.storages)) <= layer {
-		return chunk.BlockRegistry.AirRuntimeID()
+		return chunk.air
 	}
 	return sub.storages[layer].At(x, uint8(y), z)
 }
@@ -88,7 +91,7 @@ func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
 // SubChunk exists at the given y, a new SubChunk is created and the block is set.
 func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint32) {
 	sub := chunk.sub[chunk.SubIndex(y)]
-	if uint8(len(sub.storages)) <= layer && block == chunk.BlockRegistry.AirRuntimeID() {
+	if uint8(len(sub.storages)) <= layer && block == chunk.air {
 		// Air was set at n layer, but there were less than n layers, so there already was air there.
 		// Don't do anything with this, just return.
 		return
@@ -146,7 +149,7 @@ func (chunk *Chunk) highestLightBlocker(x, z uint8, addOne bool) int16 {
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			for y := 15; y >= 0; y-- {
-				if chunk.BlockRegistry.FilteringBlock(sub.storages[0].At(x, uint8(y), z)) == 15 {
+				if chunk.br.FilteringBlock(sub.storages[0].At(x, uint8(y), z)) == 15 {
 					return int16(y) | chunk.SubY(index) + plus
 				}
 			}
@@ -161,7 +164,7 @@ func (chunk *Chunk) HighestBlock(x, z uint8) int16 {
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			for y := 15; y >= 0; y-- {
-				if rid := sub.storages[0].At(x, uint8(y), z); rid != chunk.BlockRegistry.AirRuntimeID() {
+				if rid := sub.storages[0].At(x, uint8(y), z); rid != chunk.air {
 					return int16(y) | chunk.SubY(index)
 				}
 			}

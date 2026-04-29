@@ -87,13 +87,13 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 	if err != nil {
 		return nil, fmt.Errorf("error reading version: %w", err)
 	}
-	sub := NewSubChunk(c.BlockRegistry)
+	sub := NewSubChunk(c.br)
 	switch ver {
 	default:
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
+		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +116,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.BlockRegistry})
+			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
 			if err != nil {
 				return nil, err
 			}

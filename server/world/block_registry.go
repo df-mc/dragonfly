@@ -19,7 +19,7 @@ import (
 // The registry is populated during package init (block states + block implementations) and is finalized on first use
 // by `server.Config.New()`, `world.Config.New()`, or `mcdb.Config.Open()`. Callers that need custom blocks should
 // create a new registry using `NewBlockRegistry()` and pass it through config instead of mutating this value.
-var DefaultBlockRegistry BlockRegistry = &BlockRegistryImpl{
+var DefaultBlockRegistry = &BasicBlockRegistry{
 	blockProperties: make(map[string]map[string]any),
 	stateRuntimeIDs: make(map[stateHash]uint32),
 	customBlocks:    make(map[string]CustomBlock),
@@ -54,9 +54,6 @@ type BlockRegistry interface {
 	Blocks() []Block
 	// Air returns the air block registered in the registry.
 	Air() Block
-	// Clone returns an independent copy of the registry. If the source registry is finalized, the clone is also
-	// finalized. If the source is not finalized, the clone remains mutable.
-	Clone() BlockRegistry
 	// Finalize finalizes the registry, building derived lookup tables required for runtime usage. Finalize is
 	// idempotent.
 	Finalize()
@@ -81,7 +78,7 @@ const (
 // - bits 8..11: 4-bit light emission level (0-15).
 // - bits 12..15: 4-bit light filtering level (0-15).
 //
-// Values are computed during BlockRegistry.Finalize() and stored in BlockRegistryImpl.blockInfos, indexed by runtime ID.
+// Values are computed during BlockRegistry.Finalize() and stored in BasicBlockRegistry.blockInfos, indexed by runtime ID.
 type blockInfo uint16
 
 func (b *blockInfo) set(flag uint16) {
@@ -112,7 +109,8 @@ func (b blockInfo) getLightFilter() uint8 {
 	return uint8((b >> 12) & 0xF)
 }
 
-type BlockRegistryImpl struct {
+// BasicBlockRegistry is the default BlockRegistry implementation used by Dragonfly.
+type BasicBlockRegistry struct {
 	mu sync.Mutex
 
 	finalized         bool
@@ -135,70 +133,70 @@ type BlockRegistryImpl struct {
 	airRID uint32
 }
 
-func (br *BlockRegistryImpl) BitSize() int {
+func (br *BasicBlockRegistry) BitSize() int {
 	if !br.finalized {
 		panic("BlockRegistry.BitSize called on non finalized BlockRegistry")
 	}
 	return br.bitSize
 }
 
-func (br *BlockRegistryImpl) BlockCount() int {
+func (br *BasicBlockRegistry) BlockCount() int {
 	if !br.finalized {
 		panic("BlockRegistry.BlockCount called on non finalized BlockRegistry")
 	}
 	return len(br.blockInfos)
 }
 
-func (br *BlockRegistryImpl) RandomTickBlock(rid uint32) bool {
+func (br *BasicBlockRegistry) RandomTickBlock(rid uint32) bool {
 	if !br.finalized {
 		panic("BlockRegistry.RandomTickBlock called on non finalized BlockRegistry")
 	}
 	return br.blockInfos[rid].get(blockFlagRandomTick)
 }
 
-func (br *BlockRegistryImpl) FilteringBlock(rid uint32) uint8 {
+func (br *BasicBlockRegistry) FilteringBlock(rid uint32) uint8 {
 	if !br.finalized {
 		panic("BlockRegistry.FilteringBlock called on non finalized BlockRegistry")
 	}
 	return br.blockInfos[rid].getLightFilter()
 }
 
-func (br *BlockRegistryImpl) LightBlock(rid uint32) uint8 {
+func (br *BasicBlockRegistry) LightBlock(rid uint32) uint8 {
 	if !br.finalized {
 		panic("BlockRegistry.LightBlock called on non finalized BlockRegistry")
 	}
 	return br.blockInfos[rid].getLight()
 }
 
-func (br *BlockRegistryImpl) NBTBlock(rid uint32) bool {
+func (br *BasicBlockRegistry) NBTBlock(rid uint32) bool {
 	if !br.finalized {
 		panic("BlockRegistry.NBTBlock called on non finalized BlockRegistry")
 	}
 	return br.blockInfos[rid].get(blockFlagNBT)
 }
 
-func (br *BlockRegistryImpl) LiquidDisplacingBlock(rid uint32) bool {
+func (br *BasicBlockRegistry) LiquidDisplacingBlock(rid uint32) bool {
 	if !br.finalized {
 		panic("BlockRegistry.LiquidDisplacingBlock called on non finalized BlockRegistry")
 	}
 	return br.blockInfos[rid].get(blockFlagLiquidDisplacing)
 }
 
-func (br *BlockRegistryImpl) LiquidBlock(rid uint32) bool {
+func (br *BasicBlockRegistry) LiquidBlock(rid uint32) bool {
 	if !br.finalized {
 		panic("BlockRegistry.LiquidBlock called on non finalized BlockRegistry")
 	}
 	return br.blockInfos[rid].get(blockFlagLiquid)
 }
 
-func (br *BlockRegistryImpl) Blocks() []Block {
+func (br *BasicBlockRegistry) Blocks() []Block {
 	if !br.finalized {
 		panic("BlockRegistry.Blocks called on non finalized BlockRegistry")
 	}
 	return slices.Clone(br.blocks)
 }
 
-func (br *BlockRegistryImpl) HashToRuntimeID(hash uint32) (rid uint32, ok bool) {
+func (br *BasicBlockRegistry) HashToRuntimeID(hash uint32) (rid uint32, ok bool) {
 	if !br.finalized {
 		panic("BlockRegistry.HashToRuntimeID called on non finalized BlockRegistry")
 	}
@@ -206,11 +204,13 @@ func (br *BlockRegistryImpl) HashToRuntimeID(hash uint32) (rid uint32, ok bool) 
 	return
 }
 
-func (br *BlockRegistryImpl) Clone() BlockRegistry {
+// Clone returns an independent copy of the registry. If the source registry is finalized, the clone is also finalized.
+// If the source is not finalized, the clone remains mutable.
+func (br *BasicBlockRegistry) Clone() *BasicBlockRegistry {
 	br.mu.Lock()
 	defer br.mu.Unlock()
 
-	br2 := &BlockRegistryImpl{
+	br2 := &BasicBlockRegistry{
 		blockProperties: make(map[string]map[string]any, len(br.blockProperties)),
 		stateRuntimeIDs: make(map[stateHash]uint32, len(br.stateRuntimeIDs)),
 		customBlocks:    make(map[string]CustomBlock, len(br.customBlocks)),
@@ -250,7 +250,7 @@ func (br *BlockRegistryImpl) Clone() BlockRegistry {
 func NewBlockRegistry() BlockRegistry {
 	// Clone() produces a fully populated registry. We then mark it mutable again so that additional block states and
 	// blocks can be registered before finalizing.
-	br := DefaultBlockRegistry.Clone().(*BlockRegistryImpl)
+	br := DefaultBlockRegistry.Clone()
 	br.finalized = false
 	br.bitSize = 0
 	br.hashes = nil
@@ -261,7 +261,7 @@ func NewBlockRegistry() BlockRegistry {
 
 // RegisterBlock registers the Block passed. The EncodeBlock method will be used to encode and decode the
 // block passed. RegisterBlock panics if the block properties returned were not valid, existing properties.
-func (br *BlockRegistryImpl) RegisterBlock(b Block) {
+func (br *BasicBlockRegistry) RegisterBlock(b Block) {
 	br.mu.Lock()
 	defer br.mu.Unlock()
 
@@ -291,14 +291,14 @@ func (br *BlockRegistryImpl) RegisterBlock(b Block) {
 
 // RegisterBlockState registers a BlockState to the registry. The function panics if the properties the
 // BlockState holds are invalid or if the BlockState was already registered.
-func (br *BlockRegistryImpl) RegisterBlockState(s BlockState) {
+func (br *BasicBlockRegistry) RegisterBlockState(s BlockState) {
 	br.mu.Lock()
 	defer br.mu.Unlock()
 	br.registerBlockStateLocked(s)
 }
 
 // registerBlockStateLocked is the implementation of RegisterBlockState. br.mu must be held by the caller.
-func (br *BlockRegistryImpl) registerBlockStateLocked(s BlockState) {
+func (br *BasicBlockRegistry) registerBlockStateLocked(s BlockState) {
 	if br.finalized {
 		panic("BlockRegistry.RegisterBlockState called on finalized BlockRegistry")
 	}
@@ -314,7 +314,7 @@ func (br *BlockRegistryImpl) registerBlockStateLocked(s BlockState) {
 	br.stateRuntimeIDs[h] = rid
 }
 
-func (br *BlockRegistryImpl) Finalize() {
+func (br *BasicBlockRegistry) Finalize() {
 	br.mu.Lock()
 	defer br.mu.Unlock()
 
@@ -406,7 +406,7 @@ func (br *BlockRegistryImpl) Finalize() {
 }
 
 // AirRuntimeID returns the runtime ID of the air block.
-func (br *BlockRegistryImpl) AirRuntimeID() uint32 {
+func (br *BasicBlockRegistry) AirRuntimeID() uint32 {
 	if !br.finalized {
 		panic("BlockRegistry.AirRuntimeID called on non finalized BlockRegistry")
 	}
@@ -414,7 +414,7 @@ func (br *BlockRegistryImpl) AirRuntimeID() uint32 {
 }
 
 // RuntimeIDToState returns the name and state properties of a block by its runtime ID.
-func (br *BlockRegistryImpl) RuntimeIDToState(runtimeID uint32) (name string, properties map[string]any, found bool) {
+func (br *BasicBlockRegistry) RuntimeIDToState(runtimeID uint32) (name string, properties map[string]any, found bool) {
 	if !br.finalized {
 		panic("BlockRegistry.RuntimeIDToState called on non finalized BlockRegistry")
 	}
@@ -426,7 +426,7 @@ func (br *BlockRegistryImpl) RuntimeIDToState(runtimeID uint32) (name string, pr
 }
 
 // StateToRuntimeID returns the runtime ID of a block by its name and state properties.
-func (br *BlockRegistryImpl) StateToRuntimeID(name string, properties map[string]any) (runtimeID uint32, found bool) {
+func (br *BasicBlockRegistry) StateToRuntimeID(name string, properties map[string]any) (runtimeID uint32, found bool) {
 	if !br.finalized {
 		panic("BlockRegistry.StateToRuntimeID called on non finalized BlockRegistry")
 	}
@@ -441,14 +441,14 @@ func (br *BlockRegistryImpl) StateToRuntimeID(name string, properties map[string
 // to convert a block to a single integer which can be used in map lookups. The hash produced therefore does not
 // need to match anything in the game, but it must be unique among all registered blocks.
 // The tool in `/cmd/blockhash` may be used to automatically generate block hashes of blocks in a package.
-func (br *BlockRegistryImpl) BlockHash(b Block) uint64 {
+func (br *BasicBlockRegistry) BlockHash(b Block) uint64 {
 	base, hash := b.Hash()
 	return base | (hash << uint64(br.bitSize))
 }
 
 // BlockRuntimeID attempts to return a runtime ID of a block previously registered using RegisterBlock().
 // If the runtime ID cannot be found because the Block wasn't registered, BlockRuntimeID will panic.
-func (br *BlockRegistryImpl) BlockRuntimeID(b Block) uint32 {
+func (br *BasicBlockRegistry) BlockRuntimeID(b Block) uint32 {
 	if !br.finalized {
 		panic("BlockRegistry.BlockRuntimeID called on non finalized BlockRegistry")
 	}
@@ -465,14 +465,14 @@ func (br *BlockRegistryImpl) BlockRuntimeID(b Block) uint32 {
 	return br.slowBlockRuntimeID(b)
 }
 
-func (br *BlockRegistryImpl) BlockByRuntimeIDOrAir(rid uint32) Block {
+func (br *BasicBlockRegistry) BlockByRuntimeIDOrAir(rid uint32) Block {
 	bl, _ := br.BlockByRuntimeID(rid)
 	return bl
 }
 
 // slowBlockRuntimeID finds the runtime ID of a Block by hashing the properties produced by calling the
 // Block.EncodeBlock method and looking it up in the stateRuntimeIDs map.
-func (br *BlockRegistryImpl) slowBlockRuntimeID(b Block) uint32 {
+func (br *BasicBlockRegistry) slowBlockRuntimeID(b Block) uint32 {
 	name, properties := b.EncodeBlock()
 	rid, ok := br.stateRuntimeIDs[stateHash{name: name, properties: hashProperties(properties)}]
 	if !ok {
@@ -483,7 +483,7 @@ func (br *BlockRegistryImpl) slowBlockRuntimeID(b Block) uint32 {
 
 // BlockByRuntimeID attempts to return a Block by its runtime ID. If not found, the bool returned is
 // false. If found, the block is non-nil and the bool true.
-func (br *BlockRegistryImpl) BlockByRuntimeID(rid uint32) (Block, bool) {
+func (br *BasicBlockRegistry) BlockByRuntimeID(rid uint32) (Block, bool) {
 	if !br.finalized {
 		panic("BlockRegistry.BlockByRuntimeID called on non finalized BlockRegistry")
 	}
@@ -495,7 +495,7 @@ func (br *BlockRegistryImpl) BlockByRuntimeID(rid uint32) (Block, bool) {
 
 // BlockByName attempts to return a Block by its name and properties. If not found, the bool returned is
 // false.
-func (br *BlockRegistryImpl) BlockByName(name string, properties map[string]any) (Block, bool) {
+func (br *BasicBlockRegistry) BlockByName(name string, properties map[string]any) (Block, bool) {
 	if !br.finalized {
 		panic("BlockRegistry.BlockByName called on non finalized BlockRegistry")
 	}
@@ -507,12 +507,12 @@ func (br *BlockRegistryImpl) BlockByName(name string, properties map[string]any)
 }
 
 // CustomBlocks returns a map of all custom blocks registered with their names as keys.
-func (br *BlockRegistryImpl) CustomBlocks() map[string]CustomBlock {
+func (br *BasicBlockRegistry) CustomBlocks() map[string]CustomBlock {
 	return maps.Clone(br.customBlocks)
 }
 
 // Air returns an air block.
-func (br *BlockRegistryImpl) Air() Block {
+func (br *BasicBlockRegistry) Air() Block {
 	if !br.finalized {
 		panic("BlockRegistry.Air called on non finalized BlockRegistry")
 	}

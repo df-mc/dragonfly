@@ -7,6 +7,8 @@ import (
 )
 
 type blockRegistrySetter interface {
+	// SetBlockRegistry updates the registry used by the provider to encode and decode blocks.
+	// Config.New calls it with Config.Blocks after applying the default registry and finalizing it.
 	SetBlockRegistry(BlockRegistry)
 }
 

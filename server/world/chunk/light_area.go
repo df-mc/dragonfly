@@ -27,7 +27,7 @@ func LightArea(c []*Chunk, baseX, baseZ int) *lightArea {
 		panic("area must have a square chunk area")
 	}
 	return &lightArea{
-		br:    c[0].BlockRegistry,
+		br:    c[0].br,
 		c:     c,
 		w:     w,
 		baseX: baseX << 4,
