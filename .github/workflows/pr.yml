@@ -14,10 +14,6 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-        id: go
-
-      - name: Build
-        run: go build -o dragonfly_exe -v .
 
       - name: Lint
         run: make lint
