@@ -124,7 +124,7 @@ func (r RedstoneWire) StrongPower(pos cube.Pos, face cube.Face, tx *world.Tx, ac
 // calculatePower returns the highest level of received redstone power at the provided position.
 func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 	aboveBlock := tx.Block(pos.Side(cube.FaceUp))
-	_, aboveSolid := aboveBlock.Model().(model.Solid)
+	aboveBlocksVerticalTravel := blocksRedstoneWireVerticalTravel(aboveBlock)
 
 	var blockPower, wirePower int
 	for _, side := range cube.Faces() {
@@ -139,7 +139,7 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 			continue
 		}
 
-		if canRedstoneWireStepDown(pos, neighbourPos, neighbour, tx) && !aboveSolid {
+		if canRedstoneWireStepDown(pos, neighbourPos, neighbour, tx) && !aboveBlocksVerticalTravel {
 			wirePower = r.maxCurrentStrength(wirePower, neighbourPos.Side(cube.FaceUp), tx)
 		}
 
@@ -171,7 +171,7 @@ func (r RedstoneWire) hasHorizontalRedstoneConnection(pos cube.Pos, tx *world.Tx
 func (r RedstoneWire) connection(pos cube.Pos, face cube.Face, tx *world.Tx) bool {
 	sidePos := pos.Side(face)
 	sideBlock := tx.Block(sidePos)
-	if _, solidAbove := tx.Block(pos.Side(cube.FaceUp)).Model().(model.Solid); !solidAbove && r.canRunOnTop(tx, sidePos, sideBlock) && r.connectsTo(tx.Block(sidePos.Side(cube.FaceUp)), false) {
+	if !blocksRedstoneWireVerticalTravel(tx.Block(pos.Side(cube.FaceUp))) && r.canRunOnTop(tx, sidePos, sideBlock) && r.connectsTo(tx.Block(sidePos.Side(cube.FaceUp)), false) {
 		return true
 	}
 	_, sideSolid := sideBlock.Model().(model.Solid)
@@ -191,6 +191,15 @@ func (RedstoneWire) connectsTo(block world.Block, allowDirectSources bool) bool 
 // canRunOnTop checks whether redstone dust can be placed on top of the block.
 func (RedstoneWire) canRunOnTop(tx *world.Tx, pos cube.Pos, block world.Block) bool {
 	return block.Model().FaceSolid(pos, cube.FaceUp, tx)
+}
+
+// blocksRedstoneWireVerticalTravel checks if the block above redstone wire blocks vertical wire travel.
+func blocksRedstoneWireVerticalTravel(block world.Block) bool {
+	if _, ok := block.Model().(model.Solid); !ok {
+		return false
+	}
+	diffuser, ok := block.(LightDiffuser)
+	return !ok || diffuser.LightDiffusionLevel() != 0
 }
 
 // canRedstoneWireStepDown checks if redstone dust can provide power while travelling down around the side block.

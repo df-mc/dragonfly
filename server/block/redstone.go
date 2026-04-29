@@ -301,7 +301,7 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 
 	if wirePower < 15 {
 		centerUp := node.neighbours[1].block
-		_, centerUpSolid := centerUp.Model().(model.Solid)
+		centerUpBlocksVerticalTravel := blocksRedstoneWireVerticalTravel(centerUp)
 		for m := 0; m < 4; m++ {
 			neighbour := node.neighbours[rsNeighbours[m]]
 			neighbourBlock := neighbour.block
@@ -311,7 +311,7 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) Reds
 			if !neighbourSolid {
 				neighbourDown := node.neighbours[rsNeighboursDn[m]].block
 				blockPower = n.maxCurrentStrength(neighbourDown, blockPower)
-			} else if canRedstoneWireStepDown(node.pos, neighbour.pos, neighbourBlock, tx) && !centerUpSolid {
+			} else if canRedstoneWireStepDown(node.pos, neighbour.pos, neighbourBlock, tx) && !centerUpBlocksVerticalTravel {
 				neighbourUp := node.neighbours[rsNeighboursUp[m]].block
 				blockPower = n.maxCurrentStrength(neighbourUp, blockPower)
 			}
