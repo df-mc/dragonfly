@@ -96,7 +96,14 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		}
 	}
 
-	serialisedSubChunk := chunk.EncodeSubChunk(col.Chunk, chunk.NetworkEncoding, int(ind))
+	var serialisedSubChunk []byte
+
+	if cache, ok := col.NetworkEncodedCache(ind); ok {
+		serialisedSubChunk = cache
+	} else {
+		serialisedSubChunk = chunk.EncodeSubChunk(col.Chunk, chunk.NetworkEncoding, int(ind))
+		col.StoreNetworkCache(ind, serialisedSubChunk)
+	}
 
 	blockEntityBuf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
