@@ -317,9 +317,9 @@ func (t RedstoneTorch) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:unlit_redstone_torch", map[string]any{"torch_facing_direction": face}
 }
 
-// RedstoneSource returns whether the redstone torch is currently providing redstone power.
+// RedstoneSource ...
 func (t RedstoneTorch) RedstoneSource() bool {
-	return t.Lit
+	return true
 }
 
 // WeakPower returns the weak redstone power level provided to adjacent blocks.
