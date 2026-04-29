@@ -80,7 +80,7 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	return false
 }
 
-// NeighbourUpdateTick is called when a neighboring block is updated.
+// NeighbourUpdateTick is called when a neighbouring block is updated.
 func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
 		tx.Redstone().ClearTorchBurnout(pos)
