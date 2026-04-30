@@ -10,7 +10,6 @@ import (
 // Glowstone is commonly found on the ceiling of the nether dimension.
 type Glowstone struct {
 	solid
-	transparent
 }
 
 // Instrument ...
@@ -20,6 +19,11 @@ func (g Glowstone) Instrument() sound.Instrument {
 
 // CanRedstoneWireStepDown ...
 func (Glowstone) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
+}
+
+// RelaysRedstonePowerThrough returns false.
+func (Glowstone) RelaysRedstonePowerThrough() bool {
 	return false
 }
 

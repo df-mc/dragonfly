@@ -285,7 +285,13 @@ func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (
 	if c, ok := b.(Conductor); ok {
 		return c.WeakPower(pos, face, tx, accountForDust)
 	}
-	if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
+	// The wiki states that in the future some blocks may be transparent but still relay redstone.
+	// If a block implements RedstonePowerRelayer, it should always be prioritised over lightDiffuser.
+	if r, ok := b.(RedstonePowerRelayer); ok {
+		if !r.RelaysRedstonePowerThrough() {
+			return 0
+		}
+	} else if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
 		return 0
 	}
 	for _, f := range cube.Faces() {
