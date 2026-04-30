@@ -6,7 +6,6 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -170,14 +169,8 @@ func flowInto(b world.Liquid, src, pos cube.Pos, tx *world.Tx, falling bool) boo
 		if _, air := existing.(Air); !air {
 			tx.SetBlock(pos, nil, nil)
 		}
-		if _, lava := b.(Lava); !lava && removable.HasLiquidDrops() {
-			if b, ok := existing.(Breakable); ok {
-				for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
-					dropItem(tx, d, pos.Vec3Centre())
-				}
-			} else {
-				panic("liquid drops should always implement breakable")
-			}
+		if removable.HasLiquidDrops() {
+			b.LiquidRemoveBlock(pos, tx, existing)
 		}
 	}
 	tx.SetLiquid(pos, b.WithDepth(newDepth, falling))

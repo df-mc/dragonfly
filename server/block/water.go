@@ -1,14 +1,15 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand/v2"
-	"time"
 )
 
 // Water is a natural fluid that generates abundantly in the world.
@@ -84,6 +85,17 @@ func (Water) BlastResistance() float64 {
 // HasLiquidDrops ...
 func (Water) HasLiquidDrops() bool {
 	return false
+}
+
+// LiquidRemoveBlock drops the items of the removed block at the position passed.
+func (Water) LiquidRemoveBlock(pos cube.Pos, tx *world.Tx, removed world.Block) {
+	b, ok := removed.(Breakable)
+	if !ok {
+		panic("liquid drops should always implement breakable")
+	}
+	for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
+		dropItem(tx, d, pos.Vec3Centre())
+	}
 }
 
 // LightDiffusionLevel ...
