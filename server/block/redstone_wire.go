@@ -74,16 +74,34 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, neighbour cube.Pos, tx *world.Tx)
 		breakBlock(r, pos, tx)
 		return
 	}
-	updateRedstone(pos, tx)
+	if changed, ok := r.updateFromNeighbour(pos, tx); ok && !changed {
+		updateStrongRedstone(pos, tx)
+	}
 }
 
 // RedstoneUpdate ...
 func (r RedstoneWire) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	r.updatePower(pos, tx)
+}
+
+// updateFromNeighbour updates the wire after a neighbour change. changed reports whether the wire's power changed,
+// and ok reports whether the update was allowed by the redstone update handler.
+func (r RedstoneWire) updateFromNeighbour(pos cube.Pos, tx *world.Tx) (changed bool, ok bool) {
+	if redstoneUpdateCancelled(pos, tx) {
+		return false, false
+	}
+	return r.updatePower(pos, tx), true
+}
+
+// updatePower recalculates the wire's power and propagates the network when the power changes.
+func (r RedstoneWire) updatePower(pos cube.Pos, tx *world.Tx) bool {
 	if power := r.calculatePower(pos, tx); r.Power != power {
 		r.Power = power
 		tx.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true})
 		updateStrongRedstone(pos, tx)
+		return true
 	}
+	return false
 }
 
 // RedstoneSource ...
