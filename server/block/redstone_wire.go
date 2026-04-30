@@ -154,7 +154,7 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 		neighbourPos := pos.Side(side)
 		neighbour := tx.Block(neighbourPos)
 
-		wirePower = maxRedstoneWirePower(tx.Block(neighbourPos), wirePower)
+		wirePower = maxRedstoneWirePower(neighbour, wirePower)
 		blockPower = max(blockPower, tx.RedstonePower(neighbourPos, side, false))
 
 		if side.Axis() == cube.Y {
