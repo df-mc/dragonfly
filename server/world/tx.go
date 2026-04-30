@@ -213,6 +213,9 @@ func (tx *Tx) RemoveEntity(e Entity) *EntityHandle {
 // Entity is no longer usable.
 func (tx *Tx) TransferEntity(e Entity, w *World, pos mgl64.Vec3) {
 	handle := tx.RemoveEntity(e)
+	if handle == nil {
+		return
+	}
 	handle.data.Pos = pos
 	w.Exec(func(tx *Tx) {
 		tx.AddEntity(handle)

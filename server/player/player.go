@@ -2183,6 +2183,10 @@ func (p *Player) TransferToWorld(w *world.World, pos mgl64.Vec3) *world.EntityHa
 	p.ResetFallDistance()
 
 	handle := p.tx.RemoveEntity(p)
+	if handle == nil {
+		// The player was already removed from its world (e.g. a previous transfer this tick).
+		return p.handle
+	}
 	w.Exec(func(tx *world.Tx) {
 		np := tx.AddEntity(handle).(*Player)
 		np.Teleport(pos)
