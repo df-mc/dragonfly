@@ -13,7 +13,7 @@ type Cobweb struct {
 	transparent
 }
 
-// Cobweb identifies the block as a cobweb, which swords mine particularly fast.
+// Cobweb is implemented because the item package needs to identify this block but cannot implement the block package.
 func (Cobweb) Cobweb() {}
 
 // EntityInside slows the entity's velocity and resets its fall distance while it is inside the cobweb.
