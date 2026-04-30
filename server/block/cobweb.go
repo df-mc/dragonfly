@@ -39,7 +39,7 @@ func (c Cobweb) BreakInfo() BreakInfo {
 			return swordEffective(t) || shearsEffective(t)
 		},
 		func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-			if t.ToolType() == item.TypeShears || (t.ToolType() == item.TypeSword && hasSilkTouch(enchantments)) {
+			if t.ToolType() == item.TypeShears {
 				return oneOf(c)(t, enchantments)
 			}
 			if t.ToolType() == item.TypeSword {
