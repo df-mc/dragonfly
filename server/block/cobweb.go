@@ -32,17 +32,22 @@ func (Cobweb) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 
 // BreakInfo ...
 func (c Cobweb) BreakInfo() BreakInfo {
-	return newBreakInfo(4, alwaysHarvestable, func(t item.Tool) bool {
-		return swordEffective(t) || shearsEffective(t)
-	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(c, 1)}
-		}
-		if t.ToolType() == item.TypeSword {
-			return []item.Stack{item.NewStack(String{}, 1)}
-		}
-		return nil
-	}).withBlastResistance(4)
+	return newBreakInfo(
+		4,
+		alwaysHarvestable,
+		func(t item.Tool) bool {
+			return swordEffective(t) || shearsEffective(t)
+		},
+		func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+			if t.ToolType() == item.TypeShears || (t.ToolType() == item.TypeSword && hasSilkTouch(enchantments)) {
+				return oneOf(c)(t, enchantments)
+			}
+			if t.ToolType() == item.TypeSword {
+				return oneOf(String{})(t, enchantments)
+			}
+			return nil
+		},
+	).withBlastResistance(4)
 }
 
 // HasLiquidDrops ...
