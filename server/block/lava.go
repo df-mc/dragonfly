@@ -87,11 +87,8 @@ func (Lava) HasLiquidDrops() bool {
 	return false
 }
 
-// LiquidRemoveBlock plays a fizz sound at the position of the removed block, unless it was air.
-func (Lava) LiquidRemoveBlock(pos cube.Pos, tx *world.Tx, removed world.Block) {
-	if _, air := removed.(Air); air {
-		return
-	}
+// LiquidRemoveBlock plays a fizz sound at the position of the removed block.
+func (Lava) LiquidRemoveBlock(pos cube.Pos, tx *world.Tx, _ world.Block) {
 	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 }
 

@@ -168,8 +168,8 @@ func flowInto(b world.Liquid, src, pos cube.Pos, tx *world.Tx, falling bool) boo
 	if isRemovable {
 		if _, air := existing.(Air); !air {
 			tx.SetBlock(pos, nil, nil)
+			b.LiquidRemoveBlock(pos, tx, existing)
 		}
-		b.LiquidRemoveBlock(pos, tx, existing)
 	}
 	tx.SetLiquid(pos, b.WithDepth(newDepth, falling))
 	return true
