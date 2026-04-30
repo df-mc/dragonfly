@@ -32,7 +32,9 @@ func (Cobweb) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 
 // BreakInfo ...
 func (c Cobweb) BreakInfo() BreakInfo {
-	return newBreakInfo(4, alwaysHarvestable, swordOrShearsEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return newBreakInfo(4, alwaysHarvestable, func(t item.Tool) bool {
+		return swordEffective(t) || shearsEffective(t)
+	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(c, 1)}
 		}
