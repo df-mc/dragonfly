@@ -11,7 +11,7 @@ import (
 func TestChunkClearBlockEntityDataInRange(t *testing.T) {
 	t.Parallel()
 
-	ch := chunk.New(0, world.Overworld.Range())
+	ch := chunk.New(world.DefaultBlockRegistry, world.Overworld.Range())
 	clearedPos := cube.Pos{32, 64, 48}
 	keptPos := cube.Pos{32, 80, 48}
 	outsideXZ := cube.Pos{48, 64, 48}

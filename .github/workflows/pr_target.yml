@@ -15,16 +15,10 @@ jobs:
         with:
           ref: refs/pull/${{ github.event.pull_request.number }}/merge
 
-      - name: Set up Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.24
-        id: go
-
-      - name: Get dependencies
-        run: |
-          mkdir -p $GOPATH/bin
-          export PATH=$PATH:$GOPATH/bin
+          go-version-file: go.mod
 
       - name: Build
         run: go build -o dragonfly_exe -v .

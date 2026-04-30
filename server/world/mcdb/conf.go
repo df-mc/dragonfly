@@ -2,12 +2,14 @@ package mcdb
 
 import (
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world/mcdb/leveldat"
-	"github.com/df-mc/goleveldb/leveldb"
-	"github.com/df-mc/goleveldb/leveldb/opt"
 	"log/slog"
 	"os"
 	"path/filepath"
+
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/mcdb/leveldat"
+	"github.com/df-mc/goleveldb/leveldb"
+	"github.com/df-mc/goleveldb/leveldb/opt"
 )
 
 // Config holds the optional parameters of a DB.
@@ -18,6 +20,10 @@ type Config struct {
 	// LDBOptions holds LevelDB specific default options, such as the block size
 	// or compression used in the database.
 	LDBOptions *opt.Options
+
+	// Blocks is the BlockRegistry used for chunk decoding/encoding. If nil, world.DefaultBlockRegistry is used.
+	// When using a non-default registry, pass the same registry used by the World.
+	Blocks world.BlockRegistry
 }
 
 // Open creates a new DB reading and writing from/to files under the path
@@ -35,9 +41,11 @@ func (conf Config) Open(dir string) (*DB, error) {
 	if conf.LDBOptions.BlockSize == 0 {
 		conf.LDBOptions.BlockSize = 16 * opt.KiB
 	}
+
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
 	db := &DB{conf: conf, dir: dir, ldat: &leveldat.Data{}}
+	db.SetBlockRegistry(conf.Blocks)
 	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
 		// A level.dat was not currently present for the world.
 		db.ldat.FillDefault()

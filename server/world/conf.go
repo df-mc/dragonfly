@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+type blockRegistrySetter interface {
+	// SetBlockRegistry updates the registry used by the provider to encode and decode blocks.
+	// Config.New calls it with Config.Blocks after applying the default registry and finalizing it.
+	SetBlockRegistry(BlockRegistry)
+}
+
 // Config may be used to create a new World. It holds a variety of fields that
 // influence the World.
 type Config struct {
@@ -60,6 +66,11 @@ type Config struct {
 	// Entities is an EntityRegistry with all Entity types registered that may
 	// be added to the World.
 	Entities EntityRegistry
+
+	// Blocks is the BlockRegistry used by the World.
+	// If left nil, DefaultBlockRegistry is used. For a non-default registry,
+	// use NewBlockRegistry(), register blocks/states, and call Finalize().
+	Blocks BlockRegistry
 }
 
 // New creates a new World using the Config conf. The World returned will start
@@ -86,6 +97,18 @@ func (conf Config) New() *World {
 	if conf.RandomTickSpeed == 0 {
 		conf.RandomTickSpeed = 3
 	}
+	if conf.Blocks == nil {
+		conf.Blocks = DefaultBlockRegistry
+	}
+
+	// Initialize the passed block registry and also initialize the default block registry which
+	// is used in some vanilla paths.
+	conf.Blocks.Finalize()
+	DefaultBlockRegistry.Finalize()
+	if provider, ok := conf.Provider.(blockRegistrySetter); ok {
+		provider.SetBlockRegistry(conf.Blocks)
+	}
+
 	if conf.RandSource == nil {
 		t := uint64(time.Now().UnixNano())
 		conf.RandSource = rand.NewPCG(t, t)

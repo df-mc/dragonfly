@@ -10,14 +10,10 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v6
 
-      - name: Set up Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.24
-        id: go
-
-      - name: Build
-        run: go build -o dragonfly_exe -v .
+          go-version-file: go.mod
 
       - name: Lint
         run: make lint

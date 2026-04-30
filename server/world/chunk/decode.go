@@ -9,25 +9,24 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
-// StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
-var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uint32, found bool)
-
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // NetworkDecode creates a new buffer and calls NetworkDecodeBuffer.
+//
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
-	return NetworkDecodeBuffer(air, bytes.NewBuffer(data), count, r)
+func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, error) {
+	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r)
 }
 
 // NetworkDecodeBuffer decodes the network serialised data from buf passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeBuffer(air uint32, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
+func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
 	var (
-		c   = New(air, r)
+		c   = New(br, r)
 		err error
 	)
 	for i := 0; i < count; i++ {
@@ -62,15 +61,15 @@ func NetworkDecodeBuffer(air uint32, buf *bytes.Buffer, count int, r cube.Range)
 // NetworkDecodeWithBlockNBTs decodes a network serialised Chunk and any trailing block entity NBT data.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeWithBlockNBTs(air uint32, data []byte, count int, r cube.Range) (*Chunk, []map[string]any, error) {
-	return NetworkDecodeBufferWithBlockNBTs(air, bytes.NewBuffer(data), count, r)
+func NetworkDecodeWithBlockNBTs(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, []map[string]any, error) {
+	return NetworkDecodeBufferWithBlockNBTs(br, bytes.NewBuffer(data), count, r)
 }
 
 // NetworkDecodeBufferWithBlockNBTs decodes a network serialised Chunk and any trailing block entity NBT data.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeBufferWithBlockNBTs(air uint32, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, []map[string]any, error) {
-	c, err := NetworkDecodeBuffer(air, buf, count, r)
+func NetworkDecodeBufferWithBlockNBTs(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, []map[string]any, error) {
+	c, err := NetworkDecodeBuffer(br, buf, count, r)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -103,16 +102,16 @@ func NetworkDecodeBufferWithBlockNBTs(air uint32, buf *bytes.Buffer, count int, 
 // the canonical chunk.BlockEntity type.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeWithBlockEntities(air uint32, data []byte, count int, r cube.Range) (*Chunk, []BlockEntity, error) {
-	return NetworkDecodeBufferWithBlockEntities(air, bytes.NewBuffer(data), count, r)
+func NetworkDecodeWithBlockEntities(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, []BlockEntity, error) {
+	return NetworkDecodeBufferWithBlockEntities(br, bytes.NewBuffer(data), count, r)
 }
 
 // NetworkDecodeBufferWithBlockEntities decodes a network serialised Chunk and any trailing block entities, returning
 // them in the canonical chunk.BlockEntity type.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeBufferWithBlockEntities(air uint32, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, []BlockEntity, error) {
-	c, blockNBTs, err := NetworkDecodeBufferWithBlockNBTs(air, buf, count, r)
+func NetworkDecodeBufferWithBlockEntities(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, []BlockEntity, error) {
+	c, blockNBTs, err := NetworkDecodeBufferWithBlockNBTs(br, buf, count, r)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -157,15 +156,12 @@ func DecodeBlockNBTs(buf *bytes.Buffer) ([]map[string]any, error) {
 	return blockNBTs, nil
 }
 
-// DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
-// invalid, an error is returned.
-func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
-	air, ok := StateToRuntimeID("minecraft:air", nil)
-	if !ok {
-		panic("cannot find air runtime ID")
-	}
-
-	c := New(air, r)
+// DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was invalid,
+// an error is returned.
+//
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
+func DiskDecode(br BlockRegistry, data SerialisedData, r cube.Range) (*Chunk, error) {
+	c := New(br, r)
 
 	err := decodeBiomes(bytes.NewBuffer(data.Biomes), c, DiskEncoding)
 	if err != nil {
@@ -197,7 +193,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding)
+		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +216,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding)
+			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
 			if err != nil {
 				return nil, err
 			}
@@ -265,7 +261,7 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 		return nil, fmt.Errorf("error reading block size: %w", err)
 	}
 	_, isNetwork := e.(networkEncoding)
-	_, isBlocks := pe.(blockPaletteEncoding)
+	_, isBlocks := pe.(BlockPaletteEncoding)
 	if isNetwork && isBlocks && blockSize&1 != 1 {
 		e = NetworkPersistentEncoding
 	}
