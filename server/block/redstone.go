@@ -331,17 +331,17 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) (Red
 	wire := node.block.(RedstoneWire)
 	i := wire.Power
 
-	var blockPower int
+	var wirePower int
 	if !node.oriented {
 		n.identifyNeighbours(tx, node)
 	}
 
-	var wirePower int
+	var blockPower int
 	for _, face := range cube.Faces() {
-		wirePower = max(wirePower, tx.RedstonePower(node.pos.Side(face), face, false))
+		blockPower = max(blockPower, tx.RedstonePower(node.pos.Side(face), face, false))
 	}
 
-	if wirePower < 15 {
+	if blockPower < 15 {
 		centerUp := node.neighbours[1].block
 		centerUpBlocksVerticalTravel := blocksRedstoneWireVerticalTravel(centerUp)
 		for m := range 4 {
@@ -349,27 +349,27 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) (Red
 			neighbourBlock := neighbour.block
 			_, neighbourSolid := neighbourBlock.Model().(model.Solid)
 
-			blockPower = maxRedstoneWirePower(neighbourBlock, blockPower)
+			wirePower = maxRedstoneWirePower(neighbourBlock, wirePower)
 			if !neighbourSolid {
 				neighbourDown := node.neighbours[rsNeighboursDn[m]].block
-				blockPower = maxRedstoneWirePower(neighbourDown, blockPower)
+				wirePower = maxRedstoneWirePower(neighbourDown, wirePower)
 			} else {
 				if canRedstoneWireStepDown(node.pos, neighbour.pos, neighbourBlock, tx) && !centerUpBlocksVerticalTravel {
 					neighbourUp := node.neighbours[rsNeighboursUp[m]].block
-					blockPower = maxRedstoneWirePower(neighbourUp, blockPower)
+					wirePower = maxRedstoneWirePower(neighbourUp, wirePower)
 				}
 				if canRedstoneWireStepDown(neighbour.pos.Side(cube.FaceDown), neighbour.pos, neighbourBlock, tx) && !blocksRedstoneWireVerticalTravel(neighbourBlock) {
 					neighbourDown := node.neighbours[rsNeighboursDn[m]].block
-					blockPower = maxRedstoneWirePower(neighbourDown, blockPower)
+					wirePower = maxRedstoneWirePower(neighbourDown, wirePower)
 				}
 			}
-			if blockPower == 15 {
+			if wirePower == 15 {
 				break
 			}
 		}
 	}
 
-	j := max(blockPower-1, 0, wirePower)
+	j := max(blockPower, wirePower-1)
 
 	if i == j {
 		return wire, false
