@@ -54,7 +54,6 @@ func (l Lever) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	supportPos := pos.Side(l.Facing.Opposite())
 	if !tx.Block(supportPos).Model().FaceSolid(supportPos, l.Facing, tx) {
 		breakBlock(l, pos, tx)
-		updateDirectionalRedstone(pos, tx, l.Facing.Opposite())
 	}
 }
 
