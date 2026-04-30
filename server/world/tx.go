@@ -298,7 +298,14 @@ func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (
 		if !ok {
 			continue
 		}
-		power = max(power, c.StrongPower(pos.Side(f), f, tx, accountForDust))
+		sourcePos := pos.Side(f)
+		power = max(power, c.StrongPower(sourcePos, f, tx, accountForDust))
+		if !accountForDust {
+			continue
+		}
+		if weakBlockPowerer, ok := c.(WeakBlockPowerer); ok && weakBlockPowerer.WeaklyPowersBlocks() {
+			power = max(power, c.WeakPower(sourcePos, f, tx, accountForDust))
+		}
 	}
 	return power
 }

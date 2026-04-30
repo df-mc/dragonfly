@@ -91,6 +91,11 @@ func (RedstoneWire) RedstoneSource() bool {
 	return false
 }
 
+// WeaklyPowersBlocks returns true because powered redstone dust weakly powers conductive blocks it points into or rests on top of.
+func (RedstoneWire) WeaklyPowersBlocks() bool {
+	return true
+}
+
 // WeakPower returns the power emitted by the wire toward a neighbouring receiver. Dust powers upward, never powers
 // downward, and only powers horizontal receivers in connected directions. A powered wire with no horizontal
 // connections behaves as an unconnected cross and powers every horizontal side.
@@ -116,9 +121,9 @@ func (r RedstoneWire) WeakPower(pos cube.Pos, face cube.Face, tx *world.Tx, acco
 	return 0
 }
 
-// StrongPower ...
-func (r RedstoneWire) StrongPower(pos cube.Pos, face cube.Face, tx *world.Tx, accountForDust bool) int {
-	return r.WeakPower(pos, face, tx, accountForDust)
+// StrongPower returns 0 because redstone dust weakly powers conductive blocks rather than strongly powering them.
+func (RedstoneWire) StrongPower(cube.Pos, cube.Face, *world.Tx, bool) int {
+	return 0
 }
 
 // calculatePower returns the highest level of received redstone power at the provided position.

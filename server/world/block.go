@@ -101,6 +101,16 @@ type Conductor interface {
 	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
 }
 
+// WeakBlockPowerer represents a conductor whose weak power may weakly power an adjacent conductive block. Weakly
+// powered blocks may activate mechanisms and repeaters, but do not power adjacent redstone dust. For example,
+// dust pointing into a stone block opens a door on the stone's far side, but a second stretch of dust there stays
+// dark.
+type WeakBlockPowerer interface {
+	Conductor
+	// WeaklyPowersBlocks returns true if this conductor's WeakPower can make an adjacent conductive block weakly powered.
+	WeaklyPowersBlocks() bool
+}
+
 // RedstoneUpdater represents a block that reacts to nearby redstone power changes.
 type RedstoneUpdater interface {
 	Block
