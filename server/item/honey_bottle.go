@@ -21,7 +21,7 @@ func (HoneyBottle) AlwaysConsumable() bool {
 	return true
 }
 
-// ConsumeDuration is longer than DefaultConsumeDuration to match the slower drinking animation.
+// ConsumeDuration ...
 func (HoneyBottle) ConsumeDuration() time.Duration {
 	return DefaultConsumeDuration * 5 / 4
 }
