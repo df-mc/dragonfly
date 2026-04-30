@@ -173,7 +173,7 @@ func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)               
 func (NopHandler) HandleJump(*Player)                                                      {}
 func (NopHandler) HandleTeleport(*Context, mgl64.Vec3)                                     {}
 func (NopHandler) HandleChangeWorld(*Player, *world.World, *world.World)                   {}
-func (NopHandler) HandleWorldTransfer(*Context, **world.World, *mgl64.Vec3)                 {}
+func (NopHandler) HandleWorldTransfer(*Context, **world.World, *mgl64.Vec3)                {}
 func (NopHandler) HandleToggleSprint(*Context, bool)                                       {}
 func (NopHandler) HandleToggleSneak(*Context, bool)                                        {}
 func (NopHandler) HandleCommandExecution(*Context, cmd.Command, []string)                  {}
