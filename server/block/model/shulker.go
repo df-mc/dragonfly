@@ -5,27 +5,27 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Shulker is the model of a shulker. It depends on the opening/closing progress of the shulker block.
+// Shulker is the model of a shulker box. The bounding box grows along the
+// facing axis as the lid opens.
 type Shulker struct {
-	// Facing is the face that the shulker faces.
+	// Facing is the direction that the lid opens towards.
 	Facing cube.Face
-	// Progress is the opening/closing progress of the shulker.
+	// Progress is the lid animation progress, ranging from 0 (closed) to 10 (fully open).
 	Progress int32
 }
 
-// BBox returns a BBox that depends on the opening/closing progress of the shulker.
+// BBox returns a single bounding box that extends outward along Facing and
+// inward along its opposite as the lid opens.
 func (s Shulker) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	peak := ShulkerPhysicalPeak(s.Progress)
-	// Adds peak to the top and subtracts peak from the bottom. (according to BDS)
-	bbox := full
-	bbox = bbox.ExtendTowards(s.Facing, peak).ExtendTowards(s.Facing.Opposite(), -peak)
-	return []cube.BBox{bbox}
+	return []cube.BBox{full.ExtendTowards(s.Facing, peak).ExtendTowards(s.Facing.Opposite(), -peak)}
 }
 
-// ShulkerPhysicalPeak returns the peak of which the shulker reaches in its current progress
+// ShulkerPhysicalPeak returns the lid extension along the facing axis for a
+// given Progress in [0, 10]. The curve eases out cubically so the lid moves
+// quickly and settles.
 func ShulkerPhysicalPeak(progress int32) float64 {
-	fp := float64(progress) / 10.0
-	openness := 1.0 - fp
+	openness := 1.0 - float64(progress)/10.0
 	return (1.0 - openness*openness*openness) * 0.5
 }
 

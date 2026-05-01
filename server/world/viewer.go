@@ -24,8 +24,9 @@ type Viewer interface {
 	// ViewEntityMovement views the movement of an Entity. The Entity is moved with a delta position, yaw and
 	// pitch, which, when applied to the respective values of the Entity, will result in the final values.
 	ViewEntityMovement(e Entity, pos mgl64.Vec3, rot cube.Rotation, onGround bool)
-	// ViewEntityDelta views the movement of an Entity to an absolute position. The pos parameter is the
-	// absolute target position (not a delta), and rot is the target rotation.
+	// ViewEntityDelta views a forced target position and rotation for an Entity, applied without client-side
+	// interpolation. Implementations may send only the absolute components that differ from the current entity
+	// state, as MoveActorDelta-style packets apply flagged absolute components rather than true deltas.
 	ViewEntityDelta(e Entity, pos mgl64.Vec3, rot cube.Rotation)
 	// ViewEntityVelocity views the velocity of an Entity. It is called right before a call to
 	// ViewEntityMovement so that the Viewer may interpolate the movement itself.

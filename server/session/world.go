@@ -215,21 +215,24 @@ func (s *Session) ViewEntityDelta(e world.Entity, pos mgl64.Vec3, rot cube.Rotat
 		return
 	}
 
+	currentPos, currentRot := e.Position().Add(entityOffset(e)), e.Rotation()
+	targetPos := pos.Add(entityOffset(e))
+
 	flags := uint16(0)
-	if !mgl64.FloatEqual(pos.X(), 0) {
+	if !mgl64.FloatEqual(targetPos.X(), currentPos.X()) {
 		flags |= packet.MoveActorDeltaFlagHasX
 	}
-	if !mgl64.FloatEqual(pos.Y(), 0) {
+	if !mgl64.FloatEqual(targetPos.Y(), currentPos.Y()) {
 		flags |= packet.MoveActorDeltaFlagHasY
 	}
-	if !mgl64.FloatEqual(pos.Z(), 0) {
+	if !mgl64.FloatEqual(targetPos.Z(), currentPos.Z()) {
 		flags |= packet.MoveActorDeltaFlagHasZ
 	}
-	if !mgl64.FloatEqual(rot.Pitch(), 0) {
+	if !mgl64.FloatEqual(rot.Pitch(), currentRot.Pitch()) {
 		flags |= packet.MoveActorDeltaFlagHasRotX
 	}
-	if !mgl64.FloatEqual(rot.Yaw(), 0) {
-		flags |= packet.MoveActorDeltaFlagHasRotY
+	if !mgl64.FloatEqual(rot.Yaw(), currentRot.Yaw()) {
+		flags |= packet.MoveActorDeltaFlagHasRotY | packet.MoveActorDeltaFlagHasRotZ
 	}
 
 	flags |= packet.MoveActorDeltaFlagForceMove
@@ -237,7 +240,7 @@ func (s *Session) ViewEntityDelta(e world.Entity, pos mgl64.Vec3, rot cube.Rotat
 	s.writePacket(&packet.MoveActorDelta{
 		Flags:           flags,
 		EntityRuntimeID: s.entityRuntimeID(e),
-		Position:        vec64To32(pos.Add(entityOffset(e))),
+		Position:        vec64To32(targetPos),
 		Rotation:        vec64To32(mgl64.Vec3{rot.Pitch(), rot.Yaw(), rot.Yaw()}),
 	})
 }

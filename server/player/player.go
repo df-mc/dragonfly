@@ -2254,12 +2254,16 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 }
 
-// MoveDelta ...
-func (p *Player) MoveDelta(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
-	var (
-		pos         = p.Position()
-		res, resRot = pos.Add(deltaPos), p.Rotation().Add(cube.Rotation{deltaYaw, deltaPitch})
-	)
+// ForceMove forcibly applies a position and rotation delta to the player and
+// emits a delta movement view for nearby viewers. It is used by blocks like
+// the shulker box that need to push entities out of the way without going
+// through the regular move pipeline (no handler dispatch).
+func (p *Player) ForceMove(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
+	if p.Dead() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
+		return
+	}
+	res := p.Position().Add(deltaPos)
+	resRot := p.Rotation().Add(cube.Rotation{deltaYaw, deltaPitch})
 
 	for _, v := range p.viewers() {
 		v.ViewEntityDelta(p, res, resRot)
