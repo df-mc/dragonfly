@@ -13,6 +13,7 @@ type LayerViewer interface {
 
 // layer stores the appearance overrides that a ViewLayer applies to a LayerViewer.
 type layer struct {
+	viewer     LayerViewer
 	nameTag    *string
 	scoreTag   *string
 	visibility VisibilityLevel
@@ -23,14 +24,12 @@ type layer struct {
 type ViewLayer struct {
 	viewerMu sync.RWMutex
 	viewers  map[*EntityHandle]layer
-	entities map[*EntityHandle]LayerViewer
 }
 
 // NewViewLayer returns a new ViewLayer.
 func NewViewLayer() *ViewLayer {
 	return &ViewLayer{
-		viewers:  map[*EntityHandle]layer{},
-		entities: map[*EntityHandle]LayerViewer{},
+		viewers: map[*EntityHandle]layer{},
 	}
 }
 
@@ -39,8 +38,8 @@ func (v *ViewLayer) Viewers() []LayerViewer {
 	v.viewerMu.RLock()
 	defer v.viewerMu.RUnlock()
 	viewers := make([]LayerViewer, 0, len(v.viewers))
-	for _, viewer := range v.entities {
-		viewers = append(viewers, viewer)
+	for _, l := range v.viewers {
+		viewers = append(viewers, l.viewer)
 	}
 	return viewers
 }
@@ -53,9 +52,9 @@ func (v *ViewLayer) ViewNameTag(viewer LayerViewer, nameTag string) {
 
 	handle := viewer.H()
 	l := v.viewers[handle]
+	l.viewer = viewer
 	l.nameTag = &nameTag
 	v.viewers[handle] = l
-	v.entities[handle] = viewer
 }
 
 // ViewPublicNameTag removes the name tag override from the viewer, causing the public name tag to be
@@ -69,11 +68,10 @@ func (v *ViewLayer) ViewPublicNameTag(viewer LayerViewer) {
 	l.nameTag = nil
 	if l.empty() {
 		delete(v.viewers, handle)
-		delete(v.entities, handle)
 		return
 	}
+	l.viewer = viewer
 	v.viewers[handle] = l
-	v.entities[handle] = viewer
 }
 
 // NameTag returns the overwritten name tag of the viewer and whether an override was set.
@@ -95,9 +93,9 @@ func (v *ViewLayer) ViewScoreTag(viewer LayerViewer, scoreTag string) {
 
 	handle := viewer.H()
 	l := v.viewers[handle]
+	l.viewer = viewer
 	l.scoreTag = &scoreTag
 	v.viewers[handle] = l
-	v.entities[handle] = viewer
 }
 
 // ViewPublicScoreTag removes the score tag override from the viewer, causing the public score tag to be
@@ -111,11 +109,10 @@ func (v *ViewLayer) ViewPublicScoreTag(viewer LayerViewer) {
 	l.scoreTag = nil
 	if l.empty() {
 		delete(v.viewers, handle)
-		delete(v.entities, handle)
 		return
 	}
+	l.viewer = viewer
 	v.viewers[handle] = l
-	v.entities[handle] = viewer
 }
 
 // ScoreTag returns the overwritten score tag of the viewer and whether an override was set.
@@ -137,14 +134,13 @@ func (v *ViewLayer) ViewVisibility(viewer LayerViewer, level VisibilityLevel) {
 
 	handle := viewer.H()
 	l := v.viewers[handle]
+	l.viewer = viewer
 	l.visibility = level
 	if l.empty() {
 		delete(v.viewers, handle)
-		delete(v.entities, handle)
 		return
 	}
 	v.viewers[handle] = l
-	v.entities[handle] = viewer
 }
 
 // Visibility returns the visibility of the viewer.
@@ -161,7 +157,6 @@ func (v *ViewLayer) Remove(viewer LayerViewer) {
 
 	handle := viewer.H()
 	delete(v.viewers, handle)
-	delete(v.entities, handle)
 }
 
 // Close closes the view layer.
@@ -169,7 +164,6 @@ func (v *ViewLayer) Close() error {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 	clear(v.viewers)
-	clear(v.entities)
 	return nil
 }
 
