@@ -25,8 +25,8 @@ func (s Shulker) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 // given Progress in [0, 10]. The curve eases out cubically so the lid moves
 // quickly and settles.
 func ShulkerPhysicalPeak(progress int32) float64 {
-	openness := 1.0 - float64(progress)/10.0
-	return (1.0 - openness*openness*openness) * 0.5
+	t := float64(progress) / 10.0
+	return (1.0 - (1.0-t)*(1.0-t)*(1.0-t)) * 0.5
 }
 
 // FaceSolid always returns false.
