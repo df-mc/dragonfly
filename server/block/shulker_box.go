@@ -31,11 +31,9 @@ const shulkerLidSteps int32 = 10
 type ShulkerBox struct {
 	transparent
 	sourceWaterDisplacer
-	// Dyed reports whether the shulker box has a colour.
-	// The undyed variant is minecraft:undyed_shulker_box.
-	Dyed bool
-	// Colour is the colour of the shulker box when Dyed is true.
-	Colour item.Colour
+	// Colour is the colour of the shulker box. A zero OptionalColour represents
+	// the undyed variant (minecraft:undyed_shulker_box).
+	Colour item.OptionalColour
 	// Facing is the direction that the shulker box is facing.
 	Facing cube.Face
 	// CustomName is the custom name of the shulker box. This name is displayed when the shulker box is opened, and may
@@ -145,7 +143,7 @@ func (s ShulkerBox) initialised() ShulkerBox {
 		return s
 	}
 	n := NewShulkerBox()
-	n.Dyed, n.Colour, n.Facing, n.CustomName = s.Dyed, s.Colour, s.Facing, s.CustomName
+	n.Colour, n.Facing, n.CustomName = s.Colour, s.Facing, s.CustomName
 	return n
 }
 
@@ -280,8 +278,8 @@ func (s ShulkerBox) MaxCount() int {
 
 // EncodeBlock ...
 func (s ShulkerBox) EncodeBlock() (name string, properties map[string]any) {
-	if s.Dyed {
-		return "minecraft:" + s.Colour.String() + "_shulker_box", nil
+	if c, ok := s.Colour.Colour(); ok {
+		return "minecraft:" + c.String() + "_shulker_box", nil
 	}
 	return "minecraft:undyed_shulker_box", nil
 }
@@ -315,11 +313,10 @@ func (s ShulkerBox) EncodeNBT() map[string]any {
 	return m
 }
 
-// allShulkerBoxes returns one undyed shulker box and one per item.Colour.
+// allShulkerBoxes returns one shulker box per item.OptionalColour, including the undyed variant.
 func allShulkerBoxes() (boxes []world.Block) {
-	boxes = append(boxes, ShulkerBox{})
-	for _, c := range item.Colours() {
-		boxes = append(boxes, ShulkerBox{Dyed: true, Colour: c})
+	for _, c := range item.OptionalColours() {
+		boxes = append(boxes, ShulkerBox{Colour: c})
 	}
 	return boxes
 }
