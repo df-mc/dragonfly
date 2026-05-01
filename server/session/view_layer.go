@@ -4,6 +4,8 @@ import "github.com/df-mc/dragonfly/server/world"
 
 // LayerViewer represents an entity whose appearance may be overridden by a session ViewLayer.
 type LayerViewer interface {
+	// H returns the EntityHandle that points to the viewer.
+	H() *world.EntityHandle
 	// ViewLayer returns the ViewLayer attached to the viewer.
 	ViewLayer() *world.ViewLayer
 }

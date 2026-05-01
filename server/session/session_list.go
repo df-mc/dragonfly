@@ -33,12 +33,15 @@ func (l *sessionList) Add(s *Session) {
 	l.s = append(l.s, s)
 }
 
-func (l *sessionList) Remove(s *Session) {
+func (l *sessionList) Remove(s *Session, viewer LayerViewer) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	for _, other := range l.s {
 		l.unsendSessionFrom(s, other)
+		if viewer != nil && other.viewLayer != nil {
+			other.viewLayer.Remove(viewer)
+		}
 	}
 	l.s = sliceutil.DeleteVal(l.s, s)
 }
