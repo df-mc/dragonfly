@@ -1,9 +1,10 @@
 package world
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
-	"time"
 )
 
 // weather implements weather related methods for World. World embeds this
@@ -62,6 +63,26 @@ func (w weather) thunderingAt(pos cube.Pos) bool {
 	a := w.w.set.Thundering && raining
 	w.w.set.Unlock()
 	return a && w.w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+}
+
+// raining checks if it is raining anywhere in the World.
+func (w weather) raining() bool {
+	if w.w == nil || !w.w.Dimension().WeatherCycle() {
+		return false
+	}
+	w.w.set.Lock()
+	defer w.w.set.Unlock()
+	return w.w.set.Raining
+}
+
+// thundering checks if it is thundering anywhere in the World.
+func (w weather) thundering() bool {
+	if w.w == nil || !w.w.Dimension().WeatherCycle() {
+		return false
+	}
+	w.w.set.Lock()
+	defer w.w.set.Unlock()
+	return w.w.set.Thundering
 }
 
 // StartRaining makes it rain in the World. The time.Duration passed will

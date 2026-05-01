@@ -370,7 +370,7 @@ func (srv *Server) startListening() {
 	}
 }
 
-// makeBlockEntries initializes the server's block components map using the
+// makeBlockEntries initialises the server's block components map using the
 // registered custom blocks. It allows block components to be created only once
 // at startup.
 func (srv *Server) makeBlockEntries() {
@@ -386,7 +386,7 @@ func (srv *Server) makeBlockEntries() {
 	}
 }
 
-// makeItemComponents initializes the server's item components map using the
+// makeItemComponents initialises the server's item components map using the
 // registered custom items. It allows item components to be created only once
 // at startup
 func (srv *Server) makeItemComponents() {
@@ -554,20 +554,24 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	logger.Debug("Loading dimension...")
 
 	conf := world.Config{
-		Log:             logger,
-		Dim:             dim,
-		Provider:        srv.conf.WorldProvider,
-		Generator:       srv.conf.Generator(dim),
-		RandomTickSpeed: srv.conf.RandomTickSpeed,
-		ReadOnly:        srv.conf.ReadOnlyWorld,
-		Entities:        srv.conf.Entities,
+		Log:                 logger,
+		Dim:                 dim,
+		Provider:            srv.conf.WorldProvider,
+		Generator:           srv.conf.Generator(dim),
+		RandomTickSpeed:     srv.conf.RandomTickSpeed,
+		ReadOnly:            srv.conf.ReadOnlyWorld,
+		SaveInterval:        srv.conf.SaveInterval,
+		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		Entities:            srv.conf.Entities,
 		PortalDestination: func(dim world.Dimension) *world.World {
-			if dim == world.Nether {
+			switch dim {
+			case world.Nether:
 				return *nether
-			} else if dim == world.End {
+			case world.End:
 				return *end
+			default:
+				return nil
 			}
-			return nil
 		},
 	}
 	w := conf.New()

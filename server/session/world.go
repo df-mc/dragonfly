@@ -1,6 +1,7 @@
 package session
 
 import (
+	"bytes"
 	"fmt"
 	"image/color"
 	"math/rand/v2"
@@ -20,6 +21,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -360,6 +362,23 @@ func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
 	s.writePacket(&packet.ClientStartItemCooldown{
 		Category: strings.Split(name, ":")[1],
 		Duration: int32(duration.Milliseconds() / 50),
+	})
+}
+
+// ViewSleepingPlayers ...
+func (s *Session) ViewSleepingPlayers(sleeping, max int) {
+	buf := bytes.NewBuffer(nil)
+	_ = nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian).Encode(map[string]any{
+		"ableToSleep":          int32(max),
+		"overworldPlayerCount": int32(max),
+		"sleepingPlayerCount":  int32(sleeping),
+	})
+
+	eventData := buf.Bytes()
+
+	s.writePacket(&packet.LevelEventGeneric{
+		EventID:             packet.LevelEventSleepingPlayers,
+		SerialisedEventData: eventData[2 : len(eventData)-1],
 	})
 }
 
@@ -1109,7 +1128,7 @@ func (s *Session) OpenBlockContainer(pos cube.Pos, tx *world.Tx) {
 	if s.containerOpened.Load() && *s.openedPos.Load() == pos {
 		return
 	}
-	s.closeCurrentContainer(tx)
+	s.closeCurrentContainer(tx, false)
 
 	b := tx.Block(pos)
 	if container, ok := b.(block.Container); ok {
@@ -1188,6 +1207,7 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world
 		containerType = protocol.ContainerTypeHopper
 	}
 
+	s.openedContainerID.Store(uint32(containerType))
 	s.writePacket(&packet.ContainerOpen{
 		WindowID:                nextID,
 		ContainerType:           containerType,
@@ -1311,6 +1331,14 @@ func (s *Session) ViewWeather(raining, thunder bool) {
 	s.writePacket(pk)
 }
 
+// ViewEntityWake ...
+func (s *Session) ViewEntityWake(e world.Entity) {
+	s.writePacket(&packet.Animate{
+		EntityRuntimeID: s.entityRuntimeID(e),
+		ActionType:      packet.AnimateActionStopSleep,
+	})
+}
+
 // nextWindowID produces the next window ID for a new window. It is an int of 1-99.
 func (s *Session) nextWindowID() byte {
 	if s.openedWindowID.CompareAndSwap(99, 1) {
@@ -1321,13 +1349,23 @@ func (s *Session) nextWindowID() byte {
 
 // closeWindow closes the container window currently opened. If no window is open, closeWindow will do
 // nothing.
-func (s *Session) closeWindow() {
+func (s *Session) closeWindow(clientRequested bool) bool {
 	if !s.containerOpened.CompareAndSwap(true, false) {
-		return
+		return false
 	}
+	containerType := byte(s.openedContainerID.Load())
+	windowID := byte(s.openedWindowID.Load())
+
 	s.openedContainerID.Store(0)
 	s.openedWindow.Store(inventory.New(1, nil))
-	s.writePacket(&packet.ContainerClose{WindowID: byte(s.openedWindowID.Load())})
+	if !clientRequested {
+		s.writePacket(&packet.ContainerClose{
+			WindowID:      windowID,
+			ContainerType: containerType,
+			ServerSide:    true,
+		})
+	}
+	return true
 }
 
 // entityRuntimeID returns the runtime ID of the entity passed.

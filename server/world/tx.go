@@ -1,12 +1,14 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Tx represents a synchronised transaction performed on a World. Most
@@ -157,6 +159,16 @@ func (tx *Tx) ThunderingAt(pos cube.Pos) bool {
 	return tx.World().thunderingAt(pos)
 }
 
+// Raining checks if it is raining anywhere in the World.
+func (tx *Tx) Raining() bool {
+	return tx.World().raining()
+}
+
+// Thundering checks if it is thundering anywhere in the World.
+func (tx *Tx) Thundering() bool {
+	return tx.World().thundering()
+}
+
 // AddParticle spawns a Particle at a given position in the World. Viewers that
 // are viewing the chunk will be shown the particle.
 func (tx *Tx) AddParticle(pos mgl64.Vec3, p Particle) {
@@ -213,6 +225,56 @@ func (tx *Tx) Players() iter.Seq[Entity] {
 // Viewers returns all viewers viewing the position passed.
 func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
 	return tx.World().viewersOf(pos)
+}
+
+// Sleepers returns an iterator that yields all sleeping entities currently added to the World.
+func (tx *Tx) Sleepers() iter.Seq[Sleeper] {
+	ent := tx.Entities()
+	return func(yield func(Sleeper) bool) {
+		for e := range ent {
+			if sleeper, ok := e.(Sleeper); ok {
+				if !yield(sleeper) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// BroadcastSleepingIndicator broadcasts a sleeping indicator to all sleepers in the world.
+func (tx *Tx) BroadcastSleepingIndicator() {
+	sleepers := tx.Sleepers()
+
+	var sleeping, allSleepers int
+	for s := range sleepers {
+		allSleepers++
+		if _, ok := s.Sleeping(); ok {
+			sleeping++
+		}
+	}
+
+	for s := range sleepers {
+		s.SendSleepingIndicator(sleeping, allSleepers)
+	}
+}
+
+// BroadcastSleepingReminder broadcasts a sleeping reminder message to all sleepers in the world, excluding the sleeper
+// passed.
+func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
+	sleepers := tx.Sleepers()
+
+	var notSleeping int
+	for s := range sleepers {
+		if _, ok := s.Sleeping(); !ok {
+			notSleeping++
+		}
+	}
+
+	for s := range sleepers {
+		if _, ok := s.Sleeping(); !ok {
+			s.Messaget(chat.MessageSleeping, sleeper.Name(), notSleeping)
+		}
+	}
 }
 
 // World returns the World of the Tx. It panics if the transaction was already

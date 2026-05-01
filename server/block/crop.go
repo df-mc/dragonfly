@@ -94,11 +94,3 @@ func sameCrop(blockA, blockB world.Block) bool {
 	}
 	return false
 }
-
-// min returns the smaller of the two integers passed.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

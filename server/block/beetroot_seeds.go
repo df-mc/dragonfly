@@ -1,11 +1,12 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // BeetrootSeeds are a crop that can be harvested to craft soup or red dye.
@@ -49,12 +50,7 @@ func (b BeetrootSeeds) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 
 // BreakInfo ...
 func (b BeetrootSeeds) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
-		if b.Growth < 7 {
-			return []item.Stack{item.NewStack(b, 1)}
-		}
-		return []item.Stack{item.NewStack(item.Beetroot{}, 1), item.NewStack(b, rand.IntN(4)+1)}
-	})
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, cropSeedDrops(b, item.Beetroot{}, b.Growth))
 }
 
 // CompostChance ...

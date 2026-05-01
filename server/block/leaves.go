@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // Leaves are blocks that grow as part of trees which mainly drop saplings and sticks.
@@ -14,9 +15,8 @@ type Leaves struct {
 	leaves
 	sourceWaterDisplacer
 
-	// Wood is the type of wood of the leaves. This field must have one of the values found in the material
-	// package.
-	Wood WoodType
+	// Type is the type of the leaves.
+	Type LeavesType
 	// Persistent specifies if the leaves are persistent, meaning they will not decay as a result of no wood
 	// being nearby.
 	Persistent bool
@@ -103,13 +103,20 @@ func (l Leaves) BreakInfo() BreakInfo {
 		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(l, 1)}
 		}
+		fortune := fortuneLevel(enchantments)
 		var drops []item.Stack
+
 		// TODO: Drop saplings.
-		if rand.Float64() < 0.02 {
+
+		stickChances := []float64{0.02, 0.022222222, 0.025, 0.033333333}
+		if rand.Float64() < stickChances[min(fortune, 3)] {
 			drops = append(drops, item.NewStack(item.Stick{}, rand.IntN(2)+1))
 		}
-		if (l.Wood == OakWood() || l.Wood == DarkOakWood()) && rand.Float64() < 0.005 {
-			drops = append(drops, item.NewStack(item.Apple{}, 1))
+		if wood, ok := l.Type.Wood(); ok && (wood == OakWood() || wood == DarkOakWood()) {
+			appleChances := []float64{0.005, 0.005555556, 0.00625, 0.008333333}
+			if rand.Float64() < appleChances[min(fortune, 3)] {
+				drops = append(drops, item.NewStack(item.Apple{}, 1))
+			}
 		}
 		return drops
 	})
@@ -122,7 +129,7 @@ func (Leaves) CompostChance() float64 {
 
 // EncodeItem ...
 func (l Leaves) EncodeItem() (name string, meta int16) {
-	return "minecraft:" + l.Wood.String() + "_leaves", 0
+	return "minecraft:" + l.Type.String(), 0
 }
 
 // LightDiffusionLevel ...
@@ -137,16 +144,14 @@ func (Leaves) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // EncodeBlock ...
 func (l Leaves) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + l.Wood.String() + "_leaves", map[string]any{"persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
+	return "minecraft:" + l.Type.String(), map[string]any{"persistent_bit": l.Persistent, "update_bit": l.ShouldUpdate}
 }
 
-// allLogs returns a list of all possible leaves states.
+// allLeaves returns a list of all possible leaves states.
 func allLeaves() (leaves []world.Block) {
 	f := func(persistent, update bool) {
-		for _, w := range WoodTypes() {
-			if w != CrimsonWood() && w != WarpedWood() {
-				leaves = append(leaves, Leaves{Wood: w, Persistent: persistent, ShouldUpdate: update})
-			}
+		for _, t := range LeavesTypes() {
+			leaves = append(leaves, Leaves{Type: t, Persistent: persistent, ShouldUpdate: update})
 		}
 	}
 	f(true, true)

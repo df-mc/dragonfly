@@ -16,22 +16,26 @@ const (
 
 // String converts an Axis into either x, y or z, depending on which axis it is.
 func (a Axis) String() string {
-	if a == X {
+	switch a {
+	case X:
 		return "x"
-	} else if a == Y {
+	case Y:
 		return "y"
+	default:
+		return "z"
 	}
-	return "z"
 }
 
 // RotateLeft rotates an Axis from X to Z or from Z to X.
 func (a Axis) RotateLeft() Axis {
-	if a == X {
+	switch a {
+	case X:
 		return Z
-	} else if a == Z {
+	case Z:
 		return X
+	default:
+		return 0
 	}
-	return 0
 }
 
 // RotateRight rotates an Axis from X to Z or from Z to X.
@@ -43,12 +47,14 @@ func (a Axis) RotateRight() Axis {
 // Vec3 returns a unit Vec3 of either (1, 0, 0), (0, 1, 0) or (0, 0, 1),
 // depending on the Axis.
 func (a Axis) Vec3() mgl64.Vec3 {
-	if a == X {
+	switch a {
+	case X:
 		return mgl64.Vec3{1, 0, 0}
-	} else if a == Y {
+	case Y:
 		return mgl64.Vec3{0, 1, 0}
+	default:
+		return mgl64.Vec3{0, 0, 1}
 	}
-	return mgl64.Vec3{0, 0, 1}
 }
 
 // Axes return all possible axes. (x, y, z)

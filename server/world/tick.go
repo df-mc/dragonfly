@@ -40,7 +40,7 @@ func (t ticker) tick(tx *Tx) {
 	w := tx.World()
 
 	w.set.Lock()
-	if s := w.set.Spawn; s[1] > tx.Range()[1] {
+	if s := w.set.Spawn; s[1] > tx.Range()[1] && w.Dimension() == Overworld {
 		// Vanilla will set the spawn position's Y value to max to indicate that
 		// the player should spawn at the highest position in the world.
 		w.set.Spawn[1] = w.highestObstructingBlock(s[0], s[2]) + 1
@@ -61,7 +61,18 @@ func (t ticker) tick(tx *Tx) {
 	}
 
 	rain, thunder, tick, tim, cycle := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time), w.set.TimeCycle
+
+	tryAdvanceDay := false
+	if tx.w.set.RequiredSleepTicks > 0 {
+		tx.w.set.RequiredSleepTicks--
+		tryAdvanceDay = tx.w.set.RequiredSleepTicks <= 0
+	}
+
 	w.set.Unlock()
+
+	if tryAdvanceDay {
+		t.tryAdvanceDay(tx, cycle)
+	}
 
 	if tick%20 == 0 {
 		for _, viewer := range viewers {

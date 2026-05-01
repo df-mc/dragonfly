@@ -73,6 +73,12 @@ type EntityInsider interface {
 	EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity)
 }
 
+// EntityStepper represents a block that reacts to an entity standing on top of it.
+type EntityStepper interface {
+	// EntityStepOn is called every tick while an entity is standing on the top face of the block.
+	EntityStepOn(pos cube.Pos, tx *world.Tx, e world.Entity)
+}
+
 // ProjectileHitter represents a block that handles being hit by a projectile.
 type ProjectileHitter interface {
 	// ProjectileHit is called when a projectile hits the block.
@@ -239,11 +245,11 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
 
 // Flammable is an interface for blocks that can catch on fire.
 type Flammable interface {
-	// FlammabilityInfo returns information about a block's behavior involving fire.
+	// FlammabilityInfo returns information about a block's behaviour involving fire.
 	FlammabilityInfo() FlammabilityInfo
 }
 
-// FlammabilityInfo contains values related to block behaviors involving fire.
+// FlammabilityInfo contains values related to block behaviours involving fire.
 type FlammabilityInfo struct {
 	// Encouragement is the chance a block will catch on fire during attempted fire spread.
 	Encouragement int

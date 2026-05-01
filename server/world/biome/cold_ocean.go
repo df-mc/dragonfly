@@ -32,7 +32,7 @@ func (ColdOcean) WaterColour() color.RGBA {
 
 // Tags ...
 func (ColdOcean) Tags() []string {
-	return []string{"cold", "monster", "ocean", "overworld", "spawns_cold_variant_farm_animals"}
+	return []string{"cold", "monster", "ocean", "overworld", "spawns_cold_variant_farm_animals", "fast_fishing", "high_seas"}
 }
 
 // String ...

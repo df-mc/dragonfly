@@ -66,11 +66,10 @@ func (s *Session) StartShowingEntity(e world.Entity) {
 }
 
 // closeCurrentContainer closes the container the player might currently have open.
-func (s *Session) closeCurrentContainer(tx *world.Tx) {
-	if !s.containerOpened.Load() {
+func (s *Session) closeCurrentContainer(tx *world.Tx, clientRequested bool) {
+	if !s.closeWindow(clientRequested) {
 		return
 	}
-	s.closeWindow()
 
 	pos := *s.openedPos.Load()
 	b := tx.Block(pos)
@@ -87,6 +86,18 @@ func (s *Session) SendRespawn(pos mgl64.Vec3, c Controllable) {
 		Position:        vec64To32(pos.Add(entityOffset(c))),
 		State:           packet.RespawnStateReadyToSpawn,
 		EntityRuntimeID: selfEntityRuntimeID,
+	})
+}
+
+// SendPlayerSpawn updates the player's spawn point on the client-side. There is currently little reason
+// to do so other than to prevent the client-side "Respawn point set" message when sleeping in a bed.
+func (s *Session) SendPlayerSpawn(pos mgl64.Vec3) {
+	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
+	s.writePacket(&packet.SetSpawnPosition{
+		SpawnType:     packet.SpawnTypePlayer,
+		Position:      blockPos,
+		Dimension:     packet.DimensionOverworld,
+		SpawnPosition: blockPos,
 	})
 }
 
@@ -884,68 +895,15 @@ loop:
 		select {
 		case shape := <-s.debugShapesAdd:
 			s.debugShapes[shape.ShapeID()] = shape
-			shapes = append(shapes, s.debugShapeToProtocol(shape, dim))
+			shapes = append(shapes, debugShapeToProtocol(shape, dim, s.shapeAttachedEntityRuntimeID(shape)))
 		case id := <-s.debugShapesRemove:
 			delete(s.debugShapes, id)
-			shapes = append(shapes, protocol.DebugDrawerShape{NetworkID: uint64(id), DimensionID: s.dimensionID(dim)})
+			shapes = append(shapes, protocol.DebugDrawerShape{NetworkID: uint64(id), DimensionID: protocol.Option(s.dimensionID(dim)), ExtraShapeData: &protocol.LastShape{}})
 		default:
 			break loop
 		}
 	}
 	s.writePacket(&packet.DebugDrawer{Shapes: shapes})
-}
-
-// debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
-// for some fields such as colour, scale and other per-shape properties.
-func (s *Session) debugShapeToProtocol(shape debug.Shape, dim world.Dimension) protocol.DebugDrawerShape {
-	ps := protocol.DebugDrawerShape{
-		NetworkID:   uint64(shape.ShapeID()),
-		DimensionID: s.dimensionID(dim),
-	}
-	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
-	switch shape := shape.(type) {
-	case *debug.Arrow:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeArrow))
-		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
-		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.ExtraShapeData = &protocol.ArrowShape{
-			ArrowEndLocation: protocol.Option(vec64To32(shape.EndPosition)),
-			ArrowHeadLength:  protocol.Option(valueOrDefault(float32(shape.HeadLength), 1)),
-			ArrowHeadRadius:  protocol.Option(valueOrDefault(float32(shape.HeadRadius), 0.5)),
-			Segments:         protocol.Option(valueOrDefault(uint8(shape.HeadSegments), 4)),
-		}
-	case *debug.Box:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeBox))
-		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
-		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.ExtraShapeData = &protocol.BoxShape{BoxBound: valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1})}
-	case *debug.Circle:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeCircle))
-		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
-		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
-	case *debug.Line:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeLine))
-		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
-		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.ExtraShapeData = &protocol.LineShape{LineEndLocation: vec64To32(shape.EndPosition)}
-	case *debug.Sphere:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeSphere))
-		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
-		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
-	case *debug.Text:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeText))
-		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
-		ps.Location = protocol.Option(vec64To32(shape.Position))
-		ps.ExtraShapeData = &protocol.TextShape{Text: shape.Text}
-	default:
-		panic(fmt.Sprintf("unknown debug shape type %T", shape))
-	}
-	return ps
 }
 
 // valueOrDefault returns the value passed if it is not the zero value of the type T, otherwise it returns
@@ -1135,6 +1093,87 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 		s.Animations = append(s.Animations, animation)
 	}
 	return
+}
+
+// shapeAttachedEntityRuntimeID returns the runtime ID of the entity attached to a debug shape.
+func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) int64 {
+	var handle *world.EntityHandle
+	switch shape := shape.(type) {
+	case *debug.Arrow:
+		handle = shape.Entity
+	case *debug.Box:
+		handle = shape.Entity
+	case *debug.Circle:
+		handle = shape.Entity
+	case *debug.Line:
+		handle = shape.Entity
+	case *debug.Sphere:
+		handle = shape.Entity
+	case *debug.Text:
+		handle = shape.Entity
+	}
+	if handle == nil {
+		return 0
+	}
+	return int64(s.handleRuntimeID(handle))
+}
+
+// debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
+// for some fields such as colour, scale and other per-shape properties.
+func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID int64) protocol.DebugDrawerShape {
+	dimID, _ := world.DimensionID(dim)
+	ps := protocol.DebugDrawerShape{
+		NetworkID:   uint64(shape.ShapeID()),
+		DimensionID: protocol.Option(int32(dimID)),
+	}
+	if attachedEntityID > 0 {
+		ps.AttachedToEntityID = protocol.Option(uint64(attachedEntityID))
+	}
+	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	switch shape := shape.(type) {
+	case *debug.Arrow:
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeArrow))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.ExtraShapeData = &protocol.ArrowShape{
+			ArrowEndLocation: protocol.Option(vec64To32(shape.EndPosition)),
+			ArrowHeadLength:  protocol.Option(valueOrDefault(float32(shape.HeadLength), 1)),
+			ArrowHeadRadius:  protocol.Option(valueOrDefault(float32(shape.HeadRadius), 0.5)),
+			Segments:         protocol.Option(valueOrDefault(uint8(shape.HeadSegments), 4)),
+		}
+	case *debug.Box:
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeBox))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.ExtraShapeData = &protocol.BoxShape{BoxBound: valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1})}
+	case *debug.Circle:
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeCircle))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
+	case *debug.Line:
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeLine))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.ExtraShapeData = &protocol.LineShape{LineEndLocation: vec64To32(shape.EndPosition)}
+	case *debug.Sphere:
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeSphere))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
+	case *debug.Text:
+		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeText))
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.ExtraShapeData = &protocol.TextShape{Text: shape.Text}
+	default:
+		panic(fmt.Sprintf("unknown debug shape type %T", shape))
+	}
+	return ps
 }
 
 // gameTypeFromMode returns the game type ID from the game mode passed.
