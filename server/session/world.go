@@ -1080,6 +1080,9 @@ func (s *Session) ViewEntityState(e world.Entity) {
 				}
 			}
 		}
+		if st, ok := s.viewLayer.ScoreTag(v); ok {
+			metadata[protocol.EntityDataKeyScore] = st
+		}
 		if visibility := s.viewLayer.Visibility(v); visibility.EnforceVisibility() {
 			invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
 			if (visibility == world.EnforceVisible() && invisibleFlag) ||

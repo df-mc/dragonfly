@@ -12,6 +12,7 @@ type LayerViewer interface {
 // layer stores the appearance overrides that a ViewLayer applies to a LayerViewer.
 type layer struct {
 	nameTag    *string
+	scoreTag   *string
 	visibility VisibilityLevel
 }
 
@@ -59,7 +60,7 @@ func (v *ViewLayer) ViewPublicNameTag(viewer LayerViewer) {
 
 	l := v.viewers[viewer]
 	l.nameTag = nil
-	if l.visibility == PublicVisibility() {
+	if l.empty() {
 		delete(v.viewers, viewer)
 		return
 	}
@@ -77,6 +78,43 @@ func (v *ViewLayer) NameTag(viewer LayerViewer) (string, bool) {
 	return *nameTag, true
 }
 
+// ViewScoreTag overwrites the public score tag of the viewer and allows this ViewLayer to view a different score tag.
+// Passing an empty score tag removes the score tag for this ViewLayer.
+func (v *ViewLayer) ViewScoreTag(viewer LayerViewer, scoreTag string) {
+	v.viewerMu.Lock()
+	defer v.viewerMu.Unlock()
+
+	l := v.viewers[viewer]
+	l.scoreTag = &scoreTag
+	v.viewers[viewer] = l
+}
+
+// ViewPublicScoreTag removes the score tag override from the viewer, causing the public score tag to be
+// viewed again.
+func (v *ViewLayer) ViewPublicScoreTag(viewer LayerViewer) {
+	v.viewerMu.Lock()
+	defer v.viewerMu.Unlock()
+
+	l := v.viewers[viewer]
+	l.scoreTag = nil
+	if l.empty() {
+		delete(v.viewers, viewer)
+		return
+	}
+	v.viewers[viewer] = l
+}
+
+// ScoreTag returns the overwritten score tag of the viewer and whether an override was set.
+func (v *ViewLayer) ScoreTag(viewer LayerViewer) (string, bool) {
+	v.viewerMu.RLock()
+	defer v.viewerMu.RUnlock()
+	scoreTag := v.viewers[viewer].scoreTag
+	if scoreTag == nil {
+		return "", false
+	}
+	return *scoreTag, true
+}
+
 // ViewVisibility overwrites the public visibility of the viewer and allows this ViewLayer to view
 // this viewer as (in)visible depending on the VisibilityLevel.
 func (v *ViewLayer) ViewVisibility(viewer LayerViewer, level VisibilityLevel) {
@@ -85,7 +123,7 @@ func (v *ViewLayer) ViewVisibility(viewer LayerViewer, level VisibilityLevel) {
 
 	l := v.viewers[viewer]
 	l.visibility = level
-	if l.nameTag == nil && level == PublicVisibility() {
+	if l.empty() {
 		delete(v.viewers, viewer)
 		return
 	}
@@ -105,4 +143,8 @@ func (v *ViewLayer) Close() error {
 	defer v.viewerMu.Unlock()
 	clear(v.viewers)
 	return nil
+}
+
+func (l layer) empty() bool {
+	return l.nameTag == nil && l.scoreTag == nil && l.visibility == PublicVisibility()
 }
