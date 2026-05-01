@@ -506,8 +506,9 @@ func init() {
 		}
 	}
 
-	for _, t := range ShulkerBoxTypes() {
-		world.RegisterItem(ShulkerBox{Type: t})
+	world.RegisterItem(ShulkerBox{})
+	for _, c := range item.Colours() {
+		world.RegisterItem(ShulkerBox{Dyed: true, Colour: c})
 	}
 }
 

@@ -18,18 +18,24 @@ import (
 )
 
 const (
-	StateClosed = iota
-	StateOpening
-	StateOpened
-	StateClosing
+	shulkerStateClosed int32 = iota
+	shulkerStateOpening
+	shulkerStateOpened
+	shulkerStateClosing
 )
+
+// shulkerLidSteps is the number of animation ticks between fully closed and fully open.
+const shulkerLidSteps int32 = 10
 
 // ShulkerBox is a dye-able block that stores items. Unlike other blocks, it keeps its contents when broken.
 type ShulkerBox struct {
 	transparent
 	sourceWaterDisplacer
-	// Type is the type of shulker box of the block.
-	Type ShulkerBoxType
+	// Dyed reports whether the shulker box has a colour.
+	// The undyed variant is minecraft:undyed_shulker_box.
+	Dyed bool
+	// Colour is the colour of the shulker box when Dyed is true.
+	Colour item.Colour
 	// Facing is the direction that the shulker box is facing.
 	Facing cube.Face
 	// CustomName is the custom name of the shulker box. This name is displayed when the shulker box is opened, and may
@@ -39,11 +45,9 @@ type ShulkerBox struct {
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
 	viewers   map[ContainerViewer]struct{}
-	// progress is the openness of the shulker box opening or closing. It is a float between 0 and 1.
+	// progress is the lid opening progress in [0, 10].
 	progress *atomic.Int32
-	// prevProgress is the previous tick's progress, used to calculate push delta.
-	prevProgress *atomic.Int32
-	// animationStatus is the current openness state of the shulker box (whether its opened, closing, etc.).
+	// animationStatus is the current openness state of the shulker box (whether it's opened, closing, etc.).
 	animationStatus *atomic.Int32
 }
 
@@ -53,7 +57,6 @@ func NewShulkerBox() ShulkerBox {
 		viewerMu:        new(sync.RWMutex),
 		viewers:         make(map[ContainerViewer]struct{}, 1),
 		progress:        new(atomic.Int32),
-		prevProgress:    new(atomic.Int32),
 		animationStatus: new(atomic.Int32),
 	}
 
@@ -62,9 +65,10 @@ func NewShulkerBox() ShulkerBox {
 		defer s.viewerMu.RUnlock()
 		for viewer := range s.viewers {
 			// A shulker box inventory can't store shulker boxes, this is mostly handled by the client.
-			if _, ok := after.Item().(ShulkerBox); !ok {
-				viewer.ViewSlotChange(slot, after)
+			if _, ok := after.Item().(ShulkerBox); ok {
+				continue
 			}
+			viewer.ViewSlotChange(slot, after)
 		}
 	})
 
@@ -128,22 +132,26 @@ func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	if !used {
 		return
 	}
-
-	if s.inventory == nil {
-		typ, customName := s.Type, s.CustomName
-		//noinspection GoAssignmentToReceiver
-		s = NewShulkerBox()
-		s.Type, s.CustomName = typ, customName
-	}
-
+	s = s.initialised()
 	s.Facing = face
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
+// initialised lazily populates runtime fields on values created via struct
+// literal (e.g. those returned from allShulkerBoxes).
+func (s ShulkerBox) initialised() ShulkerBox {
+	if s.inventory != nil {
+		return s
+	}
+	n := NewShulkerBox()
+	n.Dyed, n.Colour, n.Facing, n.CustomName = s.Dyed, s.Colour, s.Facing, s.CustomName
+	return n
+}
+
 // open opens the shulker box, displaying the animation and playing a sound.
 func (s ShulkerBox) open(tx *world.Tx, pos cube.Pos) {
-	s.animationStatus.Store(StateOpening)
+	s.animationStatus.Store(shulkerStateOpening)
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, OpenAction{})
 	}
@@ -153,7 +161,7 @@ func (s ShulkerBox) open(tx *world.Tx, pos cube.Pos) {
 
 // close closes the shulker box, displaying the animation and playing a sound.
 func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
-	s.animationStatus.Store(StateClosing)
+	s.animationStatus.Store(shulkerStateClosing)
 	for _, v := range tx.Viewers(pos.Vec3()) {
 		v.ViewBlockAction(pos, CloseAction{})
 	}
@@ -163,26 +171,24 @@ func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
 // ScheduledTick ...
 func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	switch s.animationStatus.Load() {
-	case StateClosed:
+	case shulkerStateClosed:
 		s.progress.Store(0)
-	case StateOpening:
-		s.prevProgress.Store(s.progress.Load())
+	case shulkerStateOpening:
 		s.progress.Add(1)
-
 		s.pushEntities(pos, tx)
-		if s.progress.Load() >= 10 {
-			s.progress.Store(10)
-			s.animationStatus.Store(StateOpened)
+		if s.progress.Load() >= shulkerLidSteps {
+			s.progress.Store(shulkerLidSteps)
+			s.animationStatus.Store(shulkerStateOpened)
 		}
 		tx.ScheduleBlockUpdate(pos, s, 0)
-	case StateOpened:
-		s.progress.Store(10)
-	case StateClosing:
+	case shulkerStateOpened:
+		s.progress.Store(shulkerLidSteps)
+	case shulkerStateClosing:
 		s.progress.Add(-1)
 		if s.progress.Load() <= 0 {
 			tx.PlaySound(pos.Vec3Centre(), sound.ShulkerBoxClose{})
 			s.progress.Store(0)
-			s.animationStatus.Store(StateClosed)
+			s.animationStatus.Store(shulkerStateClosed)
 		}
 		tx.ScheduleBlockUpdate(pos, s, 0)
 	}
@@ -202,10 +208,10 @@ func (s ShulkerBox) pushEntities(pos cube.Pos, tx *world.Tx) {
 
 // push pushes entities when the shulker box lid is opening.
 func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
-	if s.animationStatus.Load() != StateOpening {
+	if s.animationStatus.Load() != shulkerStateOpening {
 		return
 	}
-	living, ok := e.(interface {
+	mover, ok := e.(interface {
 		MoveDelta(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 	})
 	if !ok {
@@ -227,7 +233,7 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	if offset.Y() > 0 {
 		targetY := shulkerBBox.Max().Y()
 		if entityPos.Y() < targetY {
-			living.MoveDelta(mgl64.Vec3{0, targetY - entityPos.Y(), 0}, 0, 0)
+			mover.MoveDelta(mgl64.Vec3{0, targetY - entityPos.Y(), 0}, 0, 0)
 		}
 		return
 	}
@@ -242,22 +248,22 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	case offset.X() > 0:
 		target := shulkerBBox.Max().X() + halfW
 		if x := entityPos.X(); x < target {
-			living.MoveDelta(mgl64.Vec3{target - x, 0, 0}, 0, 0)
+			mover.MoveDelta(mgl64.Vec3{target - x, 0, 0}, 0, 0)
 		}
 	case offset.X() < 0:
 		target := shulkerBBox.Min().X() - halfW
 		if x := entityPos.X(); x > target {
-			living.MoveDelta(mgl64.Vec3{target - x, 0, 0}, 0, 0)
+			mover.MoveDelta(mgl64.Vec3{target - x, 0, 0}, 0, 0)
 		}
 	case offset.Z() > 0:
 		target := shulkerBBox.Max().Z() + halfL
 		if z := entityPos.Z(); z < target {
-			living.MoveDelta(mgl64.Vec3{0, 0, target - z}, 0, 0)
+			mover.MoveDelta(mgl64.Vec3{0, 0, target - z}, 0, 0)
 		}
 	case offset.Z() < 0:
 		target := shulkerBBox.Min().Z() - halfL
 		if z := entityPos.Z(); z > target {
-			living.MoveDelta(mgl64.Vec3{0, 0, target - z}, 0, 0)
+			mover.MoveDelta(mgl64.Vec3{0, 0, target - z}, 0, 0)
 		}
 	}
 }
@@ -274,20 +280,21 @@ func (s ShulkerBox) MaxCount() int {
 
 // EncodeBlock ...
 func (s ShulkerBox) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + s.Type.String(), nil
+	if s.Dyed {
+		return "minecraft:" + s.Colour.String() + "_shulker_box", nil
+	}
+	return "minecraft:undyed_shulker_box", nil
 }
 
 // EncodeItem ...
 func (s ShulkerBox) EncodeItem() (id string, meta int16) {
-	return "minecraft:" + s.Type.String(), 0
+	name, _ := s.EncodeBlock()
+	return name, 0
 }
 
 // DecodeNBT ...
 func (s ShulkerBox) DecodeNBT(data map[string]any) any {
-	typ := s.Type
-	//noinspection GoAssignmentToReceiver
-	s = NewShulkerBox()
-	s.Type = typ
+	s = s.initialised()
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
 	s.Facing = cube.Face(nbtconv.Uint8(data, "facing"))
 	s.CustomName = nbtconv.String(data, "CustomName")
@@ -296,12 +303,7 @@ func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 
 // EncodeNBT ..
 func (s ShulkerBox) EncodeNBT() map[string]any {
-	if s.inventory == nil {
-		typ, facing, customName := s.Type, s.Facing, s.CustomName
-		//noinspection GoAssignmentToReceiver
-		s = NewShulkerBox()
-		s.Type, s.Facing, s.CustomName = typ, facing, customName
-	}
+	s = s.initialised()
 	m := map[string]any{
 		"Items":  nbtconv.InvToNBT(s.inventory),
 		"id":     "ShulkerBox",
@@ -313,10 +315,11 @@ func (s ShulkerBox) EncodeNBT() map[string]any {
 	return m
 }
 
-// allShulkerBoxes ...
+// allShulkerBoxes returns one undyed shulker box and one per item.Colour.
 func allShulkerBoxes() (boxes []world.Block) {
-	for _, t := range ShulkerBoxTypes() {
-		boxes = append(boxes, ShulkerBox{Type: t})
+	boxes = append(boxes, ShulkerBox{})
+	for _, c := range item.Colours() {
+		boxes = append(boxes, ShulkerBox{Dyed: true, Colour: c})
 	}
-	return
+	return boxes
 }
