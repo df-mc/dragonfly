@@ -20,3 +20,8 @@ func (i InfestedChiseledStoneBricks) EncodeItem() (name string, meta int16) {
 func (i InfestedChiseledStoneBricks) EncodeBlock() (string, map[string]any) {
 	return "minecraft:infested_chiseled_stone_bricks", nil
 }
+
+// Hash ...
+func (i InfestedChiseledStoneBricks) Hash() (uint64, uint64) {
+	return hashInfestedChiseledStoneBricks, 0
+}

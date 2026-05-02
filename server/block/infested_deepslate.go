@@ -20,3 +20,8 @@ func (i InfestedDeepslate) EncodeItem() (name string, meta int16) {
 func (i InfestedDeepslate) EncodeBlock() (string, map[string]any) {
 	return "minecraft:infested_deepslate", nil
 }
+
+// Hash ...
+func (i InfestedDeepslate) Hash() (uint64, uint64) {
+	return hashInfestedDeepslate, 0
+}

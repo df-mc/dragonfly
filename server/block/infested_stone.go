@@ -1,9 +1,5 @@
 package block
 
-import (
-	"github.com/df-mc/dragonfly/server/world"
-)
-
 // InfestedStone is a block that hides a silverfish. It looks identical to stone.
 type InfestedStone struct {
 	solid
@@ -27,5 +23,5 @@ func (i InfestedStone) EncodeBlock() (string, map[string]any) {
 
 // Hash ...
 func (i InfestedStone) Hash() (uint64, uint64) {
-	return 2000, 0 // Hash temporal
+	return hashInfestedStone, 0
 }

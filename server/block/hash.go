@@ -98,6 +98,13 @@ const (
 	hashHoneycomb
 	hashHopper
 	hashInvisibleBedrock
+	hashInfestedStone
+	hashInfestedCobblestone
+	hashInfestedStoneBricks
+	hashInfestedMossyStoneBricks
+	hashInfestedCrackedStoneBricks
+	hashInfestedChiseledStoneBricks
+	hashInfestedDeepslate
 	hashIron
 	hashIronBars
 	hashIronChain
