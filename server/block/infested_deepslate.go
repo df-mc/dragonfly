@@ -43,11 +43,6 @@ func (i InfestedDeepslate) EncodeBlock() (string, map[string]any) {
 	return "minecraft:infested_deepslate", map[string]any{"pillar_axis": i.Axis.String()}
 }
 
-// Hash ...
-func (i InfestedDeepslate) Hash() (uint64, uint64) {
-	return hashInfestedDeepslate, uint64(i.Axis)
-}
-
 // allInfestedDeepslate ...
 func allInfestedDeepslate() (s []world.Block) {
 	for _, axis := range cube.Axes() {
