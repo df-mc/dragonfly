@@ -1,4 +1,0 @@
-#!/bin/bash
-# Script para ejecutar Dragonfly fácilmente
-chmod +x dragonfly-arm64
-./dragonfly-arm64

@@ -101,9 +101,6 @@ const (
 	hashInfestedStone
 	hashInfestedCobblestone
 	hashInfestedStoneBricks
-	hashInfestedMossyStoneBricks
-	hashInfestedCrackedStoneBricks
-	hashInfestedChiseledStoneBricks
 	hashInfestedDeepslate
 	hashIron
 	hashIronBars
@@ -1002,21 +999,9 @@ func (InfestedCobblestone) Hash() (uint64, uint64) {
 	return hashInfestedCobblestone, 0
 }
 
-func (InfestedStoneBricks) Hash() (uint64, uint64) {
-	return hashInfestedStoneBricks, 0
-}
 
-func (InfestedMossyStoneBricks) Hash() (uint64, uint64) {
-	return hashInfestedMossyStoneBricks, 0
-}
 
-func (InfestedCrackedStoneBricks) Hash() (uint64, uint64) {
-	return hashInfestedCrackedStoneBricks, 0
-}
 
-func (InfestedChiseledStoneBricks) Hash() (uint64, uint64) {
-	return hashInfestedChiseledStoneBricks, 0
-}
 
 func (i InfestedDeepslate) Hash() (uint64, uint64) {
 	return hashInfestedDeepslate, uint64(i.Axis)
