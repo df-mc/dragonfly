@@ -7,8 +7,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Piston is a block capable of pushing blocks when powered by redstone.
-type Piston struct {
+// StickyPiston is a block capable of pushing and pulling blocks.
+type StickyPiston struct {
 	solid
 	transparent
 
@@ -19,12 +19,12 @@ type Piston struct {
 }
 
 // BreakInfo ...
-func (p Piston) BreakInfo() BreakInfo {
+func (p StickyPiston) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, oneOf(p))
 }
 
 // UseOnBlock ...
-func (p Piston) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (p StickyPiston) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, p)
 	if !used {
 		return
@@ -36,7 +36,7 @@ func (p Piston) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 }
 
 // NeighbourUpdateTick ...
-func (p Piston) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+func (p StickyPiston) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if p.Extended {
 		if !p.isPowered(pos, tx) {
 			p.Extended = false
@@ -54,7 +54,7 @@ func (p Piston) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 }
 
 // extend handles the extension of the piston, pushing up to 12 blocks.
-func (p Piston) extend(pos cube.Pos, tx *world.Tx) bool {
+func (p StickyPiston) extend(pos cube.Pos, tx *world.Tx) bool {
 	dir := p.Facing
 	pushPos := pos.Side(dir)
 
@@ -84,18 +84,25 @@ func (p Piston) extend(pos cube.Pos, tx *world.Tx) bool {
 		b := tx.Block(blocks[i])
 		tx.SetBlock(blocks[i].Side(dir), b, nil)
 	}
-	tx.SetBlock(pushPos, PistonArmCollision{Facing: p.Facing, Sticky: false}, nil)
+	tx.SetBlock(pushPos, PistonArmCollision{Facing: p.Facing, Sticky: true}, nil)
 	return true
 }
 
 // retract handles the retraction of the piston.
-func (p Piston) retract(pos cube.Pos, tx *world.Tx) {
+func (p StickyPiston) retract(pos cube.Pos, tx *world.Tx) {
 	armPos := pos.Side(p.Facing)
 	tx.SetBlock(armPos, Air{}, nil)
+
+	pullPos := armPos.Side(p.Facing)
+	b := tx.Block(pullPos)
+	if !p.isImmovable(b) && len(b.Model().BBox(pullPos, tx)) > 0 {
+		tx.SetBlock(armPos, b, nil)
+		tx.SetBlock(pullPos, Air{}, nil)
+	}
 }
 
 // isImmovable returns true if the block cannot be pushed.
-func (p Piston) isImmovable(b world.Block) bool {
+func (p StickyPiston) isImmovable(b world.Block) bool {
 	switch b.(type) {
 	case Bedrock, Obsidian, InvisibleBedrock, Barrier, Water, Lava:
 		return true
@@ -104,7 +111,7 @@ func (p Piston) isImmovable(b world.Block) bool {
 }
 
 // isPowered checks if the piston is powered by an adjacent redstone block.
-func (p Piston) isPowered(pos cube.Pos, tx *world.Tx) bool {
+func (p StickyPiston) isPowered(pos cube.Pos, tx *world.Tx) bool {
 	for _, face := range cube.Faces() {
 		if _, ok := tx.Block(pos.Side(face)).(RedstoneBlock); ok {
 			return true
@@ -113,33 +120,33 @@ func (p Piston) isPowered(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-const hashPiston = 12347 // Temporary constant
+const hashStickyPiston = 12348 // Temporary constant
 
 // Hash ...
-func (p Piston) Hash() (uint64, uint64) {
-	return hashPiston, uint64(p.Facing) | uint64(boolByte(p.Extended))<<3
+func (p StickyPiston) Hash() (uint64, uint64) {
+	return hashStickyPiston, uint64(p.Facing) | uint64(boolByte(p.Extended))<<3
 }
 
 // Model ...
-func (p Piston) Model() world.BlockModel {
+func (p StickyPiston) Model() world.BlockModel {
 	return world.FullBlockModel{}
 }
 
 // EncodeItem ...
-func (p Piston) EncodeItem() (name string, meta int16) {
-	return "minecraft:piston", 0
+func (p StickyPiston) EncodeItem() (name string, meta int16) {
+	return "minecraft:sticky_piston", 0
 }
 
 // EncodeBlock ...
-func (p Piston) EncodeBlock() (string, map[string]any) {
-	return "minecraft:piston", map[string]any{"facing_direction": int32(p.Facing), "extended_bit": p.Extended}
+func (p StickyPiston) EncodeBlock() (string, map[string]any) {
+	return "minecraft:sticky_piston", map[string]any{"facing_direction": int32(p.Facing), "extended_bit": p.Extended}
 }
 
-// allPistons ...
-func allPistons() (pistons []world.Block) {
+// allStickyPistons ...
+func allStickyPistons() (pistons []world.Block) {
 	for _, face := range cube.Faces() {
 		for _, extended := range []bool{false, true} {
-			pistons = append(pistons, Piston{Facing: face, Extended: extended})
+			pistons = append(pistons, StickyPiston{Facing: face, Extended: extended})
 		}
 	}
 	return
