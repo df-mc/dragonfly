@@ -113,13 +113,6 @@ func (p Piston) isPowered(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-const hashPiston = 12347 // Temporary constant
-
-// Hash ...
-func (p Piston) Hash() (uint64, uint64) {
-	return hashPiston, uint64(p.Facing) | uint64(boolByte(p.Extended))<<3
-}
-
 // EncodeItem ...
 func (p Piston) EncodeItem() (name string, meta int16) {
 	return "minecraft:piston", 0
