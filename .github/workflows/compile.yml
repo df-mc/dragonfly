@@ -1,0 +1,32 @@
+name: Compile Dragonfly ARM64
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: Build ARM64
+        run: |
+          GOOS=linux GOARCH=arm64 go build -o dragonfly-arm64 main.go
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragonfly-bin-arm64
+          path: dragonfly-arm64
