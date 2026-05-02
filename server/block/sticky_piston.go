@@ -108,8 +108,6 @@ func (p StickyPiston) isImmovable(b world.Block) bool {
 		return true
 	}
 	return false
-}
-
 // isPowered checks if the piston is powered by an adjacent redstone block.
 func (p StickyPiston) isPowered(pos cube.Pos, tx *world.Tx) bool {
 	for _, face := range cube.Faces() {
@@ -120,15 +118,11 @@ func (p StickyPiston) isPowered(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-const hashStickyPiston = 12348 // Temporary constant
-
-// Hash ...
-func (p StickyPiston) Hash() (uint64, uint64) {
-	return hashStickyPiston, uint64(p.Facing) | uint64(boolByte(p.Extended))<<3
+// Model ...
+func (p StickyPiston) Model() world.BlockModel {
+	return world.FullBlockModel{}
 }
 
-// EncodeItem ...
-func (p StickyPiston) EncodeItem() (name string, meta int16) {
 	return "minecraft:sticky_piston", 0
 }
 

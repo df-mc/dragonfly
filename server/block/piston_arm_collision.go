@@ -30,13 +30,6 @@ func (p PistonArmCollision) EncodeBlock() (string, map[string]any) {
 	return "minecraft:piston_arm_collision", map[string]any{"facing_direction": int32(p.Facing)}
 }
 
-const hashPistonArmCollision = 12346 // Temporary constant
-
-// Hash ...
-func (p PistonArmCollision) Hash() (uint64, uint64) {
-	return hashPistonArmCollision, uint64(p.Facing) | uint64(boolByte(p.Sticky))<<3
-}
-
 // Model ...
 func (p PistonArmCollision) Model() world.BlockModel {
 	return model.Empty{}
