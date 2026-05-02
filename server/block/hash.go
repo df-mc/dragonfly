@@ -993,3 +993,32 @@ func (t WoodTrapdoor) Hash() (uint64, uint64) {
 func (w Wool) Hash() (uint64, uint64) {
 	return hashWool, uint64(w.Colour.Uint8())
 }
+
+func (InfestedStone) Hash() (uint64, uint64) {
+	return hashInfestedStone, 0
+}
+
+func (InfestedCobblestone) Hash() (uint64, uint64) {
+	return hashInfestedCobblestone, 0
+}
+
+func (InfestedStoneBricks) Hash() (uint64, uint64) {
+	return hashInfestedStoneBricks, 0
+}
+
+func (InfestedMossyStoneBricks) Hash() (uint64, uint64) {
+	return hashInfestedMossyStoneBricks, 0
+}
+
+func (InfestedCrackedStoneBricks) Hash() (uint64, uint64) {
+	return hashInfestedCrackedStoneBricks, 0
+}
+
+func (InfestedChiseledStoneBricks) Hash() (uint64, uint64) {
+	return hashInfestedChiseledStoneBricks, 0
+}
+
+func (InfestedDeepslate) Hash() (uint64, uint64) {
+	return hashInfestedDeepslate, 0
+}
+
