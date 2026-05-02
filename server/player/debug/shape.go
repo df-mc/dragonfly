@@ -20,16 +20,20 @@ type Shape interface {
 // shape is a base type for all shapes that implements the Shape interface. It contains a unique identifier
 // that is lazily initialised when the ShapeID method is called for the first time.
 type shape struct {
-	id *int
+	id atomic.Int32
 }
 
 // ShapeID ...
 func (s *shape) ShapeID() int {
-	if s.id == nil {
-		id := int(nextShapeID.Add(1))
-		s.id = &id
+	if id := s.id.Load(); id != 0 {
+		return int(id)
 	}
-	return *s.id
+
+	id := nextShapeID.Add(1)
+	if !s.id.CompareAndSwap(0, id) {
+		id = s.id.Load()
+	}
+	return int(id)
 }
 
 // Arrow represents an arrow shape that can be drawn at any point in the world. It has a head which can also
