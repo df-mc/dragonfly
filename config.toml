@@ -9,7 +9,7 @@
   # name of the server.
   Name = "Dragonfly Server"
   # AuthEnabled controls whether players must be connected to Xbox Live in order to join the server.
-  AuthEnabled = true
+  AuthEnabled = false
   # DisableJoinQuitMessages specifies if join/quit messages should be broadcast when players join the server.
   DisableJoinQuitMessages = false
   # MuteEmoteChat specifies if the player emote chat should be muted or not.
