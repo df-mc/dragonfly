@@ -67,6 +67,8 @@ type Liquid interface {
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
 	Harden(pos cube.Pos, tx *Tx, flownIntoBy *cube.Pos) bool
+	// LiquidRemoveBlock is called when the liquid flows into and removes the block passed.
+	LiquidRemoveBlock(pos cube.Pos, tx *Tx, removed Block)
 }
 
 // RegisterBlock registers the Block passed in the DefaultBlockRegistry.
