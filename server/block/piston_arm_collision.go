@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/world"
 )
 
 // PistonArmCollision is the collision block for the piston arm.
@@ -34,11 +33,6 @@ const hashPistonArmCollision = 12346 // Temporary constant
 // Hash ...
 func (p PistonArmCollision) Hash() (uint64, uint64) {
 	return hashPistonArmCollision, uint64(p.Facing) | uint64(boolByte(p.Sticky))<<3
-}
-
-// Model ...
-func (p PistonArmCollision) Model() world.BlockModel {
-	return world.FullBlockModel{}
 }
 
 // allPistonArms ...

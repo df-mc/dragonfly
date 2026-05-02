@@ -29,7 +29,7 @@ func (p Piston) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	if !used {
 		return
 	}
-	p.Facing = cube.OrientationFromRotation(user.Rotation()).Facing().Opposite()
+	p.Facing = user.Rotation().Orientation().Facing().Opposite()
 
 	place(tx, pos, p, user, ctx)
 	return placed(ctx)
@@ -118,11 +118,6 @@ const hashPiston = 12347 // Temporary constant
 // Hash ...
 func (p Piston) Hash() (uint64, uint64) {
 	return hashPiston, uint64(p.Facing) | uint64(boolByte(p.Extended))<<3
-}
-
-// Model ...
-func (p Piston) Model() world.BlockModel {
-	return world.FullBlockModel{}
 }
 
 // EncodeItem ...

@@ -2,7 +2,6 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/world"
 )
 
 // RedstoneBlock is a solid block that emits a full redstone signal.
@@ -32,9 +31,4 @@ const hashRedstoneBlock = 12345 // Temporary constant
 // Hash ...
 func (RedstoneBlock) Hash() (uint64, uint64) {
 	return hashRedstoneBlock, 0
-}
-
-// Model ...
-func (RedstoneBlock) Model() world.BlockModel {
-	return world.FullBlockModel{}
 }

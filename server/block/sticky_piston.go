@@ -29,7 +29,7 @@ func (p StickyPiston) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	if !used {
 		return
 	}
-	p.Facing = cube.OrientationFromRotation(user.Rotation()).Facing().Opposite()
+	p.Facing = user.Rotation().Orientation().Facing().Opposite()
 
 	place(tx, pos, p, user, ctx)
 	return placed(ctx)
@@ -125,11 +125,6 @@ const hashStickyPiston = 12348 // Temporary constant
 // Hash ...
 func (p StickyPiston) Hash() (uint64, uint64) {
 	return hashStickyPiston, uint64(p.Facing) | uint64(boolByte(p.Extended))<<3
-}
-
-// Model ...
-func (p StickyPiston) Model() world.BlockModel {
-	return world.FullBlockModel{}
 }
 
 // EncodeItem ...
