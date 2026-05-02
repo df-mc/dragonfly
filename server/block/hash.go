@@ -1018,7 +1018,7 @@ func (InfestedChiseledStoneBricks) Hash() (uint64, uint64) {
 	return hashInfestedChiseledStoneBricks, 0
 }
 
-func (InfestedDeepslate) Hash() (uint64, uint64) {
-	return hashInfestedDeepslate, 0
+func (i InfestedDeepslate) Hash() (uint64, uint64) {
+	return hashInfestedDeepslate, uint64(i.Axis)
 }
 
