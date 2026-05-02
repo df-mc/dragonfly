@@ -816,8 +816,8 @@ func (s *Session) HudElementHidden(e hud.Element) bool {
 // of packets being sent. Up to 2 packets will be sent, one for showing elements and one for hiding elements.
 func (s *Session) SendHudUpdates() {
 	s.hudMu.Lock()
-	defer s.hudMu.Unlock()
 	if len(s.hudUpdates) == 0 {
+		s.hudMu.Unlock()
 		return
 	}
 	var show, hide []int32
@@ -831,6 +831,8 @@ func (s *Session) SendHudUpdates() {
 		}
 	}
 	s.hudUpdates = make(map[hud.Element]bool)
+	s.hudMu.Unlock()
+
 	if len(show) > 0 {
 		s.writePacket(&packet.SetHud{Elements: show, Visibility: packet.HudVisibilityReset})
 	}
