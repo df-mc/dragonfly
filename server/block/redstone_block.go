@@ -25,10 +25,3 @@ func (RedstoneBlock) EncodeItem() (name string, meta int16) {
 func (RedstoneBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:redstone_block", nil
 }
-
-const hashRedstoneBlock = 12345 // Temporary constant
-
-// Hash ...
-func (RedstoneBlock) Hash() (uint64, uint64) {
-	return hashRedstoneBlock, 0
-}
