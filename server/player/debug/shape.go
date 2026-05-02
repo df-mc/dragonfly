@@ -28,12 +28,8 @@ func (s *shape) ShapeID() int {
 	if id := s.id.Load(); id != 0 {
 		return int(id)
 	}
-
-	id := nextShapeID.Add(1)
-	if !s.id.CompareAndSwap(0, id) {
-		id = s.id.Load()
-	}
-	return int(id)
+	s.id.CompareAndSwap(0, nextShapeID.Add(1))
+	return int(s.id.Load())
 }
 
 // Arrow represents an arrow shape that can be drawn at any point in the world. It has a head which can also
