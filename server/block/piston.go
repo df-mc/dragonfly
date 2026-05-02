@@ -29,7 +29,7 @@ func (p Piston) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	if !used {
 		return
 	}
-	p.Facing = user.Rotation().Orientation().Facing().Opposite()
+	p.Facing = user.Rotation().Direction().Face().Opposite()
 
 	place(tx, pos, p, user, ctx)
 	return placed(ctx)

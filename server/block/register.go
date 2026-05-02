@@ -348,7 +348,7 @@ func init() {
 	world.RegisterItem(PackedIce{})
 	world.RegisterItem(PackedMud{})
 	world.RegisterItem(PinkPetals{})
-	world.RegisterItem(Piston{Sticky: true})
+	world.RegisterItem(StickyPiston{})
 	world.RegisterItem(Piston{})
 	world.RegisterItem(Podzol{})
 	world.RegisterItem(PolishedBlackstoneBrick{Cracked: true})
