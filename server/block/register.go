@@ -63,7 +63,9 @@ func init() {
 	world.RegisterBlock(InfestedMossyStoneBricks{})
 	world.RegisterBlock(InfestedCrackedStoneBricks{})
 	world.RegisterBlock(InfestedChiseledStoneBricks{})
-	world.RegisterBlock(InfestedDeepslate{})
+	for _, b := range allInfestedDeepslate() {
+		world.RegisterBlock(b)
+	}
 	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(Iron{})
 	world.RegisterBlock(Jukebox{})
