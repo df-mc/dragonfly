@@ -57,9 +57,13 @@ func init() {
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(Honeycomb{})
 	world.RegisterBlock(InvisibleBedrock{})
-	for _, b := range allInfested() {
-		world.RegisterBlock(b)
-	}
+	world.RegisterBlock(InfestedStone{})
+	world.RegisterBlock(InfestedCobblestone{})
+	world.RegisterBlock(InfestedStoneBricks{})
+	world.RegisterBlock(InfestedMossyStoneBricks{})
+	world.RegisterBlock(InfestedCrackedStoneBricks{})
+	world.RegisterBlock(InfestedChiseledStoneBricks{})
+	world.RegisterBlock(InfestedDeepslate{})
 	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(Iron{})
 	world.RegisterBlock(Jukebox{})
@@ -297,9 +301,13 @@ func init() {
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(Hopper{})
 	world.RegisterItem(InvisibleBedrock{})
-	for _, b := range allInfested() {
-		world.RegisterItem(b.(world.Item))
-	}
+	world.RegisterItem(InfestedStone{})
+	world.RegisterItem(InfestedCobblestone{})
+	world.RegisterItem(InfestedStoneBricks{})
+	world.RegisterItem(InfestedMossyStoneBricks{})
+	world.RegisterItem(InfestedCrackedStoneBricks{})
+	world.RegisterItem(InfestedChiseledStoneBricks{})
+	world.RegisterItem(InfestedDeepslate{})
 	world.RegisterItem(IronBars{})
 	world.RegisterItem(Iron{})
 	world.RegisterItem(ItemFrame{Glowing: true})
