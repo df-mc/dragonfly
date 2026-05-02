@@ -31,11 +31,7 @@ func (p Piston) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	if !used {
 		return
 	}
-	p.Facing = user.Facing().Opposite()
-	if f, ok := user.(interface{ Facing() cube.Face }); ok {
-		// Use vertical facing if possible.
-		p.Facing = f.Facing().Opposite()
-	}
+	p.Facing = user.Rotation().Facing().Opposite()
 
 	place(tx, pos, p, user, ctx)
 	return placed(ctx)
@@ -63,7 +59,7 @@ func (p Piston) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 func (p Piston) extend(pos cube.Pos, tx *world.Tx) bool {
 	dir := p.Facing
 	pushPos := pos.Side(dir)
-	
+
 	blocks := []cube.Pos{}
 	curr := pushPos
 	for len(blocks) < 12 {
@@ -77,9 +73,12 @@ func (p Piston) extend(pos cube.Pos, tx *world.Tx) bool {
 		blocks = append(blocks, curr)
 		curr = curr.Side(dir)
 	}
-	
-	if len(blocks) >= 12 && !tx.Block(curr).Model().BBox(curr, tx).Empty() {
-		return false
+
+	if len(blocks) >= 12 {
+		b := tx.Block(curr)
+		if len(b.Model().BBox(curr, tx)) > 0 {
+			return false
+		}
 	}
 
 	// Move blocks in reverse order to avoid overwriting.
@@ -95,11 +94,11 @@ func (p Piston) extend(pos cube.Pos, tx *world.Tx) bool {
 func (p Piston) retract(pos cube.Pos, tx *world.Tx) {
 	armPos := pos.Side(p.Facing)
 	tx.SetBlock(armPos, Air{}, nil)
-	
+
 	if p.Sticky {
 		pullPos := armPos.Side(p.Facing)
 		b := tx.Block(pullPos)
-		if !p.isImmovable(b) && !(tx.Block(pullPos).Model().BBox(pullPos, tx).Empty()) {
+		if !p.isImmovable(b) && len(b.Model().BBox(pullPos, tx)) > 0 {
 			tx.SetBlock(armPos, b, nil)
 			tx.SetBlock(pullPos, Air{}, nil)
 		}
@@ -125,6 +124,12 @@ func (p Piston) isPowered(pos cube.Pos, tx *world.Tx) bool {
 	}
 	return false
 }
+
+// Hash ...
+func (p Piston) Hash() (uint64, uint64) {
+	return hashPiston, uint64(p.Facing) | uint64(boolByte(p.Sticky))<<3 | uint64(boolByte(p.Extended))<<4
+}
+
 
 // EncodeItem ...
 func (p Piston) EncodeItem() (name string, meta int16) {

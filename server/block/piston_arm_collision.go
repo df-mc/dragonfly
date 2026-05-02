@@ -29,6 +29,11 @@ func (p PistonArmCollision) EncodeBlock() (string, map[string]any) {
 	return "minecraft:piston_arm_collision", map[string]any{"facing_direction": int32(p.Facing)}
 }
 
+// Hash ...
+func (p PistonArmCollision) Hash() (uint64, uint64) {
+	return hashPistonArmCollision, uint64(p.Facing) | uint64(boolByte(p.Sticky))<<3
+}
+
 // allPistonArms ...
 func allPistonArms() (arms []world.Block) {
 	for _, face := range cube.Faces() {

@@ -25,3 +25,8 @@ func (RedstoneBlock) EncodeItem() (name string, meta int16) {
 func (RedstoneBlock) EncodeBlock() (string, map[string]any) {
 	return "minecraft:redstone_block", nil
 }
+
+// Hash ...
+func (RedstoneBlock) Hash() (uint64, uint64) {
+	return hashRedstoneBlock, 0
+}
