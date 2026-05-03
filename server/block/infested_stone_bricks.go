@@ -5,6 +5,7 @@ import (
 )
 
 // InfestedStoneBricks is a block that hides a silverfish. It looks identical to stone bricks.
+// TODO: spawn a silverfish on break (without silk touch) once silverfish are implemented.
 type InfestedStoneBricks struct {
 	solid
 	flute

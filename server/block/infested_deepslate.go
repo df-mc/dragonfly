@@ -8,6 +8,7 @@ import (
 )
 
 // InfestedDeepslate is a block that hides a silverfish. It looks identical to deepslate.
+// TODO: spawn a silverfish on break (without silk touch) once silverfish are implemented.
 type InfestedDeepslate struct {
 	solid
 	flute

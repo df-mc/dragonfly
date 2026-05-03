@@ -1,6 +1,7 @@
 package block
 
 // InfestedCobblestone is a block that hides a silverfish. It looks identical to cobblestone.
+// TODO: spawn a silverfish on break (without silk touch) once silverfish are implemented.
 type InfestedCobblestone struct {
 	solid
 	flute
