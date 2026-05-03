@@ -97,10 +97,16 @@ type Session struct {
 
 	debugShapesMu     sync.RWMutex
 	debugShapes       map[int]debug.Shape
-	debugShapesAdd    chan debug.Shape
-	debugShapesRemove chan int
+	debugShapeUpdates []debugShapeUpdate
 
 	closeBackground chan struct{}
+}
+
+// debugShapeUpdate represents a pending debug shape mutation. If shape is nil, the update removes the
+// debug shape with the matching ID. Updates are applied in order when the session sends debug shapes.
+type debugShapeUpdate struct {
+	id    int
+	shape debug.Shape
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -187,8 +193,7 @@ func (conf Config) New(conn Conn) *Session {
 		hudUpdates:             make(map[hud.Element]bool),
 		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
-		debugShapesAdd:         make(chan debug.Shape, 256),
-		debugShapesRemove:      make(chan int, 256),
+		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
 	}
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
