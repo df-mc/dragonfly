@@ -8,6 +8,7 @@ import (
 type InfestedStoneBricks struct {
 	solid
 	flute
+
 	// Type is the type of stone bricks of the block.
 	Type StoneBricksType
 }
