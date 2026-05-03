@@ -27,11 +27,6 @@ func (s InfestedStoneBricks) EncodeBlock() (string, map[string]any) {
 	return "minecraft:infested_" + s.Type.String(), nil
 }
 
-// Hash ...
-func (s InfestedStoneBricks) Hash() (uint64, uint64) {
-	return hashInfestedStoneBricks, uint64(s.Type.Uint8())
-}
-
 // allInfestedStoneBricks returns a list of all infested stone bricks variants.
 func allInfestedStoneBricks() (s []world.Block) {
 	for _, t := range StoneBricksTypes() {
