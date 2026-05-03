@@ -56,7 +56,6 @@ func init() {
 	world.RegisterBlock(Grass{})
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(Honeycomb{})
-	world.RegisterBlock(InvisibleBedrock{})
 	world.RegisterBlock(InfestedStone{})
 	world.RegisterBlock(InfestedCobblestone{})
 	for _, b := range allInfestedStoneBricks() {
@@ -65,6 +64,7 @@ func init() {
 	for _, b := range allInfestedDeepslate() {
 		world.RegisterBlock(b)
 	}
+	world.RegisterBlock(InvisibleBedrock{})
 	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(Iron{})
 	world.RegisterBlock(Jukebox{})
@@ -301,13 +301,13 @@ func init() {
 	world.RegisterItem(HayBale{})
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(Hopper{})
-	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(InfestedStone{})
 	world.RegisterItem(InfestedCobblestone{})
 	for _, t := range StoneBricksTypes() {
 		world.RegisterItem(InfestedStoneBricks{Type: t})
 	}
 	world.RegisterItem(InfestedDeepslate{})
+	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(IronBars{})
 	world.RegisterItem(Iron{})
 	world.RegisterItem(ItemFrame{Glowing: true})
