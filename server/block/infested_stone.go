@@ -8,7 +8,7 @@ type InfestedStone struct {
 
 // BreakInfo ...
 func (i InfestedStone) BreakInfo() BreakInfo {
-	return newBreakInfo(0.75, alwaysHarvestable, nothingEffective, nil).withBlastResistance(0.75)
+	return newBreakInfo(0.75, pickaxeHarvestable, pickaxeEffective, silkTouchOnlyDrop(i)).withBlastResistance(0.75)
 }
 
 // EncodeItem ...

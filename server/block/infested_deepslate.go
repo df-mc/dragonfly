@@ -18,7 +18,7 @@ type InfestedDeepslate struct {
 
 // BreakInfo ...
 func (i InfestedDeepslate) BreakInfo() BreakInfo {
-	return newBreakInfo(0.75, alwaysHarvestable, nothingEffective, nil).withBlastResistance(0.75)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOnlyDrop(Deepslate{Axis: i.Axis})).withBlastResistance(0.75)
 }
 
 // UseOnBlock ...
