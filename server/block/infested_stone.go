@@ -3,7 +3,7 @@ package block
 // InfestedStone is a block that hides a silverfish. It looks identical to stone.
 type InfestedStone struct {
 	solid
-	bassDrum
+	flute
 }
 
 // BreakInfo ...
@@ -12,11 +12,11 @@ func (i InfestedStone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (i InfestedStone) EncodeItem() (name string, meta int16) {
+func (InfestedStone) EncodeItem() (name string, meta int16) {
 	return "minecraft:infested_stone", 0
 }
 
 // EncodeBlock ...
-func (i InfestedStone) EncodeBlock() (string, map[string]any) {
+func (InfestedStone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:infested_stone", nil
 }

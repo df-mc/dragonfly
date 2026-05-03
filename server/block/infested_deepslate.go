@@ -10,7 +10,7 @@ import (
 // InfestedDeepslate is a block that hides a silverfish. It looks identical to deepslate.
 type InfestedDeepslate struct {
 	solid
-	bassDrum
+	flute
 
 	// Axis is the axis which the deepslate faces.
 	Axis cube.Axis
@@ -18,7 +18,7 @@ type InfestedDeepslate struct {
 
 // BreakInfo ...
 func (i InfestedDeepslate) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOnlyDrop(Deepslate{Axis: i.Axis})).withBlastResistance(0.75)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, silkTouchOnlyDrop(i)).withBlastResistance(0.75)
 }
 
 // UseOnBlock ...
@@ -34,7 +34,7 @@ func (i InfestedDeepslate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3
 }
 
 // EncodeItem ...
-func (i InfestedDeepslate) EncodeItem() (name string, meta int16) {
+func (InfestedDeepslate) EncodeItem() (name string, meta int16) {
 	return "minecraft:infested_deepslate", 0
 }
 

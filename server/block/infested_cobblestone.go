@@ -3,7 +3,7 @@ package block
 // InfestedCobblestone is a block that hides a silverfish. It looks identical to cobblestone.
 type InfestedCobblestone struct {
 	solid
-	bassDrum
+	flute
 }
 
 // BreakInfo ...
@@ -12,11 +12,11 @@ func (i InfestedCobblestone) BreakInfo() BreakInfo {
 }
 
 // EncodeItem ...
-func (i InfestedCobblestone) EncodeItem() (name string, meta int16) {
+func (InfestedCobblestone) EncodeItem() (name string, meta int16) {
 	return "minecraft:infested_cobblestone", 0
 }
 
 // EncodeBlock ...
-func (i InfestedCobblestone) EncodeBlock() (string, map[string]any) {
+func (InfestedCobblestone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:infested_cobblestone", nil
 }

@@ -595,8 +595,8 @@ func (InfestedStone) Hash() (uint64, uint64) {
 	return hashInfestedStone, 0
 }
 
-func (s InfestedStoneBricks) Hash() (uint64, uint64) {
-	return hashInfestedStoneBricks, uint64(s.Type.Uint8())
+func (i InfestedStoneBricks) Hash() (uint64, uint64) {
+	return hashInfestedStoneBricks, uint64(i.Type.Uint8())
 }
 
 func (InvisibleBedrock) Hash() (uint64, uint64) {
