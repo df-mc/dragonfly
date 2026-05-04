@@ -83,7 +83,7 @@ func (conf Config) New() *World {
 	if conf.Provider == nil {
 		// If no provider is set, use the default settings and the default spawn position from the generator.
 		s := defaultSettings()
-		s.Spawn = conf.Generator.DefaultSpawn()
+		s.Spawn = conf.Generator.DefaultSpawn(conf.Dim)
 		conf.Provider = NopProvider{Set: s}
 	}
 	if conf.RandomTickSpeed == 0 {

@@ -11,8 +11,8 @@ type Generator interface {
 	// GenerateChunk generates a chunk at a chunk position passed. The generator sets blocks in the chunk that
 	// is passed to the method.
 	GenerateChunk(pos ChunkPos, chunk *chunk.Chunk)
-	// DefaultSpawn returns the default spawn position for worlds using this generator.
-	DefaultSpawn() cube.Pos
+	// DefaultSpawn returns the default spawn position for worlds using this generator in the dimension passed.
+	DefaultSpawn(dim Dimension) cube.Pos
 }
 
 // NopGenerator is the default generator a world. It places no blocks in the world which results in a void
@@ -23,4 +23,4 @@ type NopGenerator struct{}
 func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
 
 // DefaultSpawn ...
-func (NopGenerator) DefaultSpawn() cube.Pos { return cube.Pos{} }
+func (NopGenerator) DefaultSpawn(Dimension) cube.Pos { return cube.Pos{} }
