@@ -62,6 +62,7 @@ func (s *Session) RemoveViewLayer(entity world.Entity) {
 	s.viewLayerEntityChanged(entity)
 }
 
+// viewLayerEntityChanged refreshes the entity metadata for this session if the entity is currently visible.
 func (s *Session) viewLayerEntityChanged(e world.Entity) {
 	if s.entityHidden(e) || !s.viewingEntity(e.H()) {
 		return
@@ -69,6 +70,7 @@ func (s *Session) viewLayerEntityChanged(e world.Entity) {
 	s.ViewEntityState(e)
 }
 
+// viewingEntity checks if this session currently has a runtime ID assigned to the entity handle.
 func (s *Session) viewingEntity(handle *world.EntityHandle) bool {
 	s.entityMutex.RLock()
 	_, ok := s.entityRuntimeIDs[handle]

@@ -122,6 +122,7 @@ func (v *ViewLayer) Close() error {
 	return nil
 }
 
+// empty checks if the layer does not override any public entity metadata.
 func (l layer) empty() bool {
 	return l.nameTag == nil && l.scoreTag == nil && l.visibility == PublicVisibility()
 }
