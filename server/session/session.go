@@ -195,8 +195,6 @@ func (conf Config) New(conn Conn) *Session {
 		hudUpdates:             make(map[hud.Element]bool),
 		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
-		debugShapesAdd:         make(chan debug.Shape, 256),
-		debugShapesRemove:      make(chan int, 256),
 		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
 		viewLayer:              world.NewViewLayer(),
 	}
