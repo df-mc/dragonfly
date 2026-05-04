@@ -1,10 +1,13 @@
 package world
 
-import "sync"
+import (
+	"maps"
+	"slices"
+	"sync"
+)
 
 // layer stores the appearance overrides that a ViewLayer applies to a viewer.
 type layer struct {
-	viewer     Entity
 	nameTag    *string
 	scoreTag   *string
 	visibility VisibilityLevel
@@ -24,15 +27,11 @@ func NewViewLayer() *ViewLayer {
 	}
 }
 
-// Viewers returns all viewers with overrides in the view layer.
-func (v *ViewLayer) Viewers() []Entity {
+// Viewers returns the handles of all viewers with overrides in the view layer.
+func (v *ViewLayer) Viewers() []*EntityHandle {
 	v.viewerMu.RLock()
 	defer v.viewerMu.RUnlock()
-	viewers := make([]Entity, 0, len(v.viewers))
-	for _, l := range v.viewers {
-		viewers = append(viewers, l.viewer)
-	}
-	return viewers
+	return slices.Collect(maps.Keys(v.viewers))
 }
 
 // ViewNameTag overwrites the public name tag of the viewer and allows this ViewLayer to view a different name tag.
@@ -43,7 +42,6 @@ func (v *ViewLayer) ViewNameTag(viewer Entity, nameTag string) {
 
 	handle := viewer.H()
 	l := v.viewers[handle]
-	l.viewer = viewer
 	l.nameTag = &nameTag
 	v.viewers[handle] = l
 }
@@ -61,7 +59,6 @@ func (v *ViewLayer) ViewPublicNameTag(viewer Entity) {
 		delete(v.viewers, handle)
 		return
 	}
-	l.viewer = viewer
 	v.viewers[handle] = l
 }
 
@@ -84,7 +81,6 @@ func (v *ViewLayer) ViewScoreTag(viewer Entity, scoreTag string) {
 
 	handle := viewer.H()
 	l := v.viewers[handle]
-	l.viewer = viewer
 	l.scoreTag = &scoreTag
 	v.viewers[handle] = l
 }
@@ -102,7 +98,6 @@ func (v *ViewLayer) ViewPublicScoreTag(viewer Entity) {
 		delete(v.viewers, handle)
 		return
 	}
-	l.viewer = viewer
 	v.viewers[handle] = l
 }
 
@@ -125,7 +120,6 @@ func (v *ViewLayer) ViewVisibility(viewer Entity, level VisibilityLevel) {
 
 	handle := viewer.H()
 	l := v.viewers[handle]
-	l.viewer = viewer
 	l.visibility = level
 	if l.empty() {
 		delete(v.viewers, handle)
