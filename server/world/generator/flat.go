@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
@@ -47,3 +48,6 @@ func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 		}
 	}
 }
+
+// DefaultSpawn ...
+func (Flat) DefaultSpawn() cube.Pos { return cube.Pos{0, -59, 0} }
