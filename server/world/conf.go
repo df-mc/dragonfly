@@ -82,9 +82,6 @@ func (conf Config) New() *World {
 	if conf.Dim == nil {
 		conf.Dim = Overworld
 	}
-	if conf.Provider == nil {
-		conf.Provider = NopProvider{}
-	}
 	if conf.SaveInterval == 0 {
 		conf.SaveInterval = time.Minute * 10
 	}
@@ -93,6 +90,12 @@ func (conf Config) New() *World {
 	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}
+	}
+	if conf.Provider == nil {
+		// If no provider is set, use the default settings and the default spawn position from the generator.
+		s := defaultSettings()
+		s.Spawn = conf.Generator.DefaultSpawn()
+		conf.Provider = NopProvider{Set: s}
 	}
 	if conf.RandomTickSpeed == 0 {
 		conf.RandomTickSpeed = 3

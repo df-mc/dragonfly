@@ -1,6 +1,7 @@
 package world
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
 
@@ -10,6 +11,8 @@ type Generator interface {
 	// GenerateChunk generates a chunk at a chunk position passed. The generator sets blocks in the chunk that
 	// is passed to the method.
 	GenerateChunk(pos ChunkPos, chunk *chunk.Chunk)
+	// DefaultSpawn returns the default spawn position for worlds using this generator.
+	DefaultSpawn() cube.Pos
 }
 
 // NopGenerator is the default generator a world. It places no blocks in the world which results in a void
@@ -18,3 +21,6 @@ type NopGenerator struct{}
 
 // GenerateChunk ...
 func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
+
+// DefaultSpawn ...
+func (NopGenerator) DefaultSpawn() cube.Pos { return cube.Pos{} }
