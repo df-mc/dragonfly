@@ -3,7 +3,6 @@ package world
 import (
 	"maps"
 	"slices"
-	"sync"
 )
 
 // layer stores the appearance overrides that a ViewLayer applies to a viewer.
@@ -16,8 +15,7 @@ type layer struct {
 // ViewLayer holds per-viewer overrides for entities. It allows entities to be viewed differently by
 // different players, such as with a different name tag or visibility state.
 type ViewLayer struct {
-	viewerMu sync.RWMutex
-	viewers  map[*EntityHandle]layer
+	viewers map[*EntityHandle]layer
 }
 
 // NewViewLayer returns a new ViewLayer.
@@ -29,17 +27,12 @@ func NewViewLayer() *ViewLayer {
 
 // Viewers returns the handles of all viewers with overrides in the view layer.
 func (v *ViewLayer) Viewers() []*EntityHandle {
-	v.viewerMu.RLock()
-	defer v.viewerMu.RUnlock()
 	return slices.Collect(maps.Keys(v.viewers))
 }
 
 // ViewNameTag overwrites the public name tag of the viewer and allows this ViewLayer to view a different name tag.
 // Passing an empty name tag removes the name tag for this ViewLayer.
 func (v *ViewLayer) ViewNameTag(viewer Entity, nameTag string) {
-	v.viewerMu.Lock()
-	defer v.viewerMu.Unlock()
-
 	handle := viewer.H()
 	l := v.viewers[handle]
 	l.nameTag = &nameTag
@@ -49,9 +42,6 @@ func (v *ViewLayer) ViewNameTag(viewer Entity, nameTag string) {
 // ViewPublicNameTag removes the name tag override from the viewer, causing the public name tag to be
 // viewed again.
 func (v *ViewLayer) ViewPublicNameTag(viewer Entity) {
-	v.viewerMu.Lock()
-	defer v.viewerMu.Unlock()
-
 	handle := viewer.H()
 	l := v.viewers[handle]
 	l.nameTag = nil
@@ -64,8 +54,6 @@ func (v *ViewLayer) ViewPublicNameTag(viewer Entity) {
 
 // NameTag returns the overwritten name tag of the viewer and whether an override was set.
 func (v *ViewLayer) NameTag(viewer Entity) (string, bool) {
-	v.viewerMu.RLock()
-	defer v.viewerMu.RUnlock()
 	nameTag := v.viewers[viewer.H()].nameTag
 	if nameTag == nil {
 		return "", false
@@ -76,9 +64,6 @@ func (v *ViewLayer) NameTag(viewer Entity) (string, bool) {
 // ViewScoreTag overwrites the public score tag of the viewer and allows this ViewLayer to view a different score tag.
 // Passing an empty score tag removes the score tag for this ViewLayer.
 func (v *ViewLayer) ViewScoreTag(viewer Entity, scoreTag string) {
-	v.viewerMu.Lock()
-	defer v.viewerMu.Unlock()
-
 	handle := viewer.H()
 	l := v.viewers[handle]
 	l.scoreTag = &scoreTag
@@ -88,9 +73,6 @@ func (v *ViewLayer) ViewScoreTag(viewer Entity, scoreTag string) {
 // ViewPublicScoreTag removes the score tag override from the viewer, causing the public score tag to be
 // viewed again.
 func (v *ViewLayer) ViewPublicScoreTag(viewer Entity) {
-	v.viewerMu.Lock()
-	defer v.viewerMu.Unlock()
-
 	handle := viewer.H()
 	l := v.viewers[handle]
 	l.scoreTag = nil
@@ -103,8 +85,6 @@ func (v *ViewLayer) ViewPublicScoreTag(viewer Entity) {
 
 // ScoreTag returns the overwritten score tag of the viewer and whether an override was set.
 func (v *ViewLayer) ScoreTag(viewer Entity) (string, bool) {
-	v.viewerMu.RLock()
-	defer v.viewerMu.RUnlock()
 	scoreTag := v.viewers[viewer.H()].scoreTag
 	if scoreTag == nil {
 		return "", false
@@ -115,9 +95,6 @@ func (v *ViewLayer) ScoreTag(viewer Entity) (string, bool) {
 // ViewVisibility overwrites the public visibility of the viewer and allows this ViewLayer to view
 // this viewer as (in)visible depending on the VisibilityLevel.
 func (v *ViewLayer) ViewVisibility(viewer Entity, level VisibilityLevel) {
-	v.viewerMu.Lock()
-	defer v.viewerMu.Unlock()
-
 	handle := viewer.H()
 	l := v.viewers[handle]
 	l.visibility = level
@@ -130,24 +107,17 @@ func (v *ViewLayer) ViewVisibility(viewer Entity, level VisibilityLevel) {
 
 // Visibility returns the visibility of the viewer.
 func (v *ViewLayer) Visibility(viewer Entity) VisibilityLevel {
-	v.viewerMu.RLock()
-	defer v.viewerMu.RUnlock()
 	return v.viewers[viewer.H()].visibility
 }
 
 // Remove removes all overrides for the viewer from the ViewLayer.
 func (v *ViewLayer) Remove(viewer Entity) {
-	v.viewerMu.Lock()
-	defer v.viewerMu.Unlock()
-
 	handle := viewer.H()
 	delete(v.viewers, handle)
 }
 
 // Close closes the view layer.
 func (v *ViewLayer) Close() error {
-	v.viewerMu.Lock()
-	defer v.viewerMu.Unlock()
 	clear(v.viewers)
 	return nil
 }
