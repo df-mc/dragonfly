@@ -2,18 +2,9 @@ package world
 
 import "sync"
 
-// LayerViewer represents an entity whose appearance may be overridden by a ViewLayer for individual
-// viewers.
-type LayerViewer interface {
-	// H returns the EntityHandle that points to the viewer.
-	H() *EntityHandle
-	// ViewLayer returns the ViewLayer attached to the viewer.
-	ViewLayer() *ViewLayer
-}
-
-// layer stores the appearance overrides that a ViewLayer applies to a LayerViewer.
+// layer stores the appearance overrides that a ViewLayer applies to a viewer.
 type layer struct {
-	viewer     LayerViewer
+	viewer     Entity
 	nameTag    *string
 	scoreTag   *string
 	visibility VisibilityLevel
@@ -33,11 +24,11 @@ func NewViewLayer() *ViewLayer {
 	}
 }
 
-// Viewers returns all viewers of the view layer.
-func (v *ViewLayer) Viewers() []LayerViewer {
+// Viewers returns all viewers with overrides in the view layer.
+func (v *ViewLayer) Viewers() []Entity {
 	v.viewerMu.RLock()
 	defer v.viewerMu.RUnlock()
-	viewers := make([]LayerViewer, 0, len(v.viewers))
+	viewers := make([]Entity, 0, len(v.viewers))
 	for _, l := range v.viewers {
 		viewers = append(viewers, l.viewer)
 	}
@@ -46,7 +37,7 @@ func (v *ViewLayer) Viewers() []LayerViewer {
 
 // ViewNameTag overwrites the public name tag of the viewer and allows this ViewLayer to view a different name tag.
 // Passing an empty name tag removes the name tag for this ViewLayer.
-func (v *ViewLayer) ViewNameTag(viewer LayerViewer, nameTag string) {
+func (v *ViewLayer) ViewNameTag(viewer Entity, nameTag string) {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 
@@ -59,7 +50,7 @@ func (v *ViewLayer) ViewNameTag(viewer LayerViewer, nameTag string) {
 
 // ViewPublicNameTag removes the name tag override from the viewer, causing the public name tag to be
 // viewed again.
-func (v *ViewLayer) ViewPublicNameTag(viewer LayerViewer) {
+func (v *ViewLayer) ViewPublicNameTag(viewer Entity) {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 
@@ -75,7 +66,7 @@ func (v *ViewLayer) ViewPublicNameTag(viewer LayerViewer) {
 }
 
 // NameTag returns the overwritten name tag of the viewer and whether an override was set.
-func (v *ViewLayer) NameTag(viewer LayerViewer) (string, bool) {
+func (v *ViewLayer) NameTag(viewer Entity) (string, bool) {
 	v.viewerMu.RLock()
 	defer v.viewerMu.RUnlock()
 	nameTag := v.viewers[viewer.H()].nameTag
@@ -87,7 +78,7 @@ func (v *ViewLayer) NameTag(viewer LayerViewer) (string, bool) {
 
 // ViewScoreTag overwrites the public score tag of the viewer and allows this ViewLayer to view a different score tag.
 // Passing an empty score tag removes the score tag for this ViewLayer.
-func (v *ViewLayer) ViewScoreTag(viewer LayerViewer, scoreTag string) {
+func (v *ViewLayer) ViewScoreTag(viewer Entity, scoreTag string) {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 
@@ -100,7 +91,7 @@ func (v *ViewLayer) ViewScoreTag(viewer LayerViewer, scoreTag string) {
 
 // ViewPublicScoreTag removes the score tag override from the viewer, causing the public score tag to be
 // viewed again.
-func (v *ViewLayer) ViewPublicScoreTag(viewer LayerViewer) {
+func (v *ViewLayer) ViewPublicScoreTag(viewer Entity) {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 
@@ -116,7 +107,7 @@ func (v *ViewLayer) ViewPublicScoreTag(viewer LayerViewer) {
 }
 
 // ScoreTag returns the overwritten score tag of the viewer and whether an override was set.
-func (v *ViewLayer) ScoreTag(viewer LayerViewer) (string, bool) {
+func (v *ViewLayer) ScoreTag(viewer Entity) (string, bool) {
 	v.viewerMu.RLock()
 	defer v.viewerMu.RUnlock()
 	scoreTag := v.viewers[viewer.H()].scoreTag
@@ -128,7 +119,7 @@ func (v *ViewLayer) ScoreTag(viewer LayerViewer) (string, bool) {
 
 // ViewVisibility overwrites the public visibility of the viewer and allows this ViewLayer to view
 // this viewer as (in)visible depending on the VisibilityLevel.
-func (v *ViewLayer) ViewVisibility(viewer LayerViewer, level VisibilityLevel) {
+func (v *ViewLayer) ViewVisibility(viewer Entity, level VisibilityLevel) {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 
@@ -144,14 +135,14 @@ func (v *ViewLayer) ViewVisibility(viewer LayerViewer, level VisibilityLevel) {
 }
 
 // Visibility returns the visibility of the viewer.
-func (v *ViewLayer) Visibility(viewer LayerViewer) VisibilityLevel {
+func (v *ViewLayer) Visibility(viewer Entity) VisibilityLevel {
 	v.viewerMu.RLock()
 	defer v.viewerMu.RUnlock()
 	return v.viewers[viewer.H()].visibility
 }
 
 // Remove removes all overrides for the viewer from the ViewLayer.
-func (v *ViewLayer) Remove(viewer LayerViewer) {
+func (v *ViewLayer) Remove(viewer Entity) {
 	v.viewerMu.Lock()
 	defer v.viewerMu.Unlock()
 

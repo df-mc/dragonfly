@@ -74,7 +74,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	s.entityMutex.Unlock()
 
 	yaw, pitch := e.Rotation().Elem()
-	metadata := s.parseEntityMetadata(e)
+	metadata := s.entityMetadata(e)
 
 	id := e.H().Type().EncodeEntity()
 	switch v := e.(type) {
@@ -1066,35 +1066,40 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 
 // ViewEntityState ...
 func (s *Session) ViewEntityState(e world.Entity) {
+	s.writePacket(&packet.SetActorData{
+		EntityRuntimeID: s.entityRuntimeID(e),
+		EntityMetadata:  s.entityMetadata(e),
+	})
+}
+
+func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	metadata := s.parseEntityMetadata(e)
-	if v, ok := e.(LayerViewer); ok {
-		if nt, ok := s.viewLayer.NameTag(v); ok {
-			metadata[protocol.EntityDataKeyName] = nt
-			if nt == "" {
-				metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
-				if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
-					metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-				}
-				if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
-					metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
-				}
+	if s.viewLayer == nil {
+		return metadata
+	}
+	if nt, ok := s.viewLayer.NameTag(e); ok {
+		metadata[protocol.EntityDataKeyName] = nt
+		if nt == "" {
+			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
+			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
 			}
-		}
-		if st, ok := s.viewLayer.ScoreTag(v); ok {
-			metadata[protocol.EntityDataKeyScore] = st
-		}
-		if visibility := s.viewLayer.Visibility(v); visibility.EnforceVisibility() {
-			invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
-			if (visibility == world.EnforceVisible() && invisibleFlag) ||
-				visibility == world.EnforceInvisible() && !invisibleFlag {
-				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
 			}
 		}
 	}
-	s.writePacket(&packet.SetActorData{
-		EntityRuntimeID: s.entityRuntimeID(e),
-		EntityMetadata:  metadata,
-	})
+	if st, ok := s.viewLayer.ScoreTag(e); ok {
+		metadata[protocol.EntityDataKeyScore] = st
+	}
+	if visibility := s.viewLayer.Visibility(e); visibility.EnforceVisibility() {
+		invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		if (visibility == world.EnforceVisible() && invisibleFlag) ||
+			visibility == world.EnforceInvisible() && !invisibleFlag {
+			metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		}
+	}
+	return metadata
 }
 
 // ViewEntityAnimation ...

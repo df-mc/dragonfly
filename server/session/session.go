@@ -307,11 +307,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.
-	var viewer LayerViewer
-	if v, ok := c.(LayerViewer); ok {
-		viewer = v
-	}
-	sessions.Remove(s, viewer)
+	sessions.Remove(s, c)
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)

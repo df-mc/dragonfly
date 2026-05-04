@@ -2586,6 +2586,36 @@ func (p *Player) ViewLayer() *world.ViewLayer {
 	return p.session().ViewLayer()
 }
 
+// ViewNameTag overwrites the public name tag of the entity for this player.
+func (p *Player) ViewNameTag(entity world.Entity, nameTag string) {
+	p.session().ViewNameTag(entity, nameTag)
+}
+
+// ViewPublicNameTag removes the name tag override of the entity for this player.
+func (p *Player) ViewPublicNameTag(entity world.Entity) {
+	p.session().ViewPublicNameTag(entity)
+}
+
+// ViewScoreTag overwrites the public score tag of the entity for this player.
+func (p *Player) ViewScoreTag(entity world.Entity, scoreTag string) {
+	p.session().ViewScoreTag(entity, scoreTag)
+}
+
+// ViewPublicScoreTag removes the score tag override of the entity for this player.
+func (p *Player) ViewPublicScoreTag(entity world.Entity) {
+	p.session().ViewPublicScoreTag(entity)
+}
+
+// ViewVisibility overwrites the public visibility of the entity for this player.
+func (p *Player) ViewVisibility(entity world.Entity, level world.VisibilityLevel) {
+	p.session().ViewVisibility(entity, level)
+}
+
+// RemoveViewLayer removes all view-layer overrides of the entity for this player.
+func (p *Player) RemoveViewLayer(entity world.Entity) {
+	p.session().RemoveViewLayer(entity)
+}
+
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
 func (p *Player) tickAirSupply() {
 	if !p.canBreathe() {
