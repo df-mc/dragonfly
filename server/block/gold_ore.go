@@ -17,7 +17,7 @@ type GoldOre struct {
 func (g GoldOre) BreakInfo() BreakInfo {
 	return newBreakInfo(g.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, silkTouchOneOf(item.RawGold{}, g)).withBlastResistance(15)
+	}, pickaxeEffective, oreDrops(item.RawGold{}, g)).withBlastResistance(15)
 }
 
 // SmeltInfo ...
