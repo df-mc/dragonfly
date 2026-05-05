@@ -5,120 +5,120 @@ import (
 	"slices"
 )
 
-// layer stores the appearance overrides that a ViewLayer applies to a viewer.
+// layer stores the appearance overrides that a ViewLayer applies to an entity.
 type layer struct {
 	nameTag    *string
 	scoreTag   *string
 	visibility VisibilityLevel
 }
 
-// ViewLayer holds per-viewer overrides for entities. It allows entities to be viewed differently by
-// different players, such as with a different name tag or visibility state.
+// ViewLayer holds overrides for how entities are viewed by a single viewer. It allows entities to be
+// viewed differently by different players, such as with a different name tag or visibility state.
 type ViewLayer struct {
-	viewers map[*EntityHandle]layer
+	entities map[*EntityHandle]layer
 }
 
 // NewViewLayer returns a new ViewLayer.
 func NewViewLayer() *ViewLayer {
 	return &ViewLayer{
-		viewers: map[*EntityHandle]layer{},
+		entities: map[*EntityHandle]layer{},
 	}
 }
 
-// Viewers returns the handles of all viewers with overrides in the view layer.
-func (v *ViewLayer) Viewers() []*EntityHandle {
-	return slices.Collect(maps.Keys(v.viewers))
+// Entities returns the handles of all entities with overrides in the view layer.
+func (v *ViewLayer) Entities() []*EntityHandle {
+	return slices.Collect(maps.Keys(v.entities))
 }
 
-// ViewNameTag overwrites the public name tag of the viewer and allows this ViewLayer to view a different name tag.
+// ViewNameTag overwrites the public name tag of the entity and allows this ViewLayer to view a different name tag.
 // Passing an empty name tag removes the name tag for this ViewLayer.
-func (v *ViewLayer) ViewNameTag(viewer Entity, nameTag string) {
-	handle := viewer.H()
-	l := v.viewers[handle]
+func (v *ViewLayer) ViewNameTag(entity Entity, nameTag string) {
+	handle := entity.H()
+	l := v.entities[handle]
 	l.nameTag = &nameTag
-	v.viewers[handle] = l
+	v.entities[handle] = l
 }
 
-// ViewPublicNameTag removes the name tag override from the viewer, causing the public name tag to be
+// ViewPublicNameTag removes the name tag override from the entity, causing the public name tag to be
 // viewed again.
-func (v *ViewLayer) ViewPublicNameTag(viewer Entity) {
-	handle := viewer.H()
-	l := v.viewers[handle]
+func (v *ViewLayer) ViewPublicNameTag(entity Entity) {
+	handle := entity.H()
+	l := v.entities[handle]
 	l.nameTag = nil
 	if l.empty() {
-		delete(v.viewers, handle)
+		delete(v.entities, handle)
 		return
 	}
-	v.viewers[handle] = l
+	v.entities[handle] = l
 }
 
-// NameTag returns the overwritten name tag of the viewer and whether an override was set.
-func (v *ViewLayer) NameTag(viewer Entity) (string, bool) {
-	nameTag := v.viewers[viewer.H()].nameTag
+// NameTag returns the overwritten name tag of the entity and whether an override was set.
+func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
+	nameTag := v.entities[entity.H()].nameTag
 	if nameTag == nil {
 		return "", false
 	}
 	return *nameTag, true
 }
 
-// ViewScoreTag overwrites the public score tag of the viewer and allows this ViewLayer to view a different score tag.
+// ViewScoreTag overwrites the public score tag of the entity and allows this ViewLayer to view a different score tag.
 // Passing an empty score tag removes the score tag for this ViewLayer.
-func (v *ViewLayer) ViewScoreTag(viewer Entity, scoreTag string) {
-	handle := viewer.H()
-	l := v.viewers[handle]
+func (v *ViewLayer) ViewScoreTag(entity Entity, scoreTag string) {
+	handle := entity.H()
+	l := v.entities[handle]
 	l.scoreTag = &scoreTag
-	v.viewers[handle] = l
+	v.entities[handle] = l
 }
 
-// ViewPublicScoreTag removes the score tag override from the viewer, causing the public score tag to be
+// ViewPublicScoreTag removes the score tag override from the entity, causing the public score tag to be
 // viewed again.
-func (v *ViewLayer) ViewPublicScoreTag(viewer Entity) {
-	handle := viewer.H()
-	l := v.viewers[handle]
+func (v *ViewLayer) ViewPublicScoreTag(entity Entity) {
+	handle := entity.H()
+	l := v.entities[handle]
 	l.scoreTag = nil
 	if l.empty() {
-		delete(v.viewers, handle)
+		delete(v.entities, handle)
 		return
 	}
-	v.viewers[handle] = l
+	v.entities[handle] = l
 }
 
-// ScoreTag returns the overwritten score tag of the viewer and whether an override was set.
-func (v *ViewLayer) ScoreTag(viewer Entity) (string, bool) {
-	scoreTag := v.viewers[viewer.H()].scoreTag
+// ScoreTag returns the overwritten score tag of the entity and whether an override was set.
+func (v *ViewLayer) ScoreTag(entity Entity) (string, bool) {
+	scoreTag := v.entities[entity.H()].scoreTag
 	if scoreTag == nil {
 		return "", false
 	}
 	return *scoreTag, true
 }
 
-// ViewVisibility overwrites the public visibility of the viewer and allows this ViewLayer to view
-// this viewer as (in)visible depending on the VisibilityLevel.
-func (v *ViewLayer) ViewVisibility(viewer Entity, level VisibilityLevel) {
-	handle := viewer.H()
-	l := v.viewers[handle]
+// ViewVisibility overwrites the public visibility of the entity and allows this ViewLayer to view
+// this entity as (in)visible depending on the VisibilityLevel.
+func (v *ViewLayer) ViewVisibility(entity Entity, level VisibilityLevel) {
+	handle := entity.H()
+	l := v.entities[handle]
 	l.visibility = level
 	if l.empty() {
-		delete(v.viewers, handle)
+		delete(v.entities, handle)
 		return
 	}
-	v.viewers[handle] = l
+	v.entities[handle] = l
 }
 
-// Visibility returns the visibility of the viewer.
-func (v *ViewLayer) Visibility(viewer Entity) VisibilityLevel {
-	return v.viewers[viewer.H()].visibility
+// Visibility returns the visibility of the entity.
+func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
+	return v.entities[entity.H()].visibility
 }
 
-// Remove removes all overrides for the viewer from the ViewLayer.
-func (v *ViewLayer) Remove(viewer Entity) {
-	handle := viewer.H()
-	delete(v.viewers, handle)
+// Remove removes all overrides for the entity from the ViewLayer.
+func (v *ViewLayer) Remove(entity Entity) {
+	handle := entity.H()
+	delete(v.entities, handle)
 }
 
 // Close closes the view layer.
 func (v *ViewLayer) Close() error {
-	clear(v.viewers)
+	clear(v.entities)
 	return nil
 }
 

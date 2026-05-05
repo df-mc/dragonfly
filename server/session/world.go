@@ -1081,7 +1081,15 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	}
 	if nt, ok := s.viewLayer.NameTag(e); ok {
 		metadata[protocol.EntityDataKeyName] = nt
-		if nt == "" {
+		if nt != "" {
+			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
+			if !metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			}
+			if !metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+			}
+		} else {
 			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
 			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
 				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
