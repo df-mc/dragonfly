@@ -138,6 +138,8 @@ func (v *ViewLayer) remove(entity Entity) bool {
 	return ok
 }
 
+// update applies a mutation to the entity's layer, removes the entry if no overrides remain, and refreshes
+// the entity for the layer's viewer.
 func (v *ViewLayer) update(entity Entity, update func(*layer)) {
 	handle := entity.H()
 
