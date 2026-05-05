@@ -74,7 +74,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	s.entityMutex.Unlock()
 
 	yaw, pitch := e.Rotation().Elem()
-	metadata := s.parseEntityMetadata(e)
+	metadata := s.entityMetadata(e)
 
 	id := e.H().Type().EncodeEntity()
 	switch v := e.(type) {
@@ -1109,8 +1109,51 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 func (s *Session) ViewEntityState(e world.Entity) {
 	s.writePacket(&packet.SetActorData{
 		EntityRuntimeID: s.entityRuntimeID(e),
-		EntityMetadata:  s.parseEntityMetadata(e),
+		EntityMetadata:  s.entityMetadata(e),
 	})
+}
+
+// entityMetadata returns the metadata of an entity as viewed by the session, including any overrides
+// applied through its ViewLayer.
+func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
+	metadata := s.parseEntityMetadata(e)
+	if s.viewLayer == nil {
+		return metadata
+	}
+	if nt, ok := s.viewLayer.NameTag(e); ok {
+		metadata[protocol.EntityDataKeyName] = nt
+		if nt != "" {
+			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
+			if !metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			}
+			if !metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
+				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+			}
+		} else {
+			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
+			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
+				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			}
+			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
+				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+			}
+		}
+	}
+	if st, ok := s.viewLayer.ScoreTag(e); ok {
+		metadata[protocol.EntityDataKeyScore] = st
+	}
+	if visibility := s.viewLayer.Visibility(e); visibility.EnforceVisibility() {
+		invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		shouldForceVisible := visibility == world.EnforceVisible() && invisibleFlag
+		shouldForceInvisible := visibility == world.EnforceInvisible() && !invisibleFlag
+		if shouldForceVisible {
+			metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		} else if shouldForceInvisible {
+			metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		}
+	}
+	return metadata
 }
 
 // ViewEntityAnimation ...

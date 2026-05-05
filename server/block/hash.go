@@ -97,6 +97,10 @@ const (
 	hashHayBale
 	hashHoneycomb
 	hashHopper
+	hashInfestedCobblestone
+	hashInfestedDeepslate
+	hashInfestedStone
+	hashInfestedStoneBricks
 	hashInvisibleBedrock
 	hashIron
 	hashIronBars
@@ -578,6 +582,22 @@ func (Honeycomb) Hash() (uint64, uint64) {
 
 func (h Hopper) Hash() (uint64, uint64) {
 	return hashHopper, uint64(h.Facing) | uint64(boolByte(h.Powered))<<3
+}
+
+func (InfestedCobblestone) Hash() (uint64, uint64) {
+	return hashInfestedCobblestone, 0
+}
+
+func (i InfestedDeepslate) Hash() (uint64, uint64) {
+	return hashInfestedDeepslate, uint64(i.Axis)
+}
+
+func (InfestedStone) Hash() (uint64, uint64) {
+	return hashInfestedStone, 0
+}
+
+func (i InfestedStoneBricks) Hash() (uint64, uint64) {
+	return hashInfestedStoneBricks, uint64(i.Type.Uint8())
 }
 
 func (InvisibleBedrock) Hash() (uint64, uint64) {

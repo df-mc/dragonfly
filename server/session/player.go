@@ -820,8 +820,8 @@ func (s *Session) HudElementHidden(e hud.Element) bool {
 // of packets being sent. Up to 2 packets will be sent, one for showing elements and one for hiding elements.
 func (s *Session) SendHudUpdates() {
 	s.hudMu.Lock()
-	defer s.hudMu.Unlock()
 	if len(s.hudUpdates) == 0 {
+		s.hudMu.Unlock()
 		return
 	}
 	var show, hide []int32
@@ -835,6 +835,8 @@ func (s *Session) SendHudUpdates() {
 		}
 	}
 	s.hudUpdates = make(map[hud.Element]bool)
+	s.hudMu.Unlock()
+
 	if len(show) > 0 {
 		s.writePacket(&packet.SetHud{Elements: show, Visibility: packet.HudVisibilityReset})
 	}
@@ -846,17 +848,18 @@ func (s *Session) SendHudUpdates() {
 // AddDebugShape adds a debug shape to be rendered to the player. If the shape already exists, it will be
 // updated with the new information.
 func (s *Session) AddDebugShape(shape debug.Shape) {
-	s.debugShapesAdd <- shape
+	if s == Nop {
+		return
+	}
+	s.queueDebugShapeUpdate(debugShapeUpdate{id: shape.ShapeID(), shape: shape})
 }
 
 // RemoveDebugShape removes a debug shape from the player by its unique identifier.
 func (s *Session) RemoveDebugShape(shape debug.Shape) {
-	s.debugShapesMu.RLock()
-	defer s.debugShapesMu.RUnlock()
-
-	if _, ok := s.debugShapes[shape.ShapeID()]; ok {
-		s.debugShapesRemove <- shape.ShapeID()
+	if s == Nop {
+		return
 	}
+	s.queueDebugShapeUpdate(debugShapeUpdate{id: shape.ShapeID()})
 }
 
 // VisibleDebugShapes returns a slice of all debug shapes that are currently being shown to the player.
@@ -870,12 +873,15 @@ func (s *Session) VisibleDebugShapes() []debug.Shape {
 // RemoveAllDebugShapes removes all rendered debug shapes from the player, as well as any shapes that have
 // not yet been rendered.
 func (s *Session) RemoveAllDebugShapes() {
+	if s == Nop {
+		return
+	}
 	s.debugShapesMu.Lock()
 	defer s.debugShapesMu.Unlock()
 
-	s.debugShapesAdd = make(chan debug.Shape, 256)
+	s.debugShapeUpdates = s.debugShapeUpdates[:0]
 	for id := range s.debugShapes {
-		s.debugShapesRemove <- id
+		s.debugShapeUpdates = append(s.debugShapeUpdates, debugShapeUpdate{id: id})
 	}
 }
 
@@ -883,27 +889,37 @@ func (s *Session) RemoveAllDebugShapes() {
 // every tick to allow for batching and time-efficient updates.
 func (s *Session) SendDebugShapes(dim world.Dimension) {
 	s.debugShapesMu.Lock()
-	defer s.debugShapesMu.Unlock()
-
-	if len(s.debugShapesAdd) == 0 && len(s.debugShapesRemove) == 0 {
+	updates := s.debugShapeUpdates
+	if len(updates) == 0 {
+		s.debugShapesMu.Unlock()
 		return
 	}
 
-	shapes := make([]protocol.DebugDrawerShape, 0, len(s.debugShapesAdd)+len(s.debugShapesRemove))
-loop:
-	for {
-		select {
-		case shape := <-s.debugShapesAdd:
-			s.debugShapes[shape.ShapeID()] = shape
-			shapes = append(shapes, debugShapeToProtocol(shape, dim, s.shapeAttachedEntityRuntimeID(shape)))
-		case id := <-s.debugShapesRemove:
-			delete(s.debugShapes, id)
-			shapes = append(shapes, protocol.DebugDrawerShape{NetworkID: uint64(id), DimensionID: protocol.Option(s.dimensionID(dim)), ExtraShapeData: &protocol.LastShape{}})
-		default:
-			break loop
+	shapes := make([]protocol.DebugDrawerShape, 0, len(updates))
+	for _, update := range updates {
+		if update.shape == nil {
+			delete(s.debugShapes, update.id)
+			shapes = append(shapes, protocol.DebugDrawerShape{
+				NetworkID:      uint64(update.id),
+				DimensionID:    protocol.Option(s.dimensionID(dim)),
+				ExtraShapeData: &protocol.LastShape{},
+			})
+			continue
 		}
+		s.debugShapes[update.id] = update.shape
+		shapes = append(shapes, debugShapeToProtocol(update.shape, dim, s.shapeAttachedEntityRuntimeID(update.shape)))
 	}
+	s.debugShapeUpdates = s.debugShapeUpdates[:0]
+	s.debugShapesMu.Unlock()
+
 	s.writePacket(&packet.DebugDrawer{Shapes: shapes})
+}
+
+// queueDebugShapeUpdate queues a debug shape mutation to be applied the next time debug shapes are sent.
+func (s *Session) queueDebugShapeUpdate(update debugShapeUpdate) {
+	s.debugShapesMu.Lock()
+	defer s.debugShapesMu.Unlock()
+	s.debugShapeUpdates = append(s.debugShapeUpdates, update)
 }
 
 // valueOrDefault returns the value passed if it is not the zero value of the type T, otherwise it returns
