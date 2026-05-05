@@ -1092,10 +1092,10 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 		} else {
 			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
 			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
-				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
 			}
 			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
-				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
 			}
 		}
 	}
@@ -1106,7 +1106,9 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 		invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
 		shouldForceVisible := visibility == world.EnforceVisible() && invisibleFlag
 		shouldForceInvisible := visibility == world.EnforceInvisible() && !invisibleFlag
-		if shouldForceVisible || shouldForceInvisible {
+		if shouldForceVisible {
+			metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
+		} else if shouldForceInvisible {
 			metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
 		}
 	}
