@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"image/color"
 	"io"
 	"log/slog"
 	"net"
@@ -98,6 +99,8 @@ type Session struct {
 	debugShapesMu     sync.RWMutex
 	debugShapes       map[int]debug.Shape
 	debugShapeUpdates []debugShapeUpdate
+
+	colour atomic.Pointer[color.RGBA]
 
 	closeBackground chan struct{}
 }
@@ -195,6 +198,9 @@ func (conf Config) New(conn Conn) *Session {
 		debugShapes:            make(map[int]debug.Shape),
 		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
 	}
+	colour := randomColour(conn.IdentityData().DisplayName)
+	s.colour.Store(&colour)
+
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 
