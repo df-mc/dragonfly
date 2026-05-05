@@ -1,7 +1,9 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
@@ -13,6 +15,16 @@ type Glowstone struct {
 // Instrument ...
 func (g Glowstone) Instrument() sound.Instrument {
 	return sound.Pling()
+}
+
+// CanRedstoneWireStepDown ...
+func (Glowstone) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
+}
+
+// RelaysRedstonePowerThrough returns false.
+func (Glowstone) RelaysRedstonePowerThrough() bool {
+	return false
 }
 
 // BreakInfo ...

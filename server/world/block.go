@@ -79,6 +79,56 @@ type Liquid interface {
 	LiquidRemoveBlock(pos cube.Pos, tx *Tx, removed Block)
 }
 
+// Conductor represents a block that can conduct a redstone signal.
+type Conductor interface {
+	Block
+	// RedstoneSource returns true if the conductor is a signal source.
+	RedstoneSource() bool
+
+	// WeakPower returns the weak power level emitted by this conductor toward a neighbouring receiver.
+	// The face argument is relative to the receiving block, not this conductor.
+	// Weak power can pass through a solid block to power redstone components on the other side, but
+	// cannot power solid blocks themselves or travel further.
+	// The accountForDust parameter indicates whether redstone dust should be considered when
+	// calculating power levels.
+	WeakPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
+
+	// StrongPower returns the strong power level emitted by this conductor toward a neighbouring
+	// receiver. The face argument uses the same convention as WeakPower.
+	// Strong power can be transmitted through solid blocks. When a solid block receives strong power
+	// through one of its faces, it can provide weak power to adjacent redstone components on all other
+	// faces. Strong power can also directly power any redstone component.
+	// The accountForDust parameter indicates whether redstone dust should be considered when
+	// calculating power levels.
+	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
+}
+
+// WeakBlockPowerer represents a conductor whose weak power may weakly power an adjacent conductive block. Weakly
+// powered blocks may activate mechanisms and repeaters, but do not power adjacent redstone dust. For example,
+// dust pointing into a stone block opens a door on the stone's far side, but a second stretch of dust there stays
+// dark.
+type WeakBlockPowerer interface {
+	Conductor
+	// WeaklyPowersBlocks returns true if this conductor's WeakPower can make an adjacent conductive block weakly powered.
+	WeaklyPowersBlocks() bool
+}
+
+// RedstonePowerRelayer represents a block with custom behaviour for whether
+// neighbouring redstone power may be relayed through it by Tx.RedstonePower.
+type RedstonePowerRelayer interface {
+	Block
+	// RelaysRedstonePowerThrough reports whether this non-conductor block may
+	// relay neighbouring redstone power through itself to receivers on its other sides.
+	RelaysRedstonePowerThrough() bool
+}
+
+// RedstoneUpdater represents a block that reacts to nearby redstone power changes.
+type RedstoneUpdater interface {
+	Block
+	// RedstoneUpdate is called when a change in redstone signal is computed.
+	RedstoneUpdate(pos cube.Pos, tx *Tx)
+}
+
 // hashes holds a list of runtime IDs indexed by the hash of the Block that implements the blocks pointed to by those
 // runtime IDs. It is used to look up a block's runtime ID quickly.
 var (

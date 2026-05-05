@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/internal/redstone"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -277,6 +278,44 @@ func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
 	}
 }
 
+// RedstonePower returns the redstone power emitted by the block at pos toward a neighbouring receiver.
+// The face argument is relative to the receiving block.
+func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
+	b := tx.Block(pos)
+	if c, ok := b.(Conductor); ok {
+		return c.WeakPower(pos, face, tx, accountForDust)
+	}
+	// The wiki states that in the future some blocks may be transparent but still relay redstone.
+	// If a block implements RedstonePowerRelayer, it should always be prioritised over lightDiffuser.
+	if r, ok := b.(RedstonePowerRelayer); ok {
+		if !r.RelaysRedstonePowerThrough() {
+			return 0
+		}
+	} else if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
+		return 0
+	}
+	for _, f := range cube.Faces() {
+		if !b.Model().FaceSolid(pos, f, tx) {
+			return 0
+		}
+	}
+	for _, f := range cube.Faces() {
+		c, ok := tx.Block(pos.Side(f)).(Conductor)
+		if !ok {
+			continue
+		}
+		sourcePos := pos.Side(f)
+		power = max(power, c.StrongPower(sourcePos, f, tx, accountForDust))
+		if !accountForDust {
+			continue
+		}
+		if weakBlockPowerer, ok := c.(WeakBlockPowerer); ok && weakBlockPowerer.WeaklyPowersBlocks() {
+			power = max(power, c.WeakPower(sourcePos, f, tx, accountForDust))
+		}
+	}
+	return power
+}
+
 // World returns the World of the Tx. It panics if the transaction was already
 // marked complete.
 func (tx *Tx) World() *World {
@@ -284,6 +323,19 @@ func (tx *Tx) World() *World {
 		panic("world.Tx: use of transaction after transaction finishes is not permitted")
 	}
 	return tx.w
+}
+
+// CurrentTick returns the current tick of the transaction's world.
+func (tx *Tx) CurrentTick() int64 {
+	w := tx.World()
+	w.set.Lock()
+	defer w.set.Unlock()
+	return w.set.CurrentTick
+}
+
+// Redstone returns the transient redstone runtime state owned by the transaction's world.
+func (tx *Tx) Redstone() *redstone.State {
+	return &tx.World().redstone
 }
 
 // close finishes the Tx, causing any following call on the Tx to panic.
