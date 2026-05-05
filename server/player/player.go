@@ -2596,7 +2596,7 @@ func (p *Player) ViewPublicNameTag(entity world.Entity) {
 	p.session().ViewPublicNameTag(entity)
 }
 
-// ViewScoreTag overwrites the public score tag of the entity for this player.
+// ViewScoreTag overrides the public score tag of the entity for this player.
 func (p *Player) ViewScoreTag(entity world.Entity, scoreTag string) {
 	p.session().ViewScoreTag(entity, scoreTag)
 }
