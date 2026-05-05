@@ -28,6 +28,10 @@ type Handler interface {
 	HandleTeleport(ctx *Context, pos mgl64.Vec3)
 	// HandleChangeWorld handles when the player is added to a new world. before may be nil.
 	HandleChangeWorld(p *Player, before, after *world.World)
+	// HandleWorldTransfer handles a player being transferred to a different world via TransferToWorld.
+	// ctx.Cancel() may be called to cancel the transfer. The destination world and position may be
+	// changed by assigning to *w and *pos.
+	HandleWorldTransfer(ctx *Context, w **world.World, pos *mgl64.Vec3)
 	// HandleToggleSprint handles when the player starts or stops sprinting.
 	// After is true if the player is sprinting after toggling (changing their sprinting state).
 	HandleToggleSprint(ctx *Context, after bool)
@@ -169,6 +173,7 @@ func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)               
 func (NopHandler) HandleJump(*Player)                                                      {}
 func (NopHandler) HandleTeleport(*Context, mgl64.Vec3)                                     {}
 func (NopHandler) HandleChangeWorld(*Player, *world.World, *world.World)                   {}
+func (NopHandler) HandleWorldTransfer(*Context, **world.World, *mgl64.Vec3)                {}
 func (NopHandler) HandleToggleSprint(*Context, bool)                                       {}
 func (NopHandler) HandleToggleSneak(*Context, bool)                                        {}
 func (NopHandler) HandleCommandExecution(*Context, cmd.Command, []string)                  {}

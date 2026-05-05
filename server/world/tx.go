@@ -206,6 +206,22 @@ func (tx *Tx) RemoveEntity(e Entity) *EntityHandle {
 	return tx.World().removeEntity(e, tx)
 }
 
+// TransferEntity removes the Entity from the World tied to this Tx and re-adds
+// it to the World passed at the position passed. The destination World may be
+// the same as the current one, in which case this acts like a teleport
+// scheduled via World.Exec. After transferring the Entity from the World, the
+// Entity is no longer usable.
+func (tx *Tx) TransferEntity(e Entity, w *World, pos mgl64.Vec3) {
+	handle := tx.RemoveEntity(e)
+	if handle == nil {
+		return
+	}
+	handle.data.Pos = pos
+	w.Exec(func(tx *Tx) {
+		tx.AddEntity(handle)
+	})
+}
+
 // EntitiesWithin returns an iterator that yields all entities contained within
 // the cube.BBox passed.
 func (tx *Tx) EntitiesWithin(box cube.BBox) iter.Seq[Entity] {

@@ -2161,6 +2161,41 @@ func (p *Player) PickBlock(pos cube.Pos) {
 	p.SetHeldItems(pickedItem, offhand)
 }
 
+// TransferToWorld transfers the player to a different world, teleporting them to the position
+// passed. If the destination world is the same as the player's current one, the call behaves
+// like Teleport. ctx.Cancel() may be used in HandleWorldTransfer to cancel the transfer.
+// Calling TransferToWorld may lead to the player being removed from its world and being added
+// to a new world. This means that p cannot be assumed to be valid after a call to TransferToWorld.
+func (p *Player) TransferToWorld(w *world.World, pos mgl64.Vec3) *world.EntityHandle {
+	if w == p.tx.World() {
+		p.Teleport(pos)
+		return p.handle
+	}
+	ctx := event.C(p)
+	if p.Handler().HandleWorldTransfer(ctx, &w, &pos); ctx.Cancelled() {
+		return p.handle
+	}
+	if w == p.tx.World() {
+		p.Teleport(pos)
+		return p.handle
+	}
+
+	p.ResetFallDistance()
+
+	handle := p.tx.RemoveEntity(p)
+	if handle == nil {
+		// The player was already removed from its world (e.g. a previous transfer this tick).
+		return p.handle
+	}
+	w.Exec(func(tx *world.Tx) {
+		np := tx.AddEntity(handle).(*Player)
+		np.Teleport(pos)
+		np.session().SendRespawn(pos, np)
+		np.SetVisible()
+	})
+	return p.handle
+}
+
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
