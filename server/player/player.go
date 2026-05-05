@@ -2586,7 +2586,7 @@ func (p *Player) ViewLayer() *world.ViewLayer {
 	return p.session().ViewLayer()
 }
 
-// ViewNameTag overwrites the public name tag of the entity for this player.
+// ViewNameTag overrides the public name tag of the entity for this player.
 func (p *Player) ViewNameTag(entity world.Entity, nameTag string) {
 	p.session().ViewNameTag(entity, nameTag)
 }
