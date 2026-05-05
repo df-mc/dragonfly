@@ -50,33 +50,17 @@ func (v *ViewLayer) Entities() []*EntityHandle {
 // ViewNameTag overwrites the public name tag of the entity and allows this ViewLayer to view a different name tag.
 // Passing an empty name tag removes the name tag for this ViewLayer.
 func (v *ViewLayer) ViewNameTag(entity Entity, nameTag string) {
-	handle := entity.H()
-
-	v.mu.Lock()
-	l := v.entities[handle]
-	l.nameTag = &nameTag
-	v.entities[handle] = l
-	v.mu.Unlock()
-
-	v.refresh(entity)
+	v.update(entity, func(l *layer) {
+		l.nameTag = &nameTag
+	})
 }
 
 // ViewPublicNameTag removes the name tag override from the entity, causing the public name tag to be
 // viewed again.
 func (v *ViewLayer) ViewPublicNameTag(entity Entity) {
-	handle := entity.H()
-
-	v.mu.Lock()
-	l := v.entities[handle]
-	l.nameTag = nil
-	if l.empty() {
-		delete(v.entities, handle)
-	} else {
-		v.entities[handle] = l
-	}
-	v.mu.Unlock()
-
-	v.refresh(entity)
+	v.update(entity, func(l *layer) {
+		l.nameTag = nil
+	})
 }
 
 // NameTag returns the overwritten name tag of the entity and whether an override was set.
@@ -94,33 +78,17 @@ func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
 // ViewScoreTag overwrites the public score tag of the entity and allows this ViewLayer to view a different score tag.
 // Passing an empty score tag removes the score tag for this ViewLayer.
 func (v *ViewLayer) ViewScoreTag(entity Entity, scoreTag string) {
-	handle := entity.H()
-
-	v.mu.Lock()
-	l := v.entities[handle]
-	l.scoreTag = &scoreTag
-	v.entities[handle] = l
-	v.mu.Unlock()
-
-	v.refresh(entity)
+	v.update(entity, func(l *layer) {
+		l.scoreTag = &scoreTag
+	})
 }
 
 // ViewPublicScoreTag removes the score tag override from the entity, causing the public score tag to be
 // viewed again.
 func (v *ViewLayer) ViewPublicScoreTag(entity Entity) {
-	handle := entity.H()
-
-	v.mu.Lock()
-	l := v.entities[handle]
-	l.scoreTag = nil
-	if l.empty() {
-		delete(v.entities, handle)
-	} else {
-		v.entities[handle] = l
-	}
-	v.mu.Unlock()
-
-	v.refresh(entity)
+	v.update(entity, func(l *layer) {
+		l.scoreTag = nil
+	})
 }
 
 // ScoreTag returns the overwritten score tag of the entity and whether an override was set.
@@ -138,19 +106,9 @@ func (v *ViewLayer) ScoreTag(entity Entity) (string, bool) {
 // ViewVisibility overwrites the public visibility of the entity and allows this ViewLayer to view
 // this entity as (in)visible depending on the VisibilityLevel.
 func (v *ViewLayer) ViewVisibility(entity Entity, level VisibilityLevel) {
-	handle := entity.H()
-
-	v.mu.Lock()
-	l := v.entities[handle]
-	l.visibility = level
-	if l.empty() {
-		delete(v.entities, handle)
-	} else {
-		v.entities[handle] = l
-	}
-	v.mu.Unlock()
-
-	v.refresh(entity)
+	v.update(entity, func(l *layer) {
+		l.visibility = level
+	})
 }
 
 // Visibility returns the visibility of the entity.
@@ -178,6 +136,22 @@ func (v *ViewLayer) remove(entity Entity) bool {
 	delete(v.entities, handle)
 	v.mu.Unlock()
 	return ok
+}
+
+func (v *ViewLayer) update(entity Entity, update func(*layer)) {
+	handle := entity.H()
+
+	v.mu.Lock()
+	l := v.entities[handle]
+	update(&l)
+	if l.empty() {
+		delete(v.entities, handle)
+	} else {
+		v.entities[handle] = l
+	}
+	v.mu.Unlock()
+
+	v.refresh(entity)
 }
 
 // Close closes the view layer.
