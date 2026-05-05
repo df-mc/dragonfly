@@ -257,6 +257,22 @@ const (
 	craftingResult          = 50
 )
 
+// CraftingGridSize returns the number of slots in the active crafting grid.
+func (s *Session) CraftingGridSize() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridSizeLarge
+	}
+	return craftingGridSizeSmall
+}
+
+// CraftingGridOffset returns the UI inventory offset of the active crafting grid.
+func (s *Session) CraftingGridOffset() uint32 {
+	if s.openedContainerID.Load() == 1 {
+		return craftingGridLargeOffset
+	}
+	return craftingGridSmallOffset
+}
+
 // smelter is an interface representing a block used to smelt items.
 type smelter interface {
 	// ResetExperience resets the collected experience of the smelter, and returns the amount of experience that was reset.
