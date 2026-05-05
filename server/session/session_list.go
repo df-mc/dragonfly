@@ -6,6 +6,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/player/skin"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -33,14 +34,23 @@ func (l *sessionList) Add(s *Session) {
 	l.s = append(l.s, s)
 }
 
-func (l *sessionList) Remove(s *Session) {
+func (l *sessionList) Remove(s *Session, entity world.Entity) {
 	l.mu.Lock()
-	defer l.mu.Unlock()
-
+	removedFrom := slices.Clone(l.s)
 	for _, other := range l.s {
 		l.unsendSessionFrom(s, other)
 	}
 	l.s = sliceutil.DeleteVal(l.s, s)
+	l.mu.Unlock()
+
+	if entity == nil {
+		return
+	}
+	for _, other := range removedFrom {
+		if other.viewLayer != nil {
+			other.viewLayer.Remove(entity)
+		}
+	}
 }
 
 func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
