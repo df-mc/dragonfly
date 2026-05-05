@@ -1104,8 +1104,9 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	}
 	if visibility := s.viewLayer.Visibility(e); visibility.EnforceVisibility() {
 		invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
-		if (visibility == world.EnforceVisible() && invisibleFlag) ||
-			visibility == world.EnforceInvisible() && !invisibleFlag {
+		shouldForceVisible := visibility == world.EnforceVisible() && invisibleFlag
+		shouldForceInvisible := visibility == world.EnforceInvisible() && !invisibleFlag
+		if shouldForceVisible || shouldForceInvisible {
 			metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
 		}
 	}
