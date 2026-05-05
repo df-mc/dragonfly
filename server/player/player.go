@@ -2606,7 +2606,7 @@ func (p *Player) ViewPublicScoreTag(entity world.Entity) {
 	p.session().ViewPublicScoreTag(entity)
 }
 
-// ViewVisibility overwrites the public visibility of the entity for this player.
+// ViewVisibility overrides the public visibility of the entity for this player.
 func (p *Player) ViewVisibility(entity world.Entity, level world.VisibilityLevel) {
 	p.session().ViewVisibility(entity, level)
 }
