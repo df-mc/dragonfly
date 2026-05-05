@@ -163,17 +163,21 @@ func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
 
 // Remove removes all overrides for the entity from the ViewLayer.
 func (v *ViewLayer) Remove(entity Entity) {
-	v.remove(entity)
-	v.refresh(entity)
+	if v.remove(entity) {
+		v.refresh(entity)
+	}
 }
 
-// remove removes all overrides for the entity from the ViewLayer without refreshing entity metadata.
-func (v *ViewLayer) remove(entity Entity) {
+// remove removes all overrides for the entity from the ViewLayer without refreshing entity metadata. It returns
+// whether any overrides were removed.
+func (v *ViewLayer) remove(entity Entity) bool {
 	handle := entity.H()
 
 	v.mu.Lock()
+	_, ok := v.entities[handle]
 	delete(v.entities, handle)
 	v.mu.Unlock()
+	return ok
 }
 
 // Close closes the view layer.

@@ -36,15 +36,21 @@ func (l *sessionList) Add(s *Session) {
 
 func (l *sessionList) Remove(s *Session, entity world.Entity) {
 	l.mu.Lock()
-	defer l.mu.Unlock()
-
+	removedFrom := slices.Clone(l.s)
 	for _, other := range l.s {
 		l.unsendSessionFrom(s, other)
-		if entity != nil && other.viewLayer != nil {
+	}
+	l.s = sliceutil.DeleteVal(l.s, s)
+	l.mu.Unlock()
+
+	if entity == nil {
+		return
+	}
+	for _, other := range removedFrom {
+		if other.viewLayer != nil {
 			other.viewLayer.Remove(entity)
 		}
 	}
-	l.s = sliceutil.DeleteVal(l.s, s)
 }
 
 func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
