@@ -3,6 +3,7 @@ package world
 import (
 	"maps"
 	"slices"
+	"sync"
 )
 
 // layer stores the appearance overrides that a ViewLayer applies to an entity.
@@ -25,6 +26,7 @@ type viewLayerViewer interface {
 // ViewLayer holds overrides for how entities are viewed by a single viewer. It allows entities to be
 // viewed differently by different players, such as with a different name tag or visibility state.
 type ViewLayer struct {
+	mu       sync.RWMutex
 	entities map[*EntityHandle]layer
 	updater  ViewLayerUpdater
 }
@@ -39,6 +41,9 @@ func NewViewLayer(updater ViewLayerUpdater) *ViewLayer {
 
 // Entities returns the handles of all entities with overrides in the view layer.
 func (v *ViewLayer) Entities() []*EntityHandle {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
 	return slices.Collect(maps.Keys(v.entities))
 }
 
@@ -46,9 +51,13 @@ func (v *ViewLayer) Entities() []*EntityHandle {
 // Passing an empty name tag removes the name tag for this ViewLayer.
 func (v *ViewLayer) ViewNameTag(entity Entity, nameTag string) {
 	handle := entity.H()
+
+	v.mu.Lock()
 	l := v.entities[handle]
 	l.nameTag = &nameTag
 	v.entities[handle] = l
+	v.mu.Unlock()
+
 	v.refresh(entity)
 }
 
@@ -56,6 +65,8 @@ func (v *ViewLayer) ViewNameTag(entity Entity, nameTag string) {
 // viewed again.
 func (v *ViewLayer) ViewPublicNameTag(entity Entity) {
 	handle := entity.H()
+
+	v.mu.Lock()
 	l := v.entities[handle]
 	l.nameTag = nil
 	if l.empty() {
@@ -63,11 +74,16 @@ func (v *ViewLayer) ViewPublicNameTag(entity Entity) {
 	} else {
 		v.entities[handle] = l
 	}
+	v.mu.Unlock()
+
 	v.refresh(entity)
 }
 
 // NameTag returns the overwritten name tag of the entity and whether an override was set.
 func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
 	nameTag := v.entities[entity.H()].nameTag
 	if nameTag == nil {
 		return "", false
@@ -79,9 +95,13 @@ func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
 // Passing an empty score tag removes the score tag for this ViewLayer.
 func (v *ViewLayer) ViewScoreTag(entity Entity, scoreTag string) {
 	handle := entity.H()
+
+	v.mu.Lock()
 	l := v.entities[handle]
 	l.scoreTag = &scoreTag
 	v.entities[handle] = l
+	v.mu.Unlock()
+
 	v.refresh(entity)
 }
 
@@ -89,6 +109,8 @@ func (v *ViewLayer) ViewScoreTag(entity Entity, scoreTag string) {
 // viewed again.
 func (v *ViewLayer) ViewPublicScoreTag(entity Entity) {
 	handle := entity.H()
+
+	v.mu.Lock()
 	l := v.entities[handle]
 	l.scoreTag = nil
 	if l.empty() {
@@ -96,11 +118,16 @@ func (v *ViewLayer) ViewPublicScoreTag(entity Entity) {
 	} else {
 		v.entities[handle] = l
 	}
+	v.mu.Unlock()
+
 	v.refresh(entity)
 }
 
 // ScoreTag returns the overwritten score tag of the entity and whether an override was set.
 func (v *ViewLayer) ScoreTag(entity Entity) (string, bool) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
 	scoreTag := v.entities[entity.H()].scoreTag
 	if scoreTag == nil {
 		return "", false
@@ -112,6 +139,8 @@ func (v *ViewLayer) ScoreTag(entity Entity) (string, bool) {
 // this entity as (in)visible depending on the VisibilityLevel.
 func (v *ViewLayer) ViewVisibility(entity Entity, level VisibilityLevel) {
 	handle := entity.H()
+
+	v.mu.Lock()
 	l := v.entities[handle]
 	l.visibility = level
 	if l.empty() {
@@ -119,11 +148,16 @@ func (v *ViewLayer) ViewVisibility(entity Entity, level VisibilityLevel) {
 	} else {
 		v.entities[handle] = l
 	}
+	v.mu.Unlock()
+
 	v.refresh(entity)
 }
 
 // Visibility returns the visibility of the entity.
 func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
 	return v.entities[entity.H()].visibility
 }
 
@@ -136,11 +170,17 @@ func (v *ViewLayer) Remove(entity Entity) {
 // remove removes all overrides for the entity from the ViewLayer without refreshing entity metadata.
 func (v *ViewLayer) remove(entity Entity) {
 	handle := entity.H()
+
+	v.mu.Lock()
 	delete(v.entities, handle)
+	v.mu.Unlock()
 }
 
 // Close closes the view layer.
 func (v *ViewLayer) Close() error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
 	clear(v.entities)
 	return nil
 }
