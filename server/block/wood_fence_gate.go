@@ -80,7 +80,7 @@ func (f WoodFenceGate) shouldBeLowered(pos cube.Pos, tx *world.Tx) bool {
 // Activate ...
 func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	f.Open = !f.Open
-	if f.Open && f.Facing.Opposite() == u.Rotation().Direction() {
+	if f.Open && u != nil && f.Facing.Opposite() == u.Rotation().Direction() {
 		f.Facing = f.Facing.Opposite()
 	}
 	tx.SetBlock(pos, f, nil)
@@ -91,6 +91,9 @@ func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.
 	tx.PlaySound(pos.Vec3Centre(), sound.FenceGateClose{Block: f})
 	return true
 }
+
+// WindChargeAffected ...
+func (WoodFenceGate) WindChargeAffected() {}
 
 // SideClosed ...
 func (f WoodFenceGate) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {

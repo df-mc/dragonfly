@@ -483,6 +483,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticleLegacyEvent | 88,
 			Position:  vec64To32(pos),
 		})
+	case particle.WindExplosion:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticlesWindExplosion,
+			Position:  vec64To32(pos),
+		})
 	}
 }
 
@@ -652,6 +657,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		case sound.Dream():
 			pk.SoundType = packet.SoundEventGoatCall7
 		}
+	case sound.WindChargeBurst:
+		pk.SoundType = packet.SoundEventWindChargeBurst
 	case sound.FireExtinguish:
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
