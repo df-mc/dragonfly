@@ -38,6 +38,7 @@ type Controllable interface {
 	SetHeldSlot(slot int) error
 
 	Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+	ForceMove(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 
 	Speed() float64
 	FlightSpeed() float64

@@ -10,9 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
-
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
@@ -25,8 +22,10 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/player/title"
@@ -2252,6 +2251,30 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		p.Exhaust(0.01 * horizontalVel.Len())
 	} else if p.Sprinting() {
 		p.Exhaust(0.1 * horizontalVel.Len())
+	}
+}
+
+// ForceMove forcibly applies a position and rotation delta to the player and
+// emits a delta movement view for nearby viewers. It is used by blocks like
+// the shulker box that need to push entities out of the way without going
+// through the regular move pipeline (no handler dispatch).
+func (p *Player) ForceMove(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
+	if p.Dead() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
+		return
+	}
+	res := p.Position().Add(deltaPos)
+	resRot := p.Rotation().Add(cube.Rotation{deltaYaw, deltaPitch})
+
+	for _, v := range p.viewers() {
+		v.ViewEntityDelta(p, res, resRot)
+	}
+
+	p.data.Pos = res
+	p.data.Rot = resRot
+	if deltaPos.Len() <= 3 {
+		// Only update velocity if the player is not moving too fast to prevent potential OOMs.
+		p.data.Vel = deltaPos
+		p.checkBlockCollisions(deltaPos)
 	}
 }
 
