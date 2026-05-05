@@ -92,6 +92,7 @@ type playerData struct {
 	enchantSeed int64
 
 	mc *entity.MovementComputer
+	tc *entity.TravelComputer
 
 	collidedVertically, collidedHorizontally bool
 
@@ -2579,6 +2580,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	} else {
 		p.data.Vel = mgl64.Vec3{}
 	}
+
+	p.tc.TickTravelling(p, tx)
 }
 
 // ViewLayer returns the ViewLayer attached to the player's session.
