@@ -2,9 +2,7 @@ package chunk
 
 import (
 	"bytes"
-	"container/list"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"iter"
 	"math"
 )
 
@@ -14,6 +12,62 @@ type lightArea struct {
 	c            []*Chunk
 	w            int
 	r            cube.Range
+}
+
+// lightQueue is a FIFO ring buffer used during light propagation.
+type lightQueue struct {
+	nodes []lightNode
+	head  int
+	tail  int
+	size  int
+}
+
+// newLightQueue creates an empty queue sized to capacity (at least 1).
+func newLightQueue(capacity int) *lightQueue {
+	if capacity < 1 {
+		capacity = 1
+	}
+	return &lightQueue{nodes: make([]lightNode, capacity)}
+}
+
+// push appends a node to the tail, growing storage if full.
+func (q *lightQueue) push(n lightNode) {
+	if q.size == len(q.nodes) {
+		q.grow()
+	}
+	q.nodes[q.tail] = n
+	q.tail = (q.tail + 1) % len(q.nodes)
+	q.size++
+}
+
+// pop removes and returns the oldest queued node.
+func (q *lightQueue) pop() (lightNode, bool) {
+	if q.size == 0 {
+		return lightNode{}, false
+	}
+	n := q.nodes[q.head]
+	q.head = (q.head + 1) % len(q.nodes)
+	q.size--
+	return n, true
+}
+
+// empty returns true when no nodes are queued.
+func (q *lightQueue) empty() bool {
+	return q.size == 0
+}
+
+// grow expands the ring buffer and reorders elements to start at index 0.
+func (q *lightQueue) grow() {
+	nodes := make([]lightNode, len(q.nodes)<<1)
+	if q.head < q.tail {
+		copy(nodes, q.nodes[q.head:q.tail])
+	} else {
+		n := copy(nodes, q.nodes[q.head:])
+		copy(nodes[n:], q.nodes[:q.tail])
+	}
+	q.head = 0
+	q.tail = q.size
+	q.nodes = nodes
 }
 
 // LightArea creates a lightArea with the lower corner of the lightArea at baseX and baseY. The length of the Chunk
@@ -30,11 +84,11 @@ func LightArea(c []*Chunk, baseX, baseY int) *lightArea {
 // individual chunks within the lightArea itself, without light crossing chunk borders.
 func (a *lightArea) Fill() {
 	a.initialiseLightSlices()
-	queue := list.New()
+	queue := newLightQueue(512)
 	a.insertBlockLightNodes(queue)
 	a.insertSkyLightNodes(queue)
 
-	for queue.Len() != 0 {
+	for !queue.empty() {
 		a.propagate(queue)
 	}
 }
@@ -43,11 +97,11 @@ func (a *lightArea) Fill() {
 // neighbouring chunks. The neighbouring chunks must have passed the light 'filling' stage before this
 // function is called for an lightArea that includes them.
 func (a *lightArea) Spread() {
-	queue := list.New()
+	queue := newLightQueue(512)
 	a.insertLightSpreadingNodes(queue, BlockLight)
 	a.insertLightSpreadingNodes(queue, SkyLight)
 
-	for queue.Len() != 0 {
+	for !queue.empty() {
 		a.propagate(queue)
 	}
 }
@@ -60,21 +114,6 @@ func (a *lightArea) light(pos cube.Pos, l light) uint8 {
 // light sets the light at a cube.Pos with the light type l.
 func (a *lightArea) setLight(pos cube.Pos, l light, v uint8) {
 	l.setLight(a.sub(pos), uint8(pos[0]&0xf), uint8(pos[1]&0xf), uint8(pos[2]&0xf), v)
-}
-
-// neighbours returns all neighbour lightNode of the one passed. If one of these nodes would otherwise fall outside the
-// lightArea, it is not returned.
-func (a *lightArea) neighbours(n lightNode) iter.Seq[lightNode] {
-	return func(yield func(lightNode) bool) {
-		for _, f := range cube.Faces() {
-			nn := lightNode{pos: n.pos.Side(f), lt: n.lt}
-			if nn.pos[1] <= a.r.Max() && nn.pos[1] >= a.r.Min() && nn.pos[0] >= a.baseX && nn.pos[2] >= a.baseZ && nn.pos[0] < a.baseX+a.w*16 && nn.pos[2] < a.baseZ+a.w*16 {
-				if !yield(nn) {
-					return
-				}
-			}
-		}
-	}
 }
 
 // iterSubChunks iterates over all blocks of the lightArea on a per-SubChunk basis. A filter function may be passed to
