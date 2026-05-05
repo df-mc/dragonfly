@@ -15,6 +15,15 @@ type Gravel struct {
 	snare
 }
 
+// SoilFor ...
+func (g Gravel) SoilFor(block world.Block) bool {
+	switch block.(type) {
+	case BambooSapling:
+		return true
+	}
+	return false
+}
+
 // NeighbourUpdateTick ...
 func (g Gravel) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	g.fall(g, pos, tx)
