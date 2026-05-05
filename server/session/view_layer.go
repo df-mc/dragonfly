@@ -14,7 +14,6 @@ func (s *Session) ViewNameTag(entity world.Entity, nameTag string) {
 		return
 	}
 	s.viewLayer.ViewNameTag(entity, nameTag)
-	s.viewLayerEntityChanged(entity)
 }
 
 // ViewPublicNameTag removes the name tag override from the entity and immediately refreshes it for this session.
@@ -23,7 +22,6 @@ func (s *Session) ViewPublicNameTag(entity world.Entity) {
 		return
 	}
 	s.viewLayer.ViewPublicNameTag(entity)
-	s.viewLayerEntityChanged(entity)
 }
 
 // ViewScoreTag overwrites the public score tag of the entity and immediately refreshes it for this session.
@@ -32,7 +30,6 @@ func (s *Session) ViewScoreTag(entity world.Entity, scoreTag string) {
 		return
 	}
 	s.viewLayer.ViewScoreTag(entity, scoreTag)
-	s.viewLayerEntityChanged(entity)
 }
 
 // ViewPublicScoreTag removes the score tag override from the entity and immediately refreshes it for this session.
@@ -41,7 +38,6 @@ func (s *Session) ViewPublicScoreTag(entity world.Entity) {
 		return
 	}
 	s.viewLayer.ViewPublicScoreTag(entity)
-	s.viewLayerEntityChanged(entity)
 }
 
 // ViewVisibility overwrites the public visibility of the entity and immediately refreshes it for this session.
@@ -50,7 +46,6 @@ func (s *Session) ViewVisibility(entity world.Entity, level world.VisibilityLeve
 		return
 	}
 	s.viewLayer.ViewVisibility(entity, level)
-	s.viewLayerEntityChanged(entity)
 }
 
 // RemoveViewLayer removes all overrides for the entity and immediately refreshes it for this session.
@@ -59,11 +54,10 @@ func (s *Session) RemoveViewLayer(entity world.Entity) {
 		return
 	}
 	s.viewLayer.Remove(entity)
-	s.viewLayerEntityChanged(entity)
 }
 
-// viewLayerEntityChanged refreshes the entity metadata for this session if the entity is currently visible.
-func (s *Session) viewLayerEntityChanged(e world.Entity) {
+// ViewLayerEntityChanged refreshes the entity metadata for this session if the entity is currently visible.
+func (s *Session) ViewLayerEntityChanged(e world.Entity) {
 	if s.entityHidden(e) || !s.viewingEntity(e.H()) {
 		return
 	}
