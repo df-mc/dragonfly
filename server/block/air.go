@@ -1,5 +1,7 @@
 package block
 
+import "github.com/df-mc/dragonfly/server/world"
+
 // Air is the block present in otherwise empty space.
 type Air struct {
 	empty
@@ -10,6 +12,11 @@ type Air struct {
 // HasLiquidDrops ...
 func (Air) HasLiquidDrops() bool {
 	return false
+}
+
+// PortalInterior returns true if air may occupy the inside of a portal frame before activation.
+func (Air) PortalInterior(dimension world.Dimension) bool {
+	return dimension == world.Nether
 }
 
 // EncodeItem ...

@@ -35,12 +35,9 @@ func NetherPortalFromPos(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 		return Nether{}, false
 	}
 
-	axis, positions, width, height, completed, ok := multiAxisScan(pos, tx, []string{
-		"minecraft:air",
-		"minecraft:fire",
-	})
+	axis, positions, width, height, completed, ok := multiAxisScan(pos, tx, matchesNetherPortalInterior)
 	if !ok {
-		axis, positions, width, height, completed, ok = multiAxisScan(pos, tx, []string{"minecraft:portal"})
+		axis, positions, width, height, completed, ok = multiAxisScan(pos, tx, matchesNetherPortal)
 	}
 	return Nether{
 		w: width, h: height,
@@ -50,6 +47,26 @@ func NetherPortalFromPos(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 		axis:      axis,
 		tx:        tx,
 	}, ok
+}
+
+// ActivateNetherPortal activates an inactive framed Nether portal at the position passed.
+func ActivateNetherPortal(tx *world.Tx, pos cube.Pos) bool {
+	p, ok := NetherPortalFromPos(tx, pos)
+	if !ok || !p.Framed() || p.Activated() {
+		return false
+	}
+	p.Activate()
+	return true
+}
+
+// DeactivateNetherPortal deactivates the connected Nether portal at the position passed.
+func DeactivateNetherPortal(tx *world.Tx, pos cube.Pos) bool {
+	_, positions, ok := connectedNetherPortal(tx, pos)
+	if !ok {
+		return false
+	}
+	deactivate(tx, positions)
+	return true
 }
 
 // FindOrCreateNetherPortal finds or creates a Nether portal at the given position.
@@ -273,8 +290,12 @@ func (n Nether) Activate() {
 
 // Deactivate ...
 func (n Nether) Deactivate() {
-	for _, pos := range n.Positions() {
-		n.tx.SetBlock(pos, nil, nil)
+	deactivate(n.tx, n.Positions())
+}
+
+func deactivate(tx *world.Tx, positions []cube.Pos) {
+	for _, pos := range positions {
+		tx.SetBlock(pos, nil, nil)
 	}
 }
 

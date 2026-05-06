@@ -187,6 +187,9 @@ func (f Fire) spread(from, to cube.Pos, tx *world.Tx, r *rand.Rand) {
 		return
 	}
 	spread := Fire{Type: f.Type, Age: min(15, f.Age+r.IntN(5)/4)}
+	if spread.Type == NormalFire() && portal.ActivateNetherPortal(tx, to) {
+		return
+	}
 	tx.SetBlock(to, spread, nil)
 	tx.ScheduleBlockUpdate(to, spread, time.Duration(30+r.IntN(10))*time.Second/20)
 }
@@ -241,6 +244,11 @@ func (f Fire) HasLiquidDrops() bool {
 	return false
 }
 
+// PortalInterior returns true if fire may occupy the inside of a portal frame before activation.
+func (f Fire) PortalInterior(dimension world.Dimension) bool {
+	return dimension == world.Nether && f.Type == NormalFire()
+}
+
 // LightEmissionLevel ...
 func (f Fire) LightEmissionLevel() uint8 {
 	return f.Type.LightLevel()
@@ -267,30 +275,14 @@ func (f Fire) Start(tx *world.Tx, pos cube.Pos) {
 	if air || shortGrass || fern {
 		below := tx.Block(pos.Side(cube.FaceDown))
 		if below.Model().FaceSolid(pos, cube.FaceUp, tx) || neighboursFlammable(pos, tx) {
+			if portal.ActivateNetherPortal(tx, pos) {
+				return
+			}
 			f := Fire{}
 			tx.SetBlock(pos, f, nil)
 			tx.ScheduleBlockUpdate(pos, f, time.Duration(30+rand.IntN(10))*time.Second/20)
 		}
 	}
-}
-
-// Place ...
-func (Fire) Place(pos cube.Pos, w *world.World) bool {
-	portalActivated := false
-	for _, f := range cube.Faces() {
-		if portalActivated {
-			break
-		}
-		w.Exec(func(tx *world.Tx) {
-			if o, ok := tx.Block(pos.Side(f)).(Obsidian); ok && !o.Crying {
-				if p, ok := portal.NetherPortalFromPos(tx, pos); ok && p.Framed() && !p.Activated() {
-					p.Activate()
-					portalActivated = true
-				}
-			}
-		})
-	}
-	return true
 }
 
 // allFire ...

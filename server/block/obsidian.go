@@ -40,7 +40,7 @@ func (o Obsidian) EncodeBlock() (string, map[string]any) {
 
 // Frame ...
 func (o Obsidian) Frame(dimension world.Dimension) bool {
-	return dimension == world.Nether
+	return dimension == world.Nether && !o.Crying
 }
 
 // BreakInfo ...

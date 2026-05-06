@@ -72,9 +72,10 @@ func (t *TravelComputer) StopTravelling() {
 func (t *TravelComputer) Travel(e Traveller, source *world.World, destination *world.World) {
 	sourceDimension, targetDimension := source.Dimension(), destination.Dimension()
 	pos := cube.PosFromVec3(e.Position())
-	if sourceDimension == world.Overworld {
+	switch sourceDimension {
+	case world.Overworld:
 		pos = cube.Pos{pos.X() / 8, pos.Y() + sourceDimension.Range().Min(), pos.Z() / 8}
-	} else if sourceDimension == world.Nether {
+	case world.Nether:
 		pos = cube.Pos{pos.X() * 8, pos.Y() - targetDimension.Range().Min(), pos.Z() * 8}
 	}
 

@@ -46,9 +46,10 @@ func (p Portal) NeighbourUpdateTick(pos, neighbour cube.Pos, tx *world.Tx) {
 	if axis != cube.Y && axis != p.Axis {
 		return
 	}
-	if n, ok := portal.NetherPortalFromPos(tx, pos); ok && (!n.Framed() || !n.Activated()) {
-		n.Deactivate()
+	if n, ok := portal.NetherPortalFromPos(tx, pos); ok && n.Framed() && n.Activated() {
+		return
 	}
+	portal.DeactivateNetherPortal(tx, pos)
 }
 
 // EntityInside ...
