@@ -30,17 +30,17 @@ func scan(axis cube.Axis, pos cube.Pos, tx *world.Tx, matches blockMatcher) ([]c
 
 	// Walk down then towards the negative face to land on the bottom-left interior corner.
 	origin := pos
-	for down := 0; matches(tx.Block(origin.Side(cube.FaceDown)), axis); down++ {
+	for down, next := 0, origin.Side(cube.FaceDown); matches(tx.Block(next), axis); down, next = down+1, origin.Side(cube.FaceDown) {
 		if down >= maximumNetherPortalHeight {
 			return nil, 0, 0, false
 		}
-		origin = origin.Side(cube.FaceDown)
+		origin = next
 	}
-	for left := 0; matches(tx.Block(origin.Side(negative)), axis); left++ {
+	for left, next := 0, origin.Side(negative); matches(tx.Block(next), axis); left, next = left+1, origin.Side(negative) {
 		if left >= maximumNetherPortalWidth {
 			return nil, 0, 0, false
 		}
-		origin = origin.Side(negative)
+		origin = next
 	}
 
 	// Measure the bottom row and the leftmost column from the origin.
@@ -68,12 +68,12 @@ func scan(axis cube.Axis, pos cube.Pos, tx *world.Tx, matches blockMatcher) ([]c
 	for y := 0; y < height; y++ {
 		row := origin.Add(cube.Pos{0, y})
 		if !isFrame(tx.Block(row.Side(negative))) || !isFrame(tx.Block(row.Add(widthOffset(axis, width)))) {
-			return positions, width, height, false
+			return nil, width, height, false
 		}
 		for x := 0; x < width; x++ {
 			p := row.Add(widthOffset(axis, x))
 			if !matches(tx.Block(p), axis) {
-				return positions, width, height, false
+				return nil, width, height, false
 			}
 			positions = append(positions, p)
 		}
@@ -82,7 +82,7 @@ func scan(axis cube.Axis, pos cube.Pos, tx *world.Tx, matches blockMatcher) ([]c
 	for x := 0; x < width; x++ {
 		p := origin.Add(widthOffset(axis, x))
 		if !isFrame(tx.Block(p.Side(cube.FaceDown))) || !isFrame(tx.Block(p.Add(cube.Pos{0, height}))) {
-			return positions, width, height, false
+			return nil, width, height, false
 		}
 	}
 	return positions, width, height, true
@@ -125,12 +125,10 @@ func connectedPortalBlocks(tx *world.Tx, pos cube.Pos, axis cube.Axis) []cube.Po
 	return positions
 }
 
-// portalFaces returns the four faces (vertical plus the two horizontal ones on the portal plane) used to flood-fill a portal of the given axis.
+// portalFaces returns the four neighbouring faces used to flood-fill a portal of the given horizontal axis.
 func portalFaces(axis cube.Axis) []cube.Face {
-	if axis == cube.X {
-		return []cube.Face{cube.FaceDown, cube.FaceUp, cube.FaceWest, cube.FaceEast}
-	}
-	return []cube.Face{cube.FaceDown, cube.FaceUp, cube.FaceNorth, cube.FaceSouth}
+	negative, positive := axis.Faces()
+	return []cube.Face{cube.FaceDown, cube.FaceUp, negative, positive}
 }
 
 // widthOffset returns the position offset for moving by the given number of blocks along the portal's width axis.
@@ -150,7 +148,7 @@ func isFrame(b world.Block) bool {
 // matchesNetherPortalInterior reports whether the block may sit inside an unactivated Nether portal frame.
 func matchesNetherPortalInterior(b world.Block, _ cube.Axis) bool {
 	i, ok := b.(interface {
-		PortalInterior(dimension world.Dimension) bool
+		PortalInterior(target world.Dimension) bool
 	})
 	return ok && i.PortalInterior(world.Nether)
 }
