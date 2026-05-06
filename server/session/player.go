@@ -1175,9 +1175,12 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		if shape.LockRotation {
+			ps.Rotation = protocol.Option(vec64To32(shape.Rotation))
+		}
 		ps.ExtraShapeData = &protocol.TextShape{
 			Text:             shape.Text,
-			UseRotation:      protocol.Option(!shape.NoRotation),
+			UseRotation:      protocol.Option(!shape.LockRotation),
 			BackgroundColour: protocol.Option(shape.BackgroundColour),
 			DepthTest:        protocol.Option(shape.DepthTest),
 			ShowBackface:     protocol.Option(!shape.HideBackface),

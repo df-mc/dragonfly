@@ -137,21 +137,23 @@ type Text struct {
 	BackgroundColour color.RGBA
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
+	// Rotation is the rotation of the shape, applied only when LockRotation is set.
+	Rotation mgl64.Vec3
 	// Scale is the size of the text. If zero, it will default to 1.0.
 	Scale float64
 	// Text is the text to be displayed on the shape. The background automatically scales to fit the text.
 	Text string
-	// NoRotation specifies whether the text should stay static instead of rotating to always face the
-	// camera. If false, the text will rotate to face the camera.
-	NoRotation bool
+	// LockRotation specifies whether the text should be locked to the orientation set by Rotation.
+	// If false, the text will rotate to always face the camera.
+	LockRotation bool
 	// DepthTest specifies whether the text should show through walls. If false, the text will be
 	// occluded by geometry in front of it.
 	DepthTest bool
 	// HideBackface specifies whether the background should be hidden on the back side of the shape.
-	// Has no visible effect unless NoRotation is also set.
+	// Has no visible effect unless LockRotation is also set.
 	HideBackface bool
 	// HideBackfaceText specifies whether the text should be hidden on the back side of the shape.
-	// Has no visible effect unless NoRotation is also set.
+	// Has no visible effect unless LockRotation is also set.
 	HideBackfaceText bool
 	// Entity is an optional entity handle to attach the shape to.
 	Entity *world.EntityHandle
