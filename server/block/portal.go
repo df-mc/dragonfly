@@ -41,7 +41,11 @@ func (p Portal) EncodeBlock() (string, map[string]any) {
 }
 
 // NeighbourUpdateTick ...
-func (p Portal) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+func (p Portal) NeighbourUpdateTick(pos, neighbour cube.Pos, tx *world.Tx) {
+	axis := pos.Face(neighbour).Axis()
+	if axis != cube.Y && axis != p.Axis {
+		return
+	}
 	if n, ok := portal.NetherPortalFromPos(tx, pos); ok && (!n.Framed() || !n.Activated()) {
 		n.Deactivate()
 	}
