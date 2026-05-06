@@ -97,18 +97,17 @@ func FindNetherPortal(tx *world.Tx, pos cube.Pos, radius int) (Nether, bool) {
 		return Nether{}, false
 	}
 
-	closestPos, closestDist, found := cube.Pos{}, math.MaxFloat64, false
+	closest, closestDist, found := Nether{}, math.MaxFloat64, false
 	for x := pos.X() - radius; x < pos.X()+radius; x++ {
 		for z := pos.Z() - radius; z < pos.Z()+radius; z++ {
 			r := tx.World().Dimension().Range()
 			for y := r.Max(); y >= r.Min(); y-- {
 				selectedPos := cube.Pos{x, y, z}
 				if p, ok := tx.Block(selectedPos).(portalBlock); ok && p.Portal() == world.Nether {
-					belowPos := selectedPos.Side(cube.FaceDown)
-					if f, ok := tx.Block(belowPos).(frameBlock); ok && f.Frame(world.Nether) {
+					if n, ok := NetherPortalFromPos(tx, selectedPos); ok && n.Framed() && n.Activated() {
 						dist := selectedPos.Vec3().Sub(pos.Vec3()).Len()
 						if dist < closestDist {
-							closestDist, closestPos, found = dist, selectedPos, true
+							closestDist, closest, found = dist, n, true
 						}
 					}
 				}
@@ -118,7 +117,7 @@ func FindNetherPortal(tx *world.Tx, pos cube.Pos, radius int) (Nether, bool) {
 	if !found {
 		return Nether{}, false
 	}
-	return NetherPortalFromPos(tx, closestPos)
+	return closest, true
 }
 
 // CreateNetherPortal creates a Nether portal at the given position.
