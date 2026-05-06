@@ -598,7 +598,11 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
 		return 0, false
 	}
-	p.setAttackImmunity(immunity, totalDamage)
+	if immune {
+		p.lastDamage = totalDamage
+	} else {
+		p.setAttackImmunity(immunity, totalDamage)
+	}
 
 	if a := p.Absorption(); a > 0 {
 		p.SetAbsorption(a - damageLeft)
@@ -638,8 +642,10 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	}
 
 	pos := p.Position()
-	for _, viewer := range p.viewers() {
-		viewer.ViewEntityAction(p, entity.HurtAction{})
+	if !immune {
+		for _, viewer := range p.viewers() {
+			viewer.ViewEntityAction(p, entity.HurtAction{})
+		}
 	}
 	if src.Fire() {
 		p.tx.PlaySound(pos, sound.Burning{})
@@ -1801,6 +1807,10 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		dmg *= 1.5
 	}
 
+	targetImmune := false
+	if target, ok := living.(*Player); ok {
+		targetImmune = time.Now().Before(target.immuneUntil)
+	}
 	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
 	i, left := p.HeldItems()
 
@@ -1816,7 +1826,9 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 
 	p.Exhaust(0.1)
 
-	living.KnockBack(p.Position(), force, height)
+	if !targetImmune {
+		living.KnockBack(p.Position(), force, height)
+	}
 
 	if f, ok := i.Enchantment(enchantment.FireAspect); ok {
 		if flammable, ok := living.(entity.Flammable); ok {
