@@ -1178,14 +1178,17 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 		if shape.LockRotation {
 			ps.Rotation = protocol.Option(vec64To32(shape.Rotation))
 		}
-		ps.ExtraShapeData = &protocol.TextShape{
+		textData := &protocol.TextShape{
 			Text:             shape.Text,
-			UseRotation:      protocol.Option(!shape.LockRotation),
-			BackgroundColour: protocol.Option(shape.BackgroundColour),
-			DepthTest:        protocol.Option(shape.DepthTest),
-			ShowBackface:     protocol.Option(!shape.HideBackface),
-			ShowBackfaceText: protocol.Option(!shape.HideBackfaceText),
+			UseRotation:      shape.LockRotation,
+			DepthTest:        shape.DepthTest,
+			ShowBackface:     !shape.HideBackface,
+			ShowBackfaceText: !shape.HideBackfaceText,
 		}
+		if shape.BackgroundColour != (color.RGBA{}) {
+			textData.BackgroundColour = protocol.Option(shape.BackgroundColour)
+		}
+		ps.ExtraShapeData = textData
 	default:
 		panic(fmt.Sprintf("unknown debug shape type %T", shape))
 	}
