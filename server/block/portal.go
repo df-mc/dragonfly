@@ -30,6 +30,11 @@ func (Portal) Portal() world.Dimension {
 	return world.Nether
 }
 
+// LightEmissionLevel returns 11.
+func (Portal) LightEmissionLevel() uint8 {
+	return 11
+}
+
 // HasLiquidDrops ...
 func (p Portal) HasLiquidDrops() bool {
 	return false
