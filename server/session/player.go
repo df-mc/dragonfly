@@ -162,12 +162,6 @@ func (s *Session) sendRecipes() {
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
-		case recipe.Furnace:
-			recipes = append(recipes, &protocol.FurnaceRecipe{
-				InputType: stackFromItem(i.Input()[0].(item.Stack)).ItemType,
-				Output:    stackFromItem(i.Output()[0]),
-				Block:     i.Block(),
-			})
 		case recipe.Potion:
 			inputRuntimeID, inputMeta, _ := world.ItemRuntimeID(i.Input()[0].(item.Stack).Item())
 			reagentRuntimeID, reagentMeta, _ := world.ItemRuntimeID(i.Input()[1].(item.Stack).Item())
@@ -1165,7 +1159,14 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.ExtraShapeData = &protocol.TextShape{Text: shape.Text}
+		ps.ExtraShapeData = &protocol.TextShape{
+			Text:             shape.Text,
+			UseRotation:      protocol.Option(!shape.NoRotation),
+			BackgroundColour: protocol.Option(shape.BackgroundColour),
+			DepthTest:        protocol.Option(shape.DepthTest),
+			ShowBackface:     protocol.Option(!shape.HideBackface),
+			ShowBackfaceText: protocol.Option(!shape.HideBackfaceText),
+		}
 	default:
 		panic(fmt.Sprintf("unknown debug shape type %T", shape))
 	}
