@@ -3,8 +3,8 @@ package bossbar
 // Colour is the colour of a BossBar.
 type Colour struct{ colour }
 
-// Grey is the colour for a grey boss bar.
-func Grey() Colour {
+// Pink is the colour for a pink boss bar.
+func Pink() Colour {
 	return Colour{colour(0)}
 }
 
@@ -33,9 +33,14 @@ func Purple() Colour {
 	return Colour{colour(5)}
 }
 
+// DarkPurple is the colour for a dark purple boss bar.
+func DarkPurple() Colour {
+	return Colour{colour(6)}
+}
+
 // White is the colour for a white boss bar.
 func White() Colour {
-	return Colour{colour(6)}
+	return Colour{colour(7)}
 }
 
 type colour uint8

@@ -16,11 +16,12 @@ type NPCRequestHandler struct {
 // Handle ...
 func (h *NPCRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.NPCRequest)
-	if pk.RequestType == packet.NPCRequestActionExecuteAction {
+	switch pk.RequestType {
+	case packet.NPCRequestActionExecuteAction:
 		if err := h.dialogue.Submit(uint(pk.ActionType), c, tx); err != nil {
 			return fmt.Errorf("error submitting dialogue: %w", err)
 		}
-	} else if pk.RequestType == packet.NPCRequestActionExecuteClosingCommands {
+	case packet.NPCRequestActionExecuteClosingCommands:
 		h.dialogue.Close(c, tx)
 	}
 	return nil

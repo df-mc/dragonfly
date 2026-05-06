@@ -27,6 +27,7 @@ func init() {
 	world.RegisterBlock(Coal{})
 	world.RegisterBlock(Cobblestone{Mossy: true})
 	world.RegisterBlock(Cobblestone{})
+	world.RegisterBlock(Cobweb{})
 	world.RegisterBlock(CraftingTable{})
 	world.RegisterBlock(DeadBush{})
 	world.RegisterBlock(DeepslateBricks{Cracked: true})
@@ -56,12 +57,21 @@ func init() {
 	world.RegisterBlock(Grass{})
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(Honeycomb{})
+	world.RegisterBlock(InfestedStone{})
+	world.RegisterBlock(InfestedCobblestone{})
+	for _, b := range allInfestedStoneBricks() {
+		world.RegisterBlock(b)
+	}
+	for _, b := range allInfestedDeepslate() {
+		world.RegisterBlock(b)
+	}
 	world.RegisterBlock(InvisibleBedrock{})
 	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(Iron{})
 	world.RegisterBlock(Jukebox{})
 	world.RegisterBlock(Lapis{})
 	world.RegisterBlock(LilyPad{})
+	world.RegisterBlock(Magma{})
 	world.RegisterBlock(Melon{})
 	world.RegisterBlock(MossCarpet{})
 	world.RegisterBlock(MudBricks{})
@@ -96,6 +106,7 @@ func init() {
 	world.RegisterBlock(Sand{})
 	world.RegisterBlock(SeaLantern{})
 	world.RegisterBlock(Shroomlight{})
+	world.RegisterBlock(Slime{})
 	world.RegisterBlock(SmithingTable{})
 	world.RegisterBlock(SmoothBasalt{})
 	world.RegisterBlock(Snow{})
@@ -201,6 +212,7 @@ func init() {
 	registerAll(allStairs())
 	registerAll(allStoneBricks())
 	registerAll(allStonecutters())
+	registerAll(allString())
 	registerAll(allSugarCane())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
@@ -252,6 +264,7 @@ func init() {
 	world.RegisterItem(Coal{})
 	world.RegisterItem(Cobblestone{Mossy: true})
 	world.RegisterItem(Cobblestone{})
+	world.RegisterItem(Cobweb{})
 	world.RegisterItem(CocoaBean{})
 	world.RegisterItem(Composter{})
 	world.RegisterItem(CopperTorch{})
@@ -291,6 +304,12 @@ func init() {
 	world.RegisterItem(HayBale{})
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(Hopper{})
+	world.RegisterItem(InfestedStone{})
+	world.RegisterItem(InfestedCobblestone{})
+	for _, t := range StoneBricksTypes() {
+		world.RegisterItem(InfestedStoneBricks{Type: t})
+	}
+	world.RegisterItem(InfestedDeepslate{})
 	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(IronBars{})
 	world.RegisterItem(Iron{})
@@ -302,6 +321,7 @@ func init() {
 	world.RegisterItem(Lapis{})
 	world.RegisterItem(Lectern{})
 	world.RegisterItem(LilyPad{})
+	world.RegisterItem(Magma{})
 	world.RegisterItem(LitPumpkin{})
 	world.RegisterItem(Loom{})
 	world.RegisterItem(MelonSeeds{})
@@ -350,6 +370,7 @@ func init() {
 	world.RegisterItem(SeaLantern{})
 	world.RegisterItem(SeaPickle{})
 	world.RegisterItem(Shroomlight{})
+	world.RegisterItem(Slime{})
 	world.RegisterItem(SmithingTable{})
 	world.RegisterItem(Smoker{})
 	world.RegisterItem(SmoothBasalt{})
@@ -362,6 +383,7 @@ func init() {
 	world.RegisterItem(Stonecutter{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
+	world.RegisterItem(String{})
 	world.RegisterItem(SugarCane{})
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
@@ -412,7 +434,8 @@ func init() {
 	}
 	for _, w := range WoodTypes() {
 		if w != WarpedWood() && w != CrimsonWood() {
-			world.RegisterItem(Leaves{Wood: w, Persistent: true})
+			t, _ := w.Leaves()
+			world.RegisterItem(Leaves{Type: t, Persistent: true})
 		}
 		world.RegisterItem(Log{Wood: w, Stripped: true})
 		world.RegisterItem(Log{Wood: w})
@@ -425,6 +448,8 @@ func init() {
 		world.RegisterItem(Wood{Wood: w, Stripped: true})
 		world.RegisterItem(Wood{Wood: w})
 	}
+	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
+	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
 		world.RegisterItem(CopperOre{Type: ore})
