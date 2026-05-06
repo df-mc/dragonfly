@@ -109,6 +109,7 @@ type ProjectileBehaviour struct {
 
 	collisionPos cube.Pos
 	collided     bool
+	portalTravel bool
 }
 
 // Owner returns the owner of the projectile.
@@ -132,6 +133,16 @@ func (lt *ProjectileBehaviour) Potion() potion.Potion {
 // and if the projectile has not collided.
 func (lt *ProjectileBehaviour) Critical() bool {
 	return lt.conf.Critical && !lt.collided
+}
+
+// HandlePortalTravel records that this projectile has travelled between dimensions through a portal.
+func (lt *ProjectileBehaviour) HandlePortalTravel(world.Dimension, world.Dimension) {
+	lt.portalTravel = true
+}
+
+// PortalTravel reports whether this projectile has travelled between dimensions through a portal.
+func (lt *ProjectileBehaviour) PortalTravel() bool {
+	return lt.portalTravel
 }
 
 // Tick runs the tick-based behaviour of a ProjectileBehaviour and returns the
