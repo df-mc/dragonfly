@@ -14,7 +14,7 @@ type blockMatcher func(world.Block, cube.Axis) bool
 func multiAxisScan(framePos cube.Pos, tx *world.Tx, matches blockMatcher) (cube.Axis, []cube.Pos, int, int, bool, bool) {
 	zPositions, zWidth, zHeight, zCompleted := scan(cube.Z, framePos, tx, matches)
 	xPositions, xWidth, xHeight, xCompleted := scan(cube.X, framePos, tx, matches)
-	if len(zPositions) < minimumArea && len(xPositions) >= minimumArea {
+	if len(zPositions) < minimumNetherPortalArea && len(xPositions) >= minimumNetherPortalArea {
 		return cube.X, xPositions, xWidth, xHeight, xCompleted, len(xPositions) > 0
 	}
 	return cube.Z, zPositions, zWidth, zHeight, zCompleted, len(zPositions) > 0

@@ -20,12 +20,10 @@ type Nether struct {
 }
 
 const (
-	// minimumNetherPortalWidth, maximumNetherPortalWidth controls the minimum and maximum width of a portal.
-	minimumNetherPortalWidth, maximumNetherPortalWidth = 2, 21
-	// minimumNetherPortalHeight, maximumNetherPortalHeight controls the minimum and maximum height of a portal.
+	minimumNetherPortalWidth, maximumNetherPortalWidth   = 2, 21
 	minimumNetherPortalHeight, maximumNetherPortalHeight = 3, 21
-	// minimumArea is the minimum area of a portal.
-	minimumArea = minimumNetherPortalWidth * minimumNetherPortalHeight
+
+	minimumNetherPortalArea = minimumNetherPortalWidth * minimumNetherPortalHeight
 )
 
 // NetherPortalFromPos returns Nether portal information from a given position in the frame.
