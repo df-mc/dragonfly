@@ -124,7 +124,7 @@ func (t *TravelComputer) travel(e Traveller, source *world.World, destination *w
 func translatePortalPosition(pos cube.Pos, source, target world.Dimension) cube.Pos {
 	switch source {
 	case world.Overworld:
-		pos[0], pos[2] = pos[0]/8, pos[2]/8
+		pos[0], pos[2] = pos[0]>>3, pos[2]>>3
 	case world.Nether:
 		pos[0], pos[2] = pos[0]*8, pos[2]*8
 	}
