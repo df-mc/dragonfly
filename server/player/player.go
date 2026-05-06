@@ -2581,7 +2581,12 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		p.data.Vel = mgl64.Vec3{}
 	}
 
-	p.tc.TickTravelling(p, tx)
+	p.tc.StopTravelling()
+}
+
+// TravelThroughPortal handles the player touching a portal block.
+func (p *Player) TravelThroughPortal(tx *world.Tx, target world.Dimension) {
+	p.tc.EnterPortal(p, tx, target)
 }
 
 // ViewLayer returns the ViewLayer attached to the player's session.

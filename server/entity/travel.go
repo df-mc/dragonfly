@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"math"
 	"sync"
 	"time"
 
@@ -18,6 +17,7 @@ type TravelComputer struct {
 
 	mu             sync.RWMutex
 	start          time.Time
+	inside         bool
 	awaitingTravel bool
 	travelling     bool
 	timedOut       bool
@@ -30,51 +30,12 @@ type Traveller interface {
 	Teleport(pos mgl64.Vec3)
 }
 
-// portalBlock represents a block that can be used as a portal to travel between dimensions.
-type portalBlock interface {
-	world.Block
-	// Portal returns the dimension that the portal leads to.
-	Portal() world.Dimension
-}
-
-// TickTravelling checks if the player is colliding with a nether portal block. If so, it teleports the player
-// to the other dimension after four seconds or instantly if instantaneous is true.
-func (t *TravelComputer) TickTravelling(travel Traveller, tx *world.Tx) {
-	box := travel.H().Type().BBox(travel).Translate(travel.Position()).Grow(0.25)
-
-	min, max := box.Min(), box.Max()
-	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
-	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
-	found, target := false, world.Dimension(nil)
-	for y := minY; y <= maxY; y++ {
-		for x := minX; x <= maxX; x++ {
-			for z := minZ; z <= maxZ; z++ {
-				pos := cube.Pos{x, y, z}
-				p, ok := tx.Block(pos).(portalBlock)
-				if !ok {
-					continue
-				}
-				for _, blockBox := range p.Model().BBox(pos, tx) {
-					if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
-						found, target = true, p.Portal()
-						break
-					}
-				}
-			}
-		}
-	}
-
+// EnterPortal handles an entity touching a portal block. It teleports the entity to the other dimension after four
+// seconds or instantly if instantaneous is true.
+func (t *TravelComputer) EnterPortal(travel Traveller, tx *world.Tx, target world.Dimension) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if !found {
-		if t.travelling {
-			// Don't reset if we're travelling.
-			return
-		}
-		t.timedOut, t.awaitingTravel = false, false
-		return
-	}
-
+	t.inside = true
 	switch target {
 	case world.Nether:
 		if t.timedOut {
@@ -89,6 +50,21 @@ func (t *TravelComputer) TickTravelling(travel Traveller, tx *world.Tx) {
 			t.start, t.awaitingTravel = time.Now(), true
 		}
 	}
+}
+
+// StopTravelling resets the travel timer if the entity was not inside a portal this tick.
+func (t *TravelComputer) StopTravelling() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.inside {
+		t.inside = false
+		return
+	}
+	t.inside = false
+	if t.travelling {
+		return
+	}
+	t.timedOut, t.awaitingTravel = false, false
 }
 
 // Travel moves the player to the given Nether or Overworld world and translates the player's current position based
