@@ -885,11 +885,11 @@ func (s *Session) SendDebugShapes(dim world.Dimension) {
 		return
 	}
 
-	shapes := make([]protocol.DebugDrawerShape, 0, len(updates))
+	shapes := make([]protocol.PrimitiveShape, 0, len(updates))
 	for _, update := range updates {
 		if update.shape == nil {
 			delete(s.debugShapes, update.id)
-			shapes = append(shapes, protocol.DebugDrawerShape{
+			shapes = append(shapes, protocol.PrimitiveShape{
 				NetworkID:      uint64(update.id),
 				DimensionID:    protocol.Option(s.dimensionID(dim)),
 				ExtraShapeData: &protocol.LastShape{},
@@ -902,7 +902,7 @@ func (s *Session) SendDebugShapes(dim world.Dimension) {
 	s.debugShapeUpdates = s.debugShapeUpdates[:0]
 	s.debugShapesMu.Unlock()
 
-	s.writePacket(&packet.DebugDrawer{Shapes: shapes})
+	s.writePacket(&packet.PrimitiveShapes{Shapes: shapes})
 }
 
 // queueDebugShapeUpdate queues a debug shape mutation to be applied the next time debug shapes are sent.
