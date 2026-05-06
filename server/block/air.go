@@ -14,9 +14,9 @@ func (Air) HasLiquidDrops() bool {
 	return false
 }
 
-// PortalInterior returns true if air may occupy the inside of a portal frame before activation.
-func (Air) PortalInterior(dimension world.Dimension) bool {
-	return dimension == world.Nether
+// PortalInterior returns true if air may occupy the inside of a portal frame before activation for the target dimension.
+func (Air) PortalInterior(target world.Dimension) bool {
+	return target == world.Nether
 }
 
 // EncodeItem ...
