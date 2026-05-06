@@ -1181,7 +1181,7 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 		textData := &protocol.TextShape{
 			Text:             shape.Text,
 			UseRotation:      shape.LockRotation,
-			DepthTest:        shape.DepthTest,
+			DepthTest:        !shape.DisableDepthTest,
 			ShowBackface:     !shape.HideBackface,
 			ShowBackfaceText: !shape.HideBackfaceText,
 		}

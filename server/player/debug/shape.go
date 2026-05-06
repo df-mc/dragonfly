@@ -149,9 +149,9 @@ type Text struct {
 	// LockRotation specifies whether the text should be locked to the orientation set by Rotation.
 	// If false, the text will rotate to always face the camera.
 	LockRotation bool
-	// DepthTest specifies whether the text should show through walls. If false, the text will be
-	// occluded by geometry in front of it.
-	DepthTest bool
+	// DisableDepthTest specifies whether the text should show through walls. If false, the text
+	// will be occluded by geometry in front of it.
+	DisableDepthTest bool
 	// HideBackface specifies whether the background should be hidden on the back side of the shape.
 	// Has no visible effect unless LockRotation is also set.
 	HideBackface bool
