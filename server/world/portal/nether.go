@@ -2,14 +2,15 @@ package portal
 
 import (
 	"math"
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Nether contains information about a nether portal structure.
+// Nether contains information about a nether portal structure. Values returned from this package are tied to the
+// transaction that created them and must not be retained after that transaction finishes.
 type Nether struct {
 	w, h      int
 	framed    bool
@@ -35,6 +36,9 @@ func NetherPortalFromPos(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 	axis, positions, width, height, completed, ok := multiAxisScan(pos, tx, matchesNetherPortalInterior)
 	if !ok {
 		axis, positions, width, height, completed, ok = multiAxisScan(pos, tx, matchesNetherPortal)
+	}
+	if !ok {
+		return Nether{}, false
 	}
 	return Nether{
 		w: width, h: height,
@@ -123,7 +127,7 @@ func CreateNetherPortal(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 		return Nether{}, false
 	}
 
-	resultPos, random, distance, a, r := pos, rand.Intn(4), -1.0, 0, tx.Range()
+	resultPos, random, distance, a, r := pos, rand.IntN(4), -1.0, 0, tx.Range()
 	searchValidArea := func(directions int, valid func(pos cube.Pos, riv int, coEff1, coEff2 int) bool) {
 		for tempX := pos.X() - 16; tempX <= pos.X()+16; tempX++ {
 			offsetX := float64(tempX-pos.X()) + 0.5
@@ -168,7 +172,7 @@ func CreateNetherPortal(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 			coEff2 = -coEff2
 		}
 
-		for safeSpace1 := 0; safeSpace1 < 3; safeSpace1++ {
+		for safeSpace1 := range 3 {
 			for safeSpace2 := -1; safeSpace2 < 3; safeSpace2++ {
 				for height := -1; height < 4; height++ {
 					b := tx.Block(cube.Pos{
@@ -221,9 +225,9 @@ func CreateNetherPortal(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 
 	if distance < 0.0 {
 		// If all else fails, we can simply create a floating platform in the void with the portal on it.
-		resultPos[1] = int(math.Min(math.Max(float64(resultPos[1]), 70), float64(r.Max()-10)))
+		resultPos[1] = min(max(resultPos[1], 70), r.Max()-10)
 		for safeBeforeAfter := -1; safeBeforeAfter <= 1; safeBeforeAfter++ {
-			for safeWidth := 0; safeWidth < 2; safeWidth++ {
+			for safeWidth := range 2 {
 				for height := -1; height < 3; height++ {
 					entryPos := cube.Pos{
 						resultPos.X() + safeWidth*coEff1 + safeBeforeAfter*coEff2,
