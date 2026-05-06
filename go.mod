@@ -1,8 +1,6 @@
 module github.com/df-mc/dragonfly
 
-go 1.24.0
-
-toolchain go1.24.4
+go 1.26.0
 
 require (
 	github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479
