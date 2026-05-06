@@ -29,7 +29,6 @@ const (
 // NetherPortalFromPos returns Nether portal information from a given position in the frame.
 func NetherPortalFromPos(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 	if tx.World().Dimension() == world.End {
-		// Don't waste our time; we can't make a portal in the end.
 		return Nether{}, false
 	}
 
@@ -91,7 +90,6 @@ type frameBlock interface {
 // FindNetherPortal searches a provided radius for a Nether portal.
 func FindNetherPortal(tx *world.Tx, pos cube.Pos, radius int) (Nether, bool) {
 	if tx.World().Dimension() == world.End {
-		// Don't waste our time - we can't make a portal in the end.
 		return Nether{}, false
 	}
 
@@ -114,7 +112,6 @@ func FindNetherPortal(tx *world.Tx, pos cube.Pos, radius int) (Nether, bool) {
 		}
 	}
 	if !found {
-		// Don't waste our time if the search didn't work out.
 		return Nether{}, false
 	}
 	return NetherPortalFromPos(tx, closestPos)
@@ -123,7 +120,6 @@ func FindNetherPortal(tx *world.Tx, pos cube.Pos, radius int) (Nether, bool) {
 // CreateNetherPortal creates a Nether portal at the given position.
 func CreateNetherPortal(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 	if tx.World().Dimension() == world.End {
-		// You can't create a nether portal in the end.
 		return Nether{}, false
 	}
 
@@ -194,7 +190,7 @@ func CreateNetherPortal(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 		// If we couldn't find a valid area under those specifications, we can search the two main directions instead,
 		// reducing comfort but at least allowing us to have a portal in the area.
 		searchValidArea(2, func(pos cube.Pos, riv int, coEff1, coEff2 int) bool {
-			for safeSpace := 0; safeSpace < 3; safeSpace++ {
+			for safeSpace := range 3 {
 				for height := -1; height < 4; height++ {
 					b := tx.Block(cube.Pos{
 						pos.X() + safeSpace*coEff1,
