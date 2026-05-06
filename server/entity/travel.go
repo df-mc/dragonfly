@@ -12,10 +12,10 @@ import (
 
 // TravelComputer handles the interdimensional travelling of an entity.
 type TravelComputer struct {
-	// Instantaneous is a function that returns true if the entity given can travel instantly.
+	// Instantaneous returns true if the entity should skip the portal wait timer. Players use this for Creative mode.
 	Instantaneous func() bool
 
-	mu             sync.RWMutex
+	mu             sync.Mutex
 	start          time.Time
 	inside         bool
 	awaitingTravel bool
@@ -32,24 +32,33 @@ type Traveller interface {
 
 // EnterPortal handles an entity touching a portal block. It teleports the entity to the other dimension after four
 // seconds or instantly if instantaneous is true.
-func (t *TravelComputer) EnterPortal(travel Traveller, tx *world.Tx, target world.Dimension) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.inside = true
-	switch target {
-	case world.Nether:
-		if t.timedOut {
-			// Timed out, we can't travel through Nether portals.
-			return
-		}
-		if t.Instantaneous() || (t.awaitingTravel && time.Since(t.start) >= time.Second*4) {
-			t.mu.Unlock()
-			t.Travel(travel, tx.World(), tx.World().PortalDestination(world.Nether))
-			t.mu.Lock()
-		} else if !t.awaitingTravel {
-			t.start, t.awaitingTravel = time.Now(), true
-		}
+func (t *TravelComputer) EnterPortal(e Traveller, tx *world.Tx, target world.Dimension) {
+	source := tx.World()
+	destination := source.PortalDestination(target)
+	if destination == source {
+		return
 	}
+
+	t.mu.Lock()
+	t.inside = true
+	if t.timedOut {
+		// Timed out, we can't travel through portals.
+		t.mu.Unlock()
+		return
+	}
+	travelNow := t.instantaneous() || (t.awaitingTravel && time.Since(t.start) >= time.Second*4)
+	if !travelNow && !t.awaitingTravel {
+		t.start, t.awaitingTravel = time.Now(), true
+	}
+	t.mu.Unlock()
+
+	if travelNow {
+		t.travel(e, source, destination)
+	}
+}
+
+func (t *TravelComputer) instantaneous() bool {
+	return t.Instantaneous != nil && t.Instantaneous()
 }
 
 // StopTravelling resets the travel timer if the entity was not inside a portal this tick.
@@ -60,24 +69,20 @@ func (t *TravelComputer) StopTravelling() {
 		t.inside = false
 		return
 	}
-	t.inside = false
 	if t.travelling {
 		return
 	}
 	t.timedOut, t.awaitingTravel = false, false
 }
 
-// Travel moves the player to the given Nether or Overworld world and translates the player's current position based
-// on the source world.
-func (t *TravelComputer) Travel(e Traveller, source *world.World, destination *world.World) {
-	sourceDimension, targetDimension := source.Dimension(), destination.Dimension()
-	pos := cube.PosFromVec3(e.Position())
-	switch sourceDimension {
-	case world.Overworld:
-		pos = cube.Pos{pos.X() / 8, pos.Y() + sourceDimension.Range().Min(), pos.Z() / 8}
-	case world.Nether:
-		pos = cube.Pos{pos.X() * 8, pos.Y() - targetDimension.Range().Min(), pos.Z() * 8}
+// travel moves the entity to the given Nether or Overworld world and translates its current position based on the
+// source world.
+func (t *TravelComputer) travel(e Traveller, source *world.World, destination *world.World) {
+	if destination == nil || destination == source {
+		return
 	}
+
+	pos := translatePortalPosition(cube.PosFromVec3(e.Position()), source.Dimension(), destination.Dimension())
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -86,18 +91,24 @@ func (t *TravelComputer) Travel(e Traveller, source *world.World, destination *w
 	go func() {
 		spawn := pos.Vec3Middle()
 
-		source.Exec(func(tx *world.Tx) {
-			tx.RemoveEntity(e)
+		var handle *world.EntityHandle
+		<-source.Exec(func(tx *world.Tx) {
+			handle = tx.RemoveEntity(e)
 		})
+		if handle == nil {
+			t.mu.Lock()
+			t.travelling = false
+			t.mu.Unlock()
+			return
+		}
 
-		destination.Exec(func(tx *world.Tx) {
+		<-destination.Exec(func(tx *world.Tx) {
 			if netherPortal, ok := portal.FindOrCreateNetherPortal(tx, pos, 128); ok {
 				spawn = netherPortal.Spawn().Vec3Middle()
 			}
 
-			tx.AddEntity(e.H())
-			if ent, ok := e.H().Entity(tx); ok {
-				ent.(Traveller).Teleport(spawn)
+			if ent, ok := tx.AddEntity(handle).(Traveller); ok {
+				ent.Teleport(spawn)
 			}
 		})
 
@@ -105,4 +116,19 @@ func (t *TravelComputer) Travel(e Traveller, source *world.World, destination *w
 		defer t.mu.Unlock()
 		t.travelling = false
 	}()
+}
+
+// translatePortalPosition maps a position in the source dimension to the equivalent position in the target dimension.
+// Overworld coordinates are divided by 8 when crossing to the Nether and Nether coordinates are multiplied by 8 when
+// crossing to the Overworld; the Y coordinate is clamped to the target dimension's vertical range.
+func translatePortalPosition(pos cube.Pos, source, target world.Dimension) cube.Pos {
+	switch source {
+	case world.Overworld:
+		pos[0], pos[2] = pos[0]/8, pos[2]/8
+	case world.Nether:
+		pos[0], pos[2] = pos[0]*8, pos[2]*8
+	}
+	r := target.Range()
+	pos[1] = min(max(pos[1], r.Min()), r.Max())
+	return pos
 }
