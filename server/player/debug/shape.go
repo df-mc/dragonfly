@@ -135,6 +135,9 @@ type Text struct {
 	// BackgroundColour is the colour used for the text background. If empty, it will default to a
 	// translucent black.
 	BackgroundColour color.RGBA
+	// HideBackground specifies whether the text background should be hidden entirely. Takes precedence
+	// over BackgroundColour when set.
+	HideBackground bool
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
 	// Rotation is the rotation of the shape, applied only when LockRotation is set.

@@ -1185,7 +1185,10 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 			ShowBackface:     !shape.HideBackface,
 			ShowBackfaceText: !shape.HideBackfaceText,
 		}
-		if shape.BackgroundColour != (color.RGBA{}) {
+		switch {
+		case shape.HideBackground:
+			textData.BackgroundColour = protocol.Option(color.RGBA{})
+		case shape.BackgroundColour != (color.RGBA{}):
 			textData.BackgroundColour = protocol.Option(shape.BackgroundColour)
 		}
 		ps.ExtraShapeData = textData
