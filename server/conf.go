@@ -21,6 +21,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 )
 
@@ -78,6 +79,9 @@ type Config struct {
 	// list. By default, StatusProvider will show the server name from the Name
 	// field and the current player count and maximum players.
 	StatusProvider minecraft.ServerStatusProvider
+	// Compression is the packet compression used for connections accepted by
+	// the default listener. If nil, gophertunnel's default compression is used.
+	Compression packet.Compression
 	// PlayerProvider is the player.Provider used for storing and loading player
 	// data. If left as nil, player data will be newly created every time a
 	// player joins the server and no data will be stored.
