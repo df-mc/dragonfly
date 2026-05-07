@@ -99,6 +99,8 @@ type Session struct {
 	debugShapes       map[int]debug.Shape
 	debugShapeUpdates []debugShapeUpdate
 
+	viewLayer *world.ViewLayer
+
 	closeBackground chan struct{}
 }
 
@@ -195,6 +197,7 @@ func (conf Config) New(conn Conn) *Session {
 		debugShapes:            make(map[int]debug.Shape),
 		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
 	}
+	s.viewLayer = world.NewViewLayer(s)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 
@@ -284,6 +287,9 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 func (s *Session) close(tx *world.Tx, c Controllable) {
 	c.MoveItemsToInventory()
 	s.closeCurrentContainer(tx, false)
+	if s.viewLayer != nil {
+		_ = s.viewLayer.Close()
+	}
 
 	s.conf.HandleStop(tx, c)
 
@@ -306,7 +312,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.
-	sessions.Remove(s)
+	sessions.Remove(s, c)
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)
