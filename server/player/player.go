@@ -2910,20 +2910,20 @@ func (p *Player) EyeHeight() float64 {
 	case p.swimming || p.crawling || p.gliding:
 		return 0.4
 	case p.sneaking:
-		return 1.26
+		return 1.27
 	default:
 		return 1.62
 	}
 }
 
-// TorsoHeight returns the torso height of the player: 1.52, 1.16 if the player is sneaking, or 0.42 if the player is
+// TorsoHeight returns the torso height of the player: 1.52, 1.17 if the player is sneaking, or 0.42 if the player is
 // swimming, gliding, or crawling.
 func (p *Player) TorsoHeight() float64 {
 	switch {
 	case p.swimming || p.crawling || p.gliding:
-		return 0.42
+		return 0.3
 	case p.sneaking:
-		return 1.16
+		return 1.17
 	default:
 		return 1.52
 	}
