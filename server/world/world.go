@@ -715,12 +715,29 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	c := w.chunk(pos)
 	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
 
+	w.removeEntityFromViewLayers(e)
 	for _, v := range c.viewers {
 		v.HideEntity(e)
 	}
 	delete(w.entities, handle)
 	handle.unsetAndLockWorld()
 	return handle
+}
+
+// removeEntityFromViewLayers removes stale overrides for despawned entities. Entities that own a ViewLayer,
+// such as players, are skipped because they may be removed temporarily when respawning or changing worlds.
+func (w *World) removeEntityFromViewLayers(e Entity) {
+	if _, ok := e.(viewLayerViewer); ok {
+		return
+	}
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
+		v, ok := viewer.(viewLayerViewer)
+		if !ok || v.ViewLayer() == nil {
+			continue
+		}
+		v.ViewLayer().remove(e)
+	}
 }
 
 // entitiesWithin returns an iterator that yields all entities contained within
@@ -736,11 +753,12 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 					// The chunk wasn't loaded, so there are no entities here.
 					continue
 				}
-				for _, handle := range c.Entities {
+				for _, handle := range slices.Clone(c.Entities) {
 					if !box.Vec3Within(handle.data.Pos) {
 						continue
 					}
-					if !yield(handle.mustEntity(tx)) {
+					ent, ok := handle.Entity(tx)
+					if ok && !yield(ent) {
 						return
 					}
 				}

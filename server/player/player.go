@@ -1481,17 +1481,15 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 // unless the held item implements the item.Usable interface, in which case it will be activated.
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
-	var (
-		i, left = p.HeldItems()
-		ctx     = event.C(p)
-	)
+	i, _ := p.HeldItems()
+	ctx := event.C(p)
 	if p.HasCooldown(i.Item()) {
 		return
 	}
 	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
 		return
 	}
-	i, left = p.HeldItems()
+	i, left := p.HeldItems()
 	it := i.Item()
 
 	if cd, ok := it.(item.Cooldown); ok {
@@ -2370,14 +2368,23 @@ func (p *Player) SetExperienceProgress(progress float64) {
 	p.session().SendExperience(p.ExperienceLevel(), p.ExperienceProgress())
 }
 
-// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
-// is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
-// experience collection or if the player was dead or in a game mode that doesn't allow collection.
-func (p *Player) CollectExperience(value int) bool {
+// CanCollectExperience checks if the player can collect experience, which is true if the player is not dead,
+// is in a game mode that allows interaction and if 100ms have passed since the last experience collection.
+func (p *Player) CanCollectExperience() bool {
 	if p.Dead() || !p.GameMode().AllowsInteraction() {
 		return false
 	}
 	if last := p.lastXPPickup; last != nil && time.Since(*last) < time.Millisecond*100 {
+		return false
+	}
+	return true
+}
+
+// CollectExperience makes the player collect the experience points passed, adding it to the experience manager. A bool
+// is returned indicating whether the player was able to collect the experience or not, due to the 100ms delay between
+// experience collection or if the player was dead or in a game mode that doesn't allow collection.
+func (p *Player) CollectExperience(value int) bool {
+	if !p.CanCollectExperience() {
 		return false
 	}
 	value = p.mendItems(value)
@@ -2506,6 +2513,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	p.checkBlockCollisions(p.data.Vel)
 	p.onGround = p.checkOnGround(mgl64.Vec3{})
+	p.checkEntitySteppers()
 
 	p.effects.Tick(p, p.tx)
 
@@ -2571,6 +2579,41 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	} else {
 		p.data.Vel = mgl64.Vec3{}
 	}
+}
+
+// ViewLayer returns the ViewLayer attached to the player's session.
+func (p *Player) ViewLayer() *world.ViewLayer {
+	return p.session().ViewLayer()
+}
+
+// ViewNameTag overrides the public name tag of the entity for this player.
+func (p *Player) ViewNameTag(entity world.Entity, nameTag string) {
+	p.session().ViewNameTag(entity, nameTag)
+}
+
+// ViewPublicNameTag removes the name tag override of the entity for this player.
+func (p *Player) ViewPublicNameTag(entity world.Entity) {
+	p.session().ViewPublicNameTag(entity)
+}
+
+// ViewScoreTag overrides the public score tag of the entity for this player.
+func (p *Player) ViewScoreTag(entity world.Entity, scoreTag string) {
+	p.session().ViewScoreTag(entity, scoreTag)
+}
+
+// ViewPublicScoreTag removes the score tag override of the entity for this player.
+func (p *Player) ViewPublicScoreTag(entity world.Entity) {
+	p.session().ViewPublicScoreTag(entity)
+}
+
+// ViewVisibility overrides the public visibility of the entity for this player.
+func (p *Player) ViewVisibility(entity world.Entity, level world.VisibilityLevel) {
+	p.session().ViewVisibility(entity, level)
+}
+
+// RemoveViewLayer removes all view-layer overrides of the entity for this player.
+func (p *Player) RemoveViewLayer(entity world.Entity) {
+	p.session().RemoveViewLayer(entity)
 }
 
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
@@ -2791,6 +2834,26 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 						collide.EntityInside(blockPos, p.tx, p)
 					}
 				}
+			}
+		}
+	}
+}
+
+// checkEntitySteppers checks if the player is standing on any EntityStepper blocks.
+func (p *Player) checkEntitySteppers() {
+	if !p.OnGround() {
+		return
+	}
+	box := Type.BBox(p).Translate(p.Position()).Grow(-0.0001)
+	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+	y := int(math.Floor(box.Min()[1] - 0.0001))
+
+	for x := low[0]; x <= high[0]; x++ {
+		for z := low[2]; z <= high[2]; z++ {
+			pos := cube.Pos{x, y, z}
+			if stepper, ok := p.tx.Block(pos).(block.EntityStepper); ok {
+				stepper.EntityStepOn(pos, p.tx, p)
+				return
 			}
 		}
 	}

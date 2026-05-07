@@ -39,6 +39,13 @@ func (p Pos) OutOfBounds(r Range) bool {
 	return y > r[1] || y < r[0]
 }
 
+// Within reports if the position lies within the inclusive minimum and maximum bounds passed.
+func (p Pos) Within(min, max Pos) bool {
+	return p[0] >= min[0] && p[0] <= max[0] &&
+		p[1] >= min[1] && p[1] <= max[1] &&
+		p[2] >= min[2] && p[2] <= max[2]
+}
+
 // Add adds two positions together and returns a new combined one.
 func (p Pos) Add(pos Pos) Pos {
 	return Pos{p[0] + pos[0], p[1] + pos[1], p[2] + pos[2]}
@@ -159,7 +166,7 @@ func Range3D(p1, p2 Pos) iter.Seq[Pos] {
 		for x := min[0]; x <= max[0]; x++ {
 			for y := min[1]; y <= max[1]; y++ {
 				for z := min[2]; z <= max[2]; z++ {
-					if !yield(min.Add(Pos{x, y, z})) {
+					if !yield(Pos{x, y, z}) {
 						return
 					}
 				}
