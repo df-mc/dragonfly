@@ -2169,12 +2169,17 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
+	p.forceTeleport(pos)
+}
+
+// forceTeleport teleports the player without calling the Handler.
+// It also wakes up the player from sleep.
+func (p *Player) forceTeleport(pos mgl64.Vec3) {
 	p.Wake()
 	p.teleport(pos)
 }
 
-// teleport teleports the player to a target position in the world. It does not call the Handler of the
-// player.
+// teleport teleports the player to a target position in the world without updating non-positional state.
 func (p *Player) teleport(pos mgl64.Vec3) {
 	for _, v := range p.viewers() {
 		v.ViewEntityTeleport(p, pos)
