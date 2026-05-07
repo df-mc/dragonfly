@@ -1804,6 +1804,10 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
 	i, left := p.HeldItems()
 
+	if durable, ok := i.Item().(item.Durable); ok {
+		p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
+	}
+
 	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
 	if !vulnerable {
 		return true
@@ -1822,10 +1826,6 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		if flammable, ok := living.(entity.Flammable); ok {
 			flammable.SetOnFire(enchantment.FireAspect.Duration(f.Level()))
 		}
-	}
-
-	if durable, ok := i.Item().(item.Durable); ok {
-		p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
 	}
 	return true
 }
@@ -2902,12 +2902,13 @@ func (p *Player) OnGround() bool {
 	return p.onGround
 }
 
-// EyeHeight returns the eye height of the player: 1.62, 1.26 if player is sneaking or 0.52 if the player is
-// swimming, gliding or crawling.
+// EyeHeight returns the player's eye offset above its feet, in blocks. The value depends on the
+// player's current pose: 1.62 when standing, 1.26 while sneaking, and 0.4 while swimming, gliding
+// or crawling.
 func (p *Player) EyeHeight() float64 {
 	switch {
 	case p.swimming || p.crawling || p.gliding:
-		return 0.52
+		return 0.4
 	case p.sneaking:
 		return 1.26
 	default:
