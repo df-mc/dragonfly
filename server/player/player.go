@@ -2916,17 +2916,9 @@ func (p *Player) EyeHeight() float64 {
 	}
 }
 
-// TorsoHeight returns the torso height of the player: 1.52, 1.17 if the player is sneaking, or 0.42 if the player is
-// swimming, gliding, or crawling.
+// TorsoHeight returns the player's torso offset above its feet. This is 0.1 blocks below the eye height.
 func (p *Player) TorsoHeight() float64 {
-	switch {
-	case p.swimming || p.crawling || p.gliding:
-		return 0.3
-	case p.sneaking:
-		return 1.17
-	default:
-		return 1.52
-	}
+	return p.EyeHeight() - 0.1
 }
 
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
