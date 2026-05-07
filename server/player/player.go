@@ -2902,30 +2902,23 @@ func (p *Player) OnGround() bool {
 	return p.onGround
 }
 
-// EyeHeight returns the eye height of the player: 1.62, 1.26 if player is sneaking or 0.52 if the player is
-// swimming, gliding or crawling.
+// EyeHeight returns the player's eye offset above its feet, in blocks. The value depends on the
+// player's current pose: 1.62 when standing, 1.26 while sneaking, and 0.4 while swimming, gliding
+// or crawling.
 func (p *Player) EyeHeight() float64 {
 	switch {
 	case p.swimming || p.crawling || p.gliding:
-		return 0.52
+		return 0.4
 	case p.sneaking:
-		return 1.26
+		return 1.27
 	default:
 		return 1.62
 	}
 }
 
-// TorsoHeight returns the torso height of the player: 1.52, 1.16 if the player is sneaking, or 0.42 if the player is
-// swimming, gliding, or crawling.
+// TorsoHeight returns the player's torso offset above its feet. This is 0.1 blocks below the eye height.
 func (p *Player) TorsoHeight() float64 {
-	switch {
-	case p.swimming || p.crawling || p.gliding:
-		return 0.42
-	case p.sneaking:
-		return 1.16
-	default:
-		return 1.52
-	}
+	return p.EyeHeight() - 0.1
 }
 
 // PlaySound plays a world.Sound that only this Player can hear. Unlike World.PlaySound, it is not broadcast
