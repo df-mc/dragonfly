@@ -2,6 +2,10 @@ package session
 
 import (
 	"fmt"
+	"math"
+	"math/rand/v2"
+	"slices"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -9,9 +13,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"math"
-	"math/rand/v2"
-	"slices"
 )
 
 const (
@@ -120,7 +121,7 @@ func (s *Session) sendEnchantmentOptions(tx *world.Tx, c Controllable, pos cube.
 		// an unknown purpose and can cause various unexpected issues.
 		options = append(options, protocol.EnchantmentOption{
 			Name:            enchantNames[rand.IntN(len(enchantNames))],
-			Cost:            uint32(selectedCosts[i]),
+			Cost:            uint8(selectedCosts[i]),
 			RecipeNetworkID: uint32(i),
 			Enchantments: protocol.ItemEnchantments{
 				Slot:         int32(i),

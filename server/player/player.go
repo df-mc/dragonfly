@@ -1804,6 +1804,10 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
 	i, left := p.HeldItems()
 
+	if durable, ok := i.Item().(item.Durable); ok {
+		p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
+	}
+
 	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
 	if !vulnerable {
 		return true
@@ -1822,10 +1826,6 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		if flammable, ok := living.(entity.Flammable); ok {
 			flammable.SetOnFire(enchantment.FireAspect.Duration(f.Level()))
 		}
-	}
-
-	if durable, ok := i.Item().(item.Durable); ok {
-		p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
 	}
 	return true
 }
@@ -2581,6 +2581,41 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	}
 }
 
+// ViewLayer returns the ViewLayer attached to the player's session.
+func (p *Player) ViewLayer() *world.ViewLayer {
+	return p.session().ViewLayer()
+}
+
+// ViewNameTag overrides the public name tag of the entity for this player.
+func (p *Player) ViewNameTag(entity world.Entity, nameTag string) {
+	p.session().ViewNameTag(entity, nameTag)
+}
+
+// ViewPublicNameTag removes the name tag override of the entity for this player.
+func (p *Player) ViewPublicNameTag(entity world.Entity) {
+	p.session().ViewPublicNameTag(entity)
+}
+
+// ViewScoreTag overrides the public score tag of the entity for this player.
+func (p *Player) ViewScoreTag(entity world.Entity, scoreTag string) {
+	p.session().ViewScoreTag(entity, scoreTag)
+}
+
+// ViewPublicScoreTag removes the score tag override of the entity for this player.
+func (p *Player) ViewPublicScoreTag(entity world.Entity) {
+	p.session().ViewPublicScoreTag(entity)
+}
+
+// ViewVisibility overrides the public visibility of the entity for this player.
+func (p *Player) ViewVisibility(entity world.Entity, level world.VisibilityLevel) {
+	p.session().ViewVisibility(entity, level)
+}
+
+// RemoveViewLayer removes all view-layer overrides of the entity for this player.
+func (p *Player) RemoveViewLayer(entity world.Entity) {
+	p.session().RemoveViewLayer(entity)
+}
+
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
 func (p *Player) tickAirSupply() {
 	if !p.canBreathe() {
@@ -2867,12 +2902,13 @@ func (p *Player) OnGround() bool {
 	return p.onGround
 }
 
-// EyeHeight returns the eye height of the player: 1.62, 1.26 if player is sneaking or 0.52 if the player is
-// swimming, gliding or crawling.
+// EyeHeight returns the player's eye offset above its feet, in blocks. The value depends on the
+// player's current pose: 1.62 when standing, 1.26 while sneaking, and 0.4 while swimming, gliding
+// or crawling.
 func (p *Player) EyeHeight() float64 {
 	switch {
 	case p.swimming || p.crawling || p.gliding:
-		return 0.52
+		return 0.4
 	case p.sneaking:
 		return 1.26
 	default:
