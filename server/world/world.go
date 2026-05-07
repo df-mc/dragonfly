@@ -148,6 +148,15 @@ func (w *World) EntityRegistry() EntityRegistry {
 	return w.conf.Entities
 }
 
+// blockFromLoadedChunk returns block from loaded chunk or air.
+func (w *World) blockFromLoadedChunk(pos cube.Pos) (Block, bool) {
+	c, ok := w.loadedChunk(chunkPosFromBlockPos(pos))
+	if !ok {
+		return air(), false
+	}
+	return w.blockInChunk(c, pos), true
+}
+
 // block reads a block from the position passed. If a chunk is not yet loaded
 // at that position, the chunk is loaded, or generated if it could not be found
 // in the world save, and the block returned.
@@ -563,7 +572,11 @@ func (w *World) light(pos cube.Pos) uint8 {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
-	return w.chunk(chunkPosFromBlockPos(pos)).Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
+	c, ok := w.loadedChunk(chunkPosFromBlockPos(pos))
+	if ok {
+		return c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
+	}
+	return 0
 }
 
 // skyLight returns the skylight level at the position passed. This light level
@@ -1149,6 +1162,15 @@ func showEntity(e Entity, viewer Viewer) {
 	viewer.ViewEntity(e)
 	viewer.ViewEntityItems(e)
 	viewer.ViewEntityArmour(e)
+}
+
+// loadedChunk returns chunk & true only if chunk at position passed is loaded.
+func (w *World) loadedChunk(pos ChunkPos) (*Column, bool) {
+	c, ok := w.chunks[pos]
+	if ok {
+		return c, true
+	}
+	return nil, false
 }
 
 // chunk reads a chunk from the position passed. If a chunk at that position is
