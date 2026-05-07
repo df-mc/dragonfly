@@ -62,7 +62,7 @@ func NewShulkerBox() ShulkerBox {
 		s.viewerMu.RLock()
 		defer s.viewerMu.RUnlock()
 		for viewer := range s.viewers {
-			// A shulker box inventory can't store shulker boxes, this is mostly handled by the client.
+			// A shulker box inventory can't store shulker boxes.
 			if _, ok := after.Item().(ShulkerBox); ok {
 				continue
 			}
