@@ -100,8 +100,11 @@ func (l *Loader) Load(tx *Tx, n int) {
 			break
 		}
 		pos := l.loadQueue[0]
-		tx.World().loadChunkAsync(tx, pos, func(tx *Tx, chunk *Column) {
-			l.viewChunk(tx, pos, chunk)
+		w := tx.World()
+		w.loadChunkAsync(tx, pos, func(tx *Tx, chunk *Column) {
+			if l.World() == w {
+				l.viewChunk(tx, pos, chunk)
+			}
 		})
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
