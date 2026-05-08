@@ -56,8 +56,8 @@ func (r *chunkRequest) doImmediate(tx *Tx) *Column {
 // load loads chunk or generates it.
 func (r *chunkRequest) load(w *World) {
 	r.col = w.loadChunk(r.pos)
-	w.Exec(r.signal)
 	close(r.close)
+	w.Exec(r.signal)
 }
 
 // signal calls all callbacks and adds chunk to the world.
