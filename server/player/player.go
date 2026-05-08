@@ -2907,7 +2907,7 @@ func (p *Player) OnGround() bool {
 func (p *Player) EyeHeight() float64 {
 	switch {
 	case p.swimming || p.crawling || p.gliding:
-		return 0.52
+		return 0.4
 	case p.sneaking:
 		return 1.27
 	default:
