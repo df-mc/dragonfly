@@ -101,9 +101,9 @@ func (l *Loader) Load(tx *Tx, n int) {
 		}
 		pos := l.loadQueue[0]
 		w := tx.World()
-		w.loadChunkAsync(tx, pos, func(tx *Tx, chunk *Column) {
-			if l.World() == w {
-				l.viewChunk(tx, pos, chunk)
+		w.loadChunkAsync(tx, pos, func(tx2 *Tx, chunk *Column) {
+			if tx == tx2 || l.World() == tx2.World() {
+				l.viewChunk(tx2, pos, chunk)
 			}
 		})
 

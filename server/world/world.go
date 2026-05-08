@@ -1213,13 +1213,13 @@ func (w *World) loadChunk(pos ChunkPos) *chunk.Column {
 	switch {
 	case err == nil:
 		return column
-	case errors.Is(err, leveldb.ErrNotFound):
+	default:
+		if !errors.Is(err, leveldb.ErrNotFound) {
+			w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+		}
 		ch := chunk.New(w.conf.Blocks, w.Range())
 		w.conf.Generator.GenerateChunk(pos, ch)
 		return &chunk.Column{Chunk: ch}
-	default:
-		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
-		return &chunk.Column{Chunk: chunk.New(w.conf.Blocks, w.Range())}
 	}
 }
 
