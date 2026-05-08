@@ -1,5 +1,5 @@
-github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9 h1:/G0ghZwrhou0Wq21qc1vXXMm/t/aKWkALWwITptKbE0=
-github.com/brentp/intintmap v0.0.0-20190211203843-30dc0ade9af9/go.mod h1:TOk10ahXejq9wkEaym3KPRNeuR/h5Jx+s8QRWIa2oTM=
+github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479 h1:UZbbt19ACBOFO+CiDQFjaEoPJkBhj7GNGtIq59WR6Os=
+github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479/go.mod h1:TOk10ahXejq9wkEaym3KPRNeuR/h5Jx+s8QRWIa2oTM=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/coreos/go-oidc/v3 v3.17.0 h1:hWBGaQfbi0iVviX4ibC7bk8OKT5qNr4klBaCHVNvehc=
@@ -41,8 +41,8 @@ github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3v
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217 h1:UZQq2253Q+7co/C9Et62RYPBggzz+L+2yqGlvQhSNM8=
 github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217/go.mod h1:/yysjwfCXm2+2OY8mBazLzcxJ3irnylKCyG3FLgUPVU=
-github.com/sandertv/gophertunnel v1.55.0 h1:0GMBOOl3NEzSOOUz6qNTWQ7S/seSYLh/4zAgy8RPyaY=
-github.com/sandertv/gophertunnel v1.55.0/go.mod h1:F8+ZPbzxJ0LqunXEaDjqeyUgHVB0rI5ZU+PHnptXGfI=
+github.com/sandertv/gophertunnel v1.56.2 h1:eFc58AkMQo43ntR0Wmvz8GRFSdOgABKVDn52GMbIYag=
+github.com/sandertv/gophertunnel v1.56.2/go.mod h1:F8+ZPbzxJ0LqunXEaDjqeyUgHVB0rI5ZU+PHnptXGfI=
 github.com/segmentio/fasthash v1.0.3 h1:EI9+KE1EwvMLBWwjpRDc+fEM+prwxDYbslddQGtrmhM=
 github.com/segmentio/fasthash v1.0.3/go.mod h1:waKX8l2N8yckOgmSsXJi7x1ZfdKZ4x7KRMzBtS3oedY=
 golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329 h1:9kj3STMvgqy3YA4VQXBrN7925ICMxD5wzMRcgA30588=
