@@ -24,7 +24,7 @@ func (sub *SubChunk) Equals(s *SubChunk) bool {
 	return true
 }
 
-// NewSubChunk creates a new sub chunk. All sub chunks should be created through this function
+// NewSubChunk creates a new sub chunk. All sub chunks should be created through this function.
 func NewSubChunk(air uint32) *SubChunk {
 	return &SubChunk{air: air}
 }
