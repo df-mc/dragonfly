@@ -26,18 +26,28 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session, tx *world.Tx,
 		}
 		switch id {
 		case "Sign":
-			return b.handleSign(pk, pos, s, tx, c)
+			return b.handleSign(pk, pos, s, tx, c, false)
+		case "HangingSign":
+			return b.handleSign(pk, pos, s, tx, c, true)
 		}
 		return fmt.Errorf("unhandled block actor data ID %v", id)
 	}
 	return fmt.Errorf("block actor data without 'id' tag: %v", pk.NBTData)
 }
 
-// handleSign handles the BlockActorData packet sent when editing a sign.
-func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Pos, s *Session, tx *world.Tx, co Controllable) error {
-	if _, ok := tx.Block(pos).(block.Sign); !ok {
-		s.conf.Log.Debug("no sign at position of sign block actor data", "pos", pos.String())
-		return nil
+// handleSign handles the BlockActorData packet sent when editing a sign and validates the expected sign variant.
+func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Pos, s *Session, tx *world.Tx, co Controllable, hanging bool) error {
+	bl := tx.Block(pos)
+	if hanging {
+		if _, ok := bl.(block.HangingSign); !ok {
+			s.conf.Log.Debug("no hanging sign at position of sign block actor data", "pos", pos.String())
+			return nil
+		}
+	} else {
+		if _, ok := bl.(block.Sign); !ok {
+			s.conf.Log.Debug("no sign at position of sign block actor data", "pos", pos.String())
+			return nil
+		}
 	}
 
 	frontText, err := b.textFromNBTData(pk.NBTData, true)
