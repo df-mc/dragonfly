@@ -37,7 +37,7 @@ func (f Flat) GenerateChunk(_ world.ChunkPos, chunk *chunk.Chunk) {
 
 	for x := range uint8(16) {
 		for z := range uint8(16) {
-			for y := range int16(max) {
+			for y := int16(0); y <= max; y++ {
 				if y < n {
 					chunk.SetBlock(x, min+y, z, 0, f.layers[n-y-1])
 				}
