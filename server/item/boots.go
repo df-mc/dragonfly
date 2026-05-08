@@ -54,7 +54,7 @@ func (b Boots) RepairableBy(i Stack) bool {
 // DefencePoints ...
 func (b Boots) DefencePoints() float64 {
 	switch b.Tier.Name() {
-	case "leather", "golden", "chainmail":
+	case "leather", "copper", "golden", "chainmail":
 		return 1
 	case "iron":
 		return 2

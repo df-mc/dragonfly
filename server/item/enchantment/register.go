@@ -21,7 +21,7 @@ func init() {
 	item.RegisterEnchantment(15, Efficiency)
 	item.RegisterEnchantment(16, SilkTouch)
 	item.RegisterEnchantment(17, Unbreaking)
-	// TODO: (18) Fortune.
+	item.RegisterEnchantment(18, Fortune)
 	item.RegisterEnchantment(19, Power)
 	item.RegisterEnchantment(20, Punch)
 	item.RegisterEnchantment(21, Flame)
@@ -36,7 +36,7 @@ func init() {
 	// TODO: (30) Riptide.
 	// TODO: (31) Loyalty.
 	// TODO: (32) Channeling.
-	// TODO: (33) Multishot.
+	item.RegisterEnchantment(33, Multishot)
 	// TODO: (34) Piercing.
 	item.RegisterEnchantment(35, QuickCharge)
 	item.RegisterEnchantment(36, SoulSpeed)

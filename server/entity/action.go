@@ -14,11 +14,19 @@ type HurtAction struct{ action }
 
 // CriticalHitAction is a world.EntityAction that makes an entity display critical hit particles. This will show stars
 // around the entity.
-type CriticalHitAction struct{ action }
+type CriticalHitAction struct {
+	action
+	// Count is the count of particles around the entity.
+	Count int
+}
 
 // EnchantedHitAction is a world.Action that makes an entity display enchanted hit particles. This will show circles
 // around the entity.
-type EnchantedHitAction struct{ action }
+type EnchantedHitAction struct {
+	action
+	// Count is the count of particles around the entity.
+	Count int
+}
 
 // DeathAction is a world.EntityAction that makes an entity display the death animation. After this animation, the
 // entity disappears from viewers watching it.

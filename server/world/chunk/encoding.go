@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
 	"github.com/df-mc/worldupgrader/blockupgrader"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -33,8 +34,6 @@ var (
 	NetworkEncoding networkEncoding
 	// BiomePaletteEncoding is the paletteEncoding used for encoding a palette of biomes.
 	BiomePaletteEncoding biomePaletteEncoding
-	// BlockPaletteEncoding is the paletteEncoding used for encoding a palette of block states encoded as NBT.
-	BlockPaletteEncoding blockPaletteEncoding
 )
 
 // biomePaletteEncoding implements the encoding of biome palettes to disk.
@@ -48,13 +47,16 @@ func (biomePaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	return v, binary.Read(buf, binary.LittleEndian, &v)
 }
 
-// blockPaletteEncoding implements the encoding of block palettes to disk.
-type blockPaletteEncoding struct{}
+// BlockPaletteEncoding implements the encoding of block palettes to disk. It requires a BlockRegistry for converting
+// between runtime IDs and block states.
+type BlockPaletteEncoding struct {
+	Blocks BlockRegistry
+}
 
-func (bpe blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
+func (bpe BlockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(bpe.EncodeBlockState(v))
 }
-func (bpe blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
+func (bpe BlockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	var m map[string]any
 	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&m); err != nil {
 		return 0, fmt.Errorf("error decoding block palette entry: %w", err)
@@ -62,14 +64,14 @@ func (bpe blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	return bpe.DecodeBlockState(m)
 }
 
-func (blockPaletteEncoding) EncodeBlockState(v uint32) blockEntry {
+func (bpe BlockPaletteEncoding) EncodeBlockState(v uint32) blockEntry {
 	// Get the block state registered with the runtime IDs we have in the palette of the block storage
 	// as we need the name and data value to store.
-	name, props, _ := RuntimeIDToState(v)
+	name, props, _ := bpe.Blocks.RuntimeIDToState(v)
 	return blockEntry{Name: name, State: props, Version: CurrentBlockVersion}
 }
 
-func (blockPaletteEncoding) DecodeBlockState(m map[string]any) (uint32, error) {
+func (bpe BlockPaletteEncoding) DecodeBlockState(m map[string]any) (uint32, error) {
 	// Decode the name and version of the block entry.
 	name, _ := m["name"].(string)
 	version, _ := m["version"].(int32)
@@ -107,7 +109,7 @@ func (blockPaletteEncoding) DecodeBlockState(m map[string]any) (uint32, error) {
 		Version:    version,
 	})
 
-	v, ok := StateToRuntimeID(upgraded.Name, upgraded.Properties)
+	v, ok := bpe.Blocks.StateToRuntimeID(upgraded.Name, upgraded.Properties)
 	if !ok {
 		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v} %v", upgraded.Name, upgraded.Properties, upgraded.Version)
 	}

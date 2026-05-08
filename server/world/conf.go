@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+type blockRegistrySetter interface {
+	// SetBlockRegistry updates the registry used by the provider to encode and decode blocks.
+	// Config.New calls it with Config.Blocks after applying the default registry and finalizing it.
+	SetBlockRegistry(BlockRegistry)
+}
+
 // Config may be used to create a new World. It holds a variety of fields that
 // influence the World.
 type Config struct {
@@ -38,6 +44,11 @@ type Config struct {
 	// By default, SaveInterval is set to 10 minutes. Setting SaveInterval to
 	// a negative number disables automatic saving entirely.
 	SaveInterval time.Duration
+	// ChunkUnloadInterval specifies how often unused chunks should be unloaded
+	// from memory when no longer in use. By default, this is set to 2 minutes.
+	// ChunkUnloadInterval should not be used to prevent chunks from unloading
+	// altogether. This should be done using a Loader with a custom Viewer.
+	ChunkUnloadInterval time.Duration
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per
 	// sub chunk, so the default value is 3. Setting this value to -1 or lower
@@ -55,6 +66,11 @@ type Config struct {
 	// Entities is an EntityRegistry with all Entity types registered that may
 	// be added to the World.
 	Entities EntityRegistry
+
+	// Blocks is the BlockRegistry used by the World.
+	// If left nil, DefaultBlockRegistry is used. For a non-default registry,
+	// use NewBlockRegistry(), register blocks/states, and call Finalize().
+	Blocks BlockRegistry
 }
 
 // New creates a new World using the Config conf. The World returned will start
@@ -66,18 +82,36 @@ func (conf Config) New() *World {
 	if conf.Dim == nil {
 		conf.Dim = Overworld
 	}
-	if conf.Provider == nil {
-		conf.Provider = NopProvider{}
-	}
 	if conf.SaveInterval == 0 {
 		conf.SaveInterval = time.Minute * 10
+	}
+	if conf.ChunkUnloadInterval <= 0 {
+		conf.ChunkUnloadInterval = time.Minute * 2
 	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}
 	}
+	if conf.Provider == nil {
+		// If no provider is set, use the default settings and the default spawn position from the generator.
+		s := defaultSettings()
+		s.Spawn = conf.Generator.DefaultSpawn(conf.Dim)
+		conf.Provider = NopProvider{Set: s}
+	}
 	if conf.RandomTickSpeed == 0 {
 		conf.RandomTickSpeed = 3
 	}
+	if conf.Blocks == nil {
+		conf.Blocks = DefaultBlockRegistry
+	}
+
+	// Initialize the passed block registry and also initialize the default block registry which
+	// is used in some vanilla paths.
+	conf.Blocks.Finalize()
+	DefaultBlockRegistry.Finalize()
+	if provider, ok := conf.Provider.(blockRegistrySetter); ok {
+		provider.SetBlockRegistry(conf.Blocks)
+	}
+
 	if conf.RandSource == nil {
 		t := uint64(time.Now().UnixNano())
 		conf.RandSource = rand.NewPCG(t, t)

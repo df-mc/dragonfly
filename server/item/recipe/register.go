@@ -13,6 +13,8 @@ import (
 // recipes is a list of each recipe.
 var (
 	recipes []Recipe
+	// dynamicRecipes is a list of each dynamic recipe.
+	dynamicRecipes []DynamicRecipe
 	// index maps an input hash to output stacks for each PotionContainerChange and Potion recipe.
 	index = make(map[string]map[string]Recipe)
 	// reagent maps the item name and an item.Stack.
@@ -22,6 +24,11 @@ var (
 // Recipes returns each recipe in a slice.
 func Recipes() []Recipe {
 	return slices.Clone(recipes)
+}
+
+// DynamicRecipes returns each dynamic recipe in a slice.
+func DynamicRecipes() []DynamicRecipe {
+	return slices.Clone(dynamicRecipes)
 }
 
 // Register registers a new recipe.
@@ -114,4 +121,10 @@ func ValidBrewingReagent(i world.Item) bool {
 	name, _ := i.EncodeItem()
 	_, exists := reagent[name]
 	return exists
+}
+
+// RegisterDynamic registers a new dynamic recipe. Dynamic recipes are not sent to the client
+// and are validated server-side.
+func RegisterDynamic(recipe DynamicRecipe) {
+	dynamicRecipes = append(dynamicRecipes, recipe)
 }
