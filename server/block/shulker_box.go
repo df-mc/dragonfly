@@ -218,45 +218,20 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 		return
 	}
 
-	offset := s.Facing.Offset()
-	entityPos := e.Position()
-
-	if offset.Y() > 0 {
-		targetY := shulkerBBox.Max().Y()
-		if entityPos.Y() < targetY {
-			mover.Displace(mgl64.Vec3{0, targetY - entityPos.Y(), 0}, 0, 0)
-		}
-		return
-	}
-
-	if offset.Y() != 0 {
-		return
-	}
-
-	halfW := entityBBox.Width() / 2
-	halfL := entityBBox.Length() / 2
+	// Move the entity out along the lid's facing axis by the penetration depth
+	// between the shulker lid box and the entity box.
 	var delta mgl64.Vec3
-	switch {
-	case offset.X() > 0:
-		target := shulkerBBox.Max().X() + halfW
-		if x := entityPos.X(); x < target {
-			delta[0] = target - x
-		}
-	case offset.X() < 0:
-		target := shulkerBBox.Min().X() - halfW
-		if x := entityPos.X(); x > target {
-			delta[0] = target - x
-		}
-	case offset.Z() > 0:
-		target := shulkerBBox.Max().Z() + halfL
-		if z := entityPos.Z(); z < target {
-			delta[2] = target - z
-		}
-	case offset.Z() < 0:
-		target := shulkerBBox.Min().Z() - halfL
-		if z := entityPos.Z(); z > target {
-			delta[2] = target - z
-		}
+	switch s.Facing {
+	case cube.FaceUp:
+		delta[1] = shulkerBBox.Max().Y() - entityBBox.Min().Y()
+	case cube.FaceEast:
+		delta[0] = shulkerBBox.Max().X() - entityBBox.Min().X()
+	case cube.FaceWest:
+		delta[0] = shulkerBBox.Min().X() - entityBBox.Max().X()
+	case cube.FaceSouth:
+		delta[2] = shulkerBBox.Max().Z() - entityBBox.Min().Z()
+	case cube.FaceNorth:
+		delta[2] = shulkerBBox.Min().Z() - entityBBox.Max().Z()
 	}
 	if delta != (mgl64.Vec3{}) {
 		mover.Displace(delta, 0, 0)
