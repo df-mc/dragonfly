@@ -202,7 +202,7 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 		return
 	}
 	mover, ok := e.(interface {
-		ForceMove(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+		Displace(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 	})
 	if !ok {
 		return
@@ -223,7 +223,7 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	if offset.Y() > 0 {
 		targetY := shulkerBBox.Max().Y()
 		if entityPos.Y() < targetY {
-			mover.ForceMove(mgl64.Vec3{0, targetY - entityPos.Y(), 0}, 0, 0)
+			mover.Displace(mgl64.Vec3{0, targetY - entityPos.Y(), 0}, 0, 0)
 		}
 		return
 	}
@@ -238,22 +238,22 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	case offset.X() > 0:
 		target := shulkerBBox.Max().X() + halfW
 		if x := entityPos.X(); x < target {
-			mover.ForceMove(mgl64.Vec3{target - x, 0, 0}, 0, 0)
+			mover.Displace(mgl64.Vec3{target - x, 0, 0}, 0, 0)
 		}
 	case offset.X() < 0:
 		target := shulkerBBox.Min().X() - halfW
 		if x := entityPos.X(); x > target {
-			mover.ForceMove(mgl64.Vec3{target - x, 0, 0}, 0, 0)
+			mover.Displace(mgl64.Vec3{target - x, 0, 0}, 0, 0)
 		}
 	case offset.Z() > 0:
 		target := shulkerBBox.Max().Z() + halfL
 		if z := entityPos.Z(); z < target {
-			mover.ForceMove(mgl64.Vec3{0, 0, target - z}, 0, 0)
+			mover.Displace(mgl64.Vec3{0, 0, target - z}, 0, 0)
 		}
 	case offset.Z() < 0:
 		target := shulkerBBox.Min().Z() - halfL
 		if z := entityPos.Z(); z > target {
-			mover.ForceMove(mgl64.Vec3{0, 0, target - z}, 0, 0)
+			mover.Displace(mgl64.Vec3{0, 0, target - z}, 0, 0)
 		}
 	}
 }

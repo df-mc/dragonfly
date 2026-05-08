@@ -22,6 +22,9 @@ type Handler interface {
 	// HandleMove handles the movement of a player. ctx.Cancel() may be called to cancel the movement event.
 	// The new position, yaw and pitch are passed.
 	HandleMove(ctx *Context, newPos mgl64.Vec3, newRot cube.Rotation)
+	// HandleDisplace handles forced displacement of a player by an external force (e.g., a shulker box).
+	// ctx.Cancel() may be called to cancel the displacement.
+	HandleDisplace(ctx *Context, newPos mgl64.Vec3, newRot cube.Rotation)
 	// HandleJump handles the player jumping.
 	HandleJump(p *Player)
 	// HandleTeleport handles the teleportation of a player. ctx.Cancel() may be called to cancel it.
@@ -166,6 +169,7 @@ var _ Handler = NopHandler{}
 func (NopHandler) HandleItemDrop(*Context, item.Stack)                                     {}
 func (NopHandler) HandleHeldSlotChange(*Context, int, int)                                 {}
 func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                          {}
+func (NopHandler) HandleDisplace(*Context, mgl64.Vec3, cube.Rotation)                        {}
 func (NopHandler) HandleJump(*Player)                                                      {}
 func (NopHandler) HandleTeleport(*Context, mgl64.Vec3)                                     {}
 func (NopHandler) HandleChangeWorld(*Player, *world.World, *world.World)                   {}
