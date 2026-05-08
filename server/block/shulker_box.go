@@ -73,7 +73,6 @@ func NewShulkerBox() ShulkerBox {
 	return s
 }
 
-// Model ...
 func (s ShulkerBox) Model() world.BlockModel {
 	return model.Shulker{Facing: s.Facing, Progress: s.progress.Load()}
 }
@@ -108,7 +107,6 @@ func (s ShulkerBox) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return s.inventory
 }
 
-// Activate ...
 func (s ShulkerBox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	opener, ok := u.(ContainerOpener)
 	if !ok {
@@ -120,7 +118,6 @@ func (s ShulkerBox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.Use
 	return true
 }
 
-// UseOnBlock ...
 func (s ShulkerBox) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, _, used = firstReplaceable(tx, pos, face, s)
 	if !used {
@@ -162,7 +159,6 @@ func (s ShulkerBox) close(tx *world.Tx, pos cube.Pos) {
 	tx.ScheduleBlockUpdate(pos, s, 0)
 }
 
-// ScheduledTick ...
 func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	switch s.animationStatus.Load() {
 	case shulkerStateClosed:
@@ -262,17 +258,14 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	}
 }
 
-// BreakInfo ...
 func (s ShulkerBox) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, oneOf(s))
 }
 
-// MaxCount ...
 func (s ShulkerBox) MaxCount() int {
 	return 1
 }
 
-// EncodeBlock ...
 func (s ShulkerBox) EncodeBlock() (name string, properties map[string]any) {
 	if c, ok := s.Colour.Colour(); ok {
 		return "minecraft:" + c.String() + "_shulker_box", nil
@@ -280,13 +273,11 @@ func (s ShulkerBox) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:undyed_shulker_box", nil
 }
 
-// EncodeItem ...
 func (s ShulkerBox) EncodeItem() (id string, meta int16) {
 	name, _ := s.EncodeBlock()
 	return name, 0
 }
 
-// DecodeNBT ...
 func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 	s = s.initialised()
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
@@ -295,7 +286,6 @@ func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 	return s
 }
 
-// EncodeNBT ..
 func (s ShulkerBox) EncodeNBT() map[string]any {
 	s = s.initialised()
 	m := map[string]any{
