@@ -97,10 +97,20 @@ type Session struct {
 
 	debugShapesMu     sync.RWMutex
 	debugShapes       map[int]debug.Shape
-	debugShapesAdd    chan debug.Shape
-	debugShapesRemove chan int
+	debugShapeUpdates []debugShapeUpdate
+
+	viewLayer *world.ViewLayer
 
 	closeBackground chan struct{}
+
+	br world.BlockRegistry
+}
+
+// debugShapeUpdate represents a pending debug shape mutation. If shape is nil, the update removes the
+// debug shape with the matching ID. Updates are applied in order when the session sends debug shapes.
+type debugShapeUpdate struct {
+	id    int
+	shape debug.Shape
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -153,6 +163,8 @@ type Config struct {
 	JoinMessage, QuitMessage chat.Translation
 
 	HandleStop func(*world.Tx, Controllable)
+	// BlockRegistry overrides the registry used for network serialization. If nil, world.DefaultBlockRegistry is used.
+	BlockRegistry world.BlockRegistry
 }
 
 func (conf Config) New(conn Conn) *Session {
@@ -187,9 +199,9 @@ func (conf Config) New(conn Conn) *Session {
 		hudUpdates:             make(map[hud.Element]bool),
 		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
-		debugShapesAdd:         make(chan debug.Shape, 256),
-		debugShapesRemove:      make(chan int, 256),
+		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
 	}
+	s.viewLayer = world.NewViewLayer(s)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 
@@ -198,9 +210,15 @@ func (conf Config) New(conn Conn) *Session {
 	s.currentScoreboard.Store(&scoreboardName)
 	s.currentLines.Store(&scoreboardLines)
 
+	if conf.BlockRegistry == nil {
+		s.br = world.DefaultBlockRegistry
+	} else {
+		s.br = conf.BlockRegistry
+	}
+
 	s.registerHandlers()
 	s.sendBiomes()
-	groups, items := creativeContent()
+	groups, items := creativeContent(s.br)
 	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
 	s.sendArmourTrimData()
@@ -279,6 +297,9 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 func (s *Session) close(tx *world.Tx, c Controllable) {
 	c.MoveItemsToInventory()
 	s.closeCurrentContainer(tx, false)
+	if s.viewLayer != nil {
+		_ = s.viewLayer.Close()
+	}
 
 	s.conf.HandleStop(tx, c)
 
@@ -301,7 +322,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.
-	sessions.Remove(s)
+	sessions.Remove(s, c)
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)

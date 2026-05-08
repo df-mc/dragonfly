@@ -5,6 +5,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/rand/v2"
+	"os"
+	"path/filepath"
+	"slices"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
@@ -12,11 +18,6 @@ import (
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"math/rand/v2"
-	"os"
-	"path/filepath"
-	"slices"
-	"time"
 )
 
 // DB implements a world provider for the Minecraft world format, which
@@ -36,6 +37,16 @@ type DB struct {
 func Open(dir string) (*DB, error) {
 	var conf Config
 	return conf.Open(dir)
+}
+
+// SetBlockRegistry updates the block registry used for chunk and scheduled update encoding/decoding.
+// It should be called before any columns are loaded or stored.
+func (db *DB) SetBlockRegistry(br world.BlockRegistry) {
+	if br == nil {
+		br = world.DefaultBlockRegistry
+	}
+	br.Finalize()
+	db.conf.Blocks = br
 }
 
 // Settings returns the world.Settings of the world loaded by the DB.
@@ -159,7 +170,7 @@ func (db *DB) column(k dbKey) (*chunk.Column, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read sub chunks: %w", err)
 	}
-	col.Chunk, err = chunk.DiskDecode(cdata, k.dim.Range())
+	col.Chunk, err = chunk.DiskDecode(db.conf.Blocks, cdata, k.dim.Range())
 	if err != nil {
 		return nil, fmt.Errorf("decode chunk data: %w", err)
 	}
@@ -314,7 +325,8 @@ func (db *DB) scheduledUpdates(k dbKey) ([]chunk.ScheduledBlockUpdate, int64, er
 	for i, tick := range m.TickList {
 		t, _ := tick["time"].(int64)
 		bl, _ := tick["blockState"].(map[string]any)
-		block, err := chunk.BlockPaletteEncoding.DecodeBlockState(bl)
+		bpe := chunk.BlockPaletteEncoding{Blocks: db.conf.Blocks}
+		block, err := bpe.DecodeBlockState(bl)
 		if err != nil {
 			db.conf.Log.Error("read scheduled updates: decode block state: " + err.Error())
 			continue
@@ -447,10 +459,11 @@ func (db *DB) storeScheduledUpdates(batch *leveldb.Batch, k dbKey, tick int64, u
 		return
 	}
 	list := make([]map[string]any, len(updates))
+	bpe := chunk.BlockPaletteEncoding{Blocks: db.conf.Blocks}
 	for i, update := range updates {
 		list[i] = map[string]any{
 			"x": int32(update.Pos[0]), "y": int32(update.Pos[1]), "z": int32(update.Pos[2]),
-			"time": update.Tick, "blockState": chunk.BlockPaletteEncoding.EncodeBlockState(update.Block),
+			"time": update.Tick, "blockState": bpe.EncodeBlockState(update.Block),
 		}
 	}
 	b, err := nbt.MarshalEncoding(scheduledUpdates{CurrentTick: int32(tick), TickList: list}, nbt.LittleEndian)

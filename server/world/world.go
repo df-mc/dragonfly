@@ -111,6 +111,11 @@ func (w *World) Range() cube.Range {
 	return w.ra
 }
 
+// BlockRegistry returns the BlockRegistry used by the World.
+func (w *World) BlockRegistry() BlockRegistry {
+	return w.conf.Blocks
+}
+
 // ExecFunc is a function that performs a synchronised transaction on a World.
 type ExecFunc func(tx *Tx)
 
@@ -152,7 +157,7 @@ func (w *World) EntityRegistry() EntityRegistry {
 func (w *World) blockFromLoadedChunk(pos cube.Pos) (Block, bool) {
 	c, ok := w.loadedChunk(chunkPosFromBlockPos(pos))
 	if !ok {
-		return air(), false
+		return w.conf.Blocks.Air(), false
 	}
 	return w.blockInChunk(c, pos), true
 }
@@ -169,24 +174,24 @@ func (w *World) block(pos cube.Pos) Block {
 func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
-		return air()
+		return w.conf.Blocks.Air()
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	if nbtBlocks[rid] {
-		// The block was also a block entity, so we look it up in the map.
+	if w.conf.Blocks.NBTBlock(rid) {
+		// The block was also a block entity, so we look it up in the block entity map.
 		if b, ok := c.BlockEntities[pos]; ok {
 			return b
 		}
 		// Despite being a block with NBT, the block didn't actually have any
 		// stored NBT yet. We add it here and update the block.
-		nbtB := blockByRuntimeIDOrAir(rid).(NBTer).DecodeNBT(map[string]any{}).(Block)
+		nbtB := w.conf.Blocks.BlockByRuntimeIDOrAir(rid).(NBTer).DecodeNBT(map[string]any{}).(Block)
 		c.BlockEntities[pos] = nbtB
 		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, nbtB, 0)
 		}
 		return nbtB
 	}
-	return blockByRuntimeIDOrAir(rid)
+	return w.conf.Blocks.BlockByRuntimeIDOrAir(rid)
 }
 
 // biome reads the Biome at the position passed. If a chunk is not yet loaded
@@ -205,9 +210,9 @@ func (w *World) biome(pos cube.Pos) Biome {
 	return b
 }
 
-// highestLightBlocker gets the Y value of the highest fully light blocking
+// HighestLightBlocker gets the Y value of the highest fully light blocking
 // block at the x and z values passed in the World.
-func (w *World) highestLightBlocker(x, z int) int {
+func (w *World) HighestLightBlocker(x, z int) int {
 	return int(w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)}).HighestLightBlocker(uint8(x), uint8(z)))
 }
 
@@ -273,16 +278,16 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := w.chunk(chunkPosFromBlockPos(pos))
 
-	rid := BlockRuntimeID(b)
+	rid := w.conf.Blocks.BlockRuntimeID(b)
 
 	var before uint32
-	if rid != airRID && !opts.DisableLiquidDisplacement {
+	if rid != w.conf.Blocks.AirRuntimeID() && !opts.DisableLiquidDisplacement {
 		before = c.Block(x, y, z, 0)
 	}
 
 	c.modified = true
 	c.SetBlock(x, y, z, 0, rid)
-	if nbtBlocks[rid] {
+	if w.conf.Blocks.NBTBlock(rid) {
 		c.BlockEntities[pos] = b
 	} else {
 		delete(c.BlockEntities, pos)
@@ -293,16 +298,17 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	if !opts.DisableLiquidDisplacement {
 		var secondLayer Block
 
+		airRID := w.conf.Blocks.AirRuntimeID()
 		if rid == airRID {
 			if li := c.Block(x, y, z, 1); li != airRID {
 				c.SetBlock(x, y, z, 0, li)
 				c.SetBlock(x, y, z, 1, airRID)
-				secondLayer = air()
-				b = blockByRuntimeIDOrAir(li)
+				secondLayer = w.conf.Blocks.Air()
+				b = w.conf.Blocks.BlockByRuntimeIDOrAir(li)
 			}
-		} else if liquidDisplacingBlocks[rid] {
-			if liquidBlocks[before] {
-				l := blockByRuntimeIDOrAir(before)
+		} else if w.conf.Blocks.LiquidDisplacingBlock(rid) {
+			if w.conf.Blocks.LiquidBlock(before) {
+				l := w.conf.Blocks.BlockByRuntimeIDOrAir(before)
 				if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
 					c.SetBlock(x, y, z, 1, before)
 					secondLayer = l
@@ -310,7 +316,7 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 			}
 		} else if li := c.Block(x, y, z, 1); li != airRID {
 			c.SetBlock(x, y, z, 1, airRID)
-			secondLayer = air()
+			secondLayer = w.conf.Blocks.Air()
 		}
 
 		if secondLayer != nil {
@@ -397,20 +403,20 @@ func (w *World) buildStructure(pos cube.Pos, s Structure) {
 							}
 							b, liq := s.At(xOffset-pos[0], yOffset-pos[1], zOffset-pos[2], f)
 							if b != nil {
-								rid := BlockRuntimeID(b)
+								rid := w.conf.Blocks.BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
 								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
-								if nbtBlocks[rid] {
+								if w.conf.Blocks.NBTBlock(rid) {
 									c.BlockEntities[nbtPos] = b
 								} else {
 									delete(c.BlockEntities, nbtPos)
 								}
 							}
 							if liq != nil {
-								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, BlockRuntimeID(liq))
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, w.conf.Blocks.BlockRuntimeID(liq))
 							} else if len(sub.Layers()) > 1 {
-								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, airRID)
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, w.conf.Blocks.AirRuntimeID())
 							}
 						}
 					}
@@ -440,7 +446,7 @@ func (w *World) liquid(pos cube.Pos) (Liquid, bool) {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 
 	id := c.Block(x, y, z, 0)
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.conf.Blocks.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Error("Liquid: no block with runtime ID", "ID", id)
 		return nil, false
@@ -450,7 +456,7 @@ func (w *World) liquid(pos cube.Pos) (Liquid, bool) {
 	}
 	id = c.Block(x, y, z, 1)
 
-	b, ok = BlockByRuntimeID(id)
+	b, ok = w.conf.Blocks.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Error("Liquid: no block with runtime ID", "ID", id)
 		return nil, false
@@ -483,7 +489,7 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 			return
 		}
 	}
-	rid := BlockRuntimeID(b)
+	rid := w.conf.Blocks.BlockRuntimeID(b)
 	if w.removeLiquids(c, pos) {
 		c.SetBlock(x, y, z, 0, rid)
 		for _, v := range c.viewers {
@@ -505,19 +511,20 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 // were left on the foreground layer.
 func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
+	air := w.conf.Blocks.Air()
 
 	noneLeft := false
 	if noLeft, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
 		if changed {
 			for _, v := range c.viewers {
-				v.ViewBlockUpdate(pos, air(), 0)
+				v.ViewBlockUpdate(pos, air, 0)
 			}
 		}
 		noneLeft = true
 	}
 	if _, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); changed {
 		for _, v := range c.viewers {
-			v.ViewBlockUpdate(pos, air(), 1)
+			v.ViewBlockUpdate(pos, air, 1)
 		}
 	}
 	return noneLeft
@@ -527,8 +534,9 @@ func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
 // chunk passed, returning true if successful.
 func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer uint8) (bool, bool) {
 	id := c.Block(x, y, z, layer)
+	airRID := w.conf.Blocks.AirRuntimeID()
 
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.conf.Blocks.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Error("removeLiquidOnLayer: no block with runtime ID", "ID", id)
 		return false, false
@@ -550,7 +558,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 	c := w.chunk(chunkPosFromBlockPos(pos))
 	id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1)
 
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.conf.Blocks.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Error("additionalLiquid: no block with runtime ID", "ID", id)
 		return nil, false
@@ -731,12 +739,29 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	c := w.chunk(pos)
 	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
 
+	w.removeEntityFromViewLayers(e)
 	for _, v := range c.viewers {
 		v.HideEntity(e)
 	}
 	delete(w.entities, handle)
 	handle.unsetAndLockWorld()
 	return handle
+}
+
+// removeEntityFromViewLayers removes stale overrides for despawned entities. Entities that own a ViewLayer,
+// such as players, are skipped because they may be removed temporarily when respawning or changing worlds.
+func (w *World) removeEntityFromViewLayers(e Entity) {
+	if _, ok := e.(viewLayerViewer); ok {
+		return
+	}
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
+		v, ok := viewer.(viewLayerViewer)
+		if !ok || v.ViewLayer() == nil {
+			continue
+		}
+		v.ViewLayer().remove(e)
+	}
 }
 
 // entitiesWithin returns an iterator that yields all entities contained within
@@ -752,11 +777,12 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 					// The chunk wasn't loaded, so there are no entities here.
 					continue
 				}
-				for _, handle := range c.Entities {
+				for _, handle := range slices.Clone(c.Entities) {
 					if !box.Vec3Within(handle.data.Pos) {
 						continue
 					}
-					if !yield(handle.mustEntity(tx)) {
+					ent, ok := handle.Entity(tx)
+					if ok && !yield(ent) {
 						return
 					}
 				}
@@ -940,7 +966,7 @@ func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) 
 	if pos.OutOfBounds(w.Range()) {
 		return
 	}
-	w.scheduledUpdates.schedule(pos, b, delay)
+	w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the
@@ -1197,12 +1223,12 @@ func (w *World) loadChunk(pos ChunkPos) *chunk.Column {
 	case err == nil:
 		return column
 	case errors.Is(err, leveldb.ErrNotFound):
-		ch := chunk.New(airRID, w.Range())
+		ch := chunk.New(w.conf.Blocks, w.Range())
 		w.conf.Generator.GenerateChunk(pos, ch)
 		return &chunk.Column{Chunk: ch}
 	default:
 		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
-		return &chunk.Column{Chunk: chunk.New(airRID, w.Range())}
+		return &chunk.Column{Chunk: chunk.New(w.conf.Blocks, w.Range())}
 	}
 }
 
@@ -1347,7 +1373,7 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 		c.BlockEntities = append(c.BlockEntities, chunk.BlockEntity{Pos: pos, Data: be.(NBTer).EncodeNBT()})
 	}
 	for _, t := range scheduled {
-		c.ScheduledBlocks = append(c.ScheduledBlocks, chunk.ScheduledBlockUpdate{Pos: t.pos, Block: BlockRuntimeID(t.b), Tick: t.t})
+		c.ScheduledBlocks = append(c.ScheduledBlocks, chunk.ScheduledBlockUpdate{Pos: t.pos, Block: w.conf.Blocks.BlockRuntimeID(t.b), Tick: t.t})
 	}
 	return c
 }
@@ -1375,7 +1401,7 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	}
 	for _, be := range c.BlockEntities {
 		rid := c.Chunk.Block(uint8(be.Pos[0]), int16(be.Pos[1]), uint8(be.Pos[2]), 0)
-		b, ok := BlockByRuntimeID(rid)
+		b, ok := w.conf.Blocks.BlockByRuntimeID(rid)
 		if !ok {
 			w.conf.Log.Error("read column: no block with runtime ID", "ID", rid)
 			continue
@@ -1389,8 +1415,13 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	}
 	scheduled, savedTick := make([]scheduledTick, 0, len(c.ScheduledBlocks)), c.Tick
 	for _, t := range c.ScheduledBlocks {
-		bl := blockByRuntimeIDOrAir(t.Block)
-		scheduled = append(scheduled, scheduledTick{pos: t.Pos, b: bl, bhash: BlockHash(bl), t: w.scheduledUpdates.currentTick + (t.Tick - savedTick)})
+		bl := w.conf.Blocks.BlockByRuntimeIDOrAir(t.Block)
+		scheduled = append(scheduled, scheduledTick{
+			pos:   t.Pos,
+			b:     bl,
+			bhash: w.conf.Blocks.BlockHash(bl),
+			t:     w.scheduledUpdates.currentTick + (t.Tick - savedTick),
+		})
 	}
 	w.scheduledUpdates.add(scheduled)
 	return col
