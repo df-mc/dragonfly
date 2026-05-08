@@ -153,15 +153,6 @@ func (w *World) EntityRegistry() EntityRegistry {
 	return w.conf.Entities
 }
 
-// blockFromLoadedChunk returns block from loaded chunk or air.
-func (w *World) blockFromLoadedChunk(pos cube.Pos) (Block, bool) {
-	c, ok := w.loadedChunk(chunkPosFromBlockPos(pos))
-	if !ok {
-		return w.conf.Blocks.Air(), false
-	}
-	return w.blockInChunk(c, pos), true
-}
-
 // block reads a block from the position passed. If a chunk is not yet loaded
 // at that position, the chunk is loaded, or generated if it could not be found
 // in the world save, and the block returned.
