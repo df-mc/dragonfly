@@ -193,7 +193,14 @@ func (s *Session) HideEntity(e world.Entity) {
 // ViewEntityMovement ...
 func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
 	id := s.entityRuntimeID(e)
-	if (id == selfEntityRuntimeID && s.moving) || s.entityHidden(e) {
+	if s.entityHidden(e) {
+		return
+	}
+	if id == selfEntityRuntimeID {
+		if s.moving {
+			return
+		}
+		s.ViewEntityDelta(e, pos, rot)
 		return
 	}
 
