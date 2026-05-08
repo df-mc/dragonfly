@@ -24,8 +24,8 @@ const (
 	shulkerStateClosing
 )
 
-// shulkerLidSteps is the number of animation ticks between fully closed and fully open.
-const shulkerLidSteps int32 = 10
+// shulkerLidTicks is the number of scheduled ticks between fully closed and fully open.
+const shulkerLidTicks int32 = 10
 
 // ShulkerBox is a dye-able block that stores items. Unlike other blocks, it keeps its contents when broken.
 type ShulkerBox struct {
@@ -78,13 +78,11 @@ func (s ShulkerBox) Model() world.BlockModel {
 	return model.Shulker{Facing: s.Facing, Progress: s.progress.Load()}
 }
 
-// WithName returns the shulker box after applying a specific name to the block.
 func (s ShulkerBox) WithName(a ...any) world.Item {
 	s.CustomName = strings.TrimSuffix(fmt.Sprintln(a...), "\n")
 	return s
 }
 
-// AddViewer adds a viewer to the shulker box, so that it is updated whenever the inventory of the shulker box is changed.
 func (s ShulkerBox) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	s.viewerMu.Lock()
 	defer s.viewerMu.Unlock()
@@ -94,7 +92,6 @@ func (s ShulkerBox) AddViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	s.viewers[v] = struct{}{}
 }
 
-// RemoveViewer removes a viewer from the shulker box, so that slot updates in the inventory are no longer sent to it.
 func (s ShulkerBox) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) {
 	s.viewerMu.Lock()
 	defer s.viewerMu.Unlock()
@@ -107,7 +104,6 @@ func (s ShulkerBox) RemoveViewer(v ContainerViewer, tx *world.Tx, pos cube.Pos) 
 	}
 }
 
-// Inventory returns the inventory of the shulker box.
 func (s ShulkerBox) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return s.inventory
 }
@@ -174,13 +170,13 @@ func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	case shulkerStateOpening:
 		s.progress.Add(1)
 		s.pushEntities(pos, tx)
-		if s.progress.Load() >= shulkerLidSteps {
-			s.progress.Store(shulkerLidSteps)
+		if s.progress.Load() >= shulkerLidTicks {
+			s.progress.Store(shulkerLidTicks)
 			s.animationStatus.Store(shulkerStateOpened)
 		}
 		tx.ScheduleBlockUpdate(pos, s, 0)
 	case shulkerStateOpened:
-		s.progress.Store(shulkerLidSteps)
+		s.progress.Store(shulkerLidTicks)
 	case shulkerStateClosing:
 		s.progress.Add(-1)
 		if s.progress.Load() <= 0 {
@@ -271,7 +267,7 @@ func (s ShulkerBox) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, oneOf(s))
 }
 
-// MaxCount always returns 1.
+// MaxCount ...
 func (s ShulkerBox) MaxCount() int {
 	return 1
 }
