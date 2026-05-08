@@ -63,15 +63,21 @@ func NewShulkerBox() ShulkerBox {
 		s.viewerMu.RLock()
 		defer s.viewerMu.RUnlock()
 		for viewer := range s.viewers {
-			// A shulker box inventory can't store shulker boxes.
-			if _, ok := after.Item().(ShulkerBox); ok {
-				continue
-			}
 			viewer.ViewSlotChange(slot, after)
 		}
 	})
+	s.inventory.SlotValidatorFunc(canStoreInShulkerBox)
 
 	return s
+}
+
+// canStoreInShulkerBox rejects nested shulker boxes.
+func canStoreInShulkerBox(s item.Stack, _ int) bool {
+	if s.Empty() {
+		return true
+	}
+	_, nested := s.Item().(ShulkerBox)
+	return !nested
 }
 
 func (s ShulkerBox) Model() world.BlockModel {
