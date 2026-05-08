@@ -164,6 +164,21 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 // relatively heavy task which should only happen right before the sub chunk holding this PalettedStorage is
 // saved to disk. compact also shrinks the palette size if possible.
 func (storage *PalettedStorage) compact() {
+	if storage.palette == nil || storage.palette.Len() == 0 {
+		return
+	}
+	if storage.palette.Len() == 1 {
+		// A single unique value can always be represented using 0 bits per index. This avoids scanning the
+		// entire storage and drops any backing indices slice.
+		storage.bitsPerIndex = 0
+		storage.filledBitsPerIndex = 0
+		storage.indexMask = 0
+		storage.indicesStart = nil
+		storage.indices = nil
+		storage.palette.size = 0
+		return
+	}
+
 	usedIndices := make([]bool, storage.palette.Len())
 	for x := byte(0); x < 16; x++ {
 		for y := byte(0); y < 16; y++ {
@@ -172,18 +187,34 @@ func (storage *PalettedStorage) compact() {
 			}
 		}
 	}
-	newRuntimeIDs := make([]uint32, 0, len(usedIndices))
-	conversion := make([]uint16, len(usedIndices))
 
-	for index, set := range usedIndices {
-		if set {
+	usedCount := 0
+	allUsed := true
+	for _, used := range usedIndices {
+		if used {
+			usedCount++
+		} else {
+			allUsed = false
+		}
+	}
+
+	// If every palette entry is used and the palette size cannot shrink, nothing changes.
+	// This avoids allocating a new indices slice and palette values slice for already-optimal storages.
+	size := paletteSizeFor(usedCount)
+	if allUsed && size == storage.palette.size {
+		return
+	}
+
+	newRuntimeIDs := make([]uint32, 0, usedCount)
+	conversion := make([]uint16, len(usedIndices))
+	for index, used := range usedIndices {
+		if used {
 			conversion[index] = uint16(len(newRuntimeIDs))
 			newRuntimeIDs = append(newRuntimeIDs, storage.palette.values[index])
 		}
 	}
 	// Construct a new storage and set all values in there manually. We can't easily do this in a better
 	// way, because all values will be at a different index with a different length.
-	size := paletteSizeFor(len(newRuntimeIDs))
 	newStorage := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, newRuntimeIDs))
 
 	for x := byte(0); x < 16; x++ {

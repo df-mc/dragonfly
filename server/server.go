@@ -370,11 +370,11 @@ func (srv *Server) startListening() {
 	}
 }
 
-// makeBlockEntries initializes the server's block components map using the
+// makeBlockEntries initialises the server's block components map using the
 // registered custom blocks. It allows block components to be created only once
 // at startup.
 func (srv *Server) makeBlockEntries() {
-	custom := slices.Collect(maps.Values(world.CustomBlocks()))
+	custom := slices.Collect(maps.Values(srv.conf.Blocks.CustomBlocks()))
 	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
 
 	for i, b := range custom {
@@ -386,7 +386,7 @@ func (srv *Server) makeBlockEntries() {
 	}
 }
 
-// makeItemComponents initializes the server's item components map using the
+// makeItemComponents initialises the server's item components map using the
 // registered custom items. It allows item components to be created only once
 // at startup
 func (srv *Server) makeItemComponents() {
@@ -532,6 +532,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
 		HandleStop:     srv.handleSessionClose,
+		BlockRegistry:  w.BlockRegistry(),
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName
@@ -563,13 +564,16 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		SaveInterval:        srv.conf.SaveInterval,
 		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
 		Entities:            srv.conf.Entities,
+		Blocks:              srv.conf.Blocks,
 		PortalDestination: func(dim world.Dimension) *world.World {
-			if dim == world.Nether {
+			switch dim {
+			case world.Nether:
 				return *nether
-			} else if dim == world.End {
+			case world.End:
 				return *end
+			default:
+				return nil
 			}
-			return nil
 		},
 	}
 	w := conf.New()
