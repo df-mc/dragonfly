@@ -215,17 +215,17 @@ func (s *Session) ViewEntityDelta(e world.Entity, pos mgl64.Vec3, rot cube.Rotat
 		return
 	}
 
-	currentPos, currentRot := e.Position().Add(entityOffset(e)), e.Rotation()
 	targetPos := pos.Add(entityOffset(e))
+	currentRot := e.Rotation()
 
 	flags := uint16(0)
-	if !mgl64.FloatEqual(targetPos.X(), currentPos.X()) {
+	if !mgl64.FloatEqual(targetPos.X(), 0) {
 		flags |= packet.MoveActorDeltaFlagHasX
 	}
-	if !mgl64.FloatEqual(targetPos.Y(), currentPos.Y()) {
+	if !mgl64.FloatEqual(targetPos.Y(), 0) {
 		flags |= packet.MoveActorDeltaFlagHasY
 	}
-	if !mgl64.FloatEqual(targetPos.Z(), currentPos.Z()) {
+	if !mgl64.FloatEqual(targetPos.Z(), 0) {
 		flags |= packet.MoveActorDeltaFlagHasZ
 	}
 	if !mgl64.FloatEqual(rot.Pitch(), currentRot.Pitch()) {
