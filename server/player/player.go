@@ -2902,13 +2902,12 @@ func (p *Player) OnGround() bool {
 	return p.onGround
 }
 
-// EyeHeight returns the player's eye offset above its feet, in blocks. The value depends on the
-// player's current pose: 1.62 when standing, 1.26 while sneaking, and 0.4 while swimming, gliding
-// or crawling.
+// EyeHeight returns the eye height of the player: 1.62, 1.26 if player is sneaking or 0.52 if the player is
+// swimming, gliding or crawling.
 func (p *Player) EyeHeight() float64 {
 	switch {
 	case p.swimming || p.crawling || p.gliding:
-		return 0.4
+		return 0.52
 	case p.sneaking:
 		return 1.27
 	default:
