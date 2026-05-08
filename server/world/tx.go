@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/redstone"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world/redstone"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
