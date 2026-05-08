@@ -235,27 +235,31 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 
 	halfW := entityBBox.Width() / 2
 	halfL := entityBBox.Length() / 2
+	var delta mgl64.Vec3
 	switch {
 	case offset.X() > 0:
 		target := shulkerBBox.Max().X() + halfW
 		if x := entityPos.X(); x < target {
-			mover.Displace(mgl64.Vec3{target - x, 0, 0}, 0, 0)
+			delta[0] = target - x
 		}
 	case offset.X() < 0:
 		target := shulkerBBox.Min().X() - halfW
 		if x := entityPos.X(); x > target {
-			mover.Displace(mgl64.Vec3{target - x, 0, 0}, 0, 0)
+			delta[0] = target - x
 		}
 	case offset.Z() > 0:
 		target := shulkerBBox.Max().Z() + halfL
 		if z := entityPos.Z(); z < target {
-			mover.Displace(mgl64.Vec3{0, 0, target - z}, 0, 0)
+			delta[2] = target - z
 		}
 	case offset.Z() < 0:
 		target := shulkerBBox.Min().Z() - halfL
 		if z := entityPos.Z(); z > target {
-			mover.Displace(mgl64.Vec3{0, 0, target - z}, 0, 0)
+			delta[2] = target - z
 		}
+	}
+	if delta != (mgl64.Vec3{}) {
+		mover.Displace(delta, 0, 0)
 	}
 }
 
