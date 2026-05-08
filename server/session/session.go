@@ -80,8 +80,7 @@ type Session struct {
 	swingingArm                    atomic.Bool
 	changingSlot                   atomic.Bool
 	changingDimension              atomic.Bool
-	// moving is true while applying movement from a PlayerAuthInput packet.
-	moving bool
+	moving                         bool
 
 	lastChunkPos world.ChunkPos
 
