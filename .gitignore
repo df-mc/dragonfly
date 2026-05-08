@@ -1,5 +1,7 @@
 # JetBrains
 .idea/
+.zed/
+.vscode/
 
 # Dragonfly
 /world/
