@@ -169,7 +169,7 @@ var _ Handler = NopHandler{}
 func (NopHandler) HandleItemDrop(*Context, item.Stack)                                     {}
 func (NopHandler) HandleHeldSlotChange(*Context, int, int)                                 {}
 func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                          {}
-func (NopHandler) HandleDisplace(*Context, mgl64.Vec3, cube.Rotation)                        {}
+func (NopHandler) HandleDisplace(*Context, mgl64.Vec3, cube.Rotation)                      {}
 func (NopHandler) HandleJump(*Player)                                                      {}
 func (NopHandler) HandleTeleport(*Context, mgl64.Vec3)                                     {}
 func (NopHandler) HandleChangeWorld(*Player, *world.World, *world.World)                   {}
