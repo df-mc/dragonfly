@@ -31,6 +31,7 @@ const shulkerLidTicks int32 = 10
 type ShulkerBox struct {
 	transparent
 	sourceWaterDisplacer
+
 	// Colour is the colour of the shulker box. A zero OptionalColour represents
 	// the undyed variant (minecraft:undyed_shulker_box).
 	Colour item.OptionalColour
