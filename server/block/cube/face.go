@@ -103,7 +103,7 @@ func (f Face) Offset() mgl64.Vec3 {
 	case FaceSouth:
 		return mgl64.Vec3{0, 0, 1}
 	case FaceWest:
-		return mgl64.Vec3{-1, -0, 0}
+		return mgl64.Vec3{-1, 0, 0}
 	case FaceEast:
 		return mgl64.Vec3{1, 0, 0}
 	}
