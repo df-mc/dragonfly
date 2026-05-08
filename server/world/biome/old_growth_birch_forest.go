@@ -7,12 +7,12 @@ type OldGrowthBirchForest struct{}
 
 // Temperature ...
 func (OldGrowthBirchForest) Temperature() float64 {
-	return 0.7
+	return 0.6
 }
 
 // Rainfall ...
 func (OldGrowthBirchForest) Rainfall() float64 {
-	return 0.8
+	return 0.6
 }
 
 // Depth ...

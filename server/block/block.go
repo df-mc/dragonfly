@@ -1,14 +1,15 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -71,6 +72,12 @@ type EntityLander interface {
 type EntityInsider interface {
 	// EntityInside is called when an entity goes inside the block's 1x1x1 axis aligned bounding box.
 	EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity)
+}
+
+// EntityStepper represents a block that reacts to an entity standing on top of it.
+type EntityStepper interface {
+	// EntityStepOn is called every tick while an entity is standing on the top face of the block.
+	EntityStepOn(pos cube.Pos, tx *world.Tx, e world.Entity)
 }
 
 // ProjectileHitter represents a block that handles being hit by a projectile.
@@ -239,11 +246,11 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
 
 // Flammable is an interface for blocks that can catch on fire.
 type Flammable interface {
-	// FlammabilityInfo returns information about a block's behavior involving fire.
+	// FlammabilityInfo returns information about a block's behaviour involving fire.
 	FlammabilityInfo() FlammabilityInfo
 }
 
-// FlammabilityInfo contains values related to block behaviors involving fire.
+// FlammabilityInfo contains values related to block behaviours involving fire.
 type FlammabilityInfo struct {
 	// Encouragement is the chance a block will catch on fire during attempted fire spread.
 	Encouragement int
@@ -319,6 +326,14 @@ type bassDrum struct{}
 // Instrument ...
 func (bassDrum) Instrument() sound.Instrument {
 	return sound.BassDrum()
+}
+
+// flute is a struct that may be embedded for blocks that create a flute sound.
+type flute struct{}
+
+// Instrument ...
+func (flute) Instrument() sound.Instrument {
+	return sound.Flute()
 }
 
 // newSmeltInfo returns a new SmeltInfo with the given values.
