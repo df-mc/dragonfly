@@ -275,8 +275,9 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 	return s
 }
 
-// ForceEnchantments returns the current stack with the passed enchantments, allowing incompatible
-// enchantments to be applied.
+// WithForcedEnchantments returns the current stack with the passed enchantments applied,
+// bypassing compatibility checks that would normally prevent incompatible enchantments
+// from being applied together.
 func (s Stack) WithForcedEnchantments(enchants ...Enchantment) Stack {
 	s.enchantments = cloneMap(s.enchantments)
 	for _, enchant := range enchants {
