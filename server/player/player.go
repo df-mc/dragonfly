@@ -707,9 +707,10 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 		BlockableByShield: !c.UnblockableByShield,
 		Source:            c.Source,
 	})
-	if !shieldBlocked {
-		p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
+	if shieldBlocked {
+		impact *= shieldExplosionKnockBackMultiplier
 	}
+	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
@@ -1478,10 +1479,10 @@ func (p *Player) GameMode() world.GameMode {
 // HasCooldown returns true if the item passed has an active cooldown, meaning it currently cannot be used again. If the
 // world.Item passed is nil, HasCooldown always returns false.
 func (p *Player) HasCooldown(item world.Item) bool {
-	return p.hasCooldownAt(item, time.Now())
+	return p.hasCooldownAt(item, time.Now(), true)
 }
 
-func (p *Player) hasCooldownAt(item world.Item, now time.Time) bool {
+func (p *Player) hasCooldownAt(item world.Item, now time.Time, cleanExpired bool) bool {
 	if item == nil {
 		return false
 	}
@@ -1491,6 +1492,9 @@ func (p *Player) hasCooldownAt(item world.Item, now time.Time) bool {
 		return false
 	}
 	if now.After(otherTime) {
+		if !cleanExpired {
+			return false
+		}
 		delete(p.cooldowns, name)
 		return false
 	}
@@ -1530,7 +1534,7 @@ func (p *Player) UseItem() {
 	}
 	i, left := p.HeldItems()
 	it := i.Item()
-	if p.StartShieldBlockingInput() {
+	if p.startShieldBlockingInput(i) {
 		return
 	}
 

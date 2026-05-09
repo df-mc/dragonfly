@@ -36,8 +36,8 @@ func (t *projectileShieldTarget) Speed() float64                         { retur
 func (t *projectileShieldTarget) SetSpeed(float64)                       {}
 
 func (t *projectileShieldTarget) Hurt(_ float64, src world.DamageSource) (float64, bool) {
-	if s, ok := src.(ProjectileDamageSource); ok && t.blocked && s.ShieldBlockHandler != nil {
-		s.ShieldBlockHandler.HandleShieldBlock()
+	if s, ok := src.(ProjectileDamageSource); ok && t.blocked && s.ShieldBlockMarker != nil {
+		s.ShieldBlockMarker.MarkShieldBlocked()
 	}
 	return 0, t.vulnerable
 }

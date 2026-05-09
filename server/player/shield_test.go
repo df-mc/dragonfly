@@ -145,6 +145,19 @@ func TestStartShieldBlockingInputHonoursUsePriority(t *testing.T) {
 	}
 }
 
+func TestStartShieldBlockingInputHonoursCancelledItemUse(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	p.h = cancellingItemUseHandler{}
+
+	if p.StartShieldBlockingInput() {
+		t.Fatal("expected cancelled item use not to start shield blocking input")
+	}
+	if p.shieldBlockingInput {
+		t.Fatal("expected shield input to stay inactive after cancelled item use")
+	}
+}
+
 func TestStopSneakingPreservesHeldShieldInput(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.shieldBlockingInput = true
@@ -247,20 +260,16 @@ func TestShieldBlocksZeroDamageProjectile(t *testing.T) {
 	projectile := shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}
 	handler := &shieldBlockTestHandler{}
 
-	if dmg, vulnerable := p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile, ShieldBlockHandler: handler}); dmg != 0 || vulnerable {
+	if dmg, vulnerable := p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile, ShieldBlockMarker: &handler.ProjectileShieldBlockMarker}); dmg != 0 || vulnerable {
 		t.Fatalf("expected shield-blocked zero damage projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
 	}
-	if !handler.blocked {
+	if !handler.ShieldBlocked() {
 		t.Fatal("expected zero damage projectile shield block callback to run")
 	}
 }
 
 type shieldBlockTestHandler struct {
-	blocked bool
-}
-
-func (h *shieldBlockTestHandler) HandleShieldBlock() {
-	h.blocked = true
+	entity.ProjectileShieldBlockMarker
 }
 
 func TestShieldDurabilityUsesDamageBeforeArmourReduction(t *testing.T) {
@@ -299,11 +308,47 @@ func TestExplosionKnockBackNotSuppressedByNestedShieldBlock(t *testing.T) {
 	}
 }
 
+func TestShieldBlockedExplosionAppliesReducedKnockBack(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.data.Pos = mgl64.Vec3{0, 0, 1}
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+
+	unblocked := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.Stack{})
+	unblocked.data.Pos = p.data.Pos
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+	explosionPos := mgl64.Vec3{0, 0, 4}
+	<-w.Exec(func(tx *world.Tx) {
+		p.tx = tx
+		unblocked.tx = tx
+
+		conf := block.ExplosionConfig{Size: 1}
+		p.Explode(explosionPos, 0.2, conf)
+		unblocked.Explode(explosionPos, 0.2, conf)
+	})
+	if p.Velocity().Len() == 0 {
+		t.Fatal("expected shield-blocked explosion to still apply reduced knockback")
+	}
+	if p.Velocity().Len() >= unblocked.Velocity().Len() {
+		t.Fatalf("expected shield-blocked explosion knockback %v to be less than unblocked knockback %v", p.Velocity(), unblocked.Velocity())
+	}
+}
+
 type cancellingHurtHandler struct {
 	NopHandler
 }
 
 func (cancellingHurtHandler) HandleHurt(ctx *Context, _ *float64, _ bool, _ *time.Duration, _ world.DamageSource) {
+	ctx.Cancel()
+}
+
+type cancellingItemUseHandler struct {
+	NopHandler
+}
+
+func (cancellingItemUseHandler) HandleItemUse(ctx *Context) {
 	ctx.Cancel()
 }
 
@@ -366,6 +411,60 @@ func TestShieldDurabilityDamage(t *testing.T) {
 	} {
 		if got := shieldDurabilityDamage(test.damage); got != test.want {
 			t.Fatalf("shieldDurabilityDamage(%v) = %v, want %v", test.damage, got, test.want)
+		}
+	}
+}
+
+func TestShieldBlockingReadDoesNotClearExpiredCooldown(t *testing.T) {
+	now := time.Now()
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.shieldBlockingSince = now.Add(-shieldBlockDelay)
+	p.cooldowns[shieldItemName] = now.Add(-time.Second)
+
+	if !p.Blocking() {
+		t.Fatal("expected expired shield cooldown not to prevent blocking")
+	}
+	if _, ok := p.cooldowns[shieldItemName]; !ok {
+		t.Fatal("expected shield blocking metadata read not to mutate cooldown state")
+	}
+}
+
+func TestShouldAttemptShieldBlockWithHandlerMutatedDamage(t *testing.T) {
+	for _, test := range []struct {
+		name                string
+		rawDamage           float64
+		damageLeft          float64
+		damageBeforeHandler float64
+		src                 world.DamageSource
+		want                bool
+	}{
+		{
+			name:                "positive damage reduced to zero",
+			rawDamage:           4,
+			damageLeft:          0,
+			damageBeforeHandler: 4,
+			src:                 entity.AttackDamageSource{Attacker: shieldTestEntity{}},
+		},
+		{
+			name:       "zero damage increased",
+			damageLeft: 2,
+			src:        entity.AttackDamageSource{Attacker: shieldTestEntity{}},
+			want:       true,
+		},
+		{
+			name:       "negative damage",
+			rawDamage:  -1,
+			damageLeft: -1,
+			src:        entity.AttackDamageSource{Attacker: shieldTestEntity{}},
+		},
+		{
+			name: "zero damage projectile",
+			src:  entity.ProjectileDamageSource{Projectile: shieldTestEntity{}},
+			want: true,
+		},
+	} {
+		if got := shouldAttemptShieldBlock(test.rawDamage, test.damageLeft, test.damageBeforeHandler, test.src); got != test.want {
+			t.Fatalf("%v: expected shouldAttemptShieldBlock to return %v, got %v", test.name, test.want, got)
 		}
 	}
 }

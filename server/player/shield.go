@@ -6,6 +6,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
@@ -14,10 +15,11 @@ import (
 )
 
 const (
-	shieldBlockDelay      = time.Second / 4
-	shieldDisableCooldown = 5 * time.Second
-	shieldDamageThreshold = 3
-	shieldItemName        = "minecraft:shield"
+	shieldBlockDelay                   = time.Second / 4
+	shieldDisableCooldown              = 5 * time.Second
+	shieldExplosionKnockBackMultiplier = 0.2
+	shieldDamageThreshold              = 3
+	shieldItemName                     = "minecraft:shield"
 
 	shieldAttackerKnockBackForce  = 0.4
 	shieldAttackerKnockBackHeight = 0.4
@@ -40,11 +42,16 @@ type shieldKnockBacker interface {
 
 // Blocking returns true if the player is currently blocking with a shield.
 func (p *Player) Blocking() bool {
+	return p.ShieldBlocking()
+}
+
+// ShieldBlocking returns true if the player is currently blocking with a shield.
+func (p *Player) ShieldBlocking() bool {
 	return p.shieldBlockingAt(time.Now())
 }
 
 func (p *Player) shieldBlockingAt(now time.Time) bool {
-	if p.shieldBlockingSince.IsZero() || !p.canBlockWithShieldAt(now) {
+	if p.shieldBlockingSince.IsZero() || !p.canBlockWithShieldAt(now, false) {
 		return false
 	}
 	return !now.Before(p.shieldBlockingSince.Add(shieldBlockDelay))
@@ -52,7 +59,7 @@ func (p *Player) shieldBlockingAt(now time.Time) bool {
 
 func (p *Player) updateShieldBlockingState(now time.Time) bool {
 	wasPrepared, wasBlocking := !p.shieldBlockingSince.IsZero(), p.shieldBlockingCached
-	if !p.canBlockWithShieldAt(now) {
+	if !p.canBlockWithShieldAt(now, true) {
 		p.shieldBlockingSince = time.Time{}
 		p.shieldBlockingCached = false
 		return wasPrepared || wasBlocking
@@ -71,8 +78,8 @@ func (p *Player) resetShieldBlocking() bool {
 	return wasPrepared || wasBlocking
 }
 
-func (p *Player) canBlockWithShieldAt(now time.Time) bool {
-	if (!p.Sneaking() && !p.shieldBlockingInput) || p.hasCooldownAt(item.Shield{}, now) {
+func (p *Player) canBlockWithShieldAt(now time.Time, cleanExpiredCooldown bool) bool {
+	if (!p.Sneaking() && !p.shieldBlockingInput) || p.hasCooldownAt(item.Shield{}, now, cleanExpiredCooldown) {
 		return false
 	}
 	_, _, ok := p.heldShield()
@@ -203,6 +210,17 @@ func (p *Player) useItemStartsShieldBlocking(mainHand item.Stack) bool {
 // StartShieldBlockingInput starts shield blocking from an item-use input if the held items allow it.
 func (p *Player) StartShieldBlockingInput() bool {
 	mainHand, _ := p.HeldItems()
+	if p.HasCooldown(mainHand.Item()) {
+		return false
+	}
+	ctx := event.C(p)
+	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
+		return false
+	}
+	return p.startShieldBlockingInput(mainHand)
+}
+
+func (p *Player) startShieldBlockingInput(mainHand item.Stack) bool {
 	if !p.useItemStartsShieldBlocking(mainHand) {
 		return false
 	}
@@ -238,8 +256,8 @@ func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource) bool
 	if damage := shieldDurabilityDamage(dmg); damage > 0 {
 		p.setHeldShield(hand, p.damageItem(shield, damage))
 	}
-	if s, ok := src.(entity.ProjectileDamageSource); ok && s.ShieldBlockHandler != nil {
-		s.ShieldBlockHandler.HandleShieldBlock()
+	if s, ok := src.(entity.ProjectileDamageSource); ok && s.ShieldBlockMarker != nil {
+		s.ShieldBlockMarker.MarkShieldBlocked()
 	}
 	if p.tx != nil {
 		p.tx.PlaySound(p.Position(), sound.ShieldBlock{})

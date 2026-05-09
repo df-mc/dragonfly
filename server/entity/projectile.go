@@ -267,13 +267,13 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 	if lt.conf.Owner != nil {
 		owner, _ = lt.conf.Owner.Entity(e.tx)
 	}
-	blockHandler := &projectileShieldBlockHandler{}
-	src := ProjectileDamageSource{Projectile: e, Owner: owner, ShieldBlockHandler: blockHandler}
+	blockMarker := &ProjectileShieldBlockMarker{}
+	src := ProjectileDamageSource{Projectile: e, Owner: owner, ShieldBlockMarker: blockMarker}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, vulnerable := l.Hurt(dmg, src); blockHandler.blocked {
+	if _, vulnerable := l.Hurt(dmg, src); blockMarker.ShieldBlocked() {
 		lt.deflect(e, vel)
 		return true
 	} else if vulnerable {
@@ -300,14 +300,6 @@ func (lt *ProjectileBehaviour) emitHitEffects(tx *world.Tx, result trace.Result)
 	if lt.conf.Sound != nil {
 		tx.PlaySound(result.Position(), lt.conf.Sound)
 	}
-}
-
-type projectileShieldBlockHandler struct {
-	blocked bool
-}
-
-func (h *projectileShieldBlockHandler) HandleShieldBlock() {
-	h.blocked = true
 }
 
 func (lt *ProjectileBehaviour) deflect(e *Ent, vel mgl64.Vec3) {

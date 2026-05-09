@@ -13,19 +13,19 @@ import (
 
 // NewTNT creates a new primed TNT entity.
 func NewTNT(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
-	return newTNTWithSourceHandle(opts, fuse, nil)
+	return newTNTWithSourceHandle(opts, fuse, nil, false)
 }
 
 // NewTNTWithSource creates a new primed TNT entity with the entity that caused it to ignite.
-func NewTNTWithSource(opts world.EntitySpawnOpts, fuse time.Duration, source world.Entity) *world.EntityHandle {
-	return newTNTWithSourceHandle(opts, fuse, entityHandle(source))
+func NewTNTWithSource(opts world.EntitySpawnOpts, fuse time.Duration, source world.Entity, blockableByShield bool) *world.EntityHandle {
+	return newTNTWithSourceHandle(opts, fuse, entityHandle(source), blockableByShield)
 }
 
-func newTNTWithSourceHandle(opts world.EntitySpawnOpts, fuse time.Duration, source *world.EntityHandle) *world.EntityHandle {
+func newTNTWithSourceHandle(opts world.EntitySpawnOpts, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
 	conf := tntConf
 	conf.ExistenceDuration = fuse
 	conf.Expire = func(e *Ent, tx *world.Tx) {
-		explodeTNT(e, tx, source)
+		explodeTNT(e, tx, source, blockableByShield)
 	}
 	if opts.Velocity.Len() == 0 {
 		angle := rand.Float64() * math.Pi * 2
@@ -45,14 +45,21 @@ var tntConf = PassiveBehaviourConfig{
 	Gravity: 0.04,
 	Drag:    0.02,
 	Expire: func(e *Ent, tx *world.Tx) {
-		explodeTNT(e, tx, nil)
+		explodeTNT(e, tx, nil, false)
 	},
 }
 
 // explodeTNT creates an explosion at the position of e.
-func explodeTNT(e *Ent, tx *world.Tx, source *world.EntityHandle) {
-	sourceEntity, ok := source.Entity(tx)
-	block.ExplosionConfig{ItemDropChance: 1, UnblockableByShield: !ok, Source: sourceEntity}.Explode(tx, e.Position())
+func explodeTNT(e *Ent, tx *world.Tx, source *world.EntityHandle, blockableByShield bool) {
+	tntExplosionConfig(tx, source, blockableByShield).Explode(tx, e.Position())
+}
+
+func tntExplosionConfig(tx *world.Tx, source *world.EntityHandle, blockableByShield bool) block.ExplosionConfig {
+	var sourceEntity world.Entity
+	if source != nil {
+		sourceEntity, _ = source.Entity(tx)
+	}
+	return block.ExplosionConfig{ItemDropChance: 1, UnblockableByShield: !blockableByShield, Source: sourceEntity}
 }
 
 // TNTType is a world.EntityType implementation for TNT.

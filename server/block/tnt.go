@@ -19,7 +19,7 @@ type TNT struct {
 // ProjectileHit ...
 func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
 	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
-		spawnTnt(pos, tx, time.Second*4, tntIgnitionSourceHandle(e))
+		spawnTnt(pos, tx, time.Second*4, tntIgnitionSourceHandle(e), true)
 	}
 }
 
@@ -36,13 +36,13 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx 
 
 // Ignite ...
 func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
-	spawnTnt(pos, tx, time.Second*4, entityHandle(source))
+	spawnTnt(pos, tx, time.Second*4, entityHandle(source), source != nil)
 	return true
 }
 
 // Explode ...
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig) {
-	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), tntExplosionSourceHandle(c))
+	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), tntExplosionSourceHandle(c), !c.UnblockableByShield)
 }
 
 // BreakInfo ...
@@ -93,16 +93,18 @@ func entityHandle(e world.Entity) *world.EntityHandle {
 	return e.H()
 }
 
-func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration, source *world.EntityHandle) {
+func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) {
 	tx.PlaySound(pos.Vec3Centre(), sound.TNT{})
 	tx.SetBlock(pos, nil, nil)
 	opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
 	conf := tx.World().EntityRegistry().Config()
-	if source != nil && conf.TNTWithSource != nil {
-		if e, ok := source.Entity(tx); ok {
-			tx.AddEntity(conf.TNTWithSource(opts, fuse, e))
-			return
+	if (source != nil || blockableByShield) && conf.TNTWithSource != nil {
+		var e world.Entity
+		if source != nil {
+			e, _ = source.Entity(tx)
 		}
+		tx.AddEntity(conf.TNTWithSource(opts, fuse, e, blockableByShield))
+		return
 	}
 	tx.AddEntity(conf.TNT(opts, fuse))
 }

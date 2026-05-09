@@ -81,8 +81,8 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if u, ok := e.(using); ok && u.UsingItem() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagUsingItem)
 	}
-	if b, ok := e.(blocker); ok && b.Blocking() {
-		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagBlocking)
+	if b, ok := e.(shieldBlocker); ok && b.ShieldBlocking() {
+		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagBlocking&63)
 	}
 	if c, ok := e.(arrow); ok && c.Critical() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCritical)
@@ -221,8 +221,8 @@ type breather interface {
 	MaxAirSupply() time.Duration
 }
 
-type blocker interface {
-	Blocking() bool
+type shieldBlocker interface {
+	ShieldBlocking() bool
 }
 
 type immobile interface {

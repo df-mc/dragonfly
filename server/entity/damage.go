@@ -7,9 +7,22 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// ShieldBlockHandler handles a projectile damage source being blocked by a shield.
-type ShieldBlockHandler interface {
-	HandleShieldBlock()
+// ProjectileShieldBlockMarker is attached to a projectile damage source so that
+// the projectile can tell if its damage was blocked by a shield.
+type ProjectileShieldBlockMarker struct {
+	shieldBlocked bool
+}
+
+// MarkShieldBlocked marks the projectile damage as blocked by a shield.
+func (m *ProjectileShieldBlockMarker) MarkShieldBlocked() {
+	if m != nil {
+		m.shieldBlocked = true
+	}
+}
+
+// ShieldBlocked returns true if the projectile damage was blocked by a shield.
+func (m *ProjectileShieldBlockMarker) ShieldBlocked() bool {
+	return m != nil && m.shieldBlocked
 }
 
 type (
@@ -48,8 +61,8 @@ type (
 		// Projectile and Owner are the world.Entity that dealt the damage and
 		// the one that fired the projectile respectively.
 		Projectile, Owner world.Entity
-		// ShieldBlockHandler is called if the projectile damage is blocked by a shield.
-		ShieldBlockHandler ShieldBlockHandler
+		// ShieldBlockMarker is marked if the projectile damage is blocked by a shield.
+		ShieldBlockMarker *ProjectileShieldBlockMarker
 	}
 
 	// ExplosionDamageSource is used for damage caused by an explosion.
