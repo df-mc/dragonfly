@@ -95,7 +95,7 @@ func TestTNTSpawnCanCreateShieldBlockableTNTWithoutSource(t *testing.T) {
 	}
 }
 
-func TestTNTIgniteWithoutSourceIsShieldUnblockable(t *testing.T) {
+func TestTNTIgniteWithoutSourceIsShieldBlockable(t *testing.T) {
 	var blockable bool
 	var source *world.EntityHandle
 	registry := world.EntityRegistryConfig{
@@ -118,8 +118,8 @@ func TestTNTIgniteWithoutSourceIsShieldUnblockable(t *testing.T) {
 	if source != nil {
 		t.Fatalf("expected no TNT source entity, got %T", source)
 	}
-	if blockable {
-		t.Fatal("expected source-less TNT ignition to be shield-unblockable")
+	if !blockable {
+		t.Fatal("expected source-less TNT ignition to be shield-blockable")
 	}
 }
 

@@ -37,7 +37,7 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx 
 // Ignite ...
 func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
 	sourceHandle := entityHandle(source)
-	spawnTnt(pos, tx, time.Second*4, sourceHandle, sourceHandle != nil)
+	spawnTnt(pos, tx, time.Second*4, sourceHandle, true)
 	return true
 }
 
