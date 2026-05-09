@@ -24,45 +24,48 @@ func (w weather) StartWeatherCycle() {
 // snowingAt checks if it is snowing at a specific cube.Pos in the World. True
 // is returned if the temperature in the Biome at that position is sufficiently
 // low, if it is raining and if it's above the top-most obstructing block.
-func (w weather) snowingAt(pos cube.Pos) bool {
-	if w.w == nil || !w.w.Dimension().WeatherCycle() {
+func (tx *Tx) snowingAt(pos cube.Pos) bool {
+	w := tx.w
+	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	if b := w.w.biome(pos); b.Rainfall() == 0 || w.w.temperature(pos) > 0.15 {
+	if b := tx.biome(pos); b.Rainfall() == 0 || tx.temperature(pos) > 0.15 {
 		return false
 	}
-	w.w.set.Lock()
-	raining := w.w.set.Raining
-	w.w.set.Unlock()
-	return raining && w.w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+	w.set.Lock()
+	raining := w.set.Raining
+	w.set.Unlock()
+	return raining && tx.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
 
 // rainingAt checks if it is raining at a specific cube.Pos in the World. True
 // is returned if it is raining, if the temperature is high enough in the biome
 // for it not to be snow and if the block is above the top-most obstructing
 // block.
-func (w weather) rainingAt(pos cube.Pos) bool {
-	if w.w == nil || !w.w.Dimension().WeatherCycle() {
+func (tx *Tx) rainingAt(pos cube.Pos) bool {
+	w := tx.w
+	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
-	if b := w.w.biome(pos); b.Rainfall() == 0 || w.w.temperature(pos) <= 0.15 {
+	if b := tx.biome(pos); b.Rainfall() == 0 || tx.temperature(pos) <= 0.15 {
 		return false
 	}
-	w.w.set.Lock()
-	a := w.w.set.Raining
-	w.w.set.Unlock()
-	return a && w.w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+	w.set.Lock()
+	a := w.set.Raining
+	w.set.Unlock()
+	return a && tx.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
 
 // thunderingAt checks if it is thundering at a specific cube.Pos in the World.
 // True is returned if rainingAt returns true and if it is thundering in the
 // world.
-func (w weather) thunderingAt(pos cube.Pos) bool {
-	raining := w.rainingAt(pos)
-	w.w.set.Lock()
-	a := w.w.set.Thundering && raining
-	w.w.set.Unlock()
-	return a && w.w.highestObstructingBlock(pos[0], pos[2]) < pos[1]
+func (tx *Tx) thunderingAt(pos cube.Pos) bool {
+	w := tx.w
+	raining := tx.rainingAt(pos)
+	w.set.Lock()
+	a := w.set.Thundering && raining
+	w.set.Unlock()
+	return a && tx.highestObstructingBlock(pos[0], pos[2]) < pos[1]
 }
 
 // raining checks if it is raining anywhere in the World.

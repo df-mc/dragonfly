@@ -40,21 +40,21 @@ func (tx *Tx) Range() cube.Range {
 // needing to set a lot of blocks to the world. BuildStructure may be used
 // instead.
 func (tx *Tx) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
-	tx.World().setBlock(pos, b, opts)
+	tx.setBlock(pos, b, opts)
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded
 // at that position, the chunk is loaded, or generated if it could not be found
 // in the world save, and the block returned.
 func (tx *Tx) Block(pos cube.Pos) Block {
-	return tx.World().block(pos)
+	return tx.block(pos)
 }
 
 // Liquid attempts to return a Liquid block at the position passed. This
 // Liquid may be in the foreground or in any other layer. If found, the Liquid
 // is returned. If not, the bool returned is false.
 func (tx *Tx) Liquid(pos cube.Pos) (Liquid, bool) {
-	return tx.World().liquid(pos)
+	return tx.liquid(pos)
 }
 
 // SetLiquid sets a Liquid at a specific position in the World. Unlike
@@ -64,7 +64,7 @@ func (tx *Tx) Liquid(pos cube.Pos) (Liquid, bool) {
 // overwritten. If nil is passed for the Liquid, any Liquid currently present
 // will be removed.
 func (tx *Tx) SetLiquid(pos cube.Pos, b Liquid) {
-	tx.World().setLiquid(pos, b)
+	tx.setLiquid(pos, b)
 }
 
 // BuildStructure builds a Structure passed at a specific position in the
@@ -75,7 +75,7 @@ func (tx *Tx) SetLiquid(pos cube.Pos, b Liquid) {
 // method operates on a per-chunk basis, setting all blocks within a single
 // chunk part of the Structure before moving on to the next chunk.
 func (tx *Tx) BuildStructure(pos cube.Pos, s Structure) {
-	tx.World().buildStructure(pos, s)
+	tx.buildStructure(pos, s)
 }
 
 // ScheduleBlockUpdate schedules a block update at the position passed for the
@@ -91,14 +91,14 @@ func (tx *Tx) ScheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
 // HighestLightBlocker gets the Y value of the highest fully light blocking
 // block at the x and z values passed in the World.
 func (tx *Tx) HighestLightBlocker(x, z int) int {
-	return tx.World().HighestLightBlocker(x, z)
+	return tx.highestLightBlocker(x, z)
 }
 
 // HighestBlock looks up the highest non-air block in the World at a specific x
 // and z. The y value of the highest block is returned, or 0 if no blocks were
 // present in the column.
 func (tx *Tx) HighestBlock(x, z int) int {
-	return tx.World().highestBlock(x, z)
+	return tx.highestBlock(x, z)
 }
 
 // Light returns the light level at the position passed. This is the highest of
@@ -114,27 +114,27 @@ func (tx *Tx) Light(pos cube.Pos) uint8 {
 // value, similarly to Light, is a value in the range 0-15, where 0 means no
 // light is present.
 func (tx *Tx) SkyLight(pos cube.Pos) uint8 {
-	return tx.World().skyLight(pos)
+	return tx.skyLight(pos)
 }
 
 // SetBiome sets the Biome at the position passed. If a chunk is not yet loaded
 // at that position, the chunk is first loaded or generated if it could not be
 // found in the world save.
 func (tx *Tx) SetBiome(pos cube.Pos, b Biome) {
-	tx.World().setBiome(pos, b)
+	tx.setBiome(pos, b)
 }
 
 // Biome reads the Biome at the position passed. If a chunk is not yet loaded
 // at that position, the chunk is loaded, or generated if it could not be found
 // in the world save, and the Biome returned.
 func (tx *Tx) Biome(pos cube.Pos) Biome {
-	return tx.World().biome(pos)
+	return tx.biome(pos)
 }
 
 // Temperature returns the temperature in the World at a specific position.
 // Higher altitudes and different biomes influence the temperature returned.
 func (tx *Tx) Temperature(pos cube.Pos) float64 {
-	return tx.World().temperature(pos)
+	return tx.temperature(pos)
 }
 
 // RainingAt checks if it is raining at a specific cube.Pos in the World. True
@@ -142,21 +142,21 @@ func (tx *Tx) Temperature(pos cube.Pos) float64 {
 // for it not to be snow and if the block is above the top-most obstructing
 // block.
 func (tx *Tx) RainingAt(pos cube.Pos) bool {
-	return tx.World().rainingAt(pos)
+	return tx.rainingAt(pos)
 }
 
 // SnowingAt checks if it is snowing at a specific cube.Pos in the World. True
 // is returned if the temperature in the Biome at that position is sufficiently
 // low, if it is raining and if it's above the top-most obstructing block.
 func (tx *Tx) SnowingAt(pos cube.Pos) bool {
-	return tx.World().snowingAt(pos)
+	return tx.snowingAt(pos)
 }
 
 // ThunderingAt checks if it is thundering at a specific cube.Pos in the World.
 // True is returned if RainingAt returns true and if it is thundering in the
 // world.
 func (tx *Tx) ThunderingAt(pos cube.Pos) bool {
-	return tx.World().thunderingAt(pos)
+	return tx.thunderingAt(pos)
 }
 
 // Raining checks if it is raining anywhere in the World.
@@ -302,7 +302,6 @@ type normalTransaction struct {
 // ntx.c.
 func (ntx normalTransaction) Run(w *World) {
 	tx := &Tx{w: w}
-	w.currentTx = tx
 	ntx.f(tx)
 	tx.close()
 	close(ntx.c)
@@ -324,7 +323,6 @@ func (wtx weakTransaction) Run(w *World) {
 	valid := !wtx.invalid.Load()
 	if valid {
 		tx := &Tx{w: w}
-		w.currentTx = tx
 		wtx.f(tx)
 		tx.close()
 	}
