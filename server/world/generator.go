@@ -44,13 +44,26 @@ const defaultChunkLoadWorkers = 4
 // chunkCallback is called on the transaction path after a chunk is installed.
 type chunkCallback = func(tx *Tx, chunk *Column)
 
+type chunkRequestHandler interface {
+	handleChunkRequest(*chunkRequest)
+}
+
+type asyncChunkRequestHandler struct {
+	w     *World
+	queue chan *chunkRequest
+}
+
+func newAsyncChunkRequestHandler(w *World) *asyncChunkRequestHandler {
+	return &asyncChunkRequestHandler{w: w, queue: make(chan *chunkRequest, 4096)}
+}
+
 // Do registers receiver to be called when the chunk is loaded. The first call
 // starts the asynchronous load.
 func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) {
 	r.callbacks = append(r.callbacks, receiver)
 	if !r.generating {
 		r.generating = true
-		tx.World().queueChunkLoad(r)
+		tx.World().chunkRequestHandler.handleChunkRequest(r)
 	}
 }
 
@@ -74,28 +87,28 @@ func (r *chunkRequest) load(w *World) {
 	}
 }
 
-// queueChunkLoad queues r on the world's bounded chunk loading pool.
-func (w *World) queueChunkLoad(r *chunkRequest) {
+// handleChunkRequest queues r on the bounded asynchronous chunk loading pool.
+func (h *asyncChunkRequestHandler) handleChunkRequest(r *chunkRequest) {
 	select {
-	case w.chunkLoadQueue <- r:
-	case <-w.closing:
+	case h.queue <- r:
+	case <-h.w.closing:
 		close(r.close)
 	}
 }
 
-// handleChunkLoads processes the chunk load queue until the world closes.
-func (w *World) handleChunkLoads() {
-	defer w.running.Done()
+// handle processes the chunk load queue until the world closes.
+func (h *asyncChunkRequestHandler) handle() {
+	defer h.w.running.Done()
 	for {
 		select {
-		case <-w.closing:
+		case <-h.w.closing:
 			return
 		default:
 		}
 		select {
-		case r := <-w.chunkLoadQueue:
-			r.load(w)
-		case <-w.closing:
+		case r := <-h.queue:
+			r.load(h.w)
+		case <-h.w.closing:
 			return
 		}
 	}

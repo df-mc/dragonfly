@@ -130,7 +130,6 @@ func (conf Config) New() *World {
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		chunkRequests:    make(map[ChunkPos]*chunkRequest),
-		chunkLoadQueue:   make(chan *chunkRequest, 4096),
 		queueClosing:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
@@ -140,6 +139,8 @@ func (conf Config) New() *World {
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
+	chunkRequests := newAsyncChunkRequestHandler(w)
+	w.chunkRequestHandler = chunkRequests
 	w.weather = weather{w: w}
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
@@ -152,7 +153,7 @@ func (conf Config) New() *World {
 	go w.autoSave()
 	go w.handleTransactions()
 	for range conf.ChunkLoadWorkers {
-		go w.handleChunkLoads()
+		go chunkRequests.handle()
 	}
 
 	<-w.Exec(t.tick)

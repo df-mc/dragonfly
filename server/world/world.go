@@ -50,9 +50,9 @@ type World struct {
 
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
-	chunks         map[ChunkPos]*Column
-	chunkRequests  map[ChunkPos]*chunkRequest
-	chunkLoadQueue chan *chunkRequest
+	chunks              map[ChunkPos]*Column
+	chunkRequests       map[ChunkPos]*chunkRequest
+	chunkRequestHandler chunkRequestHandler
 
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
