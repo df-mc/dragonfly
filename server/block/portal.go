@@ -47,7 +47,11 @@ func (p Portal) EncodeBlock() (string, map[string]any) {
 
 // NeighbourUpdateTick ...
 func (p Portal) NeighbourUpdateTick(pos, neighbour cube.Pos, tx *world.Tx) {
-	axis := pos.Face(neighbour).Axis()
+	face, ok := pos.NeighbourFace(neighbour)
+	if !ok {
+		return
+	}
+	axis := face.Axis()
 	if axis != cube.Y && axis != p.Axis {
 		return
 	}
