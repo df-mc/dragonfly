@@ -328,12 +328,6 @@ func (n *wireNetwork) updateNode(tx *world.Tx, node *wireNode, layer uint32) {
 	n.propagateChanges(tx, node, layer)
 }
 
-var (
-	rsNeighbours   = [...]uint32{4, 5, 6, 7}
-	rsNeighboursUp = [...]uint32{9, 11, 13, 15}
-	rsNeighboursDn = [...]uint32{8, 10, 12, 14}
-)
-
 // calculateCurrentChanges computes redstone wire power levels from neighboring blocks. Modifications cut the number of
 // power level changes by about 45% from vanilla, and also synergies well with the breadth-first search implementation.
 // It returns the new redstone wire block and a boolean indicating whether the power level changed.
@@ -341,45 +335,16 @@ func (n *wireNetwork) calculateCurrentChanges(tx *world.Tx, node *wireNode) (Red
 	wire := node.block.(RedstoneWire)
 	i := wire.Power
 
-	var wirePower int
 	if !node.oriented {
 		n.identifyNeighbours(tx, node)
 	}
 
-	var blockPower int
-	for _, face := range cube.Faces() {
-		blockPower = max(blockPower, tx.RedstonePower(node.pos.Side(face), face, false))
-	}
-
-	if blockPower < 15 {
-		centerUp := node.neighbours[1].block
-		centerUpBlocksVerticalTravel := blocksRedstoneWireVerticalTravel(centerUp)
-		for m := range 4 {
-			neighbour := node.neighbours[rsNeighbours[m]]
-			neighbourBlock := neighbour.block
-			_, neighbourSolid := neighbourBlock.Model().(model.Solid)
-
-			wirePower = maxRedstoneWirePower(neighbourBlock, wirePower)
-			if !neighbourSolid {
-				neighbourDown := node.neighbours[rsNeighboursDn[m]].block
-				wirePower = maxRedstoneWirePower(neighbourDown, wirePower)
-			} else {
-				if canRedstoneWireStepDown(node.pos, neighbour.pos, neighbourBlock, tx) && !centerUpBlocksVerticalTravel {
-					neighbourUp := node.neighbours[rsNeighboursUp[m]].block
-					wirePower = maxRedstoneWirePower(neighbourUp, wirePower)
-				}
-				if canRedstoneWireStepDown(neighbour.pos.Side(cube.FaceDown), neighbour.pos, neighbourBlock, tx) && !blocksRedstoneWireVerticalTravel(neighbourBlock) {
-					neighbourDown := node.neighbours[rsNeighboursDn[m]].block
-					wirePower = maxRedstoneWirePower(neighbourDown, wirePower)
-				}
-			}
-			if wirePower == 15 {
-				break
-			}
+	j := calculateRedstoneWirePower(node.pos, tx, func(pos cube.Pos) world.Block {
+		if cached, ok := n.nodeCache[pos]; ok {
+			return cached.block
 		}
-	}
-
-	j := max(blockPower, wirePower-1)
+		return tx.Block(pos)
+	})
 
 	if i == j {
 		return wire, false

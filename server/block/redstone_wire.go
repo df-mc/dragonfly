@@ -146,13 +146,18 @@ func (RedstoneWire) StrongPower(cube.Pos, cube.Face, *world.Tx, bool) int {
 
 // calculatePower returns the highest level of received redstone power at the provided position.
 func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
-	aboveBlock := tx.Block(pos.Side(cube.FaceUp))
-	aboveBlocksVerticalTravel := blocksRedstoneWireVerticalTravel(aboveBlock)
+	return calculateRedstoneWirePower(pos, tx, tx.Block)
+}
 
+// calculateRedstoneWirePower returns the highest level of received redstone power at the provided position. blockAt is
+// injected so direct updates and the BFS wire network share the same rules while the BFS path may still read cached
+// node state.
+func calculateRedstoneWirePower(pos cube.Pos, tx *world.Tx, blockAt func(cube.Pos) world.Block) int {
+	aboveBlocksVerticalTravel := blocksRedstoneWireVerticalTravel(blockAt(pos.Side(cube.FaceUp)))
 	var blockPower, wirePower int
 	for _, side := range cube.Faces() {
 		neighbourPos := pos.Side(side)
-		neighbour := tx.Block(neighbourPos)
+		neighbour := blockAt(neighbourPos)
 
 		wirePower = maxRedstoneWirePower(neighbour, wirePower)
 		blockPower = max(blockPower, tx.RedstonePower(neighbourPos, side, false))
@@ -163,14 +168,14 @@ func (r RedstoneWire) calculatePower(pos cube.Pos, tx *world.Tx) int {
 		}
 
 		if canRedstoneWireStepDown(pos, neighbourPos, neighbour, tx) && !aboveBlocksVerticalTravel {
-			wirePower = maxRedstoneWirePower(tx.Block(neighbourPos.Side(cube.FaceUp)), wirePower)
+			wirePower = maxRedstoneWirePower(blockAt(neighbourPos.Side(cube.FaceUp)), wirePower)
 		}
 		if canRedstoneWireStepDown(neighbourPos.Side(cube.FaceDown), neighbourPos, neighbour, tx) && !blocksRedstoneWireVerticalTravel(neighbour) {
-			wirePower = maxRedstoneWirePower(tx.Block(neighbourPos.Side(cube.FaceDown)), wirePower)
+			wirePower = maxRedstoneWirePower(blockAt(neighbourPos.Side(cube.FaceDown)), wirePower)
 		}
 
 		if _, neighbourSolid := neighbour.Model().(model.Solid); !neighbourSolid {
-			wirePower = maxRedstoneWirePower(tx.Block(neighbourPos.Side(cube.FaceDown)), wirePower)
+			wirePower = maxRedstoneWirePower(blockAt(neighbourPos.Side(cube.FaceDown)), wirePower)
 		}
 	}
 	return max(blockPower, wirePower-1)
