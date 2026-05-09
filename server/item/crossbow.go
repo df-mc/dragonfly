@@ -122,18 +122,21 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	held, _ := releaser.HeldItems()
 	creative := releaser.GameMode().CreativeInventory()
 
-	multishot := false
+	pierceLevel, multishot := 0, false
 	for _, enchant := range held.Enchantments() {
 		if _, ok := enchant.Type().(interface{ MultipleProjectiles() bool }); ok {
 			multishot = true
 			break
 		}
+		if _, ok := enchant.Type().(interface{ Pierces() bool }); ok {
+			pierceLevel = enchant.Level()
+		}
 	}
 
-	c.shoot(releaser, tx, 0, !creative)
+	c.shoot(releaser, tx, 0, !creative, pierceLevel)
 	if multishot {
-		c.shoot(releaser, tx, -10, false)
-		c.shoot(releaser, tx, 10, false)
+		c.shoot(releaser, tx, -10, false, 0)
+		c.shoot(releaser, tx, 10, false, 0)
 	}
 	c.applyDamage(ctx)
 
@@ -146,7 +149,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 }
 
 // shoot fires the crossbow's loaded projectiles.
-func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, canObtainPickup bool) {
+func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, canObtainPickup bool, pierceLevel int) {
 	rot := releaser.Rotation()
 	dirVec := cube.Rotation{rot[0] + offsetAngle, rot[1]}.Vec3()
 
@@ -164,7 +167,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ca
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(5.15),
 			Rotation: rot.Neg(),
-		}, 9, releaser, false, false, canObtainPickup, 0, c.Item.Item().(Arrow).Tip)
+		}, 9, releaser, false, false, canObtainPickup, 0, pierceLevel, c.Item.Item().(Arrow).Tip)
 		tx.AddEntity(arrow)
 	}
 }

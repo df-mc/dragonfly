@@ -1,6 +1,12 @@
 package entity
 
 import (
+	"iter"
+	"math"
+	"math/rand/v2"
+	"slices"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
@@ -9,10 +15,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"iter"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
 // ProjectileBehaviourConfig allows the configuration of projectiles. Calling
@@ -80,6 +82,9 @@ type ProjectileBehaviourConfig struct {
 	// CollisionPosition specifies the position that the projectile is stuck
 	// in. If non-empty, the entity will not move.
 	CollisionPosition cube.Pos
+	// PiercingLevel specifies how many entities the projectile can pierce
+	// through without breaking.
+	PiercingLevel int
 }
 
 func (conf ProjectileBehaviourConfig) Apply(data *world.EntityData) {
@@ -109,6 +114,8 @@ type ProjectileBehaviour struct {
 
 	collisionPos cube.Pos
 	collided     bool
+
+	collidedEntities []*world.EntityHandle
 }
 
 // Owner returns the owner of the projectile.
@@ -170,6 +177,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	case trace.EntityResult:
 		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
 			lt.hitEntity(l, e, vel)
+			lt.collidedEntities = append(lt.collidedEntities, l.H())
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
@@ -185,7 +193,9 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		lt.conf.Hit(e, tx, result)
 	}
 
-	lt.close = true
+	if len(lt.collidedEntities) > lt.conf.PiercingLevel {
+		lt.close = true
+	}
 	return m
 }
 
@@ -313,7 +323,9 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 
 				vel = mgl64.Vec3{x * mx, y * my, z * mz}
 			} else {
-				vel = zeroVec3
+				if lt.conf.PiercingLevel == 0 {
+					vel = zeroVec3
+				}
 			}
 			end = hit.Position()
 		}
@@ -322,15 +334,19 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 }
 
 // ignores returns a function to ignore entities in trace.Perform that are
-// either a spectator, not living, the entity itself or its owner in the first
-// 5 ticks.
+// either a spectator, not living, the entity itself, its owner in the first
+// 5 ticks, or an entity it already collided with.
 func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 	return func(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
 		return func(yield func(world.Entity) bool) {
 			for other := range seq {
 				g, ok := other.(interface{ GameMode() world.GameMode })
+				spectator := ok && !g.GameMode().HasCollision()
+				itself := e.H() == other.H()
 				_, living := other.(Living)
-				if (ok && !g.GameMode().HasCollision()) || e.H() == other.H() || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
+				owner := e.data.Age < time.Second/4 && lt.conf.Owner == other.H()
+				collidedEntity := slices.Contains(lt.collidedEntities, other.H())
+				if spectator || itself || !living || owner || collidedEntity {
 					continue
 				}
 				if !yield(other) {
