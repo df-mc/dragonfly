@@ -15,17 +15,33 @@ import (
 )
 
 type shieldTestEntity struct {
+	h   *world.EntityHandle
 	pos mgl64.Vec3
 }
 
 func (e shieldTestEntity) Close() error           { return nil }
-func (e shieldTestEntity) H() *world.EntityHandle { return nil }
+func (e shieldTestEntity) H() *world.EntityHandle { return e.h }
 func (e shieldTestEntity) Position() mgl64.Vec3   { return e.pos }
 func (e shieldTestEntity) Rotation() cube.Rotation {
 	return cube.Rotation{}
 }
 func (e shieldTestEntity) HeldItems() (item.Stack, item.Stack) {
 	return item.Stack{}, item.Stack{}
+}
+
+type shieldTestEntityType struct{}
+
+func (shieldTestEntityType) Open(*world.Tx, *world.EntityHandle, *world.EntityData) world.Entity {
+	return nil
+}
+func (shieldTestEntityType) EncodeEntity() string                        { return "dragonfly:shield_test_entity" }
+func (shieldTestEntityType) BBox(world.Entity) cube.BBox                 { return cube.Box(0, 0, 0, 0, 0, 0) }
+func (shieldTestEntityType) DecodeNBT(map[string]any, *world.EntityData) {}
+func (shieldTestEntityType) EncodeNBT(*world.EntityData) map[string]any  { return nil }
+func (shieldTestEntityType) Apply(*world.EntityData)                     {}
+
+func newShieldTestHandle() *world.EntityHandle {
+	return world.EntitySpawnOpts{}.New(shieldTestEntityType{}, shieldTestEntityType{})
 }
 
 type shieldAxeAttacker struct {
@@ -173,13 +189,42 @@ func TestUseItemWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
 	p.sneaking = false
 	p.shieldBlockingInput = true
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+	_ = p.inv.SetItem(1, item.NewStack(item.Arrow{}, 1))
 
-	p.UseItem()
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+	<-w.Exec(func(tx *world.Tx) {
+		p.tx = tx
+		p.UseItem()
+	})
 	if p.shieldBlockingInput {
 		t.Fatal("expected priority main-hand use to clear held shield input")
 	}
 	if p.ShieldBlocking() {
 		t.Fatal("expected priority main-hand use to stop shield blocking")
+	}
+}
+
+func TestUseItemFallsBackToOffHandShieldWhenMainHandFoodCannotBeConsumed(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.NewStack(item.Apple{}, 1), item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+
+	p.UseItem()
+	if !p.shieldBlockingInput {
+		t.Fatal("expected off-hand shield input to start when full hunger prevents main-hand food use")
+	}
+}
+
+func TestUseItemFallsBackToOffHandShieldWhenMainHandItemIsOnCooldown(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.NewStack(item.GoatHorn{}, 1), item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	p.SetCooldown(item.GoatHorn{}, time.Second)
+
+	p.UseItem()
+	if !p.shieldBlockingInput {
+		t.Fatal("expected off-hand shield input to start when main-hand item is on cooldown")
 	}
 }
 
@@ -205,6 +250,21 @@ func TestSetHeldSlotWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
 	}
 	if p.ShieldBlocking() {
 		t.Fatal("expected priority main-hand slot change to stop shield blocking")
+	}
+}
+
+func TestSetHeldItemsWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	p.shieldBlockingInput = true
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+
+	p.SetHeldItems(item.NewStack(item.Bow{}, 1), item.NewStack(item.Shield{}, 1))
+	if p.shieldBlockingInput {
+		t.Fatal("expected priority main-hand item update to clear held shield input")
+	}
+	if p.ShieldBlocking() {
+		t.Fatal("expected priority main-hand item update to stop shield blocking")
 	}
 }
 
@@ -337,13 +397,12 @@ func TestShieldDoesNotBlockCancelledDamage(t *testing.T) {
 func TestShieldBlocksZeroDamageProjectile(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
-	projectile := shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}
-	handler := &shieldBlockTestHandler{}
+	projectile := shieldTestEntity{h: newShieldTestHandle(), pos: mgl64.Vec3{0, 0, 4}}
 
-	if dmg, vulnerable := p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile, ShieldBlockMarker: &handler.ProjectileShieldBlockMarker}); dmg != 0 || vulnerable {
+	if dmg, vulnerable := p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile}); dmg != 0 || vulnerable {
 		t.Fatalf("expected shield-blocked zero damage projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
 	}
-	if !handler.ShieldBlocked() {
+	if !entity.ProjectileShieldBlocked(projectile) {
 		t.Fatal("expected zero damage projectile shield block callback to run")
 	}
 }
@@ -353,13 +412,12 @@ func TestShieldBlocksProjectileDuringDamageImmunity(t *testing.T) {
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
 	p.immuneUntil = time.Now().Add(time.Second)
 	p.lastDamage = 10
-	projectile := shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}
-	handler := &shieldBlockTestHandler{}
+	projectile := shieldTestEntity{h: newShieldTestHandle(), pos: mgl64.Vec3{0, 0, 4}}
 
-	if dmg, vulnerable := p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile, ShieldBlockMarker: &handler.ProjectileShieldBlockMarker}); dmg != 0 || vulnerable {
+	if dmg, vulnerable := p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile}); dmg != 0 || vulnerable {
 		t.Fatalf("expected immune shield-blocked projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
 	}
-	if !handler.ShieldBlocked() {
+	if !entity.ProjectileShieldBlocked(projectile) {
 		t.Fatal("expected shield-blocked projectile to be marked even during damage immunity")
 	}
 }
@@ -379,8 +437,19 @@ func TestShieldBlocksMeleeDuringDamageImmunity(t *testing.T) {
 	}
 }
 
-type shieldBlockTestHandler struct {
-	entity.ProjectileShieldBlockMarker
+func TestIgnoredImmuneHitDoesNotNotifyHurtHandler(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.Stack{})
+	p.immuneUntil = time.Now().Add(time.Second)
+	p.lastDamage = 10
+	handler := &minimumDamageHurtHandler{}
+	p.h = handler
+
+	if dmg, vulnerable := p.Hurt(1, entity.AttackDamageSource{Attacker: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}}); dmg != 0 || vulnerable {
+		t.Fatalf("expected immune ignored hit to deal no damage, got damage %v vulnerable %v", dmg, vulnerable)
+	}
+	if handler.called {
+		t.Fatal("expected fully ignored immune hit not to notify hurt handler")
+	}
 }
 
 func TestShieldDurabilityUsesDamageBeforeArmourReduction(t *testing.T) {
@@ -455,6 +524,16 @@ func (cancellingHurtHandler) HandleHurt(ctx *Context, _ *float64, _ bool, _ *tim
 	ctx.Cancel()
 }
 
+type minimumDamageHurtHandler struct {
+	NopHandler
+	called bool
+}
+
+func (h *minimumDamageHurtHandler) HandleHurt(_ *Context, damage *float64, _ bool, _ *time.Duration, _ world.DamageSource) {
+	h.called = true
+	*damage = 1
+}
+
 type cancellingItemUseHandler struct {
 	NopHandler
 }
@@ -510,6 +589,35 @@ func TestShieldDisableCooldownFromAxeAttack(t *testing.T) {
 	if _, ok := shieldDisableCooldownFrom(entity.AttackDamageSource{Attacker: shieldTestEntity{}}); ok {
 		t.Fatal("expected a non-axe attack not to disable shields")
 	}
+}
+
+func TestShieldDisableCooldownFromCustomAxeToolAttack(t *testing.T) {
+	attacker := shieldAxeAttacker{mainHand: item.NewStack(shieldCustomAxeTool{}, 1)}
+	cooldown, ok := shieldDisableCooldownFrom(entity.AttackDamageSource{Attacker: attacker})
+	if !ok {
+		t.Fatal("expected a custom axe tool attack to disable shields")
+	}
+	if cooldown != shieldDisableCooldown {
+		t.Fatalf("expected shield disable cooldown %v, got %v", shieldDisableCooldown, cooldown)
+	}
+}
+
+type shieldCustomAxeTool struct{}
+
+func (shieldCustomAxeTool) EncodeItem() (string, int16) {
+	return "dragonfly:shield_custom_axe", 0
+}
+
+func (shieldCustomAxeTool) ToolType() item.ToolType {
+	return item.TypeAxe
+}
+
+func (shieldCustomAxeTool) HarvestLevel() int {
+	return 0
+}
+
+func (shieldCustomAxeTool) BaseMiningEfficiency(world.Block) float64 {
+	return 1
 }
 
 func TestShieldKnocksBackMeleeAttacker(t *testing.T) {

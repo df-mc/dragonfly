@@ -598,8 +598,14 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 	}
 
 	immunity := time.Second / 2
-	ctx := event.C(p)
 	damageBeforeHandler := damageLeft
+	if immune && damageLeft <= 0 {
+		if shouldAttemptShieldBlock(dmg, damageLeft, damageBeforeHandler, src) && p.blockDamageWithShield(dmg, src) {
+			return 0, false, true
+		}
+		return 0, false, false
+	}
+	ctx := event.C(p)
 	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
 		return 0, false, false
 	}
@@ -1395,9 +1401,24 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(*p.heldSlot), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
-	if changed := p.updateShieldBlockingState(time.Now()); changed && p.tx != nil {
+	if changed := p.updateHeldItemState(); changed && p.tx != nil {
 		p.updateState()
 	}
+}
+
+// UpdateHeldItemState refreshes state derived from the player's currently held items.
+func (p *Player) UpdateHeldItemState() {
+	if changed := p.updateHeldItemState(); changed && p.tx != nil {
+		p.updateState()
+	}
+}
+
+func (p *Player) updateHeldItemState() bool {
+	mainHand, _ := p.HeldItems()
+	if p.shieldBlockingInput && !p.canStartShieldBlockingInput(mainHand) {
+		p.shieldBlockingInput = false
+	}
+	return p.updateShieldBlockingState(time.Now())
 }
 
 // SetHeldSlot updates the held slot of the player to the slot provided. The
@@ -1423,11 +1444,7 @@ func (p *Player) SetHeldSlot(to int) error {
 	}
 	*p.heldSlot = uint32(to)
 	p.usingItem = false
-	mainHand, _ := p.HeldItems()
-	if p.shieldBlockingInput && !p.canStartShieldBlockingInput(mainHand) {
-		p.shieldBlockingInput = false
-	}
-	shieldChanged := p.updateShieldBlockingState(time.Now())
+	shieldChanged := p.updateHeldItemState()
 
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
@@ -1527,6 +1544,7 @@ func (p *Player) UseItem() {
 	i, _ := p.HeldItems()
 	ctx := event.C(p)
 	if p.HasCooldown(i.Item()) {
+		p.startOffHandShieldBlockingInput()
 		return
 	}
 	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
@@ -1547,6 +1565,9 @@ func (p *Player) UseItem() {
 
 	if _, ok := it.(item.Releasable); ok {
 		if !p.canRelease() {
+			if p.startOffHandShieldBlockingInput() {
+				return
+			}
 			return
 		}
 		p.usingSince, p.usingItem = time.Now(), true
@@ -1576,6 +1597,9 @@ func (p *Player) UseItem() {
 	case item.Usable:
 		useCtx := p.useContext()
 		if !usable.Use(p.tx, p, useCtx) {
+			if p.startOffHandShieldBlockingInput() {
+				return
+			}
 			return
 		}
 		// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
@@ -1585,12 +1609,18 @@ func (p *Player) UseItem() {
 		p.addNewItem(useCtx)
 	case item.Consumable:
 		if c, ok := usable.(interface{ CanConsume() bool }); ok && !c.CanConsume() {
+			if p.startOffHandShieldBlockingInput() {
+				return
+			}
 			p.ReleaseItem()
 			return
 		}
 		if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
 			// The item.Consumable is not always consumable, the player is not in creative mode and the
 			// food bar is filled: The item cannot be consumed.
+			if p.startOffHandShieldBlockingInput() {
+				return
+			}
 			p.ReleaseItem()
 			return
 		}

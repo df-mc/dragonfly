@@ -1,29 +1,15 @@
 package entity
 
 import (
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// ProjectileShieldBlockMarker is attached to a projectile damage source so that
-// the projectile can tell if its damage was blocked by a shield.
-type ProjectileShieldBlockMarker struct {
-	shieldBlocked bool
-}
-
-// MarkShieldBlocked marks the projectile damage as blocked by a shield.
-func (m *ProjectileShieldBlockMarker) MarkShieldBlocked() {
-	if m != nil {
-		m.shieldBlocked = true
-	}
-}
-
-// ShieldBlocked returns true if the projectile damage was blocked by a shield.
-func (m *ProjectileShieldBlockMarker) ShieldBlocked() bool {
-	return m != nil && m.shieldBlocked
-}
+var projectileShieldBlocks sync.Map
 
 type (
 	// AttackDamageSource is used for damage caused by other entities, for
@@ -61,8 +47,6 @@ type (
 		// Projectile and Owner are the world.Entity that dealt the damage and
 		// the one that fired the projectile respectively.
 		Projectile, Owner world.Entity
-		// ShieldBlockMarker is marked if the projectile damage is blocked by a shield.
-		ShieldBlockMarker *ProjectileShieldBlockMarker
 	}
 
 	// ExplosionDamageSource is used for damage caused by an explosion.
@@ -77,6 +61,23 @@ type (
 		Source world.Entity
 	}
 )
+
+// MarkProjectileShieldBlocked marks projectile damage as blocked by a shield.
+func MarkProjectileShieldBlocked(projectile world.Entity) {
+	if projectile == nil || projectile.H() == nil {
+		return
+	}
+	projectileShieldBlocks.Store(projectile.H().UUID(), struct{}{})
+}
+
+// ProjectileShieldBlocked returns true if projectile damage was blocked by a shield.
+func ProjectileShieldBlocked(projectile world.Entity) bool {
+	if projectile == nil || projectile.H() == nil {
+		return false
+	}
+	_, ok := projectileShieldBlocks.LoadAndDelete(projectile.H().UUID())
+	return ok
+}
 
 // ExplosionDamageSourceConfig is implemented by explosion configuration values that can create explosion damage sources.
 type ExplosionDamageSourceConfig interface {

@@ -366,8 +366,8 @@ type EntityRegistryConfig struct {
 	FallingBlock func(opts EntitySpawnOpts, bl Block) *EntityHandle
 	TNT          func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
 	// TNTWithSource optionally creates a TNT entity with the nullable handle that caused it to ignite and whether
-	// its explosion may be blocked by shields. If nil, TNT is used instead, losing source attribution and
-	// shield-blockability for source-aware TNT.
+	// its explosion may be blocked by shields. If nil, New fills a fallback that only supports source-less,
+	// shield-blockable TNT through TNT and panics for source-aware or shield-unblockable TNT.
 	TNTWithSource      func(opts EntitySpawnOpts, fuse time.Duration, source *EntityHandle, blockableByShield bool) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
@@ -382,6 +382,14 @@ type EntityRegistryConfig struct {
 
 // New creates an EntityRegistry using conf and the EntityTypes passed.
 func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
+	if conf.TNTWithSource == nil && conf.TNT != nil {
+		conf.TNTWithSource = func(opts EntitySpawnOpts, fuse time.Duration, source *EntityHandle, blockableByShield bool) *EntityHandle {
+			if source != nil || !blockableByShield {
+				panic("source-aware or shield-unblockable TNT requires EntityRegistryConfig.TNTWithSource")
+			}
+			return conf.TNT(opts, fuse)
+		}
+	}
 	m := make(map[string]EntityType, len(ent))
 	for _, e := range ent {
 		name := e.EncodeEntity()

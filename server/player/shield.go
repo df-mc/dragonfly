@@ -159,7 +159,8 @@ func shieldDisableCooldownFrom(src world.DamageSource) (time.Duration, bool) {
 		return 0, false
 	}
 	mainHand, _ := attacker.HeldItems()
-	if _, ok := mainHand.Item().(item.Axe); !ok {
+	tool, ok := mainHand.Item().(item.Tool)
+	if !ok || tool.ToolType() != item.TypeAxe {
 		return 0, false
 	}
 	return shieldDisableCooldown, true
@@ -239,6 +240,17 @@ func (p *Player) startShieldBlockingInput(mainHand item.Stack) bool {
 	return true
 }
 
+func (p *Player) startOffHandShieldBlockingInput() bool {
+	mainHand, offHand := p.HeldItems()
+	if _, ok := mainHand.Item().(item.Shield); ok {
+		return p.startShieldBlockingInput(mainHand)
+	}
+	if _, ok := offHand.Item().(item.Shield); !ok {
+		return false
+	}
+	return p.startShieldBlockingInput(item.Stack{})
+}
+
 func (p *Player) knockBackShieldAttacker(src world.DamageSource) bool {
 	attack, ok := src.(entity.AttackDamageSource)
 	if !ok {
@@ -267,8 +279,8 @@ func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource) bool
 	if damage := shieldDurabilityDamage(dmg); damage > 0 {
 		p.setHeldShield(hand, p.damageItem(shield, damage))
 	}
-	if s, ok := src.(entity.ProjectileDamageSource); ok && s.ShieldBlockMarker != nil {
-		s.ShieldBlockMarker.MarkShieldBlocked()
+	if s, ok := src.(entity.ProjectileDamageSource); ok {
+		entity.MarkProjectileShieldBlocked(s.Projectile)
 	}
 	if p.tx != nil {
 		p.tx.PlaySound(p.Position(), sound.ShieldBlock{})

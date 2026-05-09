@@ -2,6 +2,7 @@ package entity
 
 import (
 	"testing"
+	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -84,6 +85,23 @@ func TestTNTNBTDefaultsToShieldBlockable(t *testing.T) {
 	encoded := TNTType.EncodeNBT(&data)
 	if _, ok := encoded["DragonflyUnblockableByShield"]; ok {
 		t.Fatal("expected default decoded TNT to stay shield blockable")
+	}
+}
+
+func TestTNTNBTDoesNotPersistRuntimeSource(t *testing.T) {
+	source := world.EntitySpawnOpts{}.New(tntTestEntityType{}, tntTestEntityType{})
+	data := world.EntityData{
+		Data: tntBehaviourConfig{
+			Fuse:   time.Second,
+			Source: source,
+		}.New(),
+	}
+
+	encoded := TNTType.EncodeNBT(&data)
+	var decoded world.EntityData
+	TNTType.DecodeNBT(encoded, &decoded)
+	if decoded.Data.(*tntBehaviour).source != nil {
+		t.Fatal("expected TNT NBT decode not to restore runtime-only source handle")
 	}
 }
 

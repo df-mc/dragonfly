@@ -267,13 +267,12 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 	if lt.conf.Owner != nil {
 		owner, _ = lt.conf.Owner.Entity(e.tx)
 	}
-	blockMarker := &ProjectileShieldBlockMarker{}
-	src := ProjectileDamageSource{Projectile: e, Owner: owner, ShieldBlockMarker: blockMarker}
+	src := ProjectileDamageSource{Projectile: e, Owner: owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, vulnerable := l.Hurt(dmg, src); blockMarker.ShieldBlocked() {
+	if _, vulnerable := l.Hurt(dmg, src); ProjectileShieldBlocked(e) {
 		lt.deflect(e, vel)
 		return true
 	} else if vulnerable {
