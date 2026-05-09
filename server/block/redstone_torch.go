@@ -82,22 +82,17 @@ func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 		breakBlock(t, pos, tx)
 		return
 	}
+	if t.recoverFromBurnout(pos, tx) {
+		return
+	}
 	updateRedstone(pos, tx)
 }
 
-// RedstoneUpdate is called when the redstone power state changes nearby. This method handles burnout recovery and
-// schedules state changes.
+// RedstoneUpdate is called when the redstone power state changes nearby. This method ignores burned-out torches and
+// schedules state changes for active torches.
 func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	currentTick := tx.CurrentTick()
-	if burnedOut, recoverable := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
-		if recoverable {
-			tx.Redstone().ClearTorchBurnout(pos)
-
-			shouldBeLit := t.inputStrength(pos, tx) == 0
-			t.Lit = shouldBeLit
-			tx.SetBlock(pos, t, nil)
-			updateTorchRedstone(pos, tx)
-		}
+	if burnedOut, _ := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
 		return
 	}
 
@@ -107,6 +102,26 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	}
 	tx.Redstone().MarkTorchSelfTriggeredIfActive(pos)
 	tx.ScheduleBlockUpdate(pos, t, time.Millisecond*100)
+}
+
+// recoverFromBurnout relights a burned-out torch after a real neighbouring block update once its rapid-toggle history
+// has expired. Redstone propagation alone may visit calculation-only positions, so it must not recover burned-out
+// torches that did not receive an actual neighbour update.
+func (t RedstoneTorch) recoverFromBurnout(pos cube.Pos, tx *world.Tx) bool {
+	currentTick := tx.CurrentTick()
+	burnedOut, recoverable := tx.Redstone().TorchBurnoutStatus(pos, currentTick)
+	if !burnedOut {
+		return false
+	}
+	if !recoverable {
+		return true
+	}
+	tx.Redstone().ClearTorchBurnout(pos)
+
+	t.Lit = t.inputStrength(pos, tx) == 0
+	tx.SetBlock(pos, t, nil)
+	updateTorchRedstone(pos, tx)
+	return true
 }
 
 // ScheduledTick is called when a scheduled block update occurs.
