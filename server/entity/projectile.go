@@ -322,10 +322,8 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 				mx, my, mz := hit.Face().Axis().Vec3().Mul(-2).Add(mgl64.Vec3{1, 1, 1}).Elem()
 
 				vel = mgl64.Vec3{x * mx, y * my, z * mz}
-			} else {
-				if lt.conf.PiercingLevel == 0 {
-					vel = zeroVec3
-				}
+			} else if lt.conf.PiercingLevel == 0 {
+				vel = zeroVec3
 			}
 			end = hit.Position()
 		}
