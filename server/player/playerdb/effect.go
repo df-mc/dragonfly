@@ -30,11 +30,12 @@ func dataToEffects(data []jsonEffect) []effect.Effect {
 		}
 		switch eff := e.(type) {
 		case effect.LastingType:
-			if d.Ambient {
+			switch {
+			case d.Ambient:
 				effects[i] = effect.NewAmbient(eff, d.Level, d.Duration)
-			} else if d.Infinite {
+			case d.Infinite:
 				effects[i] = effect.NewInfinite(eff, d.Level)
-			} else {
+			default:
 				effects[i] = effect.New(eff, d.Level, d.Duration)
 			}
 

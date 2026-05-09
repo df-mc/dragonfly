@@ -1301,8 +1301,7 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 
 // ViewSkin ...
 func (s *Session) ViewSkin(e world.Entity) {
-	switch v := e.(type) {
-	case Controllable:
+	if v, ok := e.(Controllable); ok {
 		s.writePacket(&packet.PlayerSkin{
 			UUID: v.UUID(),
 			Skin: skinToProtocol(v.Skin()),
