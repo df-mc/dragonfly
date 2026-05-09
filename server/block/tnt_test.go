@@ -147,3 +147,27 @@ func TestTNTSpawnPreservesUnavailableSourceHandle(t *testing.T) {
 		t.Fatalf("expected unavailable source handle %v to be passed through, got %v", wantSource, gotSource)
 	}
 }
+
+func TestTNTSpawnPreservesSourceLessUnblockableExplosion(t *testing.T) {
+	var blockable bool
+	registry := world.EntityRegistryConfig{
+		TNT: func(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
+			return opts.New(tntTestEntityType{}, tntTestEntityType{})
+		},
+		TNTWithSource: func(opts world.EntitySpawnOpts, fuse time.Duration, src *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
+			blockable = blockableByShield
+			return opts.New(tntTestEntityType{}, tntTestEntityType{})
+		},
+	}.New([]world.EntityType{tntTestEntityType{}})
+	w := world.Config{Entities: registry}.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	<-w.Exec(func(tx *world.Tx) {
+		TNT{}.Explode(cube.Pos{}.Vec3Centre(), cube.Pos{}, tx, ExplosionConfig{UnblockableByShield: true})
+	})
+	if blockable {
+		t.Fatal("expected source-less unblockable explosion to prime shield-unblockable TNT")
+	}
+}

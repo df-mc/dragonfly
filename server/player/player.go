@@ -594,9 +594,7 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 
 	immune := time.Now().Before(p.immuneUntil)
 	if immune {
-		if damageLeft -= p.lastDamage; damageLeft <= 0 {
-			return 0, false, false
-		}
+		damageLeft -= p.lastDamage
 	}
 
 	immunity := time.Second / 2
@@ -607,6 +605,9 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 	}
 	if shouldAttemptShieldBlock(dmg, damageLeft, damageBeforeHandler, src) && p.blockDamageWithShield(dmg, src) {
 		return 0, false, true
+	}
+	if immune && damageLeft <= 0 {
+		return 0, false, false
 	}
 	p.setAttackImmunity(immunity, totalDamage)
 
@@ -1531,6 +1532,9 @@ func (p *Player) UseItem() {
 	it := i.Item()
 	if p.startShieldBlockingInput(i) {
 		return
+	}
+	if p.shieldBlockingInput && !p.useItemStartsShieldBlocking(i) {
+		p.SetShieldBlockingInput(false)
 	}
 
 	if cd, ok := it.(item.Cooldown); ok {

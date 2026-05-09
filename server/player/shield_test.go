@@ -168,6 +168,21 @@ func TestStartShieldBlockingInputHonoursShieldCooldown(t *testing.T) {
 	}
 }
 
+func TestUseItemWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.NewStack(item.Bow{}, 1), item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	p.shieldBlockingInput = true
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+
+	p.UseItem()
+	if p.shieldBlockingInput {
+		t.Fatal("expected priority main-hand use to clear held shield input")
+	}
+	if p.ShieldBlocking() {
+		t.Fatal("expected priority main-hand use to stop shield blocking")
+	}
+}
+
 func TestStartShieldBlockingInputHonoursCancelledItemUse(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.sneaking = false
@@ -288,6 +303,22 @@ func TestShieldBlocksZeroDamageProjectile(t *testing.T) {
 	}
 	if !handler.ShieldBlocked() {
 		t.Fatal("expected zero damage projectile shield block callback to run")
+	}
+}
+
+func TestShieldBlocksProjectileDuringDamageImmunity(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+	p.immuneUntil = time.Now().Add(time.Second)
+	p.lastDamage = 10
+	projectile := shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}
+	handler := &shieldBlockTestHandler{}
+
+	if dmg, vulnerable := p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile, ShieldBlockMarker: &handler.ProjectileShieldBlockMarker}); dmg != 0 || vulnerable {
+		t.Fatalf("expected immune shield-blocked projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
+	}
+	if !handler.ShieldBlocked() {
+		t.Fatal("expected shield-blocked projectile to be marked even during damage immunity")
 	}
 }
 

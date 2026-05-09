@@ -174,7 +174,8 @@ func shieldDurabilityDamage(dmg float64) int {
 
 func shouldAttemptShieldBlock(rawDamage, damageLeft, damageBeforeHandler float64, src world.DamageSource) bool {
 	if damageLeft < 0 {
-		return false
+		_, ok := src.(entity.ProjectileDamageSource)
+		return ok
 	}
 	if damageLeft > 0 {
 		return true
