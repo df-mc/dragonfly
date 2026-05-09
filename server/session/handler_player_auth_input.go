@@ -168,7 +168,7 @@ type shieldBlockingInputStarter interface {
 
 func shieldBlockingInput(flags protocol.Bitset, wasSneaking, sneaking bool) (bool, bool) {
 	if flags.Load(packet.InputFlagSneaking) || flags.Load(packet.InputFlagSneakDown) || flags.Load(packet.InputFlagSneakCurrentRaw) {
-		if flags.Load(packet.InputFlagStartSneaking) && !wasSneaking && !sneaking {
+		if !wasSneaking && !sneaking {
 			return false, false
 		}
 		return true, true

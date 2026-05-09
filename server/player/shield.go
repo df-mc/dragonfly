@@ -210,18 +210,26 @@ func (p *Player) useItemStartsShieldBlocking(mainHand item.Stack) bool {
 // StartShieldBlockingInput starts shield blocking from an item-use input if the held items allow it.
 func (p *Player) StartShieldBlockingInput() bool {
 	mainHand, _ := p.HeldItems()
-	if p.HasCooldown(mainHand.Item()) {
+	if !p.canStartShieldBlockingInput(mainHand) {
 		return false
 	}
 	ctx := event.C(p)
-	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
+	p.Handler().HandleItemUse(ctx)
+	if ctx.Cancelled() {
 		return false
 	}
 	return p.startShieldBlockingInput(mainHand)
 }
 
-func (p *Player) startShieldBlockingInput(mainHand item.Stack) bool {
+func (p *Player) canStartShieldBlockingInput(mainHand item.Stack) bool {
 	if !p.useItemStartsShieldBlocking(mainHand) {
+		return false
+	}
+	return !p.HasCooldown(item.Shield{})
+}
+
+func (p *Player) startShieldBlockingInput(mainHand item.Stack) bool {
+	if !p.canStartShieldBlockingInput(mainHand) {
 		return false
 	}
 	p.SetShieldBlockingInput(true)

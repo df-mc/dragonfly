@@ -52,3 +52,12 @@ func TestShieldBlockingInputIgnoresCancelledStartSneaking(t *testing.T) {
 		t.Fatal("expected cancelled start sneaking not to start shield input")
 	}
 }
+
+func TestShieldBlockingInputIgnoresHeldRawSneakAfterCancelledSneak(t *testing.T) {
+	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
+	flags.Set(packet.InputFlagSneakCurrentRaw)
+
+	if down, ok := shieldBlockingInput(flags, false, false); ok || down {
+		t.Fatal("expected held raw sneak after cancelled sneaking not to start shield input")
+	}
+}

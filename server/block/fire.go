@@ -56,8 +56,8 @@ func infinitelyBurning(pos cube.Pos, tx *world.Tx) bool {
 // burn attempts to burn a block.
 func (f Fire) burn(from, to cube.Pos, tx *world.Tx, r *rand.Rand, chanceBound int) {
 	if flammable, ok := tx.Block(to).(Flammable); ok && r.IntN(chanceBound) < flammable.FlammabilityInfo().Flammability {
-		if _, ok := flammable.(TNT); ok {
-			spawnTnt(to, tx, time.Second*4, nil, true)
+		if t, ok := flammable.(TNT); ok {
+			t.Ignite(to, tx, nil)
 			return
 		}
 		if r.IntN(f.Age+10) < 5 && !rainingAround(to, tx) {

@@ -99,7 +99,7 @@ func TestShieldBlockingRequiresSneakingReadyShieldAndStartupDelay(t *testing.T) 
 	p.shieldBlockingInput = false
 
 	p.sneaking = true
-	p.SetCooldown(item.Shield{}, shieldDisableCooldown)
+	p.cooldowns[shieldItemName] = now.Add(shieldDisableCooldown)
 	if p.shieldBlockingAt(now.Add(shieldBlockDelay)) {
 		t.Fatal("expected shield not to block while its item cooldown is active")
 	}
@@ -136,12 +136,35 @@ func TestReleaseItemStopsShieldBlockingInput(t *testing.T) {
 func TestStartShieldBlockingInputHonoursUsePriority(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.NewStack(item.Bow{}, 1), item.NewStack(item.Shield{}, 1))
 	p.sneaking = false
+	handler := &countingItemUseHandler{}
+	p.h = handler
 
 	if p.StartShieldBlockingInput() {
 		t.Fatal("expected main-hand bow use to take priority over offhand shield blocking")
 	}
 	if p.shieldBlockingInput {
 		t.Fatal("expected shield input to stay inactive while main-hand bow use has priority")
+	}
+	if handler.count != 0 {
+		t.Fatalf("expected item-use handler not to run for non-shield-priority use, got %v calls", handler.count)
+	}
+}
+
+func TestStartShieldBlockingInputHonoursShieldCooldown(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	p.cooldowns[shieldItemName] = time.Now().Add(shieldDisableCooldown)
+	handler := &countingItemUseHandler{}
+	p.h = handler
+
+	if p.StartShieldBlockingInput() {
+		t.Fatal("expected shield use not to start while shield is on cooldown")
+	}
+	if p.shieldBlockingInput {
+		t.Fatal("expected shield input to stay inactive while shield is on cooldown")
+	}
+	if handler.count != 0 {
+		t.Fatalf("expected item-use handler not to run while shield is on cooldown, got %v calls", handler.count)
 	}
 }
 
@@ -350,6 +373,15 @@ type cancellingItemUseHandler struct {
 
 func (cancellingItemUseHandler) HandleItemUse(ctx *Context) {
 	ctx.Cancel()
+}
+
+type countingItemUseHandler struct {
+	NopHandler
+	count int
+}
+
+func (h *countingItemUseHandler) HandleItemUse(*Context) {
+	h.count++
 }
 
 type nestedShieldBlockHandler struct {

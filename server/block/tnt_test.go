@@ -94,3 +94,31 @@ func TestTNTSpawnCanCreateShieldBlockableTNTWithoutSource(t *testing.T) {
 		t.Fatal("expected source-less environmental TNT to be shield blockable")
 	}
 }
+
+func TestTNTIgniteWithoutSourceIsShieldBlockable(t *testing.T) {
+	var blockable bool
+	var source world.Entity
+	registry := world.EntityRegistryConfig{
+		TNT: func(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
+			return opts.New(tntTestEntityType{}, tntTestEntityType{})
+		},
+		TNTWithSource: func(opts world.EntitySpawnOpts, fuse time.Duration, src world.Entity, blockableByShield bool) *world.EntityHandle {
+			source, blockable = src, blockableByShield
+			return opts.New(tntTestEntityType{}, tntTestEntityType{})
+		},
+	}.New([]world.EntityType{tntTestEntityType{}})
+	w := world.Config{Entities: registry}.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	<-w.Exec(func(tx *world.Tx) {
+		TNT{}.Ignite(cube.Pos{}, tx, nil)
+	})
+	if source != nil {
+		t.Fatalf("expected no TNT source entity, got %T", source)
+	}
+	if !blockable {
+		t.Fatal("expected source-less TNT ignition to be shield blockable")
+	}
+}
