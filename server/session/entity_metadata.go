@@ -123,6 +123,18 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if sc, ok := e.(scoreTag); ok {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
 	}
+	if c, ok := e.(endCrystal); ok {
+		if c.ShowBase() {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowBottom)
+		} else {
+			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowBottom)
+		}
+		if target, ok := c.BeamTarget(); ok {
+			m[protocol.EntityDataKeyBlockTarget] = protocol.BlockPos{int32(target[0]), int32(target[1]), int32(target[2])}
+		} else {
+			m[protocol.EntityDataKeyBlockTarget] = protocol.BlockPos{}
+		}
+	}
 	if sl, ok := e.(sleeper); ok {
 		if pos, ok := sl.Sleeping(); ok {
 			m[protocol.EntityDataKeyBedPosition] = protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
@@ -240,6 +252,11 @@ type named interface {
 
 type scoreTag interface {
 	ScoreTag() string
+}
+
+type endCrystal interface {
+	ShowBase() bool
+	BeamTarget() (cube.Pos, bool)
 }
 
 type splash interface {

@@ -168,8 +168,8 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 	switch r := result.(type) {
 	case trace.EntityResult:
-		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
-			lt.hitEntity(l, e, vel)
+		if lt.conf.Damage >= 0 {
+			lt.hitEntity(r.Entity(), e, vel)
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
@@ -254,17 +254,49 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 	}
 }
 
-// hitEntity is called when a projectile hits a Living. It deals damage to the
-// entity and knocks it back. Additionally, it applies any potion effects and
-// fire if applicable.
-func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
+type behaviourDamageable interface {
+	Hurt(e *Ent, damage float64, src world.DamageSource) (n float64, vulnerable bool)
+}
+
+func hurtEntity(e world.Entity, damage float64, src world.DamageSource) (n float64, vulnerable, ok bool) {
+	if l, ok := e.(Living); ok {
+		n, vulnerable = l.Hurt(damage, src)
+		return n, vulnerable, true
+	}
+	if ent, ok := e.(*Ent); ok {
+		if d, ok := ent.Behaviour().(behaviourDamageable); ok {
+			n, vulnerable = d.Hurt(ent, damage, src)
+			return n, vulnerable, true
+		}
+	}
+	return 0, false, false
+}
+
+func damageableEntity(e world.Entity) bool {
+	if _, ok := e.(Living); ok {
+		return true
+	}
+	if ent, ok := e.(*Ent); ok {
+		_, ok = ent.Behaviour().(behaviourDamageable)
+		return ok
+	}
+	return false
+}
+
+// hitEntity is called when a projectile hits an entity. It deals damage to the
+// entity if possible, and applies Living-specific effects such as knockback.
+func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.Vec3) {
 	owner, _ := lt.conf.Owner.Entity(e.tx)
 	src := ProjectileDamageSource{Projectile: e, Owner: owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, vulnerable := l.Hurt(dmg, src); vulnerable {
+	if _, vulnerable, ok := hurtEntity(victim, dmg, src); ok && vulnerable {
+		l, ok := victim.(Living)
+		if !ok {
+			return
+		}
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
@@ -322,15 +354,14 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 }
 
 // ignores returns a function to ignore entities in trace.Perform that are
-// either a spectator, not living, the entity itself or its owner in the first
-// 5 ticks.
+// either a spectator, not damageable, the entity itself or its owner in the
+// first 5 ticks.
 func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 	return func(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
 		return func(yield func(world.Entity) bool) {
 			for other := range seq {
 				g, ok := other.(interface{ GameMode() world.GameMode })
-				_, living := other.(Living)
-				if (ok && !g.GameMode().HasCollision()) || e.H() == other.H() || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
+				if (ok && !g.GameMode().HasCollision()) || e.H() == other.H() || !damageableEntity(other) || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
 					continue
 				}
 				if !yield(other) {
