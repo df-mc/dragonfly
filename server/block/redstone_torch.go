@@ -110,7 +110,12 @@ func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 // recoverFromBurnout relights a burned-out torch after a real neighbouring block update once its rapid-toggle history
 // has expired. Redstone propagation alone may visit calculation-only positions, so it must not recover burned-out
 // torches that did not receive an actual neighbour update.
-func (t RedstoneTorch) recoverFromBurnout(pos cube.Pos, tx *world.Tx) bool {
+func (RedstoneTorch) recoverFromBurnout(pos cube.Pos, tx *world.Tx) bool {
+	torch, ok := redstoneTorchAt(pos, tx)
+	if !ok {
+		return false
+	}
+
 	currentTick := tx.CurrentTick()
 	burnedOut, recoverable := tx.Redstone().TorchBurnoutStatus(pos, currentTick)
 	if !burnedOut {
@@ -121,8 +126,8 @@ func (t RedstoneTorch) recoverFromBurnout(pos cube.Pos, tx *world.Tx) bool {
 	}
 	tx.Redstone().ClearTorchBurnout(pos)
 
-	t.Lit = t.inputStrength(pos, tx) == 0
-	tx.SetBlock(pos, t, nil)
+	torch.Lit = torch.inputStrength(pos, tx) == 0
+	tx.SetBlock(pos, torch, nil)
 	updateTorchRedstone(pos, tx)
 	return true
 }
@@ -149,35 +154,55 @@ func (t RedstoneTorch) updateSourceTouchesInput(pos cube.Pos, tx *world.Tx) bool
 
 // ScheduledTick is called when a scheduled block update occurs.
 // This method handles state changes and checks for burnout conditions.
-func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+func (RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	torch, ok := redstoneTorchAt(pos, tx)
+	if !ok {
+		return
+	}
+
 	currentTick := tx.CurrentTick()
 	if burnedOut, _ := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
 		return
 	}
 
-	shouldBeLit := t.inputStrength(pos, tx) == 0
-	if shouldBeLit == t.Lit {
+	shouldBeLit := torch.inputStrength(pos, tx) == 0
+	if shouldBeLit == torch.Lit {
 		tx.Redstone().PruneTorchBurnout(pos, currentTick)
 		return
 	}
 
 	if tx.Redstone().RecordTorchToggle(pos, currentTick) {
-		t.burnOut(pos, tx)
+		torch.burnOut(pos, tx)
 		return
 	}
 
-	t.Lit = !t.Lit
-	tx.SetBlock(pos, t, nil)
+	torch.Lit = !torch.Lit
+	tx.SetBlock(pos, torch, nil)
 	updateTorchRedstone(pos, tx)
 }
 
 // burnOut puts the redstone torch into burnout state, turning it off and playing effects.
-func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx) {
+func (RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx) {
+	torch, ok := redstoneTorchAt(pos, tx)
+	if !ok {
+		return
+	}
+
 	tx.Redstone().BurnOutTorch(pos)
-	t.Lit = false
+	torch.Lit = false
 	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-	tx.SetBlock(pos, t, nil)
+	tx.SetBlock(pos, torch, nil)
 	updateTorchRedstone(pos, tx)
+}
+
+// redstoneTorchAt returns the current torch at pos. Scheduled redstone updates carry an old block value, so mutation
+// paths must reload the live world block before writing torch state back.
+func redstoneTorchAt(pos cube.Pos, tx *world.Tx) (RedstoneTorch, bool) {
+	t, ok := tx.Block(pos).(RedstoneTorch)
+	if !ok {
+		tx.Redstone().ClearTorchBurnout(pos)
+	}
+	return t, ok
 }
 
 // updateTorchRedstone updates receivers around the torch and behind the block it strongly powers above.
