@@ -280,7 +280,11 @@ func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource) bool
 		p.setHeldShield(hand, p.damageItem(shield, damage))
 	}
 	if s, ok := src.(entity.ProjectileDamageSource); ok {
-		entity.MarkProjectileShieldBlocked(s.Projectile)
+		if projectile, ok := s.Projectile.(*entity.Ent); ok {
+			if marker, ok := projectile.Behaviour().(interface{ MarkShieldBlocked() }); ok {
+				marker.MarkShieldBlocked()
+			}
+		}
 	}
 	if p.tx != nil {
 		p.tx.PlaySound(p.Position(), sound.ShieldBlock{})

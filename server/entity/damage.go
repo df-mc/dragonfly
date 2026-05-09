@@ -1,15 +1,11 @@
 package entity
 
 import (
-	"sync"
-
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
-
-var projectileShieldBlocks sync.Map
 
 type (
 	// AttackDamageSource is used for damage caused by other entities, for
@@ -61,23 +57,6 @@ type (
 		Source world.Entity
 	}
 )
-
-// MarkProjectileShieldBlocked marks projectile damage as blocked by a shield.
-func MarkProjectileShieldBlocked(projectile world.Entity) {
-	if projectile == nil || projectile.H() == nil {
-		return
-	}
-	projectileShieldBlocks.Store(projectile.H().UUID(), struct{}{})
-}
-
-// ProjectileShieldBlocked returns true if projectile damage was blocked by a shield.
-func ProjectileShieldBlocked(projectile world.Entity) bool {
-	if projectile == nil || projectile.H() == nil {
-		return false
-	}
-	_, ok := projectileShieldBlocks.LoadAndDelete(projectile.H().UUID())
-	return ok
-}
 
 // ExplosionDamageSourceConfig is implemented by explosion configuration values that can create explosion damage sources.
 type ExplosionDamageSourceConfig interface {

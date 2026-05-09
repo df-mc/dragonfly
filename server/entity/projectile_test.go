@@ -37,7 +37,7 @@ func (t *projectileShieldTarget) SetSpeed(float64)                       {}
 
 func (t *projectileShieldTarget) Hurt(_ float64, src world.DamageSource) (float64, bool) {
 	if s, ok := src.(ProjectileDamageSource); ok && t.blocked {
-		MarkProjectileShieldBlocked(s.Projectile)
+		s.Projectile.(*Ent).Behaviour().(interface{ MarkShieldBlocked() }).MarkShieldBlocked()
 	}
 	return 0, t.vulnerable
 }
@@ -80,17 +80,17 @@ func (s projectileTestSound) Play(*world.World, mgl64.Vec3) {
 	(*s.count)++
 }
 
-func newProjectileShieldTestEnt(pos mgl64.Vec3) *Ent {
+func newProjectileShieldTestEnt(pos mgl64.Vec3, behaviour *ProjectileBehaviour) *Ent {
 	return &Ent{
 		handle: world.EntitySpawnOpts{}.New(SnowballType, ProjectileBehaviourConfig{}),
-		data:   &world.EntityData{Pos: pos},
+		data:   &world.EntityData{Pos: pos, Data: behaviour},
 	}
 }
 
 func TestProjectileDeflectsAfterShieldBlock(t *testing.T) {
 	pos := mgl64.Vec3{0, 0, 1}
-	projectile := newProjectileShieldTestEnt(pos)
-	behaviour := &ProjectileBehaviour{conf: ProjectileBehaviourConfig{Damage: 2}}
+	behaviour := ProjectileBehaviourConfig{Damage: 2}.New()
+	projectile := newProjectileShieldTestEnt(pos, behaviour)
 	velocity := mgl64.Vec3{0, 0, -1}
 
 	blocked := behaviour.hitEntity(&projectileShieldTarget{blocked: true}, projectile, velocity)
@@ -107,8 +107,8 @@ func TestProjectileDeflectsAfterShieldBlock(t *testing.T) {
 
 func TestProjectileDeflectsZeroDamageShieldBlock(t *testing.T) {
 	pos := mgl64.Vec3{0, 0, 1}
-	projectile := newProjectileShieldTestEnt(pos)
-	behaviour := &ProjectileBehaviour{conf: ProjectileBehaviourConfig{Damage: 0}}
+	behaviour := ProjectileBehaviourConfig{Damage: 0}.New()
+	projectile := newProjectileShieldTestEnt(pos, behaviour)
 	velocity := mgl64.Vec3{0, 0, -1}
 
 	blocked := behaviour.hitEntity(&projectileShieldTarget{blocked: true}, projectile, velocity)

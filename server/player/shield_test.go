@@ -29,21 +29,6 @@ func (e shieldTestEntity) HeldItems() (item.Stack, item.Stack) {
 	return item.Stack{}, item.Stack{}
 }
 
-type shieldTestEntityType struct{}
-
-func (shieldTestEntityType) Open(*world.Tx, *world.EntityHandle, *world.EntityData) world.Entity {
-	return nil
-}
-func (shieldTestEntityType) EncodeEntity() string                        { return "dragonfly:shield_test_entity" }
-func (shieldTestEntityType) BBox(world.Entity) cube.BBox                 { return cube.Box(0, 0, 0, 0, 0, 0) }
-func (shieldTestEntityType) DecodeNBT(map[string]any, *world.EntityData) {}
-func (shieldTestEntityType) EncodeNBT(*world.EntityData) map[string]any  { return nil }
-func (shieldTestEntityType) Apply(*world.EntityData)                     {}
-
-func newShieldTestHandle() *world.EntityHandle {
-	return world.EntitySpawnOpts{}.New(shieldTestEntityType{}, shieldTestEntityType{})
-}
-
 type shieldAxeAttacker struct {
 	shieldTestEntity
 	mainHand item.Stack
@@ -397,13 +382,27 @@ func TestShieldDoesNotBlockCancelledDamage(t *testing.T) {
 func TestShieldBlocksZeroDamageProjectile(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
-	projectile := shieldTestEntity{h: newShieldTestHandle(), pos: mgl64.Vec3{0, 0, 4}}
-
-	if dmg, vulnerable := p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile}); dmg != 0 || vulnerable {
+	h := world.EntitySpawnOpts{Position: mgl64.Vec3{0, 0, 4}}.New(entity.SnowballType, entity.ProjectileBehaviourConfig{})
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+	var (
+		dmg           float64
+		vulnerable    bool
+		shieldBlocked bool
+	)
+	<-w.Exec(func(tx *world.Tx) {
+		p.tx = tx
+		projectile := tx.AddEntity(h).(*entity.Ent)
+		dmg, vulnerable = p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile})
+		shieldBlocked = projectile.Behaviour().(*entity.ProjectileBehaviour).ShieldBlocked()
+	})
+	if dmg != 0 || vulnerable {
 		t.Fatalf("expected shield-blocked zero damage projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
 	}
-	if !entity.ProjectileShieldBlocked(projectile) {
-		t.Fatal("expected zero damage projectile shield block callback to run")
+	if !shieldBlocked {
+		t.Fatal("expected zero damage projectile shield block marker to be set")
 	}
 }
 
@@ -412,12 +411,26 @@ func TestShieldBlocksProjectileDuringDamageImmunity(t *testing.T) {
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
 	p.immuneUntil = time.Now().Add(time.Second)
 	p.lastDamage = 10
-	projectile := shieldTestEntity{h: newShieldTestHandle(), pos: mgl64.Vec3{0, 0, 4}}
-
-	if dmg, vulnerable := p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile}); dmg != 0 || vulnerable {
+	h := world.EntitySpawnOpts{Position: mgl64.Vec3{0, 0, 4}}.New(entity.SnowballType, entity.ProjectileBehaviourConfig{})
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+	var (
+		dmg           float64
+		vulnerable    bool
+		shieldBlocked bool
+	)
+	<-w.Exec(func(tx *world.Tx) {
+		p.tx = tx
+		projectile := tx.AddEntity(h).(*entity.Ent)
+		dmg, vulnerable = p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile})
+		shieldBlocked = projectile.Behaviour().(*entity.ProjectileBehaviour).ShieldBlocked()
+	})
+	if dmg != 0 || vulnerable {
 		t.Fatalf("expected immune shield-blocked projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
 	}
-	if !entity.ProjectileShieldBlocked(projectile) {
+	if !shieldBlocked {
 		t.Fatal("expected shield-blocked projectile to be marked even during damage immunity")
 	}
 }

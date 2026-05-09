@@ -107,8 +107,19 @@ type ProjectileBehaviour struct {
 	ageCollided int
 	close       bool
 
-	collisionPos cube.Pos
-	collided     bool
+	collisionPos  cube.Pos
+	collided      bool
+	shieldBlocked bool
+}
+
+// MarkShieldBlocked marks the projectile's current hit as shield-blocked.
+func (lt *ProjectileBehaviour) MarkShieldBlocked() {
+	lt.shieldBlocked = true
+}
+
+// ShieldBlocked returns true if the projectile's current hit was shield-blocked.
+func (lt *ProjectileBehaviour) ShieldBlocked() bool {
+	return lt.shieldBlocked
 }
 
 // Owner returns the owner of the projectile.
@@ -272,7 +283,8 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, vulnerable := l.Hurt(dmg, src); ProjectileShieldBlocked(e) {
+	lt.shieldBlocked = false
+	if _, vulnerable := l.Hurt(dmg, src); lt.shieldBlocked {
 		lt.deflect(e, vel)
 		return true
 	} else if vulnerable {

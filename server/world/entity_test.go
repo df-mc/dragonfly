@@ -33,32 +33,36 @@ func TestEntityRegistryConfigTNTWithSourceFallbackAllowsDefaultTNT(t *testing.T)
 	}
 }
 
-func TestEntityRegistryConfigTNTWithSourceFallbackRejectsSourceAwareTNT(t *testing.T) {
+func TestEntityRegistryConfigTNTWithSourceFallbackAllowsSourceAwareTNT(t *testing.T) {
+	called := false
 	reg := EntityRegistryConfig{
 		TNT: func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle {
+			called = true
 			return opts.New(entityRegistryTestType{}, entityRegistryTestType{})
 		},
 	}.New([]EntityType{entityRegistryTestType{}})
 
-	defer func() {
-		if recover() == nil {
-			t.Fatal("expected fallback TNTWithSource to reject source-aware TNT")
-		}
-	}()
-	reg.Config().TNTWithSource(EntitySpawnOpts{}, time.Second, EntitySpawnOpts{}.New(entityRegistryTestType{}, entityRegistryTestType{}), true)
+	if h := reg.Config().TNTWithSource(EntitySpawnOpts{}, time.Second, EntitySpawnOpts{}.New(entityRegistryTestType{}, entityRegistryTestType{}), true); h == nil {
+		t.Fatal("expected fallback TNTWithSource to create TNT through TNT")
+	}
+	if !called {
+		t.Fatal("expected fallback TNTWithSource to call TNT")
+	}
 }
 
-func TestEntityRegistryConfigTNTWithSourceFallbackRejectsShieldUnblockableTNT(t *testing.T) {
+func TestEntityRegistryConfigTNTWithSourceFallbackAllowsShieldUnblockableTNT(t *testing.T) {
+	called := false
 	reg := EntityRegistryConfig{
 		TNT: func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle {
+			called = true
 			return opts.New(entityRegistryTestType{}, entityRegistryTestType{})
 		},
 	}.New([]EntityType{entityRegistryTestType{}})
 
-	defer func() {
-		if recover() == nil {
-			t.Fatal("expected fallback TNTWithSource to reject shield-unblockable TNT")
-		}
-	}()
-	reg.Config().TNTWithSource(EntitySpawnOpts{}, time.Second, nil, false)
+	if h := reg.Config().TNTWithSource(EntitySpawnOpts{}, time.Second, nil, false); h == nil {
+		t.Fatal("expected fallback TNTWithSource to create TNT through TNT")
+	}
+	if !called {
+		t.Fatal("expected fallback TNTWithSource to call TNT")
+	}
 }

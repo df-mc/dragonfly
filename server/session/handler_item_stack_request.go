@@ -516,7 +516,14 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session, tx *world.Tx) {
 	for container, slots := range h.changes {
 		for slot, info := range slots {
 			inv, _ := s.invByID(int32(container), tx)
-			_ = inv.SetItem(int(slot), info.before)
+			sl := int(slot)
+			if inv == s.offHand {
+				sl = 0
+			}
+			_ = inv.SetItem(sl, info.before)
+			if s.updatesHeldItemState(inv, sl) {
+				s.updateHeldItemState(tx)
+			}
 		}
 	}
 

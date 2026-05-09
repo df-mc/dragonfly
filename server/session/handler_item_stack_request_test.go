@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
 type heldItemStateTestEntity struct {
@@ -105,5 +106,79 @@ func TestItemStackRequestOffHandMutationUpdatesHeldItemState(t *testing.T) {
 	})
 	if updates != 1 {
 		t.Fatalf("expected off-hand mutation to update held item state once, got %v", updates)
+	}
+}
+
+func TestItemStackRequestRejectHeldSlotRollbackUpdatesHeldItemState(t *testing.T) {
+	var updates int
+	handle := world.EntitySpawnOpts{}.New(heldItemStateTestType{}, heldItemStateTestConfig{updates: &updates})
+	heldSlot := uint32(2)
+	s := &Session{
+		ent:      handle,
+		heldSlot: &heldSlot,
+		inv:      inventory.New(36, nil),
+		offHand:  inventory.New(1, nil),
+		packets:  make(chan packet.Packet, 1),
+	}
+	before := item.NewStack(item.Shield{}, 1)
+	_ = s.inv.SetItem(int(heldSlot), before)
+	h := &ItemStackRequestHandler{
+		changes: map[byte]map[byte]changeInfo{
+			protocol.ContainerInventory: {
+				byte(heldSlot): {before: before},
+			},
+		},
+	}
+	w := world.Config{Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	<-w.Exec(func(tx *world.Tx) {
+		tx.AddEntity(handle)
+		h.reject(1, s, tx)
+	})
+	if updates != 1 {
+		t.Fatalf("expected held slot rollback to update held item state once, got %v", updates)
+	}
+	if got, _ := s.inv.Item(int(heldSlot)); !got.Equal(before) {
+		t.Fatalf("expected held slot rollback to restore %v, got %v", before, got)
+	}
+}
+
+func TestItemStackRequestRejectOffHandRollbackUpdatesHeldItemState(t *testing.T) {
+	var updates int
+	handle := world.EntitySpawnOpts{}.New(heldItemStateTestType{}, heldItemStateTestConfig{updates: &updates})
+	heldSlot := uint32(2)
+	s := &Session{
+		ent:      handle,
+		heldSlot: &heldSlot,
+		inv:      inventory.New(36, nil),
+		offHand:  inventory.New(1, nil),
+		packets:  make(chan packet.Packet, 1),
+	}
+	before := item.NewStack(item.Shield{}, 1)
+	_ = s.offHand.SetItem(0, before)
+	h := &ItemStackRequestHandler{
+		changes: map[byte]map[byte]changeInfo{
+			protocol.ContainerOffhand: {
+				0: {before: before},
+			},
+		},
+	}
+	w := world.Config{Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	<-w.Exec(func(tx *world.Tx) {
+		tx.AddEntity(handle)
+		h.reject(1, s, tx)
+	})
+	if updates != 1 {
+		t.Fatalf("expected off-hand rollback to update held item state once, got %v", updates)
+	}
+	if got, _ := s.offHand.Item(0); !got.Equal(before) {
+		t.Fatalf("expected off-hand rollback to restore %v, got %v", before, got)
 	}
 }
