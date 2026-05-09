@@ -185,6 +185,15 @@ type ComposterReady struct{ sound }
 // PotionBrewed is a sound played when a potion is brewed.
 type PotionBrewed struct{ sound }
 
+// RespawnAnchorCharge is a sound played when a respawn anchor is charged using glowstone.
+type RespawnAnchorCharge struct{ sound }
+
+// RespawnAnchorDeplete is a sound played when a respawn anchor charge is consumed by respawning.
+type RespawnAnchorDeplete struct{ sound }
+
+// RespawnAnchorSetSpawn is a sound played when a player sets their spawn point using a respawn anchor.
+type RespawnAnchorSetSpawn struct{ sound }
+
 // LecternBookPlace is a sound played when a book is placed in a lectern.
 type LecternBookPlace struct{ sound }
 

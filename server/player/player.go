@@ -978,7 +978,10 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 	w = tx.World()
 	previousDimension = w.Dimension()
 	playerSpawn = w.PlayerSpawn(p.UUID())
-	if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
+	if b, ok := tx.Block(playerSpawn).(interface {
+		CanRespawnOn() bool
+		SafeSpawn(cube.Pos, *world.Tx) (cube.Pos, bool)
+	}); ok && b.CanRespawnOn() {
 		pos, ok := b.SafeSpawn(playerSpawn, tx)
 		if ok {
 			return pos, w, false, previousDimension
