@@ -360,11 +360,14 @@ type EntityRegistry struct {
 // EntityRegistryConfig holds functions used by the block and item packages to
 // create entities as a result of their behaviour. ALL functions of
 // EntityRegistryConfig must be filled out for the behaviour of these blocks and
-// items not to fail.
+// items not to fail, except those explicitly documented as optional.
 type EntityRegistryConfig struct {
-	Item               func(opts EntitySpawnOpts, it any) *EntityHandle
-	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
-	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
+	Item         func(opts EntitySpawnOpts, it any) *EntityHandle
+	FallingBlock func(opts EntitySpawnOpts, bl Block) *EntityHandle
+	TNT          func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
+	// TNTWithSource optionally creates a TNT entity with the entity that caused it to ignite. If nil, or if the
+	// source is nil, TNT is used instead.
+	TNTWithSource      func(opts EntitySpawnOpts, fuse time.Duration, source Entity) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle

@@ -4,7 +4,13 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
 )
+
+// ShieldBlockHandler handles a projectile damage source being blocked by a shield.
+type ShieldBlockHandler interface {
+	HandleShieldBlock()
+}
 
 type (
 	// AttackDamageSource is used for damage caused by other entities, for
@@ -42,10 +48,21 @@ type (
 		// Projectile and Owner are the world.Entity that dealt the damage and
 		// the one that fired the projectile respectively.
 		Projectile, Owner world.Entity
+		// ShieldBlockHandler is called if the projectile damage is blocked by a shield.
+		ShieldBlockHandler ShieldBlockHandler
 	}
 
 	// ExplosionDamageSource is used for damage caused by an explosion.
-	ExplosionDamageSource struct{}
+	ExplosionDamageSource struct {
+		// Origin is the position from which the explosion damage originated.
+		Origin mgl64.Vec3
+		// HasOrigin is true if Origin is a meaningful explosion source position.
+		HasOrigin bool
+		// BlockableByShield is true if the explosion damage may be blocked by a shield.
+		BlockableByShield bool
+		// Source is the entity that caused the explosion, if known.
+		Source world.Entity
+	}
 )
 
 func (FallDamageSource) ReducedByArmour() bool     { return false }

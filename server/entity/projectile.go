@@ -159,17 +159,13 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		return m
 	}
 
-	for i := 0; i < lt.conf.ParticleCount; i++ {
-		tx.AddParticle(result.Position(), lt.conf.Particle)
-	}
-	if lt.conf.Sound != nil {
-		tx.PlaySound(result.Position(), lt.conf.Sound)
-	}
-
+	deflected := false
 	switch r := result.(type) {
 	case trace.EntityResult:
 		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
-			lt.hitEntity(l, e, vel)
+			if lt.hitEntity(l, e, vel) {
+				deflected = true
+			}
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
@@ -177,10 +173,19 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
 		if lt.conf.SurviveBlockCollision {
+			lt.emitHitEffects(tx, result)
 			lt.hitBlockSurviving(e, r, m, tx)
 			return m
 		}
 	}
+	if deflected {
+		m.pos = e.Position()
+		m.vel = e.Velocity()
+		m.dpos = m.pos.Sub(result.Position())
+		m.dvel = m.vel.Sub(vel)
+		return m
+	}
+	lt.emitHitEffects(tx, result)
 	if lt.conf.Hit != nil {
 		lt.conf.Hit(e, tx, result)
 	}
@@ -257,14 +262,21 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 // hitEntity is called when a projectile hits a Living. It deals damage to the
 // entity and knocks it back. Additionally, it applies any potion effects and
 // fire if applicable.
-func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
-	owner, _ := lt.conf.Owner.Entity(e.tx)
-	src := ProjectileDamageSource{Projectile: e, Owner: owner}
+func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool {
+	var owner world.Entity
+	if lt.conf.Owner != nil {
+		owner, _ = lt.conf.Owner.Entity(e.tx)
+	}
+	blockHandler := &projectileShieldBlockHandler{}
+	src := ProjectileDamageSource{Projectile: e, Owner: owner, ShieldBlockHandler: blockHandler}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, vulnerable := l.Hurt(dmg, src); vulnerable {
+	if _, vulnerable := l.Hurt(dmg, src); blockHandler.blocked {
+		lt.deflect(e, vel)
+		return true
+	} else if vulnerable {
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
@@ -278,6 +290,33 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
 			flammable.SetOnFire(time.Second * 5)
 		}
 	}
+	return false
+}
+
+func (lt *ProjectileBehaviour) emitHitEffects(tx *world.Tx, result trace.Result) {
+	for i := 0; i < lt.conf.ParticleCount; i++ {
+		tx.AddParticle(result.Position(), lt.conf.Particle)
+	}
+	if lt.conf.Sound != nil {
+		tx.PlaySound(result.Position(), lt.conf.Sound)
+	}
+}
+
+type projectileShieldBlockHandler struct {
+	blocked bool
+}
+
+func (h *projectileShieldBlockHandler) HandleShieldBlock() {
+	h.blocked = true
+}
+
+func (lt *ProjectileBehaviour) deflect(e *Ent, vel mgl64.Vec3) {
+	if vel.Len() == 0 {
+		return
+	}
+	reflected := vel.Mul(-1)
+	e.SetVelocity(reflected)
+	e.data.Pos = e.Position().Add(reflected.Normalize().Mul(0.05))
 }
 
 // tickMovement ticks the movement of a projectile. It updates the position and
