@@ -64,6 +64,29 @@ func TestTNTExplosionConfigDefaultsToShieldBlockable(t *testing.T) {
 	})
 }
 
+func TestTNTNBTPreservesUnblockableShieldConfig(t *testing.T) {
+	var data world.EntityData
+	TNTType.DecodeNBT(map[string]any{
+		"Fuse":                         uint8(5),
+		"DragonflyUnblockableByShield": uint8(1),
+	}, &data)
+
+	encoded := TNTType.EncodeNBT(&data)
+	if encoded["DragonflyUnblockableByShield"] != uint8(1) {
+		t.Fatalf("expected saved TNT shield blockability to survive NBT round trip, got %#v", encoded["DragonflyUnblockableByShield"])
+	}
+}
+
+func TestTNTNBTDefaultsToShieldBlockable(t *testing.T) {
+	var data world.EntityData
+	TNTType.DecodeNBT(map[string]any{"Fuse": uint8(5)}, &data)
+
+	encoded := TNTType.EncodeNBT(&data)
+	if _, ok := encoded["DragonflyUnblockableByShield"]; ok {
+		t.Fatal("expected default decoded TNT to stay shield blockable")
+	}
+}
+
 func TestExplosionDamageSourceFromNilConfigIsBlockable(t *testing.T) {
 	src := ExplosionDamageSourceFromConfig(cube.Pos{}.Vec3Centre(), nil)
 

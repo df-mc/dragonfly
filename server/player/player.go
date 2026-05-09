@@ -1423,6 +1423,10 @@ func (p *Player) SetHeldSlot(to int) error {
 	}
 	*p.heldSlot = uint32(to)
 	p.usingItem = false
+	mainHand, _ := p.HeldItems()
+	if p.shieldBlockingInput && !p.canStartShieldBlockingInput(mainHand) {
+		p.shieldBlockingInput = false
+	}
 	shieldChanged := p.updateShieldBlockingState(time.Now())
 
 	for _, viewer := range p.viewers() {

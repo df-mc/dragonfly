@@ -183,6 +183,31 @@ func TestUseItemWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
 	}
 }
 
+func TestSetHeldSlotWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	p.shieldBlockingInput = true
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+	_ = p.inv.SetItem(1, item.NewStack(item.Bow{}, 1))
+
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+	<-w.Exec(func(tx *world.Tx) {
+		p.tx = tx
+		if err := p.SetHeldSlot(1); err != nil {
+			t.Fatalf("expected held slot change to succeed: %v", err)
+		}
+	})
+	if p.shieldBlockingInput {
+		t.Fatal("expected priority main-hand slot change to clear held shield input")
+	}
+	if p.ShieldBlocking() {
+		t.Fatal("expected priority main-hand slot change to stop shield blocking")
+	}
+}
+
 func TestStartShieldBlockingInputHonoursCancelledItemUse(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.sneaking = false
@@ -193,6 +218,23 @@ func TestStartShieldBlockingInputHonoursCancelledItemUse(t *testing.T) {
 	}
 	if p.shieldBlockingInput {
 		t.Fatal("expected shield input to stay inactive after cancelled item use")
+	}
+}
+
+func TestStartShieldBlockingInputRefreshesHeldItemsAfterHandler(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	p.h = &changingItemUseHandler{
+		player:  p,
+		main:    item.NewStack(item.Bow{}, 1),
+		offHand: item.NewStack(item.Shield{}, 1),
+	}
+
+	if p.StartShieldBlockingInput() {
+		t.Fatal("expected handler-swapped priority main-hand item to prevent shield blocking input")
+	}
+	if p.shieldBlockingInput {
+		t.Fatal("expected shield input to stay inactive after handler gives main-hand use priority")
 	}
 }
 
@@ -322,6 +364,21 @@ func TestShieldBlocksProjectileDuringDamageImmunity(t *testing.T) {
 	}
 }
 
+func TestShieldBlocksMeleeDuringDamageImmunity(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+	p.immuneUntil = time.Now().Add(time.Second)
+	p.lastDamage = 10
+	attacker := &shieldKnockBackAttacker{shieldTestEntity: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}}
+
+	if dmg, vulnerable := p.Hurt(1, entity.AttackDamageSource{Attacker: attacker}); dmg != 0 || vulnerable {
+		t.Fatalf("expected immune shield-blocked melee hit to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
+	}
+	if attacker.force != shieldAttackerKnockBackForce {
+		t.Fatal("expected shield-blocked melee attacker to be knocked back during damage immunity")
+	}
+}
+
 type shieldBlockTestHandler struct {
 	entity.ProjectileShieldBlockMarker
 }
@@ -413,6 +470,16 @@ type countingItemUseHandler struct {
 
 func (h *countingItemUseHandler) HandleItemUse(*Context) {
 	h.count++
+}
+
+type changingItemUseHandler struct {
+	NopHandler
+	player        *Player
+	main, offHand item.Stack
+}
+
+func (h *changingItemUseHandler) HandleItemUse(*Context) {
+	h.player.SetHeldItems(h.main, h.offHand)
 }
 
 type nestedShieldBlockHandler struct {

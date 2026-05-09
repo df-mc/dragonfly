@@ -174,8 +174,14 @@ func shieldDurabilityDamage(dmg float64) int {
 
 func shouldAttemptShieldBlock(rawDamage, damageLeft, damageBeforeHandler float64, src world.DamageSource) bool {
 	if damageLeft < 0 {
+		if rawDamage < 0 || damageBeforeHandler > 0 {
+			return false
+		}
+		if rawDamage > 0 {
+			return true
+		}
 		_, ok := src.(entity.ProjectileDamageSource)
-		return ok
+		return ok && rawDamage == 0
 	}
 	if damageLeft > 0 {
 		return true
@@ -214,6 +220,7 @@ func (p *Player) StartShieldBlockingInput() bool {
 	if ctx.Cancelled() {
 		return false
 	}
+	mainHand, _ = p.HeldItems()
 	return p.startShieldBlockingInput(mainHand)
 }
 

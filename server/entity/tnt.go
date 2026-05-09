@@ -17,21 +17,17 @@ func NewTNT(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle 
 }
 
 // NewTNTWithSource creates a new primed TNT entity with the entity handle that caused it to ignite.
+// The source is runtime-only and is not persisted through NBT reloads.
 func NewTNTWithSource(opts world.EntitySpawnOpts, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
 	return newTNTWithSourceHandle(opts, fuse, source, blockableByShield)
 }
 
 func newTNTWithSourceHandle(opts world.EntitySpawnOpts, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
-	conf := tntConf
-	conf.ExistenceDuration = fuse
-	conf.Expire = func(e *Ent, tx *world.Tx) {
-		explodeTNT(e, tx, source, blockableByShield)
-	}
 	if opts.Velocity.Len() == 0 {
 		angle := rand.Float64() * math.Pi * 2
 		opts.Velocity = mgl64.Vec3{-math.Sin(angle) * 0.02, 0.1, -math.Cos(angle) * 0.02}
 	}
-	return opts.New(TNTType, conf)
+	return opts.New(TNTType, tntBehaviourConfig{Fuse: fuse, Source: source, UnblockableByShield: !blockableByShield})
 }
 
 var tntConf = PassiveBehaviourConfig{
@@ -40,6 +36,33 @@ var tntConf = PassiveBehaviourConfig{
 	Expire: func(e *Ent, tx *world.Tx) {
 		explodeTNT(e, tx, nil, true)
 	},
+}
+
+type tntBehaviourConfig struct {
+	Fuse                time.Duration
+	Source              *world.EntityHandle
+	UnblockableByShield bool
+}
+
+func (conf tntBehaviourConfig) Apply(data *world.EntityData) {
+	data.Data = conf.New()
+}
+
+func (conf tntBehaviourConfig) New() *tntBehaviour {
+	b := &tntBehaviour{source: conf.Source, blockableByShield: !conf.UnblockableByShield}
+	confPassive := tntConf
+	confPassive.ExistenceDuration = conf.Fuse
+	confPassive.Expire = func(e *Ent, tx *world.Tx) {
+		explodeTNT(e, tx, b.source, b.blockableByShield)
+	}
+	b.PassiveBehaviour = confPassive.New()
+	return b
+}
+
+type tntBehaviour struct {
+	*PassiveBehaviour
+	source            *world.EntityHandle
+	blockableByShield bool
 }
 
 // explodeTNT creates an explosion at the position of e.
@@ -73,11 +96,28 @@ func (tntType) BBox(world.Entity) cube.BBox {
 }
 
 func (t tntType) DecodeNBT(m map[string]any, data *world.EntityData) {
-	conf := tntConf
-	conf.ExistenceDuration = nbtconv.TickDuration[uint8](m, "Fuse")
-	data.Data = conf.New()
+	data.Data = tntBehaviourConfig{
+		Fuse:                nbtconv.TickDuration[uint8](m, "Fuse"),
+		UnblockableByShield: nbtconv.Bool(m, "DragonflyUnblockableByShield"),
+	}.New()
 }
 
 func (tntType) EncodeNBT(data *world.EntityData) map[string]any {
-	return map[string]any{"Fuse": uint8(data.Data.(*PassiveBehaviour).Fuse().Milliseconds() / 50)}
+	fuse, blockableByShield := tntFuseAndBlockability(data.Data)
+	m := map[string]any{"Fuse": uint8(fuse.Milliseconds() / 50)}
+	if !blockableByShield {
+		m["DragonflyUnblockableByShield"] = uint8(1)
+	}
+	return m
+}
+
+func tntFuseAndBlockability(data any) (time.Duration, bool) {
+	switch b := data.(type) {
+	case *tntBehaviour:
+		return b.Fuse(), b.blockableByShield
+	case *PassiveBehaviour:
+		return b.Fuse(), true
+	default:
+		panic("invalid TNT behaviour type")
+	}
 }
