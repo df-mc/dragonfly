@@ -19,6 +19,9 @@ import (
 type ExplosionConfig struct {
 	// Size is the size of the explosion, it is effectively the radius which entities/blocks will be affected within.
 	Size float64
+	// EndCrystal makes the explosion behave like an End crystal explosion, clipping blast propagation below the
+	// explosion origin's Y level.
+	EndCrystal bool
 	// RandSource is the source to use for the explosion "randomness". If set
 	// to nil, RandSource defaults to a `rand.PCG`source seeded with
 	// `time.Now().UnixNano()`.
@@ -101,6 +104,9 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	affectedEntities := make([]world.Entity, 0, 32)
 	for e := range tx.EntitiesWithin(box.Grow(2)) {
 		pos := e.Position()
+		if c.EndCrystal && e.H().Type().BBox(e).Translate(pos).Max()[1] < explosionPos[1] {
+			continue
+		}
 		dist := pos.Sub(explosionPos).Len()
 		if dist > d || dist == 0 {
 			continue
@@ -113,6 +119,9 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	for _, ray := range rays {
 		pos := explosionPos
 		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
+			if c.EndCrystal && pos[1] < explosionPos[1] {
+				break
+			}
 			current := cube.PosFromVec3(pos)
 			currentBlock := tx.Block(current)
 
@@ -142,7 +151,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 
 	for _, e := range affectedEntities {
 		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
+			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e, c.EndCrystal)
 			explodable.Explode(explosionPos, impact, c)
 		}
 	}
@@ -180,7 +189,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 }
 
 // exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
-func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
+func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity, endCrystal bool) float64 {
 	pos := e.Position()
 	box := e.H().Type().BBox(e).Translate(pos)
 
@@ -204,6 +213,9 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 					lerp(y, boxMin[1], boxMax[1]),
 					lerp(z, boxMin[2], boxMax[2]) + zOffset,
 				}
+				if endCrystal && point[1] < origin[1] {
+					continue
+				}
 				var collided bool
 				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (cont bool) {
 					_, collided = trace.BlockIntercept(pos, tx, tx.Block(pos), origin, point)
@@ -216,6 +228,9 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 				checks++
 			}
 		}
+	}
+	if checks == 0 {
+		return 0
 	}
 	return misses / checks
 }
