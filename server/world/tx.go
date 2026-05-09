@@ -198,6 +198,13 @@ func (tx *Tx) AddEntity(e *EntityHandle) Entity {
 	return tx.World().addEntity(tx, e)
 }
 
+// AddEntityAt adds an EntityHandle to a World at the position passed. The Entity will be visible to all viewers of
+// the World that have the chunk at the position passed. AddEntityAt panics if the EntityHandle is already in a world.
+// AddEntityAt returns the Entity created by the EntityHandle.
+func (tx *Tx) AddEntityAt(e *EntityHandle, pos mgl64.Vec3) Entity {
+	return tx.World().addEntityAt(tx, e, pos)
+}
+
 // RemoveEntity removes an Entity from the World that is currently present in
 // it. Any viewers of the Entity will no longer be able to see it.
 // RemoveEntity returns the EntityHandle of the Entity. After removing an Entity

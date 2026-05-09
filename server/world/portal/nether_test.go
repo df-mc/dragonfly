@@ -2,7 +2,6 @@ package portal_test
 
 import (
 	"testing"
-	_ "unsafe"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -11,13 +10,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/portal"
 )
-
-//go:linkname finaliseBlockRegistry github.com/df-mc/dragonfly/server/world.finaliseBlockRegistry
-func finaliseBlockRegistry()
-
-func init() {
-	finaliseBlockRegistry()
-}
 
 func TestNetherPortalFromPos(t *testing.T) {
 	tests := []struct {

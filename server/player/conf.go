@@ -56,27 +56,19 @@ func (cfg Config) Apply(data *world.EntityData) {
 	data.Name, data.Pos, data.Rot = conf.Name, conf.Position, conf.Rotation
 	slot := uint32(conf.HeldSlot)
 	pdata := &playerData{
-		xuid:       conf.XUID,
-		ui:         inventory.New(54, nil),
-		inv:        conf.Inventory,
-		enderChest: conf.EnderChestInventory,
-		offHand:    conf.OffHand,
-		armour:     conf.Armour,
-		hunger:     newHungerManager(),
-		health:     entity.NewHealthManager(conf.Health, conf.MaxHealth), // 20, 20
-		experience: entity.NewExperienceManager(),
-		effects:    entity.NewEffectManager(conf.Effects...),
-		locale:     conf.Locale,
-		cooldowns:  make(map[string]time.Time),
-		mc:         &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
-		tc: &entity.TravelComputer{
-			Instantaneous: func() bool {
-				return cfg.GameMode == world.GameModeCreative
-			},
-			Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
-				e.(*Player).forceTeleport(pos)
-			},
-		},
+		xuid:                conf.XUID,
+		ui:                  inventory.New(54, nil),
+		inv:                 conf.Inventory,
+		enderChest:          conf.EnderChestInventory,
+		offHand:             conf.OffHand,
+		armour:              conf.Armour,
+		hunger:              newHungerManager(),
+		health:              entity.NewHealthManager(conf.Health, conf.MaxHealth), // 20, 20
+		experience:          entity.NewExperienceManager(),
+		effects:             entity.NewEffectManager(conf.Effects...),
+		locale:              conf.Locale,
+		cooldowns:           make(map[string]time.Time),
+		mc:                  &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 		heldSlot:            &slot,
 		gameMode:            conf.GameMode,
 		skin:                conf.Skin,
@@ -93,6 +85,14 @@ func (cfg Config) Apply(data *world.EntityData) {
 		nameTag:             conf.Name,
 		fireTicks:           conf.FireTicks,
 		fallDistance:        conf.FallDistance,
+	}
+	pdata.portalTravel = &entity.PortalTravelComputer{
+		Instantaneous: func() bool {
+			return pdata.gameMode == world.GameModeCreative
+		},
+		Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
+			e.(*Player).forceTeleport(pos)
+		},
 	}
 	pdata.hunger.foodLevel, pdata.hunger.foodTick, pdata.hunger.exhaustionLevel, pdata.hunger.saturationLevel = conf.Food, conf.FoodTick, conf.Exhaustion, conf.Saturation
 	pdata.experience.Add(conf.Experience)

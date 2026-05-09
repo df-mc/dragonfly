@@ -53,7 +53,7 @@ type Handler interface {
 	// ctx.Cancel() may be called to prevent leaves from decaying.
 	HandleLeavesDecay(ctx *Context, pos cube.Pos)
 	// HandleEntitySpawn handles an Entity being spawned into a World through a
-	// call to Tx.AddEntity.
+	// call to Tx.AddEntity or Tx.AddEntityAt.
 	HandleEntitySpawn(tx *Tx, e Entity)
 	// HandleEntityDespawn handles an Entity being despawned from a World
 	// through a call to Tx.RemoveEntity.

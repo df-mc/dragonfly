@@ -91,8 +91,8 @@ type playerData struct {
 
 	enchantSeed int64
 
-	mc *entity.MovementComputer
-	tc *entity.TravelComputer
+	mc           *entity.MovementComputer
+	portalTravel *entity.PortalTravelComputer
 
 	collidedVertically, collidedHorizontally bool
 
@@ -2586,12 +2586,12 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		p.data.Vel = mgl64.Vec3{}
 	}
 
-	p.tc.StopTravelling()
+	p.portalTravel.StopPortalContact()
 }
 
 // TravelThroughPortal handles the player touching a portal block.
 func (p *Player) TravelThroughPortal(tx *world.Tx, target world.Dimension) {
-	p.tc.EnterPortal(p, tx, target)
+	p.portalTravel.EnterPortal(p, tx, target)
 }
 
 // ViewLayer returns the ViewLayer attached to the player's session.

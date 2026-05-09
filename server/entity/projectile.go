@@ -92,16 +92,24 @@ func (conf ProjectileBehaviourConfig) New() *ProjectileBehaviour {
 	if conf.ParticleCount == 0 && conf.Particle != nil {
 		conf.ParticleCount = 1
 	}
-	return &ProjectileBehaviour{conf: conf, collided: conf.CollisionPosition != cube.Pos{}, collisionPos: conf.CollisionPosition, mc: &MovementComputer{
-		Gravity:           conf.Gravity,
-		Drag:              conf.Drag,
-		DragBeforeGravity: true,
-	}}
+	return &ProjectileBehaviour{
+		BaseBehaviour: NewBaseBehaviour(),
+		conf:          conf,
+		collided:      conf.CollisionPosition != cube.Pos{},
+		collisionPos:  conf.CollisionPosition,
+		mc: &MovementComputer{
+			Gravity:           conf.Gravity,
+			Drag:              conf.Drag,
+			DragBeforeGravity: true,
+		},
+	}
 }
 
 // ProjectileBehaviour implements the behaviour of projectiles. Its specifics
 // may be configured using ProjectileBehaviourConfig.
 type ProjectileBehaviour struct {
+	BaseBehaviour
+
 	conf        ProjectileBehaviourConfig
 	mc          *MovementComputer
 	ageCollided int
