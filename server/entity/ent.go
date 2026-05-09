@@ -40,10 +40,10 @@ func (e *Ent) Behaviour() Behaviour {
 	return e.data.Data.(Behaviour)
 }
 
-// ProjectileOwner returns the entity that owns this Ent, if its Behaviour tracks one.
+// ProjectileOwner returns the entity that owns this Ent, if it has projectile behaviour.
 func (e *Ent) ProjectileOwner() *world.EntityHandle {
-	if owner, ok := e.Behaviour().(interface{ Owner() *world.EntityHandle }); ok {
-		return owner.Owner()
+	if projectile, ok := e.Behaviour().(*ProjectileBehaviour); ok {
+		return projectile.Owner()
 	}
 	return nil
 }

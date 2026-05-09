@@ -80,7 +80,7 @@ type (
 
 // ExplosionDamageSourceConfig is implemented by explosion configuration values that can create explosion damage sources.
 type ExplosionDamageSourceConfig interface {
-	ExplosionUnblockableByShield() bool
+	BlockableByShield() bool
 	ExplosionSource() world.Entity
 }
 
@@ -89,7 +89,7 @@ func ExplosionDamageSourceFromConfig(origin mgl64.Vec3, c ExplosionDamageSourceC
 	return ExplosionDamageSource{
 		Origin:            origin,
 		HasOrigin:         true,
-		BlockableByShield: !c.ExplosionUnblockableByShield(),
+		BlockableByShield: c.BlockableByShield(),
 		Source:            c.ExplosionSource(),
 	}
 }

@@ -99,11 +99,7 @@ func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration, source *world.Enti
 	opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
 	conf := tx.World().EntityRegistry().Config()
 	if (source != nil || blockableByShield) && conf.TNTWithSource != nil {
-		var e world.Entity
-		if source != nil {
-			e, _ = source.Entity(tx)
-		}
-		tx.AddEntity(conf.TNTWithSource(opts, fuse, e, blockableByShield))
+		tx.AddEntity(conf.TNTWithSource(opts, fuse, source, blockableByShield))
 		return
 	}
 	tx.AddEntity(conf.TNT(opts, fuse))

@@ -16,9 +16,9 @@ func NewTNT(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle 
 	return newTNTWithSourceHandle(opts, fuse, nil, false)
 }
 
-// NewTNTWithSource creates a new primed TNT entity with the entity that caused it to ignite.
-func NewTNTWithSource(opts world.EntitySpawnOpts, fuse time.Duration, source world.Entity, blockableByShield bool) *world.EntityHandle {
-	return newTNTWithSourceHandle(opts, fuse, entityHandle(source), blockableByShield)
+// NewTNTWithSource creates a new primed TNT entity with the entity handle that caused it to ignite.
+func NewTNTWithSource(opts world.EntitySpawnOpts, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
+	return newTNTWithSourceHandle(opts, fuse, source, blockableByShield)
 }
 
 func newTNTWithSourceHandle(opts world.EntitySpawnOpts, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
@@ -32,13 +32,6 @@ func newTNTWithSourceHandle(opts world.EntitySpawnOpts, fuse time.Duration, sour
 		opts.Velocity = mgl64.Vec3{-math.Sin(angle) * 0.02, 0.1, -math.Cos(angle) * 0.02}
 	}
 	return opts.New(TNTType, conf)
-}
-
-func entityHandle(e world.Entity) *world.EntityHandle {
-	if e == nil {
-		return nil
-	}
-	return e.H()
 }
 
 var tntConf = PassiveBehaviourConfig{
@@ -59,7 +52,9 @@ func tntExplosionConfig(tx *world.Tx, source *world.EntityHandle, blockableByShi
 	if source != nil {
 		sourceEntity, _ = source.Entity(tx)
 	}
-	return block.ExplosionConfig{ItemDropChance: 1, UnblockableByShield: !blockableByShield, Source: sourceEntity}
+	c := block.ExplosionConfig{ItemDropChance: 1, Source: sourceEntity}
+	c.SetBlockableByShield(blockableByShield)
+	return c
 }
 
 // TNTType is a world.EntityType implementation for TNT.

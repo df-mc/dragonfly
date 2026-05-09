@@ -365,9 +365,10 @@ type EntityRegistryConfig struct {
 	Item         func(opts EntitySpawnOpts, it any) *EntityHandle
 	FallingBlock func(opts EntitySpawnOpts, bl Block) *EntityHandle
 	TNT          func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
-	// TNTWithSource optionally creates a TNT entity with the nullable entity that caused it to ignite and whether
-	// its explosion may be blocked by shields. If nil, TNT is used instead.
-	TNTWithSource      func(opts EntitySpawnOpts, fuse time.Duration, source Entity, blockableByShield bool) *EntityHandle
+	// TNTWithSource optionally creates a TNT entity with the nullable handle that caused it to ignite and whether
+	// its explosion may be blocked by shields. If nil, TNT is used instead, losing source attribution and
+	// shield-blockability for source-aware TNT.
+	TNTWithSource      func(opts EntitySpawnOpts, fuse time.Duration, source *EntityHandle, blockableByShield bool) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle

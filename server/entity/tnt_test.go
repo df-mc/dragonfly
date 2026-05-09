@@ -36,7 +36,7 @@ func TestTNTExplosionWithUnavailableSourceRemainsShieldBlockable(t *testing.T) {
 	})
 }
 
-func TestTNTExplosionWithoutSourceIsUnblockableByShield(t *testing.T) {
+func TestTNTExplosionConfigHonoursBlockabilityInput(t *testing.T) {
 	w := world.New()
 	defer func() {
 		_ = w.Close()
@@ -45,7 +45,7 @@ func TestTNTExplosionWithoutSourceIsUnblockableByShield(t *testing.T) {
 	<-w.Exec(func(tx *world.Tx) {
 		conf := tntExplosionConfig(tx, nil, false)
 		if !conf.UnblockableByShield {
-			t.Fatal("expected source-less TNT to be unblockable by shields")
+			t.Fatal("expected TNT configured as shield-unblockable to remain unblockable")
 		}
 	})
 }

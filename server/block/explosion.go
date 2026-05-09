@@ -43,9 +43,14 @@ type ExplosionConfig struct {
 	Particle world.Particle
 }
 
-// ExplosionUnblockableByShield returns true if the explosion damage should not be blockable by shields.
-func (c ExplosionConfig) ExplosionUnblockableByShield() bool {
-	return c.UnblockableByShield
+// BlockableByShield returns true if the explosion damage may be blocked by shields.
+func (c ExplosionConfig) BlockableByShield() bool {
+	return !c.UnblockableByShield
+}
+
+// SetBlockableByShield sets if the explosion damage may be blocked by shields.
+func (c *ExplosionConfig) SetBlockableByShield(blockable bool) {
+	c.UnblockableByShield = !blockable
 }
 
 // ExplosionSource returns the entity that caused the explosion, if known.

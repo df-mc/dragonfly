@@ -128,7 +128,7 @@ func TestReleaseItemStopsShieldBlockingInput(t *testing.T) {
 	if p.shieldBlockingInput {
 		t.Fatal("expected releasing item to stop shield blocking input")
 	}
-	if p.Blocking() {
+	if p.ShieldBlocking() {
 		t.Fatal("expected shield not to block after use input is released")
 	}
 }
@@ -453,7 +453,7 @@ func TestShieldBlockingReadDoesNotClearExpiredCooldown(t *testing.T) {
 	p.shieldBlockingSince = now.Add(-shieldBlockDelay)
 	p.cooldowns[shieldItemName] = now.Add(-time.Second)
 
-	if !p.Blocking() {
+	if !p.ShieldBlocking() {
 		t.Fatal("expected expired shield cooldown not to prevent blocking")
 	}
 	if _, ok := p.cooldowns[shieldItemName]; !ok {

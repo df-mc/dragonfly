@@ -40,11 +40,6 @@ type shieldKnockBacker interface {
 	KnockBack(src mgl64.Vec3, force, height float64)
 }
 
-// Blocking returns true if the player is currently blocking with a shield.
-func (p *Player) Blocking() bool {
-	return p.ShieldBlocking()
-}
-
 // ShieldBlocking returns true if the player is currently blocking with a shield.
 func (p *Player) ShieldBlocking() bool {
 	return p.shieldBlockingAt(time.Now())
