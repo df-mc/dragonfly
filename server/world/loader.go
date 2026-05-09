@@ -89,33 +89,36 @@ func (l *Loader) Move(tx *Tx, pos mgl64.Vec3) {
 // every chunk loaded, the Viewer passed through construction in New has its ViewChunk method called.
 // Load does nothing for n <= 0.
 func (l *Loader) Load(tx *Tx, n int) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.closed || l.w == nil {
-		return
-	}
 	for i := 0; i < n; i++ {
+		l.mu.Lock()
+		if l.closed || l.w == nil {
+			l.mu.Unlock()
+			return
+		}
 		if len(l.loadQueue) == 0 {
+			l.mu.Unlock()
 			break
 		}
 		pos := l.loadQueue[0]
 		w := tx.World()
-		w.loadChunkAsync(tx, pos, func(tx2 *Tx, chunk *Column) {
-			if tx == tx2 || l.World() == tx2.World() {
-				l.viewChunk(tx2, pos, chunk)
-			}
-		})
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
+		l.mu.Unlock()
+
+		w.loadChunkAsync(tx, pos, func(tx2 *Tx, chunk *Column) {
+			l.viewChunk(tx2, pos, chunk)
+		})
 	}
 }
 
 // viewChunk adds chunk to the Viewer.
 func (l *Loader) viewChunk(tx *Tx, pos ChunkPos, c *Column) {
-	if l.viewer == nil {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.closed || l.viewer == nil || l.w == nil || l.w != tx.World() {
 		return
 	}
 	l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
