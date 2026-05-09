@@ -45,14 +45,14 @@ func (RedstoneWire) EncodeItem() (name string, meta int16) {
 }
 
 // UseOnBlock ...
-func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
-	pos, _, used = firstReplaceable(tx, pos, face, r)
+func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
+	pos, _, used := firstReplaceable(tx, pos, face, r)
 	if !used {
-		return
+		return false
 	}
 	belowPos := pos.Side(cube.FaceDown)
 	if !tx.Block(belowPos).Model().FaceSolid(belowPos, cube.FaceUp, tx) {
-		return
+		return false
 	}
 	r.Power = r.calculatePower(pos, tx)
 	place(tx, pos, r, user, ctx)

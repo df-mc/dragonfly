@@ -69,7 +69,7 @@ func (s *State) RecordTorchToggle(pos cube.Pos, currentTick int64) (burnsOut boo
 		return false
 	}
 	s.torchBurnout[pos] = data
-	return len(data.expirationTicks) > torchBurnoutThreshold
+	return len(data.expirationTicks) >= torchBurnoutThreshold
 }
 
 // BurnOutTorch marks a redstone torch as burned out until a later redstone update recovers it.

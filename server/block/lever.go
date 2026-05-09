@@ -68,6 +68,7 @@ func (l Lever) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 		return false
 	}
 
+	l.Powered = false
 	l.Facing = face
 	l.Direction = cube.North
 	if face.Axis() == cube.Y && user.Rotation().Direction().Face().Axis() == cube.X {
@@ -92,7 +93,7 @@ func (l Lever) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ 
 
 // BreakInfo ...
 func (l Lever) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, oneOf(l)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
+	return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, oneOf(Lever{})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		updateDirectionalRedstone(pos, tx, l.Facing.Opposite())
 	})
 }
