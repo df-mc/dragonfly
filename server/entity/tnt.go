@@ -13,7 +13,7 @@ import (
 
 // NewTNT creates a new primed TNT entity.
 func NewTNT(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
-	return newTNTWithSourceHandle(opts, fuse, nil, false)
+	return newTNTWithSourceHandle(opts, fuse, nil, true)
 }
 
 // NewTNTWithSource creates a new primed TNT entity with the entity handle that caused it to ignite.
@@ -38,7 +38,7 @@ var tntConf = PassiveBehaviourConfig{
 	Gravity: 0.04,
 	Drag:    0.02,
 	Expire: func(e *Ent, tx *world.Tx) {
-		explodeTNT(e, tx, nil, false)
+		explodeTNT(e, tx, nil, true)
 	},
 }
 

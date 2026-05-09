@@ -42,7 +42,7 @@ func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
 
 // Explode ...
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig) {
-	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), tntExplosionSourceHandle(c), !c.UnblockableByShield)
+	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), tntExplosionSourceHandle(c), c.BlockableByShield())
 }
 
 // BreakInfo ...

@@ -49,3 +49,31 @@ func TestTNTExplosionConfigHonoursBlockabilityInput(t *testing.T) {
 		}
 	})
 }
+
+func TestTNTExplosionConfigDefaultsToShieldBlockable(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	<-w.Exec(func(tx *world.Tx) {
+		conf := tntExplosionConfig(tx, nil, true)
+		if conf.UnblockableByShield {
+			t.Fatal("expected default TNT explosions to be shield blockable")
+		}
+	})
+}
+
+func TestExplosionDamageSourceFromNilConfigIsBlockable(t *testing.T) {
+	src := ExplosionDamageSourceFromConfig(cube.Pos{}.Vec3Centre(), nil)
+
+	if !src.HasOrigin {
+		t.Fatal("expected nil-config explosion damage source to keep origin")
+	}
+	if !src.BlockableByShield {
+		t.Fatal("expected nil-config explosion damage source to default to shield blockable")
+	}
+	if src.Source != nil {
+		t.Fatalf("expected nil-config explosion damage source not to have a source, got %T", src.Source)
+	}
+}

@@ -86,6 +86,9 @@ type ExplosionDamageSourceConfig interface {
 
 // ExplosionDamageSourceFromConfig creates an ExplosionDamageSource from an explosion position and config.
 func ExplosionDamageSourceFromConfig(origin mgl64.Vec3, c ExplosionDamageSourceConfig) ExplosionDamageSource {
+	if c == nil {
+		return ExplosionDamageSource{Origin: origin, HasOrigin: true, BlockableByShield: true}
+	}
 	return ExplosionDamageSource{
 		Origin:            origin,
 		HasOrigin:         true,
