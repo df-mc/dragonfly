@@ -3,7 +3,6 @@ package world
 import (
 	"log/slog"
 	"math/rand/v2"
-	"runtime"
 	"time"
 )
 
@@ -94,7 +93,7 @@ func (conf Config) New() *World {
 		conf.ChunkUnloadInterval = time.Minute * 2
 	}
 	if conf.ChunkLoadWorkers <= 0 {
-		conf.ChunkLoadWorkers = min(runtime.GOMAXPROCS(0), defaultChunkLoadWorkers)
+		conf.ChunkLoadWorkers = defaultChunkLoadWorkers
 	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}
