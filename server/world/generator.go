@@ -25,7 +25,8 @@ func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
 // DefaultSpawn ...
 func (NopGenerator) DefaultSpawn(Dimension) cube.Pos { return cube.Pos{} }
 
-// chunkRequest ...
+// chunkRequest tracks one asynchronous chunk load for a specific position and
+// collects all callbacks waiting for that chunk.
 type chunkRequest struct {
 	pos        ChunkPos
 	callbacks  []chunkCallback
@@ -36,24 +37,32 @@ type chunkRequest struct {
 	result *Column
 }
 
-// Do adds callback to list of all callbacks.
+// defaultChunkLoadWorkers is the number of asynchronous chunk load workers
+// started when Config.ChunkLoadWorkers is not set.
+const defaultChunkLoadWorkers = 4
+
+// chunkCallback is called on the transaction path after a chunk is installed.
+type chunkCallback = func(tx *Tx, chunk *Column)
+
+// Do registers receiver to be called when the chunk is loaded. The first call
+// starts the asynchronous load.
 func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) {
 	r.callbacks = append(r.callbacks, receiver)
 	if !r.generating {
 		r.generating = true
-		w := tx.World()
-		go r.load(w)
+		tx.World().queueChunkLoad(r)
 	}
 }
 
-// doImmediate waits till chunk is loaded and returns it.
+// doImmediate waits until the chunk is loaded and returns it.
 func (r *chunkRequest) doImmediate(tx *Tx) *Column {
 	<-r.close
 	r.signal(tx)
 	return r.result
 }
 
-// load loads chunk or generates it.
+// load reads or generates the chunk, then schedules installation back onto the
+// world transaction queue.
 func (r *chunkRequest) load(w *World) {
 	r.col = w.loadChunk(r.pos)
 	close(r.close)
@@ -65,7 +74,34 @@ func (r *chunkRequest) load(w *World) {
 	}
 }
 
-// signal calls all callbacks and adds chunk to the world.
+// queueChunkLoad queues r on the world's bounded chunk loading pool.
+func (w *World) queueChunkLoad(r *chunkRequest) {
+	select {
+	case w.chunkLoadQueue <- r:
+	case <-w.closing:
+		close(r.close)
+	}
+}
+
+// handleChunkLoads processes the chunk load queue until the world closes.
+func (w *World) handleChunkLoads() {
+	defer w.running.Done()
+	for {
+		select {
+		case <-w.closing:
+			return
+		default:
+		}
+		select {
+		case r := <-w.chunkLoadQueue:
+			r.load(w)
+		case <-w.closing:
+			return
+		}
+	}
+}
+
+// signal installs the loaded chunk and invokes all waiting callbacks.
 func (r *chunkRequest) signal(tx *Tx) {
 	if r.result != nil {
 		return
@@ -79,5 +115,3 @@ func (r *chunkRequest) signal(tx *Tx) {
 		recv(tx, r.result)
 	}
 }
-
-type chunkCallback = func(tx *Tx, chunk *Column)

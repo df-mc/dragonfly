@@ -3,6 +3,7 @@ package world
 import (
 	"log/slog"
 	"math/rand/v2"
+	"runtime"
 	"time"
 )
 
@@ -49,6 +50,10 @@ type Config struct {
 	// ChunkUnloadInterval should not be used to prevent chunks from unloading
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
+	// ChunkLoadWorkers specifies the number of concurrent workers used to process
+	// asynchronous chunk loads. Synchronous chunk loads are not limited by this
+	// value. If set to 0 or lower, a conservative default is used.
+	ChunkLoadWorkers int
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per
 	// sub chunk, so the default value is 3. Setting this value to -1 or lower
@@ -88,6 +93,9 @@ func (conf Config) New() *World {
 	if conf.ChunkUnloadInterval <= 0 {
 		conf.ChunkUnloadInterval = time.Minute * 2
 	}
+	if conf.ChunkLoadWorkers <= 0 {
+		conf.ChunkLoadWorkers = min(runtime.GOMAXPROCS(0), defaultChunkLoadWorkers)
+	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}
 	}
@@ -123,6 +131,7 @@ func (conf Config) New() *World {
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		chunkRequests:    make(map[ChunkPos]*chunkRequest),
+		chunkLoadQueue:   make(chan *chunkRequest, 4096),
 		queueClosing:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
@@ -137,12 +146,15 @@ func (conf Config) New() *World {
 	w.handler.Store(&h)
 
 	w.queueing.Add(1)
-	w.running.Add(2)
+	w.running.Add(2 + conf.ChunkLoadWorkers)
 
 	t := ticker{interval: time.Second / 20}
 	go t.tickLoop(w)
 	go w.autoSave()
 	go w.handleTransactions()
+	for range conf.ChunkLoadWorkers {
+		go w.handleChunkLoads()
+	}
 
 	<-w.Exec(t.tick)
 	return w
