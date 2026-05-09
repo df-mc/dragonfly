@@ -70,6 +70,7 @@ func (p *Player) resetShieldBlocking() bool {
 	wasPrepared, wasBlocking := !p.shieldBlockingSince.IsZero(), p.shieldBlockingCached
 	p.shieldBlockingSince = time.Time{}
 	p.shieldBlockingCached = false
+	p.shieldBlockingUseHandled = false
 	return wasPrepared || wasBlocking
 }
 
@@ -173,17 +174,14 @@ func shieldDurabilityDamage(dmg float64) int {
 	return int(math.Floor(dmg)) + 1
 }
 
-func shouldAttemptShieldBlock(rawDamage, damageLeft, damageBeforeHandler float64, src world.DamageSource) bool {
-	if damageLeft < 0 {
-		if rawDamage < 0 || damageBeforeHandler > 0 {
-			return false
-		}
-		if rawDamage > 0 {
-			return true
-		}
-		_, ok := src.(entity.ProjectileDamageSource)
-		return ok && rawDamage == 0
+func shouldAttemptShieldBlockBeforeHurtHandler(rawDamage float64, src world.DamageSource) bool {
+	if rawDamage > 0 {
+		return true
 	}
+	return isZeroDamageProjectile(rawDamage, src)
+}
+
+func shouldAttemptShieldBlockAfterHurtHandler(rawDamage, damageLeft, damageBeforeHandler float64, src world.DamageSource) bool {
 	if damageLeft > 0 {
 		return true
 	}
@@ -193,6 +191,10 @@ func shouldAttemptShieldBlock(rawDamage, damageLeft, damageBeforeHandler float64
 	if rawDamage > 0 {
 		return true
 	}
+	return isZeroDamageProjectile(rawDamage, src)
+}
+
+func isZeroDamageProjectile(rawDamage float64, src world.DamageSource) bool {
 	_, ok := src.(entity.ProjectileDamageSource)
 	return ok && rawDamage == 0
 }
@@ -222,7 +224,11 @@ func (p *Player) StartShieldBlockingInput() bool {
 		return false
 	}
 	mainHand, _ = p.HeldItems()
-	return p.startShieldBlockingInput(mainHand)
+	if !p.startShieldBlockingInput(mainHand) {
+		return false
+	}
+	p.shieldBlockingUseHandled = true
+	return true
 }
 
 func (p *Player) canStartShieldBlockingInput(mainHand item.Stack) bool {
@@ -249,6 +255,37 @@ func (p *Player) startOffHandShieldBlockingInput() bool {
 		return false
 	}
 	return p.startShieldBlockingInput(item.Stack{})
+}
+
+func (p *Player) startOffHandShieldBlockingInputAfterItemUse() bool {
+	if !p.canStartOffHandShieldBlockingInput() {
+		return false
+	}
+	ctx := event.C(p)
+	p.Handler().HandleItemUse(ctx)
+	if ctx.Cancelled() {
+		return false
+	}
+	return p.startOffHandShieldBlockingInput()
+}
+
+func (p *Player) canStartOffHandShieldBlockingInput() bool {
+	mainHand, offHand := p.HeldItems()
+	if _, ok := mainHand.Item().(item.Shield); ok {
+		return p.canStartShieldBlockingInput(mainHand)
+	}
+	if _, ok := offHand.Item().(item.Shield); !ok {
+		return false
+	}
+	return p.canStartShieldBlockingInput(item.Stack{})
+}
+
+func (p *Player) consumeShieldBlockingUseHandled(mainHand item.Stack) bool {
+	if !p.shieldBlockingUseHandled {
+		return false
+	}
+	p.shieldBlockingUseHandled = false
+	return p.canStartShieldBlockingInput(mainHand)
 }
 
 func (p *Player) knockBackShieldAttacker(src world.DamageSource) bool {
@@ -280,10 +317,8 @@ func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource) bool
 		p.setHeldShield(hand, p.damageItem(shield, damage))
 	}
 	if s, ok := src.(entity.ProjectileDamageSource); ok {
-		if projectile, ok := s.Projectile.(*entity.Ent); ok {
-			if marker, ok := projectile.Behaviour().(interface{ MarkShieldBlocked() }); ok {
-				marker.MarkShieldBlocked()
-			}
+		if marker, ok := s.Projectile.(interface{ MarkShieldBlocked() }); ok {
+			marker.MarkShieldBlocked()
 		}
 	}
 	if p.tx != nil {

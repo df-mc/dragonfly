@@ -58,25 +58,6 @@ type (
 	}
 )
 
-// ExplosionDamageSourceConfig is implemented by explosion configuration values that can create explosion damage sources.
-type ExplosionDamageSourceConfig interface {
-	BlockableByShield() bool
-	ExplosionSource() world.Entity
-}
-
-// ExplosionDamageSourceFromConfig creates an ExplosionDamageSource from an explosion position and config.
-func ExplosionDamageSourceFromConfig(origin mgl64.Vec3, c ExplosionDamageSourceConfig) ExplosionDamageSource {
-	if c == nil {
-		return ExplosionDamageSource{Origin: origin, HasOrigin: true, BlockableByShield: true}
-	}
-	return ExplosionDamageSource{
-		Origin:            origin,
-		HasOrigin:         true,
-		BlockableByShield: c.BlockableByShield(),
-		Source:            c.ExplosionSource(),
-	}
-}
-
 func (FallDamageSource) ReducedByArmour() bool     { return false }
 func (FallDamageSource) ReducedByResistance() bool { return true }
 func (FallDamageSource) Fire() bool                { return false }

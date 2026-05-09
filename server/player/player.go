@@ -56,7 +56,7 @@ type playerData struct {
 	heldSlot                     *uint32
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
-	invisible, immobile, onGround, usingItem, shieldBlockingInput, shieldBlockingCached bool
+	invisible, immobile, onGround, usingItem, shieldBlockingInput, shieldBlockingCached, shieldBlockingUseHandled bool
 
 	sleeping bool
 	sleepPos cube.Pos
@@ -600,7 +600,7 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 	immunity := time.Second / 2
 	damageBeforeHandler := damageLeft
 	if immune && damageLeft <= 0 {
-		if shouldAttemptShieldBlock(dmg, damageLeft, damageBeforeHandler, src) && p.blockDamageWithShield(dmg, src) {
+		if shouldAttemptShieldBlockBeforeHurtHandler(dmg, src) && p.blockDamageWithShield(dmg, src) {
 			return 0, false, true
 		}
 		return 0, false, false
@@ -609,7 +609,7 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
 		return 0, false, false
 	}
-	if shouldAttemptShieldBlock(dmg, damageLeft, damageBeforeHandler, src) && p.blockDamageWithShield(dmg, src) {
+	if shouldAttemptShieldBlockAfterHurtHandler(dmg, damageLeft, damageBeforeHandler, src) && p.blockDamageWithShield(dmg, src) {
 		return 0, false, true
 	}
 	if immune && damageLeft <= 0 {
@@ -708,7 +708,13 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 // Explode ...
 func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
 	diff := p.Position().Sub(explosionPos)
-	_, _, shieldBlocked := p.hurt(math.Floor((impact*impact+impact)*3.5*c.Size*2+1), entity.ExplosionDamageSourceFromConfig(explosionPos, c))
+	src := entity.ExplosionDamageSource{
+		Origin:            explosionPos,
+		HasOrigin:         true,
+		BlockableByShield: !c.UnblockableByShield,
+		Source:            c.Source,
+	}
+	_, _, shieldBlocked := p.hurt(math.Floor((impact*impact+impact)*3.5*c.Size*2+1), src)
 	if shieldBlocked {
 		impact *= shieldExplosionKnockBackMultiplier
 	}
@@ -1542,13 +1548,20 @@ func (p *Player) setCooldown(item world.Item, cooldown time.Duration, updateShie
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
 	i, _ := p.HeldItems()
-	ctx := event.C(p)
+	shieldUseHandled := p.consumeShieldBlockingUseHandled(i)
 	if p.HasCooldown(i.Item()) {
-		p.startOffHandShieldBlockingInput()
+		if shieldUseHandled {
+			p.startOffHandShieldBlockingInput()
+		} else {
+			p.startOffHandShieldBlockingInputAfterItemUse()
+		}
 		return
 	}
-	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
-		return
+	if !shieldUseHandled {
+		ctx := event.C(p)
+		if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
+			return
+		}
 	}
 	i, left := p.HeldItems()
 	it := i.Item()
@@ -1741,6 +1754,9 @@ func (p *Player) UsingItem() bool {
 func (p *Player) SetShieldBlockingInput(down bool) {
 	if p.shieldBlockingInput == down {
 		return
+	}
+	if !down {
+		p.shieldBlockingUseHandled = false
 	}
 	p.shieldBlockingInput = down
 	if changed := p.updateShieldBlockingState(time.Now()); changed && p.tx != nil {

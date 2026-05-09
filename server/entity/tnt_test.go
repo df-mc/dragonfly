@@ -104,17 +104,3 @@ func TestTNTNBTDoesNotPersistRuntimeSource(t *testing.T) {
 		t.Fatal("expected TNT NBT decode not to restore runtime-only source handle")
 	}
 }
-
-func TestExplosionDamageSourceFromNilConfigIsBlockable(t *testing.T) {
-	src := ExplosionDamageSourceFromConfig(cube.Pos{}.Vec3Centre(), nil)
-
-	if !src.HasOrigin {
-		t.Fatal("expected nil-config explosion damage source to keep origin")
-	}
-	if !src.BlockableByShield {
-		t.Fatal("expected nil-config explosion damage source to default to shield blockable")
-	}
-	if src.Source != nil {
-		t.Fatalf("expected nil-config explosion damage source not to have a source, got %T", src.Source)
-	}
-}

@@ -75,9 +75,7 @@ func tntExplosionConfig(tx *world.Tx, source *world.EntityHandle, blockableByShi
 	if source != nil {
 		sourceEntity, _ = source.Entity(tx)
 	}
-	c := block.ExplosionConfig{ItemDropChance: 1, Source: sourceEntity}
-	c.SetBlockableByShield(blockableByShield)
-	return c
+	return block.ExplosionConfig{ItemDropChance: 1, Source: sourceEntity, UnblockableByShield: !blockableByShield}
 }
 
 // TNTType is a world.EntityType implementation for TNT.

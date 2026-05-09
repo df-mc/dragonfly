@@ -36,13 +36,14 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx 
 
 // Ignite ...
 func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
-	spawnTnt(pos, tx, time.Second*4, entityHandle(source), true)
+	sourceHandle := entityHandle(source)
+	spawnTnt(pos, tx, time.Second*4, sourceHandle, sourceHandle != nil)
 	return true
 }
 
 // Explode ...
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig) {
-	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), tntExplosionSourceHandle(c), c.BlockableByShield())
+	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), tntExplosionSourceHandle(c), !c.UnblockableByShield)
 }
 
 // BreakInfo ...

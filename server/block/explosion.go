@@ -43,21 +43,6 @@ type ExplosionConfig struct {
 	Particle world.Particle
 }
 
-// BlockableByShield returns true if the explosion damage may be blocked by shields.
-func (c ExplosionConfig) BlockableByShield() bool {
-	return !c.UnblockableByShield
-}
-
-// SetBlockableByShield sets if the explosion damage may be blocked by shields.
-func (c *ExplosionConfig) SetBlockableByShield(blockable bool) {
-	c.UnblockableByShield = !blockable
-}
-
-// ExplosionSource returns the entity that caused the explosion, if known.
-func (c ExplosionConfig) ExplosionSource() world.Entity {
-	return c.Source
-}
-
 // ExplodableEntity represents an entity that can be exploded.
 type ExplodableEntity interface {
 	// Explode is called when an explosion occurs. The entity can then react to the explosion using the configuration

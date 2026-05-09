@@ -48,6 +48,15 @@ func (a *shieldKnockBackAttacker) KnockBack(src mgl64.Vec3, force, height float6
 	a.src, a.force, a.height = src, force, height
 }
 
+type shieldMarkedProjectile struct {
+	shieldTestEntity
+	marked bool
+}
+
+func (p *shieldMarkedProjectile) MarkShieldBlocked() {
+	p.marked = true
+}
+
 func newShieldTestPlayer(rot cube.Rotation, mainHand, offHand item.Stack) *Player {
 	heldSlot := uint32(0)
 	inv := inventory.New(36, nil)
@@ -210,6 +219,34 @@ func TestUseItemFallsBackToOffHandShieldWhenMainHandItemIsOnCooldown(t *testing.
 	p.UseItem()
 	if !p.shieldBlockingInput {
 		t.Fatal("expected off-hand shield input to start when main-hand item is on cooldown")
+	}
+}
+
+func TestUseItemWithCooldownOffHandShieldHonoursCancelledItemUse(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.NewStack(item.GoatHorn{}, 1), item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	p.SetCooldown(item.GoatHorn{}, time.Second)
+	p.h = cancellingItemUseHandler{}
+
+	p.UseItem()
+
+	if p.shieldBlockingInput {
+		t.Fatal("expected cancelled item use to prevent cooldown off-hand shield fallback")
+	}
+}
+
+func TestUseItemDoesNotHandleAlreadyStartedShieldUseTwice(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	handler := &countingItemUseHandler{}
+	p.h = handler
+
+	if !p.StartShieldBlockingInput() {
+		t.Fatal("expected auth input to start shield blocking")
+	}
+	p.UseItem()
+
+	if handler.count != 1 {
+		t.Fatalf("expected shield use handler to run once, got %v calls", handler.count)
 	}
 }
 
@@ -432,6 +469,19 @@ func TestShieldBlocksProjectileDuringDamageImmunity(t *testing.T) {
 	}
 	if !shieldBlocked {
 		t.Fatal("expected shield-blocked projectile to be marked even during damage immunity")
+	}
+}
+
+func TestShieldBlocksCustomMarkedProjectile(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+	projectile := &shieldMarkedProjectile{shieldTestEntity: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}}
+
+	if dmg, vulnerable := p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile}); dmg != 0 || vulnerable {
+		t.Fatalf("expected shield-blocked custom projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
+	}
+	if !projectile.marked {
+		t.Fatal("expected custom projectile shield block marker to be set")
 	}
 }
 
@@ -680,7 +730,41 @@ func TestShieldBlockingReadDoesNotClearExpiredCooldown(t *testing.T) {
 	}
 }
 
-func TestShouldAttemptShieldBlockWithHandlerMutatedDamage(t *testing.T) {
+func TestShouldAttemptShieldBlockBeforeHurtHandler(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		rawDamage float64
+		src       world.DamageSource
+		want      bool
+	}{
+		{
+			name:      "positive melee damage",
+			rawDamage: 4,
+			src:       entity.AttackDamageSource{Attacker: shieldTestEntity{}},
+			want:      true,
+		},
+		{
+			name: "zero damage projectile",
+			src:  entity.ProjectileDamageSource{Projectile: shieldTestEntity{}},
+			want: true,
+		},
+		{
+			name: "zero damage melee",
+			src:  entity.AttackDamageSource{Attacker: shieldTestEntity{}},
+		},
+		{
+			name:      "negative damage",
+			rawDamage: -1,
+			src:       entity.AttackDamageSource{Attacker: shieldTestEntity{}},
+		},
+	} {
+		if got := shouldAttemptShieldBlockBeforeHurtHandler(test.rawDamage, test.src); got != test.want {
+			t.Fatalf("%v: expected shouldAttemptShieldBlockBeforeHurtHandler to return %v, got %v", test.name, test.want, got)
+		}
+	}
+}
+
+func TestShouldAttemptShieldBlockAfterHurtHandlerWithHandlerMutatedDamage(t *testing.T) {
 	for _, test := range []struct {
 		name                string
 		rawDamage           float64
@@ -714,8 +798,8 @@ func TestShouldAttemptShieldBlockWithHandlerMutatedDamage(t *testing.T) {
 			want: true,
 		},
 	} {
-		if got := shouldAttemptShieldBlock(test.rawDamage, test.damageLeft, test.damageBeforeHandler, test.src); got != test.want {
-			t.Fatalf("%v: expected shouldAttemptShieldBlock to return %v, got %v", test.name, test.want, got)
+		if got := shouldAttemptShieldBlockAfterHurtHandler(test.rawDamage, test.damageLeft, test.damageBeforeHandler, test.src); got != test.want {
+			t.Fatalf("%v: expected shouldAttemptShieldBlockAfterHurtHandler to return %v, got %v", test.name, test.want, got)
 		}
 	}
 }
