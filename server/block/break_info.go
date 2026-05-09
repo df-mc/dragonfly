@@ -16,7 +16,9 @@ import (
 // Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks
 // such as bedrock.
 type Breakable interface {
-	// BreakInfo returns information of the block related to the breaking of it.
+	// BreakInfo returns information of the block related to the breaking of it. Callers that execute the BreakHandler
+	// must call BreakInfo on the concrete block value being broken, as handlers may need block state after the world
+	// position has been cleared.
 	BreakInfo() BreakInfo
 }
 
