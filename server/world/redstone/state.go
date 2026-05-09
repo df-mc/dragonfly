@@ -17,6 +17,7 @@ const (
 type State struct {
 	torchBurnout       map[cube.Pos]torchBurnout
 	activeTorchUpdates map[cube.Pos]int
+	updateSources      []cube.Pos
 }
 
 // torchBurnout holds the burnout state and state change history for a redstone torch.
@@ -98,6 +99,23 @@ func (s *State) WithActiveTorchUpdate(pos cube.Pos, fn func()) {
 		s.activeTorchUpdates[pos]--
 	}()
 	fn()
+}
+
+// WithUpdateSource marks redstone propagation as originating from pos for the duration of fn.
+func (s *State) WithUpdateSource(pos cube.Pos, fn func()) {
+	s.updateSources = append(s.updateSources, pos)
+	defer func() {
+		s.updateSources = s.updateSources[:len(s.updateSources)-1]
+	}()
+	fn()
+}
+
+// UpdateSource returns the position that caused the current redstone update.
+func (s *State) UpdateSource() (cube.Pos, bool) {
+	if len(s.updateSources) == 0 {
+		return cube.Pos{}, false
+	}
+	return s.updateSources[len(s.updateSources)-1], true
 }
 
 // MarkTorchSelfTriggeredIfActive marks the next scheduled tick for the redstone torch at pos as self-triggered if the

@@ -23,8 +23,9 @@ type wireNetwork struct {
 type wireNode struct {
 	visited bool
 
-	pos   cube.Pos
-	block world.Block
+	pos    cube.Pos
+	block  world.Block
+	source cube.Pos
 
 	neighbours []*wireNode
 	oriented   bool
@@ -77,9 +78,9 @@ func updateAroundRedstone(centre cube.Pos, tx *world.Tx, ignoredFaces ...cube.Fa
 			continue
 		}
 		pos := centre.Side(face)
-		updateRedstone(pos, tx)
-		updateRedstone(pos.Side(cube.FaceUp), tx)
-		updateRedstone(pos.Side(cube.FaceDown), tx)
+		updateRedstoneFrom(pos, centre, tx)
+		updateRedstoneFrom(pos.Side(cube.FaceUp), centre, tx)
+		updateRedstoneFrom(pos.Side(cube.FaceDown), centre, tx)
 		updateReceiversAroundPoweredBlock(pos, tx, face.Opposite())
 	}
 }
@@ -95,7 +96,7 @@ func updateReceiversAroundPoweredBlock(pos cube.Pos, tx *world.Tx, ignoredFaces 
 		if slices.Contains(ignoredFaces, face) || tx.RedstonePower(pos, face, true) == 0 {
 			continue
 		}
-		updateRedstone(pos.Side(face), tx)
+		updateRedstoneFrom(pos.Side(face), pos, tx)
 	}
 }
 
@@ -104,6 +105,11 @@ func updateReceiversAroundPoweredBlock(pos cube.Pos, tx *world.Tx, ignoredFaces 
 // and optionally cancel the update. Direct RedstoneUpdate calls are reserved for internal state initialisation
 // (e.g. seeding a freshly placed block) where handler cancellation isn't appropriate.
 func updateRedstone(pos cube.Pos, tx *world.Tx) {
+	updateRedstoneFrom(pos, pos, tx)
+}
+
+// updateRedstoneFrom dispatches a cancellable redstone update and records the position that caused it.
+func updateRedstoneFrom(pos, source cube.Pos, tx *world.Tx) {
 	r, ok := tx.Block(pos).(world.RedstoneUpdater)
 	if !ok {
 		return
@@ -111,7 +117,9 @@ func updateRedstone(pos cube.Pos, tx *world.Tx) {
 	if redstoneUpdateCancelled(pos, tx) {
 		return
 	}
-	r.RedstoneUpdate(pos, tx)
+	tx.Redstone().WithUpdateSource(source, func() {
+		r.RedstoneUpdate(pos, tx)
+	})
 }
 
 // redstoneUpdateCancelled checks if the redstone update has been cancelled by the HandleRedstoneUpdate handler.
@@ -260,6 +268,7 @@ func (n *wireNetwork) propagateChanges(tx *world.Tx, node *wireNode, layer uint3
 	for _, neighbour := range node.neighbours {
 		if layerOne > neighbour.layer {
 			neighbour.layer = layerOne
+			neighbour.source = node.pos
 			n.updateQueue[1] = append(n.updateQueue[1], neighbour)
 		}
 	}
@@ -268,6 +277,7 @@ func (n *wireNetwork) propagateChanges(tx *world.Tx, node *wireNode, layer uint3
 	for _, neighbour := range node.neighbours[:4] {
 		if layerTwo > neighbour.layer {
 			neighbour.layer = layerTwo
+			neighbour.source = node.pos
 			n.updateQueue[2] = append(n.updateQueue[2], neighbour)
 		}
 	}
@@ -285,7 +295,7 @@ func (n *wireNetwork) breadthFirstWalk(tx *world.Tx) {
 				n.updateNode(tx, node, n.currentWalkLayer)
 				continue
 			}
-			updateRedstone(node.pos, tx)
+			updateRedstoneFrom(node.pos, node.source, tx)
 		}
 
 		n.shiftQueue()

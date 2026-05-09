@@ -93,6 +93,9 @@ func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 func (t RedstoneTorch) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
 	currentTick := tx.CurrentTick()
 	if burnedOut, _ := tx.Redstone().TorchBurnoutStatus(pos, currentTick); burnedOut {
+		if t.updateSourceTouchesInput(pos, tx) {
+			t.recoverFromBurnout(pos, tx)
+		}
 		return
 	}
 
@@ -122,6 +125,26 @@ func (t RedstoneTorch) recoverFromBurnout(pos cube.Pos, tx *world.Tx) bool {
 	tx.SetBlock(pos, t, nil)
 	updateTorchRedstone(pos, tx)
 	return true
+}
+
+// updateSourceTouchesInput reports whether the current redstone update came from the block the torch is attached to,
+// or from a block directly beside it. Dust on top of the attached block can legitimately recover a burnout loop, while
+// disconnected dust visited by the broad wire walk should not.
+func (t RedstoneTorch) updateSourceTouchesInput(pos cube.Pos, tx *world.Tx) bool {
+	source, ok := tx.Redstone().UpdateSource()
+	if !ok {
+		return false
+	}
+	inputPos := pos.Side(t.Facing)
+	if source == inputPos {
+		return true
+	}
+	for _, face := range cube.Faces() {
+		if source == inputPos.Side(face) {
+			return true
+		}
+	}
+	return false
 }
 
 // ScheduledTick is called when a scheduled block update occurs.
