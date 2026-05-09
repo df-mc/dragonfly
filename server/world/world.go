@@ -1224,17 +1224,15 @@ func (tx *Tx) chunk(pos ChunkPos) *Column {
 // if one doesn't currently exist.
 func (w *World) loadChunk(pos ChunkPos) *chunk.Column {
 	column, err := w.conf.Provider.LoadColumn(pos, w.conf.Dim)
-	switch {
-	case err == nil:
+	if err == nil {
 		return column
-	default:
-		if !errors.Is(err, leveldb.ErrNotFound) {
-			w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
-		}
-		ch := chunk.New(w.conf.Blocks, w.Range())
-		w.conf.Generator.GenerateChunk(pos, ch)
-		return &chunk.Column{Chunk: ch}
 	}
+	if !errors.Is(err, leveldb.ErrNotFound) {
+		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+	}
+	ch := chunk.New(w.conf.Blocks, w.Range())
+	w.conf.Generator.GenerateChunk(pos, ch)
+	return &chunk.Column{Chunk: ch}
 }
 
 // loadChunkAsync ...
