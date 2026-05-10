@@ -25,8 +25,7 @@ func (minimalRedstoneTestHandler) HandleEntitySpawn(*Tx, Entity)                
 func (minimalRedstoneTestHandler) HandleEntityDespawn(*Tx, Entity)                              {}
 func (minimalRedstoneTestHandler) HandleExplosion(*Context, mgl64.Vec3, *[]Entity, *[]cube.Pos, *float64, *bool) {
 }
-func (minimalRedstoneTestHandler) HandleRedstoneUpdate(*Context, RedstoneUpdate) {}
-func (minimalRedstoneTestHandler) HandleClose(*Tx)                               {}
+func (minimalRedstoneTestHandler) HandleClose(*Tx) {}
 
 func TestClampRedstonePower(t *testing.T) {
 	tests := []struct {
@@ -175,18 +174,111 @@ func TestRedstoneEngineInvalidateAround(t *testing.T) {
 	}
 }
 
-func TestScheduledTickQueueReschedulesEarlierTick(t *testing.T) {
+func TestRedstoneCancelledSourceDoesNotPropagate(t *testing.T) {
+	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
+	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	defer w.Close()
+
+	w.Handle(&redstoneCancellationHandler{cancel: map[cube.Pos]struct{}{sourcePos: {}}})
+	var sinkPowered bool
+	var sourceOutput int
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sourcePos, redstoneCancellationSource{Power: 15}, nil)
+		tx.SetBlock(sinkPos, redstoneCancellationConsumer{}, nil)
+		tx.World().redstone.tick(tx, 1)
+
+		sinkPowered = tx.Block(sinkPos).(redstoneCancellationConsumer).Powered
+		sourceOutput = tx.World().redstone.output[sourcePos]
+	})
+	if sinkPowered {
+		t.Fatalf("sink powered after cancelling source update")
+	}
+	if sourceOutput != 0 {
+		t.Fatalf("stored source output = %d, want 0", sourceOutput)
+	}
+}
+
+func TestRedstoneCancelledConsumerDoesNotUpdate(t *testing.T) {
+	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
+	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	defer w.Close()
+
+	consumerUpdates := 0
+	redstoneCancellationConsumerUpdates = &consumerUpdates
+	t.Cleanup(func() {
+		redstoneCancellationConsumerUpdates = nil
+	})
+	w.Handle(&redstoneCancellationHandler{cancel: map[cube.Pos]struct{}{sinkPos: {}}})
+	var sinkPowered bool
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sourcePos, redstoneCancellationSource{Power: 15}, nil)
+		tx.SetBlock(sinkPos, redstoneCancellationConsumer{}, nil)
+		tx.World().redstone.tick(tx, 1)
+
+		sinkPowered = tx.Block(sinkPos).(redstoneCancellationConsumer).Powered
+	})
+	if consumerUpdates != 0 {
+		t.Fatalf("consumer updates = %d, want 0", consumerUpdates)
+	}
+	if sinkPowered {
+		t.Fatalf("sink powered after cancelling consumer update")
+	}
+}
+
+func TestRedstoneCancelledActionDoesNotRun(t *testing.T) {
+	sourcePos, actionPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
+	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	defer w.Close()
+
+	actions := 0
+	redstoneCancellationActions = &actions
+	t.Cleanup(func() {
+		redstoneCancellationActions = nil
+	})
+	w.Handle(&redstoneCancellationHandler{cancel: map[cube.Pos]struct{}{actionPos: {}}})
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sourcePos, redstoneCancellationSource{Power: 15}, nil)
+		tx.SetBlock(actionPos, redstoneCancellationAction{}, nil)
+		tx.World().redstone.tick(tx, 1)
+	})
+	if actions != 0 {
+		t.Fatalf("actions = %d, want 0", actions)
+	}
+}
+
+func TestScheduledTickQueueKeepsLaterTickForSameBlock(t *testing.T) {
 	queue := newScheduledTickQueue(100)
 	pos := cube.Pos{8, 64, 8}
 	b := scheduledTickTestBlock{}
 
-	queue.schedule(DefaultBlockRegistry, pos, b, time.Second)
+	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/20)
 	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/10)
-	queue.schedule(DefaultBlockRegistry, pos, b, time.Second*2)
 
-	index := scheduledTickIndex{pos: pos, hash: BlockHash(b)}
-	if got, want := queue.scheduledTicks[index], int64(102); got != want {
-		t.Fatalf("scheduled tick = %d, want %d", got, want)
+	index := scheduledTickIndex{pos: pos, hash: DefaultBlockRegistry.BlockHash(b)}
+	if got, want := queue.furthestTicks[index], int64(102); got != want {
+		t.Fatalf("furthest tick = %d, want %d", got, want)
+	}
+	ticks := queue.fromChunk(chunkPosFromBlockPos(pos))
+	if len(ticks) != 2 {
+		t.Fatalf("active ticks = %v, want two ticks", ticks)
+	}
+	got, want := []int64{ticks[0].t, ticks[1].t}, []int64{101, 102}
+	if !slices.Equal(got, want) {
+		t.Fatalf("fromChunk ticks = %v, want %v", got, want)
+	}
+}
+
+func TestScheduledTickQueueIgnoresEarlierTickBehindLaterTick(t *testing.T) {
+	queue := newScheduledTickQueue(100)
+	pos := cube.Pos{8, 64, 8}
+	b := scheduledTickTestBlock{}
+
+	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/10)
+	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/20)
+
+	index := scheduledTickIndex{pos: pos, hash: DefaultBlockRegistry.BlockHash(b)}
+	if got, want := queue.furthestTicks[index], int64(102); got != want {
+		t.Fatalf("furthest tick = %d, want %d", got, want)
 	}
 	ticks := queue.fromChunk(chunkPosFromBlockPos(pos))
 	if len(ticks) != 1 {
@@ -208,8 +300,8 @@ func TestScheduledTickQueueRemoveChunkClearsSchedule(t *testing.T) {
 	if len(queue.ticks) != 0 {
 		t.Fatalf("ticks after removeChunk = %v, want empty", queue.ticks)
 	}
-	if len(queue.scheduledTicks) != 0 {
-		t.Fatalf("scheduled ticks after removeChunk = %v, want empty", queue.scheduledTicks)
+	if len(queue.furthestTicks) != 0 {
+		t.Fatalf("furthest ticks after removeChunk = %v, want empty", queue.furthestTicks)
 	}
 }
 
@@ -217,11 +309,11 @@ func TestScheduledTickQueueCanRescheduleWhileCurrentTickIsDue(t *testing.T) {
 	queue := newScheduledTickQueue(100)
 	pos := cube.Pos{8, 64, 8}
 	b := scheduledTickTestBlock{}
-	index := scheduledTickIndex{pos: pos, hash: BlockHash(b)}
-	queue.scheduledTicks[index] = 100
+	index := scheduledTickIndex{pos: pos, hash: DefaultBlockRegistry.BlockHash(b)}
+	queue.furthestTicks[index] = 100
 
 	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/2)
-	if got, want := queue.scheduledTicks[index], int64(110); got != want {
+	if got, want := queue.furthestTicks[index], int64(110); got != want {
 		t.Fatalf("rescheduled tick = %d, want %d", got, want)
 	}
 }
@@ -246,3 +338,96 @@ func (redstoneNeighbourOrderTestBlock) EncodeBlock() (string, map[string]any) {
 }
 func (redstoneNeighbourOrderTestBlock) Hash() (uint64, uint64) { return 1 << 41, 0 }
 func (redstoneNeighbourOrderTestBlock) Model() BlockModel      { return nil }
+
+type redstoneCancellationHandler struct {
+	NopHandler
+	cancel map[cube.Pos]struct{}
+}
+
+func (h *redstoneCancellationHandler) HandleRedstoneUpdate(ctx *Context, update RedstoneUpdate) {
+	if _, ok := h.cancel[update.Pos]; ok {
+		ctx.Cancel()
+	}
+}
+
+var (
+	redstoneCancellationConsumerUpdates *int
+	redstoneCancellationActions         *int
+)
+
+func redstoneCancellationTestRegistry() BlockRegistry {
+	registry := NewBlockRegistry()
+	for _, power := range []int32{0, 15} {
+		registry.RegisterBlockState(BlockState{Name: "test:redstone_source", Properties: map[string]any{"power": power}})
+		registry.RegisterBlock(redstoneCancellationSource{Power: int(power)})
+	}
+	for _, powered := range []bool{false, true} {
+		registry.RegisterBlockState(BlockState{Name: "test:redstone_consumer", Properties: map[string]any{"powered": powered}})
+		registry.RegisterBlock(redstoneCancellationConsumer{Powered: powered})
+	}
+	registry.RegisterBlockState(BlockState{Name: "test:redstone_action", Properties: map[string]any{}})
+	registry.RegisterBlock(redstoneCancellationAction{})
+	return registry
+}
+
+type redstoneCancellationSource struct {
+	Power int
+}
+
+func (b redstoneCancellationSource) RedstonePower(cube.Pos, *Tx, cube.Face) int {
+	return b.Power
+}
+func (b redstoneCancellationSource) EncodeBlock() (string, map[string]any) {
+	return "test:redstone_source", map[string]any{"power": int32(b.Power)}
+}
+func (b redstoneCancellationSource) Hash() (uint64, uint64) {
+	return 1 << 42, uint64(b.Power)
+}
+func (redstoneCancellationSource) Model() BlockModel { return redstoneCancellationModel{} }
+
+type redstoneCancellationConsumer struct {
+	Powered bool
+}
+
+func (b redstoneCancellationConsumer) RedstonePowerUpdate(_ cube.Pos, _ *Tx, power int) (Block, bool) {
+	if redstoneCancellationConsumerUpdates != nil {
+		(*redstoneCancellationConsumerUpdates)++
+	}
+	powered := power > 0
+	if b.Powered == powered {
+		return b, false
+	}
+	b.Powered = powered
+	return b, true
+}
+func (b redstoneCancellationConsumer) EncodeBlock() (string, map[string]any) {
+	return "test:redstone_consumer", map[string]any{"powered": b.Powered}
+}
+func (b redstoneCancellationConsumer) Hash() (uint64, uint64) {
+	if b.Powered {
+		return 1 << 43, 1
+	}
+	return 1 << 43, 0
+}
+func (redstoneCancellationConsumer) Model() BlockModel { return redstoneCancellationModel{} }
+
+type redstoneCancellationAction struct{}
+
+func (redstoneCancellationAction) RedstonePowerAction(cube.Pos, *Tx, int, int) bool {
+	if redstoneCancellationActions != nil {
+		(*redstoneCancellationActions)++
+	}
+	return true
+}
+func (redstoneCancellationAction) EncodeBlock() (string, map[string]any) {
+	return "test:redstone_action", nil
+}
+func (redstoneCancellationAction) Hash() (uint64, uint64) { return 1 << 44, 0 }
+func (redstoneCancellationAction) Model() BlockModel      { return redstoneCancellationModel{} }
+
+type redstoneCancellationModel struct{}
+
+func (redstoneCancellationModel) BBox(cube.Pos, BlockSource) []cube.BBox { return nil }
+func (redstoneCancellationModel) FaceSolid(cube.Pos, cube.Face, BlockSource) bool {
+	return false
+}

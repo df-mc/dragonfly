@@ -497,7 +497,7 @@ func (w *World) liquidLoaded(pos cube.Pos) (Liquid, bool) {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	for _, layer := range []uint8{0, 1} {
 		id := c.Block(x, y, z, layer)
-		b, ok := BlockByRuntimeID(id)
+		b, ok := w.conf.Blocks.BlockByRuntimeID(id)
 		if !ok {
 			w.conf.Log.Error("liquidLoaded: no block with runtime ID", "ID", id)
 			return nil, false

@@ -13,6 +13,35 @@ func TestRedstoneBlockPower(t *testing.T) {
 		if power := (RedstoneBlock{}).RedstonePower(cube.Pos{}, nil, face); power != 15 {
 			t.Fatalf("RedstoneBlock power from %v = %d, want 15", face, power)
 		}
+		if power := (RedstoneBlock{}).RedstoneStrongPower(cube.Pos{}, nil, face); power != 0 {
+			t.Fatalf("RedstoneBlock strong power from %v = %d, want 0", face, power)
+		}
+	}
+
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		source := cube.Pos{0, 1, 0}
+		target := source.Side(cube.FaceEast)
+		tx.SetBlock(source, RedstoneBlock{}, nil)
+		if power := tx.RedstonePower(target); power != 15 {
+			err = fmt.Errorf("RedstoneBlock weak power = %d, want 15", power)
+			return
+		}
+		if power := tx.RedstoneDirectPower(target); power != 15 {
+			err = fmt.Errorf("RedstoneBlock direct power = %d, want 15", power)
+			return
+		}
+		if power := tx.RedstoneStrongPower(target); power != 0 {
+			err = fmt.Errorf("RedstoneBlock strong power = %d, want 0", power)
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -95,6 +124,33 @@ func TestRedstoneWireConnectsUpBlocks(t *testing.T) {
 	}
 }
 
+func TestRedstoneWireRelayerNeighboursDoNotLoadAdjacentChunks(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		pos := cube.Pos{15, 1, 0}
+		unloadedNeighbour := pos.Side(cube.FaceEast)
+		tx.SetBlock(pos.Side(cube.FaceDown), Stone{}, nil)
+		tx.SetBlock(pos, RedstoneWire{}, nil)
+
+		if _, ok := tx.BlockLoaded(unloadedNeighbour); ok {
+			err = fmt.Errorf("adjacent chunk was loaded before relayer neighbour lookup")
+			return
+		}
+		_ = (RedstoneWire{}).RedstoneRelayerNeighbours(pos, tx)
+		if _, ok := tx.BlockLoaded(unloadedNeighbour); ok {
+			err = fmt.Errorf("relayer neighbour lookup loaded adjacent chunk")
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestStrongPowerConductsThroughSolidBlocks(t *testing.T) {
 	w := world.New()
 	defer func() {
@@ -103,13 +159,67 @@ func TestStrongPowerConductsThroughSolidBlocks(t *testing.T) {
 
 	var err error
 	<-w.Exec(func(tx *world.Tx) {
-		conductor := cube.Pos{0, 1, 0}
+		source := cube.Pos{0, 1, 0}
+		conductor := source.Side(cube.FaceEast)
 		target := conductor.Side(cube.FaceEast)
+		tx.SetBlock(source, Lever{Facing: cube.FaceWest, Powered: true}, nil)
 		tx.SetBlock(conductor, Stone{}, nil)
-		tx.SetBlock(conductor.Side(cube.FaceWest), RedstoneBlock{}, nil)
 
 		if power := tx.RedstonePower(target); power != 15 {
 			err = fmt.Errorf("conducted strong power = %d, want 15", power)
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStrongPowerDoesNotConductThroughTransparentFullBlocks(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		source := cube.Pos{0, 1, 0}
+		conductor := source.Side(cube.FaceEast)
+		target := conductor.Side(cube.FaceEast)
+		tx.SetBlock(source, Lever{Facing: cube.FaceWest, Powered: true}, nil)
+		tx.SetBlock(conductor, Glass{}, nil)
+
+		if power := tx.RedstonePower(target); power != 0 {
+			err = fmt.Errorf("power conducted through glass = %d, want 0", power)
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRedstoneBlockDoesNotPowerLampThroughSolidBlock(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		source := cube.Pos{0, 1, 0}
+		conductor := source.Side(cube.FaceEast)
+		lampPos := conductor.Side(cube.FaceEast)
+		tx.SetBlock(source, RedstoneBlock{}, nil)
+		tx.SetBlock(conductor, Stone{}, nil)
+		tx.SetBlock(lampPos, RedstoneLamp{}, nil)
+
+		power := tx.RedstonePower(lampPos)
+		if power != 0 {
+			err = fmt.Errorf("lamp power through opaque block = %d, want 0", power)
+			return
+		}
+		after, changed := (RedstoneLamp{}).RedstonePowerUpdate(lampPos, tx, power)
+		if changed || after.(RedstoneLamp).Lit {
+			err = fmt.Errorf("lamp lit from redstone block through opaque block")
 		}
 	})
 	if err != nil {

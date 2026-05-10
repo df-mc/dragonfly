@@ -8,8 +8,8 @@ import (
 
 type Context = event.Context[*Tx]
 
-// RedstoneHandler may be implemented by world Handlers to receive redstone updates. It is intentionally separate
-// from Handler so existing handlers remain source-compatible.
+// RedstoneHandler may be implemented by world Handlers to receive detailed redstone updates. It is intentionally
+// separate from Handler so existing handlers remain source-compatible.
 type RedstoneHandler interface {
 	// HandleRedstoneUpdate handles a redstone update proposed by the World redstone engine. ctx.Cancel() may be
 	// called to suppress the proposed redstone mutation and any propagation from that mutation.
@@ -71,8 +71,6 @@ type Handler interface {
 	// The affected entities, affected blocks, item drop chance, and whether the
 	// explosion spawns fire may be altered.
 	HandleExplosion(ctx *Context, position mgl64.Vec3, entities *[]Entity, blocks *[]cube.Pos, itemDropChance *float64, spawnFire *bool)
-	// HandleRedstoneUpdate handles a redstone update. ctx.Cancel() may be called to cancel the proposed update.
-	HandleRedstoneUpdate(ctx *Context, update RedstoneUpdate)
 	// HandleClose handles the World being closed. HandleClose may be used as a
 	// moment to finish code running on other goroutines that operates on the
 	// World specifically. HandleClose is called directly before the World stops
@@ -88,7 +86,7 @@ var _ Handler = (*NopHandler)(nil)
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
-func (NopHandler) HandleRedstoneUpdate(*Context, RedstoneUpdate)                                 {}
+func (NopHandler) HandleRedstoneUpdate(*Context, cube.Pos)                                       {}
 func (NopHandler) HandleLiquidFlow(*Context, cube.Pos, cube.Pos, Liquid, Block)                  {}
 func (NopHandler) HandleLiquidDecay(*Context, cube.Pos, Liquid, Liquid)                          {}
 func (NopHandler) HandleLiquidHarden(*Context, cube.Pos, Block, Block, Block)                    {}

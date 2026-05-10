@@ -107,11 +107,12 @@ type RedstoneComparatorReadable interface {
 }
 
 type redstoneEngine struct {
-	currentTick int64
-	dirty       map[cube.Pos]redstoneDirty
-	power       map[cube.Pos]int
-	output      map[cube.Pos]int
-	evaluating  map[cube.Pos]struct{}
+	currentTick       int64
+	dirty             map[cube.Pos]redstoneDirty
+	power             map[cube.Pos]int
+	output            map[cube.Pos]int
+	evaluating        map[cube.Pos]struct{}
+	suppressedSources map[cube.Pos]int
 }
 
 type redstoneDirty struct {
@@ -203,6 +204,13 @@ func (e *redstoneEngine) tick(tx *Tx, tick int64) {
 	slices.SortFunc(candidates, compareBlockPos)
 
 	graph := e.compile(tx, candidates)
+	cancelledSources, checkedSources := e.updateGraphSources(tx, graph, dirty)
+	previousSuppressed := e.suppressedSources
+	e.suppressedSources = cancelledSources
+	defer func() {
+		e.suppressedSources = previousSuppressed
+	}()
+
 	powers := e.graphPower(tx, graph)
 	for i, node := range graph.nodes {
 		d := dirty[node.pos]
@@ -211,6 +219,9 @@ func (e *redstoneEngine) tick(tx *Tx, tick int64) {
 		}
 	}
 	for _, node := range graph.nodes {
+		if _, ok := checkedSources[node.pos]; ok {
+			continue
+		}
 		d := dirty[node.pos]
 		if node.source {
 			e.updateSource(tx, node.pos, d.changed, d.cause, graph.id)
@@ -277,36 +288,50 @@ func (e *redstoneEngine) update(tx *Tx, pos, changed cube.Pos, cause RedstoneUpd
 	b := tx.Block(pos)
 	oldPower, newPower := e.power[pos], clampRedstonePower(newPower)
 
+	action, hasAction := b.(RedstonePowerAction)
+	actionChanged := hasAction && oldPower != newPower
+	if oldPower != newPower {
+		update := RedstoneUpdate{
+			Pos:              pos,
+			ChangedNeighbour: changed,
+			Before:           b,
+			OldPower:         oldPower,
+			NewPower:         newPower,
+			CurrentTick:      e.currentTick,
+			NetworkID:        graphID,
+			Cause:            cause,
+		}
+		if !e.redstoneUpdateAllowed(tx, update) {
+			return
+		}
+	}
+
 	after, blockChanged := b, false
 	if consumer, ok := b.(RedstonePowerTransitionConsumer); ok {
 		after, blockChanged = consumer.RedstonePowerTransitionUpdate(pos, tx, oldPower, newPower)
 	} else if consumer, ok := b.(RedstonePowerConsumer); ok {
 		after, blockChanged = consumer.RedstonePowerUpdate(pos, tx, newPower)
 	}
-	action, hasAction := b.(RedstonePowerAction)
-	actionChanged := hasAction && oldPower != newPower
 	if !blockChanged && !actionChanged {
 		e.power[pos] = newPower
 		return
 	}
 
-	update := RedstoneUpdate{
-		Pos:              pos,
-		ChangedNeighbour: changed,
-		Before:           b,
-		After:            after,
-		OldPower:         oldPower,
-		NewPower:         newPower,
-		CurrentTick:      e.currentTick,
-		NetworkID:        graphID,
-		Cause:            cause,
-	}
-	ctx := event.C(tx)
-	if handler, ok := tx.World().Handler().(RedstoneHandler); ok {
-		handler.HandleRedstoneUpdate(ctx, update)
-	}
-	if ctx.Cancelled() {
-		return
+	if oldPower == newPower {
+		update := RedstoneUpdate{
+			Pos:              pos,
+			ChangedNeighbour: changed,
+			Before:           b,
+			After:            after,
+			OldPower:         oldPower,
+			NewPower:         newPower,
+			CurrentTick:      e.currentTick,
+			NetworkID:        graphID,
+			Cause:            cause,
+		}
+		if !e.redstoneUpdateAllowed(tx, update) {
+			return
+		}
 	}
 	if blockChanged {
 		tx.SetBlock(pos, after, &SetOpts{DisableRedstoneUpdates: true})
@@ -331,11 +356,41 @@ func (e *redstoneEngine) update(tx *Tx, pos, changed cube.Pos, cause RedstoneUpd
 	}
 }
 
-func (e *redstoneEngine) updateSource(tx *Tx, pos, changed cube.Pos, cause RedstoneUpdateCause, graphID uint64) {
+func (e *redstoneEngine) updateGraphSources(tx *Tx, graph redstoneGraph, dirty map[cube.Pos]redstoneDirty) (map[cube.Pos]int, map[cube.Pos]struct{}) {
+	var cancelled map[cube.Pos]int
+	var checked map[cube.Pos]struct{}
+	for _, node := range graph.nodes {
+		if !node.source {
+			continue
+		}
+		b, ok := tx.World().blockLoaded(node.pos)
+		if !ok {
+			continue
+		}
+		if _, ok := b.(RedstonePowerRelayer); ok {
+			continue
+		}
+		if checked == nil {
+			checked = make(map[cube.Pos]struct{})
+		}
+		checked[node.pos] = struct{}{}
+
+		d := dirty[node.pos]
+		if !e.updateSource(tx, node.pos, d.changed, d.cause, graph.id) {
+			if cancelled == nil {
+				cancelled = make(map[cube.Pos]int)
+			}
+			cancelled[node.pos] = e.output[node.pos]
+		}
+	}
+	return cancelled, checked
+}
+
+func (e *redstoneEngine) updateSource(tx *Tx, pos, changed cube.Pos, cause RedstoneUpdateCause, graphID uint64) bool {
 	b := tx.Block(pos)
 	oldPower, newPower := e.output[pos], e.sourcePower(pos, tx)
 	if oldPower == newPower {
-		return
+		return true
 	}
 	update := RedstoneUpdate{
 		Pos:              pos,
@@ -347,15 +402,12 @@ func (e *redstoneEngine) updateSource(tx *Tx, pos, changed cube.Pos, cause Redst
 		NetworkID:        graphID,
 		Cause:            cause,
 	}
-	ctx := event.C(tx)
-	if handler, ok := tx.World().Handler().(RedstoneHandler); ok {
-		handler.HandleRedstoneUpdate(ctx, update)
-	}
-	if ctx.Cancelled() {
-		return
+	if !e.redstoneUpdateAllowed(tx, update) {
+		return false
 	}
 	e.output[pos] = newPower
 	e.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, tx.Range())
+	return true
 }
 
 func (e *redstoneEngine) directPower(pos cube.Pos, tx *Tx) int {
@@ -399,6 +451,9 @@ func (e *redstoneEngine) strongPowerFrom(pos cube.Pos, tx *Tx, face cube.Face) i
 		return 0
 	}
 	if source, ok := b.(RedstoneStrongPowerSource); ok {
+		if power, ok := e.suppressedSources[neighbour]; ok {
+			return clampRedstonePower(power)
+		}
 		return clampRedstonePower(source.RedstoneStrongPower(neighbour, tx, face.Opposite()))
 	}
 	return 0
@@ -418,7 +473,7 @@ func (e *redstoneEngine) conductedStrongPowerFrom(pos cube.Pos, tx *Tx, face cub
 		return 0
 	}
 	conductor, ok := tx.World().blockLoaded(conductorPos)
-	if !ok || !conductor.Model().FaceSolid(conductorPos, face.Opposite(), tx) {
+	if !ok || !redstoneStrongPowerConductor(conductorPos, conductor, tx, face.Opposite()) {
 		return 0
 	}
 	power := 0
@@ -569,12 +624,45 @@ func (e *redstoneEngine) powerFrom(pos cube.Pos, tx *Tx, face cube.Face, relayer
 }
 
 func (e *redstoneEngine) redstonePower(source RedstonePowerSource, pos cube.Pos, tx *Tx, face cube.Face) int {
+	if power, ok := e.suppressedSources[pos]; ok {
+		return clampRedstonePower(power)
+	}
 	if _, ok := e.evaluating[pos]; ok {
 		return 0
 	}
 	e.evaluating[pos] = struct{}{}
 	defer delete(e.evaluating, pos)
 	return source.RedstonePower(pos, tx, face)
+}
+
+type legacyRedstoneHandler interface {
+	HandleRedstoneUpdate(ctx *Context, pos cube.Pos)
+}
+
+func (e *redstoneEngine) redstoneUpdateAllowed(tx *Tx, update RedstoneUpdate) bool {
+	ctx := event.C(tx)
+	handler := tx.World().Handler()
+	if legacy, ok := handler.(legacyRedstoneHandler); ok {
+		legacy.HandleRedstoneUpdate(ctx, update.Pos)
+	}
+	if rich, ok := handler.(RedstoneHandler); ok {
+		rich.HandleRedstoneUpdate(ctx, update)
+	}
+	return !ctx.Cancelled()
+}
+
+type redstoneLightDiffuser interface {
+	LightDiffusionLevel() uint8
+}
+
+func redstoneStrongPowerConductor(pos cube.Pos, b Block, tx *Tx, face cube.Face) bool {
+	if !b.Model().FaceSolid(pos, face, tx) {
+		return false
+	}
+	if diffuser, ok := b.(redstoneLightDiffuser); ok && diffuser.LightDiffusionLevel() == 0 {
+		return false
+	}
+	return true
 }
 
 func (e *redstoneEngine) compileEdges(tx *Tx, nodes []redstoneNode) []redstoneEdge {

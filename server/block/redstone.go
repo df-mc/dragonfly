@@ -22,9 +22,10 @@ func (RedstoneBlock) RedstonePower(cube.Pos, *world.Tx, cube.Face) int {
 	return 15
 }
 
-// RedstoneStrongPower always returns maximum strong power.
+// RedstoneStrongPower returns no strong power. Redstone blocks power adjacent components directly, but do not power
+// adjacent opaque blocks.
 func (RedstoneBlock) RedstoneStrongPower(cube.Pos, *world.Tx, cube.Face) int {
-	return 15
+	return 0
 }
 
 // EncodeItem ...
@@ -79,10 +80,10 @@ func (RedstoneWire) RedstoneRelayerNeighbours(pos cube.Pos, tx *world.Tx) []cube
 		neighbours = append(neighbours, side)
 
 		above := pos.Side(cube.FaceUp)
-		if !redstoneWireBlocksConnection(tx, above, cube.FaceDown) && redstoneWireSupported(tx, side.Side(cube.FaceUp)) {
+		if !redstoneWireBlocksConnectionLoaded(tx, above, cube.FaceDown) && redstoneWireSupportedLoaded(tx, side.Side(cube.FaceUp)) {
 			neighbours = append(neighbours, side.Side(cube.FaceUp))
 		}
-		if !redstoneWireBlocksConnection(tx, side, cube.FaceUp) {
+		if !redstoneWireBlocksConnectionLoaded(tx, side, cube.FaceUp) {
 			down := side.Side(cube.FaceDown)
 			if !down.OutOfBounds(tx.Range()) {
 				neighbours = append(neighbours, down)
@@ -149,21 +150,21 @@ func redstoneWireSupported(tx *world.Tx, pos cube.Pos) bool {
 	return tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
 }
 
-func redstoneWireBlocksConnection(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
+func redstoneWireSupportedLoaded(tx *world.Tx, pos cube.Pos) bool {
+	below := pos.Side(cube.FaceDown)
+	if below.OutOfBounds(tx.Range()) {
+		return false
+	}
+	b, ok := tx.BlockLoaded(below)
+	return ok && b.Model().FaceSolid(below, cube.FaceUp, tx)
+}
+
+func redstoneWireBlocksConnectionLoaded(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
 	if pos.OutOfBounds(tx.Range()) {
 		return true
 	}
-	return tx.Block(pos).Model().FaceSolid(pos, face, tx)
-}
-
-func redstoneOpenableTransition(open bool, oldPower, newPower int) (bool, bool) {
-	if newPower > 0 {
-		return true, !open
-	}
-	if oldPower > 0 {
-		return false, open
-	}
-	return open, false
+	b, ok := tx.BlockLoaded(pos)
+	return ok && b.Model().FaceSolid(pos, face, tx)
 }
 
 // RedstoneLamp is a lamp that lights while powered.
