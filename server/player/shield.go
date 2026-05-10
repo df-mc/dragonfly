@@ -174,11 +174,9 @@ func shieldDurabilityDamage(dmg float64) int {
 	return int(math.Floor(dmg)) + 1
 }
 
-func shouldAttemptShieldBlockBeforeHurtHandler(rawDamage float64, src world.DamageSource) bool {
-	if rawDamage > 0 {
-		return true
-	}
-	return isZeroDamageProjectile(rawDamage, src)
+func shouldAttemptShieldBlockBeforeHurtHandler(_ float64, src world.DamageSource) bool {
+	_, ok := src.(entity.ProjectileDamageSource)
+	return ok
 }
 
 func shouldAttemptShieldBlockAfterHurtHandler(rawDamage, damageLeft, damageBeforeHandler float64, src world.DamageSource) bool {

@@ -526,7 +526,7 @@ func TestShieldBlocksCustomMarkedProjectile(t *testing.T) {
 	}
 }
 
-func TestShieldBlocksMeleeDuringDamageImmunity(t *testing.T) {
+func TestIgnoredImmuneMeleeHitDoesNotTriggerShieldBlock(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
 	p.immuneUntil = time.Now().Add(time.Second)
@@ -534,10 +534,14 @@ func TestShieldBlocksMeleeDuringDamageImmunity(t *testing.T) {
 	attacker := &shieldKnockBackAttacker{shieldTestEntity: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}}
 
 	if dmg, vulnerable := p.Hurt(1, entity.AttackDamageSource{Attacker: attacker}); dmg != 0 || vulnerable {
-		t.Fatalf("expected immune shield-blocked melee hit to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
+		t.Fatalf("expected immune ignored melee hit to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
 	}
-	if attacker.force != shieldAttackerKnockBackForce {
-		t.Fatal("expected shield-blocked melee attacker to be knocked back during damage immunity")
+	if attacker.force != 0 || attacker.height != 0 {
+		t.Fatalf("expected ignored immune melee hit not to knock back attacker, got %v/%v", attacker.force, attacker.height)
+	}
+	_, offHand := p.HeldItems()
+	if got, want := offHand.Durability(), item.NewStack(item.Shield{}, 1).MaxDurability(); got != want {
+		t.Fatalf("expected ignored immune melee hit not to damage shield, got durability %v want %v", got, want)
 	}
 }
 
@@ -831,6 +835,11 @@ func TestShouldAttemptShieldBlockBeforeHurtHandler(t *testing.T) {
 			name:      "positive melee damage",
 			rawDamage: 4,
 			src:       entity.AttackDamageSource{Attacker: shieldTestEntity{}},
+		},
+		{
+			name:      "positive projectile damage",
+			rawDamage: 4,
+			src:       entity.ProjectileDamageSource{Projectile: shieldTestEntity{}},
 			want:      true,
 		},
 		{
