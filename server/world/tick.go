@@ -92,6 +92,7 @@ func (t ticker) tick(tx *Tx) {
 	w.scheduledUpdates.tick(tx, tick)
 	t.tickBlocksRandomly(tx, loaders, tick)
 	t.performNeighbourUpdates(tx)
+	w.redstone.tick(tx, tick)
 }
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
@@ -268,9 +269,9 @@ func (g *randUint4) uint4(r *rand.Rand) uint8 {
 // scheduledTickQueue implements a queue for scheduled block updates. Scheduled
 // block updates are both position and block type specific.
 type scheduledTickQueue struct {
-	ticks         []scheduledTick
-	furthestTicks map[scheduledTickIndex]int64
-	currentTick   int64
+	ticks          []scheduledTick
+	scheduledTicks map[scheduledTickIndex]int64
+	currentTick    int64
 }
 
 type scheduledTick struct {
@@ -287,7 +288,7 @@ type scheduledTickIndex struct {
 
 // newScheduledTickQueue creates a queue for scheduled block ticks.
 func newScheduledTickQueue(tick int64) *scheduledTickQueue {
-	return &scheduledTickQueue{furthestTicks: make(map[scheduledTickIndex]int64), currentTick: tick}
+	return &scheduledTickQueue{scheduledTicks: make(map[scheduledTickIndex]int64), currentTick: tick}
 }
 
 // tick processes scheduled ticks, calling ScheduledTicker.ScheduledTick for any
@@ -299,6 +300,10 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 	w := tx.World()
 	for _, t := range queue.ticks {
 		if t.t > tick {
+			continue
+		}
+		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
+		if scheduledTick, ok := queue.scheduledTicks[index]; !ok || scheduledTick != t.t {
 			continue
 		}
 		b := tx.Block(t.pos)
@@ -315,25 +320,21 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 	queue.ticks = slices.DeleteFunc(queue.ticks, func(t scheduledTick) bool {
 		return t.t <= tick
 	})
-	maps.DeleteFunc(queue.furthestTicks, func(index scheduledTickIndex, t int64) bool {
+	maps.DeleteFunc(queue.scheduledTicks, func(index scheduledTickIndex, t int64) bool {
 		return t <= tick
 	})
 }
 
 // schedule schedules a block update at the position passed for the block type
-// passed after a specific delay. A block update is only scheduled if no block
-// update with the same position and block type is already scheduled at a later
-// time than the newly scheduled update.
+// passed after a specific delay. A block update replaces an existing update for
+// the same position and block type if it would occur sooner.
 func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Block, delay time.Duration) {
 	resTick := queue.currentTick + int64(max(delay/(time.Second/20), 1))
 	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(b)}
-	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
-		// Already have a tick scheduled for this position that will occur after
-		// the delay passed. Block updates can only be scheduled if they are
-		// after any currently scheduled updates.
+	if t, ok := queue.scheduledTicks[index]; ok && t <= resTick && t > queue.currentTick {
 		return
 	}
-	queue.furthestTicks[index] = resTick
+	queue.scheduledTicks[index] = resTick
 	queue.ticks = append(queue.ticks, scheduledTick{pos: pos, t: resTick, b: b, bhash: index.hash})
 }
 
@@ -341,7 +342,8 @@ func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Bloc
 func (queue *scheduledTickQueue) fromChunk(pos ChunkPos) []scheduledTick {
 	m := make([]scheduledTick, 0, 8)
 	for _, t := range queue.ticks {
-		if pos == chunkPosFromBlockPos(t.pos) {
+		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
+		if pos == chunkPosFromBlockPos(t.pos) && queue.scheduledTicks[index] == t.t {
 			m = append(m, t)
 		}
 	}
@@ -353,6 +355,9 @@ func (queue *scheduledTickQueue) removeChunk(pos ChunkPos) {
 	queue.ticks = slices.DeleteFunc(queue.ticks, func(tick scheduledTick) bool {
 		return chunkPosFromBlockPos(tick.pos) == pos
 	})
+	maps.DeleteFunc(queue.scheduledTicks, func(index scheduledTickIndex, _ int64) bool {
+		return chunkPosFromBlockPos(index.pos) == pos
+	})
 }
 
 // add adds a slice of scheduled ticks to the queue. It assumes no duplicate
@@ -361,11 +366,10 @@ func (queue *scheduledTickQueue) add(ticks []scheduledTick) {
 	queue.ticks = append(queue.ticks, ticks...)
 	for _, t := range ticks {
 		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
-		if existing, ok := queue.furthestTicks[index]; ok {
-			// Make sure we find the furthest tick for each of the ticks added.
-			// Some ticks may have the same block and position, in which case we
-			// need to set the furthest tick.
-			queue.furthestTicks[index] = max(existing, t.t)
+		if existing, ok := queue.scheduledTicks[index]; ok {
+			queue.scheduledTicks[index] = min(existing, t.t)
+		} else {
+			queue.scheduledTicks[index] = t.t
 		}
 	}
 }

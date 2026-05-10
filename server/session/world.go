@@ -550,6 +550,14 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.PistonIn:
+		pk.SoundType = packet.SoundEventPistonIn
+	case sound.PistonOut:
+		pk.SoundType = packet.SoundEventPistonOut
+	case sound.PressurePlateClickOn:
+		pk.SoundType = packet.SoundEventPressurePlateClickOn
+	case sound.PressurePlateClickOff:
+		pk.SoundType = packet.SoundEventPressurePlateClickOff
 	case sound.SignWaxed:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventWaxOn,

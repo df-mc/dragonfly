@@ -61,36 +61,23 @@ func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *
 	return true
 }
 
-// RedstoneUpdate updates the note block's powered state and plays the note when it first becomes powered.
-func (n Note) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
-	poweredFaces := n.poweredFaces(pos, tx)
-	powered := len(poweredFaces) > 0
+// RedstonePowerUpdate updates the note block's powered state and plays the note when it first becomes powered.
+func (n Note) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, power int) (world.Block, bool) {
+	powered := power > 0
 	if powered == n.Powered {
-		return
+		return n, false
 	}
 	n.Powered = powered
 	if powered && n.canPlay(pos, tx) {
 		n.playNote(pos, tx)
 	}
-	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true})
-	updateAroundRedstone(pos, tx, poweredFaces...)
+	return n, true
 }
 
 // canPlay reports whether the block above the note block is air.
 func (n Note) canPlay(pos cube.Pos, tx *world.Tx) bool {
 	_, ok := tx.Block(pos.Side(cube.FaceUp)).(Air)
 	return ok
-}
-
-func (n Note) poweredFaces(pos cube.Pos, tx *world.Tx) []cube.Face {
-	var faces []cube.Face
-	for _, face := range cube.Faces() {
-		adjacentPos := pos.Side(face)
-		if power := tx.RedstonePower(adjacentPos, face, true); power > 0 {
-			faces = append(faces, face)
-		}
-	}
-	return faces
 }
 
 // BreakInfo ...
