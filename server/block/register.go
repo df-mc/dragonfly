@@ -46,6 +46,10 @@ func init() {
 	world.RegisterBlock(Emerald{})
 	world.RegisterBlock(EnchantingTable{})
 	world.RegisterBlock(EndBricks{})
+	world.RegisterBlock(EndPortal{})
+	for _, f := range allEndPortalFrames() {
+		world.RegisterBlock(f)
+	}
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(FletchingTable{})
 	world.RegisterBlock(GlassPane{})
@@ -286,6 +290,8 @@ func init() {
 	world.RegisterItem(Emerald{})
 	world.RegisterItem(EnchantingTable{})
 	world.RegisterItem(EndBricks{})
+	world.RegisterItem(EndPortal{})
+	world.RegisterItem(EndPortalFrame{})
 	world.RegisterItem(EndRod{})
 	world.RegisterItem(EndStone{})
 	world.RegisterItem(EnderChest{})

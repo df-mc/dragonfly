@@ -10,6 +10,27 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+func TestPortalTravelComputerInstantaneousByDimension(t *testing.T) {
+	calls := 0
+	tc := &PortalTravelComputer{Instantaneous: func(source, target world.Dimension) bool {
+		calls++
+		return source == world.End || target == world.End
+	}}
+
+	if !tc.instantaneous(world.Overworld, world.End) {
+		t.Fatal("instantaneous(Overworld, End) = false, want true")
+	}
+	if !tc.instantaneous(world.End, world.Overworld) {
+		t.Fatal("instantaneous(End, Overworld) = false, want true")
+	}
+	if tc.instantaneous(world.Overworld, world.Nether) {
+		t.Fatal("instantaneous(Overworld, Nether) = true, want false")
+	}
+	if calls != 3 {
+		t.Fatalf("Instantaneous closure called %d times, want 3", calls)
+	}
+}
+
 func TestPortalTravelComputerStopPortalContact(t *testing.T) {
 	t.Run("keeps timer after portal contact", func(t *testing.T) {
 		tc := &PortalTravelComputer{inside: true, awaitingTravel: true, start: time.Now()}
@@ -152,6 +173,108 @@ func TestEntTravelsThroughPortalOnTick(t *testing.T) {
 		}
 		if got := e.(*Ent).Age(); got != 0 {
 			t.Fatalf("entity age after terminal portal travel tick = %v, want 0", got)
+		}
+	})
+}
+
+func TestEntTravelsThroughEndPortal(t *testing.T) {
+	var overworld, end *world.World
+	overworld = world.Config{PortalDestination: func(dim world.Dimension) *world.World {
+		if dim == world.End {
+			return end
+		}
+		return nil
+	}}.New()
+	end = world.Config{Dim: world.End, PortalDestination: func(dim world.Dimension) *world.World {
+		if dim == world.End {
+			return overworld
+		}
+		return nil
+	}}.New()
+	t.Cleanup(func() {
+		_ = overworld.Close()
+		_ = end.Close()
+	})
+
+	sourcePortal := cube.Pos{50, 64, 50}
+	<-overworld.Exec(func(tx *world.Tx) {
+		tx.SetBlock(sourcePortal, block.EndPortal{}, nil)
+	})
+
+	handle := world.EntitySpawnOpts{Position: sourcePortal.Vec3Middle().Sub(mgl64.Vec3{1})}.New(testMovingEntType{}, testMoveConfig{delta: mgl64.Vec3{1}})
+	<-overworld.Exec(func(tx *world.Tx) {
+		e := tx.AddEntity(handle)
+		ticker, ok := e.(world.TickerEntity)
+		if !ok {
+			t.Fatalf("entity has type %T, want world.TickerEntity", e)
+		}
+		ticker.Tick(tx, 1)
+	})
+
+	waitForEntityWorld(t, handle, end)
+	if entityInWorld(handle, overworld) {
+		t.Fatal("entity remained in the source world after End portal travel")
+	}
+	<-end.Exec(func(tx *world.Tx) {
+		e, ok := handle.Entity(tx)
+		if !ok {
+			t.Fatal("entity was not added to the End")
+		}
+		want := mgl64.Vec3{100.5, 49, 0.5}
+		if got := e.Position(); !got.ApproxEqual(want) {
+			t.Fatalf("entity position after End travel = %v, want %v", got, want)
+		}
+		// Spawn platform: 5x5 obsidian at y=48 around x=100, z=0.
+		for dx := -2; dx <= 2; dx++ {
+			for dz := -2; dz <= 2; dz++ {
+				p := cube.Pos{100 + dx, 48, dz}
+				if _, ok := tx.Block(p).(block.Obsidian); !ok {
+					t.Fatalf("obsidian platform missing at %v: got %T", p, tx.Block(p))
+				}
+			}
+		}
+	})
+}
+
+func TestEndPortalReturnsToOverworldSpawn(t *testing.T) {
+	var overworld, end *world.World
+	overworld = world.Config{PortalDestination: func(dim world.Dimension) *world.World {
+		if dim == world.End {
+			return end
+		}
+		return nil
+	}}.New()
+	end = world.Config{Dim: world.End, PortalDestination: func(dim world.Dimension) *world.World {
+		if dim == world.End {
+			return overworld
+		}
+		return nil
+	}}.New()
+	t.Cleanup(func() {
+		_ = overworld.Close()
+		_ = end.Close()
+	})
+
+	endPortalPos := cube.Pos{200, 60, 200}
+	<-end.Exec(func(tx *world.Tx) {
+		tx.SetBlock(endPortalPos, block.EndPortal{}, nil)
+	})
+
+	handle := world.EntitySpawnOpts{Position: endPortalPos.Vec3Middle().Sub(mgl64.Vec3{1})}.New(testMovingEntType{}, testMoveConfig{delta: mgl64.Vec3{1}})
+	<-end.Exec(func(tx *world.Tx) {
+		e := tx.AddEntity(handle)
+		e.(world.TickerEntity).Tick(tx, 1)
+	})
+
+	waitForEntityWorld(t, handle, overworld)
+	<-overworld.Exec(func(tx *world.Tx) {
+		e, ok := handle.Entity(tx)
+		if !ok {
+			t.Fatal("entity did not return to the Overworld")
+		}
+		want := tx.World().Spawn().Vec3Middle()
+		if got := e.Position(); !got.ApproxEqual(want) {
+			t.Fatalf("entity position after End→Overworld return = %v, want %v", got, want)
 		}
 	})
 }

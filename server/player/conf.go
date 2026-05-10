@@ -87,8 +87,10 @@ func (cfg Config) Apply(data *world.EntityData) {
 		fallDistance:        conf.FallDistance,
 	}
 	pdata.portalTravel = &entity.PortalTravelComputer{
-		Instantaneous: func() bool {
-			return pdata.gameMode == world.GameModeCreative
+		Instantaneous: func(source, target world.Dimension) bool {
+			// Creative skips the timer for any portal. End travel is always instant in vanilla regardless of game mode,
+			// in either direction.
+			return pdata.gameMode == world.GameModeCreative || source == world.End || target == world.End
 		},
 		Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
 			e.(*Player).forceTeleport(pos)

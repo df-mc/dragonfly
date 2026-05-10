@@ -74,6 +74,8 @@ const (
 	hashEmeraldOre
 	hashEnchantingTable
 	hashEndBricks
+	hashEndPortal
+	hashEndPortalFrame
 	hashEndRod
 	hashEndStone
 	hashEnderChest
@@ -490,6 +492,14 @@ func (EnchantingTable) Hash() (uint64, uint64) {
 
 func (EndBricks) Hash() (uint64, uint64) {
 	return hashEndBricks, 0
+}
+
+func (EndPortal) Hash() (uint64, uint64) {
+	return hashEndPortal, 0
+}
+
+func (f EndPortalFrame) Hash() (uint64, uint64) {
+	return hashEndPortalFrame, uint64(boolByte(f.Eye)) | uint64(f.Facing)<<1
 }
 
 func (e EndRod) Hash() (uint64, uint64) {

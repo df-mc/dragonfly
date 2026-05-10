@@ -12,8 +12,10 @@ import (
 
 // PortalTravelComputer handles portal-triggered interdimensional travel for an entity.
 type PortalTravelComputer struct {
-	// Instantaneous returns true if the entity should skip the portal wait timer. Players use this for Creative mode.
-	Instantaneous func() bool
+	// Instantaneous returns true if the entity should skip the portal wait timer. Source is the dimension being left
+	// and target is the dimension being entered. Players use this for Creative mode and for End travel (which is
+	// always instant in vanilla, regardless of game mode).
+	Instantaneous func(source, target world.Dimension) bool
 	// Teleport teleports the entity to the final portal position. If nil, Traveller.Teleport is used.
 	Teleport func(e Traveller, pos mgl64.Vec3)
 
@@ -28,7 +30,7 @@ type PortalTravelComputer struct {
 
 // NewPortalTravelComputer creates a PortalTravelComputer for instant portal travel.
 func NewPortalTravelComputer() *PortalTravelComputer {
-	return &PortalTravelComputer{Instantaneous: func() bool { return true }}
+	return &PortalTravelComputer{Instantaneous: func(world.Dimension, world.Dimension) bool { return true }}
 }
 
 type portalTravelComputerProvider interface {
@@ -78,7 +80,7 @@ func (t *PortalTravelComputer) enterPortal(tx *world.Tx, target world.Dimension)
 		t.mu.Unlock()
 		return nil
 	}
-	travelNow := t.instantaneous() || (t.awaitingTravel && time.Since(t.start) >= time.Second*4)
+	travelNow := t.instantaneous(source.Dimension(), target) || (t.awaitingTravel && time.Since(t.start) >= time.Second*4)
 	if !travelNow && !t.awaitingTravel {
 		t.start, t.awaitingTravel = time.Now(), true
 	}
@@ -90,8 +92,8 @@ func (t *PortalTravelComputer) enterPortal(tx *world.Tx, target world.Dimension)
 	return nil
 }
 
-func (t *PortalTravelComputer) instantaneous() bool {
-	return t.Instantaneous != nil && t.Instantaneous()
+func (t *PortalTravelComputer) instantaneous(source, target world.Dimension) bool {
+	return t.Instantaneous != nil && t.Instantaneous(source, target)
 }
 
 // hasPendingPortalTravel reports whether portal travel was queued during this tick.
@@ -153,10 +155,7 @@ func (t *PortalTravelComputer) travel(e Traveller, tx *world.Tx, destination *wo
 
 	go func() {
 		<-destination.Exec(func(tx *world.Tx) {
-			spawn := pos.Vec3Middle()
-			if netherPortal, ok := portal.FindOrCreateNetherPortal(tx, pos, 128); ok {
-				spawn = netherPortal.Spawn().Vec3Middle()
-			}
+			spawn := arrivalSpawn(tx, sourceDim, destinationDim, pos)
 
 			if e, ok := tx.AddEntityAt(handle, spawn).(Traveller); ok {
 				t.finishTravel(e, spawn, sourceDim, destinationDim)
@@ -197,10 +196,7 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 		}
 
 		<-destination.Exec(func(tx *world.Tx) {
-			spawn := pos.Vec3Middle()
-			if netherPortal, ok := portal.FindOrCreateNetherPortal(tx, pos, 128); ok {
-				spawn = netherPortal.Spawn().Vec3Middle()
-			}
+			spawn := arrivalSpawn(tx, sourceDim, destinationDim, pos)
 
 			if e, ok := tx.AddEntityAt(handle, spawn).(Traveller); ok {
 				t.finishTravel(e, spawn, sourceDim, destinationDim)
@@ -211,6 +207,29 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 		t.travelling = false
 		t.mu.Unlock()
 	}()
+}
+
+// arrivalSpawn computes the entity arrival position in the destination world and performs any required side effects
+// (nether portal find-or-create, End spawn-platform regeneration). The fallback position is used when no
+// dimension-specific structure exists.
+func arrivalSpawn(tx *world.Tx, sourceDim, destinationDim world.Dimension, fallback cube.Pos) mgl64.Vec3 {
+	switch destinationDim {
+	case world.End:
+		portal.GenerateEndSpawnPlatform(tx)
+		return portal.EndSpawnPosition()
+	case world.Nether:
+		if n, ok := portal.FindOrCreateNetherPortal(tx, fallback, 128); ok {
+			return n.Spawn().Vec3Middle()
+		}
+	case world.Overworld:
+		if sourceDim == world.End {
+			return tx.World().Spawn().Vec3Middle()
+		}
+		if n, ok := portal.FindOrCreateNetherPortal(tx, fallback, 128); ok {
+			return n.Spawn().Vec3Middle()
+		}
+	}
+	return fallback.Vec3Middle()
 }
 
 // finishTravel runs the post-transfer portal hook and places the traveller at
