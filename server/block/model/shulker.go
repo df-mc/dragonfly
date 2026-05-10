@@ -14,11 +14,11 @@ type Shulker struct {
 	Progress int32
 }
 
-// BBox returns a single bounding box that extends outward along Facing and
-// inward along its opposite as the lid opens.
+// BBox returns a single bounding box that extends outward along Facing as the
+// lid opens.
 func (s Shulker) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	peak := ShulkerPhysicalPeak(s.Progress)
-	return []cube.BBox{full.ExtendTowards(s.Facing, peak).ExtendTowards(s.Facing.Opposite(), -peak)}
+	return []cube.BBox{full.ExtendTowards(s.Facing, peak)}
 }
 
 // ShulkerPhysicalPeak returns the lid extension along the facing axis for a
