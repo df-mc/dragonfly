@@ -2,7 +2,7 @@ version: "2"
 
 linters:
   default: none
-  enable: [govet, staticcheck, ineffassign]
+  enable: [govet, staticcheck, ineffassign, gocritic]
   settings:
     staticcheck:
       checks: [all, -ST1000, -ST1003, -ST1016]
