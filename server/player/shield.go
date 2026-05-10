@@ -188,9 +188,6 @@ func shouldAttemptShieldBlockAfterHurtHandler(rawDamage, damageLeft, damageBefor
 	if damageBeforeHandler > 0 {
 		return false
 	}
-	if rawDamage > 0 {
-		return true
-	}
 	return isZeroDamageProjectile(rawDamage, src)
 }
 

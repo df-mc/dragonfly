@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -515,6 +516,26 @@ func TestIgnoredImmuneHitDoesNotNotifyHurtHandler(t *testing.T) {
 	}
 }
 
+func TestImmuneHitZeroedByHandlerUpdatesAttackImmunity(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.Stack{})
+	p.immuneUntil = time.Now().Add(time.Second)
+	p.lastDamage = 1
+	p.h = zeroDamageHurtHandler{}
+
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+	<-w.Exec(func(tx *world.Tx) {
+		p.tx = tx
+		p.Hurt(4, entity.SuffocationDamageSource{})
+	})
+
+	if p.lastDamage != 4 {
+		t.Fatalf("expected zeroed immune hit to refresh last damage to 4, got %v", p.lastDamage)
+	}
+}
+
 func TestShieldDurabilityUsesDamageBeforeArmourReduction(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
@@ -526,6 +547,27 @@ func TestShieldDurabilityUsesDamageBeforeArmourReduction(t *testing.T) {
 	_, offHand := p.HeldItems()
 	if got, want := offHand.Durability(), item.NewStack(item.Shield{}, 1).MaxDurability()-5; got != want {
 		t.Fatalf("expected shield durability %v after blocking 4 raw damage, got %v", want, got)
+	}
+}
+
+func TestShieldDoesNotLoseDurabilityWhenDamageFullyReduced(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+	p.effects.Add(effect.New(effect.Resistance, 5, time.Second), p)
+	attacker := shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}
+
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+	<-w.Exec(func(tx *world.Tx) {
+		p.tx = tx
+		p.Hurt(4, entity.AttackDamageSource{Attacker: attacker})
+	})
+
+	_, offHand := p.HeldItems()
+	if got, want := offHand.Durability(), item.NewStack(item.Shield{}, 1).MaxDurability(); got != want {
+		t.Fatalf("expected shield durability to remain %v after fully reduced damage, got %v", want, got)
 	}
 }
 
@@ -595,6 +637,14 @@ type minimumDamageHurtHandler struct {
 func (h *minimumDamageHurtHandler) HandleHurt(_ *Context, damage *float64, _ bool, _ *time.Duration, _ world.DamageSource) {
 	h.called = true
 	*damage = 1
+}
+
+type zeroDamageHurtHandler struct {
+	NopHandler
+}
+
+func (zeroDamageHurtHandler) HandleHurt(_ *Context, damage *float64, _ bool, _ *time.Duration, _ world.DamageSource) {
+	*damage = 0
 }
 
 type cancellingItemUseHandler struct {
@@ -790,6 +840,12 @@ func TestShouldAttemptShieldBlockAfterHurtHandlerWithHandlerMutatedDamage(t *tes
 			name:       "negative damage",
 			rawDamage:  -1,
 			damageLeft: -1,
+			src:        entity.AttackDamageSource{Attacker: shieldTestEntity{}},
+		},
+		{
+			name:       "positive raw damage fully reduced",
+			rawDamage:  4,
+			damageLeft: 0,
 			src:        entity.AttackDamageSource{Attacker: shieldTestEntity{}},
 		},
 		{

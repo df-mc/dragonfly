@@ -612,9 +612,6 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 	if shouldAttemptShieldBlockAfterHurtHandler(dmg, damageLeft, damageBeforeHandler, src) && p.blockDamageWithShield(dmg, src) {
 		return 0, false, true
 	}
-	if immune && damageLeft <= 0 {
-		return 0, false, false
-	}
 	p.setAttackImmunity(immunity, totalDamage)
 
 	if a := p.Absorption(); a > 0 {
