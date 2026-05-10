@@ -43,6 +43,19 @@ func TestShieldBlockingInputIgnoresUseItem(t *testing.T) {
 	}
 }
 
+func TestShieldBlockingInputStartsOnStartSneakingOnly(t *testing.T) {
+	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
+	flags.Set(packet.InputFlagStartSneaking)
+
+	down, ok := shieldBlockingInput(flags, false, true)
+	if !ok {
+		t.Fatal("expected shield input to be updated")
+	}
+	if !down {
+		t.Fatal("expected start sneaking input to start shield input")
+	}
+}
+
 func TestShieldBlockingInputIgnoresCancelledStartSneaking(t *testing.T) {
 	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
 	flags.Set(packet.InputFlagStartSneaking)

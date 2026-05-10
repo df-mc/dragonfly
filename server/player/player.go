@@ -1419,6 +1419,7 @@ func (p *Player) UpdateHeldItemState() {
 func (p *Player) updateHeldItemState() bool {
 	mainHand, _ := p.HeldItems()
 	if p.shieldBlockingInput && !p.canStartShieldBlockingInput(mainHand) {
+		p.shieldBlockingUseHandled = false
 		p.shieldBlockingInput = false
 	}
 	return p.updateShieldBlockingState(time.Now())

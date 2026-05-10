@@ -291,6 +291,24 @@ func TestSetHeldItemsWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
 	}
 }
 
+func TestSetHeldItemsClearsHandledShieldUseLatch(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.sneaking = false
+	handler := &countingItemUseHandler{}
+	p.h = handler
+
+	if !p.StartShieldBlockingInput() {
+		t.Fatal("expected auth input to start shield blocking")
+	}
+	p.SetHeldItems(item.NewStack(item.Bow{}, 1), item.NewStack(item.Shield{}, 1))
+	p.SetHeldItems(item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.UseItem()
+
+	if handler.count != 2 {
+		t.Fatalf("expected item-use handler to run for next shield raise after held-item cancellation, got %v calls", handler.count)
+	}
+}
+
 func TestStartShieldBlockingInputHonoursCancelledItemUse(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.sneaking = false

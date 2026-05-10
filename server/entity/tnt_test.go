@@ -104,3 +104,26 @@ func TestTNTNBTDoesNotPersistRuntimeSource(t *testing.T) {
 		t.Fatal("expected TNT NBT decode not to restore runtime-only source handle")
 	}
 }
+
+func TestTNTNBTClampsFuseToUint8Range(t *testing.T) {
+	tests := []struct {
+		name string
+		fuse time.Duration
+		want uint8
+	}{
+		{name: "negative", fuse: -time.Second, want: 0},
+		{name: "oversized", fuse: time.Second * 20, want: 255},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := world.EntityData{
+				Data: tntBehaviourConfig{Fuse: tt.fuse}.New(),
+			}
+
+			encoded := TNTType.EncodeNBT(&data)
+			if encoded["Fuse"] != tt.want {
+				t.Fatalf("expected fuse to encode as %v, got %#v", tt.want, encoded["Fuse"])
+			}
+		})
+	}
+}
