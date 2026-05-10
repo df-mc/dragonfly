@@ -665,6 +665,39 @@ func TestShieldBlockedExplosionAppliesReducedKnockBack(t *testing.T) {
 	}
 }
 
+func TestShieldBlockedExplosionDuringDamageImmunityAppliesReducedKnockBack(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
+	p.data.Pos = mgl64.Vec3{0, 0, 1}
+	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
+	p.immuneUntil = time.Now().Add(time.Second)
+	p.lastDamage = 10
+
+	unblocked := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.Stack{})
+	unblocked.data.Pos = p.data.Pos
+	unblocked.immuneUntil = p.immuneUntil
+	unblocked.lastDamage = p.lastDamage
+
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+	explosionPos := mgl64.Vec3{0, 0, 4}
+	<-w.Exec(func(tx *world.Tx) {
+		p.tx = tx
+		unblocked.tx = tx
+
+		conf := block.ExplosionConfig{Size: 1}
+		p.Explode(explosionPos, 0.2, conf)
+		unblocked.Explode(explosionPos, 0.2, conf)
+	})
+	if p.Velocity().Len() == 0 {
+		t.Fatal("expected shield-blocked immune explosion to still apply reduced knockback")
+	}
+	if p.Velocity().Len() >= unblocked.Velocity().Len() {
+		t.Fatalf("expected shield-blocked immune explosion knockback %v to be less than unblocked knockback %v", p.Velocity(), unblocked.Velocity())
+	}
+}
+
 type cancellingHurtHandler struct {
 	NopHandler
 }
@@ -841,6 +874,16 @@ func TestShouldAttemptShieldBlockBeforeHurtHandler(t *testing.T) {
 			rawDamage: 4,
 			src:       entity.ProjectileDamageSource{Projectile: shieldTestEntity{}},
 			want:      true,
+		},
+		{
+			name:      "positive explosion damage",
+			rawDamage: 4,
+			src: entity.ExplosionDamageSource{
+				Origin:            mgl64.Vec3{0, 0, 4},
+				HasOrigin:         true,
+				BlockableByShield: true,
+			},
+			want: true,
 		},
 		{
 			name: "zero damage projectile",

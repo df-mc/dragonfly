@@ -175,8 +175,12 @@ func shieldDurabilityDamage(dmg float64) int {
 }
 
 func shouldAttemptShieldBlockBeforeHurtHandler(_ float64, src world.DamageSource) bool {
-	_, ok := src.(entity.ProjectileDamageSource)
-	return ok
+	switch src.(type) {
+	case entity.ProjectileDamageSource, entity.ExplosionDamageSource:
+		return true
+	default:
+		return false
+	}
 }
 
 func shouldAttemptShieldBlockAfterHurtHandler(rawDamage, damageLeft, damageBeforeHandler float64, src world.DamageSource) bool {

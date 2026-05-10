@@ -33,9 +33,6 @@ func newTNTWithSourceHandle(opts world.EntitySpawnOpts, fuse time.Duration, sour
 var tntConf = PassiveBehaviourConfig{
 	Gravity: 0.04,
 	Drag:    0.02,
-	Expire: func(e *Ent, tx *world.Tx) {
-		explodeTNT(e, tx, nil, true)
-	},
 }
 
 type tntBehaviourConfig struct {
