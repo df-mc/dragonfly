@@ -1745,7 +1745,11 @@ func (p *Player) useDuration() time.Duration {
 // UsingItem checks if the Player is currently using an item. True is returned if the Player is currently eating an
 // item or using it over a longer duration such as when using a bow.
 func (p *Player) UsingItem() bool {
-	return p.usingItem || !p.shieldBlockingSince.IsZero()
+	if p.usingItem {
+		return true
+	}
+	_, hand, ok := p.heldShield()
+	return ok && hand == shieldHandMain && !p.shieldBlockingSince.IsZero()
 }
 
 // SetShieldBlockingInput updates whether the player is holding the control that raises shields.

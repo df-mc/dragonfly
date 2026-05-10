@@ -129,6 +129,28 @@ func TestUseItemStartsShieldBlockingInput(t *testing.T) {
 	}
 }
 
+func TestOffHandShieldBlockingDoesNotReportMainHandItemUse(t *testing.T) {
+	now := time.Now()
+	p := newShieldTestPlayer(cube.Rotation{}, item.NewStack(item.Bow{}, 1), item.NewStack(item.Shield{}, 1))
+	p.shieldBlockingSince = now.Add(-shieldBlockDelay)
+
+	if !p.shieldBlockingAt(now) {
+		t.Fatal("expected off-hand shield to block while sneaking")
+	}
+	if p.UsingItem() {
+		t.Fatal("expected off-hand shield blocking not to report generic main-hand item use")
+	}
+}
+
+func TestMainHandShieldBlockingReportsItemUse(t *testing.T) {
+	p := newShieldTestPlayer(cube.Rotation{}, item.NewStack(item.Shield{}, 1), item.Stack{})
+	p.shieldBlockingSince = time.Now()
+
+	if !p.UsingItem() {
+		t.Fatal("expected main-hand shield blocking to report item use")
+	}
+}
+
 func TestReleaseItemStopsShieldBlockingInput(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.sneaking = false
