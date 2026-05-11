@@ -53,18 +53,18 @@ func TestClampRedstonePower(t *testing.T) {
 func TestRedstoneTorchBurnoutRecoveryUsesRollingWindow(t *testing.T) {
 	e := newRedstoneEngine(0)
 	pos := cube.Pos{1, 64, 1}
-	for tick := int64(0); tick <= redstoneTorchBurnoutThreshold; tick++ {
+	for tick := int64(0); tick < redstoneTorchBurnoutThreshold; tick++ {
 		burnedOut := e.recordTorchTurnOff(pos, tick)
-		if burnedOut != (tick == redstoneTorchBurnoutThreshold) {
-			t.Fatalf("recordTorchTurnOff at tick %d burnedOut=%t", tick, burnedOut)
+		if burnedOut != (tick == redstoneTorchBurnoutThreshold-1) {
+			t.Fatalf("recordTorchTurnOff after %d turn-offs burnedOut=%t", tick+1, burnedOut)
 		}
 	}
 
-	burnedOut, recoverable := e.torchBurnoutStatus(pos, redstoneTorchBurnoutWindowTicks)
+	burnedOut, recoverable := e.torchBurnoutStatus(pos, redstoneTorchBurnoutWindowTicks-1)
 	if !burnedOut || recoverable {
 		t.Fatalf("burnout status with eight turn-offs left in window = burnedOut:%t recoverable:%t, want burnedOut:true recoverable:false", burnedOut, recoverable)
 	}
-	burnedOut, recoverable = e.torchBurnoutStatus(pos, redstoneTorchBurnoutWindowTicks+1)
+	burnedOut, recoverable = e.torchBurnoutStatus(pos, redstoneTorchBurnoutWindowTicks)
 	if !burnedOut || !recoverable {
 		t.Fatalf("burnout status with fewer than eight turn-offs left in window = burnedOut:%t recoverable:%t, want burnedOut:true recoverable:true", burnedOut, recoverable)
 	}

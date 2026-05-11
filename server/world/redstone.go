@@ -948,7 +948,7 @@ func (e *redstoneEngine) recordTorchTurnOff(pos cube.Pos, currentTick int64) boo
 	}
 	data, _ := e.pruneTorchBurnout(pos, currentTick)
 	data.offTicks = append(data.offTicks, currentTick)
-	if len(data.offTicks) > redstoneTorchBurnoutThreshold {
+	if len(data.offTicks) >= redstoneTorchBurnoutThreshold {
 		data.burnedOut = true
 	}
 	e.torchBurnout[pos] = data

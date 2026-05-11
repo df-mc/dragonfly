@@ -93,6 +93,10 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if tx == nil {
 		return
 	}
+	var ok bool
+	if t, ok = redstoneTorchAt(pos, tx); !ok {
+		return
+	}
 	redstone := tx.Redstone()
 	torch := redstone.Torch(pos)
 	selfTriggered := torch.ConsumeSelfTriggered()
@@ -113,6 +117,16 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 		tx.SetBlock(pos, t, &world.SetOpts{DisableRedstoneUpdates: true})
 		redstone.ScheduleUpdate(pos)
 	}
+}
+
+// redstoneTorchAt returns the live redstone torch at pos. Scheduled tick callers may carry stale block state, so
+// mutation paths must reload the world block before writing torch state back.
+func redstoneTorchAt(pos cube.Pos, tx *world.Tx) (RedstoneTorch, bool) {
+	t, ok := tx.Block(pos).(RedstoneTorch)
+	if !ok {
+		tx.Redstone().Torch(pos).ClearBurnout()
+	}
+	return t, ok
 }
 
 // RedstonePower emits power from every side except the attached block while lit.

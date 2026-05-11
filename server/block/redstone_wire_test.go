@@ -377,6 +377,27 @@ func TestRedstoneTorchExternalTurnOffsDoNotBurnOut(t *testing.T) {
 	}
 }
 
+func TestRedstoneTorchScheduledTickReloadsLiveState(t *testing.T) {
+	w := world.Config{}.New()
+	defer w.Close()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := torchPos.Side(cube.FaceWest)
+	var lit bool
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, &world.SetOpts{DisableRedstoneUpdates: true})
+
+		stale := RedstoneTorch{Facing: cube.FaceWest, Lit: true}
+		stale.ScheduledTick(torchPos, tx, nil)
+		lit = tx.Block(torchPos).(RedstoneTorch).Lit
+	})
+
+	if !lit {
+		t.Fatal("redstone torch scheduled tick used stale receiver state instead of live block state")
+	}
+}
+
 func TestBurnedOutRedstoneTorchRelightsWhenInputIsRemoved(t *testing.T) {
 	w := world.Config{}.New()
 	defer w.Close()
