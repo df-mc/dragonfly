@@ -75,7 +75,7 @@ func (RedstoneWire) RedstoneRelayerNeighbours(pos cube.Pos, tx *world.Tx) []cube
 }
 
 func (r RedstoneWire) RedstonePowerUpdate(_ cube.Pos, _ *world.Tx, power int) (world.Block, bool) {
-	power = redstonePower(power)
+	power = world.ClampRedstonePower(power)
 	if r.Power == power {
 		return r, false
 	}
@@ -102,7 +102,7 @@ func (RedstoneWire) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 }
 
 func (r RedstoneWire) EncodeBlock() (string, map[string]any) {
-	return "minecraft:redstone_wire", map[string]any{"redstone_signal": int32(redstonePower(r.Power))}
+	return "minecraft:redstone_wire", map[string]any{"redstone_signal": int32(world.ClampRedstonePower(r.Power))}
 }
 
 func (RedstoneWire) EncodeItem() (name string, meta int16) {
@@ -124,11 +124,6 @@ func allRedstoneWires() (all []world.Block) {
 		all = append(all, RedstoneWire{Power: i})
 	}
 	return
-}
-
-// redstonePower clamps a redstone signal strength to the vanilla 0-15 range.
-func redstonePower(power int) int {
-	return world.ClampRedstonePower(power)
 }
 
 // redstoneTicks converts redstone ticks to a wall-clock duration at 10 redstone ticks per second.

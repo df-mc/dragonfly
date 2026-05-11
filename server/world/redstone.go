@@ -522,13 +522,12 @@ func (e *redstoneEngine) update(tx *Tx, pos cube.Pos, d redstoneDirty, graphID u
 			}
 		}
 	}
-	acted := false
 	if hasContextAction {
-		acted = contextAction.RedstonePowerActionUpdate(pos, tx, update)
+		contextAction.RedstonePowerActionUpdate(pos, tx, update)
 	} else if shouldRunAction {
-		acted = action.RedstonePowerAction(pos, tx, oldPower, newPower)
+		action.RedstonePowerAction(pos, tx, oldPower, newPower)
 	}
-	if blockChanged || shouldRunAction || acted {
+	if blockChanged || shouldRunAction {
 		storeRedstonePower(e.power, pos, newPower)
 	}
 }
