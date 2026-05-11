@@ -356,7 +356,7 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		w.doBlockUpdatesAround(pos)
 	}
 	if !opts.DisableRedstoneUpdates {
-		w.redstone.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, w.Range())
+		w.redstone.invalidateAroundBlockChange(pos, oldBlock, b, RedstoneUpdateCauseBlockUpdate, w.Range())
 	}
 }
 

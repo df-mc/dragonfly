@@ -29,6 +29,15 @@ type RedstoneUpdate struct {
 	Pos cube.Pos
 	// ChangedNeighbour is the neighbouring block that caused the update, if any.
 	ChangedNeighbour cube.Pos
+	// HasChangedNeighbour reports whether ChangedNeighbour is set. A zero block position is valid, so callers must not
+	// use ChangedNeighbour == cube.Pos{} as an absence check.
+	HasChangedNeighbour bool
+	// ChangedRedstoneRelevant reports whether ChangedNeighbour was a redstone component before or after the change.
+	ChangedRedstoneRelevant bool
+	// Source is the original block position that caused this redstone propagation, if known.
+	Source cube.Pos
+	// HasSource reports whether Source is set.
+	HasSource bool
 	// Before is the block currently at Pos.
 	Before Block
 	// After is the block that will replace Before, if the update is a block-state update. After is nil for updates
@@ -136,15 +145,19 @@ type redstoneEngine struct {
 
 // redstoneDirty records why a position needs redstone evaluation.
 type redstoneDirty struct {
-	changed cube.Pos
-	cause   RedstoneUpdateCause
+	changed                 cube.Pos
+	hasChanged              bool
+	changedRedstoneRelevant bool
+	source                  cube.Pos
+	hasSource               bool
+	cause                   RedstoneUpdateCause
 }
 
 // redstoneTorchBurnout tracks rapid torch turn-off history and the current burned-out state.
 type redstoneTorchBurnout struct {
-	offTicks      []int64
-	burnedOut     bool
-	burnedOutTick int64
+	offTicks             []int64
+	burnedOut            bool
+	pendingSelfTriggered bool
 }
 
 const (
@@ -185,21 +198,66 @@ func newRedstoneEngine(tick int64) *redstoneEngine {
 
 // invalidateAround marks pos and its direct neighbours dirty for redstone evaluation.
 func (e *redstoneEngine) invalidateAround(pos, changed cube.Pos, cause RedstoneUpdateCause, r cube.Range) {
+	e.invalidateAroundWith(pos, redstoneDirty{changed: changed, hasChanged: true, source: changed, hasSource: true, cause: cause}, r)
+}
+
+// invalidateAroundBlockChange marks pos and its direct neighbours dirty for a block change.
+func (e *redstoneEngine) invalidateAroundBlockChange(pos cube.Pos, before, after Block, cause RedstoneUpdateCause, r cube.Range) {
+	d := redstoneDirty{
+		changed:                 pos,
+		hasChanged:              true,
+		changedRedstoneRelevant: isRedstoneRelevant(before) || isRedstoneRelevant(after),
+		source:                  pos,
+		hasSource:               true,
+		cause:                   cause,
+	}
+	e.invalidateAroundWith(pos, d, r)
+}
+
+// invalidateAroundWith marks pos and its direct neighbours dirty using the same update context.
+func (e *redstoneEngine) invalidateAroundWith(pos cube.Pos, d redstoneDirty, r cube.Range) {
 	if e == nil || pos.OutOfBounds(r) {
 		return
 	}
-	e.invalidate(pos, changed, cause, r)
+	e.invalidate(pos, d, r)
 	pos.Neighbours(func(neighbour cube.Pos) {
-		e.invalidate(neighbour, changed, cause, r)
+		e.invalidate(neighbour, d, r)
 	}, r)
 }
 
 // invalidate marks a single in-range position dirty for redstone evaluation.
-func (e *redstoneEngine) invalidate(pos, changed cube.Pos, cause RedstoneUpdateCause, r cube.Range) {
+func (e *redstoneEngine) invalidate(pos cube.Pos, d redstoneDirty, r cube.Range) {
 	if pos.OutOfBounds(r) {
 		return
 	}
-	e.dirty[pos] = redstoneDirty{changed: changed, cause: cause}
+	if existing, ok := e.dirty[pos]; ok {
+		e.dirty[pos] = mergeRedstoneDirty(existing, d)
+		return
+	}
+	e.dirty[pos] = d
+}
+
+// mergeRedstoneDirty keeps the strongest cause when multiple invalidations touch the same position before evaluation.
+func mergeRedstoneDirty(a, b redstoneDirty) redstoneDirty {
+	if redstoneDirtyPriority(b) >= redstoneDirtyPriority(a) {
+		b.changedRedstoneRelevant = a.changedRedstoneRelevant || b.changedRedstoneRelevant
+		return b
+	}
+	a.changedRedstoneRelevant = a.changedRedstoneRelevant || b.changedRedstoneRelevant
+	return a
+}
+
+func redstoneDirtyPriority(d redstoneDirty) int {
+	switch d.cause {
+	case RedstoneUpdateCauseBlockUpdate:
+		return 3
+	case RedstoneUpdateCauseScheduledTick:
+		return 2
+	case RedstoneUpdateCauseCompilerRebuild:
+		return 1
+	default:
+		return 0
+	}
 }
 
 // removeChunk drops transient redstone state tied to an unloaded chunk.
@@ -258,7 +316,7 @@ func (e *redstoneEngine) tick(tx *Tx, tick int64) {
 	for i, node := range graph.nodes {
 		d := redstoneDirtyContext(dirty, node.pos)
 		if node.sink {
-			e.update(tx, node.pos, d.changed, d.cause, graph.id, powers[i])
+			e.update(tx, node.pos, d, graph.id, powers[i])
 		}
 	}
 	for _, node := range graph.nodes {
@@ -267,7 +325,7 @@ func (e *redstoneEngine) tick(tx *Tx, tick int64) {
 		}
 		d := redstoneDirtyContext(dirty, node.pos)
 		if node.source {
-			e.updateSource(tx, node.pos, d.changed, d.cause, graph.id)
+			e.updateSource(tx, node.pos, d, graph.id)
 		}
 	}
 }
@@ -291,9 +349,35 @@ func redstoneDirtyContext(dirty map[cube.Pos]redstoneDirty, pos cube.Pos) redsto
 		}
 	}
 	if !ok {
-		return redstoneDirty{changed: pos, cause: RedstoneUpdateCauseCompilerRebuild}
+		return redstoneDirty{changed: pos, hasChanged: true, source: pos, hasSource: true, cause: RedstoneUpdateCauseCompilerRebuild}
 	}
 	return best
+}
+
+// redstoneUpdate builds the public update payload for a dirty context.
+func (d redstoneDirty) redstoneUpdate(pos cube.Pos, before Block, oldPower, newPower int, tick int64, graphID uint64) RedstoneUpdate {
+	return RedstoneUpdate{
+		Pos:                     pos,
+		ChangedNeighbour:        d.changed,
+		HasChangedNeighbour:     d.hasChanged,
+		ChangedRedstoneRelevant: d.changedRedstoneRelevant,
+		Source:                  d.source,
+		HasSource:               d.hasSource,
+		Before:                  before,
+		OldPower:                oldPower,
+		NewPower:                newPower,
+		CurrentTick:             tick,
+		NetworkID:               graphID,
+		Cause:                   d.cause,
+	}
+}
+
+// propagatedFrom keeps the original source but records the block state that changed during propagation.
+func (d redstoneDirty) propagatedFrom(pos cube.Pos) redstoneDirty {
+	d.changed = pos
+	d.hasChanged = true
+	d.changedRedstoneRelevant = true
+	return d
 }
 
 func redstoneManhattanDistance(a, b cube.Pos) int {
@@ -313,31 +397,43 @@ func (e *redstoneEngine) compile(tx *Tx, candidates []cube.Pos) redstoneGraph {
 	seen := make(map[cube.Pos]struct{}, len(candidates)*2)
 	for _, pos := range candidates {
 		e.compileRegion(tx, pos, seen, &nodes)
-		if b, ok := tx.World().blockLoaded(pos); ok && e.redstoneBlockMayConduct(tx, pos, b) {
-			pos.Neighbours(func(neighbour cube.Pos) {
-				if b, ok := tx.World().blockLoaded(neighbour); ok && isRedstoneRelevant(b) {
-					e.compileRegion(tx, neighbour, seen, &nodes)
-				}
-			}, tx.Range())
-		}
-		pos.Neighbours(func(neighbour cube.Pos) {
-			if b, ok := tx.World().blockLoaded(neighbour); ok && isRedstoneRelevant(b) {
-				e.compileRegion(tx, neighbour, seen, &nodes)
-			}
-			if b, ok := tx.World().blockLoaded(neighbour); ok && e.redstoneBlockMayConduct(tx, neighbour, b) {
-				neighbour.Neighbours(func(conductedNeighbour cube.Pos) {
-					if b, ok := tx.World().blockLoaded(conductedNeighbour); ok && isRedstoneRelevant(b) {
-						e.compileRegion(tx, conductedNeighbour, seen, &nodes)
-					}
-				}, tx.Range())
-			}
-		}, tx.Range())
+		e.compileAdjacentRedstone(tx, pos, seen, &nodes)
+	}
+	for i := 0; i < len(nodes); i++ {
+		e.compileAdjacentRedstone(tx, nodes[i].pos, seen, &nodes)
 	}
 	slices.SortFunc(nodes, func(a, b redstoneNode) int {
 		return compareBlockPos(a.pos, b.pos)
 	})
 	edges := e.compileEdges(tx, nodes)
 	return redstoneGraph{id: redstoneGraphID(nodes, edges), nodes: nodes, edges: edges}
+}
+
+// compileAdjacentRedstone adds redstone blocks that can interact with pos directly or through an adjacent conductor.
+func (e *redstoneEngine) compileAdjacentRedstone(tx *Tx, pos cube.Pos, seen map[cube.Pos]struct{}, nodes *[]redstoneNode) {
+	if b, ok := tx.World().blockLoaded(pos); ok && e.redstoneBlockMayConduct(tx, pos, b) {
+		pos.Neighbours(func(neighbour cube.Pos) {
+			if b, ok := tx.World().blockLoaded(neighbour); ok && isRedstoneRelevant(b) {
+				e.compileRegion(tx, neighbour, seen, nodes)
+			}
+		}, tx.Range())
+	}
+	pos.Neighbours(func(neighbour cube.Pos) {
+		b, ok := tx.World().blockLoaded(neighbour)
+		if !ok {
+			return
+		}
+		if isRedstoneRelevant(b) {
+			e.compileRegion(tx, neighbour, seen, nodes)
+		}
+		if e.redstoneBlockMayConduct(tx, neighbour, b) {
+			neighbour.Neighbours(func(conductedNeighbour cube.Pos) {
+				if b, ok := tx.World().blockLoaded(conductedNeighbour); ok && isRedstoneRelevant(b) {
+					e.compileRegion(tx, conductedNeighbour, seen, nodes)
+				}
+			}, tx.Range())
+		}
+	}, tx.Range())
 }
 
 // redstoneBlockMayConduct reports whether a block should include its adjacent receivers in graph compilation.
@@ -380,7 +476,7 @@ func (e *redstoneEngine) compileRegion(tx *Tx, pos cube.Pos, seen map[cube.Pos]s
 		if !relayer {
 			continue
 		}
-		for _, neighbour := range e.redstoneRelayerNeighbourPositions(tx, p, b) {
+		for _, neighbour := range e.redstoneRelayerConnectedPositions(tx, p, b) {
 			if b, ok := tx.World().blockLoaded(neighbour); ok && isRedstoneRelevant(b) {
 				queue = append(queue, neighbour)
 			}
@@ -389,7 +485,7 @@ func (e *redstoneEngine) compileRegion(tx *Tx, pos cube.Pos, seen map[cube.Pos]s
 }
 
 // update applies a computed input power to a consumer or action block.
-func (e *redstoneEngine) update(tx *Tx, pos, changed cube.Pos, cause RedstoneUpdateCause, graphID uint64, newPower int) {
+func (e *redstoneEngine) update(tx *Tx, pos cube.Pos, d redstoneDirty, graphID uint64, newPower int) {
 	b := tx.Block(pos)
 	oldPower, newPower := e.power[pos], clampRedstonePower(newPower)
 
@@ -403,17 +499,7 @@ func (e *redstoneEngine) update(tx *Tx, pos, changed cube.Pos, cause RedstoneUpd
 	contextAction, hasContextAction := b.(RedstonePowerContextAction)
 	hasAnyAction := hasAction || hasContextAction
 
-	update := RedstoneUpdate{
-		Pos:              pos,
-		ChangedNeighbour: changed,
-		Before:           b,
-		After:            nil,
-		OldPower:         oldPower,
-		NewPower:         newPower,
-		CurrentTick:      e.currentTick,
-		NetworkID:        graphID,
-		Cause:            cause,
-	}
+	update := d.redstoneUpdate(pos, b, oldPower, newPower, e.currentTick, graphID)
 	if blockChanged {
 		update.After = after
 	}
@@ -430,7 +516,7 @@ func (e *redstoneEngine) update(tx *Tx, pos, changed cube.Pos, cause RedstoneUpd
 
 	if blockChanged {
 		tx.SetBlock(pos, after, &SetOpts{DisableRedstoneUpdates: true})
-		e.invalidateAround(pos, pos, cause, tx.Range())
+		e.invalidateAroundWith(pos, d.propagatedFrom(pos), tx.Range())
 		if postUpdater, ok := b.(RedstonePowerPostUpdater); ok {
 			postUpdater.RedstonePowerPostUpdate(pos, tx, b, after, oldPower, newPower)
 		}
@@ -471,8 +557,8 @@ func (e *redstoneEngine) updateGraphSources(tx *Tx, graph redstoneGraph, dirty m
 		}
 		checked[node.pos] = struct{}{}
 
-		d := dirty[node.pos]
-		if !e.updateSource(tx, node.pos, d.changed, d.cause, graph.id) {
+		d := redstoneDirtyContext(dirty, node.pos)
+		if !e.updateSource(tx, node.pos, d, graph.id) {
 			if cancelled == nil {
 				cancelled = make(map[cube.Pos]int)
 			}
@@ -483,27 +569,18 @@ func (e *redstoneEngine) updateGraphSources(tx *Tx, graph redstoneGraph, dirty m
 }
 
 // updateSource updates cached output power for a source and reports whether it was allowed.
-func (e *redstoneEngine) updateSource(tx *Tx, pos, changed cube.Pos, cause RedstoneUpdateCause, graphID uint64) bool {
+func (e *redstoneEngine) updateSource(tx *Tx, pos cube.Pos, d redstoneDirty, graphID uint64) bool {
 	b := tx.Block(pos)
 	oldPower, newPower := e.output[pos], e.sourcePower(pos, tx)
 	if oldPower == newPower {
 		return true
 	}
-	update := RedstoneUpdate{
-		Pos:              pos,
-		ChangedNeighbour: changed,
-		Before:           b,
-		OldPower:         oldPower,
-		NewPower:         newPower,
-		CurrentTick:      e.currentTick,
-		NetworkID:        graphID,
-		Cause:            cause,
-	}
+	update := d.redstoneUpdate(pos, b, oldPower, newPower, e.currentTick, graphID)
 	if !e.redstoneUpdateAllowed(tx, update) {
 		return false
 	}
 	e.output[pos] = newPower
-	e.invalidateAround(pos, pos, cause, tx.Range())
+	e.invalidateAroundWith(pos, d.propagatedFrom(pos), tx.Range())
 	return true
 }
 
@@ -849,7 +926,10 @@ func (e *redstoneEngine) torchBurnoutStatus(pos cube.Pos, currentTick int64) (bu
 	if !ok {
 		return false, true
 	}
-	return data.burnedOut, !data.burnedOut || currentTick > data.burnedOutTick
+	if !data.burnedOut {
+		return false, true
+	}
+	return true, len(data.offTicks) < redstoneTorchBurnoutThreshold
 }
 
 // recordTorchTurnOff records a torch being forced off and reports whether that torch should burn out.
@@ -861,16 +941,9 @@ func (e *redstoneEngine) recordTorchTurnOff(pos cube.Pos, currentTick int64) boo
 	data.offTicks = append(data.offTicks, currentTick)
 	if len(data.offTicks) > redstoneTorchBurnoutThreshold {
 		data.burnedOut = true
-		data.burnedOutTick = currentTick
-		e.torchBurnout[pos] = data
-		return true
-	}
-	if len(data.offTicks) == 0 && !data.burnedOut {
-		delete(e.torchBurnout, pos)
-		return false
 	}
 	e.torchBurnout[pos] = data
-	return false
+	return data.burnedOut
 }
 
 // clearTorchBurnout removes transient burnout state for a redstone torch.
@@ -879,6 +952,38 @@ func (e *redstoneEngine) clearTorchBurnout(pos cube.Pos) {
 		return
 	}
 	delete(e.torchBurnout, pos)
+}
+
+// markTorchSelfTriggered records that the next torch turn-off at pos was caused by that torch's own output loop.
+func (e *redstoneEngine) markTorchSelfTriggered(pos cube.Pos) {
+	if e == nil {
+		return
+	}
+	if e.torchBurnout == nil {
+		e.torchBurnout = make(map[cube.Pos]redstoneTorchBurnout)
+	}
+	data := e.torchBurnout[pos]
+	data.pendingSelfTriggered = true
+	e.torchBurnout[pos] = data
+}
+
+// consumeTorchSelfTriggered reports and clears whether the next torch turn-off at pos was self-triggered.
+func (e *redstoneEngine) consumeTorchSelfTriggered(pos cube.Pos) bool {
+	if e == nil || e.torchBurnout == nil {
+		return false
+	}
+	data, ok := e.torchBurnout[pos]
+	if !ok {
+		return false
+	}
+	selfTriggered := data.pendingSelfTriggered
+	data.pendingSelfTriggered = false
+	if len(data.offTicks) == 0 && !data.burnedOut {
+		delete(e.torchBurnout, pos)
+	} else {
+		e.torchBurnout[pos] = data
+	}
+	return selfTriggered
 }
 
 // pruneTorchBurnout removes expired turn-off entries and returns the remaining burnout data.
@@ -893,7 +998,7 @@ func (e *redstoneEngine) pruneTorchBurnout(pos cube.Pos, currentTick int64) (red
 	data.offTicks = slices.DeleteFunc(data.offTicks, func(tick int64) bool {
 		return currentTick-tick >= redstoneTorchBurnoutWindowTicks
 	})
-	if len(data.offTicks) == 0 && !data.burnedOut {
+	if len(data.offTicks) == 0 && !data.burnedOut && !data.pendingSelfTriggered {
 		delete(e.torchBurnout, pos)
 		return redstoneTorchBurnout{}, false
 	}
@@ -998,6 +1103,51 @@ func (e *redstoneEngine) redstoneRelayerNeighbourPositions(tx *Tx, pos cube.Pos,
 	})
 	slices.SortFunc(neighbours, compareBlockPos)
 	return neighbours
+}
+
+// redstoneRelayerConnectedPositions returns relayers connected to pos in either direction. Graph membership must be
+// weakly connected so a one-way relayer, such as dust climbing glowstone, still compiles with its lower input path.
+func (e *redstoneEngine) redstoneRelayerConnectedPositions(tx *Tx, pos cube.Pos, b Block) []cube.Pos {
+	neighbours := e.redstoneRelayerNeighbourPositions(tx, pos, b)
+	seen := make(map[cube.Pos]struct{}, len(neighbours)+8)
+	for _, neighbour := range neighbours {
+		seen[neighbour] = struct{}{}
+	}
+	for _, candidate := range redstoneRelayerIncomingCandidates(pos, tx.Range()) {
+		if _, ok := seen[candidate]; ok {
+			continue
+		}
+		candidateBlock, ok := tx.World().blockLoaded(candidate)
+		if !ok {
+			continue
+		}
+		if _, ok := candidateBlock.(RedstonePowerRelayer); !ok {
+			continue
+		}
+		if slices.Contains(e.redstoneRelayerNeighbourPositions(tx, candidate, candidateBlock), pos) {
+			neighbours = append(neighbours, candidate)
+			seen[candidate] = struct{}{}
+		}
+	}
+	slices.SortFunc(neighbours, compareBlockPos)
+	return neighbours
+}
+
+// redstoneRelayerIncomingCandidates returns nearby positions that can point at pos with the built-in relayer geometry.
+func redstoneRelayerIncomingCandidates(pos cube.Pos, r cube.Range) []cube.Pos {
+	candidates := make([]cube.Pos, 0, 26)
+	for x := pos[0] - 1; x <= pos[0]+1; x++ {
+		for y := pos[1] - 1; y <= pos[1]+1; y++ {
+			for z := pos[2] - 1; z <= pos[2]+1; z++ {
+				candidate := cube.Pos{x, y, z}
+				if candidate == pos || candidate.OutOfBounds(r) {
+					continue
+				}
+				candidates = append(candidates, candidate)
+			}
+		}
+	}
+	return candidates
 }
 
 // redstoneRelayerNeighbours visits the six default adjacent relayer neighbours.

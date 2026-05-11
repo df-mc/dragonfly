@@ -115,6 +115,16 @@ func (tx *Tx) RecordRedstoneTorchTurnOff(pos cube.Pos) (burnsOut bool) {
 	return tx.World().redstone.recordTorchTurnOff(pos, tx.CurrentTick())
 }
 
+// MarkRedstoneTorchSelfTriggered records that the next torch turn-off at pos was caused by that torch's own output.
+func (tx *Tx) MarkRedstoneTorchSelfTriggered(pos cube.Pos) {
+	tx.World().redstone.markTorchSelfTriggered(pos)
+}
+
+// ConsumeRedstoneTorchSelfTriggered reports and clears whether the next torch turn-off at pos was self-triggered.
+func (tx *Tx) ConsumeRedstoneTorchSelfTriggered(pos cube.Pos) bool {
+	return tx.World().redstone.consumeTorchSelfTriggered(pos)
+}
+
 // ClearRedstoneTorchBurnout removes transient burnout state for the redstone torch at pos.
 func (tx *Tx) ClearRedstoneTorchBurnout(pos cube.Pos) {
 	tx.World().redstone.clearTorchBurnout(pos)
