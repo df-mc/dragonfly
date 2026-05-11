@@ -165,7 +165,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireBreak(t *testing
 	dustPower := make(map[cube.Pos]int, len(dustPositions))
 	<-w.Exec(func(tx *world.Tx) {
 		currentTick = tx.CurrentTick()
-		burnedOut, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+		burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 	})
 	if !burnedOut || recoverable {
 		t.Fatalf("torch was not in immediate burnout window before wire break; tick=%d burnedOut=%t recoverable=%t", currentTick, burnedOut, recoverable)
@@ -265,7 +265,7 @@ func TestBurnedOutRedstoneTorchRecoversFromAdjacentBlockUpdate(t *testing.T) {
 	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
-			burnedOut, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 		})
 		return burnedOut && recoverable
 	}, func() string {
@@ -319,7 +319,7 @@ func TestBurnedOutRedstoneTorchRecoversFromVerticalBlockUpdate(t *testing.T) {
 			redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
 				<-w.Exec(func(tx *world.Tx) {
 					currentTick = tx.CurrentTick()
-					burnedOut, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+					burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 				})
 				return burnedOut && recoverable
 			}, func() string {
@@ -378,7 +378,7 @@ func TestBurnedOutRedstoneTorchRecoversFromWireNeighbourUpdate(t *testing.T) {
 	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
-			burnedOut, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 		})
 		return burnedOut && recoverable
 	}, func() string {
@@ -436,7 +436,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromRedstoneDustPastAdjacentWire(t 
 	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
-			burnedOut, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 		})
 		return burnedOut && recoverable
 	}, func() string {
@@ -501,7 +501,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireNeighbourUpdate(
 	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
-			burnedOut, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 		})
 		return burnedOut && recoverable
 	}, func() string {
@@ -561,7 +561,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantWireUpdate(t *testing.T)
 	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
-			burnedOut, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 		})
 		return burnedOut && recoverable
 	}, func() string {
@@ -601,14 +601,14 @@ func redstoneTorchBurnoutTestSnapshot(w *world.World, torchPos cube.Pos, dustPos
 				}
 			}
 		}
-		*burnedOut, _ = tx.RedstoneTorchBurnoutStatus(torchPos)
+		*burnedOut, _ = tx.Redstone().Torch(torchPos).BurnoutStatus()
 	})
 }
 
 func redstoneTorchBurnoutTestForceBurnedOut(tx *world.Tx, pos cube.Pos) {
 	for range 10 {
-		tx.MarkRedstoneTorchSelfTriggered(pos)
-		tx.RecordRedstoneTorchTurnOff(pos)
+		tx.Redstone().Torch(pos).MarkSelfTriggered()
+		tx.Redstone().Torch(pos).RecordTurnOff()
 	}
 }
 

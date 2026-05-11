@@ -40,7 +40,7 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 
 func (t RedstoneTorch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
-		tx.ClearRedstoneTorchBurnout(pos)
+		tx.Redstone().Torch(pos).ClearBurnout()
 	})
 }
 
@@ -73,13 +73,14 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 // NeighbourUpdateTick breaks unsupported torches and otherwise schedules inverse-state refreshes.
 func (t RedstoneTorch) NeighbourUpdateTick(pos, changed cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
-		tx.ClearRedstoneTorchBurnout(pos)
+		tx.Redstone().Torch(pos).ClearBurnout()
 		breakBlock(t, pos, tx)
 		return
 	}
-	if burnedOut, recoverable := tx.RedstoneTorchBurnoutStatus(pos); burnedOut {
+	torch := tx.Redstone().Torch(pos)
+	if burnedOut, recoverable := torch.BurnoutStatus(); burnedOut {
 		if t.recoverBurnout(pos, changed, tx, recoverable, false, t.attachmentPowered(pos, tx)) {
-			tx.ClearRedstoneTorchBurnout(pos)
+			torch.ClearBurnout()
 			tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
 		}
 		return
@@ -92,23 +93,25 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if tx == nil {
 		return
 	}
-	selfTriggered := tx.ConsumeRedstoneTorchSelfTriggered(pos)
-	if burnedOut, _ := tx.RedstoneTorchBurnoutStatus(pos); burnedOut {
+	redstone := tx.Redstone()
+	torch := redstone.Torch(pos)
+	selfTriggered := torch.ConsumeSelfTriggered()
+	if burnedOut, _ := torch.BurnoutStatus(); burnedOut {
 		return
 	}
 	attachmentPowered := t.attachmentPowered(pos, tx)
 	lit := !attachmentPowered
 	if t.Lit != lit {
-		if !lit && selfTriggered && tx.RecordRedstoneTorchTurnOff(pos) {
+		if !lit && selfTriggered && torch.RecordTurnOff() {
 			t.Lit = false
 			tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 			tx.SetBlock(pos, t, &world.SetOpts{DisableRedstoneUpdates: true})
-			tx.ScheduleRedstoneUpdate(pos)
+			redstone.ScheduleUpdate(pos)
 			return
 		}
 		t.Lit = lit
 		tx.SetBlock(pos, t, &world.SetOpts{DisableRedstoneUpdates: true})
-		tx.ScheduleRedstoneUpdate(pos)
+		redstone.ScheduleUpdate(pos)
 	}
 }
 
@@ -138,12 +141,13 @@ func (t RedstoneTorch) RedstonePowerActionUpdate(pos cube.Pos, tx *world.Tx, upd
 	if tx == nil {
 		return false
 	}
-	if burnedOut, recoverable := tx.RedstoneTorchBurnoutStatus(pos); burnedOut {
+	torch := tx.Redstone().Torch(pos)
+	if burnedOut, recoverable := torch.BurnoutStatus(); burnedOut {
 		attachmentPowered := update.NewPower > 0 && t.attachmentPowered(pos, tx)
 		if !update.HasChangedNeighbour || update.Cause == world.RedstoneUpdateCauseScheduledTick || !t.recoverBurnout(pos, update.ChangedNeighbour, tx, recoverable, update.ChangedRedstoneRelevant, attachmentPowered) {
 			return false
 		}
-		tx.ClearRedstoneTorchBurnout(pos)
+		torch.ClearBurnout()
 		tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
 		return true
 	}
@@ -152,7 +156,7 @@ func (t RedstoneTorch) RedstonePowerActionUpdate(pos cube.Pos, tx *world.Tx, upd
 		return false
 	}
 	if attachmentPowered && redstoneTorchSelfTriggered(pos, update) {
-		tx.MarkRedstoneTorchSelfTriggered(pos)
+		torch.MarkSelfTriggered()
 	}
 	tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
 	return true

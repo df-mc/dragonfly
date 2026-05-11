@@ -319,18 +319,18 @@ func TestRedstoneTorchBurnsOutAfterRapidSelfTriggeredTurnOffs(t *testing.T) {
 		for range 8 {
 			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-			tx.MarkRedstoneTorchSelfTriggered(torchPos)
+			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 			tx.SetBlock(inputPos, nil, nil)
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		}
 		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-		tx.MarkRedstoneTorchSelfTriggered(torchPos)
+		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 
 		lit = tx.Block(torchPos).(RedstoneTorch).Lit
-		burnedOut, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+		burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 	})
 
 	if lit {
@@ -366,7 +366,7 @@ func TestRedstoneTorchExternalTurnOffsDoNotBurnOut(t *testing.T) {
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 
 		lit = tx.Block(torchPos).(RedstoneTorch).Lit
-		burnedOut, _ = tx.RedstoneTorchBurnoutStatus(torchPos)
+		burnedOut, _ = tx.Redstone().Torch(torchPos).BurnoutStatus()
 	})
 
 	if lit {
@@ -402,14 +402,14 @@ func TestBurnedOutRedstoneTorchRelightsWhenInputIsRemoved(t *testing.T) {
 		for range 8 {
 			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-			tx.MarkRedstoneTorchSelfTriggered(torchPos)
+			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 			tx.SetBlock(inputPos, nil, nil)
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		}
 		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-		tx.MarkRedstoneTorchSelfTriggered(torchPos)
+		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 
 		burnedOutTick = tx.CurrentTick()
@@ -444,14 +444,14 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromInputWirePowerDrop(t *testing.T
 		for range 8 {
 			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-			tx.MarkRedstoneTorchSelfTriggered(torchPos)
+			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 			tx.SetBlock(inputPos, RedstoneWire{}, nil)
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		}
 		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-		tx.MarkRedstoneTorchSelfTriggered(torchPos)
+		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 
 		tx.SetBlock(inputPos, RedstoneWire{}, nil)
@@ -459,7 +459,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromInputWirePowerDrop(t *testing.T
 		torch.RedstonePowerActionUpdate(torchPos, tx, world.RedstoneUpdate{ChangedNeighbour: inputPos, HasChangedNeighbour: true})
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		lit = tx.Block(torchPos).(RedstoneTorch).Lit
-		burnedOut, _ = tx.RedstoneTorchBurnoutStatus(torchPos)
+		burnedOut, _ = tx.Redstone().Torch(torchPos).BurnoutStatus()
 	})
 
 	if lit || !burnedOut {
@@ -482,14 +482,14 @@ func TestBurnedOutRedstoneTorchRecoversFromZeroPositionInputUpdate(t *testing.T)
 		for range 8 {
 			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-			tx.MarkRedstoneTorchSelfTriggered(torchPos)
+			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 			tx.SetBlock(inputPos, nil, nil)
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		}
 		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-		tx.MarkRedstoneTorchSelfTriggered(torchPos)
+		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 
 		tx.SetBlock(inputPos, nil, nil)
@@ -529,14 +529,14 @@ func TestBurnedOutRedstoneTorchDoesNotRelightFromDisconnectedUpdate(t *testing.T
 		for range 8 {
 			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-			tx.MarkRedstoneTorchSelfTriggered(torchPos)
+			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 			tx.SetBlock(inputPos, nil, nil)
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		}
 		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-		tx.MarkRedstoneTorchSelfTriggered(torchPos)
+		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 
 		burnedOutTick = tx.CurrentTick()
@@ -548,7 +548,7 @@ func TestBurnedOutRedstoneTorchDoesNotRelightFromDisconnectedUpdate(t *testing.T
 		torch.RedstonePowerActionUpdate(torchPos, tx, world.RedstoneUpdate{ChangedNeighbour: inputPos.Side(cube.FaceNorth).Side(cube.FaceNorth), HasChangedNeighbour: true})
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		lit = tx.Block(torchPos).(RedstoneTorch).Lit
-		_, recoverable = tx.RedstoneTorchBurnoutStatus(torchPos)
+		_, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
 	})
 
 	if lit || recoverable {
@@ -571,14 +571,14 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverOnSameTickInputDrops(t *testing.T) 
 		for range 8 {
 			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-			tx.MarkRedstoneTorchSelfTriggered(torchPos)
+			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 			tx.SetBlock(inputPos, nil, nil)
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		}
 		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-		tx.MarkRedstoneTorchSelfTriggered(torchPos)
+		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 
 		tx.SetBlock(inputPos, nil, nil)
@@ -608,14 +608,14 @@ func TestBurnedOutRedstoneTorchDoesNotSelfRecoverWhenLoopUnpowersInput(t *testin
 		for range 8 {
 			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-			tx.MarkRedstoneTorchSelfTriggered(torchPos)
+			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 			tx.SetBlock(inputPos, nil, nil)
 			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 		}
 		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
 		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-		tx.MarkRedstoneTorchSelfTriggered(torchPos)
+		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
 		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
 
 		tx.SetBlock(inputPos, nil, nil)
