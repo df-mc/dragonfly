@@ -67,13 +67,15 @@ type Handler interface {
 	// be called to cancel the fire being extinguished.
 	// cube.Pos can be used to see where was the fire extinguished, may be used to cancel this on specific positions.
 	HandleFireExtinguish(ctx *Context, pos cube.Pos)
-	// HandleStartBreak handles the player starting to break a block at the position passed. ctx.Cancel() may
-	// be called to stop the player from breaking the block completely.
-	HandleStartBreak(ctx *Context, pos cube.Pos)
-	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
-	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered
-	// to change what items will actually be dropped.
-	HandleBlockBreak(ctx *Context, pos cube.Pos, drops *[]item.Stack, xp *int)
+	// HandleStartBreak handles the player starting to break a block at the position passed. Private is true if the
+	// block is a private view-layer block, and false if it is the public world block. ctx.Cancel() may be called to
+	// stop the player from breaking the block completely.
+	HandleStartBreak(ctx *Context, pos cube.Pos, private bool)
+	// HandleBlockBreak handles a block that is being broken by a player. Private is true if the block broken is
+	// a private view-layer block, and false if it is the public world block. ctx.Cancel() may be called to cancel
+	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered to change
+	// what items will actually be dropped.
+	HandleBlockBreak(ctx *Context, pos cube.Pos, private bool, drops *[]item.Stack, xp *int)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
 	HandleBlockPlace(ctx *Context, pos cube.Pos, b world.Block)
@@ -176,8 +178,8 @@ func (NopHandler) HandleTransfer(*Context, *net.UDPAddr)                        
 func (NopHandler) HandleChat(*Context, *string)                                            {}
 func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
 func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
-func (NopHandler) HandleStartBreak(*Context, cube.Pos)                                     {}
-func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)                {}
+func (NopHandler) HandleStartBreak(*Context, cube.Pos, bool)                               {}
+func (NopHandler) HandleBlockBreak(*Context, cube.Pos, bool, *[]item.Stack, *int)          {}
 func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
 func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}
 func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)                 {}
