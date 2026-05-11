@@ -510,7 +510,7 @@ func (e *redstoneEngine) update(tx *Tx, pos cube.Pos, d redstoneDirty, graphID u
 	}
 
 	if !blockChanged && !hasAnyAction {
-		e.power[pos] = newPower
+		storeRedstonePower(e.power, pos, newPower)
 		return
 	}
 
@@ -533,7 +533,7 @@ func (e *redstoneEngine) update(tx *Tx, pos cube.Pos, d redstoneDirty, graphID u
 		acted = action.RedstonePowerAction(pos, tx, oldPower, newPower)
 	}
 	if blockChanged || hasAnyAction || acted {
-		e.power[pos] = newPower
+		storeRedstonePower(e.power, pos, newPower)
 	}
 }
 
@@ -579,9 +579,18 @@ func (e *redstoneEngine) updateSource(tx *Tx, pos cube.Pos, d redstoneDirty, gra
 	if !e.redstoneUpdateAllowed(tx, update) {
 		return false
 	}
-	e.output[pos] = newPower
+	storeRedstonePower(e.output, pos, newPower)
 	e.invalidateAroundWith(pos, d.propagatedFrom(pos), tx.Range())
 	return true
+}
+
+// storeRedstonePower stores non-zero redstone power and removes zero entries from cache maps.
+func storeRedstonePower(cache map[cube.Pos]int, pos cube.Pos, power int) {
+	if power == 0 {
+		delete(cache, pos)
+		return
+	}
+	cache[pos] = power
 }
 
 // directPower returns the strongest direct power reaching pos from any side.
