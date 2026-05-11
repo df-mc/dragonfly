@@ -4,6 +4,8 @@ import (
 	"maps"
 	"slices"
 	"sync"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // layer stores the appearance overrides that a ViewLayer applies to an entity.
@@ -17,6 +19,8 @@ type layer struct {
 type ViewLayerUpdater interface {
 	// ViewLayerEntityChanged handles an entity whose view-layer overrides changed.
 	ViewLayerEntityChanged(entity Entity)
+	// ViewLayerBlockChanged handles a block whose view-layer override changed.
+	ViewLayerBlockChanged(pos cube.Pos)
 }
 
 type viewLayerViewer interface {
@@ -28,6 +32,7 @@ type viewLayerViewer interface {
 type ViewLayer struct {
 	mu       sync.RWMutex
 	entities map[*EntityHandle]layer
+	blocks   map[cube.Pos]Block
 	updater  ViewLayerUpdater
 }
 
@@ -35,6 +40,7 @@ type ViewLayer struct {
 func NewViewLayer(updater ViewLayerUpdater) *ViewLayer {
 	return &ViewLayer{
 		entities: map[*EntityHandle]layer{},
+		blocks:   map[cube.Pos]Block{},
 		updater:  updater,
 	}
 }
@@ -119,6 +125,42 @@ func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
 	return v.entities[entity.H()].visibility
 }
 
+// ViewBlock overwrites the public block at the position passed for this ViewLayer.
+// Passing nil removes the block override, causing the public block to be viewed again.
+func (v *ViewLayer) ViewBlock(pos cube.Pos, b Block) {
+	v.mu.Lock()
+	if b == nil {
+		delete(v.blocks, pos)
+	} else {
+		v.blocks[pos] = b
+	}
+	v.mu.Unlock()
+
+	v.refreshBlock(pos)
+}
+
+// ViewPublicBlock removes the block override at the position passed, causing the public block to be viewed again.
+func (v *ViewLayer) ViewPublicBlock(pos cube.Pos) {
+	v.ViewBlock(pos, nil)
+}
+
+// Block returns the overwritten block at the position passed and whether an override was set.
+func (v *ViewLayer) Block(pos cube.Pos) (Block, bool) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
+	b, ok := v.blocks[pos]
+	return b, ok
+}
+
+// Blocks returns all block overrides in the view layer.
+func (v *ViewLayer) Blocks() map[cube.Pos]Block {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
+	return maps.Clone(v.blocks)
+}
+
 // Remove removes all overrides for the entity from the ViewLayer.
 func (v *ViewLayer) Remove(entity Entity) {
 	if v.remove(entity) {
@@ -162,6 +204,7 @@ func (v *ViewLayer) Close() error {
 	defer v.mu.Unlock()
 
 	clear(v.entities)
+	clear(v.blocks)
 	return nil
 }
 
@@ -173,5 +216,11 @@ func (l layer) empty() bool {
 func (v *ViewLayer) refresh(entity Entity) {
 	if v.updater != nil {
 		v.updater.ViewLayerEntityChanged(entity)
+	}
+}
+
+func (v *ViewLayer) refreshBlock(pos cube.Pos) {
+	if v.updater != nil {
+		v.updater.ViewLayerBlockChanged(pos)
 	}
 }

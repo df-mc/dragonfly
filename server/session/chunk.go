@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+	"maps"
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -18,6 +19,7 @@ const subChunkRequests = true
 
 // ViewChunk ...
 func (s *Session) ViewChunk(pos world.ChunkPos, dim world.Dimension, blockEntities map[cube.Pos]world.Block, c *chunk.Chunk) {
+	c, blockEntities = s.applyViewLayerToChunk(pos, c, blockEntities)
 	if !s.conn.ClientCacheEnabled() {
 		s.sendNetworkChunk(pos, dim, c, blockEntities)
 		return
@@ -45,7 +47,11 @@ func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.Sub
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
 			continue
 		}
-		entries = append(entries, s.subChunkEntry(offset, ind, col, transaction))
+		ch, blockEntities := s.applyViewLayerToChunk(world.ChunkPos{
+			centre.X() + int32(offset[0]),
+			centre.Z() + int32(offset[2]),
+		}, col.Chunk, col.BlockEntities)
+		entries = append(entries, s.subChunkEntry(offset, ind, ch, blockEntities, transaction))
 	}
 	if s.conn.ClientCacheEnabled() && len(transaction) > 0 {
 		s.blobMu.Lock()
@@ -61,21 +67,21 @@ func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.Sub
 	})
 }
 
-func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *world.Column, transaction map[uint64]struct{}) protocol.SubChunkEntry {
-	chunkMap := col.HeightMap()
+func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block, transaction map[uint64]struct{}) protocol.SubChunkEntry {
+	chunkMap := c.HeightMap()
 	subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]int8, 256)
 	higher, lower := true, true
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
-			otherInd := col.SubIndex(y)
+			otherInd := c.SubIndex(y)
 			switch {
 			case otherInd > ind:
 				subMap[i], lower = 16, false
 			case otherInd < ind:
 				subMap[i], higher = -1, false
 			default:
-				subMap[i], lower, higher = int8(y-col.SubY(otherInd)), false, false
+				subMap[i], lower, higher = int8(y-c.SubY(otherInd)), false, false
 			}
 		}
 	}
@@ -85,7 +91,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		subMapType, subMap = protocol.HeightMapDataTooLow, nil
 	}
 
-	sub := col.Sub()[ind]
+	sub := c.Sub()[ind]
 	if sub.Empty() {
 		return protocol.SubChunkEntry{
 			Result:              protocol.SubChunkResultSuccessAllAir,
@@ -97,12 +103,12 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		}
 	}
 
-	serialisedSubChunk := chunk.EncodeSubChunk(col.Chunk, chunk.NetworkEncoding, int(ind))
+	serialisedSubChunk := chunk.EncodeSubChunk(c, chunk.NetworkEncoding, int(ind))
 
 	blockEntityBuf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
-	for pos, b := range col.BlockEntities {
-		if n, ok := b.(world.NBTer); ok && col.SubIndex(int16(pos.Y())) == ind {
+	for pos, b := range blockEntities {
+		if n, ok := b.(world.NBTer); ok && c.SubIndex(int16(pos.Y())) == ind {
 			d := n.EncodeNBT()
 			d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 			_ = enc.Encode(d)
@@ -127,6 +133,36 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		}
 	}
 	return entry
+}
+
+// applyViewLayerToChunk returns a chunk and block entity map with this session's view-layer block overrides applied.
+func (s *Session) applyViewLayerToChunk(pos world.ChunkPos, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) (*chunk.Chunk, map[cube.Pos]world.Block) {
+	if s.viewLayer == nil {
+		return c, blockEntities
+	}
+	overrides := s.viewLayer.Blocks()
+	if len(overrides) == 0 {
+		return c, blockEntities
+	}
+
+	var cloned bool
+	for blockPos, b := range overrides {
+		if (world.ChunkPos{int32(blockPos[0] >> 4), int32(blockPos[2] >> 4)}) != pos {
+			continue
+		}
+		if !cloned {
+			c = c.Clone()
+			blockEntities = maps.Clone(blockEntities)
+			cloned = true
+		}
+		c.SetBlock(uint8(blockPos[0]), int16(blockPos[1]), uint8(blockPos[2]), 0, s.br.BlockRuntimeID(b))
+		if _, ok := b.(world.NBTer); ok {
+			blockEntities[blockPos] = b
+		} else {
+			delete(blockEntities, blockPos)
+		}
+	}
+	return c, blockEntities
 }
 
 // dimensionID returns the dimension ID of the world that the session is in.
