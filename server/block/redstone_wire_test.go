@@ -345,6 +345,39 @@ func TestLeverStrongPowersAttachedBlockFace(t *testing.T) {
 	}
 }
 
+func TestLeverUpdatesConsumerBehindAttachedBlock(t *testing.T) {
+	w := world.Config{}.New()
+	defer w.Close()
+	loader := world.NewLoader(1, w, world.NopViewer{})
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Load(tx, 1)
+	})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	leverPos := cube.Pos{0, 64, 0}
+	attachmentPos := leverPos.Side(cube.FaceWest)
+	notePos := attachmentPos.Side(cube.FaceWest)
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(notePos, Note{}, nil)
+		tx.SetBlock(leverPos, Lever{Facing: cube.FaceEast}, nil)
+	})
+
+	redstoneWireTestSetBlockAndWait(t, w, leverPos, Lever{Powered: true, Facing: cube.FaceEast})
+
+	var powered bool
+	<-w.Exec(func(tx *world.Tx) {
+		powered = tx.Block(notePos).(Note).Powered
+	})
+	if !powered {
+		t.Fatal("lever did not update consumer behind its attached block")
+	}
+}
+
 func TestTNTDoesNotConductRedstonePower(t *testing.T) {
 	w := world.Config{}.New()
 	defer w.Close()

@@ -122,11 +122,6 @@ type RedstonePowerContextAction interface {
 	RedstonePowerActionUpdate(pos cube.Pos, tx *Tx, update RedstoneUpdate) bool
 }
 
-// RedstoneComparatorReadable is implemented by blocks that expose an analog signal to a comparator.
-type RedstoneComparatorReadable interface {
-	RedstoneComparatorOutput(pos cube.Pos, tx *Tx, face cube.Face) int
-}
-
 // RedstoneNonConductive may be implemented by solid redstone blocks that should not conduct strong power.
 type RedstoneNonConductive interface {
 	RedstoneNonConductive()
