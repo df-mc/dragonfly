@@ -490,31 +490,6 @@ func (w *World) liquid(pos cube.Pos) (Liquid, bool) {
 	return liq, ok
 }
 
-// liquidLoaded attempts to return a Liquid block at the position passed only if the chunk containing the position is
-// already loaded. It returns false without loading or generating the chunk when the liquid is unavailable.
-func (w *World) liquidLoaded(pos cube.Pos) (Liquid, bool) {
-	if pos.OutOfBounds(w.Range()) {
-		return nil, false
-	}
-	c, ok := w.chunks[chunkPosFromBlockPos(pos)]
-	if !ok {
-		return nil, false
-	}
-	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
-	for _, layer := range []uint8{0, 1} {
-		id := c.Block(x, y, z, layer)
-		b, ok := w.conf.Blocks.BlockByRuntimeID(id)
-		if !ok {
-			w.conf.Log.Error("liquidLoaded: no block with runtime ID", "ID", id)
-			return nil, false
-		}
-		if liq, ok := b.(Liquid); ok {
-			return liq, true
-		}
-	}
-	return nil, false
-}
-
 // setLiquid sets a Liquid at a specific position in the World. Unlike
 // setBlock, setLiquid will not necessarily overwrite any existing blocks. It
 // will instead be in the same position as a block currently there, unless

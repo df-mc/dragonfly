@@ -63,12 +63,6 @@ func (tx *Tx) Liquid(pos cube.Pos) (Liquid, bool) {
 	return tx.World().liquid(pos)
 }
 
-// LiquidLoaded attempts to return a Liquid block at the position passed if the chunk containing it is already loaded.
-// It returns false without loading or generating the chunk when the liquid is unavailable.
-func (tx *Tx) LiquidLoaded(pos cube.Pos) (Liquid, bool) {
-	return tx.World().liquidLoaded(pos)
-}
-
 // SetLiquid sets a Liquid at a specific position in the World. Unlike
 // SetBlock, SetLiquid will not necessarily overwrite any existing blocks. It
 // will instead be in the same position as a block currently there, unless
