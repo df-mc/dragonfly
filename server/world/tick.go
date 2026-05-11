@@ -302,6 +302,10 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 		if t.t > tick {
 			continue
 		}
+		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
+		if furthest, ok := queue.furthestTicks[index]; ok && furthest > t.t {
+			continue
+		}
 		b := tx.Block(t.pos)
 		if ticker, ok := b.(ScheduledTicker); ok && w.conf.Blocks.BlockHash(b) == t.bhash {
 			ticker.ScheduledTick(t.pos, tx, w.r)

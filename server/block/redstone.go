@@ -1,6 +1,8 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
@@ -58,8 +60,11 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	return placed(ctx)
 }
 
-// RedstonePower returns the wire's current signal strength.
-func (r RedstoneWire) RedstonePower(cube.Pos, *world.Tx, cube.Face) int {
+// RedstonePower returns the wire's current signal strength from connected faces.
+func (r RedstoneWire) RedstonePower(pos cube.Pos, tx *world.Tx, face cube.Face) int {
+	if tx != nil && redstoneWireFaceHorizontal(face) && !redstoneWirePowersHorizontalFace(pos, tx, face) {
+		return 0
+	}
 	return r.Power
 }
 
@@ -72,22 +77,22 @@ func (RedstoneWire) RedstoneSignalLoss(cube.Pos, *world.Tx, cube.Face, cube.Face
 // down adjacent blocks.
 func (RedstoneWire) RedstoneRelayerNeighbours(pos cube.Pos, tx *world.Tx) []cube.Pos {
 	neighbours := make([]cube.Pos, 0, 12)
+	faces := redstoneWirePoweredHorizontalFaces(pos, tx)
 	for _, face := range cube.HorizontalFaces() {
+		if !faces[face] {
+			continue
+		}
 		side := pos.Side(face)
 		if side.OutOfBounds(tx.Range()) {
 			continue
 		}
-		neighbours = append(neighbours, side)
-
-		above := pos.Side(cube.FaceUp)
-		if !redstoneWireBlocksConnectionLoaded(tx, above, cube.FaceDown) && redstoneWireSupportedLoaded(tx, side.Side(cube.FaceUp)) {
-			neighbours = append(neighbours, side.Side(cube.FaceUp))
+		positions := redstoneWireHorizontalConnectionPositions(pos, tx, face)
+		if len(positions) != 0 {
+			neighbours = append(neighbours, positions...)
+			continue
 		}
-		if !redstoneWireBlocksConnectionLoaded(tx, side, cube.FaceUp) {
-			down := side.Side(cube.FaceDown)
-			if !down.OutOfBounds(tx.Range()) {
-				neighbours = append(neighbours, down)
-			}
+		if redstoneWireRelevantLoaded(tx, side) {
+			neighbours = append(neighbours, side)
 		}
 	}
 	return neighbours
@@ -167,6 +172,136 @@ func redstoneWireBlocksConnectionLoaded(tx *world.Tx, pos cube.Pos, face cube.Fa
 	return ok && b.Model().FaceSolid(pos, face, tx)
 }
 
+func redstoneWirePowersHorizontalFace(pos cube.Pos, tx *world.Tx, face cube.Face) bool {
+	return redstoneWirePoweredHorizontalFaces(pos, tx)[face]
+}
+
+func redstoneWirePoweredHorizontalFaces(pos cube.Pos, tx *world.Tx) map[cube.Face]bool {
+	connections := make(map[cube.Face]bool, len(cube.HorizontalFaces()))
+	for _, face := range cube.HorizontalFaces() {
+		if len(redstoneWireHorizontalConnectionPositions(pos, tx, face)) != 0 {
+			connections[face] = true
+		}
+	}
+	switch len(connections) {
+	case 0:
+		for _, face := range cube.HorizontalFaces() {
+			connections[face] = true
+		}
+	case 1:
+		for face := range connections {
+			connections[face.Opposite()] = true
+		}
+	}
+	return connections
+}
+
+func redstoneWireHorizontalConnectionPositions(pos cube.Pos, tx *world.Tx, face cube.Face) []cube.Pos {
+	side := pos.Side(face)
+	if side.OutOfBounds(tx.Range()) {
+		return nil
+	}
+	positions := make([]cube.Pos, 0, 3)
+	if redstoneWireDirectConnectionLoaded(tx, side, face.Opposite()) {
+		positions = append(positions, side)
+	}
+
+	above := pos.Side(cube.FaceUp)
+	sideAbove := side.Side(cube.FaceUp)
+	if !redstoneWireBlocksConnectionLoaded(tx, above, cube.FaceDown) && redstoneWireAtLoaded(tx, sideAbove) && redstoneWireSupportedLoaded(tx, sideAbove) {
+		positions = append(positions, sideAbove)
+	}
+	if !redstoneWireBlocksConnectionLoaded(tx, side, cube.FaceUp) {
+		down := side.Side(cube.FaceDown)
+		if !down.OutOfBounds(tx.Range()) && redstoneWireAtLoaded(tx, down) {
+			positions = append(positions, down)
+		}
+	}
+	return positions
+}
+
+func redstoneWireDirectConnectionLoaded(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
+	b, ok := tx.BlockLoaded(pos)
+	if !ok {
+		return false
+	}
+	if _, ok := b.(RedstoneWire); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstonePowerSource); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstoneStrongPowerSource); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstonePowerRelayer); ok {
+		return true
+	}
+	return redstoneWireNonSolidComponent(pos, b, tx, face)
+}
+
+func redstoneWireNonSolidComponent(pos cube.Pos, b world.Block, tx *world.Tx, face cube.Face) bool {
+	model := b.Model()
+	if model == nil || model.FaceSolid(pos, face, tx) {
+		return false
+	}
+	if _, ok := b.(world.RedstonePowerConsumer); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstonePowerTransitionConsumer); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstonePowerAction); ok {
+		return true
+	}
+	return false
+}
+
+func redstoneWireAtLoaded(tx *world.Tx, pos cube.Pos) bool {
+	b, ok := tx.BlockLoaded(pos)
+	if !ok {
+		return false
+	}
+	_, ok = b.(RedstoneWire)
+	return ok
+}
+
+func redstoneWireRelevantLoaded(tx *world.Tx, pos cube.Pos) bool {
+	b, ok := tx.BlockLoaded(pos)
+	return ok && redstoneWireRelevant(b)
+}
+
+func redstoneWireRelevant(b world.Block) bool {
+	if _, ok := b.(world.RedstonePowerSource); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstoneStrongPowerSource); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstonePowerRelayer); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstonePowerConsumer); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstonePowerTransitionConsumer); ok {
+		return true
+	}
+	if _, ok := b.(world.RedstonePowerAction); ok {
+		return true
+	}
+	return false
+}
+
+func redstoneWireFaceHorizontal(face cube.Face) bool {
+	switch face {
+	case cube.FaceNorth, cube.FaceSouth, cube.FaceWest, cube.FaceEast:
+		return true
+	default:
+		return false
+	}
+}
+
 // RedstoneLamp is a lamp that lights while powered.
 type RedstoneLamp struct {
 	solid
@@ -183,14 +318,119 @@ func (r RedstoneLamp) LightEmissionLevel() uint8 {
 	return 0
 }
 
-// RedstonePowerUpdate updates the lamp's lit state to match its redstone input.
-func (r RedstoneLamp) RedstonePowerUpdate(_ cube.Pos, _ *world.Tx, power int) (world.Block, bool) {
-	lit := power > 0
-	if r.Lit == lit {
+// RedstonePowerUpdate lights the lamp immediately and schedules delayed turn-off when power is removed.
+func (r RedstoneLamp) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, power int) (world.Block, bool) {
+	if redstoneLampPower(pos, tx, power) > 0 {
+		if r.Lit {
+			return r, false
+		}
+		r.Lit = true
+		return r, true
+	}
+	if !r.Lit {
 		return r, false
 	}
-	r.Lit = lit
+	if tx != nil {
+		tx.ScheduleBlockUpdate(pos, r, redstoneTicks(2))
+		return r, false
+	}
+	r.Lit = false
 	return r, true
+}
+
+// ScheduledTick turns the lamp off after its delay if it was not repowered.
+func (r RedstoneLamp) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	if tx == nil || !r.Lit || redstoneLampPower(pos, tx, tx.RedstonePower(pos)) > 0 {
+		return
+	}
+	r.Lit = false
+	tx.SetBlock(pos, r, nil)
+}
+
+func redstoneLampPower(pos cube.Pos, tx *world.Tx, power int) int {
+	if tx == nil {
+		return redstonePower(power)
+	}
+	return max(redstoneLampGraphPower(pos, tx, power), tx.RedstoneDirectPower(pos), redstoneLampConductedStrongPower(pos, tx))
+}
+
+func redstoneLampGraphPower(pos cube.Pos, tx *world.Tx, power int) int {
+	power = redstonePower(power)
+	if power == 0 {
+		return 0
+	}
+	for _, face := range cube.Faces() {
+		neighbour := pos.Side(face)
+		if neighbour.OutOfBounds(tx.Range()) {
+			continue
+		}
+		b, ok := tx.BlockLoaded(neighbour)
+		if !ok {
+			continue
+		}
+		if _, ok := b.(world.RedstonePowerRelayer); !ok {
+			continue
+		}
+		if redstoneLampRelayerConnectsTo(neighbour, pos, tx, b) {
+			return power
+		}
+	}
+	return 0
+}
+
+func redstoneLampRelayerConnectsTo(relayerPos, target cube.Pos, tx *world.Tx, b world.Block) bool {
+	neighbourer, ok := b.(world.RedstonePowerRelayerNeighbourer)
+	if !ok {
+		return true
+	}
+	for _, neighbour := range neighbourer.RedstoneRelayerNeighbours(relayerPos, tx) {
+		if neighbour == target {
+			return true
+		}
+	}
+	return false
+}
+
+func redstoneLampConductedStrongPower(pos cube.Pos, tx *world.Tx) int {
+	power := 0
+	for _, face := range cube.Faces() {
+		conductorPos := pos.Side(face)
+		if conductorPos.OutOfBounds(tx.Range()) {
+			continue
+		}
+		conductor, ok := tx.BlockLoaded(conductorPos)
+		if !ok || !redstoneLampStrongPowerConductor(conductorPos, conductor, tx, face.Opposite()) {
+			continue
+		}
+		power = max(power, tx.RedstoneStrongPower(conductorPos))
+	}
+	return redstonePower(power)
+}
+
+func redstoneLampStrongPowerConductor(pos cube.Pos, b world.Block, tx *world.Tx, face cube.Face) bool {
+	if !b.Model().FaceSolid(pos, face, tx) {
+		return false
+	}
+	if redstoneLampExplicitNonConductor(b) {
+		return false
+	}
+	if diffuser, ok := b.(redstoneLampLightDiffuser); ok && diffuser.LightDiffusionLevel() == 0 {
+		return false
+	}
+	return true
+}
+
+func redstoneLampExplicitNonConductor(b world.Block) bool {
+	name, _ := b.EncodeBlock()
+	switch name {
+	case "minecraft:redstone_block", "minecraft:piston", "minecraft:sticky_piston", "minecraft:piston_arm", "minecraft:observer":
+		return true
+	}
+	return false
+}
+
+type redstoneLampLightDiffuser interface {
+	LightDiffusionLevel() uint8
 }
 
 // BreakInfo ...

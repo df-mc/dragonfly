@@ -614,7 +614,14 @@ func (e *redstoneEngine) powerFrom(pos cube.Pos, tx *Tx, face cube.Face, relayer
 			if to == s.from {
 				continue
 			}
-			loss := s.loss + max(relayer.RedstoneSignalLoss(s.pos, tx, s.from, to), 1)
+			nextBlock, ok := tx.World().blockLoaded(next)
+			if !ok {
+				continue
+			}
+			loss := s.loss
+			if _, nextRelayer := nextBlock.(RedstonePowerRelayer); nextRelayer {
+				loss += max(relayer.RedstoneSignalLoss(s.pos, tx, s.from, to), 1)
+			}
 			if loss <= 15 {
 				queue = append(queue, step{pos: next, from: to.Opposite(), loss: loss, depth: s.depth + 1})
 			}
@@ -659,10 +666,22 @@ func redstoneStrongPowerConductor(pos cube.Pos, b Block, tx *Tx, face cube.Face)
 	if !b.Model().FaceSolid(pos, face, tx) {
 		return false
 	}
+	if redstoneExplicitNonConductor(b) {
+		return false
+	}
 	if diffuser, ok := b.(redstoneLightDiffuser); ok && diffuser.LightDiffusionLevel() == 0 {
 		return false
 	}
 	return true
+}
+
+func redstoneExplicitNonConductor(b Block) bool {
+	name, _ := b.EncodeBlock()
+	switch name {
+	case "minecraft:redstone_block", "minecraft:piston", "minecraft:sticky_piston", "minecraft:piston_arm", "minecraft:observer":
+		return true
+	}
+	return false
 }
 
 func (e *redstoneEngine) compileEdges(tx *Tx, nodes []redstoneNode) []redstoneEdge {
@@ -686,7 +705,13 @@ func (e *redstoneEngine) compileEdges(tx *Tx, nodes []redstoneNode) []redstoneEd
 				continue
 			}
 			face := redstoneStepFace(node.pos, neighbour)
-			edges = append(edges, redstoneEdge{from: i, to: j, weight: max(relayer.RedstoneSignalLoss(node.pos, tx, face.Opposite(), face), 1)})
+			weight := 0
+			if neighbourBlock, ok := tx.World().blockLoaded(neighbour); ok {
+				if _, neighbourRelayer := neighbourBlock.(RedstonePowerRelayer); neighbourRelayer {
+					weight = max(relayer.RedstoneSignalLoss(node.pos, tx, face.Opposite(), face), 1)
+				}
+			}
+			edges = append(edges, redstoneEdge{from: i, to: j, weight: weight})
 		}
 	}
 	slices.SortFunc(edges, compareRedstoneEdge)

@@ -1,6 +1,7 @@
 package world
 
 import (
+	"math/rand/v2"
 	"slices"
 	"testing"
 	"time"
@@ -143,6 +144,24 @@ func TestRedstoneGraphID(t *testing.T) {
 	}
 }
 
+func TestRedstoneStrongPowerConductorExcludesExplicitNonConductors(t *testing.T) {
+	pos := cube.Pos{0, 64, 0}
+	if !redstoneStrongPowerConductor(pos, redstoneNamedSolidBlock{name: "minecraft:stone"}, nil, cube.FaceWest) {
+		t.Fatal("stone was not treated as a strong-power conductor")
+	}
+	for _, name := range []string{
+		"minecraft:redstone_block",
+		"minecraft:piston",
+		"minecraft:sticky_piston",
+		"minecraft:piston_arm",
+		"minecraft:observer",
+	} {
+		if redstoneStrongPowerConductor(pos, redstoneNamedSolidBlock{name: name}, nil, cube.FaceWest) {
+			t.Fatalf("%s was treated as a strong-power conductor", name)
+		}
+	}
+}
+
 func TestRedstoneEngineInvalidateAround(t *testing.T) {
 	var nilEngine *redstoneEngine
 	nilEngine.invalidateAround(cube.Pos{0, 0, 0}, cube.Pos{0, 0, 0}, RedstoneUpdateCauseBlockUpdate, cube.Range{0, 0})
@@ -246,6 +265,31 @@ func TestRedstoneCancelledActionDoesNotRun(t *testing.T) {
 	}
 }
 
+func TestRedstoneRelayerToSinkDoesNotLosePower(t *testing.T) {
+	sourcePos, relayerPos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}, cube.Pos{2, 64, 0}
+	w := Config{Blocks: redstoneSignalLossTestRegistry()}.New()
+	defer w.Close()
+
+	var directPower, sinkPower int
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sourcePos, redstoneLossSource{Power: 15}, nil)
+		tx.SetBlock(relayerPos, redstoneLossRelayer{}, nil)
+		tx.SetBlock(sinkPos, redstoneLossConsumer{}, nil)
+
+		directPower = tx.RedstonePower(sinkPos)
+		tx.World().redstone.tick(tx, 1)
+		if sink, ok := tx.Block(sinkPos).(redstoneLossConsumer); ok {
+			sinkPower = sink.Power
+		}
+	})
+	if directPower != 15 {
+		t.Fatalf("powerFrom through relayer into sink = %d, want 15", directPower)
+	}
+	if sinkPower != 15 {
+		t.Fatalf("graph power through relayer into sink = %d, want 15", sinkPower)
+	}
+}
+
 func TestScheduledTickQueueKeepsLaterTickForSameBlock(t *testing.T) {
 	queue := newScheduledTickQueue(100)
 	pos := cube.Pos{8, 64, 8}
@@ -318,13 +362,80 @@ func TestScheduledTickQueueCanRescheduleWhileCurrentTickIsDue(t *testing.T) {
 	}
 }
 
+func TestScheduledTickQueueSkipsStaleDueTickBehindLaterTick(t *testing.T) {
+	registry := scheduledTickTestRegistry()
+	w := Config{Blocks: registry}.New()
+	defer w.Close()
+
+	queue := newScheduledTickQueue(100)
+	pos := cube.Pos{8, 64, 8}
+	b := scheduledTickTestBlock{}
+	index := scheduledTickIndex{pos: pos, hash: registry.BlockHash(b)}
+
+	ticks := 0
+	scheduledTickTestBlockTicks = &ticks
+	t.Cleanup(func() {
+		scheduledTickTestBlockTicks = nil
+	})
+
+	var (
+		ticksAfterFirst, ticksAfterSecond   int
+		activeAfterFirst, activeAfterSecond []scheduledTick
+		furthestAfterFirst                  int64
+		hasFurthestAfterFirst               bool
+	)
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(pos, b, nil)
+		queue.schedule(registry, pos, b, time.Second/20)
+		queue.schedule(registry, pos, b, time.Second/10)
+
+		queue.tick(tx, 101)
+		ticksAfterFirst = ticks
+		activeAfterFirst = queue.fromChunk(chunkPosFromBlockPos(pos))
+		furthestAfterFirst, hasFurthestAfterFirst = queue.furthestTicks[index]
+
+		queue.tick(tx, 102)
+		ticksAfterSecond = ticks
+		activeAfterSecond = queue.fromChunk(chunkPosFromBlockPos(pos))
+	})
+	if ticksAfterFirst != 0 {
+		t.Fatalf("stale due tick executed %d time(s), want 0", ticksAfterFirst)
+	}
+	if !hasFurthestAfterFirst || furthestAfterFirst != 102 {
+		t.Fatalf("furthest tick after stale tick = %d, %t; want 102, true", furthestAfterFirst, hasFurthestAfterFirst)
+	}
+	if len(activeAfterFirst) != 1 || activeAfterFirst[0].t != 102 {
+		t.Fatalf("active ticks after stale tick = %v, want only tick 102", activeAfterFirst)
+	}
+	if ticksAfterSecond != 1 {
+		t.Fatalf("later scheduled tick executed %d time(s), want 1", ticksAfterSecond)
+	}
+	if len(activeAfterSecond) != 0 {
+		t.Fatalf("active ticks after later tick = %v, want empty", activeAfterSecond)
+	}
+}
+
 type scheduledTickTestBlock struct{}
 
+var scheduledTickTestBlockTicks *int
+
+func (scheduledTickTestBlock) ScheduledTick(cube.Pos, *Tx, *rand.Rand) {
+	if scheduledTickTestBlockTicks != nil {
+		(*scheduledTickTestBlockTicks)++
+	}
+}
 func (scheduledTickTestBlock) EncodeBlock() (string, map[string]any) {
 	return "test:scheduled_tick", nil
 }
 func (scheduledTickTestBlock) Hash() (uint64, uint64) { return 1 << 40, 0 }
 func (scheduledTickTestBlock) Model() BlockModel      { return nil }
+
+func scheduledTickTestRegistry() BlockRegistry {
+	registry := NewBlockRegistry()
+	registry.RegisterBlockState(BlockState{Name: "test:scheduled_tick", Properties: map[string]any{}})
+	registry.RegisterBlock(scheduledTickTestBlock{})
+	return registry
+}
 
 type redstoneNeighbourOrderTestBlock struct {
 	neighbours []cube.Pos
@@ -430,4 +541,79 @@ type redstoneCancellationModel struct{}
 func (redstoneCancellationModel) BBox(cube.Pos, BlockSource) []cube.BBox { return nil }
 func (redstoneCancellationModel) FaceSolid(cube.Pos, cube.Face, BlockSource) bool {
 	return false
+}
+
+func redstoneSignalLossTestRegistry() BlockRegistry {
+	registry := NewBlockRegistry()
+	registry.RegisterBlockState(BlockState{Name: "test:redstone_loss_source", Properties: map[string]any{"power": int32(15)}})
+	registry.RegisterBlock(redstoneLossSource{Power: 15})
+	registry.RegisterBlockState(BlockState{Name: "test:redstone_loss_relayer", Properties: map[string]any{}})
+	registry.RegisterBlock(redstoneLossRelayer{})
+	for power := int32(0); power <= 15; power++ {
+		registry.RegisterBlockState(BlockState{Name: "test:redstone_loss_consumer", Properties: map[string]any{"power": power}})
+		registry.RegisterBlock(redstoneLossConsumer{Power: int(power)})
+	}
+	return registry
+}
+
+type redstoneLossSource struct {
+	Power int
+}
+
+func (b redstoneLossSource) RedstonePower(cube.Pos, *Tx, cube.Face) int {
+	return b.Power
+}
+func (b redstoneLossSource) EncodeBlock() (string, map[string]any) {
+	return "test:redstone_loss_source", map[string]any{"power": int32(b.Power)}
+}
+func (b redstoneLossSource) Hash() (uint64, uint64) {
+	return 1 << 45, uint64(b.Power)
+}
+func (redstoneLossSource) Model() BlockModel { return redstoneCancellationModel{} }
+
+type redstoneLossRelayer struct{}
+
+func (redstoneLossRelayer) RedstoneSignalLoss(cube.Pos, *Tx, cube.Face, cube.Face) int {
+	return 1
+}
+func (redstoneLossRelayer) EncodeBlock() (string, map[string]any) {
+	return "test:redstone_loss_relayer", nil
+}
+func (redstoneLossRelayer) Hash() (uint64, uint64) { return 1 << 46, 0 }
+func (redstoneLossRelayer) Model() BlockModel      { return redstoneCancellationModel{} }
+
+type redstoneLossConsumer struct {
+	Power int
+}
+
+func (b redstoneLossConsumer) RedstonePowerUpdate(_ cube.Pos, _ *Tx, power int) (Block, bool) {
+	if b.Power == power {
+		return b, false
+	}
+	b.Power = power
+	return b, true
+}
+func (b redstoneLossConsumer) EncodeBlock() (string, map[string]any) {
+	return "test:redstone_loss_consumer", map[string]any{"power": int32(b.Power)}
+}
+func (b redstoneLossConsumer) Hash() (uint64, uint64) {
+	return 1 << 47, uint64(b.Power)
+}
+func (redstoneLossConsumer) Model() BlockModel { return redstoneCancellationModel{} }
+
+type redstoneNamedSolidBlock struct {
+	name string
+}
+
+func (b redstoneNamedSolidBlock) EncodeBlock() (string, map[string]any) {
+	return b.name, nil
+}
+func (redstoneNamedSolidBlock) Hash() (uint64, uint64) { return 1 << 48, 0 }
+func (redstoneNamedSolidBlock) Model() BlockModel      { return redstoneSolidModel{} }
+
+type redstoneSolidModel struct{}
+
+func (redstoneSolidModel) BBox(cube.Pos, BlockSource) []cube.BBox { return nil }
+func (redstoneSolidModel) FaceSolid(cube.Pos, cube.Face, BlockSource) bool {
+	return true
 }

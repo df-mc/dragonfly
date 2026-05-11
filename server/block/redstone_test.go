@@ -124,6 +124,42 @@ func TestRedstoneWireConnectsUpBlocks(t *testing.T) {
 	}
 }
 
+func TestRedstoneWireRelayerNeighboursFollowShape(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		pos := cube.Pos{0, 1, 0}
+		source := pos.Side(cube.FaceWest)
+		endLamp := pos.Side(cube.FaceEast)
+		sideLamp := pos.Side(cube.FaceNorth)
+		tx.SetBlock(pos.Side(cube.FaceDown), Stone{}, nil)
+		tx.SetBlock(source, RedstoneBlock{}, nil)
+		tx.SetBlock(pos, RedstoneWire{}, nil)
+		tx.SetBlock(endLamp, RedstoneLamp{}, nil)
+		tx.SetBlock(sideLamp, RedstoneLamp{}, nil)
+
+		neighbours := (RedstoneWire{}).RedstoneRelayerNeighbours(pos, tx)
+		if !redstoneNeighbourTestContains(neighbours, source) {
+			err = fmt.Errorf("wire neighbours %v did not include source connection %v", neighbours, source)
+			return
+		}
+		if !redstoneNeighbourTestContains(neighbours, endLamp) {
+			err = fmt.Errorf("wire neighbours %v did not include line-end lamp %v", neighbours, endLamp)
+			return
+		}
+		if redstoneNeighbourTestContains(neighbours, sideLamp) {
+			err = fmt.Errorf("wire neighbours %v included side lamp %v", neighbours, sideLamp)
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRedstoneWireRelayerNeighboursDoNotLoadAdjacentChunks(t *testing.T) {
 	w := world.New()
 	defer func() {
@@ -144,6 +180,38 @@ func TestRedstoneWireRelayerNeighboursDoNotLoadAdjacentChunks(t *testing.T) {
 		_ = (RedstoneWire{}).RedstoneRelayerNeighbours(pos, tx)
 		if _, ok := tx.BlockLoaded(unloadedNeighbour); ok {
 			err = fmt.Errorf("relayer neighbour lookup loaded adjacent chunk")
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRedstoneWirePowersEndLampButNotSideLamp(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		wire := cube.Pos{0, 1, 0}
+		endLamp := wire.Side(cube.FaceEast)
+		sideLamp := wire.Side(cube.FaceNorth)
+		tx.SetBlock(wire.Side(cube.FaceDown), Stone{}, nil)
+		tx.SetBlock(wire.Side(cube.FaceWest), RedstoneBlock{}, nil)
+		tx.SetBlock(wire, RedstoneWire{Power: 1}, nil)
+		tx.SetBlock(endLamp, RedstoneLamp{}, nil)
+		tx.SetBlock(sideLamp, RedstoneLamp{}, nil)
+
+		after, changed := (RedstoneLamp{}).RedstonePowerUpdate(endLamp, tx, tx.RedstonePower(endLamp))
+		if !changed || !after.(RedstoneLamp).Lit {
+			err = fmt.Errorf("strength-1 line dust did not light end lamp: changed=%t after=%#v", changed, after)
+			return
+		}
+		after, changed = (RedstoneLamp{}).RedstonePowerUpdate(sideLamp, tx, tx.RedstonePower(sideLamp))
+		if changed || after.(RedstoneLamp).Lit {
+			err = fmt.Errorf("line dust powered side lamp: changed=%t after=%#v", changed, after)
 		}
 	})
 	if err != nil {
@@ -246,4 +314,71 @@ func TestRedstoneLampPowerUpdate(t *testing.T) {
 	if after.(RedstoneLamp).Lit {
 		t.Fatal("RedstoneLamp did not turn off")
 	}
+}
+
+func TestRedstoneLampDelayedTurnOff(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		pos := cube.Pos{0, 1, 0}
+		lamp := RedstoneLamp{Lit: true}
+		tx.SetBlock(pos, lamp, nil)
+
+		after, changed := lamp.RedstonePowerUpdate(pos, tx, 0)
+		if changed {
+			err = fmt.Errorf("RedstoneLamp reported immediate off change: %#v", after)
+			return
+		}
+		if !tx.Block(pos).(RedstoneLamp).Lit {
+			err = fmt.Errorf("RedstoneLamp turned off before scheduled tick")
+			return
+		}
+		tx.Block(pos).(RedstoneLamp).ScheduledTick(pos, tx, nil)
+		if tx.Block(pos).(RedstoneLamp).Lit {
+			err = fmt.Errorf("RedstoneLamp stayed lit after delayed off tick")
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRedstoneLampRepowerCancelsTurnOff(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		pos := cube.Pos{0, 1, 0}
+		lamp := RedstoneLamp{Lit: true}
+		tx.SetBlock(pos, lamp, nil)
+		_, changed := lamp.RedstonePowerUpdate(pos, tx, 0)
+		if changed {
+			err = fmt.Errorf("RedstoneLamp reported immediate off change")
+			return
+		}
+		tx.SetBlock(pos.Side(cube.FaceWest), RedstoneBlock{}, nil)
+		tx.Block(pos).(RedstoneLamp).ScheduledTick(pos, tx, nil)
+		if !tx.Block(pos).(RedstoneLamp).Lit {
+			err = fmt.Errorf("RedstoneLamp turned off after being repowered")
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func redstoneNeighbourTestContains(neighbours []cube.Pos, pos cube.Pos) bool {
+	for _, neighbour := range neighbours {
+		if neighbour == pos {
+			return true
+		}
+	}
+	return false
 }

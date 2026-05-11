@@ -3,6 +3,7 @@ package block
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
@@ -128,6 +129,9 @@ func TestPressurePlatePower(t *testing.T) {
 	if power := (PressurePlate{Type: redstoneSourceHeavyWeighted}).weightedPower(141); power != 15 {
 		t.Fatalf("heavy weighted pressure plate max power = %d, want 15", power)
 	}
+	if delay := (PressurePlate{Type: redstoneSourceLightWeighted}).releaseDelay(); delay != time.Second {
+		t.Fatalf("weighted pressure plate release delay = %v, want %v", delay, time.Second)
+	}
 }
 
 func TestPressurePlateItemActivation(t *testing.T) {
@@ -165,6 +169,26 @@ func TestPressurePlateDetectsEntityBoundingBoxOnEdge(t *testing.T) {
 
 		if power := (PressurePlate{Type: redstoneSourceStone}).detectPower(pos, tx); power != 15 {
 			err = fmt.Errorf("edge-overlapping pressure plate power = %d, want 15", power)
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPressurePlateActivationBoxIsInset(t *testing.T) {
+	w := world.New()
+	defer func() {
+		_ = w.Close()
+	}()
+
+	var err error
+	<-w.Exec(func(tx *world.Tx) {
+		pos := cube.Pos{0, 1, 0}
+		tx.AddEntity(world.EntitySpawnOpts{Position: mgl64.Vec3{-0.25, 1.0625, 0.5}}.New(pressurePlateTestEntityType{name: "minecraft:player"}, pressurePlateTestEntityConfig{}))
+
+		if power := (PressurePlate{Type: redstoneSourceStone}).detectPower(pos, tx); power != 0 {
+			err = fmt.Errorf("rim-overlapping pressure plate power = %d, want 0", power)
 		}
 	})
 	if err != nil {

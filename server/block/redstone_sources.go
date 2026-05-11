@@ -440,9 +440,6 @@ func (p PressurePlate) weightedMaxEntities() int {
 }
 
 func (p PressurePlate) releaseDelay() time.Duration {
-	if p.weighted() {
-		return time.Second / 2
-	}
 	return time.Second
 }
 
@@ -471,7 +468,8 @@ func pressurePlateEntityName(e world.Entity) string {
 }
 
 func pressurePlateActivationBox(pos cube.Pos) cube.BBox {
-	return cube.Box(float64(pos[0]), float64(pos[1]), float64(pos[2]), float64(pos[0]+1), float64(pos[1])+0.25, float64(pos[2]+1))
+	const inset = 1.0 / 16.0
+	return cube.Box(float64(pos[0])+inset, float64(pos[1]), float64(pos[2])+inset, float64(pos[0]+1)-inset, float64(pos[1])+0.25, float64(pos[2]+1)-inset)
 }
 
 func pressurePlateEntityIntersects(e world.Entity, box cube.BBox) bool {
