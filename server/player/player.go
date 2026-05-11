@@ -1839,6 +1839,9 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
 	if _, air := p.tx.Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
+		if air && p.viewLayerBlock(pos) {
+			p.resendNearbyBlocks(pos)
+		}
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
