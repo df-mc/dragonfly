@@ -2037,6 +2037,9 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 func (p *Player) BreakBlock(pos cube.Pos) {
 	b := p.tx.Block(pos)
 	if _, air := b.(block.Air); air {
+		if p.viewLayerBlock(pos) {
+			p.resendNearbyBlocks(pos)
+		}
 		// Don't do anything if the position broken is already air.
 		return
 	}
@@ -2107,6 +2110,15 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 		drops = []item.Stack{item.NewStack(it, 1)}
 	}
 	return drops
+}
+
+// viewLayerBlock checks if this player has a view-layer block override at pos.
+func (p *Player) viewLayerBlock(pos cube.Pos) bool {
+	if p.session() == session.Nop {
+		return false
+	}
+	_, ok := p.ViewLayer().Block(pos)
+	return ok
 }
 
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
