@@ -147,7 +147,6 @@ func init() {
 	registerAll(allBlastFurnaces())
 	registerAll(allBoneBlock())
 	registerAll(allBrewingStands())
-	registerAll(allButtons())
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCampfires())
@@ -197,13 +196,11 @@ func init() {
 	registerAll(allPinkPetals())
 	registerAll(allPlanks())
 	registerAll(allPotato())
-	registerAll(allPressurePlates())
 	registerAll(allPrismarine())
 	registerAll(allPumpkinStems())
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
-	registerAll(allRedstoneLamps())
 	registerAll(allRedstoneTorches())
 	registerAll(allRedstoneWires())
 	registerAll(allSandstones())
@@ -259,7 +256,6 @@ func init() {
 	world.RegisterItem(Bookshelf{})
 	world.RegisterItem(BrewingStand{})
 	world.RegisterItem(Bricks{})
-	world.RegisterItem(Button{Type: redstoneSourceStone})
 	world.RegisterItem(Cactus{})
 	world.RegisterItem(Cake{})
 	world.RegisterItem(Calcite{})
@@ -357,7 +353,6 @@ func init() {
 	world.RegisterItem(PolishedBlackstoneBrick{Cracked: true})
 	world.RegisterItem(PolishedBlackstoneBrick{})
 	world.RegisterItem(Potato{})
-	world.RegisterItem(PressurePlate{Type: redstoneSourceStone})
 	world.RegisterItem(PumpkinSeeds{})
 	world.RegisterItem(Pumpkin{Carved: true})
 	world.RegisterItem(Pumpkin{})
@@ -374,7 +369,6 @@ func init() {
 	world.RegisterItem(RedstoneTorch{})
 	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(ReinforcedDeepslate{})
-	world.RegisterItem(RedstoneLamp{})
 	world.RegisterItem(ResinBricks{Chiseled: true})
 	world.RegisterItem(ResinBricks{})
 	world.RegisterItem(Resin{})
@@ -513,31 +507,6 @@ func init() {
 	}
 	for _, t := range DeepslateTypes() {
 		world.RegisterItem(Deepslate{Type: t})
-	}
-	for _, typ := range []int{
-		redstoneSourcePolishedBlackstone,
-	} {
-		world.RegisterItem(Button{Type: typ})
-		world.RegisterItem(PressurePlate{Type: typ})
-	}
-	world.RegisterItem(PressurePlate{Type: redstoneSourceLightWeighted})
-	world.RegisterItem(PressurePlate{Type: redstoneSourceHeavyWeighted})
-	for _, typ := range []int{
-		redstoneSourceOak,
-		redstoneSourceSpruce,
-		redstoneSourceBirch,
-		redstoneSourceJungle,
-		redstoneSourceAcacia,
-		redstoneSourceDarkOak,
-		redstoneSourceMangrove,
-		redstoneSourceCherry,
-		redstoneSourceBamboo,
-		redstoneSourceCrimson,
-		redstoneSourceWarped,
-		redstoneSourcePaleOak,
-	} {
-		world.RegisterItem(Button{Type: typ})
-		world.RegisterItem(PressurePlate{Type: typ})
 	}
 	for _, o := range OxidationTypes() {
 		world.RegisterItem(CopperBars{Oxidation: o})

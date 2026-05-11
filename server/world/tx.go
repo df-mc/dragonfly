@@ -143,6 +143,32 @@ func (tx *Tx) RedstoneStoredPowerFrom(pos cube.Pos, face cube.Face) int {
 	return tx.World().redstone.powerFrom(pos, tx, face, true)
 }
 
+// RedstoneTorchBurnoutStatus reports whether the torch at pos is burned out and whether it may recover after its
+// recent toggle history expires.
+func (tx *Tx) RedstoneTorchBurnoutStatus(pos cube.Pos) (burnedOut, recoverable bool) {
+	return tx.World().redstone.redstoneTorchBurnoutStatus(pos, tx.CurrentTick())
+}
+
+// PruneRedstoneTorchBurnout removes expired burnout history for the torch at pos.
+func (tx *Tx) PruneRedstoneTorchBurnout(pos cube.Pos) {
+	tx.World().redstone.pruneRedstoneTorchBurnout(pos, tx.CurrentTick())
+}
+
+// RecordRedstoneTorchToggle records a redstone torch state transition and reports whether it should burn out.
+func (tx *Tx) RecordRedstoneTorchToggle(pos cube.Pos) bool {
+	return tx.World().redstone.recordRedstoneTorchToggle(pos, tx.CurrentTick())
+}
+
+// BurnOutRedstoneTorch marks the torch at pos as burned out.
+func (tx *Tx) BurnOutRedstoneTorch(pos cube.Pos) {
+	tx.World().redstone.burnOutRedstoneTorch(pos)
+}
+
+// ClearRedstoneTorchBurnout removes transient burnout history for the torch at pos.
+func (tx *Tx) ClearRedstoneTorchBurnout(pos cube.Pos) {
+	tx.World().redstone.clearRedstoneTorchBurnout(pos)
+}
+
 // HighestLightBlocker gets the Y value of the highest fully light blocking
 // block at the x and z values passed in the World.
 func (tx *Tx) HighestLightBlocker(x, z int) int {

@@ -272,6 +272,7 @@ type scheduledTickQueue struct {
 	ticks         []scheduledTick
 	furthestTicks map[scheduledTickIndex]int64
 	currentTick   int64
+	ticking       bool
 }
 
 type scheduledTick struct {
@@ -296,14 +297,14 @@ func newScheduledTickQueue(tick int64) *scheduledTickQueue {
 // queue.
 func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 	queue.currentTick = tick
+	queue.ticking = true
 
 	w := tx.World()
 	for _, t := range queue.ticks {
 		if t.t > tick {
 			continue
 		}
-		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
-		if furthest, ok := queue.furthestTicks[index]; ok && furthest > t.t {
+		if !queue.active(t) {
 			continue
 		}
 		b := tx.Block(t.pos)
@@ -315,10 +316,11 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 			}
 		}
 	}
+	queue.ticking = false
 
 	// Clear scheduled ticks that were processed from the queue.
 	queue.ticks = slices.DeleteFunc(queue.ticks, func(t scheduledTick) bool {
-		return t.t <= tick
+		return t.t <= tick || !queue.active(t)
 	})
 	maps.DeleteFunc(queue.furthestTicks, func(index scheduledTickIndex, t int64) bool {
 		return t <= tick
@@ -336,6 +338,11 @@ func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Bloc
 		return
 	}
 	queue.furthestTicks[index] = resTick
+	if !queue.ticking {
+		queue.ticks = slices.DeleteFunc(queue.ticks, func(t scheduledTick) bool {
+			return t.pos == pos && t.bhash == index.hash
+		})
+	}
 	queue.ticks = append(queue.ticks, scheduledTick{pos: pos, t: resTick, b: b, bhash: index.hash})
 }
 
@@ -343,7 +350,7 @@ func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Bloc
 func (queue *scheduledTickQueue) fromChunk(pos ChunkPos) []scheduledTick {
 	m := make([]scheduledTick, 0, 8)
 	for _, t := range queue.ticks {
-		if pos == chunkPosFromBlockPos(t.pos) {
+		if pos == chunkPosFromBlockPos(t.pos) && queue.active(t) {
 			m = append(m, t)
 		}
 	}
@@ -372,4 +379,13 @@ func (queue *scheduledTickQueue) add(ticks []scheduledTick) {
 			queue.furthestTicks[index] = t.t
 		}
 	}
+	queue.ticks = slices.DeleteFunc(queue.ticks, func(t scheduledTick) bool {
+		return !queue.active(t)
+	})
+}
+
+func (queue *scheduledTickQueue) active(t scheduledTick) bool {
+	index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
+	furthest, ok := queue.furthestTicks[index]
+	return ok && furthest == t.t
 }

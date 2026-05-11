@@ -25,7 +25,6 @@ const (
 	hashBookshelf
 	hashBrewingStand
 	hashBricks
-	hashButton
 	hashCactus
 	hashCake
 	hashCalcite
@@ -149,7 +148,6 @@ const (
 	hashPolishedBlackstoneBrick
 	hashPolishedTuff
 	hashPotato
-	hashPressurePlate
 	hashPrismarine
 	hashPumpkin
 	hashPumpkinSeeds
@@ -162,7 +160,6 @@ const (
 	hashRawGold
 	hashRawIron
 	hashRedstoneBlock
-	hashRedstoneLamp
 	hashRedstoneOre
 	hashRedstoneTorch
 	hashRedstoneWire
@@ -301,10 +298,6 @@ func (b BrewingStand) Hash() (uint64, uint64) {
 
 func (Bricks) Hash() (uint64, uint64) {
 	return hashBricks, 0
-}
-
-func (b Button) Hash() (uint64, uint64) {
-	return hashButton, uint64(b.Type) | uint64(b.Facing)<<8 | uint64(boolByte(b.Pressed))<<11
 }
 
 func (c Cactus) Hash() (uint64, uint64) {
@@ -672,7 +665,7 @@ func (l Lectern) Hash() (uint64, uint64) {
 }
 
 func (l Lever) Hash() (uint64, uint64) {
-	return hashLever, uint64(l.Facing) | leverAxisHash(l)<<3 | uint64(boolByte(l.Powered))<<4
+	return hashLever, uint64(boolByte(l.Powered)) | uint64(l.Facing)<<1 | uint64(l.Direction)<<4
 }
 
 func (l Light) Hash() (uint64, uint64) {
@@ -799,10 +792,6 @@ func (p Potato) Hash() (uint64, uint64) {
 	return hashPotato, uint64(p.Growth)
 }
 
-func (p PressurePlate) Hash() (uint64, uint64) {
-	return hashPressurePlate, uint64(p.Type) | uint64(p.Power)<<8
-}
-
 func (p Prismarine) Hash() (uint64, uint64) {
 	return hashPrismarine, uint64(p.Type.Uint8())
 }
@@ -849,10 +838,6 @@ func (RawIron) Hash() (uint64, uint64) {
 
 func (RedstoneBlock) Hash() (uint64, uint64) {
 	return hashRedstoneBlock, 0
-}
-
-func (r RedstoneLamp) Hash() (uint64, uint64) {
-	return hashRedstoneLamp, uint64(boolByte(r.Lit))
 }
 
 func (r RedstoneOre) Hash() (uint64, uint64) {

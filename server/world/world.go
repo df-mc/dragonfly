@@ -167,7 +167,7 @@ func (w *World) blockLoaded(pos cube.Pos) (Block, bool) {
 	if !ok {
 		return w.conf.Blocks.Air(), false
 	}
-	return w.blockInChunk(c, pos), true
+	return w.blockInChunkLoaded(c, pos), true
 }
 
 // blockInChunk reads a block from a chunk at the position passed. The block
@@ -191,6 +191,21 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 			v.ViewBlockUpdate(pos, nbtB, 0)
 		}
 		return nbtB
+	}
+	return w.conf.Blocks.BlockByRuntimeIDOrAir(rid)
+}
+
+// blockInChunkLoaded reads a block from an already-loaded chunk without repairing missing block entity data. It is
+// used by loaded-only queries, which must not mutate chunks or broadcast viewer updates.
+func (w *World) blockInChunkLoaded(c *Column, pos cube.Pos) Block {
+	if pos.OutOfBounds(w.ra) {
+		return w.conf.Blocks.Air()
+	}
+	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+	if w.conf.Blocks.NBTBlock(rid) {
+		if b, ok := c.BlockEntities[pos]; ok {
+			return b
+		}
 	}
 	return w.conf.Blocks.BlockByRuntimeIDOrAir(rid)
 }

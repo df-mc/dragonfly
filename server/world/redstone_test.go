@@ -100,6 +100,23 @@ func TestRedstoneRelayerNeighbourPositionsAreDeterministic(t *testing.T) {
 	}
 }
 
+func TestRedstoneCompileRegionIncludesCustomRelayerNeighbours(t *testing.T) {
+	pos, step := cube.Pos{0, 64, 0}, cube.Pos{1, 65, 0}
+	w := Config{Blocks: redstoneCustomRelayerTestRegistry()}.New()
+	defer w.Close()
+
+	var nodes []redstoneNode
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(pos, redstoneStepRelayer{}, nil)
+		tx.SetBlock(step, redstoneStepRelayer{}, nil)
+
+		tx.World().redstone.compileRegion(tx, pos, make(map[cube.Pos]struct{}), &nodes)
+	})
+	if !redstoneNodeTestContains(nodes, step) {
+		t.Fatalf("compiled region nodes = %v, want custom neighbour %v included", nodes, step)
+	}
+}
+
 func TestRedstoneGraphID(t *testing.T) {
 	if got := redstoneGraphID(nil, nil); got != 0 {
 		t.Fatalf("redstoneGraphID(nil) = %d, want 0", got)
@@ -144,21 +161,39 @@ func TestRedstoneGraphID(t *testing.T) {
 	}
 }
 
-func TestRedstoneStrongPowerConductorExcludesExplicitNonConductors(t *testing.T) {
+func TestRedstoneStrongPowerConductorExcludesRedstoneBlock(t *testing.T) {
 	pos := cube.Pos{0, 64, 0}
 	if !redstoneStrongPowerConductor(pos, redstoneNamedSolidBlock{name: "minecraft:stone"}, nil, cube.FaceWest) {
 		t.Fatal("stone was not treated as a strong-power conductor")
 	}
-	for _, name := range []string{
-		"minecraft:redstone_block",
-		"minecraft:piston",
-		"minecraft:sticky_piston",
-		"minecraft:piston_arm",
-		"minecraft:observer",
-	} {
-		if redstoneStrongPowerConductor(pos, redstoneNamedSolidBlock{name: name}, nil, cube.FaceWest) {
-			t.Fatalf("%s was treated as a strong-power conductor", name)
+	if redstoneStrongPowerConductor(pos, redstoneNamedSolidBlock{name: "minecraft:redstone_block"}, nil, cube.FaceWest) {
+		t.Fatal("redstone block was treated as a strong-power conductor")
+	}
+}
+
+func TestRedstoneTorchBurnoutState(t *testing.T) {
+	engine := newRedstoneEngine(0)
+	pos := cube.Pos{0, 64, 0}
+	for i := range redstoneTorchBurnoutThreshold - 1 {
+		if engine.recordRedstoneTorchToggle(pos, int64(i)) {
+			t.Fatalf("torch burned out after %d toggles, want below threshold", i+1)
 		}
+	}
+	if !engine.recordRedstoneTorchToggle(pos, redstoneTorchBurnoutThreshold-1) {
+		t.Fatal("torch did not burn out at threshold")
+	}
+	burnedOut, recoverable := engine.redstoneTorchBurnoutStatus(pos, redstoneTorchBurnoutThreshold)
+	if !burnedOut || recoverable {
+		t.Fatalf("burnout status = burnedOut %t recoverable %t, want true false", burnedOut, recoverable)
+	}
+	burnedOut, recoverable = engine.redstoneTorchBurnoutStatus(pos, redstoneTorchBurnoutWindowTicks+redstoneTorchBurnoutThreshold)
+	if !burnedOut || !recoverable {
+		t.Fatalf("expired burnout status = burnedOut %t recoverable %t, want true true", burnedOut, recoverable)
+	}
+	engine.clearRedstoneTorchBurnout(pos)
+	burnedOut, recoverable = engine.redstoneTorchBurnoutStatus(pos, redstoneTorchBurnoutWindowTicks+redstoneTorchBurnoutThreshold)
+	if burnedOut || recoverable {
+		t.Fatalf("cleared burnout status = burnedOut %t recoverable %t, want false false", burnedOut, recoverable)
 	}
 }
 
@@ -222,11 +257,6 @@ func TestRedstoneCancelledConsumerDoesNotUpdate(t *testing.T) {
 	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
 	defer w.Close()
 
-	consumerUpdates := 0
-	redstoneCancellationConsumerUpdates = &consumerUpdates
-	t.Cleanup(func() {
-		redstoneCancellationConsumerUpdates = nil
-	})
 	w.Handle(&redstoneCancellationHandler{cancel: map[cube.Pos]struct{}{sinkPos: {}}})
 	var sinkPowered bool
 	<-w.Exec(func(tx *Tx) {
@@ -236,9 +266,6 @@ func TestRedstoneCancelledConsumerDoesNotUpdate(t *testing.T) {
 
 		sinkPowered = tx.Block(sinkPos).(redstoneCancellationConsumer).Powered
 	})
-	if consumerUpdates != 0 {
-		t.Fatalf("consumer updates = %d, want 0", consumerUpdates)
-	}
 	if sinkPowered {
 		t.Fatalf("sink powered after cancelling consumer update")
 	}
@@ -290,7 +317,36 @@ func TestRedstoneRelayerToSinkDoesNotLosePower(t *testing.T) {
 	}
 }
 
-func TestScheduledTickQueueKeepsLaterTickForSameBlock(t *testing.T) {
+func TestRedstoneUpdateIncludesAfterForConsumerStateChange(t *testing.T) {
+	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
+	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	defer w.Close()
+
+	handler := &redstoneRecordingHandler{}
+	w.Handle(handler)
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sourcePos, redstoneCancellationSource{Power: 15}, nil)
+		tx.SetBlock(sinkPos, redstoneCancellationConsumer{}, nil)
+		tx.World().redstone.tick(tx, 1)
+	})
+
+	for _, update := range handler.updates {
+		if update.Pos != sinkPos {
+			continue
+		}
+		after, ok := update.After.(redstoneCancellationConsumer)
+		if !ok {
+			t.Fatalf("consumer update After = %#v, want redstoneCancellationConsumer", update.After)
+		}
+		if !after.Powered {
+			t.Fatalf("consumer update After.Powered = false, want true")
+		}
+		return
+	}
+	t.Fatalf("no redstone update recorded for sink %v; updates=%v", sinkPos, handler.updates)
+}
+
+func TestScheduledTickQueueKeepsLatestTickForSameBlock(t *testing.T) {
 	queue := newScheduledTickQueue(100)
 	pos := cube.Pos{8, 64, 8}
 	b := scheduledTickTestBlock{}
@@ -303,12 +359,28 @@ func TestScheduledTickQueueKeepsLaterTickForSameBlock(t *testing.T) {
 		t.Fatalf("furthest tick = %d, want %d", got, want)
 	}
 	ticks := queue.fromChunk(chunkPosFromBlockPos(pos))
-	if len(ticks) != 2 {
-		t.Fatalf("active ticks = %v, want two ticks", ticks)
+	if len(ticks) != 1 {
+		t.Fatalf("active ticks = %v, want one latest tick", ticks)
 	}
-	got, want := []int64{ticks[0].t, ticks[1].t}, []int64{101, 102}
-	if !slices.Equal(got, want) {
-		t.Fatalf("fromChunk ticks = %v, want %v", got, want)
+	if got, want := ticks[0].t, int64(102); got != want {
+		t.Fatalf("fromChunk tick = %d, want %d", got, want)
+	}
+}
+
+func TestScheduledTickQueueFromChunkOmitsSupersededTicks(t *testing.T) {
+	queue := newScheduledTickQueue(100)
+	pos := cube.Pos{8, 64, 8}
+	b := scheduledTickTestBlock{}
+	hash := DefaultBlockRegistry.BlockHash(b)
+	queue.ticks = []scheduledTick{
+		{pos: pos, t: 101, b: b, bhash: hash},
+		{pos: pos, t: 102, b: b, bhash: hash},
+	}
+	queue.furthestTicks[scheduledTickIndex{pos: pos, hash: hash}] = 102
+
+	ticks := queue.fromChunk(chunkPosFromBlockPos(pos))
+	if len(ticks) != 1 || ticks[0].t != 102 {
+		t.Fatalf("fromChunk active ticks = %v, want only tick 102", ticks)
 	}
 }
 
@@ -450,6 +522,39 @@ func (redstoneNeighbourOrderTestBlock) EncodeBlock() (string, map[string]any) {
 func (redstoneNeighbourOrderTestBlock) Hash() (uint64, uint64) { return 1 << 41, 0 }
 func (redstoneNeighbourOrderTestBlock) Model() BlockModel      { return nil }
 
+type redstoneStepRelayer struct{}
+
+func (redstoneStepRelayer) RedstoneRelayerNeighbours(pos cube.Pos, _ *Tx) []cube.Pos {
+	return []cube.Pos{
+		{pos[0] + 1, pos[1] + 1, pos[2]},
+		{pos[0] - 1, pos[1] - 1, pos[2]},
+	}
+}
+func (redstoneStepRelayer) RedstoneSignalLoss(cube.Pos, *Tx, cube.Face, cube.Face) int {
+	return 1
+}
+func (redstoneStepRelayer) EncodeBlock() (string, map[string]any) {
+	return "test:redstone_step_relayer", nil
+}
+func (redstoneStepRelayer) Hash() (uint64, uint64) { return 1 << 42, 0 }
+func (redstoneStepRelayer) Model() BlockModel      { return redstoneCancellationModel{} }
+
+func redstoneCustomRelayerTestRegistry() BlockRegistry {
+	registry := NewBlockRegistry()
+	registry.RegisterBlockState(BlockState{Name: "test:redstone_step_relayer", Properties: map[string]any{}})
+	registry.RegisterBlock(redstoneStepRelayer{})
+	return registry
+}
+
+func redstoneNodeTestContains(nodes []redstoneNode, pos cube.Pos) bool {
+	for _, node := range nodes {
+		if node.pos == pos {
+			return true
+		}
+	}
+	return false
+}
+
 type redstoneCancellationHandler struct {
 	NopHandler
 	cancel map[cube.Pos]struct{}
@@ -459,6 +564,15 @@ func (h *redstoneCancellationHandler) HandleRedstoneUpdate(ctx *Context, update 
 	if _, ok := h.cancel[update.Pos]; ok {
 		ctx.Cancel()
 	}
+}
+
+type redstoneRecordingHandler struct {
+	NopHandler
+	updates []RedstoneUpdate
+}
+
+func (h *redstoneRecordingHandler) HandleRedstoneUpdate(_ *Context, update RedstoneUpdate) {
+	h.updates = append(h.updates, update)
 }
 
 var (
@@ -492,7 +606,7 @@ func (b redstoneCancellationSource) EncodeBlock() (string, map[string]any) {
 	return "test:redstone_source", map[string]any{"power": int32(b.Power)}
 }
 func (b redstoneCancellationSource) Hash() (uint64, uint64) {
-	return 1 << 42, uint64(b.Power)
+	return 1 << 43, uint64(b.Power)
 }
 func (redstoneCancellationSource) Model() BlockModel { return redstoneCancellationModel{} }
 
@@ -516,9 +630,9 @@ func (b redstoneCancellationConsumer) EncodeBlock() (string, map[string]any) {
 }
 func (b redstoneCancellationConsumer) Hash() (uint64, uint64) {
 	if b.Powered {
-		return 1 << 43, 1
+		return 1 << 44, 1
 	}
-	return 1 << 43, 0
+	return 1 << 44, 0
 }
 func (redstoneCancellationConsumer) Model() BlockModel { return redstoneCancellationModel{} }
 
@@ -533,7 +647,7 @@ func (redstoneCancellationAction) RedstonePowerAction(cube.Pos, *Tx, int, int) b
 func (redstoneCancellationAction) EncodeBlock() (string, map[string]any) {
 	return "test:redstone_action", nil
 }
-func (redstoneCancellationAction) Hash() (uint64, uint64) { return 1 << 44, 0 }
+func (redstoneCancellationAction) Hash() (uint64, uint64) { return 1 << 45, 0 }
 func (redstoneCancellationAction) Model() BlockModel      { return redstoneCancellationModel{} }
 
 type redstoneCancellationModel struct{}

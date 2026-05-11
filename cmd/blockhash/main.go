@@ -252,19 +252,11 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 	case "CoralType", "SkullType":
 		return "uint64(" + s + ".Uint8())", 3
 	case "AnvilType", "SandstoneType", "PrismarineType", "StoneBricksType", "NetherBricksType", "FroglightType",
-		"WallConnectionType", "BlackstoneType", "DeepslateType", "TallGrassType", "CopperType", "OxidationType", "BellAttachment":
+		"WallConnectionType", "BlackstoneType", "DeepslateType", "TallGrassType", "CopperType", "OxidationType":
 		return "uint64(" + s + ".Uint8())", 2
-	case "CrafterOrientation":
-		return "uint64(" + s + ".Uint8())", 4
 	case "OreType", "FireType", "DoubleTallGrassType":
 		return "uint64(" + s + ".Uint8())", 1
-	case "Direction":
-		return "uint64(" + s + ")", 2
-	case "Axis":
-		if _, ok := directives["lever_axis"]; ok {
-			receiver, _, _ := strings.Cut(s, ".")
-			return "leverAxisHash(" + receiver + ")", 1
-		}
+	case "Direction", "Axis":
 		return "uint64(" + s + ")", 2
 	case "Face":
 		return "uint64(" + s + ")", 3

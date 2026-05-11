@@ -120,18 +120,6 @@ type DoorCrash struct{ sound }
 // Click is a clicking sound.
 type Click struct{ sound }
 
-// PistonIn is played when a piston retracts.
-type PistonIn struct{ sound }
-
-// PistonOut is played when a piston extends.
-type PistonOut struct{ sound }
-
-// PressurePlateClickOn is played when a pressure plate starts emitting power.
-type PressurePlateClickOn struct{ sound }
-
-// PressurePlateClickOff is played when a pressure plate stops emitting power.
-type PressurePlateClickOff struct{ sound }
-
 // Ignite is a sound played when using a flint & steel.
 type Ignite struct{ sound }
 

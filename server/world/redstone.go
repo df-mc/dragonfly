@@ -18,8 +18,6 @@ const (
 	RedstoneUpdateCauseBlockUpdate RedstoneUpdateCause = iota
 	// RedstoneUpdateCauseScheduledTick means a scheduled redstone tick invalidated a component.
 	RedstoneUpdateCauseScheduledTick
-	// RedstoneUpdateCauseCompilerRebuild means a redstone compiler rebuild invalidated a component.
-	RedstoneUpdateCauseCompilerRebuild
 )
 
 // RedstoneUpdate represents a redstone state transition proposed by the world redstone engine. Handlers may cancel
@@ -101,11 +99,6 @@ type RedstonePowerAction interface {
 	RedstonePowerAction(pos cube.Pos, tx *Tx, oldPower, newPower int) bool
 }
 
-// RedstoneComparatorReadable is implemented by blocks that expose an analog signal to a comparator.
-type RedstoneComparatorReadable interface {
-	RedstoneComparatorOutput(pos cube.Pos, tx *Tx, face cube.Face) int
-}
-
 type redstoneEngine struct {
 	currentTick       int64
 	dirty             map[cube.Pos]redstoneDirty
@@ -113,6 +106,7 @@ type redstoneEngine struct {
 	output            map[cube.Pos]int
 	evaluating        map[cube.Pos]struct{}
 	suppressedSources map[cube.Pos]int
+	torchBurnout      map[cube.Pos]redstoneTorchBurnout
 }
 
 type redstoneDirty struct {
@@ -179,6 +173,9 @@ func (e *redstoneEngine) removeChunk(chunkPos ChunkPos) {
 		return chunkPosFromBlockPos(pos) == chunkPos
 	})
 	maps.DeleteFunc(e.output, func(pos cube.Pos, _ int) bool {
+		return chunkPosFromBlockPos(pos) == chunkPos
+	})
+	maps.DeleteFunc(e.torchBurnout, func(pos cube.Pos, _ redstoneTorchBurnout) bool {
 		return chunkPosFromBlockPos(pos) == chunkPos
 	})
 }
@@ -276,11 +273,11 @@ func (e *redstoneEngine) compileRegion(tx *Tx, pos cube.Pos, seen map[cube.Pos]s
 		if !relayer {
 			continue
 		}
-		e.redstoneRelayerNeighbours(tx, p, b, func(neighbour cube.Pos) {
+		for _, neighbour := range e.redstoneRelayerNeighbourPositions(tx, p, b) {
 			if b, ok := tx.World().blockLoaded(neighbour); ok && isRedstoneRelevant(b) {
 				queue = append(queue, neighbour)
 			}
-		})
+		}
 	}
 }
 
@@ -290,39 +287,23 @@ func (e *redstoneEngine) update(tx *Tx, pos, changed cube.Pos, cause RedstoneUpd
 
 	action, hasAction := b.(RedstonePowerAction)
 	actionChanged := hasAction && oldPower != newPower
-	if oldPower != newPower {
-		update := RedstoneUpdate{
-			Pos:              pos,
-			ChangedNeighbour: changed,
-			Before:           b,
-			OldPower:         oldPower,
-			NewPower:         newPower,
-			CurrentTick:      e.currentTick,
-			NetworkID:        graphID,
-			Cause:            cause,
-		}
-		if !e.redstoneUpdateAllowed(tx, update) {
-			return
-		}
-	}
-
 	after, blockChanged := b, false
 	if consumer, ok := b.(RedstonePowerTransitionConsumer); ok {
 		after, blockChanged = consumer.RedstonePowerTransitionUpdate(pos, tx, oldPower, newPower)
 	} else if consumer, ok := b.(RedstonePowerConsumer); ok {
 		after, blockChanged = consumer.RedstonePowerUpdate(pos, tx, newPower)
 	}
-	if !blockChanged && !actionChanged {
-		e.power[pos] = newPower
-		return
-	}
 
-	if oldPower == newPower {
+	if oldPower != newPower || blockChanged || actionChanged {
+		var updateAfter Block
+		if blockChanged {
+			updateAfter = after
+		}
 		update := RedstoneUpdate{
 			Pos:              pos,
 			ChangedNeighbour: changed,
 			Before:           b,
-			After:            after,
+			After:            updateAfter,
 			OldPower:         oldPower,
 			NewPower:         newPower,
 			CurrentTick:      e.currentTick,
@@ -333,6 +314,12 @@ func (e *redstoneEngine) update(tx *Tx, pos, changed cube.Pos, cause RedstoneUpd
 			return
 		}
 	}
+
+	if !blockChanged && !actionChanged {
+		e.power[pos] = newPower
+		return
+	}
+
 	if blockChanged {
 		tx.SetBlock(pos, after, &SetOpts{DisableRedstoneUpdates: true})
 		e.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, tx.Range())
@@ -677,11 +664,7 @@ func redstoneStrongPowerConductor(pos cube.Pos, b Block, tx *Tx, face cube.Face)
 
 func redstoneExplicitNonConductor(b Block) bool {
 	name, _ := b.EncodeBlock()
-	switch name {
-	case "minecraft:redstone_block", "minecraft:piston", "minecraft:sticky_piston", "minecraft:piston_arm", "minecraft:observer":
-		return true
-	}
-	return false
+	return name == "minecraft:redstone_block"
 }
 
 func (e *redstoneEngine) compileEdges(tx *Tx, nodes []redstoneNode) []redstoneEdge {

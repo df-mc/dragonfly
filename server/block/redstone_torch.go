@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -28,7 +29,10 @@ type RedstoneTorch struct {
 
 // BreakInfo ...
 func (t RedstoneTorch) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
+		tx.ClearRedstoneTorchBurnout(pos)
+		tx.ScheduleRedstoneUpdate(pos)
+	})
 }
 
 // LightEmissionLevel ...
@@ -45,6 +49,9 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	if !used || face == cube.FaceDown {
 		return false
 	}
+	if _, ok := tx.Block(pos).(world.Liquid); ok {
+		return false
+	}
 	if !tx.Block(pos.Side(face.Opposite())).Model().FaceSolid(pos.Side(face.Opposite()), face, tx) {
 		found := false
 		for _, i := range []cube.Face{cube.FaceSouth, cube.FaceWest, cube.FaceNorth, cube.FaceEast, cube.FaceDown} {
@@ -59,11 +66,13 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 		}
 	}
 	t.Facing = face.Opposite()
-	t.Lit = !t.attachmentPowered(pos, tx)
+	t.Lit = true
 
 	place(tx, pos, t, user, ctx)
 	if placed(ctx) {
-		tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
+		if t.attachmentPowered(pos, tx) {
+			tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
+		}
 	}
 	return placed(ctx)
 }
@@ -71,7 +80,11 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 // NeighbourUpdateTick breaks unsupported torches and otherwise schedules inverse-state refreshes.
 func (t RedstoneTorch) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
+		tx.ClearRedstoneTorchBurnout(pos)
 		breakBlock(t, pos, tx)
+		return
+	}
+	if t.recoverFromBurnout(pos, tx) {
 		return
 	}
 	tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
@@ -82,11 +95,26 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if tx == nil {
 		return
 	}
+	torch, ok := tx.Block(pos).(RedstoneTorch)
+	if !ok {
+		tx.ClearRedstoneTorchBurnout(pos)
+		return
+	}
+	if burnedOut, _ := tx.RedstoneTorchBurnoutStatus(pos); burnedOut {
+		return
+	}
+	t = torch
 	lit := !t.attachmentPowered(pos, tx)
 	if t.Lit != lit {
+		if tx.RecordRedstoneTorchToggle(pos) {
+			t.burnOut(pos, tx)
+			return
+		}
 		t.Lit = lit
 		tx.SetBlock(pos, t, nil)
+		return
 	}
+	tx.PruneRedstoneTorchBurnout(pos)
 }
 
 // RedstonePower emits power from every side except the attached block while lit.
@@ -110,8 +138,39 @@ func (t RedstoneTorch) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, _ int) (w
 	if tx == nil || t.Lit == !t.attachmentPowered(pos, tx) {
 		return t, false
 	}
+	if t.recoverFromBurnout(pos, tx) {
+		return t, false
+	}
 	tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
 	return t, false
+}
+
+func (t RedstoneTorch) recoverFromBurnout(pos cube.Pos, tx *world.Tx) bool {
+	burnedOut, recoverable := tx.RedstoneTorchBurnoutStatus(pos)
+	if !burnedOut {
+		return false
+	}
+	if !recoverable {
+		return true
+	}
+	tx.ClearRedstoneTorchBurnout(pos)
+	live, ok := tx.Block(pos).(RedstoneTorch)
+	if !ok {
+		return true
+	}
+	lit := !live.attachmentPowered(pos, tx)
+	if live.Lit != lit {
+		live.Lit = lit
+		tx.SetBlock(pos, live, nil)
+	}
+	return true
+}
+
+func (t RedstoneTorch) burnOut(pos cube.Pos, tx *world.Tx) {
+	tx.BurnOutRedstoneTorch(pos)
+	t.Lit = false
+	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+	tx.SetBlock(pos, t, nil)
 }
 
 func (t RedstoneTorch) attachmentPowered(pos cube.Pos, tx *world.Tx) bool {
