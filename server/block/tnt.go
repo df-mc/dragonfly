@@ -16,6 +16,8 @@ type TNT struct {
 	solid
 }
 
+func (TNT) RedstoneNonConductive() {}
+
 // ProjectileHit ...
 func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
 	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {

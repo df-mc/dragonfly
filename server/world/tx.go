@@ -8,7 +8,6 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world/redstone"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -51,11 +50,23 @@ func (tx *Tx) Block(pos cube.Pos) Block {
 	return tx.World().block(pos)
 }
 
+// BlockLoaded returns the block at the position passed if the chunk containing it is already loaded. It returns false
+// without loading or generating the chunk when the block is unavailable.
+func (tx *Tx) BlockLoaded(pos cube.Pos) (Block, bool) {
+	return tx.World().blockLoaded(pos)
+}
+
 // Liquid attempts to return a Liquid block at the position passed. This
 // Liquid may be in the foreground or in any other layer. If found, the Liquid
 // is returned. If not, the bool returned is false.
 func (tx *Tx) Liquid(pos cube.Pos) (Liquid, bool) {
 	return tx.World().liquid(pos)
+}
+
+// LiquidLoaded attempts to return a Liquid block at the position passed if the chunk containing it is already loaded.
+// It returns false without loading or generating the chunk when the liquid is unavailable.
+func (tx *Tx) LiquidLoaded(pos cube.Pos) (Liquid, bool) {
+	return tx.World().liquidLoaded(pos)
 }
 
 // SetLiquid sets a Liquid at a specific position in the World. Unlike
@@ -87,6 +98,69 @@ func (tx *Tx) BuildStructure(pos cube.Pos, s Structure) {
 // already scheduled at a later time than the newly scheduled update.
 func (tx *Tx) ScheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
 	tx.World().scheduleBlockUpdate(pos, b, delay)
+}
+
+// ScheduleRedstoneUpdate schedules a redstone re-evaluation around the position passed in the next redstone phase.
+func (tx *Tx) ScheduleRedstoneUpdate(pos cube.Pos) {
+	tx.World().redstone.invalidateAround(pos, pos, RedstoneUpdateCauseScheduledTick, tx.Range())
+}
+
+// RedstoneTorchBurnoutStatus returns the transient burnout state for the redstone torch at pos.
+func (tx *Tx) RedstoneTorchBurnoutStatus(pos cube.Pos) (burnedOut, recoverable bool) {
+	return tx.World().redstone.torchBurnoutStatus(pos, tx.CurrentTick())
+}
+
+// RecordRedstoneTorchTurnOff records that the redstone torch at pos was forced off.
+func (tx *Tx) RecordRedstoneTorchTurnOff(pos cube.Pos) (burnsOut bool) {
+	return tx.World().redstone.recordTorchTurnOff(pos, tx.CurrentTick())
+}
+
+// ClearRedstoneTorchBurnout removes transient burnout state for the redstone torch at pos.
+func (tx *Tx) ClearRedstoneTorchBurnout(pos cube.Pos) {
+	tx.World().redstone.clearTorchBurnout(pos)
+}
+
+// RedstonePower returns the strongest redstone power currently applied to the position passed.
+func (tx *Tx) RedstonePower(pos cube.Pos) int {
+	return tx.World().redstone.powerTo(pos, tx)
+}
+
+// RedstoneDirectPower returns the strongest direct redstone power currently applied to the position passed, excluding
+// power conducted through solid blocks.
+func (tx *Tx) RedstoneDirectPower(pos cube.Pos) int {
+	return tx.World().redstone.directPower(pos, tx)
+}
+
+// RedstoneStrongPower returns the strongest strong redstone power currently applied to the position passed.
+func (tx *Tx) RedstoneStrongPower(pos cube.Pos) int {
+	return tx.World().redstone.strongPower(pos, tx)
+}
+
+// RedstoneConductivePower returns the power held by pos as a conductive block, excluding direct component activation.
+func (tx *Tx) RedstoneConductivePower(pos cube.Pos) int {
+	return tx.World().redstone.conductivePowerTo(pos, tx)
+}
+
+// RedstonePowerFrom returns the strongest redstone power reaching pos from the side passed.
+func (tx *Tx) RedstonePowerFrom(pos cube.Pos, face cube.Face) int {
+	return tx.World().redstone.powerFrom(pos, tx, face, false)
+}
+
+// RedstoneDirectPowerFrom returns the strongest direct redstone power reaching pos from the side passed.
+func (tx *Tx) RedstoneDirectPowerFrom(pos cube.Pos, face cube.Face) int {
+	return tx.World().redstone.directPowerFrom(pos, tx, face)
+}
+
+// RedstoneStrongPowerFrom returns the strongest strong redstone power reaching pos from the side passed.
+func (tx *Tx) RedstoneStrongPowerFrom(pos cube.Pos, face cube.Face) int {
+	return tx.World().redstone.strongPowerFrom(pos, tx, face)
+}
+
+// RedstoneStoredPowerFrom returns the strongest redstone power reaching pos from the side passed, allowing stored
+// relayer output to contribute. This is used by ticked analog components such as comparators that sample the previous
+// wire state for feedback loops.
+func (tx *Tx) RedstoneStoredPowerFrom(pos cube.Pos, face cube.Face) int {
+	return tx.World().redstone.powerFrom(pos, tx, face, true)
 }
 
 // HighestLightBlocker gets the Y value of the highest fully light blocking
@@ -278,44 +352,6 @@ func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
 	}
 }
 
-// RedstonePower returns the redstone power emitted by the block at pos toward a neighbouring receiver.
-// The face argument is relative to the receiving block.
-func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
-	b := tx.Block(pos)
-	if c, ok := b.(Conductor); ok {
-		return c.WeakPower(pos, face, tx, accountForDust)
-	}
-	// The wiki states that in the future some blocks may be transparent but still relay redstone.
-	// If a block implements RedstonePowerRelayer, it should always be prioritised over lightDiffuser.
-	if r, ok := b.(RedstonePowerRelayer); ok {
-		if !r.RelaysRedstonePowerThrough() {
-			return 0
-		}
-	} else if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
-		return 0
-	}
-	for _, f := range cube.Faces() {
-		if !b.Model().FaceSolid(pos, f, tx) {
-			return 0
-		}
-	}
-	for _, f := range cube.Faces() {
-		c, ok := tx.Block(pos.Side(f)).(Conductor)
-		if !ok {
-			continue
-		}
-		sourcePos := pos.Side(f)
-		power = max(power, c.StrongPower(sourcePos, f, tx, accountForDust))
-		if !accountForDust {
-			continue
-		}
-		if weakBlockPowerer, ok := c.(WeakBlockPowerer); ok && weakBlockPowerer.WeaklyPowersBlocks() {
-			power = max(power, c.WeakPower(sourcePos, f, tx, accountForDust))
-		}
-	}
-	return power
-}
-
 // World returns the World of the Tx. It panics if the transaction was already
 // marked complete.
 func (tx *Tx) World() *World {
@@ -331,11 +367,6 @@ func (tx *Tx) CurrentTick() int64 {
 	w.set.Lock()
 	defer w.set.Unlock()
 	return w.set.CurrentTick
-}
-
-// Redstone returns the transient redstone runtime state owned by the transaction's world.
-func (tx *Tx) Redstone() *redstone.State {
-	return &tx.World().redstone
 }
 
 // close finishes the Tx, causing any following call on the Tx to panic.
