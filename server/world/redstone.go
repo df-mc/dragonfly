@@ -265,11 +265,9 @@ func (e *redstoneEngine) removeChunk(chunkPos ChunkPos) {
 	if e == nil {
 		return
 	}
-	maps.DeleteFunc(e.dirty, func(pos cube.Pos, _ redstoneDirty) bool {
-		return chunkPosFromBlockPos(pos) == chunkPos
-	})
-	maps.DeleteFunc(e.dirty, func(_ cube.Pos, dirty redstoneDirty) bool {
-		return chunkPosFromBlockPos(dirty.changed) == chunkPos
+	maps.DeleteFunc(e.dirty, func(pos cube.Pos, dirty redstoneDirty) bool {
+		return chunkPosFromBlockPos(pos) == chunkPos ||
+			(dirty.hasChanged && chunkPosFromBlockPos(dirty.changed) == chunkPos)
 	})
 	maps.DeleteFunc(e.power, func(pos cube.Pos, _ int) bool {
 		return chunkPosFromBlockPos(pos) == chunkPos

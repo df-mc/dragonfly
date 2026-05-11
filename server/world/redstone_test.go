@@ -81,11 +81,11 @@ func TestRedstoneTorchBurnoutRecoveryUsesRollingWindow(t *testing.T) {
 
 	burnedOut, recoverable := e.torchBurnoutStatus(pos, redstoneTorchBurnoutWindowTicks-1)
 	if !burnedOut || recoverable {
-		t.Fatalf("burnout status with eight turn-offs left in window = burnedOut:%t recoverable:%t, want burnedOut:true recoverable:false", burnedOut, recoverable)
+		t.Fatalf("burnout status with all eight turn-offs still inside the rolling window = burnedOut:%t recoverable:%t, want burnedOut:true recoverable:false", burnedOut, recoverable)
 	}
 	burnedOut, recoverable = e.torchBurnoutStatus(pos, redstoneTorchBurnoutWindowTicks)
 	if !burnedOut || !recoverable {
-		t.Fatalf("burnout status with fewer than eight turn-offs left in window = burnedOut:%t recoverable:%t, want burnedOut:true recoverable:true", burnedOut, recoverable)
+		t.Fatalf("burnout status after earliest turn-off has aged out of the rolling window = burnedOut:%t recoverable:%t, want burnedOut:true recoverable:true", burnedOut, recoverable)
 	}
 }
 
@@ -216,6 +216,31 @@ func TestRedstoneEngineInvalidateAround(t *testing.T) {
 	engine.invalidateAround(cube.Pos{0, -1, 0}, changed, RedstoneUpdateCauseScheduledTick, cube.Range{0, 1})
 	if len(engine.dirty) != len(want) {
 		t.Fatalf("out-of-bounds invalidation changed dirty positions to %v, want %v", engine.dirty, want)
+	}
+	for pos, dirty := range want {
+		if got, ok := engine.dirty[pos]; !ok || got != dirty {
+			t.Fatalf("dirty[%v] after out-of-bounds invalidation = %v, %t; want %v, true", pos, got, ok, dirty)
+		}
+	}
+}
+
+func TestRedstoneEngineRemoveChunkKeepsUnchangedDirtyOutsideChunk(t *testing.T) {
+	engine := newRedstoneEngine(42)
+	unloadedChunk := chunkPosFromBlockPos(cube.Pos{0, 64, 0})
+	dirtyPos := cube.Pos{32, 64, 0}
+	unchanged := redstoneDirty{cause: RedstoneUpdateCauseCompilerRebuild}
+	engine.dirty[dirtyPos] = unchanged
+
+	engine.removeChunk(unloadedChunk)
+	if got, ok := engine.dirty[dirtyPos]; !ok || got != unchanged {
+		t.Fatalf("dirty[%v] after unrelated chunk removal = %v, %t; want %v, true", dirtyPos, got, ok, unchanged)
+	}
+
+	changed := redstoneDirty{changed: cube.Pos{0, 64, 0}, hasChanged: true, cause: RedstoneUpdateCauseBlockUpdate}
+	engine.dirty[dirtyPos] = changed
+	engine.removeChunk(unloadedChunk)
+	if _, ok := engine.dirty[dirtyPos]; ok {
+		t.Fatalf("dirty[%v] with changed position in unloaded chunk was not removed", dirtyPos)
 	}
 }
 
@@ -610,6 +635,7 @@ func TestScheduledTickQueueExecutesEarlierDueTickBeforeLaterTick(t *testing.T) {
 
 type scheduledTickTestBlock struct{}
 
+// Test counters below are package-level because block instances are registry values; tests using them must stay serial.
 var scheduledTickTestBlockTicks *int
 
 func (scheduledTickTestBlock) ScheduledTick(cube.Pos, *Tx, *rand.Rand) {
@@ -998,6 +1024,10 @@ type redstoneNonConductiveSolidBlock struct {
 }
 
 func (redstoneNonConductiveSolidBlock) RedstoneNonConductive() {}
+func (redstoneNonConductiveSolidBlock) EncodeBlock() (string, map[string]any) {
+	return "test:non_conductive_solid_block", nil
+}
+func (redstoneNonConductiveSolidBlock) Hash() (uint64, uint64) { return 1 << 56, 0 }
 
 type redstoneSolidModel struct{}
 

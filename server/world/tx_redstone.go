@@ -12,7 +12,7 @@ type RedstoneTransaction struct {
 	tx *Tx
 }
 
-// ScheduleUpdate schedules a redstone re-evaluation around pos in the next redstone phase.
+// ScheduleUpdate marks pos and its neighbours for re-evaluation during the next redstone phase.
 func (r RedstoneTransaction) ScheduleUpdate(pos cube.Pos) {
 	r.tx.World().redstone.invalidateAround(pos, pos, RedstoneUpdateCauseScheduledTick, r.tx.Range())
 }
