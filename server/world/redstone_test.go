@@ -43,8 +43,8 @@ func TestClampRedstonePower(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if got := clampRedstonePower(test.power); got != test.want {
-				t.Fatalf("clampRedstonePower(%d) = %d, want %d", test.power, got, test.want)
+			if got := ClampRedstonePower(test.power); got != test.want {
+				t.Fatalf("ClampRedstonePower(%d) = %d, want %d", test.power, got, test.want)
 			}
 		})
 	}

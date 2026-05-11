@@ -490,7 +490,7 @@ func (e *redstoneEngine) compileRegion(tx *Tx, pos cube.Pos, seen map[cube.Pos]s
 // update applies a computed input power to a consumer or action block.
 func (e *redstoneEngine) update(tx *Tx, pos cube.Pos, d redstoneDirty, graphID uint64, newPower int) {
 	b := tx.Block(pos)
-	oldPower, newPower := e.power[pos], clampRedstonePower(newPower)
+	oldPower, newPower := e.power[pos], ClampRedstonePower(newPower)
 
 	after, blockChanged := b, false
 	if consumer, ok := b.(RedstonePowerTransitionConsumer); ok {
@@ -616,7 +616,7 @@ func (e *redstoneEngine) directPowerFrom(pos cube.Pos, tx *Tx, face cube.Face) i
 		return 0
 	}
 	if source, ok := b.(RedstonePowerSource); ok {
-		return clampRedstonePower(e.redstonePower(source, neighbour, tx, face.Opposite()))
+		return ClampRedstonePower(e.redstonePower(source, neighbour, tx, face.Opposite()))
 	}
 	return 0
 }
@@ -642,9 +642,9 @@ func (e *redstoneEngine) strongPowerFrom(pos cube.Pos, tx *Tx, face cube.Face) i
 	}
 	if source, ok := b.(RedstoneStrongPowerSource); ok {
 		if power, ok := e.suppressedSources[neighbour]; ok {
-			return clampRedstonePower(power)
+			return ClampRedstonePower(power)
 		}
-		return clampRedstonePower(source.RedstoneStrongPower(neighbour, tx, face.Opposite()))
+		return ClampRedstonePower(source.RedstoneStrongPower(neighbour, tx, face.Opposite()))
 	}
 	return 0
 }
@@ -695,7 +695,7 @@ func (e *redstoneEngine) weakBlockPowerFrom(pos cube.Pos, tx *Tx, face cube.Face
 		return 0
 	}
 	if source, ok := b.(RedstonePowerSource); ok && e.redstoneWeaklyPowersBlocks(b) {
-		return clampRedstonePower(e.redstonePower(source, sourcePos, tx, face.Opposite()))
+		return ClampRedstonePower(e.redstonePower(source, sourcePos, tx, face.Opposite()))
 	}
 	return 0
 }
@@ -782,7 +782,7 @@ func (e *redstoneEngine) sourcePower(pos cube.Pos, tx *Tx) int {
 	}
 	power := 0
 	for _, face := range cube.Faces() {
-		power = max(power, clampRedstonePower(e.redstonePower(source, pos, tx, face)))
+		power = max(power, ClampRedstonePower(e.redstonePower(source, pos, tx, face)))
 	}
 	return power
 }
@@ -811,7 +811,7 @@ func (e *redstoneEngine) graphPower(tx *Tx, graph redstoneGraph) []int {
 
 	queue := make([]int, 0, len(graph.nodes))
 	push := func(i, power int) {
-		power = clampRedstonePower(power)
+		power = ClampRedstonePower(power)
 		if power <= powers[i] {
 			return
 		}
@@ -839,7 +839,7 @@ func (e *redstoneEngine) graphPower(tx *Tx, graph redstoneGraph) []int {
 			if !ok {
 				continue
 			}
-			power := clampRedstonePower(e.redstonePower(source, pos, tx, face))
+			power := ClampRedstonePower(e.redstonePower(source, pos, tx, face))
 			push(j, power)
 		}
 	}
@@ -867,7 +867,7 @@ func (e *redstoneEngine) powerTo(pos cube.Pos, tx *Tx) int {
 	} else {
 		power = max(power, e.conductedStrongPower(pos, tx))
 	}
-	return clampRedstonePower(power)
+	return ClampRedstonePower(power)
 }
 
 // powerFrom returns redstone power reaching pos through face.
@@ -906,7 +906,7 @@ func (e *redstoneEngine) powerFrom(pos cube.Pos, tx *Tx, face cube.Face, relayer
 		// See graphPower: relayers carry recomputed power through edges, so their
 		// stored RedstonePower should not count as an independent source here.
 		if source, ok := b.(RedstonePowerSource); ok && (!isRelayer || relayerSources) && e.acceptsDirectSourcePower(pos, tx) {
-			power = max(power, clampRedstonePower(e.redstonePower(source, s.pos, tx, s.from)-s.loss))
+			power = max(power, ClampRedstonePower(e.redstonePower(source, s.pos, tx, s.from)-s.loss))
 		}
 		if !isRelayer {
 			continue
@@ -929,7 +929,7 @@ func (e *redstoneEngine) powerFrom(pos cube.Pos, tx *Tx, face cube.Face, relayer
 			}
 		}
 	}
-	return clampRedstonePower(power)
+	return ClampRedstonePower(power)
 }
 
 // torchBurnoutStatus returns whether the torch at pos is burned out and whether it can recover at currentTick.
@@ -1021,7 +1021,7 @@ func (e *redstoneEngine) pruneTorchBurnout(pos cube.Pos, currentTick int64) (red
 // redstonePower reads source power while guarding against recursive source evaluation.
 func (e *redstoneEngine) redstonePower(source RedstonePowerSource, pos cube.Pos, tx *Tx, face cube.Face) int {
 	if power, ok := e.suppressedSources[pos]; ok {
-		return clampRedstonePower(power)
+		return ClampRedstonePower(power)
 	}
 	if _, ok := e.evaluating[pos]; ok {
 		return 0
@@ -1259,8 +1259,8 @@ func compareRedstoneEdge(a, b redstoneEdge) int {
 	return a.weight - b.weight
 }
 
-// clampRedstonePower clamps power to the vanilla 0-15 redstone range.
-func clampRedstonePower(power int) int {
+// ClampRedstonePower clamps power to the vanilla 0-15 redstone range.
+func ClampRedstonePower(power int) int {
 	if power < 0 {
 		return 0
 	}

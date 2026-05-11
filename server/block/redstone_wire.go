@@ -128,7 +128,7 @@ func allRedstoneWires() (all []world.Block) {
 
 // redstonePower clamps a redstone signal strength to the vanilla 0-15 range.
 func redstonePower(power int) int {
-	return min(max(power, 0), 15)
+	return world.ClampRedstonePower(power)
 }
 
 // redstoneTicks converts redstone ticks to a wall-clock duration at 10 redstone ticks per second.
