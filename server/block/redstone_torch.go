@@ -77,8 +77,8 @@ func (t RedstoneTorch) NeighbourUpdateTick(pos, changed cube.Pos, tx *world.Tx) 
 		breakBlock(t, pos, tx)
 		return
 	}
-	if burnedOut, _ := tx.RedstoneTorchBurnoutStatus(pos); burnedOut {
-		if changed != pos && !t.attachmentPowered(pos, tx) {
+	if burnedOut, recoverable := tx.RedstoneTorchBurnoutStatus(pos); burnedOut {
+		if recoverable && changed != pos && !t.attachmentPowered(pos, tx) && redstoneTorchRecoveryChange(changed, tx) {
 			tx.ClearRedstoneTorchBurnout(pos)
 			tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
 		}
@@ -101,11 +101,13 @@ func (t RedstoneTorch) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 		if !lit && tx.RecordRedstoneTorchTurnOff(pos) {
 			t.Lit = false
 			tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
-			tx.SetBlock(pos, t, nil)
+			tx.SetBlock(pos, t, &world.SetOpts{DisableRedstoneUpdates: true})
+			tx.ScheduleRedstoneUpdate(pos)
 			return
 		}
 		t.Lit = lit
-		tx.SetBlock(pos, t, nil)
+		tx.SetBlock(pos, t, &world.SetOpts{DisableRedstoneUpdates: true})
+		tx.ScheduleRedstoneUpdate(pos)
 	}
 }
 
@@ -136,8 +138,8 @@ func (t RedstoneTorch) RedstonePowerActionUpdate(pos cube.Pos, tx *world.Tx, upd
 		return false
 	}
 	attachmentPowered := t.attachmentPowered(pos, tx)
-	if burnedOut, _ := tx.RedstoneTorchBurnoutStatus(pos); burnedOut {
-		if attachmentPowered || update.ChangedNeighbour == pos {
+	if burnedOut, recoverable := tx.RedstoneTorchBurnoutStatus(pos); burnedOut {
+		if !recoverable || attachmentPowered || update.ChangedNeighbour == pos || update.Cause == world.RedstoneUpdateCauseScheduledTick || !redstoneTorchRecoveryChange(update.ChangedNeighbour, tx) {
 			return false
 		}
 		tx.ClearRedstoneTorchBurnout(pos)
@@ -166,6 +168,19 @@ func (t RedstoneTorch) attachmentPowered(pos cube.Pos, tx *world.Tx) bool {
 		}
 	}
 	return redstoneConductiveBlock(attached, attachedBlock, tx) && tx.RedstoneConductivePower(attached) > 0
+}
+
+// redstoneTorchRecoveryChange reports whether a neighbouring change should recover a burned-out torch. A loop's own
+// dust dropping to zero remains redstone wire, so it must not be treated like the input being removed.
+func redstoneTorchRecoveryChange(changed cube.Pos, tx *world.Tx) bool {
+	if tx == nil {
+		return false
+	}
+	if changed == (cube.Pos{}) {
+		return false
+	}
+	_, stillWire := tx.Block(changed).(RedstoneWire)
+	return !stillWire
 }
 
 func (RedstoneTorch) EncodeItem() (name string, meta int16) {

@@ -2,6 +2,7 @@ package block
 
 import (
 	"testing"
+	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -241,6 +242,55 @@ func TestRedstoneTorchBurnsOutAfterRapidTurnOffs(t *testing.T) {
 func TestBurnedOutRedstoneTorchRelightsWhenInputIsRemoved(t *testing.T) {
 	w := world.Config{}.New()
 	defer w.Close()
+	loader := world.NewLoader(1, w, world.NopViewer{})
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Load(tx, 1)
+	})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := torchPos.Side(cube.FaceWest)
+	inputPos := attachmentPos.Side(cube.FaceNorth)
+	var lit bool
+	var burnedOutTick int64
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest, Lit: true}, nil)
+
+		for range 8 {
+			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
+			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
+			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
+			tx.SetBlock(inputPos, nil, nil)
+			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
+		}
+		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
+		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
+		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
+
+		burnedOutTick = tx.CurrentTick()
+	})
+	redstoneWireTestWaitTick(t, w, burnedOutTick)
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(inputPos, nil, nil)
+		torch := tx.Block(torchPos).(RedstoneTorch)
+		torch.RedstonePowerActionUpdate(torchPos, tx, world.RedstoneUpdate{ChangedNeighbour: inputPos})
+		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
+		lit = tx.Block(torchPos).(RedstoneTorch).Lit
+	})
+
+	if !lit {
+		t.Fatal("burned-out redstone torch did not relight after its input was removed")
+	}
+}
+
+func TestBurnedOutRedstoneTorchDoesNotRecoverOnSameTickInputDrops(t *testing.T) {
+	w := world.Config{}.New()
+	defer w.Close()
 
 	torchPos := cube.Pos{1, 64, 0}
 	attachmentPos := torchPos.Side(cube.FaceWest)
@@ -268,8 +318,8 @@ func TestBurnedOutRedstoneTorchRelightsWhenInputIsRemoved(t *testing.T) {
 		lit = tx.Block(torchPos).(RedstoneTorch).Lit
 	})
 
-	if !lit {
-		t.Fatal("burned-out redstone torch did not relight after its input was removed")
+	if lit {
+		t.Fatal("burned-out redstone torch recovered on the same tick its input dropped")
 	}
 }
 
@@ -306,6 +356,21 @@ func TestBurnedOutRedstoneTorchDoesNotSelfRecoverWhenLoopUnpowersInput(t *testin
 	if lit {
 		t.Fatal("burned-out redstone torch self-recovered after its own loop unpowered the input")
 	}
+}
+
+func redstoneWireTestWaitTick(t *testing.T, w *world.World, tick int64) {
+	t.Helper()
+	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); {
+		var current int64
+		<-w.Exec(func(tx *world.Tx) {
+			current = tx.CurrentTick()
+		})
+		if current > tick {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatalf("world tick did not advance past %d", tick)
 }
 
 func redstoneWireTestContains(positions []cube.Pos, pos cube.Pos) bool {

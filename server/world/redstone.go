@@ -142,8 +142,9 @@ type redstoneDirty struct {
 
 // redstoneTorchBurnout tracks rapid torch turn-off history and the current burned-out state.
 type redstoneTorchBurnout struct {
-	offTicks  []int64
-	burnedOut bool
+	offTicks      []int64
+	burnedOut     bool
+	burnedOutTick int64
 }
 
 const (
@@ -255,7 +256,7 @@ func (e *redstoneEngine) tick(tx *Tx, tick int64) {
 
 	powers := e.graphPower(tx, graph)
 	for i, node := range graph.nodes {
-		d := dirty[node.pos]
+		d := redstoneDirtyContext(dirty, node.pos)
 		if node.sink {
 			e.update(tx, node.pos, d.changed, d.cause, graph.id, powers[i])
 		}
@@ -264,11 +265,46 @@ func (e *redstoneEngine) tick(tx *Tx, tick int64) {
 		if _, ok := checkedSources[node.pos]; ok {
 			continue
 		}
-		d := dirty[node.pos]
+		d := redstoneDirtyContext(dirty, node.pos)
 		if node.source {
 			e.updateSource(tx, node.pos, d.changed, d.cause, graph.id)
 		}
 	}
+}
+
+// redstoneDirtyContext returns the direct dirty context for pos, or the nearest dirty context that pulled pos into
+// the current graph. Graph compilation intentionally includes connected blocks that are not dirty themselves.
+func redstoneDirtyContext(dirty map[cube.Pos]redstoneDirty, pos cube.Pos) redstoneDirty {
+	if d, ok := dirty[pos]; ok {
+		return d
+	}
+	var (
+		bestPos  cube.Pos
+		best     redstoneDirty
+		bestDist int
+		ok       bool
+	)
+	for dirtyPos, d := range dirty {
+		dist := redstoneManhattanDistance(pos, dirtyPos)
+		if !ok || dist < bestDist || (dist == bestDist && compareBlockPos(dirtyPos, bestPos) < 0) {
+			bestPos, best, bestDist, ok = dirtyPos, d, dist, true
+		}
+	}
+	if !ok {
+		return redstoneDirty{changed: pos, cause: RedstoneUpdateCauseCompilerRebuild}
+	}
+	return best
+}
+
+func redstoneManhattanDistance(a, b cube.Pos) int {
+	return abs(a[0]-b[0]) + abs(a[1]-b[1]) + abs(a[2]-b[2])
+}
+
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // compile builds a deterministic graph around the candidate positions.
@@ -394,7 +430,7 @@ func (e *redstoneEngine) update(tx *Tx, pos, changed cube.Pos, cause RedstoneUpd
 
 	if blockChanged {
 		tx.SetBlock(pos, after, &SetOpts{DisableRedstoneUpdates: true})
-		e.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, tx.Range())
+		e.invalidateAround(pos, pos, cause, tx.Range())
 		if postUpdater, ok := b.(RedstonePowerPostUpdater); ok {
 			postUpdater.RedstonePowerPostUpdate(pos, tx, b, after, oldPower, newPower)
 		}
@@ -467,7 +503,7 @@ func (e *redstoneEngine) updateSource(tx *Tx, pos, changed cube.Pos, cause Redst
 		return false
 	}
 	e.output[pos] = newPower
-	e.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, tx.Range())
+	e.invalidateAround(pos, pos, cause, tx.Range())
 	return true
 }
 
@@ -813,7 +849,7 @@ func (e *redstoneEngine) torchBurnoutStatus(pos cube.Pos, currentTick int64) (bu
 	if !ok {
 		return false, true
 	}
-	return data.burnedOut, len(data.offTicks) <= redstoneTorchBurnoutThreshold
+	return data.burnedOut, !data.burnedOut || currentTick > data.burnedOutTick
 }
 
 // recordTorchTurnOff records a torch being forced off and reports whether that torch should burn out.
@@ -825,6 +861,7 @@ func (e *redstoneEngine) recordTorchTurnOff(pos cube.Pos, currentTick int64) boo
 	data.offTicks = append(data.offTicks, currentTick)
 	if len(data.offTicks) > redstoneTorchBurnoutThreshold {
 		data.burnedOut = true
+		data.burnedOutTick = currentTick
 		e.torchBurnout[pos] = data
 		return true
 	}
