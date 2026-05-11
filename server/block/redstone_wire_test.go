@@ -206,6 +206,25 @@ func TestRedstoneTorchTurnsOffOnPoweredConductiveAttachment(t *testing.T) {
 	}
 }
 
+func TestRedstoneTorchTurnsOffOnRedstoneBlockAttachment(t *testing.T) {
+	w := world.Config{}.New()
+	defer w.Close()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := torchPos.Side(cube.FaceWest)
+	var powered bool
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(attachmentPos, RedstoneBlock{}, nil)
+
+		torch := RedstoneTorch{Facing: cube.FaceWest, Lit: true}
+		powered = torch.attachmentPowered(torchPos, tx)
+	})
+
+	if !powered {
+		t.Fatal("torch attachment was not powered by redstone block")
+	}
+}
+
 func TestRedstoneTorchUnknownFacingDoesNotPowerAttachmentFace(t *testing.T) {
 	torch := RedstoneTorch{Facing: unknownFace, Lit: true}
 	pos := cube.Pos{1, 64, 0}
