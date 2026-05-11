@@ -206,6 +206,52 @@ func TestRedstoneTorchTurnsOffOnPoweredConductiveAttachment(t *testing.T) {
 	}
 }
 
+func TestRedstoneTorchUnknownFacingDoesNotPowerAttachmentFace(t *testing.T) {
+	torch := RedstoneTorch{Facing: unknownFace, Lit: true}
+	pos := cube.Pos{1, 64, 0}
+
+	if power := torch.RedstonePower(pos, nil, cube.FaceDown); power != 0 {
+		t.Fatalf("unknown-facing torch power from attachment face = %d, want 0", power)
+	}
+	if power := torch.RedstonePower(pos, nil, cube.FaceUp); power != 15 {
+		t.Fatalf("unknown-facing torch power from top face = %d, want 15", power)
+	}
+}
+
+func TestRedstoneTorchUnknownFacingUsesBlockBelowAsAttachment(t *testing.T) {
+	w := world.Config{}.New()
+	defer w.Close()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := torchPos.Side(cube.FaceDown)
+	inputPos := attachmentPos.Side(cube.FaceNorth)
+	var unpoweredAttachment, poweredAttachment, supported bool
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: unknownFace, Lit: true}, nil)
+
+		torch := tx.Block(torchPos).(RedstoneTorch)
+		unpoweredAttachment = torch.attachmentPowered(torchPos, tx)
+
+		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
+		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
+		poweredAttachment = torch.attachmentPowered(torchPos, tx)
+
+		torch.NeighbourUpdateTick(torchPos, attachmentPos, tx)
+		_, supported = tx.Block(torchPos).(RedstoneTorch)
+	})
+
+	if unpoweredAttachment {
+		t.Fatal("unknown-facing torch treated itself as a powered attachment")
+	}
+	if !poweredAttachment {
+		t.Fatal("unknown-facing torch did not use the block below as its powered attachment")
+	}
+	if !supported {
+		t.Fatal("unknown-facing torch broke instead of using the block below as support")
+	}
+}
+
 func TestRedstoneBlockPowersAdjacentComponentsButNotThroughStone(t *testing.T) {
 	w := world.Config{}.New()
 	defer w.Close()
@@ -300,6 +346,64 @@ func TestTNTDoesNotConductRedstonePower(t *testing.T) {
 
 	if power != 0 {
 		t.Fatalf("redstone power conducted through TNT = %d, want 0", power)
+	}
+}
+
+func TestTNTRedstonePowerPrimesOnRisingEdge(t *testing.T) {
+	w := world.Config{Entities: redstoneTNTTestEntityRegistry()}.New()
+	defer w.Close()
+
+	pos := cube.Pos{1, 64, 0}
+	var acted bool
+	var blockAfter world.Block
+	entities := 0
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(pos, TNT{}, nil)
+
+		acted = (TNT{}).RedstonePowerAction(pos, tx, 0, 15)
+		blockAfter = tx.Block(pos)
+		for range tx.Entities() {
+			entities++
+		}
+	})
+
+	if !acted {
+		t.Fatal("TNT redstone action returned false on rising edge")
+	}
+	if _, ok := blockAfter.(Air); !ok {
+		t.Fatalf("block after powered TNT action = %T, want Air", blockAfter)
+	}
+	if entities != 1 {
+		t.Fatalf("entities after powered TNT action = %d, want 1", entities)
+	}
+}
+
+func TestTNTRedstonePowerIgnoresFallingEdge(t *testing.T) {
+	w := world.Config{Entities: redstoneTNTTestEntityRegistry()}.New()
+	defer w.Close()
+
+	pos := cube.Pos{1, 64, 0}
+	var acted bool
+	var blockAfter world.Block
+	entities := 0
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(pos, TNT{}, nil)
+
+		acted = (TNT{}).RedstonePowerAction(pos, tx, 15, 0)
+		blockAfter = tx.Block(pos)
+		for range tx.Entities() {
+			entities++
+		}
+	})
+
+	if acted {
+		t.Fatal("TNT redstone action returned true on falling edge")
+	}
+	if _, ok := blockAfter.(TNT); !ok {
+		t.Fatalf("block after unpowered TNT action = %T, want TNT", blockAfter)
+	}
+	if entities != 0 {
+		t.Fatalf("entities after unpowered TNT action = %d, want 0", entities)
 	}
 }
 
@@ -742,4 +846,52 @@ func (v *redstoneWireTestBlockUpdateViewer) blockUpdateCount(pos cube.Pos) int {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	return v.updates[pos]
+}
+
+func redstoneTNTTestEntityRegistry() world.EntityRegistry {
+	return world.EntityRegistryConfig{
+		TNT: func(opts world.EntitySpawnOpts, _ time.Duration) *world.EntityHandle {
+			return opts.New(redstoneTNTTestEntityType{}, redstoneTNTTestEntityConfig{})
+		},
+	}.New([]world.EntityType{redstoneTNTTestEntityType{}})
+}
+
+type redstoneTNTTestEntityConfig struct{}
+
+func (redstoneTNTTestEntityConfig) Apply(*world.EntityData) {}
+
+type redstoneTNTTestEntityType struct{}
+
+func (redstoneTNTTestEntityType) Open(_ *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+	return redstoneTNTTestEntity{handle: handle, data: data}
+}
+
+func (redstoneTNTTestEntityType) EncodeEntity() string { return "test:tnt" }
+func (redstoneTNTTestEntityType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
+}
+func (redstoneTNTTestEntityType) DecodeNBT(map[string]any, *world.EntityData) {}
+func (redstoneTNTTestEntityType) EncodeNBT(*world.EntityData) map[string]any {
+	return nil
+}
+
+type redstoneTNTTestEntity struct {
+	handle *world.EntityHandle
+	data   *world.EntityData
+}
+
+func (e redstoneTNTTestEntity) Close() error {
+	return nil
+}
+
+func (e redstoneTNTTestEntity) H() *world.EntityHandle {
+	return e.handle
+}
+
+func (e redstoneTNTTestEntity) Position() mgl64.Vec3 {
+	return e.data.Pos
+}
+
+func (e redstoneTNTTestEntity) Rotation() cube.Rotation {
+	return e.data.Rot
 }

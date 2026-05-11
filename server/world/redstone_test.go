@@ -50,6 +50,25 @@ func TestClampRedstonePower(t *testing.T) {
 	}
 }
 
+func TestRedstoneStepFace(t *testing.T) {
+	tests := []struct {
+		name string
+		from cube.Pos
+		to   cube.Pos
+		want cube.Face
+	}{
+		{name: "diagonal step up", from: cube.Pos{0, 64, 0}, to: cube.Pos{1, 65, 0}, want: cube.FaceUp},
+		{name: "diagonal step down", from: cube.Pos{0, 64, 0}, to: cube.Pos{-1, 63, 0}, want: cube.FaceDown},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := redstoneStepFace(test.from, test.to); got != test.want {
+				t.Fatalf("redstoneStepFace(%v, %v) = %v, want %v", test.from, test.to, got, test.want)
+			}
+		})
+	}
+}
+
 func TestRedstoneTorchBurnoutRecoveryUsesRollingWindow(t *testing.T) {
 	e := newRedstoneEngine(0)
 	pos := cube.Pos{1, 64, 1}
@@ -285,6 +304,28 @@ func TestRedstoneCancelledActionDoesNotRun(t *testing.T) {
 	})
 	if actions != 0 {
 		t.Fatalf("actions = %d, want 0", actions)
+	}
+}
+
+func TestRedstoneActionOnlyRunsOnPowerChange(t *testing.T) {
+	sourcePos, actionPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
+	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	defer w.Close()
+
+	actions := 0
+	redstoneCancellationActions = &actions
+	t.Cleanup(func() {
+		redstoneCancellationActions = nil
+	})
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sourcePos, redstoneCancellationSource{Power: 15}, nil)
+		tx.SetBlock(actionPos, redstoneCancellationAction{}, nil)
+		tx.World().redstone.tick(tx, 1)
+		tx.World().redstone.invalidate(actionPos, redstoneDirty{cause: RedstoneUpdateCauseBlockUpdate}, tx.Range())
+		tx.World().redstone.tick(tx, 2)
+	})
+	if actions != 1 {
+		t.Fatalf("actions after same-power dirty evaluation = %d, want 1", actions)
 	}
 }
 

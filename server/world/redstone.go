@@ -396,8 +396,11 @@ func (e *redstoneEngine) compile(tx *Tx, candidates []cube.Pos) redstoneGraph {
 	nodes := make([]redstoneNode, 0, len(candidates))
 	seen := make(map[cube.Pos]struct{}, len(candidates)*2)
 	for _, pos := range candidates {
+		nodeCount := len(nodes)
 		e.compileRegion(tx, pos, seen, &nodes)
-		e.compileAdjacentRedstone(tx, pos, seen, &nodes)
+		if len(nodes) == nodeCount {
+			e.compileAdjacentRedstone(tx, pos, seen, &nodes)
+		}
 	}
 	for i := 0; i < len(nodes); i++ {
 		e.compileAdjacentRedstone(tx, nodes[i].pos, seen, &nodes)
@@ -497,19 +500,19 @@ func (e *redstoneEngine) update(tx *Tx, pos cube.Pos, d redstoneDirty, graphID u
 	}
 	action, hasAction := b.(RedstonePowerAction)
 	contextAction, hasContextAction := b.(RedstonePowerContextAction)
-	hasAnyAction := hasAction || hasContextAction
 
 	update := d.redstoneUpdate(pos, b, oldPower, newPower, e.currentTick, graphID)
 	if blockChanged {
 		update.After = after
 	}
-	if oldPower != newPower || blockChanged || hasAnyAction {
+	shouldRunAction := hasContextAction || (hasAction && oldPower != newPower)
+	if oldPower != newPower || blockChanged || shouldRunAction {
 		if !e.redstoneUpdateAllowed(tx, update) {
 			return
 		}
 	}
 
-	if !blockChanged && !hasAnyAction {
+	if !blockChanged && !shouldRunAction {
 		storeRedstonePower(e.power, pos, newPower)
 		return
 	}
@@ -529,10 +532,10 @@ func (e *redstoneEngine) update(tx *Tx, pos cube.Pos, d redstoneDirty, graphID u
 	acted := false
 	if hasContextAction {
 		acted = contextAction.RedstonePowerActionUpdate(pos, tx, update)
-	} else if hasAction {
+	} else if shouldRunAction {
 		acted = action.RedstonePowerAction(pos, tx, oldPower, newPower)
 	}
-	if blockChanged || hasAnyAction || acted {
+	if blockChanged || shouldRunAction || acted {
 		storeRedstonePower(e.power, pos, newPower)
 	}
 }
@@ -1173,6 +1176,10 @@ func (e *redstoneEngine) redstoneRelayerNeighbours(tx *Tx, pos cube.Pos, f func(
 func redstoneStepFace(from, to cube.Pos) cube.Face {
 	dx, dy, dz := to[0]-from[0], to[1]-from[1], to[2]-from[2]
 	switch {
+	case dy > 0:
+		return cube.FaceUp
+	case dy < 0:
+		return cube.FaceDown
 	case dx > 0:
 		return cube.FaceEast
 	case dx < 0:
@@ -1181,10 +1188,6 @@ func redstoneStepFace(from, to cube.Pos) cube.Face {
 		return cube.FaceSouth
 	case dz < 0:
 		return cube.FaceNorth
-	case dy > 0:
-		return cube.FaceUp
-	case dy < 0:
-		return cube.FaceDown
 	default:
 		return cube.FaceUp
 	}

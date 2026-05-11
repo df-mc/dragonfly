@@ -38,6 +38,13 @@ func (t RedstoneTorch) LightEmissionLevel() uint8 {
 	return 0
 }
 
+func (t RedstoneTorch) facing() cube.Face {
+	if t.Facing == unknownFace {
+		return cube.FaceDown
+	}
+	return t.Facing
+}
+
 func (t RedstoneTorch) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(t)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		tx.Redstone().Torch(pos).ClearBurnout()
@@ -72,7 +79,8 @@ func (t RedstoneTorch) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 
 // NeighbourUpdateTick breaks unsupported torches and otherwise schedules inverse-state refreshes.
 func (t RedstoneTorch) NeighbourUpdateTick(pos, changed cube.Pos, tx *world.Tx) {
-	if !tx.Block(pos.Side(t.Facing)).Model().FaceSolid(pos.Side(t.Facing), t.Facing.Opposite(), tx) {
+	facing := t.facing()
+	if !tx.Block(pos.Side(facing)).Model().FaceSolid(pos.Side(facing), facing.Opposite(), tx) {
 		tx.Redstone().Torch(pos).ClearBurnout()
 		breakBlock(t, pos, tx)
 		return
@@ -131,7 +139,7 @@ func redstoneTorchAt(pos cube.Pos, tx *world.Tx) (RedstoneTorch, bool) {
 
 // RedstonePower emits power from every side except the attached block while lit.
 func (t RedstoneTorch) RedstonePower(_ cube.Pos, _ *world.Tx, face cube.Face) int {
-	if t.Lit && face != t.Facing {
+	if t.Lit && face != t.facing() {
 		return 15
 	}
 	return 0
@@ -181,7 +189,7 @@ func (t RedstoneTorch) attachmentPowered(pos cube.Pos, tx *world.Tx) bool {
 	if tx == nil {
 		return false
 	}
-	attached := pos.Side(t.Facing)
+	attached := pos.Side(t.facing())
 	attachedBlock := tx.Block(attached)
 	if source, ok := attachedBlock.(world.RedstonePowerSource); ok {
 		for _, face := range cube.Faces() {
@@ -202,7 +210,7 @@ func (t RedstoneTorch) recoverBurnout(pos, changed cube.Pos, tx *world.Tx, recov
 	if changedRedstoneRelevant {
 		return touchesRecoveryArea
 	}
-	if changed == pos.Side(t.Facing) {
+	if changed == pos.Side(t.facing()) {
 		return true
 	}
 	return recoverable && touchesRecoveryArea
@@ -211,7 +219,7 @@ func (t RedstoneTorch) recoverBurnout(pos, changed cube.Pos, tx *world.Tx, recov
 // changeTouchesRecoveryArea reports whether changed is close enough to the torch, its input, or an output wire directly
 // beside it to count as a real neighbour update. A dust line extending straight away from the torch is not local.
 func (t RedstoneTorch) changeTouchesRecoveryArea(pos, changed cube.Pos, tx *world.Tx) bool {
-	inputPos := pos.Side(t.Facing)
+	inputPos := pos.Side(t.facing())
 	if changed == inputPos {
 		return true
 	}

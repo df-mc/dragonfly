@@ -16,7 +16,17 @@ type TNT struct {
 	solid
 }
 
+var _ world.RedstonePowerAction = TNT{}
+
 func (TNT) RedstoneNonConductive() {}
+
+// RedstonePowerAction primes TNT when it first receives redstone power.
+func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower int) bool {
+	if oldPower > 0 || newPower == 0 {
+		return false
+	}
+	return t.Ignite(pos, tx, nil)
+}
 
 // ProjectileHit ...
 func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
