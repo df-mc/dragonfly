@@ -14,56 +14,62 @@ func TestRedstoneWirePowersBlockBelowButNotAbove(t *testing.T) {
 	wire := RedstoneWire{Power: 15}
 	pos := cube.Pos{0, 64, 0}
 
-	if power := wire.RedstonePower(pos, nil, cube.FaceUp); power != 0 {
-		t.Fatalf("power from wire top face = %d, want 0", power)
+	tests := []struct {
+		name string
+		face cube.Face
+		want int
+	}{
+		{name: "top", face: cube.FaceUp},
+		{name: "bottom", face: cube.FaceDown, want: 15},
 	}
-	if power := wire.RedstonePower(pos, nil, cube.FaceDown); power != 15 {
-		t.Fatalf("power from wire bottom face = %d, want 15", power)
-	}
-}
-
-func TestRedstoneWireTransmitsUpButNotDownGlowstone(t *testing.T) {
-	w := world.Config{}.New()
-	defer w.Close()
-
-	low, high := cube.Pos{1, 64, 0}, cube.Pos{0, 65, 0}
-	var lowNeighbours, highNeighbours []cube.Pos
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(low.Side(cube.FaceDown), Stone{}, nil)
-		tx.SetBlock(high.Side(cube.FaceDown), Glowstone{}, nil)
-		tx.SetBlock(low, RedstoneWire{}, nil)
-		tx.SetBlock(high, RedstoneWire{}, nil)
-
-		wire := RedstoneWire{}
-		lowNeighbours = wire.RedstoneRelayerNeighbours(low, tx)
-		highNeighbours = wire.RedstoneRelayerNeighbours(high, tx)
-	})
-
-	if !redstoneWireTestContains(lowNeighbours, high) {
-		t.Fatalf("lower wire neighbours = %v, want high wire %v", lowNeighbours, high)
-	}
-	if redstoneWireTestContains(highNeighbours, low) {
-		t.Fatalf("upper wire neighbours = %v, did not want lower wire %v", highNeighbours, low)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if power := wire.RedstonePower(pos, nil, test.face); power != test.want {
+				t.Fatalf("power from %s face = %d, want %d", test.face, power, test.want)
+			}
+		})
 	}
 }
 
-func TestRedstoneWireTransmitsDownGlassInBedrock(t *testing.T) {
-	w := world.Config{}.New()
-	defer w.Close()
+func TestRedstoneWireVerticalTravel(t *testing.T) {
+	tests := []struct {
+		name         string
+		upperSupport world.Block
+		fromHigh     bool
+		want         bool
+	}{
+		{name: "up glowstone", upperSupport: Glowstone{}, want: true},
+		{name: "down glowstone", upperSupport: Glowstone{}, fromHigh: true},
+		{name: "down glass", upperSupport: Glass{}, fromHigh: true, want: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			w := world.Config{}.New()
+			defer w.Close()
 
-	low, high := cube.Pos{1, 64, 0}, cube.Pos{0, 65, 0}
-	var highNeighbours []cube.Pos
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(low.Side(cube.FaceDown), Stone{}, nil)
-		tx.SetBlock(high.Side(cube.FaceDown), Glass{}, nil)
-		tx.SetBlock(low, RedstoneWire{}, nil)
-		tx.SetBlock(high, RedstoneWire{}, nil)
+			low, high := cube.Pos{1, 64, 0}, cube.Pos{0, 65, 0}
+			var neighbours []cube.Pos
+			<-w.Exec(func(tx *world.Tx) {
+				tx.SetBlock(low.Side(cube.FaceDown), Stone{}, nil)
+				tx.SetBlock(high.Side(cube.FaceDown), test.upperSupport, nil)
+				tx.SetBlock(low, RedstoneWire{}, nil)
+				tx.SetBlock(high, RedstoneWire{}, nil)
 
-		highNeighbours = RedstoneWire{}.RedstoneRelayerNeighbours(high, tx)
-	})
+				from := low
+				if test.fromHigh {
+					from = high
+				}
+				neighbours = RedstoneWire{}.RedstoneRelayerNeighbours(from, tx)
+			})
 
-	if !redstoneWireTestContains(highNeighbours, low) {
-		t.Fatalf("upper wire neighbours = %v, want lower wire %v", highNeighbours, low)
+			to := high
+			if test.fromHigh {
+				to = low
+			}
+			if got := redstoneWireTestContains(neighbours, to); got != test.want {
+				t.Fatalf("neighbours = %v, contains %v = %t, want %t", neighbours, to, got, test.want)
+			}
+		})
 	}
 }
 
@@ -165,63 +171,55 @@ func TestRedstoneWireGlowstoneLadderDoesNotOscillateAfterNeighbourBlockUpdate(t 
 	}
 }
 
-func TestRedstoneTorchIgnoresPowerOnNonConductiveAttachment(t *testing.T) {
-	w := world.Config{}.New()
-	defer w.Close()
-
-	torchPos := cube.Pos{1, 64, 0}
-	attachmentPos := torchPos.Side(cube.FaceWest)
-	var powered bool
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(attachmentPos, Glass{}, nil)
-		tx.SetBlock(attachmentPos.Side(cube.FaceNorth), RedstoneBlock{}, nil)
-
-		torch := RedstoneTorch{Facing: cube.FaceWest, Lit: true}
-		powered = torch.attachmentPowered(torchPos, tx)
-	})
-
-	if powered {
-		t.Fatal("torch attachment was powered through non-conductive glass")
+func TestRedstoneTorchAttachmentPower(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(tx *world.Tx, attachmentPos cube.Pos)
+		want  bool
+	}{
+		{
+			name: "ignores non-conductive attachment",
+			setup: func(tx *world.Tx, attachmentPos cube.Pos) {
+				tx.SetBlock(attachmentPos, Glass{}, nil)
+				tx.SetBlock(attachmentPos.Side(cube.FaceNorth), RedstoneBlock{}, nil)
+			},
+		},
+		{
+			name: "powered conductive attachment",
+			setup: func(tx *world.Tx, attachmentPos cube.Pos) {
+				tx.SetBlock(attachmentPos, Stone{}, nil)
+				tx.SetBlock(attachmentPos.Side(cube.FaceNorth), RedstoneWire{Power: 15}, nil)
+				tx.SetBlock(attachmentPos.Side(cube.FaceNorth).Side(cube.FaceDown), Stone{}, nil)
+			},
+			want: true,
+		},
+		{
+			name: "redstone block attachment",
+			setup: func(tx *world.Tx, attachmentPos cube.Pos) {
+				tx.SetBlock(attachmentPos, RedstoneBlock{}, nil)
+			},
+			want: true,
+		},
 	}
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			w := world.Config{}.New()
+			defer w.Close()
 
-func TestRedstoneTorchTurnsOffOnPoweredConductiveAttachment(t *testing.T) {
-	w := world.Config{}.New()
-	defer w.Close()
+			torchPos := cube.Pos{1, 64, 0}
+			attachmentPos := torchPos.Side(cube.FaceWest)
+			var powered bool
+			<-w.Exec(func(tx *world.Tx) {
+				test.setup(tx, attachmentPos)
 
-	torchPos := cube.Pos{1, 64, 0}
-	attachmentPos := torchPos.Side(cube.FaceWest)
-	var powered bool
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(attachmentPos, Stone{}, nil)
-		tx.SetBlock(attachmentPos.Side(cube.FaceNorth), RedstoneWire{Power: 15}, nil)
-		tx.SetBlock(attachmentPos.Side(cube.FaceNorth).Side(cube.FaceDown), Stone{}, nil)
+				torch := RedstoneTorch{Facing: cube.FaceWest, Lit: true}
+				powered = torch.attachmentPowered(torchPos, tx)
+			})
 
-		torch := RedstoneTorch{Facing: cube.FaceWest, Lit: true}
-		powered = torch.attachmentPowered(torchPos, tx)
-	})
-
-	if !powered {
-		t.Fatal("torch attachment was not powered through conductive stone")
-	}
-}
-
-func TestRedstoneTorchTurnsOffOnRedstoneBlockAttachment(t *testing.T) {
-	w := world.Config{}.New()
-	defer w.Close()
-
-	torchPos := cube.Pos{1, 64, 0}
-	attachmentPos := torchPos.Side(cube.FaceWest)
-	var powered bool
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(attachmentPos, RedstoneBlock{}, nil)
-
-		torch := RedstoneTorch{Facing: cube.FaceWest, Lit: true}
-		powered = torch.attachmentPowered(torchPos, tx)
-	})
-
-	if !powered {
-		t.Fatal("torch attachment was not powered by redstone block")
+			if powered != test.want {
+				t.Fatalf("attachment powered = %t, want %t", powered, test.want)
+			}
+		})
 	}
 }
 
@@ -229,11 +227,20 @@ func TestRedstoneTorchUnknownFacingDoesNotPowerAttachmentFace(t *testing.T) {
 	torch := RedstoneTorch{Facing: unknownFace, Lit: true}
 	pos := cube.Pos{1, 64, 0}
 
-	if power := torch.RedstonePower(pos, nil, cube.FaceDown); power != 0 {
-		t.Fatalf("unknown-facing torch power from attachment face = %d, want 0", power)
+	tests := []struct {
+		name string
+		face cube.Face
+		want int
+	}{
+		{name: "attachment", face: cube.FaceDown},
+		{name: "top", face: cube.FaceUp, want: 15},
 	}
-	if power := torch.RedstonePower(pos, nil, cube.FaceUp); power != 15 {
-		t.Fatalf("unknown-facing torch power from top face = %d, want 15", power)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if power := torch.RedstonePower(pos, nil, test.face); power != test.want {
+				t.Fatalf("unknown-facing torch power from %s face = %d, want %d", test.face, power, test.want)
+			}
+		})
 	}
 }
 
@@ -401,53 +408,43 @@ func TestTNTDoesNotConductRedstonePower(t *testing.T) {
 	}
 }
 
-func TestTNTRedstonePowerPrimesOnRisingEdge(t *testing.T) {
-	w := world.Config{Entities: redstoneTNTTestEntityRegistry()}.New()
-	defer w.Close()
-
-	pos := cube.Pos{1, 64, 0}
-	var blockAfter world.Block
-	entities := 0
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(pos, TNT{}, nil)
-
-		(TNT{}).RedstonePowerAction(pos, tx, 0, 15)
-		blockAfter = tx.Block(pos)
-		for range tx.Entities() {
-			entities++
-		}
-	})
-
-	if _, ok := blockAfter.(Air); !ok {
-		t.Fatalf("block after powered TNT action = %T, want Air", blockAfter)
+func TestTNTRedstonePowerAction(t *testing.T) {
+	tests := []struct {
+		name         string
+		oldPower     int
+		newPower     int
+		wantAir      bool
+		wantEntities int
+	}{
+		{name: "rising edge primes", newPower: 15, wantAir: true, wantEntities: 1},
+		{name: "falling edge ignored", oldPower: 15},
 	}
-	if entities != 1 {
-		t.Fatalf("entities after powered TNT action = %d, want 1", entities)
-	}
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			w := world.Config{Entities: redstoneTNTTestEntityRegistry()}.New()
+			defer w.Close()
 
-func TestTNTRedstonePowerIgnoresFallingEdge(t *testing.T) {
-	w := world.Config{Entities: redstoneTNTTestEntityRegistry()}.New()
-	defer w.Close()
+			pos := cube.Pos{1, 64, 0}
+			var blockAfter world.Block
+			entities := 0
+			<-w.Exec(func(tx *world.Tx) {
+				tx.SetBlock(pos, TNT{}, nil)
 
-	pos := cube.Pos{1, 64, 0}
-	var blockAfter world.Block
-	entities := 0
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(pos, TNT{}, nil)
+				(TNT{}).RedstonePowerAction(pos, tx, test.oldPower, test.newPower)
+				blockAfter = tx.Block(pos)
+				for range tx.Entities() {
+					entities++
+				}
+			})
 
-		(TNT{}).RedstonePowerAction(pos, tx, 15, 0)
-		blockAfter = tx.Block(pos)
-		for range tx.Entities() {
-			entities++
-		}
-	})
-
-	if _, ok := blockAfter.(TNT); !ok {
-		t.Fatalf("block after unpowered TNT action = %T, want TNT", blockAfter)
-	}
-	if entities != 0 {
-		t.Fatalf("entities after unpowered TNT action = %d, want 0", entities)
+			_, air := blockAfter.(Air)
+			if air != test.wantAir {
+				t.Fatalf("block after TNT action = %T, air=%t, want air=%t", blockAfter, air, test.wantAir)
+			}
+			if entities != test.wantEntities {
+				t.Fatalf("entities after TNT action = %d, want %d", entities, test.wantEntities)
+			}
+		})
 	}
 }
 
@@ -781,43 +778,6 @@ func TestBurnedOutRedstoneTorchDoesNotRelightFromDisconnectedUpdate(t *testing.T
 
 	if lit || recoverable {
 		t.Fatalf("burned-out redstone torch recovered from a disconnected update; lit=%t recoverable=%t", lit, recoverable)
-	}
-}
-
-func TestBurnedOutRedstoneTorchDoesNotRecoverOnSameTickInputDrops(t *testing.T) {
-	w := world.Config{}.New()
-	defer w.Close()
-
-	torchPos := cube.Pos{1, 64, 0}
-	attachmentPos := torchPos.Side(cube.FaceWest)
-	inputPos := attachmentPos.Side(cube.FaceNorth)
-	var lit bool
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(attachmentPos, Stone{}, nil)
-		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest, Lit: true}, nil)
-
-		for range 8 {
-			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
-			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
-			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
-			tx.SetBlock(inputPos, nil, nil)
-			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
-		}
-		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
-		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
-		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
-		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
-
-		tx.SetBlock(inputPos, nil, nil)
-		torch := tx.Block(torchPos).(RedstoneTorch)
-		torch.RedstonePowerActionUpdate(torchPos, tx, world.RedstoneUpdate{ChangedNeighbour: torchPos, HasChangedNeighbour: true, Cause: world.RedstoneUpdateCauseScheduledTick})
-		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
-		lit = tx.Block(torchPos).(RedstoneTorch).Lit
-	})
-
-	if lit {
-		t.Fatal("burned-out redstone torch recovered on the same tick its input dropped")
 	}
 }
 

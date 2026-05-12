@@ -142,11 +142,20 @@ func TestRedstoneRelayerNeighbourPositionsAreDeterministic(t *testing.T) {
 
 func TestRedstoneStrongPowerConductorExcludesMarkedNonConductors(t *testing.T) {
 	pos := cube.Pos{0, 64, 0}
-	if !redstoneStrongPowerConductor(pos, redstoneSolidBlock{}, nil, cube.FaceWest) {
-		t.Fatal("stone was not treated as a strong-power conductor")
+	tests := []struct {
+		name  string
+		block Block
+		want  bool
+	}{
+		{name: "solid block", block: redstoneSolidBlock{}, want: true},
+		{name: "marked non-conductor", block: redstoneNonConductiveSolidBlock{}},
 	}
-	if redstoneStrongPowerConductor(pos, redstoneNonConductiveSolidBlock{}, nil, cube.FaceWest) {
-		t.Fatal("marked non-conductor was treated as a strong-power conductor")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := redstoneStrongPowerConductor(pos, test.block, nil, cube.FaceWest); got != test.want {
+				t.Fatalf("redstoneStrongPowerConductor(%T) = %t, want %t", test.block, got, test.want)
+			}
+		})
 	}
 }
 
@@ -468,48 +477,39 @@ func TestDirectSourceDoesNotWeakPowerConductor(t *testing.T) {
 	}
 }
 
-func TestScheduledTickQueueKeepsEarlierTickWhenLaterTickIsScheduled(t *testing.T) {
-	queue := newScheduledTickQueue(100)
-	pos := cube.Pos{8, 64, 8}
-	b := scheduledTickTestBlock{}
+func TestScheduledTickQueueDuplicateScheduling(t *testing.T) {
+	tests := []struct {
+		name      string
+		delays    []time.Duration
+		wantTicks []int64
+	}{
+		{name: "keeps earlier tick when later tick is scheduled", delays: []time.Duration{time.Second / 20, time.Second / 10}, wantTicks: []int64{101, 102}},
+		{name: "ignores earlier tick behind later tick", delays: []time.Duration{time.Second / 10, time.Second / 20}, wantTicks: []int64{102}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			queue := newScheduledTickQueue(100)
+			pos := cube.Pos{8, 64, 8}
+			b := scheduledTickTestBlock{}
 
-	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/20)
-	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/10)
+			for _, delay := range test.delays {
+				queue.schedule(DefaultBlockRegistry, pos, b, delay)
+			}
 
-	index := scheduledTickIndex{pos: pos, hash: DefaultBlockRegistry.BlockHash(b)}
-	if got, want := queue.furthestTicks[index], int64(102); got != want {
-		t.Fatalf("furthest tick = %d, want %d", got, want)
-	}
-	ticks := queue.fromChunk(chunkPosFromBlockPos(pos))
-	if len(ticks) != 2 {
-		t.Fatalf("active ticks = %v, want two ticks", ticks)
-	}
-	if got, want := ticks[0].t, int64(101); got != want {
-		t.Fatalf("first fromChunk tick = %d, want %d", got, want)
-	}
-	if got, want := ticks[1].t, int64(102); got != want {
-		t.Fatalf("second fromChunk tick = %d, want %d", got, want)
-	}
-}
-
-func TestScheduledTickQueueIgnoresEarlierTickBehindLaterTick(t *testing.T) {
-	queue := newScheduledTickQueue(100)
-	pos := cube.Pos{8, 64, 8}
-	b := scheduledTickTestBlock{}
-
-	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/10)
-	queue.schedule(DefaultBlockRegistry, pos, b, time.Second/20)
-
-	index := scheduledTickIndex{pos: pos, hash: DefaultBlockRegistry.BlockHash(b)}
-	if got, want := queue.furthestTicks[index], int64(102); got != want {
-		t.Fatalf("furthest tick = %d, want %d", got, want)
-	}
-	ticks := queue.fromChunk(chunkPosFromBlockPos(pos))
-	if len(ticks) != 1 {
-		t.Fatalf("active ticks = %v, want one tick", ticks)
-	}
-	if got, want := ticks[0].t, int64(102); got != want {
-		t.Fatalf("fromChunk tick = %d, want %d", got, want)
+			index := scheduledTickIndex{pos: pos, hash: DefaultBlockRegistry.BlockHash(b)}
+			if got, want := queue.furthestTicks[index], int64(102); got != want {
+				t.Fatalf("furthest tick = %d, want %d", got, want)
+			}
+			ticks := queue.fromChunk(chunkPosFromBlockPos(pos))
+			if len(ticks) != len(test.wantTicks) {
+				t.Fatalf("active ticks = %v, want %v", ticks, test.wantTicks)
+			}
+			for i, want := range test.wantTicks {
+				if got := ticks[i].t; got != want {
+					t.Fatalf("active tick %d = %d, want %d; ticks=%v", i, got, want, ticks)
+				}
+			}
+		})
 	}
 }
 
