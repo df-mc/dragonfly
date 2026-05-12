@@ -597,6 +597,65 @@ func TestBurnedOutRedstoneTorchRelightsWhenInputIsRemoved(t *testing.T) {
 	}
 }
 
+func TestBurnedOutRedstoneTorchRecoversFromExternalScheduledUpdate(t *testing.T) {
+	w := world.Config{}.New()
+	defer w.Close()
+	loader := world.NewLoader(1, w, world.NopViewer{})
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Load(tx, 1)
+	})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := torchPos.Side(cube.FaceWest)
+	inputPos := attachmentPos.Side(cube.FaceNorth)
+	sourcePos := inputPos.Side(cube.FaceNorth)
+	var lit bool
+	var burnedOutTick int64
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest, Lit: true}, nil)
+
+		for range 8 {
+			tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
+			tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
+			tx.Redstone().Torch(torchPos).MarkSelfTriggered()
+			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
+			tx.SetBlock(inputPos, nil, nil)
+			tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
+		}
+		tx.SetBlock(inputPos, RedstoneWire{Power: 15}, nil)
+		tx.SetBlock(inputPos.Side(cube.FaceDown), Stone{}, nil)
+		tx.Redstone().Torch(torchPos).MarkSelfTriggered()
+		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
+
+		burnedOutTick = tx.CurrentTick()
+	})
+	redstoneWireTestWaitTick(t, w, burnedOutTick)
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(inputPos, nil, nil)
+		torch := tx.Block(torchPos).(RedstoneTorch)
+		torch.RedstonePowerActionUpdate(torchPos, tx, world.RedstoneUpdate{
+			ChangedNeighbour:        inputPos,
+			HasChangedNeighbour:     true,
+			ChangedRedstoneRelevant: true,
+			Source:                  sourcePos,
+			HasSource:               true,
+			Cause:                   world.RedstoneUpdateCauseScheduledTick,
+		})
+		tx.Block(torchPos).(RedstoneTorch).ScheduledTick(torchPos, tx, nil)
+		lit = tx.Block(torchPos).(RedstoneTorch).Lit
+	})
+
+	if !lit {
+		t.Fatal("burned-out redstone torch did not recover from an external scheduled update")
+	}
+}
+
 func TestBurnedOutRedstoneTorchDoesNotRecoverFromInputWirePowerDrop(t *testing.T) {
 	w := world.Config{}.New()
 	defer w.Close()

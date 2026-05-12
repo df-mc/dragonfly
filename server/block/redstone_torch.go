@@ -161,7 +161,7 @@ func (t RedstoneTorch) RedstonePowerActionUpdate(pos cube.Pos, tx *world.Tx, upd
 	torch := tx.Redstone().Torch(pos)
 	if burnedOut, recoverable := torch.BurnoutStatus(); burnedOut {
 		attachmentPowered := update.NewPower > 0 && t.attachmentPowered(pos, tx)
-		if !update.HasChangedNeighbour || update.Cause == world.RedstoneUpdateCauseScheduledTick || !t.recoverBurnout(pos, update.ChangedNeighbour, tx, recoverable, update.ChangedRedstoneRelevant, attachmentPowered) {
+		if !update.HasChangedNeighbour || redstoneTorchSelfTriggered(pos, update) || !t.recoverBurnout(pos, update.ChangedNeighbour, tx, recoverable, update.ChangedRedstoneRelevant, attachmentPowered) {
 			return
 		}
 		torch.ClearBurnout()
