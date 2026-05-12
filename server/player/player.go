@@ -2091,17 +2091,12 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 			if info.BreakHandler != nil {
 				info.BreakHandler(pos, p.tx, p)
 			}
-			for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
-				p.tx.AddEntity(orb)
-			}
 		}
 	}
 	p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
-	if private {
-		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
-			p.tx.AddEntity(orb)
-		}
+	for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
+		p.tx.AddEntity(orb)
 	}
 	for _, drop := range drops {
 		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre(), Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
