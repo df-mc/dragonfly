@@ -2046,32 +2046,10 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
 	b := p.tx.Block(pos)
-	if privateBlock, private := p.privateBlock(pos); private {
-		held, _ := p.HeldItems()
-		drops := p.drops(held, privateBlock)
-		xp := 0
-		if breakable, ok := privateBlock.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
-			if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
-				xp = breakable.BreakInfo().XPDrops.RandomValue()
-			}
-		}
 
-		ctx := event.C(p)
-		if p.Handler().HandleBlockBreak(ctx, pos, true, &drops, &xp); ctx.Cancelled() {
-			p.resendNearbyBlocks(pos)
-			return
-		}
-		p.SwingArm()
-		p.ViewPublicBlock(pos)
-		p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: privateBlock})
-		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
-			p.tx.AddEntity(orb)
-		}
-		for _, drop := range drops {
-			opts := world.EntitySpawnOpts{Position: pos.Vec3Centre(), Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
-			p.tx.AddEntity(entity.NewItem(opts, drop))
-		}
-		return
+	privateBlock, private := p.privateBlock(pos)
+	if private {
+		b = privateBlock
 	}
 	if _, air := b.(block.Air); air {
 		// Don't do anything if the position broken is already air.
@@ -2096,21 +2074,31 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	ctx := event.C(p)
-	if p.Handler().HandleBlockBreak(ctx, pos, false, &drops, &xp); ctx.Cancelled() {
+	if p.Handler().HandleBlockBreak(ctx, pos, private, &drops, &xp); ctx.Cancelled() {
 		p.resendNearbyBlocks(pos)
 		return
 	}
 	held, left := p.HeldItems()
 
 	p.SwingArm()
-	p.tx.SetBlock(pos, nil, nil)
+	if private {
+		p.ViewPublicBlock(pos)
+	} else {
+		p.tx.SetBlock(pos, nil, nil)
+
+		if breakable, ok := b.(block.Breakable); ok {
+			info := breakable.BreakInfo()
+			if info.BreakHandler != nil {
+				info.BreakHandler(pos, p.tx, p)
+			}
+			for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
+				p.tx.AddEntity(orb)
+			}
+		}
+	}
 	p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
-	if breakable, ok := b.(block.Breakable); ok {
-		info := breakable.BreakInfo()
-		if info.BreakHandler != nil {
-			info.BreakHandler(pos, p.tx, p)
-		}
+	if private {
 		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
 			p.tx.AddEntity(orb)
 		}
