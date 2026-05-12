@@ -178,6 +178,11 @@ func (conf Config) New(conn Conn) *Session {
 	}
 	conf.Log = conf.Log.With("name", conn.IdentityData().DisplayName, "uuid", conn.IdentityData().Identity, "raddr", conn.RemoteAddr().String())
 
+	br := conf.BlockRegistry
+	if br == nil {
+		br = world.DefaultBlockRegistry
+	}
+
 	s := &Session{}
 	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
@@ -200,8 +205,9 @@ func (conf Config) New(conn Conn) *Session {
 		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
 		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
+		br:                     br,
 	}
-	s.viewLayer = world.NewViewLayer(s)
+	s.viewLayer = world.NewViewLayerWithBlockRegistry(s, br)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 
@@ -209,12 +215,6 @@ func (conf Config) New(conn Conn) *Session {
 	var scoreboardLines []string
 	s.currentScoreboard.Store(&scoreboardName)
 	s.currentLines.Store(&scoreboardLines)
-
-	if conf.BlockRegistry == nil {
-		s.br = world.DefaultBlockRegistry
-	} else {
-		s.br = conf.BlockRegistry
-	}
 
 	s.registerHandlers()
 	s.sendBiomes()
