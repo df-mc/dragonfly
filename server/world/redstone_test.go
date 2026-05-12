@@ -140,44 +140,6 @@ func TestRedstoneRelayerNeighbourPositionsAreDeterministic(t *testing.T) {
 	}
 }
 
-func TestRedstoneGraphID(t *testing.T) {
-	if got := redstoneGraphID(nil, nil); got != 0 {
-		t.Fatalf("redstoneGraphID(nil) = %d, want 0", got)
-	}
-	if got := redstoneGraphID([]redstoneNode{}, []redstoneEdge{{from: 0, to: 1, weight: 1}}); got != 0 {
-		t.Fatalf("redstoneGraphID(empty) = %d, want 0", got)
-	}
-
-	nodes := []redstoneNode{
-		{pos: cube.Pos{0, 0, 0}, source: true},
-		{pos: cube.Pos{1, -4, 3}, sink: true},
-		{pos: cube.Pos{-8, 12, 2}, source: true, sink: true},
-	}
-	edges := []redstoneEdge{
-		{from: 0, to: 1, weight: 1},
-		{from: 1, to: 2, weight: 2},
-	}
-	id := redstoneGraphID(nodes, edges)
-	if id == 0 {
-		t.Fatalf("redstoneGraphID(non-empty nodes) = 0, want non-zero")
-	}
-	if got := redstoneGraphID(slices.Clone(nodes), slices.Clone(edges)); got != id {
-		t.Fatalf("redstoneGraphID(cloned nodes) = %d, want %d", got, id)
-	}
-
-	movedNode := slices.Clone(nodes)
-	movedNode[2].pos[0]++
-	if got := redstoneGraphID(movedNode, edges); got == id {
-		t.Fatalf("redstoneGraphID(nodes with moved position) = %d, want value different from %d", got, id)
-	}
-
-	changedEdge := slices.Clone(edges)
-	changedEdge[0].weight++
-	if got := redstoneGraphID(nodes, changedEdge); got == id {
-		t.Fatalf("redstoneGraphID(nodes with changed edge) = %d, want value different from %d", got, id)
-	}
-}
-
 func TestRedstoneStrongPowerConductorExcludesMarkedNonConductors(t *testing.T) {
 	pos := cube.Pos{0, 64, 0}
 	if !redstoneStrongPowerConductor(pos, redstoneSolidBlock{}, nil, cube.FaceWest) {

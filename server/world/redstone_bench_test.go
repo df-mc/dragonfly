@@ -6,44 +6,38 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-var redstoneGraphIDBenchmarkResult uint64
+var redstoneDirtyTickBenchmarkPower int
 
-func BenchmarkRedstoneGraphID(b *testing.B) {
-	nodes := redstoneBenchmarkNodes(256)
-	edges := redstoneBenchmarkEdges(len(nodes))
+func BenchmarkRedstoneDirtyTickLongLineWithClocks(b *testing.B) {
+	const lineLength = 96
 
-	b.ReportAllocs()
-	b.SetBytes(int64(len(nodes)*32 + len(edges)*24))
-	b.ResetTimer()
+	w := Config{Blocks: redstoneSignalLossTestRegistry()}.New()
+	defer w.Close()
 
-	var result uint64
-	for i := 0; i < b.N; i++ {
-		result = redstoneGraphID(nodes, edges)
-	}
-	redstoneGraphIDBenchmarkResult = result
-}
-
-func redstoneBenchmarkNodes(n int) []redstoneNode {
-	nodes := make([]redstoneNode, n)
-	for i := range nodes {
-		nodes[i] = redstoneNode{
-			pos:    cube.Pos{i%16 - 8, i/16 - 8, (i * 7) % 16},
-			source: i%3 == 0,
-			sink:   i%5 == 0,
+	<-w.Exec(func(tx *Tx) {
+		clockA := cube.Pos{-1, 64, 0}
+		clockB := cube.Pos{lineLength / 2, 64, 1}
+		line := make([]cube.Pos, lineLength)
+		for x := range lineLength {
+			line[x] = cube.Pos{x, 64, 0}
+			tx.SetBlock(line[x], redstoneLossRelayer{}, nil)
 		}
-	}
-	return nodes
-}
+		tx.SetBlock(clockA, redstoneLossSource{Power: 15}, nil)
+		tx.SetBlock(clockB, redstoneLossSource{Power: 15}, nil)
+		tx.SetBlock(cube.Pos{lineLength, 64, 0}, redstoneLossConsumer{}, nil)
+		tx.World().redstone.tick(tx, 0)
 
-func redstoneBenchmarkEdges(nodes int) []redstoneEdge {
-	edges := make([]redstoneEdge, 0, nodes*2)
-	for i := 0; i < nodes; i++ {
-		if i+1 < nodes {
-			edges = append(edges, redstoneEdge{from: i, to: i + 1, weight: i%3 + 1})
+		b.ReportAllocs()
+		b.ResetTimer()
+		for tick := range b.N {
+			tx.World().redstone.invalidateAround(clockA, clockA, RedstoneUpdateCauseBlockUpdate, tx.Range())
+			tx.World().redstone.invalidateAround(clockB, clockB, RedstoneUpdateCauseBlockUpdate, tx.Range())
+			tx.World().redstone.tick(tx, int64(tick+1))
 		}
-		if i+16 < nodes {
-			edges = append(edges, redstoneEdge{from: i, to: i + 16, weight: i%5 + 1})
+		b.StopTimer()
+
+		if consumer, ok := tx.Block(cube.Pos{lineLength, 64, 0}).(redstoneLossConsumer); ok {
+			redstoneDirtyTickBenchmarkPower = consumer.Power
 		}
-	}
-	return edges
+	})
 }

@@ -76,7 +76,7 @@ func (tx *Tx) RedstoneConductivePower(pos cube.Pos) int {
 
 // RedstonePowerFrom returns the strongest redstone power reaching pos from the side passed.
 func (tx *Tx) RedstonePowerFrom(pos cube.Pos, face cube.Face) int {
-	return tx.World().redstone.powerFrom(pos, tx, face, false)
+	return tx.World().redstone.powerFrom(pos, tx, face)
 }
 
 // RedstoneDirectPowerFrom returns the strongest direct redstone power reaching pos from the side passed.
@@ -87,11 +87,4 @@ func (tx *Tx) RedstoneDirectPowerFrom(pos cube.Pos, face cube.Face) int {
 // RedstoneStrongPowerFrom returns the strongest strong redstone power reaching pos from the side passed.
 func (tx *Tx) RedstoneStrongPowerFrom(pos cube.Pos, face cube.Face) int {
 	return tx.World().redstone.strongPowerFrom(pos, tx, face)
-}
-
-// RedstoneStoredPowerFrom returns the strongest redstone power reaching pos from the side passed, allowing stored
-// relayer output to contribute. This is used by ticked analog components such as comparators that sample the previous
-// wire state for feedback loops.
-func (tx *Tx) RedstoneStoredPowerFrom(pos cube.Pos, face cube.Face) int {
-	return tx.World().redstone.powerFrom(pos, tx, face, true)
 }

@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	_ world.RedstonePowerSource = RedstoneTorch{}
-	_ world.RedstonePowerAction = RedstoneTorch{}
-	_ world.ScheduledTicker     = RedstoneTorch{}
+	_ world.RedstonePowerSource        = RedstoneTorch{}
+	_ world.RedstonePowerContextAction = RedstoneTorch{}
+	_ world.ScheduledTicker            = RedstoneTorch{}
 )
 
 // RedstoneTorch is a non-solid block that emits light and provides a full-strength redstone signal when lit.
@@ -151,11 +151,6 @@ func (t RedstoneTorch) RedstoneStrongPower(pos cube.Pos, tx *world.Tx, face cube
 		return t.RedstonePower(pos, tx, face)
 	}
 	return 0
-}
-
-// RedstonePowerAction schedules the delayed inverse-state refresh after an uncancelled power transition.
-func (t RedstoneTorch) RedstonePowerAction(pos cube.Pos, tx *world.Tx, _, _ int) bool {
-	return t.RedstonePowerActionUpdate(pos, tx, world.RedstoneUpdate{})
 }
 
 // RedstonePowerActionUpdate schedules torch refreshes and keeps burnout from self-recovering through its own loop.
