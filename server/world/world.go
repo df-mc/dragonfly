@@ -288,15 +288,25 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := w.chunk(chunkPosFromBlockPos(pos))
-	oldRID := c.Block(x, y, z, 0)
-	oldBlock := w.conf.Blocks.BlockByRuntimeIDOrAir(oldRID)
-	if w.conf.Blocks.NBTBlock(oldRID) {
-		if blockEntity, ok := c.BlockEntities[pos]; ok {
-			oldBlock = blockEntity
-		}
-	}
 
 	rid := w.conf.Blocks.BlockRuntimeID(b)
+	redstoneAfterRelevant := isRedstoneRelevant(b)
+	needOldBlock := !opts.DisableRedstoneUpdates || !redstoneAfterRelevant
+	needOldRID := needOldBlock || (rid != w.conf.Blocks.AirRuntimeID() && !opts.DisableLiquidDisplacement)
+
+	var oldRID uint32
+	if needOldRID {
+		oldRID = c.Block(x, y, z, 0)
+	}
+	var oldBlock Block
+	if needOldBlock {
+		oldBlock = w.conf.Blocks.BlockByRuntimeIDOrAir(oldRID)
+		if w.conf.Blocks.NBTBlock(oldRID) {
+			if blockEntity, ok := c.BlockEntities[pos]; ok {
+				oldBlock = blockEntity
+			}
+		}
+	}
 
 	var before uint32
 	if rid != w.conf.Blocks.AirRuntimeID() && !opts.DisableLiquidDisplacement {
@@ -344,7 +354,7 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		}
 	}
 
-	if isRedstoneRelevant(oldBlock) || isRedstoneRelevant(b) {
+	if redstoneAfterRelevant || (needOldBlock && isRedstoneRelevant(oldBlock)) {
 		w.redstone.forget(pos)
 	}
 

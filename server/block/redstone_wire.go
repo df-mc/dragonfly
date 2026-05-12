@@ -156,7 +156,7 @@ func redstoneWireBlocksConnectionLoaded(tx *world.Tx, pos cube.Pos, face cube.Fa
 		return true
 	}
 	b, ok := tx.BlockLoaded(pos)
-	return ok && b.Model().FaceSolid(pos, face, tx) && redstoneConductiveBlock(pos, b, tx)
+	return ok && b.Model().FaceSolid(pos, face, tx) && world.RedstoneFullPowerConductor(pos, b, tx)
 }
 
 // redstoneWirePowersHorizontalFace reports whether wire power is exposed through a horizontal face.
@@ -225,22 +225,6 @@ func redstoneWireCanTransmitDown(tx *world.Tx, pos cube.Pos) bool {
 	}
 	for _, face := range cube.Faces() {
 		if !support.Model().FaceSolid(supportPos, face, tx) {
-			return false
-		}
-	}
-	return true
-}
-
-// redstoneConductiveBlock reports whether b can be powered as a solid redstone conductor.
-func redstoneConductiveBlock(pos cube.Pos, b world.Block, tx *world.Tx) bool {
-	if _, ok := b.(world.RedstoneNonConductive); ok {
-		return false
-	}
-	if diffuser, ok := b.(LightDiffuser); ok && diffuser.LightDiffusionLevel() == 0 {
-		return false
-	}
-	for _, face := range cube.Faces() {
-		if !b.Model().FaceSolid(pos, face, tx) {
 			return false
 		}
 	}

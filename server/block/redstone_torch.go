@@ -154,29 +154,28 @@ func (t RedstoneTorch) RedstoneStrongPower(pos cube.Pos, tx *world.Tx, face cube
 }
 
 // RedstonePowerActionUpdate schedules torch refreshes and keeps burnout from self-recovering through its own loop.
-func (t RedstoneTorch) RedstonePowerActionUpdate(pos cube.Pos, tx *world.Tx, update world.RedstoneUpdate) bool {
+func (t RedstoneTorch) RedstonePowerActionUpdate(pos cube.Pos, tx *world.Tx, update world.RedstoneUpdate) {
 	if tx == nil {
-		return false
+		return
 	}
 	torch := tx.Redstone().Torch(pos)
 	if burnedOut, recoverable := torch.BurnoutStatus(); burnedOut {
 		attachmentPowered := update.NewPower > 0 && t.attachmentPowered(pos, tx)
 		if !update.HasChangedNeighbour || update.Cause == world.RedstoneUpdateCauseScheduledTick || !t.recoverBurnout(pos, update.ChangedNeighbour, tx, recoverable, update.ChangedRedstoneRelevant, attachmentPowered) {
-			return false
+			return
 		}
 		torch.ClearBurnout()
 		tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
-		return true
+		return
 	}
 	attachmentPowered := t.attachmentPowered(pos, tx)
 	if t.Lit == !attachmentPowered {
-		return false
+		return
 	}
 	if attachmentPowered && redstoneTorchSelfTriggered(pos, update) {
 		torch.MarkSelfTriggered()
 	}
 	tx.ScheduleBlockUpdate(pos, t, redstoneTicks(1))
-	return true
 }
 
 // attachmentPowered reports whether the block the torch is attached to is powered.
@@ -193,7 +192,7 @@ func (t RedstoneTorch) attachmentPowered(pos cube.Pos, tx *world.Tx) bool {
 			}
 		}
 	}
-	return redstoneConductiveBlock(attached, attachedBlock, tx) && tx.RedstoneConductivePower(attached) > 0
+	return world.RedstoneFullPowerConductor(attached, attachedBlock, tx) && tx.RedstoneConductivePower(attached) > 0
 }
 
 // recoverBurnout reports whether an update should relight a burned-out torch.

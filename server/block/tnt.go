@@ -22,11 +22,11 @@ var _ world.RedstonePowerAction = TNT{}
 func (TNT) RedstoneNonConductive() {}
 
 // RedstonePowerAction primes TNT when it first receives redstone power.
-func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower int) bool {
+func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower int) {
 	if oldPower > 0 || newPower == 0 {
-		return false
+		return
 	}
-	return t.Ignite(pos, tx, nil)
+	t.Ignite(pos, tx, nil)
 }
 
 // ProjectileHit ...

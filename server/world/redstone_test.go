@@ -711,11 +711,10 @@ func (redstoneCancellationConsumer) Model() BlockModel { return redstoneCancella
 
 type redstoneCancellationAction struct{}
 
-func (redstoneCancellationAction) RedstonePowerAction(cube.Pos, *Tx, int, int) bool {
+func (redstoneCancellationAction) RedstonePowerAction(cube.Pos, *Tx, int, int) {
 	if redstoneCancellationActions != nil {
 		(*redstoneCancellationActions)++
 	}
-	return true
 }
 func (redstoneCancellationAction) EncodeBlock() (string, map[string]any) {
 	return "test:redstone_action", nil
@@ -918,13 +917,12 @@ func (t redstoneAttachmentTorch) RedstonePower(cube.Pos, *Tx, cube.Face) int {
 	}
 	return 0
 }
-func (t redstoneAttachmentTorch) RedstonePowerAction(pos cube.Pos, tx *Tx, _, _ int) bool {
+func (t redstoneAttachmentTorch) RedstonePowerAction(pos cube.Pos, tx *Tx, _, _ int) {
 	if t.Lit == !t.attachmentPowered(pos, tx) {
-		return false
+		return
 	}
 	t.Lit = !t.Lit
 	tx.SetBlock(pos, t, nil)
-	return true
 }
 func (t redstoneAttachmentTorch) attachmentPowered(pos cube.Pos, tx *Tx) bool {
 	attached := pos.Side(t.Facing)

@@ -94,16 +94,15 @@ type RedstonePowerPostUpdater interface {
 }
 
 // RedstonePowerAction is implemented by blocks that perform a side effect when their input power changes, such as TNT
-// priming on a rising edge. The action is run only if the redstone update event is not cancelled. The returned bool
-// reports whether a side effect was performed.
+// priming on a rising edge. The action is run only if the redstone update event is not cancelled.
 type RedstonePowerAction interface {
-	RedstonePowerAction(pos cube.Pos, tx *Tx, oldPower, newPower int) bool
+	RedstonePowerAction(pos cube.Pos, tx *Tx, oldPower, newPower int)
 }
 
 // RedstonePowerContextAction may be implemented by action blocks that need the proposed update metadata to distinguish
 // self-caused redstone changes from external block updates.
 type RedstonePowerContextAction interface {
-	RedstonePowerActionUpdate(pos cube.Pos, tx *Tx, update RedstoneUpdate) bool
+	RedstonePowerActionUpdate(pos cube.Pos, tx *Tx, update RedstoneUpdate)
 }
 
 // RedstoneNonConductive may be implemented by solid redstone blocks that should not conduct strong power.
@@ -704,7 +703,7 @@ func (e *redstoneEngine) conductedActivationPowerFrom(pos cube.Pos, tx *Tx, face
 // conductivePowerTo returns power held by pos as a conductive block, excluding direct component activation.
 func (e *redstoneEngine) conductivePowerTo(pos cube.Pos, tx *Tx) int {
 	b, ok := tx.World().blockLoaded(pos)
-	if !ok || !redstoneFullPowerConductor(pos, b, tx) {
+	if !ok || !RedstoneFullPowerConductor(pos, b, tx) {
 		return 0
 	}
 	return max(e.strongPower(pos, tx), e.weakBlockPower(pos, tx))
@@ -719,7 +718,7 @@ func (e *redstoneEngine) acceptsDirectSourcePower(pos cube.Pos, tx *Tx) bool {
 	if isRedstoneRelevant(b) {
 		return true
 	}
-	return !redstoneFullPowerConductor(pos, b, tx)
+	return !RedstoneFullPowerConductor(pos, b, tx)
 }
 
 // acceptsWeakConductedPower reports whether the block at pos may be activated by a weakly powered conductor.
@@ -1025,8 +1024,9 @@ func redstoneStrongPowerConductor(pos cube.Pos, b Block, tx *Tx, face cube.Face)
 	return true
 }
 
-// redstoneFullPowerConductor reports whether b is a full solid redstone conductor.
-func redstoneFullPowerConductor(pos cube.Pos, b Block, tx *Tx) bool {
+// RedstoneFullPowerConductor reports whether b is a full solid redstone conductor according to the default redstone
+// conductivity rules.
+func RedstoneFullPowerConductor(pos cube.Pos, b Block, tx *Tx) bool {
 	for _, face := range cube.Faces() {
 		if !redstoneStrongPowerConductor(pos, b, tx, face) {
 			return false

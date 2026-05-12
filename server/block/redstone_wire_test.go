@@ -406,22 +406,18 @@ func TestTNTRedstonePowerPrimesOnRisingEdge(t *testing.T) {
 	defer w.Close()
 
 	pos := cube.Pos{1, 64, 0}
-	var acted bool
 	var blockAfter world.Block
 	entities := 0
 	<-w.Exec(func(tx *world.Tx) {
 		tx.SetBlock(pos, TNT{}, nil)
 
-		acted = (TNT{}).RedstonePowerAction(pos, tx, 0, 15)
+		(TNT{}).RedstonePowerAction(pos, tx, 0, 15)
 		blockAfter = tx.Block(pos)
 		for range tx.Entities() {
 			entities++
 		}
 	})
 
-	if !acted {
-		t.Fatal("TNT redstone action returned false on rising edge")
-	}
 	if _, ok := blockAfter.(Air); !ok {
 		t.Fatalf("block after powered TNT action = %T, want Air", blockAfter)
 	}
@@ -435,22 +431,18 @@ func TestTNTRedstonePowerIgnoresFallingEdge(t *testing.T) {
 	defer w.Close()
 
 	pos := cube.Pos{1, 64, 0}
-	var acted bool
 	var blockAfter world.Block
 	entities := 0
 	<-w.Exec(func(tx *world.Tx) {
 		tx.SetBlock(pos, TNT{}, nil)
 
-		acted = (TNT{}).RedstonePowerAction(pos, tx, 15, 0)
+		(TNT{}).RedstonePowerAction(pos, tx, 15, 0)
 		blockAfter = tx.Block(pos)
 		for range tx.Entities() {
 			entities++
 		}
 	})
 
-	if acted {
-		t.Fatal("TNT redstone action returned true on falling edge")
-	}
 	if _, ok := blockAfter.(TNT); !ok {
 		t.Fatalf("block after unpowered TNT action = %T, want TNT", blockAfter)
 	}
