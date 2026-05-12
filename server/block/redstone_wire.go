@@ -45,7 +45,7 @@ func (RedstoneWire) RedstoneWeaklyPowersBlocks() bool {
 	return true
 }
 
-func (RedstoneWire) RedstoneSignalLoss(cube.Pos, *world.Tx, cube.Face, cube.Face) int {
+func (RedstoneWire) RedstoneSignalLoss(cube.Pos, *world.Tx) int {
 	return 1
 }
 

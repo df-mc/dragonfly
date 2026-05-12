@@ -760,7 +760,7 @@ func (redstoneLossSource) Model() BlockModel { return redstoneCancellationModel{
 
 type redstoneLossRelayer struct{}
 
-func (redstoneLossRelayer) RedstoneSignalLoss(cube.Pos, *Tx, cube.Face, cube.Face) int {
+func (redstoneLossRelayer) RedstoneSignalLoss(cube.Pos, *Tx) int {
 	return 1
 }
 func (redstoneLossRelayer) EncodeBlock() (string, map[string]any) {
@@ -876,7 +876,7 @@ type redstoneVerticalRelayer struct {
 func (b redstoneVerticalRelayer) RedstonePower(cube.Pos, *Tx, cube.Face) int {
 	return b.Power
 }
-func (redstoneVerticalRelayer) RedstoneSignalLoss(cube.Pos, *Tx, cube.Face, cube.Face) int {
+func (redstoneVerticalRelayer) RedstoneSignalLoss(cube.Pos, *Tx) int {
 	return 1
 }
 func (b redstoneVerticalRelayer) RedstonePowerUpdate(_ cube.Pos, _ *Tx, power int) (Block, bool) {

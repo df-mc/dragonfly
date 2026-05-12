@@ -70,9 +70,9 @@ type RedstoneWeakBlockPowerer interface {
 }
 
 // RedstonePowerRelayer is implemented by redstone wire-like blocks that relay power through a compiled redstone
-// network. The returned value is the signal loss when power enters through from and leaves through to.
+// network. The returned value is the signal loss when power crosses one relayer edge.
 type RedstonePowerRelayer interface {
-	RedstoneSignalLoss(pos cube.Pos, tx *Tx, from, to cube.Face) int
+	RedstoneSignalLoss(pos cube.Pos, tx *Tx) int
 }
 
 // RedstonePowerRelayerNeighbourer may be implemented by relayers with non-adjacent connections, such as redstone
@@ -890,7 +890,7 @@ func (e *redstoneEngine) powerFrom(pos cube.Pos, tx *Tx, face cube.Face) int {
 			}
 			loss := s.loss
 			if _, nextRelayer := nextBlock.(RedstonePowerRelayer); nextRelayer {
-				loss += max(relayer.RedstoneSignalLoss(s.pos, tx, s.from, to), 1)
+				loss += max(relayer.RedstoneSignalLoss(s.pos, tx), 1)
 			}
 			if loss <= 15 {
 				queue = append(queue, step{pos: next, from: to.Opposite(), loss: loss, depth: s.depth + 1})
@@ -1056,11 +1056,10 @@ func (e *redstoneEngine) compileEdges(tx *Tx, nodes []redstoneNode) []redstoneEd
 			if !ok {
 				continue
 			}
-			face := redstoneStepFace(node.pos, neighbour)
 			weight := 0
 			if neighbourBlock, ok := tx.World().blockLoaded(neighbour); ok {
 				if _, neighbourRelayer := neighbourBlock.(RedstonePowerRelayer); neighbourRelayer {
-					weight = max(relayer.RedstoneSignalLoss(node.pos, tx, face.Opposite(), face), 1)
+					weight = max(relayer.RedstoneSignalLoss(node.pos, tx), 1)
 				}
 			}
 			edges = append(edges, redstoneEdge{from: i, to: j, weight: weight})
