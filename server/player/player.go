@@ -1916,10 +1916,6 @@ func (p *Player) breakTime(b world.Block) time.Duration {
 // FinishBreaking will stop the animation and break the block.
 func (p *Player) FinishBreaking() {
 	if !p.breaking {
-		if _, private := p.privateBlock(p.breakingPos); private {
-			p.BreakBlock(p.breakingPos)
-			return
-		}
 		p.resendNearbyBlock(p.breakingPos)
 		return
 	}
@@ -2051,8 +2047,14 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 func (p *Player) BreakBlock(pos cube.Pos) {
 	b := p.tx.Block(pos)
 	if privateBlock, private := p.privateBlock(pos); private {
-		var drops []item.Stack
+		held, _ := p.HeldItems()
+		drops := p.drops(held, privateBlock)
 		xp := 0
+		if breakable, ok := privateBlock.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+			if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
+				xp = breakable.BreakInfo().XPDrops.RandomValue()
+			}
+		}
 
 		ctx := event.C(p)
 		if p.Handler().HandleBlockBreak(ctx, pos, true, &drops, &xp); ctx.Cancelled() {
@@ -2062,6 +2064,13 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		p.SwingArm()
 		p.ViewPublicBlock(pos)
 		p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: privateBlock})
+		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
+			p.tx.AddEntity(orb)
+		}
+		for _, drop := range drops {
+			opts := world.EntitySpawnOpts{Position: pos.Vec3Centre(), Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
+			p.tx.AddEntity(entity.NewItem(opts, drop))
+		}
 		return
 	}
 	if _, air := b.(block.Air); air {
