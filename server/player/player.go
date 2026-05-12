@@ -2083,8 +2083,10 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	p.SwingArm()
 	if private {
 		p.ViewPublicBlock(pos)
+		p.s.ViewParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 	} else {
 		p.tx.SetBlock(pos, nil, nil)
+		p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 	}
 
 	if breakable, ok := b.(block.Breakable); ok {
@@ -2094,7 +2096,6 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		}
 	}
 
-	p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 	for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
 		p.tx.AddEntity(orb)
 	}
