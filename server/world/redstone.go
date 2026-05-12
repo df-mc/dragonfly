@@ -110,7 +110,9 @@ type RedstoneNonConductive interface {
 	RedstoneNonConductive()
 }
 
-// redstoneEngine owns transient redstone graph state for a world.
+// redstoneEngine evaluates the immediate-power network for a world and caches transient power state. Neighbour updates
+// and scheduled block ticks remain the semantic model for block behaviour; the engine just resolves wire/relayer power
+// and lets consumers and actions schedule any delayed or directional changes themselves.
 type redstoneEngine struct {
 	currentTick       int64
 	dirty             map[cube.Pos]redstoneDirty
@@ -131,7 +133,7 @@ type redstoneDirty struct {
 	cause                   RedstoneUpdateCause
 }
 
-// redstoneTorchBurnout tracks rapid torch turn-off history and the current burned-out state.
+// redstoneTorchBurnout tracks a torch's recent turn-off history and whether it is currently burned out.
 type redstoneTorchBurnout struct {
 	offTicks             []int64
 	burnedOut            bool
@@ -143,8 +145,9 @@ const (
 	redstoneTorchBurnoutWindowTicks = 60
 )
 
-// redstoneGraph is a compiled immediate-power network for one engine tick. Directional or delayed components should
-// stay as graph endpoints and use scheduled ticks for their delayed state changes rather than encoding timing in edges.
+// redstoneGraph is the immediate-power network compiled for one engine tick. Edges are signal loss between relayers
+// only — never delay, direction locking, or mechanical state — so delayed or directional components stay as graph
+// endpoints and drive their own state changes via scheduled ticks or actions.
 type redstoneGraph struct {
 	nodes []redstoneNode
 	edges []redstoneEdge
