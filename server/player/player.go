@@ -2085,16 +2085,16 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		p.ViewPublicBlock(pos)
 	} else {
 		p.tx.SetBlock(pos, nil, nil)
+	}
 
-		if breakable, ok := b.(block.Breakable); ok {
-			info := breakable.BreakInfo()
-			if info.BreakHandler != nil {
-				info.BreakHandler(pos, p.tx, p)
-			}
+	if breakable, ok := b.(block.Breakable); ok {
+		info := breakable.BreakInfo()
+		if info.BreakHandler != nil {
+			info.BreakHandler(pos, p.tx, p)
 		}
 	}
-	p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 
+	p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 	for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
 		p.tx.AddEntity(orb)
 	}
