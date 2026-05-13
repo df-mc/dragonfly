@@ -2087,12 +2087,11 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	} else {
 		p.tx.SetBlock(pos, nil, nil)
 		p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-	}
-
-	if breakable, ok := b.(block.Breakable); ok {
-		info := breakable.BreakInfo()
-		if info.BreakHandler != nil {
-			info.BreakHandler(pos, p.tx, p)
+		if breakable, ok := b.(block.Breakable); ok  {
+			info := breakable.BreakInfo()
+			if info.BreakHandler != nil {
+				info.BreakHandler(pos, p.tx, p)
+			}
 		}
 	}
 
