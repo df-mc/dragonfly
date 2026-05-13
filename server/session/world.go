@@ -841,6 +841,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventComposterFillLayer
 	case sound.ComposterReady:
 		pk.SoundType = packet.SoundEventComposterReady
+	case sound.PowerOn:
+		pk.SoundType = packet.SoundEventPowerOn
+	case sound.PowerOff:
+		pk.SoundType = packet.SoundEventPowerOff
 	case sound.LecternBookPlace:
 		pk.SoundType = packet.SoundEventLecternBookPlace
 	case sound.Totem:
@@ -1297,8 +1301,7 @@ func (s *Session) ViewEmote(player world.Entity, emote uuid.UUID) {
 
 // ViewSkin ...
 func (s *Session) ViewSkin(e world.Entity) {
-	switch v := e.(type) {
-	case Controllable:
+	if v, ok := e.(Controllable); ok {
 		s.writePacket(&packet.PlayerSkin{
 			UUID: v.UUID(),
 			Skin: skinToProtocol(v.Skin()),
