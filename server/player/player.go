@@ -1870,7 +1870,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	if p.Handler().HandleStartBreak(ctx, pos, private); ctx.Cancelled() {
 		return
 	}
-	if punchable, ok := b.(block.Punchable); ok {
+	if punchable, ok := b.(block.Punchable); ok && !private {
 		punchable.Punch(pos, face, p.tx, p)
 	}
 
@@ -1881,9 +1881,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	p.lastBreakDuration = p.breakTime(b)
-	for _, viewer := range p.viewers() {
-		viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
-	}
+	p.viewBreakingBlockAction(pos, private, block.StartCrackAction{BreakTime: p.lastBreakDuration})
 }
 
 // breakTime returns the time needed to break a block at the position passed, taking into account the item
@@ -1930,10 +1928,9 @@ func (p *Player) AbortBreaking() {
 	if !p.breaking {
 		return
 	}
+	_, private := p.privateBlock(p.breakingPos)
 	p.breaking, p.breakCounter = false, 0
-	for _, viewer := range p.viewers() {
-		viewer.ViewBlockAction(p.breakingPos, block.StopCrackAction{})
-	}
+	p.viewBreakingBlockAction(p.breakingPos, private, block.StopCrackAction{})
 }
 
 // ContinueBreaking makes the player continue breaking the block it started breaking after a call to
@@ -1945,20 +1942,39 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	}
 	pos := p.breakingPos
 	b := p.breakingBlock(pos)
-	p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
+	_, private := p.privateBlock(pos)
+	if private {
+		p.s.ViewParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
+	} else {
+		p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
+	}
 
 	if p.breakCounter++; p.breakCounter%5 == 0 {
 		p.SwingArm()
 
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
-		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
+		if private {
+			p.s.ViewSound(pos.Vec3(), sound.BlockBreaking{Block: b})
+		} else {
+			p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
+		}
 	}
 	if breakTime := p.breakTime(b); breakTime != p.lastBreakDuration {
-		for _, viewer := range p.viewers() {
-			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
-		}
+		p.viewBreakingBlockAction(pos, private, block.ContinueCrackAction{BreakTime: breakTime})
 		p.lastBreakDuration = breakTime
+	}
+}
+
+// viewBreakingBlockAction shows a breaking action to the player only if the block is a private view-layer
+// block, or to all viewers if it is a public world block.
+func (p *Player) viewBreakingBlockAction(pos cube.Pos, private bool, a world.BlockAction) {
+	if private {
+		p.s.ViewBlockAction(pos, a)
+		return
+	}
+	for _, viewer := range p.viewers() {
+		viewer.ViewBlockAction(pos, a)
 	}
 }
 
@@ -2087,7 +2103,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	} else {
 		p.tx.SetBlock(pos, nil, nil)
 		p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-		if breakable, ok := b.(block.Breakable); ok  {
+		if breakable, ok := b.(block.Breakable); ok {
 			info := breakable.BreakInfo()
 			if info.BreakHandler != nil {
 				info.BreakHandler(pos, p.tx, p)
