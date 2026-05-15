@@ -235,6 +235,7 @@ func init() {
 	registerAll(allCopperLanterns())
 	registerAll(allCopperTorches())
 	registerAll(allCopperTrapdoors())
+	registerAll(allShulkerBoxes())
 }
 
 func init() {
@@ -528,6 +529,10 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
+	}
+
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(ShulkerBox{Colour: c})
 	}
 }
 
