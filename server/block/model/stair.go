@@ -60,13 +60,11 @@ func (s Stair) BBox(pos cube.Pos, bs world.BlockSource) []cube.BBox {
 
 // FaceSolid returns true for all faces of the Stair that are completely filled.
 func (s Stair) FaceSolid(pos cube.Pos, face cube.Face, bs world.BlockSource) bool {
-	if !s.UpsideDown && face == cube.FaceDown {
-		// Non-upside-down stairs have a closed side at the bottom.
-		return true
-	} else if s.UpsideDown && face == cube.FaceUp {
-		// Upside-down stairs always have a closed side at the top.
+	// Stairs always have a closed side at the top or bottom based on their orientation.
+	if (face == cube.FaceUp && s.UpsideDown) || (face == cube.FaceDown && !s.UpsideDown) {
 		return true
 	}
+
 	switch t := s.cornerType(pos, bs); t {
 	case cornerRightOuter, cornerLeftOuter:
 		// Small corner blocks, they do not block water flowing out horizontally.
