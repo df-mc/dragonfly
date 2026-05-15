@@ -24,3 +24,60 @@ func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
 
 // DefaultSpawn ...
 func (NopGenerator) DefaultSpawn(Dimension) cube.Pos { return cube.Pos{} }
+
+// chunkRequest ...
+type chunkRequest struct {
+	pos        ChunkPos
+	callbacks  []chunkCallback
+	generating bool
+
+	close  chan struct{}
+	col    *chunk.Column
+	result *Column
+}
+
+// Do adds callback to list of all callbacks.
+func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) {
+	r.callbacks = append(r.callbacks, receiver)
+	if !r.generating {
+		r.generating = true
+		w := tx.World()
+		go r.load(w)
+	}
+}
+
+// doImmediate waits till chunk is loaded and returns it.
+func (r *chunkRequest) doImmediate(tx *Tx) *Column {
+	<-r.close
+	r.signal(tx)
+	return r.result
+}
+
+// load loads chunk or generates it.
+func (r *chunkRequest) load(w *World) {
+	r.col = w.loadChunk(r.pos)
+	close(r.close)
+	select {
+	case <-w.closing:
+		return
+	default:
+		w.Exec(r.signal)
+	}
+}
+
+// signal calls all callbacks and adds chunk to the world.
+func (r *chunkRequest) signal(tx *Tx) {
+	if r.result != nil {
+		return
+	}
+	w := tx.World()
+	pos := r.pos
+
+	delete(w.chunkRequests, pos)
+	r.result = w.addChunk(pos, r.col)
+	for _, recv := range r.callbacks {
+		recv(tx, r.result)
+	}
+}
+
+type chunkCallback = func(tx *Tx, chunk *Column)

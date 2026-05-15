@@ -51,7 +51,8 @@ type World struct {
 
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
-	chunks map[ChunkPos]*Column
+	chunks        map[ChunkPos]*Column
+	chunkRequests map[ChunkPos]*chunkRequest
 
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
@@ -71,6 +72,8 @@ type World struct {
 
 	viewerMu sync.Mutex
 	viewers  map[*Loader]Viewer
+
+	currentTx *Tx
 }
 
 // transaction is a type that may be added to the transaction queue of a World.
@@ -571,7 +574,11 @@ func (w *World) light(pos cube.Pos) uint8 {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
-	return w.chunk(chunkPosFromBlockPos(pos)).Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
+	c, ok := w.loadedChunk(chunkPosFromBlockPos(pos))
+	if ok {
+		return c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
+	}
+	return 0
 }
 
 // skyLight returns the skylight level at the position passed. This light level
@@ -1177,6 +1184,15 @@ func showEntity(e Entity, viewer Viewer) {
 	viewer.ViewEntityArmour(e)
 }
 
+// loadedChunk returns chunk & true only if chunk at position passed is loaded.
+func (w *World) loadedChunk(pos ChunkPos) (*Column, bool) {
+	c, ok := w.chunks[pos]
+	if ok {
+		return c, true
+	}
+	return nil, false
+}
+
 // chunk reads a chunk from the position passed. If a chunk at that position is
 // not yet loaded, the chunk is loaded from the provider, or generated if it
 // did not yet exist. Additionally, chunks newly loaded have the light in them
@@ -1186,39 +1202,66 @@ func (w *World) chunk(pos ChunkPos) *Column {
 	if ok {
 		return c
 	}
-	c, err := w.loadChunk(pos)
-	chunk.LightArea([]*chunk.Chunk{c.Chunk}, int(pos[0]), int(pos[1])).Fill()
-	if err != nil {
-		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+	c, ok = w.chunkFromAsyncPool(w.currentTx, pos)
+	if ok {
 		return c
 	}
-	w.calculateLight(pos)
-	return c
+	return w.addChunk(pos, w.loadChunk(pos))
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk
 // if one doesn't currently exist.
-func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
+func (w *World) loadChunk(pos ChunkPos) *chunk.Column {
 	column, err := w.conf.Provider.LoadColumn(pos, w.conf.Dim)
 	switch {
 	case err == nil:
-		col := w.columnFrom(column, pos)
-		w.chunks[pos] = col
-		for _, e := range col.Entities {
-			w.entities[e] = pos
-			e.w = w
-		}
-		return col, nil
-	case errors.Is(err, leveldb.ErrNotFound):
-		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		col := newColumn(chunk.New(w.conf.Blocks, w.Range()))
-		w.chunks[pos] = col
-
-		w.conf.Generator.GenerateChunk(pos, col.Chunk)
-		return col, nil
+		return column
 	default:
-		return newColumn(chunk.New(w.conf.Blocks, w.Range())), err
+		if !errors.Is(err, leveldb.ErrNotFound) {
+			w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+		}
+		ch := chunk.New(w.conf.Blocks, w.Range())
+		w.conf.Generator.GenerateChunk(pos, ch)
+		return &chunk.Column{Chunk: ch}
 	}
+}
+
+// loadChunkAsync ...
+func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) {
+	if c, ok := w.chunks[pos]; ok {
+		callback(tx, c)
+		return
+	}
+	req, ok := w.chunkRequests[pos]
+	if ok {
+		req.Do(w.currentTx, callback)
+		return
+	}
+	req = &chunkRequest{pos: pos, close: make(chan struct{})}
+	req.Do(w.currentTx, callback)
+	w.chunkRequests[pos] = req
+}
+
+// addChunk ...
+func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
+	column := w.columnFrom(c, pos)
+	w.chunks[pos] = column
+	for _, e := range column.Entities {
+		w.entities[e] = pos
+		e.w = w
+	}
+	chunk.LightArea([]*chunk.Chunk{column.Chunk}, int(pos[0]), int(pos[1])).Fill()
+	w.calculateLight(pos)
+	return column
+}
+
+// chunkFromAsyncPool ...
+func (w *World) chunkFromAsyncPool(tx *Tx, pos ChunkPos) (*Column, bool) {
+	req, ok := w.chunkRequests[pos]
+	if ok {
+		return req.doImmediate(tx), true
+	}
+	return nil, false
 }
 
 // calculateLight calculates the light in the chunk passed and spreads the
@@ -1301,11 +1344,6 @@ type Column struct {
 
 	viewers []Viewer
 	loaders []*Loader
-}
-
-// newColumn returns a new Column wrapper around the chunk.Chunk passed.
-func newColumn(c *chunk.Chunk) *Column {
-	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}}
 }
 
 // columnTo converts a Column to a chunk.Column so that it can be written to
