@@ -150,6 +150,7 @@ func init() {
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCampfires())
+	registerAll(allCandles())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
 	registerAll(allIronChains())
@@ -466,6 +467,9 @@ func init() {
 		world.RegisterItem(IronOre{Type: ore})
 		world.RegisterItem(LapisOre{Type: ore})
 		world.RegisterItem(RedstoneOre{Type: ore})
+	}
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(Candle{Colour: c})
 	}
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
