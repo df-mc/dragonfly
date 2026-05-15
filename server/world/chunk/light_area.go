@@ -24,6 +24,11 @@ type lightQueue struct {
 	size  int
 }
 
+// initialLightQueueCapacity is the starting size for light propagation queues. A lightNode is 48 bytes on
+// 64-bit platforms, so 1024 entries cost about 48 KiB. This avoids the first grow/copy for busier lighting
+// runs while keeping the queue transient and able to grow for larger chunks.
+const initialLightQueueCapacity = 1024
+
 // newLightQueue creates an empty queue sized to capacity (at least 1).
 func newLightQueue(capacity int) *lightQueue {
 	if capacity < 1 {
@@ -93,7 +98,7 @@ func LightArea(c []*Chunk, baseX, baseZ int) *lightArea {
 // individual chunks within the lightArea itself, without light crossing chunk borders.
 func (a *lightArea) Fill() {
 	a.initialiseLightSlices()
-	queue := newLightQueue(512)
+	queue := newLightQueue(initialLightQueueCapacity)
 	a.insertBlockLightNodes(queue)
 	a.insertSkyLightNodes(queue)
 
@@ -106,7 +111,7 @@ func (a *lightArea) Fill() {
 // neighbouring chunks. The neighbouring chunks must have passed the light 'filling' stage before this
 // function is called for an lightArea that includes them.
 func (a *lightArea) Spread() {
-	queue := newLightQueue(512)
+	queue := newLightQueue(initialLightQueueCapacity)
 	a.insertLightSpreadingNodes(queue, BlockLight)
 	a.insertLightSpreadingNodes(queue, SkyLight)
 
