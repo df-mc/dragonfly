@@ -125,8 +125,8 @@ func (s *Session) sendRecipes() {
 			recipes = append(recipes, &protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
 				Priority:        int32(i.Priority()),
-				Input:           stacksToIngredientItems(i.Input()),
-				Output:          stacksToRecipeStacks(i.Output()),
+				Input:           stacksToIngredientItems(s.br, i.Input()),
+				Output:          stacksToRecipeStacks(s.br, i.Output()),
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
@@ -136,13 +136,13 @@ func (s *Session) sendRecipes() {
 				Priority:        int32(i.Priority()),
 				Width:           int32(i.Shape().Width()),
 				Height:          int32(i.Shape().Height()),
-				Input:           stacksToIngredientItems(i.Input()),
-				Output:          stacksToRecipeStacks(i.Output()),
+				Input:           stacksToIngredientItems(s.br, i.Input()),
+				Output:          stacksToRecipeStacks(s.br, i.Output()),
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
 		case recipe.SmithingTransform:
-			input, output := stacksToIngredientItems(i.Input()), stacksToRecipeStacks(i.Output())
+			input, output := stacksToIngredientItems(s.br, i.Input()), stacksToRecipeStacks(s.br, i.Output())
 			recipes = append(recipes, &protocol.SmithingTransformRecipe{
 				RecipeID:        uuid.New().String(),
 				Base:            input[0],
@@ -153,7 +153,7 @@ func (s *Session) sendRecipes() {
 				RecipeNetworkID: networkID,
 			})
 		case recipe.SmithingTrim:
-			input := stacksToIngredientItems(i.Input())
+			input := stacksToIngredientItems(s.br, i.Input())
 			recipes = append(recipes, &protocol.SmithingTrimRecipe{
 				RecipeID:        uuid.New().String(),
 				Base:            input[0],
@@ -161,12 +161,6 @@ func (s *Session) sendRecipes() {
 				Template:        input[2],
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
-			})
-		case recipe.Furnace:
-			recipes = append(recipes, &protocol.FurnaceRecipe{
-				InputType: stackFromItem(i.Input()[0].(item.Stack)).ItemType,
-				Output:    stackFromItem(i.Output()[0]),
-				Block:     i.Block(),
 			})
 		case recipe.Potion:
 			inputRuntimeID, inputMeta, _ := world.ItemRuntimeID(i.Input()[0].(item.Stack).Item())
@@ -235,7 +229,7 @@ func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 		Content:  make([]protocol.ItemInstance, 0, inv.Size()),
 	}
 	for _, i := range inv.Slots() {
-		pk.Content = append(pk.Content, instanceFromItem(i))
+		pk.Content = append(pk.Content, instanceFromItem(s.br, i))
 	}
 	s.writePacket(pk)
 }
@@ -245,7 +239,7 @@ func (s *Session) sendItem(item item.Stack, slot int, windowID uint32) {
 	s.writePacket(&packet.InventorySlot{
 		WindowID: windowID,
 		Slot:     uint32(slot),
-		NewItem:  instanceFromItem(item),
+		NewItem:  instanceFromItem(s.br, item),
 	})
 }
 
@@ -653,7 +647,7 @@ func (s *Session) broadcastOffHandFunc(tx *world.Tx, c Controllable) inventory.S
 			i, _ := s.offHand.Item(0)
 			s.writePacket(&packet.InventoryContent{
 				WindowID: protocol.WindowIDOffHand,
-				Content:  []protocol.ItemInstance{instanceFromItem(i)},
+				Content:  []protocol.ItemInstance{instanceFromItem(s.br, i)},
 			})
 		}
 	}
@@ -701,7 +695,7 @@ func (s *Session) SendHeldSlot(slot int, c Controllable, force bool) {
 	mainHand, _ := c.HeldItems()
 	s.writePacket(&packet.MobEquipment{
 		EntityRuntimeID: selfEntityRuntimeID,
-		NewItem:         instanceFromItem(mainHand),
+		NewItem:         instanceFromItem(s.br, mainHand),
 		InventorySlot:   byte(slot),
 		HotBarSlot:      byte(slot),
 	})
@@ -891,11 +885,11 @@ func (s *Session) SendDebugShapes(dim world.Dimension) {
 		return
 	}
 
-	shapes := make([]protocol.DebugDrawerShape, 0, len(updates))
+	shapes := make([]protocol.PrimitiveShape, 0, len(updates))
 	for _, update := range updates {
 		if update.shape == nil {
 			delete(s.debugShapes, update.id)
-			shapes = append(shapes, protocol.DebugDrawerShape{
+			shapes = append(shapes, protocol.PrimitiveShape{
 				NetworkID:      uint64(update.id),
 				DimensionID:    protocol.Option(s.dimensionID(dim)),
 				ExtraShapeData: &protocol.LastShape{},
@@ -908,7 +902,7 @@ func (s *Session) SendDebugShapes(dim world.Dimension) {
 	s.debugShapeUpdates = s.debugShapeUpdates[:0]
 	s.debugShapesMu.Unlock()
 
-	s.writePacket(&packet.DebugDrawer{Shapes: shapes})
+	s.writePacket(&packet.PrimitiveShapes{Shapes: shapes})
 }
 
 // queueDebugShapeUpdate queues a debug shape mutation to be applied the next time debug shapes are sent.
@@ -929,14 +923,14 @@ func valueOrDefault[T comparable](v, def T) T {
 }
 
 // stackFromItem converts an item.Stack to its network ItemStack representation.
-func stackFromItem(it item.Stack) protocol.ItemStack {
+func stackFromItem(br world.BlockRegistry, it item.Stack) protocol.ItemStack {
 	if it.Empty() {
 		return protocol.ItemStack{}
 	}
 
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
-		blockRuntimeID = world.BlockRuntimeID(b)
+		blockRuntimeID = br.BlockRuntimeID(b)
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())
@@ -954,7 +948,7 @@ func stackFromItem(it item.Stack) protocol.ItemStack {
 }
 
 // stackToItem converts a network ItemStack representation back to an item.Stack.
-func stackToItem(it protocol.ItemStack) item.Stack {
+func stackToItem(br world.BlockRegistry, it protocol.ItemStack) item.Stack {
 	t, ok := world.ItemByRuntimeID(it.NetworkID, int16(it.MetadataValue))
 	if !ok {
 		t = block.Air{}
@@ -963,7 +957,7 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
 		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
 		// return air anyway.
-		b, _ := world.BlockByRuntimeID(uint32(it.BlockRuntimeID))
+		b, _ := br.BlockByRuntimeID(uint32(it.BlockRuntimeID))
 		if t, ok = b.(world.Item); !ok {
 			t = block.Air{}
 		}
@@ -977,24 +971,24 @@ func stackToItem(it protocol.ItemStack) item.Stack {
 }
 
 // instanceFromItem converts an item.Stack to its network ItemInstance representation.
-func instanceFromItem(it item.Stack) protocol.ItemInstance {
+func instanceFromItem(br world.BlockRegistry, it item.Stack) protocol.ItemInstance {
 	return protocol.ItemInstance{
 		StackNetworkID: item_id(it),
-		Stack:          stackFromItem(it),
+		Stack:          stackFromItem(br, it),
 	}
 }
 
 // stacksToRecipeStacks converts a list of item.Stacks to their protocol representation with damage stripped for recipes.
-func stacksToRecipeStacks(inputs []item.Stack) []protocol.ItemStack {
+func stacksToRecipeStacks(br world.BlockRegistry, inputs []item.Stack) []protocol.ItemStack {
 	items := make([]protocol.ItemStack, 0, len(inputs))
 	for _, i := range inputs {
-		items = append(items, deleteDamage(stackFromItem(i)))
+		items = append(items, deleteDamage(stackFromItem(br, i)))
 	}
 	return items
 }
 
 // stacksToIngredientItems converts a list of item.Stacks to recipe ingredient items used over the network.
-func stacksToIngredientItems(inputs []recipe.Item) []protocol.ItemDescriptorCount {
+func stacksToIngredientItems(_ world.BlockRegistry, inputs []recipe.Item) []protocol.ItemDescriptorCount {
 	items := make([]protocol.ItemDescriptorCount, 0, len(inputs))
 	for _, i := range inputs {
 		var d protocol.ItemDescriptor = &protocol.InvalidItemDescriptor{}
@@ -1027,13 +1021,13 @@ func stacksToIngredientItems(inputs []recipe.Item) []protocol.ItemDescriptorCoun
 }
 
 // creativeContent returns all creative groups, and creative inventory items as protocol item stacks.
-func creativeContent() ([]protocol.CreativeGroup, []protocol.CreativeItem) {
+func creativeContent(br world.BlockRegistry) ([]protocol.CreativeGroup, []protocol.CreativeItem) {
 	groups := make([]protocol.CreativeGroup, 0, len(creative.Groups()))
 	for _, group := range creative.Groups() {
 		groups = append(groups, protocol.CreativeGroup{
 			Category: int32(group.Category.Uint8()),
 			Name:     group.Name,
-			Icon:     deleteDamage(stackFromItem(group.Icon)),
+			Icon:     deleteDamage(stackFromItem(br, group.Icon)),
 		})
 	}
 
@@ -1047,7 +1041,7 @@ func creativeContent() ([]protocol.CreativeGroup, []protocol.CreativeItem) {
 		}
 		it = append(it, protocol.CreativeItem{
 			CreativeItemNetworkID: uint32(index) + 1,
-			Item:                  deleteDamage(stackFromItem(i.Stack)),
+			Item:                  deleteDamage(stackFromItem(br, i.Stack)),
 			GroupIndex:            uint32(group),
 		})
 	}
@@ -1132,19 +1126,19 @@ func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) int64 {
 
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
 // for some fields such as colour, scale and other per-shape properties.
-func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID int64) protocol.DebugDrawerShape {
+func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID int64) protocol.PrimitiveShape {
 	dimID, _ := world.DimensionID(dim)
-	ps := protocol.DebugDrawerShape{
+	ps := protocol.PrimitiveShape{
 		NetworkID:   uint64(shape.ShapeID()),
 		DimensionID: protocol.Option(int32(dimID)),
 	}
 	if attachedEntityID > 0 {
-		ps.AttachedToEntityID = protocol.Option(uint64(attachedEntityID))
+		ps.AttachedToEntityID = protocol.Option(attachedEntityID)
 	}
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	switch shape := shape.(type) {
 	case *debug.Arrow:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeArrow))
+		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeArrow))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.ExtraShapeData = &protocol.ArrowShape{
@@ -1154,34 +1148,50 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 			Segments:         protocol.Option(valueOrDefault(uint8(shape.HeadSegments), 4)),
 		}
 	case *debug.Box:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeBox))
+		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeBox))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.BoxShape{BoxBound: valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1})}
 	case *debug.Circle:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeCircle))
+		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeCircle))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
 	case *debug.Line:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeLine))
+		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeLine))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.ExtraShapeData = &protocol.LineShape{LineEndLocation: vec64To32(shape.EndPosition)}
 	case *debug.Sphere:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeSphere))
+		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeSphere))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
 	case *debug.Text:
-		ps.Type = protocol.Option(uint8(protocol.DebugDrawerShapeText))
+		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeText))
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
-		ps.ExtraShapeData = &protocol.TextShape{Text: shape.Text}
+		if shape.LockRotation {
+			ps.Rotation = protocol.Option(vec64To32(shape.Rotation))
+		}
+		textData := &protocol.TextShape{
+			Text:             shape.Text,
+			UseRotation:      shape.LockRotation,
+			DepthTest:        !shape.DisableDepthTest,
+			ShowBackface:     !shape.HideBackface,
+			ShowBackfaceText: !shape.HideBackfaceText,
+		}
+		switch {
+		case shape.HideBackground:
+			textData.BackgroundColour = protocol.Option(color.RGBA{})
+		case shape.BackgroundColour != (color.RGBA{}):
+			textData.BackgroundColour = protocol.Option(shape.BackgroundColour)
+		}
+		ps.ExtraShapeData = textData
 	default:
 		panic(fmt.Sprintf("unknown debug shape type %T", shape))
 	}

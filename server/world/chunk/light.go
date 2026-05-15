@@ -1,24 +1,22 @@
 package chunk
 
-import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-)
+import "github.com/df-mc/dragonfly/server/block/cube"
 
 // insertBlockLightNodes iterates over the chunk and looks for blocks that have a light level of at least 1.
 // If one is found, a node is added for it to the node queue.
 func (a *lightArea) insertBlockLightNodes(queue *lightQueue) {
-	a.iterSubChunks(anyLightBlocks, func(pos cube.Pos) {
-		if level := a.highest(pos, LightBlocks); level > 0 {
+	a.iterSubChunks(a.anyLightBlocks, func(pos cube.Pos) {
+		if level := a.highest(pos, a.br.LightBlock); level > 0 {
 			queue.push(node(pos, level, BlockLight))
 		}
 	})
 }
 
 // anyLightBlocks checks if there are any blocks in the SubChunk passed that emit light.
-func anyLightBlocks(sub *SubChunk) bool {
+func (a *lightArea) anyLightBlocks(sub *SubChunk) bool {
 	for _, layer := range sub.storages {
 		for _, id := range layer.palette.values {
-			if LightBlocks[id] != 0 {
+			if a.br.LightBlock(id) != 0 {
 				return true
 			}
 		}
@@ -36,7 +34,7 @@ func (a *lightArea) insertSkyLightNodes(queue *lightQueue) {
 			a.setLight(pos, SkyLight, 15)
 
 			if pos[1] > lowestY {
-				if level := a.highest(pos.Sub(cube.Pos{0, 1}), FilteringBlocks); level != 15 && level != 0 {
+				if level := a.highest(pos.Sub(cube.Pos{0, 1}), a.br.FilteringBlock); level != 15 && level != 0 {
 					// If we hit a block like water or leaves (something that diffuses but does not block light), we
 					// need a node above this block regardless of the neighbours.
 					queue.push(node(pos, 15, SkyLight))
@@ -66,9 +64,9 @@ func (a *lightArea) insertLightSpreadingNodes(queue *lightQueue, lt light) {
 			// No chance for this to spread. Don't check for the highest filtering blocks on the side.
 			return
 		}
-		if filter := a.highest(pb, FilteringBlocks) + 1; la > filter && la-filter > lb {
+		if filter := a.highest(pb, a.br.FilteringBlock) + 1; la > filter && la-filter > lb {
 			queue.push(node(pb, la-filter, lt))
-		} else if filter = a.highest(pa, FilteringBlocks) + 1; lb > filter && lb-filter > la {
+		} else if filter = a.highest(pa, a.br.FilteringBlock) + 1; lb > filter && lb-filter > la {
 			queue.push(node(pa, lb-filter, lt))
 		}
 	})
@@ -114,7 +112,7 @@ func (a *lightArea) propagateNeighbour(queue *lightQueue, lt light, level uint8,
 		return
 	}
 	pos := cube.Pos{x, y, z}
-	filter := a.highest(pos, FilteringBlocks) + 1
+	filter := a.highest(pos, a.br.FilteringBlock) + 1
 	if level > filter && a.light(pos, lt) < level-filter {
 		queue.push(node(pos, level-filter, lt))
 	}

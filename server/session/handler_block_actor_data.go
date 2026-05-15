@@ -24,8 +24,7 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session, tx *world.Tx,
 		if !canReach(c, pos.Vec3Middle()) {
 			return fmt.Errorf("block at %v is not within reach", pos)
 		}
-		switch id {
-		case "Sign":
+		if id == "Sign" {
 			return b.handleSign(pk, pos, s, tx, c)
 		}
 		return fmt.Errorf("unhandled block actor data ID %v", id)
