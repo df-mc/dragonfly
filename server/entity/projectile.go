@@ -175,8 +175,10 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 	switch r := result.(type) {
 	case trace.EntityResult:
-		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
-			lt.hitEntity(l, e, vel)
+		if l, ok := r.Entity().(Living); ok {
+			if lt.conf.Damage >= 0 {
+				lt.hitEntity(l, e, vel)
+			}
 			lt.collidedEntities = append(lt.collidedEntities, l.H())
 		}
 	case trace.BlockResult:
@@ -188,6 +190,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 			lt.hitBlockSurviving(e, r, m, tx)
 			return m
 		}
+		lt.close = true
 	}
 	if lt.conf.Hit != nil {
 		lt.conf.Hit(e, tx, result)
