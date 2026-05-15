@@ -45,5 +45,5 @@ func (sharpness) CompatibleWithEnchantment(item.EnchantmentType) bool {
 // CompatibleWithItem ...
 func (sharpness) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
-	return ok && (t.ToolType() == item.TypeSword || t.ToolType() == item.TypeAxe)
+	return ok && (t.ToolType() == item.TypeSword || t.ToolType() == item.TypeAxe || t.ToolType() == item.TypeSpear)
 }

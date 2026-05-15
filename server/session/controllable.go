@@ -53,6 +53,7 @@ type Controllable interface {
 	Effects() []effect.Effect
 
 	UseItem()
+	UseItemAsAttack() bool
 	ReleaseItem()
 	UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity) bool
