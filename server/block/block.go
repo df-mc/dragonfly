@@ -21,6 +21,14 @@ type Activatable interface {
 	Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool
 }
 
+// WindChargeAffected represents a block that is toggled by a wind charge
+// burst, such as doors, trapdoors and fence gates.
+// TODO: Buttons, levers, bells and candles should also implement this.
+type WindChargeAffected interface {
+	Activatable
+	WindChargeAffected()
+}
+
 // Pickable represents a block that may give a different item then the block itself when picked.
 type Pickable interface {
 	// Pick returns the item that is picked when the block is picked.
