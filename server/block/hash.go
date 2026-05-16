@@ -96,6 +96,7 @@ const (
 	hashGrass
 	hashGravel
 	hashGrindstone
+	hashHangingSign
 	hashHayBale
 	hashHoneycomb
 	hashHopper
@@ -205,9 +206,11 @@ const (
 	hashWater
 	hashWheatSeeds
 	hashWood
+	hashWoodButton
 	hashWoodDoor
 	hashWoodFence
 	hashWoodFenceGate
+	hashWoodPressurePlate
 	hashWoodTrapdoor
 	hashWool
 	hashCustomBlockBase
@@ -584,6 +587,10 @@ func (Gravel) Hash() (uint64, uint64) {
 
 func (g Grindstone) Hash() (uint64, uint64) {
 	return hashGrindstone, uint64(g.Attach.Uint8()) | uint64(g.Facing)<<2
+}
+
+func (h HangingSign) Hash() (uint64, uint64) {
+	return hashHangingSign, uint64(h.Wood.Uint8()) | uint64(h.Attach.Uint8())<<4
 }
 
 func (h HayBale) Hash() (uint64, uint64) {
@@ -1022,6 +1029,10 @@ func (w Wood) Hash() (uint64, uint64) {
 	return hashWood, uint64(w.Wood.Uint8()) | uint64(boolByte(w.Stripped))<<4 | uint64(w.Axis)<<5
 }
 
+func (b WoodButton) Hash() (uint64, uint64) {
+	return hashWoodButton, uint64(b.Wood.Uint8()) | uint64(boolByte(b.Powered))<<4 | uint64(b.Facing)<<5
+}
+
 func (d WoodDoor) Hash() (uint64, uint64) {
 	return hashWoodDoor, uint64(d.Wood.Uint8()) | uint64(d.Facing)<<4 | uint64(boolByte(d.Open))<<6 | uint64(boolByte(d.Top))<<7 | uint64(boolByte(d.Right))<<8
 }
@@ -1032,6 +1043,10 @@ func (w WoodFence) Hash() (uint64, uint64) {
 
 func (f WoodFenceGate) Hash() (uint64, uint64) {
 	return hashWoodFenceGate, uint64(f.Wood.Uint8()) | uint64(f.Facing)<<4 | uint64(boolByte(f.Open))<<6 | uint64(boolByte(f.Lowered))<<7
+}
+
+func (p WoodPressurePlate) Hash() (uint64, uint64) {
+	return hashWoodPressurePlate, uint64(p.Wood.Uint8()) | uint64(boolByte(p.Powered))<<4
 }
 
 func (t WoodTrapdoor) Hash() (uint64, uint64) {
