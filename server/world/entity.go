@@ -181,9 +181,10 @@ func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
 	}
 	// We now arrive at the more complicated part. When we call e.w.Exec(), our
 	// transaction must await earlier transactions in the world. If one of those
-	// earlier transactions tries to change e.w (through e.unsetAndLockWorld()
-	// or e.setAndUnlockWorld()), it must lock e.cond.L. This would lead to a
-	// deadlock, because we already have e.cond.L locked here.
+	// earlier transactions tries to change e.w (through e.unsetAndLockWorld(),
+	// e.setAndUnlockWorld(), or e.setAndUnlockWorldAt()), it must lock
+	// e.cond.L. This would lead to a deadlock, because we already have e.cond.L
+	// locked here.
 	// We work around this with so-called "weak transactions". This is a
 	// transaction that may be invalidated before it is executed. In this case,
 	// this invalidation happens by setting e.worldless to true. If the
@@ -258,6 +259,20 @@ func (e *EntityHandle) setAndUnlockWorld(w *World) {
 	if e.w != nil {
 		panic("cannot add entity to new world before removing from old world")
 	}
+	e.w = w
+	e.cond.Broadcast()
+}
+
+// setAndUnlockWorldAt sets e's position before publishing e to the World
+// passed, then broadcasts e.cond so waiters can open the entity.
+func (e *EntityHandle) setAndUnlockWorldAt(w *World, pos mgl64.Vec3) {
+	e.cond.L.Lock()
+	defer e.cond.L.Unlock()
+
+	if e.w != nil {
+		panic("cannot add entity to new world before removing from old world")
+	}
+	e.data.Pos = pos
 	e.w = w
 	e.cond.Broadcast()
 }
