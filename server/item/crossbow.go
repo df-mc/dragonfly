@@ -133,10 +133,18 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		}
 	}
 
-	c.shoot(releaser, tx, 0, !creative, pierceLevel)
+	arrowConf := world.ArrowSpawnConfig{
+		Damage:              9,
+		Owner:               releaser,
+		ObtainArrowOnPickup: !creative,
+		PiercingLevel:       pierceLevel,
+	}
+	c.shoot(releaser, tx, 0, arrowConf)
 	if multishot {
-		c.shoot(releaser, tx, -10, false, 0)
-		c.shoot(releaser, tx, 10, false, 0)
+		arrowConf.ObtainArrowOnPickup = false
+		arrowConf.PiercingLevel = 0
+		c.shoot(releaser, tx, -10, arrowConf)
+		c.shoot(releaser, tx, 10, arrowConf)
 	}
 	c.applyDamage(ctx)
 
@@ -149,7 +157,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 }
 
 // shoot fires the crossbow's loaded projectiles.
-func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, canObtainPickup bool, pierceLevel int) {
+func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, arrowConf world.ArrowSpawnConfig) {
 	rot := releaser.Rotation()
 	dirVec := cube.Rotation{rot[0] + offsetAngle, rot[1]}.Vec3()
 
@@ -163,11 +171,12 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ca
 		tx.AddEntity(projectile)
 	} else {
 		createArrow := tx.World().EntityRegistry().Config().Arrow
+		arrowConf.Tip = c.Item.Item().(Arrow).Tip
 		arrow := createArrow(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(5.15),
 			Rotation: rot.Neg(),
-		}, 9, releaser, false, false, canObtainPickup, 0, pierceLevel, c.Item.Item().(Arrow).Tip)
+		}, arrowConf)
 		tx.AddEntity(arrow)
 	}
 }
