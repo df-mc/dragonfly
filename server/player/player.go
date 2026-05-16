@@ -1781,6 +1781,13 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 	p.SwingArm()
 
+	if e.H().Type() == entity.RaftType || e.H().Type() == entity.ChestRaftType {
+		raft := item.Raft{Chest: e.H().Type() == entity.ChestRaftType}
+		p.tx.AddEntity(entity.NewItem(world.EntitySpawnOpts{Position: e.Position()}, item.NewStack(raft, 1)))
+		_ = e.Close()
+		return true
+	}
+
 	if !isLiving {
 		return false
 	}
@@ -2068,6 +2075,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	p.SwingArm()
 	p.tx.SetBlock(pos, nil, nil)
 	p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+	p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 
 	if breakable, ok := b.(block.Breakable); ok {
 		info := breakable.BreakInfo()
@@ -2942,34 +2950,60 @@ func (p *Player) OpenSign(pos cube.Pos, frontSide bool) {
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
 // present, an error is returned.
 func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
-	sign, ok := p.tx.Block(pos).(block.Sign)
+	if sign, ok := p.tx.Block(pos).(block.Sign); ok {
+		if sign.Waxed {
+			return nil
+		} else if frontText == sign.Front.Text && backText == sign.Back.Text {
+			return nil
+		}
+
+		ctx := event.C(p)
+		if frontText != sign.Front.Text {
+			if p.Handler().HandleSignEdit(ctx, pos, true, sign.Front.Text, frontText); ctx.Cancelled() {
+				p.resendNearbyBlock(pos)
+				return nil
+			}
+			sign.Front.Text = frontText
+			sign.Front.Owner = p.XUID()
+		} else {
+			if p.Handler().HandleSignEdit(ctx, pos, false, sign.Back.Text, backText); ctx.Cancelled() {
+				p.resendNearbyBlock(pos)
+				return nil
+			}
+			sign.Back.Text = backText
+			sign.Back.Owner = p.XUID()
+		}
+		p.tx.SetBlock(pos, sign, nil)
+		return nil
+	}
+
+	hangingSign, ok := p.tx.Block(pos).(block.HangingSign)
 	if !ok {
 		return fmt.Errorf("edit sign: no sign at position %v", pos)
 	}
-
-	if sign.Waxed {
+	if hangingSign.Waxed {
 		return nil
-	} else if frontText == sign.Front.Text && backText == sign.Back.Text {
+	} else if frontText == hangingSign.Front.Text && backText == hangingSign.Back.Text {
 		return nil
 	}
 
 	ctx := event.C(p)
-	if frontText != sign.Front.Text {
-		if p.Handler().HandleSignEdit(ctx, pos, true, sign.Front.Text, frontText); ctx.Cancelled() {
+	if frontText != hangingSign.Front.Text {
+		if p.Handler().HandleSignEdit(ctx, pos, true, hangingSign.Front.Text, frontText); ctx.Cancelled() {
 			p.resendNearbyBlock(pos)
 			return nil
 		}
-		sign.Front.Text = frontText
-		sign.Front.Owner = p.XUID()
+		hangingSign.Front.Text = frontText
+		hangingSign.Front.Owner = p.XUID()
 	} else {
-		if p.Handler().HandleSignEdit(ctx, pos, false, sign.Back.Text, backText); ctx.Cancelled() {
+		if p.Handler().HandleSignEdit(ctx, pos, false, hangingSign.Back.Text, backText); ctx.Cancelled() {
 			p.resendNearbyBlock(pos)
 			return nil
 		}
-		sign.Back.Text = backText
-		sign.Back.Owner = p.XUID()
+		hangingSign.Back.Text = backText
+		hangingSign.Back.Owner = p.XUID()
 	}
-	p.tx.SetBlock(pos, sign, nil)
+	p.tx.SetBlock(pos, hangingSign, nil)
 	return nil
 }
 
