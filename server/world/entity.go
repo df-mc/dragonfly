@@ -366,14 +366,38 @@ type EntityRegistryConfig struct {
 	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
 	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	EnderPearl         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	Firework           func(opts EntitySpawnOpts, firework Item, owner Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *EntityHandle
 	LingeringPotion    func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
 	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
 	Lightning          func(opts EntitySpawnOpts) *EntityHandle
+
+	Arrow func(opts EntitySpawnOpts, conf ArrowSpawnConfig) *EntityHandle
+
+	Firework func(
+		opts EntitySpawnOpts, firework Item, owner Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool,
+	) *EntityHandle
+}
+
+// ArrowSpawnConfig holds the options used to spawn an arrow entity.
+type ArrowSpawnConfig struct {
+	// Damage specifies the base damage dealt by the arrow.
+	Damage float64
+	// Owner is the entity that fired the arrow.
+	Owner Entity
+	// Critical specifies if the arrow should deal critical damage.
+	Critical bool
+	// DisablePickup specifies if picking up the arrow should be disabled.
+	DisablePickup bool
+	// ObtainArrowOnPickup specifies if the arrow should be returned as an item when picked up.
+	ObtainArrowOnPickup bool
+	// PunchLevel specifies the level of punch knockback applied to the arrow.
+	PunchLevel int
+	// PiercingLevel specifies how many entities the arrow can pierce through without breaking.
+	PiercingLevel int
+	// Tip specifies the potion tip carried by the arrow.
+	Tip any
 }
 
 // New creates an EntityRegistry using conf and the EntityTypes passed.
