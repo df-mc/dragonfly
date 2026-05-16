@@ -108,11 +108,12 @@ func (h HangingSign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *
 	if !used {
 		return false
 	}
-	if face == cube.FaceDown {
+	switch face {
+	case cube.FaceDown:
 		h.Attach = StandingAttachment(user.Rotation().Orientation().Opposite())
-	} else if face == cube.FaceUp {
+	case cube.FaceUp:
 		return false
-	} else {
+	default:
 		h.Attach = WallAttachment(face.Direction())
 	}
 	place(tx, pos, h, user, ctx)
