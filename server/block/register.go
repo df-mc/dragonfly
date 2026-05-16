@@ -140,6 +140,7 @@ func init() {
 
 	registerAll(allAnvils())
 	registerAll(allBanners())
+	registerAll(allBamboo())
 	registerAll(allBambooBlocks())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -402,6 +403,7 @@ func init() {
 	world.RegisterItem(TuffBricks{})
 	world.RegisterItem(TuffBricks{Chiseled: true})
 	world.RegisterItem(PolishedTuff{})
+	world.RegisterItem(Bamboo{})
 	world.RegisterItem(BambooBlock{})
 	world.RegisterItem(BambooBlock{Stripped: true})
 	world.RegisterItem(BambooMosaic{})

@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
 )
@@ -132,10 +133,28 @@ func (h HangingSign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *
 	return placed(ctx)
 }
 
+// Activate opens the sign editor on right-click if the sign is not waxed.
+func (h HangingSign) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
+	if editor, ok := u.(SignEditor); ok && !h.Waxed {
+		editor.OpenSign(pos, h.EditingFrontSide(pos, u.Position()))
+	} else if h.Waxed {
+		tx.PlaySound(pos.Vec3(), sound.WaxedSignFailedInteraction{})
+	}
+	return true
+}
+
 // NeighbourUpdateTick ...
 func (h HangingSign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); ok {
-		breakBlock(h, pos, tx)
+	if h.Hanging {
+		// Ceiling-hung: break if the block above is air.
+		if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); ok {
+			breakBlock(h, pos, tx)
+		}
+	} else {
+		// Wall-mounted: break if the block it is attached to is air.
+		if _, ok := tx.Block(pos.Side(cube.Face(h.FacingDirection).Opposite())).(Air); ok {
+			breakBlock(h, pos, tx)
+		}
 	}
 }
 
