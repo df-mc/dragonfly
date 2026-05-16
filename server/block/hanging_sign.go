@@ -18,14 +18,20 @@ type HangingSign struct {
 
 	// Wood is the type of wood of the hanging sign.
 	Wood WoodType
-	// Attach is the attachment of the HangingSign. It uses the same Attachment type as Sign.
-	Attach Attachment
 	// Waxed specifies if the HangingSign has been waxed. If set to true, the sign can no longer be edited.
 	Waxed bool
 	// Front is the text of the front side.
 	Front SignText
 	// Back is the text of the back side.
 	Back SignText
+	// AttachedBit specifies if the hanging sign's chains are visually attached to the block above.
+	AttachedBit bool
+	// Hanging specifies if the sign is hanging from the ceiling (true) or mounted on a wall (false).
+	Hanging bool
+	// FacingDirection is the Minecraft block state facing direction (0-5). Relevant for wall-mounted signs.
+	FacingDirection int
+	// GroundSignDirection is the 16-step rotation of a ceiling-hung sign (0-15).
+	GroundSignDirection int
 }
 
 // SideClosed ...
@@ -110,11 +116,14 @@ func (h HangingSign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *
 	}
 	switch face {
 	case cube.FaceDown:
-		h.Attach = StandingAttachment(user.Rotation().Orientation().Opposite())
+		h.Hanging = true
+		h.FacingDirection = int(cube.FaceDown)
+		h.GroundSignDirection = int(user.Rotation().Orientation().Opposite())
 	case cube.FaceUp:
 		return false
 	default:
-		h.Attach = WallAttachment(face.Direction())
+		h.Hanging = false
+		h.FacingDirection = int(face)
 	}
 	place(tx, pos, h, user, ctx)
 	if editor, ok := user.(SignEditor); ok {
@@ -132,11 +141,12 @@ func (h HangingSign) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 
 // EncodeBlock ...
 func (h HangingSign) EncodeBlock() (name string, properties map[string]any) {
-	woodType := h.Wood.String() + "_"
-	if h.Attach.hanging {
-		return "minecraft:" + woodType + "wall_hanging_sign", map[string]any{"facing_direction": int32(h.Attach.facing + 2)}
+	return "minecraft:" + h.Wood.String() + "_hanging_sign", map[string]any{
+		"attached_bit":          boolByte(h.AttachedBit),
+		"facing_direction":      int32(h.FacingDirection),
+		"ground_sign_direction": int32(h.GroundSignDirection),
+		"hanging":               boolByte(h.Hanging),
 	}
-	return "minecraft:" + woodType + "hanging_sign", map[string]any{"ground_sign_direction": int32(h.Attach.o)}
 }
 
 // DecodeNBT ...
@@ -181,17 +191,45 @@ func (h HangingSign) EncodeNBT() map[string]any {
 
 // EditingFrontSide reports whether the user is editing the front side of the sign.
 func (h HangingSign) EditingFrontSide(pos cube.Pos, userPos mgl64.Vec3) bool {
-	return userPos.Sub(pos.Vec3Centre()).Dot(h.Attach.Rotation().Vec3()) > 0
+	return userPos.Sub(pos.Vec3Centre()).Dot(h.rotation().Vec3()) > 0
 }
 
-// allHangingSigns returns a list of all hanging sign types.
+// rotation returns the facing rotation of the hanging sign for sign text side detection.
+func (h HangingSign) rotation() cube.Rotation {
+	if h.Hanging {
+		return cube.Rotation{cube.Orientation(h.GroundSignDirection).Yaw()}
+	}
+	var yaw float64
+	switch cube.Face(h.FacingDirection) {
+	case cube.FaceWest:
+		yaw = 90
+	case cube.FaceEast:
+		yaw = -90
+	case cube.FaceNorth:
+		yaw = 180
+	}
+	return cube.Rotation{yaw}
+}
+
+// allHangingSigns returns a list of all hanging sign block states.
+// Minecraft registers all 384 combinations per wood type:
+// attached_bit (0-1) × facing_direction (0-5) × ground_sign_direction (0-15) × hanging (0-1).
 func allHangingSigns() (signs []world.Block) {
 	for _, w := range WoodTypes() {
-		for o := cube.Orientation(0); o <= 15; o++ {
-			signs = append(signs, HangingSign{Wood: w, Attach: StandingAttachment(o)})
-		}
-		for _, d := range cube.Directions() {
-			signs = append(signs, HangingSign{Wood: w, Attach: WallAttachment(d)})
+		for _, attached := range []bool{false, true} {
+			for _, hanging := range []bool{false, true} {
+				for facing := 0; facing <= 5; facing++ {
+					for groundDir := 0; groundDir <= 15; groundDir++ {
+						signs = append(signs, HangingSign{
+							Wood:                w,
+							AttachedBit:         attached,
+							Hanging:             hanging,
+							FacingDirection:     facing,
+							GroundSignDirection: groundDir,
+						})
+					}
+				}
+			}
 		}
 	}
 	return
