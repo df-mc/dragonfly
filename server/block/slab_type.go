@@ -25,6 +25,8 @@ func encodeSlabBlock(block world.Block, double bool) (id string, suffix string) 
 		} else if block.Type == PolishedBlackstone() {
 			return "polished_blackstone", suffix
 		}
+	case BambooMosaic:
+		return "bamboo_mosaic", suffix
 	case Bricks:
 		return "brick", suffix
 	case Cobblestone:
@@ -153,6 +155,7 @@ func SlabBlocks() []world.Block {
 	b := []world.Block{
 		Andesite{Polished: true},
 		Andesite{},
+		BambooMosaic{},
 		Blackstone{Type: PolishedBlackstone()},
 		Blackstone{},
 		Bricks{},
