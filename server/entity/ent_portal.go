@@ -57,16 +57,11 @@ func (e *Ent) checkPortalInsiders() bool {
 	box := e.H().Type().BBox(e).Translate(e.Position()).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
-	for y := low[1]; y <= high[1]; y++ {
-		for x := low[0]; x <= high[0]; x++ {
-			for z := low[2]; z <= high[2]; z++ {
-				blockPos := cube.Pos{x, y, z}
-				if p, ok := e.tx.Block(blockPos).(portalBlock); ok {
-					e.TravelThroughPortal(e.tx, p.Portal())
-					if e.pendingPortalTravel() {
-						return true
-					}
-				}
+	for blockPos := range cube.Range3D(low, high) {
+		if p, ok := e.tx.Block(blockPos).(portalBlock); ok {
+			e.TravelThroughPortal(e.tx, p.Portal())
+			if e.pendingPortalTravel() {
+				return true
 			}
 		}
 	}
