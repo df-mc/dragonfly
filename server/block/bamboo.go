@@ -197,6 +197,9 @@ func canSurviveBamboo(pos cube.Pos, tx *world.Tx) bool {
 	if _, ok := tx.Block(below).(Bamboo); ok {
 		return canSurviveBamboo(below, tx)
 	}
+	if _, ok := tx.Block(below).(BambooSapling); ok {
+		return true
+	}
 	return supportsVegetation(Bamboo{}, tx.Block(below))
 }
 
@@ -217,7 +220,9 @@ func bambooBase(pos cube.Pos, tx *world.Tx) cube.Pos {
 	for {
 		next := pos.Side(cube.FaceDown)
 		if _, ok := tx.Block(next).(Bamboo); !ok {
-			return pos
+			if _, ok := tx.Block(next).(BambooSapling); !ok {
+				return pos
+			}
 		}
 		pos = next
 	}
@@ -287,10 +292,10 @@ func updateBambooStalk(base cube.Pos, tx *world.Tx) {
 				b.LeafSize = bambooNoLeaves
 			}
 		default: // height >= 5
-			switch {
-			case distFromTop <= 1:
+			switch distFromTop {
+			case 0, 1:
 				b.LeafSize = LargeLeaves
-			case distFromTop == 2:
+			case 2:
 				b.LeafSize = SmallLeaves
 			default:
 				b.LeafSize = bambooNoLeaves
