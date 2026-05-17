@@ -13,7 +13,6 @@ var DefaultRegistry = conf.New([]world.EntityType{
 	AreaEffectCloudType,
 	ArrowType,
 	BottleOfEnchantingType,
-	ChestRaftType,
 	EggType,
 	EnderPearlType,
 	ExperienceOrbType,
@@ -22,7 +21,6 @@ var DefaultRegistry = conf.New([]world.EntityType{
 	ItemType,
 	LightningType,
 	LingeringPotionType,
-	RaftType,
 	SnowballType,
 	SplashPotionType,
 	TNTType,
@@ -42,9 +40,6 @@ var conf = world.EntityRegistryConfig{
 	},
 	Item: func(opts world.EntitySpawnOpts, it any) *world.EntityHandle {
 		return NewItem(opts, it.(item.Stack))
-	},
-	Raft: func(opts world.EntitySpawnOpts, chest bool) *world.EntityHandle {
-		return NewRaft(opts, chest)
 	},
 	LingeringPotion: func(opts world.EntitySpawnOpts, t any, owner world.Entity) *world.EntityHandle {
 		return NewLingeringPotion(opts, t.(potion.Potion), owner)

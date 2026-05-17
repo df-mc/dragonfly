@@ -20,30 +20,35 @@ type Bamboo struct {
 
 var _ item.BoneMealAffected = Bamboo{}
 
-// UseOnBlock ...
+// UseOnBlock places bamboo. When placed on soil it starts as a thin Bamboo Shoot (no leaves).
+// When placed on top of an existing bamboo stalk it extends it and updates the whole stalk shape.
 func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, b)
 	if !used {
 		return false
 	}
 	below := pos.Side(cube.FaceDown)
-	if _, ok := tx.Block(below).(Bamboo); ok {
-		// Vanilla only allows extending a manually placed stalk up to two blocks.
-		base := bambooBase(below, tx)
-		if bambooHeightFromBase(base, tx) >= 2 {
-			return false
-		}
-	} else if !supportsVegetation(b, tx.Block(below)) {
+	if _, ok := tx.Block(below).(Bamboo); !ok && !supportsVegetation(b, tx.Block(below)) {
 		return false
 	}
-	b.Age = false
-	b.LeafSize = SmallLeaves
-	b.Thick = false
-	place(tx, pos, b, user, ctx)
+
+	if _, ok := tx.Block(below).(Bamboo); ok {
+		// Extending an existing stalk: the new top block is aged and leafy.
+		b.Age = true
+		b.LeafSize = LargeLeaves
+		b.Thick = true
+		place(tx, pos, b, user, ctx)
+		base := bambooBase(pos, tx)
+		updateBambooStalk(base, tx)
+	} else {
+		// Planting a new shoot: thin, no leaves, not aged.
+		b.Age = false
+		b.LeafSize = bambooNoLeaves
+		b.Thick = false
+		place(tx, pos, b, user, ctx)
+	}
 	return placed(ctx)
 }
-
-// BreakInfo ...
 
 // BoneMeal grows a bamboo stalk by 1-2 blocks if there is enough room.
 func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
@@ -64,7 +69,7 @@ func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	return applied
 }
 
-// NeighbourUpdateTick ...
+// NeighbourUpdateTick breaks the bamboo if it loses support.
 func (b Bamboo) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !canSurviveBamboo(pos, tx) {
 		breakBlock(b, pos, tx)
@@ -72,7 +77,7 @@ func (b Bamboo) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// RandomTick ...
+// RandomTick handles natural bamboo growth.
 func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if !canSurviveBamboo(pos, tx) {
 		breakBlock(b, pos, tx)
@@ -214,37 +219,66 @@ func growBamboo(top cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 		return cube.Pos{}, false
 	}
 	base := bambooBase(top, tx)
-	if bambooHeightFromBase(base, tx) >= 16 {
+	if bambooHeightFromBase(base, tx) >= 12+rand.IntN(5) {
 		return cube.Pos{}, false
 	}
 
-	topBlock, _ := tx.Block(top).(Bamboo)
-	newTop := Bamboo{Age: topBlock.Age, LeafSize: LargeLeaves, Thick: true}
-	tx.SetBlock(above, newTop, nil)
-	refreshBambooTop(above, tx)
+	// Grow a new top block.
+	tx.SetBlock(above, Bamboo{Age: true, LeafSize: LargeLeaves, Thick: true}, nil)
+	updateBambooStalk(base, tx)
 	return above, true
 }
 
-// refreshBambooTop updates the top section so the last three blocks carry leaves.
-func refreshBambooTop(top cube.Pos, tx *world.Tx) {
-	if b, ok := tx.Block(top).(Bamboo); ok {
-		b.LeafSize = LargeLeaves
-		b.Thick = true
-		tx.SetBlock(top, b, nil)
+// updateBambooStalk updates the entire bamboo stalk to match vanilla Bedrock visuals.
+// Height 1   = thin shoot, no leaves.
+// Height 2-3 = thin stalk, top 2 blocks have large leaves.
+// Height >=4 = thick stalk, top 2 blocks have large leaves, 3rd-from-top has small leaves.
+func updateBambooStalk(base cube.Pos, tx *world.Tx) {
+	height := bambooHeightFromBase(base, tx)
+	if height == 0 {
+		return
 	}
-	if b, ok := tx.Block(top.Side(cube.FaceDown)).(Bamboo); ok {
-		b.LeafSize = LargeLeaves
-		b.Thick = true
-		tx.SetBlock(top.Side(cube.FaceDown), b, nil)
-	}
-	if b, ok := tx.Block(top.Side(cube.FaceDown).Side(cube.FaceDown)).(Bamboo); ok {
-		b.LeafSize = SmallLeaves
-		b.Thick = true
-		tx.SetBlock(top.Side(cube.FaceDown).Side(cube.FaceDown), b, nil)
-	}
-	if b, ok := tx.Block(top.Side(cube.FaceDown).Side(cube.FaceDown).Side(cube.FaceDown)).(Bamboo); ok {
-		b.LeafSize = bambooNoLeaves
-		b.Thick = true
-		tx.SetBlock(top.Side(cube.FaceDown).Side(cube.FaceDown).Side(cube.FaceDown), b, nil)
+
+	for i := 0; i < height; i++ {
+		pos := base.Add(cube.Pos{0, i, 0})
+		b, ok := tx.Block(pos).(Bamboo)
+		if !ok {
+			continue
+		}
+
+		// Thickness: thin while short, thick once mature (height >= 4).
+		b.Thick = height >= 4
+
+		// Leaf distribution based on distance from the top.
+		distFromTop := height - 1 - i
+		switch {
+		case height == 1:
+			b.LeafSize = bambooNoLeaves
+		case height == 2:
+			if distFromTop == 0 {
+				b.LeafSize = LargeLeaves
+			} else {
+				b.LeafSize = bambooNoLeaves
+			}
+		case height == 3 || height == 4:
+			if distFromTop <= 1 {
+				b.LeafSize = LargeLeaves
+			} else {
+				b.LeafSize = bambooNoLeaves
+			}
+		default: // height >= 5
+			if distFromTop <= 1 {
+				b.LeafSize = LargeLeaves
+			} else if distFromTop == 2 {
+				b.LeafSize = SmallLeaves
+			} else {
+				b.LeafSize = bambooNoLeaves
+			}
+		}
+
+		// Only the top block is aged (can grow further).
+		b.Age = i == height-1
+
+		tx.SetBlock(pos, b, nil)
 	}
 }

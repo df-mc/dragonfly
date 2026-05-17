@@ -364,7 +364,6 @@ type EntityRegistry struct {
 type EntityRegistryConfig struct {
 	Item               func(opts EntitySpawnOpts, it any) *EntityHandle
 	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
-	Raft               func(opts EntitySpawnOpts, chest bool) *EntityHandle
 	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
