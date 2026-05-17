@@ -43,13 +43,14 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 		base := bambooBase(pos, tx)
 		updateBambooStalk(base, tx)
 	} else if _, ok := tx.Block(below).(BambooSapling); ok {
-		// Placing on top of a sapling: extend the stalk directly.
+		// Placing on top of a sapling: convert sapling to bottom bamboo and extend stalk.
 		b.Age = true
 		b.LeafSize = LargeLeaves
 		b.Thick = true
 		place(tx, pos, b, user, ctx)
-		base := bambooBase(pos, tx)
-		updateBambooStalk(base, tx)
+		// Convert the sapling below to a proper bamboo bottom block.
+		tx.SetBlock(below, Bamboo{Age: false, LeafSize: bambooNoLeaves, Thick: false}, nil)
+		updateBambooStalk(below, tx)
 	} else {
 		// Planting a new shoot on the ground: use BambooSapling.
 		sapling := BambooSapling{Age: false}
@@ -86,7 +87,7 @@ func (b Bamboo) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 }
 
 // RandomTick handles natural bamboo growth.
-// In vanilla, only young bamboo (age=0) can grow further with a 1/3 chance.
+// In vanilla, only the top block (age_bit=1) can grow further with a 1/3 chance.
 func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if !canSurviveBamboo(pos, tx) {
 		breakBlock(b, pos, tx)
@@ -95,18 +96,18 @@ func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 9 {
 		return
 	}
-	// Matured bamboo (age=1) cannot grow further.
-	if b.Age {
+	// Only the top block (age=1) can grow further.
+	if !b.Age {
+		return
+	}
+	above := pos.Side(cube.FaceUp)
+	if _, ok := tx.Block(above).(Air); !ok {
 		return
 	}
 	if r.IntN(3) != 0 {
 		return
 	}
-	top, ok := bambooTop(pos, tx)
-	if !ok {
-		return
-	}
-	_, _ = growBamboo(top, tx)
+	_, _ = growBamboo(pos, tx)
 }
 
 // HasLiquidDrops ...
@@ -239,14 +240,14 @@ func growBamboo(top cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 		return cube.Pos{}, false
 	}
 
-	// If the base is still a sapling, convert it to bamboo first so that
-	// updateBambooStalk can properly update the whole stalk.
+	// If the base is still a sapling, convert it to bamboo first.
+	// The base becomes the bottom block (age=0, no leaves).
 	if _, ok := tx.Block(base).(BambooSapling); ok {
-		tx.SetBlock(base, Bamboo{Age: true, LeafSize: bambooNoLeaves, Thick: false}, nil)
+		tx.SetBlock(base, Bamboo{Age: false, LeafSize: bambooNoLeaves, Thick: false}, nil)
 	}
 
-	// Grow a new top block: young (age=0) with small leaves by default.
-	tx.SetBlock(above, Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}, nil)
+	// Grow a new top block (age=1, small leaves).
+	tx.SetBlock(above, Bamboo{Age: true, LeafSize: SmallLeaves, Thick: false}, nil)
 	updateBambooStalk(base, tx)
 	return above, true
 }
@@ -299,9 +300,9 @@ func updateBambooStalk(base cube.Pos, tx *world.Tx) {
 			}
 		}
 
-		// Only the top block stays young (age=0) so it can grow further.
-		// All lower blocks are matured (age=1).
-		b.Age = i != height-1
+		// The top block is aged (age_bit=1) so it is recognised as the top.
+		// All lower blocks are not aged (age_bit=0).
+		b.Age = i == height-1
 
 		tx.SetBlock(pos, b, nil)
 	}
