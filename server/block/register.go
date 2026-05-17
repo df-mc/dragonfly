@@ -141,6 +141,7 @@ func init() {
 	registerAll(allAnvils())
 	registerAll(allBanners())
 	registerAll(allBamboo())
+	registerAll(allBambooSapling())
 	registerAll(allBambooBlocks())
 	registerAll(allBarrels())
 	registerAll(allBasalt())

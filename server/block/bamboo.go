@@ -28,8 +28,10 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 		return false
 	}
 	below := pos.Side(cube.FaceDown)
-	if _, ok := tx.Block(below).(Bamboo); !ok && !supportsVegetation(b, tx.Block(below)) {
-		return false
+	if _, ok := tx.Block(below).(Bamboo); !ok {
+		if _, ok := tx.Block(below).(BambooSapling); !ok && !supportsVegetation(b, tx.Block(below)) {
+			return false
+		}
 	}
 
 	if _, ok := tx.Block(below).(Bamboo); ok {
@@ -40,12 +42,18 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 		place(tx, pos, b, user, ctx)
 		base := bambooBase(pos, tx)
 		updateBambooStalk(base, tx)
-	} else {
-		// Planting a new shoot: thin, no leaves, not aged.
-		b.Age = false
-		b.LeafSize = bambooNoLeaves
-		b.Thick = false
+	} else if _, ok := tx.Block(below).(BambooSapling); ok {
+		// Placing on top of a sapling: extend the stalk directly.
+		b.Age = true
+		b.LeafSize = LargeLeaves
+		b.Thick = true
 		place(tx, pos, b, user, ctx)
+		base := bambooBase(pos, tx)
+		updateBambooStalk(base, tx)
+	} else {
+		// Planting a new shoot on the ground: use BambooSapling.
+		sapling := BambooSapling{Age: false}
+		place(tx, pos, sapling, user, ctx)
 	}
 	return placed(ctx)
 }
@@ -83,7 +91,19 @@ func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 		breakBlock(b, pos, tx)
 		return
 	}
-	if tx.Light(pos) < 9 || r.IntN(3) != 0 {
+	if tx.Light(pos) < 9 {
+		return
+	}
+	// Shoots (age_bit=0) mature slowly before they can grow taller.
+	// Very low probability (1/40) ensures the shoot remains visible longer.
+	if !b.Age {
+		if r.IntN(40) == 0 {
+			b.Age = true
+			tx.SetBlock(pos, b, nil)
+		}
+		return
+	}
+	if r.IntN(3) != 0 {
 		return
 	}
 	top, ok := bambooTop(pos, tx)

@@ -13,6 +13,7 @@ const (
 	hashBamboo
 	hashBambooBlock
 	hashBambooMosaic
+	hashBambooSapling
 	hashBanner
 	hashBarrel
 	hashBarrier
@@ -254,6 +255,10 @@ func (b BambooBlock) Hash() (uint64, uint64) {
 
 func (BambooMosaic) Hash() (uint64, uint64) {
 	return hashBambooMosaic, 0
+}
+
+func (b BambooSapling) Hash() (uint64, uint64) {
+	return hashBambooSapling, uint64(boolByte(b.Age))
 }
 
 func (b Banner) Hash() (uint64, uint64) {
