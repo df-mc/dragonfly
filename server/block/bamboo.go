@@ -86,6 +86,7 @@ func (b Bamboo) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 }
 
 // RandomTick handles natural bamboo growth.
+// In vanilla, only young bamboo (age=0) can grow further with a 1/3 chance.
 func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if !canSurviveBamboo(pos, tx) {
 		breakBlock(b, pos, tx)
@@ -94,13 +95,8 @@ func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if tx.Light(pos) < 9 {
 		return
 	}
-	// Shoots (age_bit=0) mature slowly before they can grow taller.
-	// Very low probability (1/40) ensures the shoot remains visible longer.
-	if !b.Age {
-		if r.IntN(40) == 0 {
-			b.Age = true
-			tx.SetBlock(pos, b, nil)
-		}
+	// Matured bamboo (age=1) cannot grow further.
+	if b.Age {
 		return
 	}
 	if r.IntN(3) != 0 {
@@ -243,8 +239,14 @@ func growBamboo(top cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 		return cube.Pos{}, false
 	}
 
-	// Grow a new top block.
-	tx.SetBlock(above, Bamboo{Age: true, LeafSize: LargeLeaves, Thick: true}, nil)
+	// If the base is still a sapling, convert it to bamboo first so that
+	// updateBambooStalk can properly update the whole stalk.
+	if _, ok := tx.Block(base).(BambooSapling); ok {
+		tx.SetBlock(base, Bamboo{Age: true, LeafSize: bambooNoLeaves, Thick: false}, nil)
+	}
+
+	// Grow a new top block: young (age=0) with small leaves by default.
+	tx.SetBlock(above, Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}, nil)
 	updateBambooStalk(base, tx)
 	return above, true
 }
@@ -297,8 +299,9 @@ func updateBambooStalk(base cube.Pos, tx *world.Tx) {
 			}
 		}
 
-		// Only the top block is aged (can grow further).
-		b.Age = i == height-1
+		// Only the top block stays young (age=0) so it can grow further.
+		// All lower blocks are matured (age=1).
+		b.Age = i != height-1
 
 		tx.SetBlock(pos, b, nil)
 	}

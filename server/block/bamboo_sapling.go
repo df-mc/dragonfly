@@ -64,7 +64,8 @@ func (b BambooSapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if r.IntN(3) != 0 {
 		return
 	}
-	tx.SetBlock(above, Bamboo{Age: true, LeafSize: SmallLeaves, Thick: false}, nil)
+	// The new bamboo is young (age=0) so it can grow further.
+	tx.SetBlock(above, Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}, nil)
 }
 
 // BoneMeal grows bamboo above the sapling immediately.
@@ -73,7 +74,7 @@ func (b BambooSapling) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if _, ok := tx.Block(above).(Air); !ok {
 		return false
 	}
-	tx.SetBlock(above, Bamboo{Age: true, LeafSize: SmallLeaves, Thick: false}, nil)
+	tx.SetBlock(above, Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}, nil)
 	return true
 }
 
