@@ -302,5 +302,3 @@ func updateBambooStalk(base cube.Pos, tx *world.Tx) {
 		tx.SetBlock(pos, b, nil)
 	}
 }
-
-
