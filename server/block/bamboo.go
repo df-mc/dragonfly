@@ -271,27 +271,28 @@ func updateBambooStalk(base cube.Pos, tx *world.Tx) {
 
 		// Leaf distribution based on distance from the top.
 		distFromTop := height - 1 - i
-		switch {
-		case height == 1:
+		switch height {
+		case 1:
 			b.LeafSize = bambooNoLeaves
-		case height == 2:
+		case 2:
 			if distFromTop == 0 {
 				b.LeafSize = LargeLeaves
 			} else {
 				b.LeafSize = bambooNoLeaves
 			}
-		case height == 3 || height == 4:
+		case 3, 4:
 			if distFromTop <= 1 {
 				b.LeafSize = LargeLeaves
 			} else {
 				b.LeafSize = bambooNoLeaves
 			}
 		default: // height >= 5
-			if distFromTop <= 1 {
+			switch {
+			case distFromTop <= 1:
 				b.LeafSize = LargeLeaves
-			} else if distFromTop == 2 {
+			case distFromTop == 2:
 				b.LeafSize = SmallLeaves
-			} else {
+			default:
 				b.LeafSize = bambooNoLeaves
 			}
 		}

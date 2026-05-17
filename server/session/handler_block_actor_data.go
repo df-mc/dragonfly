@@ -36,8 +36,8 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session, tx *world.Tx,
 func (b BlockActorDataHandler) handleSign(pk *packet.BlockActorData, pos cube.Pos, s *Session, tx *world.Tx, co Controllable) error {
 	if _, ok := tx.Block(pos).(block.Sign); !ok {
 		if _, ok := tx.Block(pos).(block.HangingSign); !ok {
-		s.conf.Log.Debug("no sign at position of sign block actor data", "pos", pos.String())
-		return nil
+			s.conf.Log.Debug("no sign at position of sign block actor data", "pos", pos.String())
+			return nil
 		}
 	}
 

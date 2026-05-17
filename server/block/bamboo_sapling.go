@@ -26,7 +26,7 @@ func (b BambooSapling) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 		return false
 	}
 	below := pos.Side(cube.FaceDown)
-	if !supportsVegetation(BambooSapling{}, tx.Block(below)) && !isBambooSupport(tx.Block(below)) {
+	if !supportsVegetation(Bamboo{}, tx.Block(below)) && !isBambooSupport(tx.Block(below)) {
 		return false
 	}
 	place(tx, pos, b, user, ctx)
@@ -37,7 +37,7 @@ func (b BambooSapling) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 // when bamboo grows above it.
 func (b BambooSapling) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	below := pos.Side(cube.FaceDown)
-	if !supportsVegetation(BambooSapling{}, tx.Block(below)) && !isBambooSupport(tx.Block(below)) {
+	if !supportsVegetation(Bamboo{}, tx.Block(below)) && !isBambooSupport(tx.Block(below)) {
 		breakBlock(b, pos, tx)
 		tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 		return
