@@ -111,7 +111,7 @@ func (s *Session) sendEnchantmentOptions(tx *world.Tx, c Controllable, pos cube.
 		for _, enchant := range selectedEnchants[i] {
 			id, _ := item.EnchantmentID(enchant.Type())
 			enchants = append(enchants, protocol.EnchantmentInstance{
-				Type:  uint32(id),
+				Type:  byte(id),
 				Level: byte(enchant.Level()),
 			})
 		}
