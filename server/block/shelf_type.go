@@ -136,27 +136,26 @@ func (s Shelf) Activate(pos cube.Pos, face cube.Face, tx *world.Tx, u item.User,
 	slotItem, _ := s.inventory.Item(slot)
 
 	// Aplicamos la lógica de intercambio que el usuario confirmó que funciona.
-	if !held.Empty() && slotItem.Empty() {
+	switch {
+	case !held.Empty() && slotItem.Empty():
 		_ = s.inventory.SetItem(slot, held.Grow(-held.Count()+1))
 		ctx.SubtractFromCount(1)
 		tx.PlaySound(pos.Vec3Middle(), sound.ItemAdd{})
 		tx.SetBlock(pos, s, &world.SetOpts{DisableBlockUpdates: true})
 		return true
-	} else if held.Empty() && !slotItem.Empty() {
+	case held.Empty() && !slotItem.Empty():
 		ctx.NewItem = slotItem
 		_ = s.inventory.SetItem(slot, item.Stack{})
 		tx.PlaySound(pos.Vec3Middle(), sound.Click{})
 		tx.SetBlock(pos, s, &world.SetOpts{DisableBlockUpdates: true})
 		return true
-	} else if !held.Empty() && !slotItem.Empty() {
-		if held.Count() == 1 {
-			_ = s.inventory.SetItem(slot, held)
-			ctx.NewItem = slotItem
-			ctx.SubtractFromCount(1)
-			tx.PlaySound(pos.Vec3Middle(), sound.Click{})
-			tx.SetBlock(pos, s, &world.SetOpts{DisableBlockUpdates: true})
-			return true
-		}
+	case !held.Empty() && !slotItem.Empty() && held.Count() == 1:
+		_ = s.inventory.SetItem(slot, held)
+		ctx.NewItem = slotItem
+		ctx.SubtractFromCount(1)
+		tx.PlaySound(pos.Vec3Middle(), sound.Click{})
+		tx.SetBlock(pos, s, &world.SetOpts{DisableBlockUpdates: true})
+		return true
 	}
 	return false
 }
@@ -238,7 +237,9 @@ func (s Shelf) swapHotbar(pos cube.Pos, tx *world.Tx, u item.User) {
 
 		slotOffset := 0
 		for _, shelf := range connected[:numShelves] {
-			if shelf.inventory == nil { continue }
+			if shelf.inventory == nil {
+				continue
+			}
 			for i := 0; i < 3; i++ {
 				shelfItem, _ := shelf.inventory.Item(i)
 				hotbarItem, _ := inv.Item(startIndex + slotOffset)
