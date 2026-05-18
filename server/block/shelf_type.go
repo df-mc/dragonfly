@@ -167,9 +167,9 @@ func (s Shelf) calculateSlotFromView(pos cube.Pos, u item.User) int {
 	yaw, pitch := rot.Yaw(), rot.Pitch()
 
 	direction := mgl64.Vec3{
-		-math.Sin(yaw * math.Pi / 180) * math.Cos(pitch * math.Pi / 180),
+		-math.Sin(yaw*math.Pi/180) * math.Cos(pitch*math.Pi/180),
 		-math.Sin(pitch * math.Pi / 180),
-		math.Cos(yaw * math.Pi / 180) * math.Cos(pitch * math.Pi / 180),
+		math.Cos(yaw*math.Pi/180) * math.Cos(pitch*math.Pi/180),
 	}
 
 	var planeNormal mgl64.Vec3
@@ -318,7 +318,7 @@ func (s Shelf) EncodeBlock() (name string, properties map[string]any) {
 	return name, map[string]any{
 		"minecraft:cardinal_direction": s.Facing.String(),
 		"powered_bit":                  s.Powered,
-		"powered_shelf_type":          int32(s.PoweredType),
+		"powered_shelf_type":           int32(s.PoweredType),
 	}
 }
 
