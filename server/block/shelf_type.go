@@ -51,7 +51,7 @@ func (s Shelf) BreakInfo() BreakInfo {
 
 // UseOnBlock ...
 func (s Shelf) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
-	pos, face, used := firstReplaceable(tx, pos, face, s)
+	pos, _, used := firstReplaceable(tx, pos, face, s)
 	if !used {
 		return false
 	}
