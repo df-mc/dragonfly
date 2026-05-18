@@ -55,7 +55,7 @@ func (s Shelf) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	if !used {
 		return false
 	}
-	s.Facing = user.Rotation().Orientation().Direction()
+	s.Facing = user.Rotation().Direction()
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
