@@ -43,26 +43,38 @@ func (b BambooSapling) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 }
 
 // RandomTick grows the sapling into a bamboo stalk.
-// The sapling is converted to the bottom block and a new top block grows above it.
+// RandomTick seeds the ScheduledTick growth chain for world-generated saplings.
+// For player-placed saplings the chain is started directly in Bamboo.UseOnBlock.
 func (b BambooSapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if b.Age {
 		return
 	}
-	if tx.Light(pos) < 9 {
+	tx.ScheduleBlockUpdate(pos, b, bambooGrowthDelay(r))
+}
+
+// ScheduledTick converts the sapling to a 2-block bamboo stalk once there is
+// enough light (>= 9) and space above. If not, it re-schedules and waits.
+func (b BambooSapling) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
+	if b.Age {
 		return
 	}
 	above := pos.Side(cube.FaceUp)
 	if _, ok := tx.Block(above).(Air); !ok {
 		return
 	}
-	if r.IntN(3) != 0 {
+	delay := bambooGrowthDelay(r)
+	t := tx.World().Time() % 24000
+	if t >= 13000 && t < 23000 {
+		// Nighttime — wait and retry.
+		tx.ScheduleBlockUpdate(pos, b, delay)
 		return
 	}
-	// Convert sapling to the bottom bamboo block (age=0, no leaves).
-	// Grow a new top block above it (age=1, small leaves).
-	tx.SetBlock(pos, Bamboo{Age: false, LeafSize: bambooNoLeaves, Thick: false}, nil)
-	tx.SetBlock(above, Bamboo{Age: true, LeafSize: SmallLeaves, Thick: false}, nil)
-	updateBambooStalk(pos, tx)
+	// Convert: bottom = aged bamboo, top = fresh growable bamboo.
+	tx.SetBlock(pos, Bamboo{Age: true, LeafSize: bambooNoLeaves, Thick: false}, nil)
+	newTop := Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}
+	tx.SetBlock(above, newTop, nil)
+	// Seed the growth chain on the new bamboo top.
+	tx.ScheduleBlockUpdate(above, newTop, delay)
 }
 
 // BoneMeal grows the sapling into a bamboo stalk immediately.
@@ -71,11 +83,9 @@ func (b BambooSapling) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 	if _, ok := tx.Block(above).(Air); !ok {
 		return false
 	}
-	// Convert sapling to the bottom bamboo block (age=0, no leaves).
-	// Grow a new top block above it (age=1, small leaves).
-	tx.SetBlock(pos, Bamboo{Age: false, LeafSize: bambooNoLeaves, Thick: false}, nil)
-	tx.SetBlock(above, Bamboo{Age: true, LeafSize: SmallLeaves, Thick: false}, nil)
-	updateBambooStalk(pos, tx)
+	// Bottom becomes aged (age_bit=1), top is fresh growable (age_bit=0).
+	tx.SetBlock(pos, Bamboo{Age: true, LeafSize: bambooNoLeaves, Thick: false}, nil)
+	tx.SetBlock(above, Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}, nil)
 	return true
 }
 
