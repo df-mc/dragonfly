@@ -19,6 +19,9 @@ type layer struct {
 type ViewLayerUpdater interface {
 	// ViewLayerEntityChanged handles an entity whose view-layer overrides changed.
 	ViewLayerEntityChanged(entity Entity)
+}
+
+type viewLayerBlockUpdater interface {
 	// ViewLayerBlockChanged handles a block whose view-layer override changed.
 	ViewLayerBlockChanged(pos cube.Pos)
 }
@@ -30,29 +33,18 @@ type viewLayerViewer interface {
 // ViewLayer holds overrides for how entities are viewed by a single viewer. It allows entities to be
 // viewed differently by different players, such as with a different name tag or visibility state.
 type ViewLayer struct {
-	mu            sync.RWMutex
-	entities      map[*EntityHandle]layer
-	blocks        map[cube.Pos]uint32
-	blockRegistry BlockRegistry
-	updater       ViewLayerUpdater
+	mu       sync.RWMutex
+	entities map[*EntityHandle]layer
+	blocks   map[cube.Pos]Block
+	updater  ViewLayerUpdater
 }
 
 // NewViewLayer returns a new ViewLayer.
 func NewViewLayer(updater ViewLayerUpdater) *ViewLayer {
-	return NewViewLayerWithBlockRegistry(updater, DefaultBlockRegistry)
-}
-
-// NewViewLayerWithBlockRegistry returns a new ViewLayer using the BlockRegistry passed for block runtime ID
-// conversions.
-func NewViewLayerWithBlockRegistry(updater ViewLayerUpdater, br BlockRegistry) *ViewLayer {
-	if br == nil {
-		br = DefaultBlockRegistry
-	}
 	return &ViewLayer{
-		entities:      map[*EntityHandle]layer{},
-		blocks:        map[cube.Pos]uint32{},
-		blockRegistry: br,
-		updater:       updater,
+		entities: map[*EntityHandle]layer{},
+		blocks:   map[cube.Pos]Block{},
+		updater:  updater,
 	}
 }
 
@@ -143,7 +135,7 @@ func (v *ViewLayer) ViewBlock(pos cube.Pos, b Block) {
 	if b == nil {
 		delete(v.blocks, pos)
 	} else {
-		v.blocks[pos] = v.blockRegistry.BlockRuntimeID(b)
+		v.blocks[pos] = b
 	}
 	v.mu.Unlock()
 
@@ -160,11 +152,7 @@ func (v *ViewLayer) Block(pos cube.Pos) (Block, bool) {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
-	rid, ok := v.blocks[pos]
-	if !ok {
-		return nil, false
-	}
-	b, ok := v.blockRegistry.BlockByRuntimeID(rid)
+	b, ok := v.blocks[pos]
 	return b, ok
 }
 
@@ -173,13 +161,7 @@ func (v *ViewLayer) Blocks() map[cube.Pos]Block {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
-	blocks := make(map[cube.Pos]Block, len(v.blocks))
-	for pos, rid := range v.blocks {
-		if b, ok := v.blockRegistry.BlockByRuntimeID(rid); ok {
-			blocks[pos] = b
-		}
-	}
-	return blocks
+	return maps.Clone(v.blocks)
 }
 
 // Remove removes all overrides for the entity from the ViewLayer.
@@ -241,7 +223,7 @@ func (v *ViewLayer) refresh(entity Entity) {
 }
 
 func (v *ViewLayer) refreshBlock(pos cube.Pos) {
-	if v.updater != nil {
-		v.updater.ViewLayerBlockChanged(pos)
+	if updater, ok := v.updater.(viewLayerBlockUpdater); ok {
+		updater.ViewLayerBlockChanged(pos)
 	}
 }

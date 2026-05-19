@@ -59,7 +59,7 @@ func (s *Session) ViewBlock(pos cube.Pos, b world.Block) {
 	s.viewLayer.ViewBlock(pos, b)
 }
 
-// ViewPublicBlock removes the block override at the position passed and immediately refreshes it for this session.
+// ViewPublicBlock removes the block override at the position passed.
 func (s *Session) ViewPublicBlock(pos cube.Pos) {
 	if s.viewLayer == nil {
 		return
@@ -83,13 +83,12 @@ func (s *Session) ViewLayerEntityChanged(e world.Entity) {
 	s.ViewEntityState(e)
 }
 
-// ViewLayerBlockChanged refreshes the block for this session if its chunk is currently visible.
+// ViewLayerBlockChanged refreshes a block override for this session if its chunk is currently visible.
 func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
-	if b, ok := s.viewLayer.Block(pos); ok {
-		s.viewBlockUpdate(pos, b, 0)
+	if !s.viewingBlock(pos) {
 		return
 	}
-	if b, ok := s.publicBlock(pos); ok {
+	if b, ok := s.viewLayer.Block(pos); ok {
 		s.viewBlockUpdate(pos, b, 0)
 	}
 }
@@ -102,15 +101,14 @@ func (s *Session) viewingEntity(handle *world.EntityHandle) bool {
 	return ok
 }
 
-// publicBlock returns the public block at pos from the loaded chunk for this session.
-func (s *Session) publicBlock(pos cube.Pos) (world.Block, bool) {
+// viewingBlock returns true if the block position is loaded for this session.
+func (s *Session) viewingBlock(pos cube.Pos) bool {
+	if s.chunkLoader == nil {
+		return false
+	}
 	col, ok := s.chunkLoader.Chunk(world.ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
 	if !ok {
-		return nil, false
+		return false
 	}
-	if b, ok := col.BlockEntities[pos]; ok {
-		return b, true
-	}
-	b, ok := s.br.BlockByRuntimeID(col.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0))
-	return b, ok
+	return !pos.OutOfBounds(col.Range())
 }

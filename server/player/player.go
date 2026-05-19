@@ -1844,7 +1844,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
-	if _, ok := p.tx.Block(pos.Side(face)).(block.Fire); ok {
+	if _, ok := p.tx.Block(pos.Side(face)).(block.Fire); ok && !private {
 		ctx := event.C(p)
 		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
 			// Resend the block because on client side that was extinguished
@@ -1867,7 +1867,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.breakingPos = pos
 
 	ctx := event.C(p)
-	if p.Handler().HandleStartBreak(ctx, pos, private); ctx.Cancelled() {
+	if p.Handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
 		return
 	}
 	if punchable, ok := b.(block.Punchable); ok && !private {
@@ -2080,17 +2080,20 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		return
 	}
 	held, _ := p.HeldItems()
-	drops := p.drops(held, b)
+	var drops []item.Stack
 
 	xp := 0
-	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
-		if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
-			xp = breakable.BreakInfo().XPDrops.RandomValue()
+	if !private {
+		drops = p.drops(held, b)
+		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+			if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
+				xp = breakable.BreakInfo().XPDrops.RandomValue()
+			}
 		}
 	}
 
 	ctx := event.C(p)
-	if p.Handler().HandleBlockBreak(ctx, pos, private, &drops, &xp); ctx.Cancelled() {
+	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
 		p.resendNearbyBlocks(pos)
 		return
 	}
@@ -2100,6 +2103,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	if private {
 		p.ViewPublicBlock(pos)
 		p.s.ViewParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+		return
 	} else {
 		p.tx.SetBlock(pos, nil, nil)
 		p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
@@ -2160,7 +2164,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		return
 	}
 
-	b := p.tx.Block(pos)
+	b := p.breakingBlock(pos)
 
 	var pickedItem item.Stack
 	if pi, ok := b.(block.Pickable); ok {
@@ -2664,6 +2668,9 @@ func (p *Player) ViewBlock(pos cube.Pos, b world.Block) {
 // ViewPublicBlock removes the block override at the position passed for this player.
 func (p *Player) ViewPublicBlock(pos cube.Pos) {
 	p.session().ViewPublicBlock(pos)
+	if p.session() != session.Nop && !pos.OutOfBounds(p.tx.Range()) {
+		p.session().ViewBlockUpdate(pos, p.tx.Block(pos), 0)
+	}
 }
 
 // RemoveViewLayer removes all view-layer overrides of the entity for this player.

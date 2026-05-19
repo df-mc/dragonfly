@@ -150,6 +150,9 @@ func (s *Session) applyViewLayerToChunk(pos world.ChunkPos, c *chunk.Chunk, bloc
 		if (world.ChunkPos{int32(blockPos[0] >> 4), int32(blockPos[2] >> 4)}) != pos {
 			continue
 		}
+		if blockPos.OutOfBounds(c.Range()) {
+			continue
+		}
 		if !cloned {
 			c = c.Clone()
 			blockEntities = maps.Clone(blockEntities)

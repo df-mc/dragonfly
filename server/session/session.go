@@ -207,7 +207,7 @@ func (conf Config) New(conn Conn) *Session {
 		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
 		br:                     br,
 	}
-	s.viewLayer = world.NewViewLayerWithBlockRegistry(s, br)
+	s.viewLayer = world.NewViewLayer(s)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 
