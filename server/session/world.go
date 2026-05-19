@@ -959,6 +959,16 @@ func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFu
 
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
+	if s.viewLayer != nil && layer == 0 {
+		if viewed, ok := s.viewLayer.Block(pos); ok {
+			b = viewed
+		}
+	}
+	s.viewBlockUpdate(pos, b, layer)
+}
+
+// viewBlockUpdate sends a block update to the session without applying view-layer overrides.
+func (s *Session) viewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.UpdateBlock{
 		Position:          blockPos,

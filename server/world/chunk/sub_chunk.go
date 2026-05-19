@@ -29,6 +29,20 @@ func NewSubChunk(air uint32) *SubChunk {
 	return &SubChunk{air: air}
 }
 
+// Clone returns an independent copy of the SubChunk.
+func (sub *SubChunk) Clone() *SubChunk {
+	clone := &SubChunk{
+		air:        sub.air,
+		blockLight: append([]uint8(nil), sub.blockLight...),
+		skyLight:   append([]uint8(nil), sub.skyLight...),
+		storages:   make([]*PalettedStorage, len(sub.storages)),
+	}
+	for i, storage := range sub.storages {
+		clone.storages[i] = storage.Clone()
+	}
+	return clone
+}
+
 // Empty checks if the SubChunk is considered empty. This is the case if the SubChunk has 0 block storages or if it has
 // a single one that is completely filled with air.
 func (sub *SubChunk) Empty() bool {

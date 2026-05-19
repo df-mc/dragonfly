@@ -1838,11 +1838,13 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 // player might be breaking before this method is called.
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
-	if _, air := p.tx.Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
+	b := p.breakingBlock(pos)
+	_, private := p.privateBlock(pos)
+	if _, air := b.(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
-	if _, ok := p.tx.Block(pos.Side(face)).(block.Fire); ok {
+	if _, ok := p.tx.Block(pos.Side(face)).(block.Fire); ok && !private {
 		ctx := event.C(p)
 		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
 			// Resend the block because on client side that was extinguished
@@ -1868,7 +1870,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	if p.Handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
 		return
 	}
-	if punchable, ok := p.tx.Block(pos).(block.Punchable); ok {
+	if punchable, ok := b.(block.Punchable); ok && !private {
 		punchable.Punch(pos, face, p.tx, p)
 	}
 
@@ -1878,17 +1880,15 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	if p.GameMode().CreativeInventory() {
 		return
 	}
-	p.lastBreakDuration = p.breakTime(pos)
-	for _, viewer := range p.viewers() {
-		viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
-	}
+	p.lastBreakDuration = p.breakTime(b)
+	p.viewBreakingBlockAction(pos, private, block.StartCrackAction{BreakTime: p.lastBreakDuration})
 }
 
 // breakTime returns the time needed to break a block at the position passed, taking into account the item
 // held, if the player is on the ground/underwater and if the player has any effects.
-func (p *Player) breakTime(pos cube.Pos) time.Duration {
+func (p *Player) breakTime(b world.Block) time.Duration {
 	held, _ := p.HeldItems()
-	breakTime := block.BreakDuration(p.tx.Block(pos), held)
+	breakTime := block.BreakDuration(b, held)
 	if !p.OnGround() {
 		breakTime *= 5
 	}
@@ -1928,10 +1928,9 @@ func (p *Player) AbortBreaking() {
 	if !p.breaking {
 		return
 	}
+	_, private := p.privateBlock(p.breakingPos)
 	p.breaking, p.breakCounter = false, 0
-	for _, viewer := range p.viewers() {
-		viewer.ViewBlockAction(p.breakingPos, block.StopCrackAction{})
-	}
+	p.viewBreakingBlockAction(p.breakingPos, private, block.StopCrackAction{})
 }
 
 // ContinueBreaking makes the player continue breaking the block it started breaking after a call to
@@ -1942,22 +1941,49 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 		return
 	}
 	pos := p.breakingPos
-	b := p.tx.Block(pos)
-	p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
+	b := p.breakingBlock(pos)
+	_, private := p.privateBlock(pos)
+	if private {
+		p.s.ViewParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
+	} else {
+		p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
+	}
 
 	if p.breakCounter++; p.breakCounter%5 == 0 {
 		p.SwingArm()
 
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
-		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
-	}
-	if breakTime := p.breakTime(pos); breakTime != p.lastBreakDuration {
-		for _, viewer := range p.viewers() {
-			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
+		if private {
+			p.s.ViewSound(pos.Vec3(), sound.BlockBreaking{Block: b})
+		} else {
+			p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 		}
+	}
+	if breakTime := p.breakTime(b); breakTime != p.lastBreakDuration {
+		p.viewBreakingBlockAction(pos, private, block.ContinueCrackAction{BreakTime: breakTime})
 		p.lastBreakDuration = breakTime
 	}
+}
+
+// viewBreakingBlockAction shows a breaking action to the player only if the block is a private view-layer
+// block, or to all viewers if it is a public world block.
+func (p *Player) viewBreakingBlockAction(pos cube.Pos, private bool, a world.BlockAction) {
+	if private {
+		p.s.ViewBlockAction(pos, a)
+		return
+	}
+	for _, viewer := range p.viewers() {
+		viewer.ViewBlockAction(pos, a)
+	}
+}
+
+// breakingBlock returns the block that should be used for the player's breaking progress.
+func (p *Player) breakingBlock(pos cube.Pos) world.Block {
+	if b, ok := p.privateBlock(pos); ok {
+		return b
+	}
+	return p.tx.Block(pos)
 }
 
 // PlaceBlock makes the player place the block passed at the position passed, granted it is within the range
@@ -2036,6 +2062,11 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
 	b := p.tx.Block(pos)
+
+	privateBlock, private := p.privateBlock(pos)
+	if private {
+		b = privateBlock
+	}
 	if _, air := b.(block.Air); air {
 		// Don't do anything if the position broken is already air.
 		return
@@ -2049,12 +2080,15 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		return
 	}
 	held, _ := p.HeldItems()
-	drops := p.drops(held, b)
+	var drops []item.Stack
 
 	xp := 0
-	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
-		if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
-			xp = breakable.BreakInfo().XPDrops.RandomValue()
+	if !private {
+		drops = p.drops(held, b)
+		if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
+			if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
+				xp = breakable.BreakInfo().XPDrops.RandomValue()
+			}
 		}
 	}
 
@@ -2066,17 +2100,23 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	held, left := p.HeldItems()
 
 	p.SwingArm()
-	p.tx.SetBlock(pos, nil, nil)
-	p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+	if private {
+		p.ViewPublicBlock(pos)
+		p.s.ViewParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+		return
+	} else {
+		p.tx.SetBlock(pos, nil, nil)
+		p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
+		if breakable, ok := b.(block.Breakable); ok {
+			info := breakable.BreakInfo()
+			if info.BreakHandler != nil {
+				info.BreakHandler(pos, p.tx, p)
+			}
+		}
+	}
 
-	if breakable, ok := b.(block.Breakable); ok {
-		info := breakable.BreakInfo()
-		if info.BreakHandler != nil {
-			info.BreakHandler(pos, p.tx, p)
-		}
-		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
-			p.tx.AddEntity(orb)
-		}
+	for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
+		p.tx.AddEntity(orb)
 	}
 	for _, drop := range drops {
 		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre(), Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
@@ -2109,6 +2149,14 @@ func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 	return drops
 }
 
+// privateBlock returns this player's view-layer block override at pos, if present.
+func (p *Player) privateBlock(pos cube.Pos) (world.Block, bool) {
+	if p.session() == session.Nop {
+		return nil, false
+	}
+	return p.ViewLayer().Block(pos)
+}
+
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
 // pick the block, the method returns immediately.
 func (p *Player) PickBlock(pos cube.Pos) {
@@ -2116,7 +2164,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		return
 	}
 
-	b := p.tx.Block(pos)
+	b := p.breakingBlock(pos)
 
 	var pickedItem item.Stack
 	if pi, ok := b.(block.Pickable); ok {
@@ -2610,6 +2658,19 @@ func (p *Player) ViewPublicScoreTag(entity world.Entity) {
 // ViewVisibility overrides the public visibility of the entity for this player.
 func (p *Player) ViewVisibility(entity world.Entity, level world.VisibilityLevel) {
 	p.session().ViewVisibility(entity, level)
+}
+
+// ViewBlock overrides the public block at the position passed for this player.
+func (p *Player) ViewBlock(pos cube.Pos, b world.Block) {
+	p.session().ViewBlock(pos, b)
+}
+
+// ViewPublicBlock removes the block override at the position passed for this player.
+func (p *Player) ViewPublicBlock(pos cube.Pos) {
+	p.session().ViewPublicBlock(pos)
+	if p.session() != session.Nop && !pos.OutOfBounds(p.tx.Range()) {
+		p.session().ViewBlockUpdate(pos, p.tx.Block(pos), 0)
+	}
 }
 
 // RemoveViewLayer removes all view-layer overrides of the entity for this player.

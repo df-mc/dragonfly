@@ -71,8 +71,8 @@ type Handler interface {
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *Context, pos cube.Pos)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
-	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered
-	// to change what items will actually be dropped.
+	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered to change
+	// what items will actually be dropped.
 	HandleBlockBreak(ctx *Context, pos cube.Pos, drops *[]item.Stack, xp *int)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.

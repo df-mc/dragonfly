@@ -59,6 +59,11 @@ func emptyStorage(v uint32) *PalettedStorage {
 	return newPalettedStorage([]uint32{}, newPalette(0, []uint32{v}))
 }
 
+// Clone returns an independent copy of the PalettedStorage.
+func (storage *PalettedStorage) Clone() *PalettedStorage {
+	return newPalettedStorage(append([]uint32(nil), storage.indices...), storage.palette.Clone())
+}
+
 // Palette returns the Palette of the PalettedStorage.
 func (storage *PalettedStorage) Palette() *Palette {
 	return storage.palette
