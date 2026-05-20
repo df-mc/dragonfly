@@ -1045,7 +1045,9 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 		c.Compact()
 		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos)); err != nil {
 			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+			return
 		}
+		c.modified = false
 	}
 }
 
