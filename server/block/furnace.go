@@ -45,6 +45,14 @@ func (f Furnace) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
+// LightEmissionLevel ...
+func (f Furnace) LightEmissionLevel() uint8 {
+	if f.Lit {
+		return 13
+	}
+	return 0
+}
+
 // EncodeItem ...
 func (f Furnace) EncodeItem() (name string, meta int16) {
 	return "minecraft:furnace", 0
