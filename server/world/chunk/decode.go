@@ -53,6 +53,7 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 		}
 		c.biomes[i] = b
 	}
+	c.MarkClean()
 	return c, nil
 }
 
@@ -77,6 +78,7 @@ func DiskDecode(br BlockRegistry, data SerialisedData, r cube.Range) (*Chunk, er
 			return nil, err
 		}
 	}
+	c.MarkClean()
 	return c, nil
 }
 
