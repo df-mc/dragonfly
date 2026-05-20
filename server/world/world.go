@@ -1332,13 +1332,13 @@ func (c *Column) markDirty(flags chunk.DirtyFlags) {
 
 func (c *Column) markClean() {
 	c.dirty = 0
-	c.Chunk.MarkClean()
+	c.MarkClean()
 }
 
 func (c *Column) dirtyFlags() chunk.DirtyFlags {
 	flags := c.dirty
 	if c.Chunk != nil {
-		flags |= c.Chunk.DirtyFlags()
+		flags |= c.DirtyFlags()
 	}
 	return flags
 }
