@@ -360,11 +360,15 @@ type EntityRegistry struct {
 // EntityRegistryConfig holds functions used by the block and item packages to
 // create entities as a result of their behaviour. ALL functions of
 // EntityRegistryConfig must be filled out for the behaviour of these blocks and
-// items not to fail.
+// items not to fail, except those explicitly documented as optional.
 type EntityRegistryConfig struct {
-	Item               func(opts EntitySpawnOpts, it any) *EntityHandle
-	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
-	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
+	Item         func(opts EntitySpawnOpts, it any) *EntityHandle
+	FallingBlock func(opts EntitySpawnOpts, bl Block) *EntityHandle
+	TNT          func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
+	// TNTWithSource optionally creates a TNT entity with the nullable handle that caused it to ignite and whether
+	// its explosion may be blocked by shields. If nil, New fills a fallback that uses TNT and ignores source
+	// attribution and shield-blockability arguments.
+	TNTWithSource      func(opts EntitySpawnOpts, fuse time.Duration, source *EntityHandle, blockableByShield bool) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
@@ -378,6 +382,11 @@ type EntityRegistryConfig struct {
 
 // New creates an EntityRegistry using conf and the EntityTypes passed.
 func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
+	if conf.TNTWithSource == nil && conf.TNT != nil {
+		conf.TNTWithSource = func(opts EntitySpawnOpts, fuse time.Duration, source *EntityHandle, blockableByShield bool) *EntityHandle {
+			return conf.TNT(opts, fuse)
+		}
+	}
 	m := make(map[string]EntityType, len(ent))
 	for _, e := range ent {
 		name := e.EncodeEntity()

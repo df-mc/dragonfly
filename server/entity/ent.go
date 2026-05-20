@@ -40,6 +40,21 @@ func (e *Ent) Behaviour() Behaviour {
 	return e.data.Data.(Behaviour)
 }
 
+// ProjectileOwner returns the entity that owns this Ent, if it has projectile behaviour.
+func (e *Ent) ProjectileOwner() *world.EntityHandle {
+	if projectile, ok := e.Behaviour().(*ProjectileBehaviour); ok {
+		return projectile.Owner()
+	}
+	return nil
+}
+
+// MarkShieldBlocked marks the Ent's behaviour as shield-blocked if it supports projectile shield block state.
+func (e *Ent) MarkShieldBlocked() {
+	if marker, ok := e.Behaviour().(interface{ MarkShieldBlocked() }); ok {
+		marker.MarkShieldBlocked()
+	}
+}
+
 // Explode propagates the explosion behaviour of the underlying Behaviour.
 func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
 	if expl, ok := e.Behaviour().(interface {

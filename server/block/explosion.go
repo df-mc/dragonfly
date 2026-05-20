@@ -31,6 +31,10 @@ type ExplosionConfig struct {
 	// the item drop chance is 1/Size. If negative, no items will be dropped by
 	// the explosion. If set to 1 or higher, all items are dropped.
 	ItemDropChance float64
+	// UnblockableByShield specifies if the explosion damage should not be blockable by shields.
+	UnblockableByShield bool
+	// Source is the entity that caused the explosion, if known.
+	Source world.Entity
 
 	// Sound is the sound to play when the explosion is created. If set to nil, this will default to the sound of a
 	// regular explosion.
