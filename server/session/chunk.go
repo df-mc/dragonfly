@@ -33,25 +33,31 @@ func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.Sub
 
 	entries := make([]protocol.SubChunkEntry, 0, len(offsets))
 	transaction := make(map[uint64]struct{})
+	viewedChunks := make(map[world.ChunkPos]struct {
+		chunk         *chunk.Chunk
+		blockEntities map[cube.Pos]world.Block
+	})
 	for _, offset := range offsets {
 		ind := int16(centre.Y()) + int16(offset[1]) - int16(r[0])>>4
 		if ind < 0 || ind > int16(r.Height()>>4) {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
 			continue
 		}
-		col, ok := s.chunkLoader.Chunk(world.ChunkPos{
+		chunkPos := world.ChunkPos{
 			centre.X() + int32(offset[0]),
 			centre.Z() + int32(offset[2]),
-		})
+		}
+		col, ok := s.chunkLoader.Chunk(chunkPos)
 		if !ok {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
 			continue
 		}
-		ch, blockEntities := s.applyViewLayerToChunk(world.ChunkPos{
-			centre.X() + int32(offset[0]),
-			centre.Z() + int32(offset[2]),
-		}, col.Chunk, col.BlockEntities)
-		entries = append(entries, s.subChunkEntry(offset, ind, ch, blockEntities, transaction))
+		viewed, ok := viewedChunks[chunkPos]
+		if !ok {
+			viewed.chunk, viewed.blockEntities = s.applyViewLayerToChunk(chunkPos, col.Chunk, col.BlockEntities)
+			viewedChunks[chunkPos] = viewed
+		}
+		entries = append(entries, s.subChunkEntry(offset, ind, viewed.chunk, viewed.blockEntities, transaction))
 	}
 	if s.conn.ClientCacheEnabled() && len(transaction) > 0 {
 		s.blobMu.Lock()
