@@ -128,7 +128,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 			multishot = true
 		}
 		if _, ok := enchant.Type().(interface{ Pierces() bool }); ok {
-			pierceLevel = effectivePiercingLevel(enchant.Level())
+			pierceLevel = enchant.Level()
 		}
 	}
 
@@ -152,16 +152,6 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	releaser.SetHeldItems(crossbow, left)
 	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
 	return true
-}
-
-// effectivePiercingLevel returns the vanilla Piercing level for a crossbow shot.
-// Minecraft treats levels above 127 as non-piercing, which matters for
-// command/NBT-created crossbows even though survival Piercing is capped at IV.
-func effectivePiercingLevel(level int) int {
-	if level > 127 {
-		return 0
-	}
-	return level
 }
 
 // shoot fires the crossbow's loaded projectiles.
