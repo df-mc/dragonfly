@@ -82,8 +82,9 @@ type ProjectileBehaviourConfig struct {
 	// CollisionPosition specifies the position that the projectile is stuck
 	// in. If non-empty, the entity will not move.
 	CollisionPosition cube.Pos
-	// PiercingLevel specifies how many entities the projectile can pierce
-	// through without breaking.
+	// PiercingLevel is the crossbow Piercing enchantment level. The projectile
+	// passes through PiercingLevel entities and damages PiercingLevel+1 in
+	// total. A value of 0 means no piercing.
 	PiercingLevel int
 }
 

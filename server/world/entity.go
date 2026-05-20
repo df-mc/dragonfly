@@ -390,7 +390,9 @@ type ArrowSpawnConfig struct {
 	ObtainArrowOnPickup bool
 	// PunchLevel specifies the level of punch knockback applied to the arrow.
 	PunchLevel int
-	// PiercingLevel specifies how many entities the arrow can pierce through without breaking.
+	// PiercingLevel is the crossbow Piercing enchantment level. The arrow passes
+	// through PiercingLevel entities and damages PiercingLevel+1 in total. A
+	// value of 0 means no piercing.
 	PiercingLevel int
 	// Tip specifies the potion tip carried by the arrow.
 	Tip any
