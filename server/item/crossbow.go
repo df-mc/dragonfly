@@ -154,7 +154,8 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	return true
 }
 
-// Minecraft treats Piercing levels above 127 as non-piercing, which matters for
+// effectivePiercingLevel returns the vanilla Piercing level for a crossbow shot.
+// Minecraft treats levels above 127 as non-piercing, which matters for
 // command/NBT-created crossbows even though survival Piercing is capped at IV.
 func effectivePiercingLevel(level int) int {
 	if level > 127 {
