@@ -52,6 +52,13 @@ type World struct {
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
 	chunks map[ChunkPos]*Column
+	// pendingChunks holds async chunk preparation jobs that have not been
+	// committed to chunks yet. It is only accessed on the transaction goroutine.
+	pendingChunks map[ChunkPos]chunkPrepareState
+	// chunkPreparer owns the background workers that load/generate private chunk data.
+	chunkPreparer *chunkPreparer
+	// chunkToken is incremented for each accepted prepare request to identify stale completions.
+	chunkToken uint64
 
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
@@ -1084,6 +1091,7 @@ func (w *World) close() {
 
 	close(w.closing)
 	w.running.Wait()
+	w.chunkPreparer.close()
 
 	close(w.queueClosing)
 	w.queueing.Wait()
@@ -1175,6 +1183,60 @@ func showEntity(e Entity, viewer Viewer) {
 	viewer.ViewEntity(e)
 	viewer.ViewEntityItems(e)
 	viewer.ViewEntityArmour(e)
+}
+
+// chunkReady looks up a chunk that has already been committed to the world. It
+// never loads or generates chunks, so callers can use it without blocking on
+// provider I/O or generation work.
+func (w *World) chunkReady(pos ChunkPos) (*Column, bool) {
+	c, ok := w.chunks[pos]
+	return c, ok
+}
+
+// requestChunk queues a missing chunk for asynchronous preparation. It
+// deduplicates in-flight work and only records the chunk as pending if the
+// request was accepted by the preparer.
+func (w *World) requestChunk(pos ChunkPos) bool {
+	if _, ok := w.chunks[pos]; ok {
+		return true
+	}
+	if _, ok := w.pendingChunks[pos]; ok {
+		return true
+	}
+	w.chunkToken++
+	state := chunkPrepareState{token: w.chunkToken}
+	w.pendingChunks[pos] = state
+	if !w.chunkPreparer.request(chunkPrepareRequest{pos: pos, token: state.token}) {
+		delete(w.pendingChunks, pos)
+		return false
+	}
+	return true
+}
+
+// commitPreparedChunk publishes an asynchronously prepared chunk on the world
+// transaction goroutine. Stale completions and failed preparations are dropped
+// so partially prepared chunks never become visible to readers.
+func (w *World) commitPreparedChunk(result chunkPrepareResult) {
+	state, ok := w.pendingChunks[result.pos]
+	if !ok || state.token != result.token {
+		return
+	}
+	delete(w.pendingChunks, result.pos)
+	if _, ok := w.chunks[result.pos]; ok {
+		return
+	}
+	if result.err != nil {
+		w.conf.Log.Error("load chunk: "+result.err.Error(), "X", result.pos[0], "Z", result.pos[1])
+		return
+	}
+	col := w.columnFrom(result.column, result.pos)
+	w.chunks[result.pos] = col
+	for _, e := range col.Entities {
+		w.entities[e] = result.pos
+		e.w = w
+	}
+	chunk.LightArea([]*chunk.Chunk{col.Chunk}, int(result.pos[0]), int(result.pos[1])).Fill()
+	w.calculateLight(result.pos)
 }
 
 // chunk reads a chunk from the position passed. If a chunk at that position is

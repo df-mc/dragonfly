@@ -3,6 +3,7 @@ package world
 import (
 	"log/slog"
 	"math/rand/v2"
+	"runtime"
 	"time"
 )
 
@@ -49,6 +50,13 @@ type Config struct {
 	// ChunkUnloadInterval should not be used to prevent chunks from unloading
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
+	// ChunkWorkers specifies how many background workers may prepare chunks for
+	// loading/generation. A value of 0 defaults to half the available logical CPUs,
+	// clamped to at least 1.
+	ChunkWorkers int
+	// ChunkPrepareQueueSize specifies the maximum amount of chunk prepare requests
+	// queued for background workers. A value of 0 defaults to ChunkWorkers*64.
+	ChunkPrepareQueueSize int
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per
 	// sub chunk, so the default value is 3. Setting this value to -1 or lower
@@ -88,6 +96,12 @@ func (conf Config) New() *World {
 	if conf.ChunkUnloadInterval <= 0 {
 		conf.ChunkUnloadInterval = time.Minute * 2
 	}
+	if conf.ChunkWorkers <= 0 {
+		conf.ChunkWorkers = max(1, runtime.GOMAXPROCS(0)/2)
+	}
+	if conf.ChunkPrepareQueueSize <= 0 {
+		conf.ChunkPrepareQueueSize = conf.ChunkWorkers * 64
+	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}
 	}
@@ -122,6 +136,7 @@ func (conf Config) New() *World {
 		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
+		pendingChunks:    make(map[ChunkPos]chunkPrepareState),
 		queueClosing:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
@@ -131,6 +146,7 @@ func (conf Config) New() *World {
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
+	w.chunkPreparer = newChunkPreparer(w, conf.ChunkWorkers, conf.ChunkPrepareQueueSize)
 	w.weather = weather{w: w}
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)

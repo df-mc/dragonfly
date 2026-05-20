@@ -34,12 +34,18 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		defer s.swingingArm.Store(false)
 
 		s.breakingPos = cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
+		if !s.chunkInteractionReady(s.breakingPos) {
+			return nil
+		}
 		c.StartBreaking(s.breakingPos, cube.Face(face))
 	case protocol.PlayerActionAbortBreak:
 		c.AbortBreaking()
 	case protocol.PlayerActionPredictDestroyBlock, protocol.PlayerActionStopBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
+		if !s.chunkInteractionReady(s.breakingPos) {
+			return nil
+		}
 		c.FinishBreaking()
 	case protocol.PlayerActionCrackBreak:
 		// Don't do anything for this action. It is no longer used. Block

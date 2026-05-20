@@ -91,25 +91,31 @@ func (l *Loader) Load(tx *Tx, n int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if l.closed || l.w == nil {
+	if l.closed || l.w == nil || n <= 0 {
 		return
 	}
-	for i := 0; i < n; i++ {
-		if len(l.loadQueue) == 0 {
-			break
-		}
-
+	processed := 0
+	checked, queued := 0, len(l.loadQueue)
+	for processed < n && checked < queued {
 		pos := l.loadQueue[0]
-		c := tx.w.chunk(pos)
+		l.loadQueue = l.loadQueue[1:]
+		checked++
+
+		if _, ok := l.loaded[pos]; ok {
+			continue
+		}
+		c, ok := tx.w.chunkReady(pos)
+		if !ok {
+			_ = tx.w.requestChunk(pos)
+			l.loadQueue = append(l.loadQueue, pos)
+			processed++
+			continue
+		}
 
 		l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
 		l.w.addViewer(tx, c, l)
-
 		l.loaded[pos] = c
-
-		// Shift the first element from the load queue off so that we can take a new one during the next
-		// iteration.
-		l.loadQueue = l.loadQueue[1:]
+		processed++
 	}
 }
 
@@ -120,6 +126,14 @@ func (l *Loader) Chunk(pos ChunkPos) (*Column, bool) {
 	c, ok := l.loaded[pos]
 	l.mu.RUnlock()
 	return c, ok
+}
+
+// Loaded returns if the chunk at the position passed was sent to this loader's viewer.
+func (l *Loader) Loaded(pos ChunkPos) bool {
+	l.mu.RLock()
+	_, ok := l.loaded[pos]
+	l.mu.RUnlock()
+	return ok
 }
 
 // Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that
@@ -193,7 +207,7 @@ func (l *Loader) populateLoadQueue() {
 	}
 
 	l.loadQueue = l.loadQueue[:0]
-	for i := int32(0); i < r; i++ {
+	for i := int32(0); i <= r; i++ {
 		l.loadQueue = append(l.loadQueue, queue[i]...)
 	}
 }

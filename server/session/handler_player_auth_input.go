@@ -45,6 +45,9 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	pk.Position = pk.Position.Sub(mgl32.Vec3{0, 1.62}) // Sub the base offset of players from the pos.
 
 	newPos := vec32To64(pk.Position)
+	if !s.positionInteractionReady(pos) || !s.positionInteractionReady(newPos) {
+		return nil
+	}
 	deltaPos, deltaYaw, deltaPitch := newPos.Sub(pos), float64(pk.Yaw)-yaw, float64(pk.Pitch)-pitch
 	if mgl64.FloatEqual(deltaPos.Len(), 0) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0) {
 		// The PlayerAuthInput packet is sent every tick, so don't do anything if the position and rotation
@@ -164,6 +167,9 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 	// Seems like this is only used for breaking blocks at the moment.
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
+		if !s.chunkInteractionReady(pos) {
+			return nil
+		}
 		c.BreakBlock(pos)
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType for PlayerAuthInput packet %v", data.ActionType)

@@ -70,7 +70,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
-		return h.handleReleaseItemTransaction(c)
+		return h.handleReleaseItemTransaction(s, c)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
 }
@@ -137,6 +137,9 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 
 // handleUseItemOnEntityTransaction ...
 func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *protocol.UseItemOnEntityTransactionData, s *Session, tx *world.Tx, c Controllable) error {
+	if !s.positionInteractionReady(c.Position()) {
+		return nil
+	}
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
 
@@ -154,6 +157,9 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	e, ok := handle.Entity(tx)
 	if !ok {
 		s.conf.Log.Debug("invalid entity interaction: entity is not in the same world (anymore)", "ID", data.TargetEntityRuntimeID)
+		return nil
+	}
+	if !s.positionInteractionReady(e.Position()) {
 		return nil
 	}
 	var valid bool
@@ -187,10 +193,20 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
+		if !s.chunkInteractionReady(pos) {
+			return nil
+		}
 		c.BreakBlock(pos)
 	case protocol.UseItemActionClickBlock:
-		c.UseItemOnBlock(pos, cube.Face(data.BlockFace), vec32To64(data.ClickedPosition))
+		face := cube.Face(data.BlockFace)
+		if !s.chunkInteractionReady(pos) || !s.chunkInteractionReady(pos.Side(face)) {
+			return nil
+		}
+		c.UseItemOnBlock(pos, face, vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:
+		if !s.positionInteractionReady(c.Position()) {
+			return nil
+		}
 		c.UseItem()
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType %v", data.ActionType)
@@ -199,7 +215,10 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 }
 
 // handleReleaseItemTransaction ...
-func (h *InventoryTransactionHandler) handleReleaseItemTransaction(c Controllable) error {
+func (h *InventoryTransactionHandler) handleReleaseItemTransaction(s *Session, c Controllable) error {
+	if !s.positionInteractionReady(c.Position()) {
+		return nil
+	}
 	c.ReleaseItem()
 	return nil
 }

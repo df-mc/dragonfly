@@ -24,6 +24,9 @@ func (b BlockActorDataHandler) Handle(p packet.Packet, s *Session, tx *world.Tx,
 		if !canReach(c, pos.Vec3Middle()) {
 			return fmt.Errorf("block at %v is not within reach", pos)
 		}
+		if !s.chunkInteractionReady(pos) {
+			return nil
+		}
 		if id == "Sign" {
 			return b.handleSign(pk, pos, s, tx, c)
 		}

@@ -88,8 +88,12 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleBeaconPayment(a, s, tx)
 		case *protocol.CraftRecipeStackRequestAction:
 			if s.containerOpened.Load() {
+				openedPos := *s.openedPos.Load()
+				if !s.chunkInteractionReady(openedPos) {
+					return nil
+				}
 				var special bool
-				switch tx.Block(*s.openedPos.Load()).(type) {
+				switch tx.Block(openedPos).(type) {
 				case block.SmithingTable:
 					err, special = h.handleSmithing(a, s, tx), true
 				case block.Stonecutter:
@@ -207,7 +211,11 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 // smelting. If it does, it will drop the rewards at the player's location.
 func (h *ItemStackRequestHandler) collectRewards(s *Session, inv *inventory.Inventory, slot int, tx *world.Tx, c Controllable) {
 	if inv == s.openedWindow.Load() && s.containerOpened.Load() && slot == inv.Size()-1 {
-		if f, ok := tx.Block(*s.openedPos.Load()).(smelter); ok {
+		openedPos := *s.openedPos.Load()
+		if !s.chunkInteractionReady(openedPos) {
+			return
+		}
+		if f, ok := tx.Block(openedPos).(smelter); ok {
 			for _, o := range entity.NewExperienceOrbs(entity.EyePosition(c), f.ResetExperience()) {
 				tx.AddEntity(o)
 			}
