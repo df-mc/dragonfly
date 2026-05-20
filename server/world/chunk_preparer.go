@@ -43,6 +43,10 @@ type chunkPreparer struct {
 	// closed is closed after all workers have exited.
 	closed chan struct{}
 
+	// providerMu preserves the previous single-threaded Provider access contract.
+	providerMu sync.Mutex
+	// generatorMu preserves the previous single-threaded Generator access contract.
+	generatorMu sync.Mutex
 	// wg tracks active worker goroutines.
 	wg sync.WaitGroup
 }
@@ -115,7 +119,9 @@ func (p *chunkPreparer) worker() {
 // visible through World.chunks. The result must be committed on the transaction
 // goroutine before it can be used by gameplay or viewers.
 func (p *chunkPreparer) prepare(req chunkPrepareRequest) chunkPrepareResult {
+	p.providerMu.Lock()
 	column, err := p.w.conf.Provider.LoadColumn(req.pos, p.w.conf.Dim)
+	p.providerMu.Unlock()
 	if err == nil {
 		return chunkPrepareResult{pos: req.pos, token: req.token, column: column}
 	}
@@ -124,7 +130,9 @@ func (p *chunkPreparer) prepare(req chunkPrepareRequest) chunkPrepareResult {
 	}
 
 	c := chunk.New(p.w.conf.Blocks, p.w.Range())
+	p.generatorMu.Lock()
 	p.w.conf.Generator.GenerateChunk(req.pos, c)
+	p.generatorMu.Unlock()
 	return chunkPrepareResult{
 		pos:   req.pos,
 		token: req.token,
