@@ -3,7 +3,6 @@ package world
 import (
 	"log/slog"
 	"math/rand/v2"
-	"runtime"
 	"time"
 )
 
@@ -51,8 +50,8 @@ type Config struct {
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
 	// ChunkWorkers specifies how many background workers may prepare chunks for
-	// loading/generation. A value of 0 defaults to half the available logical CPUs,
-	// clamped to at least 1.
+	// loading/generation. A value of 0 defaults to 1 for provider/generator
+	// compatibility.
 	ChunkWorkers int
 	// ChunkPrepareQueueSize specifies the maximum amount of chunk prepare requests
 	// queued for background workers. A value of 0 defaults to ChunkWorkers*64.
@@ -97,7 +96,7 @@ func (conf Config) New() *World {
 		conf.ChunkUnloadInterval = time.Minute * 2
 	}
 	if conf.ChunkWorkers <= 0 {
-		conf.ChunkWorkers = max(1, runtime.GOMAXPROCS(0)/2)
+		conf.ChunkWorkers = 1
 	}
 	if conf.ChunkPrepareQueueSize <= 0 {
 		conf.ChunkPrepareQueueSize = conf.ChunkWorkers * 64
