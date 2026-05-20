@@ -92,16 +92,24 @@ func (conf ProjectileBehaviourConfig) New() *ProjectileBehaviour {
 	if conf.ParticleCount == 0 && conf.Particle != nil {
 		conf.ParticleCount = 1
 	}
-	return &ProjectileBehaviour{conf: conf, collided: conf.CollisionPosition != cube.Pos{}, collisionPos: conf.CollisionPosition, mc: &MovementComputer{
-		Gravity:           conf.Gravity,
-		Drag:              conf.Drag,
-		DragBeforeGravity: true,
-	}}
+	return &ProjectileBehaviour{
+		BaseBehaviour: NewBaseBehaviour(),
+		conf:          conf,
+		collided:      conf.CollisionPosition != cube.Pos{},
+		collisionPos:  conf.CollisionPosition,
+		mc: &MovementComputer{
+			Gravity:           conf.Gravity,
+			Drag:              conf.Drag,
+			DragBeforeGravity: true,
+		},
+	}
 }
 
 // ProjectileBehaviour implements the behaviour of projectiles. Its specifics
 // may be configured using ProjectileBehaviourConfig.
 type ProjectileBehaviour struct {
+	BaseBehaviour
+
 	conf        ProjectileBehaviourConfig
 	mc          *MovementComputer
 	ageCollided int
@@ -109,6 +117,7 @@ type ProjectileBehaviour struct {
 
 	collisionPos cube.Pos
 	collided     bool
+	portalTravel bool
 }
 
 // Owner returns the owner of the projectile.
@@ -132,6 +141,16 @@ func (lt *ProjectileBehaviour) Potion() potion.Potion {
 // and if the projectile has not collided.
 func (lt *ProjectileBehaviour) Critical() bool {
 	return lt.conf.Critical && !lt.collided
+}
+
+// HandlePortalTravel records that this projectile has travelled between dimensions through a portal.
+func (lt *ProjectileBehaviour) HandlePortalTravel(world.Dimension, world.Dimension) {
+	lt.portalTravel = true
+}
+
+// PortalTravel reports whether this projectile has travelled between dimensions through a portal.
+func (lt *ProjectileBehaviour) PortalTravel() bool {
+	return lt.portalTravel
 }
 
 // Tick runs the tick-based behaviour of a ProjectileBehaviour and returns the

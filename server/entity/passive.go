@@ -36,17 +36,24 @@ func (conf PassiveBehaviourConfig) New() *PassiveBehaviour {
 	if conf.ExistenceDuration == 0 {
 		conf.ExistenceDuration = math.MaxInt64
 	}
-	return &PassiveBehaviour{conf: conf, fuse: conf.ExistenceDuration, mc: &MovementComputer{
-		Gravity:           conf.Gravity,
-		Drag:              conf.Drag,
-		DragBeforeGravity: true,
-	}}
+	return &PassiveBehaviour{
+		BaseBehaviour: NewBaseBehaviour(),
+		conf:          conf,
+		fuse:          conf.ExistenceDuration,
+		mc: &MovementComputer{
+			Gravity:           conf.Gravity,
+			Drag:              conf.Drag,
+			DragBeforeGravity: true,
+		},
+	}
 }
 
 // PassiveBehaviour implements Behaviour for entities that act passively. This
 // means that they can move, but only under influence of the environment, which
 // includes, for example, falling, and flowing water.
 type PassiveBehaviour struct {
+	BaseBehaviour
+
 	conf PassiveBehaviourConfig
 	mc   *MovementComputer
 

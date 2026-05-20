@@ -694,11 +694,16 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 // loaded. addEntity panics if the EntityHandle is already in a world.
 // addEntity returns the Entity created by the EntityHandle.
 func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
-	handle.setAndUnlockWorld(w)
-	pos := chunkPosFromVec3(handle.data.Pos)
-	w.entities[handle] = pos
+	return w.addEntityAt(tx, handle, handle.data.Pos)
+}
 
-	c := w.chunk(pos)
+// addEntityAt adds an EntityHandle to a World at the position passed.
+func (w *World) addEntityAt(tx *Tx, handle *EntityHandle, pos mgl64.Vec3) Entity {
+	handle.setAndUnlockWorldAt(w, pos)
+	chunkPos := chunkPosFromVec3(handle.data.Pos)
+	w.entities[handle] = chunkPos
+
+	c := w.chunk(chunkPos)
 	c.Entities, c.modified = append(c.Entities, handle), true
 
 	e := handle.mustEntity(tx)
