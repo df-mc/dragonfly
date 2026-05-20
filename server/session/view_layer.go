@@ -48,6 +48,22 @@ func (s *Session) ViewVisibility(entity world.Entity, level world.VisibilityLeve
 	s.viewLayer.ViewVisibility(entity, level)
 }
 
+// ViewArmour overwrites whether the public armour of the entity is visible and immediately refreshes it for this session.
+func (s *Session) ViewArmour(entity world.Entity, visible bool) {
+	if s.viewLayer == nil {
+		return
+	}
+	s.viewLayer.ViewArmour(entity, visible)
+}
+
+// ViewPublicArmour removes the armour visibility override from the entity and immediately refreshes it for this session.
+func (s *Session) ViewPublicArmour(entity world.Entity) {
+	if s.viewLayer == nil {
+		return
+	}
+	s.viewLayer.ViewPublicArmour(entity)
+}
+
 // RemoveViewLayer removes all overrides for the entity and immediately refreshes it for this session.
 func (s *Session) RemoveViewLayer(entity world.Entity) {
 	if s.viewLayer == nil {
@@ -62,6 +78,14 @@ func (s *Session) ViewLayerEntityChanged(e world.Entity) {
 		return
 	}
 	s.ViewEntityState(e)
+}
+
+// ViewLayerArmourChanged refreshes the entity armour for this session if the entity is currently visible.
+func (s *Session) ViewLayerArmourChanged(e world.Entity) {
+	if s.entityHidden(e) || !s.viewingEntity(e.H()) {
+		return
+	}
+	s.ViewEntityArmour(e)
 }
 
 // viewingEntity checks if this session currently has a runtime ID assigned to the entity handle.

@@ -2612,6 +2612,16 @@ func (p *Player) ViewVisibility(entity world.Entity, level world.VisibilityLevel
 	p.session().ViewVisibility(entity, level)
 }
 
+// ViewArmour overrides whether the public armour of the entity is visible for this player.
+func (p *Player) ViewArmour(entity world.Entity, visible bool) {
+	p.session().ViewArmour(entity, visible)
+}
+
+// ViewPublicArmour removes the armour visibility override of the entity for this player.
+func (p *Player) ViewPublicArmour(entity world.Entity) {
+	p.session().ViewPublicArmour(entity)
+}
+
 // RemoveViewLayer removes all view-layer overrides of the entity for this player.
 func (p *Player) RemoveViewLayer(entity world.Entity) {
 	p.session().RemoveViewLayer(entity)

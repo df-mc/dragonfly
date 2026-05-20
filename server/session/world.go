@@ -311,6 +311,23 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 		return
 	}
 
+	if s.viewLayer != nil {
+		visible, ok := s.viewLayer.ArmourVisible(e)
+		if !ok && s.viewLayer.Visibility(e) == world.EnforceInvisible() {
+			visible, ok = false, true
+		}
+		if ok && !visible {
+			s.writePacket(&packet.MobArmourEquipment{
+				EntityRuntimeID: runtimeID,
+				Helmet:          instanceFromItem(s.br, item.Stack{}),
+				Chestplate:      instanceFromItem(s.br, item.Stack{}),
+				Leggings:        instanceFromItem(s.br, item.Stack{}),
+				Boots:           instanceFromItem(s.br, item.Stack{}),
+			})
+			return
+		}
+	}
+
 	inv := armoured.Armour()
 
 	// Show the entity's armour
