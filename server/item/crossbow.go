@@ -126,7 +126,6 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	for _, enchant := range held.Enchantments() {
 		if _, ok := enchant.Type().(interface{ MultipleProjectiles() bool }); ok {
 			multishot = true
-			break
 		}
 		if _, ok := enchant.Type().(interface{ Pierces() bool }); ok {
 			pierceLevel = enchant.Level()
@@ -142,7 +141,6 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	c.shoot(releaser, tx, 0, arrowConf)
 	if multishot {
 		arrowConf.ObtainArrowOnPickup = false
-		arrowConf.PiercingLevel = 0
 		c.shoot(releaser, tx, -10, arrowConf)
 		c.shoot(releaser, tx, 10, arrowConf)
 	}
