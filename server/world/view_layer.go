@@ -10,7 +10,6 @@ import (
 type layer struct {
 	nameTag    *string
 	scoreTag   *string
-	armour     *bool
 	visibility VisibilityLevel
 }
 
@@ -20,17 +19,12 @@ type ViewLayerUpdater interface {
 	ViewLayerEntityChanged(entity Entity)
 }
 
-type viewLayerArmourUpdater interface {
-	// ViewLayerArmourChanged handles an entity whose view-layer armour override changed.
-	ViewLayerArmourChanged(entity Entity)
-}
-
 type viewLayerViewer interface {
 	ViewLayer() *ViewLayer
 }
 
 // ViewLayer holds overrides for how entities are viewed by a single viewer. It allows entities to be
-// viewed differently by different players, such as with a different name tag, visibility state or armour.
+// viewed differently by different players, such as with a different name tag or visibility state.
 type ViewLayer struct {
 	mu       sync.RWMutex
 	entities map[*EntityHandle]layer
@@ -115,7 +109,6 @@ func (v *ViewLayer) ViewVisibility(entity Entity, level VisibilityLevel) {
 	v.update(entity, func(l *layer) {
 		l.visibility = level
 	})
-	v.refreshArmour(entity)
 }
 
 // Visibility returns the visibility of the entity.
@@ -126,39 +119,10 @@ func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
 	return v.entities[entity.H()].visibility
 }
 
-// ViewArmour overwrites whether the entity's public armour is visible to this ViewLayer. Passing false hides
-// the armour, and passing true shows it even if the entity is forced invisible for this ViewLayer.
-func (v *ViewLayer) ViewArmour(entity Entity, visible bool) {
-	v.updateArmour(entity, func(l *layer) {
-		l.armour = &visible
-	})
-}
-
-// ViewPublicArmour removes the armour visibility override from the entity, causing the public armour visibility
-// to be viewed again.
-func (v *ViewLayer) ViewPublicArmour(entity Entity) {
-	v.updateArmour(entity, func(l *layer) {
-		l.armour = nil
-	})
-}
-
-// ArmourVisible returns whether the entity's public armour should be visible and whether an override was set.
-func (v *ViewLayer) ArmourVisible(entity Entity) (bool, bool) {
-	v.mu.RLock()
-	defer v.mu.RUnlock()
-
-	visible := v.entities[entity.H()].armour
-	if visible == nil {
-		return false, false
-	}
-	return *visible, true
-}
-
 // Remove removes all overrides for the entity from the ViewLayer.
 func (v *ViewLayer) Remove(entity Entity) {
 	if v.remove(entity) {
 		v.refresh(entity)
-		v.refreshArmour(entity)
 	}
 }
 
@@ -192,24 +156,6 @@ func (v *ViewLayer) update(entity Entity, update func(*layer)) {
 	v.refresh(entity)
 }
 
-// updateArmour applies a mutation to the entity's layer, removes the entry if no overrides remain, and refreshes
-// the entity's armour for the layer's viewer.
-func (v *ViewLayer) updateArmour(entity Entity, update func(*layer)) {
-	handle := entity.H()
-
-	v.mu.Lock()
-	l := v.entities[handle]
-	update(&l)
-	if l.empty() {
-		delete(v.entities, handle)
-	} else {
-		v.entities[handle] = l
-	}
-	v.mu.Unlock()
-
-	v.refreshArmour(entity)
-}
-
 // Close closes the view layer.
 func (v *ViewLayer) Close() error {
 	v.mu.Lock()
@@ -219,19 +165,13 @@ func (v *ViewLayer) Close() error {
 	return nil
 }
 
-// empty checks if the layer does not override any public entity view state.
+// empty checks if the layer does not override any public entity metadata.
 func (l layer) empty() bool {
-	return l.nameTag == nil && l.scoreTag == nil && l.armour == nil && l.visibility == PublicVisibility()
+	return l.nameTag == nil && l.scoreTag == nil && l.visibility == PublicVisibility()
 }
 
 func (v *ViewLayer) refresh(entity Entity) {
 	if v.updater != nil {
 		v.updater.ViewLayerEntityChanged(entity)
-	}
-}
-
-func (v *ViewLayer) refreshArmour(entity Entity) {
-	if updater, ok := v.updater.(viewLayerArmourUpdater); ok {
-		updater.ViewLayerArmourChanged(entity)
 	}
 }

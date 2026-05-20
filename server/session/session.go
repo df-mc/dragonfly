@@ -99,7 +99,9 @@ type Session struct {
 	debugShapes       map[int]debug.Shape
 	debugShapeUpdates []debugShapeUpdate
 
-	viewLayer *world.ViewLayer
+	viewLayer         *world.ViewLayer
+	viewLayerArmourMu sync.RWMutex
+	viewLayerArmour   map[*world.EntityHandle]viewLayerArmour
 
 	closeBackground chan struct{}
 
@@ -200,6 +202,7 @@ func (conf Config) New(conn Conn) *Session {
 		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
 		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
+		viewLayerArmour:        make(map[*world.EntityHandle]viewLayerArmour),
 	}
 	s.viewLayer = world.NewViewLayer(s)
 	s.openedWindow.Store(inventory.New(1, nil))
@@ -300,6 +303,9 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	if s.viewLayer != nil {
 		_ = s.viewLayer.Close()
 	}
+	s.viewLayerArmourMu.Lock()
+	clear(s.viewLayerArmour)
+	s.viewLayerArmourMu.Unlock()
 
 	s.conf.HandleStop(tx, c)
 

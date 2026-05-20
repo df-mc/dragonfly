@@ -311,32 +311,23 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 		return
 	}
 
-	if s.viewLayer != nil {
-		visible, ok := s.viewLayer.ArmourVisible(e)
-		if !ok && s.viewLayer.Visibility(e) == world.EnforceInvisible() {
-			visible, ok = false, true
-		}
-		if ok && !visible {
-			s.writePacket(&packet.MobArmourEquipment{
-				EntityRuntimeID: runtimeID,
-				Helmet:          instanceFromItem(s.br, item.Stack{}),
-				Chestplate:      instanceFromItem(s.br, item.Stack{}),
-				Leggings:        instanceFromItem(s.br, item.Stack{}),
-				Boots:           instanceFromItem(s.br, item.Stack{}),
-			})
-			return
-		}
+	var helmet, chestplate, leggings, boots item.Stack
+	if armour, ok := s.viewedArmour(e); ok {
+		helmet, chestplate, leggings, boots = armour.helmet, armour.chestplate, armour.leggings, armour.boots
+	} else if s.viewLayer != nil && s.viewLayer.Visibility(e) == world.EnforceInvisible() {
+		helmet, chestplate, leggings, boots = item.Stack{}, item.Stack{}, item.Stack{}, item.Stack{}
+	} else {
+		inv := armoured.Armour()
+		helmet, chestplate, leggings, boots = inv.Helmet(), inv.Chestplate(), inv.Leggings(), inv.Boots()
 	}
-
-	inv := armoured.Armour()
 
 	// Show the entity's armour
 	s.writePacket(&packet.MobArmourEquipment{
 		EntityRuntimeID: runtimeID,
-		Helmet:          instanceFromItem(s.br, inv.Helmet()),
-		Chestplate:      instanceFromItem(s.br, inv.Chestplate()),
-		Leggings:        instanceFromItem(s.br, inv.Leggings()),
-		Boots:           instanceFromItem(s.br, inv.Boots()),
+		Helmet:          instanceFromItem(s.br, helmet),
+		Chestplate:      instanceFromItem(s.br, chestplate),
+		Leggings:        instanceFromItem(s.br, leggings),
+		Boots:           instanceFromItem(s.br, boots),
 	})
 }
 
