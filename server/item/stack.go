@@ -276,6 +276,21 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 			// Enchantment is not compatible with the item.
 			continue
 		}
+		compatible := true
+		for _, otherEnchant := range s.enchantments {
+			addingType := enchant.t
+			existingType := otherEnchant.Type()
+			addingAcceptsExisting := addingType.CompatibleWithEnchantment(existingType)
+			existingAcceptsAdding := existingType.CompatibleWithEnchantment(addingType)
+			if addingType != existingType && (!addingAcceptsExisting || !existingAcceptsAdding) {
+				compatible = false
+				break
+			}
+		}
+		if !compatible {
+			// Enchantment is not compatible with another enchantment on the item.
+			continue
+		}
 		s.enchantments[enchant.t] = enchant
 	}
 	return s
