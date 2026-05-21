@@ -1,13 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Bamboo is a non-solid plant block that can be placed on vegetation-supporting blocks.
@@ -56,15 +56,7 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 		// Planting a new shoot on the ground: use BambooSapling.
 		sapling := BambooSapling{Age: false}
 		place(tx, pos, sapling, user, ctx)
-		// Seed the growth chain immediately after placement.
-		tx.ScheduleBlockUpdate(pos, sapling, bambooGrowthDelay(nil))
 		return placed(ctx)
-	}
-	// Seed the growth chain for the new bamboo top.
-	if topPos, ok := bambooTop(pos, tx); ok {
-		if topB, ok2 := tx.Block(topPos).(Bamboo); ok2 && !topB.Age {
-			tx.ScheduleBlockUpdate(topPos, topB, bambooGrowthDelay(nil))
-		}
 	}
 	return placed(ctx)
 }
@@ -89,12 +81,6 @@ func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 		top = nextTop
 		applied = true
 	}
-	if applied {
-		// Re-seed the growth chain on the new top so natural growth resumes.
-		if topB, ok2 := tx.Block(top).(Bamboo); ok2 && !topB.Age {
-			tx.ScheduleBlockUpdate(top, topB, bambooGrowthDelay(nil))
-		}
-	}
 	return applied
 }
 
@@ -106,47 +92,24 @@ func (b Bamboo) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// RandomTick handles survival checks and seeds the ScheduledTick growth chain
-// for world-generated bamboo that was never explicitly placed by a player.
+// RandomTick handles survival checks and grows bamboo when the light level
+// at the block above is >= 9, matching vanilla Bedrock behaviour.
 func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if !canSurviveBamboo(pos, tx) {
 		breakBlock(b, pos, tx)
 		return
 	}
-	// For world-generated bamboo: start the scheduled growth chain if the top
-	// block has no pending tick yet. ScheduleBlockUpdate is a no-op when a
-	// later tick is already queued, so this is safe to call unconditionally.
-	if !b.Age {
-		tx.ScheduleBlockUpdate(pos, b, bambooGrowthDelay(r))
-	}
-}
-
-// ScheduledTick drives natural bamboo growth at vanilla-like speed (1-5 s per
-// stage). Each firing grows one block and re-schedules the new top.
-// Light < 9 (night / cave) causes a re-schedule without growing, matching the
-// observed vanilla behaviour that bamboo does not grow at night.
-func (b Bamboo) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if b.Age {
-		return // stalk already at max height
+		return
 	}
 	above := pos.Side(cube.FaceUp)
 	if _, ok := tx.Block(above).(Air); !ok {
-		return // blocked above — stop the chain
-	}
-	delay := bambooGrowthDelay(r)
-	t := tx.World().Time() % 24000
-	if t >= 13000 && t < 23000 {
-		// Nighttime — wait and retry.
-		tx.ScheduleBlockUpdate(pos, b, delay)
 		return
 	}
-	newTop, ok := growBamboo(pos, tx)
-	if !ok {
-		return // reached per-stalk max height
+	if tx.Light(above) < 9 {
+		return
 	}
-	if newTopB, ok2 := tx.Block(newTop).(Bamboo); ok2 && !newTopB.Age {
-		tx.ScheduleBlockUpdate(newTop, newTopB, delay)
-	}
+	growBamboo(pos, tx)
 }
 
 // HasLiquidDrops ...
@@ -183,11 +146,6 @@ func (b Bamboo) BreakInfo() BreakInfo {
 			}
 		},
 	}
-}
-
-// CompostChance ...
-func (Bamboo) CompostChance() float64 {
-	return 0.65
 }
 
 // EncodeItem ...
@@ -363,19 +321,6 @@ func growBamboo(top cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 		tx.SetBlock(top, topB, nil)
 	}
 	return above, true
-}
-
-// bambooGrowthDelay returns a random delay of 1-5 seconds for scheduled
-// growth ticks, matching the vanilla-observed 1-5s per growth stage.
-// r may be nil (uses the global rand source), which is valid in UseOnBlock.
-func bambooGrowthDelay(r *rand.Rand) time.Duration {
-	var n int
-	if r != nil {
-		n = r.IntN(81) // 0-80 ticks → 0-4s on top of the base 1s
-	} else {
-		n = rand.IntN(81)
-	}
-	return time.Duration(20+n) * time.Second / 20
 }
 
 // bambooMaxHeight returns a deterministic per-stalk maximum height in the

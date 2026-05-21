@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // BambooSapling is the initial stage of bamboo growth. It appears as a small shoot
@@ -42,19 +43,9 @@ func (b BambooSapling) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// RandomTick grows the sapling into a bamboo stalk.
-// RandomTick seeds the ScheduledTick growth chain for world-generated saplings.
-// For player-placed saplings the chain is started directly in Bamboo.UseOnBlock.
+// RandomTick converts the sapling to a 2-block bamboo stalk when the light
+// level above is >= 9, matching vanilla Bedrock behaviour.
 func (b BambooSapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	if b.Age {
-		return
-	}
-	tx.ScheduleBlockUpdate(pos, b, bambooGrowthDelay(r))
-}
-
-// ScheduledTick converts the sapling to a 2-block bamboo stalk once there is
-// enough light (>= 9) and space above. If not, it re-schedules and waits.
-func (b BambooSapling) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if b.Age {
 		return
 	}
@@ -62,19 +53,12 @@ func (b BambooSapling) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if _, ok := tx.Block(above).(Air); !ok {
 		return
 	}
-	delay := bambooGrowthDelay(r)
-	t := tx.World().Time() % 24000
-	if t >= 13000 && t < 23000 {
-		// Nighttime — wait and retry.
-		tx.ScheduleBlockUpdate(pos, b, delay)
+	if tx.Light(above) < 9 {
 		return
 	}
 	// Convert: bottom = aged bamboo, top = fresh growable bamboo.
 	tx.SetBlock(pos, Bamboo{Age: true, LeafSize: bambooNoLeaves, Thick: false}, nil)
-	newTop := Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}
-	tx.SetBlock(above, newTop, nil)
-	// Seed the growth chain on the new bamboo top.
-	tx.ScheduleBlockUpdate(above, newTop, delay)
+	tx.SetBlock(above, Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}, nil)
 }
 
 // BoneMeal grows the sapling into a bamboo stalk immediately.
@@ -111,11 +95,6 @@ func (BambooSapling) HasLiquidDrops() bool {
 // FlammabilityInfo ...
 func (BambooSapling) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(60, 100, false)
-}
-
-// CompostChance ...
-func (BambooSapling) CompostChance() float64 {
-	return 0.65
 }
 
 // EncodeItem ...

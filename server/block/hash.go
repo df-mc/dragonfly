@@ -598,7 +598,7 @@ func (g Grindstone) Hash() (uint64, uint64) {
 }
 
 func (h HangingSign) Hash() (uint64, uint64) {
-	return hashHangingSign, uint64(h.Wood.Uint8()) | uint64(boolByte(h.AttachedBit))<<4 | uint64(boolByte(h.Hanging))<<5 | uint64(h.FacingDirection)<<6 | uint64(h.GroundSignDirection)<<14
+	return hashHangingSign, uint64(h.Wood.Uint8()) | uint64(h.Attach.Uint8())<<4
 }
 
 func (h HayBale) Hash() (uint64, uint64) {
