@@ -143,12 +143,12 @@ func (h HangingSign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *
 		case !sneaking && canStraightHangFrom(support, supportPos, tx, newDir):
 			// Straight-chain (CeilingEdges): solid block above, or tip-to-tip with a
 			// same-axis straight-chain or wall hanging sign.
-			// Matches PNX CeilingEdgesHangingSign.canBeSupportedAt.
+			// Matches CeilingEdgesHangingSign.canBeSupportedAt.
 			h.Attach = CeilingHangingAttachment(newDir)
 		case canCenterHangFrom(support, sneaking):
 			// V-shape (CeilingCenter): narrow/post block above, any hanging sign above,
 			// or sneaking above any solid block.
-			// Matches PNX CeilingCenterHangingSign.canBeSupportedAt + vanilla sneak rule.
+			// Matches CeilingCenterHangingSign.canBeSupportedAt + vanilla sneak rule.
 			h.Attach = AttachedCeilingHangingAttachment(user.Rotation().Orientation().Opposite())
 		default:
 			return false
@@ -169,7 +169,6 @@ func (h HangingSign) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *
 		}
 		// The sign panel is perpendicular to the wall attachment axis.
 		// Facing = RotateRight from the direction toward the wall.
-		// (Matches PocketMine WallHangingSign: facing = rotateY(opposite(attachDir), cw))
 		wallFacing := face.Direction().RotateRight()
 		// Orient the text toward the player when possible, so the front is readable.
 		if wallFacing == user.Rotation().Direction() {
@@ -339,7 +338,6 @@ func (h HangingSign) EditingFrontSide(pos cube.Pos, userPos mgl64.Vec3) bool {
 // can be placed below block b. supportPos is b's position, tx is the world, and newDir is
 // the facing direction the new sign would use.
 //
-// Mirrors PocketMine CeilingEdgesHangingSign.canBeSupportedAt:
 //   - SupportType::FULL → block whose bottom face is solid (full blocks, bottom slabs, etc.).
 //   - WallHangingSign or CeilingEdgesHangingSign with the same facing axis → tip-to-tip.
 func canStraightHangFrom(b world.Block, supportPos cube.Pos, tx *world.Tx, newDir cube.Direction) bool {
@@ -365,7 +363,6 @@ func canStraightHangFrom(b world.Block, supportPos cube.Pos, tx *world.Tx, newDi
 // canCenterHangFrom reports whether a V-shape (AttachedBit=true) hanging sign can be
 // placed below block b.
 //
-// Mirrors PocketMine CeilingCenterHangingSign.canBeSupportedAt:
 //   - hasCenterSupport() → fence, wall, chain, iron bars, glass pane.
 //   - hasTypeTag(HANGING_SIGN) → any hanging sign variant.
 //
@@ -392,7 +389,7 @@ func canWallHangFrom(b world.Block) bool {
 //   - Trigger V-shape (attached_bit=true) chains when a hanging sign is hung from below.
 //   - Cannot be used as a wall surface for wall-mounted hanging signs.
 //
-// This matches the BlockThin / BlockIronChain / BlockHangingSign check in PNX.
+// This matches the BlockThin / BlockIronChain / BlockHangingSign check.
 func isNarrowHangingBlock(b world.Block) bool {
 	switch b.(type) {
 	case WoodFence, NetherBrickFence, Wall,

@@ -132,12 +132,12 @@ func (b Bamboo) BreakInfo() BreakInfo {
 		BreakHandler: func(pos cube.Pos, tx *world.Tx, u item.User) {
 			tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 			// When the top is broken, reset the new top to Age=false so it can
-			// resume natural growth (mirrors PNX onBreak age reset logic).
+			// resume natural growth.
 			below := pos.Side(cube.FaceDown)
 			if belowB, ok := tx.Block(below).(Bamboo); ok {
 				base := bambooBase(below, tx)
 				h := bambooHeightFromBase(base, tx)
-				// Probabilistic stop mirrors PNX: always reset below height 11,
+				// Probabilistic stop: always reset below height 11,
 				// 75% chance to reset between 11-14, never reset at 15+.
 				if h < 15 && (h < 11 || rand.IntN(4) != 0) {
 					belowB.Age = false
@@ -242,7 +242,7 @@ func bambooHeightFromBase(base cube.Pos, tx *world.Tx) int {
 
 // growBamboo grows the bamboo stalk at top by one block.
 // top must be the current top block (Age=false, air above).
-// Uses a PNX-style local update: only touches the top 3–4 blocks,
+// Uses a local update: only touches the top 3–4 blocks,
 // never the full stalk, so it stays fast even for tall bamboo.
 func growBamboo(top cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	above := top.Side(cube.FaceUp)
@@ -273,7 +273,7 @@ func growBamboo(top cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	switch {
 	case topB.Thick:
 		// Already thick: new top = thick + large_leaves.
-		// Update top 3 blocks (mirrors PNX place() for thick parent).
+		// Update top 3 blocks.
 		tx.SetBlock(above, Bamboo{Age: false, LeafSize: LargeLeaves, Thick: true}, nil)
 		topB.Age = true
 		topB.LeafSize = LargeLeaves
@@ -296,7 +296,7 @@ func growBamboo(top cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	case becomesThick:
 		// Thin → thick transition at height 4.
 		// New top: thick + large_leaves. Old top: thick + small_leaves.
-		// All blocks below: thick + no_leaves (mirrors PNX setThick path).
+		// All blocks below: thick + no_leaves.
 		tx.SetBlock(above, Bamboo{Age: false, LeafSize: LargeLeaves, Thick: true}, nil)
 		topB.Age = true
 		topB.LeafSize = SmallLeaves
