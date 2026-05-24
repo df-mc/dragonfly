@@ -30,7 +30,7 @@ func (e EndCrystal) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 		return false
 	}
 
-	box := cube.Box(0, 0, 0, 1, 2, 1).Translate(pos.Vec3())
+	box := cube.Box(0, 0, 0, 1, 2, 1).Translate(above.Vec3())
 	for entity := range tx.EntitiesWithin(box.Grow(2)) {
 		if entity.H().Type().BBox(entity).Translate(entity.Position()).IntersectsWith(box) {
 			return false
