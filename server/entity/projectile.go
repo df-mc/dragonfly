@@ -268,35 +268,6 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 	}
 }
 
-type behaviourDamageable interface {
-	Hurt(e *Ent, damage float64, src world.DamageSource) (n float64, vulnerable bool)
-}
-
-func hurtEntity(e world.Entity, damage float64, src world.DamageSource) (n float64, vulnerable, ok bool) {
-	if l, ok := e.(Living); ok {
-		n, vulnerable = l.Hurt(damage, src)
-		return n, vulnerable, true
-	}
-	if ent, ok := e.(*Ent); ok {
-		if d, ok := ent.Behaviour().(behaviourDamageable); ok {
-			n, vulnerable = d.Hurt(ent, damage, src)
-			return n, vulnerable, true
-		}
-	}
-	return 0, false, false
-}
-
-func damageableEntity(e world.Entity) bool {
-	if _, ok := e.(Living); ok {
-		return true
-	}
-	if ent, ok := e.(*Ent); ok {
-		_, ok = ent.Behaviour().(behaviourDamageable)
-		return ok
-	}
-	return false
-}
-
 // hitEntity is called when a projectile hits an entity. It deals damage to the
 // entity if possible, and applies Living-specific effects such as knockback.
 func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.Vec3) {
@@ -307,7 +278,7 @@ func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.
 		dmg += rand.Float64() * dmg / 2
 	}
 	// TODO: Piercing arrows should bypass shield blocking when shields are implemented.
-	if _, vulnerable, ok := hurtEntity(victim, dmg, src); ok && vulnerable {
+	if _, vulnerable, ok := HurtEntity(victim, dmg, src); ok && vulnerable {
 		l, ok := victim.(Living)
 		if !ok {
 			return
