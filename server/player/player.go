@@ -605,7 +605,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		remaining := a - damageLeft
 		p.SetAbsorption(remaining)
 		damageLeft = max(0, damageLeft-a)
-		if remaining <= 0 {
+		if _, exists := p.Effect(effect.Absorption); exists && remaining <= 0 {
 			p.RemoveEffect(effect.Absorption)
 		}
 	}
