@@ -30,10 +30,10 @@ func (endCrystalType) BBox(world.Entity) cube.BBox {
 
 func (endCrystalType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	b := endCrystalBehaviour{showBase: nbtconv.Bool(m, "ShowBottom")}
-	x, xOK := m["BlockTargetX"].(int32)
-	y, yOK := m["BlockTargetY"].(int32)
-	z, zOK := m["BlockTargetZ"].(int32)
-	if xOK && yOK && zOK {
+	x, hasX := m["BlockTargetX"].(int32)
+	y, hasY := m["BlockTargetY"].(int32)
+	z, hasZ := m["BlockTargetZ"].(int32)
+	if hasX && hasY && hasZ {
 		b.beamTarget = cube.Pos{int(x), int(y), int(z)}
 		b.hasBeamTarget = true
 	}
