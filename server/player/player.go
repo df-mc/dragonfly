@@ -976,16 +976,18 @@ func (p *Player) respawn(f func(p *Player)) {
 	})
 }
 
+type respawnBlock interface {
+	CanRespawnOn() bool
+	SafeSpawn(cube.Pos, *world.Tx) (cube.Pos, bool)
+}
+
 // spawnLocation designates a players safe spawn location.
 func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
 	tx := p.tx
 	w = tx.World()
 	previousDimension = w.Dimension()
 	playerSpawn = w.PlayerSpawn(p.UUID())
-	if b, ok := tx.Block(playerSpawn).(interface {
-		CanRespawnOn() bool
-		SafeSpawn(cube.Pos, *world.Tx) (cube.Pos, bool)
-	}); ok && b.CanRespawnOn() {
+	if b, ok := tx.Block(playerSpawn).(respawnBlock); ok && b.CanRespawnOn() {
 		pos, ok := b.SafeSpawn(playerSpawn, tx)
 		if ok {
 			return pos, w, false, previousDimension
