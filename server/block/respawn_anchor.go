@@ -19,6 +19,7 @@ type RespawnAnchor struct {
 	Charges int
 }
 
+// respawnAnchorSpawnOffsets holds the vanilla respawn search priority around an anchor.
 var respawnAnchorSpawnOffsets = []cube.Pos{
 	{0, 0, -1}, {0, 1, -1},
 	{-1, 0, 0}, {-1, 1, 0},

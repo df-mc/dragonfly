@@ -131,8 +131,6 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		}
 		if target, ok := c.BeamTarget(); ok {
 			m[protocol.EntityDataKeyBlockTarget] = protocol.BlockPos{int32(target[0]), int32(target[1]), int32(target[2])}
-		} else {
-			m[protocol.EntityDataKeyBlockTarget] = protocol.BlockPos{}
 		}
 	}
 	if sl, ok := e.(sleeper); ok {

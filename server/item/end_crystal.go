@@ -53,6 +53,7 @@ func (EndCrystal) EncodeItem() (name string, meta int16) {
 	return "minecraft:end_crystal", 0
 }
 
+// endCrystalPlacementReplaceable checks if an End crystal may replace the block above its base.
 func endCrystalPlacementReplaceable(b world.Block) bool {
 	replacement := air()
 	if b == replacement {
