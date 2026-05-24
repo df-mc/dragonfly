@@ -19,6 +19,25 @@ type RespawnAnchor struct {
 	Charges int
 }
 
+var respawnAnchorSpawnOffsets = []cube.Pos{
+	{0, 0, -1}, {0, 1, -1},
+	{-1, 0, 0}, {-1, 1, 0},
+	{0, 0, 1}, {0, 1, 1},
+	{1, 0, 0}, {1, 1, 0},
+	{-1, 0, -1}, {-1, 1, -1},
+	{1, 0, -1}, {1, 1, -1},
+	{-1, 0, 1}, {-1, 1, 1},
+	{1, 0, 1}, {1, 1, 1},
+	{0, -1, -1},
+	{-1, -1, 0},
+	{0, -1, 1},
+	{1, -1, 0},
+	{-1, -1, -1},
+	{1, -1, -1},
+	{-1, -1, 1},
+	{1, -1, 1},
+}
+
 // Activate ...
 func (r RespawnAnchor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
@@ -131,25 +150,3 @@ func respawnAnchorSpawnClear(pos cube.Pos, tx *world.Tx) bool {
 	}
 	return true
 }
-
-var (
-	respawnAnchorHorizontalOffsets = []cube.Pos{
-		{0, 0, -1},
-		{-1, 0, 0},
-		{0, 0, 1},
-		{1, 0, 0},
-		{-1, 0, -1},
-		{1, 0, -1},
-		{-1, 0, 1},
-		{1, 0, 1},
-	}
-	respawnAnchorSpawnOffsets = func() (offsets []cube.Pos) {
-		for _, offset := range respawnAnchorHorizontalOffsets {
-			offsets = append(offsets, offset, offset.Side(cube.FaceUp))
-		}
-		for _, offset := range respawnAnchorHorizontalOffsets {
-			offsets = append(offsets, offset.Side(cube.FaceDown))
-		}
-		return
-	}()
-)
