@@ -87,10 +87,10 @@ func (r RespawnAnchor) BreakInfo() BreakInfo {
 
 // LightEmissionLevel ...
 func (r RespawnAnchor) LightEmissionLevel() uint8 {
-	if r.Charges == 0 {
+	if r.Charges < 1 || r.Charges > 4 {
 		return 0
 	}
-	return uint8(r.Charges*4 - 1)
+	return [...]uint8{0, 3, 7, 11, 15}[r.Charges]
 }
 
 // EncodeItem ...

@@ -1785,11 +1785,10 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	p.SwingArm()
 
 	if !isLiving {
-		hurt, ok := behaviourDamageFunc(e)
+		n, vulnerable, ok := entity.HurtEntity(e, i.AttackDamage(), entity.AttackDamageSource{Attacker: p})
 		if !ok {
 			return false
 		}
-		n, vulnerable := hurt(i.AttackDamage(), entity.AttackDamageSource{Attacker: p})
 		p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
 		if vulnerable {
 			p.Exhaust(0.1)
@@ -1841,21 +1840,6 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		}
 	}
 	return true
-}
-
-type behaviourDamageable interface {
-	Hurt(e *entity.Ent, damage float64, src world.DamageSource) (n float64, vulnerable bool)
-}
-
-func behaviourDamageFunc(e world.Entity) (func(float64, world.DamageSource) (float64, bool), bool) {
-	if ent, ok := e.(*entity.Ent); ok {
-		if d, ok := ent.Behaviour().(behaviourDamageable); ok {
-			return func(damage float64, src world.DamageSource) (float64, bool) {
-				return d.Hurt(ent, damage, src)
-			}, true
-		}
-	}
-	return nil, false
 }
 
 // StartBreaking makes the player start breaking the block at the position passed using the item currently
