@@ -20,7 +20,7 @@ var MessageRespawnAnchorRespawnPointSet = Translate(str("%tile.respawn_anchor.re
 var MessageNoSleep = Translate(str("%tile.bed.noSleep"), 0, `You can only sleep at night and during thunderstorms`).Enc("<grey>%v</grey>")
 var MessageBedIsOccupied = Translate(str("%tile.bed.occupied"), 0, `This bed is occupied`).Enc("<grey>%v</grey>")
 var MessageSleeping = Translate(str("%chat.type.sleeping"), 2, `%v is sleeping in a bed. To skip to dawn, %v more users need to sleep in beds at the same time.`)
-var MessageBedNotValid = Translate(str("%tile.bed.notValid"), 0, `You have no home bed or charged Respawn Anchor, or it was obstructed`)
+var MessageBedNotValid = Translate(str("%tile.bed.notValid"), 0, `Your home bed was missing or obstructed`)
 
 type str string
 
