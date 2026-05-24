@@ -602,8 +602,12 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	p.setAttackImmunity(immunity, totalDamage)
 
 	if a := p.Absorption(); a > 0 {
-		p.SetAbsorption(a - damageLeft)
+		remaining := a - damageLeft
+		p.SetAbsorption(remaining)
 		damageLeft = max(0, damageLeft-a)
+		if remaining <= 0 {
+			p.RemoveEffect(effect.Absorption)
+		}
 	}
 
 	if p.Health()-damageLeft <= mgl64.Epsilon && !src.IgnoreTotem() {
