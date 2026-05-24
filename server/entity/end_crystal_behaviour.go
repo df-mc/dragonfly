@@ -78,7 +78,16 @@ func explodeEndCrystal(e *Ent) {
 		return
 	}
 	pos := e.Position()
-	conf := block.ExplosionConfig{Size: 6, EndCrystal: true}
+	conf := block.ExplosionConfig{Size: 6, EndCrystal: true, DisableEntityDamage: endCrystalInWater(e.tx, pos)}
 	_ = e.Close()
 	conf.Explode(e.tx, pos)
+}
+
+func endCrystalInWater(tx *world.Tx, pos mgl64.Vec3) bool {
+	liq, ok := tx.Liquid(cube.PosFromVec3(pos))
+	if !ok {
+		return false
+	}
+	_, ok = liq.(block.Water)
+	return ok
 }

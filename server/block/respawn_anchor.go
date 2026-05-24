@@ -67,7 +67,7 @@ func (r RespawnAnchor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.
 		return true
 	}
 
-	if tx.World().PlayerSpawn(user.UUID()) == pos {
+	if spawn, ok := tx.World().PlayerSpawnPoint(user.UUID()); ok && spawn.Pos == pos && spawn.Dim == world.Nether {
 		return true
 	}
 	tx.World().SetPlayerSpawn(user.UUID(), pos)
