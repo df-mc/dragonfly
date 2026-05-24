@@ -9,7 +9,8 @@ type behaviourDamageable interface {
 }
 
 // HurtEntity hurts an entity if it is either Living or has a Behaviour that may
-// be hurt directly.
+// be hurt directly. It returns the damage dealt, whether the entity was
+// vulnerable to the damage, and whether the entity could be damaged.
 func HurtEntity(e world.Entity, damage float64, src world.DamageSource) (n float64, vulnerable, ok bool) {
 	if l, ok := e.(Living); ok {
 		n, vulnerable = l.Hurt(damage, src)
