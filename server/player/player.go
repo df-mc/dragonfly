@@ -2122,8 +2122,10 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		}
 	}
 
-	for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
-		p.tx.AddEntity(orb)
+	if _, ok := b.(block.Breakable); ok {
+		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
+			p.tx.AddEntity(orb)
+		}
 	}
 	for _, drop := range drops {
 		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre(), Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
@@ -2684,9 +2686,6 @@ func (p *Player) ViewBlock(pos cube.Pos, b world.Block) {
 // ViewPublicBlock removes the block override at the position passed for this player.
 func (p *Player) ViewPublicBlock(pos cube.Pos) {
 	p.session().ViewPublicBlock(pos)
-	if p.session() != session.Nop && !pos.OutOfBounds(p.tx.Range()) {
-		p.session().ViewBlockUpdate(pos, p.tx.Block(pos), 0)
-	}
 }
 
 // RemoveViewLayer removes all view-layer overrides of the entity for this player.
