@@ -91,6 +91,11 @@ type Consumer interface {
 	// Effects returns any effect currently applied to the Consumer. The returned effects are guaranteed not to have
 	// expired when returned.
 	Effects() []effect.Effect
+	// Absorption returns the absorption health of the Consumer.
+	Absorption() float64
+	// SetAbsorption sets the absorption health of the Consumer. Absorption health is shown as golden hearts and does
+	// not regenerate naturally.
+	SetAbsorption(health float64)
 }
 
 // DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
