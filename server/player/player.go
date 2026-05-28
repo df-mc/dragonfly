@@ -1943,6 +1943,8 @@ func (p *Player) FinishBreaking() {
 	if private {
 		if b, ok := p.privateBlock(pos); ok {
 			p.breakBlock(pos, b, true)
+		} else {
+			p.resendBreakingBlock(pos, false)
 		}
 		return
 	}
