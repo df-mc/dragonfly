@@ -1922,7 +1922,14 @@ func (p *Player) FinishBreaking() {
 		return
 	}
 	pos := p.breakingPos
+	private := p.breakingPrivate
 	p.AbortBreaking()
+	if private {
+		if b, ok := p.privateBlock(pos); ok {
+			p.breakBlock(pos, b, true)
+			return
+		}
+	}
 	p.BreakBlock(pos)
 }
 
@@ -2069,7 +2076,12 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 // BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
 // reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
-	b, private := p.breakingBlock(pos)
+	p.breakBlock(pos, p.tx.Block(pos), false)
+}
+
+// breakBlock makes the player break the block passed at the position passed. Private blocks are removed
+// from the player's view layer instead of the world.
+func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
 	if _, air := b.(block.Air); air {
 		// Don't do anything if the position broken is already air.
 		return
