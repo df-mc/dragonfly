@@ -1861,17 +1861,20 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
-	if _, ok := p.tx.Block(pos.Side(face)).(block.Fire); ok && !private {
-		ctx := event.C(p)
-		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
-			// Resend the block because on client side that was extinguished
-			p.resendNearbyBlocks(pos, face)
+	firePos := pos.Side(face)
+	if fireBlock, firePrivate := p.viewedBlock(firePos); !firePrivate {
+		if _, ok := fireBlock.(block.Fire); ok {
+			ctx := event.C(p)
+			if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
+				// Resend the block because on client side that was extinguished
+				p.resendNearbyBlocks(pos, face)
+				return
+			}
+
+			p.tx.SetBlock(firePos, nil, nil)
+			p.tx.PlaySound(pos.Vec3(), sound.FireExtinguish{})
 			return
 		}
-
-		p.tx.SetBlock(pos.Side(face), nil, nil)
-		p.tx.PlaySound(pos.Vec3(), sound.FireExtinguish{})
-		return
 	}
 
 	held, _ := p.HeldItems()
