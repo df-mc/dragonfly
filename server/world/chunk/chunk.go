@@ -56,7 +56,7 @@ func (chunk *Chunk) Clone() *Chunk {
 		br:                   chunk.br,
 		air:                  chunk.air,
 		recalculateHeightMap: chunk.recalculateHeightMap,
-		heightMap:            append(HeightMap(nil), chunk.heightMap...),
+		heightMap:            slices.Clone(chunk.heightMap),
 		sub:                  make([]*SubChunk, len(chunk.sub)),
 		biomes:               make([]*PalettedStorage, len(chunk.biomes)),
 	}
