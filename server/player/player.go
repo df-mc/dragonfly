@@ -1680,6 +1680,11 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		p.resendNearbyBlocks(pos, face)
 		return
 	}
+	b, private = p.viewedBlock(pos)
+	if _, ok := b.(block.Air); ok {
+		p.resendNearbyBlocks(pos, face)
+		return
+	}
 	if private {
 		return
 	}
