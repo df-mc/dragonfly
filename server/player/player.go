@@ -1664,7 +1664,8 @@ func (p *Player) UsingItem() bool {
 // returns immediately.
 // UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
-	if _, ok := p.tx.Block(pos).(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
+	b, _ := p.viewedBlock(pos)
+	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that does not exist server-side or one it couldn't reach. Stop trying
 		// to use the item immediately.
 		p.resendNearbyBlocks(pos, face)
@@ -1676,7 +1677,6 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		return
 	}
 	i, left := p.HeldItems()
-	b := p.tx.Block(pos)
 	if act, ok := b.(block.Activatable); ok {
 		// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 		// items, in which case the block will be activated as usual.
@@ -1712,7 +1712,8 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The block clicked was either not replaceable, or not replaceable using the block passed.
 			replacedPos = pos.Side(face)
 		}
-		if replaceable, ok := p.tx.Block(replacedPos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) || replacedPos.OutOfBounds(p.tx.Range()) {
+		replacedBlock, _ := p.viewedBlock(replacedPos)
+		if replaceable, ok := replacedBlock.(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) || replacedPos.OutOfBounds(p.tx.Range()) {
 			return
 		}
 		if !p.placeBlock(replacedPos, ib, false) || p.GameMode().CreativeInventory() {
@@ -1922,7 +1923,14 @@ func (p *Player) FinishBreaking() {
 		return
 	}
 	pos := p.breakingPos
+	private := p.breakingPrivate
 	p.AbortBreaking()
+	if private {
+		if b, ok := p.privateBlock(pos); ok {
+			p.breakBlock(pos, b, true)
+		}
+		return
+	}
 	p.BreakBlock(pos)
 }
 
@@ -1999,12 +2007,17 @@ func viewerHasPrivateBlock(viewer world.Viewer, pos cube.Pos) bool {
 	return ok
 }
 
-// breakingBlock returns the block that should be used for the player's breaking progress.
-func (p *Player) breakingBlock(pos cube.Pos) (world.Block, bool) {
+// viewedBlock returns the block currently shown to the player at pos.
+func (p *Player) viewedBlock(pos cube.Pos) (world.Block, bool) {
 	if b, ok := p.privateBlock(pos); ok {
 		return b, true
 	}
 	return p.tx.Block(pos), false
+}
+
+// breakingBlock returns the block that should be used for the player's breaking progress.
+func (p *Player) breakingBlock(pos cube.Pos) (world.Block, bool) {
+	return p.viewedBlock(pos)
 }
 
 // PlaceBlock makes the player place the block passed at the position passed, granted it is within the range

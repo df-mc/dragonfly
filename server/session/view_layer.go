@@ -93,11 +93,25 @@ func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
 	}
 	if b, ok := s.viewLayer.Block(pos); ok {
 		s.viewBlockUpdate(pos, b, 0)
+		s.viewBlockUpdate(pos, s.br.Air(), 1)
 		return
 	}
 	if b, ok := s.publicBlock(pos); ok {
 		s.viewBlockUpdate(pos, b, 0)
+		s.viewBlockUpdate(pos, s.publicLiquid(pos), 1)
 	}
+}
+
+// publicLiquid returns the public liquid layer loaded for this session at pos, or air if no liquid is present.
+func (s *Session) publicLiquid(pos cube.Pos) world.Block {
+	if s.chunkLoader == nil {
+		return s.br.Air()
+	}
+	col, ok := s.chunkLoader.Chunk(world.ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
+	if !ok || pos.OutOfBounds(col.Range()) {
+		return s.br.Air()
+	}
+	return s.br.BlockByRuntimeIDOrAir(col.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1))
 }
 
 // viewingEntity checks if this session currently has a runtime ID assigned to the entity handle.
