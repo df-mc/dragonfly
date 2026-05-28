@@ -92,6 +92,7 @@ func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
 		return
 	}
 	if b, ok := s.viewLayer.Block(pos); ok {
+		s.advertisePrivateBlockSubChunk(pos)
 		s.viewBlockUpdate(pos, b, 0)
 		s.viewBlockUpdate(pos, s.br.Air(), 1)
 		return
@@ -100,6 +101,28 @@ func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
 		s.viewBlockUpdate(pos, b, 0)
 		s.viewBlockUpdate(pos, s.publicLiquid(pos), 1)
 	}
+}
+
+// advertisePrivateBlockSubChunk resends the chunk height advert if a private block override occupies a
+// sub-chunk the client may not have loaded from the public chunk state.
+func (s *Session) advertisePrivateBlockSubChunk(pos cube.Pos) {
+	if !subChunkRequests || s.chunkLoader == nil {
+		return
+	}
+	chunkPos := world.ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
+	col, ok := s.chunkLoader.Chunk(chunkPos)
+	if !ok || pos.OutOfBounds(col.Range()) {
+		return
+	}
+	if uint16(col.SubIndex(int16(pos[1]))) <= col.HighestFilledSubChunk() {
+		return
+	}
+	w := s.chunkLoader.World()
+	if w == nil {
+		return
+	}
+	c, blockEntities := s.applyViewLayerToChunk(chunkPos, col.Chunk, col.BlockEntities)
+	s.sendNetworkChunk(chunkPos, w.Dimension(), c, blockEntities)
 }
 
 // publicLiquid returns the public liquid layer loaded for this session at pos, or air if no liquid is present.
