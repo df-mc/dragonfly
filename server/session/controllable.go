@@ -125,3 +125,14 @@ type Controllable interface {
 
 	UpdateDiagnostics(Diagnostics)
 }
+
+// breakViewedBlock breaks the block currently shown to the controllable when supported. This preserves
+// session-driven client semantics for players with private view-layer block overrides while keeping BreakBlock
+// as the public-world block break API for generic Controllable implementations.
+func breakViewedBlock(c Controllable, pos cube.Pos) {
+	if breaker, ok := c.(interface{ BreakViewedBlock(cube.Pos) }); ok {
+		breaker.BreakViewedBlock(pos)
+		return
+	}
+	c.BreakBlock(pos)
+}

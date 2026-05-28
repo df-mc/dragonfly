@@ -187,7 +187,7 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
-		c.BreakBlock(pos)
+		breakViewedBlock(c, pos)
 	case protocol.UseItemActionClickBlock:
 		c.UseItemOnBlock(pos, cube.Face(data.BlockFace), vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:

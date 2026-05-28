@@ -1686,6 +1686,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		return
 	}
 	if private {
+		p.resendNearbyBlocks(pos, face)
 		return
 	}
 	i, left := p.HeldItems()
@@ -1726,6 +1727,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		}
 		replacedBlock, replacedPrivate := p.viewedBlock(replacedPos)
 		if replacedPrivate {
+			p.resendNearbyBlocks(replacedPos)
 			return
 		}
 		if replaceable, ok := replacedBlock.(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) || replacedPos.OutOfBounds(p.tx.Range()) {
@@ -2112,10 +2114,17 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 	return obstructed, true
 }
 
-// BreakBlock makes the player break a block at a position passed. If the player has a private block
-// override at that position, it is removed instead of breaking the public world block. If the player is
-// unable to reach the block passed, the method returns immediately.
+// BreakBlock makes the player break the public world block at the position passed. Private view-layer
+// overrides are ignored by this method: Call BreakViewedBlock to break what the player currently sees instead.
+// If the player is unable to reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
+	p.breakBlock(pos, p.tx.Block(pos), false)
+}
+
+// BreakViewedBlock makes the player break the block currently shown to them at the position passed. If the
+// player has a private block override at that position, it is removed instead of breaking the public world block.
+// If the player is unable to reach the block passed, the method returns immediately.
+func (p *Player) BreakViewedBlock(pos cube.Pos) {
 	b, private := p.breakingBlock(pos)
 	p.breakBlock(pos, b, private)
 }
