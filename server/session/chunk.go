@@ -164,7 +164,9 @@ func (s *Session) applyViewLayerToChunk(pos world.ChunkPos, c *chunk.Chunk, bloc
 			blockEntities = maps.Clone(blockEntities)
 			cloned = true
 		}
-		c.SetBlock(uint8(blockPos[0]), int16(blockPos[1]), uint8(blockPos[2]), 0, s.br.BlockRuntimeID(b))
+		x, y, z := uint8(blockPos[0]), int16(blockPos[1]), uint8(blockPos[2])
+		c.SetBlock(x, y, z, 0, s.br.BlockRuntimeID(b))
+		c.SetBlock(x, y, z, 1, s.br.AirRuntimeID())
 		if _, ok := b.(world.NBTer); ok {
 			blockEntities[blockPos] = b
 		} else {

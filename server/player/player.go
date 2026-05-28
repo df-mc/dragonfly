@@ -1922,14 +1922,7 @@ func (p *Player) FinishBreaking() {
 		return
 	}
 	pos := p.breakingPos
-	private := p.breakingPrivate
 	p.AbortBreaking()
-	if private {
-		if b, ok := p.privateBlock(pos); ok {
-			p.breakBlock(pos, b, true)
-			return
-		}
-	}
 	p.BreakBlock(pos)
 }
 
@@ -1989,8 +1982,21 @@ func (p *Player) viewBreakingBlockAction(pos cube.Pos, private bool, a world.Blo
 		return
 	}
 	for _, viewer := range p.viewers() {
+		if viewerHasPrivateBlock(viewer, pos) {
+			continue
+		}
 		viewer.ViewBlockAction(pos, a)
 	}
+}
+
+// viewerHasPrivateBlock returns true if the viewer has a private block override at pos.
+func viewerHasPrivateBlock(viewer world.Viewer, pos cube.Pos) bool {
+	s, ok := viewer.(*session.Session)
+	if !ok || s.ViewLayer() == nil {
+		return false
+	}
+	_, ok = s.ViewLayer().Block(pos)
+	return ok
 }
 
 // breakingBlock returns the block that should be used for the player's breaking progress.
@@ -2073,10 +2079,12 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 	return obstructed, true
 }
 
-// BreakBlock makes the player break a block in the world at a position passed. If the player is unable to
-// reach the block passed, the method returns immediately.
+// BreakBlock makes the player break a block at a position passed. If the player has a private block
+// override at that position, it is removed instead of breaking the public world block. If the player is
+// unable to reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
-	p.breakBlock(pos, p.tx.Block(pos), false)
+	b, private := p.breakingBlock(pos)
+	p.breakBlock(pos, b, private)
 }
 
 // breakBlock makes the player break the block passed at the position passed. Private blocks are removed
