@@ -959,9 +959,13 @@ func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFu
 
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
-	if s.viewLayer != nil && layer == 0 {
+	if s.viewLayer != nil {
 		if viewed, ok := s.viewLayer.Block(pos); ok {
-			b = viewed
+			if layer == 0 {
+				b = viewed
+			} else {
+				b = s.br.Air()
+			}
 		}
 	}
 	s.viewBlockUpdate(pos, b, layer)
