@@ -33,9 +33,6 @@ func NewSubChunk(air uint32) *SubChunk {
 
 // Clone returns an independent copy of the SubChunk.
 func (sub *SubChunk) Clone() *SubChunk {
-	if sub == nil {
-		return nil
-	}
 	clone := &SubChunk{
 		air:        sub.air,
 		storages:   make([]*PalettedStorage, len(sub.storages)),
