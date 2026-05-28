@@ -1258,6 +1258,21 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 
 // ViewBlockAction ...
 func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
+	if s.viewLayer != nil {
+		if _, ok := s.viewLayer.Block(pos); ok {
+			return
+		}
+	}
+	s.viewBlockAction(pos, a)
+}
+
+// ViewPrivateBlockAction views an action performed by a private view-layer block.
+func (s *Session) ViewPrivateBlockAction(pos cube.Pos, a world.BlockAction) {
+	s.viewBlockAction(pos, a)
+}
+
+// viewBlockAction sends a block action without applying view-layer filters.
+func (s *Session) viewBlockAction(pos cube.Pos, a world.BlockAction) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	switch t := a.(type) {
 	case block.OpenAction:

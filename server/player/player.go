@@ -1992,7 +1992,7 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 // block, or to all viewers if it is a public world block.
 func (p *Player) viewBreakingBlockAction(pos cube.Pos, private bool, a world.BlockAction) {
 	if private {
-		p.session().ViewBlockAction(pos, a)
+		p.session().ViewPrivateBlockAction(pos, a)
 		return
 	}
 	for _, viewer := range p.viewers() {
