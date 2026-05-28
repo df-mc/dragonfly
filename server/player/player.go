@@ -1948,13 +1948,12 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	}
 	pos := p.breakingPos
 	private := p.breakingPrivate
-	b := p.tx.Block(pos)
+	var b world.Block
 	if private {
 		b, _ = p.breakingBlock(pos)
-	}
-	if private {
 		p.ShowParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 	} else {
+		b = p.tx.Block(pos)
 		p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 	}
 
