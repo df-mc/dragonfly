@@ -381,7 +381,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 		})
 	case particle.BoneMeal:
-		var count int32 = 0
+		var count int32
 		if pa.Huge {
 			count = 5
 		}
