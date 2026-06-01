@@ -34,6 +34,7 @@ func (f Flower) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 
 // BoneMeal ...
 func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (result item.BoneMealResult) {
+	result = item.BoneMealResultNone
 	if f.Type == WitherRose() {
 		return
 	}
