@@ -55,7 +55,7 @@ func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (result item.BoneMealResult
 			}
 		}
 		tx.SetBlock(p, Flower{Type: flowerType}, nil)
-		result = item.BoneMealResultHuge
+		result = item.BoneMealResultArea
 	}
 	return
 }

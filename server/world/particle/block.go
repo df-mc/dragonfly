@@ -53,10 +53,10 @@ type BlockForceField struct{ particle }
 type BoneMeal struct {
 	particle
 
-	// Huge specifies whether the particle effect should be large. If false,
+	// Area specifies whether the particle effect should be for area. If false,
 	// a small burst is used for minor growth. If true, a large burst is used
 	// for significant growth.
-	Huge bool
+	Area bool
 }
 
 // Note is a particle that shows up on note block interactions.

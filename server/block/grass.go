@@ -90,7 +90,7 @@ func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) (result item.BoneMealResult)
 		_, grass := tx.Block(c).(Grass)
 		if air && grass {
 			tx.SetBlock(above, plantSelection[rand.IntN(len(plantSelection))], nil)
-			result = item.BoneMealResultHuge
+			result = item.BoneMealResultArea
 		}
 	}
 	return

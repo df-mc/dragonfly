@@ -12,7 +12,7 @@ type BoneMealResult int
 const (
 	BoneMealResultNone BoneMealResult = iota
 	BoneMealResultSmall
-	BoneMealResultHuge
+	BoneMealResultArea
 )
 
 // BoneMeal is an item used to force growth in plants & crops.
@@ -34,7 +34,7 @@ func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.
 
 		ctx.SubtractFromCount(1)
 		tx.AddParticle(pos.Vec3(), particle.BoneMeal{
-			Huge: result == BoneMealResultHuge,
+			Area: result == BoneMealResultArea,
 		})
 		return true
 	}
