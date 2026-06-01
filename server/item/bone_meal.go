@@ -7,11 +7,16 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// BoneMealResult represents the outcome of a bone meal interaction with a block,
+// determining the intensity of the particle effect displayed.
 type BoneMealResult int
 
 const (
+	// BoneMealResultNone indicates that the bone meal had no effect on the block.
 	BoneMealResultNone BoneMealResult = iota
+	// BoneMealResultSmall indicates a minor growth effect, produces a small particle burst.
 	BoneMealResultSmall
+	// BoneMealResultArea indicates a significant growth effect over an area, produces a large particle burst.
 	BoneMealResultArea
 )
 
