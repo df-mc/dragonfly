@@ -381,14 +381,10 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 		})
 	case particle.BoneMeal:
-		var area int32
-		if pa.Area {
-			area = 1
-		}
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleCropGrowth,
 			Position:  vec64To32(pos),
-			EventData: area,
+			EventData: int32(boolByte(pa.Area)),
 		})
 	case particle.BlockForceField:
 		s.writePacket(&packet.LevelEvent{
