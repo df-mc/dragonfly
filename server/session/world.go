@@ -1412,6 +1412,11 @@ func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
 }
 
+// vec2To32 converts a mgl64.Vec2 to a mgl32.Vec2.
+func vec2To32(vec2 mgl64.Vec2) mgl32.Vec2 {
+	return mgl32.Vec2{float32(vec2[0]), float32(vec2[1])}
+}
+
 // blockPosFromProtocol ...
 func blockPosFromProtocol(pos protocol.BlockPos) cube.Pos {
 	return cube.Pos{int(pos.X()), int(pos.Y()), int(pos.Z())}
