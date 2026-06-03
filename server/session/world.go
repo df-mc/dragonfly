@@ -487,7 +487,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 }
 
 // tierToSoundEvent converts an item.ArmourTier to a sound event associated with equipping it.
-func tierToSoundEvent(tier item.ArmourTier) uint32 {
+func tierToSoundEvent(tier item.ArmourTier) string {
 	switch tier.(type) {
 	case item.ArmourTierLeather:
 		return packet.SoundEventEquipLeather
