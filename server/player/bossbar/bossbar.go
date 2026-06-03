@@ -11,14 +11,16 @@ type BossBar struct {
 	text   string
 	health float64
 	c      Colour
+	o      Overlay
 }
 
 // New creates a new boss bar with the text passed. The text is formatted according to the rules of
 // fmt.Sprintln.
 // By default, the boss bar will have a full health bar. To change this, use BossBar.WithHealthPercentage().
 // The default colour of the BossBar is Purple. This can be changed using BossBar.WithColour.
+// The default overlay of the BossBar is Progress. This can be changed using BossBar.WithOverlay.
 func New(text ...any) BossBar {
-	return BossBar{text: format(text), health: 1, c: Purple()}
+	return BossBar{text: format(text), health: 1, c: Purple(), o: Progress()}
 }
 
 // Text returns the text of the boss bar: The text passed when creating the bar using New().
@@ -43,6 +45,12 @@ func (bar BossBar) WithColour(c Colour) BossBar {
 	return bar
 }
 
+// WithOverlay returns a copy of the BossBar with the Overlay passed.
+func (bar BossBar) WithOverlay(o Overlay) BossBar {
+	bar.o = o
+	return bar
+}
+
 // HealthPercentage returns the health percentage of the boss bar. The number returned is a value between 0
 // and 1, with 0 being an empty boss bar and 1 being a full one.
 func (bar BossBar) HealthPercentage() float64 {
@@ -52,6 +60,11 @@ func (bar BossBar) HealthPercentage() float64 {
 // Colour returns the colour of the BossBar.
 func (bar BossBar) Colour() Colour {
 	return bar.c
+}
+
+// Overlay returns the overlay of the BossBar.
+func (bar BossBar) Overlay() Overlay {
+	return bar.o
 }
 
 // format is a utility function to format a list of values to have spaces between them, but no newline at the
