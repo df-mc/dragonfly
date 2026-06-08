@@ -384,6 +384,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleCropGrowth,
 			Position:  vec64To32(pos),
+			EventData: int32(boolByte(pa.Area)),
 		})
 	case particle.BlockForceField:
 		s.writePacket(&packet.LevelEvent{
