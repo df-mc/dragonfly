@@ -154,6 +154,12 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	return true
 }
 
+// CanCharge ...
+func (c Crossbow) CanCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool {
+	_, found := c.findProjectile(releaser, ctx)
+	return found && !c.Item.Empty()
+}
+
 // shoot fires the crossbow's loaded projectiles.
 func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, arrowConf world.ArrowSpawnConfig) {
 	rot := releaser.Rotation()
