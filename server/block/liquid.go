@@ -24,6 +24,16 @@ func (s sourceWaterDisplacer) CanDisplace(b world.Liquid) bool {
 	return ok && !w.Falling && w.Depth == 8
 }
 
+// sourceOrFallingWaterDisplacer may be embedded to allow displacing water source
+// and falling water blocks.
+type sourceOrFallingWaterDisplacer struct{}
+
+// CanDisplace returns true if the world.Liquid passed is of the type Water and has a depth of 8.
+func (s sourceOrFallingWaterDisplacer) CanDisplace(b world.Liquid) bool {
+	w, ok := b.(Water)
+	return ok && w.Depth == 8
+}
+
 // flowingWaterDisplacer may be embedded to allow displacing water source blocks or flowing water.
 type flowingWaterDisplacer struct{}
 
