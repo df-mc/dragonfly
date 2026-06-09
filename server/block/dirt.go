@@ -1,6 +1,8 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -12,6 +14,10 @@ type Dirt struct {
 	// Coarse specifies if the dirt should be off the coarse dirt variant. Grass blocks won't spread on
 	// the block if set to true.
 	Coarse bool
+}
+
+func (d Dirt) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
+	return trySpreadSeaFlora(pos, tx)
 }
 
 // SoilFor ...

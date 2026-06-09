@@ -1,11 +1,22 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
+
+var seaFlora = []world.Block{
+	Coral{Type: TubeCoral()},
+	Coral{Type: BrainCoral()},
+	Coral{Type: BubbleCoral()},
+	Coral{Type: FireCoral()},
+	Coral{Type: HornCoral()},
+	// TODO: coral fans.
+}
 
 type SeaGrass struct {
 	empty
@@ -106,6 +117,48 @@ func canSeaGrassStay(pos cube.Pos, tx *world.Tx) bool {
 		return false
 	}
 	return block.Model().FaceSolid(pos, cube.FaceUp, tx)
+}
+
+func trySpreadSeaFlora(pos cube.Pos, tx *world.Tx) (result item.BoneMealResult) {
+	result = item.BoneMealResultNone
+	for range 16 {
+		dy := (rand.IntN(3) - 1) * rand.IntN(3) / 2
+		candidate := pos.Add(cube.Pos{rand.IntN(3) - 1, dy, rand.IntN(3) - 1})
+		above := candidate.Side(cube.FaceUp)
+
+		switch tx.Block(candidate).(type) {
+		case Dirt, Sand, Gravel, Clay:
+		default:
+			continue
+		}
+
+		if _, ok := tx.Block(above).(Water); !ok {
+			continue
+		}
+
+		aboveAbove := above.Side(cube.FaceUp)
+		existing := tx.Block(above)
+		if _, ok := existing.(SeaGrass); ok {
+			continue
+		}
+		result = item.BoneMealResultArea
+
+		if rand.IntN(8) == 0 {
+			if liquid, ok := tx.Liquid(aboveAbove); !ok || liquid.LiquidDepth() != 8 {
+				continue
+			}
+			tx.SetBlock(above, SeaGrass{Type: DoubleBottomSeaGrass()}, nil)
+			tx.SetBlock(aboveAbove, SeaGrass{Type: DoubleTopSeaGrass()}, nil)
+			continue
+		}
+
+		if rand.IntN(3) == 0 {
+			tx.SetBlock(above, seaFlora[rand.IntN(len(seaFlora))], nil)
+			continue
+		}
+		tx.SetBlock(above, SeaGrass{Type: DefaultSeaGrass()}, nil)
+	}
+	return
 }
 
 // allSeaGrass ...

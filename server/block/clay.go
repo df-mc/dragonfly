@@ -1,13 +1,19 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 // Clay is a block that can be found underwater.
 type Clay struct {
 	solid
+}
+
+func (c Clay) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
+	return trySpreadSeaFlora(pos, tx)
 }
 
 // Instrument ...

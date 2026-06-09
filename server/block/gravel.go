@@ -15,6 +15,10 @@ type Gravel struct {
 	snare
 }
 
+func (g Gravel) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
+	return trySpreadSeaFlora(pos, tx)
+}
+
 // NeighbourUpdateTick ...
 func (g Gravel) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	g.fall(g, pos, tx)
