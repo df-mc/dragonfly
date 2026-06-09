@@ -13,7 +13,7 @@ import (
 type Kelp struct {
 	empty
 	transparent
-	sourceWaterDisplacer
+	sourceOrFallingWaterDisplacer
 
 	// Age is the age of the kelp block which can be 0-25. If age is 25, kelp won't grow any further.
 	Age int

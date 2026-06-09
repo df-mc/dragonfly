@@ -11,6 +11,7 @@ type SeaGrass struct {
 	empty
 	replaceable
 	transparent
+	sourceOrFallingWaterDisplacer
 
 	// Type is the type of the seagrass.
 	Type SeaGrassType
@@ -18,11 +19,6 @@ type SeaGrass struct {
 
 func (s SeaGrass) HasLiquidDrops() bool {
 	return false
-}
-
-func (s SeaGrass) CanDisplace(b world.Liquid) bool {
-	w, ok := b.(Water)
-	return ok && w.Depth == 8
 }
 
 func (s SeaGrass) SideClosed(_, _ cube.Pos, _ *world.Tx) bool {
