@@ -1,8 +1,9 @@
 package chunk
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
 	"slices"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // Chunk is a segment in the world with a size of 16x16x256 blocks. A chunk contains multiple sub chunks
@@ -11,6 +12,8 @@ import (
 type Chunk struct {
 	// r holds the (vertical) range of the Chunk. It includes both the minimum and maximum coordinates.
 	r cube.Range
+	// br is the block registry used for this chunk.
+	br BlockRegistry
 	// air is the runtime ID of air.
 	air uint32
 	// recalculateHeightMap is true if the chunk's height map should be recalculated on the next call to the HeightMap
@@ -26,21 +29,44 @@ type Chunk struct {
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
-func New(air uint32, r cube.Range) *Chunk {
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk's storages.
+func New(br BlockRegistry, r cube.Range) *Chunk {
 	n := (r.Height() >> 4) + 1
 	sub, biomes := make([]*SubChunk, n), make([]*PalettedStorage, n)
+	air := br.AirRuntimeID()
 	for i := 0; i < n; i++ {
 		sub[i] = NewSubChunk(air)
 		biomes[i] = emptyStorage(0)
 	}
 	return &Chunk{
 		r:                    r,
+		br:                   br,
 		air:                  air,
 		sub:                  sub,
 		biomes:               biomes,
 		recalculateHeightMap: true,
 		heightMap:            make(HeightMap, 256),
 	}
+}
+
+// Clone returns an independent copy of the Chunk.
+func (chunk *Chunk) Clone() *Chunk {
+	clone := &Chunk{
+		r:                    chunk.r,
+		br:                   chunk.br,
+		air:                  chunk.air,
+		recalculateHeightMap: chunk.recalculateHeightMap,
+		heightMap:            slices.Clone(chunk.heightMap),
+		sub:                  make([]*SubChunk, len(chunk.sub)),
+		biomes:               make([]*PalettedStorage, len(chunk.biomes)),
+	}
+	for i, sub := range chunk.sub {
+		clone.sub[i] = sub.Clone()
+	}
+	for i, biomes := range chunk.biomes {
+		clone.biomes[i] = biomes.Clone()
+	}
+	return clone
 }
 
 // Equals returns if the chunk passed is equal to the current one
@@ -144,7 +170,7 @@ func (chunk *Chunk) highestLightBlocker(x, z uint8, addOne bool) int16 {
 	for index := int16(len(chunk.sub) - 1); index >= 0; index-- {
 		if sub := chunk.sub[index]; !sub.Empty() {
 			for y := 15; y >= 0; y-- {
-				if FilteringBlocks[sub.storages[0].At(x, uint8(y), z)] == 15 {
+				if chunk.br.FilteringBlock(sub.storages[0].At(x, uint8(y), z)) == 15 {
 					return int16(y) | chunk.SubY(index) + plus
 				}
 			}

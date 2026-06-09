@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"math/rand/v2"
-	"time"
 )
 
 // Lava is a light-emitting fluid block that causes fire damage.
@@ -84,6 +85,11 @@ func (l Lava) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 // HasLiquidDrops ...
 func (Lava) HasLiquidDrops() bool {
 	return false
+}
+
+// LiquidRemoveBlock plays a fizz sound at the position of the removed block.
+func (Lava) LiquidRemoveBlock(pos cube.Pos, tx *world.Tx, _ world.Block) {
+	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
 }
 
 // LightDiffusionLevel always returns 2.

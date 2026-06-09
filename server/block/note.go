@@ -1,13 +1,14 @@
 package block
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"time"
 )
 
 // Note is a musical block that emits sounds when powered with redstone.
@@ -17,6 +18,8 @@ type Note struct {
 
 	// Pitch is the current pitch the note block is set to. Value ranges from 0-24.
 	Pitch int
+	// Powered is whether the note block was powered during its last redstone update.
+	Powered bool
 }
 
 // playNote ...
@@ -38,23 +41,56 @@ func (n Note) instrument(pos cube.Pos, tx *world.Tx) sound.Instrument {
 // DecodeNBT ...
 func (n Note) DecodeNBT(data map[string]any) any {
 	n.Pitch = int(nbtconv.Uint8(data, "note"))
+	n.Powered = nbtconv.Bool(data, "powered")
 	return n
 }
 
 // EncodeNBT ...
 func (n Note) EncodeNBT() map[string]any {
-	return map[string]any{"note": byte(n.Pitch)}
+	return map[string]any{"note": byte(n.Pitch), "powered": boolByte(n.Powered)}
 }
 
-// Activate ...
+// Activate tunes and plays the note block when there is room above it.
 func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
-	if _, ok := tx.Block(pos.Side(cube.FaceUp)).(Air); !ok {
+	if !n.canPlay(pos, tx) {
 		return false
 	}
 	n.Pitch = (n.Pitch + 1) % 25
 	n.playNote(pos, tx)
-	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true, DisableLiquidDisplacement: true})
+	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true})
 	return true
+}
+
+// RedstoneUpdate updates the note block's powered state and plays the note when it first becomes powered.
+func (n Note) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	poweredFaces := n.poweredFaces(pos, tx)
+	powered := len(poweredFaces) > 0
+	if powered == n.Powered {
+		return
+	}
+	n.Powered = powered
+	if powered && n.canPlay(pos, tx) {
+		n.playNote(pos, tx)
+	}
+	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true})
+	updateAroundRedstone(pos, tx, poweredFaces...)
+}
+
+// canPlay reports whether the block above the note block is air.
+func (n Note) canPlay(pos cube.Pos, tx *world.Tx) bool {
+	_, ok := tx.Block(pos.Side(cube.FaceUp)).(Air)
+	return ok
+}
+
+func (n Note) poweredFaces(pos cube.Pos, tx *world.Tx) []cube.Face {
+	var faces []cube.Face
+	for _, face := range cube.Faces() {
+		adjacentPos := pos.Side(face)
+		if power := tx.RedstonePower(adjacentPos, face, true); power > 0 {
+			faces = append(faces, face)
+		}
+	}
+	return faces
 }
 
 // BreakInfo ...

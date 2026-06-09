@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"bytes"
+	"slices"
 	"unsafe"
 )
 
@@ -57,6 +58,11 @@ func newPalettedStorage(indices []uint32, palette *Palette) *PalettedStorage {
 // emptyStorage creates a PalettedStorage filled completely with a value v.
 func emptyStorage(v uint32) *PalettedStorage {
 	return newPalettedStorage([]uint32{}, newPalette(0, []uint32{v}))
+}
+
+// Clone returns an independent copy of the PalettedStorage.
+func (storage *PalettedStorage) Clone() *PalettedStorage {
+	return newPalettedStorage(slices.Clone(storage.indices), storage.palette.Clone())
 }
 
 // Palette returns the Palette of the PalettedStorage.
@@ -164,7 +170,7 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 // relatively heavy task which should only happen right before the sub chunk holding this PalettedStorage is
 // saved to disk. compact also shrinks the palette size if possible.
 func (storage *PalettedStorage) compact() {
-	if storage.palette == nil || storage.palette.Len() == 0 {
+	if storage.palette.Len() == 0 {
 		return
 	}
 	if storage.palette.Len() == 1 {

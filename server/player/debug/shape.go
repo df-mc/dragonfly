@@ -20,16 +20,16 @@ type Shape interface {
 // shape is a base type for all shapes that implements the Shape interface. It contains a unique identifier
 // that is lazily initialised when the ShapeID method is called for the first time.
 type shape struct {
-	id *int
+	id atomic.Int32
 }
 
 // ShapeID ...
 func (s *shape) ShapeID() int {
-	if s.id == nil {
-		id := int(nextShapeID.Add(1))
-		s.id = &id
+	if id := s.id.Load(); id != 0 {
+		return int(id)
 	}
-	return *s.id
+	s.id.CompareAndSwap(0, nextShapeID.Add(1))
+	return int(s.id.Load())
 }
 
 // Arrow represents an arrow shape that can be drawn at any point in the world. It has a head which can also
@@ -130,15 +130,34 @@ type Sphere struct {
 type Text struct {
 	shape
 
-	// Colour is the colour that will be used for the actual text, not affecting the always-black background.
-	// If empty, the text will default to white.
+	// Colour is the colour that will be used for the actual text. If empty, the text will default to white.
 	Colour color.RGBA
+	// BackgroundColour is the colour used for the text background. If empty, it will default to a
+	// translucent black.
+	BackgroundColour color.RGBA
+	// HideBackground specifies whether the text background should be hidden entirely. Takes precedence
+	// over BackgroundColour when set.
+	HideBackground bool
 	// Position is the origin position of the shape in the world.
 	Position mgl64.Vec3
+	// Rotation is the rotation of the shape, applied only when LockRotation is set.
+	Rotation mgl64.Vec3
 	// Scale is the size of the text. If zero, it will default to 1.0.
 	Scale float64
 	// Text is the text to be displayed on the shape. The background automatically scales to fit the text.
 	Text string
+	// LockRotation specifies whether the text should be locked to the orientation set by Rotation.
+	// If false, the text will rotate to always face the camera.
+	LockRotation bool
+	// DisableDepthTest specifies whether the text should show through walls. If false, the text
+	// will be occluded by geometry in front of it.
+	DisableDepthTest bool
+	// HideBackface specifies whether the background should be hidden on the back side of the shape.
+	// Has no visible effect unless LockRotation is also set.
+	HideBackface bool
+	// HideBackfaceText specifies whether the text should be hidden on the back side of the shape.
+	// Has no visible effect unless LockRotation is also set.
+	HideBackfaceText bool
 	// Entity is an optional entity handle to attach the shape to.
 	Entity *world.EntityHandle
 }
