@@ -2646,7 +2646,9 @@ func (p *Player) tickAirSupply() {
 func (p *Player) tickFood() {
 	if p.hunger.foodTick%10 == 0 && p.tx.World().Difficulty().FoodRegenerates() {
 		p.AddFood(1)
-		p.regenerate(false)
+		if p.hunger.foodTick%20 == 0 {
+			p.regenerate(false)
+		}
 	}
 	if p.hunger.foodTick == 1 {
 		if p.hunger.canRegenerate() {
