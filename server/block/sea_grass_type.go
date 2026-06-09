@@ -42,5 +42,5 @@ func (s seaGrass) String() string {
 	case 2:
 		return "double_bot"
 	}
-	panic("unknown sea grass type")
+	panic("unknown seagrass type")
 }

@@ -94,6 +94,7 @@ func (s SeaGrass) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// BreakInfo ...
 func (s SeaGrass) BreakInfo() BreakInfo {
 	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if tool.ToolType() == item.TypeShears {
