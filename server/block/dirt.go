@@ -16,6 +16,7 @@ type Dirt struct {
 	Coarse bool
 }
 
+// BoneMeal ...
 func (d Dirt) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	return trySpreadSeaFlora(pos, tx)
 }

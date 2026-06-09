@@ -12,6 +12,7 @@ type Clay struct {
 	solid
 }
 
+// BoneMeal ...
 func (c Clay) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	return trySpreadSeaFlora(pos, tx)
 }

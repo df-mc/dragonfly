@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// seaFlora is the list of coral blocks that may be placed by trySpreadSeaFlora along with seagrass.
 var seaFlora = []world.Block{
 	Coral{Type: TubeCoral()},
 	Coral{Type: BrainCoral()},
@@ -18,6 +19,7 @@ var seaFlora = []world.Block{
 	// TODO: coral fans.
 }
 
+// SeaGrass is a non-solid plant block that generates in ocean biomes.
 type SeaGrass struct {
 	empty
 	replaceable
@@ -28,14 +30,17 @@ type SeaGrass struct {
 	Type SeaGrassType
 }
 
+// HasLiquidDrops ...
 func (s SeaGrass) HasLiquidDrops() bool {
 	return false
 }
 
+// SideClosed ...
 func (s SeaGrass) SideClosed(_, _ cube.Pos, _ *world.Tx) bool {
 	return false
 }
 
+// BoneMeal ...
 func (s SeaGrass) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if liquid, ok := tx.Liquid(pos.Side(cube.FaceUp)); !ok || !s.CanDisplace(liquid) {
 		return item.BoneMealResultNone
@@ -46,7 +51,6 @@ func (s SeaGrass) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 		tx.SetBlock(pos.Side(cube.FaceUp), top, nil)
 		return item.BoneMealResultSmall
 	}
-
 	return item.BoneMealResultNone
 }
 
@@ -67,6 +71,7 @@ func (s SeaGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 	return placed(ctx)
 }
 
+// NeighbourUpdateTick ...
 func (s SeaGrass) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if liquid, ok := tx.Liquid(pos); !ok || liquid.LiquidDepth() != 8 {
 		breakBlockNoDrops(s, pos, tx)
@@ -98,18 +103,22 @@ func (s SeaGrass) BreakInfo() BreakInfo {
 	})
 }
 
+// CompostChance ...
 func (s SeaGrass) CompostChance() float64 {
 	return 0.3
 }
 
+// EncodeItem ...
 func (s SeaGrass) EncodeItem() (name string, meta int16) {
 	return "minecraft:seagrass", 0
 }
 
+// EncodeBlock ...
 func (s SeaGrass) EncodeBlock() (string, map[string]any) {
 	return "minecraft:seagrass", map[string]any{"sea_grass_type": s.Type.String()}
 }
 
+// canSeaGrassStay returns whether sea grass can survive on the block at pos.
 func canSeaGrassStay(pos cube.Pos, tx *world.Tx) bool {
 	block := tx.Block(pos)
 	switch block.(type) {
@@ -119,6 +128,7 @@ func canSeaGrassStay(pos cube.Pos, tx *world.Tx) bool {
 	return block.Model().FaceSolid(pos, cube.FaceUp, tx)
 }
 
+// trySpreadSeaFlora attempts to spread sea grass and coral around pos using bone meal.
 func trySpreadSeaFlora(pos cube.Pos, tx *world.Tx) (result item.BoneMealResult) {
 	result = item.BoneMealResultNone
 	for range 16 {

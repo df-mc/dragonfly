@@ -15,6 +15,7 @@ type Gravel struct {
 	snare
 }
 
+// BoneMeal ...
 func (g Gravel) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	return trySpreadSeaFlora(pos, tx)
 }
