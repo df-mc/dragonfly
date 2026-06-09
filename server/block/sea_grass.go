@@ -42,7 +42,7 @@ func (s SeaGrass) SideClosed(_, _ cube.Pos, _ *world.Tx) bool {
 
 // BoneMeal ...
 func (s SeaGrass) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
-	if liquid, ok := tx.Liquid(pos.Side(cube.FaceUp)); !ok || !s.CanDisplace(liquid) {
+	if _, ok := tx.Liquid(pos.Side(cube.FaceUp)); !ok {
 		return item.BoneMealResultNone
 	}
 	top := SeaGrass{Type: DoubleTopSeaGrass()}
