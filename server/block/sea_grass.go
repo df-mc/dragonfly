@@ -9,11 +9,10 @@ import (
 
 type SeaGrass struct {
 	empty
-	transparent
 	replaceable
-	sourceWaterDisplacer
+	transparent
 
-	// Type is the type of the sea grass.
+	// Type is the type of the seagrass.
 	Type SeaGrassType
 }
 
@@ -21,8 +20,27 @@ func (s SeaGrass) HasLiquidDrops() bool {
 	return false
 }
 
+func (s SeaGrass) CanDisplace(b world.Liquid) bool {
+	w, ok := b.(Water)
+	return ok && w.Depth == 8
+}
+
 func (s SeaGrass) SideClosed(_, _ cube.Pos, _ *world.Tx) bool {
 	return false
+}
+
+func (s SeaGrass) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
+	if liquid, ok := tx.Liquid(pos.Side(cube.FaceUp)); !ok || !s.CanDisplace(liquid) {
+		return item.BoneMealResultNone
+	}
+	top := SeaGrass{Type: DoubleTopSeaGrass()}
+	if replaceableWith(tx, pos.Side(cube.FaceUp), top) && s.Type == DefaultSeaGrass() {
+		tx.SetBlock(pos, SeaGrass{Type: DoubleBottomSeaGrass()}, nil)
+		tx.SetBlock(pos.Side(cube.FaceUp), top, nil)
+		return item.BoneMealResultSmall
+	}
+
+	return item.BoneMealResultNone
 }
 
 // UseOnBlock ...
@@ -31,23 +49,33 @@ func (s SeaGrass) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wor
 	if !used {
 		return false
 	}
-
+	if liquid, ok := tx.Liquid(pos); !ok || liquid.LiquidDepth() != 8 {
+		return false
+	}
 	if !canSeaGrassStay(pos.Side(cube.FaceDown), tx) {
 		return false
 	}
-	if _, ok := tx.Liquid(pos); !ok {
-		return false
-	}
+
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
 func (s SeaGrass) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if liquid, ok := tx.Liquid(pos); !ok || liquid.LiquidDepth() != 8 {
+		breakBlockNoDrops(s, pos, tx)
+		return
+	}
+
 	if s.Type == DoubleTopSeaGrass() {
-		if _, ok := tx.Block(pos.Side(cube.FaceDown)).(SeaGrass); !ok {
+		if bottom, ok := tx.Block(pos.Side(cube.FaceDown)).(SeaGrass); !ok || bottom.Type != DoubleBottomSeaGrass() {
 			breakBlockNoDrops(s, pos, tx)
 		}
 		return
+	} else if s.Type == DoubleBottomSeaGrass() {
+		if upper, ok := tx.Block(pos.Side(cube.FaceUp)).(SeaGrass); !ok || upper.Type != DoubleTopSeaGrass() {
+			breakBlockNoDrops(s, pos, tx)
+			return
+		}
 	}
 	if !canSeaGrassStay(pos.Side(cube.FaceDown), tx) {
 		breakBlockNoDrops(s, pos, tx)
