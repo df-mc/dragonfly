@@ -155,7 +155,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 }
 
 // CanCharge ...
-func (c Crossbow) CanCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool {
+func (c Crossbow) CanCharge(releaser Releaser, _ *world.Tx, ctx *UseContext) bool {
 	_, found := c.findProjectile(releaser, ctx)
 	return found && !c.Item.Empty()
 }
