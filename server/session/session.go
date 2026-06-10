@@ -104,6 +104,8 @@ type Session struct {
 	closeBackground chan struct{}
 
 	br world.BlockRegistry
+
+	ddui *DDUIFormHandler
 }
 
 // debugShapeUpdate represents a pending debug shape mutation. If shape is nil, the update removes the
@@ -216,6 +218,7 @@ func (conf Config) New(conn Conn) *Session {
 		s.br = conf.BlockRegistry
 	}
 
+	s.ddui = &DDUIFormHandler{forms: make(map[uint32]*activeDDUIForm)}
 	s.registerHandlers()
 	s.sendBiomes()
 	groups, items := creativeContent(s.br)
@@ -531,39 +534,41 @@ func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (
 // registerHandlers registers all packet handlers found in the packetHandler package.
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
-		packet.IDActorEvent:                nil,
-		packet.IDAdventureSettings:         nil, // Deprecated, the client still sends this though.
-		packet.IDAnimate:                   nil,
-		packet.IDAnvilDamage:               nil,
-		packet.IDBlockActorData:            &BlockActorDataHandler{},
-		packet.IDBlockPickRequest:          &BlockPickRequestHandler{},
-		packet.IDBookEdit:                  &BookEditHandler{},
-		packet.IDBossEvent:                 nil,
-		packet.IDClientCacheBlobStatus:     &ClientCacheBlobStatusHandler{},
-		packet.IDCommandRequest:            &CommandRequestHandler{},
-		packet.IDContainerClose:            &ContainerCloseHandler{},
-		packet.IDEmote:                     &EmoteHandler{},
-		packet.IDEmoteList:                 nil,
-		packet.IDFilterText:                nil,
-		packet.IDInteract:                  &InteractHandler{},
-		packet.IDInventoryTransaction:      &InventoryTransactionHandler{},
-		packet.IDItemStackRequest:          &ItemStackRequestHandler{changes: map[byte]map[byte]changeInfo{}, responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
-		packet.IDLecternUpdate:             &LecternUpdateHandler{},
-		packet.IDMobEquipment:              &MobEquipmentHandler{},
-		packet.IDModalFormResponse:         &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
-		packet.IDMovePlayer:                nil,
-		packet.IDNPCRequest:                &NPCRequestHandler{},
-		packet.IDPlayerAction:              &PlayerActionHandler{},
-		packet.IDPlayerAuthInput:           &PlayerAuthInputHandler{},
-		packet.IDPlayerSkin:                &PlayerSkinHandler{},
-		packet.IDRequestAbility:            &RequestAbilityHandler{},
-		packet.IDRequestChunkRadius:        &RequestChunkRadiusHandler{},
-		packet.IDRespawn:                   &RespawnHandler{},
-		packet.IDSetPlayerInventoryOptions: nil,
-		packet.IDSubChunkRequest:           &SubChunkRequestHandler{},
-		packet.IDText:                      &TextHandler{},
-		packet.IDServerBoundLoadingScreen:  &ServerBoundLoadingScreenHandler{},
-		packet.IDServerBoundDiagnostics:    &ServerBoundDiagnosticsHandler{},
+		packet.IDActorEvent:                        nil,
+		packet.IDAdventureSettings:                 nil, // Deprecated, the client still sends this though.
+		packet.IDAnimate:                           nil,
+		packet.IDAnvilDamage:                       nil,
+		packet.IDBlockActorData:                    &BlockActorDataHandler{},
+		packet.IDBlockPickRequest:                  &BlockPickRequestHandler{},
+		packet.IDBookEdit:                          &BookEditHandler{},
+		packet.IDBossEvent:                         nil,
+		packet.IDClientCacheBlobStatus:             &ClientCacheBlobStatusHandler{},
+		packet.IDCommandRequest:                    &CommandRequestHandler{},
+		packet.IDContainerClose:                    &ContainerCloseHandler{},
+		packet.IDEmote:                             &EmoteHandler{},
+		packet.IDEmoteList:                         nil,
+		packet.IDFilterText:                        nil,
+		packet.IDInteract:                          &InteractHandler{},
+		packet.IDInventoryTransaction:              &InventoryTransactionHandler{},
+		packet.IDItemStackRequest:                  &ItemStackRequestHandler{changes: map[byte]map[byte]changeInfo{}, responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{}},
+		packet.IDLecternUpdate:                     &LecternUpdateHandler{},
+		packet.IDMobEquipment:                      &MobEquipmentHandler{},
+		packet.IDModalFormResponse:                 &ModalFormResponseHandler{forms: make(map[uint32]form.Form)},
+		packet.IDServerBoundDataDrivenScreenClosed: &DataDrivenScreenClosedHandler{h: s.ddui},
+		packet.IDServerBoundDataStore:              &ServerBoundDataStoreHandler{h: s.ddui},
+		packet.IDMovePlayer:                        nil,
+		packet.IDNPCRequest:                        &NPCRequestHandler{},
+		packet.IDPlayerAction:                      &PlayerActionHandler{},
+		packet.IDPlayerAuthInput:                   &PlayerAuthInputHandler{},
+		packet.IDPlayerSkin:                        &PlayerSkinHandler{},
+		packet.IDRequestAbility:                    &RequestAbilityHandler{},
+		packet.IDRequestChunkRadius:                &RequestChunkRadiusHandler{},
+		packet.IDRespawn:                           &RespawnHandler{},
+		packet.IDSetPlayerInventoryOptions:         nil,
+		packet.IDSubChunkRequest:                   &SubChunkRequestHandler{},
+		packet.IDText:                              &TextHandler{},
+		packet.IDServerBoundLoadingScreen:          &ServerBoundLoadingScreenHandler{},
+		packet.IDServerBoundDiagnostics:            &ServerBoundDiagnosticsHandler{},
 	}
 }
 
