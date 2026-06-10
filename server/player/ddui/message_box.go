@@ -1,79 +1,88 @@
 package ddui
 
 // MessageBoxOption configures a MessageBox. The interface is sealed; use the
-// provided constructors (Body, Button1, Button2, Handler) to build options.
+// provided constructors (Body, Button1, Button2, Handler).
 type MessageBoxOption interface {
 	applyMessageBox(m *MessageBox)
 }
 
-// bodyOption sets the body text of a MessageBox.
-type bodyOption struct{ text string }
+type bodyOption struct{ obs *Observable[string] }
 
-func (b bodyOption) applyMessageBox(m *MessageBox) { m.body = b.text }
+func (b bodyOption) applyMessageBox(m *MessageBox) { m.body = b.obs }
 
-// Body sets the body text displayed in the message box.
-func Body(text string) MessageBoxOption { return bodyOption{text: text} }
+// Body sets the body text of the message box. Accepts a plain string or an
+// *Observable[string]; passing an observable allows live updates while the form is open.
+func Body[T string | *Observable[string]](text T) MessageBoxOption {
+	return bodyOption{obs: toStringObs(text)}
+}
 
-// button1Option sets the first button of a MessageBox.
 type button1Option struct {
-	label string
+	label *Observable[string]
 	opts  []MessageBoxButtonOption
 }
 
 func (b button1Option) applyMessageBox(m *MessageBox) {
 	m.btn1.label = b.label
 	for _, o := range b.opts {
-		m.btn1.tooltip = o.tooltip
+		if o.tooltip != nil {
+			m.btn1.tooltip = o.tooltip
+		}
 	}
 }
 
-// Button1 sets the label and optional tooltip for the first button.
-func Button1(label string, opts ...MessageBoxButtonOption) MessageBoxOption {
-	return button1Option{label: label, opts: opts}
+// Button1 sets the first button's label and optional tooltip. Accepts a plain
+// string or an *Observable[string] for the label.
+func Button1[T string | *Observable[string]](label T, opts ...MessageBoxButtonOption) MessageBoxOption {
+	return button1Option{label: toStringObs(label), opts: opts}
 }
 
-// button2Option sets the second button of a MessageBox.
 type button2Option struct {
-	label string
+	label *Observable[string]
 	opts  []MessageBoxButtonOption
 }
 
 func (b button2Option) applyMessageBox(m *MessageBox) {
 	m.btn2.label = b.label
 	for _, o := range b.opts {
-		m.btn2.tooltip = o.tooltip
+		if o.tooltip != nil {
+			m.btn2.tooltip = o.tooltip
+		}
 	}
 }
 
-// Button2 sets the label and optional tooltip for the second button.
-func Button2(label string, opts ...MessageBoxButtonOption) MessageBoxOption {
-	return button2Option{label: label, opts: opts}
+// Button2 sets the second button's label and optional tooltip. Accepts a plain
+// string or an *Observable[string] for the label.
+func Button2[T string | *Observable[string]](label T, opts ...MessageBoxButtonOption) MessageBoxOption {
+	return button2Option{label: toStringObs(label), opts: opts}
 }
 
 // MessageBox is a two-button confirmation dialog. The Handler is called with
 // the selected button (1 or 2) when the form closes, or 0 if cancelled.
 type MessageBox struct {
-	title, body string
-	btn1, btn2  messageBoxButton
-	selection   int
-	handler     func(selection int)
+	title      *Observable[string]
+	body       *Observable[string]
+	btn1, btn2 messageBoxButton
+	selection  int
+	handler    func(selection int)
 }
 
 type messageBoxButton struct {
-	label, tooltip string
+	label   *Observable[string]
+	tooltip *Observable[string]
 }
 
 // MessageBoxButtonOption configures optional properties of a MessageBox button.
-type MessageBoxButtonOption struct{ tooltip string }
+type MessageBoxButtonOption struct{ tooltip *Observable[string] }
 
-// WithTooltip sets the tooltip text shown when hovering over a button.
-func WithTooltip(tooltip string) MessageBoxButtonOption {
-	return MessageBoxButtonOption{tooltip: tooltip}
+// WithTooltip sets the button tooltip. Accepts a plain string or an *Observable[string].
+func WithTooltip[T string | *Observable[string]](tooltip T) MessageBoxButtonOption {
+	return MessageBoxButtonOption{tooltip: toStringObs(tooltip)}
 }
 
-// NewMessageBox creates a MessageBox with the given title and options.
-func NewMessageBox(title string, opts ...MessageBoxOption) *MessageBox {
-	m := &MessageBox{title: title}
+// NewMessageBox creates a MessageBox with the given title and options. title
+// accepts a plain string or an *Observable[string].
+func NewMessageBox[T string | *Observable[string]](title T, opts ...MessageBoxOption) *MessageBox {
+	m := &MessageBox{title: toStringObs(title)}
 	for _, o := range opts {
 		o.applyMessageBox(m)
 	}
@@ -85,18 +94,23 @@ func (m *MessageBox) ScreenID() string { return "minecraft:message_box" }
 
 // Describe implements Form.
 func (m *MessageBox) Describe() FormDescriptor {
-	return FormDescriptor{
-		Title: m.title,
-		Body:  m.body,
-		Button1: ButtonDescriptor{
-			Label:   m.btn1.label,
-			Tooltip: m.btn1.tooltip,
-		},
-		Button2: ButtonDescriptor{
-			Label:   m.btn2.label,
-			Tooltip: m.btn2.tooltip,
-		},
+	desc := FormDescriptor{Title: m.title.Get()}
+	if m.body != nil {
+		desc.Body = m.body.Get()
 	}
+	if m.btn1.label != nil {
+		desc.Button1.Label = m.btn1.label.Get()
+	}
+	if m.btn1.tooltip != nil {
+		desc.Button1.Tooltip = m.btn1.tooltip.Get()
+	}
+	if m.btn2.label != nil {
+		desc.Button2.Label = m.btn2.label.Get()
+	}
+	if m.btn2.tooltip != nil {
+		desc.Button2.Tooltip = m.btn2.tooltip.Get()
+	}
+	return desc
 }
 
 // HandleUpdate implements Form. Returns true when a button is clicked, signalling
@@ -114,11 +128,37 @@ func (m *MessageBox) HandleUpdate(path string, _ UpdateValue) bool {
 }
 
 // BindSend implements Form.
-func (m *MessageBox) BindSend(_ func(UpdateNotification)) {}
+func (m *MessageBox) BindSend(fn func(UpdateNotification)) {
+	bind := func(obs *Observable[string], path string) {
+		if obs == nil {
+			return
+		}
+		obs.bindSend(func(v string) {
+			fn(UpdateNotification{Path: path, Value: UpdateValue{Kind: UpdateKindString, String: v}})
+		})
+	}
+	bind(m.title, "title")
+	bind(m.body, "body")
+	bind(m.btn1.label, "button1.label")
+	bind(m.btn1.tooltip, "button1.tooltip")
+	bind(m.btn2.label, "button2.label")
+	bind(m.btn2.tooltip, "button2.tooltip")
+}
 
 // OnClose implements Form.
 func (m *MessageBox) OnClose(_ int) {
 	if m.handler != nil {
 		m.handler(m.selection)
 	}
+}
+
+// toStringObs converts a string or *Observable[string] to *Observable[string].
+func toStringObs[T string | *Observable[string]](v T) *Observable[string] {
+	switch val := any(v).(type) {
+	case string:
+		return NewObservable(val, false)
+	case *Observable[string]:
+		return val
+	}
+	panic("unreachable")
 }
