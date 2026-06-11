@@ -62,15 +62,15 @@ func (b BambooSapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // BoneMeal grows the sapling into a bamboo stalk immediately.
-func (b BambooSapling) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (b BambooSapling) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	above := pos.Side(cube.FaceUp)
 	if _, ok := tx.Block(above).(Air); !ok {
-		return false
+		return item.BoneMealResultNone
 	}
 	// Bottom becomes aged (age_bit=1), top is fresh growable (age_bit=0).
 	tx.SetBlock(pos, Bamboo{Age: true, LeafSize: bambooNoLeaves, Thick: false}, nil)
 	tx.SetBlock(above, Bamboo{Age: false, LeafSize: SmallLeaves, Thick: false}, nil)
-	return true
+	return item.BoneMealResultSmall
 }
 
 // BreakInfo ...

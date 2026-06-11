@@ -62,14 +62,14 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 }
 
 // BoneMeal grows a bamboo stalk by 1-2 blocks if there is enough room.
-func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	top, ok := bambooTop(pos, tx)
 	if !ok {
-		return false
+		return item.BoneMealResultNone
 	}
 	// The top block must have Age=false (growable) for bone meal to work.
 	if topB, ok2 := tx.Block(top).(Bamboo); ok2 && topB.Age {
-		return false
+		return item.BoneMealResultNone
 	}
 	growth := rand.IntN(2) + 1
 	applied := false
@@ -81,7 +81,10 @@ func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 		top = nextTop
 		applied = true
 	}
-	return applied
+	if !applied {
+		return item.BoneMealResultNone
+	}
+	return item.BoneMealResultSmall
 }
 
 // NeighbourUpdateTick breaks the bamboo if it loses support.
