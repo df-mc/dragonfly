@@ -1,5 +1,7 @@
 package chunk
 
+import "slices"
+
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
 type SubChunk struct {
@@ -27,6 +29,34 @@ func (sub *SubChunk) Equals(s *SubChunk) bool {
 // NewSubChunk creates a new sub chunk. All sub chunks should be created through this function.
 func NewSubChunk(air uint32) *SubChunk {
 	return &SubChunk{air: air}
+}
+
+// Clone returns an independent copy of the SubChunk.
+func (sub *SubChunk) Clone() *SubChunk {
+	clone := &SubChunk{
+		air:        sub.air,
+		storages:   make([]*PalettedStorage, len(sub.storages)),
+		blockLight: cloneLight(sub.blockLight),
+		skyLight:   cloneLight(sub.skyLight),
+	}
+	for i, storage := range sub.storages {
+		clone.storages[i] = storage.Clone()
+	}
+	return clone
+}
+
+func cloneLight(light []uint8) []uint8 {
+	if len(light) == 0 {
+		return slices.Clone(light)
+	}
+	switch &light[0] {
+	case noLightPtr:
+		return noLight
+	case fullLightPtr:
+		return fullLight
+	default:
+		return slices.Clone(light)
+	}
 }
 
 // Empty checks if the SubChunk is considered empty. This is the case if the SubChunk has 0 block storages or if it has

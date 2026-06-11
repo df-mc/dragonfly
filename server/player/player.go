@@ -1512,7 +1512,7 @@ func (p *Player) UseItem() {
 	case item.Chargeable:
 		useCtx := p.useContext()
 		if !p.usingItem {
-			if !usable.ReleaseCharge(p, p.tx, useCtx) {
+			if !usable.ReleaseCharge(p, p.tx, useCtx) && usable.CanCharge(p, p.tx, useCtx) {
 				// If the item was not charged yet, start charging.
 				p.usingSince, p.usingItem = time.Now(), true
 			}

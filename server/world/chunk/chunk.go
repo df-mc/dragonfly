@@ -49,6 +49,26 @@ func New(br BlockRegistry, r cube.Range) *Chunk {
 	}
 }
 
+// Clone returns an independent copy of the Chunk.
+func (chunk *Chunk) Clone() *Chunk {
+	clone := &Chunk{
+		r:                    chunk.r,
+		br:                   chunk.br,
+		air:                  chunk.air,
+		recalculateHeightMap: chunk.recalculateHeightMap,
+		heightMap:            slices.Clone(chunk.heightMap),
+		sub:                  make([]*SubChunk, len(chunk.sub)),
+		biomes:               make([]*PalettedStorage, len(chunk.biomes)),
+	}
+	for i, sub := range chunk.sub {
+		clone.sub[i] = sub.Clone()
+	}
+	for i, biomes := range chunk.biomes {
+		clone.biomes[i] = biomes.Clone()
+	}
+	return clone
+}
+
 // Equals returns if the chunk passed is equal to the current one
 func (chunk *Chunk) Equals(c *Chunk) bool {
 	if !chunk.recalculateHeightMap && !c.recalculateHeightMap && !slices.Equal(c.heightMap, chunk.heightMap) {
