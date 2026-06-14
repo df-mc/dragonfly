@@ -73,7 +73,8 @@ type Handler interface {
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
 	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered to change
 	// what items will actually be dropped. If the block being broken is a private view-layer block, drops and xp
-	// start empty and modifications to them are ignored: Private breaks only remove the viewer's override.
+	// start empty and modifications to them are ignored: Private breaks only remove the viewer's override. Use
+	// ctx.Val().ViewLayer().Block(pos) to check if the block being broken is private.
 	HandleBlockBreak(ctx *Context, pos cube.Pos, drops *[]item.Stack, xp *int)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
