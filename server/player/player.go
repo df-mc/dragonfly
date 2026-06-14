@@ -1668,10 +1668,14 @@ func (p *Player) UsingItem() bool {
 // returns immediately.
 // UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
-	b, _ := p.viewedBlock(pos)
+	b, private := p.viewedBlock(pos)
 	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that does not exist server-side or one it couldn't reach. Stop trying
 		// to use the item immediately.
+		p.resendNearbyBlocks(pos, face)
+		return
+	}
+	if private {
 		p.resendNearbyBlocks(pos, face)
 		return
 	}
@@ -1680,7 +1684,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		p.resendNearbyBlocks(pos, face)
 		return
 	}
-	b, private := p.viewedBlock(pos)
+	b, private = p.viewedBlock(pos)
 	if _, ok := b.(block.Air); ok {
 		p.resendNearbyBlocks(pos, face)
 		return
@@ -1980,7 +1984,13 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	private := p.breakingPrivate
 	var b world.Block
 	if private {
-		b, _ = p.breakingBlock(pos)
+		var ok bool
+		b, ok = p.privateBlock(pos)
+		if !ok {
+			p.AbortBreaking()
+			p.resendBreakingBlock(pos, false)
+			return
+		}
 		p.ShowParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 	} else {
 		b = p.tx.Block(pos)
