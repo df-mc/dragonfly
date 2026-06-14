@@ -89,7 +89,7 @@ func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
 		return
 	}
 	if b, ok := s.viewLayer.Block(pos); ok {
-		s.advertisePrivateBlockSubChunk(pos)
+		s.broadcastPrivateBlockSubChunk(pos)
 		s.viewBlockUpdate(pos, b, 0)
 		s.viewBlockUpdate(pos, s.br.Air(), 1)
 		return
@@ -100,9 +100,9 @@ func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
 	}
 }
 
-// advertisePrivateBlockSubChunk resends the chunk height advert if a private block override occupies a
+// broadcastPrivateBlockSubChunk resends the chunk height advert if a private block override occupies a
 // sub-chunk the client may not have loaded from the public chunk state.
-func (s *Session) advertisePrivateBlockSubChunk(pos cube.Pos) {
+func (s *Session) broadcastPrivateBlockSubChunk(pos cube.Pos) {
 	if !subChunkRequests || s.chunkLoader == nil {
 		return
 	}
