@@ -128,8 +128,9 @@ func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
 	return v.entities[entity.H()].visibility
 }
 
-// ViewBlock overwrites the public block at the position passed for this ViewLayer.
-// Passing nil removes the block override, causing the public block to be viewed again.
+// ViewBlock overwrites the public block at the position passed for this ViewLayer. Liquid or waterlogged
+// state at layer 1 is not represented for overrides. Passing nil removes the block override, causing the
+// public block to be viewed again.
 func (v *ViewLayer) ViewBlock(pos cube.Pos, b Block) {
 	v.mu.Lock()
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
