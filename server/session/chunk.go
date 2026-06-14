@@ -146,16 +146,13 @@ func (s *Session) applyViewLayerToChunk(pos world.ChunkPos, c *chunk.Chunk, bloc
 	if s.viewLayer == nil {
 		return c, blockEntities
 	}
-	overrides := s.viewLayer.Blocks()
+	overrides := s.viewLayer.ChunkBlocks(pos)
 	if len(overrides) == 0 {
 		return c, blockEntities
 	}
 
 	var cloned bool
 	for blockPos, b := range overrides {
-		if (world.ChunkPos{int32(blockPos[0] >> 4), int32(blockPos[2] >> 4)}) != pos {
-			continue
-		}
 		if blockPos.OutOfBounds(c.Range()) {
 			continue
 		}

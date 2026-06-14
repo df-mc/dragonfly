@@ -33,18 +33,18 @@ type viewLayerViewer interface {
 // ViewLayer holds overrides for how entities are viewed by a single viewer. It allows entities to be
 // viewed differently by different players, such as with a different name tag or visibility state.
 type ViewLayer struct {
-	mu       sync.RWMutex
-	entities map[*EntityHandle]layer
-	blocks   map[cube.Pos]Block
-	updater  ViewLayerUpdater
+	mu            sync.RWMutex
+	entities      map[*EntityHandle]layer
+	blocksByChunk map[ChunkPos]map[cube.Pos]Block
+	updater       ViewLayerUpdater
 }
 
 // NewViewLayer returns a new ViewLayer.
 func NewViewLayer(updater ViewLayerUpdater) *ViewLayer {
 	return &ViewLayer{
-		entities: map[*EntityHandle]layer{},
-		blocks:   map[cube.Pos]Block{},
-		updater:  updater,
+		entities:      map[*EntityHandle]layer{},
+		blocksByChunk: map[ChunkPos]map[cube.Pos]Block{},
+		updater:       updater,
 	}
 }
 
@@ -132,10 +132,17 @@ func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
 // Passing nil removes the block override, causing the public block to be viewed again.
 func (v *ViewLayer) ViewBlock(pos cube.Pos, b Block) {
 	v.mu.Lock()
+	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
 	if b == nil {
-		delete(v.blocks, pos)
+		delete(v.blocksByChunk[chunkPos], pos)
+		if len(v.blocksByChunk[chunkPos]) == 0 {
+			delete(v.blocksByChunk, chunkPos)
+		}
 	} else {
-		v.blocks[pos] = b
+		if v.blocksByChunk[chunkPos] == nil {
+			v.blocksByChunk[chunkPos] = map[cube.Pos]Block{}
+		}
+		v.blocksByChunk[chunkPos][pos] = b
 	}
 	v.mu.Unlock()
 
@@ -152,7 +159,7 @@ func (v *ViewLayer) Block(pos cube.Pos) (Block, bool) {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
-	b, ok := v.blocks[pos]
+	b, ok := v.blocksByChunk[ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}][pos]
 	return b, ok
 }
 
@@ -161,7 +168,23 @@ func (v *ViewLayer) Blocks() map[cube.Pos]Block {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
-	return maps.Clone(v.blocks)
+	blocks := make(map[cube.Pos]Block)
+	for _, chunkBlocks := range v.blocksByChunk {
+		maps.Copy(blocks, chunkBlocks)
+	}
+	return blocks
+}
+
+// ChunkBlocks returns all block overrides in a chunk.
+func (v *ViewLayer) ChunkBlocks(pos ChunkPos) map[cube.Pos]Block {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
+	blocks := v.blocksByChunk[pos]
+	if len(blocks) == 0 {
+		return nil
+	}
+	return maps.Clone(blocks)
 }
 
 // Remove removes all overrides for the entity from the ViewLayer.
@@ -207,7 +230,7 @@ func (v *ViewLayer) Close() error {
 	defer v.mu.Unlock()
 
 	clear(v.entities)
-	clear(v.blocks)
+	clear(v.blocksByChunk)
 	return nil
 }
 
