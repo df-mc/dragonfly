@@ -85,10 +85,7 @@ func (s *Session) ViewLayerEntityChanged(e world.Entity) {
 
 // ViewLayerBlockChanged refreshes a block override for this session if its chunk is currently visible.
 func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
-	if s.viewLayer == nil {
-		return
-	}
-	if !s.viewingBlock(pos) {
+	if s.viewLayer == nil || !s.viewingBlock(pos) {
 		return
 	}
 	if b, ok := s.viewLayer.Block(pos); ok {
