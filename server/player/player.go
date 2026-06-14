@@ -1859,12 +1859,17 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	firePos := pos.Side(face)
-	if fireBlock, firePrivate := p.viewedBlock(firePos); !firePrivate {
+	if fireBlock, firePrivate := p.viewedBlock(firePos); fireBlock != nil {
 		if _, ok := fireBlock.(block.Fire); ok {
 			ctx := event.C(p)
 			if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
 				// Resend the block because on client side that was extinguished
 				p.resendNearbyBlocks(pos, face)
+				return
+			}
+			if firePrivate {
+				p.ViewPublicBlock(firePos)
+				p.session().ViewSound(pos.Vec3(), sound.FireExtinguish{})
 				return
 			}
 
