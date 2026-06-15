@@ -19,9 +19,6 @@ type layer struct {
 type ViewLayerUpdater interface {
 	// ViewLayerEntityChanged handles an entity whose view-layer overrides changed.
 	ViewLayerEntityChanged(entity Entity)
-}
-
-type viewLayerBlockUpdater interface {
 	// ViewLayerBlockChanged handles a block whose view-layer override changed.
 	ViewLayerBlockChanged(pos cube.Pos)
 }
@@ -247,7 +244,7 @@ func (v *ViewLayer) refresh(entity Entity) {
 }
 
 func (v *ViewLayer) refreshBlock(pos cube.Pos) {
-	if updater, ok := v.updater.(viewLayerBlockUpdater); ok {
-		updater.ViewLayerBlockChanged(pos)
+	if v.updater != nil {
+		v.updater.ViewLayerBlockChanged(pos)
 	}
 }

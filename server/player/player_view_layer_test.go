@@ -27,10 +27,10 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 		expectedPrivateBlock world.Block
 	}{
 		{
-			name:                "break viewed block removes private override without mutating world",
+			name:                "break visible block removes private override without mutating world",
 			publicBlock:         block.Dirt{},
 			privateBlock:        block.Stone{},
-			action:              func(p *Player, pos cube.Pos) { p.BreakViewedBlock(pos) },
+			action:              func(p *Player, pos cube.Pos) { p.BreakVisibleBlock(pos) },
 			expectedPublicBlock: block.Dirt{},
 		},
 		{

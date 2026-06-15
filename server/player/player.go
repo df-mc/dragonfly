@@ -96,10 +96,8 @@ type playerData struct {
 	collidedVertically, collidedHorizontally bool
 
 	breaking          bool
-	breakingPos       cube.Pos
+	blockBreakTarget  *blockBreakTarget
 	breakingFace      cube.Face
-	breakingPrivate   bool
-	breakingPosValid  bool
 	lastBreakDuration time.Duration
 
 	breakCounter uint32
@@ -1857,6 +1855,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 // player might be breaking before this method is called.
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
+	p.blockBreakTarget = nil
 	b, private := p.visibleBlock(pos)
 	if _, air := b.(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
@@ -1873,14 +1872,11 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		}
 		if firePrivate {
 			p.ViewPublicBlock(firePos)
-			if _, ok := p.tx.Block(firePos).(block.Fire); !ok {
-				p.session().ViewSound(pos.Vec3(), sound.FireExtinguish{})
-				return
-			}
+			p.blockAudience(true).PlaySound(pos.Vec3(), sound.FireExtinguish{})
+			return
 		}
-
 		p.tx.SetBlock(firePos, nil, nil)
-		p.tx.PlaySound(pos.Vec3(), sound.FireExtinguish{})
+		p.blockAudience(false).PlaySound(pos.Vec3(), sound.FireExtinguish{})
 		return
 	}
 
@@ -1891,7 +1887,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	}
 	// Note: We intentionally store this regardless of whether the breaking proceeds, so that we
 	// can resend the block to the client when it tries to break the block regardless.
-	p.breakingPos, p.breakingPrivate, p.breakingPosValid = pos, private, true
+	p.blockBreakTarget = &blockBreakTarget{pos: pos, block: b, private: private}
 
 	ctx := event.C(p)
 	if p.Handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
@@ -1908,7 +1904,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	p.lastBreakDuration = p.breakTime(b)
-	p.viewBreakingBlockAction(pos, private, block.StartCrackAction{BreakTime: p.lastBreakDuration})
+	p.blockAudience(private).ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
 }
 
 // breakTime returns the time needed to break a block at the position passed, taking into account the item
@@ -1941,25 +1937,18 @@ func (p *Player) breakTime(b world.Block) time.Duration {
 // FinishBreaking will stop the animation and break the block.
 func (p *Player) FinishBreaking() {
 	if !p.breaking {
-		if p.breakingPosValid {
-			p.resendBreakingBlock(p.breakingPos, p.breakingPrivate)
-			p.breakingPosValid = false
+		if target := p.blockBreakTarget; target != nil {
+			p.blockAudience(target.private).Resend(target.pos)
+			p.blockBreakTarget = nil
 		}
 		return
 	}
-	pos := p.breakingPos
-	private := p.breakingPrivate
+	target := p.blockBreakTarget
 	p.AbortBreaking()
-	if private {
-		b, ok := p.privateBlock(pos)
-		if !ok {
-			p.resendBreakingBlock(pos, false)
-			return
-		}
-		p.breakBlock(pos, b, true)
+	if target == nil {
 		return
 	}
-	p.BreakBlock(pos)
+	p.breakTarget(*target)
 }
 
 // AbortBreaking makes the player stop breaking the block it is currently breaking, or returns immediately
@@ -1969,70 +1958,42 @@ func (p *Player) AbortBreaking() {
 	if !p.breaking {
 		return
 	}
-	private := p.breakingPrivate
-	p.breaking, p.breakingPrivate, p.breakingPosValid, p.breakCounter = false, false, false, 0
-	p.viewBreakingBlockAction(p.breakingPos, private, block.StopCrackAction{})
+	target := p.blockBreakTarget
+	p.breaking, p.blockBreakTarget, p.breakCounter = false, nil, 0
+	if target != nil {
+		p.blockAudience(target.private).ViewBlockAction(target.pos, block.StopCrackAction{})
+	}
 }
 
 // ContinueBreaking makes the player continue breaking the block it started breaking after a call to
 // Player.StartBreaking().
 // The face passed is used to display particles on the side of the block broken.
 func (p *Player) ContinueBreaking(face cube.Face) {
-	if !p.breaking {
+	target := p.blockBreakTarget
+	if !p.breaking || target == nil {
 		return
 	}
-	pos := p.breakingPos
-	private := p.breakingPrivate
-	var b world.Block
-	if private {
-		var ok bool
-		b, ok = p.privateBlock(pos)
-		if !ok {
+	if target.private {
+		if _, ok := p.privateBlock(target.pos); !ok {
 			p.AbortBreaking()
-			p.resendBreakingBlock(pos, false)
+			p.blockAudience(false).Resend(target.pos)
 			return
 		}
-		p.ShowParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
-	} else {
-		b = p.tx.Block(pos)
-		p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 	}
+	audience := p.blockAudience(target.private)
+	audience.AddParticle(target.pos.Vec3(), particle.PunchBlock{Block: target.block, Face: face})
 
 	if p.breakCounter++; p.breakCounter%5 == 0 {
 		p.SwingArm()
 
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
-		if private {
-			p.session().ViewSound(pos.Vec3(), sound.BlockBreaking{Block: b})
-		} else {
-			p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
-		}
+		audience.PlaySound(target.pos.Vec3(), sound.BlockBreaking{Block: target.block})
 	}
-	if breakTime := p.breakTime(b); breakTime != p.lastBreakDuration {
-		p.viewBreakingBlockAction(pos, private, block.ContinueCrackAction{BreakTime: breakTime})
+	if breakTime := p.breakTime(target.block); breakTime != p.lastBreakDuration {
+		audience.ViewBlockAction(target.pos, block.ContinueCrackAction{BreakTime: breakTime})
 		p.lastBreakDuration = breakTime
 	}
-}
-
-// viewBreakingBlockAction shows a breaking action to the player only if the block is a private view-layer
-// block, or to all viewers if it is a public world block.
-func (p *Player) viewBreakingBlockAction(pos cube.Pos, private bool, a world.BlockAction) {
-	if private {
-		p.session().ViewPrivateBlockAction(pos, a)
-		return
-	}
-	for _, viewer := range p.viewers() {
-		viewer.ViewBlockAction(pos, a)
-	}
-}
-
-// visibleBlock returns the block currently shown to the player at pos.
-func (p *Player) visibleBlock(pos cube.Pos) (world.Block, bool) {
-	if b, ok := p.privateBlock(pos); ok {
-		return b, true
-	}
-	return p.tx.Block(pos), false
 }
 
 // PlaceBlock makes the player place the block passed at the position passed, granted it is within the range
@@ -2105,122 +2066,6 @@ func (p *Player) obstructedPos(pos cube.Pos, b world.Block) (obstructed, selfOnl
 		}
 	}
 	return obstructed, true
-}
-
-// BreakBlock makes the player break the public world block at the position passed. Private view-layer
-// overrides are ignored by this method: Call BreakViewedBlock to break what the player currently sees instead.
-// If the player is unable to reach the block passed, the method returns immediately.
-func (p *Player) BreakBlock(pos cube.Pos) {
-	p.breakBlock(pos, p.tx.Block(pos), false)
-}
-
-// BreakViewedBlock makes the player break the block currently shown to them at the position passed. If the
-// player has a private block override at that position, it is removed instead of breaking the public world block.
-// If the player is unable to reach the block passed, the method returns immediately.
-func (p *Player) BreakViewedBlock(pos cube.Pos) {
-	b, private := p.visibleBlock(pos)
-	p.breakBlock(pos, b, private)
-}
-
-// breakBlock makes the player break the block passed at the position passed. Private blocks are removed
-// from the player's view layer instead of the world.
-func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
-	if _, air := b.(block.Air); air {
-		// Don't do anything if the position broken is already air.
-		return
-	}
-	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
-		p.resendBreakingBlock(pos, private)
-		return
-	}
-	breakable, ok := b.(block.Breakable)
-	if !ok && !p.GameMode().CreativeInventory() {
-		p.resendBreakingBlock(pos, private)
-		return
-	}
-	held, _ := p.HeldItems()
-	var drops []item.Stack
-
-	xp := 0
-	if !private {
-		drops = p.drops(held, b)
-		if ok && !p.GameMode().CreativeInventory() {
-			if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
-				xp = breakable.BreakInfo().XPDrops.RandomValue()
-			}
-		}
-	}
-
-	ctx := event.C(p)
-	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
-		p.resendBreakingBlock(pos, private)
-		return
-	}
-	held, left := p.HeldItems()
-
-	p.SwingArm()
-	if private {
-		p.ViewPublicBlock(pos)
-		p.ShowParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-		return
-	}
-	p.tx.SetBlock(pos, nil, nil)
-	p.tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
-	if ok {
-		info := breakable.BreakInfo()
-		if info.BreakHandler != nil {
-			info.BreakHandler(pos, p.tx, p)
-		}
-		for _, orb := range entity.NewExperienceOrbs(pos.Vec3Centre(), xp) {
-			p.tx.AddEntity(orb)
-		}
-	}
-	for _, drop := range drops {
-		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre(), Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
-		p.tx.AddEntity(entity.NewItem(opts, drop))
-	}
-
-	p.Exhaust(0.005)
-	if block.BreaksInstantly(b, held) {
-		return
-	}
-	if durable, ok := held.Item().(item.Durable); ok {
-		p.SetHeldItems(p.damageItem(held, durable.DurabilityInfo().BreakDurability), left)
-	}
-}
-
-// drops returns the drops that the player can get from the block passed using the item held.
-func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
-	t, ok := held.Item().(item.Tool)
-	if !ok {
-		t = item.ToolNone{}
-	}
-	var drops []item.Stack
-	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
-		if breakable.BreakInfo().Harvestable(t) {
-			drops = breakable.BreakInfo().Drops(t, held.Enchantments())
-		}
-	} else if it, ok := b.(world.Item); ok && !p.GameMode().CreativeInventory() {
-		drops = []item.Stack{item.NewStack(it, 1)}
-	}
-	return drops
-}
-
-// privateBlock returns this player's view-layer block override at pos, if present.
-func (p *Player) privateBlock(pos cube.Pos) (world.Block, bool) {
-	if p.session() == session.Nop {
-		return nil, false
-	}
-	return p.ViewLayer().Block(pos)
-}
-
-// resendBreakingBlock resends the block being broken without overwriting private view-layer overrides.
-func (p *Player) resendBreakingBlock(pos cube.Pos, private bool) {
-	if private {
-		p.session().ViewLayerBlockChanged(pos)
-		return
-	}
-	p.resendNearbyBlocks(pos)
 }
 
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to

@@ -961,9 +961,9 @@ func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFu
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	if s.viewLayer != nil {
-		if viewed, ok := s.viewLayer.Block(pos); ok {
+		if visible, ok := s.viewLayer.Block(pos); ok {
 			if layer == 0 {
-				b = viewed
+				b = visible
 			} else {
 				b = s.br.Air()
 			}
@@ -1091,7 +1091,7 @@ func (s *Session) ViewEntityState(e world.Entity) {
 	})
 }
 
-// entityMetadata returns the metadata of an entity as viewed by the session, including any overrides
+// entityMetadata returns the metadata of an entity as visible by the session, including any overrides
 // applied through its ViewLayer.
 func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	metadata := s.parseEntityMetadata(e)

@@ -33,7 +33,7 @@ func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.Sub
 
 	entries := make([]protocol.SubChunkEntry, 0, len(offsets))
 	transaction := make(map[uint64]struct{})
-	viewedChunks := make(map[world.ChunkPos]struct {
+	visibleChunks := make(map[world.ChunkPos]struct {
 		chunk         *chunk.Chunk
 		blockEntities map[cube.Pos]world.Block
 	})
@@ -52,12 +52,12 @@ func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.Sub
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
 			continue
 		}
-		viewed, ok := viewedChunks[chunkPos]
+		visible, ok := visibleChunks[chunkPos]
 		if !ok {
-			viewed.chunk, viewed.blockEntities = s.applyViewLayerToChunk(chunkPos, col.Chunk, col.BlockEntities)
-			viewedChunks[chunkPos] = viewed
+			visible.chunk, visible.blockEntities = s.applyViewLayerToChunk(chunkPos, col.Chunk, col.BlockEntities)
+			visibleChunks[chunkPos] = visible
 		}
-		entries = append(entries, s.subChunkEntry(offset, ind, viewed.chunk, viewed.blockEntities, transaction))
+		entries = append(entries, s.subChunkEntry(offset, ind, visible.chunk, visible.blockEntities, transaction))
 	}
 	if s.conn.ClientCacheEnabled() && len(transaction) > 0 {
 		s.blobMu.Lock()

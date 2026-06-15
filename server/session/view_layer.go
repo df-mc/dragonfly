@@ -85,7 +85,10 @@ func (s *Session) ViewLayerEntityChanged(e world.Entity) {
 
 // ViewLayerBlockChanged refreshes a block override for this session if its chunk is currently visible.
 func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
-	if s.viewLayer == nil || !s.viewingBlock(pos) {
+	if s.viewLayer == nil {
+		return
+	}
+	if _, ok := s.loadedColumnAt(pos); !ok {
 		return
 	}
 	if b, ok := s.viewLayer.Block(pos); ok {
@@ -107,8 +110,8 @@ func (s *Session) broadcastPrivateBlockSubChunk(pos cube.Pos) {
 		return
 	}
 	chunkPos := world.ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
-	col, ok := s.chunkLoader.Chunk(chunkPos)
-	if !ok || pos.OutOfBounds(col.Range()) {
+	col, ok := s.loadedColumnAt(pos)
+	if !ok {
 		return
 	}
 	if uint16(col.SubIndex(int16(pos[1]))) <= col.HighestFilledSubChunk() {
@@ -124,11 +127,8 @@ func (s *Session) broadcastPrivateBlockSubChunk(pos cube.Pos) {
 
 // publicLiquid returns the public liquid layer loaded for this session at pos, or air if no liquid is present.
 func (s *Session) publicLiquid(pos cube.Pos) world.Block {
-	if s.chunkLoader == nil {
-		return s.br.Air()
-	}
-	col, ok := s.chunkLoader.Chunk(world.ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
-	if !ok || pos.OutOfBounds(col.Range()) {
+	col, ok := s.loadedColumnAt(pos)
+	if !ok {
 		return s.br.Air()
 	}
 	return s.br.BlockByRuntimeIDOrAir(col.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1))
@@ -142,25 +142,21 @@ func (s *Session) viewingEntity(handle *world.EntityHandle) bool {
 	return ok
 }
 
-// viewingBlock returns true if the block position is loaded for this session.
-func (s *Session) viewingBlock(pos cube.Pos) bool {
-	if s.chunkLoader == nil {
-		return false
-	}
-	col, ok := s.chunkLoader.Chunk(world.ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
-	if !ok {
-		return false
-	}
-	return !pos.OutOfBounds(col.Range())
-}
-
-// publicBlock returns the public block loaded for this session at pos.
-func (s *Session) publicBlock(pos cube.Pos) (world.Block, bool) {
+func (s *Session) loadedColumnAt(pos cube.Pos) (*world.Column, bool) {
 	if s.chunkLoader == nil {
 		return nil, false
 	}
 	col, ok := s.chunkLoader.Chunk(world.ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)})
-	if !ok || pos.OutOfBounds(col.Range()) {
+	if !ok {
+		return nil, false
+	}
+	return col, !pos.OutOfBounds(col.Range())
+}
+
+// publicBlock returns the public block loaded for this session at pos.
+func (s *Session) publicBlock(pos cube.Pos) (world.Block, bool) {
+	col, ok := s.loadedColumnAt(pos)
+	if !ok {
 		return nil, false
 	}
 	if b, ok := col.BlockEntities[pos]; ok {

@@ -164,7 +164,7 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 	// Seems like this is only used for breaking blocks at the moment.
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
-		c.BreakViewedBlock(pos)
+		c.BreakVisibleBlock(pos)
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType for PlayerAuthInput packet %v", data.ActionType)
 	}
