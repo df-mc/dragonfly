@@ -1669,7 +1669,6 @@ func (p *Player) UsingItem() bool {
 // UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
 	b, _ := p.viewedBlock(pos)
-	var private bool
 	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that cannot be interacted with. Stop trying to use the item immediately.
 		p.resendNearbyBlocks(pos, face)
@@ -1680,7 +1679,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		p.resendNearbyBlocks(pos, face)
 		return
 	}
-	b, private = p.viewedBlock(pos)
+	b, _ = p.viewedBlock(pos)
 	if _, ok := b.(block.Air); ok {
 		p.resendNearbyBlocks(pos, face)
 		return
