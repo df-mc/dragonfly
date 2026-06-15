@@ -8,6 +8,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -22,7 +23,7 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 		name                 string
 		publicBlock          world.Block
 		privateBlock         world.Block
-		action               func(*Player, cube.Pos)
+		action               func(*testing.T, *Player, *world.Tx, cube.Pos)
 		expectedPublicBlock  world.Block
 		expectedPrivateBlock world.Block
 	}{
@@ -30,21 +31,21 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 			name:                "break visible block removes private override without mutating world",
 			publicBlock:         block.Dirt{},
 			privateBlock:        block.Stone{},
-			action:              func(p *Player, pos cube.Pos) { p.BreakVisibleBlock(pos) },
+			action:              func(_ *testing.T, p *Player, _ *world.Tx, pos cube.Pos) { p.BreakVisibleBlock(pos) },
 			expectedPublicBlock: block.Dirt{},
 		},
 		{
 			name:                 "break block ignores private override and breaks public block",
 			publicBlock:          block.Dirt{},
 			privateBlock:         block.Stone{},
-			action:               func(p *Player, pos cube.Pos) { p.BreakBlock(pos) },
+			action:               func(_ *testing.T, p *Player, _ *world.Tx, pos cube.Pos) { p.BreakBlock(pos) },
 			expectedPublicBlock:  block.Air{},
 			expectedPrivateBlock: block.Stone{},
 		},
 		{
 			name:        "finish breaking uses started break mode",
 			publicBlock: block.Dirt{},
-			action: func(p *Player, pos cube.Pos) {
+			action: func(_ *testing.T, p *Player, _ *world.Tx, pos cube.Pos) {
 				p.StartBreaking(pos, cube.FaceUp)
 				p.ViewBlock(pos, block.Stone{})
 				p.FinishBreaking()
@@ -53,10 +54,25 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 			expectedPrivateBlock: block.Stone{},
 		},
 		{
-			name:                 "use item on private block does not mutate public world",
-			publicBlock:          block.Stone{},
-			privateBlock:         block.Lever{Facing: cube.FaceUp, Direction: cube.North},
-			action:               func(p *Player, pos cube.Pos) { p.UseItemOnBlock(pos, cube.FaceUp, mgl64.Vec3{}) },
+			name:        "finish breaking re-reads public block before break",
+			publicBlock: block.Dirt{},
+			action: func(t *testing.T, p *Player, tx *world.Tx, pos cube.Pos) {
+				h := &blockBreakTestHandler{}
+				p.Handle(h)
+				p.StartBreaking(pos, cube.FaceUp)
+				tx.SetBlock(pos, nil, nil)
+				p.FinishBreaking()
+				require.False(t, h.blockBreakCalled)
+			},
+			expectedPublicBlock: block.Air{},
+		},
+		{
+			name:         "use item on private block does not mutate public world",
+			publicBlock:  block.Stone{},
+			privateBlock: block.Lever{Facing: cube.FaceUp, Direction: cube.North},
+			action: func(_ *testing.T, p *Player, _ *world.Tx, pos cube.Pos) {
+				p.UseItemOnBlock(pos, cube.FaceUp, mgl64.Vec3{})
+			},
 			expectedPublicBlock:  block.Stone{},
 			expectedPrivateBlock: block.Lever{},
 		},
@@ -70,7 +86,7 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 					p.ViewBlock(pos, tt.privateBlock)
 				}
 
-				tt.action(p, pos)
+				tt.action(t, p, tx, pos)
 
 				require.IsType(t, tt.expectedPublicBlock, tx.Block(pos))
 				privateBlock, ok := p.ViewLayer().Block(pos)
@@ -110,6 +126,15 @@ func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 			playerData: data.Data.(*playerData),
 		}, worldTx)
 	})
+}
+
+type blockBreakTestHandler struct {
+	NopHandler
+	blockBreakCalled bool
+}
+
+func (h *blockBreakTestHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int) {
+	h.blockBreakCalled = true
 }
 
 type fakeConn struct{}

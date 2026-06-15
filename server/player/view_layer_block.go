@@ -109,12 +109,15 @@ func (p *Player) BreakVisibleBlock(pos cube.Pos) {
 
 func (p *Player) breakTarget(target blockBreakTarget) {
 	if target.private {
-		if _, ok := p.privateBlock(target.pos); !ok {
+		b, ok := p.privateBlock(target.pos)
+		if !ok {
 			p.blockAudience(false).Resend(target.pos)
 			return
 		}
+		p.breakBlock(target.pos, b, true)
+		return
 	}
-	p.breakBlock(target.pos, target.block, target.private)
+	p.BreakBlock(target.pos)
 }
 
 // breakBlock makes the player break the block passed at the position passed. Private blocks are removed
