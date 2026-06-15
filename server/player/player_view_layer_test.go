@@ -90,6 +90,10 @@ func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 
 	s := session.Config{MaxChunkRadius: 1}.New(fakeConn{})
 	w := world.New()
+	defer func() {
+		_ = w.Close()
+		s.CloseConnection()
+	}()
 
 	<-w.Exec(func(worldTx *world.Tx) {
 		data := &world.EntityData{}
