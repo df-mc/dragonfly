@@ -1681,7 +1681,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		return
 	}
 	b, private = p.viewedBlock(pos)
-	if _, ok := b.(block.Air); ok || private {
+	if _, ok := b.(block.Air); ok {
 		p.resendNearbyBlocks(pos, face)
 		return
 	}
@@ -1948,12 +1948,15 @@ func (p *Player) FinishBreaking() {
 	private := p.breakingPrivate
 	p.AbortBreaking()
 	if private {
-		if _, ok := p.privateBlock(pos); !ok {
+		b, ok := p.privateBlock(pos)
+		if !ok {
 			p.resendBreakingBlock(pos, false)
 			return
 		}
+		p.breakBlock(pos, b, true)
+		return
 	}
-	p.BreakViewedBlock(pos)
+	p.BreakBlock(pos)
 }
 
 // AbortBreaking makes the player stop breaking the block it is currently breaking, or returns immediately
