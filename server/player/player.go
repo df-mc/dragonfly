@@ -1870,8 +1870,10 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		}
 		if firePrivate {
 			p.ViewPublicBlock(firePos)
-			p.session().ViewSound(pos.Vec3(), sound.FireExtinguish{})
-			return
+			if _, ok := p.tx.Block(firePos).(block.Fire); !ok {
+				p.session().ViewSound(pos.Vec3(), sound.FireExtinguish{})
+				return
+			}
 		}
 
 		p.tx.SetBlock(firePos, nil, nil)
