@@ -14,6 +14,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBreakViewedBlockRemovesPrivateOverrideWithoutMutatingWorld(t *testing.T) {
@@ -24,12 +25,9 @@ func TestBreakViewedBlockRemovesPrivateOverrideWithoutMutatingWorld(t *testing.T
 
 		p.BreakViewedBlock(pos)
 
-		if _, ok := p.ViewLayer().Block(pos); ok {
-			t.Fatal("expected private override to be removed")
-		}
-		if _, ok := tx.Block(pos).(block.Dirt); !ok {
-			t.Fatalf("expected public block to remain dirt, got %#v", tx.Block(pos))
-		}
+		_, ok := p.ViewLayer().Block(pos)
+		require.False(t, ok, "expected private override to be removed")
+		require.IsType(t, block.Dirt{}, tx.Block(pos))
 	})
 }
 
@@ -41,12 +39,9 @@ func TestBreakBlockIgnoresPrivateOverrideAndBreaksPublicBlock(t *testing.T) {
 
 		p.BreakBlock(pos)
 
-		if _, ok := p.ViewLayer().Block(pos); !ok {
-			t.Fatal("expected private override to remain")
-		}
-		if _, ok := tx.Block(pos).(block.Air); !ok {
-			t.Fatalf("expected public block to be broken, got %#v", tx.Block(pos))
-		}
+		_, ok := p.ViewLayer().Block(pos)
+		require.True(t, ok, "expected private override to remain")
+		require.IsType(t, block.Air{}, tx.Block(pos))
 	})
 }
 
@@ -59,12 +54,9 @@ func TestFinishBreakingUsesStartedBreakMode(t *testing.T) {
 		p.ViewBlock(pos, block.Stone{})
 		p.FinishBreaking()
 
-		if _, ok := p.ViewLayer().Block(pos); !ok {
-			t.Fatal("expected private override added after StartBreaking to remain")
-		}
-		if _, ok := tx.Block(pos).(block.Air); !ok {
-			t.Fatalf("expected originally public break to remove public block, got %#v", tx.Block(pos))
-		}
+		_, ok := p.ViewLayer().Block(pos)
+		require.True(t, ok, "expected private override added after StartBreaking to remain")
+		require.IsType(t, block.Air{}, tx.Block(pos))
 	})
 }
 
@@ -76,12 +68,9 @@ func TestUseItemOnPrivateBlockDoesNotMutatePublicWorld(t *testing.T) {
 
 		p.UseItemOnBlock(pos, cube.FaceUp, mgl64.Vec3{})
 
-		if _, ok := tx.Block(pos).(block.Stone); !ok {
-			t.Fatalf("expected public block to remain stone, got %#v", tx.Block(pos))
-		}
-		if _, ok := p.ViewLayer().Block(pos); !ok {
-			t.Fatal("expected private override to remain")
-		}
+		require.IsType(t, block.Stone{}, tx.Block(pos))
+		_, ok := p.ViewLayer().Block(pos)
+		require.True(t, ok, "expected private override to remain")
 	})
 }
 
