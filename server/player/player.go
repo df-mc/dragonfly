@@ -1668,7 +1668,7 @@ func (p *Player) UsingItem() bool {
 // returns immediately.
 // UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
-	b, private := p.viewedBlock(pos)
+	b, _ := p.viewedBlock(pos)
 	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that cannot be interacted with. Stop trying to use the item immediately.
 		p.resendNearbyBlocks(pos, face)
@@ -1853,7 +1853,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 // player might be breaking before this method is called.
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
-	b, _ := p.viewedBlock(pos)
+	b, private := p.viewedBlock(pos)
 	if _, air := b.(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
