@@ -17,61 +17,67 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBreakViewedBlockRemovesPrivateOverrideWithoutMutatingWorld(t *testing.T) {
-	withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
-		pos := cube.Pos{0, 64, 0}
-		tx.SetBlock(pos, block.Dirt{}, nil)
-		p.ViewBlock(pos, block.Stone{})
+func TestViewLayerBlockInteractions(t *testing.T) {
+	tests := []struct {
+		name                string
+		publicBlock         world.Block
+		privateBlock        world.Block
+		action              func(*Player, cube.Pos)
+		expectedPublicBlock world.Block
+		expectPrivateBlock  bool
+	}{
+		{
+			name:                "break viewed block removes private override without mutating world",
+			publicBlock:         block.Dirt{},
+			privateBlock:        block.Stone{},
+			action:              func(p *Player, pos cube.Pos) { p.BreakViewedBlock(pos) },
+			expectedPublicBlock: block.Dirt{},
+		},
+		{
+			name:                "break block ignores private override and breaks public block",
+			publicBlock:         block.Dirt{},
+			privateBlock:        block.Stone{},
+			action:              func(p *Player, pos cube.Pos) { p.BreakBlock(pos) },
+			expectedPublicBlock: block.Air{},
+			expectPrivateBlock:  true,
+		},
+		{
+			name:        "finish breaking uses started break mode",
+			publicBlock: block.Dirt{},
+			action: func(p *Player, pos cube.Pos) {
+				p.StartBreaking(pos, cube.FaceUp)
+				p.ViewBlock(pos, block.Stone{})
+				p.FinishBreaking()
+			},
+			expectedPublicBlock: block.Air{},
+			expectPrivateBlock:  true,
+		},
+		{
+			name:                "use item on private block does not mutate public world",
+			publicBlock:         block.Stone{},
+			privateBlock:        block.Lever{Facing: cube.FaceUp, Direction: cube.North},
+			action:              func(p *Player, pos cube.Pos) { p.UseItemOnBlock(pos, cube.FaceUp, mgl64.Vec3{}) },
+			expectedPublicBlock: block.Stone{},
+			expectPrivateBlock:  true,
+		},
+	}
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
+				pos := cube.Pos{i, 64, 0}
+				tx.SetBlock(pos, tt.publicBlock, nil)
+				if tt.privateBlock != nil {
+					p.ViewBlock(pos, tt.privateBlock)
+				}
 
-		p.BreakViewedBlock(pos)
+				tt.action(p, pos)
 
-		_, ok := p.ViewLayer().Block(pos)
-		require.False(t, ok, "expected private override to be removed")
-		require.IsType(t, block.Dirt{}, tx.Block(pos))
-	})
-}
-
-func TestBreakBlockIgnoresPrivateOverrideAndBreaksPublicBlock(t *testing.T) {
-	withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
-		pos := cube.Pos{0, 64, 0}
-		tx.SetBlock(pos, block.Dirt{}, nil)
-		p.ViewBlock(pos, block.Stone{})
-
-		p.BreakBlock(pos)
-
-		_, ok := p.ViewLayer().Block(pos)
-		require.True(t, ok, "expected private override to remain")
-		require.IsType(t, block.Air{}, tx.Block(pos))
-	})
-}
-
-func TestFinishBreakingUsesStartedBreakMode(t *testing.T) {
-	withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
-		pos := cube.Pos{0, 64, 0}
-		tx.SetBlock(pos, block.Dirt{}, nil)
-
-		p.StartBreaking(pos, cube.FaceUp)
-		p.ViewBlock(pos, block.Stone{})
-		p.FinishBreaking()
-
-		_, ok := p.ViewLayer().Block(pos)
-		require.True(t, ok, "expected private override added after StartBreaking to remain")
-		require.IsType(t, block.Air{}, tx.Block(pos))
-	})
-}
-
-func TestUseItemOnPrivateBlockDoesNotMutatePublicWorld(t *testing.T) {
-	withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
-		pos := cube.Pos{0, 64, 0}
-		tx.SetBlock(pos, block.Stone{}, nil)
-		p.ViewBlock(pos, block.Lever{Facing: cube.FaceUp, Direction: cube.North})
-
-		p.UseItemOnBlock(pos, cube.FaceUp, mgl64.Vec3{})
-
-		require.IsType(t, block.Stone{}, tx.Block(pos))
-		_, ok := p.ViewLayer().Block(pos)
-		require.True(t, ok, "expected private override to remain")
-	})
+				require.IsType(t, tt.expectedPublicBlock, tx.Block(pos))
+				_, ok := p.ViewLayer().Block(pos)
+				require.Equal(t, tt.expectPrivateBlock, ok)
+			})
+		})
+	}
 }
 
 func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
