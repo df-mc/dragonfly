@@ -19,12 +19,12 @@ import (
 
 func TestViewLayerBlockInteractions(t *testing.T) {
 	tests := []struct {
-		name                string
-		publicBlock         world.Block
-		privateBlock        world.Block
-		action              func(*Player, cube.Pos)
-		expectedPublicBlock world.Block
-		expectPrivateBlock  bool
+		name                 string
+		publicBlock          world.Block
+		privateBlock         world.Block
+		action               func(*Player, cube.Pos)
+		expectedPublicBlock  world.Block
+		expectedPrivateBlock world.Block
 	}{
 		{
 			name:                "break viewed block removes private override without mutating world",
@@ -34,12 +34,12 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 			expectedPublicBlock: block.Dirt{},
 		},
 		{
-			name:                "break block ignores private override and breaks public block",
-			publicBlock:         block.Dirt{},
-			privateBlock:        block.Stone{},
-			action:              func(p *Player, pos cube.Pos) { p.BreakBlock(pos) },
-			expectedPublicBlock: block.Air{},
-			expectPrivateBlock:  true,
+			name:                 "break block ignores private override and breaks public block",
+			publicBlock:          block.Dirt{},
+			privateBlock:         block.Stone{},
+			action:               func(p *Player, pos cube.Pos) { p.BreakBlock(pos) },
+			expectedPublicBlock:  block.Air{},
+			expectedPrivateBlock: block.Stone{},
 		},
 		{
 			name:        "finish breaking uses started break mode",
@@ -49,16 +49,16 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 				p.ViewBlock(pos, block.Stone{})
 				p.FinishBreaking()
 			},
-			expectedPublicBlock: block.Air{},
-			expectPrivateBlock:  true,
+			expectedPublicBlock:  block.Air{},
+			expectedPrivateBlock: block.Stone{},
 		},
 		{
-			name:                "use item on private block does not mutate public world",
-			publicBlock:         block.Stone{},
-			privateBlock:        block.Lever{Facing: cube.FaceUp, Direction: cube.North},
-			action:              func(p *Player, pos cube.Pos) { p.UseItemOnBlock(pos, cube.FaceUp, mgl64.Vec3{}) },
-			expectedPublicBlock: block.Stone{},
-			expectPrivateBlock:  true,
+			name:                 "use item on private block does not mutate public world",
+			publicBlock:          block.Stone{},
+			privateBlock:         block.Lever{Facing: cube.FaceUp, Direction: cube.North},
+			action:               func(p *Player, pos cube.Pos) { p.UseItemOnBlock(pos, cube.FaceUp, mgl64.Vec3{}) },
+			expectedPublicBlock:  block.Stone{},
+			expectedPrivateBlock: block.Lever{},
 		},
 	}
 	for i, tt := range tests {
@@ -73,8 +73,13 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 				tt.action(p, pos)
 
 				require.IsType(t, tt.expectedPublicBlock, tx.Block(pos))
-				_, ok := p.ViewLayer().Block(pos)
-				require.Equal(t, tt.expectPrivateBlock, ok)
+				privateBlock, ok := p.ViewLayer().Block(pos)
+				if tt.expectedPrivateBlock == nil {
+					require.False(t, ok)
+					return
+				}
+				require.True(t, ok)
+				require.IsType(t, tt.expectedPrivateBlock, privateBlock)
 			})
 		})
 	}
