@@ -2125,16 +2125,13 @@ func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
 		// Don't do anything if the position broken is already air.
 		return
 	}
-	resendBrokenBlock := func() {
-		p.resendBreakingBlock(pos, private)
-	}
 	if !p.canReach(pos.Vec3Centre()) || !p.GameMode().AllowsEditing() {
-		resendBrokenBlock()
+		p.resendBreakingBlock(pos, private)
 		return
 	}
 	breakable, ok := b.(block.Breakable)
 	if !ok && !p.GameMode().CreativeInventory() {
-		resendBrokenBlock()
+		p.resendBreakingBlock(pos, private)
 		return
 	}
 	held, _ := p.HeldItems()
@@ -2152,7 +2149,7 @@ func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
 
 	ctx := event.C(p)
 	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
-		resendBrokenBlock()
+		p.resendBreakingBlock(pos, private)
 		return
 	}
 	held, left := p.HeldItems()
