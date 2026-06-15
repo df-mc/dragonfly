@@ -1959,7 +1959,6 @@ func (p *Player) FinishBreaking() {
 // Unlike FinishBreaking, AbortBreaking does not stop the animation.
 func (p *Player) AbortBreaking() {
 	if !p.breaking {
-		p.breakingPosValid = false
 		return
 	}
 	private := p.breakingPrivate
