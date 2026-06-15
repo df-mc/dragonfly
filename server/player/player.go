@@ -1668,7 +1668,7 @@ func (p *Player) UsingItem() bool {
 // returns immediately.
 // UseItemOnBlock does nothing if the block at the cube.Pos passed is of the type block.Air.
 func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3) {
-	b, _ := p.viewedBlock(pos)
+	b, _ := p.visibleBlock(pos)
 	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that cannot be interacted with. Stop trying to use the item immediately.
 		p.resendNearbyBlocks(pos, face)
@@ -1679,9 +1679,13 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		p.resendNearbyBlocks(pos, face)
 		return
 	}
-	b, _ = p.viewedBlock(pos)
+	b, private := p.visibleBlock(pos)
 	if _, ok := b.(block.Air); ok {
 		p.resendNearbyBlocks(pos, face)
+		return
+	}
+	if private {
+		p.resendBreakingBlock(pos, true)
 		return
 	}
 	i, left := p.HeldItems()
@@ -1720,7 +1724,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The block clicked was either not replaceable, or not replaceable using the block passed.
 			replacedPos = pos.Side(face)
 		}
-		replacedBlock, replacedPrivate := p.viewedBlock(replacedPos)
+		replacedBlock, replacedPrivate := p.visibleBlock(replacedPos)
 		if replacedPrivate {
 			p.resendNearbyBlocks(replacedPos)
 			return
@@ -1853,13 +1857,13 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 // player might be breaking before this method is called.
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
-	b, private := p.viewedBlock(pos)
+	b, private := p.visibleBlock(pos)
 	if _, air := b.(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
 	firePos := pos.Side(face)
-	fireBlock, firePrivate := p.viewedBlock(firePos)
+	fireBlock, firePrivate := p.visibleBlock(firePos)
 	if _, ok := fireBlock.(block.Fire); ok {
 		ctx := event.C(p)
 		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
@@ -2023,8 +2027,8 @@ func (p *Player) viewBreakingBlockAction(pos cube.Pos, private bool, a world.Blo
 	}
 }
 
-// viewedBlock returns the block currently shown to the player at pos.
-func (p *Player) viewedBlock(pos cube.Pos) (world.Block, bool) {
+// visibleBlock returns the block currently shown to the player at pos.
+func (p *Player) visibleBlock(pos cube.Pos) (world.Block, bool) {
 	if b, ok := p.privateBlock(pos); ok {
 		return b, true
 	}
@@ -2114,7 +2118,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 // player has a private block override at that position, it is removed instead of breaking the public world block.
 // If the player is unable to reach the block passed, the method returns immediately.
 func (p *Player) BreakViewedBlock(pos cube.Pos) {
-	b, private := p.viewedBlock(pos)
+	b, private := p.visibleBlock(pos)
 	p.breakBlock(pos, b, private)
 }
 
@@ -2226,7 +2230,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		return
 	}
 
-	b, _ := p.viewedBlock(pos)
+	b, _ := p.visibleBlock(pos)
 
 	var pickedItem item.Stack
 	if pi, ok := b.(block.Pickable); ok {

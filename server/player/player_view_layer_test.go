@@ -68,6 +68,23 @@ func TestFinishBreakingUsesStartedBreakMode(t *testing.T) {
 	})
 }
 
+func TestUseItemOnPrivateBlockDoesNotMutatePublicWorld(t *testing.T) {
+	withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
+		pos := cube.Pos{0, 64, 0}
+		tx.SetBlock(pos, block.Stone{}, nil)
+		p.ViewBlock(pos, block.Lever{Facing: cube.FaceUp, Direction: cube.North})
+
+		p.UseItemOnBlock(pos, cube.FaceUp, mgl64.Vec3{})
+
+		if _, ok := tx.Block(pos).(block.Stone); !ok {
+			t.Fatalf("expected public block to remain stone, got %#v", tx.Block(pos))
+		}
+		if _, ok := p.ViewLayer().Block(pos); !ok {
+			t.Fatal("expected private override to remain")
+		}
+	})
+}
+
 func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 	t.Helper()
 
