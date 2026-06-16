@@ -161,3 +161,95 @@ type Text struct {
 	// Entity is an optional entity handle to attach the shape to.
 	Entity *world.EntityHandle
 }
+
+// Cylinder represents a hollow cylinder, or frustum, that can be drawn at any point in the world, with a
+// height running up the Y axis. The base and top each have their own radius on the X and Z axes, allowing
+// for tapered and elliptical cylinders. A Cone is the special case of a Cylinder with a zero top radius.
+type Cylinder struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// BaseRadius is the radius of the cylinder's base along the X and Z axes. If empty, it will default to a
+	// radius of 1.0 on each axis. Differing X and Z radii produce an elliptical cylinder.
+	BaseRadius mgl64.Vec2
+	// TopRadius is the radius of the cylinder's top along the X and Z axes. If empty, it will default to
+	// BaseRadius, producing a straight cylinder. A smaller TopRadius tapers the cylinder into a frustum.
+	TopRadius mgl64.Vec2
+	// Height is the height of the cylinder. If zero, it will default to 1.0.
+	Height float64
+	// Segments is the number of segments that the cylinder will be drawn with. The more segments, the
+	// smoother the cylinder will look. If zero, it will default to 20.
+	Segments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Pyramid represents a pyramid that can be drawn at any point in the world, with a base on the X and Z axes
+// and a height running up the Y axis to a single apex.
+type Pyramid struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// Width is the width along the X axis of the pyramid base. If zero, it will default to 1.0.
+	Width float64
+	// Depth is the depth along the Z axis of the pyramid base. If zero, it will default to Width.
+	Depth float64
+	// Height is the height of the pyramid. If zero, it will default to 1.0.
+	Height float64
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Ellipsoid represents a hollow ellipsoid that can be drawn at any point in the world, with a radius along
+// each of the X, Y and Z axes.
+type Ellipsoid struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// Radii are the radii of the ellipsoid along the X, Y and Z axes. If empty, it will default to a radius
+	// of 1.0 on each axis.
+	Radii mgl64.Vec3
+	// SegmentsPerAxis is the number of segments that the ellipsoid will be drawn with per axis. The more
+	// segments, the smoother the ellipsoid will look. If zero, it will default to 20.
+	SegmentsPerAxis int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Cone represents a cone that can be drawn at any point in the world, with a base on the X and Z axes and a
+// height running up the Y axis to a single apex.
+type Cone struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// Radii are the radii along the X and Z axes of the cone base. If empty, it will default to a radius of
+	// 1.0 on each axis.
+	Radii mgl64.Vec2
+	// Height is the height of the cone. If zero, it will default to 1.0.
+	Height float64
+	// Segments is the number of segments that the cone will be drawn with. The more segments, the smoother
+	// the cone will look. If zero, it will default to 20.
+	Segments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
