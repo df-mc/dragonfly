@@ -135,6 +135,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	arrowConf := world.ArrowSpawnConfig{
 		Damage:              9,
 		Owner:               releaser,
+		Critical:            true,
 		ObtainArrowOnPickup: !creative,
 		PiercingLevel:       pierceLevel,
 	}
@@ -152,6 +153,12 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	releaser.SetHeldItems(crossbow, left)
 	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
 	return true
+}
+
+// CanCharge ...
+func (c Crossbow) CanCharge(releaser Releaser, _ *world.Tx, ctx *UseContext) bool {
+	_, found := c.findProjectile(releaser, ctx)
+	return found && !c.Item.Empty()
 }
 
 // shoot fires the crossbow's loaded projectiles.
