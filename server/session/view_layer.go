@@ -11,6 +11,14 @@ func (s *Session) ViewLayer() *world.ViewLayer {
 	return s.viewLayer
 }
 
+// viewLayerWorld returns the world whose blocks are currently viewed by the session.
+func (s *Session) viewLayerWorld() *world.World {
+	if s.chunkLoader == nil {
+		return nil
+	}
+	return s.chunkLoader.World()
+}
+
 // ViewNameTag overwrites the public name tag of the entity and immediately refreshes it for this session.
 func (s *Session) ViewNameTag(entity world.Entity, nameTag string) {
 	if s.viewLayer == nil {
@@ -56,7 +64,7 @@ func (s *Session) ViewBlock(pos cube.Pos, b world.Block) {
 	if s.viewLayer == nil {
 		return
 	}
-	s.viewLayer.ViewBlock(pos, b)
+	s.viewLayer.ViewBlock(s.viewLayerWorld(), pos, b)
 }
 
 // ViewPublicBlock removes the block override at the position passed and immediately refreshes it for this session.
@@ -64,7 +72,7 @@ func (s *Session) ViewPublicBlock(pos cube.Pos) {
 	if s.viewLayer == nil {
 		return
 	}
-	s.viewLayer.ViewPublicBlock(pos)
+	s.viewLayer.ViewPublicBlock(s.viewLayerWorld(), pos)
 }
 
 // RemoveViewLayer removes all overrides for the entity and immediately refreshes it for this session.
@@ -83,15 +91,18 @@ func (s *Session) ViewLayerEntityChanged(e world.Entity) {
 	s.ViewEntityState(e)
 }
 
-// ViewLayerBlockChanged refreshes a block override for this session if its chunk is currently visible.
-func (s *Session) ViewLayerBlockChanged(pos cube.Pos) {
+// ViewLayerBlockChanged refreshes a block override for this session if its world and chunk are currently visible.
+func (s *Session) ViewLayerBlockChanged(w *world.World, pos cube.Pos) {
 	if s.viewLayer == nil {
+		return
+	}
+	if current := s.viewLayerWorld(); current != w {
 		return
 	}
 	if _, ok := s.loadedColumnAt(pos); !ok {
 		return
 	}
-	if b, ok := s.viewLayer.Block(pos); ok {
+	if b, ok := s.viewLayer.Block(w, pos); ok {
 		s.broadcastPrivateBlockSubChunk(pos)
 		s.viewBlockUpdate(pos, b, 0)
 		s.viewBlockUpdate(pos, s.br.Air(), 1)

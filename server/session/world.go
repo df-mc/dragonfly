@@ -961,7 +961,7 @@ func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFu
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	if s.viewLayer != nil {
-		if visible, ok := s.viewLayer.Block(pos); ok {
+		if visible, ok := s.viewLayer.Block(s.viewLayerWorld(), pos); ok {
 			if layer == 0 {
 				b = visible
 			} else {
@@ -1260,7 +1260,7 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 // ViewBlockAction ...
 func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 	if s.viewLayer != nil {
-		if _, ok := s.viewLayer.Block(pos); ok {
+		if _, ok := s.viewLayer.Block(s.viewLayerWorld(), pos); ok {
 			return
 		}
 	}

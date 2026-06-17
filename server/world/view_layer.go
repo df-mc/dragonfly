@@ -20,7 +20,7 @@ type ViewLayerUpdater interface {
 	// ViewLayerEntityChanged handles an entity whose view-layer overrides changed.
 	ViewLayerEntityChanged(entity Entity)
 	// ViewLayerBlockChanged handles a block whose view-layer override changed.
-	ViewLayerBlockChanged(pos cube.Pos)
+	ViewLayerBlockChanged(w *World, pos cube.Pos)
 }
 
 type viewLayerViewer interface {
@@ -29,10 +29,11 @@ type viewLayerViewer interface {
 
 // ViewLayer holds overrides for how entities are viewed by a single viewer. It allows entities to be
 // viewed differently by different players, such as with a different name tag or visibility state.
+// Block overrides are scoped by world.
 type ViewLayer struct {
 	mu            sync.RWMutex
 	entities      map[*EntityHandle]layer
-	blocksByChunk map[ChunkPos]map[cube.Pos]Block
+	blocksByWorld map[*World]map[ChunkPos]map[cube.Pos]Block
 	updater       ViewLayerUpdater
 }
 
@@ -40,7 +41,7 @@ type ViewLayer struct {
 func NewViewLayer(updater ViewLayerUpdater) *ViewLayer {
 	return &ViewLayer{
 		entities:      map[*EntityHandle]layer{},
-		blocksByChunk: map[ChunkPos]map[cube.Pos]Block{},
+		blocksByWorld: map[*World]map[ChunkPos]map[cube.Pos]Block{},
 		updater:       updater,
 	}
 }
@@ -125,60 +126,68 @@ func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
 	return v.entities[entity.H()].visibility
 }
 
-// ViewBlock overwrites the public block at the position passed for this ViewLayer. Liquid or waterlogged
+// ViewBlock overwrites the public block at the position passed in the world passed for this ViewLayer. Liquid or waterlogged
 // state at layer 1 is not represented for overrides. Passing nil removes the block override, causing the
 // public block to be viewed again.
-func (v *ViewLayer) ViewBlock(pos cube.Pos, b Block) {
+func (v *ViewLayer) ViewBlock(w *World, pos cube.Pos, b Block) {
 	v.mu.Lock()
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
+	blocksByChunk := v.blocksByWorld[w]
 	if b == nil {
-		delete(v.blocksByChunk[chunkPos], pos)
-		if len(v.blocksByChunk[chunkPos]) == 0 {
-			delete(v.blocksByChunk, chunkPos)
+		delete(blocksByChunk[chunkPos], pos)
+		if len(blocksByChunk[chunkPos]) == 0 {
+			delete(blocksByChunk, chunkPos)
+		}
+		if len(blocksByChunk) == 0 {
+			delete(v.blocksByWorld, w)
 		}
 	} else {
-		if v.blocksByChunk[chunkPos] == nil {
-			v.blocksByChunk[chunkPos] = map[cube.Pos]Block{}
+		if blocksByChunk == nil {
+			blocksByChunk = map[ChunkPos]map[cube.Pos]Block{}
+			v.blocksByWorld[w] = blocksByChunk
 		}
-		v.blocksByChunk[chunkPos][pos] = b
+		if blocksByChunk[chunkPos] == nil {
+			blocksByChunk[chunkPos] = map[cube.Pos]Block{}
+		}
+		blocksByChunk[chunkPos][pos] = b
 	}
 	v.mu.Unlock()
 
-	v.refreshBlock(pos)
+	v.refreshBlock(w, pos)
 }
 
-// ViewPublicBlock removes the block override at the position passed, causing the public block to be viewed again.
-func (v *ViewLayer) ViewPublicBlock(pos cube.Pos) {
-	v.ViewBlock(pos, nil)
+// ViewPublicBlock removes the block override at the position passed in the world passed, causing the public block to be viewed again.
+func (v *ViewLayer) ViewPublicBlock(w *World, pos cube.Pos) {
+	v.ViewBlock(w, pos, nil)
 }
 
-// Block returns the overwritten block at the position passed and whether an override was set.
-func (v *ViewLayer) Block(pos cube.Pos) (Block, bool) {
+// Block returns the overwritten block at the position passed in the world passed and whether an override was set.
+func (v *ViewLayer) Block(w *World, pos cube.Pos) (Block, bool) {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
-	b, ok := v.blocksByChunk[ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}][pos]
+	b, ok := v.blocksByWorld[w][ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}][pos]
 	return b, ok
 }
 
-// Blocks returns all block overrides in the view layer.
-func (v *ViewLayer) Blocks() map[cube.Pos]Block {
+// Blocks returns all block overrides in the world passed.
+func (v *ViewLayer) Blocks(w *World) map[cube.Pos]Block {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
 	blocks := make(map[cube.Pos]Block)
-	for _, chunkBlocks := range v.blocksByChunk {
+	for _, chunkBlocks := range v.blocksByWorld[w] {
 		maps.Copy(blocks, chunkBlocks)
 	}
 	return blocks
 }
 
-// ChunkBlocks returns all block overrides in a chunk.
-func (v *ViewLayer) ChunkBlocks(pos ChunkPos) map[cube.Pos]Block {
+// ChunkBlocks returns all block overrides in a chunk in the world passed.
+func (v *ViewLayer) ChunkBlocks(w *World, pos ChunkPos) map[cube.Pos]Block {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
-	blocks := v.blocksByChunk[pos]
+	blocks := v.blocksByWorld[w][pos]
 	if len(blocks) == 0 {
 		return nil
 	}
@@ -228,7 +237,7 @@ func (v *ViewLayer) Close() error {
 	defer v.mu.Unlock()
 
 	clear(v.entities)
-	clear(v.blocksByChunk)
+	clear(v.blocksByWorld)
 	return nil
 }
 
@@ -243,8 +252,8 @@ func (v *ViewLayer) refresh(entity Entity) {
 	}
 }
 
-func (v *ViewLayer) refreshBlock(pos cube.Pos) {
+func (v *ViewLayer) refreshBlock(w *World, pos cube.Pos) {
 	if v.updater != nil {
-		v.updater.ViewLayerBlockChanged(pos)
+		v.updater.ViewLayerBlockChanged(w, pos)
 	}
 }

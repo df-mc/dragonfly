@@ -89,7 +89,7 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 				tt.action(t, p, tx, pos)
 
 				require.IsType(t, tt.expectedPublicBlock, tx.Block(pos))
-				privateBlock, ok := p.ViewLayer().Block(pos)
+				privateBlock, ok := p.ViewLayer().Block(tx.World(), pos)
 				if tt.expectedPrivateBlock == nil {
 					require.False(t, ok)
 					return
@@ -99,6 +99,23 @@ func TestViewLayerBlockInteractions(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestHandleBlockBreakReceivesPrivateBreakMode(t *testing.T) {
+	withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
+		pos := cube.Pos{0, 64, 0}
+		tx.SetBlock(pos, block.Dirt{}, nil)
+		p.ViewBlock(pos, block.Stone{})
+
+		h := &blockBreakTestHandler{}
+		p.Handle(h)
+
+		p.BreakVisibleBlock(pos)
+		p.ViewBlock(pos, block.Stone{})
+		p.BreakBlock(pos)
+
+		require.Equal(t, []bool{true, false}, h.private)
+	})
 }
 
 func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
@@ -131,10 +148,12 @@ func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 type blockBreakTestHandler struct {
 	NopHandler
 	blockBreakCalled bool
+	private          []bool
 }
 
-func (h *blockBreakTestHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int) {
+func (h *blockBreakTestHandler) HandleBlockBreak(_ *Context, _ cube.Pos, private bool, _ *[]item.Stack, _ *int) {
 	h.blockBreakCalled = true
+	h.private = append(h.private, private)
 }
 
 type fakeConn struct{}

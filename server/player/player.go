@@ -2573,12 +2573,16 @@ func (p *Player) ViewVisibility(entity world.Entity, level world.VisibilityLevel
 
 // ViewBlock overrides the public block at the position passed for this player.
 func (p *Player) ViewBlock(pos cube.Pos, b world.Block) {
-	p.session().ViewBlock(pos, b)
+	if l := p.ViewLayer(); l != nil {
+		l.ViewBlock(p.tx.World(), pos, b)
+	}
 }
 
 // ViewPublicBlock removes the block override at the position passed for this player.
 func (p *Player) ViewPublicBlock(pos cube.Pos) {
-	p.session().ViewPublicBlock(pos)
+	if l := p.ViewLayer(); l != nil {
+		l.ViewPublicBlock(p.tx.World(), pos)
+	}
 }
 
 // RemoveViewLayer removes all view-layer overrides of the entity for this player.

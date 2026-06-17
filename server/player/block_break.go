@@ -15,6 +15,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// blockBreakTarget holds the block and break mode that a player started breaking.
 type blockBreakTarget struct {
 	pos     cube.Pos
 	block   world.Block
@@ -29,6 +30,7 @@ func (p *Player) visibleBlock(pos cube.Pos) (world.Block, bool) {
 	return p.tx.Block(pos), false
 }
 
+// blockAudience handles block breaking side effects for either public world blocks or private view-layer blocks.
 type blockAudience interface {
 	PlaySound(pos mgl64.Vec3, s world.Sound)
 	AddParticle(pos mgl64.Vec3, particle world.Particle)
@@ -37,6 +39,7 @@ type blockAudience interface {
 	ClearOverride(pos cube.Pos)
 }
 
+// blockAudience returns the audience to use for the break mode passed.
 func (p *Player) blockAudience(private bool) blockAudience {
 	if private {
 		return privateBlockAudience{p: p}
@@ -44,52 +47,64 @@ func (p *Player) blockAudience(private bool) blockAudience {
 	return publicBlockAudience{p: p}
 }
 
+// privateBlockAudience handles block breaking side effects for private view-layer blocks.
 type privateBlockAudience struct {
 	p *Player
 }
 
+// PlaySound plays the sound only to the player breaking the private block.
 func (a privateBlockAudience) PlaySound(pos mgl64.Vec3, s world.Sound) {
 	a.p.session().ViewSound(pos, s)
 }
 
+// AddParticle shows the particle only to the player breaking the private block.
 func (a privateBlockAudience) AddParticle(pos mgl64.Vec3, particle world.Particle) {
 	a.p.ShowParticle(pos, particle)
 }
 
+// ViewBlockAction shows the block action only to the player breaking the private block.
 func (a privateBlockAudience) ViewBlockAction(pos cube.Pos, action world.BlockAction) {
 	a.p.session().ViewPrivateBlockAction(pos, action)
 }
 
+// Resend resends the private block override to the player.
 func (a privateBlockAudience) Resend(pos cube.Pos) {
-	a.p.session().ViewLayerBlockChanged(pos)
+	a.p.session().ViewLayerBlockChanged(a.p.tx.World(), pos)
 }
 
+// ClearOverride removes the private block override for the player.
 func (a privateBlockAudience) ClearOverride(pos cube.Pos) {
 	a.p.ViewPublicBlock(pos)
 }
 
+// publicBlockAudience handles block breaking side effects for public world blocks.
 type publicBlockAudience struct {
 	p *Player
 }
 
+// PlaySound plays the sound to all players viewing the public block.
 func (a publicBlockAudience) PlaySound(pos mgl64.Vec3, s world.Sound) {
 	a.p.tx.PlaySound(pos, s)
 }
 
+// AddParticle adds the particle to all players viewing the public block.
 func (a publicBlockAudience) AddParticle(pos mgl64.Vec3, particle world.Particle) {
 	a.p.tx.AddParticle(pos, particle)
 }
 
+// ViewBlockAction shows the block action to all players viewing the public block.
 func (a publicBlockAudience) ViewBlockAction(pos cube.Pos, action world.BlockAction) {
 	for _, viewer := range a.p.viewers() {
 		viewer.ViewBlockAction(pos, action)
 	}
 }
 
+// Resend resends the public block to the player.
 func (a publicBlockAudience) Resend(pos cube.Pos) {
 	a.p.resendNearbyBlocks(pos)
 }
 
+// ClearOverride does nothing for public blocks.
 func (a publicBlockAudience) ClearOverride(cube.Pos) {}
 
 // BreakBlock makes the player break the public world block at the position passed. Private view-layer
@@ -107,6 +122,7 @@ func (p *Player) BreakVisibleBlock(pos cube.Pos) {
 	p.breakBlock(pos, b, private)
 }
 
+// breakTarget breaks the target using the same mode as when breaking started.
 func (p *Player) breakTarget(target blockBreakTarget) {
 	if target.private {
 		b, ok := p.privateBlock(target.pos)
@@ -151,7 +167,7 @@ func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
 	}
 
 	ctx := event.C(p)
-	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
+	if p.Handler().HandleBlockBreak(ctx, pos, private, &drops, &xp); ctx.Cancelled() {
 		audience.Resend(pos)
 		return
 	}
@@ -210,7 +226,7 @@ func (p *Player) privateBlock(pos cube.Pos) (world.Block, bool) {
 	if p.session() == session.Nop {
 		return nil, false
 	}
-	return p.ViewLayer().Block(pos)
+	return p.ViewLayer().Block(p.tx.World(), pos)
 }
 
 // resendBreakingBlock resends the block being broken without overwriting private view-layer overrides.

@@ -146,7 +146,7 @@ func (s *Session) applyViewLayerToChunk(pos world.ChunkPos, c *chunk.Chunk, bloc
 	if s.viewLayer == nil {
 		return c, blockEntities
 	}
-	overrides := s.viewLayer.ChunkBlocks(pos)
+	overrides := s.viewLayer.ChunkBlocks(s.viewLayerWorld(), pos)
 	if len(overrides) == 0 {
 		return c, blockEntities
 	}
