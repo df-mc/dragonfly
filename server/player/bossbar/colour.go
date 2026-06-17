@@ -33,8 +33,8 @@ func Purple() Colour {
 	return Colour{colour(5)}
 }
 
-// DarkPurple is the colour for a dark purple boss bar.
-func DarkPurple() Colour {
+// RebeccaPurple is the colour for a rebecca purple boss bar.
+func RebeccaPurple() Colour {
 	return Colour{colour(6)}
 }
 
