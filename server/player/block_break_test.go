@@ -118,6 +118,63 @@ func TestHandleBlockBreakReceivesPrivateBreakMode(t *testing.T) {
 	})
 }
 
+func TestContinueBreakingReReadsTargetBlock(t *testing.T) {
+	tests := []struct {
+		name         string
+		private      bool
+		changeBlock  func(*Player, *world.Tx, cube.Pos)
+		expectedType world.Block
+	}{
+		{
+			name:    "public",
+			private: false,
+			changeBlock: func(_ *Player, tx *world.Tx, pos cube.Pos) {
+				tx.SetBlock(pos, block.Obsidian{}, nil)
+			},
+			expectedType: block.Obsidian{},
+		},
+		{
+			name:    "private",
+			private: true,
+			changeBlock: func(p *Player, _ *world.Tx, pos cube.Pos) {
+				p.ViewBlock(pos, block.Obsidian{})
+			},
+			expectedType: block.Obsidian{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
+				p.gameMode = world.GameModeSurvival
+				pos := cube.Pos{0, 64, 0}
+				tx.SetBlock(pos, block.Dirt{}, nil)
+				if tt.private {
+					p.ViewBlock(pos, block.Dirt{})
+				}
+				p.StartBreaking(pos, cube.FaceUp)
+
+				tt.changeBlock(p, tx, pos)
+				p.ContinueBreaking(cube.FaceUp)
+
+				require.Equal(t, p.breakTime(tt.expectedType), p.lastBreakDuration)
+			})
+		})
+	}
+}
+
+func TestViewerViewsPublicBlock(t *testing.T) {
+	w := world.New()
+	defer w.Close()
+
+	pos := cube.Pos{0, 64, 0}
+	viewer := &blockBreakTestViewer{viewLayer: world.NewViewLayer(nil)}
+	require.True(t, viewerViewsPublicBlock(viewer, w, pos))
+
+	viewer.viewLayer.ViewBlock(w, pos, block.Stone{})
+	require.False(t, viewerViewsPublicBlock(viewer, w, pos))
+	require.True(t, viewerViewsPublicBlock(world.NopViewer{}, w, pos))
+}
+
 func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 	t.Helper()
 
@@ -157,6 +214,15 @@ func (h *blockBreakTestHandler) HandleBlockBreak(_ *Context, _ cube.Pos, private
 }
 
 type fakeConn struct{}
+
+type blockBreakTestViewer struct {
+	world.NopViewer
+	viewLayer *world.ViewLayer
+}
+
+func (v *blockBreakTestViewer) ViewLayer() *world.ViewLayer {
+	return v.viewLayer
+}
 
 func (fakeConn) Close() error                                               { return nil }
 func (fakeConn) IdentityData() login.IdentityData                           { return login.IdentityData{DisplayName: "test"} }

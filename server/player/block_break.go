@@ -15,10 +15,9 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// blockBreakTarget holds the block and break mode that a player started breaking.
+// blockBreakTarget holds the position and break mode that a player started breaking.
 type blockBreakTarget struct {
 	pos     cube.Pos
-	block   world.Block
 	private bool
 }
 
@@ -84,17 +83,23 @@ type publicBlockAudience struct {
 
 // PlaySound plays the sound to all players viewing the public block.
 func (a publicBlockAudience) PlaySound(pos mgl64.Vec3, s world.Sound) {
-	a.p.tx.PlaySound(pos, s)
+	s.Play(a.p.tx.World(), pos)
+	for _, viewer := range a.viewers(cube.PosFromVec3(pos)) {
+		viewer.ViewSound(pos, s)
+	}
 }
 
 // AddParticle adds the particle to all players viewing the public block.
 func (a publicBlockAudience) AddParticle(pos mgl64.Vec3, particle world.Particle) {
-	a.p.tx.AddParticle(pos, particle)
+	particle.Spawn(a.p.tx.World(), pos)
+	for _, viewer := range a.viewers(cube.PosFromVec3(pos)) {
+		viewer.ViewParticle(pos, particle)
+	}
 }
 
 // ViewBlockAction shows the block action to all players viewing the public block.
 func (a publicBlockAudience) ViewBlockAction(pos cube.Pos, action world.BlockAction) {
-	for _, viewer := range a.p.viewers() {
+	for _, viewer := range a.viewers(pos) {
 		viewer.ViewBlockAction(pos, action)
 	}
 }
@@ -106,6 +111,32 @@ func (a publicBlockAudience) Resend(pos cube.Pos) {
 
 // ClearOverride does nothing for public blocks.
 func (a publicBlockAudience) ClearOverride(cube.Pos) {}
+
+// viewers returns all viewers that do not have a private block override at pos.
+func (a publicBlockAudience) viewers(pos cube.Pos) []world.Viewer {
+	viewers := a.p.viewers()
+	filtered := viewers[:0]
+	for _, viewer := range viewers {
+		if viewerViewsPublicBlock(viewer, a.p.tx.World(), pos) {
+			filtered = append(filtered, viewer)
+		}
+	}
+	return filtered
+}
+
+type blockOverrideViewer interface {
+	ViewLayer() *world.ViewLayer
+}
+
+// viewerViewsPublicBlock returns whether viewer sees the public block at pos.
+func viewerViewsPublicBlock(viewer world.Viewer, w *world.World, pos cube.Pos) bool {
+	v, ok := viewer.(blockOverrideViewer)
+	if !ok || v.ViewLayer() == nil {
+		return true
+	}
+	_, ok = v.ViewLayer().Block(w, pos)
+	return !ok
+}
 
 // BreakBlock makes the player break the public world block at the position passed. Private view-layer
 // overrides are ignored by this method: Call BreakVisibleBlock to break what the player currently sees instead.
@@ -124,16 +155,20 @@ func (p *Player) BreakVisibleBlock(pos cube.Pos) {
 
 // breakTarget breaks the target using the same mode as when breaking started.
 func (p *Player) breakTarget(target blockBreakTarget) {
-	if target.private {
-		b, ok := p.privateBlock(target.pos)
-		if !ok {
-			p.blockAudience(false).Resend(target.pos)
-			return
-		}
-		p.breakBlock(target.pos, b, true)
+	b, ok := p.breakTargetBlock(target)
+	if !ok {
+		p.blockAudience(false).Resend(target.pos)
 		return
 	}
-	p.BreakBlock(target.pos)
+	p.breakBlock(target.pos, b, target.private)
+}
+
+// breakTargetBlock returns the current block matching the break mode of target.
+func (p *Player) breakTargetBlock(target blockBreakTarget) (world.Block, bool) {
+	if target.private {
+		return p.privateBlock(target.pos)
+	}
+	return p.tx.Block(target.pos), true
 }
 
 // breakBlock makes the player break the block passed at the position passed. Private blocks are removed

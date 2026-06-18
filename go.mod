@@ -12,6 +12,7 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 	github.com/sandertv/gophertunnel v1.57.0
 	github.com/segmentio/fasthash v1.0.3
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
 	golang.org/x/mod v0.22.0
 	golang.org/x/text v0.23.0
@@ -29,7 +30,6 @@ require (
 	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217 // indirect
-	github.com/stretchr/testify v1.11.1 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect

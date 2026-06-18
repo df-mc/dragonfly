@@ -1887,7 +1887,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	}
 	// Note: We intentionally store this regardless of whether the breaking proceeds, so that we
 	// can resend the block to the client when it tries to break the block regardless.
-	p.blockBreakTarget = &blockBreakTarget{pos: pos, block: b, private: private}
+	p.blockBreakTarget = &blockBreakTarget{pos: pos, private: private}
 
 	ctx := event.C(p)
 	if p.Handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
@@ -1973,24 +1973,23 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	if !p.breaking || target == nil {
 		return
 	}
-	if target.private {
-		if _, ok := p.privateBlock(target.pos); !ok {
-			p.AbortBreaking()
-			p.blockAudience(false).Resend(target.pos)
-			return
-		}
+	b, ok := p.breakTargetBlock(*target)
+	if !ok {
+		p.AbortBreaking()
+		p.blockAudience(false).Resend(target.pos)
+		return
 	}
 	audience := p.blockAudience(target.private)
-	audience.AddParticle(target.pos.Vec3(), particle.PunchBlock{Block: target.block, Face: face})
+	audience.AddParticle(target.pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 
 	if p.breakCounter++; p.breakCounter%5 == 0 {
 		p.SwingArm()
 
 		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
 		// either. Every 5 ticks seems accurate.
-		audience.PlaySound(target.pos.Vec3(), sound.BlockBreaking{Block: target.block})
+		audience.PlaySound(target.pos.Vec3(), sound.BlockBreaking{Block: b})
 	}
-	if breakTime := p.breakTime(target.block); breakTime != p.lastBreakDuration {
+	if breakTime := p.breakTime(b); breakTime != p.lastBreakDuration {
 		audience.ViewBlockAction(target.pos, block.ContinueCrackAction{BreakTime: breakTime})
 		p.lastBreakDuration = breakTime
 	}
