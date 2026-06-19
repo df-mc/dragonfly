@@ -488,7 +488,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 }
 
 // tierToSoundEvent converts an item.ArmourTier to a sound event associated with equipping it.
-func tierToSoundEvent(tier item.ArmourTier) uint32 {
+func tierToSoundEvent(tier item.ArmourTier) string {
 	switch tier.(type) {
 	case item.ArmourTierLeather:
 		return packet.SoundEventEquipLeather
@@ -1411,6 +1411,11 @@ func vec32To64(vec3 mgl32.Vec3) mgl64.Vec3 {
 // vec64To32 converts a mgl64.Vec3 to a mgl32.Vec3.
 func vec64To32(vec3 mgl64.Vec3) mgl32.Vec3 {
 	return mgl32.Vec3{float32(vec3[0]), float32(vec3[1]), float32(vec3[2])}
+}
+
+// vec2To32 converts a mgl64.Vec2 to a mgl32.Vec2.
+func vec2To32(vec2 mgl64.Vec2) mgl32.Vec2 {
+	return mgl32.Vec2{float32(vec2[0]), float32(vec2[1])}
 }
 
 // blockPosFromProtocol ...
