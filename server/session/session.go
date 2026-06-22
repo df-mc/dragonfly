@@ -318,7 +318,9 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	// Note: Be aware of where RemoveEntity is called. This must not be done too
 	// early.
 	tx.RemoveEntity(c)
-	_ = s.ent.Close()
+	if s.ent != nil {
+		_ = s.ent.Close()
+	}
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.
@@ -356,6 +358,10 @@ func (s *Session) ClientData() login.ClientData {
 // handlePackets continuously handles incoming packets from the connection. It processes them accordingly.
 // Once the connection is closed, handlePackets will return.
 func (s *Session) handlePackets() {
+	if s.ent == nil {
+		return
+	}
+
 	defer func() {
 		// First close the Controllable. This might lead to a world change
 		// (player might be dead while disconnecting, in which case it will
@@ -387,6 +393,10 @@ func (s *Session) handlePackets() {
 // background performs background tasks of the Session. This includes chunk sending and automatic command updating.
 // background returns when the Session's connection is closed using CloseConnection.
 func (s *Session) background() {
+	if s.ent == nil {
+		return
+	}
+
 	var (
 		r          map[string]map[int]cmd.Runnable
 		enums      map[string]cmd.Enum

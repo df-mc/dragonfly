@@ -1384,6 +1384,10 @@ func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 }
 
 func (s *Session) handleRuntimeID(e *world.EntityHandle) uint64 {
+	if e == nil {
+		return 0
+	}
+
 	s.entityMutex.RLock()
 	defer s.entityMutex.RUnlock()
 

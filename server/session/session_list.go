@@ -58,7 +58,7 @@ func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
 	defer l.mu.Unlock()
 
 	if index := slices.IndexFunc(l.s, func(session *Session) bool {
-		return session.ent.UUID() == id
+		return session.ent != nil && session.ent.UUID() == id
 	}); index != -1 {
 		return l.s[index], true
 	}
@@ -66,6 +66,10 @@ func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
 }
 
 func (l *sessionList) sendSessionTo(s, to *Session) {
+	if s == nil || to == nil || s.ent == nil {
+		return
+	}
+
 	runtimeID := uint64(selfEntityRuntimeID)
 
 	to.entityMutex.Lock()
@@ -90,6 +94,10 @@ func (l *sessionList) sendSessionTo(s, to *Session) {
 }
 
 func (l *sessionList) unsendSessionFrom(s, from *Session) {
+	if s == nil || from == nil || s.ent == nil {
+		return
+	}
+
 	from.entityMutex.Lock()
 	delete(from.entities, from.entityRuntimeIDs[s.ent])
 	delete(from.entityRuntimeIDs, s.ent)
