@@ -186,6 +186,8 @@ func (d disc) DisplayName() string {
 	switch d {
 	case 17:
 		return "Creator (Music Box)"
+	case 20:
+		return "Lava Chicken"
 	}
 	if d > 12 {
 		return cases.Title(language.English, cases.Compact).String(d.String())

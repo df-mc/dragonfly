@@ -32,7 +32,7 @@ func (LegacyFrozenOcean) WaterColour() color.RGBA {
 
 // Tags ...
 func (LegacyFrozenOcean) Tags() []string {
-	return []string{"legacy", "frozen", "ocean", "overworld", "spawns_cold_variant_farm_animals", "spawns_polar_bears_on_alternate_blocks"}
+	return []string{"legacy", "frozen", "ocean", "overworld", "spawns_cold_variant_farm_animals", "spawns_polar_bears_on_alternate_blocks", "fast_fishing", "high_seas"}
 }
 
 // String ...

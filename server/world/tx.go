@@ -1,12 +1,15 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/go-gl/mathgl/mgl64"
 	"iter"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/world/redstone"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Tx represents a synchronised transaction performed on a World. Most
@@ -89,7 +92,7 @@ func (tx *Tx) ScheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
 // HighestLightBlocker gets the Y value of the highest fully light blocking
 // block at the x and z values passed in the World.
 func (tx *Tx) HighestLightBlocker(x, z int) int {
-	return tx.World().highestLightBlocker(x, z)
+	return tx.World().HighestLightBlocker(x, z)
 }
 
 // HighestBlock looks up the highest non-air block in the World at a specific x
@@ -157,6 +160,16 @@ func (tx *Tx) ThunderingAt(pos cube.Pos) bool {
 	return tx.World().thunderingAt(pos)
 }
 
+// Raining checks if it is raining anywhere in the World.
+func (tx *Tx) Raining() bool {
+	return tx.World().raining()
+}
+
+// Thundering checks if it is thundering anywhere in the World.
+func (tx *Tx) Thundering() bool {
+	return tx.World().thundering()
+}
+
 // AddParticle spawns a Particle at a given position in the World. Viewers that
 // are viewing the chunk will be shown the particle.
 func (tx *Tx) AddParticle(pos mgl64.Vec3, p Particle) {
@@ -215,6 +228,94 @@ func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
 	return tx.World().viewersOf(pos)
 }
 
+// Sleepers returns an iterator that yields all sleeping entities currently added to the World.
+func (tx *Tx) Sleepers() iter.Seq[Sleeper] {
+	ent := tx.Entities()
+	return func(yield func(Sleeper) bool) {
+		for e := range ent {
+			if sleeper, ok := e.(Sleeper); ok {
+				if !yield(sleeper) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// BroadcastSleepingIndicator broadcasts a sleeping indicator to all sleepers in the world.
+func (tx *Tx) BroadcastSleepingIndicator() {
+	sleepers := tx.Sleepers()
+
+	var sleeping, allSleepers int
+	for s := range sleepers {
+		allSleepers++
+		if _, ok := s.Sleeping(); ok {
+			sleeping++
+		}
+	}
+
+	for s := range sleepers {
+		s.SendSleepingIndicator(sleeping, allSleepers)
+	}
+}
+
+// BroadcastSleepingReminder broadcasts a sleeping reminder message to all sleepers in the world, excluding the sleeper
+// passed.
+func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
+	sleepers := tx.Sleepers()
+
+	var notSleeping int
+	for s := range sleepers {
+		if _, ok := s.Sleeping(); !ok {
+			notSleeping++
+		}
+	}
+
+	for s := range sleepers {
+		if _, ok := s.Sleeping(); !ok {
+			s.Messaget(chat.MessageSleeping, sleeper.Name(), notSleeping)
+		}
+	}
+}
+
+// RedstonePower returns the redstone power emitted by the block at pos toward a neighbouring receiver.
+// The face argument is relative to the receiving block.
+func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
+	b := tx.Block(pos)
+	if c, ok := b.(Conductor); ok {
+		return c.WeakPower(pos, face, tx, accountForDust)
+	}
+	// The wiki states that in the future some blocks may be transparent but still relay redstone.
+	// If a block implements RedstonePowerRelayer, it should always be prioritised over lightDiffuser.
+	if r, ok := b.(RedstonePowerRelayer); ok {
+		if !r.RelaysRedstonePowerThrough() {
+			return 0
+		}
+	} else if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
+		return 0
+	}
+	for _, f := range cube.Faces() {
+		if !b.Model().FaceSolid(pos, f, tx) {
+			return 0
+		}
+	}
+	for _, f := range cube.Faces() {
+		c, ok := tx.Block(pos.Side(f)).(Conductor)
+		if !ok {
+			continue
+		}
+		sourcePos := pos.Side(f)
+		power = max(power, c.StrongPower(sourcePos, f, tx, accountForDust))
+		if !accountForDust {
+			continue
+		}
+		if weakBlockPowerer, ok := c.(WeakBlockPowerer); ok && weakBlockPowerer.WeaklyPowersBlocks() {
+			power = max(power, c.WeakPower(sourcePos, f, tx, accountForDust))
+		}
+	}
+	return power
+}
+
 // World returns the World of the Tx. It panics if the transaction was already
 // marked complete.
 func (tx *Tx) World() *World {
@@ -222,6 +323,19 @@ func (tx *Tx) World() *World {
 		panic("world.Tx: use of transaction after transaction finishes is not permitted")
 	}
 	return tx.w
+}
+
+// CurrentTick returns the current tick of the transaction's world.
+func (tx *Tx) CurrentTick() int64 {
+	w := tx.World()
+	w.set.Lock()
+	defer w.set.Unlock()
+	return w.set.CurrentTick
+}
+
+// Redstone returns the transient redstone runtime state owned by the transaction's world.
+func (tx *Tx) Redstone() *redstone.State {
+	return &tx.World().redstone
 }
 
 // close finishes the Tx, causing any following call on the Tx to panic.

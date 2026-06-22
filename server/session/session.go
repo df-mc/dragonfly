@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
 	"io"
 	"log/slog"
 	"net"
@@ -18,7 +16,9 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -36,17 +36,18 @@ type Session struct {
 	conf           Config
 	once, connOnce sync.Once
 
-	ent             *world.EntityHandle
-	conn            Conn
-	handlers        map[uint32]packetHandler
-	outgoingPackets chan packet.Packet
-	incomingPackets chan packet.Packet
+	ent      *world.EntityHandle
+	conn     Conn
+	handlers map[uint32]packetHandler
+	packets  chan packet.Packet
 
 	currentScoreboard atomic.Pointer[string]
 	currentLines      atomic.Pointer[[]string]
 
 	chunkLoader                 *world.Loader
 	chunkRadius, maxChunkRadius int32
+
+	emoteChatMuted bool
 
 	teleportPos atomic.Pointer[mgl64.Vec3]
 
@@ -81,6 +82,8 @@ type Session struct {
 	changingDimension              atomic.Bool
 	moving                         bool
 
+	lastChunkPos world.ChunkPos
+
 	recipes map[uint32]recipe.Recipe
 
 	blobMu                sync.Mutex
@@ -94,11 +97,20 @@ type Session struct {
 
 	debugShapesMu     sync.RWMutex
 	debugShapes       map[int]debug.Shape
-	debugShapesAdd    chan debug.Shape
-	debugShapesRemove chan int
+	debugShapeUpdates []debugShapeUpdate
+
+	viewLayer *world.ViewLayer
 
 	closeBackground chan struct{}
-	closeRead       chan struct{}
+
+	br world.BlockRegistry
+}
+
+// debugShapeUpdate represents a pending debug shape mutation. If shape is nil, the update removes the
+// debug shape with the matching ID. Updates are applied in order when the session sends debug shapes.
+type debugShapeUpdate struct {
+	id    int
+	shape debug.Shape
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -132,7 +144,7 @@ type Conn interface {
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
-var Nop = &Session{}
+var Nop = &Session{conf: Config{Log: slog.New(slog.DiscardHandler)}}
 
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
@@ -146,9 +158,13 @@ type Config struct {
 
 	MaxChunkRadius int
 
+	EmoteChatMuted bool
+
 	JoinMessage, QuitMessage chat.Translation
 
 	HandleStop func(*world.Tx, Controllable)
+	// BlockRegistry overrides the registry used for network serialization. If nil, world.DefaultBlockRegistry is used.
+	BlockRegistry world.BlockRegistry
 }
 
 func (conf Config) New(conn Conn) *Session {
@@ -166,16 +182,15 @@ func (conf Config) New(conn Conn) *Session {
 	*s = Session{
 		openChunkTransactions:  make([]map[uint64]struct{}, 0, 8),
 		closeBackground:        make(chan struct{}),
-		closeRead:              make(chan struct{}),
 		handlers:               map[uint32]packetHandler{},
-		outgoingPackets:        make(chan packet.Packet, 256),
-		incomingPackets:        make(chan packet.Packet, 256),
+		packets:                make(chan packet.Packet, 256),
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
 		hiddenEntities:         map[uuid.UUID]struct{}{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
+		emoteChatMuted:         conf.EmoteChatMuted,
 		conn:                   conn,
 		currentEntityRuntimeID: 1,
 		heldSlot:               new(uint32),
@@ -184,9 +199,9 @@ func (conf Config) New(conn Conn) *Session {
 		hudUpdates:             make(map[hud.Element]bool),
 		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
-		debugShapesAdd:         make(chan debug.Shape, 256),
-		debugShapesRemove:      make(chan int, 256),
+		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
 	}
+	s.viewLayer = world.NewViewLayer(s)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 
@@ -195,9 +210,15 @@ func (conf Config) New(conn Conn) *Session {
 	s.currentScoreboard.Store(&scoreboardName)
 	s.currentLines.Store(&scoreboardLines)
 
+	if conf.BlockRegistry == nil {
+		s.br = world.DefaultBlockRegistry
+	} else {
+		s.br = conf.BlockRegistry
+	}
+
 	s.registerHandlers()
 	s.sendBiomes()
-	groups, items := creativeContent()
+	groups, items := creativeContent(s.br)
 	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
 	s.sendArmourTrimData()
@@ -207,41 +228,8 @@ func (conf Config) New(conn Conn) *Session {
 			select {
 			case <-s.closeBackground:
 				return
-			case pk := <-s.outgoingPackets:
+			case pk := <-s.packets:
 				_ = conn.WritePacket(pk)
-			case first := <-s.incomingPackets:
-				var err error
-				s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-					err = s.handlePacket(first, tx, e.(Controllable))
-					if err != nil {
-						return
-					}
-
-					total := len(s.incomingPackets)
-				receive:
-					for i := 0; i < total; i++ {
-						select {
-						case <-s.closeBackground:
-							break receive
-						case pk := <-s.incomingPackets:
-							err = s.handlePacket(pk, tx, e.(Controllable))
-							if err != nil {
-								break receive
-							}
-						default:
-							break receive
-						}
-					}
-				})
-
-				if err != nil {
-					s.conf.Log.Debug("process packet: " + err.Error())
-					select {
-					case <-s.closeRead:
-					default:
-						close(s.closeRead)
-					}
-				}
 			}
 		}
 	}()
@@ -308,7 +296,10 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 // manages.
 func (s *Session) close(tx *world.Tx, c Controllable) {
 	c.MoveItemsToInventory()
-	s.closeCurrentContainer(tx)
+	s.closeCurrentContainer(tx, false)
+	if s.viewLayer != nil {
+		_ = s.viewLayer.Close()
+	}
 
 	s.conf.HandleStop(tx, c)
 
@@ -331,7 +322,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.
-	sessions.Remove(s)
+	sessions.Remove(s, c)
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)
@@ -383,11 +374,12 @@ func (s *Session) handlePackets() {
 		if err != nil {
 			return
 		}
-
-		select {
-		case <-s.closeRead:
+		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
+			err = s.handlePacket(pk, tx, e.(Controllable))
+		})
+		if err != nil {
+			s.conf.Log.Debug("process packet: " + err.Error())
 			return
-		case s.incomingPackets <- pk:
 		}
 	}
 }
@@ -399,13 +391,14 @@ func (s *Session) background() {
 		r          map[string]map[int]cmd.Runnable
 		enums      map[string]cmd.Enum
 		enumValues map[string][]string
+		softEnums  = make(map[string]struct{})
 		ok         bool
 		i          int
 	)
 
 	s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
 		co := e.(Controllable)
-		r = s.sendAvailableCommands(co)
+		r = s.sendAvailableCommands(co, softEnums)
 		enums, enumValues = s.enums(co)
 	})
 
@@ -420,11 +413,11 @@ func (s *Session) background() {
 				if i++; i%20 == 0 {
 					// Enum resending happens relatively often and frequent updates are more important than with full
 					// command changes. Those are generally only related to permission changes, which doesn't happen often.
-					s.resendEnums(enums, enumValues, c)
+					r = s.resendEnums(enums, enumValues, softEnums, r, c)
 				}
 				if i%100 == 0 {
 					// Try to resend commands only every 5 seconds.
-					if r, ok = s.resendCommands(r, c); ok {
+					if r, ok = s.resendCommands(r, c, softEnums); ok {
 						enums, enumValues = s.enums(c)
 					}
 				}
@@ -439,15 +432,21 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
+	var worldSwitched bool
 	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
+		worldSwitched = true
 		s.handleWorldSwitch(w, tx, c)
 	}
 	pos := c.Position()
 	s.chunkLoader.Move(tx, pos)
-	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
-		Radius:   uint32(s.chunkRadius) << 4,
-	})
+	chunkPos := world.ChunkPos{int32(pos[0]) << 4, int32(pos[2]) << 4}
+	if s.lastChunkPos != chunkPos || worldSwitched {
+		s.lastChunkPos = chunkPos
+		s.writePacket(&packet.NetworkChunkPublisherUpdate{
+			Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+			Radius:   uint32(s.chunkRadius) << 4,
+		})
+	}
 
 	s.blobMu.Lock()
 	const maxChunkTransactions = 8
@@ -504,6 +503,11 @@ func (s *Session) changeDimension(dim int32, silent bool, c Controllable) {
 // ChangingDimension returns whether the session is currently changing dimension or not.
 func (s *Session) ChangingDimension() bool {
 	return s.changingDimension.Load()
+}
+
+// ChunkRadius returns the chunk radius of the session.
+func (s *Session) ChunkRadius() int32 {
+	return s.chunkRadius
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was
@@ -569,7 +573,7 @@ func (s *Session) writePacket(pk packet.Packet) {
 		return
 	}
 	select {
-	case s.outgoingPackets <- pk:
+	case s.packets <- pk:
 	case <-s.closeBackground:
 	}
 }
@@ -586,9 +590,9 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 	for _, t := range w.EntityRegistry().Types() {
 		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
-	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
+	serialisedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {
 		panic("should never happen")
 	}
-	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
+	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serialisedEntityData})
 }

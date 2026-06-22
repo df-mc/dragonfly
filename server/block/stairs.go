@@ -94,6 +94,11 @@ func (s Stairs) SideClosed(pos, side cube.Pos, tx *world.Tx) bool {
 	return s.Model().FaceSolid(pos, pos.Face(side), tx)
 }
 
+// CanRedstoneWireStepDown ...
+func (Stairs) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
+}
+
 // allStairs returns all states of stairs.
 func allStairs() (stairs []world.Block) {
 	f := func(facing cube.Direction, upsideDown bool) {

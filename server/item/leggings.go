@@ -30,7 +30,7 @@ func (l Leggings) DefencePoints() float64 {
 	switch l.Tier.Name() {
 	case "leather":
 		return 2
-	case "golden":
+	case "copper", "golden":
 		return 3
 	case "chainmail":
 		return 4
@@ -82,6 +82,8 @@ func (l Leggings) SmeltInfo() SmeltInfo {
 		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
 	case ArmourTierGold:
 		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	case ArmourTierCopper:
+		return newOreSmeltInfo(NewStack(CopperNugget{}, 1), 0.1)
 	}
 	return SmeltInfo{}
 }

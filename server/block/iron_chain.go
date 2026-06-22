@@ -8,8 +8,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Chain is a metallic decoration block.
-type Chain struct {
+// IronChain is a metallic decoration block.
+type IronChain struct {
 	transparent
 	sourceWaterDisplacer
 
@@ -18,12 +18,12 @@ type Chain struct {
 }
 
 // SideClosed ...
-func (Chain) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
+func (IronChain) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
 // UseOnBlock ...
-func (c Chain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
+func (c IronChain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	pos, face, used = firstReplaceable(tx, pos, face, c)
 	if !used {
 		return
@@ -35,29 +35,29 @@ func (c Chain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 }
 
 // BreakInfo ...
-func (c Chain) BreakInfo() BreakInfo {
+func (c IronChain) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
 }
 
 // EncodeItem ...
-func (Chain) EncodeItem() (name string, meta int16) {
-	return "minecraft:chain", 0
+func (IronChain) EncodeItem() (name string, meta int16) {
+	return "minecraft:iron_chain", 0
 }
 
 // EncodeBlock ...
-func (c Chain) EncodeBlock() (string, map[string]any) {
-	return "minecraft:chain", map[string]any{"pillar_axis": c.Axis.String()}
+func (c IronChain) EncodeBlock() (string, map[string]any) {
+	return "minecraft:iron_chain", map[string]any{"pillar_axis": c.Axis.String()}
 }
 
 // Model ...
-func (c Chain) Model() world.BlockModel {
+func (c IronChain) Model() world.BlockModel {
 	return model.Chain{Axis: c.Axis}
 }
 
-// allChains ...
-func allChains() (chains []world.Block) {
+// allIronChains ...
+func allIronChains() (chains []world.Block) {
 	for _, axis := range cube.Axes() {
-		chains = append(chains, Chain{Axis: axis})
+		chains = append(chains, IronChain{Axis: axis})
 	}
 	return
 }

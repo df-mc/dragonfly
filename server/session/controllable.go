@@ -43,6 +43,9 @@ type Controllable interface {
 	FlightSpeed() float64
 	VerticalFlightSpeed() float64
 
+	Sleep(pos cube.Pos)
+	Wake()
+
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
 	GameMode() world.GameMode

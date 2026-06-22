@@ -15,11 +15,6 @@ func (BasaltDeltas) Rainfall() float64 {
 	return 0
 }
 
-// Ash ...
-func (BasaltDeltas) Ash() (ash float64, whiteAsh float64) {
-	return 0, 2
-}
-
 // Depth ...
 func (BasaltDeltas) Depth() float64 {
 	return 0.1

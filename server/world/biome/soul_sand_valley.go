@@ -15,11 +15,6 @@ func (SoulSandValley) Rainfall() float64 {
 	return 0
 }
 
-// Ash ...
-func (SoulSandValley) Ash() (ash float64, whiteAsh float64) {
-	return 0.05, 0
-}
-
 // Depth ...
 func (SoulSandValley) Depth() float64 {
 	return 0.1
