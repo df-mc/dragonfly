@@ -45,7 +45,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 
 	switch data := pk.TransactionData.(type) {
 	case *protocol.NormalTransactionData:
-		h.resendInventories(s)
+		s.resendInventories()
 		// Always resend inventories with normal transactions. Most of the time we do not use these
 		// transactions, so we're best off making sure the client and server stay in sync.
 		if err := h.handleNormalTransaction(pk, s, c); err != nil {
@@ -54,7 +54,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		return
 	case *protocol.MismatchTransactionData:
 		// Just resend the inventory and don't do anything.
-		h.resendInventories(s)
+		s.resendInventories()
 		return
 	case *protocol.UseItemOnEntityTransactionData:
 		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
@@ -70,13 +70,13 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
-		return h.handleReleaseItemTransaction(c)
+		return h.handleReleaseItemTransaction(s, c)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
 }
 
 // resendInventories resends all inventories of the player.
-func (h *InventoryTransactionHandler) resendInventories(s *Session) {
+func (s *Session) resendInventories() {
 	s.sendInv(s.inv, protocol.WindowIDInventory)
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
@@ -183,7 +183,7 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	// having done that client-side.
 	// Because of the new inventory system, the client will expect a transaction confirmation, but instead of doing that
 	// it's much easier to just resend the inventory.
-	h.resendInventories(s)
+	s.resendInventories()
 
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
@@ -199,7 +199,11 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 }
 
 // handleReleaseItemTransaction ...
-func (h *InventoryTransactionHandler) handleReleaseItemTransaction(c Controllable) error {
+func (h *InventoryTransactionHandler) handleReleaseItemTransaction(s *Session, c Controllable) error {
+	// The client predicts the result of releasing an item, such as an arrow being removed from the
+	// inventory when a bow is fired. Resend the inventories so that the client stays in sync if the
+	// release does not actually consume the predicted items, for example when it is cancelled.
+	s.resendInventories()
 	c.ReleaseItem()
 	return nil
 }

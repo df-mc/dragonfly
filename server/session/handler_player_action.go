@@ -47,6 +47,11 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionStartItemUseOn:
 		// TODO: Properly utilize these actions.
 	case protocol.PlayerActionStopItemUseOn:
+		// The client predicts the result of releasing an item, such as an arrow being removed from
+		// the inventory when a bow is fired. Resend the inventories so that the client stays in sync
+		// if the release does not actually consume the predicted items, for example when it is
+		// cancelled.
+		s.resendInventories()
 		c.ReleaseItem()
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
