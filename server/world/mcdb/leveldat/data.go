@@ -151,6 +151,9 @@ type Data struct {
 	HasUncompleteWorldFileOnDisk   bool           `nbt:"HasUncompleteWorldFileOnDisk"`
 	PlayerHasDied                  bool           `nbt:"PlayerHasDied"`
 	UseAllowList                   bool           `nbt:"UseAllowList"`
+	AllowAnonymousBlockDropsInEditorWorlds bool  `nbt:"allowAnonymousBlockDropsInEditorWorlds"`
+	PlayerWaypoints                        int32 `nbt:"playerwaypoints"`
+	ServerEditorConnectionPolicy           int32 `nbt:"serverEditorConnectionPolicy"`
 }
 
 // FillDefault fills out d with all the default level.dat values.
