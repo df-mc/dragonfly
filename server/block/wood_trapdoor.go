@@ -67,6 +67,9 @@ func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.U
 	return true
 }
 
+// WindChargeAffected ...
+func (WoodTrapdoor) WindChargeAffected() {}
+
 // BreakInfo ...
 func (t WoodTrapdoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(t))
