@@ -538,7 +538,9 @@ func (p *Player) Heal(health float64, source world.HealingSource) {
 // updateFallState is called to update the entities falling state.
 func (p *Player) updateFallState(distanceThisTick float64) {
 	switch {
-	case p.OnGround():
+	// Require a vertical collision so brushing a block sideways mid-fall does
+	// not register as landing and deal premature fall damage.
+	case p.OnGround() && p.collidedVertically:
 		if p.fallDistance > 0 {
 			p.fall(p.fallDistance)
 			p.ResetFallDistance()
