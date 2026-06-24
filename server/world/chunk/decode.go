@@ -23,16 +23,21 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chu
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
 func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
-	var (
-		c   = New(br, r)
-		err error
-	)
+	c := New(br, r)
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
+		sub, err := decodeSubChunk(buf, c, &index, NetworkEncoding)
 		if err != nil {
 			return nil, err
 		}
+		// A version 9 sub chunk encodes its own Y index, which is read from the
+		// untrusted network data and translated to a sub chunk index. A malicious
+		// sender may craft an index outside the chunk's range, so guard against it
+		// before indexing c.sub to avoid an out of range panic.
+		if int(index) >= len(c.sub) {
+			return nil, fmt.Errorf("sub chunk index %v out of range (length %v)", index, len(c.sub))
+		}
+		c.sub[index] = sub
 	}
 	var last *PalettedStorage
 	for i := 0; i < len(c.sub); i++ {
