@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/item/recipe"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
@@ -54,6 +55,12 @@ type Controllable interface {
 
 	UseItem()
 	ReleaseItem()
+	// CraftItem calculates a crafting plan for a recipe crafted directly from the crafting grid.
+	CraftItem(recipe recipe.Recipe, times int) (recipe.CraftingPlan, error)
+	// AutoCraftItem calculates a crafting plan for a recipe crafted from the crafting grid and inventory.
+	AutoCraftItem(recipe recipe.Recipe, times int) (recipe.CraftingPlan, error)
+	// DynamicCraftItem calculates a crafting plan for a server-side dynamic crafting recipe.
+	DynamicCraftItem(times int) (recipe.CraftingPlan, error)
 	UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3)
 	UseItemOnEntity(e world.Entity) bool
 	BreakBlock(pos cube.Pos)
