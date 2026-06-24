@@ -960,6 +960,20 @@ func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFu
 
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
+	if s.viewLayer != nil {
+		if visible, ok := s.viewLayer.Block(s.viewLayerWorld(), pos); ok {
+			if layer == 0 {
+				b = visible
+			} else {
+				b = s.br.Air()
+			}
+		}
+	}
+	s.viewBlockUpdate(pos, b, layer)
+}
+
+// viewBlockUpdate sends a block update to the session without applying view-layer overrides.
+func (s *Session) viewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.UpdateBlock{
 		Position:          blockPos,
@@ -1077,7 +1091,7 @@ func (s *Session) ViewEntityState(e world.Entity) {
 	})
 }
 
-// entityMetadata returns the metadata of an entity as viewed by the session, including any overrides
+// entityMetadata returns the metadata of an entity as visible by the session, including any overrides
 // applied through its ViewLayer.
 func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	metadata := s.parseEntityMetadata(e)
@@ -1245,6 +1259,21 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 
 // ViewBlockAction ...
 func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
+	if s.viewLayer != nil {
+		if _, ok := s.viewLayer.Block(s.viewLayerWorld(), pos); ok {
+			return
+		}
+	}
+	s.viewBlockAction(pos, a)
+}
+
+// ViewPrivateBlockAction views an action performed by a private view-layer block.
+func (s *Session) ViewPrivateBlockAction(pos cube.Pos, a world.BlockAction) {
+	s.viewBlockAction(pos, a)
+}
+
+// viewBlockAction sends a block action without applying view-layer filters.
+func (s *Session) viewBlockAction(pos cube.Pos, a world.BlockAction) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	switch t := a.(type) {
 	case block.OpenAction:
