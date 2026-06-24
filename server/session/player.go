@@ -19,6 +19,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/item/recipe"
+	"github.com/df-mc/dragonfly/server/player/ddui"
 	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
@@ -461,6 +462,22 @@ func (s *Session) SendForm(f form.Form) {
 // happens.
 func (s *Session) CloseForm() {
 	s.writePacket(&packet.ClientBoundCloseForm{})
+}
+
+// SendDDUIForm sends a data-driven UI form to the player.
+func (s *Session) SendDDUIForm(f ddui.Form) {
+	if s == Nop {
+		return
+	}
+	s.ddui.SendDDUIForm(f, s)
+}
+
+// CloseDDUIForms closes all active data-driven UI forms for the player.
+func (s *Session) CloseDDUIForms() {
+	if s == Nop {
+		return
+	}
+	s.ddui.CloseDDUIForms(s)
 }
 
 // Transfer transfers the player to a server with the IP and port passed.
