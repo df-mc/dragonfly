@@ -27,7 +27,8 @@ type Provider interface {
 	// leveldb.ErrNotFound) equals true.
 	LoadColumn(pos ChunkPos, dim Dimension) (*chunk.Column, error)
 	// StoreColumn stores a world.Column at a position and dimension in the DB.
-	// An error is returned if storing was unsuccessful.
+	// Providers may use chunk.Column.DirtyFlags to avoid writing unchanged
+	// column sections. An error is returned if storing was unsuccessful.
 	StoreColumn(pos ChunkPos, dim Dimension, col *chunk.Column) error
 }
 
@@ -52,7 +53,10 @@ func (NopProvider) SaveSettings(*Settings) {}
 func (NopProvider) LoadColumn(ChunkPos, Dimension) (*chunk.Column, error) {
 	return nil, leveldb.ErrNotFound
 }
-func (NopProvider) StoreColumn(ChunkPos, Dimension, *chunk.Column) error { return nil }
+func (NopProvider) StoreColumn(_ ChunkPos, _ Dimension, col *chunk.Column) error {
+	col.MarkClean()
+	return nil
+}
 func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (cube.Pos, bool, error) {
 	return cube.Pos{}, false, nil
 }
