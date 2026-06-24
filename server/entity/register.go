@@ -11,6 +11,7 @@ import (
 // implemented by Dragonfly.
 var DefaultRegistry = conf.New([]world.EntityType{
 	AreaEffectCloudType,
+	ArmourStandType,
 	ArrowType,
 	BottleOfEnchantingType,
 	EggType,
@@ -35,6 +36,7 @@ var conf = world.EntityRegistryConfig{
 	EnderPearl:         NewEnderPearl,
 	FallingBlock:       NewFallingBlock,
 	Lightning:          NewLightning,
+	ArmourStand:        NewArmourStand,
 	Firework: func(opts world.EntitySpawnOpts, firework world.Item, owner world.Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
 		return newFirework(opts, firework.(item.Firework), owner, sidewaysVelocityMultiplier, upwardsAcceleration, attached)
 	},
