@@ -20,6 +20,12 @@ import (
 type ExplosionConfig struct {
 	// Size is the size of the explosion, it is effectively the radius which entities/blocks will be affected within.
 	Size float64
+	// EndCrystal makes the explosion behave like an End crystal explosion, preventing block damage below the
+	// explosion origin's Y level if the crystal is on obsidian or bedrock.
+	EndCrystal bool
+	// DisableEntityDamage disables entity impact from the explosion while still applying block effects, sound and
+	// particles.
+	DisableEntityDamage bool
 	// RandSource is the source to use for the explosion "randomness". If set
 	// to nil, RandSource defaults to a `rand.PCG`source seeded with
 	// `time.Now().UnixNano()`.
@@ -90,6 +96,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	}
 
 	r, d := rand.New(c.RandSource), c.Size*2
+	clipBlocksBelow := c.EndCrystal && endCrystalSupported(tx, explosionPos)
 	box := cube.Box(
 		math.Floor(explosionPos[0]-d-1),
 		math.Floor(explosionPos[1]-d-1),
@@ -100,20 +107,25 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	)
 
 	affectedEntities := make([]world.Entity, 0, 32)
-	for e := range tx.EntitiesWithin(box.Grow(2)) {
-		pos := e.Position()
-		dist := pos.Sub(explosionPos).Len()
-		if dist > d || dist == 0 {
-			continue
-		}
+	if !c.DisableEntityDamage {
+		for e := range tx.EntitiesWithin(box.Grow(2)) {
+			pos := e.Position()
+			dist := pos.Sub(explosionPos).Len()
+			if dist > d || dist == 0 {
+				continue
+			}
 
-		affectedEntities = append(affectedEntities, e)
+			affectedEntities = append(affectedEntities, e)
+		}
 	}
 
 	affectedBlocks := make([]cube.Pos, 0, 32)
 	for _, ray := range rays {
 		pos := explosionPos
 		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
+			if clipBlocksBelow && pos[1] < explosionPos[1] {
+				break
+			}
 			current := cube.PosFromVec3(pos)
 			currentBlock := tx.Block(current)
 
@@ -141,10 +153,12 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		return
 	}
 
-	for _, e := range affectedEntities {
-		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
-			explodable.Explode(explosionPos, impact, c)
+	if !c.DisableEntityDamage {
+		for _, e := range affectedEntities {
+			if explodable, ok := e.(ExplodableEntity); ok {
+				impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
+				explodable.Explode(explosionPos, impact, c)
+			}
 		}
 	}
 
@@ -219,7 +233,21 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 			}
 		}
 	}
+	if checks == 0 {
+		return 0
+	}
 	return misses / checks
+}
+
+// endCrystalSupported checks if the End crystal explosion has a supporting block
+// that protects blocks below it from being destroyed.
+func endCrystalSupported(tx *world.Tx, explosionPos mgl64.Vec3) bool {
+	switch tx.Block(cube.PosFromVec3(explosionPos).Side(cube.FaceDown)).(type) {
+	case Obsidian, Bedrock:
+		return true
+	default:
+		return false
+	}
 }
 
 // lerp returns the linear interpolation between a and b at t.

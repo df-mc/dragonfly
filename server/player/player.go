@@ -51,6 +51,8 @@ type playerData struct {
 	s        *session.Session
 	h        Handler
 
+	worldByDimension func(world.Dimension) *world.World
+
 	inv, offHand, enderChest, ui *inventory.Inventory
 	armour                       *inventory.Armour
 	heldSlot                     *uint32
@@ -976,16 +978,25 @@ func (p *Player) respawn(f func(p *Player)) {
 	})
 }
 
+type respawnBlock interface {
+	CanRespawnOn() bool
+	SafeSpawn(cube.Pos, *world.Tx) (cube.Pos, bool)
+}
+
 // spawnLocation designates a players safe spawn location.
 func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
 	tx := p.tx
 	w = tx.World()
 	previousDimension = w.Dimension()
-	playerSpawn = w.PlayerSpawn(p.UUID())
-	if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
-		pos, ok := b.SafeSpawn(playerSpawn, tx)
-		if ok {
-			return pos, w, false, previousDimension
+	spawn, hasSpawn := w.PlayerSpawnPoint(p.UUID())
+	if hasSpawn {
+		playerSpawn = spawn.Pos
+		if p.worldByDimension != nil {
+			if spawnWorld := p.worldByDimension(spawn.Dim); spawnWorld != nil {
+				if pos, ok := safeSpawnLocation(tx, spawnWorld, playerSpawn); ok {
+					return pos, spawnWorld, false, previousDimension
+				}
+			}
 		}
 	}
 
@@ -993,7 +1004,31 @@ func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlo
 	// always bring us back to the overworld.
 	w = w.PortalDestination(w.Dimension())
 	worldSpawn := w.Spawn()
-	return worldSpawn, w, playerSpawn != worldSpawn, previousDimension
+	return worldSpawn, w, hasSpawn && playerSpawn != worldSpawn, previousDimension
+}
+
+// safeSpawnLocation checks a saved spawn point in w.
+func safeSpawnLocation(tx *world.Tx, w *world.World, playerSpawn cube.Pos) (cube.Pos, bool) {
+	current := tx.World()
+	if w == current {
+		return safeSpawnLocationInTx(tx, playerSpawn)
+	}
+
+	var spawn cube.Pos
+	var ok bool
+	<-w.Exec(func(tx *world.Tx) {
+		spawn, ok = safeSpawnLocationInTx(tx, playerSpawn)
+	})
+	return spawn, ok
+}
+
+// safeSpawnLocationInTx checks if playerSpawn points at a valid respawn block
+// in tx and returns the block's safe respawn position.
+func safeSpawnLocationInTx(tx *world.Tx, playerSpawn cube.Pos) (cube.Pos, bool) {
+	if b, ok := tx.Block(playerSpawn).(respawnBlock); ok && b.CanRespawnOn() {
+		return b.SafeSpawn(playerSpawn, tx)
+	}
+	return cube.Pos{}, false
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
@@ -1786,7 +1821,15 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	p.SwingArm()
 
 	if !isLiving {
-		return false
+		n, vulnerable, ok := entity.HurtEntity(e, i.AttackDamage(), entity.AttackDamageSource{Attacker: p})
+		if !ok {
+			return false
+		}
+		p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
+		if vulnerable {
+			p.Exhaust(0.1)
+		}
+		return true
 	}
 
 	dmg := i.AttackDamage()

@@ -66,17 +66,23 @@ type playerData struct {
 	SelfSignedID string `nbt:"SelfSignedId"`
 }
 
-// LoadPlayerSpawnPosition loads the players spawn position stored in the level.dat from their UUID.
-func (db *DB) LoadPlayerSpawnPosition(id uuid.UUID) (pos cube.Pos, exists bool, err error) {
+// LoadPlayerSpawn loads the players spawn position stored in the level.dat from their UUID.
+func (db *DB) LoadPlayerSpawn(id uuid.UUID) (spawn world.PlayerSpawn, exists bool, err error) {
 	serverData, _, exists, err := db.loadPlayerData(id)
 	if !exists || err != nil {
-		return cube.Pos{}, exists, err
+		return world.PlayerSpawn{}, exists, err
 	}
 	x, y, z := serverData["SpawnX"], serverData["SpawnY"], serverData["SpawnZ"]
 	if x == nil || y == nil || z == nil {
-		return cube.Pos{}, true, fmt.Errorf("error reading spawn fields from server data for player %v", id)
+		return world.PlayerSpawn{}, true, fmt.Errorf("error reading spawn fields from server data for player %v", id)
 	}
-	return cube.Pos{int(x.(int32)), int(y.(int32)), int(z.(int32))}, true, nil
+	spawn = world.PlayerSpawn{Pos: cube.Pos{int(x.(int32)), int(y.(int32)), int(z.(int32))}, Dim: world.Overworld}
+	if dimID, ok := serverData["SpawnDimension"].(int32); ok {
+		if dim, ok := world.DimensionByID(int(dimID)); ok {
+			spawn.Dim = dim
+		}
+	}
+	return spawn, true, nil
 }
 
 // loadPlayerData loads the data stored in a LevelDB database for a specific UUID.
@@ -106,8 +112,8 @@ func (db *DB) loadPlayerData(id uuid.UUID) (serverData map[string]interface{}, k
 	return serverData, d.ServerID, true, nil
 }
 
-// SavePlayerSpawnPosition saves the player spawn position passed to the levelDB database.
-func (db *DB) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
+// SavePlayerSpawn saves the player spawn position passed to the levelDB database.
+func (db *DB) SavePlayerSpawn(id uuid.UUID, spawn world.PlayerSpawn) error {
 	_, err := db.ldb.Get([]byte("player_"+id.String()), nil)
 	d := make(map[string]interface{})
 	k := "player_server_" + id.String()
@@ -123,7 +129,10 @@ func (db *DB) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
 	} else if d, k, _, err = db.loadPlayerData(id); err != nil {
 		return err
 	}
-	d["SpawnX"], d["SpawnY"], d["SpawnZ"] = int32(pos.X()), int32(pos.Y()), int32(pos.Z())
+	d["SpawnX"], d["SpawnY"], d["SpawnZ"] = int32(spawn.Pos.X()), int32(spawn.Pos.Y()), int32(spawn.Pos.Z())
+	if dim, ok := world.DimensionID(spawn.Dim); ok {
+		d["SpawnDimension"] = int32(dim)
+	}
 
 	data, err := nbt.MarshalEncoding(d, nbt.LittleEndian)
 	if err != nil {

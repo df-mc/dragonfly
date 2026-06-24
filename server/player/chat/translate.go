@@ -16,6 +16,7 @@ var MessageServerDisconnect = Translate(str("%disconnect.disconnected"), 0, `Dis
 var MessageBedTooFar = Translate(str("%tile.bed.tooFar"), 0, `Bed is too far away`).Enc("<grey>%v</grey>")
 var MessageBedObstructed = Translate(str("%tile.bed.obstructed"), 0, `Bed is obstructed`).Enc("<grey>%v</grey>")
 var MessageRespawnPointSet = Translate(str("%tile.bed.respawnSet"), 0, `Respawn point set`).Enc("<grey>%v</grey>")
+var MessageRespawnAnchorRespawnPointSet = Translate(str("%tile.respawn_anchor.respawnSet"), 0, `Respawn point set`).Enc("<grey>%v</grey>")
 var MessageNoSleep = Translate(str("%tile.bed.noSleep"), 0, `You can only sleep at night and during thunderstorms`).Enc("<grey>%v</grey>")
 var MessageBedIsOccupied = Translate(str("%tile.bed.occupied"), 0, `This bed is occupied`).Enc("<grey>%v</grey>")
 var MessageSleeping = Translate(str("%chat.type.sleeping"), 2, `%v is sleeping in a bed. To skip to dawn, %v more users need to sleep in beds at the same time.`)
