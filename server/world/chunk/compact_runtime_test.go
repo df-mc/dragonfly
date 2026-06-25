@@ -160,6 +160,7 @@ func (testBlockRegistry) NBTBlock(uint32) bool                                  
 func (testBlockRegistry) LiquidDisplacingBlock(uint32) bool                      { return false }
 func (testBlockRegistry) LiquidBlock(uint32) bool                                { return false }
 func (testBlockRegistry) HashToRuntimeID(hash uint32) (uint32, bool)             { return hash, true }
+func (testBlockRegistry) RuntimeIDToHash(runtimeID uint32) (uint32, bool)        { return runtimeID, true }
 
 func testRange() cube.Range {
 	return cube.Range{0, 15}

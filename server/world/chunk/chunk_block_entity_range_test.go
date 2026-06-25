@@ -9,6 +9,7 @@ import (
 )
 
 func TestChunkClearBlockEntityDataInRange(t *testing.T) {
+	world.DefaultBlockRegistry.Finalize()
 	t.Parallel()
 
 	ch := chunk.New(world.DefaultBlockRegistry, world.Overworld.Range())
