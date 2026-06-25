@@ -66,6 +66,11 @@ type Handler interface {
 	// HandleRedstoneUpdate handles a redstone update at a position. ctx.Cancel() may be called
 	// to cancel the redstone update.
 	HandleRedstoneUpdate(ctx *Context, pos cube.Pos)
+	// HandleNeighbourUpdate handles a block at pos being updated because of a change to a
+	// neighbouring block at changedNeighbour. It is only called for a block or liquid that
+	// reacts to the change, that is, one implementing NeighbourUpdateTicker. ctx.Cancel() may
+	// be called to prevent both the block and any liquid at the position from being updated.
+	HandleNeighbourUpdate(ctx *Context, pos, changedNeighbour cube.Pos)
 	// HandleClose handles the World being closed. HandleClose may be used as a
 	// moment to finish code running on other goroutines that operates on the
 	// World specifically. HandleClose is called directly before the World stops
@@ -93,4 +98,5 @@ func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                
 func (NopHandler) HandleEntityDespawn(*Tx, Entity)                                               {}
 func (NopHandler) HandleExplosion(*Context, mgl64.Vec3, *[]Entity, *[]cube.Pos, *float64, *bool) {}
 func (NopHandler) HandleRedstoneUpdate(*Context, cube.Pos)                                       {}
+func (NopHandler) HandleNeighbourUpdate(*Context, cube.Pos, cube.Pos)                            {}
 func (NopHandler) HandleClose(*Tx)                                                               {}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 )
 
@@ -102,13 +103,21 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 
 	for _, update := range updates {
 		pos, changedNeighbour := update.pos, update.neighbour
-		if ticker, ok := tx.Block(pos).(NeighbourUpdateTicker); ok {
-			ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
+		blockTicker, blockOk := tx.Block(pos).(NeighbourUpdateTicker)
+		liquid, _ := tx.World().additionalLiquid(pos)
+		liquidTicker, liquidOk := liquid.(NeighbourUpdateTicker)
+		if !blockOk && !liquidOk {
+			continue
 		}
-		if liquid, ok := tx.World().additionalLiquid(pos); ok {
-			if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
-				ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
-			}
+		ctx := event.C(tx)
+		if tx.World().Handler().HandleNeighbourUpdate(ctx, pos, changedNeighbour); ctx.Cancelled() {
+			continue
+		}
+		if blockOk {
+			blockTicker.NeighbourUpdateTick(pos, changedNeighbour, tx)
+		}
+		if liquidOk {
+			liquidTicker.NeighbourUpdateTick(pos, changedNeighbour, tx)
 		}
 	}
 }
