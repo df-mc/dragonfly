@@ -209,6 +209,42 @@ func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, rot cube.Ro
 	})
 }
 
+// ViewEntityDelta ...
+func (s *Session) ViewEntityDelta(e world.Entity, pos mgl64.Vec3, rot cube.Rotation) {
+	if s.entityHidden(e) {
+		return
+	}
+
+	targetPos := pos.Add(entityOffset(e))
+	currentRot := e.Rotation()
+
+	flags := uint16(0)
+	if !mgl64.FloatEqual(targetPos.X(), 0) {
+		flags |= packet.MoveActorDeltaFlagHasX
+	}
+	if !mgl64.FloatEqual(targetPos.Y(), 0) {
+		flags |= packet.MoveActorDeltaFlagHasY
+	}
+	if !mgl64.FloatEqual(targetPos.Z(), 0) {
+		flags |= packet.MoveActorDeltaFlagHasZ
+	}
+	if !mgl64.FloatEqual(rot.Pitch(), currentRot.Pitch()) {
+		flags |= packet.MoveActorDeltaFlagHasRotX
+	}
+	if !mgl64.FloatEqual(rot.Yaw(), currentRot.Yaw()) {
+		flags |= packet.MoveActorDeltaFlagHasRotY | packet.MoveActorDeltaFlagHasRotZ
+	}
+
+	flags |= packet.MoveActorDeltaFlagForceMove
+
+	s.writePacket(&packet.MoveActorDelta{
+		Flags:           flags,
+		EntityRuntimeID: s.entityRuntimeID(e),
+		Position:        vec64To32(targetPos),
+		Rotation:        vec64To32(mgl64.Vec3{rot.Pitch(), rot.Yaw(), rot.Yaw()}),
+	})
+}
+
 // ViewEntityVelocity ...
 func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 	if s.entityHidden(e) {
@@ -853,6 +889,11 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			EventType: packet.LevelEventSoundTotemUsed,
 			Position:  vec64To32(pos),
 		})
+		return
+	case sound.ShulkerBoxClose:
+		pk.SoundType = packet.SoundEventShulkerBoxClosed
+	case sound.ShulkerBoxOpen:
+		pk.SoundType = packet.SoundEventShulkerBoxOpen
 	case sound.DecoratedPotInserted:
 		s.writePacket(&packet.PlaySound{
 			SoundName: "block.decorated_pot.insert",
