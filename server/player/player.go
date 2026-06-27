@@ -1583,6 +1583,7 @@ func (p *Player) UseItem() {
 func (p *Player) ReleaseItem() {
 	if !p.usingItem || !p.canRelease() || !p.GameMode().AllowsInteraction() {
 		p.usingItem = false
+		p.resyncInventory()
 		return
 	}
 	p.usingItem = false
@@ -1591,11 +1592,24 @@ func (p *Player) ReleaseItem() {
 	i, _ := p.HeldItems()
 	ctx := event.C(p)
 	if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
+		p.resyncInventory()
 		return
 	}
 	i.Item().(item.Releasable).Release(p, p.tx, useCtx, dur)
 	p.handleUseContext(useCtx)
+	if len(useCtx.ConsumedItems) == 0 {
+		// Nothing was consumed, so revert the item the client predicted the release would use.
+		p.resyncInventory()
+	}
 	p.updateState()
+}
+
+// resyncInventory resends the inventory to revert a release the client predicted but the server did not
+// carry out. A consumed item already updates the client through its inventory slot change.
+func (p *Player) resyncInventory() {
+	if s := p.session(); s != session.Nop {
+		s.ResyncInventory()
+	}
 }
 
 // canRelease returns whether the player can release the item currently held in the main hand.
