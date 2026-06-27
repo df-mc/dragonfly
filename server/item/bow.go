@@ -80,7 +80,7 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 	create := tx.World().EntityRegistry().Config().Arrow
 	opts := world.EntitySpawnOpts{
 		Position: eyePosition(releaser),
-		Velocity: releaser.Rotation().Vec3().Mul(force * 5),
+		Velocity: releaser.Rotation().Vec3().Add(spreadOffset()).Mul(force * 5),
 		Rotation: releaser.Rotation().Neg(),
 	}
 	projectile := tx.AddEntity(create(opts, world.ArrowSpawnConfig{
