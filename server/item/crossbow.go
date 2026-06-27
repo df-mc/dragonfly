@@ -164,7 +164,7 @@ func (c Crossbow) CanCharge(releaser Releaser, _ *world.Tx, ctx *UseContext) boo
 // shoot fires the crossbow's loaded projectiles.
 func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, arrowConf world.ArrowSpawnConfig) {
 	rot := releaser.Rotation()
-	dirVec := cube.Rotation{rot[0] + offsetAngle, rot[1]}.Vec3()
+	dirVec := cube.Rotation{rot[0] + offsetAngle, rot[1]}.Vec3().Add(spreadOffset())
 
 	if firework, ok := c.Item.Item().(Firework); ok {
 		createFirework := tx.World().EntityRegistry().Config().Firework
