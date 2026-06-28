@@ -2616,6 +2616,21 @@ func (p *Player) ViewVisibility(entity world.Entity, level world.VisibilityLevel
 	p.session().ViewVisibility(entity, level)
 }
 
+// ViewArmour overrides the public armour of the entity for this player.
+func (p *Player) ViewArmour(entity world.Entity, helmet, chestplate, leggings, boots item.Stack) {
+	p.session().ViewArmour(entity, helmet, chestplate, leggings, boots)
+}
+
+// ViewNoArmour hides the armour of the entity for this player.
+func (p *Player) ViewNoArmour(entity world.Entity) {
+	p.session().ViewNoArmour(entity)
+}
+
+// ViewPublicArmour removes the armour override of the entity for this player.
+func (p *Player) ViewPublicArmour(entity world.Entity) {
+	p.session().ViewPublicArmour(entity)
+}
+
 // RemoveViewLayer removes all view-layer overrides of the entity for this player.
 func (p *Player) RemoveViewLayer(entity world.Entity) {
 	p.session().RemoveViewLayer(entity)
