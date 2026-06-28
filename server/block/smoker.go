@@ -38,12 +38,20 @@ func (s Smoker) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	if s.Lit && rand.Float64() <= 0.016 { // Every three or so seconds.
 		tx.PlaySound(pos.Vec3Centre(), sound.SmokerCrackle{})
 	}
-	if lit := s.smelter.tickSmelting(time.Second*5, time.Millisecond*200, s.Lit, func(i item.SmeltInfo) bool {
+	if lit := s.tickSmelting(time.Second*5, time.Millisecond*200, s.Lit, func(i item.SmeltInfo) bool {
 		return i.Food
 	}); s.Lit != lit {
 		s.Lit = lit
 		tx.SetBlock(pos, s, nil)
 	}
+}
+
+// LightEmissionLevel ...
+func (s Smoker) LightEmissionLevel() uint8 {
+	if s.Lit {
+		return 13
+	}
+	return 0
 }
 
 // EncodeItem ...

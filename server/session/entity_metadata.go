@@ -114,10 +114,17 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagIgnited)
 	}
 	if n, ok := e.(named); ok {
-		m[protocol.EntityDataKeyName] = n.NameTag()
-		m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
-		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+		name := n.NameTag()
+		m[protocol.EntityDataKeyName] = name
+		if name == "" {
+			m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
+			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+		} else {
+			m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+		}
 	}
 	if sc, ok := e.(scoreTag); ok {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
@@ -147,7 +154,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		}
 	}
 
-	if l, ok := e.(living); ok && s.ent.UUID() == l.UUID() {
+	if l, ok := e.(living); ok && s.ent != nil && s.ent.UUID() == l.UUID() {
 		deathPos, deathDimension, died := l.DeathPosition()
 		if died {
 			dim, _ := world.DimensionID(deathDimension)
