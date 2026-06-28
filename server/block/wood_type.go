@@ -61,9 +61,14 @@ func PaleOakWood() WoodType {
 	return WoodType{10}
 }
 
+// BambooWood returns bamboo wood material.
+func BambooWood() WoodType {
+	return WoodType{11}
+}
+
 // WoodTypes returns a list of all wood types
 func WoodTypes() []WoodType {
-	return []WoodType{OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood(), CrimsonWood(), WarpedWood(), MangroveWood(), CherryWood(), PaleOakWood()}
+	return []WoodType{OakWood(), SpruceWood(), BirchWood(), JungleWood(), AcaciaWood(), DarkOakWood(), CrimsonWood(), WarpedWood(), MangroveWood(), CherryWood(), PaleOakWood(), BambooWood()}
 }
 
 type wood uint8
@@ -98,6 +103,8 @@ func (w wood) Name() string {
 		return "Cherry Wood"
 	case 10:
 		return "Pale Oak Wood"
+	case 11:
+		return "Bamboo Wood"
 	}
 	panic("unknown wood type")
 }
@@ -127,6 +134,8 @@ func (w wood) String() string {
 		return "cherry"
 	case 10:
 		return "pale_oak"
+	case 11:
+		return "bamboo"
 	}
 	panic("unknown wood type")
 }
