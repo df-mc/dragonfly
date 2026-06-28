@@ -62,14 +62,23 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	log := conf.Log.With("net origin", "nethernet-http")
 	handler := endpoint.HandlerConfig{Logger: log}.New()
 	cfg := listenerConfig(conf)
-	l, err := cfg.ListenNetwork(minecraft.NetherNet{
+	network := minecraft.NetherNet{
 		Signaling: handler,
 		ListenConfig: nethernet.ListenConfig{
 			Log:               conf.Log.With("net origin", "nethernet"),
 			AllowAnonymous:    conf.AuthDisabled,
 			DisableTrickleICE: true,
 		},
-	}, handler.NetworkID())
+	}
+	var networkLayer minecraft.Network = network
+	if nnConf.UnreliableMovement || nnConf.UnreliableEphemeral {
+		networkLayer = netherNetChannelNetwork{
+			NetherNet:           network,
+			unreliableMovement:  nnConf.UnreliableMovement,
+			unreliableEphemeral: nnConf.UnreliableEphemeral,
+		}
+	}
+	l, err := cfg.ListenNetwork(networkLayer, handler.NetworkID())
 	if err != nil {
 		_ = tcp.Close()
 		return nil, fmt.Errorf("create NetherNet listener: %w", err)

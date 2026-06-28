@@ -12,6 +12,10 @@
     # CertificateFile and KeyFile enable HTTPS signaling. If both are empty, plaintext HTTP is used.
     CertificateFile = ""
     KeyFile = ""
+    # UnreliableMovement sends movement-only NetherNet batches over the unreliable WebRTC data channel.
+    UnreliableMovement = false
+    # UnreliableEphemeral sends short-lived visual/gameplay-only NetherNet batches over the unreliable WebRTC data channel.
+    UnreliableEphemeral = false
 
 [Server]
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the

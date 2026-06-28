@@ -229,6 +229,12 @@ type UserConfig struct {
 			// the listener serves plaintext HTTP.
 			CertificateFile string
 			KeyFile         string
+			// UnreliableMovement sends NetherNet movement-only batches over the
+			// unreliable WebRTC data channel. This is experimental.
+			UnreliableMovement bool
+			// UnreliableEphemeral sends short-lived visual/gameplay-only batches over
+			// the unreliable WebRTC data channel. This is experimental.
+			UnreliableEphemeral bool
 		}
 	}
 	Server struct {
