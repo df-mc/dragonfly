@@ -14,6 +14,7 @@ func init() {
 	world.RegisterBlock(AncientDebris{})
 	world.RegisterBlock(Andesite{Polished: true})
 	world.RegisterBlock(Andesite{})
+	world.RegisterBlock(BambooMosaic{})
 	world.RegisterBlock(Barrier{})
 	world.RegisterBlock(Beacon{})
 	world.RegisterBlock(Bedrock{InfiniteBurning: true})
@@ -138,6 +139,9 @@ func init() {
 	}
 
 	registerAll(allAnvils())
+	registerAll(allBamboo())
+	registerAll(allBambooBlocks())
+	registerAll(allBambooSapling())
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -176,6 +180,7 @@ func init() {
 	registerAll(allGlazedTerracotta())
 	registerAll(allGrindstones())
 	registerAll(allHayBales())
+	registerAll(allHangingSigns())
 	registerAll(allHoppers())
 	registerAll(allItemFrames())
 	registerAll(allKelp())
@@ -392,6 +397,10 @@ func init() {
 	world.RegisterItem(Stone{})
 	world.RegisterItem(String{})
 	world.RegisterItem(SugarCane{})
+	world.RegisterItem(Bamboo{})
+	world.RegisterItem(BambooBlock{})
+	world.RegisterItem(BambooBlock{Stripped: true})
+	world.RegisterItem(BambooMosaic{})
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
@@ -440,20 +449,22 @@ func init() {
 		world.RegisterItem(Wool{Colour: c})
 	}
 	for _, w := range WoodTypes() {
-		if w != WarpedWood() && w != CrimsonWood() {
-			t, _ := w.Leaves()
+		if t, ok := w.Leaves(); ok {
 			world.RegisterItem(Leaves{Type: t, Persistent: true})
 		}
-		world.RegisterItem(Log{Wood: w, Stripped: true})
-		world.RegisterItem(Log{Wood: w})
+		if w != BambooWood() {
+			world.RegisterItem(Log{Wood: w, Stripped: true})
+			world.RegisterItem(Log{Wood: w})
+			world.RegisterItem(Wood{Wood: w, Stripped: true})
+			world.RegisterItem(Wood{Wood: w})
+		}
 		world.RegisterItem(Planks{Wood: w})
 		world.RegisterItem(Sign{Wood: w})
+		world.RegisterItem(HangingSign{Wood: w})
 		world.RegisterItem(WoodDoor{Wood: w})
 		world.RegisterItem(WoodFenceGate{Wood: w})
 		world.RegisterItem(WoodFence{Wood: w})
 		world.RegisterItem(WoodTrapdoor{Wood: w})
-		world.RegisterItem(Wood{Wood: w, Stripped: true})
-		world.RegisterItem(Wood{Wood: w})
 	}
 	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
 	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})
