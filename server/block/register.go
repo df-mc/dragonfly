@@ -138,6 +138,8 @@ func init() {
 	}
 
 	registerAll(allAnvils())
+	registerAll(allBamboo())
+	registerAll(allBambooSapling())
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -392,6 +394,7 @@ func init() {
 	world.RegisterItem(Stone{})
 	world.RegisterItem(String{})
 	world.RegisterItem(SugarCane{})
+	world.RegisterItem(Bamboo{})
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(Tuff{})
