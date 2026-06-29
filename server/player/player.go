@@ -25,6 +25,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/ddui"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
@@ -407,6 +408,16 @@ func (p *Player) SendForm(f form.Form) {
 // happens.
 func (p *Player) CloseForm() {
 	p.session().CloseForm()
+}
+
+// SendDDUIForm sends a data-driven UI form to the player.
+func (p *Player) SendDDUIForm(f ddui.Form) {
+	p.session().SendDDUIForm(f)
+}
+
+// CloseDDUIForms closes all active data-driven UI forms for the player.
+func (p *Player) CloseDDUIForms() {
+	p.session().CloseDDUIForms()
 }
 
 // ShowCoordinates enables the vanilla coordinates for the player.
