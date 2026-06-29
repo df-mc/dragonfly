@@ -4,6 +4,8 @@ import (
 	"maps"
 	"slices"
 	"sync"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 // layer stores the appearance overrides that a ViewLayer applies to an entity.
@@ -17,6 +19,8 @@ type layer struct {
 type ViewLayerUpdater interface {
 	// ViewLayerEntityChanged handles an entity whose view-layer overrides changed.
 	ViewLayerEntityChanged(entity Entity)
+	// ViewLayerBlockChanged handles a block whose view-layer override changed.
+	ViewLayerBlockChanged(w *World, pos cube.Pos)
 }
 
 type viewLayerViewer interface {
@@ -25,17 +29,20 @@ type viewLayerViewer interface {
 
 // ViewLayer holds overrides for how entities are viewed by a single viewer. It allows entities to be
 // viewed differently by different players, such as with a different name tag or visibility state.
+// Block overrides are scoped by world.
 type ViewLayer struct {
-	mu       sync.RWMutex
-	entities map[*EntityHandle]layer
-	updater  ViewLayerUpdater
+	mu            sync.RWMutex
+	entities      map[*EntityHandle]layer
+	blocksByWorld map[*World]map[ChunkPos]map[cube.Pos]Block
+	updater       ViewLayerUpdater
 }
 
 // NewViewLayer returns a new ViewLayer.
 func NewViewLayer(updater ViewLayerUpdater) *ViewLayer {
 	return &ViewLayer{
-		entities: map[*EntityHandle]layer{},
-		updater:  updater,
+		entities:      map[*EntityHandle]layer{},
+		blocksByWorld: map[*World]map[ChunkPos]map[cube.Pos]Block{},
+		updater:       updater,
 	}
 }
 
@@ -119,6 +126,74 @@ func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
 	return v.entities[entity.H()].visibility
 }
 
+// ViewBlock overwrites the public block at the position passed in the world passed for this ViewLayer. Liquid or waterlogged
+// state at layer 1 is not represented for overrides. Passing nil removes the block override, causing the
+// public block to be viewed again.
+func (v *ViewLayer) ViewBlock(w *World, pos cube.Pos, b Block) {
+	v.mu.Lock()
+	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
+	blocksByChunk := v.blocksByWorld[w]
+	if b == nil {
+		delete(blocksByChunk[chunkPos], pos)
+		if len(blocksByChunk[chunkPos]) == 0 {
+			delete(blocksByChunk, chunkPos)
+		}
+		if len(blocksByChunk) == 0 {
+			delete(v.blocksByWorld, w)
+		}
+	} else {
+		if blocksByChunk == nil {
+			blocksByChunk = map[ChunkPos]map[cube.Pos]Block{}
+			v.blocksByWorld[w] = blocksByChunk
+		}
+		if blocksByChunk[chunkPos] == nil {
+			blocksByChunk[chunkPos] = map[cube.Pos]Block{}
+		}
+		blocksByChunk[chunkPos][pos] = b
+	}
+	v.mu.Unlock()
+
+	v.refreshBlock(w, pos)
+}
+
+// ViewPublicBlock removes the block override at the position passed in the world passed, causing the public block to be viewed again.
+func (v *ViewLayer) ViewPublicBlock(w *World, pos cube.Pos) {
+	v.ViewBlock(w, pos, nil)
+}
+
+// Block returns the overwritten block at the position passed in the world passed and whether an override was set.
+func (v *ViewLayer) Block(w *World, pos cube.Pos) (Block, bool) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
+	b, ok := v.blocksByWorld[w][ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}][pos]
+	return b, ok
+}
+
+// Blocks returns all block overrides in the world passed.
+func (v *ViewLayer) Blocks(w *World) map[cube.Pos]Block {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
+	blocks := make(map[cube.Pos]Block)
+	for _, chunkBlocks := range v.blocksByWorld[w] {
+		maps.Copy(blocks, chunkBlocks)
+	}
+	return blocks
+}
+
+// ChunkBlocks returns all block overrides in a chunk in the world passed.
+func (v *ViewLayer) ChunkBlocks(w *World, pos ChunkPos) map[cube.Pos]Block {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
+	blocks := v.blocksByWorld[w][pos]
+	if len(blocks) == 0 {
+		return nil
+	}
+	return maps.Clone(blocks)
+}
+
 // Remove removes all overrides for the entity from the ViewLayer.
 func (v *ViewLayer) Remove(entity Entity) {
 	if v.remove(entity) {
@@ -162,6 +237,7 @@ func (v *ViewLayer) Close() error {
 	defer v.mu.Unlock()
 
 	clear(v.entities)
+	clear(v.blocksByWorld)
 	return nil
 }
 
@@ -173,5 +249,11 @@ func (l layer) empty() bool {
 func (v *ViewLayer) refresh(entity Entity) {
 	if v.updater != nil {
 		v.updater.ViewLayerEntityChanged(entity)
+	}
+}
+
+func (v *ViewLayer) refreshBlock(w *World, pos cube.Pos) {
+	if v.updater != nil {
+		v.updater.ViewLayerBlockChanged(w, pos)
 	}
 }

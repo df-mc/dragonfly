@@ -71,9 +71,10 @@ type Handler interface {
 	// be called to stop the player from breaking the block completely.
 	HandleStartBreak(ctx *Context, pos cube.Pos)
 	// HandleBlockBreak handles a block that is being broken by a player. ctx.Cancel() may be called to cancel
-	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered
-	// to change what items will actually be dropped.
-	HandleBlockBreak(ctx *Context, pos cube.Pos, drops *[]item.Stack, xp *int)
+	// the block being broken. A pointer to a slice of the block's drops is passed, and may be altered to change
+	// what items will actually be dropped. If the block being broken is a private view-layer block, drops and xp
+	// start empty and modifications to them are ignored: Private breaks only remove the viewer's override.
+	HandleBlockBreak(ctx *Context, pos cube.Pos, private bool, drops *[]item.Stack, xp *int)
 	// HandleBlockPlace handles the player placing a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being placed.
 	HandleBlockPlace(ctx *Context, pos cube.Pos, b world.Block)
@@ -177,7 +178,7 @@ func (NopHandler) HandleChat(*Context, *string)                                 
 func (NopHandler) HandleSkinChange(*Context, *skin.Skin)                                   {}
 func (NopHandler) HandleFireExtinguish(*Context, cube.Pos)                                 {}
 func (NopHandler) HandleStartBreak(*Context, cube.Pos)                                     {}
-func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)                {}
+func (NopHandler) HandleBlockBreak(*Context, cube.Pos, bool, *[]item.Stack, *int)          {}
 func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
 func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}
 func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)                 {}
