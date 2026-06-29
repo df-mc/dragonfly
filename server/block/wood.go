@@ -98,7 +98,8 @@ func (w Wood) EncodeBlock() (name string, properties map[string]any) {
 	}
 }
 
-// allWood returns a list of all possible wood states.
+// allWood returns all possible Wood block states, excluding bamboo blocks,
+// which are registered separately through allBambooBlocks.
 func allWood() (wood []world.Block) {
 	for _, w := range WoodTypes() {
 		if w == BambooWood() {
