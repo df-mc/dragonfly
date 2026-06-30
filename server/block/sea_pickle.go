@@ -15,7 +15,7 @@ import (
 type SeaPickle struct {
 	empty
 	transparent
-	sourceWaterDisplacer
+	sourceOrFallingWaterDisplacer
 
 	// AdditionalCount is the amount of additional sea pickles clustered together.
 	AdditionalCount int

@@ -235,6 +235,7 @@ func init() {
 	registerAll(allCopperLanterns())
 	registerAll(allCopperTorches())
 	registerAll(allCopperTrapdoors())
+	registerAll(allSeaGrass())
 }
 
 func init() {
@@ -529,6 +530,7 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
 	}
+	world.RegisterItem(SeaGrass{Type: DefaultSeaGrass()})
 }
 
 func registerAll(blocks []world.Block) {
