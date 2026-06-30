@@ -44,5 +44,5 @@ func (knockback) CompatibleWithEnchantment(item.EnchantmentType) bool {
 // CompatibleWithItem ...
 func (knockback) CompatibleWithItem(i world.Item) bool {
 	t, ok := i.(item.Tool)
-	return ok && t.ToolType() == item.TypeSword
+	return ok && (t.ToolType() == item.TypeSword || t.ToolType() == item.TypeSpear)
 }

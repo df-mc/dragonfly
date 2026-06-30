@@ -65,6 +65,9 @@
         "minecraft:charcoal",
         "minecraft:coal"
     ],
+    "minecraft:copper_tier": [
+        "minecraft:copper_spear"
+    ],
     "minecraft:crimson_stems": [
         "minecraft:crimson_hyphae",
         "minecraft:crimson_stem",
@@ -106,6 +109,7 @@
         "minecraft:diamond_leggings",
         "minecraft:diamond_pickaxe",
         "minecraft:diamond_shovel",
+        "minecraft:diamond_spear",
         "minecraft:diamond_sword",
         "minecraft:mace"
     ],
@@ -167,6 +171,7 @@
         "minecraft:golden_leggings",
         "minecraft:golden_pickaxe",
         "minecraft:golden_shovel",
+        "minecraft:golden_spear",
         "minecraft:golden_sword"
     ],
     "minecraft:hanging_actor": [
@@ -201,6 +206,7 @@
         "minecraft:iron_leggings",
         "minecraft:iron_pickaxe",
         "minecraft:iron_shovel",
+        "minecraft:iron_spear",
         "minecraft:iron_sword"
     ],
     "minecraft:is_armor": [
@@ -334,6 +340,15 @@
         "minecraft:netherite_shovel",
         "minecraft:stone_shovel",
         "minecraft:wooden_shovel"
+    ],
+    "minecraft:is_spear": [
+        "minecraft:copper_spear",
+        "minecraft:diamond_spear",
+        "minecraft:golden_spear",
+        "minecraft:iron_spear",
+        "minecraft:netherite_spear",
+        "minecraft:stone_spear",
+        "minecraft:wooden_spear"
     ],
     "minecraft:is_sword": [
         "minecraft:diamond_sword",
@@ -510,6 +525,7 @@
         "minecraft:netherite_leggings",
         "minecraft:netherite_pickaxe",
         "minecraft:netherite_shovel",
+        "minecraft:netherite_spear",
         "minecraft:netherite_sword"
     ],
     "minecraft:planks": [
@@ -662,6 +678,7 @@
         "minecraft:stone_hoe",
         "minecraft:stone_pickaxe",
         "minecraft:stone_shovel",
+        "minecraft:stone_spear",
         "minecraft:stone_sword"
     ],
     "minecraft:stone_tool_materials": [
@@ -684,6 +701,7 @@
         "minecraft:diamond_leggings",
         "minecraft:diamond_pickaxe",
         "minecraft:diamond_shovel",
+        "minecraft:diamond_spear",
         "minecraft:diamond_sword",
         "minecraft:golden_boots"
     ],
@@ -806,6 +824,7 @@
         "minecraft:wooden_hoe",
         "minecraft:wooden_pickaxe",
         "minecraft:wooden_shovel",
+        "minecraft:wooden_spear",
         "minecraft:wooden_sword"
     ],
     "minecraft:wool": [
