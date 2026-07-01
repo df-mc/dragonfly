@@ -133,6 +133,21 @@ func (sub *SubChunk) SkyLight(x, y, z byte) uint8 {
 	return (sub.skyLight[index>>1] >> ((index & 1) << 2)) & 0xf
 }
 
+// compactForRuntimeCache performs cheap in-memory compaction on the sub chunk. Unlike compact, it does not scan
+// multi-value storages for unused palette entries unless they are uniform and can be detected from packed words.
+func (sub *SubChunk) compactForRuntimeCache() {
+	storages := sub.storages[:0]
+	for _, storage := range sub.storages {
+		storage.compactForRuntimeCache()
+		if storage.palette.Len() == 1 && storage.palette.Value(0) == sub.air {
+			continue
+		}
+		storages = append(storages, storage)
+	}
+	clear(sub.storages[len(storages):])
+	sub.storages = storages
+}
+
 // Compact cleans the garbage from all block storages that sub chunk contains, so that they may be
 // cleanly written to a database.
 func (sub *SubChunk) compact() {

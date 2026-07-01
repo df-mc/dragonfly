@@ -3,6 +3,7 @@ package recipe
 import (
 	_ "embed"
 	"encoding/json"
+	"slices"
 )
 
 var (
@@ -32,6 +33,20 @@ func NewItemTag(tag string, count int) ItemTag {
 		count = 0
 	}
 	return ItemTag{tag: tag, count: count, items: itemTags[tag]}
+}
+
+// ItemTags returns all vanilla item tags, indexed by tag name.
+func ItemTags() map[string][]string {
+	tags := make(map[string][]string, len(itemTags))
+	for tag, items := range itemTags {
+		tags[tag] = slices.Clone(items)
+	}
+	return tags
+}
+
+// ItemsInTag returns all item names in a vanilla item tag.
+func ItemsInTag(tag string) []string {
+	return slices.Clone(itemTags[tag])
 }
 
 // Count ...

@@ -2,9 +2,11 @@ package chunk
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
@@ -54,6 +56,104 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 		c.biomes[i] = b
 	}
 	return c, nil
+}
+
+// NetworkDecodeWithBlockNBTs decodes a network serialised Chunk and any trailing block entity NBT data.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeWithBlockNBTs(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, []map[string]any, error) {
+	return NetworkDecodeBufferWithBlockNBTs(br, bytes.NewBuffer(data), count, r)
+}
+
+// NetworkDecodeBufferWithBlockNBTs decodes a network serialised Chunk and any trailing block entity NBT data.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeBufferWithBlockNBTs(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, []map[string]any, error) {
+	c, err := NetworkDecodeBuffer(br, buf, count, r)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The LevelChunk payload may include extra data right after biomes. If there are no remaining bytes,
+	// there are no extras to decode.
+	borderBlocks, err := buf.ReadByte()
+	if err != nil {
+		// bytes.Buffer only errors on ReadByte when empty: treat that as "no extras".
+		if buf.Len() == 0 {
+			return c, nil, nil
+		}
+		return nil, nil, fmt.Errorf("error reading border blocks byte: %w", err)
+	}
+	if borderBlocks > 0 {
+		skipped := buf.Next(int(borderBlocks))
+		if len(skipped) != int(borderBlocks) {
+			return nil, nil, fmt.Errorf("not enough border blocks data present: expected %d bytes, got %d", borderBlocks, len(skipped))
+		}
+	}
+
+	blockNBTs, err := DecodeBlockNBTs(buf)
+	if err != nil {
+		return nil, nil, err
+	}
+	return c, blockNBTs, nil
+}
+
+// NetworkDecodeWithBlockEntities decodes a network serialised Chunk and any trailing block entities, returning them in
+// the canonical chunk.BlockEntity type.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeWithBlockEntities(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, []BlockEntity, error) {
+	return NetworkDecodeBufferWithBlockEntities(br, bytes.NewBuffer(data), count, r)
+}
+
+// NetworkDecodeBufferWithBlockEntities decodes a network serialised Chunk and any trailing block entities, returning
+// them in the canonical chunk.BlockEntity type.
+// The sub chunk count passed must be that found in the LevelChunk packet.
+// noinspection GoUnusedExportedFunction
+func NetworkDecodeBufferWithBlockEntities(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, []BlockEntity, error) {
+	c, blockNBTs, err := NetworkDecodeBufferWithBlockNBTs(br, buf, count, r)
+	if err != nil {
+		return nil, nil, err
+	}
+	blockEntities := make([]BlockEntity, 0, len(blockNBTs))
+	for _, blockNBT := range blockNBTs {
+		x, okX := blockNBT["x"].(int32)
+		y, okY := blockNBT["y"].(int32)
+		z, okZ := blockNBT["z"].(int32)
+		// If x/y/z are missing (or have an unexpected type), keep the entry out: it can't be indexed into the world.
+		if !okX || !okY || !okZ {
+			continue
+		}
+		blockEntities = append(blockEntities, BlockEntity{
+			Pos:  cube.Pos{int(x), int(y), int(z)},
+			Data: blockNBT,
+		})
+	}
+	return c, blockEntities, nil
+}
+
+// DecodeBlockNBTs decodes a list of NBT compounds from buf until it is fully consumed.
+// noinspection GoUnusedExportedFunction
+func DecodeBlockNBTs(buf *bytes.Buffer) ([]map[string]any, error) {
+	if buf.Len() == 0 {
+		return nil, nil
+	}
+
+	var blockNBTs []map[string]any
+
+	dec := nbt.NewDecoderWithEncoding(buf, nbt.NetworkLittleEndian)
+	dec.AllowZero = true
+	for buf.Len() > 0 {
+		blockNBT := make(map[string]any)
+		if err := dec.Decode(&blockNBT); err != nil {
+			return nil, err
+		}
+		if len(blockNBT) > 0 {
+			blockNBTs = append(blockNBTs, blockNBT)
+		}
+	}
+
+	return blockNBTs, nil
 }
 
 // DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was invalid,
@@ -160,6 +260,12 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 	if err != nil {
 		return nil, fmt.Errorf("error reading block size: %w", err)
 	}
+	_, isNetwork := e.(networkEncoding)
+	_, isBlocks := pe.(BlockPaletteEncoding)
+	if isNetwork && isBlocks && blockSize&1 != 1 {
+		e = NetworkPersistentEncoding
+	}
+
 	blockSize >>= 1
 	if blockSize == 0x7f {
 		return nil, nil
@@ -170,18 +276,74 @@ func decodePalettedStorage(buf *bytes.Buffer, e Encoding, pe paletteEncoding) (*
 		return nil, fmt.Errorf("cannot read paletted storage (size=%v) %T: size too large", blockSize, pe)
 	}
 	uint32Count := size.uint32s()
-
-	uint32s := make([]uint32, uint32Count)
 	byteCount := uint32Count * 4
 
 	data := buf.Next(byteCount)
 	if len(data) != byteCount {
 		return nil, fmt.Errorf("cannot read paletted storage (size=%v) %T: not enough block data present: expected %v bytes, got %v", blockSize, pe, byteCount, len(data))
 	}
-	for i := 0; i < uint32Count; i++ {
-		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
-		uint32s[i] = uint32(data[i*4]) | uint32(data[i*4+1])<<8 | uint32(data[i*4+2])<<16 | uint32(data[i*4+3])<<24
+	if _, isPersistent := e.(networkPersistentEncoding); !isPersistent {
+		if paletteCount, ok := peekPaletteCount(buf, size, e); ok && paletteCount == 1 {
+			p, err := e.decodePalette(buf, size, pe)
+			if err != nil {
+				return nil, err
+			}
+			// Some servers encode a single-value palette using non-zero bits per block. Canonicalise it to a 0-bit
+			// storage and skip allocating index words.
+			p.size = 0
+			return newPalettedStorage(nil, p), nil
+		}
 	}
-	p, err := e.decodePalette(buf, paletteSize(blockSize), pe)
-	return newPalettedStorage(uint32s, p), err
+
+	uint32s := make([]uint32, uint32Count)
+	for i, j := 0, 0; i < uint32Count; i, j = i+1, j+4 {
+		// Explicitly don't use the binary package to greatly improve performance of reading the uint32s.
+		uint32s[i] = uint32(data[j]) | uint32(data[j+1])<<8 | uint32(data[j+2])<<16 | uint32(data[j+3])<<24
+	}
+	p, err := e.decodePalette(buf, size, pe)
+	if err != nil {
+		return nil, err
+	}
+	return newPalettedStorage(uint32s, p), nil
+}
+
+// peekPaletteCount peeks the amount of palette entries that follow in buf for this encoding and block size without
+// consuming the buffer.
+func peekPaletteCount(buf *bytes.Buffer, size paletteSize, e Encoding) (int32, bool) {
+	if size == 0 {
+		return 1, true
+	}
+
+	switch e.(type) {
+	case diskEncoding:
+		b := buf.Bytes()
+		if len(b) < 4 {
+			return 0, false
+		}
+		return int32(binary.LittleEndian.Uint32(b[:4])), true
+	case networkEncoding:
+		return peekVarint32(buf.Bytes())
+	default:
+		return 0, false
+	}
+}
+
+func peekVarint32(b []byte) (int32, bool) {
+	var v uint32
+	for i := uint(0); i < 35; i += 7 {
+		index := int(i / 7)
+		if index >= len(b) {
+			return 0, false
+		}
+		c := b[index]
+		v |= uint32(c&0x7f) << i
+		if c&0x80 == 0 {
+			x := int32(v >> 1)
+			if v&1 != 0 {
+				x = ^x
+			}
+			return x, true
+		}
+	}
+	return 0, false
 }

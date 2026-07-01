@@ -172,6 +172,7 @@ const (
 	hashSeaPickle
 	hashShortGrass
 	hashShroomlight
+	hashShulkerBox
 	hashSign
 	hashSkull
 	hashSlab
@@ -193,6 +194,7 @@ const (
 	hashStonecutter
 	hashString
 	hashSugarCane
+	hashSweetBerryBush
 	hashTNT
 	hashTerracotta
 	hashTorch
@@ -888,6 +890,10 @@ func (Shroomlight) Hash() (uint64, uint64) {
 	return hashShroomlight, 0
 }
 
+func (s ShulkerBox) Hash() (uint64, uint64) {
+	return hashShulkerBox, uint64(boolByte(s.Dyed)) | uint64(s.Colour.Uint8())<<1
+}
+
 func (s Sign) Hash() (uint64, uint64) {
 	return hashSign, uint64(s.Wood.Uint8()) | uint64(s.Attach.Uint8())<<4
 }
@@ -970,6 +976,10 @@ func (s String) Hash() (uint64, uint64) {
 
 func (c SugarCane) Hash() (uint64, uint64) {
 	return hashSugarCane, uint64(c.Age)
+}
+
+func (s SweetBerryBush) Hash() (uint64, uint64) {
+	return hashSweetBerryBush, uint64(s.Age)
 }
 
 func (TNT) Hash() (uint64, uint64) {

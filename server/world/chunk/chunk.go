@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"slices"
+	"sync"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
@@ -26,6 +27,14 @@ type Chunk struct {
 	sub []*SubChunk
 	// biomes is an array of biome IDs. There is one biome ID for every column in the chunk.
 	biomes []*PalettedStorage
+
+	// blockEntities holds NBT data for block entities indexed by absolute world position.
+	// The values stored are raw NBT compounds as sent by the network.
+	//
+	// Note: Chunk methods are generally not concurrency-safe. These fields are guarded so that block entity
+	// data can safely be updated/read independently by consumers that may have concurrent packet handling.
+	blockEntitiesMu sync.RWMutex
+	blockEntities   map[cube.Pos]map[string]any
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
@@ -46,6 +55,62 @@ func New(br BlockRegistry, r cube.Range) *Chunk {
 		biomes:               biomes,
 		recalculateHeightMap: true,
 		heightMap:            make(HeightMap, 256),
+	}
+}
+
+// BlockEntityData returns the raw block entity NBT at the position passed, if present.
+func (chunk *Chunk) BlockEntityData(pos cube.Pos) (map[string]any, bool) {
+	chunk.blockEntitiesMu.RLock()
+	defer chunk.blockEntitiesMu.RUnlock()
+	if chunk.blockEntities == nil {
+		return nil, false
+	}
+	d, ok := chunk.blockEntities[pos]
+	return d, ok
+}
+
+// SetBlockEntityData stores raw block entity NBT at the position passed. If data is nil, the entry is deleted.
+func (chunk *Chunk) SetBlockEntityData(pos cube.Pos, data map[string]any) {
+	// Only Y is relevant for a chunk's range check. (cube.Pos.OutOfBounds only checks Y.)
+	// We allow deletes regardless of bounds, but ignore inserts that are out of range.
+	if data != nil && pos.OutOfBounds(chunk.r) {
+		return
+	}
+
+	chunk.blockEntitiesMu.Lock()
+	defer chunk.blockEntitiesMu.Unlock()
+	if data == nil { // Clear block entities if nil data is passed
+		if chunk.blockEntities == nil {
+			return
+		}
+		delete(chunk.blockEntities, pos)
+		if len(chunk.blockEntities) == 0 {
+			// Release the map so chunks without block entities don't retain extra allocations.
+			chunk.blockEntities = nil
+		}
+		return
+	}
+	if chunk.blockEntities == nil {
+		chunk.blockEntities = make(map[cube.Pos]map[string]any, 1)
+	}
+	chunk.blockEntities[pos] = data
+}
+
+// ClearBlockEntityDataInRange clears raw block entity NBT entries within the inclusive position range passed.
+func (chunk *Chunk) ClearBlockEntityDataInRange(min, max cube.Pos) {
+	chunk.blockEntitiesMu.Lock()
+	defer chunk.blockEntitiesMu.Unlock()
+	if chunk.blockEntities == nil {
+		return
+	}
+	for pos := range chunk.blockEntities {
+		if !pos.Within(min, max) {
+			continue
+		}
+		delete(chunk.blockEntities, pos)
+	}
+	if len(chunk.blockEntities) == 0 {
+		chunk.blockEntities = nil
 	}
 }
 
@@ -214,6 +279,14 @@ func (chunk *Chunk) HeightMap() HeightMap {
 func (chunk *Chunk) Compact() {
 	for i := range chunk.sub {
 		chunk.sub[i].compact()
+	}
+}
+
+// CompactForRuntimeCache performs cheap in-memory compaction on chunk block storages. It collapses uniform
+// storages and shrinks oversized storage widths, but avoids scanning multi-value storages for unused palette entries.
+func (chunk *Chunk) CompactForRuntimeCache() {
+	for i := range chunk.sub {
+		chunk.sub[i].compactForRuntimeCache()
 	}
 }
 
