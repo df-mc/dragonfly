@@ -16,8 +16,7 @@ type Bamboo struct {
 
 // BBox ...
 func (b Bamboo) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
-	// The stalk's box extends from the centre of the block towards positive X
-	// and Z, rather than being centred within it.
+	// The stalk's box extends from the block's centre towards positive X and Z.
 	size := 0.5 + 2.0/16.0
 	if b.Thick {
 		size = 0.5 + 3.0/16.0
@@ -25,8 +24,7 @@ func (b Bamboo) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
 	return []cube.BBox{cube.Box(0.5, 0, 0.5, size, 1, size).Translate(b.randomlyModifyPosition(pos))}
 }
 
-// getSeed returns the position hash vanilla uses to derive the stalk's random
-// offset, computed with 32-bit unsigned wraparound.
+// getSeed returns the position hash vanilla uses for the stalk's random offset.
 func getSeed(x, y, z int32) uint32 {
 	v := uint32(y) ^ 3129871*uint32(x) ^ 116129781*uint32(z)
 	return v * (42317861*v + 11)
@@ -54,19 +52,15 @@ func (Bamboo) calculateOffsetValue(mn, mx float32, steps int, random float32) fl
 	return mn + (mx-mn)*random
 }
 
-// randomlyModifyPosition returns the deterministic horizontal offset of the
-// bamboo stalk at the position passed.
-// TODO: Everything below the position hash is an unverified candidate from a
-// partial BDS decompile: the xoroshiro seeding (including whether the seed is
-// shifted first) and the -0.25/0.25/16-step offset bounds still need to be
-// confirmed against the not-yet-decompiled collision shape getter.
+// randomlyModifyPosition returns the horizontal offset of the stalk at pos.
+// TODO: Verify the xoroshiro seeding and offset bounds against vanilla.
 func (b Bamboo) randomlyModifyPosition(pos cube.Pos) mgl64.Vec3 {
 	l := uint64(getSeed(int32(pos.X()), 0, int32(pos.Z()))) ^ 0x6A09E667F3BCC909
 	s0 := mcrandom.MixStafford13(l)
 	s1 := mcrandom.MixStafford13(l + 0x9E3779B97F4A7C15)
 	prng := mcrandom.NewXoroshiro128PlusPlus(s0, s1)
 	offsetX := b.calculateOffsetValue(-0.25, 0.25, 16, b.randomToFloat32(prng.Next()))
-	prng.Next() // Y offset draw, discarded: the stalk is never offset vertically.
+	prng.Next() // Y offset, unused.
 	offsetZ := b.calculateOffsetValue(-0.25, 0.25, 16, b.randomToFloat32(prng.Next()))
 	return mgl64.Vec3{float64(offsetX), 0, float64(offsetZ)}
 }

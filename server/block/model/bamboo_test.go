@@ -7,10 +7,8 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// TestBambooBBox checks the size, position and random offset of bamboo
-// bounding boxes: the stalk's box extends from the block's centre towards
-// positive X and Z, offset horizontally by a deterministic, per-position
-// offset quantized to 16 steps within [-0.25, 0.25].
+// TestBambooBBox checks the size of bamboo bounding boxes and that their
+// random offset is deterministic and quantized within [-0.25, 0.25].
 func TestBambooBBox(t *testing.T) {
 	const step = 0.5 / 15
 	for _, b := range []Bamboo{{}, {Thick: true}} {

@@ -120,9 +120,8 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// maxHeight returns the maximum height, between 12 and 16, that the bamboo
-// stalk at the position passed may grow to. It is derived deterministically
-// from the position's X and Z coordinates.
+// maxHeight returns the maximum height, between 12 and 16, of the bamboo
+// stalk at the position passed.
 func (b Bamboo) maxHeight(pos cube.Pos) int {
 	seed := 3129871*uint32(pos.X()) ^ 116129781*uint32(pos.Z())
 	seed *= 42317861*seed + 11
@@ -165,9 +164,8 @@ func (b Bamboo) grow(pos cube.Pos, amount int, maxHeight int, tx *world.Tx) bool
 	return true
 }
 
-// growthLayout returns the blocks that make up the top of a bamboo stalk that
-// has grown by amount blocks to a total height of newHeight, ordered from the
-// top of the stalk downwards.
+// growthLayout returns the new top blocks of a stalk grown by amount blocks
+// to newHeight, ordered top to bottom.
 func (b Bamboo) growthLayout(newHeight, amount int) []world.Block {
 	stemBlock := Bamboo{Thick: b.Thick || newHeight >= 4}
 	smallLeavesBlock := Bamboo{Thick: stemBlock.Thick, LeafSize: BambooSizeSmallLeaves()}

@@ -8,9 +8,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Bamboo and BambooSapling must satisfy item.BoneMealAffected: the interface
-// is discovered through a runtime type assertion, so a signature mismatch
-// would silently disable bone meal on bamboo rather than fail to compile.
+// These interfaces are discovered through runtime type assertions, so a
+// signature mismatch would fail silently rather than at compile time.
 var (
 	_ item.BoneMealAffected = Bamboo{}
 	_ item.BoneMealAffected = BambooSapling{}
@@ -19,8 +18,7 @@ var (
 )
 
 // TestBambooSoilFor checks that bamboo and bamboo saplings may be placed on
-// every block that supports them in vanilla: dirt, coarse dirt, grass,
-// podzol, mud, muddy mangrove roots, sand, red sand and gravel.
+// every block that supports them in vanilla.
 func TestBambooSoilFor(t *testing.T) {
 	soils := []world.Block{
 		Dirt{}, Dirt{Coarse: true}, Grass{}, Podzol{}, Mud{},
@@ -35,10 +33,8 @@ func TestBambooSoilFor(t *testing.T) {
 	}
 }
 
-// TestBambooGrowthLayout checks the leaf sizes and stalk thickness of the top
-// blocks of a bamboo stalk at each height, matching vanilla behaviour: small
-// leaves for two and three block stalks, thick stalks with large leaves from
-// four blocks up.
+// TestBambooGrowthLayout checks the leaf sizes and stalk thickness of grown
+// stalks against vanilla layouts.
 func TestBambooGrowthLayout(t *testing.T) {
 	thin, thick := Bamboo{}, Bamboo{Thick: true}
 	smallThin := Bamboo{LeafSize: BambooSizeSmallLeaves()}
@@ -68,8 +64,8 @@ func TestBambooGrowthLayout(t *testing.T) {
 	}
 }
 
-// TestBambooMaxHeight checks that the maximum height of a bamboo stalk is
-// always between 12 and 16 and deterministic for a given position.
+// TestBambooMaxHeight checks that the maximum stalk height is always between
+// 12 and 16 and deterministic per position.
 func TestBambooMaxHeight(t *testing.T) {
 	seen := map[int]bool{}
 	for x := -100; x <= 100; x += 3 {
