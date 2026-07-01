@@ -39,7 +39,8 @@ func offsetValue(mn, mx float32, steps int, random float32) float32 {
 	}
 	if steps == 1 {
 		return (mn + mx) * 0.5
-	} else if steps > 1 {
+	}
+	if steps > 1 {
 		index := float32(math.Floor(float64(float32(steps) * random)))
 		return mn + index*(mx-mn)/float32(steps-1)
 	}
