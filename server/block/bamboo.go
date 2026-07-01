@@ -125,7 +125,7 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 // from the position's X and Z coordinates.
 func (b Bamboo) maxHeight(pos cube.Pos) int {
 	seed := 3129871*uint32(pos.X()) ^ 116129781*uint32(pos.Z())
-	seed = seed * (42317861*seed + 11)
+	seed *= 42317861*seed + 11
 	return 12 + int(seed%5)
 }
 
