@@ -10,6 +10,7 @@ import (
 
 // randomOffset returns the deterministic horizontal offset vanilla applies to
 // the models of certain blocks, such as bamboo, at the position passed.
+// TODO: Verify the seeding chain below getSeed against vanilla.
 func randomOffset(pos cube.Pos, mn, mx float32, steps int) mgl64.Vec3 {
 	l := uint64(getSeed(int32(pos.X()), 0, int32(pos.Z()))) ^ 0x6A09E667F3BCC909
 	s0 := mcrandom.MixStafford13(l)
