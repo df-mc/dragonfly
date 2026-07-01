@@ -16,12 +16,13 @@ type Bamboo struct {
 
 // BBox ...
 func (b Bamboo) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
-	pixels := 2.0
+	// The stalk's box extends from the centre of the block towards positive X
+	// and Z, rather than being centred within it.
+	size := 0.5 + 2.0/16.0
 	if b.Thick {
-		pixels = 3.0
+		size = 0.5 + 3.0/16.0
 	}
-	radius := (pixels / 16.0) / 2.0
-	return []cube.BBox{cube.Box(0.5-radius, 0, 0.5-radius, 0.5+radius, 1, 0.5+radius).Translate(b.randomlyModifyPosition(pos))}
+	return []cube.BBox{cube.Box(0.5, 0, 0.5, size, 1, size).Translate(b.randomlyModifyPosition(pos))}
 }
 
 // positionHash ...

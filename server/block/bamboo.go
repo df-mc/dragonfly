@@ -33,9 +33,17 @@ func (b Bamboo) EncodeItem() (name string, meta int16) {
 }
 
 // BoneMeal ...
-func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (b Bamboo) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	top := b.top(pos, tx)
-	return tx.Block(top).(Bamboo).grow(top, rand.IntN(2)+1, b.maxHeight(top), tx)
+	if tx.Block(top).(Bamboo).grow(top, rand.IntN(2)+1, b.maxHeight(top), tx) {
+		return item.BoneMealResultSmall
+	}
+	return item.BoneMealResultNone
+}
+
+// FlammabilityInfo ...
+func (b Bamboo) FlammabilityInfo() FlammabilityInfo {
+	return newFlammabilityInfo(60, 60, true)
 }
 
 // BreakInfo ...
@@ -112,10 +120,13 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// maxHeight ...
+// maxHeight returns the maximum height, between 12 and 16, that the bamboo
+// stalk at the position passed may grow to. It is derived deterministically
+// from the position's X and Z coordinates.
 func (b Bamboo) maxHeight(pos cube.Pos) int {
-	// TODO: The RNG algorithm does not match vanilla's.
-	return 12 + int(rand.NewPCG(uint64(pos.X()), uint64(pos.Z())).Uint64()%5)
+	seed := int64(pos.X())*3129871 ^ int64(pos.Z())*116129781
+	seed = ((seed*42317861 + 11) * seed) & 0xffffffff
+	return 12 + int(seed%5)
 }
 
 // top ...
@@ -147,34 +158,36 @@ func (b Bamboo) grow(pos cube.Pos, amount int, maxHeight int, tx *world.Tx) bool
 		}
 	}
 
-	newHeight := height + amount
-	stemBlock := Bamboo{Thick: b.Thick}
-	if newHeight >= 4 && !stemBlock.Thick {
-		stemBlock.Thick = true
-	}
-	smallLeavesBlock := Bamboo{Thick: stemBlock.Thick, LeafSize: BambooSizeSmallLeaves()}
-	bigLeavesBlock := Bamboo{Thick: stemBlock.Thick, LeafSize: BambooSizeLargeLeaves()}
-
-	var newBlocks []world.Block
-	switch {
-	case newHeight == 2:
-		newBlocks = []world.Block{smallLeavesBlock}
-	case newHeight == 3:
-		newBlocks = []world.Block{smallLeavesBlock, smallLeavesBlock}
-	case newHeight == 4:
-		newBlocks = []world.Block{bigLeavesBlock, smallLeavesBlock, stemBlock, stemBlock}
-	case newHeight > 4:
-		newBlocks = []world.Block{bigLeavesBlock, bigLeavesBlock, smallLeavesBlock}
-		for i, mx := 0, min(amount, newHeight-len(newBlocks)); i < mx; i++ {
-			newBlocks = append(newBlocks, stemBlock)
-		}
-	}
-
-	for i, b := range newBlocks {
-		tx.SetBlock(pos.Sub(cube.Pos{0, i - amount}), b, nil)
+	for i, block := range b.growthLayout(height+amount, amount) {
+		tx.SetBlock(pos.Sub(cube.Pos{0, i - amount}), block, nil)
 	}
 
 	return true
+}
+
+// growthLayout returns the blocks that make up the top of a bamboo stalk that
+// has grown by amount blocks to a total height of newHeight, ordered from the
+// top of the stalk downwards.
+func (b Bamboo) growthLayout(newHeight, amount int) []world.Block {
+	stemBlock := Bamboo{Thick: b.Thick || newHeight >= 4}
+	smallLeavesBlock := Bamboo{Thick: stemBlock.Thick, LeafSize: BambooSizeSmallLeaves()}
+	bigLeavesBlock := Bamboo{Thick: stemBlock.Thick, LeafSize: BambooSizeLargeLeaves()}
+
+	switch {
+	case newHeight == 2:
+		return []world.Block{smallLeavesBlock}
+	case newHeight == 3:
+		return []world.Block{smallLeavesBlock, smallLeavesBlock}
+	case newHeight == 4:
+		return []world.Block{bigLeavesBlock, smallLeavesBlock, stemBlock, stemBlock}
+	case newHeight > 4:
+		newBlocks := []world.Block{bigLeavesBlock, bigLeavesBlock, smallLeavesBlock}
+		for i, mx := 0, min(amount, newHeight-len(newBlocks)); i < mx; i++ {
+			newBlocks = append(newBlocks, stemBlock)
+		}
+		return newBlocks
+	}
+	return nil
 }
 
 // allBamboos ...
