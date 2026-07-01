@@ -2097,9 +2097,8 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	p.Exhaust(0.005)
-	// An instant break costs no durability. This uses the player's actual break context (effects,
-	// environment) rather than block.BreaksInstantly, so a block that only breaks instantly on land does
-	// not skip durability when the break was actually slowed underwater or in the air.
+	// An instant break costs no durability. The real break context is used so a block that is only instant
+	// on land still costs durability when the break was slowed underwater or in the air.
 	if block.BreakDuration(b, held, p.breakContext()) == 0 {
 		return
 	}

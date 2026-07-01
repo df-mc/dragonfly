@@ -112,10 +112,30 @@ func TestBreaksInstantly(t *testing.T) {
 		stack item.Stack
 		want  bool
 	}{
-		{"zero-hardness block breaks instantly with anything", block.ShortGrass{}, item.Stack{}, true},
-		{"soft block breaks instantly with an efficiency tool", block.Netherrack{}, efficiencyDiamondPick, true},
-		{"soft block does not break instantly by hand", block.Netherrack{}, item.Stack{}, false},
-		{"stone does not break instantly with a diamond pickaxe", block.Stone{}, diamondPick, false},
+		{
+			name:  "zero-hardness block breaks instantly with anything",
+			block: block.ShortGrass{},
+			stack: item.Stack{},
+			want:  true,
+		},
+		{
+			name:  "soft block breaks instantly with an efficiency tool",
+			block: block.Netherrack{},
+			stack: efficiencyDiamondPick,
+			want:  true,
+		},
+		{
+			name:  "soft block does not break instantly by hand",
+			block: block.Netherrack{},
+			stack: item.Stack{},
+			want:  false,
+		},
+		{
+			name:  "stone does not break instantly with a diamond pickaxe",
+			block: block.Stone{},
+			stack: diamondPick,
+			want:  false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
