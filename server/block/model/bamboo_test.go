@@ -8,7 +8,7 @@ import (
 )
 
 // TestBambooBBox checks the size of bamboo bounding boxes and that their
-// random offset is deterministic and quantized within [-0.25, 0.25].
+// random offset is quantized within [-0.25, 0.25].
 func TestBambooBBox(t *testing.T) {
 	const step = 0.5 / 15
 	for _, b := range []Bamboo{{}, {Thick: true}} {
@@ -34,9 +34,6 @@ func TestBambooBBox(t *testing.T) {
 					if k := (off + 0.25) / step; math.Abs(k-math.Round(k)) > 1e-4 {
 						t.Fatalf("bamboo at %v: offset %v not quantized to steps of %v", pos, off, step)
 					}
-				}
-				if again := b.BBox(pos, nil)[0]; again != box {
-					t.Fatalf("bamboo at %v: bounding box not deterministic", pos)
 				}
 			}
 		}

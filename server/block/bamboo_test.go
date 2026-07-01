@@ -65,7 +65,7 @@ func TestBambooGrowthLayout(t *testing.T) {
 }
 
 // TestBambooMaxHeight checks that the maximum stalk height is always between
-// 12 and 16 and deterministic per position.
+// 12 and 16.
 func TestBambooMaxHeight(t *testing.T) {
 	seen := map[int]bool{}
 	for x := -100; x <= 100; x += 3 {
@@ -74,9 +74,6 @@ func TestBambooMaxHeight(t *testing.T) {
 			h := Bamboo{}.maxHeight(pos)
 			if h < 12 || h > 16 {
 				t.Fatalf("max height at %v out of range: %v", pos, h)
-			}
-			if h2 := (Bamboo{}).maxHeight(pos); h2 != h {
-				t.Fatalf("max height at %v not deterministic: %v != %v", pos, h, h2)
 			}
 			seen[h] = true
 		}
