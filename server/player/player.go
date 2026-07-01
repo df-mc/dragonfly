@@ -1884,8 +1884,11 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	p.lastBreakDuration = p.breakTime(pos)
-	for _, viewer := range p.viewers() {
-		viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
+	// A non-positive break time means the block is mined instantly; there is no cracking to animate.
+	if p.lastBreakDuration > 0 {
+		for _, viewer := range p.viewers() {
+			viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
+		}
 	}
 }
 
@@ -1893,25 +1896,29 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 // held, if the player is on the ground/underwater and if the player has any effects.
 func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	held, _ := p.HeldItems()
-	breakTime := block.BreakDuration(p.tx.Block(pos), held)
-	if !p.OnGround() {
-		breakTime *= 5
-	}
-	if _, ok := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity); p.insideOfWater() && !ok {
-		breakTime *= 5
+	return block.BreakDuration(p.tx.Block(pos), held, p.breakContext())
+}
+
+// breakContext returns the block.BreakContext describing the status effects and environment currently
+// affecting how quickly the player breaks blocks.
+func (p *Player) breakContext() block.BreakContext {
+	_, aquaAffinity := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity)
+	ctx := block.BreakContext{
+		Underwater:   p.insideOfWater(),
+		AquaAffinity: aquaAffinity,
+		Airborne:     !p.OnGround(),
 	}
 	for _, e := range p.Effects() {
-		lvl := e.Level()
 		switch e.Type() {
 		case effect.Haste:
-			breakTime = time.Duration(float64(breakTime) * effect.Haste.Multiplier(lvl))
+			ctx.HasteLevel = e.Level()
 		case effect.MiningFatigue:
-			breakTime = time.Duration(float64(breakTime) * effect.MiningFatigue.Multiplier(lvl))
+			ctx.MiningFatigueLevel = e.Level()
 		case effect.ConduitPower:
-			breakTime = time.Duration(float64(breakTime) * effect.ConduitPower.Multiplier(lvl))
+			ctx.ConduitPowerLevel = e.Level()
 		}
 	}
-	return breakTime
+	return ctx
 }
 
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
@@ -1958,8 +1965,10 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 	}
 	if breakTime := p.breakTime(pos); breakTime != p.lastBreakDuration {
-		for _, viewer := range p.viewers() {
-			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
+		if breakTime > 0 {
+			for _, viewer := range p.viewers() {
+				viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
+			}
 		}
 		p.lastBreakDuration = breakTime
 	}
@@ -2089,7 +2098,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	p.Exhaust(0.005)
-	if block.BreaksInstantly(b, held) {
+	// Only blocks that naturally break instantly (zero hardness) cost no durability; a block made to break
+	// within one tick by a fast tool or status effects still consumes durability.
+	if block.BreaksInstantly(b) {
 		return
 	}
 	if durable, ok := held.Item().(item.Durable); ok {
