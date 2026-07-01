@@ -22,59 +22,102 @@ type Breakable interface {
 	BreakInfo() BreakInfo
 }
 
-// BreakDuration returns the base duration that breaking the block passed takes when being broken using the
-// item passed.
-func BreakDuration(b world.Block, i item.Stack) time.Duration {
+// BreakContext carries the environmental and status-effect state that influences how quickly a block is
+// broken. The zero value represents a player standing on the ground, out of water, without any relevant
+// status effects or enchantments.
+type BreakContext struct {
+	// HasteLevel is the level of the Haste effect (0 if absent). Level 1 corresponds to Haste I.
+	HasteLevel int
+	// ConduitPowerLevel is the level of the Conduit Power effect (0 if absent). It grants a mining speed
+	// boost equivalent to Haste; the two do not stack (the higher of the two is used).
+	ConduitPowerLevel int
+	// MiningFatigueLevel is the level of the Mining Fatigue effect (0 if absent).
+	MiningFatigueLevel int
+	// Underwater is true if the player's head is submerged in water, which slows mining fivefold unless
+	// negated by AquaAffinity.
+	Underwater bool
+	// AquaAffinity is true if the player wears a helmet enchanted with Aqua Affinity, negating the
+	// underwater mining penalty.
+	AquaAffinity bool
+	// AirBorne is true if the player is not on the ground, which slows mining fivefold.
+	AirBorne bool
+}
+
+// BreakDuration returns the duration that breaking the block passed takes when being broken using the item
+// passed, accounting for the status effects and environment described by ctx. The zero value of ctx
+// represents a player standing on the ground, out of water and without any status effects.
+//
+// It follows the Bedrock Edition breaking calculation: status effects and the underwater/airborne penalties
+// are applied to the mining speed before the result is rounded up to a whole tick, so the returned duration
+// matches the number of ticks the client spends breaking the block.
+//
+// See https://minecraft.wiki/w/Breaking#Calculation.
+func BreakDuration(b world.Block, i item.Stack, ctx BreakContext) time.Duration {
 	breakable, ok := b.(Breakable)
 	if !ok {
 		return math.MaxInt64
+	}
+	info := breakable.BreakInfo()
+	if info.Hardness <= 0 {
+		return 0
 	}
 	t, ok := i.Item().(item.Tool)
 	if !ok {
 		t = item.ToolNone{}
 	}
-	info := breakable.BreakInfo()
 
-	breakTime := info.Hardness * 5
-	if info.Harvestable(t) {
-		breakTime = info.Hardness * 1.5
-	}
+	canHarvest := info.Harvestable(t)
+	speed := 1.0
 	if info.Effective(t) {
-		eff := t.BaseMiningEfficiency(b)
-		if e, ok := i.Enchantment(enchantment.Efficiency); ok {
-			eff += enchantment.Efficiency.Addend(e.Level())
+		speed = t.BaseMiningEfficiency(b)
+		if !canHarvest {
+			// A tool of the correct type but wrong tier (e.g. a wooden pickaxe on diamond ore) grants no
+			// speed bonus in Bedrock Edition.
+			speed = 1
+		} else if e, ok := i.Enchantment(enchantment.Efficiency); ok {
+			speed += enchantment.Efficiency.Addend(e.Level())
 		}
-		breakTime /= eff
 	}
-	// TODO: Account for haste etc here.
-	timeInTicksAccurate := math.Round(breakTime/0.05) * 0.05
 
-	return (time.Duration(math.Round(timeInTicksAccurate*20)) * time.Second) / 20
+	// Haste and Conduit Power do not stack; the higher of the two is used. They boost both the mining speed
+	// and the final destroy progress per tick.
+	positive := max(ctx.HasteLevel, ctx.ConduitPowerLevel)
+	if positive > 0 {
+		speed *= 0.2*float64(positive) + 1
+	}
+	if ctx.MiningFatigueLevel > 0 {
+		speed *= math.Pow(0.3, float64(ctx.MiningFatigueLevel))
+	}
+	if ctx.Underwater && !ctx.AquaAffinity {
+		speed /= 5
+	}
+	if ctx.AirBorne {
+		speed /= 5
+	}
+
+	damage := speed / info.Hardness
+	if canHarvest {
+		damage /= 30
+	} else {
+		damage /= 100
+	}
+	if positive > 0 {
+		damage *= math.Pow(1.2, float64(positive))
+	}
+	if ctx.MiningFatigueLevel > 0 {
+		damage *= math.Pow(0.7, float64(ctx.MiningFatigueLevel))
+	}
+	if damage >= 1 {
+		// The block breaks within a single tick.
+		return 0
+	}
+	return time.Duration(math.Ceil(1/damage)) * time.Second / 20
 }
 
 // BreaksInstantly checks if the block passed can be broken instantly using the item stack passed to break
-// it.
+// it, without any status effects.
 func BreaksInstantly(b world.Block, i item.Stack) bool {
-	breakable, ok := b.(Breakable)
-	if !ok {
-		return false
-	}
-	hardness := breakable.BreakInfo().Hardness
-	if hardness == 0 {
-		return true
-	}
-	t, ok := i.Item().(item.Tool)
-	if !ok || !breakable.BreakInfo().Effective(t) {
-		return false
-	}
-
-	// TODO: Account for haste etc here.
-	efficiencyVal := 0.0
-	if e, ok := i.Enchantment(enchantment.Efficiency); ok {
-		efficiencyVal += enchantment.Efficiency.Addend(e.Level())
-	}
-	hasteVal := 0.0
-	return (t.BaseMiningEfficiency(b)+efficiencyVal)*hasteVal >= hardness*30
+	return BreakDuration(b, i, BreakContext{}) == 0
 }
 
 // BreakInfo is a struct returned by every block. It holds information on block breaking related data, such as
