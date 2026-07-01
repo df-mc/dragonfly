@@ -39,18 +39,12 @@ type BreakContext struct {
 	// AquaAffinity is true if the player wears a helmet enchanted with Aqua Affinity, negating the
 	// underwater mining penalty.
 	AquaAffinity bool
-	// AirBorne is true if the player is not on the ground, which slows mining fivefold.
+	// AirBorne is true if the player is not on the ground, which slows mining by 5x.
 	AirBorne bool
 }
 
 // BreakDuration returns the duration that breaking the block passed takes when being broken using the item
-// passed, accounting for the status effects and environment described by ctx. The zero value of ctx
-// represents a player standing on the ground, out of water and without any status effects.
-//
-// It follows the Bedrock Edition breaking calculation: status effects and the underwater/airborne penalties
-// are applied to the mining speed before the result is rounded up to a whole tick, so the returned duration
-// matches the number of ticks the client spends breaking the block.
-//
+// passed, accounting for the status effects and environment described by ctx.
 // See https://minecraft.wiki/w/Breaking#Calculation.
 func BreakDuration(b world.Block, i item.Stack, ctx BreakContext) time.Duration {
 	breakable, ok := b.(Breakable)
