@@ -1,8 +1,8 @@
 module github.com/df-mc/dragonfly
 
-go 1.26.0
+go 1.26.1
 
-replace github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260519224427-a9adb396a02f
+replace github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260629061227-a7280363cc73
 
 require (
 	github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479
@@ -15,19 +15,20 @@ require (
 	github.com/sandertv/gophertunnel v1.57.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727
-	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
-	golang.org/x/mod v0.32.0
-	golang.org/x/text v0.34.0
-	golang.org/x/tools v0.41.0
+	golang.org/x/exp v0.0.0-20260611194520-c48552f49976
+	golang.org/x/mod v0.37.0
+	golang.org/x/text v0.38.0
+	golang.org/x/tools v0.46.0
 )
 
 require (
+	github.com/coder/websocket v1.8.14 // indirect
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
-	github.com/df-mc/go-nethernet v1.0.8 // indirect
-	github.com/df-mc/go-playfab v1.0.0 // indirect
-	github.com/df-mc/go-xsapi v1.0.1 // indirect
+	github.com/df-mc/go-nethernet v1.0.16 // indirect
+	github.com/df-mc/go-playfab/v2 v2.0.2-0.20260618232935-6d86fc87875f // indirect
+	github.com/df-mc/go-xsapi/v2 v2.0.2-0.20260618232321-7db98a0b7856 // indirect
 	github.com/df-mc/jsonc v1.0.5 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
@@ -49,11 +50,15 @@ require (
 	github.com/pion/webrtc/v4 v4.2.10-0.20260224155637-aa3b95c72dd2 // indirect
 	github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
-	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+replace github.com/sandertv/go-raknet => github.com/hashimthearab/go-raknet v1.14.2-0.20260625072737-109968c5e6ff
+
+replace github.com/df-mc/go-xsapi/v2 => github.com/hashimthearab/go-xsapi/v2 v2.0.0-20260629063438-188b35931d3e
