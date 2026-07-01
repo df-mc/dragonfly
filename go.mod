@@ -1,6 +1,6 @@
 module github.com/df-mc/dragonfly
 
-go 1.26.0
+go 1.26.1
 
 replace github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260629061227-a7280363cc73
 
