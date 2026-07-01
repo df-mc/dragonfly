@@ -1895,11 +1895,17 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 // held, if the player is on the ground/underwater and if the player has any effects.
 func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	held, _ := p.HeldItems()
+	return block.BreakDuration(p.tx.Block(pos), held, p.breakContext())
+}
+
+// breakContext returns the block.BreakContext describing the status effects and environment currently
+// affecting how quickly the player breaks blocks.
+func (p *Player) breakContext() block.BreakContext {
 	_, aquaAffinity := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity)
 	ctx := block.BreakContext{
 		Underwater:   p.insideOfWater(),
 		AquaAffinity: aquaAffinity,
-		AirBorne:     !p.OnGround(),
+		Airborne:     !p.OnGround(),
 	}
 	for _, e := range p.Effects() {
 		switch e.Type() {
@@ -1911,7 +1917,7 @@ func (p *Player) breakTime(pos cube.Pos) time.Duration {
 			ctx.ConduitPowerLevel = e.Level()
 		}
 	}
-	return block.BreakDuration(p.tx.Block(pos), held, ctx)
+	return ctx
 }
 
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
@@ -2091,7 +2097,10 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	p.Exhaust(0.005)
-	if block.BreaksInstantly(b, held) {
+	// An instant break costs no durability. This uses the player's actual break context (effects,
+	// environment) rather than block.BreaksInstantly, so a block that only breaks instantly on land does
+	// not skip durability when the break was actually slowed underwater or in the air.
+	if block.BreakDuration(b, held, p.breakContext()) == 0 {
 		return
 	}
 	if durable, ok := held.Item().(item.Durable); ok {

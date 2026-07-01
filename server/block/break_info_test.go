@@ -61,8 +61,21 @@ func TestBreakDuration(t *testing.T) {
 			name:      "airborne penalty before rounding",
 			block:     block.Stone{},
 			stack:     diamondPick,
-			ctx:       block.BreakContext{AirBorne: true},
+			ctx:       block.BreakContext{Airborne: true},
 			wantTicks: 29,
+		},
+		{
+			name:      "efficiency instant-mines a soft block on land",
+			block:     block.Netherrack{},
+			stack:     efficiencyDiamondPick,
+			wantTicks: 0,
+		},
+		{
+			name:      "airborne prevents instant-mining the same soft block",
+			block:     block.Netherrack{},
+			stack:     efficiencyDiamondPick,
+			ctx:       block.BreakContext{Airborne: true},
+			wantTicks: 4,
 		},
 		{
 			name:      "water without aqua affinity slows mining",
@@ -83,6 +96,30 @@ func TestBreakDuration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := block.BreakDuration(tt.block, tt.stack, tt.ctx).Milliseconds() / 50
 			require.Equal(t, tt.wantTicks, got)
+		})
+	}
+}
+
+// TestBreaksInstantly verifies that BreaksInstantly reports an instant break both for zero-hardness blocks
+// and for positive-hardness blocks that the item breaks within a single tick.
+func TestBreaksInstantly(t *testing.T) {
+	diamondPick := item.NewStack(item.Pickaxe{Tier: item.ToolTierDiamond}, 1)
+	efficiencyDiamondPick := diamondPick.WithEnchantments(item.NewEnchantment(enchantment.Efficiency, 3))
+
+	tests := []struct {
+		name  string
+		block world.Block
+		stack item.Stack
+		want  bool
+	}{
+		{"zero-hardness block breaks instantly with anything", block.ShortGrass{}, item.Stack{}, true},
+		{"soft block breaks instantly with an efficiency tool", block.Netherrack{}, efficiencyDiamondPick, true},
+		{"soft block does not break instantly by hand", block.Netherrack{}, item.Stack{}, false},
+		{"stone does not break instantly with a diamond pickaxe", block.Stone{}, diamondPick, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, block.BreaksInstantly(tt.block, tt.stack))
 		})
 	}
 }
