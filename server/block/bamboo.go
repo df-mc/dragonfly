@@ -124,8 +124,8 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 // stalk at the position passed may grow to. It is derived deterministically
 // from the position's X and Z coordinates.
 func (b Bamboo) maxHeight(pos cube.Pos) int {
-	seed := int64(pos.X())*3129871 ^ int64(pos.Z())*116129781
-	seed = ((seed*42317861 + 11) * seed) & 0xffffffff
+	seed := 3129871*uint32(pos.X()) ^ 116129781*uint32(pos.Z())
+	seed = seed * (42317861*seed + 11)
 	return 12 + int(seed%5)
 }
 

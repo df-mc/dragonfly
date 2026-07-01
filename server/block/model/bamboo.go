@@ -25,17 +25,11 @@ func (b Bamboo) BBox(pos cube.Pos, s world.BlockSource) []cube.BBox {
 	return []cube.BBox{cube.Box(0.5, 0, 0.5, size, 1, size).Translate(b.randomlyModifyPosition(pos))}
 }
 
-// positionHash ...
-func (Bamboo) positionHash(x, z int) uint64 {
-	ux := uint64(uint32(x))
-	iz := int64(int32(z))
-	part1 := 116129781 * iz
-	part2 := int64(0x2FC20F00000001*ux) >> 32
-	v1 := part1 ^ part2
-	calc := v1 * (42317861*v1 + 11)
-	temp := uint64(calc) >> 16
-	signExtended := int64(int32(temp))
-	return uint64(signExtended) ^ 0x6A09E667F3BCC909
+// getSeed returns the position hash vanilla uses to derive the stalk's random
+// offset, computed with 32-bit unsigned wraparound.
+func getSeed(x, y, z int32) uint32 {
+	v := uint32(y) ^ 3129871*uint32(x) ^ 116129781*uint32(z)
+	return v * (42317861*v + 11)
 }
 
 // randomToFloat32 convert random long to float in [0, 1).
@@ -60,14 +54,19 @@ func (Bamboo) calculateOffsetValue(mn, mx float32, steps int, random float32) fl
 	return mn + (mx-mn)*random
 }
 
-// randomlyModifyPosition ...
+// randomlyModifyPosition returns the deterministic horizontal offset of the
+// bamboo stalk at the position passed.
+// TODO: Everything below the position hash is an unverified candidate from a
+// partial BDS decompile: the xoroshiro seeding (including whether the seed is
+// shifted first) and the -0.25/0.25/16-step offset bounds still need to be
+// confirmed against the not-yet-decompiled collision shape getter.
 func (b Bamboo) randomlyModifyPosition(pos cube.Pos) mgl64.Vec3 {
-	seed := b.positionHash(pos.X(), pos.Z())
-	s0 := mcrandom.MixStafford13(seed)
-	s1 := mcrandom.MixStafford13(seed + 0x9e3779b97f4a7c15)
+	l := uint64(getSeed(int32(pos.X()), 0, int32(pos.Z()))) ^ 0x6A09E667F3BCC909
+	s0 := mcrandom.MixStafford13(l)
+	s1 := mcrandom.MixStafford13(l + 0x9E3779B97F4A7C15)
 	prng := mcrandom.NewXoroshiro128PlusPlus(s0, s1)
 	offsetX := b.calculateOffsetValue(-0.25, 0.25, 16, b.randomToFloat32(prng.Next()))
-	prng.Next()
+	prng.Next() // Y offset draw, discarded: the stalk is never offset vertically.
 	offsetZ := b.calculateOffsetValue(-0.25, 0.25, 16, b.randomToFloat32(prng.Next()))
 	return mgl64.Vec3{float64(offsetX), 0, float64(offsetZ)}
 }
