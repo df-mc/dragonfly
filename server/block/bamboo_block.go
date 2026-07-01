@@ -61,10 +61,11 @@ func (b BambooBlock) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (b BambooBlock) EncodeBlock() (name string, properties map[string]any) {
+	meta := map[string]any{"pillar_axis": b.Axis.String()}
 	if b.Stripped {
-		return "minecraft:stripped_bamboo_block", map[string]any{"pillar_axis": b.Axis.String()}
+		return "minecraft:stripped_bamboo_block", meta
 	}
-	return "minecraft:bamboo_block", map[string]any{"pillar_axis": b.Axis.String()}
+	return "minecraft:bamboo_block", meta
 }
 
 // allBambooBlocks ...
