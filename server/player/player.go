@@ -2946,34 +2946,57 @@ func (p *Player) OpenSign(pos cube.Pos, frontSide bool) {
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
 // present, an error is returned.
 func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
-	sign, ok := p.tx.Block(pos).(block.Sign)
-	if !ok {
+	b := p.tx.Block(pos)
+
+	var (
+		waxed    bool
+		front    block.SignText
+		back     block.SignText
+		setBlock func()
+	)
+
+	switch s := b.(type) {
+	case block.Sign:
+		waxed = s.Waxed
+		front, back = s.Front, s.Back
+		setBlock = func() {
+			s.Front, s.Back = front, back
+			p.tx.SetBlock(pos, s, nil)
+		}
+	case block.HangingSign:
+		waxed = s.Waxed
+		front, back = s.Front, s.Back
+		setBlock = func() {
+			s.Front, s.Back = front, back
+			p.tx.SetBlock(pos, s, nil)
+		}
+	default:
 		return fmt.Errorf("edit sign: no sign at position %v", pos)
 	}
 
-	if sign.Waxed {
+	if waxed {
 		return nil
-	} else if frontText == sign.Front.Text && backText == sign.Back.Text {
+	} else if frontText == front.Text && backText == back.Text {
 		return nil
 	}
 
 	ctx := event.C(p)
-	if frontText != sign.Front.Text {
-		if p.Handler().HandleSignEdit(ctx, pos, true, sign.Front.Text, frontText); ctx.Cancelled() {
+	if frontText != front.Text {
+		if p.Handler().HandleSignEdit(ctx, pos, true, front.Text, frontText); ctx.Cancelled() {
 			p.resendNearbyBlock(pos)
 			return nil
 		}
-		sign.Front.Text = frontText
-		sign.Front.Owner = p.XUID()
+		front.Text = frontText
+		front.Owner = p.XUID()
 	} else {
-		if p.Handler().HandleSignEdit(ctx, pos, false, sign.Back.Text, backText); ctx.Cancelled() {
+		if p.Handler().HandleSignEdit(ctx, pos, false, back.Text, backText); ctx.Cancelled() {
 			p.resendNearbyBlock(pos)
 			return nil
 		}
-		sign.Back.Text = backText
-		sign.Back.Owner = p.XUID()
+		back.Text = backText
+		back.Owner = p.XUID()
 	}
-	p.tx.SetBlock(pos, sign, nil)
+	setBlock()
 	return nil
 }
 
