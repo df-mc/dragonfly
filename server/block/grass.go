@@ -4,6 +4,7 @@ import (
 	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -79,18 +80,19 @@ func (g Grass) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 }
 
 // BoneMeal ...
-func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
-	for i := 0; i < 14; i++ {
+func (g Grass) BoneMeal(pos cube.Pos, tx *world.Tx) (result item.BoneMealResult) {
+	result = item.BoneMealResultNone
+	for range 14 {
 		c := pos.Add(cube.Pos{rand.IntN(6) - 3, 0, rand.IntN(6) - 3})
 		above := c.Side(cube.FaceUp)
 		_, air := tx.Block(above).(Air)
 		_, grass := tx.Block(c).(Grass)
 		if air && grass {
 			tx.SetBlock(above, plantSelection[rand.IntN(len(plantSelection))], nil)
+			result = item.BoneMealResultArea
 		}
 	}
-
-	return false
+	return
 }
 
 // BreakInfo ...

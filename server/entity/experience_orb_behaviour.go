@@ -86,7 +86,7 @@ func (exp *ExperienceOrbBehaviour) tick(e *Ent, tx *world.Tx) {
 func (exp *ExperienceOrbBehaviour) findTarget(tx *world.Tx, pos mgl64.Vec3) {
 	exp.target = nil
 	for o := range tx.EntitiesWithin(followBox.Translate(pos)) {
-		if _, ok := o.(experienceCollector); ok {
+		if ec, ok := o.(experienceCollector); ok && ec.CanCollectExperience() {
 			exp.target = o.H()
 			break
 		}
@@ -119,4 +119,6 @@ type experienceCollector interface {
 	// whether the player was able to collect the experience, or not, due to the
 	// 100ms delay between experience collection.
 	CollectExperience(value int) bool
+	// CanCollectExperience returns whether the player can collect experience or not.
+	CanCollectExperience() bool
 }

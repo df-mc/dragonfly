@@ -16,7 +16,9 @@ import (
 // Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks
 // such as bedrock.
 type Breakable interface {
-	// BreakInfo returns information of the block related to the breaking of it.
+	// BreakInfo returns information of the block related to the breaking of it. Callers that execute the BreakHandler
+	// must call BreakInfo on the concrete block value being broken, as handlers may need block state after the world
+	// position has been cleared.
 	BreakInfo() BreakInfo
 }
 
@@ -150,6 +152,11 @@ var axeEffective = func(t item.Tool) bool {
 // shearsEffective is a convenience function for blocks that are effectively mined with shears.
 var shearsEffective = func(t item.Tool) bool {
 	return t.ToolType() == item.TypeShears
+}
+
+// swordEffective is a convenience function for blocks that are effectively mined with a sword.
+var swordEffective = func(t item.Tool) bool {
+	return t.ToolType() == item.TypeSword
 }
 
 // shovelEffective is a convenience function for blocks that are effectively mined with a shovel.
@@ -365,12 +372,13 @@ func breakBlock(b world.Block, pos cube.Pos, tx *world.Tx) {
 }
 
 func breakBlockNoDrops(b world.Block, pos cube.Pos, tx *world.Tx) {
+	// Clear the block first so neighbour-sensitive break handlers observe the post-break world state.
+	tx.SetBlock(pos, nil, nil)
 	if breakable, ok := b.(Breakable); ok {
 		breakHandler := breakable.BreakInfo().BreakHandler
 		if breakHandler != nil {
 			breakHandler(pos, tx, nil)
 		}
 	}
-	tx.SetBlock(pos, nil, nil)
 	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 }
