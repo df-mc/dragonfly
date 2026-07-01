@@ -10,22 +10,23 @@ import (
 
 // randomOffset returns the deterministic horizontal offset vanilla applies to
 // the models of certain blocks, such as bamboo, at the position passed.
-// TODO: Verify the seeding chain below getSeed against vanilla.
 func randomOffset(pos cube.Pos, mn, mx float32, steps int) mgl64.Vec3 {
-	l := uint64(getSeed(int32(pos.X()), 0, int32(pos.Z()))) ^ 0x6A09E667F3BCC909
-	s0 := mcrandom.MixStafford13(l)
-	s1 := mcrandom.MixStafford13(l + 0x9E3779B97F4A7C15)
+	seed := offsetSeed(int32(pos.X()), int32(pos.Z()))
+	s0 := mcrandom.MixStafford13(seed)
+	s1 := mcrandom.MixStafford13(seed + 0x9E3779B97F4A7C15)
 	prng := mcrandom.NewXoroshiro128PlusPlus(s0, s1)
 	x := offsetValue(mn, mx, steps, randomFloat32(prng.Next()))
-	prng.Next() // Y offset, unused.
+	prng.Next() // The Y offset is always zero, but its draw is still consumed.
 	z := offsetValue(mn, mx, steps, randomFloat32(prng.Next()))
 	return mgl64.Vec3{float64(x), 0, float64(z)}
 }
 
-// getSeed returns the position hash vanilla uses for random model offsets.
-func getSeed(x, y, z int32) uint32 {
-	v := uint32(y) ^ 3129871*uint32(x) ^ 116129781*uint32(z)
-	return v * (42317861*v + 11)
+// offsetSeed returns the seed vanilla uses for random model offsets at the
+// position passed. The signed 32-bit extraction after the shift is intentional.
+func offsetSeed(x, z int32) uint64 {
+	v := int64(z)*116129781 ^ int64((uint64(uint32(x))*0x2fc20f00000001)>>32)
+	v = int64(int32(uint64(v*(v*42317861+11)) >> 16))
+	return uint64(v) ^ 0x6A09E667F3BCC909
 }
 
 // randomFloat32 converts a random uint64 to a float in [0, 1).
