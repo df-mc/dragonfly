@@ -1,12 +1,13 @@
 package entity
 
 import (
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"sync"
-	"time"
 )
 
 // Behaviour implements the behaviour of an Ent.
@@ -21,10 +22,11 @@ type Behaviour interface {
 // share a lot of code. It is currently under development and is prone to
 // (breaking) changes.
 type Ent struct {
-	tx     *world.Tx
-	handle *world.EntityHandle
-	data   *world.EntityData
-	once   sync.Once
+	tx                *world.Tx
+	handle            *world.EntityHandle
+	data              *world.EntityData
+	deferPortalTravel bool
+	once              sync.Once
 }
 
 // Open converts a world.EntityHandle to an Ent in a world.Tx.
@@ -64,6 +66,15 @@ func (e *Ent) Velocity() mgl64.Vec3 {
 // that axis in blocks/tick.
 func (e *Ent) SetVelocity(v mgl64.Vec3) {
 	e.data.Vel = v
+}
+
+// Teleport teleports the entity to the position given.
+func (e *Ent) Teleport(pos mgl64.Vec3) {
+	viewers := e.tx.Viewers(e.data.Pos)
+	e.data.Pos = pos
+	for _, v := range viewers {
+		v.ViewEntityTeleport(e, pos)
+	}
 }
 
 // Rotation returns the rotation of the entity.
@@ -118,6 +129,11 @@ func (e *Ent) SetNameTag(s string) {
 // Tick ticks Ent, progressing its lifetime and closing the entity if it is
 // in the void.
 func (e *Ent) Tick(tx *world.Tx, current int64) {
+	e.deferPortalTravel = true
+	defer func() {
+		e.deferPortalTravel = false
+	}()
+
 	y := e.data.Pos[1]
 	if y < float64(tx.Range()[0]) && current%10 == 0 {
 		_ = e.Close()
@@ -125,9 +141,17 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	}
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
-	if m := e.Behaviour().Tick(e, tx); m != nil {
+	m := e.Behaviour().Tick(e, tx)
+	if e.finishPendingPortalTravel(tx) {
+		return
+	}
+	if m != nil {
 		m.Send()
 	}
+	if e.checkPortalInsiders() && e.finishPendingPortalTravel(tx) {
+		return
+	}
+	e.stopPortalContact()
 	e.data.Age += time.Second / 20
 }
 
