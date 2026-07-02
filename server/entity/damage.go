@@ -71,6 +71,7 @@ func (VoidDamageSource) ReducedByResistance() bool        { return false }
 func (VoidDamageSource) ReducedByArmour() bool            { return false }
 func (VoidDamageSource) Fire() bool                       { return false }
 func (VoidDamageSource) IgnoreTotem() bool                { return true }
+func (VoidDamageSource) ExplodesEndCrystal() bool         { return false }
 func (SuffocationDamageSource) ReducedByResistance() bool { return false }
 func (SuffocationDamageSource) ReducedByArmour() bool     { return false }
 func (SuffocationDamageSource) Fire() bool                { return false }
@@ -92,4 +93,5 @@ func (ExplosionDamageSource) Fire() bool                { return false }
 func (ExplosionDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
 	return e == enchantment.BlastProtection
 }
-func (ExplosionDamageSource) IgnoreTotem() bool { return false }
+func (ExplosionDamageSource) IgnoreTotem() bool        { return false }
+func (ExplosionDamageSource) ExplodesEndCrystal() bool { return false }

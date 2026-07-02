@@ -176,11 +176,11 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 	switch r := result.(type) {
 	case trace.EntityResult:
-		if l, ok := r.Entity().(Living); ok {
-			if lt.conf.Damage >= 0 {
-				lt.hitEntity(l, e, vel)
+		if lt.conf.Damage >= 0 {
+			lt.hitEntity(r.Entity(), e, vel)
+			if damageableEntity(r.Entity()) {
+				lt.collidedEntities = append(lt.collidedEntities, r.Entity().H())
 			}
-			lt.collidedEntities = append(lt.collidedEntities, l.H())
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
@@ -268,10 +268,9 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 	}
 }
 
-// hitEntity is called when a projectile hits a Living. It deals damage to the
-// entity and knocks it back. Additionally, it applies any potion effects and
-// fire if applicable.
-func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
+// hitEntity is called when a projectile hits an entity. It deals damage to the
+// entity if possible, and applies Living-specific effects such as knockback.
+func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.Vec3) {
 	owner, _ := lt.conf.Owner.Entity(e.tx)
 	src := ProjectileDamageSource{Projectile: e, Owner: owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
@@ -279,7 +278,11 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
 		dmg += rand.Float64() * dmg / 2
 	}
 	// TODO: Piercing arrows should bypass shield blocking when shields are implemented.
-	if _, vulnerable := l.Hurt(dmg, src); vulnerable {
+	if _, vulnerable, ok := HurtEntity(victim, dmg, src); ok && vulnerable {
+		l, ok := victim.(Living)
+		if !ok {
+			return
+		}
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
@@ -337,7 +340,7 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 }
 
 // ignores returns a function to ignore entities in trace.Perform that are
-// either a spectator, not living, the entity itself, its owner in the first
+// either a spectator, not damageable, the entity itself, its owner in the first
 // 5 ticks, or an entity it already collided with.
 func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 	return func(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
@@ -346,10 +349,10 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 				g, ok := other.(interface{ GameMode() world.GameMode })
 				spectator := ok && !g.GameMode().HasCollision()
 				itself := e.H() == other.H()
-				_, living := other.(Living)
+				damageable := damageableEntity(other)
 				owner := e.data.Age < time.Second/4 && lt.conf.Owner == other.H()
 				collidedEntity := slices.Contains(lt.collidedEntities, other.H())
-				if spectator || itself || !living || owner || collidedEntity {
+				if spectator || itself || !damageable || owner || collidedEntity {
 					continue
 				}
 				if !yield(other) {
