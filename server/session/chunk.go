@@ -69,11 +69,12 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		for z := uint8(0); z < 16; z++ {
 			y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
 			otherInd := col.SubIndex(y)
-			if otherInd > ind {
+			switch {
+			case otherInd > ind:
 				subMap[i], lower = 16, false
-			} else if otherInd < ind {
+			case otherInd < ind:
 				subMap[i], higher = -1, false
-			} else {
+			default:
 				subMap[i], lower, higher = int8(y-col.SubY(otherInd)), false, false
 			}
 		}
