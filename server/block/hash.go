@@ -10,6 +10,8 @@ const (
 	hashAncientDebris
 	hashAndesite
 	hashAnvil
+	hashBambooBlock
+	hashBambooMosaic
 	hashBanner
 	hashBarrel
 	hashBarrier
@@ -116,6 +118,7 @@ const (
 	hashLava
 	hashLeaves
 	hashLectern
+	hashLever
 	hashLight
 	hashLilyPad
 	hashLitPumpkin
@@ -158,6 +161,10 @@ const (
 	hashRawCopper
 	hashRawGold
 	hashRawIron
+	hashRedstoneBlock
+	hashRedstoneOre
+	hashRedstoneTorch
+	hashRedstoneWire
 	hashReinforcedDeepslate
 	hashResin
 	hashResinBricks
@@ -233,6 +240,14 @@ func (a Andesite) Hash() (uint64, uint64) {
 
 func (a Anvil) Hash() (uint64, uint64) {
 	return hashAnvil, uint64(a.Type.Uint8()) | uint64(a.Facing)<<2
+}
+
+func (b BambooBlock) Hash() (uint64, uint64) {
+	return hashBambooBlock, uint64(b.Axis) | uint64(boolByte(b.Stripped))<<2
+}
+
+func (BambooMosaic) Hash() (uint64, uint64) {
+	return hashBambooMosaic, 0
 }
 
 func (b Banner) Hash() (uint64, uint64) {
@@ -659,6 +674,10 @@ func (l Lectern) Hash() (uint64, uint64) {
 	return hashLectern, uint64(l.Facing)
 }
 
+func (l Lever) Hash() (uint64, uint64) {
+	return hashLever, uint64(boolByte(l.Powered)) | uint64(l.Facing)<<1 | uint64(l.Direction)<<4
+}
+
 func (l Light) Hash() (uint64, uint64) {
 	return hashLight, uint64(l.Level)
 }
@@ -825,6 +844,22 @@ func (RawGold) Hash() (uint64, uint64) {
 
 func (RawIron) Hash() (uint64, uint64) {
 	return hashRawIron, 0
+}
+
+func (RedstoneBlock) Hash() (uint64, uint64) {
+	return hashRedstoneBlock, 0
+}
+
+func (r RedstoneOre) Hash() (uint64, uint64) {
+	return hashRedstoneOre, uint64(r.Type.Uint8()) | uint64(boolByte(r.Lit))<<1
+}
+
+func (t RedstoneTorch) Hash() (uint64, uint64) {
+	return hashRedstoneTorch, uint64(t.Facing) | uint64(boolByte(t.Lit))<<3
+}
+
+func (r RedstoneWire) Hash() (uint64, uint64) {
+	return hashRedstoneWire, uint64(r.Power)
 }
 
 func (ReinforcedDeepslate) Hash() (uint64, uint64) {

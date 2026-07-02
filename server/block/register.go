@@ -14,6 +14,7 @@ func init() {
 	world.RegisterBlock(AncientDebris{})
 	world.RegisterBlock(Andesite{Polished: true})
 	world.RegisterBlock(Andesite{})
+	world.RegisterBlock(BambooMosaic{})
 	world.RegisterBlock(Barrier{})
 	world.RegisterBlock(Beacon{})
 	world.RegisterBlock(Bedrock{InfiniteBurning: true})
@@ -95,6 +96,7 @@ func init() {
 	world.RegisterBlock(RawCopper{})
 	world.RegisterBlock(RawGold{})
 	world.RegisterBlock(RawIron{})
+	world.RegisterBlock(RedstoneBlock{})
 	world.RegisterBlock(ReinforcedDeepslate{})
 	world.RegisterBlock(ResinBricks{Chiseled: true})
 	world.RegisterBlock(ResinBricks{})
@@ -132,9 +134,12 @@ func init() {
 		world.RegisterBlock(GoldOre{Type: ore})
 		world.RegisterBlock(IronOre{Type: ore})
 		world.RegisterBlock(LapisOre{Type: ore})
+		world.RegisterBlock(RedstoneOre{Type: ore})
+		world.RegisterBlock(RedstoneOre{Type: ore, Lit: true})
 	}
 
 	registerAll(allAnvils())
+	registerAll(allBambooBlocks())
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -181,6 +186,7 @@ func init() {
 	registerAll(allLava())
 	registerAll(allLeaves())
 	registerAll(allLecterns())
+	registerAll(allLevers())
 	registerAll(allLight())
 	registerAll(allLitPumpkins())
 	registerAll(allLogs())
@@ -197,6 +203,8 @@ func init() {
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
+	registerAll(allRedstoneTorches())
+	registerAll(allRedstoneWires())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
@@ -237,6 +245,9 @@ func init() {
 	world.RegisterItem(AncientDebris{})
 	world.RegisterItem(Andesite{Polished: true})
 	world.RegisterItem(Andesite{})
+	world.RegisterItem(BambooBlock{})
+	world.RegisterItem(BambooBlock{Stripped: true})
+	world.RegisterItem(BambooMosaic{})
 	world.RegisterItem(Barrel{})
 	world.RegisterItem(Barrier{})
 	world.RegisterItem(Basalt{Polished: true})
@@ -317,6 +328,7 @@ func init() {
 	world.RegisterItem(Ladder{})
 	world.RegisterItem(Lapis{})
 	world.RegisterItem(Lectern{})
+	world.RegisterItem(Lever{})
 	world.RegisterItem(LilyPad{})
 	world.RegisterItem(Magma{})
 	world.RegisterItem(LitPumpkin{})
@@ -358,6 +370,9 @@ func init() {
 	world.RegisterItem(RawCopper{})
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
+	world.RegisterItem(RedstoneBlock{})
+	world.RegisterItem(RedstoneTorch{})
+	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(ReinforcedDeepslate{})
 	world.RegisterItem(ResinBricks{Chiseled: true})
 	world.RegisterItem(ResinBricks{})
@@ -430,20 +445,21 @@ func init() {
 		world.RegisterItem(Wool{Colour: c})
 	}
 	for _, w := range WoodTypes() {
-		if w != WarpedWood() && w != CrimsonWood() {
-			t, _ := w.Leaves()
+		if t, ok := w.Leaves(); ok {
 			world.RegisterItem(Leaves{Type: t, Persistent: true})
 		}
-		world.RegisterItem(Log{Wood: w, Stripped: true})
-		world.RegisterItem(Log{Wood: w})
+		if w != BambooWood() {
+			world.RegisterItem(Log{Wood: w, Stripped: true})
+			world.RegisterItem(Log{Wood: w})
+			world.RegisterItem(Wood{Wood: w, Stripped: true})
+			world.RegisterItem(Wood{Wood: w})
+		}
 		world.RegisterItem(Planks{Wood: w})
 		world.RegisterItem(Sign{Wood: w})
 		world.RegisterItem(WoodDoor{Wood: w})
 		world.RegisterItem(WoodFenceGate{Wood: w})
 		world.RegisterItem(WoodFence{Wood: w})
 		world.RegisterItem(WoodTrapdoor{Wood: w})
-		world.RegisterItem(Wood{Wood: w, Stripped: true})
-		world.RegisterItem(Wood{Wood: w})
 	}
 	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
 	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})
@@ -455,6 +471,7 @@ func init() {
 		world.RegisterItem(GoldOre{Type: ore})
 		world.RegisterItem(IronOre{Type: ore})
 		world.RegisterItem(LapisOre{Type: ore})
+		world.RegisterItem(RedstoneOre{Type: ore})
 	}
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
