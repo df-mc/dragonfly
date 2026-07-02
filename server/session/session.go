@@ -144,7 +144,7 @@ type Conn interface {
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
-var Nop = &Session{}
+var Nop = &Session{conf: Config{Log: slog.New(slog.DiscardHandler)}}
 
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1

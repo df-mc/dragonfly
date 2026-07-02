@@ -62,6 +62,8 @@ type BlockRegistry interface {
 	// BlockHash returns a unique identifier of the block including the block states. The hash is internal to Dragonfly
 	// and is used for fast map lookups; it does not need to match any in-game identifiers.
 	BlockHash(b Block) uint64
+	// RuntimeIDToHash resolves a runtime ID to its network block hash.
+	RuntimeIDToHash(runtimeID uint32) (hash uint32, ok bool)
 }
 
 const (
@@ -117,6 +119,7 @@ type BasicBlockRegistry struct {
 	bitSize           int
 	hashes            *intintmap.Map
 	networkhashToRids map[uint32]uint32
+	ridsToNetworkhash []uint32
 
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs map[stateHash]uint32
@@ -204,6 +207,16 @@ func (br *BasicBlockRegistry) HashToRuntimeID(hash uint32) (rid uint32, ok bool)
 	return
 }
 
+func (br *BasicBlockRegistry) RuntimeIDToHash(runtimeID uint32) (hash uint32, ok bool) {
+	if !br.finalized {
+		panic("BlockRegistry.RuntimeIDToHash called on non finalized BlockRegistry")
+	}
+	if runtimeID >= uint32(len(br.ridsToNetworkhash)) {
+		return 0, false
+	}
+	return br.ridsToNetworkhash[runtimeID], true
+}
+
 // Clone returns an independent copy of the registry. If the source registry is finalized, the clone is also finalized.
 // If the source is not finalized, the clone remains mutable.
 func (br *BasicBlockRegistry) Clone() *BasicBlockRegistry {
@@ -239,6 +252,7 @@ func (br *BasicBlockRegistry) Clone() *BasicBlockRegistry {
 		}
 		br2.networkhashToRids = make(map[uint32]uint32, len(br.networkhashToRids))
 		maps.Copy(br2.networkhashToRids, br.networkhashToRids)
+		br2.ridsToNetworkhash = append([]uint32(nil), br.ridsToNetworkhash...)
 	}
 
 	return br2
@@ -255,6 +269,7 @@ func NewBlockRegistry() BlockRegistry {
 	br.bitSize = 0
 	br.hashes = nil
 	br.networkhashToRids = nil
+	br.ridsToNetworkhash = nil
 	br.blockInfos = nil
 	return br
 }
@@ -344,6 +359,7 @@ func (br *BasicBlockRegistry) Finalize() {
 	br.blockInfos = make([]blockInfo, len(br.blocks))
 	br.hashes = intintmap.New(len(br.blocks), 0.999)
 	br.networkhashToRids = make(map[uint32]uint32, len(br.blocks))
+	br.ridsToNetworkhash = make([]uint32, len(br.blocks))
 	br.stateRuntimeIDs = make(map[stateHash]uint32, len(br.blocks))
 	networkHashScratch := make([]byte, 0, 0xff)
 	foundAir := false
@@ -398,6 +414,7 @@ func (br *BasicBlockRegistry) Finalize() {
 			panic(fmt.Sprintf("network block hash collision for (%s %+v) and (%s %+v)", name, properties, otherName, otherProperties))
 		}
 		br.networkhashToRids[netHash] = rid
+		br.ridsToNetworkhash[rid] = netHash
 	}
 	if !foundAir {
 		panic("BlockRegistry.Finalize: no minecraft:air block state registered")

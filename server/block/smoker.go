@@ -46,6 +46,14 @@ func (s Smoker) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
+// LightEmissionLevel ...
+func (s Smoker) LightEmissionLevel() uint8 {
+	if s.Lit {
+		return 13
+	}
+	return 0
+}
+
 // EncodeItem ...
 func (s Smoker) EncodeItem() (name string, meta int16) {
 	return "minecraft:smoker", 0
