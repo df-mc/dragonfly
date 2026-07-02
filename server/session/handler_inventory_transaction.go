@@ -48,7 +48,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		h.resendInventories(s)
 		// Always resend inventories with normal transactions. Most of the time we do not use these
 		// transactions, so we're best off making sure the client and server stay in sync.
-		if err := h.handleNormalTransaction(pk, s, c); err != nil {
+		if err := h.handleNormalTransaction(pk, s, tx, c); err != nil {
 			s.conf.Log.Debug("process packet: InventoryTransaction: verify Normal transaction actions: " + err.Error())
 		}
 		return
@@ -84,7 +84,7 @@ func (h *InventoryTransactionHandler) resendInventories(s *Session) {
 }
 
 // handleNormalTransaction ...
-func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.InventoryTransaction, s *Session, c Controllable) error {
+func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.InventoryTransaction, s *Session, tx *world.Tx, c interface{ Drop(item.Stack) int }) error {
 	if len(pk.Actions) != 2 {
 		return fmt.Errorf("expected two actions for dropping an item, got %d", len(pk.Actions))
 	}
@@ -132,6 +132,9 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 
 	n := c.Drop(res)
 	_ = s.inv.SetItem(slot, actual.Grow(-n))
+	if s.updatesHeldItemState(s.inv, slot) {
+		s.updateHeldItemState(tx)
+	}
 	return nil
 }
 

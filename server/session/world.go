@@ -720,6 +720,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(s.br.BlockRuntimeID(so.Block))
 	case sound.ItemBreak:
 		pk.SoundType = packet.SoundEventBreak
+	case sound.ShieldBlock:
+		pk.SoundType = packet.SoundEventShieldBlock
 	case sound.ItemUseOn:
 		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(s.br.BlockRuntimeID(so.Block))
 	case sound.Fizz:
