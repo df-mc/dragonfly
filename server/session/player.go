@@ -723,6 +723,15 @@ func (s *Session) VerifySlot(slot int, expected item.Stack) error {
 	}
 	clientSideItem := expected
 	actual, _ := s.inv.Item(slot)
+	if clientCompass, clientOK := clientSideItem.Item().(item.Compass); clientOK {
+		if serverCompass, serverOK := actual.Item().(item.Compass); serverOK && clientCompass.TrackingHandle != serverCompass.TrackingHandle {
+			// The Bedrock client predicts lodestone linking and may send a new
+			// trackingHandle before the server has processed the interaction.
+			// The handle remains server-authoritative, but a difference in this
+			// field alone is not an inventory mismatch.
+			clientSideItem = clientSideItem.WithItem(serverCompass)
+		}
+	}
 
 	// The item the client claims to have must be identical to the one we have
 	// registered server-side.

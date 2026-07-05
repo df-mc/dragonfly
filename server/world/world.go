@@ -171,6 +171,9 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	if w.conf.Blocks.NBTBlock(rid) {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if b, ok := c.BlockEntities[pos]; ok {
+			if tracked, ok := b.(PositionTrackingBlock); ok && tracked.TrackingHandle() != 0 {
+				w.TrackPosition(pos, tracked.TrackingHandle())
+			}
 			return b
 		}
 		// Despite being a block with NBT, the block didn't actually have any
@@ -268,6 +271,13 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := w.chunk(chunkPosFromBlockPos(pos))
+	old := w.blockInChunk(c, pos)
+	if tracked, ok := old.(PositionTrackingBlock); ok && tracked.TrackingHandle() != 0 {
+		replacement, keepsHandle := b.(PositionTrackingBlock)
+		if !keepsHandle || replacement.TrackingHandle() != tracked.TrackingHandle() {
+			w.UntrackPosition(pos)
+		}
+	}
 
 	rid := w.conf.Blocks.BlockRuntimeID(b)
 
@@ -282,6 +292,9 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		c.BlockEntities[pos] = b
 	} else {
 		delete(c.BlockEntities, pos)
+	}
+	if tracked, ok := b.(PositionTrackingBlock); ok && tracked.TrackingHandle() != 0 {
+		w.TrackPosition(pos, tracked.TrackingHandle())
 	}
 
 	viewers := slices.Clone(c.viewers)

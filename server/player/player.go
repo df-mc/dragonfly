@@ -1688,6 +1688,13 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The block was activated: Blocks such as doors must always have precedence over the item being
 			// used.
 			if useCtx := p.useContext(); act.Activate(pos, face, p.tx, p, useCtx) {
+				// If the complete held stack is converted into a new item, replace
+				// it in-place. This also applies in creative mode, where ordinary
+				// item subtraction is intentionally skipped.
+				if useCtx.CountSub >= i.Count() && !useCtx.NewItem.Empty() {
+					p.SetHeldItems(useCtx.NewItem, left)
+					return
+				}
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 				p.addNewItem(useCtx)
 				return

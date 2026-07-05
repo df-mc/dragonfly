@@ -97,6 +97,19 @@ func registerVanilla() {
 		})
 	}
 
+	// Register the current lodestone recipe separately because it is absent
+	// from the embedded crafting data.
+	bricks, bricksOK := world.ItemByName("minecraft:chiseled_stone_bricks", 0)
+	lodestone, lodestoneOK := world.ItemByName("minecraft:lodestone", 0)
+	if bricksOK && lodestoneOK {
+		inputs := make([]Item, 9)
+		for i := range inputs {
+			inputs[i] = item.NewStack(bricks, 1)
+		}
+		inputs[4] = item.NewStack(item.IronIngot{}, 1)
+		Register(NewShaped(inputs, item.NewStack(lodestone, 1), NewShape(3, 3), "crafting_table"))
+	}
+
 	var smithingRecipes []shapelessRecipe
 	if err := nbt.Unmarshal(vanillaSmithingData, &smithingRecipes); err != nil {
 		panic(err)

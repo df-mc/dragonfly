@@ -14,7 +14,8 @@ import (
 // world. The data held here is usually saved in a level.dat file of the world.
 // Data may be used in LevelDat.Unmarshal to collect the data of the level.dat.
 type Data struct {
-	BaseGameVersion                string `nbt:"baseGameVersion"`
+	DragonflyPositionTracking      []positionTrackingEntry `nbt:"DragonflyPositionTracking,omitempty"`
+	BaseGameVersion                string                  `nbt:"baseGameVersion"`
 	BiomeOverride                  string
 	ConfirmedPlatformLockedContent bool
 	CentreMapsToOrigin             bool  `nbt:"CenterMapsToOrigin"`
@@ -156,6 +157,15 @@ type Data struct {
 	ServerEditorConnectionPolicy           int32          `nbt:"serverEditorConnectionPolicy"`
 }
 
+type positionTrackingEntry struct {
+	Handle    int32 `nbt:"handle"`
+	X         int32 `nbt:"x"`
+	Y         int32 `nbt:"y"`
+	Z         int32 `nbt:"z"`
+	Dimension int32 `nbt:"dimension"`
+	Active    bool  `nbt:"active"`
+}
+
 // FillDefault fills out d with all the default level.dat values.
 func (d *Data) FillDefault() {
 	d.Abilities.AttackMobs = true
@@ -233,7 +243,7 @@ func (d *Data) Settings() *world.Settings {
 	d.WorldStartCount += 1
 	difficulty, _ := world.DifficultyByID(int(d.Difficulty))
 	mode, _ := world.GameModeByID(int(d.GameType))
-	return &world.Settings{
+	s := &world.Settings{
 		Name:            d.LevelName,
 		Spawn:           cube.Pos{int(d.SpawnX), int(d.SpawnY), int(d.SpawnZ)},
 		Time:            d.Time,
@@ -248,6 +258,15 @@ func (d *Data) Settings() *world.Settings {
 		Difficulty:      difficulty,
 		TickRange:       d.ServerChunkTickRange,
 	}
+	entries := make([]world.PositionTrackingEntry, 0, len(d.DragonflyPositionTracking))
+	for _, entry := range d.DragonflyPositionTracking {
+		entries = append(entries, world.PositionTrackingEntry{
+			Handle: entry.Handle, Position: cube.Pos{int(entry.X), int(entry.Y), int(entry.Z)},
+			Dimension: int(entry.Dimension), Active: entry.Active,
+		})
+	}
+	s.LoadPositionTrackingEntries(entries)
+	return s
 }
 
 // PutSettings updates d with the Settings stored in s.
@@ -272,4 +291,11 @@ func (d *Data) PutSettings(s *world.Settings) {
 	d.GameType = int32(mode)
 	difficulty, _ := world.DifficultyID(s.Difficulty)
 	d.Difficulty = int32(difficulty)
+	d.DragonflyPositionTracking = d.DragonflyPositionTracking[:0]
+	for _, entry := range s.PositionTrackingEntries() {
+		d.DragonflyPositionTracking = append(d.DragonflyPositionTracking, positionTrackingEntry{
+			Handle: entry.Handle, X: int32(entry.Position[0]), Y: int32(entry.Position[1]), Z: int32(entry.Position[2]),
+			Dimension: int32(entry.Dimension), Active: entry.Active,
+		})
+	}
 }
