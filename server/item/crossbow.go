@@ -122,18 +122,28 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	held, _ := releaser.HeldItems()
 	creative := releaser.GameMode().CreativeInventory()
 
-	multishot := false
+	pierceLevel, multishot := 0, false
 	for _, enchant := range held.Enchantments() {
 		if _, ok := enchant.Type().(interface{ MultipleProjectiles() bool }); ok {
 			multishot = true
-			break
+		}
+		if _, ok := enchant.Type().(interface{ Pierces() bool }); ok {
+			pierceLevel = enchant.Level()
 		}
 	}
 
-	c.shoot(releaser, tx, 0, !creative)
+	arrowConf := world.ArrowSpawnConfig{
+		Damage:              9,
+		Owner:               releaser,
+		Critical:            true,
+		ObtainArrowOnPickup: !creative,
+		PiercingLevel:       pierceLevel,
+	}
+	c.shoot(releaser, tx, 0, arrowConf)
 	if multishot {
-		c.shoot(releaser, tx, -10, false)
-		c.shoot(releaser, tx, 10, false)
+		arrowConf.ObtainArrowOnPickup = false
+		c.shoot(releaser, tx, -10, arrowConf)
+		c.shoot(releaser, tx, 10, arrowConf)
 	}
 	c.applyDamage(ctx)
 
@@ -145,8 +155,14 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	return true
 }
 
+// CanCharge ...
+func (c Crossbow) CanCharge(releaser Releaser, _ *world.Tx, ctx *UseContext) bool {
+	_, found := c.findProjectile(releaser, ctx)
+	return found && !c.Item.Empty()
+}
+
 // shoot fires the crossbow's loaded projectiles.
-func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, canObtainPickup bool) {
+func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, arrowConf world.ArrowSpawnConfig) {
 	rot := releaser.Rotation()
 	dirVec := cube.Rotation{rot[0] + offsetAngle, rot[1]}.Vec3()
 
@@ -160,11 +176,12 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ca
 		tx.AddEntity(projectile)
 	} else {
 		createArrow := tx.World().EntityRegistry().Config().Arrow
+		arrowConf.Tip = c.Item.Item().(Arrow).Tip
 		arrow := createArrow(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(5.15),
 			Rotation: rot.Neg(),
-		}, 9, releaser, false, false, canObtainPickup, 0, c.Item.Item().(Arrow).Tip)
+		}, arrowConf)
 		tx.AddEntity(arrow)
 	}
 }
