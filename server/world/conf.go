@@ -71,6 +71,17 @@ type Config struct {
 	// If left nil, DefaultBlockRegistry is used. For a non-default registry,
 	// use NewBlockRegistry(), register blocks/states, and call Finalize().
 	Blocks BlockRegistry
+
+	// Synchronous specifies if the World should run synchronously, without
+	// any background goroutines. If set to true, transactions created
+	// through World.Exec are executed directly on the calling goroutine,
+	// the World is not saved automatically and unused chunks are not
+	// unloaded automatically. The World does not tick on its own either:
+	// time only passes when World.AdvanceTick is called. Synchronous Worlds
+	// behave deterministically, which makes them particularly suitable for
+	// unit tests of blocks, items and entities that need a World to
+	// interact with.
+	Synchronous bool
 }
 
 // New creates a new World using the Config conf. The World returned will start
@@ -135,13 +146,15 @@ func (conf Config) New() *World {
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
-	w.queueing.Add(1)
-	w.running.Add(2)
-
 	t := ticker{interval: time.Second / 20}
-	go t.tickLoop(w)
-	go w.autoSave()
-	go w.handleTransactions()
+	if !conf.Synchronous {
+		w.queueing.Add(1)
+		w.running.Add(2)
+
+		go t.tickLoop(w)
+		go w.autoSave()
+		go w.handleTransactions()
+	}
 
 	<-w.Exec(t.tick)
 	return w
