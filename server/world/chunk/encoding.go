@@ -203,7 +203,7 @@ func (networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette, pe
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian)
 	for _, val := range p.values {
 		name, props, _ := bpe.Blocks.RuntimeIDToState(val)
-		_ = enc.Encode(blockEntry{Name: strings.TrimPrefix("minecraft:", name), State: props, Version: CurrentBlockVersion})
+		_ = enc.Encode(blockEntry{Name: strings.TrimPrefix(name, "minecraft:"), State: props, Version: CurrentBlockVersion})
 	}
 }
 func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, pe paletteEncoding) (*Palette, error) {
