@@ -60,9 +60,9 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 
 	// The action contains the pattern that the client wanted to apply, so parse the ID and check if it is a valid
 	// pattern.
-	expectedPattern, ok := block.BannerPatternByIDOK(a.Pattern)
-	if !ok {
-		return fmt.Errorf("unknown banner pattern: %q", a.Pattern)
+	expectedPattern, exists := block.BannerPatternByID(a.Pattern)
+	if !exists {
+		return fmt.Errorf("unknown banner pattern id %q", a.Pattern)
 	}
 
 	// Some banner patterns have equivalent banner pattern items that are required to craft the pattern. If the expected

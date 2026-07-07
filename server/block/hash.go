@@ -10,6 +10,8 @@ const (
 	hashAncientDebris
 	hashAndesite
 	hashAnvil
+	hashBambooBlock
+	hashBambooMosaic
 	hashBanner
 	hashBarrel
 	hashBarrier
@@ -240,6 +242,14 @@ func (a Andesite) Hash() (uint64, uint64) {
 
 func (a Anvil) Hash() (uint64, uint64) {
 	return hashAnvil, uint64(a.Type.Uint8()) | uint64(a.Facing)<<2
+}
+
+func (b BambooBlock) Hash() (uint64, uint64) {
+	return hashBambooBlock, uint64(b.Axis) | uint64(boolByte(b.Stripped))<<2
+}
+
+func (BambooMosaic) Hash() (uint64, uint64) {
+	return hashBambooMosaic, 0
 }
 
 func (b Banner) Hash() (uint64, uint64) {
