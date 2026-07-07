@@ -33,6 +33,15 @@ func (t ticker) tickLoop(w *World) {
 	}
 }
 
+// AdvanceTick advances the World by a single tick, updating the time and
+// weather of the World and ticking blocks, entities and scheduled block
+// updates as required. AdvanceTick is generally only useful for Worlds created
+// with Config.Synchronous set: other Worlds tick automatically 20 times per
+// second.
+func (w *World) AdvanceTick() {
+	<-w.Exec(ticker{}.tick)
+}
+
 // tick performs a tick on the World and updates the time, weather, blocks and
 // entities that require updates.
 func (t ticker) tick(tx *Tx) {
@@ -45,8 +54,9 @@ func (t ticker) tick(tx *Tx) {
 		// the player should spawn at the highest position in the world.
 		w.set.Spawn[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
-	if len(viewers) == 0 && w.set.CurrentTick != 0 {
-		// Don't continue ticking if no viewers are in the world.
+	if len(viewers) == 0 && w.set.CurrentTick != 0 && !w.conf.Synchronous {
+		// Don't continue ticking if no viewers are in the world. Synchronous
+		// worlds only tick on explicit AdvanceTick calls, so they always tick.
 		w.set.Unlock()
 		return
 	}
