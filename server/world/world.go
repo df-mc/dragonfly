@@ -122,7 +122,8 @@ type ExecFunc func(tx *Tx)
 // Exec performs a synchronised transaction f on a World. Exec returns a channel
 // that is closed once the transaction is complete. For Worlds created with
 // Config.Synchronous set, the transaction is executed on the calling goroutine
-// and the channel returned is closed when Exec returns.
+// and the channel returned is closed when Exec returns. Awaiting a nested Exec
+// from within a transaction deadlocks on non-synchronous Worlds.
 func (w *World) Exec(f ExecFunc) <-chan struct{} {
 	c := make(chan struct{})
 	ntx := normalTransaction{c: c, f: f}
@@ -137,14 +138,13 @@ func (w *World) Exec(f ExecFunc) <-chan struct{} {
 func (w *World) weakExec(invalid *atomic.Bool, cond *sync.Cond, f ExecFunc) <-chan bool {
 	c := make(chan bool, 1)
 	if w.conf.Synchronous {
-		// The caller checks c before waiting on cond, so unlike
-		// weakTransaction.Run, no locking on cond.L (still held by the
-		// caller here) or Broadcast is needed.
 		valid := !invalid.Load()
 		if valid {
+			cond.L.Unlock()
 			tx := &Tx{w: w}
 			f(tx)
 			tx.close()
+			cond.L.Lock()
 		}
 		c <- valid
 		return c

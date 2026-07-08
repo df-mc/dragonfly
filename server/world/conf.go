@@ -77,6 +77,9 @@ type Config struct {
 	// not saved or unloaded automatically, and time only passes on explicit
 	// World.AdvanceTick calls. This makes Synchronous Worlds deterministic and
 	// well suited to unit tests that need a World to interact with.
+	// A Synchronous World must be driven from one goroutine. Exec and
+	// AdvanceTick are not safe to call concurrently, including from delayed
+	// item or death callbacks.
 	Synchronous bool
 }
 

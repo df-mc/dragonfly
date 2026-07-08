@@ -4,6 +4,9 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // TestSynchronousWorldNoGoroutines verifies that a synchronous World starts no
@@ -76,4 +79,163 @@ func TestSynchronousWorldClose(t *testing.T) {
 	case <-time.After(time.Second * 5):
 		t.Fatal("Close did not return within 5 seconds")
 	}
+}
+
+func TestSynchronousExecWorldCanRemoveEntity(t *testing.T) {
+	w := Config{Synchronous: true}.New()
+	defer w.Close()
+
+	h := EntitySpawnOpts{Position: mgl64.Vec3{0, 4, 0}}.New(testEntityType{}, testEntityConfig{})
+	<-w.Exec(func(tx *Tx) {
+		tx.AddEntity(h)
+	})
+
+	done := make(chan struct{})
+	go func() {
+		h.ExecWorld(func(tx *Tx, e Entity) {
+			tx.RemoveEntity(e)
+		})
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second * 5):
+		t.Fatal("ExecWorld self-removal did not complete")
+	}
+}
+
+func TestSynchronousAdvanceTickTicksViewerlessEntities(t *testing.T) {
+	w := Config{Synchronous: true}.New()
+	defer w.Close()
+
+	h := EntitySpawnOpts{Position: mgl64.Vec3{0, 4, 0}}.New(testEntityType{}, testEntityConfig{})
+	<-w.Exec(func(tx *Tx) {
+		tx.AddEntity(h)
+	})
+
+	start := h.data.Pos
+	for range 3 {
+		w.AdvanceTick()
+	}
+	if got := h.data.Pos; got == start {
+		t.Fatalf("expected entity position to change after ticking, got %v", got)
+	}
+}
+
+func TestSynchronousAdvanceTickTicksViewerlessBlockEntities(t *testing.T) {
+	w := Config{Synchronous: true}.New()
+	defer w.Close()
+
+	pos := cube.Pos{0, 4, 0}
+	tb := &testTickerBlock{}
+	<-w.Exec(func(tx *Tx) {
+		col := tx.World().chunk(chunkPosFromBlockPos(pos))
+		chest, ok := tx.World().conf.Blocks.BlockByName("minecraft:chest", map[string]any{"minecraft:cardinal_direction": "north"})
+		if !ok {
+			t.Fatal("expected chest block to be registered")
+		}
+		col.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, tx.World().conf.Blocks.BlockRuntimeID(chest))
+		col.BlockEntities[pos] = tb
+	})
+
+	w.AdvanceTick()
+	if tb.ticks == 0 {
+		t.Fatal("expected block entity to tick")
+	}
+}
+
+func TestStrikeLightningWithoutLightningFactoryDoesNotPanic(t *testing.T) {
+	w := Config{Synchronous: true}.New()
+	defer w.Close()
+
+	<-w.Exec(func(tx *Tx) {
+		tx.World().set.Lock()
+		tx.World().set.Raining = true
+		tx.World().set.Thundering = true
+		tx.World().set.Unlock()
+		tx.World().chunk(ChunkPos{})
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("strikeLightning panicked: %v", r)
+			}
+		}()
+		weather{w: tx.World()}.strikeLightning(tx, ChunkPos{})
+	})
+}
+
+type testEntityConfig struct{}
+
+func (testEntityConfig) Apply(*EntityData) {}
+
+type testEntityType struct{}
+
+func (testEntityType) Open(_ *Tx, handle *EntityHandle, data *EntityData) Entity {
+	return &testEntity{handle: handle, data: data}
+}
+
+func (testEntityType) EncodeEntity() string {
+	return "dragonfly:test_entity"
+}
+
+func (testEntityType) BBox(Entity) cube.BBox {
+	return cube.Box(0, 0, 0, 1, 1, 1)
+}
+
+func (testEntityType) DecodeNBT(map[string]any, *EntityData) {}
+
+func (testEntityType) EncodeNBT(*EntityData) map[string]any {
+	return nil
+}
+
+type testEntity struct {
+	handle *EntityHandle
+	data   *EntityData
+}
+
+func (e *testEntity) Close() error {
+	return nil
+}
+
+func (e *testEntity) H() *EntityHandle {
+	return e.handle
+}
+
+func (e *testEntity) Position() mgl64.Vec3 {
+	return e.data.Pos
+}
+
+func (e *testEntity) Rotation() cube.Rotation {
+	return e.data.Rot
+}
+
+func (e *testEntity) Tick(*Tx, int64) {
+	e.data.Pos = e.data.Pos.Add(mgl64.Vec3{0, -0.1, 0})
+}
+
+type testTickerBlock struct {
+	ticks int
+}
+
+func (*testTickerBlock) EncodeBlock() (string, map[string]any) {
+	return "dragonfly:test_ticker", nil
+}
+
+func (*testTickerBlock) Hash() (uint64, uint64) {
+	return 1<<32 - 1, 0
+}
+
+func (*testTickerBlock) Model() BlockModel {
+	return unknownModel{}
+}
+
+func (*testTickerBlock) DecodeNBT(map[string]any) any {
+	return &testTickerBlock{}
+}
+
+func (*testTickerBlock) EncodeNBT() map[string]any {
+	return nil
+}
+
+func (b *testTickerBlock) Tick(int64, cube.Pos, *Tx) {
+	b.ticks++
 }
