@@ -33,6 +33,14 @@ func (t ticker) tickLoop(w *World) {
 	}
 }
 
+// AdvanceTick advances the World by a single tick. It is generally only useful
+// for Worlds created with Config.Synchronous set: other Worlds tick
+// automatically 20 times per second. Synchronous Worlds tick loaded chunks
+// even when no viewers are present.
+func (w *World) AdvanceTick() {
+	<-w.Exec(ticker{}.tick)
+}
+
 // tick performs a tick on the World and updates the time, weather, blocks and
 // entities that require updates.
 func (t ticker) tick(tx *Tx) {
@@ -45,8 +53,9 @@ func (t ticker) tick(tx *Tx) {
 		// the player should spawn at the highest position in the world.
 		w.set.Spawn[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
-	if len(viewers) == 0 && w.set.CurrentTick != 0 {
-		// Don't continue ticking if no viewers are in the world.
+	if len(viewers) == 0 && w.set.CurrentTick != 0 && !w.conf.Synchronous {
+		// Don't continue ticking if no viewers are in the world. Synchronous
+		// worlds only tick on explicit AdvanceTick calls, so they always tick.
 		w.set.Unlock()
 		return
 	}
@@ -113,8 +122,7 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 	}
 }
 
-// tickBlocksRandomly executes random block ticks in each sub chunk in the world that has at least one viewer
-// registered from the viewers passed.
+// tickBlocksRandomly executes random block ticks in loaded chunks within range of loaders.
 func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 	var (
 		r             = int32(tx.World().tickRange())
@@ -128,12 +136,16 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 	}
 
 	loaded := make([]ChunkPos, 0, len(loaders))
-	for _, loader := range loaders {
-		loader.mu.RLock()
-		pos := loader.pos
-		loader.mu.RUnlock()
+	if tx.World().conf.Synchronous {
+		loaded = slices.Collect(maps.Keys(tx.World().chunks))
+	} else {
+		for _, loader := range loaders {
+			loader.mu.RLock()
+			pos := loader.pos
+			loader.mu.RUnlock()
 
-		loaded = append(loaded, pos)
+			loaded = append(loaded, pos)
+		}
 	}
 
 	for pos, c := range tx.World().chunks {
@@ -238,7 +250,7 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 			}
 		}
 
-		if len(c.viewers) > 0 {
+		if tx.World().conf.Synchronous || len(c.viewers) > 0 {
 			if te, ok := e.(TickerEntity); ok {
 				te.Tick(tx, tick)
 			}
