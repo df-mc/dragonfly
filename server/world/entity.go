@@ -5,6 +5,7 @@ import (
 	"io"
 	"maps"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -400,6 +401,9 @@ type ArrowSpawnConfig struct {
 
 // New creates an EntityRegistry using conf and the EntityTypes passed.
 func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
+	if len(ent) != 0 {
+		conf.validate()
+	}
 	m := make(map[string]EntityType, len(ent))
 	for _, e := range ent {
 		name := e.EncodeEntity()
@@ -409,6 +413,35 @@ func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
 		m[name] = e
 	}
 	return EntityRegistry{conf: conf, ent: m}
+}
+
+func (conf EntityRegistryConfig) validate() {
+	checks := []struct {
+		name string
+		ok   bool
+	}{
+		{name: "Item", ok: conf.Item != nil},
+		{name: "FallingBlock", ok: conf.FallingBlock != nil},
+		{name: "TNT", ok: conf.TNT != nil},
+		{name: "BottleOfEnchanting", ok: conf.BottleOfEnchanting != nil},
+		{name: "Arrow", ok: conf.Arrow != nil},
+		{name: "Egg", ok: conf.Egg != nil},
+		{name: "EnderPearl", ok: conf.EnderPearl != nil},
+		{name: "Firework", ok: conf.Firework != nil},
+		{name: "LingeringPotion", ok: conf.LingeringPotion != nil},
+		{name: "Snowball", ok: conf.Snowball != nil},
+		{name: "SplashPotion", ok: conf.SplashPotion != nil},
+		{name: "Lightning", ok: conf.Lightning != nil},
+	}
+	var missing []string
+	for _, check := range checks {
+		if !check.ok {
+			missing = append(missing, check.name)
+		}
+	}
+	if len(missing) != 0 {
+		panic("world: incomplete entity registry config: missing " + strings.Join(missing, ", "))
+	}
 }
 
 // Config returns the EntityRegistryConfig that was used to create the
