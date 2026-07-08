@@ -33,11 +33,9 @@ func (t ticker) tickLoop(w *World) {
 	}
 }
 
-// AdvanceTick advances the World by a single tick, updating the time and
-// weather of the World and ticking blocks, entities and scheduled block
-// updates as required. AdvanceTick is generally only useful for Worlds created
-// with Config.Synchronous set: other Worlds tick automatically 20 times per
-// second.
+// AdvanceTick advances the World by a single tick. It is generally only useful
+// for Worlds created with Config.Synchronous set: other Worlds tick
+// automatically 20 times per second.
 func (w *World) AdvanceTick() {
 	<-w.Exec(ticker{}.tick)
 }

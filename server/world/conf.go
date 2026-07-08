@@ -72,15 +72,11 @@ type Config struct {
 	// use NewBlockRegistry(), register blocks/states, and call Finalize().
 	Blocks BlockRegistry
 
-	// Synchronous specifies if the World should run synchronously, without
-	// any background goroutines. If set to true, transactions created
-	// through World.Exec are executed directly on the calling goroutine,
-	// the World is not saved automatically and unused chunks are not
-	// unloaded automatically. The World does not tick on its own either:
-	// time only passes when World.AdvanceTick is called. Synchronous Worlds
-	// behave deterministically, which makes them particularly suitable for
-	// unit tests of blocks, items and entities that need a World to
-	// interact with.
+	// Synchronous makes the World run without any background goroutines.
+	// Transactions from World.Exec run on the calling goroutine, the World is
+	// not saved or unloaded automatically, and time only passes on explicit
+	// World.AdvanceTick calls. This makes Synchronous Worlds deterministic and
+	// well suited to unit tests that need a World to interact with.
 	Synchronous bool
 }
 
