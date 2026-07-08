@@ -215,6 +215,40 @@ func TestRedstoneEngineRemoveChunkKeepsUnchangedDirtyOutsideChunk(t *testing.T) 
 	}
 }
 
+func TestRedstoneEngineRemoveChunkClearsTransientStateInChunk(t *testing.T) {
+	engine := newRedstoneEngine(42)
+	unloadedPos := cube.Pos{0, 64, 0}
+	keptPos := cube.Pos{32, 64, 0}
+	unloadedChunk := chunkPosFromBlockPos(unloadedPos)
+
+	engine.power[unloadedPos] = 15
+	engine.output[unloadedPos] = 14
+	engine.torchBurnout = map[cube.Pos]redstoneTorchBurnout{unloadedPos: {burnedOut: true}, keptPos: {burnedOut: true}}
+
+	engine.power[keptPos] = 13
+	engine.output[keptPos] = 12
+	engine.removeChunk(unloadedChunk)
+
+	if _, ok := engine.power[unloadedPos]; ok {
+		t.Fatalf("power for unloaded position %v was not cleared", unloadedPos)
+	}
+	if _, ok := engine.output[unloadedPos]; ok {
+		t.Fatalf("output for unloaded position %v was not cleared", unloadedPos)
+	}
+	if _, ok := engine.torchBurnout[unloadedPos]; ok {
+		t.Fatalf("torch burnout state for unloaded position %v was not cleared", unloadedPos)
+	}
+	if got := engine.power[keptPos]; got != 13 {
+		t.Fatalf("power for kept position = %d, want 13", got)
+	}
+	if got := engine.output[keptPos]; got != 12 {
+		t.Fatalf("output for kept position = %d, want 12", got)
+	}
+	if burnout, ok := engine.torchBurnout[keptPos]; !ok || !burnout.burnedOut {
+		t.Fatalf("torch burnout state for kept position = %v, %t; want burned out state", burnout, ok)
+	}
+}
+
 func TestRedstoneCancelledSourceDoesNotPropagate(t *testing.T) {
 	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
 	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
@@ -239,6 +273,27 @@ func TestRedstoneCancelledSourceDoesNotPropagate(t *testing.T) {
 	}
 }
 
+func TestRedstoneCancelledSourceKeepsPreviousOutputDuringEvaluation(t *testing.T) {
+	sourcePos := cube.Pos{0, 64, 0}
+	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
+	defer w.Close()
+
+	w.Handle(&redstoneCancellationHandler{cancel: map[cube.Pos]struct{}{sourcePos: {}}})
+
+	var sourceOutput int
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sourcePos, redstoneCancellationSource{}, &SetOpts{DisableRedstoneUpdates: true})
+		tx.World().redstone.output[sourcePos] = 15
+		tx.World().redstone.invalidate(sourcePos, redstoneDirty{changed: sourcePos, hasChanged: true, source: sourcePos, hasSource: true, cause: RedstoneUpdateCauseBlockUpdate}, tx.Range())
+		tx.World().redstone.tick(tx, 2)
+
+		sourceOutput = tx.World().redstone.output[sourcePos]
+	})
+	if sourceOutput != 15 {
+		t.Fatalf("stored source output after cancelled update = %d, want 15", sourceOutput)
+	}
+}
+
 func TestRedstoneCancelledConsumerDoesNotUpdate(t *testing.T) {
 	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
 	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
@@ -255,6 +310,51 @@ func TestRedstoneCancelledConsumerDoesNotUpdate(t *testing.T) {
 	})
 	if sinkPowered {
 		t.Fatalf("sink powered after cancelling consumer update")
+	}
+}
+
+func TestRedstoneUpdateIncludesContextMetadata(t *testing.T) {
+	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
+	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
+	defer w.Close()
+
+	handler := &redstoneRecordingHandler{pos: sinkPos}
+	w.Handle(handler)
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sinkPos, redstoneCancellationConsumer{}, &SetOpts{DisableRedstoneUpdates: true})
+		tx.SetBlock(sourcePos, redstoneCancellationSource{Power: 15}, nil)
+		tx.World().redstone.tick(tx, 7)
+	})
+	if len(handler.updates) == 0 {
+		t.Fatal("no redstone update recorded for consumer")
+	}
+	update := handler.updates[0]
+	if update.Pos != sinkPos {
+		t.Fatalf("update Pos = %v, want %v", update.Pos, sinkPos)
+	}
+	if !update.HasChangedNeighbour {
+		t.Fatal("update did not record a changed neighbour")
+	}
+	if !update.ChangedRedstoneRelevant {
+		t.Fatal("update did not mark changed neighbour as redstone relevant")
+	}
+	if !update.HasSource || update.Source != sourcePos {
+		t.Fatalf("update source = %v, %t; want %v, true", update.Source, update.HasSource, sourcePos)
+	}
+	if update.OldPower != 0 || update.NewPower != 15 {
+		t.Fatalf("update power = old:%d new:%d, want old:0 new:15", update.OldPower, update.NewPower)
+	}
+	if update.CurrentTick != 7 {
+		t.Fatalf("update CurrentTick = %d, want 7", update.CurrentTick)
+	}
+	if update.Cause != RedstoneUpdateCauseBlockUpdate {
+		t.Fatalf("update Cause = %d, want RedstoneUpdateCauseBlockUpdate", update.Cause)
+	}
+	if _, ok := update.Before.(redstoneCancellationConsumer); !ok {
+		t.Fatalf("update Before = %T, want redstoneCancellationConsumer", update.Before)
+	}
+	if after, ok := update.After.(redstoneCancellationConsumer); !ok || !after.Powered {
+		t.Fatalf("update After = %T %#v, want powered redstoneCancellationConsumer", update.After, update.After)
 	}
 }
 
@@ -279,6 +379,21 @@ func TestRedstoneConsumerUpdateIncludesAfterBlock(t *testing.T) {
 	}
 	if !after.Powered {
 		t.Fatal("consumer update After was not powered")
+	}
+}
+
+func TestRedstoneRecursiveSourceEvaluationReturnsZero(t *testing.T) {
+	sourcePos, targetPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
+	w := Config{Synchronous: true, Blocks: redstoneRecursiveSourceTestRegistry()}.New()
+	defer w.Close()
+
+	var power int
+	<-w.Exec(func(tx *Tx) {
+		tx.SetBlock(sourcePos, redstoneRecursiveSource{Target: targetPos}, nil)
+		power = tx.RedstonePower(targetPos)
+	})
+	if power != 0 {
+		t.Fatalf("recursive source power = %d, want 0", power)
 	}
 }
 
@@ -685,6 +800,26 @@ func (b redstoneCancellationSource) Hash() (uint64, uint64) {
 	return 1 << 42, uint64(b.Power)
 }
 func (redstoneCancellationSource) Model() BlockModel { return redstoneCancellationModel{} }
+
+func redstoneRecursiveSourceTestRegistry() BlockRegistry {
+	registry := NewBlockRegistry()
+	registry.RegisterBlockState(BlockState{Name: "test:redstone_recursive_source", Properties: map[string]any{}})
+	registry.RegisterBlock(redstoneRecursiveSource{})
+	return registry
+}
+
+type redstoneRecursiveSource struct {
+	Target cube.Pos
+}
+
+func (b redstoneRecursiveSource) RedstonePower(_ cube.Pos, tx *Tx, _ cube.Face) int {
+	return tx.RedstonePower(b.Target)
+}
+func (redstoneRecursiveSource) EncodeBlock() (string, map[string]any) {
+	return "test:redstone_recursive_source", nil
+}
+func (redstoneRecursiveSource) Hash() (uint64, uint64) { return 1 << 57, 0 }
+func (redstoneRecursiveSource) Model() BlockModel      { return redstoneCancellationModel{} }
 
 type redstoneCancellationConsumer struct {
 	Powered bool

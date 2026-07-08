@@ -1,12 +1,14 @@
 package block
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -70,6 +72,28 @@ func TestRedstoneWireVerticalTravel(t *testing.T) {
 				t.Fatalf("neighbours = %v, contains %v = %t, want %t", neighbours, to, got, test.want)
 			}
 		})
+	}
+}
+
+func TestRedstoneWireBreaksWhenSupportRemoved(t *testing.T) {
+	w := world.Config{Synchronous: true, Entities: redstoneBreakDropTestEntityRegistry()}.New()
+	defer w.Close()
+
+	wirePos := cube.Pos{0, 64, 0}
+	supportPos := wirePos.Side(cube.FaceDown)
+	var blockAfter world.Block
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(supportPos, Stone{}, nil)
+		tx.SetBlock(wirePos, RedstoneWire{}, nil)
+		tx.SetBlock(supportPos, nil, nil)
+	})
+	w.AdvanceTick()
+	<-w.Exec(func(tx *world.Tx) {
+		blockAfter = tx.Block(wirePos)
+	})
+
+	if _, ok := blockAfter.(Air); !ok {
+		t.Fatalf("redstone wire after support removal = %T, want Air", blockAfter)
 	}
 }
 
@@ -352,6 +376,28 @@ func TestLeverStrongPowersAttachedBlockFace(t *testing.T) {
 	}
 }
 
+func TestLeverBreaksWhenSupportRemoved(t *testing.T) {
+	w := world.Config{Synchronous: true, Entities: redstoneBreakDropTestEntityRegistry()}.New()
+	defer w.Close()
+
+	leverPos := cube.Pos{1, 64, 0}
+	supportPos := leverPos.Side(cube.FaceWest)
+	var blockAfter world.Block
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(supportPos, Stone{}, nil)
+		tx.SetBlock(leverPos, Lever{Facing: cube.FaceEast}, nil)
+		tx.SetBlock(supportPos, nil, nil)
+	})
+	w.AdvanceTick()
+	<-w.Exec(func(tx *world.Tx) {
+		blockAfter = tx.Block(leverPos)
+	})
+
+	if _, ok := blockAfter.(Air); !ok {
+		t.Fatalf("lever after support removal = %T, want Air", blockAfter)
+	}
+}
+
 func TestLeverUpdatesConsumerBehindAttachedBlock(t *testing.T) {
 	w := world.Config{Synchronous: true}.New()
 	defer w.Close()
@@ -385,6 +431,37 @@ func TestLeverUpdatesConsumerBehindAttachedBlock(t *testing.T) {
 	}
 }
 
+func TestNoteBlockPlaysOnRedstoneRisingEdgeOnly(t *testing.T) {
+	w := world.Config{Synchronous: true}.New()
+	defer w.Close()
+
+	handler := &redstoneSoundTestHandler{}
+	w.Handle(handler)
+
+	leverPos := cube.Pos{0, 64, 0}
+	attachmentPos := leverPos.Side(cube.FaceWest)
+	notePos := attachmentPos.Side(cube.FaceWest)
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(notePos, Note{}, nil)
+		tx.SetBlock(leverPos, Lever{Facing: cube.FaceEast}, nil)
+	})
+
+	redstoneWireTestSetBlockAndWait(t, w, leverPos, Lever{Powered: true, Facing: cube.FaceEast})
+	redstoneWireTestSetBlockAndWait(t, w, leverPos, Lever{Powered: false, Facing: cube.FaceEast})
+
+	var powered bool
+	<-w.Exec(func(tx *world.Tx) {
+		powered = tx.Block(notePos).(Note).Powered
+	})
+	if handler.noteSounds != 1 {
+		t.Fatalf("note sounds after rising and falling edge = %d, want 1", handler.noteSounds)
+	}
+	if powered {
+		t.Fatal("note block stayed powered after falling edge")
+	}
+}
+
 func TestTNTDoesNotConductRedstonePower(t *testing.T) {
 	w := world.Config{Synchronous: true}.New()
 	defer w.Close()
@@ -405,6 +482,34 @@ func TestTNTDoesNotConductRedstonePower(t *testing.T) {
 
 	if power != 0 {
 		t.Fatalf("redstone power conducted through TNT = %d, want 0", power)
+	}
+}
+
+func TestTNTRedstoneEngineRisingEdgePrimes(t *testing.T) {
+	w := world.Config{Synchronous: true, Entities: redstoneTNTTestEntityRegistry()}.New()
+	defer w.Close()
+
+	sourcePos := cube.Pos{0, 64, 0}
+	tntPos := sourcePos.Side(cube.FaceEast)
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(tntPos, TNT{}, nil)
+		tx.SetBlock(sourcePos, RedstoneBlock{}, nil)
+	})
+	w.AdvanceTick()
+
+	var blockAfter world.Block
+	entities := 0
+	<-w.Exec(func(tx *world.Tx) {
+		blockAfter = tx.Block(tntPos)
+		for range tx.Entities() {
+			entities++
+		}
+	})
+	if _, ok := blockAfter.(Air); !ok {
+		t.Fatalf("TNT after engine redstone update = %T, want Air", blockAfter)
+	}
+	if entities != 1 {
+		t.Fatalf("entities after engine redstone update = %d, want 1 primed TNT", entities)
 	}
 }
 
@@ -911,9 +1016,29 @@ func (v *redstoneWireTestBlockUpdateViewer) blockUpdateCount(pos cube.Pos) int {
 	return v.updates[pos]
 }
 
+type redstoneSoundTestHandler struct {
+	world.NopHandler
+
+	noteSounds int
+}
+
+func (h *redstoneSoundTestHandler) HandleSound(_ *world.Context, s world.Sound, _ mgl64.Vec3) {
+	if _, ok := s.(sound.Note); ok {
+		h.noteSounds++
+	}
+}
+
 func redstoneTNTTestEntityRegistry() world.EntityRegistry {
 	return world.EntityRegistryConfig{
 		TNT: func(opts world.EntitySpawnOpts, _ time.Duration) *world.EntityHandle {
+			return opts.New(redstoneTNTTestEntityType{}, redstoneTNTTestEntityConfig{})
+		},
+	}.New([]world.EntityType{redstoneTNTTestEntityType{}})
+}
+
+func redstoneBreakDropTestEntityRegistry() world.EntityRegistry {
+	return world.EntityRegistryConfig{
+		Item: func(opts world.EntitySpawnOpts, _ any) *world.EntityHandle {
 			return opts.New(redstoneTNTTestEntityType{}, redstoneTNTTestEntityConfig{})
 		},
 	}.New([]world.EntityType{redstoneTNTTestEntityType{}})
@@ -957,4 +1082,586 @@ func (e redstoneTNTTestEntity) Position() mgl64.Vec3 {
 
 func (e redstoneTNTTestEntity) Rotation() cube.Rotation {
 	return e.data.Rot
+}
+func TestRedstoneTorchLoopBurnsOutThroughWorldScheduler(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	dustPositions := []cube.Pos{
+		{1, 66, 0},
+		{0, 65, 0},
+	}
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(torchPos.Side(cube.FaceUp), Stone{}, nil)
+		for _, pos := range dustPositions {
+			tx.SetBlock(pos, RedstoneWire{}, nil)
+		}
+		tx.SetBlock(torchPos.Side(cube.FaceDown), Stone{}, nil)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest, Lit: true}, nil)
+	})
+
+	var lit, burnedOut, attachmentPowered bool
+	var currentTick, burnedOutTick int64
+	dustPower := make(map[cube.Pos]int, len(dustPositions))
+
+	for range 200 {
+		w.AdvanceTick()
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		if burnedOut && !lit {
+			burnedOutTick = currentTick
+			break
+		}
+	}
+	if burnedOutTick == 0 {
+		t.Fatalf("redstone torch loop did not burn out through world scheduler; tick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, lit, burnedOut, attachmentPowered, dustPower)
+	}
+	for currentTick < burnedOutTick+100 {
+		w.AdvanceTick()
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		if !burnedOut || lit {
+			t.Fatalf("redstone torch loop recovered without an external update; tick=%d burnedOutTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, burnedOutTick, lit, burnedOut, attachmentPowered, dustPower)
+		}
+	}
+}
+
+func TestBurnedOutRedstoneTorchRelightsWhenLoopWireBreaks(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	loopWirePos := cube.Pos{0, 65, 0}
+	dustPositions := []cube.Pos{
+		{1, 66, 0},
+		loopWirePos,
+	}
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(torchPos.Side(cube.FaceUp), Stone{}, nil)
+		for _, pos := range dustPositions {
+			tx.SetBlock(pos, RedstoneWire{}, nil)
+		}
+		tx.SetBlock(torchPos.Side(cube.FaceDown), Stone{}, nil)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest, Lit: true}, nil)
+	})
+
+	var lit, burnedOut, attachmentPowered bool
+	var currentTick int64
+	dustPower := make(map[cube.Pos]int, len(dustPositions))
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		return burnedOut && !lit
+	}, func() string {
+		return fmt.Sprintf("torch did not burn out before wire break; tick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, lit, burnedOut, attachmentPowered, dustPower)
+	})
+
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(loopWirePos, nil, nil)
+	})
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		return lit && !burnedOut && !attachmentPowered
+	}, func() string {
+		return fmt.Sprintf("torch did not relight after loop wire broke; tick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, lit, burnedOut, attachmentPowered, dustPower)
+	})
+}
+
+func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireBreak(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	dustPositions := []cube.Pos{
+		torchPos.Side(cube.FaceEast),
+		torchPos.Side(cube.FaceEast).Side(cube.FaceEast),
+		torchPos.Side(cube.FaceEast).Side(cube.FaceEast).Side(cube.FaceEast),
+	}
+	breakPos := dustPositions[len(dustPositions)-1]
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		setupOpts := &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true}
+		tx.SetBlock(attachmentPos, Stone{}, setupOpts)
+		for _, pos := range dustPositions {
+			tx.SetBlock(pos.Side(cube.FaceDown), Stone{}, setupOpts)
+			tx.SetBlock(pos, RedstoneWire{}, setupOpts)
+		}
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, setupOpts)
+		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
+	})
+
+	var lit, burnedOut, recoverable, attachmentPowered bool
+	var currentTick int64
+	dustPower := make(map[cube.Pos]int, len(dustPositions))
+	<-w.Exec(func(tx *world.Tx) {
+		currentTick = tx.CurrentTick()
+		burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
+	})
+	if !burnedOut || recoverable {
+		t.Fatalf("torch was not in immediate burnout window before wire break; tick=%d burnedOut=%t recoverable=%t", currentTick, burnedOut, recoverable)
+	}
+
+	var updateTick int64
+	<-w.Exec(func(tx *world.Tx) {
+		updateTick = tx.CurrentTick()
+		tx.SetBlock(breakPos, nil, nil)
+	})
+
+	for currentTick <= updateTick+10 {
+		w.AdvanceTick()
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		if lit || !burnedOut {
+			t.Fatalf("torch relit from distant path wire break; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, updateTick, lit, burnedOut, attachmentPowered, dustPower)
+		}
+	}
+}
+
+func TestBurnedOutRedstoneTorchDoesNotRecoverFromUnrelatedWireBreak(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	wirePos := cube.Pos{10, 64, 10}
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		setupOpts := &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true}
+		tx.SetBlock(attachmentPos, Stone{}, setupOpts)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, setupOpts)
+		tx.SetBlock(wirePos.Side(cube.FaceDown), Stone{}, setupOpts)
+		tx.SetBlock(wirePos, RedstoneWire{}, setupOpts)
+		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
+	})
+
+	var lit, burnedOut, attachmentPowered bool
+	var currentTick int64
+	var updateTick int64
+	<-w.Exec(func(tx *world.Tx) {
+		updateTick = tx.CurrentTick()
+		tx.SetBlock(wirePos, nil, nil)
+	})
+
+	for currentTick <= updateTick+10 {
+		w.AdvanceTick()
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, nil, &currentTick, &lit, &burnedOut, &attachmentPowered, nil)
+		if lit || !burnedOut {
+			t.Fatalf("torch relit from unrelated wire break; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t", currentTick, updateTick, lit, burnedOut, attachmentPowered)
+		}
+	}
+}
+
+func TestBurnedOutRedstoneTorchRecoversFromAdjacentBlockUpdate(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	updatePos := torchPos.Side(cube.FaceEast)
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		setupOpts := &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true}
+		tx.SetBlock(attachmentPos, Stone{}, setupOpts)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true})
+		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
+	})
+
+	var lit, burnedOut, recoverable, attachmentPowered bool
+	var currentTick int64
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		<-w.Exec(func(tx *world.Tx) {
+			currentTick = tx.CurrentTick()
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
+		})
+		return burnedOut && recoverable
+	}, func() string {
+		return fmt.Sprintf("torch did not become recoverable; tick=%d burnedOut=%t recoverable=%t", currentTick, burnedOut, recoverable)
+	})
+
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(updatePos, Stone{}, nil)
+	})
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, nil, &currentTick, &lit, &burnedOut, &attachmentPowered, nil)
+		return lit && !burnedOut && !attachmentPowered
+	}, func() string {
+		return fmt.Sprintf("torch did not relight after adjacent block update; tick=%d lit=%t burnedOut=%t attachmentPowered=%t", currentTick, lit, burnedOut, attachmentPowered)
+	})
+}
+
+func TestBurnedOutRedstoneTorchRecoversFromVerticalBlockUpdate(t *testing.T) {
+	for _, face := range []cube.Face{cube.FaceUp, cube.FaceDown} {
+		t.Run(face.String(), func(t *testing.T) {
+			w := world.Config{Dim: world.End, Synchronous: true}.New()
+			defer w.Close()
+
+			loader := world.NewLoader(2, w, world.NopViewer{})
+			defer func() {
+				<-w.Exec(func(tx *world.Tx) {
+					loader.Close(tx)
+				})
+			}()
+
+			torchPos := cube.Pos{1, 64, 0}
+			attachmentPos := cube.Pos{0, 64, 0}
+			updatePos := torchPos.Side(face)
+			<-w.Exec(func(tx *world.Tx) {
+				loader.Move(tx, mgl64.Vec3{0, 64, 0})
+				loader.Load(tx, 16)
+
+				setupOpts := &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true}
+				tx.SetBlock(attachmentPos, Stone{}, setupOpts)
+				tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, setupOpts)
+				redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
+			})
+
+			var lit, burnedOut, recoverable, attachmentPowered bool
+			var currentTick int64
+
+			redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+				<-w.Exec(func(tx *world.Tx) {
+					currentTick = tx.CurrentTick()
+					burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
+				})
+				return burnedOut && recoverable
+			}, func() string {
+				return fmt.Sprintf("torch did not become recoverable; tick=%d burnedOut=%t recoverable=%t", currentTick, burnedOut, recoverable)
+			})
+
+			<-w.Exec(func(tx *world.Tx) {
+				tx.SetBlock(updatePos, Stone{}, nil)
+			})
+
+			redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+				redstoneTorchBurnoutTestSnapshot(w, torchPos, nil, &currentTick, &lit, &burnedOut, &attachmentPowered, nil)
+				return lit && !burnedOut && !attachmentPowered
+			}, func() string {
+				return fmt.Sprintf("torch did not relight after vertical block update; tick=%d face=%s lit=%t burnedOut=%t attachmentPowered=%t", currentTick, face, lit, burnedOut, attachmentPowered)
+			})
+		})
+	}
+}
+
+func TestBurnedOutRedstoneTorchRecoversFromWireNeighbourUpdate(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	wirePos := torchPos.Side(cube.FaceEast)
+	updatePos := wirePos.Side(cube.FaceNorth)
+	dustPositions := []cube.Pos{wirePos}
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		setupOpts := &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true}
+		tx.SetBlock(attachmentPos, Stone{}, setupOpts)
+		tx.SetBlock(wirePos.Side(cube.FaceDown), Stone{}, setupOpts)
+		tx.SetBlock(wirePos, RedstoneWire{}, setupOpts)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true})
+		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
+	})
+
+	var lit, burnedOut, recoverable, attachmentPowered bool
+	var currentTick int64
+	dustPower := make(map[cube.Pos]int, len(dustPositions))
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		<-w.Exec(func(tx *world.Tx) {
+			currentTick = tx.CurrentTick()
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
+		})
+		return burnedOut && recoverable
+	}, func() string {
+		return fmt.Sprintf("torch did not become recoverable; tick=%d burnedOut=%t recoverable=%t", currentTick, burnedOut, recoverable)
+	})
+
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(updatePos, Stone{}, nil)
+	})
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		return lit && !burnedOut && !attachmentPowered
+	}, func() string {
+		return fmt.Sprintf("torch did not relight after wire-neighbour block update; tick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, lit, burnedOut, attachmentPowered, dustPower)
+	})
+}
+
+func TestBurnedOutRedstoneTorchDoesNotRecoverFromRedstoneDustPastAdjacentWire(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	wirePos := torchPos.Side(cube.FaceEast)
+	updatePos := wirePos.Side(cube.FaceEast)
+	dustPositions := []cube.Pos{wirePos, updatePos}
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		setupOpts := &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true}
+		tx.SetBlock(attachmentPos, Stone{}, setupOpts)
+		tx.SetBlock(wirePos.Side(cube.FaceDown), Stone{}, setupOpts)
+		tx.SetBlock(updatePos.Side(cube.FaceDown), Stone{}, setupOpts)
+		tx.SetBlock(wirePos, RedstoneWire{}, setupOpts)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, setupOpts)
+		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
+	})
+
+	var lit, burnedOut, recoverable, attachmentPowered bool
+	var currentTick int64
+	dustPower := make(map[cube.Pos]int, len(dustPositions))
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		<-w.Exec(func(tx *world.Tx) {
+			currentTick = tx.CurrentTick()
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
+		})
+		return burnedOut && recoverable
+	}, func() string {
+		return fmt.Sprintf("torch did not become recoverable; tick=%d burnedOut=%t recoverable=%t", currentTick, burnedOut, recoverable)
+	})
+
+	var updateTick int64
+	<-w.Exec(func(tx *world.Tx) {
+		updateTick = tx.CurrentTick()
+		tx.SetBlock(updatePos, RedstoneWire{}, nil)
+	})
+
+	for currentTick <= updateTick+10 {
+		w.AdvanceTick()
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		if lit || !burnedOut {
+			t.Fatalf("torch relit from redstone dust placed past adjacent wire; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, updateTick, lit, burnedOut, attachmentPowered, dustPower)
+		}
+	}
+}
+
+func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireNeighbourUpdate(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	dustPositions := []cube.Pos{
+		torchPos.Side(cube.FaceEast),
+		torchPos.Side(cube.FaceEast).Side(cube.FaceEast),
+		torchPos.Side(cube.FaceEast).Side(cube.FaceEast).Side(cube.FaceEast),
+	}
+	updatePos := dustPositions[len(dustPositions)-1].Side(cube.FaceNorth)
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		setupOpts := &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true}
+		tx.SetBlock(attachmentPos, Stone{}, setupOpts)
+		for _, pos := range dustPositions {
+			tx.SetBlock(pos.Side(cube.FaceDown), Stone{}, setupOpts)
+			tx.SetBlock(pos, RedstoneWire{}, setupOpts)
+		}
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true})
+		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
+	})
+
+	var lit, burnedOut, recoverable, attachmentPowered bool
+	var currentTick int64
+	dustPower := make(map[cube.Pos]int, len(dustPositions))
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		<-w.Exec(func(tx *world.Tx) {
+			currentTick = tx.CurrentTick()
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
+		})
+		return burnedOut && recoverable
+	}, func() string {
+		return fmt.Sprintf("torch did not become recoverable; tick=%d burnedOut=%t recoverable=%t", currentTick, burnedOut, recoverable)
+	})
+
+	var updateTick int64
+	<-w.Exec(func(tx *world.Tx) {
+		updateTick = tx.CurrentTick()
+		tx.SetBlock(updatePos, Stone{}, nil)
+	})
+
+	for currentTick <= updateTick+10 {
+		w.AdvanceTick()
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		if lit || !burnedOut {
+			t.Fatalf("torch relit from block update beside distant path wire; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, updateTick, lit, burnedOut, attachmentPowered, dustPower)
+		}
+	}
+}
+
+func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantWireUpdate(t *testing.T) {
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
+	defer w.Close()
+
+	loader := world.NewLoader(2, w, world.NopViewer{})
+	defer func() {
+		<-w.Exec(func(tx *world.Tx) {
+			loader.Close(tx)
+		})
+	}()
+
+	torchPos := cube.Pos{1, 64, 0}
+	attachmentPos := cube.Pos{0, 64, 0}
+	wirePos := torchPos.Side(cube.FaceEast)
+	updatePos := wirePos.Side(cube.FaceNorth).Side(cube.FaceNorth)
+	dustPositions := []cube.Pos{wirePos}
+	<-w.Exec(func(tx *world.Tx) {
+		loader.Move(tx, mgl64.Vec3{0, 64, 0})
+		loader.Load(tx, 16)
+
+		setupOpts := &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true}
+		tx.SetBlock(attachmentPos, Stone{}, setupOpts)
+		tx.SetBlock(wirePos.Side(cube.FaceDown), Stone{}, setupOpts)
+		tx.SetBlock(wirePos, RedstoneWire{}, setupOpts)
+		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest}, &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true})
+		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
+	})
+
+	var lit, burnedOut, recoverable, attachmentPowered bool
+	var currentTick int64
+	dustPower := make(map[cube.Pos]int, len(dustPositions))
+
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
+		<-w.Exec(func(tx *world.Tx) {
+			currentTick = tx.CurrentTick()
+			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
+		})
+		return burnedOut && recoverable
+	}, func() string {
+		return fmt.Sprintf("torch did not become recoverable; tick=%d burnedOut=%t recoverable=%t", currentTick, burnedOut, recoverable)
+	})
+
+	var updateTick int64
+	<-w.Exec(func(tx *world.Tx) {
+		updateTick = tx.CurrentTick()
+		tx.SetBlock(updatePos, Stone{}, nil)
+	})
+
+	for currentTick <= updateTick+10 {
+		w.AdvanceTick()
+		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
+		if lit || !burnedOut {
+			t.Fatalf("torch relit from block update one block away from wire; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, updateTick, lit, burnedOut, attachmentPowered, dustPower)
+		}
+	}
+}
+
+func redstoneTorchBurnoutTestSnapshot(w *world.World, torchPos cube.Pos, dustPositions []cube.Pos, currentTick *int64, lit, burnedOut, attachmentPowered *bool, dustPower map[cube.Pos]int) {
+	<-w.Exec(func(tx *world.Tx) {
+		*currentTick = tx.CurrentTick()
+		if torch, ok := tx.Block(torchPos).(RedstoneTorch); ok {
+			*lit = torch.Lit
+			*attachmentPowered = torch.attachmentPowered(torchPos, tx)
+		}
+		for _, pos := range dustPositions {
+			if wire, ok := tx.Block(pos).(RedstoneWire); ok {
+				if dustPower != nil {
+					dustPower[pos] = wire.Power
+				}
+			} else {
+				if dustPower != nil {
+					delete(dustPower, pos)
+				}
+			}
+		}
+		*burnedOut, _ = tx.Redstone().Torch(torchPos).BurnoutStatus()
+	})
+}
+
+func redstoneTorchBurnoutTestForceBurnedOut(tx *world.Tx, pos cube.Pos) {
+	for range 10 {
+		tx.Redstone().Torch(pos).MarkSelfTriggered()
+		tx.Redstone().Torch(pos).RecordTurnOff()
+	}
+}
+
+func redstoneTorchBurnoutTestWaitFor(t *testing.T, w *world.World, ready func() bool, fail func() string) {
+	t.Helper()
+	for range 200 {
+		w.AdvanceTick()
+		if ready() {
+			return
+		}
+	}
+	t.Fatal(fail())
 }
