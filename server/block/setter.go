@@ -4,6 +4,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -18,6 +19,14 @@ type HasFacing interface {
 type HasAxis interface {
 	world.Block
 	WithAxis(axis cube.Axis) world.Block
+}
+
+// HasColour represents a block that comes in the sixteen dye colours, such as wool and concrete. On
+// some blocks, such as beds and banners, the colour is stored as block entity data rather than in the
+// encoded block state.
+type HasColour interface {
+	world.Block
+	WithColour(colour item.Colour) world.Block
 }
 
 // WithFacing returns a copy of the block with its facing set to facing. It does not update any
@@ -271,5 +280,65 @@ func (b QuartzPillar) WithAxis(axis cube.Axis) world.Block {
 // WithAxis returns a copy of the block with its axis set to axis.
 func (b Wood) WithAxis(axis cube.Axis) world.Block {
 	b.Axis = axis
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b Banner) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b Bed) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b Carpet) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b Concrete) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b ConcretePowder) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b GlazedTerracotta) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b StainedGlass) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b StainedGlassPane) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b StainedTerracotta) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
+	return b
+}
+
+// WithColour returns a copy of the block with its colour set to colour.
+func (b Wool) WithColour(colour item.Colour) world.Block {
+	b.Colour = colour
 	return b
 }
