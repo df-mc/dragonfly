@@ -213,29 +213,24 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, dim world.Dimension, c *c
 	}
 
 	data := chunk.Encode(c, chunk.NetworkEncoding)
-	chunkBuf := bytes.NewBuffer(nil)
-	for _, s := range data.SubChunks {
-		_, _ = chunkBuf.Write(s)
-	}
-	_, _ = chunkBuf.Write(data.Biomes)
 
-	// Length of 1 byte for the border block count.
-	chunkBuf.WriteByte(0)
-
-	enc := nbt.NewEncoderWithEncoding(chunkBuf, nbt.NetworkLittleEndian)
+	entities := make([]chunk.BlockEntity, 0, len(blockEntities))
 	for bp, b := range blockEntities {
 		if n, ok := b.(world.NBTer); ok {
-			d := n.EncodeNBT()
-			d["x"], d["y"], d["z"] = int32(bp[0]), int32(bp[1]), int32(bp[2])
-			_ = enc.Encode(d)
+			entities = append(entities, chunk.BlockEntity{Pos: bp, Data: n.EncodeNBT()})
 		}
+	}
+	raw, err := chunk.EncodeLevelChunkPayload(data, entities)
+	if err != nil {
+		s.conf.Log.Error("encode level chunk payload", "pos", pos, "err", err)
+		return
 	}
 
 	s.writePacket(&packet.LevelChunk{
 		Dimension:     s.dimensionID(dim),
 		Position:      protocol.ChunkPos{pos.X(), pos.Z()},
 		SubChunkCount: uint32(len(data.SubChunks)),
-		RawPayload:    append([]byte(nil), chunkBuf.Bytes()...),
+		RawPayload:    raw,
 	})
 }
 
