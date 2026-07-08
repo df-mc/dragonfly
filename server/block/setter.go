@@ -212,6 +212,12 @@ func (b WoodTrapdoor) WithFacing(facing cube.Direction) world.Block {
 }
 
 // WithAxis returns a copy of the block with its axis set to axis.
+func (b BambooBlock) WithAxis(axis cube.Axis) world.Block {
+	b.Axis = axis
+	return b
+}
+
+// WithAxis returns a copy of the block with its axis set to axis.
 func (b Basalt) WithAxis(axis cube.Axis) world.Block {
 	b.Axis = axis
 	return b
@@ -243,6 +249,12 @@ func (b Froglight) WithAxis(axis cube.Axis) world.Block {
 
 // WithAxis returns a copy of the block with its axis set to axis.
 func (b HayBale) WithAxis(axis cube.Axis) world.Block {
+	b.Axis = axis
+	return b
+}
+
+// WithAxis returns a copy of the block with its axis set to axis.
+func (b InfestedDeepslate) WithAxis(axis cube.Axis) world.Block {
 	b.Axis = axis
 	return b
 }
