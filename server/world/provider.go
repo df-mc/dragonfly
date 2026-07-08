@@ -36,7 +36,7 @@ var _ Provider = (*NopProvider)(nil)
 
 // NopProvider implements a Provider that does not perform any disk I/O. It generates values on the run and
 // dynamically, instead of reading and writing data, and otherwise returns empty values. A Settings struct can be passed
-// to initialize a world with specific settings. Since Settings is a pointer, using the same NopProvider for multiple
+// to initialise a world with specific settings. Since Settings is a pointer, using the same NopProvider for multiple
 // worlds means those worlds will share the same settings.
 type NopProvider struct {
 	Set *Settings

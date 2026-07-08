@@ -33,6 +33,14 @@ func (t ticker) tickLoop(w *World) {
 	}
 }
 
+// AdvanceTick advances the World by a single tick. It is generally only useful
+// for Worlds created with Config.Synchronous set: other Worlds tick
+// automatically 20 times per second. Synchronous Worlds tick loaded chunks
+// even when no viewers are present.
+func (w *World) AdvanceTick() {
+	<-w.Exec(ticker{}.tick)
+}
+
 // tick performs a tick on the World and updates the time, weather, blocks and
 // entities that require updates.
 func (t ticker) tick(tx *Tx) {
@@ -45,8 +53,9 @@ func (t ticker) tick(tx *Tx) {
 		// the player should spawn at the highest position in the world.
 		w.set.Spawn[1] = w.highestObstructingBlock(s[0], s[2]) + 1
 	}
-	if len(viewers) == 0 && w.set.CurrentTick != 0 {
-		// Don't continue ticking if no viewers are in the world.
+	if len(viewers) == 0 && w.set.CurrentTick != 0 && !w.conf.Synchronous {
+		// Don't continue ticking if no viewers are in the world. Synchronous
+		// worlds only tick on explicit AdvanceTick calls, so they always tick.
 		w.set.Unlock()
 		return
 	}
@@ -113,8 +122,7 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 	}
 }
 
-// tickBlocksRandomly executes random block ticks in each sub chunk in the world that has at least one viewer
-// registered from the viewers passed.
+// tickBlocksRandomly executes random block ticks in loaded chunks within range of loaders.
 func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 	var (
 		r             = int32(tx.World().tickRange())
@@ -128,12 +136,16 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 	}
 
 	loaded := make([]ChunkPos, 0, len(loaders))
-	for _, loader := range loaders {
-		loader.mu.RLock()
-		pos := loader.pos
-		loader.mu.RUnlock()
+	if tx.World().conf.Synchronous {
+		loaded = slices.Collect(maps.Keys(tx.World().chunks))
+	} else {
+		for _, loader := range loaders {
+			loader.mu.RLock()
+			pos := loader.pos
+			loader.mu.RUnlock()
 
-		loaded = append(loaded, pos)
+			loaded = append(loaded, pos)
+		}
 	}
 
 	for pos, c := range tx.World().chunks {
@@ -157,7 +169,7 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				if rid := sub.Layers()[0].At(x, y, z); randomTickBlocks[rid] {
+				if rid := sub.Layers()[0].At(x, y, z); tx.World().conf.Blocks.RandomTickBlock(rid) {
 					subY := (i + (tx.Range().Min() >> 4)) << 4
 					randomBlocks = append(randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
 
@@ -238,7 +250,7 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 			}
 		}
 
-		if len(c.viewers) > 0 {
+		if tx.World().conf.Synchronous || len(c.viewers) > 0 {
 			if te, ok := e.(TickerEntity); ok {
 				te.Tick(tx, tick)
 			}
@@ -302,9 +314,9 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 			continue
 		}
 		b := tx.Block(t.pos)
-		if ticker, ok := b.(ScheduledTicker); ok && BlockHash(b) == t.bhash {
+		if ticker, ok := b.(ScheduledTicker); ok && w.conf.Blocks.BlockHash(b) == t.bhash {
 			ticker.ScheduledTick(t.pos, tx, w.r)
-		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && BlockHash(liquid) == t.bhash {
+		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && w.conf.Blocks.BlockHash(liquid) == t.bhash {
 			if ticker, ok := liquid.(ScheduledTicker); ok {
 				ticker.ScheduledTick(t.pos, tx, w.r)
 			}
@@ -324,9 +336,9 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 // passed after a specific delay. A block update is only scheduled if no block
 // update with the same position and block type is already scheduled at a later
 // time than the newly scheduled update.
-func (queue *scheduledTickQueue) schedule(pos cube.Pos, b Block, delay time.Duration) {
+func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Block, delay time.Duration) {
 	resTick := queue.currentTick + int64(max(delay/(time.Second/20), 1))
-	index := scheduledTickIndex{pos: pos, hash: BlockHash(b)}
+	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(b)}
 	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
 		// Already have a tick scheduled for this position that will occur after
 		// the delay passed. Block updates can only be scheduled if they are

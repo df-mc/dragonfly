@@ -5,7 +5,7 @@ var (
 	bannerPatternIDs  = map[BannerPatternType]string{}
 )
 
-// init initializes all default banner patterns to the registry.
+// init initialises all default banner patterns to the registry.
 func init() {
 	registerBannerPattern("bo", BorderBannerPattern())
 	registerBannerPattern("bri", BricksBannerPattern())
@@ -34,7 +34,7 @@ func init() {
 	registerBannerPattern("tr", SquareTopRightBannerPattern())
 	registerBannerPattern("sc", StraightCrossBannerPattern())
 	registerBannerPattern("bs", StripeBottomBannerPattern())
-	registerBannerPattern("cs", StripeCenterBannerPattern())
+	registerBannerPattern("cs", StripeCentreBannerPattern())
 	registerBannerPattern("dls", StripeDownLeftBannerPattern())
 	registerBannerPattern("drs", StripeDownRightBannerPattern())
 	registerBannerPattern("ls", StripeLeftBannerPattern())
@@ -57,13 +57,11 @@ func registerBannerPattern(id string, pattern BannerPatternType) {
 	bannerPatternIDs[pattern] = id
 }
 
-// BannerPatternByID returns a banner pattern by the ID it was registered with.
-func BannerPatternByID(id string) BannerPatternType {
+// BannerPatternByID returns a banner pattern by the ID it was registered with. Second return value describes whether
+// a banner pattern with the ID was found.
+func BannerPatternByID(id string) (BannerPatternType, bool) {
 	b, ok := bannerPatternsMap[id]
-	if !ok {
-		panic("should never happen")
-	}
-	return b
+	return b, ok
 }
 
 // bannerPatternID returns the ID a banner pattern was registered with.
