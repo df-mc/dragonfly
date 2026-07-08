@@ -140,6 +140,8 @@ func (w *World) weakExec(invalid *atomic.Bool, cond *sync.Cond, f ExecFunc) <-ch
 	if w.conf.Synchronous {
 		valid := !invalid.Load()
 		if valid {
+			// As in weakTransaction.Run, f must not run under cond.L: it may
+			// relock it, e.g. through RemoveEntity.
 			cond.L.Unlock()
 			tx := &Tx{w: w}
 			f(tx)
