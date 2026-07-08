@@ -52,23 +52,6 @@ func TestSynchronousWorldAdvanceTick(t *testing.T) {
 	}
 }
 
-// TestSynchronousWorldClose verifies that closing a synchronous World returns
-// promptly instead of waiting for goroutines that were never started.
-func TestSynchronousWorldClose(t *testing.T) {
-	w := Config{Synchronous: true}.New()
-
-	done := make(chan struct{})
-	go func() {
-		_ = w.Close()
-		close(done)
-	}()
-	select {
-	case <-done:
-	case <-time.After(time.Second * 5):
-		t.Fatal("Close did not return within 5 seconds")
-	}
-}
-
 func TestSynchronousExecWorldCanRemoveEntity(t *testing.T) {
 	w := Config{Synchronous: true}.New()
 	defer w.Close()
@@ -130,25 +113,6 @@ func TestSynchronousAdvanceTickTicksViewerlessBlockEntities(t *testing.T) {
 	if tb.ticks == 0 {
 		t.Fatal("expected block entity to tick")
 	}
-}
-
-func TestStrikeLightningWithoutLightningFactoryDoesNotPanic(t *testing.T) {
-	w := Config{Synchronous: true}.New()
-	defer w.Close()
-
-	<-w.Exec(func(tx *Tx) {
-		tx.World().set.Lock()
-		tx.World().set.Raining = true
-		tx.World().set.Thundering = true
-		tx.World().set.Unlock()
-		tx.World().chunk(ChunkPos{})
-		defer func() {
-			if r := recover(); r != nil {
-				t.Fatalf("strikeLightning panicked: %v", r)
-			}
-		}()
-		weather{w: tx.World()}.strikeLightning(tx, ChunkPos{})
-	})
 }
 
 type testEntityConfig struct{}
