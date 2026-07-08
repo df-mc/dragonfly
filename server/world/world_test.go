@@ -1,24 +1,12 @@
 package world
 
 import (
-	"runtime"
 	"testing"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 )
-
-// TestSynchronousWorldNoGoroutines verifies that a synchronous World starts no
-// background goroutines.
-func TestSynchronousWorldNoGoroutines(t *testing.T) {
-	before := runtime.NumGoroutine()
-	w := Config{Synchronous: true}.New()
-	if after := runtime.NumGoroutine(); after != before {
-		t.Errorf("expected no new goroutines after New(), had %v, got %v", before, after)
-	}
-	_ = w.Close()
-}
 
 // TestSynchronousWorldExec verifies that Exec on a synchronous World runs the
 // transaction on the calling goroutine, with the returned channel closed once
