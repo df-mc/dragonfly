@@ -22,6 +22,11 @@ type Bamboo struct {
 	LeafSize BambooLeafSize
 }
 
+var (
+	_ item.BoneMealAffected = Bamboo{}
+	_ Flammable             = Bamboo{}
+)
+
 // FuelInfo ...
 func (b Bamboo) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Millisecond * 2500)

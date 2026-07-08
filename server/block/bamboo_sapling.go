@@ -17,6 +17,11 @@ type BambooSapling struct {
 	Ready bool
 }
 
+var (
+	_ item.BoneMealAffected = BambooSapling{}
+	_ Flammable             = BambooSapling{}
+)
+
 // BoneMeal ...
 func (b BambooSapling) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if b.grow(pos, tx) {
