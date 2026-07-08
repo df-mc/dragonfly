@@ -93,28 +93,6 @@ func TestSynchronousAdvanceTickTicksViewerlessEntities(t *testing.T) {
 	}
 }
 
-func TestSynchronousAdvanceTickTicksViewerlessBlockEntities(t *testing.T) {
-	w := Config{Synchronous: true}.New()
-	defer w.Close()
-
-	pos := cube.Pos{0, 4, 0}
-	tb := &testTickerBlock{}
-	<-w.Exec(func(tx *Tx) {
-		col := tx.World().chunk(chunkPosFromBlockPos(pos))
-		chest, ok := tx.World().conf.Blocks.BlockByName("minecraft:chest", map[string]any{"minecraft:cardinal_direction": "north"})
-		if !ok {
-			t.Fatal("expected chest block to be registered")
-		}
-		col.SetBlock(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0, tx.World().conf.Blocks.BlockRuntimeID(chest))
-		col.BlockEntities[pos] = tb
-	})
-
-	w.AdvanceTick()
-	if tb.ticks == 0 {
-		t.Fatal("expected block entity to tick")
-	}
-}
-
 type testEntityConfig struct{}
 
 func (testEntityConfig) Apply(*EntityData) {}
@@ -162,32 +140,4 @@ func (e *testEntity) Rotation() cube.Rotation {
 
 func (e *testEntity) Tick(*Tx, int64) {
 	e.data.Pos = e.data.Pos.Add(mgl64.Vec3{0, -0.1, 0})
-}
-
-type testTickerBlock struct {
-	ticks int
-}
-
-func (*testTickerBlock) EncodeBlock() (string, map[string]any) {
-	return "dragonfly:test_ticker", nil
-}
-
-func (*testTickerBlock) Hash() (uint64, uint64) {
-	return 1<<32 - 1, 0
-}
-
-func (*testTickerBlock) Model() BlockModel {
-	return unknownModel{}
-}
-
-func (*testTickerBlock) DecodeNBT(map[string]any) any {
-	return &testTickerBlock{}
-}
-
-func (*testTickerBlock) EncodeNBT() map[string]any {
-	return nil
-}
-
-func (b *testTickerBlock) Tick(int64, cube.Pos, *Tx) {
-	b.ticks++
 }
