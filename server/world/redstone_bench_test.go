@@ -11,7 +11,7 @@ var redstoneDirtyTickBenchmarkPower int
 func BenchmarkRedstoneDirtyTickLongLineWithClocks(b *testing.B) {
 	const lineLength = 96
 
-	w := Config{Blocks: redstoneSignalLossTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneSignalLossTestRegistry()}.New()
 	defer w.Close()
 
 	<-w.Exec(func(tx *Tx) {

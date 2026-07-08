@@ -217,7 +217,7 @@ func TestRedstoneEngineRemoveChunkKeepsUnchangedDirtyOutsideChunk(t *testing.T) 
 
 func TestRedstoneCancelledSourceDoesNotPropagate(t *testing.T) {
 	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
-	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
 	defer w.Close()
 
 	w.Handle(&redstoneCancellationHandler{cancel: map[cube.Pos]struct{}{sourcePos: {}}})
@@ -241,7 +241,7 @@ func TestRedstoneCancelledSourceDoesNotPropagate(t *testing.T) {
 
 func TestRedstoneCancelledConsumerDoesNotUpdate(t *testing.T) {
 	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
-	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
 	defer w.Close()
 
 	w.Handle(&redstoneCancellationHandler{cancel: map[cube.Pos]struct{}{sinkPos: {}}})
@@ -260,7 +260,7 @@ func TestRedstoneCancelledConsumerDoesNotUpdate(t *testing.T) {
 
 func TestRedstoneConsumerUpdateIncludesAfterBlock(t *testing.T) {
 	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
-	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
 	defer w.Close()
 
 	handler := &redstoneRecordingHandler{pos: sinkPos}
@@ -284,7 +284,7 @@ func TestRedstoneConsumerUpdateIncludesAfterBlock(t *testing.T) {
 
 func TestRedstoneCancelledActionDoesNotRun(t *testing.T) {
 	sourcePos, actionPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
-	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
 	defer w.Close()
 
 	actions := 0
@@ -305,7 +305,7 @@ func TestRedstoneCancelledActionDoesNotRun(t *testing.T) {
 
 func TestRedstoneActionOnlyRunsOnPowerChange(t *testing.T) {
 	sourcePos, actionPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
-	w := Config{Blocks: redstoneCancellationTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
 	defer w.Close()
 
 	actions := 0
@@ -327,7 +327,7 @@ func TestRedstoneActionOnlyRunsOnPowerChange(t *testing.T) {
 
 func TestRedstoneRelayerToSinkDoesNotLosePower(t *testing.T) {
 	sourcePos, relayerPos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}, cube.Pos{2, 64, 0}
-	w := Config{Blocks: redstoneSignalLossTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneSignalLossTestRegistry()}.New()
 	defer w.Close()
 
 	var directPower, sinkPower int
@@ -364,7 +364,7 @@ func TestRedstoneVerticalRelayerPropagation(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			w := Config{Blocks: redstoneVerticalRelayerTestRegistry()}.New()
+			w := Config{Synchronous: true, Blocks: redstoneVerticalRelayerTestRegistry()}.New()
 			defer w.Close()
 
 			var got int
@@ -387,7 +387,7 @@ func TestRedstoneVerticalRelayerPropagation(t *testing.T) {
 }
 
 func TestPlacedRedstoneTorchTurnsOffWhenAttachmentBecomesPowered(t *testing.T) {
-	w := Config{Blocks: redstoneTorchAttachmentTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneTorchAttachmentTestRegistry()}.New()
 	defer w.Close()
 
 	torchPos := cube.Pos{1, 64, 0}
@@ -409,7 +409,7 @@ func TestPlacedRedstoneTorchTurnsOffWhenAttachmentBecomesPowered(t *testing.T) {
 }
 
 func TestRedstoneConsumerUpdatesBehindPoweredConductor(t *testing.T) {
-	w := Config{Blocks: redstonePoweredConductorTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstonePoweredConductorTestRegistry()}.New()
 	defer w.Close()
 
 	sourcePos, conductorPos, consumerPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}, cube.Pos{2, 64, 0}
@@ -429,7 +429,7 @@ func TestRedstoneConsumerUpdatesBehindPoweredConductor(t *testing.T) {
 }
 
 func TestWeaklyPoweredConductorActivatesConsumerButNotDust(t *testing.T) {
-	w := Config{Blocks: redstoneWeakConductorTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstoneWeakConductorTestRegistry()}.New()
 	defer w.Close()
 
 	sourcePos := cube.Pos{0, 64, 0}
@@ -458,7 +458,7 @@ func TestWeaklyPoweredConductorActivatesConsumerButNotDust(t *testing.T) {
 }
 
 func TestDirectSourceDoesNotWeakPowerConductor(t *testing.T) {
-	w := Config{Blocks: redstonePoweredConductorTestRegistry()}.New()
+	w := Config{Synchronous: true, Blocks: redstonePoweredConductorTestRegistry()}.New()
 	defer w.Close()
 
 	sourcePos, conductorPos, consumerPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}, cube.Pos{2, 64, 0}
@@ -544,7 +544,7 @@ func TestScheduledTickQueueCanRescheduleWhileCurrentTickIsDue(t *testing.T) {
 
 func TestScheduledTickQueueExecutesEarlierDueTickBeforeLaterTick(t *testing.T) {
 	registry := scheduledTickTestRegistry()
-	w := Config{Blocks: registry}.New()
+	w := Config{Synchronous: true, Blocks: registry}.New()
 	defer w.Close()
 
 	queue := newScheduledTickQueue(100)

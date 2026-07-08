@@ -3,7 +3,6 @@ package block
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestRedstoneTorchLoopBurnsOutThroughWorldScheduler(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -40,15 +39,12 @@ func TestRedstoneTorchLoopBurnsOutThroughWorldScheduler(t *testing.T) {
 		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest, Lit: true}, nil)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, attachmentPowered bool
 	var currentTick, burnedOutTick int64
 	dustPower := make(map[cube.Pos]int, len(dustPositions))
 
-	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); {
-		<-ticker.C
+	for range 200 {
+		w.AdvanceTick()
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		if burnedOut && !lit {
 			burnedOutTick = currentTick
@@ -59,7 +55,7 @@ func TestRedstoneTorchLoopBurnsOutThroughWorldScheduler(t *testing.T) {
 		t.Fatalf("redstone torch loop did not burn out through world scheduler; tick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, lit, burnedOut, attachmentPowered, dustPower)
 	}
 	for currentTick < burnedOutTick+100 {
-		<-ticker.C
+		w.AdvanceTick()
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		if !burnedOut || lit {
 			t.Fatalf("redstone torch loop recovered without an external update; tick=%d burnedOutTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, burnedOutTick, lit, burnedOut, attachmentPowered, dustPower)
@@ -68,7 +64,7 @@ func TestRedstoneTorchLoopBurnsOutThroughWorldScheduler(t *testing.T) {
 }
 
 func TestBurnedOutRedstoneTorchRelightsWhenLoopWireBreaks(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -98,14 +94,11 @@ func TestBurnedOutRedstoneTorchRelightsWhenLoopWireBreaks(t *testing.T) {
 		tx.SetBlock(torchPos, RedstoneTorch{Facing: cube.FaceWest, Lit: true}, nil)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, attachmentPowered bool
 	var currentTick int64
 	dustPower := make(map[cube.Pos]int, len(dustPositions))
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		return burnedOut && !lit
 	}, func() string {
@@ -116,7 +109,7 @@ func TestBurnedOutRedstoneTorchRelightsWhenLoopWireBreaks(t *testing.T) {
 		tx.SetBlock(loopWirePos, nil, nil)
 	})
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		return lit && !burnedOut && !attachmentPowered
 	}, func() string {
@@ -125,7 +118,7 @@ func TestBurnedOutRedstoneTorchRelightsWhenLoopWireBreaks(t *testing.T) {
 }
 
 func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireBreak(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -157,9 +150,6 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireBreak(t *testing
 		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, recoverable, attachmentPowered bool
 	var currentTick int64
 	dustPower := make(map[cube.Pos]int, len(dustPositions))
@@ -178,7 +168,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireBreak(t *testing
 	})
 
 	for currentTick <= updateTick+10 {
-		<-ticker.C
+		w.AdvanceTick()
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		if lit || !burnedOut {
 			t.Fatalf("torch relit from distant path wire break; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, updateTick, lit, burnedOut, attachmentPowered, dustPower)
@@ -187,7 +177,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireBreak(t *testing
 }
 
 func TestBurnedOutRedstoneTorchDoesNotRecoverFromUnrelatedWireBreak(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -212,9 +202,6 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromUnrelatedWireBreak(t *testing.T
 		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, attachmentPowered bool
 	var currentTick int64
 	var updateTick int64
@@ -224,7 +211,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromUnrelatedWireBreak(t *testing.T
 	})
 
 	for currentTick <= updateTick+10 {
-		<-ticker.C
+		w.AdvanceTick()
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, nil, &currentTick, &lit, &burnedOut, &attachmentPowered, nil)
 		if lit || !burnedOut {
 			t.Fatalf("torch relit from unrelated wire break; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t", currentTick, updateTick, lit, burnedOut, attachmentPowered)
@@ -233,7 +220,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromUnrelatedWireBreak(t *testing.T
 }
 
 func TestBurnedOutRedstoneTorchRecoversFromAdjacentBlockUpdate(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -256,13 +243,10 @@ func TestBurnedOutRedstoneTorchRecoversFromAdjacentBlockUpdate(t *testing.T) {
 		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, recoverable, attachmentPowered bool
 	var currentTick int64
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
 			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
@@ -276,7 +260,7 @@ func TestBurnedOutRedstoneTorchRecoversFromAdjacentBlockUpdate(t *testing.T) {
 		tx.SetBlock(updatePos, Stone{}, nil)
 	})
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, nil, &currentTick, &lit, &burnedOut, &attachmentPowered, nil)
 		return lit && !burnedOut && !attachmentPowered
 	}, func() string {
@@ -287,7 +271,7 @@ func TestBurnedOutRedstoneTorchRecoversFromAdjacentBlockUpdate(t *testing.T) {
 func TestBurnedOutRedstoneTorchRecoversFromVerticalBlockUpdate(t *testing.T) {
 	for _, face := range []cube.Face{cube.FaceUp, cube.FaceDown} {
 		t.Run(face.String(), func(t *testing.T) {
-			w := world.Config{Dim: world.End}.New()
+			w := world.Config{Dim: world.End, Synchronous: true}.New()
 			defer w.Close()
 
 			loader := world.NewLoader(2, w, world.NopViewer{})
@@ -310,13 +294,10 @@ func TestBurnedOutRedstoneTorchRecoversFromVerticalBlockUpdate(t *testing.T) {
 				redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
 			})
 
-			ticker := time.NewTicker(time.Second / 40)
-			defer ticker.Stop()
-
 			var lit, burnedOut, recoverable, attachmentPowered bool
 			var currentTick int64
 
-			redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+			redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 				<-w.Exec(func(tx *world.Tx) {
 					currentTick = tx.CurrentTick()
 					burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
@@ -330,7 +311,7 @@ func TestBurnedOutRedstoneTorchRecoversFromVerticalBlockUpdate(t *testing.T) {
 				tx.SetBlock(updatePos, Stone{}, nil)
 			})
 
-			redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+			redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 				redstoneTorchBurnoutTestSnapshot(w, torchPos, nil, &currentTick, &lit, &burnedOut, &attachmentPowered, nil)
 				return lit && !burnedOut && !attachmentPowered
 			}, func() string {
@@ -341,7 +322,7 @@ func TestBurnedOutRedstoneTorchRecoversFromVerticalBlockUpdate(t *testing.T) {
 }
 
 func TestBurnedOutRedstoneTorchRecoversFromWireNeighbourUpdate(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -368,14 +349,11 @@ func TestBurnedOutRedstoneTorchRecoversFromWireNeighbourUpdate(t *testing.T) {
 		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, recoverable, attachmentPowered bool
 	var currentTick int64
 	dustPower := make(map[cube.Pos]int, len(dustPositions))
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
 			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
@@ -389,7 +367,7 @@ func TestBurnedOutRedstoneTorchRecoversFromWireNeighbourUpdate(t *testing.T) {
 		tx.SetBlock(updatePos, Stone{}, nil)
 	})
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		return lit && !burnedOut && !attachmentPowered
 	}, func() string {
@@ -398,7 +376,7 @@ func TestBurnedOutRedstoneTorchRecoversFromWireNeighbourUpdate(t *testing.T) {
 }
 
 func TestBurnedOutRedstoneTorchDoesNotRecoverFromRedstoneDustPastAdjacentWire(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -426,14 +404,11 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromRedstoneDustPastAdjacentWire(t 
 		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, recoverable, attachmentPowered bool
 	var currentTick int64
 	dustPower := make(map[cube.Pos]int, len(dustPositions))
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
 			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
@@ -450,7 +425,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromRedstoneDustPastAdjacentWire(t 
 	})
 
 	for currentTick <= updateTick+10 {
-		<-ticker.C
+		w.AdvanceTick()
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		if lit || !burnedOut {
 			t.Fatalf("torch relit from redstone dust placed past adjacent wire; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, updateTick, lit, burnedOut, attachmentPowered, dustPower)
@@ -459,7 +434,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromRedstoneDustPastAdjacentWire(t 
 }
 
 func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireNeighbourUpdate(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -491,14 +466,11 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireNeighbourUpdate(
 		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, recoverable, attachmentPowered bool
 	var currentTick int64
 	dustPower := make(map[cube.Pos]int, len(dustPositions))
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
 			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
@@ -515,7 +487,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireNeighbourUpdate(
 	})
 
 	for currentTick <= updateTick+10 {
-		<-ticker.C
+		w.AdvanceTick()
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		if lit || !burnedOut {
 			t.Fatalf("torch relit from block update beside distant path wire; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, updateTick, lit, burnedOut, attachmentPowered, dustPower)
@@ -524,7 +496,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantPathWireNeighbourUpdate(
 }
 
 func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantWireUpdate(t *testing.T) {
-	w := world.Config{Dim: world.End}.New()
+	w := world.Config{Dim: world.End, Synchronous: true}.New()
 	defer w.Close()
 
 	loader := world.NewLoader(2, w, world.NopViewer{})
@@ -551,14 +523,11 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantWireUpdate(t *testing.T)
 		redstoneTorchBurnoutTestForceBurnedOut(tx, torchPos)
 	})
 
-	ticker := time.NewTicker(time.Second / 40)
-	defer ticker.Stop()
-
 	var lit, burnedOut, recoverable, attachmentPowered bool
 	var currentTick int64
 	dustPower := make(map[cube.Pos]int, len(dustPositions))
 
-	redstoneTorchBurnoutTestWaitFor(t, ticker, w, func() bool {
+	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
 		<-w.Exec(func(tx *world.Tx) {
 			currentTick = tx.CurrentTick()
 			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
@@ -575,7 +544,7 @@ func TestBurnedOutRedstoneTorchDoesNotRecoverFromDistantWireUpdate(t *testing.T)
 	})
 
 	for currentTick <= updateTick+10 {
-		<-ticker.C
+		w.AdvanceTick()
 		redstoneTorchBurnoutTestSnapshot(w, torchPos, dustPositions, &currentTick, &lit, &burnedOut, &attachmentPowered, dustPower)
 		if lit || !burnedOut {
 			t.Fatalf("torch relit from block update one block away from wire; tick=%d updateTick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, updateTick, lit, burnedOut, attachmentPowered, dustPower)
@@ -612,10 +581,10 @@ func redstoneTorchBurnoutTestForceBurnedOut(tx *world.Tx, pos cube.Pos) {
 	}
 }
 
-func redstoneTorchBurnoutTestWaitFor(t *testing.T, ticker *time.Ticker, w *world.World, ready func() bool, fail func() string) {
+func redstoneTorchBurnoutTestWaitFor(t *testing.T, w *world.World, ready func() bool, fail func() string) {
 	t.Helper()
-	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); {
-		<-ticker.C
+	for range 200 {
+		w.AdvanceTick()
 		if ready() {
 			return
 		}
