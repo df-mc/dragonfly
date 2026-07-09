@@ -40,7 +40,14 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 	for i := 0; i < len(c.sub); i++ {
 		b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
 		if err != nil {
-			return nil, err
+			// Some non-conformant servers encode the biome sections wrong (e.g. an unsigned palette
+			// entry count instead of the spec's signed zigzag VarInt, or fewer sections than the
+			// dimension height). Biomes are cosmetic, so keep the successfully decoded block
+			// sub-chunks and leave the remaining biomes at their defaults rather than dropping an
+			// otherwise-valid chunk. Discard the rest of the payload so the trailing border-block
+			// and block-entity reads don't parse the misaligned tail as garbage.
+			buf.Next(buf.Len())
+			return c, nil
 		}
 		if b == nil {
 			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
