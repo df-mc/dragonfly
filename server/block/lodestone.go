@@ -63,7 +63,6 @@ func (l Lodestone) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if len(viewers) == 0 {
 		return
 	}
-	tx.World().ObservePositionTracking(l.trackingHandle)
 	dim, _ := world.DimensionID(tx.World().Dimension())
 	for _, viewer := range viewers {
 		viewer.ViewBlockAction(pos, world.PositionTrackingUpdateAction{
@@ -74,6 +73,12 @@ func (l Lodestone) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 
 // TrackingHandle returns the position tracking handle assigned to the block.
 func (l Lodestone) TrackingHandle() int32 { return l.trackingHandle }
+
+// WithTrackingHandle returns the lodestone with a position tracking handle assigned.
+func (l Lodestone) WithTrackingHandle(handle int32) world.Block {
+	l.trackingHandle = handle
+	return l
+}
 
 // EncodeNBT encodes the Bedrock lodestone block actor data.
 func (l Lodestone) EncodeNBT() map[string]any {

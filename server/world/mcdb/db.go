@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -27,6 +28,7 @@ type DB struct {
 	ldb  *leveldb.DB
 	dir  string
 	ldat *leveldat.Data
+	lmu  sync.Mutex
 	set  *world.Settings
 }
 
@@ -56,6 +58,8 @@ func (db *DB) Settings() *world.Settings {
 
 // SaveSettings saves the world.Settings passed to the level.dat.
 func (db *DB) SaveSettings(s *world.Settings) {
+	db.lmu.Lock()
+	defer db.lmu.Unlock()
 	db.ldat.PutSettings(s)
 }
 
@@ -492,6 +496,9 @@ func (db *DB) NewColumnIterator(r *IteratorRange) *ColumnIterator {
 
 // Close closes the provider, saving any file that might need to be saved, such as the level.dat.
 func (db *DB) Close() error {
+	db.lmu.Lock()
+	defer db.lmu.Unlock()
+
 	db.ldat.LastPlayed = time.Now().Unix()
 
 	var ldat leveldat.LevelDat

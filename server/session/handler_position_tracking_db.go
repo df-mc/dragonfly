@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -18,7 +19,7 @@ const (
 type PositionTrackingDBHandler struct{}
 
 // Handle responds with the tracked position, or marks the target as unavailable.
-func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, _ Controllable) error {
+func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk, ok := p.(*packet.PositionTrackingDBClientRequest)
 	if !ok {
 		return fmt.Errorf("expected *packet.PositionTrackingDBClientRequest, got %T", p)
@@ -26,9 +27,9 @@ func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.
 	if pk.RequestAction != packet.PositionTrackingDBRequestActionQuery {
 		return fmt.Errorf("unknown position tracking request action %d", pk.RequestAction)
 	}
-	pos, dim, found := tx.World().TrackedPosition(pk.TrackingID)
-	if found {
-		tx.World().ObservePositionTracking(pk.TrackingID)
+	pos, dim, found := cube.Pos{}, 0, false
+	if holdsTrackingCompass(c, pk.TrackingID) {
+		pos, dim, found = tx.World().TrackedPosition(pk.TrackingID)
 	}
 	action, status := byte(packet.PositionTrackingDBBroadcastActionUpdate), byte(positionTrackingStatusTracked)
 	if !found {
@@ -40,6 +41,19 @@ func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.
 		Payload:         positionTrackingPayload(pk.TrackingID, pos, dim, status),
 	})
 	return nil
+}
+
+func holdsTrackingCompass(c Controllable, handle int32) bool {
+	hasHandle := func(stack item.Stack) bool {
+		compass, ok := stack.Item().(item.Compass)
+		return ok && compass.TrackingHandle == handle
+	}
+	mainHand, offHand := c.HeldItems()
+	if hasHandle(mainHand) || hasHandle(offHand) {
+		return true
+	}
+	_, ok := c.Inventory().FirstFunc(hasHandle)
+	return ok
 }
 
 func positionTrackingPayload(handle int32, pos cube.Pos, dim int, status byte) map[string]any {

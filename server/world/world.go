@@ -193,9 +193,6 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	if w.conf.Blocks.NBTBlock(rid) {
 		// The block was also a block entity, so we look it up in the block entity map.
 		if b, ok := c.BlockEntities[pos]; ok {
-			if tracked, ok := b.(PositionTrackingBlock); ok && tracked.TrackingHandle() != 0 {
-				w.TrackPosition(pos, tracked.TrackingHandle())
-			}
 			return b
 		}
 		// Despite being a block with NBT, the block didn't actually have any
@@ -310,13 +307,13 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 	c.modified = true
 	c.SetBlock(x, y, z, 0, rid)
+	if tracked, ok := b.(PositionTrackingBlock); ok {
+		b = tracked.WithTrackingHandle(w.TrackPosition(pos, tracked.TrackingHandle()))
+	}
 	if w.conf.Blocks.NBTBlock(rid) {
 		c.BlockEntities[pos] = b
 	} else {
 		delete(c.BlockEntities, pos)
-	}
-	if tracked, ok := b.(PositionTrackingBlock); ok && tracked.TrackingHandle() != 0 {
-		w.TrackPosition(pos, tracked.TrackingHandle())
 	}
 
 	viewers := slices.Clone(c.viewers)
@@ -1402,7 +1399,11 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 			w.conf.Log.Error("read column: block with nbt does not implement NBTer", "block", fmt.Sprintf("%#v", b))
 			continue
 		}
-		col.BlockEntities[be.Pos] = nb.DecodeNBT(be.Data).(Block)
+		decoded := nb.DecodeNBT(be.Data).(Block)
+		if tracked, ok := decoded.(PositionTrackingBlock); ok && tracked.TrackingHandle() != 0 {
+			decoded = tracked.WithTrackingHandle(w.TrackPosition(be.Pos, tracked.TrackingHandle()))
+		}
+		col.BlockEntities[be.Pos] = decoded
 	}
 	scheduled, savedTick := make([]scheduledTick, 0, len(c.ScheduledBlocks)), c.Tick
 	for _, t := range c.ScheduledBlocks {
