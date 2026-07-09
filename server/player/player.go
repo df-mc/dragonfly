@@ -356,7 +356,7 @@ func (p *Player) ExecuteCommand(commandLine string) {
 	if p.Handler().HandleCommandExecution(ctx, command, args[1:]); ctx.Cancelled() {
 		return
 	}
-	command.Execute(strings.Join(args[1:], " "), p, p.tx.Event())
+	command.Execute(strings.Join(args[1:], " "), p, p.tx)
 }
 
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
@@ -878,7 +878,7 @@ func (p *Player) kill(src world.DamageSource) {
 
 	// Wait a little before removing the entity. The client displays a death
 	// animation while the player is dying.
-	NewRef(p.handle).DoAfter(time.Millisecond*1100, func(_ *world.Tx, p *Player) {
+	DoAfter(p.handle, time.Millisecond*1100, func(_ *world.Tx, p *Player) {
 		finishDying(p)
 	})
 }

@@ -115,10 +115,12 @@ func (srv *Server) Listen() {
 
 // Accept accepts incoming players into the server, returning an iterator that
 // yields players that join the server while blocking otherwise. The iterator
-// returned ends when the Server is closed using a call to Close. Players
-// returned are only valid within the block of the for loop used to iterate over
-// them. Use Player.H(), player.NewRef, or Player.Do when a player must
-// be referenced after the iterator callback returns:
+// returned ends when the Server is closed using a call to Close. The loop body
+// runs on the player's world owner: blocking there stalls that world, and
+// calling world.Call, world.CallEntity, world.CallRef, or Task.Wait for the
+// same owner deadlocks. Players returned are only valid within the block of the
+// for loop used to iterate over them. Use p.H() with player.Do for work that
+// outlives the loop body:
 //
 //	for p := range srv.Accept() {
 //	  // p is valid here
@@ -205,8 +207,14 @@ func (srv *Server) PlayerCount() int {
 
 // Players returns an iterator that yields players currently online. If Players
 // is called from within a transaction, the respective transaction should be
-// passed. Passing nil is otherwise valid. Players returned are only valid
-// within the block of the for loop used to iterate over them:
+// passed. Passing nil is otherwise valid. Each loop body runs on the yielded
+// player's world owner, so blocking stalls that world and calling world.Call,
+// world.CallEntity, world.CallRef, or Task.Wait for the same owner deadlocks.
+// Players in other worlds are yielded by blocking on those owners sequentially;
+// mirrored handlers in two worlds can therefore deadlock each other. For
+// fan-out, collect Player.H values and schedule each with player.Do instead.
+// Players returned are only valid within the block of the for loop used to
+// iterate over them:
 //
 //	for p := range srv.Players(nil) {
 //	  // p is valid here
@@ -218,7 +226,7 @@ func (srv *Server) PlayerCount() int {
 //
 // Collecting all values from the iterator using a function such as
 // slices.Collect immediately invalidates the players because their transactions
-// will be finished. Use Player.H(), player.NewRef, or Player.Do when a
+// will be finished. Use Player.H(), player.NewRef, or player.Do when a
 // player must be referenced after the iterator callback returns.
 func (srv *Server) Players(tx *world.Tx) iter.Seq[*player.Player] {
 	srv.pmu.RLock()
@@ -238,7 +246,7 @@ func (srv *Server) Players(tx *world.Tx) iter.Seq[*player.Player] {
 					continue
 				}
 			}
-			ret, err := world.CallRef(context.Background(), player.NewRef(handle), func(_ *world.Tx, p *player.Player) (bool, error) {
+			ret, err := player.Call(context.Background(), handle, func(_ *world.Tx, p *player.Player) (bool, error) {
 				return !yield(p), nil
 			})
 			if err != nil {

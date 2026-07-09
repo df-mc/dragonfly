@@ -66,9 +66,9 @@ type Liquid interface {
 	LiquidType() string
 	// Harden checks if the block should harden when looking at the surrounding blocks and sets the position
 	// to the hardened block when adequate. If the block was hardened, the method returns true.
-	Harden(pos cube.Pos, tx *Context, flownIntoBy *cube.Pos) bool
+	Harden(pos cube.Pos, tx *Tx, flownIntoBy *cube.Pos) bool
 	// LiquidRemoveBlock is called when the liquid flows into and removes the block passed.
-	LiquidRemoveBlock(pos cube.Pos, tx *Context, removed Block)
+	LiquidRemoveBlock(pos cube.Pos, tx *Tx, removed Block)
 }
 
 // Conductor represents a block that can conduct a redstone signal.
@@ -83,7 +83,7 @@ type Conductor interface {
 	// cannot power solid blocks themselves or travel further.
 	// The accountForDust parameter indicates whether redstone dust should be considered when
 	// calculating power levels.
-	WeakPower(pos cube.Pos, face cube.Face, tx *Context, accountForDust bool) int
+	WeakPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
 
 	// StrongPower returns the strong power level emitted by this conductor toward a neighbouring
 	// receiver. The face argument uses the same convention as WeakPower.
@@ -92,7 +92,7 @@ type Conductor interface {
 	// faces. Strong power can also directly power any redstone component.
 	// The accountForDust parameter indicates whether redstone dust should be considered when
 	// calculating power levels.
-	StrongPower(pos cube.Pos, face cube.Face, tx *Context, accountForDust bool) int
+	StrongPower(pos cube.Pos, face cube.Face, tx *Tx, accountForDust bool) int
 }
 
 // WeakBlockPowerer represents a conductor whose weak power may weakly power an adjacent conductive block. Weakly
@@ -118,7 +118,7 @@ type RedstonePowerRelayer interface {
 type RedstoneUpdater interface {
 	Block
 	// RedstoneUpdate is called when a change in redstone signal is computed.
-	RedstoneUpdate(pos cube.Pos, tx *Context)
+	RedstoneUpdate(pos cube.Pos, tx *Tx)
 }
 
 // RegisterBlock registers the Block passed in the DefaultBlockRegistry.
@@ -182,7 +182,7 @@ func CustomBlocks() map[string]CustomBlock {
 type RandomTicker interface {
 	// RandomTick handles a random tick of the block at the position passed. Additionally, a rand.RandSource
 	// instance is passed which may be used to generate values randomly without locking.
-	RandomTick(pos cube.Pos, tx *Context, r *rand.Rand)
+	RandomTick(pos cube.Pos, tx *Tx, r *rand.Rand)
 }
 
 // ScheduledTicker represents a block that executes an action when it has a block update scheduled, such as
@@ -191,14 +191,14 @@ type ScheduledTicker interface {
 	// ScheduledTick handles a scheduled tick initiated by an event in one of the neighbouring blocks, such as
 	// when a block is placed or broken. Additionally, a rand.RandSource instance is passed which may be used to
 	// generate values randomly without locking.
-	ScheduledTick(pos cube.Pos, tx *Context, r *rand.Rand)
+	ScheduledTick(pos cube.Pos, tx *Tx, r *rand.Rand)
 }
 
 // TickerBlock is an implementation of NBTer with an additional Tick method that is called on every world
 // tick for loaded blocks that implement this interface.
 type TickerBlock interface {
 	NBTer
-	Tick(currentTick int64, pos cube.Pos, tx *Context)
+	Tick(currentTick int64, pos cube.Pos, tx *Tx)
 }
 
 // NeighbourUpdateTicker represents a block that is updated when a block adjacent to it is updated, either
@@ -206,7 +206,7 @@ type TickerBlock interface {
 type NeighbourUpdateTicker interface {
 	// NeighbourUpdateTick handles a neighbouring block being updated. The position of that block and the
 	// position of this block is passed.
-	NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *Context)
+	NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *Tx)
 }
 
 // NBTer represents either an item or a block which may decode NBT data and encode to NBT data. Typically,
@@ -227,7 +227,7 @@ type LiquidDisplacer interface {
 	// SideClosed checks if a position on the side of the block placed in the world at a specific position is
 	// closed. When this returns true (for example, when the side is below the position and the block is a
 	// slab), liquid inside the displacer won't flow from pos into side.
-	SideClosed(pos, side cube.Pos, tx *Context) bool
+	SideClosed(pos, side cube.Pos, tx *Tx) bool
 }
 
 // lightEmitter is identical to a block.LightEmitter.

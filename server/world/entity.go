@@ -17,8 +17,8 @@ import (
 // EntityType is the type of Entity. It specifies the name, encoded Entity
 // ID and bounding box of an Entity.
 type EntityType interface {
-	// Open returns an Entity implementation in the context of a transaction.
-	Open(tx *Context, handle *EntityHandle, data *EntityData) Entity
+	// Open returns an Entity implementation in a transaction.
+	Open(tx *Tx, handle *EntityHandle, data *EntityData) Entity
 
 	// EncodeEntity converts the Entity to its encoded representation: It
 	// returns the type of the Minecraft Entity, for example
@@ -85,7 +85,7 @@ type EntitySpawnOpts struct {
 }
 
 // New creates an EntityHandle using an EntityType and EntityConfig passed. The
-// EntityHandle may be added to a world by calling Context.AddEntity().
+// EntityHandle may be added to a world by calling Tx.AddEntity().
 // The spawn conditions depend on the options set in opts.
 func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 	if opts.ID == uuid.Nil {
@@ -109,7 +109,7 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 }
 
 // NewEntity creates an EntityHandle using an EntityType and EntityConfig
-// passed. The EntityHandle may be added to a world by calling Context.AddEntity().
+// passed. The EntityHandle may be added to a world by calling Tx.AddEntity().
 // NewEntity uses the zero value for EntitySpawnOpts.
 func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 	var opts EntitySpawnOpts
@@ -136,10 +136,10 @@ func (e *EntityHandle) Type() EntityType {
 	return e.t
 }
 
-// Entity attempts to convert an EntityHandle to an Entity using the Context passed.
+// Entity attempts to convert an EntityHandle to an Entity using the Tx passed.
 // A non-nil Entity is returned only if the entity's world matches the world of
-// the Context. If they do not match, false is returned.
-func (e *EntityHandle) Entity(tx *Context) (Entity, bool) {
+// the Tx. If they do not match, false is returned.
+func (e *EntityHandle) Entity(tx *Tx) (Entity, bool) {
 	if e == nil || e.w != tx.World() {
 		return nil, false
 	}
@@ -147,16 +147,29 @@ func (e *EntityHandle) Entity(tx *Context) (Entity, bool) {
 }
 
 // mustEntity calls Entity but panics if the worlds do not match.
-func (e *EntityHandle) mustEntity(tx *Context) Entity {
+func (e *EntityHandle) mustEntity(tx *Tx) Entity {
 	if ent, ok := e.Entity(tx); ok {
 		return ent
 	}
-	panic("can't load entity with Context of different world")
+	panic("can't load entity with Tx of different world")
 }
 
 // UUID returns the identifier of the EntityHandle.
 func (e *EntityHandle) UUID() uuid.UUID {
 	return e.id
+}
+
+// Closed reports whether the EntityHandle has been closed.
+func (e *EntityHandle) Closed() bool {
+	if e == nil {
+		return true
+	}
+	select {
+	case <-e.closed:
+		return true
+	default:
+		return false
+	}
 }
 
 // Close closes the EntityHandle. Any subsequently scheduled work will fail
@@ -186,7 +199,7 @@ func cancelled(c <-chan struct{}) bool {
 // are dealing with a rather complicated synchronisation pattern here. The goal
 // for execWorld is to block until e.w becomes accessible. Meanwhile, World.exec
 // may also affect e.w, which execWorld needs to deal with.
-func (e *EntityHandle) execWorld(f func(tx *Context, e Entity), weak bool, cancel <-chan struct{}, allowedCloseWorld *World) bool {
+func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool, cancel <-chan struct{}, allowedCloseWorld *World) bool {
 	e.cond.L.Lock()
 	for e.w == nil || (e.w != closeWorld && (!e.worldReady || (!weak && e.weakTxActive))) {
 		if cancelled(cancel) {
@@ -242,7 +255,7 @@ func (e *EntityHandle) execWorld(f func(tx *Context, e Entity), weak bool, cance
 	// again, this time with e.execWorld(f, true) to make this goroutine bypass
 	// any goroutines still awaiting e.cond.
 	var ran atomic.Bool
-	ret := e.weakExec(func(tx *Context) {
+	ret := e.weakExec(func(tx *Tx) {
 		ent := e.mustEntity(tx)
 		ran.Store(true)
 		f(tx, ent)
@@ -414,7 +427,7 @@ type Entity interface {
 type TickerEntity interface {
 	Entity
 	// Tick ticks the Entity with the current World and tick passed.
-	Tick(tx *Context, current int64)
+	Tick(tx *Tx, current int64)
 }
 
 // EntityAction represents an action that may be performed by an Entity. Typically, these actions are sent to

@@ -42,12 +42,12 @@ func (l *Loader) World() *World {
 
 // ChangeWorld changes the World of the Loader. The currently loaded chunks are reset and any future loading
 // is done from the new World.
-func (l *Loader) ChangeWorld(tx *Context, new *World) {
+func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	loaded := maps.Clone(l.loaded)
-	l.w.exec(func(tx *Context) {
+	l.w.exec(func(tx *Tx) {
 		for pos := range loaded {
 			tx.World().removeViewer(tx, pos, l)
 		}
@@ -61,7 +61,7 @@ func (l *Loader) ChangeWorld(tx *Context, new *World) {
 }
 
 // ChangeRadius changes the maximum chunk radius of the Loader.
-func (l *Loader) ChangeRadius(tx *Context, new int) {
+func (l *Loader) ChangeRadius(tx *Tx, new int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -71,7 +71,7 @@ func (l *Loader) ChangeRadius(tx *Context, new int) {
 }
 
 // Move moves the loader to the position passed. The position is translated to a chunk position to load
-func (l *Loader) Move(tx *Context, pos mgl64.Vec3) {
+func (l *Loader) Move(tx *Tx, pos mgl64.Vec3) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -87,7 +87,7 @@ func (l *Loader) Move(tx *Context, pos mgl64.Vec3) {
 // Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
 // every chunk loaded, the Viewer passed through construction in New has its ViewChunk method called.
 // Load does nothing for n <= 0.
-func (l *Loader) Load(tx *Context, n int) {
+func (l *Loader) Load(tx *Tx, n int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -124,7 +124,7 @@ func (l *Loader) Chunk(pos ChunkPos) (*Column, bool) {
 
 // Close closes the loader. It unloads all chunks currently loaded for the viewer, and hides all entities that
 // are currently shown to it.
-func (l *Loader) Close(tx *Context) {
+func (l *Loader) Close(tx *Tx) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -151,7 +151,7 @@ func (l *Loader) world(new *World) {
 
 // evictUnused gets rid of chunks in the loaded map which are no longer within the chunk radius of the loader,
 // and should therefore be removed.
-func (l *Loader) evictUnused(tx *Context) {
+func (l *Loader) evictUnused(tx *Tx) {
 	for pos := range l.loaded {
 		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
 		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))

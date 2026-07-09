@@ -18,14 +18,14 @@ func TestTorchBreaksWithoutSupport(t *testing.T) {
 	defer w.Close()
 
 	support, torch := cube.Pos{0, 0, 0}, cube.Pos{0, 1, 0}
-	w.Do(func(tx *world.Context) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(support, block.Stone{}, nil)
 		tx.SetBlock(torch, block.Torch{Facing: cube.FaceDown}, nil)
 		tx.SetBlock(support, block.Air{}, nil)
 	})
 	w.AdvanceTick()
 
-	b, err := world.Call(context.Background(), w, func(tx *world.Context) (world.Block, error) {
+	b, err := world.Call(context.Background(), w, func(tx *world.Tx) (world.Block, error) {
 		return tx.Block(torch), nil
 	})
 	if err != nil {

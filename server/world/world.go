@@ -129,7 +129,7 @@ func (w *World) BlockRegistry() BlockRegistry {
 }
 
 // execFunc is a function that performs a synchronised transaction on a World.
-type execFunc func(tx *Context)
+type execFunc func(tx *Tx)
 
 // exec runs f on the World, bypassing the closed check that Do/DoAfter/Call
 // apply — reserved for the World's own machinery (ticking, saving, chunk
@@ -154,10 +154,10 @@ func (w *World) weakExec(valid func() bool, cond *sync.Cond, f execFunc, allowCl
 			// As in weakTransaction.Run, f must not run under cond.L: it may
 			// relock it, e.g. through RemoveEntity.
 			cond.L.Unlock()
-			ctx := newContext(w)
-			f(ctx)
-			ctx.close()
-			ctx.runDeferred()
+			tx := newTx(w)
+			f(tx)
+			tx.close()
+			tx.runDeferred()
 			cond.L.Lock()
 		}
 		c <- run
@@ -734,7 +734,7 @@ func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
 
 // playSound plays a sound at a specific position in the World. Viewers of that
 // position will be able to hear the sound if they are close enough.
-func (w *World) playSound(tx *Context, pos mgl64.Vec3, s Sound) {
+func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 	ctx := tx.Event()
 	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
 		return
@@ -750,7 +750,7 @@ func (w *World) playSound(tx *Context, pos mgl64.Vec3, s Sound) {
 // the chunk that the EntityHandle is in is not yet loaded, it will first be
 // loaded. addEntity panics if the EntityHandle is already in a world.
 // addEntity returns the Entity created by the EntityHandle.
-func (w *World) addEntity(tx *Context, handle *EntityHandle) Entity {
+func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 	handle.setAndUnlockWorld(w)
 	pos := chunkPosFromVec3(handle.data.Pos)
 	w.entities[handle] = pos
@@ -763,7 +763,7 @@ func (w *World) addEntity(tx *Context, handle *EntityHandle) Entity {
 		// Show the entity to all viewers in the chunk of the entity.
 		showEntity(e, v)
 	}
-	w.Handler().HandleEntitySpawn(tx.Event(), e)
+	w.Handler().HandleEntitySpawn(tx, e)
 	handle.markWorldReady(w)
 	return e
 }
@@ -772,14 +772,14 @@ func (w *World) addEntity(tx *Context, handle *EntityHandle) Entity {
 // it. Any viewers of the Entity will no longer be able to see it.
 // removeEntity returns the EntityHandle of the Entity. After removing an Entity
 // from the World, the Entity is no longer usable.
-func (w *World) removeEntity(e Entity, tx *Context) *EntityHandle {
+func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	handle := e.H()
 	pos, found := w.entities[handle]
 	if !found {
 		// The entity currently isn't in this world.
 		return nil
 	}
-	w.Handler().HandleEntityDespawn(tx.Event(), e)
+	w.Handler().HandleEntityDespawn(tx, e)
 
 	c := w.chunk(pos)
 	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
@@ -811,7 +811,7 @@ func (w *World) removeEntityFromViewLayers(e Entity) {
 
 // entitiesWithin returns an iterator that yields all entities contained within
 // the cube.BBox passed.
-func (w *World) entitiesWithin(tx *Context, box cube.BBox) iter.Seq[Entity] {
+func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 	return func(yield func(Entity) bool) {
 		minPos, maxPos := chunkPosFromVec3(box.Min()), chunkPosFromVec3(box.Max())
 
@@ -837,7 +837,7 @@ func (w *World) entitiesWithin(tx *Context, box cube.BBox) iter.Seq[Entity] {
 }
 
 // allEntities returns an iterator that yields all entities in the World.
-func (w *World) allEntities(tx *Context) iter.Seq[Entity] {
+func (w *World) allEntities(tx *Tx) iter.Seq[Entity] {
 	return func(yield func(Entity) bool) {
 		for e := range w.entities {
 			if ent := e.mustEntity(tx); !yield(ent) {
@@ -848,7 +848,7 @@ func (w *World) allEntities(tx *Context) iter.Seq[Entity] {
 }
 
 // allPlayers returns an iterator that yields all player entities in the World.
-func (w *World) allPlayers(tx *Context) iter.Seq[Entity] {
+func (w *World) allPlayers(tx *Tx) iter.Seq[Entity] {
 	return func(yield func(Entity) bool) {
 		for e := range w.entities {
 			if e.t.EncodeEntity() == "minecraft:player" {
@@ -1083,8 +1083,8 @@ func (w *World) Save() {
 }
 
 // save saves all loaded chunks to the World's provider.
-func (w *World) save(f func(*Context, ChunkPos, *Column)) execFunc {
-	return func(tx *Context) {
+func (w *World) save(f func(*Tx, ChunkPos, *Column)) execFunc {
+	return func(tx *Tx) {
 		if w.conf.ReadOnly {
 			return
 		}
@@ -1098,7 +1098,7 @@ func (w *World) save(f func(*Context, ChunkPos, *Column)) execFunc {
 }
 
 // saveChunk saves a chunk and its entities to disk after compacting the chunk.
-func (w *World) saveChunk(_ *Context, pos ChunkPos, c *Column) {
+func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
 		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos)); err != nil {
@@ -1110,7 +1110,7 @@ func (w *World) saveChunk(_ *Context, pos ChunkPos, c *Column) {
 // closeChunk saves a chunk and its entities to disk after compacting the chunk.
 // Afterwards, scheduled updates from that chunk are removed and all entities
 // in it are closed.
-func (w *World) closeChunk(tx *Context, pos ChunkPos, c *Column) {
+func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 	w.saveChunk(tx, pos, c)
 	w.scheduledUpdates.removeChunk(pos)
 	// Note: We close c.Entities here because some entities may remove
@@ -1141,7 +1141,7 @@ func (w *World) close() {
 	w.scheduleMu.Lock()
 	w.closeAcceptingEntityTasks.Store(true)
 	w.scheduleMu.Unlock()
-	<-w.exec(func(tx *Context) {
+	<-w.exec(func(tx *Tx) {
 		// Let user code run anything that needs to be finished before closing.
 		w.Handler().HandleClose(tx)
 		tx.runDeferred()
@@ -1202,7 +1202,7 @@ func (w *World) addWorldViewer(l *Loader) {
 // addViewer adds a viewer to the World at a given position. Any events that
 // happen in the chunk at that position, such as block and entity changes, will
 // be sent to the viewer.
-func (w *World) addViewer(tx *Context, c *Column, loader *Loader) {
+func (w *World) addViewer(tx *Tx, c *Column, loader *Loader) {
 	c.viewers = append(c.viewers, loader.viewer)
 	c.loaders = append(c.loaders, loader)
 
@@ -1214,7 +1214,7 @@ func (w *World) addViewer(tx *Context, c *Column, loader *Loader) {
 // removeViewer removes a viewer from a chunk position. All entities will be
 // hidden from the viewer and no more calls will be made when events in the
 // chunk happen.
-func (w *World) removeViewer(tx *Context, pos ChunkPos, loader *Loader) {
+func (w *World) removeViewer(tx *Tx, pos ChunkPos, loader *Loader) {
 	if w == nil {
 		return
 	}
@@ -1355,7 +1355,7 @@ func (w *World) autoSave() {
 }
 
 // closeUnusedChunk closes all chunks currently not in use by any viewer.
-func (w *World) closeUnusedChunks(tx *Context) {
+func (w *World) closeUnusedChunks(tx *Tx) {
 	for pos, c := range w.chunks {
 		if len(c.viewers) == 0 {
 			w.closeChunk(tx, pos, c)

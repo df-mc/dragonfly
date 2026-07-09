@@ -32,7 +32,7 @@ const (
 
 // tryAdvanceDay attempts to advance the day of the world, by first ensuring that all sleepers are sleeping, and then
 // updating the time of day.
-func (ticker) tryAdvanceDay(tx *Context, timeCycle bool) {
+func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 	sleepers := tx.Sleepers()
 	time := tx.w.Time() % TimeFull
 

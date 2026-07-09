@@ -16,17 +16,17 @@ func TestEntityDoCancelAfterInvalidatedWeakTransactionDoesNotPoisonHandle(t *tes
 	defer w.Close()
 
 	h := NewEntity(taskTestEntityType{}, taskTestEntityConfig{})
-	<-w.exec(func(tx *Context) { tx.AddEntity(h) })
+	<-w.exec(func(tx *Tx) { tx.AddEntity(h) })
 
 	started := make(chan struct{})
 	release := make(chan struct{})
-	w.exec(func(*Context) {
+	w.exec(func(*Tx) {
 		close(started)
 		<-release
 	})
 	<-started
 
-	removeDone := w.exec(func(tx *Context) {
+	removeDone := w.exec(func(tx *Tx) {
 		e, ok := h.Entity(tx)
 		if !ok {
 			t.Error("entity missing before remove")
@@ -34,7 +34,7 @@ func TestEntityDoCancelAfterInvalidatedWeakTransactionDoesNotPoisonHandle(t *tes
 		}
 		tx.RemoveEntity(e)
 	})
-	task := h.Do(func(*Context, Entity) {
+	task := h.Do(func(*Tx, Entity) {
 		t.Error("cancelled task ran")
 	})
 	// The fast path in schedule may queue directly without a weak
@@ -49,8 +49,8 @@ func TestEntityDoCancelAfterInvalidatedWeakTransactionDoesNotPoisonHandle(t *tes
 		t.Fatalf("expected ErrTaskCancelled, got %v", err)
 	}
 
-	<-w.exec(func(tx *Context) { tx.AddEntity(h) })
-	task = h.Do(func(*Context, Entity) {})
+	<-w.exec(func(tx *Tx) { tx.AddEntity(h) })
+	task = h.Do(func(*Tx, Entity) {})
 	if err := task.Wait(testContext(t)); err != nil {
 		t.Fatalf("handle poisoned after cancelling invalidated weak transaction: %v", err)
 	}
@@ -62,10 +62,10 @@ func TestDoDoesNotBlockOwnerWhenQueueFull(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		<-w.exec(func(tx *Context) {
+		<-w.exec(func(tx *Tx) {
 			for i := 0; i < cap(w.queue)+32; i++ {
-				w.Do(func(*Context) {})
-				tx.Defer(func(*Context) {})
+				w.Do(func(*Tx) {})
+				tx.Defer(func(*Tx) {})
 			}
 		})
 		close(done)
@@ -85,30 +85,30 @@ func TestWeakExecDoesNotBlockOwnerWhenQueueFull(t *testing.T) {
 	w := New()
 
 	h := NewEntity(taskTestEntityType{}, taskTestEntityConfig{})
-	<-w.exec(func(tx *Context) { tx.AddEntity(h) })
+	<-w.exec(func(tx *Tx) { tx.AddEntity(h) })
 
 	entered := make(chan struct{})
 	proceed := make(chan struct{})
 	release := make(chan struct{})
 
 	// Occupy the world owner goroutine.
-	w.exec(func(tx *Context) {
+	w.exec(func(tx *Tx) {
 		close(entered)
 		<-proceed
 		// Owner-side fire-and-forget must not block on scheduleMu.
-		w.Do(func(ctx *Context) {})
+		w.Do(func(tx *Tx) {})
 		close(release)
 	})
 	<-entered
 
 	// Fill the queue to capacity while the owner is busy.
 	for i := 0; i < cap(w.queue); i++ {
-		w.queue <- normalTransaction{c: make(chan struct{}), f: func(tx *Context) {}}
+		w.queue <- normalTransaction{c: make(chan struct{}), f: func(tx *Tx) {}}
 	}
 
 	// Entity task whose weak transaction ends up in World.weakExec with the
 	// queue full.
-	task := h.Do(func(ctx *Context, e Entity) {})
+	task := h.Do(func(tx *Tx, e Entity) {})
 	time.Sleep(200 * time.Millisecond)
 
 	close(proceed)
@@ -132,16 +132,16 @@ func TestDoQueuedBeforeCloseDoesNotRunAfterHandleClose(t *testing.T) {
 
 	started := make(chan struct{})
 	release := make(chan struct{})
-	w.exec(func(*Context) {
+	w.exec(func(*Tx) {
 		close(started)
 		<-release
 	})
 	<-started
 
 	for i := 0; i < cap(w.queue); i++ {
-		w.exec(func(*Context) {})
+		w.exec(func(*Tx) {})
 	}
-	task := w.Do(func(*Context) {
+	task := w.Do(func(*Tx) {
 		if closeHandled.Load() {
 			ranAfterClose.Store(true)
 		}
@@ -171,9 +171,9 @@ func TestEntityDoScheduledDuringWorldCloseRunsBeforeQueueShutdown(t *testing.T) 
 	var task *Task
 	w := New()
 	h := NewEntity(closeSchedulingEntityType{}, closeSchedulingEntityConfig{onClose: func(h *EntityHandle) {
-		task = h.Do(func(*Context, Entity) {})
+		task = h.Do(func(*Tx, Entity) {})
 	}})
-	<-w.exec(func(tx *Context) { tx.AddEntity(h) })
+	<-w.exec(func(tx *Tx) { tx.AddEntity(h) })
 
 	if err := w.Close(); err != nil {
 		t.Fatalf("close world: %v", err)
@@ -189,12 +189,12 @@ func TestEntityDoScheduledDuringWorldCloseRunsBeforeQueueShutdown(t *testing.T) 
 func TestEntityDoBlockedBeforeWorldCloseFailsPromptly(t *testing.T) {
 	w := New()
 	h := NewEntity(closeSchedulingEntityType{}, closeSchedulingEntityConfig{})
-	<-w.exec(func(tx *Context) { tx.AddEntity(h) })
+	<-w.exec(func(tx *Tx) { tx.AddEntity(h) })
 
 	h.cond.L.Lock()
 	h.weakTxActive = true
 	h.cond.L.Unlock()
-	task := h.Do(func(*Context, Entity) {
+	task := h.Do(func(*Tx, Entity) {
 		t.Error("entity task ran after world close")
 	})
 
@@ -218,7 +218,7 @@ type closeOrderHandler struct {
 	closed *atomic.Bool
 }
 
-func (h closeOrderHandler) HandleClose(*Context) { h.closed.Store(true) }
+func (h closeOrderHandler) HandleClose(*Tx) { h.closed.Store(true) }
 
 type closeSchedulingEntityConfig struct {
 	onClose func(*EntityHandle)
@@ -228,7 +228,7 @@ func (c closeSchedulingEntityConfig) Apply(data *EntityData) { data.Data = c.onC
 
 type closeSchedulingEntityType struct{}
 
-func (closeSchedulingEntityType) Open(_ *Context, handle *EntityHandle, data *EntityData) Entity {
+func (closeSchedulingEntityType) Open(_ *Tx, handle *EntityHandle, data *EntityData) Entity {
 	onClose, _ := data.Data.(func(*EntityHandle))
 	return closeSchedulingEntity{h: handle, onClose: onClose}
 }
@@ -263,7 +263,7 @@ func (taskTestEntityConfig) Apply(*EntityData) {}
 
 type taskTestEntityType struct{}
 
-func (taskTestEntityType) Open(tx *Context, handle *EntityHandle, _ *EntityData) Entity {
+func (taskTestEntityType) Open(tx *Tx, handle *EntityHandle, _ *EntityData) Entity {
 	return taskTestEntity{h: handle, tx: tx}
 }
 
@@ -277,7 +277,7 @@ func (taskTestEntityType) EncodeNBT(*EntityData) map[string]any { return nil }
 
 type taskTestEntity struct {
 	h  *EntityHandle
-	tx *Context
+	tx *Tx
 }
 
 func (e taskTestEntity) Close() error {

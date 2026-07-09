@@ -17,7 +17,7 @@ func TestSynchronousWorldDo(t *testing.T) {
 	defer w.Close()
 
 	var ran bool
-	task := w.Do(func(ctx *Context) { ran = true })
+	task := w.Do(func(tx *Tx) { ran = true })
 	if !ran {
 		t.Fatal("expected task to have run when Do returned")
 	}
@@ -58,11 +58,11 @@ func TestSynchronousEntityDoCanRemoveEntity(t *testing.T) {
 	defer w.Close()
 
 	h := EntitySpawnOpts{Position: mgl64.Vec3{0, 4, 0}}.New(testEntityType{}, testEntityConfig{})
-	<-w.exec(func(tx *Context) {
+	<-w.exec(func(tx *Tx) {
 		tx.AddEntity(h)
 	})
 
-	task := h.Do(func(tx *Context, e Entity) {
+	task := h.Do(func(tx *Tx, e Entity) {
 		tx.RemoveEntity(e)
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -82,10 +82,10 @@ func TestSynchronousEntityDoWaitsForAddEntityToFinish(t *testing.T) {
 		release:    make(chan struct{}),
 	}
 	h := EntitySpawnOpts{}.New(blockingOpenType{}, blockingOpenConfig{state: state})
-	task := h.Do(func(*Context, Entity) {})
+	task := h.Do(func(*Tx, Entity) {})
 	added := make(chan struct{})
 	go func() {
-		w.Do(func(tx *Context) { tx.AddEntity(h) })
+		w.Do(func(tx *Tx) { tx.AddEntity(h) })
 		close(added)
 	}()
 	<-state.firstOpen
@@ -111,7 +111,7 @@ func TestSynchronousAdvanceTickTicksViewerlessEntities(t *testing.T) {
 	defer w.Close()
 
 	h := EntitySpawnOpts{Position: mgl64.Vec3{0, 4, 0}}.New(testEntityType{}, testEntityConfig{})
-	<-w.exec(func(tx *Context) {
+	<-w.exec(func(tx *Tx) {
 		tx.AddEntity(h)
 	})
 
@@ -130,7 +130,7 @@ func TestSynchronousAdvanceTickTicksViewerlessBlockEntities(t *testing.T) {
 
 	pos := cube.Pos{0, 4, 0}
 	tb := &testTickerBlock{}
-	<-w.exec(func(tx *Context) {
+	<-w.exec(func(tx *Tx) {
 		col := tx.World().chunk(chunkPosFromBlockPos(pos))
 		chest, ok := tx.World().conf.Blocks.BlockByName("minecraft:chest", map[string]any{"minecraft:cardinal_direction": "north"})
 		if !ok {
@@ -152,7 +152,7 @@ func (testEntityConfig) Apply(*EntityData) {}
 
 type testEntityType struct{}
 
-func (testEntityType) Open(_ *Context, handle *EntityHandle, data *EntityData) Entity {
+func (testEntityType) Open(_ *Tx, handle *EntityHandle, data *EntityData) Entity {
 	return &testEntity{handle: handle, data: data}
 }
 
@@ -191,7 +191,7 @@ func (e *testEntity) Rotation() cube.Rotation {
 	return e.data.Rot
 }
 
-func (e *testEntity) Tick(*Context, int64) {
+func (e *testEntity) Tick(*Tx, int64) {
 	e.data.Pos = e.data.Pos.Add(mgl64.Vec3{0, -0.1, 0})
 }
 
@@ -214,7 +214,7 @@ func (c blockingOpenConfig) Apply(data *EntityData) { data.Data = c.state }
 
 type blockingOpenType struct{}
 
-func (blockingOpenType) Open(_ *Context, handle *EntityHandle, data *EntityData) Entity {
+func (blockingOpenType) Open(_ *Tx, handle *EntityHandle, data *EntityData) Entity {
 	state := data.Data.(*blockingOpenState)
 	switch state.opens.Add(1) {
 	case 1:
@@ -254,6 +254,6 @@ func (*testTickerBlock) EncodeNBT() map[string]any {
 	return nil
 }
 
-func (b *testTickerBlock) Tick(int64, cube.Pos, *Context) {
+func (b *testTickerBlock) Tick(int64, cube.Pos, *Tx) {
 	b.ticks++
 }

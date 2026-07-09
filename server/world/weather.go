@@ -187,7 +187,7 @@ func (w weather) enableWeatherCycle(v bool) {
 
 // tickLightning iterates over all loaded chunks in the World, striking
 // lightning in each one with a 1/100,000 chance.
-func (w weather) tickLightning(tx *Context) {
+func (w weather) tickLightning(tx *Tx) {
 	positions := make([]ChunkPos, 0, len(w.w.chunks)/100000)
 	for pos := range w.w.chunks {
 		// Wiki: For each loaded chunk, every tick there is a 1⁄100,000 chance
@@ -206,7 +206,7 @@ func (w weather) tickLightning(tx *Context) {
 // ChunkPos. The final position is influenced by living entities that might be
 // near the lightning strike. If there is no rain at the final position
 // selected, the lightning strike will fail.
-func (w weather) strikeLightning(tx *Context, c ChunkPos) {
+func (w weather) strikeLightning(tx *Tx, c ChunkPos) {
 	if w.w.conf.Entities.conf.Lightning == nil {
 		return
 	}
@@ -218,7 +218,7 @@ func (w weather) strikeLightning(tx *Context, c ChunkPos) {
 // lightningPosition finds a random position in the ChunkPos to strike
 // lightning and adjusts the position to any of the living entities found in or
 // above the position if any are found.
-func (w weather) lightningPosition(tx *Context, c ChunkPos) mgl64.Vec3 {
+func (w weather) lightningPosition(tx *Tx, c ChunkPos) mgl64.Vec3 {
 	v := w.w.r.Int32()
 	x, z := float64(c[0]<<4+(v&0xf)), float64(c[1]<<4+((v>>8)&0xf))
 
@@ -236,7 +236,7 @@ func (w weather) lightningPosition(tx *Context, c ChunkPos) mgl64.Vec3 {
 // any Entity found in the 3x3 column upwards from the mgl64.Vec3. If multiple
 // entities are found, the position of one of the entities is selected
 // randomly.
-func (w weather) adjustPositionToEntities(tx *Context, vec mgl64.Vec3) mgl64.Vec3 {
+func (w weather) adjustPositionToEntities(tx *Tx, vec mgl64.Vec3) mgl64.Vec3 {
 	max := vec.Add(mgl64.Vec3{0, float64(w.w.Range().Max())})
 
 	list := make([]mgl64.Vec3, 0, 16)
