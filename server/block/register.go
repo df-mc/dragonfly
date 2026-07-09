@@ -6,7 +6,7 @@ import (
 )
 
 //go:generate go run ../../cmd/blockhash -o hash.go .
-//go:generate go run ../../cmd/blocksetter -o setter.go .
+//go:generate go run ../../cmd/blockaccessor -o accessor.go .
 
 // init registers all blocks implemented by Dragonfly.
 func init() {
