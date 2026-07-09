@@ -1,6 +1,10 @@
 package world
 
-import "github.com/df-mc/dragonfly/server/block/cube"
+import (
+	"sync"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+)
 
 // PositionTrackingBlock is implemented by blocks whose position may be tracked
 // by the Bedrock client, currently only lodestones.
@@ -45,6 +49,7 @@ type PositionTrackingUpdateAction struct {
 func (PositionTrackingUpdateAction) BlockAction() {}
 
 type positionTracker struct {
+	mu         sync.Mutex
 	next       int32
 	byHandle   map[int32]trackedPosition
 	byPosition map[[4]int]int32
@@ -52,10 +57,11 @@ type positionTracker struct {
 
 // PositionTrackingEntries returns a snapshot of the position tracking database.
 func (s *Settings) PositionTrackingEntries() []PositionTrackingEntry {
-	s.Lock()
-	defer s.Unlock()
-	entries := make([]PositionTrackingEntry, 0, len(s.positionTracker.byHandle))
-	for handle, entry := range s.positionTracker.byHandle {
+	t := &s.positionTracker
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	entries := make([]PositionTrackingEntry, 0, len(t.byHandle))
+	for handle, entry := range t.byHandle {
 		entries = append(entries, PositionTrackingEntry{Handle: handle, Position: entry.pos, Dimension: entry.dim, Active: entry.active})
 	}
 	return entries
@@ -63,9 +69,12 @@ func (s *Settings) PositionTrackingEntries() []PositionTrackingEntry {
 
 // LoadPositionTrackingEntries replaces the position tracking database with entries.
 func (s *Settings) LoadPositionTrackingEntries(entries []PositionTrackingEntry) {
-	s.Lock()
-	defer s.Unlock()
-	t := positionTracker{byHandle: map[int32]trackedPosition{}, byPosition: map[[4]int]int32{}}
+	t := &s.positionTracker
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.next = 0
+	t.byHandle = map[int32]trackedPosition{}
+	t.byPosition = map[[4]int]int32{}
 	for _, entry := range entries {
 		if entry.Handle == 0 {
 			continue
@@ -76,7 +85,6 @@ func (s *Settings) LoadPositionTrackingEntries(entries []PositionTrackingEntry) 
 			t.next = entry.Handle
 		}
 	}
-	s.positionTracker = t
 }
 
 // TrackPosition activates a tracking handle for pos. Existing handles at the
@@ -84,9 +92,9 @@ func (s *Settings) LoadPositionTrackingEntries(entries []PositionTrackingEntry) 
 // read remains linked, matching Bedrock behaviour.
 func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 	dim, _ := DimensionID(w.Dimension())
-	w.set.Lock()
-	defer w.set.Unlock()
 	t := &w.set.positionTracker
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	if t.byHandle == nil {
 		t.byHandle = map[int32]trackedPosition{}
 		t.byPosition = map[[4]int]int32{}
@@ -113,15 +121,15 @@ func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 // association is retained so replacing the lodestone can reactivate it.
 func (w *World) UntrackPosition(pos cube.Pos) {
 	dim, _ := DimensionID(w.Dimension())
-	w.set.Lock()
 	t := &w.set.positionTracker
+	t.mu.Lock()
 	handle := t.byPosition[[4]int{dim, pos[0], pos[1], pos[2]}]
 	if handle != 0 {
 		entry := t.byHandle[handle]
 		entry.active = false
 		t.byHandle[handle] = entry
 	}
-	w.set.Unlock()
+	t.mu.Unlock()
 	if handle == 0 {
 		return
 	}
@@ -139,9 +147,10 @@ func (w *World) UntrackPosition(pos cube.Pos) {
 
 // TrackedPosition looks up an active position tracking handle.
 func (w *World) TrackedPosition(handle int32) (cube.Pos, int, bool) {
-	w.set.Lock()
-	defer w.set.Unlock()
-	entry, ok := w.set.positionTracker.byHandle[handle]
+	t := &w.set.positionTracker
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	entry, ok := t.byHandle[handle]
 	if !ok {
 		return cube.Pos{}, 0, false
 	}
