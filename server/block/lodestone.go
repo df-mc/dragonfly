@@ -27,8 +27,12 @@ func (l Lodestone) BreakInfo() BreakInfo {
 // Activate links or relinks a compass to the lodestone.
 func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
-	compass, ok := held.Item().(item.Compass)
-	if !ok {
+	relink := true
+	switch compass := held.Item().(type) {
+	case item.Compass:
+		relink = compass.TrackingHandle != 0
+	case item.LodestoneCompass:
+	default:
 		return false
 	}
 	l.trackingHandle = tx.World().TrackPosition(pos, l.trackingHandle)
@@ -39,7 +43,7 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 	// angles.
 	tx.ScheduleBlockUpdate(pos, l, time.Second/20)
 	linked := held.WithItem(item.Compass{TrackingHandle: l.trackingHandle})
-	if compass.TrackingHandle != 0 {
+	if relink {
 		// Relinking a lodestone compass updates the complete stack in-place.
 		ctx.NewItem = linked
 		ctx.SubtractFromCount(held.Count())

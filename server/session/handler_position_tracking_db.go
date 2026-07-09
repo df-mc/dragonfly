@@ -8,6 +8,12 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
+const (
+	positionTrackingPayloadVersion = 1
+	positionTrackingStatusTracked  = 0
+	positionTrackingStatusMissing  = 2
+)
+
 // PositionTrackingDBHandler handles client queries for lodestone compass targets.
 type PositionTrackingDBHandler struct{}
 
@@ -24,9 +30,9 @@ func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.
 	if found {
 		tx.World().ObservePositionTracking(pk.TrackingID)
 	}
-	action, status := byte(packet.PositionTrackingDBBroadcastActionUpdate), byte(0)
+	action, status := byte(packet.PositionTrackingDBBroadcastActionUpdate), byte(positionTrackingStatusTracked)
 	if !found {
-		action, status = packet.PositionTrackingDBBroadcastActionNotFound, 2
+		action, status = packet.PositionTrackingDBBroadcastActionNotFound, positionTrackingStatusMissing
 	}
 	s.writePacket(&packet.PositionTrackingDBServerBroadcast{
 		BroadcastAction: action,
@@ -38,7 +44,7 @@ func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.
 
 func positionTrackingPayload(handle int32, pos cube.Pos, dim int, status byte) map[string]any {
 	return map[string]any{
-		"version": byte(1),
+		"version": byte(positionTrackingPayloadVersion),
 		"dim":     int32(dim),
 		"id":      fmt.Sprintf("0x%08x", handle),
 		"pos":     []int32{int32(pos[0]), int32(pos[1]), int32(pos[2])},
