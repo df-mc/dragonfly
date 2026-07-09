@@ -23,8 +23,13 @@ type setterSpec struct {
 	IfaceDoc string
 	// Method is the name of the generated setter method, such as 'WithFacing'.
 	Method string
-	// MethodDoc is the doc comment written above each generated method.
+	// MethodDoc is the doc comment written above each generated setter method.
 	MethodDoc string
+	// Getter is the name of the generated getter method, such as 'FacingDirection'. It must differ from
+	// Field: a method cannot share its name with a struct field.
+	Getter string
+	// GetterDoc is the doc comment written above each generated getter method.
+	GetterDoc string
 	// Param is the name of the setter's parameter.
 	Param string
 	// ParamType is the qualified type of the setter's parameter, such as 'cube.Direction'.
@@ -43,7 +48,9 @@ var specs = []setterSpec{
 		Method: "WithFacing",
 		MethodDoc: `WithFacing returns a copy of the block with its facing set to facing. It does not update any
 // other blocks that the block may be part of, such as the second half of a bed or door.`,
-		Param: "facing", ParamType: "cube.Direction",
+		Getter:    "FacingDirection",
+		GetterDoc: `FacingDirection returns the horizontal direction the block faces.`,
+		Param:     "facing", ParamType: "cube.Direction",
 		Field: "Facing", Pkg: "cube", FieldType: "Direction",
 	},
 	{
@@ -51,6 +58,8 @@ var specs = []setterSpec{
 		IfaceDoc:  `HasAxis represents a block oriented along one of the three axes, such as logs and pillars.`,
 		Method:    "WithAxis",
 		MethodDoc: `WithAxis returns a copy of the block with its axis set to axis.`,
+		Getter:    "PillarAxis",
+		GetterDoc: `PillarAxis returns the axis the block is oriented along.`,
 		Param:     "axis", ParamType: "cube.Axis",
 		Field: "Axis", Pkg: "cube", FieldType: "Axis",
 	},
@@ -61,6 +70,8 @@ var specs = []setterSpec{
 // encoded block state.`,
 		Method:    "WithColour",
 		MethodDoc: `WithColour returns a copy of the block with its colour set to colour.`,
+		Getter:    "DyeColour",
+		GetterDoc: `DyeColour returns the dye colour of the block.`,
 		Param:     "colour", ParamType: "item.Colour",
 		Field: "Colour", Pkg: "item", FieldType: "Colour",
 	},
@@ -79,9 +90,15 @@ import (
 // {{.IfaceDoc}}
 type {{.Iface}} interface {
 	world.Block
+	{{.Getter}}() {{.ParamType}}
 	{{.Method}}({{.Param}} {{.ParamType}}) world.Block
 }
 {{end}}{{range .Methods}}
+// {{.Spec.GetterDoc}}
+func (b {{.Struct}}) {{.Spec.Getter}}() {{.Spec.ParamType}} {
+	return b.{{.Spec.Field}}
+}
+
 // {{.Spec.MethodDoc}}
 func (b {{.Struct}}) {{.Spec.Method}}({{.Spec.Param}} {{.Spec.ParamType}}) world.Block {
 	b.{{.Spec.Field}} = {{.Spec.Param}}
@@ -169,8 +186,7 @@ func (b *setterBuilder) resolveMethods() []methodData {
 			if !b.hasField(name, spec) {
 				continue
 			}
-			if _, ok := b.methods[name+"."+spec.Method]; ok {
-				log.Println("Skipping", name+"."+spec.Method+": block already has a hand-written method with that name.")
+			if b.collides(name, spec.Method) || b.collides(name, spec.Getter) {
 				continue
 			}
 			names = append(names, name)
@@ -181,6 +197,16 @@ func (b *setterBuilder) resolveMethods() []methodData {
 		}
 	}
 	return methods
+}
+
+// collides reports whether the struct passed already has a hand-written method with the name passed,
+// logging the collision so that the block is skipped visibly.
+func (b *setterBuilder) collides(structName, method string) bool {
+	if _, ok := b.methods[structName+"."+method]; ok {
+		log.Println("Skipping", structName+"."+method+": block already has a hand-written method with that name.")
+		return true
+	}
+	return false
 }
 
 // hasField reports whether the struct passed has a field with the name and type required by spec.
