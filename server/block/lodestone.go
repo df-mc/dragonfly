@@ -1,6 +1,7 @@
 package block
 
 import (
+	"math/rand/v2"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -13,7 +14,7 @@ import (
 // Lodestone is a block that compasses may be linked to in any dimension.
 type Lodestone struct {
 	solid
-	bass
+	bassDrum
 
 	trackingHandle int32
 }
@@ -32,21 +33,11 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 	}
 	l.trackingHandle = tx.World().TrackPosition(pos, l.trackingHandle)
 	tx.SetBlock(pos, l, nil)
-	dim, _ := world.DimensionID(tx.World().Dimension())
-	w, handle := tx.World(), l.trackingHandle
-	// Send the tracking update one tick later. The inventory slot containing
-	// the linked compass must reach the client in an earlier network batch;
-	// otherwise the in-hand and inventory renderers may cache different angles.
-	time.AfterFunc(time.Second/20, func() {
-		w.Exec(func(next *world.Tx) {
-			for _, viewer := range next.Viewers(pos.Vec3Centre()) {
-				w.ObservePositionTracking(handle)
-				viewer.ViewBlockAction(pos, world.PositionTrackingUpdateAction{
-					Handle: handle, Position: pos, Dimension: dim,
-				})
-			}
-		})
-	})
+	// Send the tracking update on the next world tick. The inventory slot
+	// containing the linked compass must reach the client in an earlier network
+	// batch; otherwise the in-hand and inventory renderers may cache different
+	// angles.
+	tx.ScheduleBlockUpdate(pos, l, time.Second/20)
 	linked := held.WithItem(item.Compass{TrackingHandle: l.trackingHandle})
 	if compass.TrackingHandle != 0 {
 		// Relinking a lodestone compass updates the complete stack in-place.
@@ -60,6 +51,22 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 	}
 	tx.PlaySound(pos.Vec3Centre(), sound.LodestoneCompassLink{})
 	return true
+}
+
+// ScheduledTick sends the delayed position tracking update for newly linked
+// lodestone compasses.
+func (l Lodestone) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	viewers := tx.Viewers(pos.Vec3Centre())
+	if len(viewers) == 0 {
+		return
+	}
+	tx.World().ObservePositionTracking(l.trackingHandle)
+	dim, _ := world.DimensionID(tx.World().Dimension())
+	for _, viewer := range viewers {
+		viewer.ViewBlockAction(pos, world.PositionTrackingUpdateAction{
+			Handle: l.trackingHandle, Position: pos, Dimension: dim,
+		})
+	}
 }
 
 // TrackingHandle returns the position tracking handle assigned to the block.
