@@ -18,7 +18,7 @@ import (
 // ID and bounding box of an Entity.
 type EntityType interface {
 	// Open returns an Entity implementation in the context of a transaction.
-	Open(tx *Tx, handle *EntityHandle, data *EntityData) Entity
+	Open(tx *Context, handle *EntityHandle, data *EntityData) Entity
 
 	// EncodeEntity converts the Entity to its encoded representation: It
 	// returns the type of the Minecraft Entity, for example
@@ -51,6 +51,17 @@ type EntityHandle struct {
 	worldless    *atomic.Bool
 	weakTxActive bool
 	w            *World
+	// worldReady becomes true only after AddEntity finishes registering and
+	// opening the entity in w. Scheduled callbacks wait for this handoff.
+	worldReady bool
+	// worldVersion increments on every change to w, letting weak transactions
+	// detect that the entity moved while they were queued.
+	worldVersion atomic.Uint64
+	// closed closes once the handle is closed. worldChanged, created lazily
+	// for delayed schedulers, is closed and dropped on every change to w.
+	closed       chan struct{}
+	worldChanged chan struct{}
+	closeOnce    sync.Once
 
 	data EntityData
 
@@ -74,7 +85,7 @@ type EntitySpawnOpts struct {
 }
 
 // New creates an EntityHandle using an EntityType and EntityConfig passed. The
-// EntityHandle may be added to a world by calling Tx.AddEntity().
+// EntityHandle may be added to a world by calling Context.AddEntity().
 // The spawn conditions depend on the options set in opts.
 func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 	if opts.ID == uuid.Nil {
@@ -83,7 +94,13 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 		opts.ID = uuid.New()
 		clear(opts.ID[:8])
 	}
-	handle := &EntityHandle{id: opts.ID, t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
+	handle := &EntityHandle{
+		id:        opts.ID,
+		t:         t,
+		cond:      sync.NewCond(&sync.Mutex{}),
+		worldless: &atomic.Bool{},
+		closed:    make(chan struct{}),
+	}
 	handle.worldless.Store(true)
 	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	handle.data.Name = opts.NameTag
@@ -92,7 +109,7 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 }
 
 // NewEntity creates an EntityHandle using an EntityType and EntityConfig
-// passed. The EntityHandle may be added to a world by calling Tx.AddEntity().
+// passed. The EntityHandle may be added to a world by calling Context.AddEntity().
 // NewEntity uses the zero value for EntitySpawnOpts.
 func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 	var opts EntitySpawnOpts
@@ -102,7 +119,12 @@ func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 // entityFromData reads an entity from the decoded NBT data passed and returns
 // an EntityHandle.
 func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
-	handle := &EntityHandle{t: t, cond: sync.NewCond(&sync.Mutex{}), worldless: &atomic.Bool{}}
+	handle := &EntityHandle{
+		t:         t,
+		cond:      sync.NewCond(&sync.Mutex{}),
+		worldless: &atomic.Bool{},
+		closed:    make(chan struct{}),
+	}
 	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
 	handle.decodeNBT(data)
 	t.DecodeNBT(data, &handle.data)
@@ -114,10 +136,10 @@ func (e *EntityHandle) Type() EntityType {
 	return e.t
 }
 
-// Entity attempts to convert an EntityHandle to an Entity using the Tx passed.
+// Entity attempts to convert an EntityHandle to an Entity using the Context passed.
 // A non-nil Entity is returned only if the entity's world matches the world of
-// the Tx. If they do not match, false is returned.
-func (e *EntityHandle) Entity(tx *Tx) (Entity, bool) {
+// the Context. If they do not match, false is returned.
+func (e *EntityHandle) Entity(tx *Context) (Entity, bool) {
 	if e == nil || e.w != tx.World() {
 		return nil, false
 	}
@@ -125,11 +147,11 @@ func (e *EntityHandle) Entity(tx *Tx) (Entity, bool) {
 }
 
 // mustEntity calls Entity but panics if the worlds do not match.
-func (e *EntityHandle) mustEntity(tx *Tx) Entity {
+func (e *EntityHandle) mustEntity(tx *Context) Entity {
 	if ent, ok := e.Entity(tx); ok {
 		return ent
 	}
-	panic("can't load entity with Tx of different world")
+	panic("can't load entity with Context of different world")
 }
 
 // UUID returns the identifier of the EntityHandle.
@@ -137,36 +159,55 @@ func (e *EntityHandle) UUID() uuid.UUID {
 	return e.id
 }
 
-// Close closes the EntityHandle. Any subsequent call to ExecWorld will return
-// immediately without the transaction function being called. Close always
-// returns nil.
+// Close closes the EntityHandle. Any subsequently scheduled work will fail
+// with ErrEntityClosed without the transaction function being called. Close
+// always returns nil.
 func (e *EntityHandle) Close() error {
-	e.setAndUnlockWorld(closeWorld)
+	e.closeOnce.Do(func() {
+		e.setAndUnlockWorld(closeWorld)
+		close(e.closed)
+	})
 	return nil
 }
 
-// ExecWorld obtains the EntityHandle's World in a thread-safe way and opens a
-// transaction in it when it does. If the EntityHandle has not been added to a
-// world, ExecWorld will block until the EntityHandle is added to a World and
-// run the transaction function once it is. If the Entity is closed before
-// ExecWorld is called, ExecWorld will return false immediately without running
-// the transaction function.
-func (e *EntityHandle) ExecWorld(f func(tx *Tx, e Entity)) bool {
-	return e.execWorld(f, false)
+func cancelled(c <-chan struct{}) bool {
+	if c == nil {
+		return false
+	}
+	select {
+	case <-c:
+		return true
+	default:
+		return false
+	}
 }
 
 // execWorld uses a sync.Cond to synchronise access to the handler's world. We
 // are dealing with a rather complicated synchronisation pattern here. The goal
-// for ExecWorld is to block until e.w becomes accessible. Meanwhile, World.Exec
+// for execWorld is to block until e.w becomes accessible. Meanwhile, World.exec
 // may also affect e.w, which execWorld needs to deal with.
-func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
+func (e *EntityHandle) execWorld(f func(tx *Context, e Entity), weak bool, cancel <-chan struct{}, allowedCloseWorld *World) bool {
 	e.cond.L.Lock()
-	for e.w == nil || (!weak && e.weakTxActive) {
+	for e.w == nil || (e.w != closeWorld && (!e.worldReady || (!weak && e.weakTxActive))) {
+		if cancelled(cancel) {
+			if weak {
+				e.clearWeakTxActiveLocked()
+			}
+			e.cond.L.Unlock()
+			return false
+		}
 		// Wait suspends the current goroutine and unlocks e.cond.L, until
 		// e.cond.Broadcast() is called. After this, one of the goroutines
 		// waiting will acquire a lock of e.cond.L again. This means that only
 		// one goroutine will run the code after this simultaneously.
 		e.cond.Wait()
+	}
+	if cancelled(cancel) {
+		if weak {
+			e.clearWeakTxActiveLocked()
+		}
+		e.cond.L.Unlock()
+		return false
 	}
 	// If a goroutine manages to exit the for loop, it will have acquired a lock
 	// on e.cond.L. This also means that e.w can be assumed to not be nil here.
@@ -176,10 +217,20 @@ func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
 	e.worldless.Store(false)
 	if e.w == closeWorld {
 		// EntityHandle was closed. No need to continue.
+		if weak {
+			e.clearWeakTxActiveLocked()
+		}
 		e.cond.L.Unlock()
 		return false
 	}
-	// We now arrive at the more complicated part. When we call e.w.Exec(), our
+	if e.w.closed.Load() && !e.w.closeAcceptingEntityTasks.Load() && e.w != allowedCloseWorld {
+		if weak {
+			e.clearWeakTxActiveLocked()
+		}
+		e.cond.L.Unlock()
+		return false
+	}
+	// We now arrive at the more complicated part. When we call e.w.exec(), our
 	// transaction must await earlier transactions in the world. If one of those
 	// earlier transactions tries to change e.w (through e.unsetAndLockWorld()
 	// or e.setAndUnlockWorld()), it must lock e.cond.L. This would lead to a
@@ -190,14 +241,27 @@ func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
 	// transaction turns out to be invalidated (ret == false), we simply try
 	// again, this time with e.execWorld(f, true) to make this goroutine bypass
 	// any goroutines still awaiting e.cond.
-	ret := e.weakExec(func(tx *Tx) { f(tx, e.mustEntity(tx)) })
+	var ran atomic.Bool
+	ret := e.weakExec(func(tx *Context) {
+		ent := e.mustEntity(tx)
+		ran.Store(true)
+		f(tx, ent)
+	}, allowedCloseWorld)
+	if !ret && e.w != nil && e.w != closeWorld && e.w.closed.Load() && !e.w.closeAcceptingEntityTasks.Load() && e.w != allowedCloseWorld {
+		e.clearWeakTxActiveLocked()
+		e.cond.L.Unlock()
+		return false
+	}
 	e.cond.L.Unlock()
 
+	if ran.Load() {
+		return true
+	}
 	if !ret {
 		// Our weak transaction was suspended. We try again, this time with
 		// e.execWorld(f, true) to make this goroutine bypass any goroutines
 		// still awaiting e.cond.
-		return e.execWorld(f, true)
+		return e.execWorld(f, true, cancel, allowedCloseWorld)
 	}
 	return true
 }
@@ -205,17 +269,20 @@ func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
 // weakExec performs a "weak transaction". It adds a transaction to the world
 // that is invalidated when e.worldless is set to true. In this case, weakExec
 // returns false. If the weak transaction is successfully executed, it returns
-// true, and any calls to ExecWorld waiting on e.cond are awakened. The goal of
+// true, and any calls to execWorld waiting on e.cond are awakened. The goal of
 // weakExec is to suspend the current goroutine and unlock e.cond.L while
 // waiting for previous transactions to finish.
-func (e *EntityHandle) weakExec(f ExecFunc) bool {
+func (e *EntityHandle) weakExec(f execFunc, allowedCloseWorld *World) bool {
 	e.weakTxActive = true
+	w, version := e.w, e.worldVersion.Load()
 
 	// We create a weak transaction and start a for loop to listen for the
 	// length of the channel. This might look weird, but the crucial part here
 	// is the call to e.cond.Wait(), which unlocks e.cond.L. This is required
 	// to prevent a deadlock if an earlier transaction tries to change e.w.
-	c := e.w.weakExec(e.worldless, e.cond, f)
+	c := w.weakExec(func() bool {
+		return e.worldVersion.Load() == version && !e.worldless.Load()
+	}, e.cond, f, w == allowedCloseWorld)
 	for len(c) == 0 && e.w != closeWorld {
 		// Calling e.cond.Wait() here will free the lock on e.cond.L until our
 		// transaction finishes. e.w.weakExec() ensures that e.cond.Broadcast()
@@ -223,8 +290,6 @@ func (e *EntityHandle) weakExec(f ExecFunc) bool {
 		// continue after that.
 		e.cond.Wait()
 	}
-	// If the EntityHandle was closed (e.w == closeWorld), we treat the
-	// transaction as successful, because all transactions must be cancelled.
 	if e.w != closeWorld && !<-c {
 		// Weak transaction was suspended. Return false and try again.
 		return false
@@ -232,14 +297,22 @@ func (e *EntityHandle) weakExec(f ExecFunc) bool {
 	// After setting e.weakTxActive back to false, we must Broadcast to make
 	// sure any goroutines waiting in e.execWorld as a result of the
 	// e.weakTxActive condition can continue.
+	closed := e.w == closeWorld
 	e.weakTxActive = false
 	e.cond.Broadcast()
-	return true
+	return !closed
+}
+
+func (e *EntityHandle) clearWeakTxActiveLocked() {
+	if e.weakTxActive {
+		e.weakTxActive = false
+		e.cond.Broadcast()
+	}
 }
 
 var closeWorld = &World{}
 
-// unsetAndLockWorld sets e.w to nil, causing any subsequent calls to ExecWorld
+// unsetAndLockWorld sets e.w to nil, causing any subsequent calls to execWorld
 // to block until e.w is set to a non-nil value.
 func (e *EntityHandle) unsetAndLockWorld() {
 	e.cond.L.Lock()
@@ -247,10 +320,13 @@ func (e *EntityHandle) unsetAndLockWorld() {
 
 	e.worldless.Store(true)
 	e.w = nil
+	e.worldReady = false
+	e.worldVersion.Add(1)
+	e.notifyWorldChangedLocked()
 }
 
-// setAndUnlockWorld sets e.w to a World passed and broadcasts e.cond, so that
-// any goroutines waiting for a non-nil world are awoken.
+// setAndUnlockWorld starts binding e to w. Scheduled callbacks remain blocked
+// until markWorldReady is called after AddEntity finishes.
 func (e *EntityHandle) setAndUnlockWorld(w *World) {
 	e.cond.L.Lock()
 	defer e.cond.L.Unlock()
@@ -259,6 +335,27 @@ func (e *EntityHandle) setAndUnlockWorld(w *World) {
 		panic("cannot add entity to new world before removing from old world")
 	}
 	e.w = w
+	e.worldReady = false
+	e.worldVersion.Add(1)
+	e.notifyWorldChangedLocked()
+}
+
+// markWorldReady wakes scheduled callbacks after AddEntity has fully opened
+// and registered the entity in w.
+func (e *EntityHandle) markWorldReady(w *World) {
+	e.cond.L.Lock()
+	defer e.cond.L.Unlock()
+	if e.w == w {
+		e.worldReady = true
+		e.cond.Broadcast()
+	}
+}
+
+func (e *EntityHandle) notifyWorldChangedLocked() {
+	if e.worldChanged != nil {
+		close(e.worldChanged)
+		e.worldChanged = nil
+	}
 	e.cond.Broadcast()
 }
 
@@ -317,7 +414,7 @@ type Entity interface {
 type TickerEntity interface {
 	Entity
 	// Tick ticks the Entity with the current World and tick passed.
-	Tick(tx *Tx, current int64)
+	Tick(tx *Context, current int64)
 }
 
 // EntityAction represents an action that may be performed by an Entity. Typically, these actions are sent to

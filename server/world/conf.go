@@ -73,11 +73,11 @@ type Config struct {
 	Blocks BlockRegistry
 
 	// Synchronous makes the World run without any background goroutines.
-	// Transactions from World.Exec run on the calling goroutine, the World is
+	// Tasks from World.Do and Call run on the calling goroutine, the World is
 	// not saved or unloaded automatically, and time only passes on explicit
 	// World.AdvanceTick calls. This makes Synchronous Worlds deterministic and
 	// well suited to unit tests that need a World to interact with.
-	// A Synchronous World must be driven from one goroutine. Exec and
+	// A Synchronous World must be driven from one goroutine. Do, Call and
 	// AdvanceTick are not safe to call concurrently, including from delayed
 	// item or death callbacks.
 	Synchronous bool
@@ -133,6 +133,7 @@ func (conf Config) New() *World {
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		queueClosing:     make(chan struct{}),
+		closeStarted:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
 		r:                rand.New(conf.RandSource),
@@ -155,6 +156,6 @@ func (conf Config) New() *World {
 		go w.handleTransactions()
 	}
 
-	<-w.Exec(t.tick)
+	<-w.exec(t.tick)
 	return w
 }

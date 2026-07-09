@@ -117,7 +117,8 @@ func (srv *Server) Listen() {
 // yields players that join the server while blocking otherwise. The iterator
 // returned ends when the Server is closed using a call to Close. Players
 // returned are only valid within the block of the for loop used to iterate over
-// them:
+// them. Use Player.H(), player.NewRef, or Player.Do when a player must
+// be referenced after the iterator callback returns:
 //
 //	for p := range srv.Accept() {
 //	  // p is valid here
@@ -137,12 +138,25 @@ func (srv *Server) Accept() iter.Seq[*player.Player] {
 			srv.p[inc.p.handle.UUID()] = inc.p
 			srv.pmu.Unlock()
 
-			ret := false
-			<-inc.w.Exec(func(tx *world.Tx) {
+			ret, err := world.Call(context.Background(), inc.w, func(tx *world.Tx) (bool, error) {
 				p := tx.AddEntity(inc.p.handle).(*player.Player)
 				inc.s.Spawn(p, tx)
-				ret = !yield(p)
+				return !yield(p), nil
 			})
+			if err != nil {
+				world.RethrowPanic(err)
+				srv.pmu.Lock()
+				delete(srv.p, inc.p.handle.UUID())
+				srv.pmu.Unlock()
+				srv.pwg.Done()
+				// Join failed before spawn: the entity was never added, so close
+				// the orphaned handle and fully tear the session down (Disconnect
+				// only writes a packet; CloseConnection frees the conn/goroutines).
+				_ = inc.p.handle.Close()
+				inc.s.Disconnect("join failed")
+				inc.s.CloseConnection()
+				continue
+			}
 			if ret {
 				return
 			}
@@ -204,7 +218,8 @@ func (srv *Server) PlayerCount() int {
 //
 // Collecting all values from the iterator using a function such as
 // slices.Collect immediately invalidates the players because their transactions
-// will be finished.
+// will be finished. Use Player.H(), player.NewRef, or Player.Do when a
+// player must be referenced after the iterator callback returns.
 func (srv *Server) Players(tx *world.Tx) iter.Seq[*player.Player] {
 	srv.pmu.RLock()
 	handles := make([]*world.EntityHandle, 0, len(srv.p))
@@ -223,10 +238,13 @@ func (srv *Server) Players(tx *world.Tx) iter.Seq[*player.Player] {
 					continue
 				}
 			}
-			ret := false
-			handle.ExecWorld(func(tx *world.Tx, e world.Entity) {
-				ret = !yield(e.(*player.Player))
+			ret, err := world.CallRef(context.Background(), player.NewRef(handle), func(_ *world.Tx, p *player.Player) (bool, error) {
+				return !yield(p), nil
 			})
+			if err != nil {
+				world.RethrowPanic(err)
+				continue
+			}
 			if ret {
 				break
 			}
@@ -514,8 +532,12 @@ func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
 		return
 	}
 
-	if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data(), tx.World()); err != nil {
-		srv.conf.Log.Error("Save player data: " + err.Error())
+	if tx != nil {
+		if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data(), tx.World()); err != nil {
+			srv.conf.Log.Error("Save player data: " + err.Error())
+		}
+	} else {
+		srv.conf.Log.Error("Save player data: player's worlds closed before teardown; data not saved", "uuid", c.UUID())
 	}
 	srv.pwg.Done()
 }

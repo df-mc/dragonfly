@@ -2,11 +2,8 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/go-gl/mathgl/mgl64"
 )
-
-type Context = event.Context[*Tx]
 
 // Handler handles events that are called by a world. Implementations of
 // Handler may be used to listen to specific events such as when an Entity is
@@ -53,11 +50,13 @@ type Handler interface {
 	// ctx.Cancel() may be called to prevent leaves from decaying.
 	HandleLeavesDecay(ctx *Context, pos cube.Pos)
 	// HandleEntitySpawn handles an Entity being spawned into a World through a
-	// call to Tx.AddEntity.
-	HandleEntitySpawn(tx *Tx, e Entity)
+	// call to Context.AddEntity. The spawn cannot be prevented: ctx.Cancel()
+	// has no effect.
+	HandleEntitySpawn(ctx *Context, e Entity)
 	// HandleEntityDespawn handles an Entity being despawned from a World
-	// through a call to Tx.RemoveEntity.
-	HandleEntityDespawn(tx *Tx, e Entity)
+	// through a call to Context.RemoveEntity. The despawn cannot be prevented:
+	// ctx.Cancel() has no effect.
+	HandleEntityDespawn(ctx *Context, e Entity)
 	// HandleExplosion handles an explosion in the world. ctx.Cancel() may be called
 	// to cancel the explosion.
 	// The affected entities, affected blocks, item drop chance, and whether the
@@ -69,8 +68,9 @@ type Handler interface {
 	// HandleClose handles the World being closed. HandleClose may be used as a
 	// moment to finish code running on other goroutines that operates on the
 	// World specifically. HandleClose is called directly before the World stops
-	// ticking and before any chunks are saved to disk.
-	HandleClose(tx *Tx)
+	// ticking and before any chunks are saved to disk. The close cannot be
+	// prevented: ctx.Cancel() has no effect.
+	HandleClose(ctx *Context)
 }
 
 // Compile time check to make sure NopHandler implements Handler.
@@ -89,8 +89,8 @@ func (NopHandler) HandleFireSpread(*Context, cube.Pos, cube.Pos)                
 func (NopHandler) HandleBlockBurn(*Context, cube.Pos)                                            {}
 func (NopHandler) HandleCropTrample(*Context, cube.Pos)                                          {}
 func (NopHandler) HandleLeavesDecay(*Context, cube.Pos)                                          {}
-func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                                 {}
-func (NopHandler) HandleEntityDespawn(*Tx, Entity)                                               {}
+func (NopHandler) HandleEntitySpawn(*Context, Entity)                                            {}
+func (NopHandler) HandleEntityDespawn(*Context, Entity)                                          {}
 func (NopHandler) HandleExplosion(*Context, mgl64.Vec3, *[]Entity, *[]cube.Pos, *float64, *bool) {}
 func (NopHandler) HandleRedstoneUpdate(*Context, cube.Pos)                                       {}
-func (NopHandler) HandleClose(*Tx)                                                               {}
+func (NopHandler) HandleClose(*Context)                                                          {}

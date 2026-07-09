@@ -123,6 +123,8 @@ func (cmd Command) Aliases() []string {
 // If parsing of all Runnables was unsuccessful, a command output with an error message is sent to the Source
 // passed, and the Run method of the Runnables are not called.
 // The Source passed must not be nil. The method will panic if a nil Source is passed.
+// tx may be nil for sources that are not attached to a world, provided the command does not parse target
+// selector parameters or otherwise require owner-scoped world access.
 func (cmd Command) Execute(args string, source Source, tx *world.Tx) {
 	if source == nil {
 		panic("execute: invalid command source: source must not be nil")

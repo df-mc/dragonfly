@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/dragonfly/server/world/redstone"
@@ -35,6 +34,16 @@ type World struct {
 	queueClosing chan struct{}
 	queueing     sync.WaitGroup
 
+	// scheduleMu serialises task scheduling against the close transitions
+	// below. scheduling counts in-flight scheduled work that close must drain.
+	scheduleMu sync.Mutex
+	scheduling sync.WaitGroup
+	// closed flips once close starts; new tasks fail with ErrWorldClosed.
+	// closeAcceptingEntityTasks is true only during the close transaction, when
+	// entity Close methods may still schedule final work that close drains.
+	closed                    atomic.Bool
+	closeAcceptingEntityTasks atomic.Bool
+
 	// advance is a bool that specifies if this World should advance the current
 	// tick, time and weather saved in the Settings struct held by the World.
 	advance bool
@@ -46,8 +55,11 @@ type World struct {
 
 	weather
 
-	closing chan struct{}
-	running sync.WaitGroup
+	// closeStarted closes as soon as World.Close begins, before the close
+	// transaction runs; closing closes once the world stops ticking.
+	closeStarted chan struct{}
+	closing      chan struct{}
+	running      sync.WaitGroup
 
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
@@ -116,15 +128,14 @@ func (w *World) BlockRegistry() BlockRegistry {
 	return w.conf.Blocks
 }
 
-// ExecFunc is a function that performs a synchronised transaction on a World.
-type ExecFunc func(tx *Tx)
+// execFunc is a function that performs a synchronised transaction on a World.
+type execFunc func(tx *Context)
 
-// Exec performs a synchronised transaction f on a World. Exec returns a channel
-// that is closed once the transaction is complete. For Worlds created with
-// Config.Synchronous set, the transaction is executed on the calling goroutine
-// and the channel returned is closed when Exec returns. Awaiting a nested Exec
-// from within a transaction deadlocks on non-synchronous Worlds.
-func (w *World) Exec(f ExecFunc) <-chan struct{} {
+// exec runs f on the World, bypassing the closed check that Do/DoAfter/Call
+// apply — reserved for the World's own machinery (ticking, saving, chunk
+// unload, the close transaction), which must queue work after close begins.
+// The returned channel closes when done; waiting on it from the owner deadlocks.
+func (w *World) exec(f execFunc) <-chan struct{} {
 	c := make(chan struct{})
 	ntx := normalTransaction{c: c, f: f}
 	if w.conf.Synchronous {
@@ -135,23 +146,47 @@ func (w *World) Exec(f ExecFunc) <-chan struct{} {
 	return c
 }
 
-func (w *World) weakExec(invalid *atomic.Bool, cond *sync.Cond, f ExecFunc) <-chan bool {
+func (w *World) weakExec(valid func() bool, cond *sync.Cond, f execFunc, allowClosed bool) <-chan bool {
 	c := make(chan bool, 1)
 	if w.conf.Synchronous {
-		valid := !invalid.Load()
-		if valid {
+		run := valid == nil || valid()
+		if run {
 			// As in weakTransaction.Run, f must not run under cond.L: it may
 			// relock it, e.g. through RemoveEntity.
 			cond.L.Unlock()
-			tx := &Tx{w: w}
-			f(tx)
-			tx.close()
+			ctx := newContext(w)
+			f(ctx)
+			ctx.close()
+			ctx.runDeferred()
 			cond.L.Lock()
 		}
-		c <- valid
+		c <- run
 		return c
 	}
-	w.queue <- weakTransaction{c: c, f: f, invalid: invalid, cond: cond}
+	w.scheduleMu.Lock()
+	if w.closed.Load() && !w.closeAcceptingEntityTasks.Load() && !allowClosed {
+		w.scheduleMu.Unlock()
+		c <- false
+		return c
+	}
+	wtx := weakTransaction{c: c, f: f, valid: valid, cond: cond}
+	select {
+	case w.queue <- wtx:
+		w.scheduleMu.Unlock()
+	default:
+		w.scheduling.Add(1)
+		w.scheduleMu.Unlock()
+		go func() {
+			defer w.scheduling.Done()
+			select {
+			case w.queue <- wtx:
+			case <-w.closing:
+				wtx.fail()
+			case <-w.queueClosing:
+				wtx.fail()
+			}
+		}()
+	}
 	return c
 }
 
@@ -699,8 +734,8 @@ func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
 
 // playSound plays a sound at a specific position in the World. Viewers of that
 // position will be able to hear the sound if they are close enough.
-func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
-	ctx := event.C(tx)
+func (w *World) playSound(tx *Context, pos mgl64.Vec3, s Sound) {
+	ctx := tx.Event()
 	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
 		return
 	}
@@ -715,7 +750,7 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 // the chunk that the EntityHandle is in is not yet loaded, it will first be
 // loaded. addEntity panics if the EntityHandle is already in a world.
 // addEntity returns the Entity created by the EntityHandle.
-func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
+func (w *World) addEntity(tx *Context, handle *EntityHandle) Entity {
 	handle.setAndUnlockWorld(w)
 	pos := chunkPosFromVec3(handle.data.Pos)
 	w.entities[handle] = pos
@@ -728,7 +763,8 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 		// Show the entity to all viewers in the chunk of the entity.
 		showEntity(e, v)
 	}
-	w.Handler().HandleEntitySpawn(tx, e)
+	w.Handler().HandleEntitySpawn(tx.Event(), e)
+	handle.markWorldReady(w)
 	return e
 }
 
@@ -736,14 +772,14 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 // it. Any viewers of the Entity will no longer be able to see it.
 // removeEntity returns the EntityHandle of the Entity. After removing an Entity
 // from the World, the Entity is no longer usable.
-func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
+func (w *World) removeEntity(e Entity, tx *Context) *EntityHandle {
 	handle := e.H()
 	pos, found := w.entities[handle]
 	if !found {
 		// The entity currently isn't in this world.
 		return nil
 	}
-	w.Handler().HandleEntityDespawn(tx, e)
+	w.Handler().HandleEntityDespawn(tx.Event(), e)
 
 	c := w.chunk(pos)
 	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
@@ -775,7 +811,7 @@ func (w *World) removeEntityFromViewLayers(e Entity) {
 
 // entitiesWithin returns an iterator that yields all entities contained within
 // the cube.BBox passed.
-func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
+func (w *World) entitiesWithin(tx *Context, box cube.BBox) iter.Seq[Entity] {
 	return func(yield func(Entity) bool) {
 		minPos, maxPos := chunkPosFromVec3(box.Min()), chunkPosFromVec3(box.Max())
 
@@ -801,7 +837,7 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 }
 
 // allEntities returns an iterator that yields all entities in the World.
-func (w *World) allEntities(tx *Tx) iter.Seq[Entity] {
+func (w *World) allEntities(tx *Context) iter.Seq[Entity] {
 	return func(yield func(Entity) bool) {
 		for e := range w.entities {
 			if ent := e.mustEntity(tx); !yield(ent) {
@@ -812,7 +848,7 @@ func (w *World) allEntities(tx *Tx) iter.Seq[Entity] {
 }
 
 // allPlayers returns an iterator that yields all player entities in the World.
-func (w *World) allPlayers(tx *Tx) iter.Seq[Entity] {
+func (w *World) allPlayers(tx *Context) iter.Seq[Entity] {
 	return func(yield func(Entity) bool) {
 		for e := range w.entities {
 			if e.t.EncodeEntity() == "minecraft:player" {
@@ -1043,12 +1079,12 @@ func (w *World) PortalDestination(dim Dimension) *World {
 
 // Save saves the World to the provider.
 func (w *World) Save() {
-	<-w.Exec(w.save(w.saveChunk))
+	<-w.exec(w.save(w.saveChunk))
 }
 
 // save saves all loaded chunks to the World's provider.
-func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
-	return func(tx *Tx) {
+func (w *World) save(f func(*Context, ChunkPos, *Column)) execFunc {
+	return func(tx *Context) {
 		if w.conf.ReadOnly {
 			return
 		}
@@ -1062,7 +1098,7 @@ func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
 }
 
 // saveChunk saves a chunk and its entities to disk after compacting the chunk.
-func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
+func (w *World) saveChunk(_ *Context, pos ChunkPos, c *Column) {
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
 		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos)); err != nil {
@@ -1074,7 +1110,7 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 // closeChunk saves a chunk and its entities to disk after compacting the chunk.
 // Afterwards, scheduled updates from that chunk are removed and all entities
 // in it are closed.
-func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
+func (w *World) closeChunk(tx *Context, pos ChunkPos, c *Column) {
 	w.saveChunk(tx, pos, c)
 	w.scheduledUpdates.removeChunk(pos)
 	// Note: We close c.Entities here because some entities may remove
@@ -1096,13 +1132,27 @@ func (w *World) Close() error {
 // close stops the World from ticking, saves all chunks to the Provider and
 // updates the world's settings.
 func (w *World) close() {
-	<-w.Exec(func(tx *Tx) {
+	w.scheduleMu.Lock()
+	w.closed.Store(true)
+	close(w.closeStarted)
+	w.scheduleMu.Unlock()
+
+	w.scheduling.Wait()
+	w.scheduleMu.Lock()
+	w.closeAcceptingEntityTasks.Store(true)
+	w.scheduleMu.Unlock()
+	<-w.exec(func(tx *Context) {
 		// Let user code run anything that needs to be finished before closing.
 		w.Handler().HandleClose(tx)
+		tx.runDeferred()
 		w.Handle(NopHandler{})
 
 		w.save(w.closeChunk)(tx)
 	})
+	w.scheduleMu.Lock()
+	w.closeAcceptingEntityTasks.Store(false)
+	w.scheduleMu.Unlock()
+	w.scheduling.Wait()
 
 	close(w.closing)
 	w.running.Wait()
@@ -1152,7 +1202,7 @@ func (w *World) addWorldViewer(l *Loader) {
 // addViewer adds a viewer to the World at a given position. Any events that
 // happen in the chunk at that position, such as block and entity changes, will
 // be sent to the viewer.
-func (w *World) addViewer(tx *Tx, c *Column, loader *Loader) {
+func (w *World) addViewer(tx *Context, c *Column, loader *Loader) {
 	c.viewers = append(c.viewers, loader.viewer)
 	c.loaders = append(c.loaders, loader)
 
@@ -1164,7 +1214,7 @@ func (w *World) addViewer(tx *Tx, c *Column, loader *Loader) {
 // removeViewer removes a viewer from a chunk position. All entities will be
 // hidden from the viewer and no more calls will be made when events in the
 // chunk happen.
-func (w *World) removeViewer(tx *Tx, pos ChunkPos, loader *Loader) {
+func (w *World) removeViewer(tx *Context, pos ChunkPos, loader *Loader) {
 	if w == nil {
 		return
 	}
@@ -1228,7 +1278,8 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		w.chunks[pos] = col
 		for _, e := range col.Entities {
 			w.entities[e] = pos
-			e.w = w
+			e.setAndUnlockWorld(w)
+			e.markWorldReady(w)
 		}
 		return col, nil
 	case errors.Is(err, leveldb.ErrNotFound):
@@ -1293,7 +1344,7 @@ func (w *World) autoSave() {
 	for {
 		select {
 		case <-closeUnused.C:
-			<-w.Exec(w.closeUnusedChunks)
+			<-w.exec(w.closeUnusedChunks)
 		case <-save.C:
 			w.Save()
 		case <-w.closing:
@@ -1304,7 +1355,7 @@ func (w *World) autoSave() {
 }
 
 // closeUnusedChunk closes all chunks currently not in use by any viewer.
-func (w *World) closeUnusedChunks(tx *Tx) {
+func (w *World) closeUnusedChunks(tx *Context) {
 	for pos, c := range w.chunks {
 		if len(c.viewers) == 0 {
 			w.closeChunk(tx, pos, c)

@@ -24,7 +24,7 @@ func (t ticker) tickLoop(w *World) {
 	for {
 		select {
 		case <-tc.C:
-			<-w.Exec(t.tick)
+			<-w.exec(t.tick)
 		case <-w.closing:
 			// World is being closed: Stop ticking and get rid of a task.
 			w.running.Done()
@@ -38,12 +38,12 @@ func (t ticker) tickLoop(w *World) {
 // automatically 20 times per second. Synchronous Worlds tick loaded chunks
 // even when no viewers are present.
 func (w *World) AdvanceTick() {
-	<-w.Exec(ticker{}.tick)
+	<-w.exec(ticker{}.tick)
 }
 
 // tick performs a tick on the World and updates the time, weather, blocks and
 // entities that require updates.
-func (t ticker) tick(tx *Tx) {
+func (t ticker) tick(tx *Context) {
 	viewers, loaders := tx.World().allViewers()
 	w := tx.World()
 
@@ -104,7 +104,7 @@ func (t ticker) tick(tx *Tx) {
 }
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
-func (t ticker) performNeighbourUpdates(tx *Tx) {
+func (t ticker) performNeighbourUpdates(tx *Context) {
 	updates := slices.Clone(tx.World().neighbourUpdates)
 	clear(tx.World().neighbourUpdates)
 	tx.World().neighbourUpdates = tx.World().neighbourUpdates[:0]
@@ -123,7 +123,7 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 }
 
 // tickBlocksRandomly executes random block ticks in loaded chunks within range of loaders.
-func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
+func (t ticker) tickBlocksRandomly(tx *Context, loaders []*Loader, tick int64) {
 	var (
 		r             = int32(tx.World().tickRange())
 		g             randUint4
@@ -208,7 +208,7 @@ func (t ticker) anyWithinDistance(pos ChunkPos, loaded []ChunkPos, r int32) bool
 
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
 // updating where necessary.
-func (t ticker) tickEntities(tx *Tx, tick int64) {
+func (t ticker) tickEntities(tx *Context, tick int64) {
 	for handle, lastPos := range tx.World().entities {
 		e := handle.mustEntity(tx)
 		chunkPos := chunkPosFromVec3(handle.data.Pos)
@@ -305,7 +305,7 @@ func newScheduledTickQueue(tick int64) *scheduledTickQueue {
 // tick processes scheduled ticks, calling ScheduledTicker.ScheduledTick for any
 // block update that is scheduled for the tick passed, and removing it from the
 // queue.
-func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
+func (queue *scheduledTickQueue) tick(tx *Context, tick int64) {
 	queue.currentTick = tick
 
 	w := tx.World()

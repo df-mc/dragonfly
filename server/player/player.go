@@ -1,6 +1,7 @@
 package player
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/rand/v2"
@@ -196,7 +197,7 @@ func (p *Player) Skin() skin.Skin {
 // SetSkin changes the skin of the player. This skin will be visible to other players that the player
 // is shown to.
 func (p *Player) SetSkin(skin skin.Skin) {
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleSkinChange(ctx, &skin); ctx.Cancelled() {
 		p.session().ViewSkin(p)
 		return
@@ -323,7 +324,7 @@ func (p *Player) RemoveBossBar() {
 // player and is formatted following the rules of fmt.Sprintln.
 func (p *Player) Chat(msg ...any) {
 	message := format(msg)
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleChat(ctx, &message); ctx.Cancelled() {
 		return
 	}
@@ -351,11 +352,11 @@ func (p *Player) ExecuteCommand(commandLine string) {
 		p.SendCommandOutput(o)
 		return
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleCommandExecution(ctx, command, args[1:]); ctx.Cancelled() {
 		return
 	}
-	command.Execute(strings.Join(args[1:], " "), p, p.tx)
+	command.Execute(strings.Join(args[1:], " "), p, p.tx.Event())
 }
 
 // Transfer transfers the player to a server at the address passed. If the address could not be resolved, an
@@ -366,7 +367,7 @@ func (p *Player) Transfer(address string) error {
 		return err
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleTransfer(ctx, addr); ctx.Cancelled() {
 		return nil
 	}
@@ -528,7 +529,7 @@ func (p *Player) Heal(health float64, source world.HealingSource) {
 	if p.Dead() || health < 0 || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleHeal(ctx, &health, source); ctx.Cancelled() {
 		return
 	}
@@ -595,7 +596,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	}
 
 	immunity := time.Second / 2
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
 		return 0, false
 	}
@@ -820,7 +821,7 @@ func (p *Player) Exhaust(points float64) {
 		// Temporarily set the food level back so that it hasn't yet changed once the event is handled.
 		p.hunger.SetFood(before)
 
-		ctx := event.C(p)
+		ctx := newContext(p)
 		if p.Handler().HandleFoodLoss(ctx, before, &after); ctx.Cancelled() {
 			// Reset the exhaustion level if the event was cancelled. Because if
 			// we cancel this, and at some point we stop cancelling it, the
@@ -877,14 +878,13 @@ func (p *Player) kill(src world.DamageSource) {
 
 	// Wait a little before removing the entity. The client displays a death
 	// animation while the player is dying.
-	time.AfterFunc(time.Millisecond*1100, func() {
-		p.H().ExecWorld(finishDying)
+	NewRef(p.handle).DoAfter(time.Millisecond*1100, func(_ *world.Tx, p *Player) {
+		finishDying(p)
 	})
 }
 
 // finishDying completes the death of a player, removing it from the world.
-func finishDying(_ *world.Tx, e world.Entity) {
-	p := e.(*Player)
+func finishDying(p *Player) {
 	if p.session() == session.Nop {
 		_ = p.Close()
 		return
@@ -944,6 +944,10 @@ func (p *Player) Respawn() *world.EntityHandle {
 	return p.handle
 }
 
+// respawn heals the player and moves it to its spawn position. f, if
+// non-nil, runs with the player once it is back in a world — normally the
+// respawn destination, otherwise the world it died in — so a quit callback
+// from close always completes the player's teardown.
 func (p *Player) respawn(f func(p *Player)) {
 	if !p.Dead() || p.session() == session.Nop {
 		return
@@ -964,8 +968,20 @@ func (p *Player) respawn(f func(p *Player)) {
 
 	p.Handler().HandleRespawn(p, &pos, &w)
 
+	sess := p.session()
+	src := p.tx.World()
 	handle := p.tx.RemoveEntity(p)
-	w.Exec(func(tx *world.Tx) {
+	// restore re-adds the player through tx and finishes with f or the normal
+	// quit path; the fallback branches below share it.
+	restore := func(tx *world.Tx) {
+		np := tx.AddEntity(handle).(*Player)
+		if f != nil {
+			f(np)
+			return
+		}
+		np.quit("respawn failed")
+	}
+	task := w.Do(func(tx *world.Tx) {
 		np := tx.AddEntity(handle).(*Player)
 		np.Teleport(pos)
 		np.session().SendRespawn(pos, p)
@@ -973,6 +989,32 @@ func (p *Player) respawn(f func(p *Player)) {
 		if f != nil {
 			f(np)
 		}
+	})
+	if errors.Is(task.Err(), world.ErrWorldClosed) {
+		// The destination refused synchronously: re-add through the still-open
+		// source context. This also keeps synchronous worlds fully inline.
+		restore(p.tx)
+		return
+	}
+	task.OnDone(func(err error) {
+		// Only ErrWorldClosed means the entity was never re-added. A callback
+		// panic is left alone: the entity is live.
+		if !errors.Is(err, world.ErrWorldClosed) {
+			return
+		}
+		// Fall back to the source world so the normal quit path still runs.
+		src.Do(restore).OnDone(func(err error) {
+			if err == nil || errors.Is(err, world.ErrTaskPanicked) {
+				return
+			}
+			// The source world is gone too; the handle is orphaned. Close the
+			// session without a world so the stop handler still runs, then
+			// free the connection.
+			_ = handle.Close()
+			sess.Disconnect("respawn failed")
+			sess.Close(nil, p)
+			sess.CloseConnection()
+		})
 	})
 }
 
@@ -1003,7 +1045,7 @@ func (p *Player) StartSprinting() {
 	if !p.hunger.canSprint() && p.GameMode().AllowsTakingDamage() || p.crawling || p.sprinting {
 		return
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleToggleSprint(ctx, true); ctx.Cancelled() {
 		return
 	}
@@ -1023,7 +1065,7 @@ func (p *Player) StopSprinting() {
 	if !p.sprinting {
 		return
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleToggleSprint(ctx, false); ctx.Cancelled() {
 		return
 	}
@@ -1039,7 +1081,7 @@ func (p *Player) StartSneaking() {
 	if p.sneaking {
 		return
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleToggleSneak(ctx, true); ctx.Cancelled() {
 		return
 	}
@@ -1061,7 +1103,7 @@ func (p *Player) StopSneaking() {
 	if !p.sneaking {
 		return
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleToggleSneak(ctx, false); ctx.Cancelled() {
 		return
 	}
@@ -1221,7 +1263,7 @@ func (p *Player) Sleep(pos cube.Pos) {
 		return
 	}
 
-	ctx, sendReminder := event.C(p), true
+	ctx, sendReminder := newContext(p), true
 	if p.Handler().HandleSleep(ctx, &sendReminder); ctx.Cancelled() {
 		return
 	}
@@ -1400,7 +1442,7 @@ func (p *Player) SetHeldSlot(to int) error {
 		return nil
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	p.Handler().HandleHeldSlotChange(ctx, from, to)
 	if ctx.Cancelled() {
 		// The slot change was cancelled, resend held slot.
@@ -1487,7 +1529,7 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
 	i, _ := p.HeldItems()
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.HasCooldown(i.Item()) {
 		return
 	}
@@ -1565,7 +1607,7 @@ func (p *Player) UseItem() {
 		}
 		// Reset the duration for the next item to be consumed.
 		p.usingSince = time.Now()
-		ctx := event.C(p)
+		ctx := newContext(p)
 		if p.Handler().HandleItemConsume(ctx, i); ctx.Cancelled() {
 			return
 		}
@@ -1589,7 +1631,7 @@ func (p *Player) ReleaseItem() {
 
 	useCtx, dur := p.useContext(), p.useDuration()
 	i, _ := p.HeldItems()
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleItemRelease(ctx, i, dur); ctx.Cancelled() {
 		return
 	}
@@ -1672,7 +1714,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		p.resendNearbyBlocks(pos, face)
 		return
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleItemUseOnBlock(ctx, pos, face, clickPos); ctx.Cancelled() {
 		p.resendNearbyBlocks(pos, face)
 		return
@@ -1731,7 +1773,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 	if !p.canReach(e.Position()) {
 		return false
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleItemUseOnEntity(ctx, e); ctx.Cancelled() {
 		return false
 	}
@@ -1779,7 +1821,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		height += inc
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleAttackEntity(ctx, e, &force, &height, &critical); ctx.Cancelled() {
 		return false
 	}
@@ -1847,7 +1889,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	if _, ok := p.tx.Block(pos.Side(face)).(block.Fire); ok {
-		ctx := event.C(p)
+		ctx := newContext(p)
 		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
 			// Resend the block because on client side that was extinguished
 			p.resendNearbyBlocks(pos, face)
@@ -1868,7 +1910,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	// can resend the block to the client when it tries to break the block regardless.
 	p.breakingPos = pos
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
 		return
 	}
@@ -1995,7 +2037,7 @@ func (p *Player) placeBlock(pos cube.Pos, b world.Block, ignoreBBox bool) bool {
 		return false
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleBlockPlace(ctx, pos, b); ctx.Cancelled() {
 		p.resendNearbyBlocks(pos, cube.Faces()...)
 		return false
@@ -2062,7 +2104,7 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		}
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleBlockBreak(ctx, pos, &drops, &xp); ctx.Cancelled() {
 		p.resendNearbyBlocks(pos)
 		return
@@ -2137,7 +2179,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 		return
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleBlockPick(ctx, pos, b); ctx.Cancelled() {
 		return
 	}
@@ -2169,7 +2211,7 @@ func (p *Player) PickBlock(pos cube.Pos) {
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
@@ -2207,7 +2249,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		pos         = p.Position()
 		res, resRot = pos.Add(deltaPos), p.Rotation().Add(cube.Rotation{deltaYaw, deltaPitch})
 	)
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleMove(ctx, res, resRot); ctx.Cancelled() {
 		if p.session() != session.Nop && pos.ApproxEqual(p.Position()) {
 			// The position of the player was changed and the event cancelled. This means we still need to notify the
@@ -2296,7 +2338,7 @@ func (p *Player) Collect(s item.Stack) (int, bool) {
 	if p.Dead() || !p.GameMode().AllowsInteraction() {
 		return 0, false
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleItemPickup(ctx, &s); ctx.Cancelled() {
 		return 0, false
 	}
@@ -2328,7 +2370,7 @@ func (p *Player) ResetEnchantmentSeed() {
 
 // AddExperience adds experience to the player.
 func (p *Player) AddExperience(amount int) int {
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleExperienceGain(ctx, &amount); ctx.Cancelled() {
 		return 0
 	}
@@ -2449,7 +2491,7 @@ func (p *Player) mendItems(xp int) int {
 // The number of items that was dropped in the end is returned. It is generally the count of the stack passed
 // or 0 if dropping the item.Stack was cancelled.
 func (p *Player) Drop(s item.Stack) int {
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleItemDrop(ctx, s); ctx.Cancelled() {
 		return 0
 	}
@@ -2957,7 +2999,7 @@ func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
 		return nil
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if frontText != sign.Front.Text {
 		if p.Handler().HandleSignEdit(ctx, pos, true, sign.Front.Text, frontText); ctx.Cancelled() {
 			p.resendNearbyBlock(pos)
@@ -2985,7 +3027,7 @@ func (p *Player) TurnLecternPage(pos cube.Pos, page int) error {
 		return fmt.Errorf("edit lectern: no lectern at position %v", pos)
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleLecternPageTurn(ctx, pos, lectern.Page, &page); ctx.Cancelled() {
 		return nil
 	}
@@ -3027,7 +3069,7 @@ func (p *Player) PunchAir() {
 	if p.Dead() {
 		return
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandlePunchAir(ctx); ctx.Cancelled() {
 		return
 	}
@@ -3084,7 +3126,7 @@ func (p *Player) damageItem(s item.Stack, d int) item.Stack {
 	if p.GameMode().CreativeInventory() || d == 0 || s.MaxDurability() == -1 {
 		return s
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleItemDamage(ctx, s, &d); ctx.Cancelled() || d <= 0 {
 		return s
 	}
@@ -3137,6 +3179,9 @@ func (p *Player) canReach(pos mgl64.Vec3) bool {
 // Disconnect closes the player and removes it from the world.
 // Disconnect, unlike Close, allows a custom message to be passed to show to the player when it is
 // disconnected. The message is formatted following the rules of fmt.Sprintln without a newline at the end.
+// The player is removed from its current world before Disconnect returns and
+// must not be used afterwards. If the player is dead, it first respawns: the
+// remaining teardown completes on the owner of the world it respawns into.
 func (p *Player) Disconnect(msg ...any) {
 	p.once.Do(func() {
 		p.close(format(msg))
@@ -3146,6 +3191,9 @@ func (p *Player) Disconnect(msg ...any) {
 // Close closes the player and removes it from the world.
 // Close disconnects the player with a 'Connection closed.' message. Disconnect should be used to disconnect a
 // player with a custom message.
+// The player is removed from its current world before Close returns and must
+// not be used afterwards. If the player is dead, it first respawns: the
+// remaining teardown completes on the owner of the world it respawns into.
 func (p *Player) Close() error {
 	p.once.Do(func() {
 		p.close("Connection closed.")
@@ -3173,6 +3221,10 @@ func (p *Player) quit(msg string) {
 
 	if s := p.s; s != nil {
 		s.Disconnect(msg)
+		// Close the session on this owner directly: teardown must not depend
+		// on the session goroutine, which cannot schedule work anymore once
+		// the world starts closing.
+		s.Close(p.tx, p)
 		s.CloseConnection()
 		return
 	}

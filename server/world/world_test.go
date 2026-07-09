@@ -1,6 +1,8 @@
 package world
 
 import (
+	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -8,22 +10,21 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// TestSynchronousWorldExec verifies that Exec on a synchronous World runs the
-// transaction on the calling goroutine, with the returned channel closed once
-// Exec returns.
-func TestSynchronousWorldExec(t *testing.T) {
+// TestSynchronousWorldDo verifies that Do on a synchronous World runs the task
+// on the calling goroutine and returns a completed task.
+func TestSynchronousWorldDo(t *testing.T) {
 	w := Config{Synchronous: true}.New()
 	defer w.Close()
 
 	var ran bool
-	c := w.Exec(func(tx *Tx) { ran = true })
+	task := w.Do(func(ctx *Context) { ran = true })
 	if !ran {
-		t.Fatal("expected transaction to have run when Exec returned")
+		t.Fatal("expected task to have run when Do returned")
 	}
 	select {
-	case <-c:
+	case <-task.Done():
 	default:
-		t.Fatal("expected channel returned by Exec to be closed when Exec returned")
+		t.Fatal("expected task returned by Do to be done when Do returned")
 	}
 }
 
@@ -52,26 +53,56 @@ func TestSynchronousWorldAdvanceTick(t *testing.T) {
 	}
 }
 
-func TestSynchronousExecWorldCanRemoveEntity(t *testing.T) {
+func TestSynchronousEntityDoCanRemoveEntity(t *testing.T) {
 	w := Config{Synchronous: true}.New()
 	defer w.Close()
 
 	h := EntitySpawnOpts{Position: mgl64.Vec3{0, 4, 0}}.New(testEntityType{}, testEntityConfig{})
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Context) {
 		tx.AddEntity(h)
 	})
 
-	done := make(chan struct{})
+	task := h.Do(func(tx *Context, e Entity) {
+		tx.RemoveEntity(e)
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	if err := task.Wait(ctx); err != nil {
+		t.Fatalf("entity Do self-removal did not complete: %v", err)
+	}
+}
+
+func TestSynchronousEntityDoWaitsForAddEntityToFinish(t *testing.T) {
+	w := Config{Synchronous: true}.New()
+	defer w.Close()
+
+	state := &blockingOpenState{
+		firstOpen:  make(chan struct{}),
+		secondOpen: make(chan struct{}),
+		release:    make(chan struct{}),
+	}
+	h := EntitySpawnOpts{}.New(blockingOpenType{}, blockingOpenConfig{state: state})
+	task := h.Do(func(*Context, Entity) {})
+	added := make(chan struct{})
 	go func() {
-		h.ExecWorld(func(tx *Tx, e Entity) {
-			tx.RemoveEntity(e)
-		})
-		close(done)
+		w.Do(func(tx *Context) { tx.AddEntity(h) })
+		close(added)
 	}()
+	<-state.firstOpen
+
+	premature := false
 	select {
-	case <-done:
-	case <-time.After(time.Second * 5):
-		t.Fatal("ExecWorld self-removal did not complete")
+	case <-state.secondOpen:
+		premature = true
+	case <-time.After(time.Millisecond * 50):
+	}
+	close(state.release)
+	<-added
+	if err := task.Wait(context.Background()); err != nil {
+		t.Fatalf("entity Do failed: %v", err)
+	}
+	if premature {
+		t.Fatal("entity callback opened before AddEntity completed")
 	}
 }
 
@@ -80,7 +111,7 @@ func TestSynchronousAdvanceTickTicksViewerlessEntities(t *testing.T) {
 	defer w.Close()
 
 	h := EntitySpawnOpts{Position: mgl64.Vec3{0, 4, 0}}.New(testEntityType{}, testEntityConfig{})
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Context) {
 		tx.AddEntity(h)
 	})
 
@@ -99,7 +130,7 @@ func TestSynchronousAdvanceTickTicksViewerlessBlockEntities(t *testing.T) {
 
 	pos := cube.Pos{0, 4, 0}
 	tb := &testTickerBlock{}
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Context) {
 		col := tx.World().chunk(chunkPosFromBlockPos(pos))
 		chest, ok := tx.World().conf.Blocks.BlockByName("minecraft:chest", map[string]any{"minecraft:cardinal_direction": "north"})
 		if !ok {
@@ -121,7 +152,7 @@ func (testEntityConfig) Apply(*EntityData) {}
 
 type testEntityType struct{}
 
-func (testEntityType) Open(_ *Tx, handle *EntityHandle, data *EntityData) Entity {
+func (testEntityType) Open(_ *Context, handle *EntityHandle, data *EntityData) Entity {
 	return &testEntity{handle: handle, data: data}
 }
 
@@ -160,13 +191,48 @@ func (e *testEntity) Rotation() cube.Rotation {
 	return e.data.Rot
 }
 
-func (e *testEntity) Tick(*Tx, int64) {
+func (e *testEntity) Tick(*Context, int64) {
 	e.data.Pos = e.data.Pos.Add(mgl64.Vec3{0, -0.1, 0})
 }
 
 type testTickerBlock struct {
 	ticks int
 }
+
+type blockingOpenState struct {
+	opens      atomic.Int32
+	firstOpen  chan struct{}
+	secondOpen chan struct{}
+	release    chan struct{}
+}
+
+type blockingOpenConfig struct {
+	state *blockingOpenState
+}
+
+func (c blockingOpenConfig) Apply(data *EntityData) { data.Data = c.state }
+
+type blockingOpenType struct{}
+
+func (blockingOpenType) Open(_ *Context, handle *EntityHandle, data *EntityData) Entity {
+	state := data.Data.(*blockingOpenState)
+	switch state.opens.Add(1) {
+	case 1:
+		close(state.firstOpen)
+		<-state.release
+	case 2:
+		close(state.secondOpen)
+	}
+	return &testEntity{handle: handle, data: data}
+}
+
+func (blockingOpenType) EncodeEntity() string { return "dragonfly:blocking_open" }
+
+func (blockingOpenType) BBox(Entity) cube.BBox { return cube.BBox{} }
+
+func (blockingOpenType) DecodeNBT(map[string]any, *EntityData) {}
+
+func (blockingOpenType) EncodeNBT(*EntityData) map[string]any { return nil }
 
 func (*testTickerBlock) EncodeBlock() (string, map[string]any) {
 	return "dragonfly:test_ticker", nil
@@ -188,6 +254,6 @@ func (*testTickerBlock) EncodeNBT() map[string]any {
 	return nil
 }
 
-func (b *testTickerBlock) Tick(int64, cube.Pos, *Tx) {
+func (b *testTickerBlock) Tick(int64, cube.Pos, *Context) {
 	b.ticks++
 }
