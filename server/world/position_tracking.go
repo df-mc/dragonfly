@@ -117,6 +117,18 @@ func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 	return handle
 }
 
+// PositionTrackingHandleAt returns the tracking handle associated with pos.
+func (w *World) PositionTrackingHandleAt(pos cube.Pos) int32 {
+	dim, _ := DimensionID(w.Dimension())
+	t := &w.set.positionTracker
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.byPosition == nil {
+		return 0
+	}
+	return t.byPosition[[4]int{dim, pos[0], pos[1], pos[2]}]
+}
+
 // UntrackPosition marks the tracking handle at pos as unavailable. Its position
 // association is retained so replacing the lodestone can reactivate it.
 func (w *World) UntrackPosition(pos cube.Pos) {

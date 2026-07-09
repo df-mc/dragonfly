@@ -308,7 +308,10 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	c.modified = true
 	c.SetBlock(x, y, z, 0, rid)
 	if tracked, ok := b.(PositionTrackingBlock); ok {
-		b = tracked.WithTrackingHandle(w.TrackPosition(pos, tracked.TrackingHandle()))
+		handle := tracked.TrackingHandle()
+		if handle != 0 || w.PositionTrackingHandleAt(pos) != 0 {
+			b = tracked.WithTrackingHandle(w.TrackPosition(pos, handle))
+		}
 	}
 	if w.conf.Blocks.NBTBlock(rid) {
 		c.BlockEntities[pos] = b
