@@ -20,6 +20,9 @@ func (c Compass) Glinted() bool { return c.TrackingHandle != 0 }
 
 // EncodeNBT encodes the position tracking handle understood by the Bedrock client.
 func (c Compass) EncodeNBT() map[string]any {
+	if c.TrackingHandle == 0 {
+		return nil
+	}
 	return map[string]any{"trackingHandle": c.TrackingHandle}
 }
 

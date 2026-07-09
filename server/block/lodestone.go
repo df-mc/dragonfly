@@ -14,7 +14,6 @@ import (
 // Lodestone is a block that compasses may be linked to in any dimension.
 type Lodestone struct {
 	solid
-	bassDrum
 
 	trackingHandle int32
 }
