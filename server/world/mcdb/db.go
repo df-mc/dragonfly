@@ -188,6 +188,7 @@ func (db *DB) column(k dbKey) (*chunk.Column, error) {
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		return nil, fmt.Errorf("read scheduled updates: %w", err)
 	}
+	col.MarkClean()
 	return col, nil
 }
 
@@ -343,21 +344,38 @@ func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *chunk.Co
 	if err := db.storeColumn(k, col); err != nil {
 		return fmt.Errorf("store column %v (%v): %w", pos, dim, err)
 	}
+	col.MarkClean()
 	return nil
 }
 
 func (db *DB) storeColumn(k dbKey, col *chunk.Column) error {
-	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
-	n := 7 + len(data.SubChunks) + len(col.Entities)
+	flags := col.DirtyFlags()
+	if flags == 0 {
+		flags = chunk.DirtyAll
+	}
+	n := 8 + len(col.Entities)
 	batch := leveldb.MakeBatch(n)
 
 	db.storeVersion(batch, k, chunkVersion)
-	db.storeBiomes(batch, k, data.Biomes)
-	db.storeSubChunks(batch, k, data.SubChunks, col.Chunk.Range())
-	db.storeFinalisation(batch, k, finalisationPopulated)
-	db.storeEntities(batch, k, col.Entities)
-	db.storeBlockEntities(batch, k, col.BlockEntities)
-	db.storeScheduledUpdates(batch, k, col.Tick, col.ScheduledBlocks)
+	if flags&(chunk.DirtyBlocks|chunk.DirtyBiomes) != 0 {
+		data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
+		if flags.Has(chunk.DirtyBiomes) {
+			db.storeBiomes(batch, k, data.Biomes)
+		}
+		if flags.Has(chunk.DirtyBlocks) {
+			db.storeSubChunks(batch, k, data.SubChunks, col.Chunk.Range())
+			db.storeFinalisation(batch, k, finalisationPopulated)
+		}
+	}
+	if flags.Has(chunk.DirtyEntities) {
+		db.storeEntities(batch, k, col.Entities)
+	}
+	if flags.Has(chunk.DirtyBlockEntities) {
+		db.storeBlockEntities(batch, k, col.BlockEntities)
+	}
+	if flags.Has(chunk.DirtyScheduledBlocks) {
+		db.storeScheduledUpdates(batch, k, col.Tick, col.ScheduledBlocks)
+	}
 
 	return db.ldb.Write(batch, nil)
 }

@@ -26,6 +26,9 @@ type Chunk struct {
 	sub []*SubChunk
 	// biomes is an array of biome IDs. There is one biome ID for every column in the chunk.
 	biomes []*PalettedStorage
+	// dirty holds which persisted chunk sections have changed since the chunk
+	// was last marked clean.
+	dirty DirtyFlags
 }
 
 // New initialises a new chunk and returns it, so that it may be used.
@@ -46,6 +49,7 @@ func New(br BlockRegistry, r cube.Range) *Chunk {
 		biomes:               biomes,
 		recalculateHeightMap: true,
 		heightMap:            make(HeightMap, 256),
+		dirty:                DirtyChunk,
 	}
 }
 
@@ -117,8 +121,12 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 		// Don't do anything with this, just return.
 		return
 	}
+	same := uint8(len(sub.storages)) > layer && sub.storages[layer].At(x, uint8(y), z) == block
 	sub.Layer(layer).Set(x, uint8(y), z, block)
 	chunk.recalculateHeightMap = true
+	if !same {
+		chunk.markDirty(DirtyBlocks)
+	}
 }
 
 // Biome returns the biome ID at a specific column in the chunk.
@@ -128,7 +136,50 @@ func (chunk *Chunk) Biome(x uint8, y int16, z uint8) uint32 {
 
 // SetBiome sets the biome ID at a specific column in the chunk.
 func (chunk *Chunk) SetBiome(x uint8, y int16, z uint8, biome uint32) {
+	if chunk.biomes[chunk.SubIndex(y)].At(x, uint8(y), z) == biome {
+		return
+	}
 	chunk.biomes[chunk.SubIndex(y)].Set(x, uint8(y), z, biome)
+	chunk.markDirty(DirtyBiomes)
+}
+
+// Dirty reports if any persisted part of the chunk changed since it was last
+// marked clean.
+func (chunk *Chunk) Dirty() bool {
+	return chunk.DirtyFlags() != 0
+}
+
+// DirtyFlags returns the persisted parts of the chunk that changed since it
+// was last marked clean.
+func (chunk *Chunk) DirtyFlags() DirtyFlags {
+	if chunk == nil {
+		return 0
+	}
+	return chunk.dirty & DirtyChunk
+}
+
+// MarkDirty marks all persisted chunk data as changed.
+func (chunk *Chunk) MarkDirty() {
+	chunk.markDirty(DirtyChunk)
+}
+
+// MarkClean marks all persisted chunk data as clean.
+func (chunk *Chunk) MarkClean() {
+	chunk.markClean(DirtyChunk)
+}
+
+func (chunk *Chunk) markDirty(flags DirtyFlags) {
+	if chunk == nil {
+		return
+	}
+	chunk.dirty |= flags & DirtyChunk
+}
+
+func (chunk *Chunk) markClean(flags DirtyFlags) {
+	if chunk == nil {
+		return
+	}
+	chunk.dirty &^= flags & DirtyChunk
 }
 
 // Light returns the light level at a specific position in the chunk.

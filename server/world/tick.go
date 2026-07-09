@@ -8,6 +8,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
+	"github.com/df-mc/dragonfly/server/world/chunk"
 )
 
 // ticker implements World ticking methods.
@@ -314,6 +315,9 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 			continue
 		}
 		b := tx.Block(t.pos)
+		if c, ok := w.chunks[chunkPosFromBlockPos(t.pos)]; ok {
+			c.markDirty(chunk.DirtyScheduledBlocks)
+		}
 		if ticker, ok := b.(ScheduledTicker); ok && w.conf.Blocks.BlockHash(b) == t.bhash {
 			ticker.ScheduledTick(t.pos, tx, w.r)
 		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && w.conf.Blocks.BlockHash(liquid) == t.bhash {
@@ -336,17 +340,18 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 // passed after a specific delay. A block update is only scheduled if no block
 // update with the same position and block type is already scheduled at a later
 // time than the newly scheduled update.
-func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Block, delay time.Duration) {
+func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Block, delay time.Duration) bool {
 	resTick := queue.currentTick + int64(max(delay/(time.Second/20), 1))
 	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(b)}
 	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
 		// Already have a tick scheduled for this position that will occur after
 		// the delay passed. Block updates can only be scheduled if they are
 		// after any currently scheduled updates.
-		return
+		return false
 	}
 	queue.furthestTicks[index] = resTick
 	queue.ticks = append(queue.ticks, scheduledTick{pos: pos, t: resTick, b: b, bhash: index.hash})
+	return true
 }
 
 // fromChunk returns all scheduled ticks positioned within a ChunkPos.

@@ -199,6 +199,7 @@ func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 		// stored NBT yet. We add it here and update the block.
 		nbtB := w.conf.Blocks.BlockByRuntimeIDOrAir(rid).(NBTer).DecodeNBT(map[string]any{}).(Block)
 		c.BlockEntities[pos] = nbtB
+		c.markDirty(chunk.DirtyBlockEntities)
 		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, nbtB, 0)
 		}
@@ -298,7 +299,13 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		before = c.Block(x, y, z, 0)
 	}
 
-	c.modified = true
+	dirty := chunk.DirtyBlocks
+	if w.conf.Blocks.NBTBlock(rid) {
+		dirty |= chunk.DirtyBlockEntities
+	} else if _, ok := c.BlockEntities[pos]; ok {
+		dirty |= chunk.DirtyBlockEntities
+	}
+	c.markDirty(dirty)
 	c.SetBlock(x, y, z, 0, rid)
 	if w.conf.Blocks.NBTBlock(rid) {
 		c.BlockEntities[pos] = b
@@ -357,7 +364,7 @@ func (w *World) setBiome(pos cube.Pos, b Biome) {
 		return
 	}
 	c := w.chunk(chunkPosFromBlockPos(pos))
-	c.modified = true
+	c.markDirty(chunk.DirtyBiomes)
 	c.SetBiome(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), uint32(b.EncodeBiome()))
 }
 
@@ -436,7 +443,7 @@ func (w *World) buildStructure(pos cube.Pos, s Structure) {
 				}
 			}
 			c.SetBlock(0, 0, 0, 0, c.Block(0, 0, 0, 0)) // Make sure the heightmap is recalculated.
-			c.modified = true
+			c.markDirty(chunk.DirtyBlocks | chunk.DirtyBlockEntities)
 
 			// After setting all blocks of the structure within a single chunk,
 			// we show the new chunk to all viewers once.
@@ -492,7 +499,9 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 	chunkPos := chunkPosFromBlockPos(pos)
 	c := w.chunk(chunkPos)
 	if b == nil {
-		w.removeLiquids(c, pos)
+		if _, changed := w.removeLiquids(c, pos); changed {
+			c.markDirty(chunk.DirtyBlocks)
+		}
 		w.doBlockUpdatesAround(pos)
 		return
 	}
@@ -503,7 +512,7 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 		}
 	}
 	rid := w.conf.Blocks.BlockRuntimeID(b)
-	if w.removeLiquids(c, pos) {
+	if noneLeft, _ := w.removeLiquids(c, pos); noneLeft {
 		c.SetBlock(x, y, z, 0, rid)
 		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, b, 0)
@@ -514,33 +523,36 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 			v.ViewBlockUpdate(pos, b, 1)
 		}
 	}
-	c.modified = true
+	c.markDirty(chunk.DirtyBlocks)
 
 	w.doBlockUpdatesAround(pos)
 }
 
 // removeLiquids removes any liquid blocks that may be present at a specific
-// block position in the chunk passed. The bool returned specifies if no blocks
-// were left on the foreground layer.
-func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
+// block position in the chunk passed. The first bool returned specifies if no
+// blocks were left on the foreground layer. The second bool reports if any
+// liquid was actually removed.
+func (w *World) removeLiquids(c *Column, pos cube.Pos) (bool, bool) {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	air := w.conf.Blocks.Air()
 
-	noneLeft := false
-	if noLeft, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
-		if changed {
+	noneLeft, changed := false, false
+	if noLeft, layerChanged := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
+		if layerChanged {
 			for _, v := range c.viewers {
 				v.ViewBlockUpdate(pos, air, 0)
 			}
+			changed = true
 		}
 		noneLeft = true
 	}
-	if _, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); changed {
+	if _, layerChanged := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); layerChanged {
 		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, air, 1)
 		}
+		changed = true
 	}
-	return noneLeft
+	return noneLeft, changed
 }
 
 // removeLiquidOnLayer removes a liquid block from a specific layer in the
@@ -721,7 +733,8 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 	w.entities[handle] = pos
 
 	c := w.chunk(pos)
-	c.Entities, c.modified = append(c.Entities, handle), true
+	c.Entities = append(c.Entities, handle)
+	c.markDirty(chunk.DirtyEntities)
 
 	e := handle.mustEntity(tx)
 	for _, v := range c.viewers {
@@ -746,7 +759,8 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	w.Handler().HandleEntityDespawn(tx, e)
 
 	c := w.chunk(pos)
-	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
+	c.Entities = sliceutil.DeleteVal(c.Entities, handle)
+	c.markDirty(chunk.DirtyEntities)
 
 	w.removeEntityFromViewLayers(e)
 	for _, v := range c.viewers {
@@ -975,7 +989,9 @@ func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) 
 	if pos.OutOfBounds(w.Range()) {
 		return
 	}
-	w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay)
+	if w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay) {
+		w.chunk(chunkPosFromBlockPos(pos)).markDirty(chunk.DirtyScheduledBlocks)
+	}
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the
@@ -1063,11 +1079,13 @@ func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
 
 // saveChunk saves a chunk and its entities to disk after compacting the chunk.
 func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
-	if !w.conf.ReadOnly && c.modified {
+	if !w.conf.ReadOnly && c.dirtyFlags() != 0 {
 		c.Compact()
 		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos)); err != nil {
 			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+			return
 		}
+		c.markClean()
 	}
 }
 
@@ -1315,7 +1333,7 @@ func (w *World) closeUnusedChunks(tx *Tx) {
 // Column represents the data of a chunk including the (block) entities and
 // viewers and loaders.
 type Column struct {
-	modified bool
+	dirty chunk.DirtyFlags
 
 	*chunk.Chunk
 	Entities      []*EntityHandle
@@ -1328,6 +1346,23 @@ type Column struct {
 // newColumn returns a new Column wrapper around the chunk.Chunk passed.
 func newColumn(c *chunk.Chunk) *Column {
 	return &Column{Chunk: c, BlockEntities: map[cube.Pos]Block{}}
+}
+
+func (c *Column) markDirty(flags chunk.DirtyFlags) {
+	c.dirty |= flags
+}
+
+func (c *Column) markClean() {
+	c.dirty = 0
+	c.MarkClean()
+}
+
+func (c *Column) dirtyFlags() chunk.DirtyFlags {
+	flags := c.dirty
+	if c.Chunk != nil {
+		flags |= c.DirtyFlags()
+	}
+	return flags
 }
 
 // columnTo converts a Column to a chunk.Column so that it can be written to
@@ -1353,6 +1388,7 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 	for _, t := range scheduled {
 		c.ScheduledBlocks = append(c.ScheduledBlocks, chunk.ScheduledBlockUpdate{Pos: t.pos, Block: w.conf.Blocks.BlockRuntimeID(t.b), Tick: t.t})
 	}
+	c.MarkDirty(col.dirtyFlags())
 	return c
 }
 
