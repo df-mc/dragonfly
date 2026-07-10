@@ -248,6 +248,7 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 func (t *PortalTravelComputer) destinationSpawn(tx *world.Tx, sourceDim world.Dimension, pos cube.Pos) (mgl64.Vec3, bool) {
 	if tx.World().Dimension() == world.End {
 		portal.GenerateEndSpawnPlatform(tx)
+		// Only players may create portals, so CreatePortal doubles as the player arrival height selector.
 		return portal.EndSpawnPosition(t.CreatePortal), true
 	}
 	if sourceDim == world.End && tx.World().Dimension() == world.Overworld {

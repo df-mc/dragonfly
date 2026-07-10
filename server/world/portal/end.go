@@ -36,13 +36,6 @@ func GenerateEndSpawnPlatform(tx *world.Tx) {
 	}
 }
 
-// End contains information about a complete End portal ring. Values returned from this package are tied to the
-// transaction that produced them and must not be retained after that transaction finishes.
-type End struct {
-	tx       *world.Tx
-	interior []cube.Pos
-}
-
 // endRingFrame is one of the twelve canonical ring positions and the Facing each frame must have.
 type endRingFrame struct {
 	pos    cube.Pos
@@ -55,66 +48,48 @@ type endFrameBlock interface {
 	EndPortalFrameState() (eye bool, facing cube.Direction)
 }
 
-// EndPortalFromPos returns End portal information from any frame on a complete twelve-frame ring. All twelve frames
-// must hold an eye and face toward the centre, as in vanilla.
-func EndPortalFromPos(tx *world.Tx, framePos cube.Pos) (End, bool) {
+// ActivateEndPortal fills the 3x3 interior with end_portal blocks if a complete twelve-frame ring exists around the
+// frame at the position passed. All twelve frames must hold an eye and face toward the centre, as in vanilla.
+func ActivateEndPortal(tx *world.Tx, framePos cube.Pos) bool {
 	f, ok := tx.Block(framePos).(endFrameBlock)
 	if !ok {
-		return End{}, false
+		return false
 	}
 	_, facing := f.EndPortalFrameState()
 
 	// The frame may be the left, middle or right of its side: walk inward twice, then try the three candidate centres.
-	inward := facing.Face()
-	tangent := tangentFace(facing)
+	inward, tangent := facing.Face(), facing.RotateRight().Face()
 	base := framePos.Side(inward).Side(inward)
-	for k := -1; k <= 1; k++ {
-		if e, ok := matchEndRing(tx, stepAlong(base, tangent, k)); ok {
-			return e, true
-		}
-	}
-	return End{}, false
-}
-
-// matchEndRing returns a complete End if the twelve canonical ring positions around centre all hold matching frames.
-func matchEndRing(tx *world.Tx, center cube.Pos) (End, bool) {
-	frames := expectedEndRingFrames(center)
-	for _, want := range frames {
-		b, ok := tx.Block(want.pos).(endFrameBlock)
+	for _, center := range []cube.Pos{base.Side(tangent.Opposite()), base, base.Side(tangent)} {
+		interior, ok := matchEndRing(tx, center)
 		if !ok {
-			return End{}, false
-		}
-		eye, gotFacing := b.EndPortalFrameState()
-		if !eye || gotFacing != want.facing {
-			return End{}, false
-		}
-	}
-	return End{
-		tx:       tx,
-		interior: endRingInterior(center),
-	}, true
-}
-
-// ActivateEndPortal fills the 3x3 interior with end_portal blocks if a complete twelve-frame ring exists around the
-// frame at the position passed.
-func ActivateEndPortal(tx *world.Tx, framePos cube.Pos) bool {
-	p, ok := EndPortalFromPos(tx, framePos)
-	if !ok {
-		return false
-	}
-	p.activate()
-	return true
-}
-
-// activate fills the 3x3 interior with end_portal blocks. Positions that already hold an end_portal are skipped.
-func (e End) activate() {
-	ep := endPortal()
-	for _, pos := range e.interior {
-		if e.tx.Block(pos) == ep {
 			continue
 		}
-		e.tx.SetBlock(pos, ep, nil)
+		ep := endPortal()
+		for _, pos := range interior {
+			if tx.Block(pos) != ep {
+				tx.SetBlock(pos, ep, nil)
+			}
+		}
+		return true
 	}
+	return false
+}
+
+// matchEndRing returns the 3x3 interior positions if the twelve canonical ring positions around centre all hold
+// matching frames.
+func matchEndRing(tx *world.Tx, center cube.Pos) ([]cube.Pos, bool) {
+	for _, want := range expectedEndRingFrames(center) {
+		b, ok := tx.Block(want.pos).(endFrameBlock)
+		if !ok {
+			return nil, false
+		}
+		eye, facing := b.EndPortalFrameState()
+		if !eye || facing != want.facing {
+			return nil, false
+		}
+	}
+	return endRingInterior(center), true
 }
 
 // expectedEndRingFrames returns the twelve (position, facing) pairs a complete ring around the centre must have, with
@@ -123,10 +98,10 @@ func expectedEndRingFrames(center cube.Pos) []endRingFrame {
 	frames := make([]endRingFrame, 0, 12)
 	for _, side := range cube.Directions() {
 		base := center.Side(side.Face()).Side(side.Face())
-		t := tangentFace(side)
+		tangent := side.RotateRight().Face()
 		inward := side.Opposite()
-		for i := -1; i <= 1; i++ {
-			frames = append(frames, endRingFrame{pos: stepAlong(base, t, i), facing: inward})
+		for _, pos := range []cube.Pos{base.Side(tangent.Opposite()), base, base.Side(tangent)} {
+			frames = append(frames, endRingFrame{pos: pos, facing: inward})
 		}
 	}
 	return frames
@@ -141,22 +116,6 @@ func endRingInterior(center cube.Pos) []cube.Pos {
 		}
 	}
 	return out
-}
-
-// tangentFace returns a horizontal Face perpendicular to side, used to walk along the three frames on a ring side.
-func tangentFace(side cube.Direction) cube.Face {
-	return side.RotateRight().Face()
-}
-
-// stepAlong returns p offset by n steps along face. Negative n walks the opposite direction.
-func stepAlong(p cube.Pos, face cube.Face, n int) cube.Pos {
-	if n < 0 {
-		face, n = face.Opposite(), -n
-	}
-	for range n {
-		p = p.Side(face)
-	}
-	return p
 }
 
 // endPortal returns the end_portal block.

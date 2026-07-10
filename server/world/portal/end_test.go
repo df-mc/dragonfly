@@ -24,24 +24,20 @@ func buildEndPortalRing(tx *world.Tx, center cube.Pos) {
 	}
 }
 
+// endRingOffsets is a hand-written oracle of the twelve (offset from centre, facing) pairs of a valid ring,
+// independent of the production ring geometry.
+var endRingOffsets = []ringFrame{
+	{cube.Pos{-1, 0, -2}, cube.South}, {cube.Pos{0, 0, -2}, cube.South}, {cube.Pos{1, 0, -2}, cube.South},
+	{cube.Pos{2, 0, -1}, cube.West}, {cube.Pos{2, 0, 0}, cube.West}, {cube.Pos{2, 0, 1}, cube.West},
+	{cube.Pos{1, 0, 2}, cube.North}, {cube.Pos{0, 0, 2}, cube.North}, {cube.Pos{-1, 0, 2}, cube.North},
+	{cube.Pos{-2, 0, 1}, cube.East}, {cube.Pos{-2, 0, 0}, cube.East}, {cube.Pos{-2, 0, -1}, cube.East},
+}
+
 // endPortalRingFrames returns the twelve (frame position, facing) pairs of a valid ring around center.
 func endPortalRingFrames(center cube.Pos) []ringFrame {
-	frames := make([]ringFrame, 0, 12)
-	for _, side := range cube.Directions() {
-		base := center.Side(side.Face()).Side(side.Face())
-		tangent := side.RotateRight().Face()
-		inward := side.Opposite()
-		for i := -1; i <= 1; i++ {
-			pos := base
-			step, n := tangent, i
-			if n < 0 {
-				step, n = step.Opposite(), -n
-			}
-			for range n {
-				pos = pos.Side(step)
-			}
-			frames = append(frames, ringFrame{pos: pos, facing: inward})
-		}
+	frames := make([]ringFrame, len(endRingOffsets))
+	for i, f := range endRingOffsets {
+		frames[i] = ringFrame{pos: center.Add(f.pos), facing: f.facing}
 	}
 	return frames
 }

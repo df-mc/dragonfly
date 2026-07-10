@@ -4,6 +4,7 @@ import (
 	"math/rand/v2"
 	"time"
 
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -96,7 +97,14 @@ func (cfg Config) Apply(data *world.EntityData) {
 			e.(*Player).forceTeleport(pos)
 		},
 		SpawnPoint: func(tx *world.Tx) mgl64.Vec3 {
-			return tx.World().PlayerSpawn(playerUUID).Vec3Middle()
+			// Use the player's spawn only while its bed still exists and is unobstructed, like respawning.
+			pos := tx.World().PlayerSpawn(playerUUID)
+			if b, ok := tx.Block(pos).(block.Bed); ok && b.CanRespawnOn() {
+				if safe, ok := b.SafeSpawn(pos, tx); ok {
+					return safe.Vec3Middle()
+				}
+			}
+			return tx.World().Spawn().Vec3Middle()
 		},
 		// Only players create a portal at the destination when no linked portal exists.
 		CreatePortal: true,
