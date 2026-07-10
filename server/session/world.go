@@ -196,10 +196,25 @@ func (s *Session) ViewEntityMovement(e world.Entity, pos mgl64.Vec3, rot cube.Ro
 	if (id == selfEntityRuntimeID && s.moving) || s.entityHidden(e) {
 		return
 	}
+	s.viewEntityAbsoluteMovement(id, e, pos, rot, onGround, false)
+}
 
+// ViewEntityDisplacement ...
+func (s *Session) ViewEntityDisplacement(e world.Entity, pos mgl64.Vec3, rot cube.Rotation, onGround bool) {
+	if s.entityHidden(e) {
+		return
+	}
+	id := s.entityRuntimeID(e)
+	s.viewEntityAbsoluteMovement(id, e, pos, rot, onGround, true)
+}
+
+func (s *Session) viewEntityAbsoluteMovement(id uint64, e world.Entity, pos mgl64.Vec3, rot cube.Rotation, onGround, authoritative bool) {
 	flags := byte(0)
 	if onGround {
 		flags |= packet.MoveFlagOnGround
+	}
+	if authoritative {
+		flags |= packet.MoveFlagTeleport
 	}
 	s.writePacket(&packet.MoveActorAbsolute{
 		EntityRuntimeID: id,

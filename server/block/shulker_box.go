@@ -209,7 +209,7 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 		return
 	}
 	mover, ok := e.(interface {
-		Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+		Displace(deltaPos mgl64.Vec3)
 	})
 	if !ok {
 		return
@@ -228,7 +228,7 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	// between the shulker lid box and the entity box.
 	delta := shulkerPushDelta(s.Facing, shulkerBBox, entityBBox)
 	if delta != (mgl64.Vec3{}) {
-		mover.Move(delta, 0, 0)
+		mover.Displace(delta)
 	}
 }
 

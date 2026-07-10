@@ -80,6 +80,12 @@ func (c *MovementComputer) OnGround() bool {
 	return c.onGround
 }
 
+// ResolveMovement clips delta against block collision boxes and returns the movement that may be applied and the
+// resulting velocity. Unlike TickMovement, ResolveMovement does not apply gravity, drag or friction.
+func (c *MovementComputer) ResolveMovement(e world.Entity, pos, delta mgl64.Vec3, tx *world.Tx) (mgl64.Vec3, mgl64.Vec3) {
+	return c.checkCollision(tx, e, pos, delta)
+}
+
 // zeroVec3 is a mgl64.Vec3 with zero values.
 var zeroVec3 mgl64.Vec3
 

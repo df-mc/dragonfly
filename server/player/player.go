@@ -2265,6 +2265,26 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 }
 
+// Displace moves the player by a server-authoritative relative delta, clipped against block collision boxes.
+func (p *Player) Displace(deltaPos mgl64.Vec3) {
+	if p.Dead() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
+		return
+	}
+	pos := p.Position()
+	deltaPos, velocity := p.mc.ResolveMovement(p, pos, deltaPos, p.tx)
+	if deltaPos.ApproxEqual(mgl64.Vec3{}) {
+		return
+	}
+	res := pos.Add(deltaPos)
+	for _, v := range p.viewers() {
+		v.ViewEntityDisplacement(p, res, p.Rotation(), p.OnGround())
+	}
+	p.data.Pos, p.data.Vel = res, velocity
+	p.checkBlockCollisions(deltaPos)
+	p.onGround = p.checkOnGround(deltaPos)
+	p.updateFallState(deltaPos[1])
+}
+
 // Position returns the current position of the player. It may be changed as the player moves or is moved
 // around the world.
 func (p *Player) Position() mgl64.Vec3 {
