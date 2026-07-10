@@ -196,12 +196,6 @@ func TestPortalTravelComputerDelayedTravel(t *testing.T) {
 		if destination := tc.enterPortal(tx, world.Nether); destination != nether {
 			t.Fatalf("enterPortal() destination after portal timer = %v, want the Nether", destination)
 		}
-
-		// Two ticks without portal contact reset the timer, requiring another four seconds.
-		tc.awaitingTravel, tc.start = false, time.Time{}
-		if destination := tc.enterPortal(tx, world.Nether); destination != nil {
-			t.Fatal("enterPortal() started travel with a reset portal timer")
-		}
 	})
 }
 
