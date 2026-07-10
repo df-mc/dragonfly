@@ -110,7 +110,7 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 			}
 			return b.grow(pos, 1, math.MaxInt, tx)
 		case BambooSapling:
-			return false
+			return x.grow(pos, tx)
 		default:
 		}
 	}
