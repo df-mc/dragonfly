@@ -48,11 +48,6 @@ type FallingBlockBehaviour struct {
 	block   world.Block
 }
 
-// PortalTravelComputer returns the interdimensional travel state for the behaviour.
-func (f *FallingBlockBehaviour) PortalTravelComputer() *PortalTravelComputer {
-	return f.passive.PortalTravelComputer()
-}
-
 // Block returns the world.Block of the entity.
 func (f *FallingBlockBehaviour) Block() world.Block {
 	return f.block
