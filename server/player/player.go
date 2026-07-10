@@ -1683,11 +1683,10 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
 		// items, in which case the block will be activated as usual.
 		if !p.Sneaking() || i.Empty() {
-			p.SwingArm()
-
 			// The block was activated: Blocks such as doors must always have precedence over the item being
 			// used.
 			if useCtx := p.useContext(); act.Activate(pos, face, p.tx, p, useCtx) {
+				p.SwingArm()
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 				p.addNewItem(useCtx)
 				return
