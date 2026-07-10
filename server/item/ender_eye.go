@@ -7,8 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// EnderEye is the item used to fill End portal frames. In vanilla, throwing it locates the nearest stronghold; that
-// projectile behaviour is not implemented in dragonfly.
+// EnderEye is the item used to fill End portal frames. The stronghold-locating throw is not implemented.
 type EnderEye struct{}
 
 // EncodeItem ...
@@ -21,14 +20,13 @@ func (EnderEye) MaxCount() int {
 	return 64
 }
 
-// endPortalFrame is the local view of a block that can hold an Eye of Ender. block.EndPortalFrame implements it.
-// InsertEndPortalEye returns the updated block and ok=true on success, or ok=false if the frame already had an eye.
+// endPortalFrame is implemented by block.EndPortalFrame, which cannot be imported here directly.
 type endPortalFrame interface {
 	InsertEndPortalEye() (world.Block, bool)
 }
 
-// UseOnBlock fills the targeted End portal frame with an Eye of Ender. If the placement completes a twelve-frame ring,
-// the End portal blocks are spawned in the interior. Has no effect on non-frame blocks or already-filled frames.
+// UseOnBlock fills the targeted End portal frame with an Eye of Ender, activating the portal if this completes the
+// twelve-frame ring.
 func (EnderEye) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
 	f, ok := tx.Block(pos).(endPortalFrame)
 	if !ok {

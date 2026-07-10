@@ -6,9 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// endSpawnX, endSpawnY and endSpawnZ are the centre of the End arrival platform. The platform extends two blocks in
-// each horizontal direction at endSpawnY, so the obsidian fills the 5x5 area at y=endSpawnY-1 and the player arrives
-// at endSpawnY+0.
+// endSpawnX, endSpawnY and endSpawnZ are the centre of the End arrival platform.
 const (
 	endSpawnX = 100
 	endSpawnY = 49
@@ -25,8 +23,7 @@ func EndSpawnPosition(player bool) mgl64.Vec3 {
 }
 
 // GenerateEndSpawnPlatform builds the 5x5 obsidian arrival platform at (100, 48, 0) and clears the 5x5x3 air column
-// above it. Run on every Overworld→End travel to match vanilla, which regenerates the platform unconditionally — any
-// player builds in the area are wiped.
+// above it. It runs on every travel into the End, matching vanilla's unconditional regeneration.
 func GenerateEndSpawnPlatform(tx *world.Tx) {
 	ob := obsidian()
 	for dx := -2; dx <= 2; dx++ {
@@ -52,19 +49,14 @@ type endRingFrame struct {
 	facing cube.Direction
 }
 
-// endFrameBlock is the local interface implemented by block.EndPortalFrame. It avoids importing server/block from this
-// package, which would create an import cycle.
+// endFrameBlock is implemented by block.EndPortalFrame, which cannot be imported here directly.
 type endFrameBlock interface {
 	world.Block
 	EndPortalFrameState() (eye bool, facing cube.Direction)
 }
 
-// EndPortalFromPos validates a complete twelve-frame End portal ring starting from any frame on the ring. Frames must
-// face TOWARD the centre (vanilla Bedrock: cardinal_direction = opposite of the placing player's facing, so a player
-// standing at the centre and placing outward yields inward-facing frames — the only valid configuration). The starting
-// frame may be the left, middle, or right of its side, so each of the three candidate centres along the tangent is
-// tried. Returns ok=true only if the ring is complete (all twelve ring positions hold an EndPortalFrame with Eye=true
-// and the correct inward Facing).
+// EndPortalFromPos returns End portal information from any frame on a complete twelve-frame ring. All twelve frames
+// must hold an eye and face toward the centre, as in vanilla.
 func EndPortalFromPos(tx *world.Tx, framePos cube.Pos) (End, bool) {
 	f, ok := tx.Block(framePos).(endFrameBlock)
 	if !ok {
@@ -72,7 +64,7 @@ func EndPortalFromPos(tx *world.Tx, framePos cube.Pos) (End, bool) {
 	}
 	_, facing := f.EndPortalFrameState()
 
-	// Frames face toward the centre, so walk in the Facing direction twice to reach the row of three candidate centres.
+	// The frame may be the left, middle or right of its side: walk inward twice, then try the three candidate centres.
 	inward := facing.Face()
 	tangent := tangentFace(facing)
 	base := framePos.Side(inward).Side(inward)
@@ -103,9 +95,8 @@ func matchEndRing(tx *world.Tx, center cube.Pos) (End, bool) {
 	}, true
 }
 
-// ActivateEndPortal places end_portal blocks in the 3x3 interior if and only if a complete twelve-frame ring exists
-// around `framePos`. If interior positions already hold end_portal blocks, they are left untouched (idempotent). The
-// starting frame must be one of the twelve ring positions; its Facing is used to derive the ring centre.
+// ActivateEndPortal fills the 3x3 interior with end_portal blocks if a complete twelve-frame ring exists around the
+// frame at the position passed.
 func ActivateEndPortal(tx *world.Tx, framePos cube.Pos) bool {
 	p, ok := EndPortalFromPos(tx, framePos)
 	if !ok {
@@ -126,9 +117,8 @@ func (e End) activate() {
 	}
 }
 
-// expectedEndRingFrames returns the twelve canonical (position, facing) pairs around the centre. Each frame sits on
-// the side of the centre indicated by `side` and must face TOWARD the centre (Facing = side.Opposite()), matching the
-// vanilla Bedrock requirement that frames be placed by a player standing at or near the centre and looking outward.
+// expectedEndRingFrames returns the twelve (position, facing) pairs a complete ring around the centre must have, with
+// every frame facing toward the centre.
 func expectedEndRingFrames(center cube.Pos) []endRingFrame {
 	frames := make([]endRingFrame, 0, 12)
 	for _, side := range cube.Directions() {
@@ -153,8 +143,7 @@ func endRingInterior(center cube.Pos) []cube.Pos {
 	return out
 }
 
-// tangentFace returns a unit horizontal Face perpendicular to side. Used to walk along the row of three frames on a
-// side of the ring. Sign does not matter: the {-1, 0, +1} step set covers the same three positions either way.
+// tangentFace returns a horizontal Face perpendicular to side, used to walk along the three frames on a ring side.
 func tangentFace(side cube.Direction) cube.Face {
 	return side.RotateRight().Face()
 }

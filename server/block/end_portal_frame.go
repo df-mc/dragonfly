@@ -7,16 +7,14 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// EndPortalFrame is the indestructible block that forms the twelve-block ring of an End portal. Inserting an Eye of
-// Ender flips the Eye bit and triggers a portal completion check.
+// EndPortalFrame is the indestructible block that forms the twelve-block ring of an End portal.
 type EndPortalFrame struct {
 	solid
 	bassDrum
 
-	// Eye reports whether an Eye of Ender has been inserted into this frame.
+	// Eye is true if an Eye of Ender has been inserted into the frame.
 	Eye bool
-	// Facing is the cardinal direction this frame faces. Each frame in a valid ring faces inward, toward the centre
-	// of the 3x3 interior.
+	// Facing is the direction the frame faces. Each frame in a valid ring faces the centre of the 3x3 interior.
 	Facing cube.Direction
 }
 
@@ -33,8 +31,7 @@ func (f EndPortalFrame) EncodeBlock() (string, map[string]any) {
 	}
 }
 
-// UseOnBlock places the frame opposite the placer's facing direction, matching the vanilla Bedrock convention
-// (cardinal_direction = opposite of the placing player's facing). The new frame is always empty (Eye = false).
+// UseOnBlock ...
 func (f EndPortalFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, f)
 	if !used {
@@ -46,14 +43,12 @@ func (f EndPortalFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, t
 	return placed(ctx)
 }
 
-// EndPortalFrameState exposes the frame's eye and facing state to the world/portal package without forcing it to
-// import server/block, which would create an import cycle.
+// EndPortalFrameState returns the frame's eye and facing state.
 func (f EndPortalFrame) EndPortalFrameState() (eye bool, facing cube.Direction) {
 	return f.Eye, f.Facing
 }
 
-// InsertEndPortalEye returns a copy of this frame with the eye inserted and ok=true. If the frame already holds an
-// eye, it returns the original frame and ok=false.
+// InsertEndPortalEye returns a copy of the frame with an eye inserted, or false if it already held one.
 func (f EndPortalFrame) InsertEndPortalEye() (world.Block, bool) {
 	if f.Eye {
 		return f, false

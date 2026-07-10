@@ -12,9 +12,8 @@ import (
 
 // PortalTravelComputer handles portal-triggered interdimensional travel for an entity.
 type PortalTravelComputer struct {
-	// Instantaneous returns true if the entity should skip the portal wait timer. Source is the dimension being left
-	// and target is the dimension being entered. Players use this for game modes with instant portal travel and for
-	// End travel, which is always instant in vanilla regardless of game mode.
+	// Instantaneous returns true if the entity should skip the portal wait timer when moving from the source to the
+	// target dimension. Players use this for game modes with instant portal travel and for End travel.
 	Instantaneous func(source, target world.Dimension) bool
 	// Teleport teleports the entity to the final portal position. If nil, Traveller.Teleport is used.
 	Teleport func(e Traveller, pos mgl64.Vec3)
@@ -244,9 +243,8 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 	t.mu.Unlock()
 }
 
-// destinationSpawn returns the position the entity should be placed at in the destination world, performing any
-// required side effects such as nether portal creation or End spawn-platform regeneration. False is returned if no
-// linked nether portal was found and the entity may not create one.
+// destinationSpawn returns the position the entity should be placed at in the destination world. False is returned
+// if no linked nether portal was found and the entity may not create one.
 func (t *PortalTravelComputer) destinationSpawn(tx *world.Tx, sourceDim world.Dimension, pos cube.Pos) (mgl64.Vec3, bool) {
 	if tx.World().Dimension() == world.End {
 		portal.GenerateEndSpawnPlatform(tx)

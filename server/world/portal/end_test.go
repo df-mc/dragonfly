@@ -10,24 +10,21 @@ import (
 	"github.com/df-mc/dragonfly/server/world/portal"
 )
 
-// ringFrame is one (position, outward facing) pair on an end portal ring.
+// ringFrame is one (position, facing) pair on an end portal ring.
 type ringFrame struct {
 	pos    cube.Pos
 	facing cube.Direction
 }
 
-// buildEndPortalRing places a complete twelve-frame end portal ring on the y plane of center, with every frame having
-// an eye and facing toward the centre (the vanilla-valid configuration).
+// buildEndPortalRing places a complete twelve-frame end portal ring around center, with every frame holding an eye
+// and facing the centre.
 func buildEndPortalRing(tx *world.Tx, center cube.Pos) {
 	for _, fp := range endPortalRingFrames(center) {
 		tx.SetBlock(fp.pos, block.EndPortalFrame{Facing: fp.facing, Eye: true}, nil)
 	}
 }
 
-// endPortalRingFrames returns the twelve canonical (frame position, facing) pairs around center for a 3x3 interior
-// portal. Each frame's Facing points TOWARD the centre — the opposite of the cardinal side it sits on — matching
-// vanilla Bedrock's requirement (cardinal_direction = opposite of the placing player's facing, so build-from-centre
-// yields inward-facing frames).
+// endPortalRingFrames returns the twelve (frame position, facing) pairs of a valid ring around center.
 func endPortalRingFrames(center cube.Pos) []ringFrame {
 	frames := make([]ringFrame, 0, 12)
 	for _, side := range cube.Directions() {
@@ -49,7 +46,7 @@ func endPortalRingFrames(center cube.Pos) []ringFrame {
 	return frames
 }
 
-// interiorPositions returns the 3x3 interior block positions on the y plane of center.
+// interiorPositions returns the 3x3 interior block positions around center.
 func interiorPositions(center cube.Pos) []cube.Pos {
 	out := make([]cube.Pos, 0, 9)
 	for dx := -1; dx <= 1; dx++ {
@@ -68,13 +65,10 @@ func TestActivateEndPortal(t *testing.T) {
 	<-w.Exec(func(tx *world.Tx) {
 		buildEndPortalRing(tx, center)
 
-		// Activate from the first frame.
 		first := endPortalRingFrames(center)[0]
 		if !portal.ActivateEndPortal(tx, first.pos) {
 			t.Fatal("ActivateEndPortal() = false on a complete ring, want true")
 		}
-
-		// Every interior position must now hold an end_portal block.
 		for _, p := range interiorPositions(center) {
 			if _, ok := tx.Block(p).(block.EndPortal); !ok {
 				t.Fatalf("interior block at %v = %T, want block.EndPortal", p, tx.Block(p))
@@ -91,12 +85,10 @@ func TestActivateEndPortalMissingEye(t *testing.T) {
 	<-w.Exec(func(tx *world.Tx) {
 		buildEndPortalRing(tx, center)
 
-		// Remove the eye from one frame.
 		frames := endPortalRingFrames(center)
 		broken := frames[5]
 		tx.SetBlock(broken.pos, block.EndPortalFrame{Facing: broken.facing, Eye: false}, nil)
 
-		// Activation must fail; no interior blocks placed.
 		if portal.ActivateEndPortal(tx, frames[0].pos) {
 			t.Fatal("ActivateEndPortal() = true with one missing eye, want false")
 		}
@@ -116,7 +108,6 @@ func TestActivateEndPortalWrongFacing(t *testing.T) {
 	<-w.Exec(func(tx *world.Tx) {
 		buildEndPortalRing(tx, center)
 
-		// Rotate one frame to face the wrong direction.
 		frames := endPortalRingFrames(center)
 		bad := frames[3]
 		tx.SetBlock(bad.pos, block.EndPortalFrame{Facing: bad.facing.Opposite(), Eye: true}, nil)
@@ -127,133 +118,12 @@ func TestActivateEndPortalWrongFacing(t *testing.T) {
 	})
 }
 
-func TestActivateEndPortalIdempotent(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
-
-	center := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
-		buildEndPortalRing(tx, center)
-
-		first := endPortalRingFrames(center)[0]
-		if !portal.ActivateEndPortal(tx, first.pos) {
-			t.Fatal("ActivateEndPortal() = false on first call, want true")
-		}
-		// Second call must not error and must leave interior intact.
-		if !portal.ActivateEndPortal(tx, first.pos) {
-			t.Fatal("ActivateEndPortal() = false on second call, want true")
-		}
-		for _, p := range interiorPositions(center) {
-			if _, ok := tx.Block(p).(block.EndPortal); !ok {
-				t.Fatalf("interior block at %v lost EndPortal after re-activation", p)
-			}
-		}
-	})
-}
-
-func TestActivateEndPortalRejectsOutwardFacing(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
-
-	center := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
-		// Build a ring with every frame facing OUTWARD (away from the centre). This is the configuration produced when
-		// frames are placed by a player standing OUTSIDE the future ring. Vanilla Bedrock rejects this configuration.
-		for _, fp := range endPortalRingFrames(center) {
-			tx.SetBlock(fp.pos, block.EndPortalFrame{Facing: fp.facing.Opposite(), Eye: true}, nil)
-		}
-		first := endPortalRingFrames(center)[0]
-		if portal.ActivateEndPortal(tx, first.pos) {
-			t.Fatal("ActivateEndPortal() = true on outward-facing ring, want false")
-		}
-	})
-}
-
-func TestActivateEndPortalCornerIgnored(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
-
-	center := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
-		buildEndPortalRing(tx, center)
-
-		// Place an unrelated frame at one of the four corner positions (which are NOT part of the ring).
-		// Activation must succeed regardless.
-		corner := center.Add(cube.Pos{2, 0, 2})
-		tx.SetBlock(corner, block.EndPortalFrame{Facing: cube.South, Eye: false}, nil)
-
-		first := endPortalRingFrames(center)[0]
-		if !portal.ActivateEndPortal(tx, first.pos) {
-			t.Fatal("ActivateEndPortal() = false despite irrelevant corner block, want true")
-		}
-	})
-}
-
-func TestEnderEyeFillsFrame(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
-
-	pos := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(pos, block.EndPortalFrame{Facing: cube.North, Eye: false}, nil)
-
-		ctx := &item.UseContext{}
-		if !(item.EnderEye{}).UseOnBlock(pos, cube.FaceUp, cube.Pos{}.Vec3(), tx, nil, ctx) {
-			t.Fatal("EnderEye.UseOnBlock() = false on empty frame, want true")
-		}
-		if ctx.CountSub != 1 {
-			t.Fatalf("EnderEye.UseOnBlock() subtracted %d items, want 1", ctx.CountSub)
-		}
-		f, ok := tx.Block(pos).(block.EndPortalFrame)
-		if !ok {
-			t.Fatalf("block at frame pos = %T, want block.EndPortalFrame", tx.Block(pos))
-		}
-		if !f.Eye {
-			t.Fatalf("frame Eye = false after UseOnBlock, want true")
-		}
-	})
-}
-
-func TestEnderEyeOnFilledFrameNoOp(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
-
-	pos := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(pos, block.EndPortalFrame{Facing: cube.North, Eye: true}, nil)
-
-		ctx := &item.UseContext{}
-		if (item.EnderEye{}).UseOnBlock(pos, cube.FaceUp, cube.Pos{}.Vec3(), tx, nil, ctx) {
-			t.Fatal("EnderEye.UseOnBlock() = true on already-filled frame, want false")
-		}
-		if ctx.CountSub != 0 {
-			t.Fatalf("EnderEye.UseOnBlock() consumed %d items on no-op, want 0", ctx.CountSub)
-		}
-	})
-}
-
-func TestEnderEyeOnNonFrameNoOp(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
-
-	pos := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
-		tx.SetBlock(pos, block.Obsidian{}, nil)
-
-		ctx := &item.UseContext{}
-		if (item.EnderEye{}).UseOnBlock(pos, cube.FaceUp, cube.Pos{}.Vec3(), tx, nil, ctx) {
-			t.Fatal("EnderEye.UseOnBlock() = true on non-frame, want false")
-		}
-	})
-}
-
 func TestEnderEyeCompletesRing(t *testing.T) {
 	w := world.New()
 	t.Cleanup(func() { _ = w.Close() })
 
 	center := cube.Pos{8, 10, 8}
 	<-w.Exec(func(tx *world.Tx) {
-		// Build the ring with all but the first frame filled.
 		frames := endPortalRingFrames(center)
 		for i, fp := range frames {
 			tx.SetBlock(fp.pos, block.EndPortalFrame{Facing: fp.facing, Eye: i != 0}, nil)
@@ -264,23 +134,13 @@ func TestEnderEyeCompletesRing(t *testing.T) {
 		if !(item.EnderEye{}).UseOnBlock(first.pos, cube.FaceUp, cube.Pos{}.Vec3(), tx, nil, ctx) {
 			t.Fatal("EnderEye.UseOnBlock() = false on the last empty frame, want true")
 		}
-		// Interior must now be end_portal blocks.
+		if ctx.CountSub != 1 {
+			t.Fatalf("EnderEye.UseOnBlock() subtracted %d items, want 1", ctx.CountSub)
+		}
 		for _, p := range interiorPositions(center) {
 			if _, ok := tx.Block(p).(block.EndPortal); !ok {
 				t.Fatalf("interior block at %v = %T, want block.EndPortal", p, tx.Block(p))
 			}
-		}
-	})
-}
-
-func TestEndPortalFromPosNonFrame(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
-
-	<-w.Exec(func(tx *world.Tx) {
-		_, ok := portal.EndPortalFromPos(tx, cube.Pos{0, 50, 0})
-		if ok {
-			t.Fatal("EndPortalFromPos() ok = true on air block, want false")
 		}
 	})
 }

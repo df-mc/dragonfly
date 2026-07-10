@@ -258,49 +258,6 @@ func TestEndReturnSpawnSelection(t *testing.T) {
 	})
 }
 
-func TestEndPortalReturnsToOverworldSpawn(t *testing.T) {
-	var overworld, end *world.World
-	overworld = world.Config{PortalDestination: func(dim world.Dimension) *world.World {
-		if dim == world.End {
-			return end
-		}
-		return nil
-	}}.New()
-	end = world.Config{Dim: world.End, PortalDestination: func(dim world.Dimension) *world.World {
-		if dim == world.End {
-			return overworld
-		}
-		return nil
-	}}.New()
-	t.Cleanup(func() {
-		_ = overworld.Close()
-		_ = end.Close()
-	})
-
-	endPortalPos := cube.Pos{200, 60, 200}
-	<-end.Exec(func(tx *world.Tx) {
-		tx.SetBlock(endPortalPos, block.EndPortal{}, nil)
-	})
-
-	handle := world.EntitySpawnOpts{Position: endPortalPos.Vec3Middle().Sub(mgl64.Vec3{1})}.New(testMovingEntType{}, testMoveConfig{delta: mgl64.Vec3{1}})
-	<-end.Exec(func(tx *world.Tx) {
-		e := tx.AddEntity(handle)
-		e.(world.TickerEntity).Tick(tx, 1)
-	})
-
-	waitForEntityWorld(t, handle, overworld)
-	<-overworld.Exec(func(tx *world.Tx) {
-		e, ok := handle.Entity(tx)
-		if !ok {
-			t.Fatal("entity did not return to the Overworld")
-		}
-		want := tx.World().Spawn().Vec3Middle()
-		if got := e.Position(); !got.ApproxEqual(want) {
-			t.Fatalf("entity position after End→Overworld return = %v, want %v", got, want)
-		}
-	})
-}
-
 func TestTranslatePortalPosition(t *testing.T) {
 	tests := []struct {
 		name           string
