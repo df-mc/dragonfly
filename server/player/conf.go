@@ -106,6 +106,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 			}
 			return tx.World().Spawn().Vec3Middle()
 		},
+		Player: true,
 		// Only players create a portal at the destination when no linked portal exists.
 		CreatePortal: true,
 	}

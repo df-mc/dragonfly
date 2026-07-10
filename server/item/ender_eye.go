@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/portal"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -37,7 +38,10 @@ func (EnderEye) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx
 		return false
 	}
 	tx.SetBlock(pos, updated, nil)
-	portal.ActivateEndPortal(tx, pos)
+	tx.PlaySound(pos.Vec3Centre(), sound.EnderEyePlaced{})
+	if portal.ActivateEndPortal(tx, pos) {
+		tx.PlaySound(pos.Vec3Centre(), sound.EndPortalCreated{})
+	}
 	ctx.SubtractFromCount(1)
 	return true
 }
