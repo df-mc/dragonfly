@@ -146,4 +146,4 @@ func (spectator) HasCollision() bool        { return false }
 func (spectator) AllowsFlying() bool        { return true }
 func (spectator) AllowsInteraction() bool   { return false }
 func (spectator) Visible() bool             { return false }
-func (spectator) InstantPortalTravel() bool { return true }
+func (spectator) InstantPortalTravel() bool { return false }

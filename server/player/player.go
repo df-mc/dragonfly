@@ -2596,6 +2596,10 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 // TravelThroughPortal handles the player touching a portal block.
 func (p *Player) TravelThroughPortal(tx *world.Tx, target world.Dimension) {
+	if !p.GameMode().HasCollision() {
+		// Game modes that pass through blocks, such as spectator, are not affected by portals.
+		return
+	}
 	p.portalTravel.EnterPortal(p, tx, target)
 }
 
