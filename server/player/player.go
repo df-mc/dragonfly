@@ -2271,7 +2271,7 @@ func (p *Player) Displace(deltaPos mgl64.Vec3) {
 		return
 	}
 	pos := p.Position()
-	deltaPos, velocity := p.mc.ResolveMovement(p, pos, deltaPos, p.tx)
+	deltaPos, velocity := p.mc.CheckCollision(p.tx, p, pos, deltaPos)
 	if deltaPos.ApproxEqual(mgl64.Vec3{}) {
 		return
 	}
