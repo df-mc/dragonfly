@@ -26,13 +26,11 @@ func (l Lodestone) BreakInfo() BreakInfo {
 // Activate links or relinks a compass to the lodestone.
 func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
-	relink := true
-	switch compass := held.Item().(type) {
-	case item.Compass:
-		relink = compass.TrackingHandle != 0
-	default:
+	compass, ok := held.Item().(item.Compass)
+	if !ok {
 		return false
 	}
+	relink := compass.TrackingHandle != 0
 	l.trackingHandle = tx.World().TrackPosition(pos, l.trackingHandle)
 	tx.SetBlock(pos, l, nil)
 	// Send the tracking update on the next world tick. The inventory slot
