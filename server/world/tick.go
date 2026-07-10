@@ -104,19 +104,23 @@ func (t ticker) tick(tx *Tx) {
 }
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
+// Updates are processed in waves so that cascading effects (e.g. a chain of hanging signs breaking)
+// resolve immediately within the same tick.
 func (t ticker) performNeighbourUpdates(tx *Tx) {
-	updates := slices.Clone(tx.World().neighbourUpdates)
-	clear(tx.World().neighbourUpdates)
-	tx.World().neighbourUpdates = tx.World().neighbourUpdates[:0]
+	for len(tx.World().neighbourUpdates) > 0 {
+		updates := slices.Clone(tx.World().neighbourUpdates)
+		clear(tx.World().neighbourUpdates)
+		tx.World().neighbourUpdates = tx.World().neighbourUpdates[:0]
 
-	for _, update := range updates {
-		pos, changedNeighbour := update.pos, update.neighbour
-		if ticker, ok := tx.Block(pos).(NeighbourUpdateTicker); ok {
-			ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
-		}
-		if liquid, ok := tx.World().additionalLiquid(pos); ok {
-			if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
+		for _, update := range updates {
+			pos, changedNeighbour := update.pos, update.neighbour
+			if ticker, ok := tx.Block(pos).(NeighbourUpdateTicker); ok {
 				ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
+			}
+			if liquid, ok := tx.World().additionalLiquid(pos); ok {
+				if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
+					ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
+				}
 			}
 		}
 	}

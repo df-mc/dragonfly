@@ -179,6 +179,7 @@ func init() {
 	registerAll(allGlazedTerracotta())
 	registerAll(allGrindstones())
 	registerAll(allHayBales())
+	registerAll(allHangingSigns())
 	registerAll(allHoppers())
 	registerAll(allItemFrames())
 	registerAll(allKelp())
@@ -457,6 +458,7 @@ func init() {
 		}
 		world.RegisterItem(Planks{Wood: w})
 		world.RegisterItem(Sign{Wood: w})
+		world.RegisterItem(HangingSign{Wood: w})
 		world.RegisterItem(WoodDoor{Wood: w})
 		world.RegisterItem(WoodFenceGate{Wood: w})
 		world.RegisterItem(WoodFence{Wood: w})
