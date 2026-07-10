@@ -38,7 +38,8 @@ func (o Obsidian) EncodeBlock() (string, map[string]any) {
 	return "minecraft:obsidian", nil
 }
 
-// Frame ...
+// Frame returns true if the block can form part of a nether portal frame in the dimension passed. Crying obsidian
+// cannot be used as a frame block.
 func (o Obsidian) Frame(dimension world.Dimension) bool {
 	return dimension == world.Nether && !o.Crying
 }
