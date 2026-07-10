@@ -40,8 +40,7 @@ func NewPortalTravelComputer() *PortalTravelComputer {
 }
 
 // portalSearchRadius is the radius around the scaled arrival position searched for an existing linked portal.
-// Bedrock Edition searches 128 blocks in both dimensions; the reduced 16-block Nether radius is Java Edition
-// behaviour.
+// Bedrock Edition searches 128 blocks in both dimensions.
 const portalSearchRadius = 128
 
 type portalTravelComputerProvider interface {
