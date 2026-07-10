@@ -209,7 +209,7 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 		return
 	}
 	mover, ok := e.(interface {
-		Displace(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
+		Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64)
 	})
 	if !ok {
 		return
@@ -226,8 +226,16 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 
 	// Move the entity out along the lid's facing axis by the penetration depth
 	// between the shulker lid box and the entity box.
-	var delta mgl64.Vec3
-	switch s.Facing {
+	delta := shulkerPushDelta(s.Facing, shulkerBBox, entityBBox)
+	if delta != (mgl64.Vec3{}) {
+		mover.Move(delta, 0, 0)
+	}
+}
+
+func shulkerPushDelta(facing cube.Face, shulkerBBox, entityBBox cube.BBox) (delta mgl64.Vec3) {
+	switch facing {
+	case cube.FaceDown:
+		delta[1] = shulkerBBox.Min().Y() - entityBBox.Max().Y()
 	case cube.FaceUp:
 		delta[1] = shulkerBBox.Max().Y() - entityBBox.Min().Y()
 	case cube.FaceEast:
@@ -239,9 +247,7 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	case cube.FaceNorth:
 		delta[2] = shulkerBBox.Min().Z() - entityBBox.Max().Z()
 	}
-	if delta != (mgl64.Vec3{}) {
-		mover.Displace(delta, 0, 0)
-	}
+	return delta
 }
 
 func (s ShulkerBox) BreakInfo() BreakInfo {

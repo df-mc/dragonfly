@@ -2259,33 +2259,6 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 }
 
-// Displace forcibly offsets the player and emits a delta movement view for nearby viewers.
-// It is used by blocks like the shulker box that push entities out of the way without
-// applying regular movement side effects such as fall state updates or exhaustion.
-func (p *Player) Displace(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
-	if p.Dead() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
-		return
-	}
-	res := p.Position().Add(deltaPos)
-	resRot := p.Rotation().Add(cube.Rotation{deltaYaw, deltaPitch})
-	ctx := event.C(p)
-	if p.Handler().HandleDisplace(ctx, res, resRot); ctx.Cancelled() {
-		return
-	}
-
-	for _, v := range p.viewers() {
-		v.ViewEntityDelta(p, res, resRot)
-	}
-
-	p.data.Pos = res
-	p.data.Rot = resRot
-	if deltaPos.Len() <= 3 {
-		// Only update velocity if the player is not moving too fast to prevent potential OOMs.
-		p.data.Vel = deltaPos
-		p.checkBlockCollisions(deltaPos)
-	}
-}
-
 // Position returns the current position of the player. It may be changed as the player moves or is moved
 // around the world.
 func (p *Player) Position() mgl64.Vec3 {
