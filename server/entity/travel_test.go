@@ -266,6 +266,34 @@ func TestEntPortalTravelWithoutDestinationPortal(t *testing.T) {
 	})
 }
 
+func TestFallingBlockDoesNotTravelThroughPortal(t *testing.T) {
+	overworld, nether := portalWorlds(t)
+
+	spawnRecorder := &entitySpawnRecorder{}
+	nether.Handle(spawnRecorder)
+
+	targetPortal := cube.Pos{10, 64, 10}
+	<-nether.Exec(func(tx *world.Tx) {
+		buildActivePortal(tx, targetPortal)
+	})
+
+	sourcePos := mgl64.Vec3{80.5, 64, 80.5}
+	handle := NewFallingBlock(world.EntitySpawnOpts{Position: sourcePos}, block.Sand{})
+	<-overworld.Exec(func(tx *world.Tx) {
+		e := tx.AddEntity(handle)
+		(block.Portal{Axis: cube.Z}).EntityInside(cube.PosFromVec3(sourcePos), tx, e)
+	})
+
+	// Portal travel finishes asynchronously, so give it time to wrongly happen before asserting nothing moved.
+	time.Sleep(100 * time.Millisecond)
+	if !entityInWorld(handle, overworld) {
+		t.Fatal("falling block left the source world through a portal")
+	}
+	if spawnRecorder.called {
+		t.Fatal("falling block was spawned in the destination world")
+	}
+}
+
 func TestEntPortalTravelCreatesPortal(t *testing.T) {
 	overworld, nether := portalWorlds(t)
 
