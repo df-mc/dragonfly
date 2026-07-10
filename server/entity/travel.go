@@ -166,7 +166,7 @@ func (t *PortalTravelComputer) travel(e Traveller, tx *world.Tx, destination *wo
 	handle := tx.RemoveEntity(e)
 	if handle == nil {
 		t.mu.Lock()
-		t.travelling = false
+		t.travelling, t.timedOut = false, false
 		t.mu.Unlock()
 		return
 	}
@@ -202,7 +202,7 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 		})
 		if handle == nil {
 			t.mu.Lock()
-			t.travelling = false
+			t.travelling, t.timedOut = false, false
 			t.mu.Unlock()
 			return
 		}
@@ -233,6 +233,11 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 	t.mu.Lock()
 	t.travelling = false
 	t.cooldownUntil = time.Now().Add(t.Cooldown)
+	if !travelled {
+		// The entity is back inside the source portal: clear the arrival latch so it may retry once the
+		// cooldown expires, for example after a linked portal is built.
+		t.timedOut = false
+	}
 	t.mu.Unlock()
 }
 
