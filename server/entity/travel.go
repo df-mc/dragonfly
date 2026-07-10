@@ -44,8 +44,8 @@ func NewPortalTravelComputer() *PortalTravelComputer {
 const portalSearchRadius = 128
 
 // portalTravelComputerProvider is implemented by behaviours of entities that can travel through portals.
-// Behaviours without a computer never travel. This matches vanilla, where some entity types (falling blocks) and
-// some states (leashed or owned mobs) cannot use portals.
+// Behaviours without a computer never travel. This matches vanilla, where some entities, such as falling blocks,
+// cannot use portals.
 type portalTravelComputerProvider interface {
 	PortalTravelComputer() *PortalTravelComputer
 }
