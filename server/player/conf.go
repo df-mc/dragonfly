@@ -93,6 +93,8 @@ func (cfg Config) Apply(data *world.EntityData) {
 		Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
 			e.(*Player).forceTeleport(pos)
 		},
+		// Only players create a portal at the destination when no linked portal exists.
+		CreatePortal: true,
 	}
 	pdata.hunger.foodLevel, pdata.hunger.foodTick, pdata.hunger.exhaustionLevel, pdata.hunger.saturationLevel = conf.Food, conf.FoodTick, conf.Exhaustion, conf.Saturation
 	pdata.experience.Add(conf.Experience)
