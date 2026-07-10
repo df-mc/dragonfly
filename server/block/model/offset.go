@@ -21,8 +21,9 @@ func randomOffset(pos cube.Pos, mn, mx float32, steps int) mgl64.Vec3 {
 	return mgl64.Vec3{float64(x), 0, float64(z)}
 }
 
-// offsetSeed returns the seed vanilla uses for random model offsets at the
-// position passed. The signed 32-bit extraction after the shift is intentional.
+// offsetSeed returns the seed vanilla uses for random model offsets. Both coordinate
+// products use signed 64-bit arithmetic. The signed 32-bit extraction after the
+// nonlinear mix is intentional.
 func offsetSeed(x, z int32) uint64 {
 	v := int64(z)*116129781 ^ int64(x)*0x2fc20f
 	v = int64(int32(uint64(v*(v*42317861+11)) >> 16))
