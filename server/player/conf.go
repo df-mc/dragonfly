@@ -1,6 +1,9 @@
 package player
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -11,8 +14,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/text/language"
-	"math/rand/v2"
-	"time"
 )
 
 // Config holds options that a Player can be created with.
@@ -84,6 +85,16 @@ func (cfg Config) Apply(data *world.EntityData) {
 		nameTag:             conf.Name,
 		fireTicks:           conf.FireTicks,
 		fallDistance:        conf.FallDistance,
+	}
+	pdata.portalTravel = &entity.PortalTravelComputer{
+		Instantaneous: func() bool {
+			return pdata.gameMode.InstantPortalTravel()
+		},
+		Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
+			e.(*Player).forceTeleport(pos)
+		},
+		// Only players create a portal at the destination when no linked portal exists.
+		CreatePortal: true,
 	}
 	pdata.hunger.foodLevel, pdata.hunger.foodTick, pdata.hunger.exhaustionLevel, pdata.hunger.saturationLevel = conf.Food, conf.FoodTick, conf.Exhaustion, conf.Saturation
 	pdata.experience.Add(conf.Experience)
