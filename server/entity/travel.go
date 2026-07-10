@@ -40,12 +40,10 @@ func NewPortalTravelComputer() *PortalTravelComputer {
 	return &PortalTravelComputer{Instantaneous: func(world.Dimension, world.Dimension) bool { return true }, Cooldown: time.Second * 15}
 }
 
-// Destination portal search radii, matching vanilla: the search area is 128 blocks in the Overworld but only 16
-// blocks in the Nether due to the 8:1 coordinate scale.
-const (
-	overworldPortalSearchRadius = 128
-	netherPortalSearchRadius    = 16
-)
+// portalSearchRadius is the radius around the scaled arrival position searched for an existing linked portal.
+// Bedrock Edition searches 128 blocks in both dimensions; the reduced 16-block Nether radius is Java Edition
+// behaviour.
+const portalSearchRadius = 128
 
 type portalTravelComputerProvider interface {
 	PortalTravelComputer() *PortalTravelComputer
@@ -254,18 +252,14 @@ func (t *PortalTravelComputer) destinationSpawn(tx *world.Tx, sourceDim world.Di
 		// Returning from the End leads to the world spawn rather than a portal.
 		return tx.World().Spawn().Vec3Middle(), true
 	}
-	radius := overworldPortalSearchRadius
-	if tx.World().Dimension() == world.Nether {
-		radius = netherPortalSearchRadius
-	}
 	if !t.CreatePortal {
-		n, ok := portal.FindNetherPortal(tx, pos, radius)
+		n, ok := portal.FindNetherPortal(tx, pos, portalSearchRadius)
 		if !ok {
 			return mgl64.Vec3{}, false
 		}
 		return n.Spawn().Vec3Middle(), true
 	}
-	if n, ok := portal.FindOrCreateNetherPortal(tx, pos, radius); ok {
+	if n, ok := portal.FindOrCreateNetherPortal(tx, pos, portalSearchRadius); ok {
 		return n.Spawn().Vec3Middle(), true
 	}
 	return pos.Vec3Middle(), true
