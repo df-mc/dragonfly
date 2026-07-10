@@ -2591,7 +2591,6 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		p.data.Vel = mgl64.Vec3{}
 	}
 
-	p.checkPortalContact(tx)
 	p.portalTravel.StopPortalContact()
 }
 
@@ -2829,21 +2828,6 @@ func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
 
 	p.collidedHorizontally = !mgl64.FloatEqual(deltaX, vel[0]) || !mgl64.FloatEqual(deltaZ, vel[2])
 	p.collidedVertically = !mgl64.FloatEqual(deltaY, vel[1])
-}
-
-// checkPortalContact registers portal contact for the player. Unlike other EntityInsider blocks, portal contact must
-// be checked every tick: Move is not called for a player standing still, which would otherwise reset the portal
-// timer through StopPortalContact each tick.
-func (p *Player) checkPortalContact(tx *world.Tx) {
-	box := Type.BBox(p).Translate(p.Position()).Grow(-0.0001)
-	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
-
-	for blockPos := range cube.Range3D(low, high) {
-		if b, ok := tx.Block(blockPos).(interface{ Portal() world.Dimension }); ok {
-			p.TravelThroughPortal(tx, b.Portal())
-			return
-		}
-	}
 }
 
 // checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
