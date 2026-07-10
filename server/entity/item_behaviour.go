@@ -66,6 +66,11 @@ type ItemBehaviour struct {
 	pickupDelay time.Duration
 }
 
+// PortalTravelComputer returns the interdimensional travel state for the behaviour.
+func (i *ItemBehaviour) PortalTravelComputer() *PortalTravelComputer {
+	return i.passive.PortalTravelComputer()
+}
+
 // Item returns the item.Stack held by the entity.
 func (i *ItemBehaviour) Item() item.Stack {
 	return i.i

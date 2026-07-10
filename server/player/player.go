@@ -91,7 +91,8 @@ type playerData struct {
 
 	enchantSeed int64
 
-	mc *entity.MovementComputer
+	mc           *entity.MovementComputer
+	portalTravel *entity.PortalTravelComputer
 
 	collidedVertically, collidedHorizontally bool
 
@@ -2173,12 +2174,17 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
+	p.forceTeleport(pos)
+}
+
+// forceTeleport teleports the player without calling the Handler.
+// It also wakes up the player from sleep.
+func (p *Player) forceTeleport(pos mgl64.Vec3) {
 	p.Wake()
 	p.teleport(pos)
 }
 
-// teleport teleports the player to a target position in the world. It does not call the Handler of the
-// player.
+// teleport teleports the player to a target position in the world without updating non-positional state.
 func (p *Player) teleport(pos mgl64.Vec3) {
 	for _, v := range p.viewers() {
 		v.ViewEntityTeleport(p, pos)
@@ -2584,6 +2590,17 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	} else {
 		p.data.Vel = mgl64.Vec3{}
 	}
+
+	p.portalTravel.StopPortalContact()
+}
+
+// TravelThroughPortal handles the player touching a portal block.
+func (p *Player) TravelThroughPortal(tx *world.Tx, target world.Dimension) {
+	if !p.GameMode().HasCollision() {
+		// Game modes that pass through blocks, such as spectator, are not affected by portals.
+		return
+	}
+	p.portalTravel.EnterPortal(p, tx, target)
 }
 
 // ViewLayer returns the ViewLayer attached to the player's session.

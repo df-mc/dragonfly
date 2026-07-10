@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -93,6 +94,8 @@ func init() {
 	world.RegisterBlock(Podzol{})
 	world.RegisterBlock(PolishedBlackstoneBrick{Cracked: true})
 	world.RegisterBlock(PolishedBlackstoneBrick{})
+	world.RegisterBlock(Portal{Axis: cube.X})
+	world.RegisterBlock(Portal{Axis: cube.Z})
 	world.RegisterBlock(QuartzBricks{})
 	world.RegisterBlock(RawCopper{})
 	world.RegisterBlock(RawGold{})
