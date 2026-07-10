@@ -52,9 +52,10 @@ func (tx *Tx) Block(pos cube.Pos) Block {
 }
 
 // BlocksWithin returns an iterator that yields the positions of blocks matching any of the block states passed,
-// within a horizontal square radius around pos. Both loaded chunks and chunks present in the world save are searched.
-// Chunks that do not exist are skipped and not generated. Only the primary block layer is searched, and blocks are
-// matched by their block state alone: block entity (NBT) data is not compared.
+// within a horizontal square radius around pos. Chunks are searched in rings that grow outward from pos, so
+// positions arrive in roughly nearest-first order. Both loaded chunks and chunks present in the world save are
+// searched. Chunks that do not exist are skipped and not generated. Only the primary block layer is searched, and
+// blocks are matched by their block state alone: block entity (NBT) data is not compared.
 func (tx *Tx) BlocksWithin(pos cube.Pos, radius int, blocks ...Block) iter.Seq[cube.Pos] {
 	return tx.World().blocksWithin(pos, radius, blocks...)
 }
