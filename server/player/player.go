@@ -1884,11 +1884,8 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	p.lastBreakDuration = p.breakTime(pos)
-	// A non-positive break time means the block is mined instantly; there is no cracking to animate.
-	if p.lastBreakDuration > 0 {
-		for _, viewer := range p.viewers() {
-			viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
-		}
+	for _, viewer := range p.viewers() {
+		viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
 	}
 }
 
@@ -1908,15 +1905,14 @@ func (p *Player) breakContext() block.BreakContext {
 		AquaAffinity: aquaAffinity,
 		Airborne:     !p.OnGround(),
 	}
-	for _, e := range p.Effects() {
-		switch e.Type() {
-		case effect.Haste:
-			ctx.HasteLevel = e.Level()
-		case effect.MiningFatigue:
-			ctx.MiningFatigueLevel = e.Level()
-		case effect.ConduitPower:
-			ctx.ConduitPowerLevel = e.Level()
-		}
+	if e, ok := p.Effect(effect.Haste); ok {
+		ctx.HasteLevel = e.Level()
+	}
+	if e, ok := p.Effect(effect.ConduitPower); ok {
+		ctx.ConduitPowerLevel = e.Level()
+	}
+	if e, ok := p.Effect(effect.MiningFatigue); ok {
+		ctx.MiningFatigueLevel = e.Level()
 	}
 	return ctx
 }
@@ -1965,10 +1961,8 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 	}
 	if breakTime := p.breakTime(pos); breakTime != p.lastBreakDuration {
-		if breakTime > 0 {
-			for _, viewer := range p.viewers() {
-				viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
-			}
+		for _, viewer := range p.viewers() {
+			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
 	}
