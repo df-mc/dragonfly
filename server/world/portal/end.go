@@ -96,17 +96,17 @@ func DeactivateEndPortal(tx *world.Tx, portalPos cube.Pos) {
 	if tx.Block(portalPos) != ep {
 		return
 	}
+	var positions []cube.Pos
 	queue := []cube.Pos{portalPos}
 	seen := map[cube.Pos]struct{}{portalPos: {}}
-	faces := []cube.Face{cube.FaceNorth, cube.FaceSouth, cube.FaceWest, cube.FaceEast}
 	for len(queue) > 0 {
 		p := queue[0]
 		queue = queue[1:]
 		if tx.Block(p) != ep {
 			continue
 		}
-		tx.SetBlock(p, nil, nil)
-		for _, face := range faces {
+		positions = append(positions, p)
+		for _, face := range cube.HorizontalFaces() {
 			n := p.Side(face)
 			if _, ok := seen[n]; ok {
 				continue
@@ -115,6 +115,7 @@ func DeactivateEndPortal(tx *world.Tx, portalPos cube.Pos) {
 			queue = append(queue, n)
 		}
 	}
+	deactivate(tx, positions)
 }
 
 // matchEndRing returns the 3x3 interior positions if the twelve canonical ring positions around centre all hold
