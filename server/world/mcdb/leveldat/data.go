@@ -15,6 +15,7 @@ import (
 // Data may be used in LevelDat.Unmarshal to collect the data of the level.dat.
 type Data struct {
 	DragonflyPositionTracking      []positionTrackingEntry `nbt:"DragonflyPositionTracking,omitempty"`
+	DragonflyPositionTrackingNext  int32                   `nbt:"DragonflyPositionTrackingNext,omitempty"`
 	BaseGameVersion                string                  `nbt:"baseGameVersion"`
 	BiomeOverride                  string
 	ConfirmedPlatformLockedContent bool
@@ -265,7 +266,7 @@ func (d *Data) Settings() *world.Settings {
 			Dimension: int(entry.Dimension), Active: entry.Active,
 		})
 	}
-	s.LoadPositionTrackingEntries(entries)
+	s.LoadPositionTrackingData(world.PositionTrackingData{Next: d.DragonflyPositionTrackingNext, Entries: entries})
 	return s
 }
 
@@ -292,7 +293,9 @@ func (d *Data) PutSettings(s *world.Settings) {
 	difficulty, _ := world.DifficultyID(s.Difficulty)
 	d.Difficulty = int32(difficulty)
 	d.DragonflyPositionTracking = d.DragonflyPositionTracking[:0]
-	for _, entry := range s.PositionTrackingEntries() {
+	trackingData := s.PositionTrackingData()
+	d.DragonflyPositionTrackingNext = trackingData.Next
+	for _, entry := range trackingData.Entries {
 		d.DragonflyPositionTracking = append(d.DragonflyPositionTracking, positionTrackingEntry{
 			Handle: entry.Handle, X: int32(entry.Position[0]), Y: int32(entry.Position[1]), Z: int32(entry.Position[2]),
 			Dimension: int32(entry.Dimension), Active: entry.Active,

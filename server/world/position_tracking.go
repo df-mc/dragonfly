@@ -48,34 +48,63 @@ type PositionTrackingUpdateAction struct {
 // BlockAction implements BlockAction.
 func (PositionTrackingUpdateAction) BlockAction() {}
 
-type positionTracker struct {
+// PositionTracker holds Bedrock position tracking handles shared by the dimensions of a world.
+type PositionTracker struct {
 	mu         sync.Mutex
 	next       int32
 	byHandle   map[int32]trackedPosition
 	byPosition map[[4]int]int32
 }
 
-// PositionTrackingEntries returns a snapshot of the position tracking database.
-func (s *Settings) PositionTrackingEntries() []PositionTrackingEntry {
-	t := &s.positionTracker
+// NewPositionTracker returns an initialised PositionTracker.
+func NewPositionTracker() *PositionTracker {
+	return &PositionTracker{byHandle: map[int32]trackedPosition{}, byPosition: map[[4]int]int32{}}
+}
+
+func (s *Settings) tracker() *PositionTracker {
+	if s.positionTracker == nil {
+		s.positionTracker = NewPositionTracker()
+	}
+	return s.positionTracker
+}
+
+// PositionTrackingData is a persistent snapshot of the position tracking database.
+type PositionTrackingData struct {
+	Next    int32
+	Entries []PositionTrackingEntry
+}
+
+// PositionTrackingData returns a snapshot of the position tracking database.
+func (s *Settings) PositionTrackingData() PositionTrackingData {
+	t := s.tracker()
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	entries := make([]PositionTrackingEntry, 0, len(t.byHandle))
+	data := PositionTrackingData{Next: t.next, Entries: make([]PositionTrackingEntry, 0, len(t.byHandle))}
 	for handle, entry := range t.byHandle {
-		entries = append(entries, PositionTrackingEntry{Handle: handle, Position: entry.pos, Dimension: entry.dim, Active: entry.active})
+		data.Entries = append(data.Entries, PositionTrackingEntry{Handle: handle, Position: entry.pos, Dimension: entry.dim, Active: entry.active})
 	}
-	return entries
+	return data
+}
+
+// PositionTrackingEntries returns a snapshot of the position tracking database.
+func (s *Settings) PositionTrackingEntries() []PositionTrackingEntry {
+	return s.PositionTrackingData().Entries
 }
 
 // LoadPositionTrackingEntries replaces the position tracking database with entries.
 func (s *Settings) LoadPositionTrackingEntries(entries []PositionTrackingEntry) {
-	t := &s.positionTracker
+	s.LoadPositionTrackingData(PositionTrackingData{Entries: entries})
+}
+
+// LoadPositionTrackingData replaces the position tracking database with data.
+func (s *Settings) LoadPositionTrackingData(data PositionTrackingData) {
+	t := s.tracker()
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.next = 0
+	t.next = data.Next
 	t.byHandle = map[int32]trackedPosition{}
 	t.byPosition = map[[4]int]int32{}
-	for _, entry := range entries {
+	for _, entry := range data.Entries {
 		if entry.Handle == 0 {
 			continue
 		}
@@ -92,7 +121,7 @@ func (s *Settings) LoadPositionTrackingEntries(entries []PositionTrackingEntry) 
 // read remains linked, matching Bedrock behaviour.
 func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 	dim, _ := DimensionID(w.Dimension())
-	t := &w.set.positionTracker
+	t := w.set.tracker()
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.byHandle == nil {
@@ -120,7 +149,7 @@ func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 // PositionTrackingHandleAt returns the tracking handle associated with pos.
 func (w *World) PositionTrackingHandleAt(pos cube.Pos) int32 {
 	dim, _ := DimensionID(w.Dimension())
-	t := &w.set.positionTracker
+	t := w.set.tracker()
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.byPosition == nil {
@@ -133,7 +162,7 @@ func (w *World) PositionTrackingHandleAt(pos cube.Pos) int32 {
 // association is retained so replacing the lodestone can reactivate it.
 func (w *World) UntrackPosition(pos cube.Pos) {
 	dim, _ := DimensionID(w.Dimension())
-	t := &w.set.positionTracker
+	t := w.set.tracker()
 	t.mu.Lock()
 	handle := t.byPosition[[4]int{dim, pos[0], pos[1], pos[2]}]
 	if handle != 0 {
@@ -159,7 +188,7 @@ func (w *World) UntrackPosition(pos cube.Pos) {
 
 // TrackedPosition looks up an active position tracking handle.
 func (w *World) TrackedPosition(handle int32) (cube.Pos, int, bool) {
-	t := &w.set.positionTracker
+	t := w.set.tracker()
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	entry, ok := t.byHandle[handle]

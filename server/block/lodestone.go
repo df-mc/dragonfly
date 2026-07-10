@@ -30,7 +30,6 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 	switch compass := held.Item().(type) {
 	case item.Compass:
 		relink = compass.TrackingHandle != 0
-	case item.LodestoneCompass:
 	default:
 		return false
 	}
@@ -45,6 +44,7 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 	if relink {
 		// Relinking a lodestone compass updates the complete stack in-place.
 		ctx.NewItem = linked
+		ctx.ReplaceHeldItem = true
 		ctx.SubtractFromCount(held.Count())
 	} else {
 		// Linking regular compasses consumes one and produces one separate

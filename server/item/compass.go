@@ -28,6 +28,7 @@ func (c Compass) EncodeNBT() map[string]any {
 
 // DecodeNBT decodes a lodestone compass from NBT.
 func (c Compass) DecodeNBT(data map[string]any) any {
+	c.TrackingHandle = 0
 	switch handle := data["trackingHandle"].(type) {
 	case int32:
 		c.TrackingHandle = handle
@@ -35,24 +36,4 @@ func (c Compass) DecodeNBT(data map[string]any) any {
 		c.TrackingHandle = int32(handle)
 	}
 	return c
-}
-
-// LodestoneCompass is the registered item form of a compass linked to a lodestone.
-type LodestoneCompass struct{}
-
-// EncodeItem ...
-func (LodestoneCompass) EncodeItem() (name string, meta int16) {
-	return "minecraft:lodestone_compass", 0
-}
-
-// Glinted returns true.
-func (LodestoneCompass) Glinted() bool { return true }
-
-// EncodeNBT encodes no extra data. Runtime lodestone compasses are represented
-// by Compass with a non-zero tracking handle.
-func (LodestoneCompass) EncodeNBT() map[string]any { return nil }
-
-// DecodeNBT decodes a lodestone compass into its runtime representation.
-func (LodestoneCompass) DecodeNBT(data map[string]any) any {
-	return Compass{}.DecodeNBT(data)
 }
