@@ -51,6 +51,13 @@ func (tx *Tx) Block(pos cube.Pos) Block {
 	return tx.World().block(pos)
 }
 
+// BlocksWithin returns an iterator over the positions of blocks matching any of the block states passed, within a
+// horizontal square radius around pos. Chunks not in memory are read from the world save; missing chunks are
+// skipped, not generated. Only the primary block layer is searched and blocks are matched by their state alone.
+func (tx *Tx) BlocksWithin(pos cube.Pos, radius int, blocks ...Block) iter.Seq[cube.Pos] {
+	return tx.World().blocksWithin(pos, radius, blocks...)
+}
+
 // Liquid attempts to return a Liquid block at the position passed. This
 // Liquid may be in the foreground or in any other layer. If found, the Liquid
 // is returned. If not, the bool returned is false.
@@ -197,6 +204,13 @@ func (tx *Tx) PlaySound(pos mgl64.Vec3, s Sound) {
 // AddEntity returns the Entity created by the EntityHandle.
 func (tx *Tx) AddEntity(e *EntityHandle) Entity {
 	return tx.World().addEntity(tx, e)
+}
+
+// AddEntityAt adds an EntityHandle to a World at the position passed. The Entity will be visible to all viewers of
+// the World that have the chunk at the position passed. AddEntityAt panics if the EntityHandle is already in a world.
+// AddEntityAt returns the Entity created by the EntityHandle.
+func (tx *Tx) AddEntityAt(e *EntityHandle, pos mgl64.Vec3) Entity {
+	return tx.World().addEntityAt(tx, e, pos)
 }
 
 // RemoveEntity removes an Entity from the World that is currently present in
