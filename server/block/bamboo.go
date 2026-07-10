@@ -105,10 +105,12 @@ func (b Bamboo) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	if face == cube.FaceUp {
 		switch x := tx.Block(pos).(type) {
 		case Bamboo:
-			top := x.top(pos, tx)
-			return b.grow(top, 1, math.MaxInt, tx)
+			if x.top(pos, tx) != pos {
+				return false
+			}
+			return b.grow(pos, 1, math.MaxInt, tx)
 		case BambooSapling:
-			return x.grow(pos, tx)
+			return false
 		default:
 		}
 	}
