@@ -141,6 +141,68 @@ func TestEnderEyeCompletesRing(t *testing.T) {
 	})
 }
 
+func TestEndPortalDespawnsOnFrameBreak(t *testing.T) {
+	w := world.New()
+	t.Cleanup(func() { _ = w.Close() })
+
+	center := cube.Pos{8, 10, 8}
+	<-w.Exec(func(tx *world.Tx) {
+		buildEndPortalRing(tx, center)
+		first := endPortalRingFrames(center)[0]
+		if !portal.ActivateEndPortal(tx, first.pos) {
+			t.Fatal("ActivateEndPortal() = false on a complete ring, want true")
+		}
+
+		// Break one frame: the portal blocks should despawn once the ring is no longer complete.
+		broken := endPortalRingFrames(center)[5]
+		tx.SetBlock(broken.pos, nil, nil)
+
+		// Drive a neighbour update on an interior end_portal block, mimicking what the world does after the removal.
+		ep, ok := tx.Block(center).(block.EndPortal)
+		if !ok {
+			t.Fatalf("centre block = %T, want block.EndPortal", tx.Block(center))
+		}
+		ep.NeighbourUpdateTick(center, broken.pos, tx)
+
+		for _, p := range interiorPositions(center) {
+			if _, ok := tx.Block(p).(block.EndPortal); ok {
+				t.Fatalf("interior at %v still EndPortal after frame break", p)
+			}
+		}
+	})
+}
+
+func TestEndPortalKeptOnPortalBlockBreak(t *testing.T) {
+	w := world.New()
+	t.Cleanup(func() { _ = w.Close() })
+
+	center := cube.Pos{8, 10, 8}
+	<-w.Exec(func(tx *world.Tx) {
+		buildEndPortalRing(tx, center)
+		if !portal.ActivateEndPortal(tx, endPortalRingFrames(center)[0].pos) {
+			t.Fatal("ActivateEndPortal() = false on a complete ring, want true")
+		}
+
+		// Break the centre portal block: the ring is still complete, so the other portal blocks must stay.
+		tx.SetBlock(center, nil, nil)
+		neighbour := center.Add(cube.Pos{1, 0, 0})
+		ep, ok := tx.Block(neighbour).(block.EndPortal)
+		if !ok {
+			t.Fatalf("neighbour block = %T, want block.EndPortal", tx.Block(neighbour))
+		}
+		ep.NeighbourUpdateTick(neighbour, center, tx)
+
+		for _, p := range interiorPositions(center) {
+			if p == center {
+				continue
+			}
+			if _, ok := tx.Block(p).(block.EndPortal); !ok {
+				t.Fatalf("interior at %v despawned after breaking a portal block", p)
+			}
+		}
+	})
+}
+
 func TestGenerateEndSpawnPlatformClearsThreeLayers(t *testing.T) {
 	w := world.New()
 	t.Cleanup(func() { _ = w.Close() })
