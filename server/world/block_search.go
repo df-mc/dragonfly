@@ -10,12 +10,8 @@ import (
 	"github.com/df-mc/goleveldb/leveldb"
 )
 
-// blocksWithin returns an iterator over the positions of blocks matching one of the block states passed, within a
-// horizontal square radius around pos. Chunks are visited in rings that grow outward from the chunk holding pos, so
-// positions are yielded in roughly nearest-first order and callers may stop early once a match can no longer be
-// beaten. Sub-chunk palettes are checked first, skipping sub-chunks that cannot contain a matching block. Unloaded
-// chunks are read from the provider without being loaded; missing chunks are skipped, not generated. blocksWithin
-// must only be called during a transaction.
+// blocksWithin implements Tx.BlocksWithin, visiting chunks in rings growing outward from pos so that positions are
+// yielded in roughly nearest-first order. It must only be called during a transaction.
 func (w *World) blocksWithin(pos cube.Pos, radius int, blocks ...Block) iter.Seq[cube.Pos] {
 	return func(yield func(cube.Pos) bool) {
 		if radius <= 0 || len(blocks) == 0 {
