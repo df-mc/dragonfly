@@ -12,7 +12,8 @@ import (
 
 // PortalTravelComputer handles portal-triggered interdimensional travel for an entity.
 type PortalTravelComputer struct {
-	// Instantaneous returns true if the entity should skip the portal wait timer. Players use this for Creative mode.
+	// Instantaneous returns true if the entity should skip the portal wait timer. Players use this for game modes
+	// with instant portal travel.
 	Instantaneous func() bool
 	// Teleport teleports the entity to the final portal position. If nil, Traveller.Teleport is used.
 	Teleport func(e Traveller, pos mgl64.Vec3)

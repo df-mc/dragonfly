@@ -88,7 +88,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 	}
 	pdata.portalTravel = &entity.PortalTravelComputer{
 		Instantaneous: func() bool {
-			return pdata.gameMode == world.GameModeCreative
+			return pdata.gameMode.InstantPortalTravel()
 		},
 		Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
 			e.(*Player).forceTeleport(pos)
