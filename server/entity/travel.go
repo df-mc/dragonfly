@@ -46,6 +46,9 @@ func NewPortalTravelComputer() *PortalTravelComputer {
 // Bedrock Edition searches 128 blocks in both dimensions.
 const portalSearchRadius = 128
 
+// portalTravelComputerProvider is implemented by behaviours of entities that can travel through portals.
+// Behaviours without a computer never travel. This matches vanilla, where some entities, such as falling blocks,
+// cannot use portals.
 type portalTravelComputerProvider interface {
 	PortalTravelComputer() *PortalTravelComputer
 }
