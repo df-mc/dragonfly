@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/portal"
 )
 
 // EndPortal is the translucent block that teleports the player to and from the End. It is created by inserting an Eye
@@ -40,20 +39,6 @@ func (EndPortal) EntityInside(_ cube.Pos, tx *world.Tx, e world.Entity) {
 	if t, ok := e.(portalTraveller); ok {
 		t.TravelThroughPortal(tx, world.End)
 	}
-}
-
-// NeighbourUpdateTick re-validates the surrounding ring after a frame is removed. If the ring is no longer complete,
-// every connected end_portal block is cleared (vanilla parity: breaking any frame despawns the whole portal).
-func (EndPortal) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if portal.EndPortalRingIntact(tx, pos) {
-		return
-	}
-	portal.DeactivateEndPortal(tx, pos)
-}
-
-// EncodeItem ...
-func (EndPortal) EncodeItem() (name string, meta int16) {
-	return "minecraft:end_portal", 0
 }
 
 // EncodeBlock ...

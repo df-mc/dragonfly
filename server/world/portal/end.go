@@ -15,13 +15,16 @@ const (
 	endSpawnZ = 0
 )
 
-// EndSpawnPosition returns the entity arrival position when travelling into the End. Matches vanilla Bedrock's fixed
-// (100.5, 49, 0.5) spawn on the obsidian platform.
-func EndSpawnPosition() mgl64.Vec3 {
-	return mgl64.Vec3{float64(endSpawnX) + 0.5, float64(endSpawnY), float64(endSpawnZ) + 0.5}
+// EndSpawnPosition returns the Bedrock End platform arrival position: y=49 for players and y=50 for other entities.
+func EndSpawnPosition(player bool) mgl64.Vec3 {
+	y := endSpawnY + 1
+	if player {
+		y = endSpawnY
+	}
+	return mgl64.Vec3{float64(endSpawnX) + 0.5, float64(y), float64(endSpawnZ) + 0.5}
 }
 
-// GenerateEndSpawnPlatform builds the 5x5 obsidian arrival platform at (100, 48, 0) and clears the 5x5x4 air column
+// GenerateEndSpawnPlatform builds the 5x5 obsidian arrival platform at (100, 48, 0) and clears the 5x5x3 air column
 // above it. Run on every Overworld→End travel to match vanilla, which regenerates the platform unconditionally — any
 // player builds in the area are wiped.
 func GenerateEndSpawnPlatform(tx *world.Tx) {
@@ -29,7 +32,7 @@ func GenerateEndSpawnPlatform(tx *world.Tx) {
 	for dx := -2; dx <= 2; dx++ {
 		for dz := -2; dz <= 2; dz++ {
 			tx.SetBlock(cube.Pos{endSpawnX + dx, endSpawnY - 1, endSpawnZ + dz}, ob, nil)
-			for dy := 0; dy < 4; dy++ {
+			for dy := 0; dy < 3; dy++ {
 				tx.SetBlock(cube.Pos{endSpawnX + dx, endSpawnY + dy, endSpawnZ + dz}, nil, nil)
 			}
 		}
@@ -40,8 +43,6 @@ func GenerateEndSpawnPlatform(tx *world.Tx) {
 // transaction that produced them and must not be retained after that transaction finishes.
 type End struct {
 	tx       *world.Tx
-	center   cube.Pos
-	frames   []endRingFrame
 	interior []cube.Pos
 }
 
@@ -98,8 +99,6 @@ func matchEndRing(tx *world.Tx, center cube.Pos) (End, bool) {
 	}
 	return End{
 		tx:       tx,
-		center:   center,
-		frames:   frames,
 		interior: endRingInterior(center),
 	}, true
 }
@@ -116,50 +115,6 @@ func ActivateEndPortal(tx *world.Tx, framePos cube.Pos) bool {
 	return true
 }
 
-// EndPortalRingIntact reports whether an intact twelve-frame ring still surrounds the end_portal block at portalPos.
-// portalPos may be any of the nine interior positions; the centre is found by trying each of the nine candidates in the
-// 3x3 around portalPos.
-func EndPortalRingIntact(tx *world.Tx, portalPos cube.Pos) bool {
-	for dx := -1; dx <= 1; dx++ {
-		for dz := -1; dz <= 1; dz++ {
-			candidate := portalPos.Add(cube.Pos{dx, 0, dz})
-			if _, ok := matchEndRing(tx, candidate); ok {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// DeactivateEndPortal clears every end_portal block reachable from portalPos via cardinal-neighbour walks on the same
-// y plane. A complete portal interior is a 3x3 grid connected through cardinal neighbours, so this removes all nine
-// blocks of a single portal but leaves unrelated end_portal blocks elsewhere alone.
-func DeactivateEndPortal(tx *world.Tx, portalPos cube.Pos) {
-	ep := endPortal()
-	if tx.Block(portalPos) != ep {
-		return
-	}
-	queue := []cube.Pos{portalPos}
-	seen := map[cube.Pos]struct{}{portalPos: {}}
-	faces := []cube.Face{cube.FaceNorth, cube.FaceSouth, cube.FaceWest, cube.FaceEast}
-	for len(queue) > 0 {
-		p := queue[0]
-		queue = queue[1:]
-		if tx.Block(p) != ep {
-			continue
-		}
-		tx.SetBlock(p, nil, nil)
-		for _, face := range faces {
-			n := p.Side(face)
-			if _, ok := seen[n]; ok {
-				continue
-			}
-			seen[n] = struct{}{}
-			queue = append(queue, n)
-		}
-	}
-}
-
 // activate fills the 3x3 interior with end_portal blocks. Positions that already hold an end_portal are skipped.
 func (e End) activate() {
 	ep := endPortal()
@@ -169,16 +124,6 @@ func (e End) activate() {
 		}
 		e.tx.SetBlock(pos, ep, nil)
 	}
-}
-
-// Center returns the centre block position of the 3x3 interior.
-func (e End) Center() cube.Pos {
-	return e.center
-}
-
-// Interior returns the nine block positions that fill the 3x3 interior.
-func (e End) Interior() []cube.Pos {
-	return e.interior
 }
 
 // expectedEndRingFrames returns the twelve canonical (position, facing) pairs around the centre. Each frame sits on

@@ -302,7 +302,6 @@ func init() {
 	world.RegisterItem(Emerald{})
 	world.RegisterItem(EnchantingTable{})
 	world.RegisterItem(EndBricks{})
-	world.RegisterItem(EndPortal{})
 	world.RegisterItem(EndPortalFrame{})
 	world.RegisterItem(EndRod{})
 	world.RegisterItem(EndStone{})

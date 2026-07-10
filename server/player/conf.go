@@ -86,13 +86,17 @@ func (cfg Config) Apply(data *world.EntityData) {
 		fireTicks:           conf.FireTicks,
 		fallDistance:        conf.FallDistance,
 	}
+	playerUUID := conf.UUID
 	pdata.portalTravel = &entity.PortalTravelComputer{
-		Instantaneous: func(source, target world.Dimension) bool {
-			// End travel is always instant in vanilla regardless of game mode, in either direction.
-			return pdata.gameMode.InstantPortalTravel() || source == world.End || target == world.End
+		Instantaneous: func(_, target world.Dimension) bool {
+			// End travel is always instant regardless of game mode; End portals target the End in either direction.
+			return pdata.gameMode.InstantPortalTravel() || target == world.End
 		},
 		Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
 			e.(*Player).forceTeleport(pos)
+		},
+		SpawnPoint: func(tx *world.Tx) mgl64.Vec3 {
+			return tx.World().PlayerSpawn(playerUUID).Vec3Middle()
 		},
 		// Only players create a portal at the destination when no linked portal exists.
 		CreatePortal: true,

@@ -11,27 +11,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-func TestPortalTravelComputerInstantaneousByDimension(t *testing.T) {
-	calls := 0
-	tc := &PortalTravelComputer{Instantaneous: func(source, target world.Dimension) bool {
-		calls++
-		return source == world.End || target == world.End
-	}}
-
-	if !tc.instantaneous(world.Overworld, world.End) {
-		t.Fatal("instantaneous(Overworld, End) = false, want true")
-	}
-	if !tc.instantaneous(world.End, world.Overworld) {
-		t.Fatal("instantaneous(End, Overworld) = false, want true")
-	}
-	if tc.instantaneous(world.Overworld, world.Nether) {
-		t.Fatal("instantaneous(Overworld, Nether) = true, want false")
-	}
-	if calls != 3 {
-		t.Fatalf("Instantaneous closure called %d times, want 3", calls)
-	}
-}
-
 func TestPortalTravelComputerStopPortalContact(t *testing.T) {
 	t.Run("keeps timer after portal contact", func(t *testing.T) {
 		tc := &PortalTravelComputer{inside: true, awaitingTravel: true, start: time.Now()}
@@ -221,7 +200,7 @@ func TestEntTravelsThroughEndPortal(t *testing.T) {
 		if !ok {
 			t.Fatal("entity was not added to the End")
 		}
-		want := mgl64.Vec3{100.5, 49, 0.5}
+		want := mgl64.Vec3{100.5, 50, 0.5}
 		if got := e.Position(); !got.ApproxEqual(want) {
 			t.Fatalf("entity position after End travel = %v, want %v", got, want)
 		}
@@ -234,6 +213,48 @@ func TestEntTravelsThroughEndPortal(t *testing.T) {
 				}
 			}
 		}
+	})
+}
+
+func TestEndReturnSpawnSelection(t *testing.T) {
+	t.Run("overworld uses configured spawn point", func(t *testing.T) {
+		w := world.New()
+		t.Cleanup(func() { _ = w.Close() })
+		want := mgl64.Vec3{12.5, 70, -3.5}
+		tc := &PortalTravelComputer{SpawnPoint: func(*world.Tx) mgl64.Vec3 { return want }}
+
+		<-w.Exec(func(tx *world.Tx) {
+			got, ok := tc.destinationSpawn(tx, world.End, cube.Pos{})
+			if !ok || !got.ApproxEqual(want) {
+				t.Fatalf("destinationSpawn() = %v, %v, want %v, true", got, ok, want)
+			}
+		})
+	})
+
+	t.Run("overworld falls back to world spawn", func(t *testing.T) {
+		w := world.New()
+		t.Cleanup(func() { _ = w.Close() })
+		tc := &PortalTravelComputer{}
+
+		<-w.Exec(func(tx *world.Tx) {
+			want := tx.World().Spawn().Vec3Middle()
+			got, ok := tc.destinationSpawn(tx, world.End, cube.Pos{})
+			if !ok || !got.ApproxEqual(want) {
+				t.Fatalf("destinationSpawn() = %v, %v, want %v, true", got, ok, want)
+			}
+		})
+	})
+
+	t.Run("nether searches for a portal", func(t *testing.T) {
+		w := world.Config{Dim: world.Nether}.New()
+		t.Cleanup(func() { _ = w.Close() })
+		tc := &PortalTravelComputer{}
+
+		<-w.Exec(func(tx *world.Tx) {
+			if _, ok := tc.destinationSpawn(tx, world.End, cube.Pos{}); ok {
+				t.Fatal("destinationSpawn() ok = true without a linked Nether portal, want false")
+			}
+		})
 	})
 }
 

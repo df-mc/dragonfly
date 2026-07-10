@@ -18,6 +18,8 @@ type PortalTravelComputer struct {
 	Instantaneous func(source, target world.Dimension) bool
 	// Teleport teleports the entity to the final portal position. If nil, Traveller.Teleport is used.
 	Teleport func(e Traveller, pos mgl64.Vec3)
+	// SpawnPoint returns the position the entity arrives at when returning from the End; if nil the world spawn is used.
+	SpawnPoint func(tx *world.Tx) mgl64.Vec3
 	// CreatePortal specifies if the entity may create a portal at the destination when none is found. Only players
 	// create portals; other entities only travel through portals that are already linked.
 	CreatePortal bool
@@ -245,10 +247,13 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 func (t *PortalTravelComputer) destinationSpawn(tx *world.Tx, sourceDim world.Dimension, pos cube.Pos) (mgl64.Vec3, bool) {
 	if tx.World().Dimension() == world.End {
 		portal.GenerateEndSpawnPlatform(tx)
-		return portal.EndSpawnPosition(), true
+		return portal.EndSpawnPosition(t.CreatePortal), true
 	}
-	if sourceDim == world.End {
-		// Returning from the End leads to the world spawn rather than a portal.
+	if sourceDim == world.End && tx.World().Dimension() == world.Overworld {
+		// Returning from the End leads to the configured spawn point rather than a portal.
+		if t.SpawnPoint != nil {
+			return t.SpawnPoint(tx), true
+		}
 		return tx.World().Spawn().Vec3Middle(), true
 	}
 	if !t.CreatePortal {

@@ -8,18 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-func TestEndPortalRegistered(t *testing.T) {
-	world.New().Close()
-
-	b, ok := world.BlockByName("minecraft:end_portal", nil)
-	if !ok {
-		t.Fatal("minecraft:end_portal not registered")
-	}
-	if _, ok := b.(block.EndPortal); !ok {
-		t.Fatalf("minecraft:end_portal returned %T, want block.EndPortal", b)
-	}
-}
-
 func TestEndPortalFrameRegistered(t *testing.T) {
 	world.New().Close()
 

@@ -169,39 +169,6 @@ func TestActivateEndPortalRejectsOutwardFacing(t *testing.T) {
 	})
 }
 
-func TestEndPortalDespawnsOnFrameBreak(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
-
-	center := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
-		buildEndPortalRing(tx, center)
-		first := endPortalRingFrames(center)[0]
-		if !portal.ActivateEndPortal(tx, first.pos) {
-			t.Fatal("ActivateEndPortal() = false on a complete ring, want true")
-		}
-
-		// Break one frame. Vanilla parity: the portal blocks should despawn when the ring is no longer complete.
-		broken := endPortalRingFrames(center)[5]
-		tx.SetBlock(broken.pos, nil, nil)
-
-		// Drive a neighbour update on an interior end_portal block, mimicking what the world tick does after the
-		// frame's removal. The centre is convenient — it is adjacent to the broken frame's interior neighbour through
-		// the 3x3 connectivity, so the deactivation flood-fill reaches every interior position.
-		ep, ok := tx.Block(center).(block.EndPortal)
-		if !ok {
-			t.Fatalf("centre block = %T, want block.EndPortal", tx.Block(center))
-		}
-		ep.NeighbourUpdateTick(center, broken.pos, tx)
-
-		for _, p := range interiorPositions(center) {
-			if _, ok := tx.Block(p).(block.EndPortal); ok {
-				t.Fatalf("interior at %v still EndPortal after frame break", p)
-			}
-		}
-	})
-}
-
 func TestActivateEndPortalCornerIgnored(t *testing.T) {
 	w := world.New()
 	t.Cleanup(func() { _ = w.Close() })
@@ -314,6 +281,27 @@ func TestEndPortalFromPosNonFrame(t *testing.T) {
 		_, ok := portal.EndPortalFromPos(tx, cube.Pos{0, 50, 0})
 		if ok {
 			t.Fatal("EndPortalFromPos() ok = true on air block, want false")
+		}
+	})
+}
+
+func TestGenerateEndSpawnPlatformClearsThreeLayers(t *testing.T) {
+	w := world.New()
+	t.Cleanup(func() { _ = w.Close() })
+
+	<-w.Exec(func(tx *world.Tx) {
+		for y := 49; y <= 52; y++ {
+			tx.SetBlock(cube.Pos{100, y, 0}, block.Obsidian{}, nil)
+		}
+		portal.GenerateEndSpawnPlatform(tx)
+
+		for y := 49; y <= 51; y++ {
+			if _, ok := tx.Block(cube.Pos{100, y, 0}).(block.Air); !ok {
+				t.Fatalf("block at y=%d = %T, want block.Air", y, tx.Block(cube.Pos{100, y, 0}))
+			}
+		}
+		if _, ok := tx.Block(cube.Pos{100, 52, 0}).(block.Obsidian); !ok {
+			t.Fatalf("block at y=52 = %T, want block.Obsidian", tx.Block(cube.Pos{100, 52, 0}))
 		}
 	})
 }
