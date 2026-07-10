@@ -100,11 +100,6 @@ func FindNetherPortal(tx *world.Tx, pos cube.Pos, radius int) (Nether, bool) {
 	closest, closestDist, found := Nether{}, math.MaxFloat64, false
 	seen := make(map[cube.Pos]struct{})
 	for selectedPos := range tx.BlocksWithin(pos, radius, portal(cube.X), portal(cube.Z)) {
-		if found && float64((chunkDistance(selectedPos, pos)-1)*16) > closestDist {
-			// BlocksWithin yields positions in outward chunk rings: nothing in this ring or beyond can be
-			// closer than the best match, so stop before loading any further chunks.
-			break
-		}
 		if _, ok := seen[selectedPos]; ok {
 			// Part of a portal that was already validated through an earlier block.
 			continue
@@ -310,10 +305,4 @@ func (n Nether) Spawn() cube.Pos {
 // Positions ...
 func (n Nether) Positions() []cube.Pos {
 	return n.positions
-}
-
-// chunkDistance returns the Chebyshev distance in chunks between the chunks holding the two positions passed.
-func chunkDistance(a, b cube.Pos) int {
-	dx, dz := a[0]>>4-b[0]>>4, a[2]>>4-b[2]>>4
-	return max(dx, -dx, dz, -dz)
 }

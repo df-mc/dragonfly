@@ -52,9 +52,8 @@ func (tx *Tx) Block(pos cube.Pos) Block {
 }
 
 // BlocksWithin returns an iterator over the positions of blocks matching any of the block states passed, within a
-// horizontal square radius around pos. Positions arrive in roughly nearest-first order. Chunks not in memory are
-// read from the world save; missing chunks are skipped, not generated. Only the primary block layer is searched
-// and blocks are matched by their state alone.
+// horizontal square radius around pos. Chunks not in memory are read from the world save; missing chunks are
+// skipped, not generated. Only the primary block layer is searched and blocks are matched by their state alone.
 func (tx *Tx) BlocksWithin(pos cube.Pos, radius int, blocks ...Block) iter.Seq[cube.Pos] {
 	return tx.World().blocksWithin(pos, radius, blocks...)
 }
