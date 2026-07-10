@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -9,13 +10,17 @@ import (
 
 // EndPortalFrame is the indestructible block that forms the twelve-block ring of an End portal.
 type EndPortalFrame struct {
-	solid
 	bassDrum
 
 	// Eye is true if an Eye of Ender has been inserted into the frame.
 	Eye bool
 	// Facing is the direction the frame faces. Each frame in a valid ring faces the centre of the 3x3 interior.
 	Facing cube.Direction
+}
+
+// Model ...
+func (f EndPortalFrame) Model() world.BlockModel {
+	return model.EndPortalFrame{Eye: f.Eye}
 }
 
 // EncodeItem ...

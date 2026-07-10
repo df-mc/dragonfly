@@ -76,6 +76,47 @@ func ActivateEndPortal(tx *world.Tx, framePos cube.Pos) bool {
 	return false
 }
 
+// EndPortalRingIntact reports whether an intact twelve-frame ring still surrounds the end_portal block at the
+// position passed, which may be any of the nine interior positions.
+func EndPortalRingIntact(tx *world.Tx, portalPos cube.Pos) bool {
+	for dx := -1; dx <= 1; dx++ {
+		for dz := -1; dz <= 1; dz++ {
+			if _, ok := matchEndRing(tx, portalPos.Add(cube.Pos{dx, 0, dz})); ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// DeactivateEndPortal clears every end_portal block reachable from the position passed through cardinal neighbours
+// on the same y plane, removing a single portal's interior without touching unrelated portals.
+func DeactivateEndPortal(tx *world.Tx, portalPos cube.Pos) {
+	ep := endPortal()
+	if tx.Block(portalPos) != ep {
+		return
+	}
+	queue := []cube.Pos{portalPos}
+	seen := map[cube.Pos]struct{}{portalPos: {}}
+	faces := []cube.Face{cube.FaceNorth, cube.FaceSouth, cube.FaceWest, cube.FaceEast}
+	for len(queue) > 0 {
+		p := queue[0]
+		queue = queue[1:]
+		if tx.Block(p) != ep {
+			continue
+		}
+		tx.SetBlock(p, nil, nil)
+		for _, face := range faces {
+			n := p.Side(face)
+			if _, ok := seen[n]; ok {
+				continue
+			}
+			seen[n] = struct{}{}
+			queue = append(queue, n)
+		}
+	}
+}
+
 // matchEndRing returns the 3x3 interior positions if the twelve canonical ring positions around centre all hold
 // matching frames.
 func matchEndRing(tx *world.Tx, center cube.Pos) ([]cube.Pos, bool) {
