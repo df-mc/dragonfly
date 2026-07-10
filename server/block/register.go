@@ -6,6 +6,7 @@ import (
 )
 
 //go:generate go run ../../cmd/blockhash -o hash.go .
+//go:generate go run ../../cmd/blockaccessor -o accessor.go .
 
 // init registers all blocks implemented by Dragonfly.
 func init() {
@@ -14,6 +15,7 @@ func init() {
 	world.RegisterBlock(AncientDebris{})
 	world.RegisterBlock(Andesite{Polished: true})
 	world.RegisterBlock(Andesite{})
+	world.RegisterBlock(BambooMosaic{})
 	world.RegisterBlock(Barrier{})
 	world.RegisterBlock(Beacon{})
 	world.RegisterBlock(Bedrock{InfiniteBurning: true})
@@ -138,6 +140,7 @@ func init() {
 	}
 
 	registerAll(allAnvils())
+	registerAll(allBambooBlocks())
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -244,6 +247,9 @@ func init() {
 	world.RegisterItem(AncientDebris{})
 	world.RegisterItem(Andesite{Polished: true})
 	world.RegisterItem(Andesite{})
+	world.RegisterItem(BambooBlock{})
+	world.RegisterItem(BambooBlock{Stripped: true})
+	world.RegisterItem(BambooMosaic{})
 	world.RegisterItem(Barrel{})
 	world.RegisterItem(Barrier{})
 	world.RegisterItem(Basalt{Polished: true})
@@ -441,12 +447,15 @@ func init() {
 		world.RegisterItem(Wool{Colour: c})
 	}
 	for _, w := range WoodTypes() {
-		if w != WarpedWood() && w != CrimsonWood() {
-			t, _ := w.Leaves()
+		if t, ok := w.Leaves(); ok {
 			world.RegisterItem(Leaves{Type: t, Persistent: true})
 		}
-		world.RegisterItem(Log{Wood: w, Stripped: true})
-		world.RegisterItem(Log{Wood: w})
+		if w != BambooWood() {
+			world.RegisterItem(Log{Wood: w, Stripped: true})
+			world.RegisterItem(Log{Wood: w})
+			world.RegisterItem(Wood{Wood: w, Stripped: true})
+			world.RegisterItem(Wood{Wood: w})
+		}
 		world.RegisterItem(Planks{Wood: w})
 		world.RegisterItem(Sign{Wood: w})
 		world.RegisterItem(HangingSign{Wood: w})
@@ -454,8 +463,6 @@ func init() {
 		world.RegisterItem(WoodFenceGate{Wood: w})
 		world.RegisterItem(WoodFence{Wood: w})
 		world.RegisterItem(WoodTrapdoor{Wood: w})
-		world.RegisterItem(Wood{Wood: w, Stripped: true})
-		world.RegisterItem(Wood{Wood: w})
 	}
 	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
 	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})

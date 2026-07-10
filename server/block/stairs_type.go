@@ -18,6 +18,8 @@ func encodeStairsBlock(block world.Block) string {
 		} else if block.Type == PolishedBlackstone() {
 			return "polished_blackstone"
 		}
+	case BambooMosaic:
+		return "bamboo_mosaic"
 	case Bricks:
 		return "brick"
 	case Cobblestone:
@@ -136,6 +138,7 @@ func StairsBlocks() []world.Block {
 	b := []world.Block{
 		Andesite{Polished: true},
 		Andesite{},
+		BambooMosaic{},
 		Blackstone{Type: PolishedBlackstone()},
 		Blackstone{},
 		Bricks{},
