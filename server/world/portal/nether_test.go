@@ -27,6 +27,14 @@ func TestNetherPortalFromPos(t *testing.T) {
 			ok:  true,
 		},
 		{
+			name: "valid X axis frame",
+			build: func(tx *world.Tx, origin cube.Pos) {
+				buildVerticalFrame(tx, origin, cube.X, 2, 3)
+			},
+			pos: cube.Pos{},
+			ok:  true,
+		},
+		{
 			name: "maximum size frame",
 			build: func(tx *world.Tx, origin cube.Pos) {
 				buildVerticalFrame(tx, origin, cube.Z, 21, 21)
@@ -110,23 +118,32 @@ func TestPortalModelHasNoCollisionBBox(t *testing.T) {
 }
 
 func TestActivateNetherPortal(t *testing.T) {
-	w := world.New()
-	t.Cleanup(func() { _ = w.Close() })
+	for _, axis := range []cube.Axis{cube.Z, cube.X} {
+		t.Run(axis.String(), func(t *testing.T) {
+			w := world.New()
+			t.Cleanup(func() { _ = w.Close() })
 
-	origin := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
-		buildVerticalFrame(tx, origin, cube.Z, 2, 3)
-		if !portal.ActivateNetherPortal(tx, origin) {
-			t.Fatal("ActivateNetherPortal() = false, want true")
-		}
-		for x := range 2 {
-			for y := range 3 {
-				if _, ok := tx.Block(origin.Add(widthOffset(cube.Z, x)).Add(cube.Pos{0, y})).(block.Portal); !ok {
-					t.Fatalf("portal block not placed at interior offset %d,%d", x, y)
+			origin := cube.Pos{8, 10, 8}
+			<-w.Exec(func(tx *world.Tx) {
+				buildVerticalFrame(tx, origin, axis, 2, 3)
+				if !portal.ActivateNetherPortal(tx, origin) {
+					t.Fatal("ActivateNetherPortal() = false, want true")
 				}
-			}
-		}
-	})
+				for x := range 2 {
+					for y := range 3 {
+						pos := origin.Add(widthOffset(axis, x)).Add(cube.Pos{0, y})
+						pb, ok := tx.Block(pos).(block.Portal)
+						if !ok {
+							t.Fatalf("portal block not placed at interior offset %d,%d", x, y)
+						}
+						if pb.Axis != axis {
+							t.Fatalf("portal block at interior offset %d,%d has axis %v, want %v", x, y, pb.Axis, axis)
+						}
+					}
+				}
+			})
+		})
+	}
 }
 
 func TestFireChargeActivatesNetherPortal(t *testing.T) {

@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
-	"github.com/sandertv/gophertunnel/minecraft/nbt"
 	"io"
 	"os"
+
+	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
 // LevelDat implements the encoding and decoding of level.dat files. An empty
@@ -40,7 +41,7 @@ func Read(r io.Reader) (*LevelDat, error) {
 		return nil, fmt.Errorf("level.dat: read header: %w", err)
 	}
 	ldat.data = make([]byte, ldat.hdr.FileLength)
-	if n, err := r.Read(ldat.data); err != nil || int32(n) != ldat.hdr.FileLength {
+	if n, err := io.ReadFull(r, ldat.data); err != nil || int32(n) != ldat.hdr.FileLength {
 		return nil, fmt.Errorf("level.dat: read data: %w", err)
 	}
 	return &ldat, nil

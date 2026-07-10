@@ -538,14 +538,15 @@ func (p *Player) Heal(health float64, source world.HealingSource) {
 
 // updateFallState is called to update the entities falling state.
 func (p *Player) updateFallState(distanceThisTick float64) {
-	if p.OnGround() {
+	switch {
+	case p.OnGround():
 		if p.fallDistance > 0 {
 			p.fall(p.fallDistance)
 			p.ResetFallDistance()
 		}
-	} else if distanceThisTick < p.fallDistance {
+	case distanceThisTick < p.fallDistance:
 		p.fallDistance -= distanceThisTick
-	} else {
+	default:
 		p.ResetFallDistance()
 	}
 }
@@ -589,7 +590,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	immune := time.Now().Before(p.immuneUntil)
 	if immune {
-		if damageLeft = damageLeft - p.lastDamage; damageLeft <= 0 {
+		if damageLeft -= p.lastDamage; damageLeft <= 0 {
 			return 0, false
 		}
 	}
@@ -602,8 +603,12 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	p.setAttackImmunity(immunity, totalDamage)
 
 	if a := p.Absorption(); a > 0 {
-		p.SetAbsorption(a - damageLeft)
+		remaining := a - damageLeft
+		p.SetAbsorption(remaining)
 		damageLeft = max(0, damageLeft-a)
+		if _, exists := p.Effect(effect.Absorption); exists && remaining <= 0 {
+			p.RemoveEffect(effect.Absorption)
+		}
 	}
 
 	if p.Health()-damageLeft <= mgl64.Epsilon && !src.IgnoreTotem() {
@@ -1508,7 +1513,7 @@ func (p *Player) UseItem() {
 	case item.Chargeable:
 		useCtx := p.useContext()
 		if !p.usingItem {
-			if !usable.ReleaseCharge(p, p.tx, useCtx) {
+			if !usable.ReleaseCharge(p, p.tx, useCtx) && usable.CanCharge(p, p.tx, useCtx) {
 				// If the item was not charged yet, start charging.
 				p.usingSince, p.usingItem = time.Now(), true
 			}
@@ -2591,6 +2596,10 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 // TravelThroughPortal handles the player touching a portal block.
 func (p *Player) TravelThroughPortal(tx *world.Tx, target world.Dimension) {
+	if !p.GameMode().HasCollision() {
+		// Game modes that pass through blocks, such as spectator, are not affected by portals.
+		return
+	}
 	p.portalTravel.EnterPortal(p, tx, target)
 }
 

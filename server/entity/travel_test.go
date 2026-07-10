@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/portal"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -277,6 +278,165 @@ func TestEndPortalReturnsToOverworldSpawn(t *testing.T) {
 			t.Fatalf("entity position after End→Overworld return = %v, want %v", got, want)
 		}
 	})
+}
+
+func TestTranslatePortalPosition(t *testing.T) {
+	tests := []struct {
+		name           string
+		pos, want      cube.Pos
+		source, target world.Dimension
+	}{
+		{name: "overworld to nether", pos: cube.Pos{80, 64, 81}, want: cube.Pos{10, 64, 10}, source: world.Overworld, target: world.Nether},
+		{name: "negative coordinates floor towards negative infinity", pos: cube.Pos{-15, 64, -1}, want: cube.Pos{-2, 64, -1}, source: world.Overworld, target: world.Nether},
+		{name: "nether to overworld", pos: cube.Pos{10, 64, -3}, want: cube.Pos{80, 64, -24}, source: world.Nether, target: world.Overworld},
+		{name: "y clamped to nether range", pos: cube.Pos{0, 319, 0}, want: cube.Pos{0, 127, 0}, source: world.Overworld, target: world.Nether},
+		{name: "y clamped to overworld range", pos: cube.Pos{0, -80, 0}, want: cube.Pos{0, -64, 0}, source: world.Nether, target: world.Overworld},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := translatePortalPosition(tt.pos, tt.source, tt.target); got != tt.want {
+				t.Fatalf("translatePortalPosition(%v, %v, %v) = %v, want %v", tt.pos, tt.source, tt.target, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPortalTravelComputerDelayedTravel(t *testing.T) {
+	overworld, nether := portalWorlds(t)
+	_ = nether
+
+	tc := &PortalTravelComputer{}
+	<-overworld.Exec(func(tx *world.Tx) {
+		if destination := tc.enterPortal(tx, world.Nether); destination != nil {
+			t.Fatal("enterPortal() started travel before the portal timer finished")
+		}
+		if !tc.awaitingTravel {
+			t.Fatal("enterPortal() did not start the portal timer")
+		}
+
+		// Backdate the timer to simulate the entity having stood in the portal for four seconds.
+		tc.start = time.Now().Add(-time.Second * 4)
+		if destination := tc.enterPortal(tx, world.Nether); destination != nether {
+			t.Fatalf("enterPortal() destination after portal timer = %v, want the Nether", destination)
+		}
+	})
+}
+
+func TestPortalTravelComputerCooldown(t *testing.T) {
+	overworld, nether := portalWorlds(t)
+	_ = nether
+
+	tc := NewPortalTravelComputer()
+	<-overworld.Exec(func(tx *world.Tx) {
+		tc.cooldownUntil = time.Now().Add(time.Hour)
+		if destination := tc.enterPortal(tx, world.Nether); destination != nil {
+			t.Fatal("enterPortal() started travel during the portal cooldown")
+		}
+
+		tc.cooldownUntil = time.Now().Add(-time.Second)
+		if destination := tc.enterPortal(tx, world.Nether); destination != nether {
+			t.Fatal("enterPortal() did not start travel after the portal cooldown expired")
+		}
+	})
+}
+
+func TestEntPortalTravelWithoutDestinationPortal(t *testing.T) {
+	overworld, nether := portalWorlds(t)
+
+	spawnRecorder := &entitySpawnRecorder{}
+	nether.Handle(spawnRecorder)
+
+	sourcePos := mgl64.Vec3{80.5, 64, 80.5}
+	handle := world.EntitySpawnOpts{Position: sourcePos}.New(EnderPearlType, enderPearlConf)
+	var tc *PortalTravelComputer
+	<-overworld.Exec(func(tx *world.Tx) {
+		e := tx.AddEntity(handle)
+		tc = e.(*Ent).Behaviour().(*ProjectileBehaviour).PortalTravelComputer()
+		(block.Portal{Axis: cube.Z}).EntityInside(cube.PosFromVec3(sourcePos), tx, e)
+	})
+
+	// The cooldown is stamped once the travel attempt finishes, after the entity was returned to the source world.
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		tc.mu.Lock()
+		done := !tc.cooldownUntil.IsZero()
+		tc.mu.Unlock()
+		if done {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("timed out waiting for the travel attempt to finish")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	if !entityInWorld(handle, overworld) {
+		t.Fatal("entity did not return to the source world after failing to find a destination portal")
+	}
+	if spawnRecorder.called {
+		t.Fatal("entity was spawned in the destination world without a linked portal")
+	}
+	<-overworld.Exec(func(tx *world.Tx) {
+		e, _ := handle.Entity(tx)
+		if got := e.Position(); !got.ApproxEqual(sourcePos) {
+			t.Fatalf("entity position after failed portal travel = %v, want %v", got, sourcePos)
+		}
+	})
+	<-nether.Exec(func(tx *world.Tx) {
+		if _, ok := portal.FindNetherPortal(tx, cube.Pos{10, 64, 10}, 16); ok {
+			t.Fatal("a portal was created in the destination world by a non-player entity")
+		}
+	})
+}
+
+func TestEntPortalTravelCreatesPortal(t *testing.T) {
+	overworld, nether := portalWorlds(t)
+
+	sourcePos := mgl64.Vec3{80.5, 64, 80.5}
+	handle := world.EntitySpawnOpts{Position: sourcePos}.New(testMovingEntType{}, testPortalCreatorConfig{})
+	<-overworld.Exec(func(tx *world.Tx) {
+		e := tx.AddEntity(handle)
+		(block.Portal{Axis: cube.Z}).EntityInside(cube.PosFromVec3(sourcePos), tx, e)
+	})
+
+	waitForEntityWorld(t, handle, nether)
+	<-nether.Exec(func(tx *world.Tx) {
+		if _, ok := portal.FindNetherPortal(tx, cube.Pos{10, 64, 10}, 16); !ok {
+			t.Fatal("no portal was created in the destination world for a portal-creating entity")
+		}
+	})
+}
+
+// portalWorlds returns an Overworld and Nether world linked to each other through portals.
+func portalWorlds(t *testing.T) (overworld, nether *world.World) {
+	t.Helper()
+	overworld = world.Config{PortalDestination: func(dim world.Dimension) *world.World {
+		if dim == world.Nether {
+			return nether
+		}
+		return nil
+	}}.New()
+	nether = world.Config{Dim: world.Nether, PortalDestination: func(dim world.Dimension) *world.World {
+		if dim == world.Nether {
+			return overworld
+		}
+		return nil
+	}}.New()
+	t.Cleanup(func() {
+		_ = overworld.Close()
+		_ = nether.Close()
+	})
+	return overworld, nether
+}
+
+// testPortalCreatorConfig configures a test entity that may create destination portals, like a player.
+type testPortalCreatorConfig struct{}
+
+func (testPortalCreatorConfig) Apply(data *world.EntityData) {
+	data.Data = &testMoveBehaviour{BaseBehaviour: BaseBehaviour{portalTravel: &PortalTravelComputer{
+		Instantaneous: func(world.Dimension, world.Dimension) bool { return true },
+		CreatePortal:  true,
+	}}}
 }
 
 func waitForEntityWorld(t *testing.T, handle *world.EntityHandle, w *world.World) {

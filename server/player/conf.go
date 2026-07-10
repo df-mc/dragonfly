@@ -88,13 +88,14 @@ func (cfg Config) Apply(data *world.EntityData) {
 	}
 	pdata.portalTravel = &entity.PortalTravelComputer{
 		Instantaneous: func(source, target world.Dimension) bool {
-			// Creative skips the timer for any portal. End travel is always instant in vanilla regardless of game mode,
-			// in either direction.
-			return pdata.gameMode == world.GameModeCreative || source == world.End || target == world.End
+			// End travel is always instant in vanilla regardless of game mode, in either direction.
+			return pdata.gameMode.InstantPortalTravel() || source == world.End || target == world.End
 		},
 		Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
 			e.(*Player).forceTeleport(pos)
 		},
+		// Only players create a portal at the destination when no linked portal exists.
+		CreatePortal: true,
 	}
 	pdata.hunger.foodLevel, pdata.hunger.foodTick, pdata.hunger.exhaustionLevel, pdata.hunger.saturationLevel = conf.Food, conf.FoodTick, conf.Exhaustion, conf.Saturation
 	pdata.experience.Add(conf.Experience)

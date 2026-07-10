@@ -106,6 +106,7 @@ func connectedPortalBlocks(tx *world.Tx, pos cube.Pos, axis cube.Axis) []cube.Po
 	var positions []cube.Pos
 	queue := []cube.Pos{pos}
 	seen := map[cube.Pos]struct{}{pos: {}}
+	faces := portalFaces(axis)
 	for len(queue) > 0 {
 		p := queue[0]
 		queue = queue[1:]
@@ -113,7 +114,7 @@ func connectedPortalBlocks(tx *world.Tx, pos cube.Pos, axis cube.Axis) []cube.Po
 			continue
 		}
 		positions = append(positions, p)
-		for _, face := range portalFaces(axis) {
+		for _, face := range faces {
 			next := p.Side(face)
 			if _, ok := seen[next]; ok {
 				continue

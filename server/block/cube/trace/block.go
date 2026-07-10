@@ -2,6 +2,7 @@ package trace
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
@@ -69,4 +70,24 @@ func BlockIntercept(pos cube.Pos, src world.BlockSource, b world.Block, start, e
 	}
 
 	return BlockResult{bb: hit.BBox(), pos: hit.Position(), face: hit.Face(), blockPos: pos}, true
+}
+
+// BlockIntersects checks if the line segment from start to end intersects the block model of b at pos. Unlike
+// BlockIntercept, it only reports whether an intersection exists and does not calculate the closest hit position, face,
+// or bounding box.
+func BlockIntersects(pos cube.Pos, src world.BlockSource, b world.Block, start, end mgl64.Vec3) bool {
+	m := b.Model()
+	switch m.(type) {
+	case model.Empty:
+		return false
+	case model.Solid:
+		return BBoxIntersects(cube.Box(0, 0, 0, 1, 1, 1).Translate(pos.Vec3()), start, end)
+	}
+
+	for _, bb := range m.BBox(pos, src) {
+		if BBoxIntersects(bb.Translate(pos.Vec3()), start, end) {
+			return true
+		}
+	}
+	return false
 }

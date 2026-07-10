@@ -20,3 +20,8 @@ jobs:
 
       - name: Test
         run: go test ./...
+
+      - name: Verify generated code
+        run: |
+          go generate ./server/block/
+          git diff --exit-code

@@ -99,6 +99,41 @@ func BBoxIntercept(bb cube.BBox, start, end mgl64.Vec3) (result BBoxResult, ok b
 	return BBoxResult{bb: bb, pos: *vec, face: f}, true
 }
 
+// BBoxIntersects checks if the line segment from start to end intersects the BBox.
+// Unlike BBoxIntercept, it only reports whether an intersection exists and does not
+// calculate the closest hit position or face.
+func BBoxIntersects(bb cube.BBox, start, end mgl64.Vec3) bool {
+	min, max := bb.Min(), bb.Max()
+	dir := end.Sub(start)
+	tMin, tMax := 0.0, 1.0
+
+	for axis := range 3 {
+		if mgl64.FloatEqual(dir[axis], 0) {
+			if start[axis] < min[axis] || start[axis] > max[axis] {
+				return false
+			}
+			continue
+		}
+
+		inv := 1 / dir[axis]
+		t1 := (min[axis] - start[axis]) * inv
+		t2 := (max[axis] - start[axis]) * inv
+		if t1 > t2 {
+			t1, t2 = t2, t1
+		}
+		if t1 > tMin {
+			tMin = t1
+		}
+		if t2 < tMax {
+			tMax = t2
+		}
+		if tMin > tMax {
+			return false
+		}
+	}
+	return true
+}
+
 // vec3OnLineWithX returns an mgl64.Vec3 on the line between mgl64.Vec3 a and b with an X value passed. If no such vec3
 // could be found, the bool returned is false.
 func vec3OnLineWithX(a, b mgl64.Vec3, x float64) *mgl64.Vec3 {
