@@ -76,7 +76,7 @@ func (t ticker) tick(tx *Tx) {
 		tick = w.tick
 	}
 
-	rain, thunder, tick, tim, cycle := w.set.Raining, w.set.Thundering && w.set.Raining, w.set.CurrentTick, int(w.set.Time), w.set.TimeCycle
+	rain, thunder, tim, cycle := w.set.Raining, w.set.Thundering && w.set.Raining, int(w.set.Time), w.set.TimeCycle
 
 	tryAdvanceDay := false
 	if tx.w.set.RequiredSleepTicks > 0 {
