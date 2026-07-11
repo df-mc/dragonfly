@@ -154,6 +154,11 @@ func TestScaffoldingDestroyedNextToLava(t *testing.T) {
 // itself through its own tick-based, chance-driven burn mechanic (using Scaffolding's FlammabilityInfo, which
 // gives it higher odds than wood, not a guarantee). Destroying it immediately on a neighbour update as well
 // would double up on that and make it disappear far faster than vanilla the instant any fire touches it.
+//
+// This calls NeighbourUpdateTick directly rather than advancing world ticks, since Fire's own RandomTick/burn is
+// chance-driven: advancing ticks could occasionally (and correctly) destroy the scaffolding through that separate
+// mechanism, making the test flaky for a reason unrelated to what it is meant to check. NeighbourUpdateTick is
+// the exact, deterministic mechanism this test targets.
 func TestScaffoldingNotInstantlyDestroyedNextToFire(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
@@ -165,12 +170,11 @@ func TestScaffoldingNotInstantlyDestroyedNextToFire(t *testing.T) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
 		tx.SetBlock(pos, block.Scaffolding{}, nil)
 		tx.SetBlock(pos.Side(cube.FaceEast), block.Fire{}, nil)
-	})
-	advanceTicks(w, 3)
 
-	<-w.Exec(func(tx *world.Tx) {
+		block.Scaffolding{}.NeighbourUpdateTick(pos, pos.Side(cube.FaceEast), tx)
+
 		if _, ok := tx.Block(pos).(block.Scaffolding); !ok {
-			t.Errorf("expected scaffolding next to fire to still be standing after a few ticks, got %v", tx.Block(pos))
+			t.Errorf("expected scaffolding next to fire to still be standing right after the neighbour update, got %v", tx.Block(pos))
 		}
 	})
 }
@@ -240,4 +244,37 @@ func TestScaffoldingFlammabilityInfo(t *testing.T) {
 	if info.LavaFlammable {
 		t.Error("expected LavaFlammable to be false")
 	}
+}
+
+// TestScaffoldingPlacementSetsStabilityCheckImmediately verifies that placing a scaffolding block horizontally
+// off an existing, floating scaffolding block sets StabilityCheck correctly (true) right away, without needing a
+// later ScheduledTick to correct it. This is a regression test: UseOnBlock previously only wrote Stability and
+// left StabilityCheck at its zero value (false), broadcasting an incorrect stability_check for a moment after
+// every horizontal placement until the next update touched it.
+func TestScaffoldingPlacementSetsStabilityCheckImmediately(t *testing.T) {
+	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
+	defer w.Close()
+
+	base := cube.Pos{0, 1, 0}
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
+		tx.SetBlock(base, block.Scaffolding{}, nil)
+	})
+
+	<-w.Exec(func(tx *world.Tx) {
+		// A nil user never implements block.Placer, so place() falls back to a plain tx.SetBlock that never
+		// touches ctx.CountSub - UseOnBlock's bool return only reflects a real Player's PlaceBlock outcome, so
+		// it is not asserted here. The block being placed with the correct state is what this test verifies.
+		block.Scaffolding{}.UseOnBlock(base, cube.FaceEast, mgl64.Vec3{}, tx, nil, &item.UseContext{})
+		s, ok := tx.Block(base.Side(cube.FaceEast)).(block.Scaffolding)
+		if !ok {
+			t.Fatalf("expected scaffolding at %v, got %v", base.Side(cube.FaceEast), tx.Block(base.Side(cube.FaceEast)))
+		}
+		if s.Stability != 1 {
+			t.Errorf("expected Stability 1, got %d", s.Stability)
+		}
+		if !s.StabilityCheck {
+			t.Error("expected StabilityCheck to be true immediately on placement, not just after a later tick")
+		}
+	})
 }

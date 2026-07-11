@@ -132,7 +132,8 @@ func TestScaffoldingBuildUpFromBranchTip(t *testing.T) {
 			t.Fatal("expected build-up from the branch tip to resolve successfully")
 		}
 		above = resolved
-		tx.SetBlock(above, Scaffolding{Stability: scaffoldingDistance(above, tx)}, nil)
+		stability, stabilityCheck := scaffoldingStability(above, tx)
+		tx.SetBlock(above, Scaffolding{Stability: stability, StabilityCheck: stabilityCheck}, nil)
 	})
 	for i := 0; i < 3; i++ {
 		w.AdvanceTick()

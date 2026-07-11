@@ -70,7 +70,7 @@ func scaffoldingNextToLava(pos cube.Pos, tx *world.Tx) bool {
 // ScheduledTick recalculates the stability of the scaffolding. If it has lost its support, the scaffolding either
 // breaks and drops as an item or falls as an entity.
 func (s Scaffolding) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
-	dist := scaffoldingDistance(pos, tx)
+	dist, bottom := scaffoldingStability(pos, tx)
 	if dist == 7 {
 		if s.Stability == 7 {
 			// The scaffolding was already unsupported on the previous tick, so it now falls as an entity. This
@@ -84,10 +84,6 @@ func (s Scaffolding) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 		// check on the scaffolding above, cascading up the column.
 		breakBlock(s, pos, tx)
 		return
-	}
-	bottom := dist > 0
-	if _, ok := tx.Block(pos.Side(cube.FaceDown)).(Scaffolding); ok {
-		bottom = false
 	}
 	if s.Stability != dist || s.StabilityCheck != bottom {
 		s.Stability, s.StabilityCheck = dist, bottom
@@ -107,7 +103,7 @@ func (s Scaffolding) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *
 		return false
 	}
 
-	s.Stability = scaffoldingDistance(pos, tx)
+	s.Stability, s.StabilityCheck = scaffoldingStability(pos, tx)
 	// Scaffolding may be placed inside the placing entity, which is required to build a tower upwards while
 	// standing on it.
 	ctx.IgnoreBBox = true
@@ -200,17 +196,20 @@ func (s Scaffolding) EncodeBlock() (string, map[string]any) {
 	}
 }
 
-// scaffoldingDistance returns the stability a scaffolding block would have at the position passed, based on the
-// block below it and any horizontally adjacent scaffolding. It returns 0 if the block rests on a supporting block
-// and 7 if it is unsupported.
-func scaffoldingDistance(pos cube.Pos, tx *world.Tx) int {
+// scaffoldingStability returns the Stability and StabilityCheck a scaffolding block would have at the position
+// passed, based on the block below it and any horizontally adjacent scaffolding. dist is 0 if the block rests on
+// a supporting block and 7 if it is unsupported. bottom mirrors the StabilityCheck field: it is true only when
+// dist is greater than 0 and the block below is not itself scaffolding, i.e. the block is floating.
+func scaffoldingStability(pos cube.Pos, tx *world.Tx) (dist int, bottom bool) {
 	below := pos.Side(cube.FaceDown)
 	belowBlock := tx.Block(below)
-	dist := 7
+	belowIsScaffolding := false
+	dist = 7
 	if s, ok := belowBlock.(Scaffolding); ok {
 		dist = s.Stability
+		belowIsScaffolding = true
 	} else if belowBlock.Model().FaceSolid(below, cube.FaceUp, tx) {
-		return 0
+		return 0, false
 	}
 	for _, face := range []cube.Face{cube.FaceNorth, cube.FaceSouth, cube.FaceWest, cube.FaceEast} {
 		if s, ok := tx.Block(pos.Side(face)).(Scaffolding); ok {
@@ -222,7 +221,7 @@ func scaffoldingDistance(pos cube.Pos, tx *world.Tx) int {
 			}
 		}
 	}
-	return dist
+	return dist, dist > 0 && !belowIsScaffolding
 }
 
 // allScaffolding ...
