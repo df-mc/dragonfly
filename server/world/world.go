@@ -41,7 +41,9 @@ type World struct {
 
 	o sync.Once
 
-	set  *Settings
+	set *Settings
+	// tick is the per-world tick counter used by worlds that do not advance the
+	// shared Settings, such as the Nether and End.
 	tick int64
 
 	handler atomic.Pointer[Handler]
