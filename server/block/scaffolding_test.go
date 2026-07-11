@@ -128,10 +128,9 @@ func TestScaffoldingMaxHorizontalReach(t *testing.T) {
 
 // TestScaffoldingNotInstantlyDestroyedNextToLava verifies that scaffolding placed next to lava is NOT destroyed
 // outright by a neighbour update. LavaFlammable being true means lava ignites a Fire block near it through the
-// normal Lava.RandomTick mechanism (confirmed visually in a Bedrock singleplayer world - fire appears before the
-// scaffolding is consumed), which then burns it away through the ordinary chance-based Fire.burn process, the
-// same mechanism used for direct fire adjacency. There is deliberately no special-cased instant destruction:
-// that would skip the fire entirely and destroy the block silently, which does not match what was observed.
+// normal Lava.RandomTick mechanism, which then burns the scaffolding away through the ordinary chance-based
+// Fire.burn process - the same mechanism used for direct fire adjacency. There is deliberately no special-cased
+// instant destruction, which would skip the fire and destroy the block silently instead.
 func TestScaffoldingNotInstantlyDestroyedNextToLava(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
@@ -235,9 +234,9 @@ func TestScaffoldingNeverWaterlogs(t *testing.T) {
 // TestScaffoldingFlammabilityInfo verifies the exact Encouragement/Flammability/LavaFlammable values, so that
 // Scaffolding keeps burning noticeably faster than wood (5/20) through the normal chance-based Fire.burn
 // mechanic, but this exact regression test exists because it is easy to mistake "burns faster than wood" for
-// "should be destroyed instantly", which it is not. LavaFlammable is true, confirmed directly in a Bedrock
-// singleplayer world (unlike Java, where scaffolding is not ignited by lava): placing it above lava visibly
-// catches fire first via the normal ignition mechanic, rather than disappearing without any fire shown.
+// "should be destroyed instantly", which it is not. LavaFlammable is true, unlike Java where scaffolding is not
+// ignited by lava, so adjacent lava starts a Fire block via the normal ignition mechanic rather than the
+// scaffolding disappearing without any fire shown.
 func TestScaffoldingFlammabilityInfo(t *testing.T) {
 	info := block.Scaffolding{}.FlammabilityInfo()
 	if info.Encouragement != 60 {

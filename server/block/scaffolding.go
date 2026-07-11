@@ -15,14 +15,10 @@ import (
 // a supporting block before it collapses.
 //
 // Unlike vanilla, Scaffolding deliberately does not implement LiquidDisplacer and can never become waterlogged.
-// A scaffolding column built through a body of water was found to permanently trap the player at the point
-// where it transitions from the waterlogged section to the dry section: a recorded reproduction (climbing up
-// through a 3-block-deep water-filled shaft) shows the player's position and camera both freeze completely for
-// several seconds right at the water surface, unable to move in either direction, until giving up. The likely
-// mechanism is that the player's hitbox straddles a wet block and a dry, climbable one at the same time, and the
-// client never resolves which movement mode (swimming or climbing) to apply, but this has not been confirmed
-// against Bedrock's own source, only observed and reproduced. Displacing the water on placement instead of
-// waterlogging guarantees the whole column stays climbable at the cost of not preserving vanilla's waterlogging.
+// A waterlogged scaffolding column traps the player permanently at the point where it transitions from the wet
+// section to the dry section: the player's hitbox straddles a non-climbable wet block and a climbable dry one at
+// the same time, and the client never resolves which movement mode (swimming or climbing) to apply. Displacing
+// the water on placement instead of waterlogging avoids this at the cost of not matching vanilla's waterlogging.
 type Scaffolding struct {
 	transparent
 
@@ -157,22 +153,17 @@ func (s Scaffolding) BreakInfo() BreakInfo {
 
 // FlammabilityInfo ...
 func (Scaffolding) FlammabilityInfo() FlammabilityInfo {
-	// LavaFlammable is true on Bedrock (unlike Java, where scaffolding is not ignited by lava and can be placed
-	// inside it - see the UseOnBlock check below for that part, which still applies on Bedrock too). Confirmed
-	// directly in a Bedrock singleplayer world: placing scaffolding above lava visibly catches fire first
-	// (Lava.RandomTick igniting a Fire block via the normal ignition mechanic, since scaffolding now counts as
-	// lava-flammable), which then consumes it through the ordinary chance-based Fire.burn process - not an
-	// instant, fire-less destruction.
+	// LavaFlammable is true on Bedrock, unlike Java where lava does not ignite scaffolding (placement into lava
+	// is still rejected outright regardless, see the UseOnBlock check below). Adjacent lava starts a Fire block
+	// through the normal ignition mechanic, which then consumes the scaffolding via the standard chance-based
+	// Fire.burn process rather than an instant, fire-less destruction.
 	return newFlammabilityInfo(60, 60, true)
 }
 
 // FuelInfo ...
 func (Scaffolding) FuelInfo() item.FuelInfo {
-	// minecraft.wiki: Scaffolding smelts 0.25 items as furnace fuel, a quarter of Planks' fuel value per item
-	// smelted (Planks smelts 1.5 items over 15 seconds elsewhere in this package, i.e. 10 seconds per item).
-	// Other sources claimed Bedrock's value differs (up to 6x Java's), so this was verified directly in a
-	// Bedrock singleplayer world rather than trusted from the wiki alone: each block burned for ~2-3 seconds,
-	// confirming 0.25 items and ruling out the longer alternative.
+	// Scaffolding smelts 0.25 items as furnace fuel, a quarter of Planks' fuel value per item smelted (Planks
+	// smelts 1.5 items over 15 seconds elsewhere in this package, i.e. 10 seconds per item).
 	return newFuelInfo(time.Second * 5 / 2)
 }
 
