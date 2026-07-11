@@ -29,8 +29,10 @@ type Scaffolding struct {
 	// means it rests on top of a supporting block or another scaffolding column; higher values are reached by
 	// extending horizontally. When Stability reaches 7 the scaffolding can no longer support itself.
 	Stability int
-	// StabilityCheck is true when the scaffolding is the bottom of its column, meaning it does not rest on top of
-	// another scaffolding block.
+	// StabilityCheck is true only when the scaffolding is both extended away from a support (Stability > 0) and
+	// does not rest on top of another scaffolding block, meaning it is floating and held up solely by a
+	// horizontal neighbour. It is false when Stability is 0 (resting directly on a supporting block) and also
+	// false when resting on top of another scaffolding block, regardless of that column's own stability.
 	StabilityCheck bool
 }
 
