@@ -187,7 +187,6 @@ func (conf Config) New() *Server {
 		p:        make(map[uuid.UUID]*onlinePlayer),
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
-	srv.conf.StatusProvider = sharedStatusProvider{provider: conf.StatusProvider, playerCount: &srv.playerCount}
 	for _, lf := range srv.conf.Listeners {
 		l, err := lf(srv.conf)
 		if err != nil {

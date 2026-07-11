@@ -54,8 +54,6 @@ type Server struct {
 	incoming  chan incoming
 
 	pmu sync.RWMutex
-	// playerCount includes players that are joining or connected across all listeners.
-	playerCount atomic.Int64
 	// p holds a map of all players currently connected to the server. When they
 	// leave, they are removed from the map.
 	p map[uuid.UUID]*onlinePlayer
@@ -348,35 +346,13 @@ func (srv *Server) listen(l Listener) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if !srv.reservePlayer() {
-				_ = l.Disconnect(c, "Server is full.")
-				return
-			}
-			connected := false
-			defer func() {
-				if !connected {
-					srv.playerCount.Add(-1)
-				}
-			}()
 			if msg, ok := srv.conf.Allower.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
 				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
 				_ = c.Close()
 				return
 			}
-			connected = srv.finaliseConn(ctx, c, l)
+			srv.finaliseConn(ctx, c, l)
 		}()
-	}
-}
-
-func (srv *Server) reservePlayer() bool {
-	for {
-		current := srv.playerCount.Load()
-		if srv.conf.MaxPlayers != 0 && current >= int64(srv.conf.MaxPlayers) {
-			return false
-		}
-		if srv.playerCount.CompareAndSwap(current, current+1) {
-			return true
-		}
 	}
 }
 
@@ -443,7 +419,7 @@ func (srv *Server) wait() {
 
 // finaliseConn finalises the session.Conn passed and adds it to the incoming
 // channel.
-func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) bool {
+func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) {
 	id := uuid.MustParse(conn.IdentityData().Identity)
 	data := srv.defaultGameData()
 
@@ -465,16 +441,15 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 		_ = l.Disconnect(conn, "Connection timeout.")
 
 		srv.conf.Log.Debug("spawn failed: "+err.Error(), "raddr", conn.RemoteAddr())
-		return false
+		return
 	}
 	if _, ok := srv.Player(id); ok {
 		_ = l.Disconnect(conn, "Already logged in.")
 		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
-		return false
+		return
 	}
 	_ = conn.WritePacket(&packet.ItemRegistry{Items: srv.customItems})
 	srv.incoming <- srv.createPlayer(id, conn, d, w)
-	return true
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It
@@ -526,7 +501,6 @@ func (srv *Server) dimension(dimension world.Dimension) *world.World {
 // handleSessionClose handles the closing of a session. It removes the player
 // of the session from the server.
 func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
-	srv.playerCount.Add(-1)
 	srv.pmu.Lock()
 	_, ok := srv.p[c.UUID()]
 	delete(srv.p, c.UUID())
