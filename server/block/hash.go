@@ -170,6 +170,7 @@ const (
 	hashResinBricks
 	hashSand
 	hashSandstone
+	hashScaffolding
 	hashSeaLantern
 	hashSeaPickle
 	hashShortGrass
@@ -880,6 +881,10 @@ func (s Sand) Hash() (uint64, uint64) {
 
 func (s Sandstone) Hash() (uint64, uint64) {
 	return hashSandstone, uint64(s.Type.Uint8()) | uint64(boolByte(s.Red))<<2
+}
+
+func (s Scaffolding) Hash() (uint64, uint64) {
+	return hashScaffolding, uint64(s.Stability) | uint64(boolByte(s.StabilityCheck))<<8
 }
 
 func (SeaLantern) Hash() (uint64, uint64) {
