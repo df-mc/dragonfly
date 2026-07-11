@@ -318,7 +318,7 @@ func (c Campfire) Hash() (uint64, uint64) {
 }
 
 func (c Candle) Hash() (uint64, uint64) {
-	return hashCandle, uint64(c.Colour.Uint8()) | uint64(c.Candles)<<5 | uint64(boolByte(c.Lit))<<13
+	return hashCandle, uint64(c.Colour.Uint8()) | uint64(c.AdditionalCandles)<<5 | uint64(boolByte(c.Lit))<<13
 }
 
 func (c Carpet) Hash() (uint64, uint64) {

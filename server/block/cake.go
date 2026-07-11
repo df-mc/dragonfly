@@ -17,10 +17,10 @@ type Cake struct {
 
 	// Bites is the amount of bites taken out of the cake.
 	Bites int
-	// CandleColour is the colour of the candle.
-	CandleColour item.OptionalColour
 	// Candle is true if the cake has a candle on top.
 	Candle bool
+	// CandleColour is the colour of the candle.
+	CandleColour item.OptionalColour
 	// CandleLit is whether the candle is lit.
 	CandleLit bool
 }
@@ -57,6 +57,13 @@ func (c Cake) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.T
 func (c Cake) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if _, air := tx.Block(pos.Side(cube.FaceDown)).(Air); air {
 		breakBlock(c, pos, tx)
+		return
+	}
+	liquid, _ := tx.Liquid(pos)
+	if _, ok := liquid.(Water); ok && c.Candle && c.CandleLit {
+		c.CandleLit = false
+		tx.SetBlock(pos, c, nil)
+		tx.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
 	}
 }
 
@@ -119,6 +126,9 @@ func (c Cake) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	if !c.Candle || c.CandleLit {
 		return false
 	}
+	if _, ok := tx.Liquid(pos); ok {
+		return false
+	}
 
 	c.CandleLit = true
 	tx.SetBlock(pos, c, nil)
@@ -138,7 +148,7 @@ func (c Cake) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 // BreakInfo ...
 func (c Cake) BreakInfo() BreakInfo {
 	if c.Candle {
-		return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, silkTouchOnlyDrop(Candle{Colour: c.CandleColour}))
+		return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, oneOf(Candle{Colour: c.CandleColour}))
 	}
 	return newBreakInfo(0.5, neverHarvestable, nothingEffective, simpleDrops())
 }

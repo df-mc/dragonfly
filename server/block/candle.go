@@ -18,25 +18,28 @@ type Candle struct {
 
 	// Colour is the colour of the candle.
 	Colour item.OptionalColour
-	// Candles is the number of candles.
-	Candles int
+	// AdditionalCandles is the amount of additional candles placed in the same block space.
+	AdditionalCandles int
 	// Lit is whether the candles are lit.
 	Lit bool
 }
 
 // BreakInfo ...
 func (c Candle) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(c, c.Candles+1)))
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(c, c.AdditionalCandles+1)))
 }
 
 // Model ...
 func (c Candle) Model() world.BlockModel {
-	return model.Candle{Count: c.Candles}
+	return model.Candle{Count: c.AdditionalCandles + 1}
 }
 
 // LightEmissionLevel ...
 func (c Candle) LightEmissionLevel() uint8 {
-	return uint8((c.Candles + 1) * 3)
+	if !c.Lit {
+		return 0
+	}
+	return uint8((c.AdditionalCandles + 1) * 3)
 }
 
 // SideClosed ...
@@ -44,14 +47,19 @@ func (Candle) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
+func (Candle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
+	below := pos.Side(cube.FaceDown)
+	return tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
+}
+
 // UseOnBlock ...
 func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) (used bool) {
 	addCandle := func(checkPos cube.Pos) bool {
 		if existing, ok := tx.Block(checkPos).(Candle); ok {
-			if existing.Colour != c.Colour || existing.Candles >= 3 {
+			if existing.Colour != c.Colour || existing.AdditionalCandles >= 3 {
 				return false
 			}
-			existing.Candles++
+			existing.AdditionalCandles++
 			place(tx, checkPos, existing, user, ctx)
 			return true
 		}
@@ -62,12 +70,15 @@ func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 		return placed(ctx)
 	}
 
-	if added := addCandle(pos.Side(cube.FaceUp)); added && face == cube.FaceUp {
+	if face == cube.FaceUp && addCandle(pos.Side(cube.FaceUp)) {
 		return placed(ctx)
 	}
 
 	pos, _, used = firstReplaceable(tx, pos, face, c)
 	if !used {
+		return false
+	}
+	if !c.canSurvive(pos, tx) {
 		return false
 	}
 
@@ -77,6 +88,10 @@ func (c Candle) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 
 // NeighbourUpdateTick ...
 func (c Candle) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if !c.canSurvive(pos, tx) {
+		breakBlock(c, pos, tx)
+		return
+	}
 	liquid, _ := tx.Liquid(pos)
 	if _, ok := liquid.(Water); ok && c.Lit {
 		c.Lit = false
@@ -124,7 +139,7 @@ func (c Candle) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c Candle) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + c.Colour.Prepend("candle"), map[string]any{"candles": int32(c.Candles), "lit": c.Lit}
+	return "minecraft:" + c.Colour.Prepend("candle"), map[string]any{"candles": int32(c.AdditionalCandles), "lit": c.Lit}
 }
 
 // allCandles returns candle blocks with all possible colours.
@@ -132,8 +147,8 @@ func allCandles() []world.Block {
 	b := make([]world.Block, 0)
 	for i := 0; i <= 3; i++ {
 		for _, c := range item.OptionalColours() {
-			b = append(b, Candle{Colour: c, Candles: i})
-			b = append(b, Candle{Colour: c, Candles: i, Lit: true})
+			b = append(b, Candle{Colour: c, AdditionalCandles: i})
+			b = append(b, Candle{Colour: c, AdditionalCandles: i, Lit: true})
 		}
 	}
 	return b
