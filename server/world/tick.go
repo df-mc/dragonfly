@@ -61,7 +61,6 @@ func (t ticker) tick(tx *Tx) {
 	}
 
 	var tick int64
-
 	if w.advance {
 		w.set.CurrentTick++
 		if w.set.TimeCycle {
