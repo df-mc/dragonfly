@@ -79,6 +79,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 		flightSpeed:         0.05,
 		verticalFlightSpeed: 1.0,
 		scale:               1.0,
+		seatIndex:           -1,
 		airSupplyTicks:      conf.AirSupply,
 		maxAirSupplyTicks:   conf.MaxAirSupply,
 		breathing:           true,
