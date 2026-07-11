@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github.com/go-gl/mathgl/mgl64"
 	"reflect"
 	"strings"
+
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Parameter is an interface for a generic parameters. Users may have types as command parameters that
@@ -37,6 +38,12 @@ type Enum interface {
 	// the argument passed to the enum parameter will be equal to one of these options. The provided Source
 	// can also be used to change the enums for each player.
 	Options(source Source) []string
+}
+
+// ParamDescriber may be implemented by a Runnable to programmatically describe its parameters
+// without relying on struct field reflection.
+type ParamDescriber interface {
+	DescribeParams(src Source) []ParamInfo
 }
 
 // SubCommand represents a subcommand that may be added as a static value that must be written. Adding

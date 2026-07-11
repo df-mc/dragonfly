@@ -118,3 +118,4 @@ type DamageSource struct {
 func (DamageSource) ReducedByResistance() bool { return true }
 func (DamageSource) ReducedByArmour() bool     { return true }
 func (DamageSource) Fire() bool                { return false }
+func (DamageSource) IgnoreTotem() bool         { return false }

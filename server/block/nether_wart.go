@@ -1,11 +1,12 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // NetherWart is a fungus found in the Nether that is vital in the creation of potions.
@@ -53,11 +54,11 @@ func (n NetherWart) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 
 // BreakInfo ...
 func (n NetherWart) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(item.Tool, []item.Enchantment) []item.Stack {
-		if n.Age == 3 {
-			return []item.Stack{item.NewStack(n, rand.IntN(3)+2)}
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+		if n.Age < 3 {
+			return []item.Stack{item.NewStack(n, 1)}
 		}
-		return []item.Stack{item.NewStack(n, 1)}
+		return []item.Stack{item.NewStack(n, fortuneDiscreteCount(2, 4, 7, enchantments))}
 	})
 }
 

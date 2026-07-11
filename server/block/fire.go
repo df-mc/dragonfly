@@ -3,13 +3,15 @@ package block
 //lint:file-ignore ST1022 Exported variables in this package have compiler directives. These variables are not otherwise exposed to users.
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
-	"math/rand/v2"
-	"time"
+	"github.com/df-mc/dragonfly/server/world/portal"
 )
 
 // Fire is a non-solid block that can spread to nearby flammable blocks.
@@ -56,12 +58,12 @@ func infinitelyBurning(pos cube.Pos, tx *world.Tx) bool {
 // burn attempts to burn a block.
 func (f Fire) burn(from, to cube.Pos, tx *world.Tx, r *rand.Rand, chanceBound int) {
 	if flammable, ok := tx.Block(to).(Flammable); ok && r.IntN(chanceBound) < flammable.FlammabilityInfo().Flammability {
-		if r.IntN(f.Age+10) < 5 && !rainingAround(to, tx) {
-			f.spread(from, to, tx, r)
-			return
-		}
 		if t, ok := flammable.(TNT); ok {
 			t.Ignite(to, tx, nil)
+			return
+		}
+		if r.IntN(f.Age+10) < 5 && !rainingAround(to, tx) {
+			f.spread(from, to, tx, r)
 			return
 		}
 		tx.SetBlock(to, nil, nil)
@@ -185,6 +187,9 @@ func (f Fire) spread(from, to cube.Pos, tx *world.Tx, r *rand.Rand) {
 		return
 	}
 	spread := Fire{Type: f.Type, Age: min(15, f.Age+r.IntN(5)/4)}
+	if spread.Type == NormalFire() && portal.ActivateNetherPortal(tx, to) {
+		return
+	}
 	tx.SetBlock(to, spread, nil)
 	tx.ScheduleBlockUpdate(to, spread, time.Duration(30+r.IntN(10))*time.Second/20)
 }
@@ -239,6 +244,11 @@ func (f Fire) HasLiquidDrops() bool {
 	return false
 }
 
+// PortalInterior returns true if fire may occupy the inside of a portal frame before activation for the target dimension.
+func (f Fire) PortalInterior(target world.Dimension) bool {
+	return target == world.Nether && f.Type == NormalFire()
+}
+
 // LightEmissionLevel ...
 func (f Fire) LightEmissionLevel() uint8 {
 	return f.Type.LightLevel()
@@ -265,6 +275,9 @@ func (f Fire) Start(tx *world.Tx, pos cube.Pos) {
 	if air || shortGrass || fern {
 		below := tx.Block(pos.Side(cube.FaceDown))
 		if below.Model().FaceSolid(pos, cube.FaceUp, tx) || neighboursFlammable(pos, tx) {
+			if portal.ActivateNetherPortal(tx, pos) {
+				return
+			}
 			f := Fire{}
 			tx.SetBlock(pos, f, nil)
 			tx.ScheduleBlockUpdate(pos, f, time.Duration(30+rand.IntN(10))*time.Second/20)
@@ -290,3 +303,4 @@ func (FireDamageSource) Fire() bool                { return true }
 func (FireDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool {
 	return e == enchantment.FireProtection
 }
+func (FireDamageSource) IgnoreTotem() bool { return false }

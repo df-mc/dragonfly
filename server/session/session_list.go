@@ -1,13 +1,15 @@
 package session
 
 import (
+	"slices"
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/player/skin"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"slices"
-	"sync"
 )
 
 var sessions = new(sessionList)
@@ -32,14 +34,23 @@ func (l *sessionList) Add(s *Session) {
 	l.s = append(l.s, s)
 }
 
-func (l *sessionList) Remove(s *Session) {
+func (l *sessionList) Remove(s *Session, entity world.Entity) {
 	l.mu.Lock()
-	defer l.mu.Unlock()
-
+	removedFrom := slices.Clone(l.s)
 	for _, other := range l.s {
 		l.unsendSessionFrom(s, other)
 	}
 	l.s = sliceutil.DeleteVal(l.s, s)
+	l.mu.Unlock()
+
+	if entity == nil {
+		return
+	}
+	for _, other := range removedFrom {
+		if other.viewLayer != nil {
+			other.viewLayer.Remove(entity)
+		}
+	}
 }
 
 func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
@@ -112,6 +123,10 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		animations = append(animations, protocolAnim)
 	}
 
+	fullID := s.FullID
+	if fullID == "" {
+		fullID = uuid.New().String()
+	}
 	return protocol.Skin{
 		PlayFabID:                 s.PlayFabID,
 		SkinID:                    uuid.New().String(),
@@ -125,7 +140,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		SkinGeometry:              s.Model,
 		PersonaSkin:               s.Persona,
 		CapeID:                    uuid.New().String(),
-		FullID:                    uuid.New().String(),
+		FullID:                    fullID,
 		Animations:                animations,
 		Trusted:                   true,
 		OverrideAppearance:        true,

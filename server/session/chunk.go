@@ -2,6 +2,7 @@ package session
 
 import (
 	"bytes"
+
 	"github.com/cespare/xxhash/v2"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -25,20 +26,20 @@ func (s *Session) ViewChunk(pos world.ChunkPos, dim world.Dimension, blockEntiti
 }
 
 // ViewSubChunks ...
-func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.SubChunkOffset, tx *world.Tx) {
+func (s *Session) ViewSubChunks(centre world.SubChunkPos, offsets []protocol.SubChunkOffset, tx *world.Tx) {
 	r := tx.Range()
 
 	entries := make([]protocol.SubChunkEntry, 0, len(offsets))
 	transaction := make(map[uint64]struct{})
 	for _, offset := range offsets {
-		ind := int16(center.Y()) + int16(offset[1]) - int16(r[0])>>4
+		ind := int16(centre.Y()) + int16(offset[1]) - int16(r[0])>>4
 		if ind < 0 || ind > int16(r.Height()>>4) {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultIndexOutOfBounds, Offset: offset})
 			continue
 		}
 		col, ok := s.chunkLoader.Chunk(world.ChunkPos{
-			center.X() + int32(offset[0]),
-			center.Z() + int32(offset[2]),
+			centre.X() + int32(offset[0]),
+			centre.Z() + int32(offset[2]),
 		})
 		if !ok {
 			entries = append(entries, protocol.SubChunkEntry{Result: protocol.SubChunkResultChunkNotFound, Offset: offset})
@@ -54,26 +55,27 @@ func (s *Session) ViewSubChunks(center world.SubChunkPos, offsets []protocol.Sub
 	dim, _ := world.DimensionID(tx.World().Dimension())
 	s.writePacket(&packet.SubChunk{
 		Dimension:       int32(dim),
-		Position:        protocol.SubChunkPos(center),
+		Position:        protocol.SubChunkPos(centre),
 		CacheEnabled:    s.conn.ClientCacheEnabled(),
 		SubChunkEntries: entries,
 	})
 }
 
 func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *world.Column, transaction map[uint64]struct{}) protocol.SubChunkEntry {
-	chunkMap := col.Chunk.HeightMap()
+	chunkMap := col.HeightMap()
 	subMapType, subMap := byte(protocol.HeightMapDataHasData), make([]int8, 256)
 	higher, lower := true, true
 	for x := uint8(0); x < 16; x++ {
 		for z := uint8(0); z < 16; z++ {
 			y, i := chunkMap.At(x, z), (uint16(z)<<4)|uint16(x)
-			otherInd := col.Chunk.SubIndex(y)
-			if otherInd > ind {
+			otherInd := col.SubIndex(y)
+			switch {
+			case otherInd > ind:
 				subMap[i], lower = 16, false
-			} else if otherInd < ind {
+			case otherInd < ind:
 				subMap[i], higher = -1, false
-			} else {
-				subMap[i], lower, higher = int8(y-col.Chunk.SubY(otherInd)), false, false
+			default:
+				subMap[i], lower, higher = int8(y-col.SubY(otherInd)), false, false
 			}
 		}
 	}
@@ -83,13 +85,15 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		subMapType, subMap = protocol.HeightMapDataTooLow, nil
 	}
 
-	sub := col.Chunk.Sub()[ind]
+	sub := col.Sub()[ind]
 	if sub.Empty() {
 		return protocol.SubChunkEntry{
-			Result:        protocol.SubChunkResultSuccessAllAir,
-			HeightMapType: subMapType,
-			HeightMapData: subMap,
-			Offset:        offset,
+			Result:              protocol.SubChunkResultSuccessAllAir,
+			HeightMapType:       subMapType,
+			HeightMapData:       subMap,
+			RenderHeightMapType: subMapType,
+			RenderHeightMapData: subMap,
+			Offset:              offset,
 		}
 	}
 
@@ -98,7 +102,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	blockEntityBuf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
 	for pos, b := range col.BlockEntities {
-		if n, ok := b.(world.NBTer); ok && col.Chunk.SubIndex(int16(pos.Y())) == ind {
+		if n, ok := b.(world.NBTer); ok && col.SubIndex(int16(pos.Y())) == ind {
 			d := n.EncodeNBT()
 			d["x"], d["y"], d["z"] = int32(pos[0]), int32(pos[1]), int32(pos[2])
 			_ = enc.Encode(d)
@@ -106,11 +110,13 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	}
 
 	entry := protocol.SubChunkEntry{
-		Result:        protocol.SubChunkResultSuccess,
-		RawPayload:    append(serialisedSubChunk, blockEntityBuf.Bytes()...),
-		HeightMapType: subMapType,
-		HeightMapData: subMap,
-		Offset:        offset,
+		Result:              protocol.SubChunkResultSuccess,
+		RawPayload:          append(serialisedSubChunk, blockEntityBuf.Bytes()...),
+		HeightMapType:       subMapType,
+		HeightMapData:       subMap,
+		RenderHeightMapType: subMapType,
+		RenderHeightMapData: subMap,
+		Offset:              offset,
 	}
 	if s.conn.ClientCacheEnabled() {
 		if hash := xxhash.Sum64(serialisedSubChunk); s.trackBlob(hash, serialisedSubChunk) {
@@ -123,7 +129,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 	return entry
 }
 
-// dimensionID  returns the dimension ID of the world that the session is in.
+// dimensionID returns the dimension ID of the world that the session is in.
 func (s *Session) dimensionID(dim world.Dimension) int32 {
 	d, _ := world.DimensionID(dim)
 	return int32(d)

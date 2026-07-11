@@ -16,3 +16,8 @@ func (a Arrow) EncodeItem() (name string, meta int16) {
 	}
 	return "minecraft:arrow", 0
 }
+
+// OffHand ...
+func (Arrow) OffHand() bool {
+	return true
+}

@@ -12,6 +12,8 @@
   AuthEnabled = true
   # DisableJoinQuitMessages specifies if join/quit messages should be broadcast when players join the server.
   DisableJoinQuitMessages = false
+  # MuteEmoteChat specifies if the player emote chat should be muted or not.
+  MuteEmoteChat = false
 
 [World]
   # The folder that the world files (will) reside in, relative to the working directory. If not currently

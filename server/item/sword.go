@@ -1,8 +1,9 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Sword is a tool generally used to attack enemies. In addition, it may be used to mine any block slightly
@@ -38,8 +39,10 @@ func (s Sword) EnchantmentValue() int {
 }
 
 // BaseMiningEfficiency always returns 1.5, unless the block passed is cobweb, in which case 15 is returned.
-func (s Sword) BaseMiningEfficiency(world.Block) float64 {
-	// TODO: Implement cobwebs and return 15 here.
+func (s Sword) BaseMiningEfficiency(b world.Block) float64 {
+	if _, ok := b.(interface{ Cobweb() }); ok {
+		return 15
+	}
 	return 1.5
 }
 
@@ -60,6 +63,8 @@ func (s Sword) SmeltInfo() SmeltInfo {
 		return newOreSmeltInfo(NewStack(IronNugget{}, 1), 0.1)
 	case ToolTierGold:
 		return newOreSmeltInfo(NewStack(GoldNugget{}, 1), 0.1)
+	case ToolTierCopper:
+		return newOreSmeltInfo(NewStack(CopperNugget{}, 1), 0.1)
 	}
 	return SmeltInfo{}
 }

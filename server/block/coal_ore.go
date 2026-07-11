@@ -13,7 +13,7 @@ type CoalOre struct {
 
 // BreakInfo ...
 func (c CoalOre) BreakInfo() BreakInfo {
-	return newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, silkTouchOneOf(item.Coal{}, c)).withXPDropRange(0, 2).withBlastResistance(15)
+	return newBreakInfo(c.Type.Hardness(), pickaxeHarvestable, pickaxeEffective, oreDrops(item.Coal{}, c)).withXPDropRange(0, 2).withBlastResistance(15)
 }
 
 // SmeltInfo ...

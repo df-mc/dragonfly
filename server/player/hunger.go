@@ -73,10 +73,7 @@ func (m *hungerManager) exhaust(points float64) {
 	defer m.mu.Unlock()
 
 	m.exhaustionLevel += points
-	for {
-		if m.exhaustionLevel < 4 {
-			break
-		}
+	for m.exhaustionLevel >= 4 {
 		// Maximum exhaustion value is 4, so keep removing one saturation point until the exhaustion level
 		// is below 4.
 		m.exhaustionLevel -= 4
@@ -139,3 +136,4 @@ type StarvationDamageSource struct{}
 func (StarvationDamageSource) ReducedByArmour() bool     { return false }
 func (StarvationDamageSource) ReducedByResistance() bool { return false }
 func (StarvationDamageSource) Fire() bool                { return false }
+func (StarvationDamageSource) IgnoreTotem() bool         { return false }

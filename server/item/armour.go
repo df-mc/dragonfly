@@ -9,7 +9,7 @@ type (
 	Armour interface {
 		// DefencePoints returns the defence points that the armour provides when worn.
 		DefencePoints() float64
-		// Toughness returns the toughness that the armor provides when worn. The toughness reduces defense reduction
+		// Toughness returns the toughness that the armour provides when worn. The toughness reduces defence reduction
 		// caused by increased damage.
 		Toughness() float64
 		// KnockBackResistance returns a number from 0-1 that decides the amount of knock back force that is
@@ -22,7 +22,7 @@ type (
 		// BaseDurability is the base durability of armour with this tier. This is otherwise the durability of
 		// the helmet with this tier.
 		BaseDurability() float64
-		// Toughness reduces the defense reduction caused by damage increases.
+		// Toughness reduces the defence reduction caused by damage increases.
 		Toughness() float64
 		// KnockBackResistance is a number from 0-1 that decides the amount of knock back force that is resisted
 		// upon being attacked. 1 knock back resistance point client-side translates to 10% knock back reduction.
@@ -66,6 +66,15 @@ func (ArmourTierLeather) Toughness() float64           { return 0 }
 func (ArmourTierLeather) KnockBackResistance() float64 { return 0 }
 func (ArmourTierLeather) EnchantmentValue() int        { return 15 }
 func (ArmourTierLeather) Name() string                 { return "leather" }
+
+// ArmourTierCopper is the ArmourTier of copper armour.
+type ArmourTierCopper struct{}
+
+func (ArmourTierCopper) BaseDurability() float64      { return 121 }
+func (ArmourTierCopper) Toughness() float64           { return 0 }
+func (ArmourTierCopper) KnockBackResistance() float64 { return 0 }
+func (ArmourTierCopper) EnchantmentValue() int        { return 8 }
+func (ArmourTierCopper) Name() string                 { return "copper" }
 
 // ArmourTierGold is the ArmourTier of gold armour.
 type ArmourTierGold struct{}
@@ -114,7 +123,7 @@ func (ArmourTierNetherite) Name() string                 { return "netherite" }
 
 // ArmourTiers returns a list of all armour tiers.
 func ArmourTiers() []ArmourTier {
-	return []ArmourTier{ArmourTierLeather{}, ArmourTierGold{}, ArmourTierChain{}, ArmourTierIron{}, ArmourTierDiamond{}, ArmourTierNetherite{}}
+	return []ArmourTier{ArmourTierLeather{}, ArmourTierCopper{}, ArmourTierGold{}, ArmourTierChain{}, ArmourTierIron{}, ArmourTierDiamond{}, ArmourTierNetherite{}}
 }
 
 // armourTierRepairable returns true if the ArmourTier passed is repairable.
@@ -124,6 +133,8 @@ func armourTierRepairable(tier ArmourTier) func(Stack) bool {
 		switch tier.(type) {
 		case ArmourTierLeather:
 			_, ok = stack.Item().(Leather)
+		case ArmourTierCopper:
+			_, ok = stack.Item().(CopperIngot)
 		case ArmourTierGold:
 			_, ok = stack.Item().(GoldIngot)
 		case ArmourTierChain, ArmourTierIron:

@@ -37,12 +37,20 @@ func (f Furnace) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	if f.Lit && rand.Float64() <= 0.016 { // Every three or so seconds.
 		tx.PlaySound(pos.Vec3Centre(), sound.FurnaceCrackle{})
 	}
-	if lit := f.smelter.tickSmelting(time.Second*10, time.Millisecond*100, f.Lit, func(item.SmeltInfo) bool {
+	if lit := f.tickSmelting(time.Second*10, time.Millisecond*100, f.Lit, func(item.SmeltInfo) bool {
 		return true
 	}); f.Lit != lit {
 		f.Lit = lit
 		tx.SetBlock(pos, f, nil)
 	}
+}
+
+// LightEmissionLevel ...
+func (f Furnace) LightEmissionLevel() uint8 {
+	if f.Lit {
+		return 13
+	}
+	return 0
 }
 
 // EncodeItem ...
@@ -72,7 +80,7 @@ func (f Furnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *worl
 // BreakInfo ...
 func (f Furnace) BreakInfo() BreakInfo {
 	xp := f.Experience()
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(f)).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(Furnace{})).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, i := range f.Inventory(tx, pos).Clear() {
 			dropItem(tx, i, pos.Vec3())
 		}

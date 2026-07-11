@@ -47,15 +47,17 @@ var conf = world.EntityRegistryConfig{
 	SplashPotion: func(opts world.EntitySpawnOpts, t any, owner world.Entity) *world.EntityHandle {
 		return NewSplashPotion(opts, t.(potion.Potion), owner)
 	},
-	Arrow: func(opts world.EntitySpawnOpts, damage float64, owner world.Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *world.EntityHandle {
+	Arrow: func(opts world.EntitySpawnOpts, arrow world.ArrowSpawnConfig) *world.EntityHandle {
+		tip := arrow.Tip.(potion.Potion)
 		conf := arrowConf
-		conf.Damage, conf.Potion, conf.Owner = damage, tip.(potion.Potion), owner.H()
-		conf.KnockBackForceAddend = float64(punchLevel) * enchantment.Punch.KnockBackMultiplier()
-		conf.DisablePickup = disallowPickup
-		if obtainArrowOnPickup {
-			conf.PickupItem = item.NewStack(item.Arrow{Tip: tip.(potion.Potion)}, 1)
+		conf.Damage, conf.Potion, conf.Owner = arrow.Damage, tip, arrow.Owner.H()
+		conf.KnockBackForceAddend = float64(arrow.PunchLevel) * enchantment.Punch.KnockBackMultiplier()
+		conf.DisablePickup = arrow.DisablePickup
+		if arrow.ObtainArrowOnPickup {
+			conf.PickupItem = item.NewStack(item.Arrow{Tip: tip}, 1)
 		}
-		conf.Critical = critical
+		conf.Critical = arrow.Critical
+		conf.PiercingLevel = arrow.PiercingLevel
 		return opts.New(ArrowType, conf)
 	},
 }

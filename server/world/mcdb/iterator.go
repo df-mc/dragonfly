@@ -3,6 +3,7 @@ package mcdb
 import (
 	"encoding/binary"
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb/iterator"
@@ -50,11 +51,12 @@ func (iter *ColumnIterator) Next() bool {
 		return false
 	}
 	k := iter.dbIter.Key()
-	if (len(k) != 9 && len(k) != 13) || (k[8] != keyVersion && k[8] != keyVersionOld) {
+	kLen := len(k)
+	if (kLen != 9 && kLen != 13) || (k[kLen-1] != keyVersion && k[kLen-1] != keyVersionOld) {
 		return iter.Next()
 	}
 	iter.dim = world.Dimension(world.Overworld)
-	if len(k) > 9 {
+	if kLen > 9 {
 		var ok bool
 		id := int(binary.LittleEndian.Uint32(k[8:12]))
 		if iter.dim, ok = world.DimensionByID(id); !ok {

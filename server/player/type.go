@@ -20,6 +20,14 @@ func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 		playerData: pd,
 	}
 
+	pd.offHand.SlotValidatorFunc(func(s item.Stack, _ int) bool {
+		if s.Empty() {
+			return true
+		}
+		it, allowedInOffhand := s.Item().(item.OffHand)
+		return allowedInOffhand && it.OffHand()
+	})
+
 	if pd.s != nil {
 		pd.s.HandleInventories(tx, p, pd.inv, pd.offHand, pd.enderChest, pd.ui, pd.armour, pd.heldSlot)
 	} else {
@@ -39,7 +47,10 @@ func (ptype) NetworkOffset() float64 { return 1.621 }
 func (ptype) BBox(e world.Entity) cube.BBox {
 	p := e.(*Player)
 	s := p.Scale()
+	_, sleeping := p.Sleeping()
 	switch {
+	case sleeping:
+		return cube.Box(-0.1*s, 0, -0.1*s, 0.1*s, 0.2*s, 0.1*s)
 	case p.Gliding(), p.Swimming(), p.Crawling():
 		return cube.Box(-0.3*s, 0, -0.3*s, 0.3*s, 0.6*s, 0.3*s)
 	case p.Sneaking():

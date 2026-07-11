@@ -172,7 +172,11 @@ func (s Stack) AsBreakable() Stack {
 
 // Empty checks if the stack is empty (has a count of 0).
 func (s Stack) Empty() bool {
-	return s.Count() == 0 || s.item == nil
+	if s.Count() == 0 || s.item == nil {
+		return true
+	}
+	name, _ := s.item.EncodeItem()
+	return name == "minecraft:air"
 }
 
 // Item returns the item that the stack holds. If the stack is considered empty (Stack.Empty()), Item will
@@ -223,6 +227,9 @@ func (s Stack) WithLore(lines ...string) Stack {
 
 // Lore returns the lore set for the Stack. If no lore is present, the slice returned has a len of 0.
 func (s Stack) Lore() []string {
+	if s.Empty() {
+		return nil
+	}
 	return s.lore
 }
 
@@ -240,6 +247,9 @@ func (s Stack) WithValue(key string, val any) Stack {
 		s.data[key] = val
 	} else {
 		delete(s.data, key)
+		if len(s.data) == 0 {
+			s.data = nil
+		}
 	}
 	return s
 }
@@ -247,6 +257,9 @@ func (s Stack) WithValue(key string, val any) Stack {
 // Value attempts to return a value set to the Stack using Stack.WithValue(). If a value is found by the key
 // passed, it is returned and ok is true. If not found, the value returned is nil and ok is false.
 func (s Stack) Value(key string) (val any, ok bool) {
+	if s.Empty() {
+		return nil, false
+	}
 	val, ok = s.data[key]
 	return val, ok
 }
@@ -263,6 +276,32 @@ func (s Stack) WithEnchantments(enchants ...Enchantment) Stack {
 			// Enchantment is not compatible with the item.
 			continue
 		}
+		compatible := true
+		for _, otherEnchant := range s.enchantments {
+			addingType := enchant.t
+			existingType := otherEnchant.Type()
+			addingAcceptsExisting := addingType.CompatibleWithEnchantment(existingType)
+			existingAcceptsAdding := existingType.CompatibleWithEnchantment(addingType)
+			if addingType != existingType && (!addingAcceptsExisting || !existingAcceptsAdding) {
+				compatible = false
+				break
+			}
+		}
+		if !compatible {
+			// Enchantment is not compatible with another enchantment on the item.
+			continue
+		}
+		s.enchantments[enchant.t] = enchant
+	}
+	return s
+}
+
+// WithForcedEnchantments returns the current stack with the passed enchantments applied,
+// bypassing compatibility checks that would normally prevent incompatible enchantments
+// from being applied together.
+func (s Stack) WithForcedEnchantments(enchants ...Enchantment) Stack {
+	s.enchantments = cloneMap(s.enchantments)
+	for _, enchant := range enchants {
 		s.enchantments[enchant.t] = enchant
 	}
 	return s
@@ -283,6 +322,9 @@ func (s Stack) WithoutEnchantments(enchants ...EnchantmentType) Stack {
 // Enchantment attempts to return an Enchantment set to the Stack using Stack.WithEnchantment(). If an Enchantment
 // is found by the EnchantmentType, the enchantment and the bool true is returned.
 func (s Stack) Enchantment(enchant EnchantmentType) (Enchantment, bool) {
+	if s.Empty() {
+		return Enchantment{}, false
+	}
 	ench, ok := s.enchantments[enchant]
 	return ench, ok
 }
@@ -290,6 +332,9 @@ func (s Stack) Enchantment(enchant EnchantmentType) (Enchantment, bool) {
 // Enchantments returns an array of all Enchantments on the item. Enchantments returns the enchantments of a Stack in a
 // deterministic order.
 func (s Stack) Enchantments() []Enchantment {
+	if s.Empty() {
+		return nil
+	}
 	e := slices.Collect(maps.Values(s.enchantments))
 	sort.Slice(e, func(i, j int) bool {
 		id1, _ := EnchantmentID(e[i].t)
@@ -408,6 +453,9 @@ func (s Stack) String() string {
 // Values returns all values associated with the stack by users. The map returned is a copy of the original:
 // Modifying it will not modify the item stack.
 func (s Stack) Values() map[string]any {
+	if s.Empty() {
+		return nil
+	}
 	return maps.Clone(s.data)
 }
 

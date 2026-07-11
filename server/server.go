@@ -1,11 +1,22 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"iter"
+	"maps"
+	"os"
+	"os/signal"
+	"runtime/debug"
+	"slices"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"syscall"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/internal/blockinternal"
 	"github.com/df-mc/dragonfly/server/internal/iteminternal"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -24,19 +35,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"golang.org/x/text/language"
-	"iter"
-	"maps"
-	"os"
-	"os/exec"
-	"os/signal"
-	"runtime"
-	"runtime/debug"
-	"slices"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"syscall"
-	"time"
 )
 
 // Server implements a Dragonfly server. It runs the main server loop and
@@ -323,7 +321,6 @@ func (srv *Server) close() {
 			srv.conf.Log.Error("Close listener: " + err.Error())
 		}
 	}
-	srv.conf.Log.Info("Server closed.", "uptime", time.Since(*srv.started.Load()).String())
 }
 
 // listen makes the Server listen for new connections from the Listener passed.
@@ -373,11 +370,11 @@ func (srv *Server) startListening() {
 	}
 }
 
-// makeBlockEntries initializes the server's block components map using the
+// makeBlockEntries initialises the server's block components map using the
 // registered custom blocks. It allows block components to be created only once
 // at startup.
 func (srv *Server) makeBlockEntries() {
-	custom := slices.Collect(maps.Values(world.CustomBlocks()))
+	custom := slices.Collect(maps.Values(srv.conf.Blocks.CustomBlocks()))
 	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
 
 	for i, b := range custom {
@@ -389,7 +386,7 @@ func (srv *Server) makeBlockEntries() {
 	}
 }
 
-// makeItemComponents initializes the server's item components map using the
+// makeItemComponents initialises the server's item components map using the
 // registered custom items. It allows item components to be created only once
 // at startup
 func (srv *Server) makeItemComponents() {
@@ -399,11 +396,16 @@ func (srv *Server) makeItemComponents() {
 	for _, it := range custom {
 		name, _ := it.EncodeItem()
 		rid, _, _ := world.ItemRuntimeID(it)
+		_, isCustomBlock := it.(world.CustomBlock)
+		var entryVersion int32 = protocol.ItemEntryVersionDataDriven
+		if isCustomBlock {
+			entryVersion = protocol.ItemEntryVersionNone
+		}
 		srv.customItems = append(srv.customItems, protocol.ItemEntry{
 			Name:           name,
-			ComponentBased: true,
+			ComponentBased: !isCustomBlock,
 			RuntimeID:      int16(rid),
-			Version:        protocol.ItemEntryVersionDataDriven,
+			Version:        entryVersion,
 			Data:           iteminternal.Components(it),
 		})
 	}
@@ -413,6 +415,7 @@ func (srv *Server) makeItemComponents() {
 // to listen and closed the players channel once that happens.
 func (srv *Server) wait() {
 	srv.wg.Wait()
+	srv.conf.Log.Info("Server closed.", "uptime", time.Since(*srv.started.Load()).String())
 	close(srv.incoming)
 }
 
@@ -433,6 +436,8 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	dim, _ := world.DimensionID(w.Dimension())
 	data.Dimension = int32(dim)
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
+
+	data.EmoteChatMuted = srv.conf.MuteEmoteChat
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
@@ -471,11 +476,13 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 
 		Items:        srv.itemEntries(),
 		CustomBlocks: srv.customBlocks,
-		GameRules:    []protocol.GameRule{{Name: "naturalregeneration", Value: false}},
+		GameRules: []protocol.GameRule{
+			{Name: "naturalregeneration", Value: false},
+			{Name: "locatorBar", Value: false},
+		},
 
 		ServerAuthoritativeInventory: true,
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
-			MovementType:                     protocol.PlayerMovementModeServer,
 			ServerAuthoritativeBlockBreaking: true,
 		},
 	}
@@ -491,22 +498,6 @@ func (srv *Server) dimension(dimension world.Dimension) *world.World {
 	case world.End:
 		return srv.end
 	}
-}
-
-// checkNetIsolation checks if a loopback exempt is in place to allow the
-// hosting device to join the server. This is only relevant on Windows. It will
-// never log anything for anything but Windows.
-func (srv *Server) checkNetIsolation() {
-	if runtime.GOOS != "windows" {
-		// Only an issue on Windows.
-		return
-	}
-	data, _ := exec.Command("CheckNetIsolation", "LoopbackExempt", "-s", `-n="microsoft.minecraftuwp_8wekyb3d8bbwe"`).CombinedOutput()
-	if bytes.Contains(data, []byte("microsoft.minecraftuwp_8wekyb3d8bbwe")) {
-		return
-	}
-	const loopbackExemptCmd = `CheckNetIsolation LoopbackExempt -a -n="Microsoft.MinecraftUWP_8wekyb3d8bbwe"`
-	srv.conf.Log.Info("You are currently unable to join the server on this machine. Run " + loopbackExemptCmd + " in an admin PowerShell session to resolve.")
 }
 
 // handleSessionClose handles the closing of a session. It removes the player
@@ -537,9 +528,11 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	s := session.Config{
 		Log:            srv.conf.Log,
 		MaxChunkRadius: srv.conf.MaxChunkRadius,
+		EmoteChatMuted: srv.conf.MuteEmoteChat,
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
 		HandleStop:     srv.handleSessionClose,
+		BlockRegistry:  w.BlockRegistry(),
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName
@@ -562,20 +555,25 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	logger.Debug("Loading dimension...")
 
 	conf := world.Config{
-		Log:             logger,
-		Dim:             dim,
-		Provider:        srv.conf.WorldProvider,
-		Generator:       srv.conf.Generator(dim),
-		RandomTickSpeed: srv.conf.RandomTickSpeed,
-		ReadOnly:        srv.conf.ReadOnlyWorld,
-		Entities:        srv.conf.Entities,
+		Log:                 logger,
+		Dim:                 dim,
+		Provider:            srv.conf.WorldProvider,
+		Generator:           srv.conf.Generator(dim),
+		RandomTickSpeed:     srv.conf.RandomTickSpeed,
+		ReadOnly:            srv.conf.ReadOnlyWorld,
+		SaveInterval:        srv.conf.SaveInterval,
+		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		Entities:            srv.conf.Entities,
+		Blocks:              srv.conf.Blocks,
 		PortalDestination: func(dim world.Dimension) *world.World {
-			if dim == world.Nether {
+			switch dim {
+			case world.Nether:
 				return *nether
-			} else if dim == world.End {
+			case world.End:
 				return *end
+			default:
+				return nil
 			}
-			return nil
 		},
 	}
 	w := conf.New()
@@ -583,7 +581,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	return w
 }
 
-// parseSkin parses a skin from the login.ClientData  and returns it.
+// parseSkin parses a skin from the login.ClientData and returns it.
 func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	// Gophertunnel guarantees the following values are valid data and are of
 	// the correct size.
@@ -595,6 +593,7 @@ func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	playerSkin.Model, _ = base64.StdEncoding.DecodeString(data.SkinGeometry)
 	playerSkin.ModelConfig, _ = skin.DecodeModelConfig(skinResourcePatch)
 	playerSkin.PlayFabID = data.PlayFabID
+	playerSkin.FullID = data.SkinID
 
 	playerSkin.Cape = skin.NewCape(data.CapeImageWidth, data.CapeImageHeight)
 	playerSkin.Cape.Pix, _ = base64.StdEncoding.DecodeString(data.CapeData)
@@ -641,42 +640,6 @@ func (srv *Server) itemEntries() []protocol.ItemEntry {
 	}
 	entries = append(entries, srv.customItems...)
 	return entries
-}
-
-// ashyBiome represents a biome that has any form of ash.
-type ashyBiome interface {
-	// Ash returns the ash and white ash of the biome.
-	Ash() (ash float64, whiteAsh float64)
-}
-
-// sporingBiome represents a biome that has blue or red spores.
-type sporingBiome interface {
-	// Spores returns the blue and red spores of the biome.
-	Spores() (blueSpores float64, redSpores float64)
-}
-
-// biomes builds a mapping of all biome definitions of the server, ready to be
-// set in the biomes field of the server listener.
-func biomes() map[string]any {
-	definitions := make(map[string]any)
-	for _, b := range world.Biomes() {
-		definition := map[string]any{
-			"name_hash":   b.String(), // Not actually a hash despite the name.
-			"temperature": float32(b.Temperature()),
-			"downfall":    float32(b.Rainfall()),
-			"rain":        b.Rainfall() > 0,
-		}
-		if a, ok := b.(ashyBiome); ok {
-			ash, whiteAsh := a.Ash()
-			definition["ash"], definition["white_ash"] = float32(ash), float32(whiteAsh)
-		}
-		if s, ok := b.(sporingBiome); ok {
-			blueSpores, redSpores := s.Spores()
-			definition["blue_spores"], definition["red_spores"] = float32(blueSpores), float32(redSpores)
-		}
-		definitions[b.String()] = definition
-	}
-	return definitions
 }
 
 var (

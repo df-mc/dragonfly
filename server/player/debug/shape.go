@@ -1,0 +1,255 @@
+package debug
+
+import (
+	"image/color"
+	"sync/atomic"
+
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl64"
+)
+
+var nextShapeID atomic.Int32
+
+// Shape represents a shape that can be drawn to a player from any point in the world.
+type Shape interface {
+	// ShapeID returns the unique identifier of the shape. This is used to either update or remove the shape
+	// after it has been sent to the player.
+	ShapeID() int
+}
+
+// shape is a base type for all shapes that implements the Shape interface. It contains a unique identifier
+// that is lazily initialised when the ShapeID method is called for the first time.
+type shape struct {
+	id atomic.Int32
+}
+
+// ShapeID ...
+func (s *shape) ShapeID() int {
+	if id := s.id.Load(); id != 0 {
+		return int(id)
+	}
+	s.id.CompareAndSwap(0, nextShapeID.Add(1))
+	return int(s.id.Load())
+}
+
+// Arrow represents an arrow shape that can be drawn at any point in the world. It has a head which can also
+// be positioned anywhere, and the length, radius and number of segments can be changed.
+type Arrow struct {
+	shape
+
+	// Colour is the colour that will be used for the line and head. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// EndPosition is the end position of the arrow in the world. The arrow will be drawn from Position to
+	// EndPosition, with the head being drawn at EndPosition.
+	EndPosition mgl64.Vec3
+	// HeadLength is the length of the head to be drawn at the end of the arrow. If zero, it will default
+	// to 1.0.
+	HeadLength float64
+	// HeadRadius is the radius of the head to be drawn at the end of the arrow. If zero, it will default
+	// to 0.5.
+	HeadRadius float64
+	// HeadSegments is the number of segments that the head of the arrow will be drawn with. The more
+	// segments, the smoother the head will look. If zero, it will default to 4.
+	HeadSegments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Box represents a hollow box that can be drawn at any point in the world, with a bounds that can be set.
+type Box struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// Bounds is the size of the box in the world, acting as an offset from the Position. If empty,
+	// it will default to a 1x1x1 box.
+	Bounds mgl64.Vec3
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Circle represents a hollow circle that can be drawn at any point in the world, with the scale being used
+// to control the radius.
+type Circle struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the radius of the circle. If zero, it will default to 1.0.
+	Scale float64
+	// Segments is the number of segments that the circle will be drawn with. The more segments, the smoother
+	// the circle will look. If empty, it will default to 20.
+	Segments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Line represents a line that can be drawn at any point in the world, with a start and end position.
+type Line struct {
+	shape
+
+	// Colour is the colour that will be used for the line. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// EndPosition is the end position of the line in the world. The line will be drawn from Position to
+	// EndPosition.
+	EndPosition mgl64.Vec3
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Sphere represents a hollow sphere that can be drawn at any point in the world, with one line in each axis.
+// The scale is used to control the radius of the sphere.
+type Sphere struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the radius of the sphere. If zero, it will default to 1.0.
+	Scale float64
+	// Segments is the number of segments that the circle will be drawn with. The more segments, the smoother
+	// the circle will look. If empty, it will default to 20.
+	Segments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Text represents text that can be drawn at any point in the world, looking like a normal entity nametag
+// without actually being attached to an entity.
+type Text struct {
+	shape
+
+	// Colour is the colour that will be used for the actual text. If empty, the text will default to white.
+	Colour color.RGBA
+	// BackgroundColour is the colour used for the text background. If empty, it will default to a
+	// translucent black.
+	BackgroundColour color.RGBA
+	// HideBackground specifies whether the text background should be hidden entirely. Takes precedence
+	// over BackgroundColour when set.
+	HideBackground bool
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Rotation is the rotation of the shape, applied only when LockRotation is set.
+	Rotation mgl64.Vec3
+	// Scale is the size of the text. If zero, it will default to 1.0.
+	Scale float64
+	// Text is the text to be displayed on the shape. The background automatically scales to fit the text.
+	Text string
+	// LockRotation specifies whether the text should be locked to the orientation set by Rotation.
+	// If false, the text will rotate to always face the camera.
+	LockRotation bool
+	// DisableDepthTest specifies whether the text should show through walls. If false, the text
+	// will be occluded by geometry in front of it.
+	DisableDepthTest bool
+	// HideBackface specifies whether the background should be hidden on the back side of the shape.
+	// Has no visible effect unless LockRotation is also set.
+	HideBackface bool
+	// HideBackfaceText specifies whether the text should be hidden on the back side of the shape.
+	// Has no visible effect unless LockRotation is also set.
+	HideBackfaceText bool
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Cylinder represents a hollow cylinder, or frustum, that can be drawn at any point in the world, with a
+// height running up the Y axis. The base and top each have their own radius on the X and Z axes, allowing
+// for tapered and elliptical cylinders. A Cone is the special case of a Cylinder with a zero top radius.
+type Cylinder struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// BaseRadius is the radius of the cylinder's base along the X and Z axes. If empty, it will default to a
+	// radius of 1.0 on each axis. Differing X and Z radii produce an elliptical cylinder.
+	BaseRadius mgl64.Vec2
+	// TopRadius is the radius of the cylinder's top along the X and Z axes. If empty, it will default to
+	// BaseRadius, producing a straight cylinder. A smaller TopRadius tapers the cylinder into a frustum.
+	TopRadius mgl64.Vec2
+	// Height is the height of the cylinder. If zero, it will default to 1.0.
+	Height float64
+	// Segments is the number of segments that the cylinder will be drawn with. The more segments, the
+	// smoother the cylinder will look. If zero, it will default to 20.
+	Segments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Pyramid represents a pyramid that can be drawn at any point in the world, with a base on the X and Z axes
+// and a height running up the Y axis to a single apex.
+type Pyramid struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// Width is the width along the X axis of the pyramid base. If zero, it will default to 1.0.
+	Width float64
+	// Depth is the depth along the Z axis of the pyramid base. If zero, it will default to Width.
+	Depth float64
+	// Height is the height of the pyramid. If zero, it will default to 1.0.
+	Height float64
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Ellipsoid represents a hollow ellipsoid that can be drawn at any point in the world, with a radius along
+// each of the X, Y and Z axes.
+type Ellipsoid struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// Radii are the radii of the ellipsoid along the X, Y and Z axes. If empty, it will default to a radius
+	// of 1.0 on each axis.
+	Radii mgl64.Vec3
+	// SegmentsPerAxis is the number of segments that the ellipsoid will be drawn with per axis. The more
+	// segments, the smoother the ellipsoid will look. If zero, it will default to 20.
+	SegmentsPerAxis int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}
+
+// Cone represents a cone that can be drawn at any point in the world, with a base on the X and Z axes and a
+// height running up the Y axis to a single apex.
+type Cone struct {
+	shape
+
+	// Colour is the colour that will be used for the outline. If empty, it will default to white.
+	Colour color.RGBA
+	// Position is the origin position of the shape in the world.
+	Position mgl64.Vec3
+	// Scale is the rate to scale the shape from its origin point. If zero, it will default to 1.0.
+	Scale float64
+	// Radii are the radii along the X and Z axes of the cone base. If empty, it will default to a radius of
+	// 1.0 on each axis.
+	Radii mgl64.Vec2
+	// Height is the height of the cone. If zero, it will default to 1.0.
+	Height float64
+	// Segments is the number of segments that the cone will be drawn with. The more segments, the smoother
+	// the cone will look. If zero, it will default to 20.
+	Segments int
+	// Entity is an optional entity handle to attach the shape to.
+	Entity *world.EntityHandle
+}

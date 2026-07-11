@@ -1,12 +1,13 @@
 package session
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"golang.org/x/text/language"
-	"time"
 )
 
 // SendMessage ...
@@ -77,12 +78,18 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 
 	if currentName != sb.Name() {
 		s.RemoveScoreboard()
-		s.writePacket(&packet.SetDisplayObjective{
+		pk := &packet.SetDisplayObjective{
 			DisplaySlot:   "sidebar",
 			ObjectiveName: sb.Name(),
 			DisplayName:   sb.Name(),
 			CriteriaName:  "dummy",
-		})
+		}
+		if sb.Descending() {
+			pk.SortOrder = packet.ScoreboardSortOrderDescending
+		} else {
+			pk.SortOrder = packet.ScoreboardSortOrderAscending
+		}
+		s.writePacket(pk)
 		name, lines := sb.Name(), append([]string(nil), sb.Lines()...)
 		s.currentScoreboard.Store(&name)
 		s.currentLines.Store(&lines)
@@ -139,7 +146,7 @@ func (s *Session) SendBossBar(text string, colour uint8, healthPercentage float6
 		EventType:          packet.BossEventShow,
 		BossBarTitle:       text,
 		HealthPercentage:   float32(healthPercentage),
-		Colour:             uint32(colour),
+		Colour:             colour,
 	})
 }
 

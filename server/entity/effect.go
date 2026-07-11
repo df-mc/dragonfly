@@ -68,9 +68,9 @@ func (m *EffectManager) Remove(e effect.Type, entity Living) {
 
 	t := reflect.TypeOf(e)
 	if existing, ok := m.effects[t]; ok {
+		delete(m.effects, t)
 		existing.Type().(effect.LastingType).End(entity, existing.Level())
 	}
-	delete(m.effects, t)
 }
 
 // Effect returns the effect instance and true if the entity has the effect. If not found, it will return an empty

@@ -2,6 +2,13 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"slices"
+	"time"
+	_ "unsafe"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/internal/packbuilder"
@@ -14,12 +21,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"slices"
-	_ "unsafe"
 )
 
 // Config contains options for starting a Minecraft server.
@@ -57,6 +60,8 @@ type Config struct {
 	// local games. Allowing players to join without authentication is generally
 	// a security hazard.
 	AuthDisabled bool
+	// MuteEmoteChat specifies if the player emote chat should be muted or not.
+	MuteEmoteChat bool
 	// MaxPlayers is the maximum amount of players allowed to join the server at
 	// once.
 	MaxPlayers int
@@ -74,6 +79,9 @@ type Config struct {
 	// list. By default, StatusProvider will show the server name from the Name
 	// field and the current player count and maximum players.
 	StatusProvider minecraft.ServerStatusProvider
+	// Compression is the packet compression used for connections accepted by
+	// the default listener. If nil, gophertunnel's default compression is used.
+	Compression packet.Compression
 	// PlayerProvider is the player.Provider used for storing and loading player
 	// data. If left as nil, player data will be newly created every time a
 	// player joins the server and no data will be stored.
@@ -98,10 +106,25 @@ type Config struct {
 	// left as 0, the RandomTickSpeed will default to a speed of 3 blocks per
 	// sub chunk per tick (normal ticking speed).
 	RandomTickSpeed int
+	// SaveInterval specifies how often a World should be automatically saved to
+	// disk. This includes chunks, entities and level.dat data. If ReadOnlyWorld
+	// is set to true, changing SaveInterval will have no effect.
+	// By default, SaveInterval is set to 10 minutes. Setting SaveInterval to
+	// a negative number disables automatic saving entirely.
+	SaveInterval time.Duration
+	// ChunkUnloadInterval specifies how often unused chunks should be unloaded
+	// from memory when no longer in use. By default, this is set to 2 minutes.
+	// ChunkUnloadInterval should not be used to prevent chunks from unloading
+	// altogether. This should be done using a Loader with a custom Viewer.
+	ChunkUnloadInterval time.Duration
 	// Entities is a world.EntityRegistry with all entity types registered that
 	// may be added to the Server's worlds. If no entity types are registered,
 	// Entities will be set to entity.DefaultRegistry.
 	Entities world.EntityRegistry
+	// Blocks is the BlockRegistry template used for newly created worlds. If nil, world.DefaultBlockRegistry is used.
+	// For a non-default registry, set this to world.NewBlockRegistry(), register blocks on that instance, and ensure
+	// it is finalized before use.
+	Blocks world.BlockRegistry
 }
 
 // New creates a Server using fields of conf. The Server's worlds are created
@@ -141,8 +164,17 @@ func (conf Config) New() *Server {
 	if len(conf.Entities.Types()) == 0 {
 		conf.Entities = entity.DefaultRegistry
 	}
+	if conf.Blocks == nil {
+		conf.Blocks = world.DefaultBlockRegistry
+	}
+
+	// Initialize the passed block registry and also initialize the default block registry which
+	// is used in some vanilla paths.
+	conf.Blocks.Finalize()
+	world.DefaultBlockRegistry.Finalize()
+
 	if !conf.DisableResourceBuilding {
-		if pack, ok := packbuilder.BuildResourcePack(); ok {
+		if pack, ok := packbuilder.BuildResourcePack(conf.Blocks); ok {
 			conf.Resources = append(conf.Resources, pack)
 		}
 	}
@@ -163,14 +195,12 @@ func (conf Config) New() *Server {
 		srv.listeners = append(srv.listeners, l)
 	}
 
-	world_finaliseBlockRegistry()
+	creative_registerCreativeItems()
 	recipe_registerVanilla()
 
 	srv.world = srv.createWorld(world.Overworld, &srv.nether, &srv.end)
 	srv.nether = srv.createWorld(world.Nether, &srv.world, &srv.end)
 	srv.end = srv.createWorld(world.End, &srv.nether, &srv.world)
-
-	srv.checkNetIsolation()
 
 	return srv
 }
@@ -195,6 +225,8 @@ type UserConfig struct {
 		// DisableJoinQuitMessages specifies if default join and quit messages
 		// for players should be disabled.
 		DisableJoinQuitMessages bool
+		// MuteEmoteChat specifies if the player emote chat should be muted or not.
+		MuteEmoteChat bool
 	}
 	World struct {
 		// SaveData controls whether a world's data will be saved and loaded.
@@ -248,6 +280,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		Name:                    uc.Server.Name,
 		ResourcesRequired:       uc.Resources.Required,
 		AuthDisabled:            !uc.Server.AuthEnabled,
+		MuteEmoteChat:           uc.Server.MuteEmoteChat,
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
@@ -327,10 +360,10 @@ func DefaultConfig() UserConfig {
 
 // noinspection ALL
 //
-//go:linkname recipe_registerVanilla github.com/df-mc/dragonfly/server/item/recipe.registerVanilla
-func recipe_registerVanilla()
+//go:linkname creative_registerCreativeItems github.com/df-mc/dragonfly/server/item/creative.registerCreativeItems
+func creative_registerCreativeItems()
 
 // noinspection ALL
 //
-//go:linkname world_finaliseBlockRegistry github.com/df-mc/dragonfly/server/world.finaliseBlockRegistry
-func world_finaliseBlockRegistry()
+//go:linkname recipe_registerVanilla github.com/df-mc/dragonfly/server/item/recipe.registerVanilla
+func recipe_registerVanilla()

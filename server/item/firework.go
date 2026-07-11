@@ -82,6 +82,11 @@ func (f Firework) RandomisedDuration() time.Duration {
 	return f.Duration + time.Duration(rand.IntN(int(time.Millisecond*600)))
 }
 
+// OffHand ...
+func (Firework) OffHand() bool {
+	return true
+}
+
 // EncodeItem ...
 func (Firework) EncodeItem() (name string, meta int16) {
 	return "minecraft:firework_rocket", 0

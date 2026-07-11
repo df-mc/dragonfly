@@ -2,12 +2,13 @@ package item
 
 import (
 	"encoding/binary"
+	"image/color"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
-	"time"
 )
 
 // MaxCounter represents an item that has a specific max count. By default, each item will be expected to have
@@ -91,6 +92,11 @@ type Consumer interface {
 	// Effects returns any effect currently applied to the Consumer. The returned effects are guaranteed not to have
 	// expired when returned.
 	Effects() []effect.Effect
+	// Absorption returns the absorption health of the Consumer.
+	Absorption() float64
+	// SetAbsorption sets the absorption health of the Consumer. Absorption health is shown as golden hearts and does
+	// not regenerate naturally.
+	SetAbsorption(health float64)
 }
 
 // DefaultConsumeDuration is the default duration that consuming an item takes. Dried kelp takes half this
@@ -163,6 +169,8 @@ type Chargeable interface {
 	ContinueCharge(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration)
 	// ReleaseCharge is called when an item is being released.
 	ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
+	// CanCharge returns whether the item can currently be charged.
+	CanCharge(releaser Releaser, tx *world.Tx, ctx *UseContext) bool
 }
 
 // User represents an entity that is able to use an item in the world, typically entities such as players,
