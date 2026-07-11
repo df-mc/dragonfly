@@ -1,6 +1,8 @@
 package server
 
-import "github.com/sandertv/gophertunnel/minecraft"
+import (
+	"github.com/sandertv/gophertunnel/minecraft"
+)
 
 // statusProvider handles the way the server shows up in the server list. The
 // online players and maximum players are not changeable from outside the

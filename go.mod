@@ -18,7 +18,7 @@ require (
 	golang.org/x/tools v0.41.0
 )
 
-replace github.com/sandertv/gophertunnel => github.com/HashimTheArab/gophertunnel v1.25.3-0.20260711140324-628e2c3d9fe6
+replace github.com/sandertv/gophertunnel => github.com/HashimTheArab/gophertunnel v1.25.3-0.20260711143608-4724458c7a08
 
 require (
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect

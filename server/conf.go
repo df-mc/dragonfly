@@ -308,7 +308,11 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 			return conf, fmt.Errorf("create player provider: %w", err)
 		}
 	}
-	conf.Listeners = append(conf.Listeners, uc.listenerFunc)
+	group := new(minecraft.ListenerGroup)
+	conf.Listeners = append(conf.Listeners, listenerFunc(uc.Network.Address, group))
+	if uc.Network.AddressV6 != "" {
+		conf.Listeners = append(conf.Listeners, listenerFunc(uc.Network.AddressV6, group))
+	}
 	return conf, nil
 }
 

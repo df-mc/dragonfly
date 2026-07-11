@@ -324,7 +324,9 @@ func (srv *Server) close() {
 }
 
 // listen makes the Server listen for new connections from the Listener passed.
-// This may be used to listen for players on different interfaces.
+// This may be used to listen for players on different interfaces. Note that
+// the maximum player count of additional Listeners added is not enforced
+// automatically. The limit must be enforced by the Listener.
 func (srv *Server) listen(l Listener) {
 	wg := new(sync.WaitGroup)
 	ctx, cancel := context.WithCancel(context.Background())
