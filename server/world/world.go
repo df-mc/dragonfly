@@ -75,6 +75,15 @@ type World struct {
 	viewers  map[*Loader]Viewer
 }
 
+// currentTickLocked returns the tick used to update this world. The caller
+// must hold the shared settings lock.
+func (w *World) currentTickLocked() int64 {
+	if w.advance {
+		return w.set.CurrentTick
+	}
+	return w.tick
+}
+
 // transaction is a type that may be added to the transaction queue of a World.
 // Its Run method is called when the transaction is taken out of the queue.
 type transaction interface {

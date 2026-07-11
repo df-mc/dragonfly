@@ -69,11 +69,10 @@ func (t ticker) tick(tx *Tx) {
 		if w.set.WeatherCycle {
 			w.advanceWeather()
 		}
-		tick = w.set.CurrentTick
 	} else {
 		w.tick++
-		tick = w.tick
 	}
+	tick = w.currentTickLocked()
 
 	rain, thunder, tim, cycle := w.set.Raining, w.set.Thundering && w.set.Raining, int(w.set.Time), w.set.TimeCycle
 
