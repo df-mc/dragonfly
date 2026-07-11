@@ -76,11 +76,13 @@ func (e *ExperienceManager) Reset() {
 // progressFromExperience returns the level and progress from the total experience given.
 func progressFromExperience(experience float64) (level int, progress float64) {
 	var a, b, c float64
-	if experience <= float64(experienceForLevels(16)) {
+
+	switch {
+	case experience <= float64(experienceForLevels(16)):
 		a, b = 1.0, 6.0
-	} else if experience <= float64(experienceForLevels(31)) {
+	case experience <= float64(experienceForLevels(31)):
 		a, b, c = 2.5, -40.5, 360.0
-	} else {
+	default:
 		a, b, c = 4.5, -162.5, 2220.0
 	}
 

@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // Fern is a transparent plant block which can be used to obtain seeds and as decoration.
@@ -22,26 +21,18 @@ func (g Fern) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (g Fern) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(g, 1)}
-		}
-		if rand.Float32() > 0.57 {
-			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
-		}
-		return nil
-	})
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, grassDrops(g))
 }
 
 // BoneMeal attempts to affect the block using a bone meal item.
-func (g Fern) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (g Fern) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	upper := DoubleTallGrass{Type: FernDoubleTallGrass(), UpperPart: true}
 	if replaceableWith(tx, pos.Side(cube.FaceUp), upper) {
 		tx.SetBlock(pos, DoubleTallGrass{Type: FernDoubleTallGrass()}, nil)
 		tx.SetBlock(pos.Side(cube.FaceUp), upper, nil)
-		return true
+		return item.BoneMealResultSmall
 	}
-	return false
+	return item.BoneMealResultNone
 }
 
 // CompostChance ...

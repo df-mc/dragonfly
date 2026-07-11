@@ -27,12 +27,12 @@ func (SwampHills) Scale() float64 {
 
 // WaterColour ...
 func (SwampHills) WaterColour() color.RGBA {
-	return color.RGBA{R: 0x4c, G: 0x65, B: 0x59, A: 0xa5}
+	return color.RGBA{R: 0x61, G: 0x7b, B: 0x64, A: 0xa5}
 }
 
 // Tags ...
 func (SwampHills) Tags() []string {
-	return []string{"animal", "monster", "mutated", "swamp", "overworld_generation", "spawns_slimes_on_surface"}
+	return []string{"animal", "monster", "mutated", "swamp", "overworld_generation", "spawns_slimes_on_surface", "slime", "swamp_water_huge_mushroom"}
 }
 
 // String ...

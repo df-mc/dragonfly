@@ -4,6 +4,7 @@ import (
 	"time"
 	_ "unsafe"
 
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
@@ -118,29 +119,33 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 		return false
 	}
 
+	held, _ := releaser.HeldItems()
 	creative := releaser.GameMode().CreativeInventory()
-	rot := releaser.Rotation().Neg()
-	dirVec := releaser.Rotation().Vec3().Normalize()
 
-	if firework, isFirework := c.Item.Item().(Firework); isFirework {
-		createFirework := tx.World().EntityRegistry().Config().Firework
-		fireworkEntity := createFirework(world.EntitySpawnOpts{
-			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(0.8),
-			Rotation: rot,
-		}, firework, releaser, 1.0, 0, false)
-		tx.AddEntity(fireworkEntity)
-		ctx.DamageItem(3)
-	} else {
-		createArrow := tx.World().EntityRegistry().Config().Arrow
-		arrow := createArrow(world.EntitySpawnOpts{
-			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(5.15),
-			Rotation: rot,
-		}, 9, releaser, false, false, !creative, 0, c.Item.Item().(Arrow).Tip)
-		tx.AddEntity(arrow)
-		ctx.DamageItem(1)
+	pierceLevel, multishot := 0, false
+	for _, enchant := range held.Enchantments() {
+		if _, ok := enchant.Type().(interface{ MultipleProjectiles() bool }); ok {
+			multishot = true
+		}
+		if _, ok := enchant.Type().(interface{ Pierces() bool }); ok {
+			pierceLevel = enchant.Level()
+		}
 	}
+
+	arrowConf := world.ArrowSpawnConfig{
+		Damage:              9,
+		Owner:               releaser,
+		Critical:            true,
+		ObtainArrowOnPickup: !creative,
+		PiercingLevel:       pierceLevel,
+	}
+	c.shoot(releaser, tx, 0, arrowConf)
+	if multishot {
+		arrowConf.ObtainArrowOnPickup = false
+		c.shoot(releaser, tx, -10, arrowConf)
+		c.shoot(releaser, tx, 10, arrowConf)
+	}
+	c.applyDamage(ctx)
 
 	c.Item = Stack{}
 	held, left := releaser.HeldItems()
@@ -148,6 +153,47 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	releaser.SetHeldItems(crossbow, left)
 	tx.PlaySound(releaser.Position(), sound.CrossbowShoot{})
 	return true
+}
+
+// CanCharge ...
+func (c Crossbow) CanCharge(releaser Releaser, _ *world.Tx, ctx *UseContext) bool {
+	_, found := c.findProjectile(releaser, ctx)
+	return found && c.Item.Empty()
+}
+
+// shoot fires the crossbow's loaded projectiles.
+func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, arrowConf world.ArrowSpawnConfig) {
+	rot := releaser.Rotation()
+	dirVec := cube.Rotation{rot[0] + offsetAngle, rot[1]}.Vec3()
+
+	if firework, ok := c.Item.Item().(Firework); ok {
+		createFirework := tx.World().EntityRegistry().Config().Firework
+		projectile := createFirework(world.EntitySpawnOpts{
+			Position: torsoPosition(releaser),
+			Velocity: dirVec.Mul(0.8),
+			Rotation: rot.Neg(),
+		}, firework, releaser, 1.0, 0, false)
+		tx.AddEntity(projectile)
+	} else {
+		createArrow := tx.World().EntityRegistry().Config().Arrow
+		arrowConf.Tip = c.Item.Item().(Arrow).Tip
+		arrow := createArrow(world.EntitySpawnOpts{
+			Position: torsoPosition(releaser),
+			Velocity: dirVec.Mul(5.15),
+			Rotation: rot.Neg(),
+		}, arrowConf)
+		tx.AddEntity(arrow)
+	}
+}
+
+// applyDamage applies damage on a UseContext based on the projectile loaded
+// in the crossbow.
+func (c Crossbow) applyDamage(ctx *UseContext) {
+	if _, ok := c.Item.Item().(Firework); ok {
+		ctx.DamageItem(3)
+	} else {
+		ctx.DamageItem(1)
+	}
 }
 
 // MaxCount always returns 1.
