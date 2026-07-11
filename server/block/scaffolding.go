@@ -39,33 +39,7 @@ type Scaffolding struct {
 
 // NeighbourUpdateTick ...
 func (s Scaffolding) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if scaffoldingNextToLava(pos, tx) {
-		// Lava never ignites Fire on its own next to a block with LavaFlammable false (as Scaffolding has,
-		// sourced from Java not igniting it), so it never goes through the regular Fire.burn tick-based
-		// mechanism the way an adjacent Fire block does. Destroying it here outright is therefore the only way
-		// to reproduce Bedrock's "destroyed next to lava" behaviour. Fire is deliberately not handled here:
-		// Scaffolding's FlammabilityInfo already makes Fire.burn consume it (faster than wood, since scaffolding
-		// has higher Encouragement/Flammability values), and destroying it immediately here as well would skip
-		// that intended chance-based burn entirely, making it disappear far faster than vanilla the moment any
-		// fire touches it.
-		breakBlockNoDrops(s, pos, tx)
-		return
-	}
 	tx.ScheduleBlockUpdate(pos, s, time.Millisecond*50)
-}
-
-// scaffoldingNextToLava reports whether any of the six blocks adjacent to pos is Lava.
-func scaffoldingNextToLava(pos cube.Pos, tx *world.Tx) bool {
-	found := false
-	pos.Neighbours(func(neighbour cube.Pos) {
-		if found {
-			return
-		}
-		if _, ok := tx.Block(neighbour).(Lava); ok {
-			found = true
-		}
-	}, tx.Range())
-	return found
 }
 
 // ScheduledTick recalculates the stability of the scaffolding. If it has lost its support, the scaffolding either
@@ -183,7 +157,13 @@ func (s Scaffolding) BreakInfo() BreakInfo {
 
 // FlammabilityInfo ...
 func (Scaffolding) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(60, 60, false)
+	// LavaFlammable is true on Bedrock (unlike Java, where scaffolding is not ignited by lava and can be placed
+	// inside it - see the UseOnBlock check below for that part, which still applies on Bedrock too). Confirmed
+	// directly in a Bedrock singleplayer world: placing scaffolding above lava visibly catches fire first
+	// (Lava.RandomTick igniting a Fire block via the normal ignition mechanic, since scaffolding now counts as
+	// lava-flammable), which then consumes it through the ordinary chance-based Fire.burn process - not an
+	// instant, fire-less destruction.
+	return newFlammabilityInfo(60, 60, true)
 }
 
 // FuelInfo ...

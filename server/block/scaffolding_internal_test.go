@@ -149,3 +149,21 @@ func TestScaffoldingBuildUpFromBranchTip(t *testing.T) {
 		}
 	})
 }
+
+// TestScaffoldingRecognisedAsLavaFlammableNeighbour verifies that Lava's own ignition check (neighboursLavaFlammable,
+// used by Lava.RandomTick to decide whether to start a Fire block nearby) recognises Scaffolding as a valid
+// target now that LavaFlammable is true. This is what makes lava ignite scaffolding through the normal mechanism
+// instead of needing a bespoke instant-destroy path.
+func TestScaffoldingRecognisedAsLavaFlammableNeighbour(t *testing.T) {
+	w := world.Config{Synchronous: true}.New()
+	defer w.Close()
+
+	air := cube.Pos{0, 0, 0}
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(air.Side(cube.FaceEast), Scaffolding{}, nil)
+
+		if !neighboursLavaFlammable(air, tx) {
+			t.Error("expected the air cell next to scaffolding to be recognised as having a lava-flammable neighbour")
+		}
+	})
+}
