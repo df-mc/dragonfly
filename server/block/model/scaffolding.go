@@ -20,7 +20,9 @@ func (Scaffolding) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	}
 }
 
-// FaceSolid always returns false.
-func (Scaffolding) FaceSolid(cube.Pos, cube.Face, world.BlockSource) bool {
-	return false
+// FaceSolid returns true only for the top face: the top slab fully spans the block, sturdy enough for torches,
+// redstone wire, buttons, rails and similar attachments to sit on, matching real Bedrock. The bottom and side
+// faces stay non-solid since the corner posts only cover the corners, not the full face.
+func (Scaffolding) FaceSolid(_ cube.Pos, face cube.Face, _ world.BlockSource) bool {
+	return face == cube.FaceUp
 }

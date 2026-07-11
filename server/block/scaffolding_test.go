@@ -278,3 +278,38 @@ func TestScaffoldingPlacementSetsStabilityCheckImmediately(t *testing.T) {
 		}
 	})
 }
+
+// TestScaffoldingModelFaceSolid verifies that only the top face of the scaffolding model is solid: the top slab
+// fully spans the block, sturdy enough for things like torches and redstone wire to attach to, matching real
+// Bedrock, while the bottom and side faces stay non-solid since the corner posts only cover the corners.
+func TestScaffoldingModelFaceSolid(t *testing.T) {
+	m := block.Scaffolding{}.Model()
+	for _, face := range cube.Faces() {
+		want := face == cube.FaceUp
+		if got := m.FaceSolid(cube.Pos{}, face, nil); got != want {
+			t.Errorf("face %v: expected FaceSolid %v, got %v", face, want, got)
+		}
+	}
+}
+
+// TestScaffoldingSupportsTorchOnTop verifies that a torch can actually be placed on top of a scaffolding block,
+// matching real Bedrock (torches only attach to the top face of scaffolding, not the sides). This is a
+// regression test: the model's FaceSolid used to always return false, which made every block that checks the
+// sturdiness of the block below it - torches, redstone wire, buttons, rails and similar - refuse to attach.
+func TestScaffoldingSupportsTorchOnTop(t *testing.T) {
+	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
+	defer w.Close()
+
+	pos := cube.Pos{0, 0, 0}
+	<-w.Exec(func(tx *world.Tx) {
+		tx.SetBlock(pos, block.Scaffolding{}, nil)
+
+		// A nil user never implements block.Placer, so place() falls back to a plain tx.SetBlock that never
+		// touches ctx.CountSub - UseOnBlock's bool return only reflects a real Player's PlaceBlock outcome, so
+		// it is not asserted here. The block being placed is what this test verifies.
+		block.Torch{}.UseOnBlock(pos, cube.FaceUp, mgl64.Vec3{}, tx, nil, &item.UseContext{})
+		if _, ok := tx.Block(pos.Side(cube.FaceUp)).(block.Torch); !ok {
+			t.Errorf("expected a torch above the scaffolding, got %v", tx.Block(pos.Side(cube.FaceUp)))
+		}
+	})
+}
