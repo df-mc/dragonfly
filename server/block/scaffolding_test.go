@@ -132,8 +132,11 @@ func TestScaffoldingDestroyedNextToLava(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
 
-	pos := cube.Pos{0, 0, 0}
+	pos := cube.Pos{0, 1, 0}
 	<-w.Exec(func(tx *world.Tx) {
+		// Grounded (Stability 0) so the only thing that could destroy it is the lava adjacency check, not an
+		// unrelated stability collapse from being left unsupported.
+		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
 		tx.SetBlock(pos, block.Scaffolding{}, nil)
 		tx.SetBlock(pos.Side(cube.FaceEast), block.Lava{Depth: 8}, nil)
 	})
@@ -146,22 +149,28 @@ func TestScaffoldingDestroyedNextToLava(t *testing.T) {
 	})
 }
 
-// TestScaffoldingDestroyedNextToFire verifies that scaffolding placed next to fire is destroyed outright, the
-// same as it is next to lava.
-func TestScaffoldingDestroyedNextToFire(t *testing.T) {
+// TestScaffoldingNotInstantlyDestroyedNextToFire verifies that scaffolding placed next to fire is NOT destroyed
+// outright the way it is next to lava. Unlike lava, an adjacent Fire block already consumes flammable neighbours
+// itself through its own tick-based, chance-driven burn mechanic (using Scaffolding's FlammabilityInfo, which
+// gives it higher odds than wood, not a guarantee). Destroying it immediately on a neighbour update as well
+// would double up on that and make it disappear far faster than vanilla the instant any fire touches it.
+func TestScaffoldingNotInstantlyDestroyedNextToFire(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
 
-	pos := cube.Pos{0, 0, 0}
+	pos := cube.Pos{0, 1, 0}
 	<-w.Exec(func(tx *world.Tx) {
+		// Grounded (Stability 0) so the block can never be destroyed by an unrelated stability collapse: any
+		// destruction observed here can only come from the fire adjacency itself.
+		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
 		tx.SetBlock(pos, block.Scaffolding{}, nil)
 		tx.SetBlock(pos.Side(cube.FaceEast), block.Fire{}, nil)
 	})
 	advanceTicks(w, 3)
 
 	<-w.Exec(func(tx *world.Tx) {
-		if b := tx.Block(pos); b != (block.Air{}) {
-			t.Errorf("expected scaffolding next to fire to be destroyed, got %v", b)
+		if _, ok := tx.Block(pos).(block.Scaffolding); !ok {
+			t.Errorf("expected scaffolding next to fire to still be standing after a few ticks, got %v", tx.Block(pos))
 		}
 	})
 }
@@ -214,4 +223,21 @@ func TestScaffoldingNeverWaterlogs(t *testing.T) {
 			t.Error("expected water to be displaced, but it is still present")
 		}
 	})
+}
+
+// TestScaffoldingFlammabilityInfo verifies the exact Encouragement/Flammability/LavaFlammable values sourced from
+// minecraft.wiki's flammability table (60/60/false), so that Scaffolding keeps burning noticeably faster than
+// wood (5/20/true) through the normal chance-based Fire.burn mechanic, but this exact regression test exists
+// because it is easy to mistake "burns faster than wood" for "should be destroyed instantly", which it is not.
+func TestScaffoldingFlammabilityInfo(t *testing.T) {
+	info := block.Scaffolding{}.FlammabilityInfo()
+	if info.Encouragement != 60 {
+		t.Errorf("expected Encouragement 60, got %d", info.Encouragement)
+	}
+	if info.Flammability != 60 {
+		t.Errorf("expected Flammability 60, got %d", info.Flammability)
+	}
+	if info.LavaFlammable {
+		t.Error("expected LavaFlammable to be false")
+	}
 }

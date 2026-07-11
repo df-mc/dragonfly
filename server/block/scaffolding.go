@@ -38,24 +38,29 @@ type Scaffolding struct {
 
 // NeighbourUpdateTick ...
 func (s Scaffolding) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if scaffoldingNextToLavaOrFire(pos, tx) {
-		// Bedrock destroys scaffolding placed next to lava or fire outright, without it catching fire and
-		// burning down over time the way its Flammability would otherwise cause.
+	if scaffoldingNextToLava(pos, tx) {
+		// Lava never ignites Fire on its own next to a block with LavaFlammable false (as Scaffolding has,
+		// sourced from Java not igniting it), so it never goes through the regular Fire.burn tick-based
+		// mechanism the way an adjacent Fire block does. Destroying it here outright is therefore the only way
+		// to reproduce Bedrock's "destroyed next to lava" behaviour. Fire is deliberately not handled here:
+		// Scaffolding's FlammabilityInfo already makes Fire.burn consume it (faster than wood, since scaffolding
+		// has higher Encouragement/Flammability values), and destroying it immediately here as well would skip
+		// that intended chance-based burn entirely, making it disappear far faster than vanilla the moment any
+		// fire touches it.
 		breakBlockNoDrops(s, pos, tx)
 		return
 	}
 	tx.ScheduleBlockUpdate(pos, s, time.Millisecond*50)
 }
 
-// scaffoldingNextToLavaOrFire reports whether any of the six blocks adjacent to pos is Lava or Fire.
-func scaffoldingNextToLavaOrFire(pos cube.Pos, tx *world.Tx) bool {
+// scaffoldingNextToLava reports whether any of the six blocks adjacent to pos is Lava.
+func scaffoldingNextToLava(pos cube.Pos, tx *world.Tx) bool {
 	found := false
 	pos.Neighbours(func(neighbour cube.Pos) {
 		if found {
 			return
 		}
-		switch tx.Block(neighbour).(type) {
-		case Lava, Fire:
+		if _, ok := tx.Block(neighbour).(Lava); ok {
 			found = true
 		}
 	}, tx.Range())
