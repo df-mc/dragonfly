@@ -344,7 +344,7 @@ func (tx *Tx) CurrentTick() int64 {
 	w := tx.World()
 	w.set.Lock()
 	defer w.set.Unlock()
-	return w.set.CurrentTick
+	return w.currentTickLocked()
 }
 
 // Redstone returns the transient redstone runtime state owned by the transaction's world.

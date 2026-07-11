@@ -41,7 +41,11 @@ type World struct {
 
 	o sync.Once
 
-	set     *Settings
+	set *Settings
+	// tick is the per-world tick counter used by worlds that do not advance the
+	// shared Settings, such as the Nether and End.
+	tick int64
+
 	handler atomic.Pointer[Handler]
 
 	weather
@@ -71,6 +75,15 @@ type World struct {
 
 	viewerMu sync.Mutex
 	viewers  map[*Loader]Viewer
+}
+
+// currentTickLocked returns the tick used to update this world. The caller
+// must hold the shared settings lock.
+func (w *World) currentTickLocked() int64 {
+	if w.advance {
+		return w.set.CurrentTick
+	}
+	return w.tick
 }
 
 // transaction is a type that may be added to the transaction queue of a World.

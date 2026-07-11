@@ -52,6 +52,28 @@ func TestSynchronousWorldAdvanceTick(t *testing.T) {
 	}
 }
 
+// TestCurrentTickUsesDimensionTick verifies that worlds sharing settings expose
+// the tick used to update that specific world through Tx.CurrentTick.
+func TestCurrentTickUsesDimensionTick(t *testing.T) {
+	provider := NopProvider{Set: defaultSettings()}
+	overworld := Config{Provider: provider, Synchronous: true}.New()
+	defer overworld.Close()
+	nether := Config{Provider: provider, Dim: Nether, Synchronous: true}.New()
+	defer nether.Close()
+
+	for range 5 {
+		overworld.AdvanceTick()
+	}
+
+	var got int64
+	<-nether.Exec(func(tx *Tx) {
+		got = tx.CurrentTick()
+	})
+	if got != nether.tick {
+		t.Fatalf("expected current tick %v for Nether world, got %v", nether.tick, got)
+	}
+}
+
 func TestSynchronousExecWorldCanRemoveEntity(t *testing.T) {
 	w := Config{Synchronous: true}.New()
 	defer w.Close()
