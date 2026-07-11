@@ -327,8 +327,12 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 // ViewItemCooldown ...
 func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
 	name, _ := item.EncodeItem()
+	category := strings.Split(name, ":")[1]
+	if c, ok := item.(interface{ CooldownCategory() string }); ok {
+		category = c.CooldownCategory()
+	}
 	s.writePacket(&packet.ClientStartItemCooldown{
-		Category: strings.Split(name, ":")[1],
+		Category: category,
 		Duration: int32(duration.Milliseconds() / 50),
 	})
 }

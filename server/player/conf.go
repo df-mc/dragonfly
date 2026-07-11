@@ -68,6 +68,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 		effects:             entity.NewEffectManager(conf.Effects...),
 		locale:              conf.Locale,
 		cooldowns:           make(map[string]time.Time),
+		spearChargeHits:     make(map[uuid.UUID]time.Time),
 		mc:                  &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 		heldSlot:            &slot,
 		gameMode:            conf.GameMode,
