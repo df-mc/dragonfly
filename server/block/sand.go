@@ -16,6 +16,11 @@ type Sand struct {
 	Red bool
 }
 
+// BoneMeal ...
+func (s Sand) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
+	return trySpreadSeaFlora(pos, tx)
+}
+
 // SoilFor ...
 func (s Sand) SoilFor(block world.Block) bool {
 	switch block.(type) {

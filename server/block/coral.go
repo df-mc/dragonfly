@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Coral is a non-solid block that comes in 5 variants.
@@ -14,7 +15,7 @@ type Coral struct {
 	empty
 	transparent
 	bassDrum
-	sourceWaterDisplacer
+	sourceOrFallingWaterDisplacer
 
 	// Type is the type of coral of the block.
 	Type CoralType
