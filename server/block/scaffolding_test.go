@@ -2,6 +2,7 @@ package block_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -312,4 +313,53 @@ func TestScaffoldingSupportsTorchOnTop(t *testing.T) {
 			t.Errorf("expected a torch above the scaffolding, got %v", tx.Block(pos.Side(cube.FaceUp)))
 		}
 	})
+}
+
+// fakeFallEntity is a minimal world.Entity used to test Scaffolding.EntityInside's fall distance reset without
+// needing a full Player.
+type fakeFallEntity struct {
+	sneaking     bool
+	fallDistance float64
+}
+
+func (*fakeFallEntity) Close() error            { return nil }
+func (*fakeFallEntity) H() *world.EntityHandle  { return nil }
+func (*fakeFallEntity) Position() mgl64.Vec3    { return mgl64.Vec3{} }
+func (*fakeFallEntity) Rotation() cube.Rotation { return cube.Rotation{} }
+func (f *fakeFallEntity) Sneaking() bool        { return f.sneaking }
+func (f *fakeFallEntity) FallDistance() float64 { return f.fallDistance }
+func (f *fakeFallEntity) ResetFallDistance()    { f.fallDistance = 0 }
+
+// TestScaffoldingResetsFallDistanceOnlyWhileSneaking verifies that Scaffolding only resets an entity's fall
+// distance when it is sneaking, unlike Ladder and Vines which do so unconditionally. Sourced from
+// minecraft.wiki's Scaffolding and Tutorial:Breaking a fall pages, both of which specifically say "while
+// sneaking", and confirmed against Ladder's own page, which has no such condition.
+func TestScaffoldingResetsFallDistanceOnlyWhileSneaking(t *testing.T) {
+	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
+	defer w.Close()
+
+	<-w.Exec(func(tx *world.Tx) {
+		sneaking := &fakeFallEntity{sneaking: true, fallDistance: 10}
+		block.Scaffolding{}.EntityInside(cube.Pos{}, tx, sneaking)
+		if sneaking.fallDistance != 0 {
+			t.Errorf("expected fall distance to be reset while sneaking, got %v", sneaking.fallDistance)
+		}
+
+		notSneaking := &fakeFallEntity{sneaking: false, fallDistance: 10}
+		block.Scaffolding{}.EntityInside(cube.Pos{}, tx, notSneaking)
+		if notSneaking.fallDistance != 10 {
+			t.Errorf("expected fall distance to be untouched while not sneaking, got %v", notSneaking.fallDistance)
+		}
+	})
+}
+
+// TestScaffoldingFuelInfo verifies the exact furnace fuel duration sourced from minecraft.wiki: Scaffolding
+// smelts 0.25 items, a quarter of a full fuel unit. Dragonfly's Planks smelts 1.5 items over 15 seconds
+// elsewhere in this package, confirming the 10-seconds-per-item baseline used to derive this value.
+func TestScaffoldingFuelInfo(t *testing.T) {
+	want := time.Second * 5 / 2
+	got := block.Scaffolding{}.FuelInfo().Duration
+	if got != want {
+		t.Errorf("expected fuel duration %v, got %v", want, got)
+	}
 }

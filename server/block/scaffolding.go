@@ -161,6 +161,13 @@ func scaffoldingColumnTop(pos cube.Pos, tx *world.Tx) cube.Pos {
 
 // EntityInside ...
 func (Scaffolding) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
+	// Unlike Ladder and Vines, which reset fall distance unconditionally, Scaffolding only does so for entities
+	// that are sneaking (sourced from minecraft.wiki's Scaffolding and Tutorial:Breaking a fall pages, both of
+	// which specifically say "while sneaking").
+	sneaking, ok := e.(interface{ Sneaking() bool })
+	if !ok || !sneaking.Sneaking() {
+		return
+	}
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
 		fallEntity.ResetFallDistance()
 	}
@@ -177,6 +184,13 @@ func (s Scaffolding) BreakInfo() BreakInfo {
 // FlammabilityInfo ...
 func (Scaffolding) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(60, 60, false)
+}
+
+// FuelInfo ...
+func (Scaffolding) FuelInfo() item.FuelInfo {
+	// minecraft.wiki: Scaffolding smelts 0.25 items as furnace fuel, a quarter of Planks' fuel value per item
+	// smelted (Planks smelts 1.5 items over 15 seconds elsewhere in this package, i.e. 10 seconds per item).
+	return newFuelInfo(time.Second * 5 / 2)
 }
 
 // Model ...
