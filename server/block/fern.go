@@ -25,14 +25,14 @@ func (g Fern) BreakInfo() BreakInfo {
 }
 
 // BoneMeal attempts to affect the block using a bone meal item.
-func (g Fern) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (g Fern) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	upper := DoubleTallGrass{Type: FernDoubleTallGrass(), UpperPart: true}
 	if replaceableWith(tx, pos.Side(cube.FaceUp), upper) {
 		tx.SetBlock(pos, DoubleTallGrass{Type: FernDoubleTallGrass()}, nil)
 		tx.SetBlock(pos.Side(cube.FaceUp), upper, nil)
-		return true
+		return item.BoneMealResultSmall
 	}
-	return false
+	return item.BoneMealResultNone
 }
 
 // CompostChance ...

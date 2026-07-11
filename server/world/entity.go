@@ -181,9 +181,10 @@ func (e *EntityHandle) execWorld(f func(tx *Tx, e Entity), weak bool) bool {
 	}
 	// We now arrive at the more complicated part. When we call e.w.Exec(), our
 	// transaction must await earlier transactions in the world. If one of those
-	// earlier transactions tries to change e.w (through e.unsetAndLockWorld()
-	// or e.setAndUnlockWorld()), it must lock e.cond.L. This would lead to a
-	// deadlock, because we already have e.cond.L locked here.
+	// earlier transactions tries to change e.w (through e.unsetAndLockWorld(),
+	// e.setAndUnlockWorld(), or e.setAndUnlockWorldAt()), it must lock
+	// e.cond.L. This would lead to a deadlock, because we already have e.cond.L
+	// locked here.
 	// We work around this with so-called "weak transactions". This is a
 	// transaction that may be invalidated before it is executed. In this case,
 	// this invalidation happens by setting e.worldless to true. If the
@@ -258,6 +259,20 @@ func (e *EntityHandle) setAndUnlockWorld(w *World) {
 	if e.w != nil {
 		panic("cannot add entity to new world before removing from old world")
 	}
+	e.w = w
+	e.cond.Broadcast()
+}
+
+// setAndUnlockWorldAt sets e's position before publishing e to the World
+// passed, then broadcasts e.cond so waiters can open the entity.
+func (e *EntityHandle) setAndUnlockWorldAt(w *World, pos mgl64.Vec3) {
+	e.cond.L.Lock()
+	defer e.cond.L.Unlock()
+
+	if e.w != nil {
+		panic("cannot add entity to new world before removing from old world")
+	}
+	e.data.Pos = pos
 	e.w = w
 	e.cond.Broadcast()
 }
@@ -366,7 +381,7 @@ type EntityRegistryConfig struct {
 	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
 	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	Arrow              func(opts EntitySpawnOpts, damage float64, owner Entity, critical, disallowPickup, obtainArrowOnPickup bool, punchLevel int, tip any) *EntityHandle
+	Arrow              func(opts EntitySpawnOpts, conf ArrowSpawnConfig) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	EnderPearl         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Firework           func(opts EntitySpawnOpts, firework Item, owner Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *EntityHandle
@@ -374,6 +389,28 @@ type EntityRegistryConfig struct {
 	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
 	Lightning          func(opts EntitySpawnOpts) *EntityHandle
+}
+
+// ArrowSpawnConfig holds the options used to spawn an arrow entity.
+type ArrowSpawnConfig struct {
+	// Damage specifies the base damage dealt by the arrow.
+	Damage float64
+	// Owner is the entity that fired the arrow.
+	Owner Entity
+	// Critical specifies if the arrow should deal critical damage.
+	Critical bool
+	// DisablePickup specifies if picking up the arrow should be disabled.
+	DisablePickup bool
+	// ObtainArrowOnPickup specifies if the arrow should be returned as an item when picked up.
+	ObtainArrowOnPickup bool
+	// PunchLevel specifies the level of punch knockback applied to the arrow.
+	PunchLevel int
+	// PiercingLevel is the crossbow Piercing enchantment level. The arrow passes
+	// through PiercingLevel entities and damages PiercingLevel+1 in total. A
+	// value of 0 means no piercing.
+	PiercingLevel int
+	// Tip specifies the potion tip carried by the arrow.
+	Tip any
 }
 
 // New creates an EntityRegistry using conf and the EntityTypes passed.

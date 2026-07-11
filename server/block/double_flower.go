@@ -24,9 +24,9 @@ func (d DoubleFlower) FlammabilityInfo() FlammabilityInfo {
 }
 
 // BoneMeal ...
-func (d DoubleFlower) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (d DoubleFlower) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
-	return true
+	return item.BoneMealResultSmall
 }
 
 // NeighbourUpdateTick ...

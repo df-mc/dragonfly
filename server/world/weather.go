@@ -207,6 +207,9 @@ func (w weather) tickLightning(tx *Tx) {
 // near the lightning strike. If there is no rain at the final position
 // selected, the lightning strike will fail.
 func (w weather) strikeLightning(tx *Tx, c ChunkPos) {
+	if w.w.conf.Entities.conf.Lightning == nil {
+		return
+	}
 	if pos := w.lightningPosition(tx, c); tx.ThunderingAt(cube.PosFromVec3(pos)) {
 		tx.AddEntity(w.w.conf.Entities.conf.Lightning(EntitySpawnOpts{Position: pos}))
 	}

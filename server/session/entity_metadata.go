@@ -148,7 +148,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		}
 	}
 
-	if l, ok := e.(living); ok && s.ent.UUID() == l.UUID() {
+	if l, ok := e.(living); ok && s.ent != nil && s.ent.UUID() == l.UUID() {
 		deathPos, deathDimension, died := l.DeathPosition()
 		if died {
 			dim, _ := world.DimensionID(deathDimension)
