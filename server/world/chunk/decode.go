@@ -24,6 +24,8 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chu
 // noinspection GoUnusedExportedFunction
 func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
 	c := New(br, r)
+	// The declared count may exceed the number of sub-chunks supported by the
+	// dimension's vertical range, so validate it before indexing c.sub.
 	if count < 0 || count > len(c.sub) {
 		return nil, fmt.Errorf("invalid sub-chunk count %d: chunk range has %d sub-chunks", count, len(c.sub))
 	}
