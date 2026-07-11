@@ -190,6 +190,9 @@ func (Scaffolding) FlammabilityInfo() FlammabilityInfo {
 func (Scaffolding) FuelInfo() item.FuelInfo {
 	// minecraft.wiki: Scaffolding smelts 0.25 items as furnace fuel, a quarter of Planks' fuel value per item
 	// smelted (Planks smelts 1.5 items over 15 seconds elsewhere in this package, i.e. 10 seconds per item).
+	// Other sources claimed Bedrock's value differs (up to 6x Java's), so this was verified directly in a
+	// Bedrock singleplayer world rather than trusted from the wiki alone: each block burned for ~2-3 seconds,
+	// confirming 0.25 items and ruling out the longer alternative.
 	return newFuelInfo(time.Second * 5 / 2)
 }
 
