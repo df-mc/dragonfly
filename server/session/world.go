@@ -517,6 +517,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		DisableRelativeVolume: disableRelative,
 	}
 	switch so := t.(type) {
+	case sound.LodestoneCompassLink:
+		pk.SoundType = packet.SoundEventLinkCompassToLodestone
 	case sound.EquipItem:
 		switch i := so.Item.(type) {
 		case item.Helmet:
@@ -1247,6 +1249,18 @@ func (s *Session) ViewSlotChange(slot int, newItem item.Stack) {
 func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	switch t := a.(type) {
+	case world.PositionTrackingUpdateAction:
+		s.writePacket(&packet.PositionTrackingDBServerBroadcast{
+			BroadcastAction: packet.PositionTrackingDBBroadcastActionUpdate,
+			TrackingID:      t.Handle,
+			Payload:         positionTrackingPayload(t.Handle, t.Position, t.Dimension, positionTrackingStatusTracked),
+		})
+	case world.PositionTrackingDestroyAction:
+		s.writePacket(&packet.PositionTrackingDBServerBroadcast{
+			BroadcastAction: packet.PositionTrackingDBBroadcastActionDestroy,
+			TrackingID:      t.Handle,
+			Payload:         positionTrackingPayload(t.Handle, cube.Pos{}, 0, positionTrackingStatusMissing),
+		})
 	case block.OpenAction:
 		s.writePacket(&packet.BlockEvent{
 			Position:  blockPos,

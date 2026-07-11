@@ -109,6 +109,7 @@ type Controllable interface {
 	EditSign(pos cube.Pos, frontText, backText string) error
 	TurnLecternPage(pos cube.Pos, page int) error
 
+	Inventory() *inventory.Inventory
 	EnderChestInventory() *inventory.Inventory
 	MoveItemsToInventory()
 
