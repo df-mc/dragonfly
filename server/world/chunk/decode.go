@@ -33,6 +33,8 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 		if err != nil {
 			return nil, err
 		}
+		// Version 9 sub-chunks replace index with an absolute Y from the payload.
+		// Validate that translated index before using it to access the chunk.
 		if int(index) >= len(c.sub) {
 			return nil, fmt.Errorf("invalid sub-chunk index %d: chunk range has %d sub-chunks", index, len(c.sub))
 		}
