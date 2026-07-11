@@ -15,13 +15,14 @@ import (
 // a supporting block before it collapses.
 //
 // Unlike vanilla, Scaffolding deliberately does not implement LiquidDisplacer and can never become waterlogged.
-// Real Bedrock scaffolding can be waterlogged, but a waterlogged climbable block cannot be climbed on Bedrock
-// (the same is true of ladders; see e.g. Mojang bug reports MC-129479 and MC-127102). This means a scaffolding
-// column that passes through water is unclimbable at the exact point where it transitions from the waterlogged
-// section to the dry section: the player's hitbox straddles a wet, non-climbable block and a dry, climbable one
-// at the same time, and the client never resolves which movement mode to apply, permanently freezing the player
-// there until they leave. Placing scaffolding into water instead simply displaces the water, guaranteeing the
-// whole column stays climbable at the cost of not preserving vanilla's waterlogging.
+// A scaffolding column built through a body of water was found to permanently trap the player at the point
+// where it transitions from the waterlogged section to the dry section: a recorded reproduction (climbing up
+// through a 3-block-deep water-filled shaft) shows the player's position and camera both freeze completely for
+// several seconds right at the water surface, unable to move in either direction, until giving up. The likely
+// mechanism is that the player's hitbox straddles a wet block and a dry, climbable one at the same time, and the
+// client never resolves which movement mode (swimming or climbing) to apply, but this has not been confirmed
+// against Bedrock's own source, only observed and reproduced. Displacing the water on placement instead of
+// waterlogging guarantees the whole column stays climbable at the cost of not preserving vanilla's waterlogging.
 type Scaffolding struct {
 	transparent
 
