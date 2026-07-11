@@ -1,6 +1,8 @@
 package server
 
 import (
+	"sync/atomic"
+
 	"github.com/sandertv/gophertunnel/minecraft"
 )
 
@@ -19,4 +21,13 @@ func (s statusProvider) ServerStatus(playerCount, maxPlayers int) minecraft.Serv
 		PlayerCount: playerCount,
 		MaxPlayers:  maxPlayers,
 	}
+}
+
+type sharedStatusProvider struct {
+	provider    minecraft.ServerStatusProvider
+	playerCount *atomic.Int64
+}
+
+func (s sharedStatusProvider) ServerStatus(_ int, maxPlayers int) minecraft.ServerStatus {
+	return s.provider.ServerStatus(int(s.playerCount.Load()), maxPlayers)
 }
