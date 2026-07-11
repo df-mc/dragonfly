@@ -158,7 +158,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 // CanCharge ...
 func (c Crossbow) CanCharge(releaser Releaser, _ *world.Tx, ctx *UseContext) bool {
 	_, found := c.findProjectile(releaser, ctx)
-	return found && !c.Item.Empty()
+	return found && c.Item.Empty()
 }
 
 // shoot fires the crossbow's loaded projectiles.
@@ -187,7 +187,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ar
 }
 
 // applyDamage applies damage on a UseContext based on the projectile loaded
-// in the crossboww.
+// in the crossbow.
 func (c Crossbow) applyDamage(ctx *UseContext) {
 	if _, ok := c.Item.Item().(Firework); ok {
 		ctx.DamageItem(3)
