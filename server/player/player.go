@@ -2814,6 +2814,9 @@ func (p *Player) insideOfSolid() bool {
 		// Transparent.
 		return false
 	}
+	if immune, ok := b.(block.NonSuffocating); ok && immune.SuffocationImmune() {
+		return false
+	}
 	for _, blockBox := range b.Model().BBox(pos, p.tx) {
 		if blockBox.Translate(pos.Vec3()).IntersectsWith(box) {
 			return true
