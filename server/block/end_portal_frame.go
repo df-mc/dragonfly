@@ -23,6 +23,11 @@ func (f EndPortalFrame) Model() world.BlockModel {
 	return model.EndPortalFrame{Eye: f.Eye}
 }
 
+// LightEmissionLevel returns 1.
+func (EndPortalFrame) LightEmissionLevel() uint8 {
+	return 1
+}
+
 // EncodeItem ...
 func (EndPortalFrame) EncodeItem() (name string, meta int16) {
 	return "minecraft:end_portal_frame", 0
