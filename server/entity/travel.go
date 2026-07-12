@@ -13,11 +13,16 @@ import (
 
 // PortalTravelComputer handles portal-triggered interdimensional travel for an entity.
 type PortalTravelComputer struct {
-	// Instantaneous returns true if the entity should skip the portal wait timer. Players use this for game modes
-	// with instant portal travel.
-	Instantaneous func() bool
+	// Instantaneous returns true if the entity should skip the portal wait timer when moving from the source to the
+	// target dimension. Players use this for game modes with instant portal travel and for End travel.
+	Instantaneous func(source, target world.Dimension) bool
 	// Teleport teleports the entity to the final portal position. If nil, Traveller.Teleport is used.
 	Teleport func(e Traveller, pos mgl64.Vec3)
+	// SpawnPoint returns the position the entity arrives at when returning from the End; if nil the world spawn is used.
+	SpawnPoint func(tx *world.Tx) mgl64.Vec3
+	// Player specifies if the entity is a player. Players arrive one block lower on the End platform than other
+	// entities.
+	Player bool
 	// CreatePortal specifies if the entity may create a portal at the destination when none is found. Only players
 	// create portals; other entities only travel through portals that are already linked.
 	CreatePortal bool
@@ -37,7 +42,7 @@ type PortalTravelComputer struct {
 
 // NewPortalTravelComputer creates a PortalTravelComputer for instant portal travel.
 func NewPortalTravelComputer() *PortalTravelComputer {
-	return &PortalTravelComputer{Instantaneous: func() bool { return true }, Cooldown: time.Second * 15}
+	return &PortalTravelComputer{Instantaneous: func(world.Dimension, world.Dimension) bool { return true }, Cooldown: time.Second * 15}
 }
 
 // portalSearchRadius is the radius around the scaled arrival position searched for an existing linked portal.
@@ -98,7 +103,7 @@ func (t *PortalTravelComputer) enterPortal(tx *world.Tx, target world.Dimension)
 		t.mu.Unlock()
 		return nil
 	}
-	travelNow := t.instantaneous() || (t.awaitingTravel && time.Since(t.start) >= time.Second*4)
+	travelNow := t.instantaneous(source.Dimension(), target) || (t.awaitingTravel && time.Since(t.start) >= time.Second*4)
 	if !travelNow && !t.awaitingTravel {
 		t.start, t.awaitingTravel = time.Now(), true
 	}
@@ -110,8 +115,8 @@ func (t *PortalTravelComputer) enterPortal(tx *world.Tx, target world.Dimension)
 	return nil
 }
 
-func (t *PortalTravelComputer) instantaneous() bool {
-	return t.Instantaneous != nil && t.Instantaneous()
+func (t *PortalTravelComputer) instantaneous(source, target world.Dimension) bool {
+	return t.Instantaneous != nil && t.Instantaneous(source, target)
 }
 
 // hasPendingPortalTravel reports whether portal travel was queued during this tick.
@@ -213,11 +218,11 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 	})
 }
 
-// transfer adds the removed entity to the destination world at the linked portal. If no destination portal was found
-// and the entity may not create one, the entity is returned to its origin in the source world instead.
+// transfer adds the removed entity to the destination world at the arrival position. If no destination portal was
+// found and the entity may not create one, the entity is returned to its origin in the source world instead.
 func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, destination *world.World, origin mgl64.Vec3, pos cube.Pos, sourceDim, destinationDim world.Dimension) {
 	travelled, err := world.Call(context.Background(), destination, func(tx *world.Tx) (bool, error) {
-		spawn, ok := t.destinationSpawn(tx, pos)
+		spawn, ok := t.destinationSpawn(tx, sourceDim, pos)
 		if !ok {
 			return false, nil
 		}
@@ -251,8 +256,19 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 }
 
 // destinationSpawn returns the position the entity should be placed at in the destination world. False is returned
-// if no linked portal was found and the entity may not create one.
-func (t *PortalTravelComputer) destinationSpawn(tx *world.Tx, pos cube.Pos) (mgl64.Vec3, bool) {
+// if no linked nether portal was found and the entity may not create one.
+func (t *PortalTravelComputer) destinationSpawn(tx *world.Tx, sourceDim world.Dimension, pos cube.Pos) (mgl64.Vec3, bool) {
+	if tx.World().Dimension() == world.End {
+		portal.GenerateEndSpawnPlatform(tx)
+		return portal.EndSpawnPosition(t.Player), true
+	}
+	if sourceDim == world.End && tx.World().Dimension() == world.Overworld {
+		// Returning from the End leads to the configured spawn point rather than a portal.
+		if t.SpawnPoint != nil {
+			return t.SpawnPoint(tx), true
+		}
+		return tx.World().Spawn().Vec3Middle(), true
+	}
 	if !t.CreatePortal {
 		n, ok := portal.FindNetherPortal(tx, pos, portalSearchRadius)
 		if !ok {
