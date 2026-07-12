@@ -2,11 +2,8 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/go-gl/mathgl/mgl64"
 )
-
-type Context = event.Context[*Tx]
 
 // Handler handles events that are called by a world. Implementations of
 // Handler may be used to listen to specific events such as when an Entity is
@@ -53,7 +50,7 @@ type Handler interface {
 	// ctx.Cancel() may be called to prevent leaves from decaying.
 	HandleLeavesDecay(ctx *Context, pos cube.Pos)
 	// HandleEntitySpawn handles an Entity being spawned into a World through a
-	// call to Tx.AddEntity.
+	// call to Tx.AddEntity or Tx.AddEntityAt.
 	HandleEntitySpawn(tx *Tx, e Entity)
 	// HandleEntityDespawn handles an Entity being despawned from a World
 	// through a call to Tx.RemoveEntity.

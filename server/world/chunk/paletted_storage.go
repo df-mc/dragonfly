@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"bytes"
+	"slices"
 	"unsafe"
 )
 
@@ -59,6 +60,11 @@ func emptyStorage(v uint32) *PalettedStorage {
 	return newPalettedStorage([]uint32{}, newPalette(0, []uint32{v}))
 }
 
+// Clone returns an independent copy of the PalettedStorage.
+func (storage *PalettedStorage) Clone() *PalettedStorage {
+	return newPalettedStorage(slices.Clone(storage.indices), storage.palette.Clone())
+}
+
 // Palette returns the Palette of the PalettedStorage.
 func (storage *PalettedStorage) Palette() *Palette {
 	return storage.palette
@@ -67,6 +73,12 @@ func (storage *PalettedStorage) Palette() *Palette {
 // At returns the value of the PalettedStorage at a given x, y and z.
 func (storage *PalettedStorage) At(x, y, z byte) uint32 {
 	return storage.palette.Value(storage.paletteIndex(x&15, y&15, z&15))
+}
+
+// PaletteIndex returns the index in the Palette that the value at a given x, y and z points to. It is a cheaper
+// alternative to At when scanning a storage for specific palette entries, as it does not dereference the Palette.
+func (storage *PalettedStorage) PaletteIndex(x, y, z byte) uint16 {
+	return storage.paletteIndex(x&15, y&15, z&15)
 }
 
 // Set sets a value at a specific x, y and z. The Palette and PalettedStorage are expanded
@@ -164,7 +176,7 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 // relatively heavy task which should only happen right before the sub chunk holding this PalettedStorage is
 // saved to disk. compact also shrinks the palette size if possible.
 func (storage *PalettedStorage) compact() {
-	if storage.palette == nil || storage.palette.Len() == 0 {
+	if storage.palette.Len() == 0 {
 		return
 	}
 	if storage.palette.Len() == 1 {
