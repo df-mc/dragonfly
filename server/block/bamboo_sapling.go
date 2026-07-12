@@ -46,14 +46,8 @@ func (b BambooSapling) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 
 // RandomTick ...
 func (b BambooSapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	if b.Ready {
-		if tx.Light(pos) < 9 || !b.grow(pos, tx) {
-			b.Ready = false
-			tx.SetBlock(pos, b, nil)
-		}
-	} else if replaceableWith(tx, pos.Side(cube.FaceUp), b) {
-		b.Ready = true
-		tx.SetBlock(pos, b, nil)
+	if tx.Light(pos) >= 9 && r.IntN(3) == 0 {
+		b.grow(pos, tx)
 	}
 }
 

@@ -76,14 +76,8 @@ func (b Bamboo) Model() world.BlockModel {
 
 // RandomTick ...
 func (b Bamboo) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	if b.Ready {
-		if tx.Light(pos) < 9 || !b.grow(pos, 1, b.maxHeight(pos), tx) {
-			b.Ready = false
-			tx.SetBlock(pos, b, nil)
-		}
-	} else if replaceableWith(tx, pos.Side(cube.FaceUp), b) {
-		b.Ready = true
-		tx.SetBlock(pos, b, nil)
+	if tx.Light(pos) >= 9 && r.IntN(3) == 0 {
+		b.grow(pos, 1, b.maxHeight(pos), tx)
 	}
 }
 
