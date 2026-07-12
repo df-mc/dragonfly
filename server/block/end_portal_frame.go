@@ -20,7 +20,7 @@ type EndPortalFrame struct {
 
 // Model ...
 func (f EndPortalFrame) Model() world.BlockModel {
-	return model.EndPortalFrame{Eye: f.Eye}
+	return model.EndPortalFrame{}
 }
 
 // LightEmissionLevel returns 1.

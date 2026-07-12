@@ -58,7 +58,7 @@ func TestActivateEndPortal(t *testing.T) {
 	t.Cleanup(func() { _ = w.Close() })
 
 	center := cube.Pos{8, 10, 8}
-	do(t, w, func(tx *world.Tx) {
+	mustDo(t, w, func(tx *world.Tx) {
 		buildEndPortalRing(tx, center)
 
 		first := endPortalRingFrames(center)[0]
@@ -78,7 +78,7 @@ func TestActivateEndPortalMissingEye(t *testing.T) {
 	t.Cleanup(func() { _ = w.Close() })
 
 	center := cube.Pos{8, 10, 8}
-	do(t, w, func(tx *world.Tx) {
+	mustDo(t, w, func(tx *world.Tx) {
 		buildEndPortalRing(tx, center)
 
 		frames := endPortalRingFrames(center)
@@ -101,7 +101,7 @@ func TestActivateEndPortalWrongFacing(t *testing.T) {
 	t.Cleanup(func() { _ = w.Close() })
 
 	center := cube.Pos{8, 10, 8}
-	do(t, w, func(tx *world.Tx) {
+	mustDo(t, w, func(tx *world.Tx) {
 		buildEndPortalRing(tx, center)
 
 		frames := endPortalRingFrames(center)
@@ -119,7 +119,7 @@ func TestEnderEyeCompletesRing(t *testing.T) {
 	t.Cleanup(func() { _ = w.Close() })
 
 	center := cube.Pos{8, 10, 8}
-	do(t, w, func(tx *world.Tx) {
+	mustDo(t, w, func(tx *world.Tx) {
 		frames := endPortalRingFrames(center)
 		for i, fp := range frames {
 			tx.SetBlock(fp.pos, block.EndPortalFrame{Facing: fp.facing, Eye: i != 0}, nil)
@@ -146,7 +146,7 @@ func TestEndPortalDespawnsOnFrameBreak(t *testing.T) {
 	t.Cleanup(func() { _ = w.Close() })
 
 	center := cube.Pos{8, 10, 8}
-	do(t, w, func(tx *world.Tx) {
+	mustDo(t, w, func(tx *world.Tx) {
 		buildEndPortalRing(tx, center)
 		first := endPortalRingFrames(center)[0]
 		if !portal.ActivateEndPortal(tx, first.pos) {
@@ -177,7 +177,7 @@ func TestEndPortalKeptOnPortalBlockBreak(t *testing.T) {
 	t.Cleanup(func() { _ = w.Close() })
 
 	center := cube.Pos{8, 10, 8}
-	do(t, w, func(tx *world.Tx) {
+	mustDo(t, w, func(tx *world.Tx) {
 		buildEndPortalRing(tx, center)
 		if !portal.ActivateEndPortal(tx, endPortalRingFrames(center)[0].pos) {
 			t.Fatal("ActivateEndPortal() = false on a complete ring, want true")
@@ -207,7 +207,7 @@ func TestGenerateEndSpawnPlatformClearsThreeLayers(t *testing.T) {
 	w := world.New()
 	t.Cleanup(func() { _ = w.Close() })
 
-	do(t, w, func(tx *world.Tx) {
+	mustDo(t, w, func(tx *world.Tx) {
 		for y := 49; y <= 52; y++ {
 			tx.SetBlock(cube.Pos{100, y, 0}, block.Obsidian{}, nil)
 		}
