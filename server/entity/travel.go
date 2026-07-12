@@ -192,24 +192,25 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 	t.mu.Unlock()
 
 	h := e.H()
-	go func() {
-		var handle *world.EntityHandle
-		_, err := world.Call(context.Background(), source, func(tx *world.Tx) (struct{}, error) {
-			// Re-open the entity in this transaction: the wrapper the travel was queued with belonged to a
-			// transaction that has since finished.
-			if e, ok := h.Entity(tx); ok {
-				handle = tx.RemoveEntity(e)
-			}
-			return struct{}{}, nil
-		})
-		if err != nil || handle == nil {
+	tx.Defer(func(tx *world.Tx) {
+		// Re-open the entity in the deferred transaction: The wrapper passed to travelQueued belongs to the
+		// transaction that is about to finish.
+		e, ok := h.Entity(tx)
+		if !ok {
 			t.mu.Lock()
 			t.travelling, t.timedOut = false, false
 			t.mu.Unlock()
 			return
 		}
-		t.transfer(handle, source, destination, origin, pos, sourceDim, destinationDim)
-	}()
+		handle := tx.RemoveEntity(e)
+		if handle == nil {
+			t.mu.Lock()
+			t.travelling, t.timedOut = false, false
+			t.mu.Unlock()
+			return
+		}
+		go t.transfer(handle, source, destination, origin, pos, sourceDim, destinationDim)
+	})
 }
 
 // transfer adds the removed entity to the destination world at the linked portal. If no destination portal was found
@@ -231,10 +232,13 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 		travelled = false
 	}
 	if !travelled {
-		_, _ = world.Call(context.Background(), source, func(tx *world.Tx) (struct{}, error) {
+		_, err = world.Call(context.Background(), source, func(tx *world.Tx) (struct{}, error) {
 			tx.AddEntityAt(handle, origin)
 			return struct{}{}, nil
 		})
+		if err != nil {
+			_ = handle.Close()
+		}
 	}
 
 	t.mu.Lock()

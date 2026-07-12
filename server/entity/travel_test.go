@@ -267,6 +267,33 @@ func TestEntPortalTravelWithoutDestinationPortal(t *testing.T) {
 	})
 }
 
+func TestPortalTravelClosesHandleWhenBothWorldsClose(t *testing.T) {
+	source := world.Config{Synchronous: true}.New()
+	destination := world.Config{Dim: world.Nether, Synchronous: true}.New()
+
+	origin := mgl64.Vec3{80.5, 64, 80.5}
+	handle := world.EntitySpawnOpts{Position: origin}.New(EnderPearlType, enderPearlConf)
+	mustDo(t, source, func(tx *world.Tx) {
+		e := tx.AddEntity(handle)
+		if removed := tx.RemoveEntity(e); removed != handle {
+			t.Fatal("RemoveEntity() did not return the entity handle")
+		}
+	})
+	if err := destination.Close(); err != nil {
+		t.Fatalf("close destination world: %v", err)
+	}
+	if err := source.Close(); err != nil {
+		t.Fatalf("close source world: %v", err)
+	}
+
+	tc := NewPortalTravelComputer()
+	tc.transfer(handle, source, destination, origin, cube.Pos{10, 64, 10}, world.Overworld, world.Nether)
+
+	if !handle.Closed() {
+		t.Fatal("entity handle remained worldless after destination and recovery worlds closed")
+	}
+}
+
 func TestFallingBlockDoesNotTravelThroughPortal(t *testing.T) {
 	overworld, nether := portalWorlds(t)
 
