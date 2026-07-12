@@ -2718,7 +2718,7 @@ func (p *Player) tickFood() {
 	}
 	if p.hunger.foodTick == 1 {
 		if p.hunger.canRegenerate() {
-			p.regenerate(false)
+			p.regenerate(!p.tx.World().Difficulty().FoodRegenerates())
 		} else if p.hunger.starving() {
 			p.starve()
 		}
