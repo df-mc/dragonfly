@@ -541,11 +541,12 @@ func (p *Player) Heal(health float64, source world.HealingSource) {
 func (p *Player) updateFallState(distanceThisTick float64) {
 	switch {
 	case p.OnGround():
-		if p.fallDistance > 0 {
+		p.fallDistance -= distanceThisTick
+		if p.fallDistance > 3 {
 			p.fall(p.fallDistance)
-			p.ResetFallDistance()
 		}
-	case distanceThisTick < p.fallDistance:
+		p.ResetFallDistance()
+	case distanceThisTick < 0 && distanceThisTick < p.fallDistance:
 		p.fallDistance -= distanceThisTick
 	default:
 		p.ResetFallDistance()
@@ -2240,6 +2241,8 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 // Move also rotates the player, adding deltaYaw and deltaPitch to the respective values.
 func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	if p.Dead() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
+		p.onGround = true
+		p.updateFallState(deltaPos.Y())
 		return
 	}
 	if p.immobile {
@@ -2298,7 +2301,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 
 	p.onGround = p.checkOnGround(deltaPos)
-	p.updateFallState(deltaPos[1])
+	p.updateFallState(deltaPos.Y())
 
 	if p.Swimming() {
 		p.Exhaust(0.01 * horizontalVel.Len())
