@@ -24,7 +24,7 @@ func (t ticker) tickLoop(w *World) {
 	for {
 		select {
 		case <-tc.C:
-			<-w.Exec(t.tick)
+			<-w.exec(t.tick)
 		case <-w.closing:
 			// World is being closed: Stop ticking and get rid of a task.
 			w.running.Done()
@@ -38,7 +38,7 @@ func (t ticker) tickLoop(w *World) {
 // automatically 20 times per second. Synchronous Worlds tick loaded chunks
 // even when no viewers are present.
 func (w *World) AdvanceTick() {
-	<-w.Exec(ticker{}.tick)
+	<-w.exec(ticker{}.tick)
 }
 
 // tick performs a tick on the World and updates the time, weather, blocks and

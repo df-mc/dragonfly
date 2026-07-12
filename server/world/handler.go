@@ -2,11 +2,8 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/go-gl/mathgl/mgl64"
 )
-
-type Context = event.Context[*Tx]
 
 // Handler handles events that are called by a world. Implementations of
 // Handler may be used to listen to specific events such as when an Entity is
