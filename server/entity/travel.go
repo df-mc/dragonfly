@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -193,14 +194,15 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 	h := e.H()
 	go func() {
 		var handle *world.EntityHandle
-		<-source.Exec(func(tx *world.Tx) {
+		_, err := world.Call(context.Background(), source, func(tx *world.Tx) (struct{}, error) {
 			// Re-open the entity in this transaction: the wrapper the travel was queued with belonged to a
 			// transaction that has since finished.
 			if e, ok := h.Entity(tx); ok {
 				handle = tx.RemoveEntity(e)
 			}
+			return struct{}{}, nil
 		})
-		if handle == nil {
+		if err != nil || handle == nil {
 			t.mu.Lock()
 			t.travelling, t.timedOut = false, false
 			t.mu.Unlock()
@@ -214,19 +216,24 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 // and the entity may not create one, the entity is returned to its origin in the source world instead.
 func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, destination *world.World, origin mgl64.Vec3, pos cube.Pos, sourceDim, destinationDim world.Dimension) {
 	travelled := true
-	<-destination.Exec(func(tx *world.Tx) {
+	_, err := world.Call(context.Background(), destination, func(tx *world.Tx) (struct{}, error) {
 		spawn, ok := t.destinationSpawn(tx, pos)
 		if !ok {
 			travelled = false
-			return
+			return struct{}{}, nil
 		}
 		if e, ok := tx.AddEntityAt(handle, spawn).(Traveller); ok {
 			t.finishTravel(e, spawn, sourceDim, destinationDim)
 		}
+		return struct{}{}, nil
 	})
+	if err != nil {
+		travelled = false
+	}
 	if !travelled {
-		<-source.Exec(func(tx *world.Tx) {
+		_, _ = world.Call(context.Background(), source, func(tx *world.Tx) (struct{}, error) {
 			tx.AddEntityAt(handle, origin)
+			return struct{}{}, nil
 		})
 	}
 
