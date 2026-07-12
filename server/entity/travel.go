@@ -216,19 +216,16 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 // transfer adds the removed entity to the destination world at the linked portal. If no destination portal was found
 // and the entity may not create one, the entity is returned to its origin in the source world instead.
 func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, destination *world.World, origin mgl64.Vec3, pos cube.Pos, sourceDim, destinationDim world.Dimension) {
-	travelled := true
-	_, err := world.Call(context.Background(), destination, func(tx *world.Tx) (struct{}, error) {
+	travelled, err := world.Call(context.Background(), destination, func(tx *world.Tx) (bool, error) {
 		spawn, ok := t.destinationSpawn(tx, pos)
 		if !ok {
-			travelled = false
-			return struct{}{}, nil
+			return false, nil
 		}
 		if e, ok := tx.AddEntityAt(handle, spawn).(Traveller); ok {
 			t.finishTravel(e, spawn, sourceDim, destinationDim)
 		}
-		return struct{}{}, nil
+		return true, nil
 	})
-	world.RethrowPanic(err)
 	if err != nil {
 		travelled = false
 	}
@@ -237,7 +234,6 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 			tx.AddEntityAt(handle, origin)
 			return struct{}{}, nil
 		})
-		world.RethrowPanic(err)
 		if err != nil {
 			_ = handle.Close()
 		}

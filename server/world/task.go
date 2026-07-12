@@ -26,8 +26,9 @@ var (
 	ErrEntityType = errors.New("world: unexpected entity type")
 )
 
-// PanicError is the Task error for a callback that panicked. It matches
-// errors.Is(err, ErrTaskPanicked) and keeps the original panic value and stack.
+// PanicError is the Task error for a fire-and-forget callback that panicked. It
+// matches errors.Is(err, ErrTaskPanicked) and keeps the original panic value
+// and stack. Synchronous Call functions re-panic with Value automatically.
 type PanicError struct {
 	// Value is the recovered panic value.
 	Value any
@@ -43,10 +44,11 @@ func (e *PanicError) Error() string {
 // Unwrap returns ErrTaskPanicked so errors.Is works.
 func (e *PanicError) Unwrap() error { return ErrTaskPanicked }
 
-// RethrowPanic re-panics with the original panic value if err wraps a
-// *PanicError. The original goroutine's stack remains in PanicError.Stack and
-// is logged through the World's Logger when recovered. RethrowPanic does
-// nothing for any other error, including nil.
+// RethrowPanic re-panics with the original panic value if an error obtained
+// from a Task wraps a *PanicError. The original goroutine's stack remains in
+// PanicError.Stack and is logged through the World's Logger when recovered.
+// RethrowPanic does nothing for any other error, including nil. Call functions
+// invoke it automatically.
 func RethrowPanic(err error) {
 	if pe, ok := errors.AsType[*PanicError](err); ok {
 		panic(pe.Value)
@@ -74,19 +76,28 @@ func executeWithRecovery(w *World, f func() error) (err error) {
 	return f()
 }
 
-// awaitTask waits for a task to complete or the context to cancel, returning
-// the result stored by the callback through the result pointer.
+// awaitTask waits for a task to complete or for cancellation to stop a pending
+// task, returning the result stored by the callback through the result pointer.
+// Once a callback starts, awaitTask waits for it to finish so synchronous calls
+// preserve their result and panic semantics.
 func awaitTask[T any](ctx context.Context, task *Task, result *T) (T, error) {
 	var zero T
-	select {
-	case <-task.Done():
+	completed := func() (T, error) {
 		if err := task.Err(); err != nil {
+			RethrowPanic(err)
 			return zero, err
 		}
 		return *result, nil
+	}
+	select {
+	case <-task.Done():
+		return completed()
 	case <-ctx.Done():
-		task.Cancel()
-		return zero, ctx.Err()
+		if task.Cancel() {
+			return zero, ctx.Err()
+		}
+		<-task.Done()
+		return completed()
 	}
 }
 
@@ -307,9 +318,10 @@ func (w *World) DoAfter(delay time.Duration, f func(tx *Tx)) *Task {
 // Call runs f on w's owner and waits for its typed result. It is for
 // off-owner code such as tests, startup and background goroutines; if you
 // already have a *world.Tx, just use it directly. Calling it from the
-// owner itself (any scheduled callback or Handler event) deadlocks. A panic in
-// f is recovered and returned as a *PanicError matching ErrTaskPanicked; call
-// RethrowPanic to restore panic semantics.
+// owner itself (any scheduled callback or Handler event) deadlocks. If f
+// panics, Call re-panics with the original value on the waiting goroutine after
+// logging the original stack through the World's Logger. Context cancellation
+// stops pending work, but Call waits for a callback that has already started.
 func Call[T any](ctx context.Context, w *World, f func(tx *Tx) (T, error)) (T, error) {
 	var zero T
 	ctx, err := callContext(ctx)
@@ -326,9 +338,8 @@ func Call[T any](ctx context.Context, w *World, f func(tx *Tx) (T, error)) (T, e
 }
 
 // CallEntity runs f with the EntityHandle's entity on its current world owner
-// and waits for the typed result. Off-owner code only, like Call. A panic in f
-// is recovered and returned as a *PanicError matching ErrTaskPanicked; call
-// RethrowPanic to restore panic semantics.
+// and waits for the typed result. Off-owner code only, like Call. If f panics,
+// CallEntity re-panics with the original value on the waiting goroutine.
 func CallEntity[T any](ctx context.Context, h *EntityHandle, f func(tx *Tx, e Entity) (T, error)) (T, error) {
 	return CallRef(ctx, NewEntityRef[Entity](h), f)
 }
