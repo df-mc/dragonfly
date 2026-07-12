@@ -2739,8 +2739,8 @@ func (p *Player) regenerate(exhaust bool) {
 	if p.Health() == p.MaxHealth() {
 		return
 	}
-	p.Heal(1, entity.FoodHealingSource{QuickRegeneration: exhaust})
-	if exhaust {
+	regenerated := p.Heal(1, entity.FoodHealingSource{QuickRegeneration: exhaust})
+	if exhaust && regenerated > 0 {
 		p.Exhaust(6)
 	}
 }
