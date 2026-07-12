@@ -5,7 +5,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Shulker is the model of a shulker box.
+// Shulker is the model of a shulker box. The bounding box grows along the
+// facing axis as the lid opens.
 type Shulker struct {
 	// Facing is the direction that the lid opens towards.
 	Facing cube.Face
@@ -13,18 +14,11 @@ type Shulker struct {
 	Progress int32
 }
 
-// BBox returns the bounding box of the shulker box block. The opening lid is
-// excluded so that it does not overlap and capture interactions with the
-// neighbouring block.
-func (Shulker) BBox(cube.Pos, world.BlockSource) []cube.BBox {
-	return []cube.BBox{full}
-}
-
-// PhysicalBBox returns the bounding box including the opening lid. It is used
-// to displace entities touched by the lid as it opens.
-func (s Shulker) PhysicalBBox() cube.BBox {
+// BBox returns a single bounding box that extends outward along Facing as the
+// lid opens.
+func (s Shulker) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	peak := ShulkerPhysicalPeak(s.Progress)
-	return full.ExtendTowards(s.Facing, peak)
+	return []cube.BBox{full.ExtendTowards(s.Facing, peak)}
 }
 
 // ShulkerPhysicalPeak returns the lid extension along the facing axis for a
