@@ -158,6 +158,107 @@ func TestEntTravelsThroughPortalOnTick(t *testing.T) {
 	})
 }
 
+func TestEntTravelsThroughEndPortal(t *testing.T) {
+	var overworld, end *world.World
+	overworld = world.Config{PortalDestination: func(dim world.Dimension) *world.World {
+		if dim == world.End {
+			return end
+		}
+		return nil
+	}}.New()
+	end = world.Config{Dim: world.End, PortalDestination: func(dim world.Dimension) *world.World {
+		if dim == world.End {
+			return overworld
+		}
+		return nil
+	}}.New()
+	t.Cleanup(func() {
+		_ = overworld.Close()
+		_ = end.Close()
+	})
+
+	sourcePortal := cube.Pos{50, 64, 50}
+	mustDo(t, overworld, func(tx *world.Tx) {
+		tx.SetBlock(sourcePortal, block.EndPortal{}, nil)
+	})
+
+	handle := world.EntitySpawnOpts{Position: sourcePortal.Vec3Middle().Sub(mgl64.Vec3{1})}.New(testMovingEntType{}, testMoveConfig{delta: mgl64.Vec3{1}})
+	mustDo(t, overworld, func(tx *world.Tx) {
+		e := tx.AddEntity(handle)
+		ticker, ok := e.(world.TickerEntity)
+		if !ok {
+			t.Fatalf("entity has type %T, want world.TickerEntity", e)
+		}
+		ticker.Tick(tx, 1)
+	})
+
+	waitForEntityWorld(t, handle, end)
+	if entityInWorld(handle, overworld) {
+		t.Fatal("entity remained in the source world after End portal travel")
+	}
+	mustDo(t, end, func(tx *world.Tx) {
+		e, ok := handle.Entity(tx)
+		if !ok {
+			t.Fatal("entity was not added to the End")
+		}
+		want := mgl64.Vec3{100.5, 50, 0.5}
+		if got := e.Position(); !got.ApproxEqual(want) {
+			t.Fatalf("entity position after End travel = %v, want %v", got, want)
+		}
+		// Spawn platform: 5x5 obsidian at y=48 around x=100, z=0.
+		for dx := -2; dx <= 2; dx++ {
+			for dz := -2; dz <= 2; dz++ {
+				p := cube.Pos{100 + dx, 48, dz}
+				if _, ok := tx.Block(p).(block.Obsidian); !ok {
+					t.Fatalf("obsidian platform missing at %v: got %T", p, tx.Block(p))
+				}
+			}
+		}
+	})
+}
+
+func TestEndReturnSpawnSelection(t *testing.T) {
+	t.Run("overworld uses configured spawn point", func(t *testing.T) {
+		w := world.New()
+		t.Cleanup(func() { _ = w.Close() })
+		want := mgl64.Vec3{12.5, 70, -3.5}
+		tc := &PortalTravelComputer{SpawnPoint: func(*world.Tx) mgl64.Vec3 { return want }}
+
+		mustDo(t, w, func(tx *world.Tx) {
+			got, ok := tc.destinationSpawn(tx, world.End, cube.Pos{})
+			if !ok || !got.ApproxEqual(want) {
+				t.Fatalf("destinationSpawn() = %v, %v, want %v, true", got, ok, want)
+			}
+		})
+	})
+
+	t.Run("overworld falls back to world spawn", func(t *testing.T) {
+		w := world.New()
+		t.Cleanup(func() { _ = w.Close() })
+		tc := &PortalTravelComputer{}
+
+		mustDo(t, w, func(tx *world.Tx) {
+			want := tx.World().Spawn().Vec3Middle()
+			got, ok := tc.destinationSpawn(tx, world.End, cube.Pos{})
+			if !ok || !got.ApproxEqual(want) {
+				t.Fatalf("destinationSpawn() = %v, %v, want %v, true", got, ok, want)
+			}
+		})
+	})
+
+	t.Run("nether searches for a portal", func(t *testing.T) {
+		w := world.Config{Dim: world.Nether}.New()
+		t.Cleanup(func() { _ = w.Close() })
+		tc := &PortalTravelComputer{}
+
+		mustDo(t, w, func(tx *world.Tx) {
+			if _, ok := tc.destinationSpawn(tx, world.End, cube.Pos{}); ok {
+				t.Fatal("destinationSpawn() ok = true without a linked Nether portal, want false")
+			}
+		})
+	})
+}
+
 func TestTranslatePortalPosition(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -402,7 +503,7 @@ type testPortalCreatorConfig struct{}
 
 func (testPortalCreatorConfig) Apply(data *world.EntityData) {
 	data.Data = &testMoveBehaviour{BaseBehaviour: BaseBehaviour{portalTravel: &PortalTravelComputer{
-		Instantaneous: func() bool { return true },
+		Instantaneous: func(world.Dimension, world.Dimension) bool { return true },
 		CreatePortal:  true,
 	}}}
 }
