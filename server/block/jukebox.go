@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"time"
@@ -66,8 +67,8 @@ func (j Jukebox) BreakInfo() BreakInfo {
 // jukeboxUser represents an item.User that can use a jukebox.
 type jukeboxUser interface {
 	item.User
-	// SendJukeboxPopup sends a jukebox popup to the item.User.
-	SendJukeboxPopup(a ...any)
+	// SendJukeboxPopupt sends a translatable jukebox popup to the item.User.
+	SendJukeboxPopupt(t chat.Translation, a ...any)
 }
 
 // Activate ...
@@ -88,7 +89,7 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, 
 
 			tx.PlaySound(pos.Vec3Centre(), sound.MusicDiscPlay{DiscType: m.DiscType})
 			if u, ok := u.(jukeboxUser); ok {
-				u.SendJukeboxPopup(fmt.Sprintf("Now playing: %v - %v", m.DiscType.Author(), m.DiscType.DisplayName()))
+				u.SendJukeboxPopupt(chat.MessageNowPlaying, fmt.Sprintf("%v - %v", m.DiscType.Author(), m.DiscType.DisplayName()))
 			}
 		}
 	}
