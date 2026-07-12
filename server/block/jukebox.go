@@ -64,15 +64,8 @@ func (j Jukebox) BreakInfo() BreakInfo {
 	})
 }
 
-// jukeboxUser represents an item.User that can receive a jukebox popup.
+// jukeboxUser represents an item.User that can use a jukebox.
 type jukeboxUser interface {
-	item.User
-	// SendJukeboxPopup sends a jukebox popup to the item.User.
-	SendJukeboxPopup(a ...any)
-}
-
-// translatedJukeboxUser represents an item.User that can receive a translatable jukebox popup.
-type translatedJukeboxUser interface {
 	item.User
 	// SendJukeboxPopupt sends a translatable jukebox popup to the item.User.
 	SendJukeboxPopupt(t chat.Translation, a ...any)
@@ -95,11 +88,8 @@ func (j Jukebox) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, 
 			ctx.SubtractFromCount(1)
 
 			tx.PlaySound(pos.Vec3Centre(), sound.MusicDiscPlay{DiscType: m.DiscType})
-			credit := fmt.Sprintf("%v - %v", m.DiscType.Author(), m.DiscType.DisplayName())
-			if translated, ok := u.(translatedJukeboxUser); ok {
-				translated.SendJukeboxPopupt(chat.MessageNowPlaying, credit)
-			} else if raw, ok := u.(jukeboxUser); ok {
-				raw.SendJukeboxPopup(fmt.Sprintf("Now playing: %v", credit))
+			if u, ok := u.(jukeboxUser); ok {
+				u.SendJukeboxPopupt(chat.MessageNowPlaying, fmt.Sprintf("%v - %v", m.DiscType.Author(), m.DiscType.DisplayName()))
 			}
 		}
 	}
