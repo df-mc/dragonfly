@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -191,43 +192,51 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 	t.mu.Unlock()
 
 	h := e.H()
-	go func() {
-		var handle *world.EntityHandle
-		<-source.Exec(func(tx *world.Tx) {
-			// Re-open the entity in this transaction: the wrapper the travel was queued with belonged to a
-			// transaction that has since finished.
-			if e, ok := h.Entity(tx); ok {
-				handle = tx.RemoveEntity(e)
-			}
-		})
+	tx.Defer(func(tx *world.Tx) {
+		// Re-open the entity in the deferred transaction: The wrapper passed to travelQueued belongs to the
+		// transaction that is about to finish.
+		e, ok := h.Entity(tx)
+		if !ok {
+			t.mu.Lock()
+			t.travelling, t.timedOut = false, false
+			t.mu.Unlock()
+			return
+		}
+		handle := tx.RemoveEntity(e)
 		if handle == nil {
 			t.mu.Lock()
 			t.travelling, t.timedOut = false, false
 			t.mu.Unlock()
 			return
 		}
-		t.transfer(handle, source, destination, origin, pos, sourceDim, destinationDim)
-	}()
+		go t.transfer(handle, source, destination, origin, pos, sourceDim, destinationDim)
+	})
 }
 
 // transfer adds the removed entity to the destination world at the linked portal. If no destination portal was found
 // and the entity may not create one, the entity is returned to its origin in the source world instead.
 func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, destination *world.World, origin mgl64.Vec3, pos cube.Pos, sourceDim, destinationDim world.Dimension) {
-	travelled := true
-	<-destination.Exec(func(tx *world.Tx) {
+	travelled, err := world.Call(context.Background(), destination, func(tx *world.Tx) (bool, error) {
 		spawn, ok := t.destinationSpawn(tx, pos)
 		if !ok {
-			travelled = false
-			return
+			return false, nil
 		}
 		if e, ok := tx.AddEntityAt(handle, spawn).(Traveller); ok {
 			t.finishTravel(e, spawn, sourceDim, destinationDim)
 		}
+		return true, nil
 	})
+	if err != nil {
+		travelled = false
+	}
 	if !travelled {
-		<-source.Exec(func(tx *world.Tx) {
+		_, err = world.Call(context.Background(), source, func(tx *world.Tx) (struct{}, error) {
 			tx.AddEntityAt(handle, origin)
+			return struct{}{}, nil
 		})
+		if err != nil {
+			_ = handle.Close()
+		}
 	}
 
 	t.mu.Lock()
