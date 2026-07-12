@@ -106,7 +106,7 @@ type WeakBlockPowerer interface {
 }
 
 // RedstonePowerRelayer represents a block with custom behaviour for whether
-// neighbouring redstone power may be relayed through it by Tx.RedstonePower.
+// neighbouring redstone power may be relayed through it by Context.RedstonePower.
 type RedstonePowerRelayer interface {
 	Block
 	// RelaysRedstonePowerThrough reports whether this non-conductor block may

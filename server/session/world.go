@@ -152,6 +152,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
 		HeadYaw:         float32(yaw),
+		BodyYaw:         float32(yaw),
 	})
 }
 
