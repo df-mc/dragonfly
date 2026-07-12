@@ -11,9 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
-
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
@@ -26,8 +23,11 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
+	"github.com/df-mc/dragonfly/server/player/input"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/player/title"
@@ -3139,6 +3139,32 @@ func (p *Player) VisibleDebugShapes() []debug.Shape {
 // not yet been rendered.
 func (p *Player) RemoveAllDebugShapes() {
 	p.session().RemoveAllDebugShapes()
+}
+
+// LockInput applies an input lock to the player, disabling the specified input and immediately sending the
+// updated lock state to the client.
+func (p *Player) LockInput(l input.Lock) {
+	p.session().LockInput(l)
+	p.session().SendInputLocks()
+}
+
+// UnlockInput removes an input lock from the player, re-enabling the specified input and immediately sending
+// the updated lock state to the client.
+func (p *Player) UnlockInput(l input.Lock) {
+	p.session().UnlockInput(l)
+	p.session().SendInputLocks()
+}
+
+// ClearInputLocks removes all input locks from the player, re-enabling all inputs and immediately sending the
+// updated lock state to the client.
+func (p *Player) ClearInputLocks() {
+	p.session().ClearInputLocks()
+	p.session().SendInputLocks()
+}
+
+// InputLocked checks if a specific input lock is currently applied to the player.
+func (p *Player) InputLocked(l input.Lock) bool {
+	return p.session().InputLocked(l)
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
