@@ -101,6 +101,9 @@ type Session struct {
 
 	viewLayer *world.ViewLayer
 
+	inputLocksMu sync.RWMutex
+	inputLocks   uint32
+
 	closeBackground chan struct{}
 
 	br world.BlockRegistry
