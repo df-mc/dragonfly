@@ -1284,6 +1284,10 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 			EventType: packet.BlockEventChangeChestState,
 		})
 	case block.StartCrackAction:
+		if t.BreakTime <= 0 {
+			// An instant break has no cracking to animate, and encoding the crack speed would divide by zero.
+			break
+		}
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventStartBlockCracking,
 			Position:  vec64To32(pos.Vec3()),
@@ -1296,6 +1300,9 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 			EventData: 0,
 		})
 	case block.ContinueCrackAction:
+		if t.BreakTime <= 0 {
+			break
+		}
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventUpdateBlockCracking,
 			Position:  vec64To32(pos.Vec3()),
