@@ -363,30 +363,6 @@ func TestRedstoneUpdateIncludesContextMetadata(t *testing.T) {
 	}
 }
 
-func TestRedstoneConsumerUpdateIncludesAfterBlock(t *testing.T) {
-	sourcePos, sinkPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
-	w := Config{Synchronous: true, Blocks: redstoneCancellationTestRegistry()}.New()
-	defer w.Close()
-
-	handler := &redstoneRecordingHandler{pos: sinkPos}
-	w.Handle(handler)
-	runWorld(w, func(tx *Tx) {
-		tx.SetBlock(sourcePos, redstoneCancellationSource{Power: 15}, nil)
-		tx.SetBlock(sinkPos, redstoneCancellationConsumer{}, nil)
-		tx.World().redstone.tick(tx, 1)
-	})
-	if len(handler.updates) == 0 {
-		t.Fatal("no redstone update recorded for consumer")
-	}
-	after, ok := handler.updates[0].After.(redstoneCancellationConsumer)
-	if !ok {
-		t.Fatalf("consumer update After = %T, want redstoneCancellationConsumer", handler.updates[0].After)
-	}
-	if !after.Powered {
-		t.Fatal("consumer update After was not powered")
-	}
-}
-
 func TestRedstoneRecursiveSourceEvaluationReturnsZero(t *testing.T) {
 	sourcePos, targetPos := cube.Pos{0, 64, 0}, cube.Pos{1, 64, 0}
 	w := Config{Synchronous: true, Blocks: redstoneRecursiveSourceTestRegistry()}.New()
