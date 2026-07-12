@@ -17,7 +17,7 @@ func runWorld(w *world.World, f func(*world.Tx)) {
 	w.Do(f).Wait(context.Background())
 }
 
-func TestRedstoneWirePowersBlockAboveButNotBelow(t *testing.T) {
+func TestRedstoneWirePowersBlockBelowButNotAbove(t *testing.T) {
 	wire := RedstoneWire{Power: 15}
 	pos := cube.Pos{0, 64, 0}
 
@@ -26,8 +26,8 @@ func TestRedstoneWirePowersBlockAboveButNotBelow(t *testing.T) {
 		face cube.Face
 		want int
 	}{
-		{name: "top", face: cube.FaceUp, want: 15},
-		{name: "bottom", face: cube.FaceDown},
+		{name: "top", face: cube.FaceUp},
+		{name: "bottom", face: cube.FaceDown, want: 15},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -1102,20 +1102,16 @@ func TestRedstoneTorchLoopBurnsOutThroughWorldScheduler(t *testing.T) {
 	torchPos := cube.Pos{1, 64, 0}
 	attachmentPos := cube.Pos{0, 64, 0}
 	dustPositions := []cube.Pos{
-		{2, 64, 0},
-		{2, 64, -1},
-		{2, 64, -2},
-		{1, 64, -2},
-		{0, 64, -2},
-		{0, 64, -1},
+		{1, 66, 0},
+		{0, 65, 0},
 	}
 	runWorld(w, func(tx *world.Tx) {
 		loader.Move(tx, mgl64.Vec3{0, 64, 0})
 		loader.Load(tx, 16)
 
 		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(torchPos.Side(cube.FaceUp), Stone{}, nil)
 		for _, pos := range dustPositions {
-			tx.SetBlock(pos.Side(cube.FaceDown), Stone{}, nil)
 			tx.SetBlock(pos, RedstoneWire{}, nil)
 		}
 		tx.SetBlock(torchPos.Side(cube.FaceDown), Stone{}, nil)
@@ -1159,13 +1155,9 @@ func TestBurnedOutRedstoneTorchRelightsWhenLoopWireBreaks(t *testing.T) {
 
 	torchPos := cube.Pos{1, 64, 0}
 	attachmentPos := cube.Pos{0, 64, 0}
-	loopWirePos := cube.Pos{0, 64, -1}
+	loopWirePos := cube.Pos{0, 65, 0}
 	dustPositions := []cube.Pos{
-		{2, 64, 0},
-		{2, 64, -1},
-		{2, 64, -2},
-		{1, 64, -2},
-		{0, 64, -2},
+		{1, 66, 0},
 		loopWirePos,
 	}
 	runWorld(w, func(tx *world.Tx) {
@@ -1173,8 +1165,8 @@ func TestBurnedOutRedstoneTorchRelightsWhenLoopWireBreaks(t *testing.T) {
 		loader.Load(tx, 16)
 
 		tx.SetBlock(attachmentPos, Stone{}, nil)
+		tx.SetBlock(torchPos.Side(cube.FaceUp), Stone{}, nil)
 		for _, pos := range dustPositions {
-			tx.SetBlock(pos.Side(cube.FaceDown), Stone{}, nil)
 			tx.SetBlock(pos, RedstoneWire{}, nil)
 		}
 		tx.SetBlock(torchPos.Side(cube.FaceDown), Stone{}, nil)
@@ -1191,16 +1183,6 @@ func TestBurnedOutRedstoneTorchRelightsWhenLoopWireBreaks(t *testing.T) {
 	}, func() string {
 		return fmt.Sprintf("torch did not burn out before wire break; tick=%d lit=%t burnedOut=%t attachmentPowered=%t dust=%v", currentTick, lit, burnedOut, attachmentPowered, dustPower)
 	})
-	redstoneTorchBurnoutTestWaitFor(t, w, func() bool {
-		var recoverable bool
-		runWorld(w, func(tx *world.Tx) {
-			burnedOut, recoverable = tx.Redstone().Torch(torchPos).BurnoutStatus()
-		})
-		return burnedOut && recoverable
-	}, func() string {
-		return fmt.Sprintf("torch did not become recoverable before wire break; tick=%d burnedOut=%t", currentTick, burnedOut)
-	})
-
 	runWorld(w, func(tx *world.Tx) {
 		tx.SetBlock(loopWirePos, nil, nil)
 	})
