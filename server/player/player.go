@@ -547,11 +547,12 @@ func (p *Player) Heal(health float64, source world.HealingSource) {
 func (p *Player) updateFallState(distanceThisTick float64) {
 	switch {
 	case p.OnGround():
-		if p.fallDistance > 0 {
+		p.fallDistance -= distanceThisTick
+		if p.fallDistance > 3 {
 			p.fall(p.fallDistance)
-			p.ResetFallDistance()
 		}
-	case distanceThisTick < p.fallDistance:
+		p.ResetFallDistance()
+	case distanceThisTick < 0 && distanceThisTick < p.fallDistance:
 		p.fallDistance -= distanceThisTick
 	default:
 		p.ResetFallDistance()
@@ -2246,6 +2247,8 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 // Move also rotates the player, adding deltaYaw and deltaPitch to the respective values.
 func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	if p.Dead() || (deltaPos.ApproxEqual(mgl64.Vec3{}) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0)) {
+		p.onGround = true
+		p.updateFallState(deltaPos.Y())
 		return
 	}
 	if p.immobile {
@@ -2304,7 +2307,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	}
 
 	p.onGround = p.checkOnGround(deltaPos)
-	p.updateFallState(deltaPos[1])
+	p.updateFallState(deltaPos.Y())
 
 	if p.Swimming() {
 		p.Exhaust(0.01 * horizontalVel.Len())
@@ -2708,17 +2711,15 @@ func (p *Player) tickAirSupply() {
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
 // is full enough.
 func (p *Player) tickFood() {
-	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || p.tx.World().Difficulty().FoodRegenerates()) {
-		if p.tx.World().Difficulty().FoodRegenerates() {
-			p.AddFood(1)
-		}
+	if p.hunger.foodTick%10 == 0 && p.tx.World().Difficulty().FoodRegenerates() {
+		p.AddFood(1)
 		if p.hunger.foodTick%20 == 0 {
-			p.regenerate(true)
+			p.regenerate(false)
 		}
 	}
 	if p.hunger.foodTick == 1 {
 		if p.hunger.canRegenerate() {
-			p.regenerate(false)
+			p.regenerate(!p.tx.World().Difficulty().FoodRegenerates())
 		} else if p.hunger.starving() {
 			p.starve()
 		}
