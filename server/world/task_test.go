@@ -3,6 +3,8 @@ package world
 import (
 	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -10,6 +12,95 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
 )
+
+func TestCallRethrowsPanic(t *testing.T) {
+	w := Config{Log: slog.New(slog.NewTextHandler(io.Discard, nil))}.New()
+	t.Cleanup(func() { _ = w.Close() })
+
+	panicValue := &struct{ message string }{"call panic"}
+	defer func() {
+		if recovered := recover(); recovered != panicValue {
+			t.Fatalf("Call panic = %v, want original value %v", recovered, panicValue)
+		}
+	}()
+	_, _ = Call(context.Background(), w, func(*Tx) (struct{}, error) {
+		panic(panicValue)
+	})
+}
+
+func TestCallRefRethrowsPanic(t *testing.T) {
+	w := Config{Log: slog.New(slog.NewTextHandler(io.Discard, nil))}.New()
+	t.Cleanup(func() { _ = w.Close() })
+	h := NewEntity(taskTestEntityType{}, taskTestEntityConfig{})
+	if err := w.Do(func(tx *Tx) { tx.AddEntity(h) }).Wait(context.Background()); err != nil {
+		t.Fatalf("add entity: %v", err)
+	}
+
+	panicValue := &struct{ message string }{"call ref panic"}
+	defer func() {
+		if recovered := recover(); recovered != panicValue {
+			t.Fatalf("CallRef panic = %v, want original value %v", recovered, panicValue)
+		}
+	}()
+	_, _ = CallRef(context.Background(), NewEntityRef[Entity](h), func(*Tx, Entity) (struct{}, error) {
+		panic(panicValue)
+	})
+}
+
+func TestCallRethrowsPanicWhenCancellationLoses(t *testing.T) {
+	w := Config{Log: slog.New(slog.NewTextHandler(io.Discard, nil))}.New()
+	t.Cleanup(func() { _ = w.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	started := make(chan struct{})
+	release := make(chan struct{})
+	panicValue := &struct{ message string }{"call panic after cancellation"}
+	type outcome struct {
+		panicValue any
+		err        error
+	}
+	result := make(chan outcome, 1)
+	go func() {
+		var out outcome
+		defer func() {
+			out.panicValue = recover()
+			result <- out
+		}()
+		_, out.err = Call(ctx, w, func(*Tx) (struct{}, error) {
+			close(started)
+			<-release
+			panic(panicValue)
+		})
+	}()
+
+	<-started
+	cancel()
+	select {
+	case out := <-result:
+		close(release)
+		t.Fatalf("Call returned before running callback completed: panic = %v, err = %v", out.panicValue, out.err)
+	case <-time.After(20 * time.Millisecond):
+		close(release)
+	}
+	out := <-result
+	if out.panicValue != panicValue {
+		t.Fatalf("Call panic = %v, want original value %v (err = %v)", out.panicValue, panicValue, out.err)
+	}
+}
+
+func TestDoCapturesPanic(t *testing.T) {
+	w := Config{Synchronous: true, Log: slog.New(slog.NewTextHandler(io.Discard, nil))}.New()
+	t.Cleanup(func() { _ = w.Close() })
+
+	panicValue := &struct{ message string }{"do panic"}
+	task := w.Do(func(*Tx) { panic(panicValue) })
+	var panicErr *PanicError
+	if err := task.Err(); !errors.As(err, &panicErr) {
+		t.Fatalf("Do error = %v, want *PanicError", err)
+	}
+	if panicErr.Value != panicValue {
+		t.Fatalf("PanicError.Value = %v, want original value %v", panicErr.Value, panicValue)
+	}
+}
 
 func TestEntityDoCancelAfterInvalidatedWeakTransactionDoesNotPoisonHandle(t *testing.T) {
 	w := New()
