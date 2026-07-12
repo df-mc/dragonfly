@@ -19,7 +19,7 @@ type Sand struct {
 // SoilFor ...
 func (s Sand) SoilFor(block world.Block) bool {
 	switch block.(type) {
-	case Cactus, DeadBush, SugarCane:
+	case Cactus, DeadBush, SugarCane, BambooSapling, Bamboo:
 		return true
 	}
 	return false

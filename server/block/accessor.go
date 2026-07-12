@@ -153,6 +153,18 @@ func (b DecoratedPot) WithFacing(facing cube.Direction) world.Block {
 }
 
 // FacingDirection returns the horizontal direction the block faces.
+func (b EndPortalFrame) FacingDirection() cube.Direction {
+	return b.Facing
+}
+
+// WithFacing returns a copy of the block with its facing set to facing. It does not update any
+// other blocks that the block may be part of, such as the second half of a bed or door.
+func (b EndPortalFrame) WithFacing(facing cube.Direction) world.Block {
+	b.Facing = facing
+	return b
+}
+
+// FacingDirection returns the horizontal direction the block faces.
 func (b EnderChest) FacingDirection() cube.Direction {
 	return b.Facing
 }

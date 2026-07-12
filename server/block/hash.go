@@ -10,8 +10,10 @@ const (
 	hashAncientDebris
 	hashAndesite
 	hashAnvil
+	hashBamboo
 	hashBambooBlock
 	hashBambooMosaic
+	hashBambooSapling
 	hashBanner
 	hashBarrel
 	hashBarrier
@@ -76,6 +78,8 @@ const (
 	hashEmeraldOre
 	hashEnchantingTable
 	hashEndBricks
+	hashEndPortal
+	hashEndPortalFrame
 	hashEndRod
 	hashEndStone
 	hashEnderChest
@@ -175,6 +179,7 @@ const (
 	hashSeaPickle
 	hashShortGrass
 	hashShroomlight
+	hashShulkerBox
 	hashSign
 	hashSkull
 	hashSlab
@@ -243,12 +248,20 @@ func (a Anvil) Hash() (uint64, uint64) {
 	return hashAnvil, uint64(a.Type.Uint8()) | uint64(a.Facing)<<2
 }
 
+func (b Bamboo) Hash() (uint64, uint64) {
+	return hashBamboo, uint64(boolByte(b.Ready)) | uint64(boolByte(b.Thick))<<1 | uint64(b.LeafSize.Uint8())<<2
+}
+
 func (b BambooBlock) Hash() (uint64, uint64) {
 	return hashBambooBlock, uint64(b.Axis) | uint64(boolByte(b.Stripped))<<2
 }
 
 func (BambooMosaic) Hash() (uint64, uint64) {
 	return hashBambooMosaic, 0
+}
+
+func (b BambooSapling) Hash() (uint64, uint64) {
+	return hashBambooSapling, uint64(boolByte(b.Ready))
 }
 
 func (b Banner) Hash() (uint64, uint64) {
@@ -505,6 +518,14 @@ func (EnchantingTable) Hash() (uint64, uint64) {
 
 func (EndBricks) Hash() (uint64, uint64) {
 	return hashEndBricks, 0
+}
+
+func (EndPortal) Hash() (uint64, uint64) {
+	return hashEndPortal, 0
+}
+
+func (f EndPortalFrame) Hash() (uint64, uint64) {
+	return hashEndPortalFrame, uint64(boolByte(f.Eye)) | uint64(f.Facing)<<1
 }
 
 func (e EndRod) Hash() (uint64, uint64) {
@@ -901,6 +922,10 @@ func (ShortGrass) Hash() (uint64, uint64) {
 
 func (Shroomlight) Hash() (uint64, uint64) {
 	return hashShroomlight, 0
+}
+
+func (s ShulkerBox) Hash() (uint64, uint64) {
+	return hashShulkerBox, uint64(s.Colour.Uint8())
 }
 
 func (s Sign) Hash() (uint64, uint64) {
