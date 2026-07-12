@@ -104,11 +104,12 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Sessi
 	if flags.Load(packet.InputFlagStopSprinting) {
 		c.StopSprinting()
 	}
-	if flags.Load(packet.InputFlagStartSneaking) {
-		c.StartSneaking()
-	}
-	if flags.Load(packet.InputFlagStopSneaking) {
-		c.StopSneaking()
+	if sneaking := flags.Load(packet.InputFlagSneaking); sneaking != c.Sneaking() {
+		if sneaking {
+			c.StartSneaking()
+		} else {
+			c.StopSneaking()
+		}
 	}
 	if flags.Load(packet.InputFlagStartSwimming) {
 		c.StartSwimming()
