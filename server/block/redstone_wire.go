@@ -32,7 +32,7 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 
 // RedstonePower returns the wire's current signal strength from connected faces.
 func (r RedstoneWire) RedstonePower(pos cube.Pos, tx *world.Tx, face cube.Face) int {
-	if face == cube.FaceUp {
+	if face == cube.FaceDown {
 		return 0
 	}
 	if tx != nil && redstoneWireFaceHorizontal(face) && !redstoneWirePowersHorizontalFace(pos, tx, face) {

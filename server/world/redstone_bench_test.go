@@ -14,7 +14,7 @@ func BenchmarkRedstoneDirtyTickLongLineWithClocks(b *testing.B) {
 	w := Config{Synchronous: true, Blocks: redstoneSignalLossTestRegistry()}.New()
 	defer w.Close()
 
-	<-w.Exec(func(tx *Tx) {
+	runWorld(w, func(tx *Tx) {
 		clockA := cube.Pos{-1, 64, 0}
 		clockB := cube.Pos{lineLength / 2, 64, 1}
 		line := make([]cube.Pos, lineLength)

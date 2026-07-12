@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 )
 
 // RedstoneUpdateCause describes the world event that caused a redstone update to be evaluated.
@@ -1003,7 +1002,7 @@ func (e *redstoneEngine) redstonePower(source RedstonePowerSource, pos cube.Pos,
 
 // redstoneUpdateAllowed dispatches redstone callbacks and reports whether the update was cancelled.
 func (e *redstoneEngine) redstoneUpdateAllowed(tx *Tx, update RedstoneUpdate) bool {
-	ctx := event.C(tx)
+	ctx := tx.Event()
 	tx.World().Handler().HandleRedstoneUpdate(ctx, update)
 	return !ctx.Cancelled()
 }

@@ -76,6 +76,8 @@ const (
 	hashEmeraldOre
 	hashEnchantingTable
 	hashEndBricks
+	hashEndPortal
+	hashEndPortalFrame
 	hashEndRod
 	hashEndStone
 	hashEnderChest
@@ -149,6 +151,7 @@ const (
 	hashPodzol
 	hashPolishedBlackstoneBrick
 	hashPolishedTuff
+	hashPortal
 	hashPotato
 	hashPrismarine
 	hashPumpkin
@@ -506,6 +509,14 @@ func (EndBricks) Hash() (uint64, uint64) {
 	return hashEndBricks, 0
 }
 
+func (EndPortal) Hash() (uint64, uint64) {
+	return hashEndPortal, 0
+}
+
+func (f EndPortalFrame) Hash() (uint64, uint64) {
+	return hashEndPortalFrame, uint64(boolByte(f.Eye)) | uint64(f.Facing)<<1
+}
+
 func (e EndRod) Hash() (uint64, uint64) {
 	return hashEndRod, uint64(e.Facing)
 }
@@ -796,6 +807,10 @@ func (b PolishedBlackstoneBrick) Hash() (uint64, uint64) {
 
 func (PolishedTuff) Hash() (uint64, uint64) {
 	return hashPolishedTuff, 0
+}
+
+func (p Portal) Hash() (uint64, uint64) {
+	return hashPortal, uint64(p.Axis)
 }
 
 func (p Potato) Hash() (uint64, uint64) {

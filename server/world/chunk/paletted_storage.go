@@ -75,6 +75,12 @@ func (storage *PalettedStorage) At(x, y, z byte) uint32 {
 	return storage.palette.Value(storage.paletteIndex(x&15, y&15, z&15))
 }
 
+// PaletteIndex returns the index in the Palette that the value at a given x, y and z points to. It is a cheaper
+// alternative to At when scanning a storage for specific palette entries, as it does not dereference the Palette.
+func (storage *PalettedStorage) PaletteIndex(x, y, z byte) uint16 {
+	return storage.paletteIndex(x&15, y&15, z&15)
+}
+
 // Set sets a value at a specific x, y and z. The Palette and PalettedStorage are expanded
 // automatically to make space for the value, should that be needed.
 func (storage *PalettedStorage) Set(x, y, z byte, v uint32) {
