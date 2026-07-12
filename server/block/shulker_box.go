@@ -193,11 +193,7 @@ func (s ShulkerBox) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 
 // pushEntities pushes all entities touching the shulker box lid during opening.
 func (s ShulkerBox) pushEntities(pos cube.Pos, tx *world.Tx) {
-	shulkerBBoxes := s.Model().BBox(pos, tx)
-	if len(shulkerBBoxes) == 0 {
-		return
-	}
-	searchBox := shulkerBBoxes[0].Translate(pos.Vec3()).Grow(0.35)
+	searchBox := s.physicalBBox().Translate(pos.Vec3()).Grow(0.35)
 	for e := range tx.EntitiesWithin(searchBox) {
 		s.push(pos, tx, e)
 	}
@@ -214,11 +210,7 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	if !ok {
 		return
 	}
-	shulkerBBoxes := s.Model().BBox(pos, tx)
-	if len(shulkerBBoxes) == 0 {
-		return
-	}
-	shulkerBBox := shulkerBBoxes[0].Translate(pos.Vec3())
+	shulkerBBox := s.physicalBBox().Translate(pos.Vec3())
 	entityBBox := e.H().Type().BBox(e).Translate(e.Position())
 	if !shulkerBBox.IntersectsWith(entityBBox) {
 		return
@@ -230,6 +222,10 @@ func (s ShulkerBox) push(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	if delta != (mgl64.Vec3{}) {
 		mover.Displace(delta)
 	}
+}
+
+func (s ShulkerBox) physicalBBox() cube.BBox {
+	return (model.Shulker{Facing: s.Facing, Progress: s.progress.Load()}).PhysicalBBox()
 }
 
 func shulkerPushDelta(facing cube.Face, shulkerBBox, entityBBox cube.BBox) (delta mgl64.Vec3) {
