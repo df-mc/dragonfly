@@ -1,6 +1,7 @@
 package portal_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/df-mc/dragonfly/server/block"
@@ -10,6 +11,13 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/portal"
 )
+
+func do(t *testing.T, w *world.World, f func(*world.Tx)) {
+	t.Helper()
+	if err := w.Do(f).Wait(context.Background()); err != nil {
+		t.Fatalf("world task: %v", err)
+	}
+}
 
 func TestNetherPortalFromPos(t *testing.T) {
 	tests := []struct {
@@ -95,7 +103,7 @@ func TestNetherPortalFromPos(t *testing.T) {
 			t.Cleanup(func() { _ = w.Close() })
 
 			origin := cube.Pos{8, 10, 8}
-			<-w.Exec(func(tx *world.Tx) {
+			do(t, w, func(tx *world.Tx) {
 				tt.build(tx, origin)
 				p, ok := portal.NetherPortalFromPos(tx, origin.Add(tt.pos))
 				if ok != tt.ok {
@@ -124,7 +132,7 @@ func TestActivateNetherPortal(t *testing.T) {
 			t.Cleanup(func() { _ = w.Close() })
 
 			origin := cube.Pos{8, 10, 8}
-			<-w.Exec(func(tx *world.Tx) {
+			do(t, w, func(tx *world.Tx) {
 				buildVerticalFrame(tx, origin, axis, 2, 3)
 				if !portal.ActivateNetherPortal(tx, origin) {
 					t.Fatal("ActivateNetherPortal() = false, want true")
@@ -151,7 +159,7 @@ func TestFireChargeActivatesNetherPortal(t *testing.T) {
 	t.Cleanup(func() { _ = w.Close() })
 
 	origin := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
+	do(t, w, func(tx *world.Tx) {
 		buildVerticalFrame(tx, origin, cube.Z, 2, 3)
 		ctx := &item.UseContext{}
 		if ok := (item.FireCharge{}).UseOnBlock(origin.Side(cube.FaceDown), cube.FaceUp, cube.Pos{}.Vec3(), tx, nil, ctx); !ok {
@@ -171,7 +179,7 @@ func TestActivatedPortalCleanupOnBrokenFrame(t *testing.T) {
 	t.Cleanup(func() { _ = w.Close() })
 
 	origin := cube.Pos{8, 10, 8}
-	<-w.Exec(func(tx *world.Tx) {
+	do(t, w, func(tx *world.Tx) {
 		buildVerticalFrame(tx, origin, cube.Z, 2, 3)
 		if !portal.ActivateNetherPortal(tx, origin) {
 			t.Fatal("ActivateNetherPortal() = false, want true")

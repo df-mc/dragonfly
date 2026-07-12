@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -195,31 +196,25 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 	t.travelling, t.timedOut, t.awaitingTravel = true, true, false
 	t.mu.Unlock()
 
-	h := e.H()
-	go func() {
-		var handle *world.EntityHandle
-		<-source.Exec(func(tx *world.Tx) {
-			// Re-open the entity in this transaction: the wrapper the travel was queued with belonged to a
-			// transaction that has since finished.
-			if e, ok := h.Entity(tx); ok {
-				handle = tx.RemoveEntity(e)
-			}
-		})
-		if handle == nil {
+	var handle *world.EntityHandle
+	e.H().Do(func(tx *world.Tx, e world.Entity) {
+		handle = tx.RemoveEntity(e)
+	}).OnDone(func(err error) {
+		if err != nil || handle == nil {
 			t.mu.Lock()
 			t.travelling, t.timedOut = false, false
 			t.mu.Unlock()
 			return
 		}
 		t.transfer(handle, source, destination, origin, pos, sourceDim, destinationDim)
-	}()
+	})
 }
 
 // transfer adds the removed entity to the destination world at the arrival position. If no destination portal was
 // found and the entity may not create one, the entity is returned to its origin in the source world instead.
 func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, destination *world.World, origin mgl64.Vec3, pos cube.Pos, sourceDim, destinationDim world.Dimension) {
 	travelled := true
-	<-destination.Exec(func(tx *world.Tx) {
+	task := destination.Do(func(tx *world.Tx) {
 		spawn, ok := t.destinationSpawn(tx, sourceDim, pos)
 		if !ok {
 			travelled = false
@@ -229,10 +224,13 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 			t.finishTravel(e, spawn, sourceDim, destinationDim)
 		}
 	})
+	if err := task.Wait(context.Background()); err != nil {
+		travelled = false
+	}
 	if !travelled {
-		<-source.Exec(func(tx *world.Tx) {
+		_ = source.Do(func(tx *world.Tx) {
 			tx.AddEntityAt(handle, origin)
-		})
+		}).Wait(context.Background())
 	}
 
 	t.mu.Lock()

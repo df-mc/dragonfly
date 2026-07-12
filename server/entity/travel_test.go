@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -10,6 +11,13 @@ import (
 	"github.com/df-mc/dragonfly/server/world/portal"
 	"github.com/go-gl/mathgl/mgl64"
 )
+
+func do(t *testing.T, w *world.World, f func(*world.Tx)) {
+	t.Helper()
+	if err := w.Do(f).Wait(context.Background()); err != nil {
+		t.Fatalf("world task: %v", err)
+	}
+}
 
 func TestPortalTravelComputerStopPortalContact(t *testing.T) {
 	t.Run("keeps timer after portal contact", func(t *testing.T) {
@@ -56,12 +64,12 @@ func TestEntProjectileTravelsThroughPortal(t *testing.T) {
 
 	sourcePos := mgl64.Vec3{80.5, 64, 80.5}
 	targetPortal := cube.Pos{10, 64, 10}
-	<-nether.Exec(func(tx *world.Tx) {
+	do(t, nether, func(tx *world.Tx) {
 		buildActivePortal(tx, targetPortal)
 	})
 
 	handle := world.EntitySpawnOpts{Position: sourcePos}.New(EnderPearlType, enderPearlConf)
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		e := tx.AddEntity(handle)
 		(block.Portal{Axis: cube.Z}).EntityInside(cube.PosFromVec3(sourcePos), tx, e)
 		if _, ok := handle.Entity(tx); !ok {
@@ -80,7 +88,7 @@ func TestEntProjectileTravelsThroughPortal(t *testing.T) {
 		t.Fatalf("destination spawn event position = %v, want %v", got, want)
 	}
 
-	<-nether.Exec(func(tx *world.Tx) {
+	do(t, nether, func(tx *world.Tx) {
 		e, ok := handle.Entity(tx)
 		if !ok {
 			t.Fatal("entity was not added to the Nether")
@@ -122,15 +130,15 @@ func TestEntTravelsThroughPortalOnTick(t *testing.T) {
 	})
 
 	sourcePortal, targetPortal := cube.Pos{80, 64, 80}, cube.Pos{10, 64, 10}
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		buildActivePortal(tx, sourcePortal)
 	})
-	<-nether.Exec(func(tx *world.Tx) {
+	do(t, nether, func(tx *world.Tx) {
 		buildActivePortal(tx, targetPortal)
 	})
 
 	handle := world.EntitySpawnOpts{Position: sourcePortal.Vec3Middle().Sub(mgl64.Vec3{1})}.New(testMovingEntType{}, testMoveConfig{delta: mgl64.Vec3{1}})
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		e := tx.AddEntity(handle)
 		ticker, ok := e.(world.TickerEntity)
 		if !ok {
@@ -143,7 +151,7 @@ func TestEntTravelsThroughPortalOnTick(t *testing.T) {
 	if entityInWorld(handle, overworld) {
 		t.Fatal("entity remained in the source world after tick-driven portal travel")
 	}
-	<-nether.Exec(func(tx *world.Tx) {
+	do(t, nether, func(tx *world.Tx) {
 		e, ok := handle.Entity(tx)
 		if !ok {
 			t.Fatal("entity was not added to the Nether")
@@ -177,12 +185,12 @@ func TestEntTravelsThroughEndPortal(t *testing.T) {
 	})
 
 	sourcePortal := cube.Pos{50, 64, 50}
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		tx.SetBlock(sourcePortal, block.EndPortal{}, nil)
 	})
 
 	handle := world.EntitySpawnOpts{Position: sourcePortal.Vec3Middle().Sub(mgl64.Vec3{1})}.New(testMovingEntType{}, testMoveConfig{delta: mgl64.Vec3{1}})
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		e := tx.AddEntity(handle)
 		ticker, ok := e.(world.TickerEntity)
 		if !ok {
@@ -195,7 +203,7 @@ func TestEntTravelsThroughEndPortal(t *testing.T) {
 	if entityInWorld(handle, overworld) {
 		t.Fatal("entity remained in the source world after End portal travel")
 	}
-	<-end.Exec(func(tx *world.Tx) {
+	do(t, end, func(tx *world.Tx) {
 		e, ok := handle.Entity(tx)
 		if !ok {
 			t.Fatal("entity was not added to the End")
@@ -223,7 +231,7 @@ func TestEndReturnSpawnSelection(t *testing.T) {
 		want := mgl64.Vec3{12.5, 70, -3.5}
 		tc := &PortalTravelComputer{SpawnPoint: func(*world.Tx) mgl64.Vec3 { return want }}
 
-		<-w.Exec(func(tx *world.Tx) {
+		do(t, w, func(tx *world.Tx) {
 			got, ok := tc.destinationSpawn(tx, world.End, cube.Pos{})
 			if !ok || !got.ApproxEqual(want) {
 				t.Fatalf("destinationSpawn() = %v, %v, want %v, true", got, ok, want)
@@ -236,7 +244,7 @@ func TestEndReturnSpawnSelection(t *testing.T) {
 		t.Cleanup(func() { _ = w.Close() })
 		tc := &PortalTravelComputer{}
 
-		<-w.Exec(func(tx *world.Tx) {
+		do(t, w, func(tx *world.Tx) {
 			want := tx.World().Spawn().Vec3Middle()
 			got, ok := tc.destinationSpawn(tx, world.End, cube.Pos{})
 			if !ok || !got.ApproxEqual(want) {
@@ -250,7 +258,7 @@ func TestEndReturnSpawnSelection(t *testing.T) {
 		t.Cleanup(func() { _ = w.Close() })
 		tc := &PortalTravelComputer{}
 
-		<-w.Exec(func(tx *world.Tx) {
+		do(t, w, func(tx *world.Tx) {
 			if _, ok := tc.destinationSpawn(tx, world.End, cube.Pos{}); ok {
 				t.Fatal("destinationSpawn() ok = true without a linked Nether portal, want false")
 			}
@@ -284,7 +292,7 @@ func TestPortalTravelComputerDelayedTravel(t *testing.T) {
 	_ = nether
 
 	tc := &PortalTravelComputer{}
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		if destination := tc.enterPortal(tx, world.Nether); destination != nil {
 			t.Fatal("enterPortal() started travel before the portal timer finished")
 		}
@@ -305,7 +313,7 @@ func TestPortalTravelComputerCooldown(t *testing.T) {
 	_ = nether
 
 	tc := NewPortalTravelComputer()
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		tc.cooldownUntil = time.Now().Add(time.Hour)
 		if destination := tc.enterPortal(tx, world.Nether); destination != nil {
 			t.Fatal("enterPortal() started travel during the portal cooldown")
@@ -327,7 +335,7 @@ func TestEntPortalTravelWithoutDestinationPortal(t *testing.T) {
 	sourcePos := mgl64.Vec3{80.5, 64, 80.5}
 	handle := world.EntitySpawnOpts{Position: sourcePos}.New(EnderPearlType, enderPearlConf)
 	var tc *PortalTravelComputer
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		e := tx.AddEntity(handle)
 		tc = e.(*Ent).Behaviour().(*ProjectileBehaviour).PortalTravelComputer()
 		(block.Portal{Axis: cube.Z}).EntityInside(cube.PosFromVec3(sourcePos), tx, e)
@@ -354,13 +362,13 @@ func TestEntPortalTravelWithoutDestinationPortal(t *testing.T) {
 	if spawnRecorder.called {
 		t.Fatal("entity was spawned in the destination world without a linked portal")
 	}
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		e, _ := handle.Entity(tx)
 		if got := e.Position(); !got.ApproxEqual(sourcePos) {
 			t.Fatalf("entity position after failed portal travel = %v, want %v", got, sourcePos)
 		}
 	})
-	<-nether.Exec(func(tx *world.Tx) {
+	do(t, nether, func(tx *world.Tx) {
 		if _, ok := portal.FindNetherPortal(tx, cube.Pos{10, 64, 10}, 16); ok {
 			t.Fatal("a portal was created in the destination world by a non-player entity")
 		}
@@ -374,13 +382,13 @@ func TestFallingBlockDoesNotTravelThroughPortal(t *testing.T) {
 	nether.Handle(spawnRecorder)
 
 	targetPortal := cube.Pos{10, 64, 10}
-	<-nether.Exec(func(tx *world.Tx) {
+	do(t, nether, func(tx *world.Tx) {
 		buildActivePortal(tx, targetPortal)
 	})
 
 	sourcePos := mgl64.Vec3{80.5, 64, 80.5}
 	handle := NewFallingBlock(world.EntitySpawnOpts{Position: sourcePos}, block.Sand{})
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		e := tx.AddEntity(handle)
 		(block.Portal{Axis: cube.Z}).EntityInside(cube.PosFromVec3(sourcePos), tx, e)
 	})
@@ -400,13 +408,13 @@ func TestEntPortalTravelCreatesPortal(t *testing.T) {
 
 	sourcePos := mgl64.Vec3{80.5, 64, 80.5}
 	handle := world.EntitySpawnOpts{Position: sourcePos}.New(testMovingEntType{}, testPortalCreatorConfig{})
-	<-overworld.Exec(func(tx *world.Tx) {
+	do(t, overworld, func(tx *world.Tx) {
 		e := tx.AddEntity(handle)
 		(block.Portal{Axis: cube.Z}).EntityInside(cube.PosFromVec3(sourcePos), tx, e)
 	})
 
 	waitForEntityWorld(t, handle, nether)
-	<-nether.Exec(func(tx *world.Tx) {
+	do(t, nether, func(tx *world.Tx) {
 		if _, ok := portal.FindNetherPortal(tx, cube.Pos{10, 64, 10}, 16); !ok {
 			t.Fatal("no portal was created in the destination world for a portal-creating entity")
 		}
@@ -458,21 +466,13 @@ func waitForEntityWorld(t *testing.T, handle *world.EntityHandle, w *world.World
 }
 
 func entityInWorld(handle *world.EntityHandle, w *world.World) bool {
-	result := make(chan bool, 1)
-	go func() {
-		var ok bool
-		running := handle.ExecWorld(func(tx *world.Tx, _ world.Entity) {
-			ok = tx.World() == w
-		})
-		result <- running && ok
-	}()
-
-	select {
-	case ok := <-result:
-		return ok
-	case <-time.After(50 * time.Millisecond):
-		return false
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	var ok bool
+	err := handle.Do(func(tx *world.Tx, _ world.Entity) {
+		ok = tx.World() == w
+	}).Wait(ctx)
+	return err == nil && ok
 }
 
 func buildActivePortal(tx *world.Tx, origin cube.Pos) {
