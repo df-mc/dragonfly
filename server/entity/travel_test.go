@@ -294,6 +294,34 @@ func TestPortalTravelClosesHandleWhenBothWorldsClose(t *testing.T) {
 	}
 }
 
+func TestPortalTravelRethrowsDestinationPanic(t *testing.T) {
+	source := world.Config{Synchronous: true}.New()
+	destination := world.Config{Dim: world.Nether, Synchronous: true}.New()
+	t.Cleanup(func() {
+		_ = source.Close()
+		_ = destination.Close()
+	})
+	destination.Handle(panicSpawnHandler{})
+
+	origin := mgl64.Vec3{80.5, 64, 80.5}
+	handle := world.EntitySpawnOpts{Position: origin}.New(testMovingEntType{}, testPortalCreatorConfig{})
+	mustDo(t, source, func(tx *world.Tx) {
+		e := tx.AddEntity(handle)
+		if removed := tx.RemoveEntity(e); removed != handle {
+			t.Fatal("RemoveEntity() did not return the entity handle")
+		}
+	})
+
+	defer func() {
+		if recovered := recover(); recovered != "spawn panic" {
+			t.Fatalf("transfer panic = %v, want spawn panic", recovered)
+		}
+	}()
+	tc := NewPortalTravelComputer()
+	tc.CreatePortal = true
+	tc.transfer(handle, source, destination, origin, cube.Pos{10, 64, 10}, world.Overworld, world.Nether)
+}
+
 func TestFallingBlockDoesNotTravelThroughPortal(t *testing.T) {
 	overworld, nether := portalWorlds(t)
 
@@ -422,6 +450,10 @@ type entitySpawnRecorder struct {
 	called bool
 	pos    mgl64.Vec3
 }
+
+type panicSpawnHandler struct{ world.NopHandler }
+
+func (panicSpawnHandler) HandleEntitySpawn(*world.Tx, world.Entity) { panic("spawn panic") }
 
 func (r *entitySpawnRecorder) HandleEntitySpawn(_ *world.Tx, e world.Entity) {
 	r.called = true

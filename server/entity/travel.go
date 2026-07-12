@@ -228,6 +228,7 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 		}
 		return struct{}{}, nil
 	})
+	world.RethrowPanic(err)
 	if err != nil {
 		travelled = false
 	}
@@ -236,6 +237,7 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 			tx.AddEntityAt(handle, origin)
 			return struct{}{}, nil
 		})
+		world.RethrowPanic(err)
 		if err != nil {
 			_ = handle.Close()
 		}
