@@ -48,6 +48,10 @@ func init() {
 	world.RegisterBlock(Emerald{})
 	world.RegisterBlock(EnchantingTable{})
 	world.RegisterBlock(EndBricks{})
+	world.RegisterBlock(EndPortal{})
+	for _, f := range allEndPortalFrames() {
+		world.RegisterBlock(f)
+	}
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(FletchingTable{})
 	world.RegisterBlock(GlassPane{})
@@ -144,6 +148,8 @@ func init() {
 
 	registerAll(allAnvils())
 	registerAll(allBambooBlocks())
+	registerAll(allBamboos())
+	registerAll(allBambooSaplings())
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -242,6 +248,7 @@ func init() {
 	registerAll(allCopperLanterns())
 	registerAll(allCopperTorches())
 	registerAll(allCopperTrapdoors())
+	registerAll(allShulkerBoxes())
 }
 
 func init() {
@@ -250,6 +257,7 @@ func init() {
 	world.RegisterItem(AncientDebris{})
 	world.RegisterItem(Andesite{Polished: true})
 	world.RegisterItem(Andesite{})
+	world.RegisterItem(Bamboo{})
 	world.RegisterItem(BambooBlock{})
 	world.RegisterItem(BambooBlock{Stripped: true})
 	world.RegisterItem(BambooMosaic{})
@@ -299,6 +307,7 @@ func init() {
 	world.RegisterItem(Emerald{})
 	world.RegisterItem(EnchantingTable{})
 	world.RegisterItem(EndBricks{})
+	world.RegisterItem(EndPortalFrame{})
 	world.RegisterItem(EndRod{})
 	world.RegisterItem(EndStone{})
 	world.RegisterItem(EnderChest{})
@@ -542,6 +551,10 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
+	}
+
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(ShulkerBox{Colour: c})
 	}
 }
 

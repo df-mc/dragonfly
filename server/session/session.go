@@ -101,6 +101,9 @@ type Session struct {
 
 	viewLayer *world.ViewLayer
 
+	inputLocksMu sync.RWMutex
+	inputLocks   uint32
+
 	closeBackground chan struct{}
 
 	br world.BlockRegistry
@@ -412,7 +415,6 @@ func (s *Session) handlePackets() {
 			return s.handlePacket(pk, tx, c)
 		})
 		if err != nil {
-			world.RethrowPanic(err)
 			if sessionOwnerStopped(err) {
 				return
 			}

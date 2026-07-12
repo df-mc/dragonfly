@@ -11,9 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/df-mc/dragonfly/server/player/debug"
-	"github.com/df-mc/dragonfly/server/player/hud"
-
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
@@ -26,8 +23,11 @@ import (
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/player/bossbar"
 	"github.com/df-mc/dragonfly/server/player/chat"
+	"github.com/df-mc/dragonfly/server/player/debug"
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
+	"github.com/df-mc/dragonfly/server/player/hud"
+	"github.com/df-mc/dragonfly/server/player/input"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/player/title"
@@ -1935,25 +1935,28 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 // held, if the player is on the ground/underwater and if the player has any effects.
 func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	held, _ := p.HeldItems()
-	breakTime := block.BreakDuration(p.tx.Block(pos), held)
-	if !p.OnGround() {
-		breakTime *= 5
+	return block.BreakDuration(p.tx.Block(pos), held, p.breakContext())
+}
+
+// breakContext returns the block.BreakContext describing the status effects and environment currently
+// affecting how quickly the player breaks blocks.
+func (p *Player) breakContext() block.BreakContext {
+	_, aquaAffinity := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity)
+	ctx := block.BreakContext{
+		Underwater:   p.insideOfWater(),
+		AquaAffinity: aquaAffinity,
+		Airborne:     !p.OnGround(),
 	}
-	if _, ok := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity); p.insideOfWater() && !ok {
-		breakTime *= 5
+	if e, ok := p.Effect(effect.Haste); ok {
+		ctx.HasteLevel = e.Level()
 	}
-	for _, e := range p.Effects() {
-		lvl := e.Level()
-		switch e.Type() {
-		case effect.Haste:
-			breakTime = time.Duration(float64(breakTime) * effect.Haste.Multiplier(lvl))
-		case effect.MiningFatigue:
-			breakTime = time.Duration(float64(breakTime) * effect.MiningFatigue.Multiplier(lvl))
-		case effect.ConduitPower:
-			breakTime = time.Duration(float64(breakTime) * effect.ConduitPower.Multiplier(lvl))
-		}
+	if e, ok := p.Effect(effect.ConduitPower); ok {
+		ctx.ConduitPowerLevel = e.Level()
 	}
-	return breakTime
+	if e, ok := p.Effect(effect.MiningFatigue); ok {
+		ctx.MiningFatigueLevel = e.Level()
+	}
+	return ctx
 }
 
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
@@ -2131,7 +2134,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	p.Exhaust(0.005)
-	if block.BreaksInstantly(b, held) {
+	// Only blocks that naturally break instantly (zero hardness) cost no durability; a block made to break
+	// within one tick by a fast tool or status effects still consumes durability.
+	if block.BreaksInstantly(b) {
 		return
 	}
 	if durable, ok := held.Item().(item.Durable); ok {
@@ -2308,6 +2313,26 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	} else if p.Sprinting() {
 		p.Exhaust(0.1 * horizontalVel.Len())
 	}
+}
+
+// Displace moves the player by a server-authoritative relative delta, clipped against block collision boxes.
+func (p *Player) Displace(deltaPos mgl64.Vec3) {
+	if p.Dead() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
+		return
+	}
+	pos := p.Position()
+	deltaPos, velocity := p.mc.CheckCollision(p.tx, p, pos, deltaPos)
+	if deltaPos.ApproxEqual(mgl64.Vec3{}) {
+		return
+	}
+	res := pos.Add(deltaPos)
+	for _, v := range p.viewers() {
+		v.ViewEntityDisplacement(p, res, p.Rotation(), p.OnGround())
+	}
+	p.data.Pos, p.data.Vel = res, velocity
+	p.checkBlockCollisions(deltaPos)
+	p.onGround = p.checkOnGround(deltaPos)
+	p.updateFallState(deltaPos[1])
 }
 
 // Position returns the current position of the player. It may be changed as the player moves or is moved
@@ -3134,6 +3159,32 @@ func (p *Player) VisibleDebugShapes() []debug.Shape {
 // not yet been rendered.
 func (p *Player) RemoveAllDebugShapes() {
 	p.session().RemoveAllDebugShapes()
+}
+
+// LockInput applies an input lock to the player, disabling the specified input and immediately sending the
+// updated lock state to the client.
+func (p *Player) LockInput(l input.Lock) {
+	p.session().LockInput(l)
+	p.session().SendInputLocks()
+}
+
+// UnlockInput removes an input lock from the player, re-enabling the specified input and immediately sending
+// the updated lock state to the client.
+func (p *Player) UnlockInput(l input.Lock) {
+	p.session().UnlockInput(l)
+	p.session().SendInputLocks()
+}
+
+// ClearInputLocks removes all input locks from the player, re-enabling all inputs and immediately sending the
+// updated lock state to the client.
+func (p *Player) ClearInputLocks() {
+	p.session().ClearInputLocks()
+	p.session().SendInputLocks()
+}
+
+// InputLocked checks if a specific input lock is currently applied to the player.
+func (p *Player) InputLocked(l input.Lock) bool {
+	return p.session().InputLocked(l)
 }
 
 // damageItem damages the item stack passed with the damage passed and returns the new stack. If the item
