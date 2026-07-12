@@ -152,6 +152,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
 		HeadYaw:         float32(yaw),
+		BodyYaw:         float32(yaw),
 	})
 }
 
@@ -672,6 +673,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventExtinguishFire
 	case sound.Ignite:
 		pk.SoundType = packet.SoundEventIgnite
+	case sound.EnderEyePlaced:
+		pk.SoundType = packet.SoundEventEnderEyePlaced
+	case sound.EndPortalCreated:
+		pk.SoundType = packet.SoundEventEndPortalCreated
 	case sound.Burning:
 		pk.SoundType = packet.SoundEventPlayerHurtOnFire
 	case sound.Drowning:

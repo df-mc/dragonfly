@@ -222,6 +222,12 @@ type DecoratedPotInserted struct {
 // DecoratedPotInsertFailed is a sound played when an item fails to be inserted into a decorated pot.
 type DecoratedPotInsertFailed struct{ sound }
 
+// EnderEyePlaced is a sound played when an eye of ender is placed into an end portal frame.
+type EnderEyePlaced struct{ sound }
+
+// EndPortalCreated is a sound played when a complete end portal frame ring is activated.
+type EndPortalCreated struct{ sound }
+
 // sound implements the world.Sound interface.
 type sound struct{}
 

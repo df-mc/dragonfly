@@ -12,37 +12,29 @@ type Glowstone struct {
 	solid
 }
 
-// Instrument ...
 func (g Glowstone) Instrument() sound.Instrument {
 	return sound.Pling()
 }
 
-// CanRedstoneWireStepDown ...
+// CanRedstoneWireStepDown keeps dust from stepping down over glowstone despite its solid top face.
 func (Glowstone) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// RelaysRedstonePowerThrough returns false.
-func (Glowstone) RelaysRedstonePowerThrough() bool {
-	return false
-}
+func (Glowstone) RedstoneNonConductive() {}
 
-// BreakInfo ...
 func (g Glowstone) BreakInfo() BreakInfo {
 	return newBreakInfo(0.3, alwaysHarvestable, nothingEffective, discreteDrops(item.GlowstoneDust{}, g, 2, 4, 4))
 }
 
-// EncodeItem ...
 func (Glowstone) EncodeItem() (name string, meta int16) {
 	return "minecraft:glowstone", 0
 }
 
-// EncodeBlock ...
 func (Glowstone) EncodeBlock() (string, map[string]any) {
 	return "minecraft:glowstone", nil
 }
 
-// LightEmissionLevel returns 15.
 func (Glowstone) LightEmissionLevel() uint8 {
 	return 15
 }
