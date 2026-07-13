@@ -101,6 +101,7 @@ func (t ticker) tick(tx *Tx) {
 	w.scheduledUpdates.tick(tx, tick)
 	t.tickBlocksRandomly(tx, loaders, tick)
 	t.performNeighbourUpdates(tx)
+	w.redstone.tick(tx, tick)
 }
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
@@ -339,10 +340,7 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Block, delay time.Duration) {
 	resTick := queue.currentTick + int64(max(delay/(time.Second/20), 1))
 	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(b)}
-	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
-		// Already have a tick scheduled for this position that will occur after
-		// the delay passed. Block updates can only be scheduled if they are
-		// after any currently scheduled updates.
+	if t, ok := queue.furthestTicks[index]; ok && t >= resTick && t > queue.currentTick {
 		return
 	}
 	queue.furthestTicks[index] = resTick
@@ -365,6 +363,9 @@ func (queue *scheduledTickQueue) removeChunk(pos ChunkPos) {
 	queue.ticks = slices.DeleteFunc(queue.ticks, func(tick scheduledTick) bool {
 		return chunkPosFromBlockPos(tick.pos) == pos
 	})
+	maps.DeleteFunc(queue.furthestTicks, func(index scheduledTickIndex, _ int64) bool {
+		return chunkPosFromBlockPos(index.pos) == pos
+	})
 }
 
 // add adds a slice of scheduled ticks to the queue. It assumes no duplicate
@@ -374,10 +375,9 @@ func (queue *scheduledTickQueue) add(ticks []scheduledTick) {
 	for _, t := range ticks {
 		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
 		if existing, ok := queue.furthestTicks[index]; ok {
-			// Make sure we find the furthest tick for each of the ticks added.
-			// Some ticks may have the same block and position, in which case we
-			// need to set the furthest tick.
 			queue.furthestTicks[index] = max(existing, t.t)
+		} else {
+			queue.furthestTicks[index] = t.t
 		}
 	}
 }

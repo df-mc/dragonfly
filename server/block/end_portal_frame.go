@@ -58,6 +58,16 @@ func (f EndPortalFrame) EndPortalFrameState() (eye bool, facing cube.Direction) 
 	return f.Eye, f.Facing
 }
 
+// EncodeNBT encodes the End portal block actor stored with the frame.
+func (EndPortalFrame) EncodeNBT() map[string]any {
+	return map[string]any{"id": "EndPortal"}
+}
+
+// DecodeNBT decodes the End portal block actor. Eye and facing are stored in the block state.
+func (f EndPortalFrame) DecodeNBT(map[string]any) any {
+	return f
+}
+
 // InsertEndPortalEye returns a copy of the frame with an eye inserted, or false if it already held one.
 func (f EndPortalFrame) InsertEndPortalEye() (world.Block, bool) {
 	if f.Eye {
