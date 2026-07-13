@@ -195,9 +195,12 @@ func init() {
 	registerAll(allLadders())
 	registerAll(allLanterns())
 	registerAll(allLava())
+	registerAll(allButtons())
 	registerAll(allLeaves())
 	registerAll(allLecterns())
 	registerAll(allLevers())
+	registerAll(allPressurePlates())
+	registerAll(allRedstoneLamps())
 	registerAll(allLight())
 	registerAll(allLitPumpkins())
 	registerAll(allLogs())
@@ -343,6 +346,13 @@ func init() {
 	world.RegisterItem(Lapis{})
 	world.RegisterItem(Lectern{})
 	world.RegisterItem(Lever{})
+	world.RegisterItem(RedstoneLamp{})
+	for _, t := range ButtonTypes() {
+		world.RegisterItem(Button{Type: t})
+	}
+	for _, t := range PressurePlateTypes() {
+		world.RegisterItem(PressurePlate{Type: t})
+	}
 	world.RegisterItem(LilyPad{})
 	world.RegisterItem(Magma{})
 	world.RegisterItem(LitPumpkin{})

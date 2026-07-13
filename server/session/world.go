@@ -561,6 +561,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventExplode
 	case sound.Thunder:
 		pk.SoundType, pk.EntityType = packet.SoundEventThunder, "minecraft:lightning_bolt"
+	case sound.PressurePlateClickOn:
+		pk.SoundType = packet.SoundEventPressurePlateClickOn
+	case sound.PressurePlateClickOff:
+		pk.SoundType = packet.SoundEventPressurePlateClickOff
 	case sound.Click:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundClick,
