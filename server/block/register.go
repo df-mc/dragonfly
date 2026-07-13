@@ -163,6 +163,7 @@ func init() {
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCampfires())
+	registerAll(allCandles())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
 	registerAll(allIronChains())
@@ -248,6 +249,7 @@ func init() {
 	registerAll(allCopperLanterns())
 	registerAll(allCopperTorches())
 	registerAll(allCopperTrapdoors())
+	registerAll(allShulkerBoxes())
 }
 
 func init() {
@@ -487,6 +489,9 @@ func init() {
 		world.RegisterItem(LapisOre{Type: ore})
 		world.RegisterItem(RedstoneOre{Type: ore})
 	}
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(Candle{Colour: c})
+	}
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
 		world.RegisterItem(Torch{Type: f})
@@ -548,6 +553,10 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
+	}
+
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(ShulkerBox{Colour: c})
 	}
 }
 
