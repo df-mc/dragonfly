@@ -7,33 +7,40 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// StateToRuntimeID must hold a function to convert a name and its state properties to a runtime ID.
-var StateToRuntimeID func(name string, properties map[string]any) (runtimeID uint32, found bool)
-
 // NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // NetworkDecode creates a new buffer and calls NetworkDecodeBuffer.
+//
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(air uint32, data []byte, count int, r cube.Range) (*Chunk, error) {
-	return NetworkDecodeBuffer(air, bytes.NewBuffer(data), count, r)
+func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, error) {
+	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r)
 }
 
 // NetworkDecodeBuffer decodes the network serialised data from buf passed into a Chunk if successful. If not, the chunk
 // returned is nil and the error non-nil.
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeBuffer(air uint32, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
-	var (
-		c   = New(air, r)
-		err error
-	)
+func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
+	c := New(br, r)
+	// The declared count may exceed the number of sub-chunks supported by the
+	// dimension's vertical range, so validate it before indexing c.sub.
+	if count < 0 || count > len(c.sub) {
+		return nil, fmt.Errorf("invalid sub-chunk count %d: chunk range has %d sub-chunks", count, len(c.sub))
+	}
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
+		sub, err := decodeSubChunk(buf, c, &index, NetworkEncoding)
 		if err != nil {
 			return nil, err
 		}
+		// Version 9 sub-chunks replace index with an absolute Y from the payload.
+		// Validate that translated index before using it to access the chunk.
+		if int(index) >= len(c.sub) {
+			return nil, fmt.Errorf("invalid sub-chunk index %d: chunk range has %d sub-chunks", index, len(c.sub))
+		}
+		c.sub[index] = sub
 	}
 	var last *PalettedStorage
 	for i := 0; i < len(c.sub); i++ {
@@ -57,15 +64,12 @@ func NetworkDecodeBuffer(air uint32, buf *bytes.Buffer, count int, r cube.Range)
 	return c, nil
 }
 
-// DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was
-// invalid, an error is returned.
-func DiskDecode(data SerialisedData, r cube.Range) (*Chunk, error) {
-	air, ok := StateToRuntimeID("minecraft:air", nil)
-	if !ok {
-		panic("cannot find air runtime ID")
-	}
-
-	c := New(air, r)
+// DiskDecode decodes the data from a SerialisedData object into a chunk and returns it. If the data was invalid,
+// an error is returned.
+//
+// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
+func DiskDecode(br BlockRegistry, data SerialisedData, r cube.Range) (*Chunk, error) {
+	c := New(br, r)
 
 	err := decodeBiomes(bytes.NewBuffer(data.Biomes), c, DiskEncoding)
 	if err != nil {
@@ -97,7 +101,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		return nil, fmt.Errorf("unknown sub chunk version %v: can't decode", ver)
 	case 1:
 		// Version 1 only has one layer for each sub chunk, but uses the format with palettes.
-		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding)
+		storage, err := decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +124,7 @@ func decodeSubChunk(buf *bytes.Buffer, c *Chunk, index *byte, e Encoding) (*SubC
 		sub.storages = make([]*PalettedStorage, storageCount)
 
 		for i := byte(0); i < storageCount; i++ {
-			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding)
+			sub.storages[i], err = decodePalettedStorage(buf, e, BlockPaletteEncoding{Blocks: c.br})
 			if err != nil {
 				return nil, err
 			}

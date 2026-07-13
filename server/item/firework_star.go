@@ -23,5 +23,5 @@ func (f FireworkStar) DecodeNBT(data map[string]any) any {
 
 // EncodeItem ...
 func (f FireworkStar) EncodeItem() (name string, meta int16) {
-	return "minecraft:firework_star", invertColour(f.FireworkExplosion.Colour)
+	return "minecraft:firework_star", invertColour(f.Colour)
 }

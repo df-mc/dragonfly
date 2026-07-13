@@ -1,6 +1,10 @@
 package player
 
 import (
+	"math/rand/v2"
+	"time"
+
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -11,8 +15,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"golang.org/x/text/language"
-	"math/rand/v2"
-	"time"
 )
 
 // Config holds options that a Player can be created with.
@@ -84,6 +86,29 @@ func (cfg Config) Apply(data *world.EntityData) {
 		nameTag:             conf.Name,
 		fireTicks:           conf.FireTicks,
 		fallDistance:        conf.FallDistance,
+	}
+	playerUUID := conf.UUID
+	pdata.portalTravel = &entity.PortalTravelComputer{
+		Instantaneous: func(_, target world.Dimension) bool {
+			// End travel is always instant regardless of game mode; End portals target the End in either direction.
+			return pdata.gameMode.InstantPortalTravel() || target == world.End
+		},
+		Teleport: func(e entity.Traveller, pos mgl64.Vec3) {
+			e.(*Player).forceTeleport(pos)
+		},
+		SpawnPoint: func(tx *world.Tx) mgl64.Vec3 {
+			// Use the player's spawn only while its bed still exists and is unobstructed, like respawning.
+			pos := tx.World().PlayerSpawn(playerUUID)
+			if b, ok := tx.Block(pos).(block.Bed); ok && b.CanRespawnOn() {
+				if safe, ok := b.SafeSpawn(pos, tx); ok {
+					return safe.Vec3Middle()
+				}
+			}
+			return tx.World().Spawn().Vec3Middle()
+		},
+		Player: true,
+		// Only players create a portal at the destination when no linked portal exists.
+		CreatePortal: true,
 	}
 	pdata.hunger.foodLevel, pdata.hunger.foodTick, pdata.hunger.exhaustionLevel, pdata.hunger.saturationLevel = conf.Food, conf.FoodTick, conf.Exhaustion, conf.Saturation
 	pdata.experience.Add(conf.Experience)

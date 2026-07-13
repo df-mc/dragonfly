@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/portal"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand/v2"
@@ -34,10 +35,14 @@ type ignitable interface {
 // UseOnBlock ...
 func (f FlintAndSteel) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
 	ctx.DamageItem(1)
-	if l, ok := tx.Block(pos).(ignitable); ok && l.Ignite(pos, tx, user) {
-		return true
-	} else if s := pos.Side(face); tx.Block(s) == air() {
+	if l, ok := tx.Block(pos).(ignitable); ok {
+		return l.Ignite(pos, tx, user)
+	}
+	if s := pos.Side(face); tx.Block(s) == air() {
 		tx.PlaySound(s.Vec3Centre(), sound.Ignite{})
+		if portal.ActivateNetherPortal(tx, s) {
+			return true
+		}
 
 		flame := fire()
 		tx.SetBlock(s, flame, nil)

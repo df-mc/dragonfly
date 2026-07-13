@@ -1,11 +1,13 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
 //go:generate go run ../../cmd/blockhash -o hash.go .
+//go:generate go run ../../cmd/blockaccessor -o accessor.go .
 
 // init registers all blocks implemented by Dragonfly.
 func init() {
@@ -14,6 +16,7 @@ func init() {
 	world.RegisterBlock(AncientDebris{})
 	world.RegisterBlock(Andesite{Polished: true})
 	world.RegisterBlock(Andesite{})
+	world.RegisterBlock(BambooMosaic{})
 	world.RegisterBlock(Barrier{})
 	world.RegisterBlock(Beacon{})
 	world.RegisterBlock(Bedrock{InfiniteBurning: true})
@@ -26,6 +29,7 @@ func init() {
 	world.RegisterBlock(Coal{})
 	world.RegisterBlock(Cobblestone{Mossy: true})
 	world.RegisterBlock(Cobblestone{})
+	world.RegisterBlock(Cobweb{})
 	world.RegisterBlock(CraftingTable{})
 	world.RegisterBlock(DeadBush{})
 	world.RegisterBlock(DeepslateBricks{Cracked: true})
@@ -44,6 +48,10 @@ func init() {
 	world.RegisterBlock(Emerald{})
 	world.RegisterBlock(EnchantingTable{})
 	world.RegisterBlock(EndBricks{})
+	world.RegisterBlock(EndPortal{})
+	for _, f := range allEndPortalFrames() {
+		world.RegisterBlock(f)
+	}
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(FletchingTable{})
 	world.RegisterBlock(GlassPane{})
@@ -55,12 +63,21 @@ func init() {
 	world.RegisterBlock(Grass{})
 	world.RegisterBlock(Gravel{})
 	world.RegisterBlock(Honeycomb{})
+	world.RegisterBlock(InfestedStone{})
+	world.RegisterBlock(InfestedCobblestone{})
+	for _, b := range allInfestedStoneBricks() {
+		world.RegisterBlock(b)
+	}
+	for _, b := range allInfestedDeepslate() {
+		world.RegisterBlock(b)
+	}
 	world.RegisterBlock(InvisibleBedrock{})
 	world.RegisterBlock(IronBars{})
 	world.RegisterBlock(Iron{})
 	world.RegisterBlock(Jukebox{})
 	world.RegisterBlock(Lapis{})
 	world.RegisterBlock(LilyPad{})
+	world.RegisterBlock(Magma{})
 	world.RegisterBlock(Melon{})
 	world.RegisterBlock(MossCarpet{})
 	world.RegisterBlock(MudBricks{})
@@ -81,10 +98,13 @@ func init() {
 	world.RegisterBlock(Podzol{})
 	world.RegisterBlock(PolishedBlackstoneBrick{Cracked: true})
 	world.RegisterBlock(PolishedBlackstoneBrick{})
+	world.RegisterBlock(Portal{Axis: cube.X})
+	world.RegisterBlock(Portal{Axis: cube.Z})
 	world.RegisterBlock(QuartzBricks{})
 	world.RegisterBlock(RawCopper{})
 	world.RegisterBlock(RawGold{})
 	world.RegisterBlock(RawIron{})
+	world.RegisterBlock(RedstoneBlock{})
 	world.RegisterBlock(ReinforcedDeepslate{})
 	world.RegisterBlock(ResinBricks{Chiseled: true})
 	world.RegisterBlock(ResinBricks{})
@@ -122,9 +142,14 @@ func init() {
 		world.RegisterBlock(GoldOre{Type: ore})
 		world.RegisterBlock(IronOre{Type: ore})
 		world.RegisterBlock(LapisOre{Type: ore})
+		world.RegisterBlock(RedstoneOre{Type: ore})
+		world.RegisterBlock(RedstoneOre{Type: ore, Lit: true})
 	}
 
 	registerAll(allAnvils())
+	registerAll(allBambooBlocks())
+	registerAll(allBamboos())
+	registerAll(allBambooSaplings())
 	registerAll(allBanners())
 	registerAll(allBarrels())
 	registerAll(allBasalt())
@@ -137,6 +162,7 @@ func init() {
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCampfires())
+	registerAll(allCandles())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
 	registerAll(allIronChains())
@@ -171,6 +197,7 @@ func init() {
 	registerAll(allLava())
 	registerAll(allLeaves())
 	registerAll(allLecterns())
+	registerAll(allLevers())
 	registerAll(allLight())
 	registerAll(allLitPumpkins())
 	registerAll(allLogs())
@@ -187,6 +214,8 @@ func init() {
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
+	registerAll(allRedstoneTorches())
+	registerAll(allRedstoneWires())
 	registerAll(allSandstones())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
@@ -199,6 +228,7 @@ func init() {
 	registerAll(allStairs())
 	registerAll(allStoneBricks())
 	registerAll(allStonecutters())
+	registerAll(allString())
 	registerAll(allSugarCane())
 	registerAll(allTorches())
 	registerAll(allTrapdoors())
@@ -218,6 +248,7 @@ func init() {
 	registerAll(allCopperLanterns())
 	registerAll(allCopperTorches())
 	registerAll(allCopperTrapdoors())
+	registerAll(allShulkerBoxes())
 }
 
 func init() {
@@ -226,6 +257,10 @@ func init() {
 	world.RegisterItem(AncientDebris{})
 	world.RegisterItem(Andesite{Polished: true})
 	world.RegisterItem(Andesite{})
+	world.RegisterItem(Bamboo{})
+	world.RegisterItem(BambooBlock{})
+	world.RegisterItem(BambooBlock{Stripped: true})
+	world.RegisterItem(BambooMosaic{})
 	world.RegisterItem(Barrel{})
 	world.RegisterItem(Barrier{})
 	world.RegisterItem(Basalt{Polished: true})
@@ -250,6 +285,7 @@ func init() {
 	world.RegisterItem(Coal{})
 	world.RegisterItem(Cobblestone{Mossy: true})
 	world.RegisterItem(Cobblestone{})
+	world.RegisterItem(Cobweb{})
 	world.RegisterItem(CocoaBean{})
 	world.RegisterItem(Composter{})
 	world.RegisterItem(CopperTorch{})
@@ -271,6 +307,7 @@ func init() {
 	world.RegisterItem(Emerald{})
 	world.RegisterItem(EnchantingTable{})
 	world.RegisterItem(EndBricks{})
+	world.RegisterItem(EndPortalFrame{})
 	world.RegisterItem(EndRod{})
 	world.RegisterItem(EndStone{})
 	world.RegisterItem(EnderChest{})
@@ -289,6 +326,12 @@ func init() {
 	world.RegisterItem(HayBale{})
 	world.RegisterItem(Honeycomb{})
 	world.RegisterItem(Hopper{})
+	world.RegisterItem(InfestedStone{})
+	world.RegisterItem(InfestedCobblestone{})
+	for _, t := range StoneBricksTypes() {
+		world.RegisterItem(InfestedStoneBricks{Type: t})
+	}
+	world.RegisterItem(InfestedDeepslate{})
 	world.RegisterItem(InvisibleBedrock{})
 	world.RegisterItem(IronBars{})
 	world.RegisterItem(Iron{})
@@ -299,7 +342,9 @@ func init() {
 	world.RegisterItem(Ladder{})
 	world.RegisterItem(Lapis{})
 	world.RegisterItem(Lectern{})
+	world.RegisterItem(Lever{})
 	world.RegisterItem(LilyPad{})
+	world.RegisterItem(Magma{})
 	world.RegisterItem(LitPumpkin{})
 	world.RegisterItem(Loom{})
 	world.RegisterItem(MelonSeeds{})
@@ -339,6 +384,9 @@ func init() {
 	world.RegisterItem(RawCopper{})
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
+	world.RegisterItem(RedstoneBlock{})
+	world.RegisterItem(RedstoneTorch{})
+	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(ReinforcedDeepslate{})
 	world.RegisterItem(ResinBricks{Chiseled: true})
 	world.RegisterItem(ResinBricks{})
@@ -361,6 +409,7 @@ func init() {
 	world.RegisterItem(Stonecutter{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
+	world.RegisterItem(String{})
 	world.RegisterItem(SugarCane{})
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
@@ -410,20 +459,24 @@ func init() {
 		world.RegisterItem(Wool{Colour: c})
 	}
 	for _, w := range WoodTypes() {
-		if w != WarpedWood() && w != CrimsonWood() {
-			world.RegisterItem(Leaves{Wood: w, Persistent: true})
+		if t, ok := w.Leaves(); ok {
+			world.RegisterItem(Leaves{Type: t, Persistent: true})
 		}
-		world.RegisterItem(Log{Wood: w, Stripped: true})
-		world.RegisterItem(Log{Wood: w})
+		if w != BambooWood() {
+			world.RegisterItem(Log{Wood: w, Stripped: true})
+			world.RegisterItem(Log{Wood: w})
+			world.RegisterItem(Wood{Wood: w, Stripped: true})
+			world.RegisterItem(Wood{Wood: w})
+		}
 		world.RegisterItem(Planks{Wood: w})
 		world.RegisterItem(Sign{Wood: w})
 		world.RegisterItem(WoodDoor{Wood: w})
 		world.RegisterItem(WoodFenceGate{Wood: w})
 		world.RegisterItem(WoodFence{Wood: w})
 		world.RegisterItem(WoodTrapdoor{Wood: w})
-		world.RegisterItem(Wood{Wood: w, Stripped: true})
-		world.RegisterItem(Wood{Wood: w})
 	}
+	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
+	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
 		world.RegisterItem(CopperOre{Type: ore})
@@ -432,6 +485,10 @@ func init() {
 		world.RegisterItem(GoldOre{Type: ore})
 		world.RegisterItem(IronOre{Type: ore})
 		world.RegisterItem(LapisOre{Type: ore})
+		world.RegisterItem(RedstoneOre{Type: ore})
+	}
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(Candle{Colour: c})
 	}
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
@@ -494,6 +551,10 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
+	}
+
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(ShulkerBox{Colour: c})
 	}
 }
 

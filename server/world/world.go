@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb"
@@ -34,6 +33,16 @@ type World struct {
 	queueClosing chan struct{}
 	queueing     sync.WaitGroup
 
+	// scheduleMu serialises task scheduling against the close transitions
+	// below. scheduling counts in-flight scheduled work that close must drain.
+	scheduleMu sync.Mutex
+	scheduling sync.WaitGroup
+	// closed flips once close starts; new tasks fail with ErrWorldClosed.
+	// closeAcceptingEntityTasks is true only during the close transaction, when
+	// entity Close methods may still schedule final work that close drains.
+	closed                    atomic.Bool
+	closeAcceptingEntityTasks atomic.Bool
+
 	// advance is a bool that specifies if this World should advance the current
 	// tick, time and weather saved in the Settings struct held by the World.
 	advance bool
@@ -45,8 +54,11 @@ type World struct {
 
 	weather
 
-	closing chan struct{}
-	running sync.WaitGroup
+	// closeStarted closes as soon as World.Close begins, before the close
+	// transaction runs; closing closes once the world stops ticking.
+	closeStarted chan struct{}
+	closing      chan struct{}
+	running      sync.WaitGroup
 
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
@@ -64,6 +76,7 @@ type World struct {
 	// tick value passed, the block update will be performed and the entry will
 	// be removed from the map.
 	scheduledUpdates *scheduledTickQueue
+	redstone         *redstoneEngine
 	neighbourUpdates []neighbourUpdate
 
 	viewerMu sync.Mutex
@@ -108,20 +121,70 @@ func (w *World) Range() cube.Range {
 	return w.ra
 }
 
-// ExecFunc is a function that performs a synchronised transaction on a World.
-type ExecFunc func(tx *Tx)
+// BlockRegistry returns the BlockRegistry used by the World.
+func (w *World) BlockRegistry() BlockRegistry {
+	return w.conf.Blocks
+}
 
-// Exec performs a synchronised transaction f on a World. Exec returns a channel
-// that is closed once the transaction is complete.
-func (w *World) Exec(f ExecFunc) <-chan struct{} {
+// execFunc is a function that performs a synchronised transaction on a World.
+type execFunc func(tx *Tx)
+
+// exec runs f on the World, bypassing the closed check that Do/DoAfter/Call
+// apply — reserved for the World's own machinery (ticking, saving, chunk
+// unload, the close transaction), which must queue work after close begins.
+// The returned channel closes when done; waiting on it from the owner deadlocks.
+func (w *World) exec(f execFunc) <-chan struct{} {
 	c := make(chan struct{})
-	w.queue <- normalTransaction{c: c, f: f}
+	ntx := normalTransaction{c: c, f: f}
+	if w.conf.Synchronous {
+		ntx.Run(w)
+		return c
+	}
+	w.queue <- ntx
 	return c
 }
 
-func (w *World) weakExec(invalid *atomic.Bool, cond *sync.Cond, f ExecFunc) <-chan bool {
+func (w *World) weakExec(valid func() bool, cond *sync.Cond, f execFunc, allowClosed bool) <-chan bool {
 	c := make(chan bool, 1)
-	w.queue <- weakTransaction{c: c, f: f, invalid: invalid, cond: cond}
+	if w.conf.Synchronous {
+		run := valid == nil || valid()
+		if run {
+			// As in weakTransaction.Run, f must not run under cond.L: it may
+			// relock it, e.g. through RemoveEntity.
+			cond.L.Unlock()
+			tx := newTx(w)
+			f(tx)
+			tx.close()
+			tx.runDeferred()
+			cond.L.Lock()
+		}
+		c <- run
+		return c
+	}
+	w.scheduleMu.Lock()
+	if w.closed.Load() && !w.closeAcceptingEntityTasks.Load() && !allowClosed {
+		w.scheduleMu.Unlock()
+		c <- false
+		return c
+	}
+	wtx := weakTransaction{c: c, f: f, valid: valid, cond: cond}
+	select {
+	case w.queue <- wtx:
+		w.scheduleMu.Unlock()
+	default:
+		w.scheduling.Add(1)
+		w.scheduleMu.Unlock()
+		go func() {
+			defer w.scheduling.Done()
+			select {
+			case w.queue <- wtx:
+			case <-w.closing:
+				wtx.fail()
+			case <-w.queueClosing:
+				wtx.fail()
+			}
+		}()
+	}
 	return c
 }
 
@@ -152,29 +215,47 @@ func (w *World) block(pos cube.Pos) Block {
 	return w.blockInChunk(w.chunk(chunkPosFromBlockPos(pos)), pos)
 }
 
+// blockLoaded reads a block from a position only if its chunk is already loaded.
+func (w *World) blockLoaded(pos cube.Pos) (Block, bool) {
+	if pos.OutOfBounds(w.ra) {
+		return w.conf.Blocks.Air(), false
+	}
+	c, ok := w.chunks[chunkPosFromBlockPos(pos)]
+	if !ok {
+		return w.conf.Blocks.Air(), false
+	}
+	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+	if w.conf.Blocks.NBTBlock(rid) {
+		if b, ok := c.BlockEntities[pos]; ok {
+			return b, true
+		}
+	}
+	return w.conf.Blocks.BlockByRuntimeIDOrAir(rid), true
+}
+
 // blockInChunk reads a block from a chunk at the position passed. The block
 // is assumed to be within the chunk passed.
 func (w *World) blockInChunk(c *Column, pos cube.Pos) Block {
 	if pos.OutOfBounds(w.ra) {
 		// Fast way out.
-		return air()
+		return w.conf.Blocks.Air()
 	}
 	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
-	if nbtBlocks[rid] {
-		// The block was also a block entity, so we look it up in the map.
+	if w.conf.Blocks.NBTBlock(rid) {
+		// The block was also a block entity, so we look it up in the block entity map.
 		if b, ok := c.BlockEntities[pos]; ok {
 			return b
 		}
 		// Despite being a block with NBT, the block didn't actually have any
 		// stored NBT yet. We add it here and update the block.
-		nbtB := blockByRuntimeIDOrAir(rid).(NBTer).DecodeNBT(map[string]any{}).(Block)
+		nbtB := w.conf.Blocks.BlockByRuntimeIDOrAir(rid).(NBTer).DecodeNBT(map[string]any{}).(Block)
 		c.BlockEntities[pos] = nbtB
 		for _, v := range c.viewers {
 			v.ViewBlockUpdate(pos, nbtB, 0)
 		}
 		return nbtB
 	}
-	return blockByRuntimeIDOrAir(rid)
+	return w.conf.Blocks.BlockByRuntimeIDOrAir(rid)
 }
 
 // biome reads the Biome at the position passed. If a chunk is not yet loaded
@@ -193,9 +274,9 @@ func (w *World) biome(pos cube.Pos) Biome {
 	return b
 }
 
-// highestLightBlocker gets the Y value of the highest fully light blocking
+// HighestLightBlocker gets the Y value of the highest fully light blocking
 // block at the x and z values passed in the World.
-func (w *World) highestLightBlocker(x, z int) int {
+func (w *World) HighestLightBlocker(x, z int) int {
 	return int(w.chunk(ChunkPos{int32(x >> 4), int32(z >> 4)}).HighestLightBlocker(uint8(x), uint8(z)))
 }
 
@@ -233,6 +314,10 @@ type SetOpts struct {
 	// performance is very important, or where it is known no liquid can be
 	// present anyway.
 	DisableLiquidDisplacement bool
+	// DisableRedstoneUpdates makes SetBlock not invalidate the redstone engine
+	// around the changed block. This is used by the redstone engine while
+	// applying its own block-state updates to avoid duplicate same-tick work.
+	DisableRedstoneUpdates bool
 }
 
 // setBlock writes a block to the position passed. If a chunk is not yet loaded
@@ -261,16 +346,33 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := w.chunk(chunkPosFromBlockPos(pos))
 
-	rid := BlockRuntimeID(b)
+	rid := w.conf.Blocks.BlockRuntimeID(b)
+	redstoneAfterRelevant := isRedstoneRelevant(b)
+	needOldBlock := !opts.DisableRedstoneUpdates || !redstoneAfterRelevant
+	needOldRID := needOldBlock || (rid != w.conf.Blocks.AirRuntimeID() && !opts.DisableLiquidDisplacement)
+
+	var oldRID uint32
+	if needOldRID {
+		oldRID = c.Block(x, y, z, 0)
+	}
+	var oldBlock Block
+	if needOldBlock {
+		oldBlock = w.conf.Blocks.BlockByRuntimeIDOrAir(oldRID)
+		if w.conf.Blocks.NBTBlock(oldRID) {
+			if blockEntity, ok := c.BlockEntities[pos]; ok {
+				oldBlock = blockEntity
+			}
+		}
+	}
 
 	var before uint32
-	if rid != airRID && !opts.DisableLiquidDisplacement {
-		before = c.Block(x, y, z, 0)
+	if rid != w.conf.Blocks.AirRuntimeID() && !opts.DisableLiquidDisplacement {
+		before = oldRID
 	}
 
 	c.modified = true
 	c.SetBlock(x, y, z, 0, rid)
-	if nbtBlocks[rid] {
+	if w.conf.Blocks.NBTBlock(rid) {
 		c.BlockEntities[pos] = b
 	} else {
 		delete(c.BlockEntities, pos)
@@ -281,16 +383,17 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	if !opts.DisableLiquidDisplacement {
 		var secondLayer Block
 
+		airRID := w.conf.Blocks.AirRuntimeID()
 		if rid == airRID {
 			if li := c.Block(x, y, z, 1); li != airRID {
 				c.SetBlock(x, y, z, 0, li)
 				c.SetBlock(x, y, z, 1, airRID)
-				secondLayer = air()
-				b = blockByRuntimeIDOrAir(li)
+				secondLayer = w.conf.Blocks.Air()
+				b = w.conf.Blocks.BlockByRuntimeIDOrAir(li)
 			}
-		} else if liquidDisplacingBlocks[rid] {
-			if liquidBlocks[before] {
-				l := blockByRuntimeIDOrAir(before)
+		} else if w.conf.Blocks.LiquidDisplacingBlock(rid) {
+			if w.conf.Blocks.LiquidBlock(before) {
+				l := w.conf.Blocks.BlockByRuntimeIDOrAir(before)
 				if b.(LiquidDisplacer).CanDisplace(l.(Liquid)) {
 					c.SetBlock(x, y, z, 1, before)
 					secondLayer = l
@@ -298,7 +401,7 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 			}
 		} else if li := c.Block(x, y, z, 1); li != airRID {
 			c.SetBlock(x, y, z, 1, airRID)
-			secondLayer = air()
+			secondLayer = w.conf.Blocks.Air()
 		}
 
 		if secondLayer != nil {
@@ -308,12 +411,19 @@ func (w *World) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		}
 	}
 
+	if redstoneAfterRelevant || (needOldBlock && isRedstoneRelevant(oldBlock)) {
+		w.redstone.forget(pos)
+	}
+
 	for _, viewer := range viewers {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
 
 	if !opts.DisableBlockUpdates {
 		w.doBlockUpdatesAround(pos)
+	}
+	if !opts.DisableRedstoneUpdates {
+		w.redstone.invalidateAroundBlockChange(pos, oldBlock, b, RedstoneUpdateCauseBlockUpdate, w.Range())
 	}
 }
 
@@ -385,20 +495,20 @@ func (w *World) buildStructure(pos cube.Pos, s Structure) {
 							}
 							b, liq := s.At(xOffset-pos[0], yOffset-pos[1], zOffset-pos[2], f)
 							if b != nil {
-								rid := BlockRuntimeID(b)
+								rid := w.conf.Blocks.BlockRuntimeID(b)
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
 								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
-								if nbtBlocks[rid] {
+								if w.conf.Blocks.NBTBlock(rid) {
 									c.BlockEntities[nbtPos] = b
 								} else {
 									delete(c.BlockEntities, nbtPos)
 								}
 							}
 							if liq != nil {
-								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, BlockRuntimeID(liq))
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, w.conf.Blocks.BlockRuntimeID(liq))
 							} else if len(sub.Layers()) > 1 {
-								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, airRID)
+								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 1, w.conf.Blocks.AirRuntimeID())
 							}
 						}
 					}
@@ -428,7 +538,7 @@ func (w *World) liquid(pos cube.Pos) (Liquid, bool) {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 
 	id := c.Block(x, y, z, 0)
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.conf.Blocks.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Error("Liquid: no block with runtime ID", "ID", id)
 		return nil, false
@@ -438,7 +548,7 @@ func (w *World) liquid(pos cube.Pos) (Liquid, bool) {
 	}
 	id = c.Block(x, y, z, 1)
 
-	b, ok = BlockByRuntimeID(id)
+	b, ok = w.conf.Blocks.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Error("Liquid: no block with runtime ID", "ID", id)
 		return nil, false
@@ -463,6 +573,7 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 	if b == nil {
 		w.removeLiquids(c, pos)
 		w.doBlockUpdatesAround(pos)
+		w.redstone.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, w.Range())
 		return
 	}
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
@@ -471,7 +582,7 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 			return
 		}
 	}
-	rid := BlockRuntimeID(b)
+	rid := w.conf.Blocks.BlockRuntimeID(b)
 	if w.removeLiquids(c, pos) {
 		c.SetBlock(x, y, z, 0, rid)
 		for _, v := range c.viewers {
@@ -486,6 +597,7 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 	c.modified = true
 
 	w.doBlockUpdatesAround(pos)
+	w.redstone.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, w.Range())
 }
 
 // removeLiquids removes any liquid blocks that may be present at a specific
@@ -493,19 +605,20 @@ func (w *World) setLiquid(pos cube.Pos, b Liquid) {
 // were left on the foreground layer.
 func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
+	air := w.conf.Blocks.Air()
 
 	noneLeft := false
 	if noLeft, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 0); noLeft {
 		if changed {
 			for _, v := range c.viewers {
-				v.ViewBlockUpdate(pos, air(), 0)
+				v.ViewBlockUpdate(pos, air, 0)
 			}
 		}
 		noneLeft = true
 	}
 	if _, changed := w.removeLiquidOnLayer(c.Chunk, x, y, z, 1); changed {
 		for _, v := range c.viewers {
-			v.ViewBlockUpdate(pos, air(), 1)
+			v.ViewBlockUpdate(pos, air, 1)
 		}
 	}
 	return noneLeft
@@ -515,8 +628,9 @@ func (w *World) removeLiquids(c *Column, pos cube.Pos) bool {
 // chunk passed, returning true if successful.
 func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer uint8) (bool, bool) {
 	id := c.Block(x, y, z, layer)
+	airRID := w.conf.Blocks.AirRuntimeID()
 
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.conf.Blocks.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Error("removeLiquidOnLayer: no block with runtime ID", "ID", id)
 		return false, false
@@ -538,7 +652,7 @@ func (w *World) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 	c := w.chunk(chunkPosFromBlockPos(pos))
 	id := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 1)
 
-	b, ok := BlockByRuntimeID(id)
+	b, ok := w.conf.Blocks.BlockByRuntimeID(id)
 	if !ok {
 		w.conf.Log.Error("additionalLiquid: no block with runtime ID", "ID", id)
 		return nil, false
@@ -667,7 +781,7 @@ func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
 // playSound plays a sound at a specific position in the World. Viewers of that
 // position will be able to hear the sound if they are close enough.
 func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
-	ctx := event.C(tx)
+	ctx := tx.Event()
 	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
 		return
 	}
@@ -683,11 +797,16 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 // loaded. addEntity panics if the EntityHandle is already in a world.
 // addEntity returns the Entity created by the EntityHandle.
 func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
-	handle.setAndUnlockWorld(w)
-	pos := chunkPosFromVec3(handle.data.Pos)
-	w.entities[handle] = pos
+	return w.addEntityAt(tx, handle, handle.data.Pos)
+}
 
-	c := w.chunk(pos)
+// addEntityAt adds an EntityHandle to a World at the position passed.
+func (w *World) addEntityAt(tx *Tx, handle *EntityHandle, pos mgl64.Vec3) Entity {
+	handle.setAndUnlockWorldAt(w, pos)
+	chunkPos := chunkPosFromVec3(handle.data.Pos)
+	w.entities[handle] = chunkPos
+
+	c := w.chunk(chunkPos)
 	c.Entities, c.modified = append(c.Entities, handle), true
 
 	e := handle.mustEntity(tx)
@@ -696,6 +815,7 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 		showEntity(e, v)
 	}
 	w.Handler().HandleEntitySpawn(tx, e)
+	handle.markWorldReady(w)
 	return e
 }
 
@@ -715,12 +835,29 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 	c := w.chunk(pos)
 	c.Entities, c.modified = sliceutil.DeleteVal(c.Entities, handle), true
 
+	w.removeEntityFromViewLayers(e)
 	for _, v := range c.viewers {
 		v.HideEntity(e)
 	}
 	delete(w.entities, handle)
 	handle.unsetAndLockWorld()
 	return handle
+}
+
+// removeEntityFromViewLayers removes stale overrides for despawned entities. Entities that own a ViewLayer,
+// such as players, are skipped because they may be removed temporarily when respawning or changing worlds.
+func (w *World) removeEntityFromViewLayers(e Entity) {
+	if _, ok := e.(viewLayerViewer); ok {
+		return
+	}
+	viewers, _ := w.allViewers()
+	for _, viewer := range viewers {
+		v, ok := viewer.(viewLayerViewer)
+		if !ok || v.ViewLayer() == nil {
+			continue
+		}
+		v.ViewLayer().remove(e)
+	}
 }
 
 // entitiesWithin returns an iterator that yields all entities contained within
@@ -736,11 +873,12 @@ func (w *World) entitiesWithin(tx *Tx, box cube.BBox) iter.Seq[Entity] {
 					// The chunk wasn't loaded, so there are no entities here.
 					continue
 				}
-				for _, handle := range c.Entities {
+				for _, handle := range slices.Clone(c.Entities) {
 					if !box.Vec3Within(handle.data.Pos) {
 						continue
 					}
-					if !yield(handle.mustEntity(tx)) {
+					ent, ok := handle.Entity(tx)
+					if ok && !yield(ent) {
 						return
 					}
 				}
@@ -924,7 +1062,7 @@ func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) 
 	if pos.OutOfBounds(w.Range()) {
 		return
 	}
-	w.scheduledUpdates.schedule(pos, b, delay)
+	w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay)
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the
@@ -992,11 +1130,11 @@ func (w *World) PortalDestination(dim Dimension) *World {
 
 // Save saves the World to the provider.
 func (w *World) Save() {
-	<-w.Exec(w.save(w.saveChunk))
+	<-w.exec(w.save(w.saveChunk))
 }
 
 // save saves all loaded chunks to the World's provider.
-func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
+func (w *World) save(f func(*Tx, ChunkPos, *Column)) execFunc {
 	return func(tx *Tx) {
 		if w.conf.ReadOnly {
 			return
@@ -1026,6 +1164,7 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 	w.saveChunk(tx, pos, c)
 	w.scheduledUpdates.removeChunk(pos)
+	w.redstone.removeChunk(pos)
 	// Note: We close c.Entities here because some entities may remove
 	// themselves from the world in their Close method, which can lead to
 	// unexpected conditions.
@@ -1045,13 +1184,27 @@ func (w *World) Close() error {
 // close stops the World from ticking, saves all chunks to the Provider and
 // updates the world's settings.
 func (w *World) close() {
-	<-w.Exec(func(tx *Tx) {
+	w.scheduleMu.Lock()
+	w.closed.Store(true)
+	close(w.closeStarted)
+	w.scheduleMu.Unlock()
+
+	w.scheduling.Wait()
+	w.scheduleMu.Lock()
+	w.closeAcceptingEntityTasks.Store(true)
+	w.scheduleMu.Unlock()
+	<-w.exec(func(tx *Tx) {
 		// Let user code run anything that needs to be finished before closing.
 		w.Handler().HandleClose(tx)
+		tx.runDeferred()
 		w.Handle(NopHandler{})
 
 		w.save(w.closeChunk)(tx)
 	})
+	w.scheduleMu.Lock()
+	w.closeAcceptingEntityTasks.Store(false)
+	w.scheduleMu.Unlock()
+	w.scheduling.Wait()
 
 	close(w.closing)
 	w.running.Wait()
@@ -1177,18 +1330,19 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		w.chunks[pos] = col
 		for _, e := range col.Entities {
 			w.entities[e] = pos
-			e.w = w
+			e.setAndUnlockWorld(w)
+			e.markWorldReady(w)
 		}
 		return col, nil
 	case errors.Is(err, leveldb.ErrNotFound):
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
-		col := newColumn(chunk.New(airRID, w.Range()))
+		col := newColumn(chunk.New(w.conf.Blocks, w.Range()))
 		w.chunks[pos] = col
 
 		w.conf.Generator.GenerateChunk(pos, col.Chunk)
 		return col, nil
 	default:
-		return newColumn(chunk.New(airRID, w.Range())), err
+		return newColumn(chunk.New(w.conf.Blocks, w.Range())), err
 	}
 }
 
@@ -1242,7 +1396,7 @@ func (w *World) autoSave() {
 	for {
 		select {
 		case <-closeUnused.C:
-			<-w.Exec(w.closeUnusedChunks)
+			<-w.exec(w.closeUnusedChunks)
 		case <-save.C:
 			w.Save()
 		case <-w.closing:
@@ -1300,7 +1454,7 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 		c.BlockEntities = append(c.BlockEntities, chunk.BlockEntity{Pos: pos, Data: be.(NBTer).EncodeNBT()})
 	}
 	for _, t := range scheduled {
-		c.ScheduledBlocks = append(c.ScheduledBlocks, chunk.ScheduledBlockUpdate{Pos: t.pos, Block: BlockRuntimeID(t.b), Tick: t.t})
+		c.ScheduledBlocks = append(c.ScheduledBlocks, chunk.ScheduledBlockUpdate{Pos: t.pos, Block: w.conf.Blocks.BlockRuntimeID(t.b), Tick: t.t})
 	}
 	return c
 }
@@ -1328,7 +1482,7 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	}
 	for _, be := range c.BlockEntities {
 		rid := c.Chunk.Block(uint8(be.Pos[0]), int16(be.Pos[1]), uint8(be.Pos[2]), 0)
-		b, ok := BlockByRuntimeID(rid)
+		b, ok := w.conf.Blocks.BlockByRuntimeID(rid)
 		if !ok {
 			w.conf.Log.Error("read column: no block with runtime ID", "ID", rid)
 			continue
@@ -1342,8 +1496,13 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 	}
 	scheduled, savedTick := make([]scheduledTick, 0, len(c.ScheduledBlocks)), c.Tick
 	for _, t := range c.ScheduledBlocks {
-		bl := blockByRuntimeIDOrAir(t.Block)
-		scheduled = append(scheduled, scheduledTick{pos: t.Pos, b: bl, bhash: BlockHash(bl), t: w.scheduledUpdates.currentTick + (t.Tick - savedTick)})
+		bl := w.conf.Blocks.BlockByRuntimeIDOrAir(t.Block)
+		scheduled = append(scheduled, scheduledTick{
+			pos:   t.Pos,
+			b:     bl,
+			bhash: w.conf.Blocks.BlockHash(bl),
+			t:     w.scheduledUpdates.currentTick + (t.Tick - savedTick),
+		})
 	}
 	w.scheduledUpdates.add(scheduled)
 	return col

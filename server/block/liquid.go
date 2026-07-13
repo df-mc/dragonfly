@@ -1,12 +1,11 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/world"
 	"math"
 	"sync"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // LiquidRemovable represents a block that may be removed by a liquid flowing into it. When this happens, the
@@ -42,7 +41,7 @@ func tickLiquid(b world.Liquid, pos cube.Pos, tx *world.Tx) {
 		if b.LiquidDepth()-4 > 0 {
 			res = b.WithDepth(b.LiquidDepth()-2*b.SpreadDecay(), false)
 		}
-		ctx := event.C(tx)
+		ctx := tx.Event()
 		if tx.World().Handler().HandleLiquidDecay(ctx, pos, b, res); ctx.Cancelled() {
 			return
 		}
@@ -138,7 +137,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, tx *world.Tx, falling bool) boo
 			// (basically considered full depth), so no need to continue.
 			return true
 		}
-		ctx := event.C(tx)
+		ctx := tx.Event()
 		if tx.World().Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
 			return false
 		}
@@ -155,12 +154,12 @@ func flowInto(b world.Liquid, src, pos cube.Pos, tx *world.Tx, falling bool) boo
 			return false
 		}
 	}
-	removable, isRemovable := existing.(LiquidRemovable)
+	_, isRemovable := existing.(LiquidRemovable)
 	if !isRemovable && (!isDisplacer || !displacer.CanDisplace(b.WithDepth(newDepth, falling))) {
 		// Can't flow into this block.
 		return false
 	}
-	ctx := event.C(tx)
+	ctx := tx.Event()
 	if tx.World().Handler().HandleLiquidFlow(ctx, src, pos, b.WithDepth(newDepth, falling), existing); ctx.Cancelled() {
 		return false
 	}
@@ -168,15 +167,7 @@ func flowInto(b world.Liquid, src, pos cube.Pos, tx *world.Tx, falling bool) boo
 	if isRemovable {
 		if _, air := existing.(Air); !air {
 			tx.SetBlock(pos, nil, nil)
-		}
-		if removable.HasLiquidDrops() {
-			if b, ok := existing.(Breakable); ok {
-				for _, d := range b.BreakInfo().Drops(item.ToolNone{}, nil) {
-					dropItem(tx, d, pos.Vec3Centre())
-				}
-			} else {
-				panic("liquid drops should always implement breakable")
-			}
+			b.LiquidRemoveBlock(pos, tx, existing)
 		}
 	}
 	tx.SetLiquid(pos, b.WithDepth(newDepth, falling))
@@ -202,10 +193,7 @@ func calculateLiquidPaths(b world.Liquid, pos cube.Pos, tx *world.Tx, displacer 
 	paths := make([]liquidPath, 0, 3)
 	first := true
 
-	for {
-		if queue.Len() == 0 {
-			break
-		}
+	for queue.Len() != 0 {
 		node := queue.Front()
 		neighA, neighB, neighC, neighD := node.neighbours(decay * 2)
 		if !first || (displacer == nil || !displacer.SideClosed(pos, cube.Pos{neighA.x, pos[1], neighA.z}, tx)) {
