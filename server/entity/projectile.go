@@ -60,6 +60,10 @@ type ProjectileBehaviourConfig struct {
 	// or trace.BlockResult. Hit may be set to run additional behaviour when a
 	// projectile hits a target.
 	Hit func(e *Ent, tx *world.Tx, target trace.Result)
+	// EntityCollisionFilter optionally reports whether the projectile may
+	// collide with an entity. If nil, projectiles only collide with Living
+	// entities.
+	EntityCollisionFilter func(world.Entity) bool
 	// SurviveBlockCollision specifies if a projectile with this
 	// ProjectileBehaviour should survive collision with a block. If set to
 	// false, the projectile will break when hitting a block (like a snowball).
@@ -199,8 +203,8 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 			if lt.conf.Damage >= 0 {
 				lt.hitEntity(l, e, vel)
 			}
-			lt.collidedEntities = append(lt.collidedEntities, l.H())
 		}
+		lt.collidedEntities = append(lt.collidedEntities, r.Entity().H())
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
 		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
@@ -366,10 +370,15 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 				g, ok := other.(interface{ GameMode() world.GameMode })
 				spectator := ok && !g.GameMode().HasCollision()
 				itself := e.H() == other.H()
-				_, living := other.(Living)
+				collides := false
+				if lt.conf.EntityCollisionFilter == nil {
+					_, collides = other.(Living)
+				} else {
+					collides = lt.conf.EntityCollisionFilter(other)
+				}
 				owner := e.data.Age < time.Second/4 && lt.conf.Owner == other.H()
 				collidedEntity := slices.Contains(lt.collidedEntities, other.H())
-				if spectator || itself || !living || owner || collidedEntity {
+				if spectator || itself || !collides || owner || collidedEntity {
 					continue
 				}
 				if !yield(other) {

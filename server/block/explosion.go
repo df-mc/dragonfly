@@ -142,7 +142,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 
 	for _, e := range affectedEntities {
 		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
+			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * ExplosionExposure(tx, explosionPos, e)
 			explodable.Explode(explosionPos, impact, c)
 		}
 	}
@@ -180,8 +180,9 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	tx.PlaySound(explosionPos, c.Sound)
 }
 
-// exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
-func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
+// ExplosionExposure returns the fraction of an entity's bounding box visible
+// from an explosion origin. The result is used to scale the explosion impulse.
+func ExplosionExposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 	pos := e.Position()
 	box := e.H().Type().BBox(e).Translate(pos)
 
