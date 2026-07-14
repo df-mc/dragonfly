@@ -7,12 +7,6 @@ import (
 
 // HoneyBlock is a sticky, translucent block crafted from honey bottles. It reduces the fall damage of
 // entities that land on it.
-//
-// The collision box uses the standard full-size Solid model rather than a 1/16-block-shorter custom shape.
-// A shorter box was tried to match the exact vanilla hitbox, but it broke checkOnGround()'s grounded-state
-// detection: entities landing on the block never registered as on ground, so fall damage silently never
-// triggered at all. A full block gives up a barely-visible hitbox difference in exchange for fall damage
-// actually working, which matters far more for parity.
 type HoneyBlock struct {
 	solid
 	transparent
