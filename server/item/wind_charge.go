@@ -21,6 +21,13 @@ type WindCharge struct{}
 // Use ...
 func (WindCharge) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().WindCharge
+	deviation := func() float64 {
+		return (rand.Float64() - rand.Float64()) * windChargeLaunchDeviation
+	}
+	velocity := user.Rotation().Vec3().Normalize().Add(mgl64.Vec3{
+		deviation(), deviation(), deviation(),
+	}).Mul(windChargeLaunchPower)
+
 	var shooterVelocity mgl64.Vec3
 	onGround := true
 	if moving, ok := user.(interface {
@@ -29,28 +36,18 @@ func (WindCharge) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	}); ok {
 		shooterVelocity, onGround = moving.Velocity(), moving.OnGround()
 	}
-	deviation := mgl64.Vec3{
-		(rand.Float64() - rand.Float64()) * windChargeLaunchDeviation,
-		(rand.Float64() - rand.Float64()) * windChargeLaunchDeviation,
-		(rand.Float64() - rand.Float64()) * windChargeLaunchDeviation,
+	if onGround {
+		shooterVelocity[1] = 0
 	}
 	opts := world.EntitySpawnOpts{
 		Position: eyePosition(user),
-		Velocity: windChargeLaunchVelocity(user.Rotation().Vec3(), deviation, shooterVelocity, onGround),
+		Velocity: velocity.Add(shooterVelocity),
 	}
 	tx.AddEntity(create(opts, user))
 	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
 	ctx.SubtractFromCount(1)
 	return true
-}
-
-func windChargeLaunchVelocity(direction, deviation, shooterVelocity mgl64.Vec3, onGround bool) mgl64.Vec3 {
-	velocity := direction.Normalize().Add(deviation).Mul(windChargeLaunchPower)
-	if onGround {
-		shooterVelocity[1] = 0
-	}
-	return velocity.Add(shooterVelocity)
 }
 
 // Cooldown ...

@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
+	"github.com/df-mc/dragonfly/server/internal/explosion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -29,8 +30,6 @@ func NewWindCharge(opts world.EntitySpawnOpts, owner world.Entity) *world.Entity
 }
 
 var windChargeConf = ProjectileBehaviourConfig{
-	Gravity:               0,
-	Drag:                  0,
 	Damage:                -1,
 	Hit:                   windChargeBurst,
 	EntityCollisionFilter: windChargeCanHit,
@@ -83,7 +82,7 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 			other.Position(),
 			EyePosition(other),
 			velocity,
-			block.ExplosionExposure(tx, pos, other),
+			explosion.Exposure(tx, pos, other),
 		)
 		if knockedBack != velocity {
 			moving.SetVelocity(knockedBack)
@@ -112,22 +111,7 @@ func windChargeKnockback(burst, position, eye, velocity mgl64.Vec3, exposure flo
 }
 
 func windChargeBlockExplosionPosition(hit mgl64.Vec3, face cube.Face) mgl64.Vec3 {
-	var direction mgl64.Vec3
-	switch face {
-	case cube.FaceDown:
-		direction[1] = -1
-	case cube.FaceUp:
-		direction[1] = 1
-	case cube.FaceNorth:
-		direction[2] = -1
-	case cube.FaceSouth:
-		direction[2] = 1
-	case cube.FaceWest:
-		direction[0] = -1
-	case cube.FaceEast:
-		direction[0] = 1
-	}
-	return hit.Add(direction.Mul(windChargeBlockHitOffset))
+	return hit.Add(cube.Pos{}.Side(face).Vec3().Mul(windChargeBlockHitOffset))
 }
 
 func windChargeCanHit(e world.Entity) bool {
