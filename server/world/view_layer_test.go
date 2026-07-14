@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/stretchr/testify/require"
 )
 
 func TestViewLayerScopesBlockOverridesByWorld(t *testing.T) {
@@ -21,7 +20,9 @@ func TestViewLayerScopesBlockOverridesByWorld(t *testing.T) {
 	err := w1.Do(func(tx *Tx) {
 		v.ViewBlock(tx, pos, b1)
 	}).Wait(context.Background())
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if b, ok := v.Block(w1, pos); !ok || b != b1 {
 		t.Fatalf("expected block %v in first world, got %v, %v", b1, b, ok)
 	}
@@ -32,7 +33,9 @@ func TestViewLayerScopesBlockOverridesByWorld(t *testing.T) {
 	err = w2.Do(func(tx *Tx) {
 		v.ViewBlock(tx, pos, b2)
 	}).Wait(context.Background())
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if b, ok := v.Block(w2, pos); !ok || b != b2 {
 		t.Fatalf("expected block %v in second world, got %v, %v", b2, b, ok)
 	}
@@ -65,14 +68,24 @@ func TestTxPublicBlockViewersFiltersWithoutMutatingWorldViewers(t *testing.T) {
 		visible = tx.PublicBlockViewers(pos)
 		after = append([]Viewer(nil), tx.Viewers(pos.Vec3())...)
 	}).Wait(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, []Viewer{publicViewer}, visible)
-	require.Equal(t, []Viewer{privateViewer, publicViewer}, before)
-	require.Equal(t, before, after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(visible) != 1 || visible[0] != publicViewer {
+		t.Fatalf("expected only public viewer, got %v", visible)
+	}
+	if len(before) != 2 || before[0] != privateViewer || before[1] != publicViewer {
+		t.Fatalf("unexpected world viewers before filtering: %v", before)
+	}
+	if len(after) != 2 || after[0] != before[0] || after[1] != before[1] {
+		t.Fatalf("world viewers mutated by filtering: before %v, after %v", before, after)
+	}
 }
 
 func TestNewViewLayerAcceptsEntityOnlyUpdater(t *testing.T) {
-	require.NotNil(t, NewViewLayer(viewLayerEntityUpdater{}))
+	if NewViewLayer(viewLayerEntityUpdater{}) == nil {
+		t.Fatal("expected a view layer")
+	}
 }
 
 func TestViewLayerBlockUpdaterReceivesTransaction(t *testing.T) {
@@ -84,10 +97,16 @@ func TestViewLayerBlockUpdaterReceivesTransaction(t *testing.T) {
 	pos := cube.Pos{1, 64, 1}
 	err := w.Do(func(tx *Tx) {
 		v.ViewBlock(tx, pos, viewLayerTestBlock(1))
-		require.Same(t, tx, updater.tx)
+		if tx != updater.tx {
+			t.Fatal("block updater did not receive the active transaction")
+		}
 	}).Wait(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, pos, updater.pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updater.pos != pos {
+		t.Fatalf("expected position %v, got %v", pos, updater.pos)
+	}
 }
 
 type viewLayerTestBlock uint64

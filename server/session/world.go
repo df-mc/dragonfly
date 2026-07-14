@@ -1116,7 +1116,7 @@ func (s *Session) ViewEntityState(e world.Entity) {
 	})
 }
 
-// entityMetadata returns the metadata of an entity as visible by the session, including any overrides
+// entityMetadata returns the metadata of an entity as viewed by the session, including any overrides
 // applied through its ViewLayer.
 func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	metadata := s.parseEntityMetadata(e)
