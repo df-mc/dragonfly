@@ -12,9 +12,7 @@ type HoneyBlock struct {
 	transparent
 }
 
-// EntityLand reduces the fall damage dealt to the entity by 80%. The reduction is applied to the damage
-// itself (i.e. the fall distance beyond the safe 3-block threshold), not to the raw fall distance, matching
-// the wiki-documented example of a fall that would deal 10 damage dealing 2 damage instead.
+// EntityLand reduces the fall damage dealt to the entity by 80%.
 func (HoneyBlock) EntityLand(_ cube.Pos, _ *world.Tx, e world.Entity, distance *float64) {
 	if _, ok := e.(fallDistanceEntity); ok {
 		*distance = (*distance-3)*0.2 + 3
