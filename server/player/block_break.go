@@ -14,18 +14,26 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// blockBreakTarget holds the position and break mode that a player started breaking.
+// blockViewMode identifies whether a block interaction affects the public world or a private view-layer override.
+type blockViewMode uint8
+
+const (
+	publicBlockView blockViewMode = iota
+	privateBlockView
+)
+
+// blockBreakTarget holds the position and view mode that a player started breaking.
 type blockBreakTarget struct {
-	pos     cube.Pos
-	private bool
+	pos  cube.Pos
+	mode blockViewMode
 }
 
 // visibleBlock returns the block currently shown to the player at pos.
-func (p *Player) visibleBlock(pos cube.Pos) (world.Block, bool) {
+func (p *Player) visibleBlock(pos cube.Pos) (world.Block, blockViewMode) {
 	if b, ok := p.privateBlock(pos); ok {
-		return b, true
+		return b, privateBlockView
 	}
-	return p.tx.Block(pos), false
+	return p.tx.Block(pos), publicBlockView
 }
 
 // blockAudience handles block breaking side effects for either public world blocks or private view-layer blocks.
@@ -38,8 +46,8 @@ type blockAudience interface {
 }
 
 // blockAudience returns the audience to use for the break mode passed.
-func (p *Player) blockAudience(private bool) blockAudience {
-	if private {
+func (p *Player) blockAudience(mode blockViewMode) blockAudience {
+	if mode == privateBlockView {
 		return privateBlockAudience{p: p}
 	}
 	return publicBlockAudience{p: p}
@@ -52,6 +60,10 @@ type privateBlockAudience struct {
 
 // PlaySound plays the sound only to the player breaking the private block.
 func (a privateBlockAudience) PlaySound(pos mgl64.Vec3, s world.Sound) {
+	ctx := a.p.tx.Event()
+	if a.p.tx.World().Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
+		return
+	}
 	a.p.session().ViewSound(pos, s)
 }
 
@@ -119,30 +131,30 @@ func (a publicBlockAudience) ClearOverride(cube.Pos) {}
 // overrides are ignored by this method: Call BreakVisibleBlock to break what the player currently sees instead.
 // If the player is unable to reach the block passed, the method returns immediately.
 func (p *Player) BreakBlock(pos cube.Pos) {
-	p.breakBlock(pos, p.tx.Block(pos), false)
+	p.breakBlock(pos, p.tx.Block(pos), publicBlockView)
 }
 
 // BreakVisibleBlock makes the player break the block currently shown to them at the position passed. If the
 // player has a private block override at that position, it is removed instead of breaking the public world block.
 // If the player is unable to reach the block passed, the method returns immediately.
 func (p *Player) BreakVisibleBlock(pos cube.Pos) {
-	b, private := p.visibleBlock(pos)
-	p.breakBlock(pos, b, private)
+	b, mode := p.visibleBlock(pos)
+	p.breakBlock(pos, b, mode)
 }
 
 // breakTarget breaks the target using the same mode as when breaking started.
 func (p *Player) breakTarget(target blockBreakTarget) {
 	b, ok := p.breakTargetBlock(target)
 	if !ok {
-		p.blockAudience(false).Resend(target.pos)
+		p.blockAudience(publicBlockView).Resend(target.pos)
 		return
 	}
-	p.breakBlock(target.pos, b, target.private)
+	p.breakBlock(target.pos, b, target.mode)
 }
 
 // breakTargetBlock returns the current block matching the break mode of target.
 func (p *Player) breakTargetBlock(target blockBreakTarget) (world.Block, bool) {
-	if target.private {
+	if target.mode == privateBlockView {
 		return p.privateBlock(target.pos)
 	}
 	return p.tx.Block(target.pos), true
@@ -150,8 +162,8 @@ func (p *Player) breakTargetBlock(target blockBreakTarget) (world.Block, bool) {
 
 // breakBlock makes the player break the block passed at the position passed. Private blocks are removed
 // from the player's view layer instead of the world.
-func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
-	audience := p.blockAudience(private)
+func (p *Player) breakBlock(pos cube.Pos, b world.Block, mode blockViewMode) {
+	audience := p.blockAudience(mode)
 	if _, air := b.(block.Air); air {
 		// Don't do anything if the position broken is already air.
 		return
@@ -169,7 +181,7 @@ func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
 	var drops []item.Stack
 
 	xp := 0
-	if !private {
+	if mode == publicBlockView {
 		drops = p.drops(held, b)
 		if ok && !p.GameMode().CreativeInventory() {
 			if _, hasSilkTouch := held.Enchantment(enchantment.SilkTouch); !hasSilkTouch {
@@ -179,14 +191,14 @@ func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
 	}
 
 	ctx := newContext(p)
-	if p.Handler().HandleBlockBreak(ctx, pos, private, &drops, &xp); ctx.Cancelled() {
+	if p.Handler().HandleBlockBreak(ctx, pos, mode == privateBlockView, &drops, &xp); ctx.Cancelled() {
 		audience.Resend(pos)
 		return
 	}
 	held, left := p.HeldItems()
 
 	p.SwingArm()
-	if private {
+	if mode == privateBlockView {
 		audience.ClearOverride(pos)
 		audience.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: b})
 		return
@@ -239,9 +251,4 @@ func (p *Player) privateBlock(pos cube.Pos) (world.Block, bool) {
 		return nil, false
 	}
 	return p.ViewLayer().Block(p.tx.World(), pos)
-}
-
-// resendBreakingBlock resends the block being broken without overwriting private view-layer overrides.
-func (p *Player) resendBreakingBlock(pos cube.Pos, private bool) {
-	p.blockAudience(private).Resend(pos)
 }

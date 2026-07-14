@@ -1716,21 +1716,21 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 	b, _ := p.visibleBlock(pos)
 	if _, ok := b.(block.Air); ok || !p.canReach(pos.Vec3Centre()) {
 		// The client used its item on a block that cannot be interacted with. Stop trying to use the item immediately.
-		p.resendNearbyBlocks(pos, face)
+		p.resendBlockUsePrediction(pos, face)
 		return
 	}
 	ctx := newContext(p)
 	if p.Handler().HandleItemUseOnBlock(ctx, pos, face, clickPos); ctx.Cancelled() {
-		p.resendNearbyBlocks(pos, face)
+		p.resendBlockUsePrediction(pos, face)
 		return
 	}
-	b, private := p.visibleBlock(pos)
+	b, mode := p.visibleBlock(pos)
 	if _, ok := b.(block.Air); ok {
-		p.resendNearbyBlocks(pos, face)
+		p.resendBlockUsePrediction(pos, face)
 		return
 	}
-	if private {
-		p.resendBreakingBlock(pos, true)
+	if mode == privateBlockView {
+		p.resendBlockUsePrediction(pos, face)
 		return
 	}
 	i, left := p.HeldItems()
@@ -1768,9 +1768,9 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// The block clicked was either not replaceable, or not replaceable using the block passed.
 			replacedPos = pos.Side(face)
 		}
-		replacedBlock, replacedPrivate := p.visibleBlock(replacedPos)
-		if replacedPrivate {
-			p.resendNearbyBlocks(replacedPos)
+		replacedBlock, replacedMode := p.visibleBlock(replacedPos)
+		if replacedMode == privateBlockView {
+			p.resendBlockUsePrediction(pos, face)
 			return
 		}
 		if replaceable, ok := replacedBlock.(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) || replacedPos.OutOfBounds(p.tx.Range()) {
@@ -1902,13 +1902,13 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.AbortBreaking()
 	p.blockBreakTarget = nil
-	b, private := p.visibleBlock(pos)
+	b, mode := p.visibleBlock(pos)
 	if _, air := b.(block.Air); air || !p.canReach(pos.Vec3Centre()) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
 	firePos := pos.Side(face)
-	fireBlock, firePrivate := p.visibleBlock(firePos)
+	fireBlock, fireMode := p.visibleBlock(firePos)
 	if _, ok := fireBlock.(block.Fire); ok {
 		ctx := newContext(p)
 		if p.Handler().HandleFireExtinguish(ctx, pos); ctx.Cancelled() {
@@ -1916,13 +1916,13 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 			p.resendNearbyBlocks(pos, face)
 			return
 		}
-		if firePrivate {
+		if fireMode == privateBlockView {
 			p.ViewPublicBlock(firePos)
-			p.blockAudience(true).PlaySound(pos.Vec3(), sound.FireExtinguish{})
+			p.blockAudience(privateBlockView).PlaySound(firePos.Vec3(), sound.FireExtinguish{})
 			return
 		}
 		p.tx.SetBlock(firePos, nil, nil)
-		p.blockAudience(false).PlaySound(pos.Vec3(), sound.FireExtinguish{})
+		p.blockAudience(publicBlockView).PlaySound(firePos.Vec3(), sound.FireExtinguish{})
 		return
 	}
 
@@ -1933,13 +1933,13 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	}
 	// Note: We intentionally store this regardless of whether the breaking proceeds, so that we
 	// can resend the block to the client when it tries to break the block regardless.
-	p.blockBreakTarget = &blockBreakTarget{pos: pos, private: private}
+	p.blockBreakTarget = &blockBreakTarget{pos: pos, mode: mode}
 
 	ctx := newContext(p)
 	if p.Handler().HandleStartBreak(ctx, pos); ctx.Cancelled() {
 		return
 	}
-	if punchable, ok := b.(block.Punchable); ok && !private {
+	if punchable, ok := b.(block.Punchable); ok && mode == publicBlockView {
 		punchable.Punch(pos, face, p.tx, p)
 	}
 
@@ -1950,7 +1950,7 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 		return
 	}
 	p.lastBreakDuration = p.breakTime(b)
-	p.blockAudience(private).ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
+	p.blockAudience(mode).ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
 }
 
 // breakTime returns the time needed to break a block at the position passed, taking into account the item
@@ -1987,7 +1987,7 @@ func (p *Player) breakContext() block.BreakContext {
 func (p *Player) FinishBreaking() {
 	if !p.breaking {
 		if target := p.blockBreakTarget; target != nil {
-			p.blockAudience(target.private).Resend(target.pos)
+			p.blockAudience(target.mode).Resend(target.pos)
 			p.blockBreakTarget = nil
 		}
 		return
@@ -2010,7 +2010,7 @@ func (p *Player) AbortBreaking() {
 	target := p.blockBreakTarget
 	p.breaking, p.blockBreakTarget, p.breakCounter = false, nil, 0
 	if target != nil {
-		p.blockAudience(target.private).ViewBlockAction(target.pos, block.StopCrackAction{})
+		p.blockAudience(target.mode).ViewBlockAction(target.pos, block.StopCrackAction{})
 	}
 }
 
@@ -2025,10 +2025,10 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	b, ok := p.breakTargetBlock(*target)
 	if !ok {
 		p.AbortBreaking()
-		p.blockAudience(false).Resend(target.pos)
+		p.blockAudience(publicBlockView).Resend(target.pos)
 		return
 	}
-	audience := p.blockAudience(target.private)
+	audience := p.blockAudience(target.mode)
 	audience.AddParticle(target.pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 
 	if p.breakCounter++; p.breakCounter%5 == 0 {
@@ -3417,6 +3417,11 @@ func (p *Player) resendNearbyBlocks(pos cube.Pos, faces ...cube.Face) {
 	for _, f := range faces {
 		p.resendNearbyBlock(pos.Side(f))
 	}
+}
+
+// resendBlockUsePrediction corrects the clicked block and the adjacent position where Bedrock predicts placement.
+func (p *Player) resendBlockUsePrediction(pos cube.Pos, face cube.Face) {
+	p.resendNearbyBlocks(pos, face)
 }
 
 // resendNearbyBlock resends a block at cube.Pos if it is within the player's render distance.
