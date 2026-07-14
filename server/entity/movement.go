@@ -44,13 +44,9 @@ func (m *Movement) Send() {
 	}
 }
 
-// checkSteppers calls EntityStepOn on the block the entity stands on after
-// the movement, mirroring the behaviour of players for other entities.
-func (m *Movement) checkSteppers(tx *world.Tx) {
-	if !m.onGround {
-		return
-	}
-	box := m.e.H().Type().BBox(m.e).Translate(m.pos).Grow(-0.0001)
+// StepOnBlock calls EntityStepOn on the block beneath an entity at pos.
+func StepOnBlock(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
+	box := e.H().Type().BBox(e).Translate(pos).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 	y := int(math.Floor(box.Min()[1] - 0.0001))
 
@@ -58,10 +54,18 @@ func (m *Movement) checkSteppers(tx *world.Tx) {
 		for z := low[2]; z <= high[2]; z++ {
 			pos := cube.Pos{x, y, z}
 			if stepper, ok := tx.Block(pos).(block.EntityStepper); ok {
-				stepper.EntityStepOn(pos, tx, m.e)
+				stepper.EntityStepOn(pos, tx, e)
 				return
 			}
 		}
+	}
+}
+
+// checkSteppers calls EntityStepOn on the block the entity stands on after
+// the movement, mirroring the behaviour of players for other entities.
+func (m *Movement) checkSteppers(tx *world.Tx) {
+	if m.onGround {
+		StepOnBlock(tx, m.e, m.pos)
 	}
 }
 

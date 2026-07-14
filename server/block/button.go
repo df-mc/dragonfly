@@ -93,8 +93,9 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 // arrowWithin reports whether an arrow intersects the block space at pos.
 func arrowWithin(pos cube.Pos, tx *world.Tx) bool {
 	box := cube.Box(0, 0, 0, 1, 1, 1).Translate(pos.Vec3())
-	for e := range tx.EntitiesWithin(box) {
-		if e.H().Type().EncodeEntity() == "minecraft:arrow" {
+	for e := range tx.EntitiesWithin(box.Grow(1)) {
+		if e.H().Type().EncodeEntity() == "minecraft:arrow" &&
+			e.H().Type().BBox(e).Translate(e.Position()).IntersectsWith(box) {
 			return true
 		}
 	}
