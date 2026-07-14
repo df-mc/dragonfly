@@ -17,15 +17,17 @@ type projectileShieldTarget struct {
 	vulnerable bool
 }
 
-func (t *projectileShieldTarget) Close() error                           { return nil }
-func (t *projectileShieldTarget) H() *world.EntityHandle                 { return t.h }
-func (t *projectileShieldTarget) Position() mgl64.Vec3                   { return t.pos }
-func (t *projectileShieldTarget) Rotation() cube.Rotation                { return cube.Rotation{} }
-func (t *projectileShieldTarget) Health() float64                        { return 20 }
-func (t *projectileShieldTarget) MaxHealth() float64                     { return 20 }
-func (t *projectileShieldTarget) SetMaxHealth(float64)                   {}
-func (t *projectileShieldTarget) Dead() bool                             { return false }
-func (t *projectileShieldTarget) Heal(float64, world.HealingSource)      {}
+func (t *projectileShieldTarget) Close() error            { return nil }
+func (t *projectileShieldTarget) H() *world.EntityHandle  { return t.h }
+func (t *projectileShieldTarget) Position() mgl64.Vec3    { return t.pos }
+func (t *projectileShieldTarget) Rotation() cube.Rotation { return cube.Rotation{} }
+func (t *projectileShieldTarget) Health() float64         { return 20 }
+func (t *projectileShieldTarget) MaxHealth() float64      { return 20 }
+func (t *projectileShieldTarget) SetMaxHealth(float64)    {}
+func (t *projectileShieldTarget) Dead() bool              { return false }
+func (t *projectileShieldTarget) Heal(float64, world.HealingSource) float64 {
+	return 0
+}
 func (t *projectileShieldTarget) KnockBack(mgl64.Vec3, float64, float64) {}
 func (t *projectileShieldTarget) Velocity() mgl64.Vec3                   { return mgl64.Vec3{} }
 func (t *projectileShieldTarget) SetVelocity(mgl64.Vec3)                 {}
@@ -121,7 +123,7 @@ func TestProjectileDeflectsZeroDamageShieldBlock(t *testing.T) {
 }
 
 func TestProjectileDeflectionSkipsHitCallback(t *testing.T) {
-	w := world.Config{Entities: world.EntityRegistryConfig{}.New([]world.EntityType{SnowballType, projectileShieldTargetType{}})}.New()
+	w := world.Config{Synchronous: true, Entities: world.EntityRegistryConfig{}.New([]world.EntityType{SnowballType, projectileShieldTargetType{}})}.New()
 	defer func() {
 		_ = w.Close()
 	}()
@@ -141,7 +143,7 @@ func TestProjectileDeflectionSkipsHitCallback(t *testing.T) {
 	})
 	target := world.EntitySpawnOpts{Position: mgl64.Vec3{0, 0, 0.8}}.New(projectileShieldTargetType{}, projectileShieldTargetConfig{blocked: true})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.AddEntity(target)
 		tx.AddEntity(projectile).(*Ent).Tick(tx, 0)
 	})

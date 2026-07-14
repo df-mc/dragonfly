@@ -1,12 +1,13 @@
 package entity
 
 import (
+	"sync"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"sync"
-	"time"
 )
 
 // Behaviour implements the behaviour of an Ent.
@@ -21,10 +22,11 @@ type Behaviour interface {
 // share a lot of code. It is currently under development and is prone to
 // (breaking) changes.
 type Ent struct {
-	tx     *world.Tx
-	handle *world.EntityHandle
-	data   *world.EntityData
-	once   sync.Once
+	tx                *world.Tx
+	handle            *world.EntityHandle
+	data              *world.EntityData
+	deferPortalTravel bool
+	once              sync.Once
 }
 
 // Open converts a world.EntityHandle to an Ent in a world.Tx.
@@ -81,6 +83,15 @@ func (e *Ent) SetVelocity(v mgl64.Vec3) {
 	e.data.Vel = v
 }
 
+// Teleport teleports the entity to the position given.
+func (e *Ent) Teleport(pos mgl64.Vec3) {
+	viewers := e.tx.Viewers(e.data.Pos)
+	e.data.Pos = pos
+	for _, v := range viewers {
+		v.ViewEntityTeleport(e, pos)
+	}
+}
+
 // Rotation returns the rotation of the entity.
 func (e *Ent) Rotation() cube.Rotation {
 	return e.data.Rot
@@ -133,6 +144,11 @@ func (e *Ent) SetNameTag(s string) {
 // Tick ticks Ent, progressing its lifetime and closing the entity if it is
 // in the void.
 func (e *Ent) Tick(tx *world.Tx, current int64) {
+	e.deferPortalTravel = true
+	defer func() {
+		e.deferPortalTravel = false
+	}()
+
 	y := e.data.Pos[1]
 	if y < float64(tx.Range()[0]) && current%10 == 0 {
 		_ = e.Close()
@@ -140,9 +156,17 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	}
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
-	if m := e.Behaviour().Tick(e, tx); m != nil {
+	m := e.Behaviour().Tick(e, tx)
+	if e.finishPendingPortalTravel(tx) {
+		return
+	}
+	if m != nil {
 		m.Send()
 	}
+	if e.checkPortalInsiders() && e.finishPendingPortalTravel(tx) {
+		return
+	}
+	e.stopPortalContact()
 	e.data.Age += time.Second / 20
 }
 
@@ -153,4 +177,67 @@ func (e *Ent) Close() error {
 		_ = e.handle.Close()
 	})
 	return nil
+}
+
+// TravelThroughPortal handles the entity touching a portal block.
+func (e *Ent) TravelThroughPortal(tx *world.Tx, target world.Dimension) {
+	if tc := e.portalTravelComputer(); tc != nil {
+		if e.deferPortalTravel {
+			tc.queuePortalTravel(tx, target)
+			return
+		}
+		tc.EnterPortal(e, tx, target)
+	}
+}
+
+// portalTravelComputer returns the behaviour's portal travel state, if any.
+func (e *Ent) portalTravelComputer() *PortalTravelComputer {
+	if b, ok := e.Behaviour().(portalTravelComputerProvider); ok {
+		return b.PortalTravelComputer()
+	}
+	return nil
+}
+
+// stopPortalContact resets portal contact state when no portal was touched.
+func (e *Ent) stopPortalContact() {
+	if tc := e.portalTravelComputer(); tc != nil {
+		tc.StopPortalContact()
+	}
+}
+
+// pendingPortalTravel reports whether this tick queued terminal portal travel.
+func (e *Ent) pendingPortalTravel() bool {
+	if tc := e.portalTravelComputer(); tc != nil {
+		return tc.hasPendingPortalTravel()
+	}
+	return false
+}
+
+// finishPendingPortalTravel starts queued terminal portal travel, if present.
+func (e *Ent) finishPendingPortalTravel(tx *world.Tx) bool {
+	if tc := e.portalTravelComputer(); tc != nil {
+		return tc.finishPendingPortalTravel(e, tx)
+	}
+	return false
+}
+
+type portalBlock interface {
+	Portal() world.Dimension
+}
+
+// checkPortalInsiders checks whether the entity is inside portal blocks.
+// Other EntityInsider blocks are intentionally left to entity physics.
+func (e *Ent) checkPortalInsiders() bool {
+	box := e.H().Type().BBox(e).Translate(e.Position()).Grow(-0.0001)
+	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+
+	for blockPos := range cube.Range3D(low, high) {
+		if p, ok := e.tx.Block(blockPos).(portalBlock); ok {
+			e.TravelThroughPortal(e.tx, p.Portal())
+			if e.pendingPortalTravel() {
+				return true
+			}
+		}
+	}
+	return false
 }

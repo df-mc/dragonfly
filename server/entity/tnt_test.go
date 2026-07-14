@@ -20,13 +20,13 @@ func (tntTestEntityType) EncodeNBT(*world.EntityData) map[string]any  { return n
 func (tntTestEntityType) Apply(*world.EntityData)                     {}
 
 func TestTNTExplosionWithUnavailableSourceRemainsShieldBlockable(t *testing.T) {
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 	source := world.EntitySpawnOpts{}.New(tntTestEntityType{}, tntTestEntityType{})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		conf := tntExplosionConfig(tx, source, true)
 		if conf.UnblockableByShield {
 			t.Fatal("expected source-ignited TNT to remain shield blockable even if its source entity is unavailable")
@@ -38,12 +38,12 @@ func TestTNTExplosionWithUnavailableSourceRemainsShieldBlockable(t *testing.T) {
 }
 
 func TestTNTExplosionConfigHonoursBlockabilityInput(t *testing.T) {
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		conf := tntExplosionConfig(tx, nil, false)
 		if !conf.UnblockableByShield {
 			t.Fatal("expected TNT configured as shield-unblockable to remain unblockable")
@@ -52,12 +52,12 @@ func TestTNTExplosionConfigHonoursBlockabilityInput(t *testing.T) {
 }
 
 func TestTNTExplosionConfigDefaultsToShieldBlockable(t *testing.T) {
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		conf := tntExplosionConfig(tx, nil, true)
 		if conf.UnblockableByShield {
 			t.Fatal("expected default TNT explosions to be shield blockable")

@@ -208,11 +208,11 @@ func TestUseItemWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
 	_ = p.inv.SetItem(1, item.NewStack(item.Arrow{}, 1))
 
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		p.UseItem()
 	})
@@ -280,11 +280,11 @@ func TestSetHeldSlotWithPriorityMainHandClearsHeldShieldInput(t *testing.T) {
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
 	_ = p.inv.SetItem(1, item.NewStack(item.Bow{}, 1))
 
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		if err := p.SetHeldSlot(1); err != nil {
 			t.Fatalf("expected held slot change to succeed: %v", err)
@@ -366,11 +366,11 @@ func TestStopSneakingPreservesHeldShieldInput(t *testing.T) {
 	p.shieldBlockingInput = true
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
 
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		p.StopSneaking()
 	})
@@ -461,7 +461,7 @@ func TestShieldBlocksZeroDamageProjectile(t *testing.T) {
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
 	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
 	h := world.EntitySpawnOpts{Position: mgl64.Vec3{0, 0, 4}}.New(entity.SnowballType, entity.ProjectileBehaviourConfig{})
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
@@ -470,7 +470,7 @@ func TestShieldBlocksZeroDamageProjectile(t *testing.T) {
 		vulnerable    bool
 		shieldBlocked bool
 	)
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		projectile := tx.AddEntity(h).(*entity.Ent)
 		dmg, vulnerable = p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile})
@@ -490,7 +490,7 @@ func TestShieldBlocksProjectileDuringDamageImmunity(t *testing.T) {
 	p.immuneUntil = time.Now().Add(time.Second)
 	p.lastDamage = 10
 	h := world.EntitySpawnOpts{Position: mgl64.Vec3{0, 0, 4}}.New(entity.SnowballType, entity.ProjectileBehaviourConfig{})
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
@@ -499,7 +499,7 @@ func TestShieldBlocksProjectileDuringDamageImmunity(t *testing.T) {
 		vulnerable    bool
 		shieldBlocked bool
 	)
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		projectile := tx.AddEntity(h).(*entity.Ent)
 		dmg, vulnerable = p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile})
@@ -566,11 +566,11 @@ func TestImmuneHitZeroedByHandlerUpdatesAttackImmunity(t *testing.T) {
 	p.lastDamage = 1
 	p.h = zeroDamageHurtHandler{}
 
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		p.Hurt(4, entity.SuffocationDamageSource{})
 	})
@@ -600,11 +600,11 @@ func TestShieldDoesNotLoseDurabilityWhenDamageFullyReduced(t *testing.T) {
 	p.effects.Add(effect.New(effect.Resistance, 5, time.Second), p)
 	attacker := shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}
 
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		p.Hurt(4, entity.AttackDamageSource{Attacker: attacker})
 	})
@@ -624,11 +624,11 @@ func TestExplosionKnockBackNotSuppressedByNestedShieldBlock(t *testing.T) {
 		src:    entity.AttackDamageSource{Attacker: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}},
 	}
 
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		p.Explode(mgl64.Vec3{}, 0.2, block.ExplosionConfig{Size: 1, UnblockableByShield: true})
 	})
@@ -644,12 +644,12 @@ func TestShieldBlockedExplosionAppliesReducedKnockBack(t *testing.T) {
 
 	unblocked := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.Stack{})
 	unblocked.data.Pos = p.data.Pos
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 	explosionPos := mgl64.Vec3{0, 0, 4}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		unblocked.tx = tx
 
@@ -677,12 +677,12 @@ func TestShieldBlockedExplosionDuringDamageImmunityAppliesReducedKnockBack(t *te
 	unblocked.immuneUntil = p.immuneUntil
 	unblocked.lastDamage = p.lastDamage
 
-	w := world.New()
+	w := world.Config{Synchronous: true}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 	explosionPos := mgl64.Vec3{0, 0, 4}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		unblocked.tx = tx
 

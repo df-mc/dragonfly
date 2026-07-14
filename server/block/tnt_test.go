@@ -79,12 +79,12 @@ func TestTNTSpawnCanCreateShieldBlockableTNTWithoutSource(t *testing.T) {
 			return opts.New(tntTestEntityType{}, tntTestEntityType{})
 		},
 	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Entities: registry}.New()
+	w := world.Config{Synchronous: true, Entities: registry}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		spawnTnt(cube.Pos{}, tx, time.Second, nil, true)
 	})
 	if source != nil {
@@ -107,12 +107,12 @@ func TestTNTIgniteWithoutSourceIsShieldBlockable(t *testing.T) {
 			return opts.New(tntTestEntityType{}, tntTestEntityType{})
 		},
 	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Entities: registry}.New()
+	w := world.Config{Synchronous: true, Entities: registry}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		TNT{}.Ignite(cube.Pos{}, tx, nil)
 	})
 	if source != nil {
@@ -136,12 +136,12 @@ func TestTNTIgniteWithSourceIsShieldBlockable(t *testing.T) {
 			return opts.New(tntTestEntityType{}, tntTestEntityType{})
 		},
 	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Entities: registry}.New()
+	w := world.Config{Synchronous: true, Entities: registry}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		TNT{}.Ignite(cube.Pos{}, tx, source)
 	})
 	if gotSource != source.H() {
@@ -164,12 +164,12 @@ func TestTNTSpawnPreservesUnavailableSourceHandle(t *testing.T) {
 			return opts.New(tntTestEntityType{}, tntTestEntityType{})
 		},
 	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Entities: registry}.New()
+	w := world.Config{Synchronous: true, Entities: registry}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		spawnTnt(cube.Pos{}, tx, time.Second, wantSource, true)
 	})
 	if gotSource != wantSource {
@@ -188,12 +188,12 @@ func TestTNTSpawnPreservesSourceLessUnblockableExplosion(t *testing.T) {
 			return opts.New(tntTestEntityType{}, tntTestEntityType{})
 		},
 	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Entities: registry}.New()
+	w := world.Config{Synchronous: true, Entities: registry}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		TNT{}.Explode(cube.Pos{}.Vec3Centre(), cube.Pos{}, tx, ExplosionConfig{UnblockableByShield: true})
 	})
 	if blockable {

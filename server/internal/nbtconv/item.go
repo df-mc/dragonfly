@@ -17,8 +17,8 @@ func InvFromNBT(inv *inventory.Inventory, items []any) {
 }
 
 // InvToNBT encodes an inventory to a data slice which may be encoded as NBT.
-func InvToNBT(inv *inventory.Inventory) []map[string]any {
-	var items []map[string]any
+func InvToNBT(inv *inventory.Inventory) []any {
+	var items []any
 	for index, i := range inv.Slots() {
 		if i.Empty() {
 			continue

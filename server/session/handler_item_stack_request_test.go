@@ -61,12 +61,12 @@ func TestItemStackRequestHeldSlotMutationUpdatesHeldItemState(t *testing.T) {
 		changes:         map[byte]map[byte]changeInfo{},
 		responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{},
 	}
-	w := world.Config{Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
+	w := world.Config{Synchronous: true, Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.AddEntity(handle)
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			Container: protocol.FullContainerName{ContainerID: protocol.ContainerInventory},
@@ -92,12 +92,12 @@ func TestItemStackRequestOffHandMutationUpdatesHeldItemState(t *testing.T) {
 		changes:         map[byte]map[byte]changeInfo{},
 		responseChanges: map[int32]map[*inventory.Inventory]map[byte]responseChange{},
 	}
-	w := world.Config{Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
+	w := world.Config{Synchronous: true, Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.AddEntity(handle)
 		h.setItemInSlot(protocol.StackRequestSlotInfo{
 			Container: protocol.FullContainerName{ContainerID: protocol.ContainerOffhand},
@@ -129,12 +129,12 @@ func TestItemStackRequestRejectHeldSlotRollbackUpdatesHeldItemState(t *testing.T
 			},
 		},
 	}
-	w := world.Config{Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
+	w := world.Config{Synchronous: true, Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.AddEntity(handle)
 		h.reject(1, s, tx)
 	})
@@ -166,12 +166,12 @@ func TestItemStackRequestRejectOffHandRollbackUpdatesHeldItemState(t *testing.T)
 			},
 		},
 	}
-	w := world.Config{Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
+	w := world.Config{Synchronous: true, Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.AddEntity(handle)
 		h.reject(1, s, tx)
 	})

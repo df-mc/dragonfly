@@ -6,7 +6,6 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
@@ -217,7 +216,7 @@ func (p *Player) StartShieldBlockingInput() bool {
 	if !p.canStartShieldBlockingInput(mainHand) {
 		return false
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	p.Handler().HandleItemUse(ctx)
 	if ctx.Cancelled() {
 		return false
@@ -260,7 +259,7 @@ func (p *Player) startOffHandShieldBlockingInputAfterItemUse() bool {
 	if !p.canStartOffHandShieldBlockingInput() {
 		return false
 	}
-	ctx := event.C(p)
+	ctx := newContext(p)
 	p.Handler().HandleItemUse(ctx)
 	if ctx.Cancelled() {
 		return false

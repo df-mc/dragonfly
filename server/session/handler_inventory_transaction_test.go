@@ -21,13 +21,13 @@ func TestInventoryTransactionDropHeldSlotUpdatesHeldItemState(t *testing.T) {
 	}
 	held := item.NewStack(item.Apple{}, 2)
 	_ = s.inv.SetItem(int(heldSlot), held)
-	w := world.Config{Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
+	w := world.Config{Synchronous: true, Entities: world.EntityRegistryConfig{}.New([]world.EntityType{heldItemStateTestType{}})}.New()
 	defer func() {
 		_ = w.Close()
 	}()
 
 	var err error
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.AddEntity(handle)
 		err = (&InventoryTransactionHandler{}).handleNormalTransaction(&packet.InventoryTransaction{Actions: []protocol.InventoryAction{
 			{
