@@ -21,12 +21,12 @@ var _ world.RedstonePowerAction = TNT{}
 
 func (TNT) RedstoneNonConductive() {}
 
-// RedstonePowerAction primes TNT when it first receives redstone power.
+// RedstonePowerAction primes shield-unblockable TNT when it first receives redstone power.
 func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower int) {
 	if oldPower > 0 || newPower == 0 {
 		return
 	}
-	t.Ignite(pos, tx, nil)
+	spawnTnt(pos, tx, world.TNTSpawnConfig{Fuse: time.Second * 4, UnblockableByShield: true})
 }
 
 // ProjectileHit ignites TNT hit by a burning projectile, attributing it to the projectile owner.

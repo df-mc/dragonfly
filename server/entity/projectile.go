@@ -302,7 +302,7 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 	if lt.conf.Owner != nil {
 		owner, _ = lt.conf.Owner.Entity(e.tx)
 	}
-	src := ProjectileDamageSource{Projectile: e, Owner: owner}
+	src := ProjectileDamageSource{Projectile: e, Owner: owner, Piercing: lt.conf.PiercingLevel > 0}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2

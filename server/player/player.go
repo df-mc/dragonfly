@@ -1934,6 +1934,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		return false
 	}
 	p.SwingArm()
+	p.delayShieldAfterAttack()
 
 	if !isLiving {
 		return false
@@ -1964,6 +1965,13 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 
 	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
+	if result.Accepted() || result.Blocked() {
+		if f, ok := i.Enchantment(enchantment.FireAspect); ok {
+			if flammable, ok := living.(entity.Flammable); ok {
+				flammable.SetOnFire(enchantment.FireAspect.Duration(f.Level()))
+			}
+		}
+	}
 	if !result.Accepted() {
 		return true
 	}
@@ -1977,11 +1985,6 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 
 	living.KnockBack(p.Position(), force, height)
 
-	if f, ok := i.Enchantment(enchantment.FireAspect); ok {
-		if flammable, ok := living.(entity.Flammable); ok {
-			flammable.SetOnFire(enchantment.FireAspect.Duration(f.Level()))
-		}
-	}
 	return true
 }
 
@@ -3229,6 +3232,7 @@ func (p *Player) PunchAir() {
 		return
 	}
 	p.SwingArm()
+	p.delayShieldAfterAttack()
 	p.tx.PlaySound(p.Position(), sound.Attack{})
 }
 

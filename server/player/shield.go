@@ -14,6 +14,7 @@ import (
 
 const (
 	shieldBlockDelay                   = time.Second / 4
+	shieldAttackCooldown               = time.Second / 2
 	shieldDisableCooldown              = 5 * time.Second
 	shieldExplosionKnockBackMultiplier = 0.2
 	shieldDamageThreshold              = 3
@@ -87,16 +88,25 @@ func (p *Player) canBlockWithShieldAt(now time.Time, cleanExpiredCooldown bool) 
 	return ok
 }
 
-// heldShield returns the preferred held shield and its hand.
+// heldShield returns the active shield, preferring the off hand as the client does.
 func (p *Player) heldShield() (item.Stack, shieldHand, bool) {
 	mainHand, offHand := p.HeldItems()
-	if _, ok := mainHand.Item().(item.Shield); ok {
-		return mainHand, shieldHandMain, true
-	}
 	if _, ok := offHand.Item().(item.Shield); ok {
 		return offHand, shieldHandOff, true
 	}
+	if _, ok := mainHand.Item().(item.Shield); ok {
+		return mainHand, shieldHandMain, true
+	}
 	return item.Stack{}, 0, false
+}
+
+// delayShieldAfterAttack lowers shields briefly after an attack.
+func (p *Player) delayShieldAfterAttack() {
+	until := time.Now().Add(shieldAttackCooldown)
+	if current, ok := p.cooldowns[shieldItemName]; ok && current.After(until) {
+		return
+	}
+	p.setCooldown(item.Shield{}, shieldAttackCooldown, true)
 }
 
 // setHeldShield writes a shield stack back to hand.
