@@ -63,55 +63,55 @@ func TestTNTIgnitionSource(t *testing.T) {
 	}
 }
 
-func TestTNTIgniteWithSourceIsShieldBlockable(t *testing.T) {
-	source := tntSourceEntity{h: newTNTTestHandle()}
-	var blockable bool
-	var gotSource *world.EntityHandle
-	registry := world.EntityRegistryConfig{
-		TNT: func(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-		TNTWithSource: func(opts world.EntitySpawnOpts, fuse time.Duration, src *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
-			gotSource, blockable = src, blockableByShield
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Synchronous: true, Entities: registry}.New()
-	defer func() {
-		_ = w.Close()
-	}()
+func TestTNTShieldBlockability(t *testing.T) {
+	tests := []struct {
+		name          string
+		spawn         func(TNT, *world.Tx, tntSourceEntity)
+		wantSource    bool
+		wantBlockable bool
+	}{
+		{name: "entity ignition", spawn: func(b TNT, tx *world.Tx, source tntSourceEntity) {
+			b.Ignite(cube.Pos{}, tx, source)
+		}, wantSource: true, wantBlockable: true},
+		{name: "unblockable chain explosion", spawn: func(b TNT, tx *world.Tx, _ tntSourceEntity) {
+			b.Explode(cube.Pos{}.Vec3Centre(), cube.Pos{}, tx, ExplosionConfig{UnblockableByShield: true})
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			source := tntSourceEntity{h: newTNTTestHandle()}
+			var gotSource *world.EntityHandle
+			var gotBlockable bool
+			registry := world.EntityRegistryConfig{
+				TNT: func(opts world.EntitySpawnOpts, _ time.Duration) *world.EntityHandle {
+					return opts.New(tntTestEntityType{}, tntTestEntityType{})
+				},
+				TNTWithSource: func(opts world.EntitySpawnOpts, _ time.Duration, src *world.EntityHandle, blockable bool) *world.EntityHandle {
+					gotSource, gotBlockable = src, blockable
+					return opts.New(tntTestEntityType{}, tntTestEntityType{})
+				},
+			}.New([]world.EntityType{tntTestEntityType{}})
+			w := world.Config{Synchronous: true, Entities: registry}.New()
+			defer w.Close()
+			w.Do(func(tx *world.Tx) { tt.spawn(TNT{}, tx, source) })
 
-	w.Do(func(tx *world.Tx) {
-		TNT{}.Ignite(cube.Pos{}, tx, source)
+			if (gotSource == source.H()) != tt.wantSource {
+				t.Fatalf("source match = %v, want %v", gotSource == source.H(), tt.wantSource)
+			}
+			if gotBlockable != tt.wantBlockable {
+				t.Fatalf("blockable = %v, want %v", gotBlockable, tt.wantBlockable)
+			}
+		})
+	}
+
+	t.Run("source-aware registry fallback", func(t *testing.T) {
+		called := false
+		registry := world.EntityRegistryConfig{TNT: func(opts world.EntitySpawnOpts, _ time.Duration) *world.EntityHandle {
+			called = true
+			return opts.New(tntTestEntityType{}, tntTestEntityType{})
+		}}.New([]world.EntityType{tntTestEntityType{}})
+		if h := registry.Config().TNTWithSource(world.EntitySpawnOpts{}, time.Second, newTNTTestHandle(), false); h == nil || !called {
+			t.Fatal("TNTWithSource did not fall back to TNT")
+		}
 	})
-	if gotSource != source.H() {
-		t.Fatalf("expected TNT source entity %v, got %v", source.H(), gotSource)
-	}
-	if !blockable {
-		t.Fatal("expected source-aware TNT ignition to stay shield-blockable for other players")
-	}
-}
-
-func TestTNTSpawnPreservesSourceLessUnblockableExplosion(t *testing.T) {
-	var blockable bool
-	registry := world.EntityRegistryConfig{
-		TNT: func(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-		TNTWithSource: func(opts world.EntitySpawnOpts, fuse time.Duration, src *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
-			blockable = blockableByShield
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Synchronous: true, Entities: registry}.New()
-	defer func() {
-		_ = w.Close()
-	}()
-
-	w.Do(func(tx *world.Tx) {
-		TNT{}.Explode(cube.Pos{}.Vec3Centre(), cube.Pos{}, tx, ExplosionConfig{UnblockableByShield: true})
-	})
-	if blockable {
-		t.Fatal("expected source-less unblockable explosion to prime shield-unblockable TNT")
-	}
 }
