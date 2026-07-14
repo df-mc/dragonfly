@@ -82,6 +82,10 @@ type publicBlockAudience struct {
 
 // PlaySound plays the sound to all players viewing the public block.
 func (a publicBlockAudience) PlaySound(pos mgl64.Vec3, s world.Sound) {
+	ctx := a.p.tx.Event()
+	if a.p.tx.World().Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
+		return
+	}
 	s.Play(a.p.tx.World(), pos)
 	for _, viewer := range a.viewers(cube.PosFromVec3(pos)) {
 		viewer.ViewSound(pos, s)
@@ -114,7 +118,7 @@ func (a publicBlockAudience) ClearOverride(cube.Pos) {}
 // viewers returns all viewers that do not have a private block override at pos.
 func (a publicBlockAudience) viewers(pos cube.Pos) []world.Viewer {
 	viewers := a.p.viewers()
-	filtered := viewers[:0]
+	filtered := make([]world.Viewer, 0, len(viewers))
 	for _, viewer := range viewers {
 		if viewerViewsPublicBlock(viewer, a.p.tx.World(), pos) {
 			filtered = append(filtered, viewer)

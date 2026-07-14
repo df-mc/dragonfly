@@ -100,6 +100,7 @@ type Session struct {
 	debugShapeUpdates []debugShapeUpdate
 
 	viewLayer *world.ViewLayer
+	viewWorld atomic.Pointer[world.World]
 
 	inputLocksMu sync.RWMutex
 	inputLocks   uint32
@@ -261,6 +262,7 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.SendFood(c.Food(), 0, 0)
 
 	pos := c.Position()
+	s.viewWorld.Store(tx.World())
 	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
 	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
@@ -523,6 +525,7 @@ func (s *Session) handleWorldSwitch(w *world.World, tx *world.Tx, c Controllable
 	}
 	s.ViewEntityTeleport(c, c.Position())
 	s.chunkLoader.ChangeWorld(tx, w)
+	s.viewWorld.Store(w)
 }
 
 // changeDimension changes the dimension of the client. If silent is set to true, the portal noise will be stopped

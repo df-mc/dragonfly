@@ -175,6 +175,54 @@ func TestViewerViewsPublicBlock(t *testing.T) {
 	require.True(t, viewerViewsPublicBlock(world.NopViewer{}, w, pos))
 }
 
+func TestPublicBlockAudienceDoesNotMutateWorldViewers(t *testing.T) {
+	w := world.Config{Synchronous: true}.New()
+	defer w.Close()
+
+	privateViewer := &blockBreakTestViewer{viewLayer: world.NewViewLayer(nil)}
+	publicViewer := &blockBreakTestViewer{viewLayer: world.NewViewLayer(nil)}
+	pos := cube.Pos{0, 64, 0}
+	privateViewer.viewLayer.ViewBlock(w, pos, block.Stone{})
+
+	var before, after, visible []world.Viewer
+	err := w.Do(func(tx *world.Tx) {
+		privateLoader := world.NewLoader(1, w, privateViewer)
+		publicLoader := world.NewLoader(1, w, publicViewer)
+		privateLoader.Load(tx, 1)
+		publicLoader.Load(tx, 1)
+		defer privateLoader.Close(tx)
+		defer publicLoader.Close(tx)
+
+		p := &Player{tx: tx, data: &world.EntityData{Pos: pos.Vec3Centre()}, playerData: &playerData{}}
+		before = append([]world.Viewer(nil), tx.Viewers(pos.Vec3())...)
+		visible = append([]world.Viewer(nil), publicBlockAudience{p: p}.viewers(pos)...)
+		after = append([]world.Viewer(nil), tx.Viewers(pos.Vec3())...)
+	}).Wait(context.Background())
+	require.NoError(t, err)
+	require.Len(t, visible, 1)
+	require.Same(t, publicViewer, visible[0])
+	require.Len(t, before, 2)
+	require.Len(t, after, 2)
+	require.Same(t, before[0], after[0])
+	require.Same(t, before[1], after[1])
+}
+
+func TestPublicBlockAudienceSoundUsesWorldHandler(t *testing.T) {
+	w := world.Config{Synchronous: true}.New()
+	defer w.Close()
+
+	h := &cancellingSoundHandler{}
+	w.Handle(h)
+	played := false
+	err := w.Do(func(tx *world.Tx) {
+		p := &Player{tx: tx, data: &world.EntityData{}, playerData: &playerData{}}
+		publicBlockAudience{p: p}.PlaySound(mgl64.Vec3{}, recordingSound{played: &played})
+	}).Wait(context.Background())
+	require.NoError(t, err)
+	require.True(t, h.called)
+	require.False(t, played)
+}
+
 func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 	t.Helper()
 
@@ -185,7 +233,7 @@ func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 		s.CloseConnection()
 	}()
 
-	_ = w.Do(func(worldTx *world.Tx) {
+	err := w.Do(func(worldTx *world.Tx) {
 		data := &world.EntityData{}
 		conf := Config{
 			Session:  s,
@@ -200,12 +248,31 @@ func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 			playerData: data.Data.(*playerData),
 		}, worldTx)
 	}).Wait(context.Background())
+	require.NoError(t, err)
 }
 
 type blockBreakTestHandler struct {
 	NopHandler
 	blockBreakCalled bool
 	private          []bool
+}
+
+type cancellingSoundHandler struct {
+	world.NopHandler
+	called bool
+}
+
+func (h *cancellingSoundHandler) HandleSound(ctx *world.Context, _ world.Sound, _ mgl64.Vec3) {
+	h.called = true
+	ctx.Cancel()
+}
+
+type recordingSound struct {
+	played *bool
+}
+
+func (s recordingSound) Play(*world.World, mgl64.Vec3) {
+	*s.played = true
 }
 
 func (h *blockBreakTestHandler) HandleBlockBreak(_ *Context, _ cube.Pos, private bool, _ *[]item.Stack, _ *int) {

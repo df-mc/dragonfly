@@ -13,10 +13,7 @@ func (s *Session) ViewLayer() *world.ViewLayer {
 
 // viewLayerWorld returns the world whose blocks are currently viewed by the session.
 func (s *Session) viewLayerWorld() *world.World {
-	if s.chunkLoader == nil {
-		return nil
-	}
-	return s.chunkLoader.World()
+	return s.viewWorld.Load()
 }
 
 // ViewNameTag overwrites the public name tag of the entity and immediately refreshes it for this session.
@@ -125,10 +122,10 @@ func (s *Session) broadcastPrivateBlockSubChunk(pos cube.Pos) {
 	if !ok {
 		return
 	}
-	if uint16(col.SubIndex(int16(pos[1]))) <= col.HighestFilledSubChunk() {
+	if uint16(col.SubIndex(int16(pos[1]))) < col.HighestFilledSubChunk() {
 		return
 	}
-	w := s.chunkLoader.World()
+	w := s.viewLayerWorld()
 	if w == nil {
 		return
 	}
