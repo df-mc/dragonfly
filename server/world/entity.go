@@ -410,7 +410,7 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 		"Yaw":     float32(e.data.Rot[0]),
 		"Pitch":   float32(e.data.Rot[1]),
 		"Fire":    int16(e.data.FireDuration.Seconds() * 20),
-		"Age":     int16(e.data.Age / (time.Second * 20)),
+		"Age":     int16(e.data.Age / (time.Second / 20)),
 		"NameTag": e.data.Name,
 	}
 	if comp := e.data.encodeComponentsNBT(); comp != nil {
