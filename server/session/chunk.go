@@ -165,6 +165,9 @@ func (s *Session) applyViewLayerToChunk(pos world.ChunkPos, c *chunk.Chunk, bloc
 		c.SetBlock(x, y, z, 0, s.br.BlockRuntimeID(b))
 		c.SetBlock(x, y, z, 1, s.br.AirRuntimeID())
 		if _, ok := b.(world.NBTer); ok {
+			if blockEntities == nil {
+				blockEntities = make(map[cube.Pos]world.Block)
+			}
 			blockEntities[blockPos] = b
 		} else {
 			delete(blockEntities, blockPos)

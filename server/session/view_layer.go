@@ -126,8 +126,7 @@ func (s *Session) broadcastPrivateBlockSubChunk(tx *world.Tx, pos cube.Pos) {
 	if uint16(col.SubIndex(int16(pos[1]))) < col.HighestFilledSubChunk() {
 		return
 	}
-	c, blockEntities := s.applyViewLayerToChunk(chunkPos, col.Chunk, col.BlockEntities)
-	s.sendNetworkChunk(chunkPos, tx.World().Dimension(), c, blockEntities)
+	s.ViewChunk(chunkPos, tx.World().Dimension(), col.BlockEntities, col.Chunk)
 }
 
 // publicLiquid returns the public liquid layer loaded for this session at pos, or air if no liquid is present.
