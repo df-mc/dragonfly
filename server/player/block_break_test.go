@@ -185,7 +185,7 @@ func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 		s.CloseConnection()
 	}()
 
-	<-w.Exec(func(worldTx *world.Tx) {
+	_ = w.Do(func(worldTx *world.Tx) {
 		data := &world.EntityData{}
 		conf := Config{
 			Session:  s,
@@ -199,7 +199,7 @@ func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 			data:       data,
 			playerData: data.Data.(*playerData),
 		}, worldTx)
-	})
+	}).Wait(context.Background())
 }
 
 type blockBreakTestHandler struct {

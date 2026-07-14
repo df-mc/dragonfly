@@ -46,20 +46,19 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 
 	newPos := vec32To64(pk.Position)
 	deltaPos, deltaYaw, deltaPitch := newPos.Sub(pos), float64(pk.Yaw)-yaw, float64(pk.Pitch)-pitch
-	if mgl64.FloatEqual(deltaPos.Len(), 0) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0) {
-		// The PlayerAuthInput packet is sent every tick, so don't do anything if the position and rotation
-		// were unchanged.
-		return nil
-	}
 
-	if expected := s.teleportPos.Load(); expected != nil {
-		if newPos.Sub(*expected).Len() > 1 {
-			// The player has moved before it received the teleport packet. Ignore this movement entirely and
-			// wait for the client to sync itself back to the server. Once we get a movement that is close
-			// enough to the teleport position, we'll allow the player to move around again.
-			return nil
+	// The PlayerAuthInput packet is sent every tick, so don't check for teleport if the position and rotation
+	// were unchanged.
+	if !mgl64.FloatEqual(deltaPos.Len(), 0) || !mgl64.FloatEqual(deltaYaw, 0) || !mgl64.FloatEqual(deltaPitch, 0) {
+		if expected := s.teleportPos.Load(); expected != nil {
+			if newPos.Sub(*expected).Len() > 1 {
+				// The player has moved before it received the teleport packet. Ignore this movement entirely and
+				// wait for the client to sync itself back to the server. Once we get a movement that is close
+				// enough to the teleport position, we'll allow the player to move around again.
+				return nil
+			}
+			s.teleportPos.Store(nil)
 		}
-		s.teleportPos.Store(nil)
 	}
 
 	s.moving = true
@@ -104,11 +103,12 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Sessi
 	if flags.Load(packet.InputFlagStopSprinting) {
 		c.StopSprinting()
 	}
-	if flags.Load(packet.InputFlagStartSneaking) {
-		c.StartSneaking()
-	}
-	if flags.Load(packet.InputFlagStopSneaking) {
-		c.StopSneaking()
+	if sneaking := flags.Load(packet.InputFlagSneaking); sneaking != c.Sneaking() {
+		if sneaking {
+			c.StartSneaking()
+		} else {
+			c.StopSneaking()
+		}
 	}
 	if flags.Load(packet.InputFlagStartSwimming) {
 		c.StartSwimming()

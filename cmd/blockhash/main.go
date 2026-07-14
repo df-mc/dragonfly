@@ -244,6 +244,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 			return "uint64(" + s + ".FaceUint8())", 3
 		}
 		return "uint64(" + s + ".Uint8())", 5
+	case "OptionalColour":
+		return "uint64(" + s + ".Uint8())", 5
 	case "GrindstoneAttachment":
 		return "uint64(" + s + ".Uint8())", 2
 	case "WoodType", "LeavesType", "FlowerType", "DoubleFlowerType", "Colour":
@@ -256,6 +258,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		return "uint64(" + s + ".Uint8())", 2
 	case "OreType", "FireType", "DoubleTallGrassType":
 		return "uint64(" + s + ".Uint8())", 1
+	case "BambooLeafSize":
+		return "uint64(" + s + ".Uint8())", 2
 	case "Direction", "Axis":
 		return "uint64(" + s + ")", 2
 	case "Face":

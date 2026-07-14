@@ -176,8 +176,11 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 // handleUseItemTransaction ...
 func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.UseItemTransactionData, s *Session, c Controllable) error {
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
-	s.swingingArm.Store(true)
-	defer s.swingingArm.Store(false)
+	if data.ClientPrediction == protocol.ClientPredictionSuccess || data.ActionType == protocol.UseItemActionBreakBlock {
+		// Suppress echoing the swing animation only when the client has already predicted it locally.
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
+	}
 
 	// We reset the inventory so that we can send the held item update without the client already
 	// having done that client-side.

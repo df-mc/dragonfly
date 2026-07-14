@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/session"
@@ -201,7 +200,7 @@ func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
 		}
 	}
 
-	ctx := event.C(p)
+	ctx := newContext(p)
 	if p.Handler().HandleBlockBreak(ctx, pos, private, &drops, &xp); ctx.Cancelled() {
 		audience.Resend(pos)
 		return
@@ -231,7 +230,7 @@ func (p *Player) breakBlock(pos cube.Pos, b world.Block, private bool) {
 	}
 
 	p.Exhaust(0.005)
-	if block.BreaksInstantly(b, held) {
+	if block.BreaksInstantly(b) {
 		return
 	}
 	if durable, ok := held.Item().(item.Durable); ok {
