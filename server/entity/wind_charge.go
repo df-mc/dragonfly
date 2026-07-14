@@ -6,7 +6,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/internal/explosion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -82,7 +81,7 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 			other.Position(),
 			EyePosition(other),
 			velocity,
-			explosion.Exposure(tx, pos, other),
+			block.ExplosionExposure(tx, pos, other),
 		)
 		if knockedBack != velocity {
 			moving.SetVelocity(knockedBack)
