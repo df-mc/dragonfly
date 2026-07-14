@@ -19,8 +19,13 @@ type layer struct {
 type ViewLayerUpdater interface {
 	// ViewLayerEntityChanged handles an entity whose view-layer overrides changed.
 	ViewLayerEntityChanged(entity Entity)
+}
+
+// ViewLayerBlockUpdater may be implemented by a ViewLayerUpdater to handle immediate updates after a
+// ViewLayer changes how a block is viewed.
+type ViewLayerBlockUpdater interface {
 	// ViewLayerBlockChanged handles a block whose view-layer override changed.
-	ViewLayerBlockChanged(w *World, pos cube.Pos)
+	ViewLayerBlockChanged(tx *Tx, pos cube.Pos)
 }
 
 type viewLayerViewer interface {
@@ -126,10 +131,11 @@ func (v *ViewLayer) Visibility(entity Entity) VisibilityLevel {
 	return v.entities[entity.H()].visibility
 }
 
-// ViewBlock overwrites the public block at the position passed in the world passed for this ViewLayer. Liquid or waterlogged
+// ViewBlock overwrites the public block at the position passed in the transaction's world for this ViewLayer. Liquid or waterlogged
 // state at layer 1 is not represented for overrides. Passing nil removes the block override, causing the
 // public block to be viewed again.
-func (v *ViewLayer) ViewBlock(w *World, pos cube.Pos, b Block) {
+func (v *ViewLayer) ViewBlock(tx *Tx, pos cube.Pos, b Block) {
+	w := tx.World()
 	v.mu.Lock()
 	chunkPos := ChunkPos{int32(pos[0] >> 4), int32(pos[2] >> 4)}
 	blocksByChunk := v.blocksByWorld[w]
@@ -153,12 +159,12 @@ func (v *ViewLayer) ViewBlock(w *World, pos cube.Pos, b Block) {
 	}
 	v.mu.Unlock()
 
-	v.refreshBlock(w, pos)
+	v.refreshBlock(tx, pos)
 }
 
-// ViewPublicBlock removes the block override at the position passed in the world passed, causing the public block to be viewed again.
-func (v *ViewLayer) ViewPublicBlock(w *World, pos cube.Pos) {
-	v.ViewBlock(w, pos, nil)
+// ViewPublicBlock removes the block override at the position passed in the transaction's world, causing the public block to be viewed again.
+func (v *ViewLayer) ViewPublicBlock(tx *Tx, pos cube.Pos) {
+	v.ViewBlock(tx, pos, nil)
 }
 
 // Block returns the overwritten block at the position passed in the world passed and whether an override was set.
@@ -252,8 +258,8 @@ func (v *ViewLayer) refresh(entity Entity) {
 	}
 }
 
-func (v *ViewLayer) refreshBlock(w *World, pos cube.Pos) {
-	if v.updater != nil {
-		v.updater.ViewLayerBlockChanged(w, pos)
+func (v *ViewLayer) refreshBlock(tx *Tx, pos cube.Pos) {
+	if updater, ok := v.updater.(ViewLayerBlockUpdater); ok {
+		updater.ViewLayerBlockChanged(tx, pos)
 	}
 }

@@ -67,7 +67,7 @@ func (a privateBlockAudience) ViewBlockAction(pos cube.Pos, action world.BlockAc
 
 // Resend resends the private block override to the player.
 func (a privateBlockAudience) Resend(pos cube.Pos) {
-	a.p.session().ViewLayerBlockChanged(a.p.tx.World(), pos)
+	a.p.session().ViewLayerBlockChanged(a.p.tx, pos)
 }
 
 // ClearOverride removes the private block override for the player.
@@ -87,7 +87,7 @@ func (a publicBlockAudience) PlaySound(pos mgl64.Vec3, s world.Sound) {
 		return
 	}
 	s.Play(a.p.tx.World(), pos)
-	for _, viewer := range a.viewers(cube.PosFromVec3(pos)) {
+	for _, viewer := range a.p.tx.PublicBlockViewers(cube.PosFromVec3(pos)) {
 		viewer.ViewSound(pos, s)
 	}
 }
@@ -95,14 +95,14 @@ func (a publicBlockAudience) PlaySound(pos mgl64.Vec3, s world.Sound) {
 // AddParticle adds the particle to all players viewing the public block.
 func (a publicBlockAudience) AddParticle(pos mgl64.Vec3, particle world.Particle) {
 	particle.Spawn(a.p.tx.World(), pos)
-	for _, viewer := range a.viewers(cube.PosFromVec3(pos)) {
+	for _, viewer := range a.p.tx.PublicBlockViewers(cube.PosFromVec3(pos)) {
 		viewer.ViewParticle(pos, particle)
 	}
 }
 
 // ViewBlockAction shows the block action to all players viewing the public block.
 func (a publicBlockAudience) ViewBlockAction(pos cube.Pos, action world.BlockAction) {
-	for _, viewer := range a.viewers(pos) {
+	for _, viewer := range a.p.tx.PublicBlockViewers(pos) {
 		viewer.ViewBlockAction(pos, action)
 	}
 }
@@ -114,32 +114,6 @@ func (a publicBlockAudience) Resend(pos cube.Pos) {
 
 // ClearOverride does nothing for public blocks.
 func (a publicBlockAudience) ClearOverride(cube.Pos) {}
-
-// viewers returns all viewers that do not have a private block override at pos.
-func (a publicBlockAudience) viewers(pos cube.Pos) []world.Viewer {
-	viewers := a.p.viewers()
-	filtered := make([]world.Viewer, 0, len(viewers))
-	for _, viewer := range viewers {
-		if viewerViewsPublicBlock(viewer, a.p.tx.World(), pos) {
-			filtered = append(filtered, viewer)
-		}
-	}
-	return filtered
-}
-
-type blockOverrideViewer interface {
-	ViewLayer() *world.ViewLayer
-}
-
-// viewerViewsPublicBlock returns whether viewer sees the public block at pos.
-func viewerViewsPublicBlock(viewer world.Viewer, w *world.World, pos cube.Pos) bool {
-	v, ok := viewer.(blockOverrideViewer)
-	if !ok || v.ViewLayer() == nil {
-		return true
-	}
-	_, ok = v.ViewLayer().Block(w, pos)
-	return !ok
-}
 
 // BreakBlock makes the player break the public world block at the position passed. Private view-layer
 // overrides are ignored by this method: Call BreakVisibleBlock to break what the player currently sees instead.

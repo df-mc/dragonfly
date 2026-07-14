@@ -287,6 +287,23 @@ func (tx *Tx) Viewers(pos mgl64.Vec3) []Viewer {
 	return tx.World().viewersOf(pos)
 }
 
+// PublicBlockViewers returns a fresh slice of viewers that see the public block at pos.
+func (tx *Tx) PublicBlockViewers(pos cube.Pos) []Viewer {
+	viewers := tx.Viewers(pos.Vec3())
+	publicViewers := make([]Viewer, 0, len(viewers))
+	for _, viewer := range viewers {
+		if layerViewer, ok := viewer.(viewLayerViewer); ok {
+			if layer := layerViewer.ViewLayer(); layer != nil {
+				if _, overridden := layer.Block(tx.World(), pos); overridden {
+					continue
+				}
+			}
+		}
+		publicViewers = append(publicViewers, viewer)
+	}
+	return publicViewers
+}
+
 // Sleepers returns an iterator that yields all sleeping entities currently added to the World.
 func (tx *Tx) Sleepers() iter.Seq[Sleeper] {
 	ent := tx.Entities()

@@ -162,49 +162,31 @@ func TestContinueBreakingReReadsTargetBlock(t *testing.T) {
 	}
 }
 
-func TestViewerViewsPublicBlock(t *testing.T) {
-	w := world.New()
-	defer w.Close()
-
-	pos := cube.Pos{0, 64, 0}
-	viewer := &blockBreakTestViewer{viewLayer: world.NewViewLayer(nil)}
-	require.True(t, viewerViewsPublicBlock(viewer, w, pos))
-
-	viewer.viewLayer.ViewBlock(w, pos, block.Stone{})
-	require.False(t, viewerViewsPublicBlock(viewer, w, pos))
-	require.True(t, viewerViewsPublicBlock(world.NopViewer{}, w, pos))
-}
-
-func TestPublicBlockAudienceDoesNotMutateWorldViewers(t *testing.T) {
+func TestPublicBlockAudienceUsesAffectedBlockViewers(t *testing.T) {
 	w := world.Config{Synchronous: true}.New()
 	defer w.Close()
 
-	privateViewer := &blockBreakTestViewer{viewLayer: world.NewViewLayer(nil)}
-	publicViewer := &blockBreakTestViewer{viewLayer: world.NewViewLayer(nil)}
-	pos := cube.Pos{0, 64, 0}
-	privateViewer.viewLayer.ViewBlock(w, pos, block.Stone{})
+	playerViewer := &blockBreakTestViewer{}
+	blockViewer := &blockBreakTestViewer{}
+	playerPos := mgl64.Vec3{15.5, 64, 0.5}
+	blockPos := cube.Pos{16, 64, 0}
 
-	var before, after, visible []world.Viewer
 	err := w.Do(func(tx *world.Tx) {
-		privateLoader := world.NewLoader(1, w, privateViewer)
-		publicLoader := world.NewLoader(1, w, publicViewer)
-		privateLoader.Load(tx, 1)
-		publicLoader.Load(tx, 1)
-		defer privateLoader.Close(tx)
-		defer publicLoader.Close(tx)
+		playerLoader := world.NewLoader(1, w, playerViewer)
+		blockLoader := world.NewLoader(1, w, blockViewer)
+		playerLoader.Move(tx, playerPos)
+		blockLoader.Move(tx, blockPos.Vec3Centre())
+		playerLoader.Load(tx, 1)
+		blockLoader.Load(tx, 1)
+		defer playerLoader.Close(tx)
+		defer blockLoader.Close(tx)
 
-		p := &Player{tx: tx, data: &world.EntityData{Pos: pos.Vec3Centre()}, playerData: &playerData{}}
-		before = append([]world.Viewer(nil), tx.Viewers(pos.Vec3())...)
-		visible = append([]world.Viewer(nil), publicBlockAudience{p: p}.viewers(pos)...)
-		after = append([]world.Viewer(nil), tx.Viewers(pos.Vec3())...)
+		p := &Player{tx: tx, data: &world.EntityData{Pos: playerPos}, playerData: &playerData{}}
+		publicBlockAudience{p: p}.ViewBlockAction(blockPos, nil)
 	}).Wait(context.Background())
 	require.NoError(t, err)
-	require.Len(t, visible, 1)
-	require.Same(t, publicViewer, visible[0])
-	require.Len(t, before, 2)
-	require.Len(t, after, 2)
-	require.Same(t, before[0], after[0])
-	require.Same(t, before[1], after[1])
+	require.Empty(t, playerViewer.blockActions)
+	require.Equal(t, []cube.Pos{blockPos}, blockViewer.blockActions)
 }
 
 func TestPublicBlockAudienceSoundUsesWorldHandler(t *testing.T) {
@@ -284,11 +266,11 @@ type fakeConn struct{}
 
 type blockBreakTestViewer struct {
 	world.NopViewer
-	viewLayer *world.ViewLayer
+	blockActions []cube.Pos
 }
 
-func (v *blockBreakTestViewer) ViewLayer() *world.ViewLayer {
-	return v.viewLayer
+func (v *blockBreakTestViewer) ViewBlockAction(pos cube.Pos, _ world.BlockAction) {
+	v.blockActions = append(v.blockActions, pos)
 }
 
 func (fakeConn) Close() error                                               { return nil }

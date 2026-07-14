@@ -57,19 +57,19 @@ func (s *Session) ViewVisibility(entity world.Entity, level world.VisibilityLeve
 }
 
 // ViewBlock overwrites the public block at the position passed and immediately refreshes it for this session.
-func (s *Session) ViewBlock(pos cube.Pos, b world.Block) {
+func (s *Session) ViewBlock(tx *world.Tx, pos cube.Pos, b world.Block) {
 	if s.viewLayer == nil {
 		return
 	}
-	s.viewLayer.ViewBlock(s.viewLayerWorld(), pos, b)
+	s.viewLayer.ViewBlock(tx, pos, b)
 }
 
 // ViewPublicBlock removes the block override at the position passed and immediately refreshes it for this session.
-func (s *Session) ViewPublicBlock(pos cube.Pos) {
+func (s *Session) ViewPublicBlock(tx *world.Tx, pos cube.Pos) {
 	if s.viewLayer == nil {
 		return
 	}
-	s.viewLayer.ViewPublicBlock(s.viewLayerWorld(), pos)
+	s.viewLayer.ViewPublicBlock(tx, pos)
 }
 
 // RemoveViewLayer removes all overrides for the entity and immediately refreshes it for this session.
@@ -89,10 +89,11 @@ func (s *Session) ViewLayerEntityChanged(e world.Entity) {
 }
 
 // ViewLayerBlockChanged refreshes a block override for this session if its world and chunk are currently visible.
-func (s *Session) ViewLayerBlockChanged(w *world.World, pos cube.Pos) {
+func (s *Session) ViewLayerBlockChanged(tx *world.Tx, pos cube.Pos) {
 	if s.viewLayer == nil {
 		return
 	}
+	w := tx.World()
 	if current := s.viewLayerWorld(); current != w {
 		return
 	}
@@ -100,7 +101,7 @@ func (s *Session) ViewLayerBlockChanged(w *world.World, pos cube.Pos) {
 		return
 	}
 	if b, ok := s.viewLayer.Block(w, pos); ok {
-		s.broadcastPrivateBlockSubChunk(pos)
+		s.broadcastPrivateBlockSubChunk(tx, pos)
 		s.viewBlockUpdate(pos, b, 0)
 		s.viewBlockUpdate(pos, s.br.Air(), 1)
 		return
@@ -113,7 +114,7 @@ func (s *Session) ViewLayerBlockChanged(w *world.World, pos cube.Pos) {
 
 // broadcastPrivateBlockSubChunk resends the chunk height advert if a private block override occupies a
 // sub-chunk the client may not have loaded from the public chunk state.
-func (s *Session) broadcastPrivateBlockSubChunk(pos cube.Pos) {
+func (s *Session) broadcastPrivateBlockSubChunk(tx *world.Tx, pos cube.Pos) {
 	if !subChunkRequests || s.chunkLoader == nil {
 		return
 	}
@@ -125,12 +126,8 @@ func (s *Session) broadcastPrivateBlockSubChunk(pos cube.Pos) {
 	if uint16(col.SubIndex(int16(pos[1]))) < col.HighestFilledSubChunk() {
 		return
 	}
-	w := s.viewLayerWorld()
-	if w == nil {
-		return
-	}
 	c, blockEntities := s.applyViewLayerToChunk(chunkPos, col.Chunk, col.BlockEntities)
-	s.sendNetworkChunk(chunkPos, w.Dimension(), c, blockEntities)
+	s.sendNetworkChunk(chunkPos, tx.World().Dimension(), c, blockEntities)
 }
 
 // publicLiquid returns the public liquid layer loaded for this session at pos, or air if no liquid is present.
