@@ -40,7 +40,46 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	if ent, ok := e.(*entity.Ent); ok {
 		s.addSpecificMetadata(ent.Behaviour(), m)
 	}
+	s.addComponentMetadata(e, m)
 	return m
+}
+
+// addComponentMetadata merges metadata contributed by the entity's components
+// through world.MetaSyncer into the metadata map. Components run after the
+// built-in metadata and overwrite values on conflict; flag bits are combined.
+func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata) {
+	var wm *world.EntityMetadata
+	for c := range e.H().Components() {
+		if syncer, ok := c.(world.MetaSyncer); ok {
+			if wm == nil {
+				wm = world.NewEntityMetadata()
+			}
+			syncer.SyncMeta(e, wm)
+		}
+	}
+	if wm == nil {
+		return
+	}
+	for key, v := range wm.Values() {
+		m[key] = v
+	}
+	for key, bits := range wm.Flags() {
+		// Most flag keys hold an int64, but some, such as
+		// EntityDataKeyPlayerFlags, hold a byte. Match the existing type so
+		// built-in flags are kept and the entry stays decodable.
+		switch existing := m[key].(type) {
+		case int64:
+			m[key] = existing | bits
+		case byte:
+			m[key] = existing | byte(bits)
+		default:
+			if key == protocol.EntityDataKeyPlayerFlags {
+				m[key] = byte(bits)
+			} else {
+				m[key] = bits
+			}
+		}
+	}
 }
 
 func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
