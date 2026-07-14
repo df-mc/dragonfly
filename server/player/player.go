@@ -58,7 +58,7 @@ type playerData struct {
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
-	shieldBlockingInput, shieldBlockingCached, shieldBlockingUseHandled bool
+	shieldBlockingInput, shieldBlockingCached, shieldUsePending bool
 
 	sleeping bool
 	sleepPos cube.Pos
@@ -588,7 +588,7 @@ func (p *Player) fall(distance float64) {
 // final damage dealt to the Player and a result describing the outcome.
 func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, world.HurtResult) {
 	if _, ok := p.Effect(effect.FireResistance); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() || dmg < 0 {
-		return 0, world.HurtImmune
+		return 0, world.HurtIgnored
 	}
 	totalDamage := p.FinalDamageFrom(dmg, src)
 	damageLeft := totalDamage
@@ -601,17 +601,19 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, world.HurtR
 	immunity := time.Second / 2
 	damageBeforeHandler := damageLeft
 	if immune && damageLeft <= 0 {
-		if shouldAttemptShieldBlockBeforeHurtHandler(dmg, src) && p.blockDamageWithShield(dmg, src) {
+		if info, ok := shieldBlockInfo(src); ok && info.BlockWhenImmune && p.blockDamageWithShield(dmg, src, info) {
 			return 0, world.HurtBlocked
 		}
-		return 0, world.HurtImmune
+		return 0, world.HurtIgnored
 	}
 	ctx := newContext(p)
 	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
 		return 0, world.HurtCancelled
 	}
-	if shouldAttemptShieldBlockAfterHurtHandler(dmg, damageLeft, damageBeforeHandler, src) && p.blockDamageWithShield(dmg, src) {
-		return 0, world.HurtBlocked
+	if info, ok := shieldBlockInfo(src); ok {
+		if (damageLeft > 0 || damageBeforeHandler <= 0 && dmg == 0 && info.BlockZeroDamage) && p.blockDamageWithShield(dmg, src, info) {
+			return 0, world.HurtBlocked
+		}
 	}
 	p.setAttackImmunity(immunity, totalDamage)
 
@@ -629,11 +631,11 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, world.HurtR
 		if _, ok := offHand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
 			p.SetHeldItems(hand, offHand.Grow(-1))
-			return 0, world.HurtImmune
+			return 0, world.HurtIgnored
 		} else if _, ok := hand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
 			p.SetHeldItems(hand.Grow(-1), offHand)
-			return 0, world.HurtImmune
+			return 0, world.HurtIgnored
 		}
 	}
 
@@ -671,7 +673,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, world.HurtR
 	if p.Dead() {
 		p.kill(src)
 	}
-	return totalDamage, world.HurtDamaged
+	return totalDamage, world.HurtAccepted
 }
 
 // applyTotemEffects is an unexported function that is used to handle totem effects.
@@ -711,10 +713,10 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
 	diff := p.Position().Sub(explosionPos)
 	src := entity.ExplosionDamageSource{
-		Origin:            explosionPos,
-		HasOrigin:         true,
-		BlockableByShield: !c.UnblockableByShield,
-		Source:            c.Source,
+		Origin:              explosionPos,
+		HasOrigin:           true,
+		UnblockableByShield: c.UnblockableByShield,
+		Source:              c.Source,
 	}
 	_, result := p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size*2+1), src)
 	if result.Blocked() {
@@ -1466,7 +1468,7 @@ func (p *Player) UpdateHeldItemState() {
 func (p *Player) updateHeldItemState() bool {
 	mainHand, _ := p.HeldItems()
 	if p.shieldBlockingInput && !p.canStartShieldBlockingInput(mainHand) {
-		p.shieldBlockingUseHandled = false
+		p.shieldUsePending = false
 		p.shieldBlockingInput = false
 	}
 	return p.updateShieldBlockingState(time.Now())
@@ -1595,7 +1597,7 @@ func (p *Player) setCooldown(item world.Item, cooldown time.Duration, updateShie
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
 	i, _ := p.HeldItems()
-	shieldUseHandled := p.consumeShieldBlockingUseHandled(i)
+	shieldUseHandled := p.consumePendingShieldUse(i)
 	if p.HasCooldown(i.Item()) {
 		if shieldUseHandled {
 			p.startOffHandShieldBlockingInput()
@@ -1801,7 +1803,7 @@ func (p *Player) SetShieldBlockingInput(down bool) {
 		return
 	}
 	if !down {
-		p.shieldBlockingUseHandled = false
+		p.shieldUsePending = false
 	}
 	p.shieldBlockingInput = down
 	if changed := p.updateShieldBlockingState(time.Now()); changed && p.tx != nil {
@@ -1962,7 +1964,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 
 	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
-	if !result.Damaged() {
+	if !result.Accepted() {
 		return true
 	}
 	if critical {

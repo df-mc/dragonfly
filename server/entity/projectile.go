@@ -310,7 +310,7 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 	if _, result := l.Hurt(dmg, src); result.Blocked() {
 		lt.deflect(e, vel)
 		return true
-	} else if result.Damaged() {
+	} else if result.Accepted() {
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {

@@ -29,7 +29,7 @@ var DefaultRegistry = conf.New([]world.EntityType{
 
 var conf = world.EntityRegistryConfig{
 	TNT:                NewTNT,
-	TNTWithSource:      NewTNTWithSource,
+	TNTWithConfig:      NewTNTWithConfig,
 	Egg:                NewEgg,
 	Snowball:           NewSnowball,
 	BottleOfEnchanting: NewBottleOfEnchanting,

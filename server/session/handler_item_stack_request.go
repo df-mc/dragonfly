@@ -24,8 +24,9 @@ type ItemStackRequestHandler struct {
 
 	pendingResults []item.Stack
 
-	current       time.Time
-	ignoreDestroy bool
+	current         time.Time
+	ignoreDestroy   bool
+	heldItemChanged bool
 }
 
 // responseChange represents a change in a specific item stack response. It holds the timestamp of the
@@ -66,9 +67,14 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 	defer func() {
 		if err != nil {
 			h.reject(req.RequestID, s, tx)
+			h.heldItemChanged = false
 			return
 		}
 		h.resolve(req.RequestID, s)
+		if h.heldItemChanged {
+			s.updateHeldItemState(tx)
+			h.heldItemChanged = false
+		}
 		h.ignoreDestroy = false
 	}()
 
@@ -424,9 +430,7 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 
 	before, _ := inv.Item(sl)
 	_ = inv.SetItem(sl, i)
-	if s.updatesHeldItemState(inv, sl) {
-		s.updateHeldItemState(tx)
-	}
+	h.heldItemChanged = h.heldItemChanged || s.heldItemSlot(inv, sl)
 
 	respSlot := protocol.StackResponseSlotInfo{
 		Slot:                 slot.Slot,
@@ -453,33 +457,6 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	h.responseChanges[h.currentRequest][inv][slot.Slot] = responseChange{
 		id:        respSlot.StackNetworkID,
 		timestamp: h.current,
-	}
-}
-
-// heldItemStateUpdater refreshes state derived from held items.
-type heldItemStateUpdater interface {
-	UpdateHeldItemState()
-}
-
-// updatesHeldItemState reports whether the inventory slot is currently held.
-func (s *Session) updatesHeldItemState(inv *inventory.Inventory, slot int) bool {
-	if inv == s.offHand {
-		return true
-	}
-	return inv == s.inv && s.heldSlot != nil && slot == int(*s.heldSlot)
-}
-
-// updateHeldItemState refreshes the controlled entity after a held item changes.
-func (s *Session) updateHeldItemState(tx *world.Tx) {
-	if s.ent == nil {
-		return
-	}
-	e, ok := s.ent.Entity(tx)
-	if !ok {
-		return
-	}
-	if updater, ok := e.(heldItemStateUpdater); ok {
-		updater.UpdateHeldItemState()
 	}
 }
 
@@ -524,9 +501,6 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session, tx *world.Tx) {
 				sl = 0
 			}
 			_ = inv.SetItem(sl, info.before)
-			if s.updatesHeldItemState(inv, sl) {
-				s.updateHeldItemState(tx)
-			}
 		}
 	}
 

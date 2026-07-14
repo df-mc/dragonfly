@@ -51,8 +51,8 @@ type (
 		Origin mgl64.Vec3
 		// HasOrigin is true if Origin is a meaningful explosion source position.
 		HasOrigin bool
-		// BlockableByShield is true if the explosion damage may be blocked by a shield.
-		BlockableByShield bool
+		// UnblockableByShield is true if shields may not block the explosion damage.
+		UnblockableByShield bool
 		// Source is the entity that caused the explosion, if known.
 		Source world.Entity
 	}
@@ -103,3 +103,30 @@ func (ExplosionDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool 
 	return e == enchantment.BlastProtection
 }
 func (ExplosionDamageSource) IgnoreTotem() bool { return false }
+
+// ShieldBlockInfo returns the position of an attack if its attacker is available.
+func (s AttackDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if s.Attacker == nil {
+		return world.ShieldBlockInfo{}, false
+	}
+	return world.ShieldBlockInfo{Origin: s.Attacker.Position()}, true
+}
+
+// ShieldBlockInfo returns the position of a projectile or its owner.
+func (s ProjectileDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if s.Projectile != nil {
+		return world.ShieldBlockInfo{Origin: s.Projectile.Position(), BlockWhenImmune: true, BlockZeroDamage: true}, true
+	}
+	if s.Owner != nil {
+		return world.ShieldBlockInfo{Origin: s.Owner.Position(), BlockWhenImmune: true, BlockZeroDamage: true}, true
+	}
+	return world.ShieldBlockInfo{}, false
+}
+
+// ShieldBlockInfo returns the origin and source of a shield-blockable explosion.
+func (s ExplosionDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if !s.HasOrigin || s.UnblockableByShield {
+		return world.ShieldBlockInfo{}, false
+	}
+	return world.ShieldBlockInfo{Origin: s.Origin, Source: s.Source, BlockWhenImmune: true}, true
+}

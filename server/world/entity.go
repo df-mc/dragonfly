@@ -469,22 +469,35 @@ type DamageSource interface {
 	IgnoreTotem() bool
 }
 
+// ShieldBlockInfo describes how a shield may block a damage source.
+type ShieldBlockInfo struct {
+	Origin                           mgl64.Vec3
+	Source                           Entity
+	BlockWhenImmune, BlockZeroDamage bool
+}
+
+// ShieldBlockSource is implemented by damage sources that shields may block.
+type ShieldBlockSource interface {
+	DamageSource
+	ShieldBlockInfo() (ShieldBlockInfo, bool)
+}
+
 // HurtResult describes the outcome of a call to Hurt on a living entity.
 type HurtResult uint8
 
 const (
-	// HurtImmune indicates that no damage was applied because the entity was immune.
-	HurtImmune HurtResult = iota
-	// HurtDamaged indicates that the entity accepted the hit and ran the normal damage path.
-	HurtDamaged
+	// HurtIgnored indicates that the hit did not run the normal damage path.
+	HurtIgnored HurtResult = iota
+	// HurtAccepted indicates that the hit ran the normal damage path.
+	HurtAccepted
 	// HurtCancelled indicates that a handler cancelled the hurt event.
 	HurtCancelled
 	// HurtBlocked indicates that a shield blocked the hit.
 	HurtBlocked
 )
 
-// Damaged reports whether the entity accepted the hit and ran the normal damage path.
-func (r HurtResult) Damaged() bool { return r == HurtDamaged }
+// Accepted reports whether the hit ran the normal damage path.
+func (r HurtResult) Accepted() bool { return r == HurtAccepted }
 
 // Blocked reports whether a shield blocked the hit.
 func (r HurtResult) Blocked() bool { return r == HurtBlocked }
@@ -513,10 +526,8 @@ type EntityRegistryConfig struct {
 	Item         func(opts EntitySpawnOpts, it any) *EntityHandle
 	FallingBlock func(opts EntitySpawnOpts, bl Block) *EntityHandle
 	TNT          func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
-	// TNTWithSource optionally creates a TNT entity with the nullable handle that caused it to ignite and whether
-	// its explosion may be blocked by shields. If nil, New fills a fallback that uses TNT and ignores source
-	// attribution and shield-blockability arguments.
-	TNTWithSource      func(opts EntitySpawnOpts, fuse time.Duration, source *EntityHandle, blockableByShield bool) *EntityHandle
+	// TNTWithConfig optionally creates TNT with additional spawn configuration.
+	TNTWithConfig      func(opts EntitySpawnOpts, conf TNTSpawnConfig) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, conf ArrowSpawnConfig) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
@@ -550,11 +561,18 @@ type ArrowSpawnConfig struct {
 	Tip any
 }
 
+// TNTSpawnConfig holds additional properties of a primed TNT entity.
+type TNTSpawnConfig struct {
+	Fuse                time.Duration
+	Source              *EntityHandle
+	UnblockableByShield bool
+}
+
 // New creates an EntityRegistry using conf and the EntityTypes passed.
 func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
-	if conf.TNTWithSource == nil && conf.TNT != nil {
-		conf.TNTWithSource = func(opts EntitySpawnOpts, fuse time.Duration, source *EntityHandle, blockableByShield bool) *EntityHandle {
-			return conf.TNT(opts, fuse)
+	if conf.TNTWithConfig == nil && conf.TNT != nil {
+		conf.TNTWithConfig = func(opts EntitySpawnOpts, tnt TNTSpawnConfig) *EntityHandle {
+			return conf.TNT(opts, tnt.Fuse)
 		}
 	}
 	m := make(map[string]EntityType, len(ent))

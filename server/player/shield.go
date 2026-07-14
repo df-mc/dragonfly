@@ -7,7 +7,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
@@ -75,7 +74,7 @@ func (p *Player) resetShieldBlocking() bool {
 	wasPrepared, wasBlocking := !p.shieldBlockingSince.IsZero(), p.shieldBlockingCached
 	p.shieldBlockingSince = time.Time{}
 	p.shieldBlockingCached = false
-	p.shieldBlockingUseHandled = false
+	p.shieldUsePending = false
 	return wasPrepared || wasBlocking
 }
 
@@ -109,16 +108,12 @@ func (p *Player) setHeldShield(hand shieldHand, shield item.Stack) {
 	_ = p.offHand.SetItem(0, shield)
 }
 
-// shieldBlocksDamageAt reports whether the raised shield blocks src at now.
-func (p *Player) shieldBlocksDamageAt(src world.DamageSource, now time.Time) bool {
+// shieldBlocksDamageAt reports whether the raised shield blocks info at now.
+func (p *Player) shieldBlocksDamageAt(info world.ShieldBlockInfo, now time.Time) bool {
 	if !p.shieldBlockingAt(now) {
 		return false
 	}
-	source, ok := shieldDamageSourcePosition(src)
-	if !ok {
-		return false
-	}
-	return p.facingShieldDamageSource(source)
+	return p.facingShieldDamageSource(info.Origin)
 }
 
 // facingShieldDamageSource reports whether source is in front of the player.
@@ -132,33 +127,13 @@ func (p *Player) facingShieldDamageSource(source mgl64.Vec3) bool {
 	return direction.Normalize().Dot(look) > 0
 }
 
-// shieldDamageSourcePosition returns the origin of shield-blockable damage.
-func shieldDamageSourcePosition(src world.DamageSource) (mgl64.Vec3, bool) {
-	switch s := src.(type) {
-	case entity.AttackDamageSource:
-		if s.Attacker == nil {
-			return mgl64.Vec3{}, false
-		}
-		return s.Attacker.Position(), true
-	case entity.ProjectileDamageSource:
-		if s.Projectile != nil {
-			return s.Projectile.Position(), true
-		}
-		if s.Owner != nil {
-			return s.Owner.Position(), true
-		}
-	case entity.ExplosionDamageSource:
-		if !s.HasOrigin || !s.BlockableByShield {
-			return mgl64.Vec3{}, false
-		}
-		return s.Origin, true
-	case enchantment.ThornsDamageSource:
-		if s.Owner == nil {
-			return mgl64.Vec3{}, false
-		}
-		return s.Owner.Position(), true
+// shieldBlockInfo returns shield-blocking information exposed by src.
+func shieldBlockInfo(src world.DamageSource) (world.ShieldBlockInfo, bool) {
+	s, ok := src.(world.ShieldBlockSource)
+	if !ok {
+		return world.ShieldBlockInfo{}, false
 	}
-	return mgl64.Vec3{}, false
+	return s.ShieldBlockInfo()
 }
 
 // shieldDisableCooldownFrom returns the shield cooldown caused by an axe attack.
@@ -185,33 +160,6 @@ func shieldDurabilityDamage(dmg float64) int {
 		return 0
 	}
 	return int(math.Floor(dmg)) + 1
-}
-
-// shouldAttemptShieldBlockBeforeHurtHandler reports whether src should be checked before the hurt handler.
-func shouldAttemptShieldBlockBeforeHurtHandler(_ float64, src world.DamageSource) bool {
-	switch src.(type) {
-	case entity.ProjectileDamageSource, entity.ExplosionDamageSource:
-		return true
-	default:
-		return false
-	}
-}
-
-// shouldAttemptShieldBlockAfterHurtHandler reports whether handled damage should still be blocked.
-func shouldAttemptShieldBlockAfterHurtHandler(rawDamage, damageLeft, damageBeforeHandler float64, src world.DamageSource) bool {
-	if damageLeft > 0 {
-		return true
-	}
-	if damageBeforeHandler > 0 {
-		return false
-	}
-	return isZeroDamageProjectile(rawDamage, src)
-}
-
-// isZeroDamageProjectile reports whether src is a harmless projectile that may still be deflected.
-func isZeroDamageProjectile(rawDamage float64, src world.DamageSource) bool {
-	_, ok := src.(entity.ProjectileDamageSource)
-	return ok && rawDamage == 0
 }
 
 // useItemStartsShieldBlocking reports whether item use should raise a held shield.
@@ -241,7 +189,7 @@ func (p *Player) StartShieldBlockingInput() bool {
 	if !p.startShieldBlockingInput(mainHand) {
 		return false
 	}
-	p.shieldBlockingUseHandled = true
+	p.shieldUsePending = true
 	return true
 }
 
@@ -304,12 +252,12 @@ func (p *Player) canStartOffHandShieldBlockingInput() bool {
 	return p.canStartShieldBlockingInput(item.Stack{})
 }
 
-// consumeShieldBlockingUseHandled prevents handling one shield-use input twice.
-func (p *Player) consumeShieldBlockingUseHandled(mainHand item.Stack) bool {
-	if !p.shieldBlockingUseHandled {
+// consumePendingShieldUse consumes a shield use already handled through auth input.
+func (p *Player) consumePendingShieldUse(mainHand item.Stack) bool {
+	if !p.shieldUsePending {
 		return false
 	}
-	p.shieldBlockingUseHandled = false
+	p.shieldUsePending = false
 	return p.canStartShieldBlockingInput(mainHand)
 }
 
@@ -328,12 +276,12 @@ func (p *Player) knockBackShieldAttacker(src world.DamageSource) bool {
 }
 
 // blockDamageWithShield applies shield effects and reports whether dmg was blocked.
-func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource) bool {
+func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource, info world.ShieldBlockInfo) bool {
 	now := time.Now()
-	if s, ok := src.(entity.ExplosionDamageSource); ok && s.Source != nil && s.Source.H() != nil && p.H() != nil && s.Source.H().UUID() == p.H().UUID() {
+	if info.Source != nil && info.Source.H() != nil && p.H() != nil && info.Source.H().UUID() == p.H().UUID() {
 		return false
 	}
-	if !p.shieldBlocksDamageAt(src, now) {
+	if !p.shieldBlocksDamageAt(info, now) {
 		return false
 	}
 	shield, hand, ok := p.heldShield()

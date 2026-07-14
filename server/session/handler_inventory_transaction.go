@@ -132,7 +132,7 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 
 	n := c.Drop(res)
 	_ = s.inv.SetItem(slot, actual.Grow(-n))
-	if s.updatesHeldItemState(s.inv, slot) {
+	if s.heldItemSlot(s.inv, slot) {
 		s.updateHeldItemState(tx)
 	}
 	return nil

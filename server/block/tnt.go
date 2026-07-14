@@ -32,7 +32,7 @@ func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower 
 // ProjectileHit ignites TNT hit by a burning projectile, attributing it to the projectile owner.
 func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
 	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
-		spawnTnt(pos, tx, time.Second*4, tntIgnitionSourceHandle(e), true)
+		spawnTnt(pos, tx, world.TNTSpawnConfig{Fuse: time.Second * 4, Source: tntIgnitionSourceHandle(e)})
 	}
 }
 
@@ -49,7 +49,7 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx 
 
 // Ignite primes the TNT with source credited for the resulting explosion.
 func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
-	spawnTnt(pos, tx, time.Second*4, tntIgnitionSourceHandle(source), true)
+	spawnTnt(pos, tx, world.TNTSpawnConfig{Fuse: time.Second * 4, Source: tntIgnitionSourceHandle(source)})
 	return true
 }
 
@@ -59,7 +59,11 @@ func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig
 	if c.Source != nil {
 		source = c.Source.H()
 	}
-	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), source, !c.UnblockableByShield)
+	spawnTnt(pos, tx, world.TNTSpawnConfig{
+		Fuse:                time.Second/2 + time.Duration(rand.IntN(int(time.Second+time.Second/2))),
+		Source:              source,
+		UnblockableByShield: c.UnblockableByShield,
+	})
 }
 
 // BreakInfo ...
@@ -101,10 +105,10 @@ func tntIgnitionSourceHandle(source world.Entity) *world.EntityHandle {
 }
 
 // spawnTnt replaces the block with primed TNT carrying its explosion source and shield blockability.
-func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) {
+func spawnTnt(pos cube.Pos, tx *world.Tx, conf world.TNTSpawnConfig) {
 	tx.PlaySound(pos.Vec3Centre(), sound.TNT{})
 	tx.SetBlock(pos, nil, nil)
 	opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
-	conf := tx.World().EntityRegistry().Config()
-	tx.AddEntity(conf.TNTWithSource(opts, fuse, source, blockableByShield))
+	registry := tx.World().EntityRegistry().Config()
+	tx.AddEntity(registry.TNTWithConfig(opts, conf))
 }
