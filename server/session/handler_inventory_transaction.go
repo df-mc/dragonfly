@@ -83,7 +83,11 @@ func (h *InventoryTransactionHandler) resendInventories(s *Session) {
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 }
 
-// handleNormalTransaction ...
+// handleNormalTransaction handles a normal inventory transaction, which the client sends only to drop an item
+// out of its inventory. The two actions the client sends are verified against the item actually held in the
+// slot before the drop is carried out, so that a modified client cannot drop items it does not have or items
+// with properties it does not hold. If the drop empties a slot the player is holding an item in, state derived
+// from the held items, such as a raised shield, is refreshed.
 func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.InventoryTransaction, s *Session, tx *world.Tx, c interface{ Drop(item.Stack) int }) error {
 	if len(pk.Actions) != 2 {
 		return fmt.Errorf("expected two actions for dropping an item, got %d", len(pk.Actions))

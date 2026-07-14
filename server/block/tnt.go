@@ -29,14 +29,16 @@ func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower 
 	t.Ignite(pos, tx, nil)
 }
 
-// ProjectileHit ...
+// ProjectileHit ignites the TNT if the projectile that hit it is on fire, such as a flaming arrow. The
+// resulting explosion is credited to the entity that shot the projectile rather than to the projectile itself.
 func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
 	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
 		spawnTnt(pos, tx, time.Second*4, tntIgnitionSourceHandle(e), true)
 	}
 }
 
-// Activate ...
+// Activate ignites the TNT if the user activates it with an item enchanted with Fire Aspect, crediting the
+// user for the resulting explosion and costing the item a point of durability.
 func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
@@ -47,13 +49,18 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx 
 	return false
 }
 
-// Ignite ...
+// Ignite primes the TNT, replacing the block with a primed TNT entity that has a fuse of four seconds. source
+// is the (nullable) entity that lit the TNT: it is credited for the resulting explosion, so that a player
+// cannot shield themselves from a blast they set off. Ignite always returns true, as TNT is always ignitable.
 func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
 	spawnTnt(pos, tx, time.Second*4, tntIgnitionSourceHandle(source), true)
 	return true
 }
 
-// Explode ...
+// Explode primes the TNT instead of destroying it when it is caught in another explosion, giving it a random
+// fuse between half a second and two seconds so that a chain reaction does not detonate all at once. The
+// primed TNT inherits the source and the shield-blockability of the explosion that lit it, keeping the whole
+// chain attributed to whoever set it off.
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig) {
 	var source *world.EntityHandle
 	if c.Source != nil {
@@ -82,11 +89,14 @@ func (t TNT) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:tnt", map[string]interface{}{"explode_bit": false}
 }
 
-// spawnTnt creates a new TNT entity at the given position with the given fuse duration.
+// ownerEntity is implemented by entities that were shot by another entity, such as projectiles.
 type ownerEntity interface {
 	ProjectileOwner() *world.EntityHandle
 }
 
+// tntIgnitionSourceHandle resolves the entity that should be credited for igniting TNT. Projectiles are
+// attributed to their shooter, so that a player who lights TNT with a flaming arrow cannot block their own
+// blast with a shield. It returns nil if the ignition had no entity source, e.g. redstone.
 func tntIgnitionSourceHandle(source world.Entity) *world.EntityHandle {
 	if source == nil {
 		return nil
@@ -99,6 +109,9 @@ func tntIgnitionSourceHandle(source world.Entity) *world.EntityHandle {
 	return source.H()
 }
 
+// spawnTnt creates a new TNT entity at the given position with the given fuse duration. source is the
+// (nullable) entity credited for the ignition and blockableByShield reports whether the resulting explosion
+// may be blocked by a shield, both of which are carried over to the primed TNT entity.
 func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) {
 	tx.PlaySound(pos.Vec3Centre(), sound.TNT{})
 	tx.SetBlock(pos, nil, nil)

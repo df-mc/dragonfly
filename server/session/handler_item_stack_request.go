@@ -456,10 +456,14 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	}
 }
 
+// heldItemStateUpdater is implemented by Controllable entities that derive state from the items they hold,
+// such as a player holding a raised shield.
 type heldItemStateUpdater interface {
 	UpdateHeldItemState()
 }
 
+// updatesHeldItemState reports whether writing to slot of inv changes an item the player is holding, meaning
+// state derived from the held items must be refreshed.
 func (s *Session) updatesHeldItemState(inv *inventory.Inventory, slot int) bool {
 	if inv == s.offHand {
 		return true
@@ -467,6 +471,8 @@ func (s *Session) updatesHeldItemState(inv *inventory.Inventory, slot int) bool 
 	return inv == s.inv && s.heldSlot != nil && slot == int(*s.heldSlot)
 }
 
+// updateHeldItemState tells the entity controlled by the session to refresh the state it derives from its
+// held items, after an inventory change swapped one of them out.
 func (s *Session) updateHeldItemState(tx *world.Tx) {
 	if s.ent == nil {
 		return

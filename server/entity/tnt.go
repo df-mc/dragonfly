@@ -22,6 +22,8 @@ func NewTNTWithSource(opts world.EntitySpawnOpts, fuse time.Duration, source *wo
 	return newTNTWithSourceHandle(opts, fuse, source, blockableByShield)
 }
 
+// newTNTWithSourceHandle is the shared implementation of NewTNT and NewTNTWithSource. It gives the TNT a
+// random horizontal nudge if opts does not already specify a velocity.
 func newTNTWithSourceHandle(opts world.EntitySpawnOpts, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
 	if opts.Velocity.Len() == 0 {
 		angle := rand.Float64() * math.Pi * 2
@@ -35,16 +37,21 @@ var tntConf = PassiveBehaviourConfig{
 	Drag:    0.02,
 }
 
+// tntBehaviourConfig holds the settings of a tntBehaviour: the fuse, the entity credited for the ignition and
+// whether the resulting explosion may be blocked by a shield.
 type tntBehaviourConfig struct {
 	Fuse              time.Duration
 	Source            *world.EntityHandle
 	BlockableByShield bool
 }
 
+// Apply implements world.EntityConfig, storing a newly created tntBehaviour on the entity data.
 func (conf tntBehaviourConfig) Apply(data *world.EntityData) {
 	data.Data = conf.New()
 }
 
+// New creates a tntBehaviour from conf. It wraps a PassiveBehaviour whose expiry explodes the TNT, carrying
+// the source and shield-blockability of conf into the resulting explosion.
 func (conf tntBehaviourConfig) New() *tntBehaviour {
 	b := &tntBehaviour{source: conf.Source, blockableByShield: conf.BlockableByShield}
 	confPassive := tntConf
@@ -56,17 +63,23 @@ func (conf tntBehaviourConfig) New() *tntBehaviour {
 	return b
 }
 
+// tntBehaviour is the Behaviour of primed TNT. It extends PassiveBehaviour with the ignition source and
+// shield-blockability that its explosion should carry. Only the latter survives an NBT round trip; the source
+// is runtime-only, as entity handles cannot be persisted.
 type tntBehaviour struct {
 	*PassiveBehaviour
 	source            *world.EntityHandle
 	blockableByShield bool
 }
 
-// explodeTNT creates an explosion at the position of e.
+// explodeTNT creates an explosion at the position of e, attributed to source and blockable by a shield only
+// if blockableByShield is true.
 func explodeTNT(e *Ent, tx *world.Tx, source *world.EntityHandle, blockableByShield bool) {
 	tntExplosionConfig(tx, source, blockableByShield).Explode(tx, e.Position())
 }
 
+// tntExplosionConfig builds the ExplosionConfig of a TNT blast, resolving source to a live entity in tx if it
+// is still present. A source that has since been removed simply leaves the explosion unattributed.
 func tntExplosionConfig(tx *world.Tx, source *world.EntityHandle, blockableByShield bool) block.ExplosionConfig {
 	var sourceEntity world.Entity
 	if source != nil {
@@ -97,6 +110,9 @@ func (t tntType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	}.New()
 }
 
+// EncodeNBT writes the fuse of the TNT, clamped to the byte vanilla stores it in. Shield-blockability is
+// written only when the explosion is unblockable, under a Dragonfly-specific key, so that TNT saved by vanilla
+// or by an older version of the server decodes as blockable, matching NewTNT.
 func (tntType) EncodeNBT(data *world.EntityData) map[string]any {
 	fuse, blockableByShield := tntFuseAndBlockability(data.Data)
 	ticks := fuse.Milliseconds() / 50
@@ -112,6 +128,9 @@ func (tntType) EncodeNBT(data *world.EntityData) map[string]any {
 	return m
 }
 
+// tntFuseAndBlockability reads the remaining fuse and shield-blockability from TNT entity data. TNT spawned
+// through the world.EntityRegistryConfig fallback (which drops the source arguments) still carries a plain
+// PassiveBehaviour, which is treated as blockable, matching NewTNT.
 func tntFuseAndBlockability(data any) (time.Duration, bool) {
 	switch b := data.(type) {
 	case *tntBehaviour:

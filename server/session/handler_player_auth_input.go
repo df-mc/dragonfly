@@ -158,14 +158,23 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Sessi
 	}
 }
 
+// shieldBlockingInputSetter is implemented by Controllable entities that raise and lower a shield based on
+// whether the sneak control is held down.
 type shieldBlockingInputSetter interface {
 	SetShieldBlockingInput(down bool)
 }
 
+// shieldBlockingInputStarter is implemented by Controllable entities that raise a shield on an item-use input.
 type shieldBlockingInputStarter interface {
 	StartShieldBlockingInput() bool
 }
 
+// shieldBlockingInput derives whether the sneak control is held down from the input flags of a
+// PlayerAuthInput packet. Clients report sneaking through several flags depending on device and version, so
+// all of them are considered. The second return value is false if the flags say nothing conclusive about the
+// sneak control this tick, in which case the shield state is left as it is rather than lowered. This is also
+// the case for a sneak flag that did not actually put the player in a sneaking state, which the client sends
+// while sneaking is being suppressed.
 func shieldBlockingInput(flags protocol.Bitset, wasSneaking, sneaking bool) (bool, bool) {
 	if flags.Load(packet.InputFlagSneaking) || flags.Load(packet.InputFlagSneakDown) || flags.Load(packet.InputFlagStartSneaking) || flags.Load(packet.InputFlagSneakCurrentRaw) {
 		if !wasSneaking && !sneaking {

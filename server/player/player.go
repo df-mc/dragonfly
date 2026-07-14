@@ -1455,13 +1455,17 @@ func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	}
 }
 
-// UpdateHeldItemState refreshes state derived from the player's currently held items.
+// UpdateHeldItemState refreshes state derived from the player's currently held items. It is called by the
+// session when an inventory change swaps out the item the player is holding without going through
+// SetHeldItems, so that a shield being taken out of the player's hands lowers it.
 func (p *Player) UpdateHeldItemState() {
 	if changed := p.updateHeldItemState(); changed && p.tx != nil {
 		p.updateState()
 	}
 }
 
+// updateHeldItemState lowers the shield if the items now held no longer support the raised shield and
+// recomputes the shield state. It returns true if the state visible to other players changed.
 func (p *Player) updateHeldItemState() bool {
 	mainHand, _ := p.HeldItems()
 	if p.shieldBlockingInput && !p.canStartShieldBlockingInput(mainHand) {
@@ -1549,6 +1553,9 @@ func (p *Player) HasCooldown(item world.Item) bool {
 	return p.hasCooldownAt(item, time.Now(), true)
 }
 
+// hasCooldownAt reports whether item is on cooldown at time now. cleanExpired controls whether an expired
+// cooldown entry is deleted from the map, allowing read-only callers to query cooldowns without mutating the
+// player.
 func (p *Player) hasCooldownAt(item world.Item, now time.Time, cleanExpired bool) bool {
 	if item == nil {
 		return false
@@ -1573,6 +1580,9 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 	p.setCooldown(item, cooldown, true)
 }
 
+// setCooldown sets a cooldown for an item. Putting a shield on cooldown normally lowers it immediately, but
+// updateShieldState may be set to false by callers that already handle the shield state themselves, such as
+// blockDamageWithShield when an axe disables the shield.
 func (p *Player) setCooldown(item world.Item, cooldown time.Duration, updateShieldState bool) {
 	if item == nil {
 		return
@@ -1783,7 +1793,8 @@ func (p *Player) useDuration() time.Duration {
 }
 
 // UsingItem checks if the Player is currently using an item. True is returned if the Player is currently eating an
-// item or using it over a longer duration such as when using a bow.
+// item or using it over a longer duration such as when using a bow. A shield raised in the main hand also counts as
+// an item being used, as the client renders it through the same item-use state.
 func (p *Player) UsingItem() bool {
 	if p.usingItem {
 		return true
