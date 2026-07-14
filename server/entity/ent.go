@@ -38,8 +38,13 @@ func (e *Ent) H() *world.EntityHandle {
 	return e.handle
 }
 
+// Behaviour returns the entity's main Behaviour, or nil for entities composed
+// purely of components, such as those created from a Spec without one.
 func (e *Ent) Behaviour() Behaviour {
-	return e.data.Data.(Behaviour)
+	if b, ok := e.data.Data.(Behaviour); ok {
+		return b
+	}
+	return nil
 }
 
 // Explode propagates the explosion behaviour of the underlying Behaviour.
@@ -141,7 +146,17 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	}
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
-	m := e.Behaviour().Tick(e, tx)
+	for _, t := range e.handle.TickerComponents() {
+		t.Tick(tx, e, current)
+	}
+	if e.handle.Closed() {
+		// A ticking component closed the entity.
+		return
+	}
+	var m *Movement
+	if b := e.Behaviour(); b != nil {
+		m = b.Tick(e, tx)
+	}
 	if e.finishPendingPortalTravel(tx) {
 		return
 	}
