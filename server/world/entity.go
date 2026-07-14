@@ -525,7 +525,8 @@ type EntityRegistry struct {
 type EntityRegistryConfig struct {
 	Item         func(opts EntitySpawnOpts, it any) *EntityHandle
 	FallingBlock func(opts EntitySpawnOpts, bl Block) *EntityHandle
-	TNT          func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
+	// TNT creates TNT with a fuse and backs the optional TNTWithConfig field.
+	TNT func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
 	// TNTWithConfig optionally creates TNT with additional spawn configuration.
 	TNTWithConfig      func(opts EntitySpawnOpts, conf TNTSpawnConfig) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle

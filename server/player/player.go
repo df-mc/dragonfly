@@ -610,6 +610,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, world.HurtR
 	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
 		return 0, world.HurtCancelled
 	}
+	// Handlers run first so damage they cancel or reduce to zero does not consume a shield.
 	if info, ok := shieldBlockInfo(src); ok {
 		if (damageLeft > 0 || damageBeforeHandler <= 0 && dmg == 0 && info.BlockZeroDamage) && p.blockDamageWithShield(dmg, src, info) {
 			return 0, world.HurtBlocked
@@ -1965,6 +1966,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 
 	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
+	// Fire Aspect bypasses shields in Bedrock Edition.
 	if result.Accepted() || result.Blocked() {
 		if f, ok := i.Enchantment(enchantment.FireAspect); ok {
 			if flammable, ok := living.(entity.Flammable); ok {

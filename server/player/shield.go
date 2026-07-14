@@ -49,13 +49,11 @@ func (p *Player) ShieldBlocking() bool {
 
 // shieldBlockingAt reports whether the shield is ready to block at now.
 func (p *Player) shieldBlockingAt(now time.Time) bool {
-	if p.shieldBlockingSince.IsZero() || !p.canBlockWithShieldAt(now, false) {
-		return false
-	}
-	return !now.Before(p.shieldBlockingSince.Add(shieldBlockDelay))
+	_, _, ok := p.blockingShieldAt(now)
+	return ok
 }
 
-// updateShieldBlockingState refreshes shield state, reporting whether visible state changed.
+// updateShieldBlockingState refreshes cached visible shield state, reporting whether it changed.
 func (p *Player) updateShieldBlockingState(now time.Time) bool {
 	wasPrepared, wasBlocking := !p.shieldBlockingSince.IsZero(), p.shieldBlockingCached
 	if !p.canBlockWithShieldAt(now, true) {
@@ -81,11 +79,16 @@ func (p *Player) resetShieldBlocking() bool {
 
 // canBlockWithShieldAt reports whether the player may raise a shield at now.
 func (p *Player) canBlockWithShieldAt(now time.Time, cleanExpiredCooldown bool) bool {
-	if (!p.Sneaking() && !p.shieldBlockingInput) || p.hasCooldownAt(item.Shield{}, now, cleanExpiredCooldown) {
+	if !p.shieldInputActiveAt(now, cleanExpiredCooldown) {
 		return false
 	}
 	_, _, ok := p.heldShield()
 	return ok
+}
+
+// shieldInputActiveAt reports whether shield input is active without a cooldown at now.
+func (p *Player) shieldInputActiveAt(now time.Time, cleanExpiredCooldown bool) bool {
+	return (p.Sneaking() || p.shieldBlockingInput) && !p.hasCooldownAt(item.Shield{}, now, cleanExpiredCooldown)
 }
 
 // heldShield returns the active shield, preferring the off hand as the client does.
@@ -98,6 +101,15 @@ func (p *Player) heldShield() (item.Stack, shieldHand, bool) {
 		return mainHand, shieldHandMain, true
 	}
 	return item.Stack{}, 0, false
+}
+
+// blockingShieldAt returns the shield ready to block at now.
+func (p *Player) blockingShieldAt(now time.Time) (item.Stack, shieldHand, bool) {
+	if p.shieldBlockingSince.IsZero() || now.Before(p.shieldBlockingSince.Add(shieldBlockDelay)) ||
+		!p.shieldInputActiveAt(now, false) {
+		return item.Stack{}, 0, false
+	}
+	return p.heldShield()
 }
 
 // delayShieldAfterAttack lowers shields briefly after an attack.
@@ -118,12 +130,13 @@ func (p *Player) setHeldShield(hand shieldHand, shield item.Stack) {
 	_ = p.offHand.SetItem(0, shield)
 }
 
-// shieldBlocksDamageAt reports whether the raised shield blocks info at now.
-func (p *Player) shieldBlocksDamageAt(info world.ShieldBlockInfo, now time.Time) bool {
-	if !p.shieldBlockingAt(now) {
-		return false
+// shieldForDamageAt returns the raised shield if it blocks info at now.
+func (p *Player) shieldForDamageAt(info world.ShieldBlockInfo, now time.Time) (item.Stack, shieldHand, bool) {
+	shield, hand, ok := p.blockingShieldAt(now)
+	if !ok || !p.facingShieldDamageSource(info.Origin) {
+		return item.Stack{}, 0, false
 	}
-	return p.facingShieldDamageSource(info.Origin)
+	return shield, hand, true
 }
 
 // facingShieldDamageSource reports whether source is in front of the player.
@@ -291,10 +304,7 @@ func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource, info
 	if info.Source != nil && info.Source.H() != nil && p.H() != nil && info.Source.H().UUID() == p.H().UUID() {
 		return false
 	}
-	if !p.shieldBlocksDamageAt(info, now) {
-		return false
-	}
-	shield, hand, ok := p.heldShield()
+	shield, hand, ok := p.shieldForDamageAt(info, now)
 	if !ok {
 		return false
 	}
