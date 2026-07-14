@@ -16,6 +16,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -236,6 +237,43 @@ func TestContinueBreakingReReadsTargetBlock(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestFinishBreakingCorrectsRemovedPrivateTarget(t *testing.T) {
+	var (
+		packets []packet.Packet
+		waitErr error
+	)
+	withViewLayerTestPlayerConn(t, func(p *Player, tx *world.Tx, conn *fakeConn) {
+		pos := cube.Pos{0, 64, 0}
+		tx.SetBlock(pos, block.Dirt{}, nil)
+		p.ViewBlock(pos, block.Stone{})
+		p.StartBreaking(pos, cube.FaceUp)
+
+		p.ViewPublicBlock(pos)
+		p.ContinueBreaking(cube.FaceUp)
+		p.session().SendMessage("before predicted destroy")
+		_, waitErr = conn.packetsUntilText("before predicted destroy")
+		if waitErr != nil {
+			return
+		}
+
+		p.FinishBreaking()
+		p.session().SendMessage("after predicted destroy")
+		packets, waitErr = conn.packetsUntilText("after predicted destroy")
+	})
+	if waitErr != nil {
+		t.Fatal(waitErr)
+	}
+
+	for _, pk := range packets {
+		update, ok := pk.(*packet.UpdateBlock)
+		if ok && update.Position == (protocol.BlockPos{0, 64, 0}) && update.Layer == 0 &&
+			update.NewBlockRuntimeID == world.DefaultBlockRegistry.BlockRuntimeID(block.Dirt{}) {
+			return
+		}
+	}
+	t.Fatal("expected the public block to be resent after the predicted destroy")
 }
 
 func TestPublicBlockAudienceUsesAffectedBlockViewers(t *testing.T) {

@@ -97,10 +97,11 @@ type playerData struct {
 
 	collidedVertically, collidedHorizontally bool
 
-	breaking          bool
-	blockBreakTarget  *blockBreakTarget
-	breakingFace      cube.Face
-	lastBreakDuration time.Duration
+	breaking                bool
+	blockBreakTarget        *blockBreakTarget
+	blockBreakCorrectionPos *cube.Pos
+	breakingFace            cube.Face
+	lastBreakDuration       time.Duration
 
 	breakCounter uint32
 
@@ -1990,6 +1991,10 @@ func (p *Player) FinishBreaking() {
 			p.blockAudience(target.mode).Resend(target.pos)
 			p.blockBreakTarget = nil
 		}
+		if pos := p.blockBreakCorrectionPos; pos != nil {
+			p.blockAudience(publicBlockView).Resend(*pos)
+			p.blockBreakCorrectionPos = nil
+		}
 		return
 	}
 	target := p.blockBreakTarget
@@ -2004,6 +2009,7 @@ func (p *Player) FinishBreaking() {
 // if the player isn't breaking anything.
 // Unlike FinishBreaking, AbortBreaking does not stop the animation.
 func (p *Player) AbortBreaking() {
+	p.blockBreakCorrectionPos = nil
 	if !p.breaking {
 		return
 	}
@@ -2024,8 +2030,10 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 	}
 	b, ok := p.breakTargetBlock(*target)
 	if !ok {
+		pos := target.pos
 		p.AbortBreaking()
-		p.blockAudience(publicBlockView).Resend(target.pos)
+		p.blockBreakCorrectionPos = &pos
+		p.blockAudience(publicBlockView).Resend(pos)
 		return
 	}
 	audience := p.blockAudience(target.mode)
