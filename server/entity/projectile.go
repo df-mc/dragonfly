@@ -296,9 +296,7 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 // hitEntity is called when a projectile hits a Living. It deals damage to the
 // entity and knocks it back. Additionally, it applies any potion effects and
 // fire if applicable.
-// It returns true if the entity blocked the hit with a shield, in which case the
-// projectile is deflected instead of hitting: it stays alive, is not recorded as
-// having collided with the entity, and may hit something else.
+// It returns true if a shield deflected the projectile.
 func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool {
 	var owner world.Entity
 	if lt.conf.Owner != nil {
@@ -329,8 +327,7 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 	return false
 }
 
-// emitHitEffects spawns the particles and plays the sound configured for the projectile at the position it
-// hit. It is called only once the hit is final: a projectile deflected by a shield produces no hit effects.
+// emitHitEffects emits the configured effects for a final, non-deflected hit.
 func (lt *ProjectileBehaviour) emitHitEffects(tx *world.Tx, result trace.Result) {
 	for i := 0; i < lt.conf.ParticleCount; i++ {
 		tx.AddParticle(result.Position(), lt.conf.Particle)
@@ -340,8 +337,7 @@ func (lt *ProjectileBehaviour) emitHitEffects(tx *world.Tx, result trace.Result)
 	}
 }
 
-// deflect bounces a projectile back the way it came after its hit was blocked by a shield. The projectile is
-// nudged slightly out of the entity it hit so that it does not immediately collide with it again.
+// deflect reverses a shield-blocked projectile and moves it clear of the blocker.
 func (lt *ProjectileBehaviour) deflect(e *Ent, vel mgl64.Vec3) {
 	if vel.Len() == 0 {
 		return
