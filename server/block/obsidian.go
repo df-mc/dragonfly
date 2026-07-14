@@ -48,5 +48,5 @@ func (o Obsidian) Frame(dimension world.Dimension) bool {
 func (o Obsidian) BreakInfo() BreakInfo {
 	return newBreakInfo(35, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
-	}, pickaxeEffective, oneOf(o)).withBlastResistance(6000)
+	}, pickaxeEffective, oneOf(o)).withBlastResistance(1200)
 }

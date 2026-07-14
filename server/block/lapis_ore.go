@@ -17,7 +17,7 @@ type LapisOre struct {
 func (l LapisOre) BreakInfo() BreakInfo {
 	return newBreakInfo(l.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
-	}, pickaxeEffective, multiOreDrops(item.LapisLazuli{}, l, 4, 9)).withXPDropRange(2, 5).withBlastResistance(15)
+	}, pickaxeEffective, multiOreDrops(item.LapisLazuli{}, l, 4, 9)).withXPDropRange(2, 5).withBlastResistance(3)
 }
 
 // SmeltInfo ...

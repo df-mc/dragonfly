@@ -127,7 +127,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 			}
 
 			pos = pos.Add(ray)
-			if blastForce -= (resistance/5 + 0.3) * 0.3; blastForce > 0 {
+			if blastForce -= (resistance + 0.3) * 0.3; blastForce > 0 {
 				affectedBlocks = append(affectedBlocks, current)
 			}
 		}

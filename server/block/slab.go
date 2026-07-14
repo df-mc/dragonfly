@@ -112,7 +112,7 @@ func (s Slab) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (s Slab) BreakInfo() BreakInfo {
-	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
+	hardness, blastResistance, harvestable, effective := 2.0, 6.0, pickaxeHarvestable, pickaxeEffective
 
 	switch block := s.Block.(type) {
 	case Stone, Sandstone, Quartz, Purpur, Blackstone, PolishedBlackstoneBrick:
