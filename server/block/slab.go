@@ -117,6 +117,8 @@ func (s Slab) BreakInfo() BreakInfo {
 	switch block := s.Block.(type) {
 	case Stone, Sandstone, Quartz, Purpur, Blackstone, PolishedBlackstoneBrick:
 	// These slab types do not match their block's hardness or blast resistance
+	case EndBricks:
+		hardness = 3
 	case StoneBricks:
 		if block.Type == MossyStoneBricks() {
 			hardness = 1.5
