@@ -1,6 +1,8 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -21,14 +23,29 @@ func (r RedstoneLamp) LightEmissionLevel() uint8 {
 	return 0
 }
 
-// RedstonePowerUpdate updates the lamp's lit state to match its redstone input.
-func (r RedstoneLamp) RedstonePowerUpdate(_ cube.Pos, _ *world.Tx, power int) (world.Block, bool) {
-	lit := power > 0
-	if r.Lit == lit {
-		return r, false
+// RedstonePowerUpdate lights the lamp as soon as it is powered. Turning off
+// is delayed by two redstone ticks, keeping the lamp lit through short pulses.
+func (r RedstoneLamp) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, power int) (world.Block, bool) {
+	if power > 0 {
+		if r.Lit {
+			return r, false
+		}
+		r.Lit = true
+		return r, true
 	}
-	r.Lit = lit
-	return r, true
+	if r.Lit {
+		tx.ScheduleBlockUpdate(pos, r, redstoneTicks(2))
+	}
+	return r, false
+}
+
+// ScheduledTick turns the lamp off if it is still unpowered.
+func (r RedstoneLamp) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	if !r.Lit || tx.RedstonePower(pos) > 0 {
+		return
+	}
+	r.Lit = false
+	tx.SetBlock(pos, r, nil)
 }
 
 // BreakInfo ...

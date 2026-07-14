@@ -96,9 +96,15 @@ func (p pressurePlate) Uint8() uint8 {
 }
 
 // Wood reports whether the pressure plate is made of wood, making it react to
-// every entity and usable as furnace fuel.
+// every entity.
 func (p pressurePlate) Wood() bool {
 	return p >= 2 && p <= 13
+}
+
+// Flammable reports whether the pressure plate can burn, making it usable as
+// furnace fuel. Crimson and warped plates are wooden but do not burn.
+func (p pressurePlate) Flammable() bool {
+	return p.Wood() && p != CrimsonPressurePlate().pressurePlate && p != WarpedPressurePlate().pressurePlate
 }
 
 // Weighted reports whether the pressure plate emits an analog power level

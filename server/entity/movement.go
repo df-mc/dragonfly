@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -39,6 +40,27 @@ func (m *Movement) Send() {
 		}
 		if velChanged {
 			v.ViewEntityVelocity(m.e, m.vel)
+		}
+	}
+}
+
+// checkSteppers calls EntityStepOn on the block the entity stands on after
+// the movement, mirroring the behaviour of players for other entities.
+func (m *Movement) checkSteppers(tx *world.Tx) {
+	if !m.onGround {
+		return
+	}
+	box := m.e.H().Type().BBox(m.e).Translate(m.pos).Grow(-0.0001)
+	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+	y := int(math.Floor(box.Min()[1] - 0.0001))
+
+	for x := low[0]; x <= high[0]; x++ {
+		for z := low[2]; z <= high[2]; z++ {
+			pos := cube.Pos{x, y, z}
+			if stepper, ok := tx.Block(pos).(block.EntityStepper); ok {
+				stepper.EntityStepOn(pos, tx, m.e)
+				return
+			}
 		}
 	}
 }

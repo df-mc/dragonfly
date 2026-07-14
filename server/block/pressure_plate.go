@@ -101,7 +101,7 @@ func (p PressurePlate) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Fa
 
 // BreakInfo ...
 func (p PressurePlate) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(p))
+	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(PressurePlate{Type: p.Type}))
 }
 
 // SideClosed ...
@@ -111,7 +111,7 @@ func (PressurePlate) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // FuelInfo ...
 func (p PressurePlate) FuelInfo() item.FuelInfo {
-	if p.Type.Wood() {
+	if p.Type.Flammable() {
 		return newFuelInfo(time.Second * 15)
 	}
 	return item.FuelInfo{}

@@ -147,6 +147,7 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	}
 	if m != nil {
 		m.Send()
+		m.checkSteppers(tx)
 	}
 	if e.checkPortalInsiders() && e.finishPendingPortalTravel(tx) {
 		return

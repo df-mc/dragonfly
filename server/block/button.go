@@ -45,14 +45,27 @@ func (b Button) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 
 // Activate presses the button and schedules its release.
 func (b Button) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
+	b.press(pos, tx)
+	return true
+}
+
+// ProjectileHit presses wooden buttons hit by an arrow.
+func (b Button) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
+	if !b.Type.Wood() || e.H().Type().EncodeEntity() != "minecraft:arrow" {
+		return
+	}
+	b.press(pos, tx)
+}
+
+// press activates an unpressed button and schedules its release.
+func (b Button) press(pos cube.Pos, tx *world.Tx) {
 	if b.Pressed {
-		return true
+		return
 	}
 	b.Pressed = true
 	tx.SetBlock(pos, b, nil)
 	tx.ScheduleBlockUpdate(pos, b, b.pressDuration())
 	tx.PlaySound(pos.Vec3Centre(), sound.Click{})
-	return true
 }
 
 // NeighbourUpdateTick breaks the button if its supporting block is removed.
@@ -62,14 +75,30 @@ func (b Button) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
-// ScheduledTick releases a pressed button.
+// ScheduledTick releases a pressed button, unless an arrow rests inside a
+// wooden button, keeping it pressed.
 func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !b.Pressed {
+		return
+	}
+	if b.Type.Wood() && arrowWithin(pos, tx) {
+		tx.ScheduleBlockUpdate(pos, b, b.pressDuration())
 		return
 	}
 	b.Pressed = false
 	tx.SetBlock(pos, b, nil)
 	tx.PlaySound(pos.Vec3Centre(), sound.Click{})
+}
+
+// arrowWithin reports whether an arrow intersects the block space at pos.
+func arrowWithin(pos cube.Pos, tx *world.Tx) bool {
+	box := cube.Box(0, 0, 0, 1, 1, 1).Translate(pos.Vec3())
+	for e := range tx.EntitiesWithin(box) {
+		if e.H().Type().EncodeEntity() == "minecraft:arrow" {
+			return true
+		}
+	}
+	return false
 }
 
 // RedstonePower returns maximum power while the button is pressed.
@@ -90,7 +119,7 @@ func (b Button) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Face) int
 
 // BreakInfo ...
 func (b Button) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(b))
+	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(Button{Type: b.Type}))
 }
 
 // SideClosed ...
@@ -100,7 +129,7 @@ func (Button) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // FuelInfo ...
 func (b Button) FuelInfo() item.FuelInfo {
-	if b.Type.Wood() {
+	if b.Type.Flammable() {
 		return newFuelInfo(time.Second * 5)
 	}
 	return item.FuelInfo{}

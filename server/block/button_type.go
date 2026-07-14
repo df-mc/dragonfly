@@ -83,9 +83,15 @@ func (b button) Uint8() uint8 {
 }
 
 // Wood reports whether the button is made of wood, giving it a longer press
-// duration and making it usable as furnace fuel.
+// duration and letting arrows press it.
 func (b button) Wood() bool {
 	return b >= 2
+}
+
+// Flammable reports whether the button can burn, making it usable as furnace
+// fuel. Crimson and warped buttons are wooden but do not burn.
+func (b button) Flammable() bool {
+	return b.Wood() && b != CrimsonButton().button && b != WarpedButton().button
 }
 
 // Name ...
