@@ -49,14 +49,17 @@ func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx 
 
 // Ignite ...
 func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
-	sourceHandle := entityHandle(source)
-	spawnTnt(pos, tx, time.Second*4, sourceHandle, true)
+	spawnTnt(pos, tx, time.Second*4, tntIgnitionSourceHandle(source), true)
 	return true
 }
 
 // Explode ...
 func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig) {
-	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), tntExplosionSourceHandle(c), !c.UnblockableByShield)
+	var source *world.EntityHandle
+	if c.Source != nil {
+		source = c.Source.H()
+	}
+	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))), source, !c.UnblockableByShield)
 }
 
 // BreakInfo ...
@@ -94,17 +97,6 @@ func tntIgnitionSourceHandle(source world.Entity) *world.EntityHandle {
 		}
 	}
 	return source.H()
-}
-
-func tntExplosionSourceHandle(c ExplosionConfig) *world.EntityHandle {
-	return entityHandle(c.Source)
-}
-
-func entityHandle(e world.Entity) *world.EntityHandle {
-	if e == nil {
-		return nil
-	}
-	return e.H()
 }
 
 func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration, source *world.EntityHandle, blockableByShield bool) {

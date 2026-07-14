@@ -469,6 +469,29 @@ type DamageSource interface {
 	IgnoreTotem() bool
 }
 
+// HurtResult describes the outcome of a call to Hurt on a living entity.
+type HurtResult uint8
+
+const (
+	// HurtImmune indicates that no damage was applied because the entity was immune.
+	HurtImmune HurtResult = iota
+	// HurtDamaged indicates that the entity accepted the hit and ran the normal damage path.
+	HurtDamaged
+	// HurtCancelled indicates that a handler cancelled the hurt event.
+	HurtCancelled
+	// HurtBlocked indicates that a shield blocked the hit.
+	HurtBlocked
+)
+
+// Damaged reports whether the entity accepted the hit and ran the normal damage path.
+func (r HurtResult) Damaged() bool { return r == HurtDamaged }
+
+// Blocked reports whether a shield blocked the hit.
+func (r HurtResult) Blocked() bool { return r == HurtBlocked }
+
+// Cancelled reports whether a handler cancelled the hurt event.
+func (r HurtResult) Cancelled() bool { return r == HurtCancelled }
+
 // HealingSource represents a source of healing for an Entity. This source may
 // be passed to the Heal() method of a living Entity.
 type HealingSource interface {

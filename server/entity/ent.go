@@ -50,13 +50,6 @@ func (e *Ent) ProjectileOwner() *world.EntityHandle {
 	return nil
 }
 
-// MarkShieldBlocked marks the Ent's behaviour as shield-blocked if it supports projectile shield block state.
-func (e *Ent) MarkShieldBlocked() {
-	if marker, ok := e.Behaviour().(interface{ MarkShieldBlocked() }); ok {
-		marker.MarkShieldBlocked()
-	}
-}
-
 // Explode propagates the explosion behaviour of the underlying Behaviour.
 func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
 	if expl, ok := e.Behaviour().(interface {

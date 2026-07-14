@@ -7,70 +7,32 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
-func TestShieldBlockingInputPrefersHeldRawInputOverStopSneaking(t *testing.T) {
-	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
-	flags.Set(packet.InputFlagSneakCurrentRaw)
-	flags.Set(packet.InputFlagStopSneaking)
-
-	down, ok := shieldBlockingInput(flags, true, false)
-	if !ok {
-		t.Fatal("expected shield input to be updated")
+func TestShieldBlockingInput(t *testing.T) {
+	tests := []struct {
+		name        string
+		flags       []int
+		wasSneaking bool
+		sneaking    bool
+		wantDown    bool
+		wantUpdated bool
+	}{
+		{name: "held raw wins over stop", flags: []int{packet.InputFlagSneakCurrentRaw, packet.InputFlagStopSneaking}, wasSneaking: true, wantDown: true, wantUpdated: true},
+		{name: "release stops", flags: []int{packet.InputFlagSneakReleasedRaw}, wasSneaking: true, wantUpdated: true},
+		{name: "item use is unrelated", flags: []int{packet.InputFlagStartUsingItem}},
+		{name: "accepted start begins", flags: []int{packet.InputFlagStartSneaking}, sneaking: true, wantDown: true, wantUpdated: true},
+		{name: "cancelled start ignored", flags: []int{packet.InputFlagStartSneaking, packet.InputFlagSneakCurrentRaw}},
+		{name: "held raw after cancellation ignored", flags: []int{packet.InputFlagSneakCurrentRaw}},
 	}
-	if !down {
-		t.Fatal("expected held raw sneak input to keep shield input active")
-	}
-}
-
-func TestShieldBlockingInputStopsOnSneakRelease(t *testing.T) {
-	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
-	flags.Set(packet.InputFlagSneakReleasedRaw)
-
-	down, ok := shieldBlockingInput(flags, true, false)
-	if !ok {
-		t.Fatal("expected shield input to be updated")
-	}
-	if down {
-		t.Fatal("expected released raw sneak input to stop shield input")
-	}
-}
-
-func TestShieldBlockingInputIgnoresUseItem(t *testing.T) {
-	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
-	flags.Set(packet.InputFlagStartUsingItem)
-
-	if down, ok := shieldBlockingInput(flags, false, false); ok || down {
-		t.Fatal("expected generic shield input helper not to start from item use")
-	}
-}
-
-func TestShieldBlockingInputStartsOnStartSneakingOnly(t *testing.T) {
-	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
-	flags.Set(packet.InputFlagStartSneaking)
-
-	down, ok := shieldBlockingInput(flags, false, true)
-	if !ok {
-		t.Fatal("expected shield input to be updated")
-	}
-	if !down {
-		t.Fatal("expected start sneaking input to start shield input")
-	}
-}
-
-func TestShieldBlockingInputIgnoresCancelledStartSneaking(t *testing.T) {
-	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
-	flags.Set(packet.InputFlagStartSneaking)
-	flags.Set(packet.InputFlagSneakCurrentRaw)
-
-	if down, ok := shieldBlockingInput(flags, false, false); ok || down {
-		t.Fatal("expected cancelled start sneaking not to start shield input")
-	}
-}
-
-func TestShieldBlockingInputIgnoresHeldRawSneakAfterCancelledSneak(t *testing.T) {
-	flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
-	flags.Set(packet.InputFlagSneakCurrentRaw)
-
-	if down, ok := shieldBlockingInput(flags, false, false); ok || down {
-		t.Fatal("expected held raw sneak after cancelled sneaking not to start shield input")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flags := protocol.NewBitset(packet.PlayerAuthInputBitsetSize)
+			for _, flag := range tt.flags {
+				flags.Set(flag)
+			}
+			down, updated := shieldBlockingInput(flags, tt.wasSneaking, tt.sneaking)
+			if down != tt.wantDown || updated != tt.wantUpdated {
+				t.Fatalf("shieldBlockingInput() = (%v, %v), want (%v, %v)", down, updated, tt.wantDown, tt.wantUpdated)
+			}
+		})
 	}
 }

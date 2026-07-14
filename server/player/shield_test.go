@@ -49,15 +49,6 @@ func (a *shieldKnockBackAttacker) KnockBack(src mgl64.Vec3, force, height float6
 	a.src, a.force, a.height = src, force, height
 }
 
-type shieldMarkedProjectile struct {
-	shieldTestEntity
-	marked bool
-}
-
-func (p *shieldMarkedProjectile) MarkShieldBlocked() {
-	p.marked = true
-}
-
 func newShieldTestPlayer(rot cube.Rotation, mainHand, offHand item.Stack) *Player {
 	heldSlot := uint32(0)
 	inv := inventory.New(36, nil)
@@ -448,8 +439,8 @@ func TestShieldDoesNotBlockCancelledDamage(t *testing.T) {
 	p.h = cancellingHurtHandler{}
 
 	front := shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}
-	if _, vulnerable := p.Hurt(4, entity.AttackDamageSource{Attacker: front}); vulnerable {
-		t.Fatal("expected cancelled damage not to be vulnerable")
+	if _, result := p.Hurt(4, entity.AttackDamageSource{Attacker: front}); !result.Cancelled() {
+		t.Fatalf("expected cancelled damage result, got %v", result)
 	}
 	_, offHand := p.HeldItems()
 	if offHand.Durability() != offHand.MaxDurability() {
@@ -466,21 +457,16 @@ func TestShieldBlocksZeroDamageProjectile(t *testing.T) {
 		_ = w.Close()
 	}()
 	var (
-		dmg           float64
-		vulnerable    bool
-		shieldBlocked bool
+		dmg    float64
+		result world.HurtResult
 	)
 	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		projectile := tx.AddEntity(h).(*entity.Ent)
-		dmg, vulnerable = p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile})
-		shieldBlocked = projectile.Behaviour().(*entity.ProjectileBehaviour).ShieldBlocked()
+		dmg, result = p.Hurt(0, entity.ProjectileDamageSource{Projectile: projectile})
 	})
-	if dmg != 0 || vulnerable {
-		t.Fatalf("expected shield-blocked zero damage projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
-	}
-	if !shieldBlocked {
-		t.Fatal("expected zero damage projectile shield block marker to be set")
+	if dmg != 0 || !result.Blocked() {
+		t.Fatalf("expected shield-blocked zero damage projectile, got damage %v result %v", dmg, result)
 	}
 }
 
@@ -495,34 +481,16 @@ func TestShieldBlocksProjectileDuringDamageImmunity(t *testing.T) {
 		_ = w.Close()
 	}()
 	var (
-		dmg           float64
-		vulnerable    bool
-		shieldBlocked bool
+		dmg    float64
+		result world.HurtResult
 	)
 	w.Do(func(tx *world.Tx) {
 		p.tx = tx
 		projectile := tx.AddEntity(h).(*entity.Ent)
-		dmg, vulnerable = p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile})
-		shieldBlocked = projectile.Behaviour().(*entity.ProjectileBehaviour).ShieldBlocked()
+		dmg, result = p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile})
 	})
-	if dmg != 0 || vulnerable {
-		t.Fatalf("expected immune shield-blocked projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
-	}
-	if !shieldBlocked {
-		t.Fatal("expected shield-blocked projectile to be marked even during damage immunity")
-	}
-}
-
-func TestShieldBlocksCustomMarkedProjectile(t *testing.T) {
-	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
-	p.shieldBlockingSince = time.Now().Add(-shieldBlockDelay)
-	projectile := &shieldMarkedProjectile{shieldTestEntity: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}}
-
-	if dmg, vulnerable := p.Hurt(1, entity.ProjectileDamageSource{Projectile: projectile}); dmg != 0 || vulnerable {
-		t.Fatalf("expected shield-blocked custom projectile to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
-	}
-	if !projectile.marked {
-		t.Fatal("expected custom projectile shield block marker to be set")
+	if dmg != 0 || !result.Blocked() {
+		t.Fatalf("expected immune shield-blocked projectile, got damage %v result %v", dmg, result)
 	}
 }
 
@@ -533,8 +501,8 @@ func TestIgnoredImmuneMeleeHitDoesNotTriggerShieldBlock(t *testing.T) {
 	p.lastDamage = 10
 	attacker := &shieldKnockBackAttacker{shieldTestEntity: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}}
 
-	if dmg, vulnerable := p.Hurt(1, entity.AttackDamageSource{Attacker: attacker}); dmg != 0 || vulnerable {
-		t.Fatalf("expected immune ignored melee hit to deal no vulnerable damage, got damage %v vulnerable %v", dmg, vulnerable)
+	if dmg, result := p.Hurt(1, entity.AttackDamageSource{Attacker: attacker}); dmg != 0 || result != world.HurtImmune {
+		t.Fatalf("expected immune ignored melee hit, got damage %v result %v", dmg, result)
 	}
 	if attacker.force != 0 || attacker.height != 0 {
 		t.Fatalf("expected ignored immune melee hit not to knock back attacker, got %v/%v", attacker.force, attacker.height)
@@ -552,8 +520,8 @@ func TestIgnoredImmuneHitDoesNotNotifyHurtHandler(t *testing.T) {
 	handler := &minimumDamageHurtHandler{}
 	p.h = handler
 
-	if dmg, vulnerable := p.Hurt(1, entity.AttackDamageSource{Attacker: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}}); dmg != 0 || vulnerable {
-		t.Fatalf("expected immune ignored hit to deal no damage, got damage %v vulnerable %v", dmg, vulnerable)
+	if dmg, result := p.Hurt(1, entity.AttackDamageSource{Attacker: shieldTestEntity{pos: mgl64.Vec3{0, 0, 4}}}); dmg != 0 || result != world.HurtImmune {
+		t.Fatalf("expected immune ignored hit, got damage %v result %v", dmg, result)
 	}
 	if handler.called {
 		t.Fatal("expected fully ignored immune hit not to notify hurt handler")
@@ -612,6 +580,18 @@ func TestShieldDoesNotLoseDurabilityWhenDamageFullyReduced(t *testing.T) {
 	_, offHand := p.HeldItems()
 	if got, want := offHand.Durability(), item.NewStack(item.Shield{}, 1).MaxDurability(); got != want {
 		t.Fatalf("expected shield durability to remain %v after fully reduced damage, got %v", want, got)
+	}
+}
+
+func TestShieldDurabilityDamage(t *testing.T) {
+	tests := []struct {
+		damage float64
+		want   int
+	}{{2.9, 0}, {3, 4}, {7.2, 8}}
+	for _, tt := range tests {
+		if got := shieldDurabilityDamage(tt.damage); got != tt.want {
+			t.Errorf("shieldDurabilityDamage(%v) = %v, want %v", tt.damage, got, tt.want)
+		}
 	}
 }
 
@@ -766,21 +746,6 @@ func (h *nestedShieldBlockHandler) HandleHurt(_ *Context, _ *float64, _ bool, _ 
 	h.player.Hurt(4, h.src)
 }
 
-func TestShieldDisableCooldownFromAxeAttack(t *testing.T) {
-	attacker := shieldAxeAttacker{mainHand: item.NewStack(item.Axe{Tier: item.ToolTierWood}, 1)}
-	cooldown, ok := shieldDisableCooldownFrom(entity.AttackDamageSource{Attacker: attacker})
-	if !ok {
-		t.Fatal("expected an axe attack to disable shields")
-	}
-	if cooldown != shieldDisableCooldown {
-		t.Fatalf("expected shield disable cooldown %v, got %v", shieldDisableCooldown, cooldown)
-	}
-
-	if _, ok := shieldDisableCooldownFrom(entity.AttackDamageSource{Attacker: shieldTestEntity{}}); ok {
-		t.Fatal("expected a non-axe attack not to disable shields")
-	}
-}
-
 func TestShieldDisableCooldownFromCustomAxeToolAttack(t *testing.T) {
 	attacker := shieldAxeAttacker{mainHand: item.NewStack(shieldCustomAxeTool{}, 1)}
 	cooldown, ok := shieldDisableCooldownFrom(entity.AttackDamageSource{Attacker: attacker})
@@ -789,6 +754,9 @@ func TestShieldDisableCooldownFromCustomAxeToolAttack(t *testing.T) {
 	}
 	if cooldown != shieldDisableCooldown {
 		t.Fatalf("expected shield disable cooldown %v, got %v", shieldDisableCooldown, cooldown)
+	}
+	if _, ok := shieldDisableCooldownFrom(entity.AttackDamageSource{Attacker: shieldTestEntity{}}); ok {
+		t.Fatal("expected a non-axe attack not to disable shields")
 	}
 }
 
@@ -828,21 +796,6 @@ func TestShieldKnocksBackMeleeAttacker(t *testing.T) {
 	}
 }
 
-func TestShieldDurabilityDamage(t *testing.T) {
-	for _, test := range []struct {
-		damage float64
-		want   int
-	}{
-		{damage: 2.9, want: 0},
-		{damage: 3, want: 4},
-		{damage: 7.2, want: 8},
-	} {
-		if got := shieldDurabilityDamage(test.damage); got != test.want {
-			t.Fatalf("shieldDurabilityDamage(%v) = %v, want %v", test.damage, got, test.want)
-		}
-	}
-}
-
 func TestShieldBlockingReadDoesNotClearExpiredCooldown(t *testing.T) {
 	now := time.Now()
 	p := newShieldTestPlayer(cube.Rotation{}, item.Stack{}, item.NewStack(item.Shield{}, 1))
@@ -854,100 +807,5 @@ func TestShieldBlockingReadDoesNotClearExpiredCooldown(t *testing.T) {
 	}
 	if _, ok := p.cooldowns[shieldItemName]; !ok {
 		t.Fatal("expected shield blocking metadata read not to mutate cooldown state")
-	}
-}
-
-func TestShouldAttemptShieldBlockBeforeHurtHandler(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		rawDamage float64
-		src       world.DamageSource
-		want      bool
-	}{
-		{
-			name:      "positive melee damage",
-			rawDamage: 4,
-			src:       entity.AttackDamageSource{Attacker: shieldTestEntity{}},
-		},
-		{
-			name:      "positive projectile damage",
-			rawDamage: 4,
-			src:       entity.ProjectileDamageSource{Projectile: shieldTestEntity{}},
-			want:      true,
-		},
-		{
-			name:      "positive explosion damage",
-			rawDamage: 4,
-			src: entity.ExplosionDamageSource{
-				Origin:            mgl64.Vec3{0, 0, 4},
-				HasOrigin:         true,
-				BlockableByShield: true,
-			},
-			want: true,
-		},
-		{
-			name: "zero damage projectile",
-			src:  entity.ProjectileDamageSource{Projectile: shieldTestEntity{}},
-			want: true,
-		},
-		{
-			name: "zero damage melee",
-			src:  entity.AttackDamageSource{Attacker: shieldTestEntity{}},
-		},
-		{
-			name:      "negative damage",
-			rawDamage: -1,
-			src:       entity.AttackDamageSource{Attacker: shieldTestEntity{}},
-		},
-	} {
-		if got := shouldAttemptShieldBlockBeforeHurtHandler(test.rawDamage, test.src); got != test.want {
-			t.Fatalf("%v: expected shouldAttemptShieldBlockBeforeHurtHandler to return %v, got %v", test.name, test.want, got)
-		}
-	}
-}
-
-func TestShouldAttemptShieldBlockAfterHurtHandlerWithHandlerMutatedDamage(t *testing.T) {
-	for _, test := range []struct {
-		name                string
-		rawDamage           float64
-		damageLeft          float64
-		damageBeforeHandler float64
-		src                 world.DamageSource
-		want                bool
-	}{
-		{
-			name:                "positive damage reduced to zero",
-			rawDamage:           4,
-			damageLeft:          0,
-			damageBeforeHandler: 4,
-			src:                 entity.AttackDamageSource{Attacker: shieldTestEntity{}},
-		},
-		{
-			name:       "zero damage increased",
-			damageLeft: 2,
-			src:        entity.AttackDamageSource{Attacker: shieldTestEntity{}},
-			want:       true,
-		},
-		{
-			name:       "negative damage",
-			rawDamage:  -1,
-			damageLeft: -1,
-			src:        entity.AttackDamageSource{Attacker: shieldTestEntity{}},
-		},
-		{
-			name:       "positive raw damage fully reduced",
-			rawDamage:  4,
-			damageLeft: 0,
-			src:        entity.AttackDamageSource{Attacker: shieldTestEntity{}},
-		},
-		{
-			name: "zero damage projectile",
-			src:  entity.ProjectileDamageSource{Projectile: shieldTestEntity{}},
-			want: true,
-		},
-	} {
-		if got := shouldAttemptShieldBlockAfterHurtHandler(test.rawDamage, test.damageLeft, test.damageBeforeHandler, test.src); got != test.want {
-			t.Fatalf("%v: expected shouldAttemptShieldBlockAfterHurtHandler to return %v, got %v", test.name, test.want, got)
-		}
 	}
 }

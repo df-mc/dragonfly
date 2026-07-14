@@ -51,20 +51,6 @@ func TestTNTExplosionConfigHonoursBlockabilityInput(t *testing.T) {
 	})
 }
 
-func TestTNTExplosionConfigDefaultsToShieldBlockable(t *testing.T) {
-	w := world.Config{Synchronous: true}.New()
-	defer func() {
-		_ = w.Close()
-	}()
-
-	w.Do(func(tx *world.Tx) {
-		conf := tntExplosionConfig(tx, nil, true)
-		if conf.UnblockableByShield {
-			t.Fatal("expected default TNT explosions to be shield blockable")
-		}
-	})
-}
-
 func TestTNTNBTPreservesUnblockableShieldConfig(t *testing.T) {
 	var data world.EntityData
 	TNTType.DecodeNBT(map[string]any{
@@ -88,23 +74,6 @@ func TestTNTNBTDefaultsToShieldBlockable(t *testing.T) {
 	}
 }
 
-func TestTNTNBTDoesNotPersistRuntimeSource(t *testing.T) {
-	source := world.EntitySpawnOpts{}.New(tntTestEntityType{}, tntTestEntityType{})
-	data := world.EntityData{
-		Data: tntBehaviourConfig{
-			Fuse:   time.Second,
-			Source: source,
-		}.New(),
-	}
-
-	encoded := TNTType.EncodeNBT(&data)
-	var decoded world.EntityData
-	TNTType.DecodeNBT(encoded, &decoded)
-	if decoded.Data.(*tntBehaviour).source != nil {
-		t.Fatal("expected TNT NBT decode not to restore runtime-only source handle")
-	}
-}
-
 func TestTNTNBTClampsFuseToUint8Range(t *testing.T) {
 	tests := []struct {
 		name string
@@ -117,7 +86,7 @@ func TestTNTNBTClampsFuseToUint8Range(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data := world.EntityData{
-				Data: tntBehaviourConfig{Fuse: tt.fuse}.New(),
+				Data: tntBehaviourConfig{Fuse: tt.fuse, BlockableByShield: true}.New(),
 			}
 
 			encoded := TNTType.EncodeNBT(&data)

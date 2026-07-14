@@ -37,11 +37,14 @@ func (t *projectileShieldTarget) Effects() []effect.Effect               { retur
 func (t *projectileShieldTarget) Speed() float64                         { return 0 }
 func (t *projectileShieldTarget) SetSpeed(float64)                       {}
 
-func (t *projectileShieldTarget) Hurt(_ float64, src world.DamageSource) (float64, bool) {
-	if s, ok := src.(ProjectileDamageSource); ok && t.blocked {
-		s.Projectile.(*Ent).Behaviour().(interface{ MarkShieldBlocked() }).MarkShieldBlocked()
+func (t *projectileShieldTarget) Hurt(_ float64, _ world.DamageSource) (float64, world.HurtResult) {
+	if t.blocked {
+		return 0, world.HurtBlocked
 	}
-	return 0, t.vulnerable
+	if t.vulnerable {
+		return 0, world.HurtDamaged
+	}
+	return 0, world.HurtImmune
 }
 
 type projectileShieldTargetConfig struct {

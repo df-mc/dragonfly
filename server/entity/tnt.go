@@ -27,7 +27,7 @@ func newTNTWithSourceHandle(opts world.EntitySpawnOpts, fuse time.Duration, sour
 		angle := rand.Float64() * math.Pi * 2
 		opts.Velocity = mgl64.Vec3{-math.Sin(angle) * 0.02, 0.1, -math.Cos(angle) * 0.02}
 	}
-	return opts.New(TNTType, tntBehaviourConfig{Fuse: fuse, Source: source, UnblockableByShield: !blockableByShield})
+	return opts.New(TNTType, tntBehaviourConfig{Fuse: fuse, Source: source, BlockableByShield: blockableByShield})
 }
 
 var tntConf = PassiveBehaviourConfig{
@@ -36,9 +36,9 @@ var tntConf = PassiveBehaviourConfig{
 }
 
 type tntBehaviourConfig struct {
-	Fuse                time.Duration
-	Source              *world.EntityHandle
-	UnblockableByShield bool
+	Fuse              time.Duration
+	Source            *world.EntityHandle
+	BlockableByShield bool
 }
 
 func (conf tntBehaviourConfig) Apply(data *world.EntityData) {
@@ -46,7 +46,7 @@ func (conf tntBehaviourConfig) Apply(data *world.EntityData) {
 }
 
 func (conf tntBehaviourConfig) New() *tntBehaviour {
-	b := &tntBehaviour{source: conf.Source, blockableByShield: !conf.UnblockableByShield}
+	b := &tntBehaviour{source: conf.Source, blockableByShield: conf.BlockableByShield}
 	confPassive := tntConf
 	confPassive.ExistenceDuration = conf.Fuse
 	confPassive.Expire = func(e *Ent, tx *world.Tx) {
@@ -92,8 +92,8 @@ func (tntType) BBox(world.Entity) cube.BBox {
 
 func (t tntType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	data.Data = tntBehaviourConfig{
-		Fuse:                nbtconv.TickDuration[uint8](m, "Fuse"),
-		UnblockableByShield: nbtconv.Bool(m, "DragonflyUnblockableByShield"),
+		Fuse:              nbtconv.TickDuration[uint8](m, "Fuse"),
+		BlockableByShield: !nbtconv.Bool(m, "DragonflyUnblockableByShield"),
 	}.New()
 }
 

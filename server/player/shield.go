@@ -216,9 +216,7 @@ func (p *Player) StartShieldBlockingInput() bool {
 	if !p.canStartShieldBlockingInput(mainHand) {
 		return false
 	}
-	ctx := newContext(p)
-	p.Handler().HandleItemUse(ctx)
-	if ctx.Cancelled() {
+	if !p.handleShieldItemUse() {
 		return false
 	}
 	mainHand, _ = p.HeldItems()
@@ -259,12 +257,16 @@ func (p *Player) startOffHandShieldBlockingInputAfterItemUse() bool {
 	if !p.canStartOffHandShieldBlockingInput() {
 		return false
 	}
-	ctx := newContext(p)
-	p.Handler().HandleItemUse(ctx)
-	if ctx.Cancelled() {
+	if !p.handleShieldItemUse() {
 		return false
 	}
 	return p.startOffHandShieldBlockingInput()
+}
+
+func (p *Player) handleShieldItemUse() bool {
+	ctx := newContext(p)
+	p.Handler().HandleItemUse(ctx)
+	return !ctx.Cancelled()
 }
 
 func (p *Player) canStartOffHandShieldBlockingInput() bool {
@@ -313,11 +315,6 @@ func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource) bool
 	}
 	if damage := shieldDurabilityDamage(dmg); damage > 0 {
 		p.setHeldShield(hand, p.damageItem(shield, damage))
-	}
-	if s, ok := src.(entity.ProjectileDamageSource); ok {
-		if marker, ok := s.Projectile.(interface{ MarkShieldBlocked() }); ok {
-			marker.MarkShieldBlocked()
-		}
 	}
 	if p.tx != nil {
 		p.tx.PlaySound(p.Position(), sound.ShieldBlock{})

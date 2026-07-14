@@ -584,16 +584,10 @@ func (p *Player) fall(distance float64) {
 // health that the player currently has, the player is killed and will have to
 // respawn.
 // If the damage passed is negative, Hurt will not do anything. Hurt returns the
-// final damage dealt to the Player and if the Player was vulnerable to this
-// kind of damage.
-func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
-	finalDamage, vulnerable, _ := p.hurt(dmg, src)
-	return finalDamage, vulnerable
-}
-
-func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool) {
+// final damage dealt to the Player and a result describing the outcome.
+func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, world.HurtResult) {
 	if _, ok := p.Effect(effect.FireResistance); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() || dmg < 0 {
-		return 0, false, false
+		return 0, world.HurtImmune
 	}
 	totalDamage := p.FinalDamageFrom(dmg, src)
 	damageLeft := totalDamage
@@ -607,16 +601,16 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 	damageBeforeHandler := damageLeft
 	if immune && damageLeft <= 0 {
 		if shouldAttemptShieldBlockBeforeHurtHandler(dmg, src) && p.blockDamageWithShield(dmg, src) {
-			return 0, false, true
+			return 0, world.HurtBlocked
 		}
-		return 0, false, false
+		return 0, world.HurtImmune
 	}
 	ctx := newContext(p)
 	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
-		return 0, false, false
+		return 0, world.HurtCancelled
 	}
 	if shouldAttemptShieldBlockAfterHurtHandler(dmg, damageLeft, damageBeforeHandler, src) && p.blockDamageWithShield(dmg, src) {
-		return 0, false, true
+		return 0, world.HurtBlocked
 	}
 	p.setAttackImmunity(immunity, totalDamage)
 
@@ -634,11 +628,11 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 		if _, ok := offHand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
 			p.SetHeldItems(hand, offHand.Grow(-1))
-			return 0, false, false
+			return 0, world.HurtImmune
 		} else if _, ok := hand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
 			p.SetHeldItems(hand.Grow(-1), offHand)
-			return 0, false, false
+			return 0, world.HurtImmune
 		}
 	}
 
@@ -676,7 +670,7 @@ func (p *Player) hurt(dmg float64, src world.DamageSource) (float64, bool, bool)
 	if p.Dead() {
 		p.kill(src)
 	}
-	return totalDamage, true, false
+	return totalDamage, world.HurtDamaged
 }
 
 // applyTotemEffects is an unexported function that is used to handle totem effects.
@@ -721,8 +715,8 @@ func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.Explos
 		BlockableByShield: !c.UnblockableByShield,
 		Source:            c.Source,
 	}
-	_, _, shieldBlocked := p.hurt(math.Floor((impact*impact+impact)*3.5*c.Size*2+1), src)
-	if shieldBlocked {
+	_, result := p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size*2+1), src)
+	if result.Blocked() {
 		impact *= shieldExplosionKnockBackMultiplier
 	}
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
@@ -1627,9 +1621,7 @@ func (p *Player) UseItem() {
 
 	if _, ok := it.(item.Releasable); ok {
 		if !p.canRelease() {
-			if p.startOffHandShieldBlockingInput() {
-				return
-			}
+			p.startOffHandShieldBlockingInput()
 			return
 		}
 		p.usingSince, p.usingItem = time.Now(), true
@@ -1659,9 +1651,7 @@ func (p *Player) UseItem() {
 	case item.Usable:
 		useCtx := p.useContext()
 		if !usable.Use(p.tx, p, useCtx) {
-			if p.startOffHandShieldBlockingInput() {
-				return
-			}
+			p.startOffHandShieldBlockingInput()
 			return
 		}
 		// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
@@ -1671,19 +1661,17 @@ func (p *Player) UseItem() {
 		p.addNewItem(useCtx)
 	case item.Consumable:
 		if c, ok := usable.(interface{ CanConsume() bool }); ok && !c.CanConsume() {
-			if p.startOffHandShieldBlockingInput() {
-				return
+			if !p.startOffHandShieldBlockingInput() {
+				p.ReleaseItem()
 			}
-			p.ReleaseItem()
 			return
 		}
 		if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
 			// The item.Consumable is not always consumable, the player is not in creative mode and the
 			// food bar is filled: The item cannot be consumed.
-			if p.startOffHandShieldBlockingInput() {
-				return
+			if !p.startOffHandShieldBlockingInput() {
+				p.ReleaseItem()
 			}
-			p.ReleaseItem()
 			return
 		}
 		if !p.usingItem {
@@ -1962,7 +1950,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		dmg *= 1.5
 	}
 
-	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
+	n, result := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
 	i, left := p.HeldItems()
 
 	if durable, ok := i.Item().(item.Durable); ok {
@@ -1970,7 +1958,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 
 	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
-	if !vulnerable {
+	if !result.Damaged() {
 		return true
 	}
 	if critical {

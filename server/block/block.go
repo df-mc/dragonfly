@@ -282,9 +282,8 @@ type livingEntity interface {
 	// Hurt hurts the entity for a given amount of damage. The source passed represents the cause of the
 	// damage, for example damage.SourceEntityAttack if the entity is attacked by another entity.
 	// If the final damage exceeds the health that the entity currently has, the entity is killed.
-	// Hurt returns the final amount of damage dealt to the Living entity and returns whether the Living entity
-	// was vulnerable to the damage at all.
-	Hurt(damage float64, src world.DamageSource) (n float64, vulnerable bool)
+	// Hurt returns the final amount of damage dealt to the Living entity and a result describing the outcome.
+	Hurt(damage float64, src world.DamageSource) (n float64, result world.HurtResult)
 }
 
 // flammableEntity ...

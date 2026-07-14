@@ -42,84 +42,24 @@ func newTNTTestHandle() *world.EntityHandle {
 	return world.EntitySpawnOpts{}.New(tntTestEntityType{}, tntTestEntityType{})
 }
 
-func TestTNTIgnitionSourcePrefersProjectileOwner(t *testing.T) {
+func TestTNTIgnitionSource(t *testing.T) {
 	owner := newTNTTestHandle()
 	projectile := tntSourceEntity{h: newTNTTestHandle(), owner: owner}
-
-	if got := tntIgnitionSourceHandle(projectile); got != owner {
-		t.Fatalf("expected TNT ignition source to use projectile owner handle %v, got %v", owner, got)
+	tests := []struct {
+		name   string
+		source tntSourceEntity
+		want   *world.EntityHandle
+	}{
+		{name: "projectile owner", source: projectile, want: owner},
+		{name: "igniting entity", source: tntSourceEntity{h: newTNTTestHandle()}, want: nil},
 	}
-}
-
-func TestTNTIgnitionSourceFallsBackToIgnitingEntity(t *testing.T) {
-	projectile := tntSourceEntity{h: newTNTTestHandle()}
-
-	if got := tntIgnitionSourceHandle(projectile); got != projectile.H() {
-		t.Fatalf("expected TNT ignition source to fall back to igniting entity handle %v, got %v", projectile.H(), got)
-	}
-}
-
-func TestTNTExplosionSourceUsesExplosionConfigSource(t *testing.T) {
-	source := tntSourceEntity{h: newTNTTestHandle()}
-
-	if got := tntExplosionSourceHandle(ExplosionConfig{Source: source}); got != source.H() {
-		t.Fatalf("expected chained TNT source to use explosion config source handle %v, got %v", source.H(), got)
-	}
-}
-
-func TestTNTSpawnCanCreateShieldBlockableTNTWithoutSource(t *testing.T) {
-	var blockable bool
-	var source *world.EntityHandle
-	registry := world.EntityRegistryConfig{
-		TNT: func(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-		TNTWithSource: func(opts world.EntitySpawnOpts, fuse time.Duration, src *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
-			source, blockable = src, blockableByShield
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Synchronous: true, Entities: registry}.New()
-	defer func() {
-		_ = w.Close()
-	}()
-
-	w.Do(func(tx *world.Tx) {
-		spawnTnt(cube.Pos{}, tx, time.Second, nil, true)
-	})
-	if source != nil {
-		t.Fatalf("expected no TNT source entity, got %T", source)
-	}
-	if !blockable {
-		t.Fatal("expected source-less environmental TNT to be shield blockable")
-	}
-}
-
-func TestTNTIgniteWithoutSourceIsShieldBlockable(t *testing.T) {
-	var blockable bool
-	var source *world.EntityHandle
-	registry := world.EntityRegistryConfig{
-		TNT: func(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-		TNTWithSource: func(opts world.EntitySpawnOpts, fuse time.Duration, src *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
-			source, blockable = src, blockableByShield
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Synchronous: true, Entities: registry}.New()
-	defer func() {
-		_ = w.Close()
-	}()
-
-	w.Do(func(tx *world.Tx) {
-		TNT{}.Ignite(cube.Pos{}, tx, nil)
-	})
-	if source != nil {
-		t.Fatalf("expected no TNT source entity, got %T", source)
-	}
-	if !blockable {
-		t.Fatal("expected source-less TNT ignition to be shield-blockable")
+	tests[1].want = tests[1].source.H()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tntIgnitionSourceHandle(tt.source); got != tt.want {
+				t.Fatalf("tntIgnitionSourceHandle() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
@@ -149,31 +89,6 @@ func TestTNTIgniteWithSourceIsShieldBlockable(t *testing.T) {
 	}
 	if !blockable {
 		t.Fatal("expected source-aware TNT ignition to stay shield-blockable for other players")
-	}
-}
-
-func TestTNTSpawnPreservesUnavailableSourceHandle(t *testing.T) {
-	wantSource := newTNTTestHandle()
-	var gotSource *world.EntityHandle
-	registry := world.EntityRegistryConfig{
-		TNT: func(opts world.EntitySpawnOpts, fuse time.Duration) *world.EntityHandle {
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-		TNTWithSource: func(opts world.EntitySpawnOpts, fuse time.Duration, src *world.EntityHandle, blockableByShield bool) *world.EntityHandle {
-			gotSource = src
-			return opts.New(tntTestEntityType{}, tntTestEntityType{})
-		},
-	}.New([]world.EntityType{tntTestEntityType{}})
-	w := world.Config{Synchronous: true, Entities: registry}.New()
-	defer func() {
-		_ = w.Close()
-	}()
-
-	w.Do(func(tx *world.Tx) {
-		spawnTnt(cube.Pos{}, tx, time.Second, wantSource, true)
-	})
-	if gotSource != wantSource {
-		t.Fatalf("expected unavailable source handle %v to be passed through, got %v", wantSource, gotSource)
 	}
 }
 

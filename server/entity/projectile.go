@@ -121,22 +121,11 @@ type ProjectileBehaviour struct {
 	ageCollided int
 	close       bool
 
-	collisionPos  cube.Pos
-	collided      bool
-	shieldBlocked bool
+	collisionPos cube.Pos
+	collided     bool
 
 	collidedEntities []*world.EntityHandle
 	portalTravel     bool
-}
-
-// MarkShieldBlocked marks the projectile's current hit as shield-blocked.
-func (lt *ProjectileBehaviour) MarkShieldBlocked() {
-	lt.shieldBlocked = true
-}
-
-// ShieldBlocked returns true if the projectile's current hit was shield-blocked.
-func (lt *ProjectileBehaviour) ShieldBlocked() bool {
-	return lt.shieldBlocked
 }
 
 // Owner returns the owner of the projectile.
@@ -317,11 +306,10 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	lt.shieldBlocked = false
-	if _, vulnerable := l.Hurt(dmg, src); lt.shieldBlocked {
+	if _, result := l.Hurt(dmg, src); result.Blocked() {
 		lt.deflect(e, vel)
 		return true
-	} else if vulnerable {
+	} else if result.Damaged() {
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
