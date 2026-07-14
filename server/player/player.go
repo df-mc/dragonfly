@@ -57,7 +57,8 @@ type playerData struct {
 	heldSlot                     *uint32
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
-	invisible, immobile, onGround, usingItem, shieldBlockingInput, shieldBlockingCached, shieldBlockingUseHandled bool
+	invisible, immobile, onGround, usingItem bool
+	shieldBlockingInput, shieldBlockingCached, shieldBlockingUseHandled bool
 
 	sleeping bool
 	sleepPos cube.Pos
