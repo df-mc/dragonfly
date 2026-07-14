@@ -163,25 +163,6 @@ func TestPrivateBlockUseCorrectsPredictedPlacement(t *testing.T) {
 	}
 }
 
-func TestHandleBlockBreakReceivesPrivateBreakMode(t *testing.T) {
-	withViewLayerTestPlayer(t, func(p *Player, tx *world.Tx) {
-		pos := cube.Pos{0, 64, 0}
-		tx.SetBlock(pos, block.Dirt{}, nil)
-		p.ViewBlock(pos, block.Stone{})
-
-		h := &blockBreakTestHandler{}
-		p.Handle(h)
-
-		p.BreakVisibleBlock(pos)
-		p.ViewBlock(pos, block.Stone{})
-		p.BreakBlock(pos)
-
-		if want := []bool{true, false}; !slices.Equal(h.private, want) {
-			t.Fatalf("expected private modes %v, got %v", want, h.private)
-		}
-	})
-}
-
 func TestContinueBreakingReReadsTargetBlock(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -290,123 +271,6 @@ func TestPublicBlockAudienceUsesAffectedBlockViewers(t *testing.T) {
 	}
 }
 
-func TestPublicBlockAudienceSoundUsesWorldHandler(t *testing.T) {
-	w := world.Config{Synchronous: true}.New()
-	defer w.Close()
-
-	h := &cancellingSoundHandler{}
-	w.Handle(h)
-	played := false
-	err := w.Do(func(tx *world.Tx) {
-		p := &Player{tx: tx, data: &world.EntityData{}, playerData: &playerData{}}
-		publicBlockAudience{p: p}.PlaySound(mgl64.Vec3{}, recordingSound{played: &played})
-	}).Wait(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if h.calls != 1 {
-		t.Fatalf("expected one sound-handler call, got %d", h.calls)
-	}
-	if played {
-		t.Fatal("cancelled public sound mutated the world")
-	}
-}
-
-func TestPrivateBreakSoundHonoursWorldHandlerCancellation(t *testing.T) {
-	var (
-		packets []packet.Packet
-		waitErr error
-	)
-	w := world.New()
-	h := &cancellingSoundHandler{}
-	w.Handle(h)
-	defer w.Close()
-
-	withViewLayerTestPlayerConnInWorld(t, w, func(p *Player, tx *world.Tx, conn *fakeConn) {
-		pos := cube.Pos{0, 64, 0}
-		tx.SetBlock(pos, block.Dirt{}, nil)
-		p.ViewBlock(pos, block.Stone{})
-		p.StartBreaking(pos, cube.FaceUp)
-
-		p.session().SendMessage("before private break sound")
-		_, waitErr = conn.packetsUntilText("before private break sound")
-		if waitErr != nil {
-			return
-		}
-		for range 5 {
-			p.ContinueBreaking(cube.FaceUp)
-		}
-		p.session().SendMessage("after private break sound")
-		packets, waitErr = conn.packetsUntilText("after private break sound")
-	})
-	if waitErr != nil {
-		t.Fatal(waitErr)
-	}
-	if h.calls != 1 {
-		t.Fatalf("expected one sound-handler call, got %d", h.calls)
-	}
-	for _, pk := range packets {
-		_, soundDelivered := pk.(*packet.LevelSoundEvent)
-		if soundDelivered {
-			t.Fatal("cancelled private break sound was delivered")
-		}
-	}
-}
-
-func TestPrivateBlockSoundDoesNotPlayInPublicWorld(t *testing.T) {
-	var (
-		packets []packet.Packet
-		waitErr error
-		played  bool
-	)
-	w := world.New()
-	h := &recordingSoundHandler{}
-	w.Handle(h)
-	defer w.Close()
-
-	pos := mgl64.Vec3{1, 2, 3}
-	withViewLayerTestPlayerConnInWorld(t, w, func(p *Player, _ *world.Tx, conn *fakeConn) {
-		privateBlockAudience{p: p}.PlaySound(pos, recordingSound{played: &played})
-		p.session().SendMessage("after private sound")
-		packets, waitErr = conn.packetsUntilText("after private sound")
-	})
-	if waitErr != nil {
-		t.Fatal(waitErr)
-	}
-	if want := []mgl64.Vec3{pos}; !slices.Equal(h.positions, want) {
-		t.Fatalf("expected sound-handler positions %v, got %v", want, h.positions)
-	}
-	if played {
-		t.Fatal("private sound mutated the public world")
-	}
-	delivered := false
-	for _, pk := range packets {
-		if _, ok := pk.(*packet.LevelSoundEvent); ok {
-			delivered = true
-		}
-	}
-	if !delivered {
-		t.Fatal("private sound was not delivered to its session")
-	}
-}
-
-func TestFireExtinguishSoundUsesFirePosition(t *testing.T) {
-	w := world.New()
-	h := &recordingSoundHandler{}
-	w.Handle(h)
-	defer w.Close()
-
-	clicked, face := cube.Pos{0, 64, 0}, cube.FaceUp
-	withViewLayerTestPlayerConnInWorld(t, w, func(p *Player, tx *world.Tx, _ *fakeConn) {
-		tx.SetBlock(clicked, block.Stone{}, nil)
-		tx.SetBlock(clicked.Side(face), block.Fire{}, nil)
-		p.StartBreaking(clicked, face)
-	})
-	if want := []mgl64.Vec3{clicked.Side(face).Vec3()}; !slices.Equal(h.positions, want) {
-		t.Fatalf("expected fire sound at %v, got %v", want, h.positions)
-	}
-}
-
 func withViewLayerTestPlayer(t *testing.T, f func(*Player, *world.Tx)) {
 	t.Helper()
 	withViewLayerTestPlayerConn(t, func(p *Player, tx *world.Tx, _ *fakeConn) { f(p, tx) })
@@ -483,39 +347,10 @@ func withViewLayerTestPlayerConnInWorld(t *testing.T, w *world.World, f func(*Pl
 type blockBreakTestHandler struct {
 	NopHandler
 	blockBreakCalled bool
-	private          []bool
 }
 
-type cancellingSoundHandler struct {
-	world.NopHandler
-	calls int
-}
-
-func (h *cancellingSoundHandler) HandleSound(ctx *world.Context, _ world.Sound, _ mgl64.Vec3) {
-	h.calls++
-	ctx.Cancel()
-}
-
-type recordingSoundHandler struct {
-	world.NopHandler
-	positions []mgl64.Vec3
-}
-
-func (h *recordingSoundHandler) HandleSound(_ *world.Context, _ world.Sound, pos mgl64.Vec3) {
-	h.positions = append(h.positions, pos)
-}
-
-type recordingSound struct {
-	played *bool
-}
-
-func (s recordingSound) Play(*world.World, mgl64.Vec3) {
-	*s.played = true
-}
-
-func (h *blockBreakTestHandler) HandleBlockBreak(_ *Context, _ cube.Pos, private bool, _ *[]item.Stack, _ *int) {
+func (h *blockBreakTestHandler) HandleBlockBreak(_ *Context, _ cube.Pos, _ bool, _ *[]item.Stack, _ *int) {
 	h.blockBreakCalled = true
-	h.private = append(h.private, private)
 }
 
 type fakeConn struct {

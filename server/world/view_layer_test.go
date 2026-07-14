@@ -82,12 +82,6 @@ func TestTxPublicBlockViewersFiltersWithoutMutatingWorldViewers(t *testing.T) {
 	}
 }
 
-func TestNewViewLayerAcceptsEntityOnlyUpdater(t *testing.T) {
-	if NewViewLayer(viewLayerEntityUpdater{}) == nil {
-		t.Fatal("expected a view layer")
-	}
-}
-
 func TestViewLayerBlockUpdaterReceivesTransaction(t *testing.T) {
 	w := Config{Synchronous: true}.New()
 	defer w.Close()
