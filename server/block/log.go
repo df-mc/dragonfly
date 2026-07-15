@@ -106,6 +106,9 @@ func (l Log) EncodeBlock() (name string, properties map[string]any) {
 // allLogs returns a list of all possible log states.
 func allLogs() (logs []world.Block) {
 	for _, w := range WoodTypes() {
+		if w == BambooWood() {
+			continue
+		}
 		for axis := cube.Axis(0); axis < 3; axis++ {
 			logs = append(logs, Log{Axis: axis, Stripped: true, Wood: w})
 			logs = append(logs, Log{Axis: axis, Stripped: false, Wood: w})
