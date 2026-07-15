@@ -14,7 +14,6 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 	github.com/sandertv/gophertunnel v1.57.0
 	github.com/segmentio/fasthash v1.0.3
-	github.com/zaataylor/cartesian v0.0.0-20221028053253-3b3244d82727
 	golang.org/x/exp v0.0.0-20260611194520-c48552f49976
 	golang.org/x/mod v0.37.0
 	golang.org/x/text v0.38.0

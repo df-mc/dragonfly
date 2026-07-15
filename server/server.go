@@ -378,11 +378,17 @@ func (srv *Server) makeBlockEntries() {
 	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
 
 	for i, b := range custom {
-		name, _ := b.EncodeBlock()
-		srv.customBlocks[i] = protocol.BlockEntry{
-			Name:       name,
-			Properties: blockinternal.Components(name, b, 10000+int32(i)),
-		}
+		srv.customBlocks[i] = CustomBlockEntry(b, 10000+int32(i))
+	}
+}
+
+// CustomBlockEntry creates the protocol entry sent to a client for b. The
+// blockID must be unique among the custom block entries in the same palette.
+func CustomBlockEntry(b world.CustomBlock, blockID int32) protocol.BlockEntry {
+	name, _ := b.EncodeBlock()
+	return protocol.BlockEntry{
+		Name:       name,
+		Properties: blockinternal.Components(name, b, blockID),
 	}
 }
 

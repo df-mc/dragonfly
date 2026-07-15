@@ -243,19 +243,67 @@ func (br *BasicBlockRegistry) Clone() *BasicBlockRegistry {
 	br2.blockInfos = append([]blockInfo(nil), br.blockInfos...)
 
 	if br.finalized {
-		br2.hashes = intintmap.New(len(br.blocks), 0.999)
-		for rid, b := range br2.blocks {
-			if _, hash := b.Hash(); hash == math.MaxUint64 {
-				continue
-			}
-			br2.hashes.Put(int64(br2.BlockHash(b)), int64(rid))
-		}
+		br2.rebuildBlockHashesLocked()
 		br2.networkhashToRids = make(map[uint32]uint32, len(br.networkhashToRids))
 		maps.Copy(br2.networkhashToRids, br.networkhashToRids)
 		br2.ridsToNetworkhash = append([]uint32(nil), br.ridsToNetworkhash...)
 	}
 
 	return br2
+}
+
+func (br *BasicBlockRegistry) addCustomBlockState(s BlockState, scratch []byte) ([]byte, error) {
+	br.mu.Lock()
+	defer br.mu.Unlock()
+
+	h := stateHash{name: s.Name, properties: hashProperties(s.Properties)}
+	if _, ok := br.stateRuntimeIDs[h]; ok {
+		return scratch, nil
+	}
+	var netHash uint32
+	if br.finalized {
+		netHash, scratch = networkBlockHash(s.Name, s.Properties, scratch)
+		if other, ok := br.networkhashToRids[netHash]; ok {
+			otherName, otherProperties := br.blocks[other].EncodeBlock()
+			return scratch, fmt.Errorf("network block hash collision for (%s %+v) and (%s %+v)", s.Name, s.Properties, otherName, otherProperties)
+		}
+	}
+	if _, ok := br.blockProperties[s.Name]; !ok {
+		br.blockProperties[s.Name] = s.Properties
+	}
+
+	rid := uint32(len(br.blocks))
+	br.blocks = append(br.blocks, unknownBlock{BlockState: s})
+	br.stateRuntimeIDs[h] = rid
+	if !br.finalized {
+		return scratch, nil
+	}
+
+	if bits.Len64(uint64(len(br.blocks))) != br.bitSize {
+		br.bitSize = bits.Len64(uint64(len(br.blocks)))
+		br.rebuildBlockHashesLocked()
+	}
+	br.blockInfos = append(br.blockInfos, defaultUnknownBlockInfo())
+
+	br.networkhashToRids[netHash] = rid
+	br.ridsToNetworkhash = append(br.ridsToNetworkhash, netHash)
+	return scratch, nil
+}
+
+func (br *BasicBlockRegistry) rebuildBlockHashesLocked() {
+	br.hashes = intintmap.New(len(br.blocks), 0.999)
+	for rid, b := range br.blocks {
+		if _, hash := b.Hash(); hash == math.MaxUint64 {
+			continue
+		}
+		br.hashes.Put(int64(br.BlockHash(b)), int64(rid))
+	}
+}
+
+func defaultUnknownBlockInfo() blockInfo {
+	var info blockInfo
+	info.setLightFilter(15)
+	return info
 }
 
 // NewBlockRegistry returns a mutable registry seeded with all vanilla block states and block implementations.
@@ -377,9 +425,8 @@ func (br *BasicBlockRegistry) Finalize() {
 		}
 		br.stateRuntimeIDs[h] = rid
 
-		var info blockInfo
+		info := defaultUnknownBlockInfo()
 		// Default to fully opaque. Blocks that implement lightDiffuser may override this (e.g., air -> 0, leaves -> 1-14).
-		info.setLightFilter(15)
 		if diffuser, ok := b.(lightDiffuser); ok {
 			info.setLightFilter(diffuser.LightDiffusionLevel())
 		}
