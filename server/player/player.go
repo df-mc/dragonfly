@@ -526,15 +526,18 @@ func (p *Player) addHealth(health float64) {
 // the entity healed by having a full food bar. If the health added to the
 // original health exceeds the entity's max health, Heal will not add the full
 // amount. If the health passed is negative, Heal will not do anything.
-func (p *Player) Heal(health float64, source world.HealingSource) {
+// Heal returns the amount of health regenerated.
+func (p *Player) Heal(health float64, source world.HealingSource) float64 {
 	if p.Dead() || health < 0 || !p.GameMode().AllowsTakingDamage() {
-		return
+		return 0
 	}
 	ctx := newContext(p)
 	if p.Handler().HandleHeal(ctx, &health, source); ctx.Cancelled() {
-		return
+		return 0
 	}
+	oldHealth := p.Health()
 	p.addHealth(health)
+	return p.Health() - oldHealth
 }
 
 // updateFallState is called to update the entities falling state.
@@ -1935,25 +1938,28 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 // held, if the player is on the ground/underwater and if the player has any effects.
 func (p *Player) breakTime(pos cube.Pos) time.Duration {
 	held, _ := p.HeldItems()
-	breakTime := block.BreakDuration(p.tx.Block(pos), held)
-	if !p.OnGround() {
-		breakTime *= 5
+	return block.BreakDuration(p.tx.Block(pos), held, p.breakContext())
+}
+
+// breakContext returns the block.BreakContext describing the status effects and environment currently
+// affecting how quickly the player breaks blocks.
+func (p *Player) breakContext() block.BreakContext {
+	_, aquaAffinity := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity)
+	ctx := block.BreakContext{
+		Underwater:   p.insideOfWater(),
+		AquaAffinity: aquaAffinity,
+		Airborne:     !p.OnGround(),
 	}
-	if _, ok := p.Armour().Helmet().Enchantment(enchantment.AquaAffinity); p.insideOfWater() && !ok {
-		breakTime *= 5
+	if e, ok := p.Effect(effect.Haste); ok {
+		ctx.HasteLevel = e.Level()
 	}
-	for _, e := range p.Effects() {
-		lvl := e.Level()
-		switch e.Type() {
-		case effect.Haste:
-			breakTime = time.Duration(float64(breakTime) * effect.Haste.Multiplier(lvl))
-		case effect.MiningFatigue:
-			breakTime = time.Duration(float64(breakTime) * effect.MiningFatigue.Multiplier(lvl))
-		case effect.ConduitPower:
-			breakTime = time.Duration(float64(breakTime) * effect.ConduitPower.Multiplier(lvl))
-		}
+	if e, ok := p.Effect(effect.ConduitPower); ok {
+		ctx.ConduitPowerLevel = e.Level()
 	}
-	return breakTime
+	if e, ok := p.Effect(effect.MiningFatigue); ok {
+		ctx.MiningFatigueLevel = e.Level()
+	}
+	return ctx
 }
 
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
@@ -2131,7 +2137,9 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 
 	p.Exhaust(0.005)
-	if block.BreaksInstantly(b, held) {
+	// Only blocks that naturally break instantly (zero hardness) cost no durability; a block made to break
+	// within one tick by a fast tool or status effects still consumes durability.
+	if block.BreaksInstantly(b) {
 		return
 	}
 	if durable, ok := held.Item().(item.Durable); ok {
@@ -2308,6 +2316,26 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 	} else if p.Sprinting() {
 		p.Exhaust(0.1 * horizontalVel.Len())
 	}
+}
+
+// Displace moves the player by a server-authoritative relative delta, clipped against block collision boxes.
+func (p *Player) Displace(deltaPos mgl64.Vec3) {
+	if p.Dead() || deltaPos.ApproxEqual(mgl64.Vec3{}) {
+		return
+	}
+	pos := p.Position()
+	deltaPos, velocity := p.mc.CheckCollision(p.tx, p, pos, deltaPos)
+	if deltaPos.ApproxEqual(mgl64.Vec3{}) {
+		return
+	}
+	res := pos.Add(deltaPos)
+	for _, v := range p.viewers() {
+		v.ViewEntityDisplacement(p, res, p.Rotation(), p.OnGround())
+	}
+	p.data.Pos, p.data.Vel = res, velocity
+	p.checkBlockCollisions(deltaPos)
+	p.onGround = p.checkOnGround(deltaPos)
+	p.updateFallState(deltaPos[1])
 }
 
 // Position returns the current position of the player. It may be changed as the player moves or is moved
@@ -2705,10 +2733,12 @@ func (p *Player) tickAirSupply() {
 // tickFood ticks food related functionality, such as the depletion of the food bar and regeneration if it
 // is full enough.
 func (p *Player) tickFood() {
-	if p.hunger.foodTick%10 == 0 && p.tx.World().Difficulty().FoodRegenerates() {
-		p.AddFood(1)
+	if p.hunger.foodTick%10 == 0 && (p.hunger.canQuicklyRegenerate() || p.tx.World().Difficulty().FoodRegenerates()) {
+		if p.tx.World().Difficulty().FoodRegenerates() {
+			p.AddFood(1)
+		}
 		if p.hunger.foodTick%20 == 0 {
-			p.regenerate(false)
+			p.regenerate(true)
 		}
 	}
 	if p.hunger.foodTick == 1 {
@@ -2734,8 +2764,8 @@ func (p *Player) regenerate(exhaust bool) {
 	if p.Health() == p.MaxHealth() {
 		return
 	}
-	p.Heal(1, entity.FoodHealingSource{})
-	if exhaust {
+	regenerated := p.Heal(1, entity.FoodHealingSource{QuickRegeneration: exhaust})
+	if exhaust && regenerated > 0 {
 		p.Exhaust(6)
 	}
 }

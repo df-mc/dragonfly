@@ -25,6 +25,10 @@ func init() {
 	world.RegisterBlock(Bookshelf{})
 	world.RegisterBlock(Bricks{})
 	world.RegisterBlock(Calcite{})
+	world.RegisterBlock(Cinnabar{})
+	world.RegisterBlock(Cinnabar{Chiseled: true})
+	world.RegisterBlock(CinnabarBricks{})
+	world.RegisterBlock(PolishedCinnabar{})
 	world.RegisterBlock(Clay{})
 	world.RegisterBlock(Coal{})
 	world.RegisterBlock(Cobblestone{Mossy: true})
@@ -124,6 +128,10 @@ func init() {
 	world.RegisterBlock(SporeBlossom{})
 	world.RegisterBlock(Stone{Smooth: true})
 	world.RegisterBlock(Stone{})
+	world.RegisterBlock(Sulfur{})
+	world.RegisterBlock(Sulfur{Chiseled: true})
+	world.RegisterBlock(SulfurBricks{})
+	world.RegisterBlock(PolishedSulfur{})
 	world.RegisterBlock(TNT{})
 	world.RegisterBlock(Terracotta{})
 	world.RegisterBlock(TintedGlass{})
@@ -163,6 +171,7 @@ func init() {
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCampfires())
+	registerAll(allCandles())
 	registerAll(allCarpet())
 	registerAll(allCarrots())
 	registerAll(allIronChains())
@@ -248,6 +257,7 @@ func init() {
 	registerAll(allCopperLanterns())
 	registerAll(allCopperTorches())
 	registerAll(allCopperTrapdoors())
+	registerAll(allShulkerBoxes())
 }
 
 func init() {
@@ -277,6 +287,10 @@ func init() {
 	world.RegisterItem(Cake{})
 	world.RegisterItem(Calcite{})
 	world.RegisterItem(Carrot{})
+	world.RegisterItem(Cinnabar{})
+	world.RegisterItem(Cinnabar{Chiseled: true})
+	world.RegisterItem(CinnabarBricks{})
+	world.RegisterItem(PolishedCinnabar{})
 	world.RegisterItem(IronChain{})
 	world.RegisterItem(Chest{})
 	world.RegisterItem(ChiseledQuartz{})
@@ -410,6 +424,10 @@ func init() {
 	world.RegisterItem(Stone{})
 	world.RegisterItem(String{})
 	world.RegisterItem(SugarCane{})
+	world.RegisterItem(Sulfur{})
+	world.RegisterItem(Sulfur{Chiseled: true})
+	world.RegisterItem(SulfurBricks{})
+	world.RegisterItem(PolishedSulfur{})
 	world.RegisterItem(TNT{})
 	world.RegisterItem(Terracotta{})
 	world.RegisterItem(TintedGlass{})
@@ -487,6 +505,9 @@ func init() {
 		world.RegisterItem(LapisOre{Type: ore})
 		world.RegisterItem(RedstoneOre{Type: ore})
 	}
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(Candle{Colour: c})
+	}
 	for _, f := range FireTypes() {
 		world.RegisterItem(Lantern{Type: f})
 		world.RegisterItem(Torch{Type: f})
@@ -548,6 +569,10 @@ func init() {
 			world.RegisterItem(Copper{Type: c, Oxidation: o})
 			world.RegisterItem(Copper{Type: c, Oxidation: o, Waxed: true})
 		}
+	}
+
+	for _, c := range item.OptionalColours() {
+		world.RegisterItem(ShulkerBox{Colour: c})
 	}
 }
 
