@@ -88,7 +88,7 @@ func allBubbleColumns() []world.Block {
 	return []world.Block{BubbleColumn{}, BubbleColumn{DragDown: true}}
 }
 
-// updateBubbleColumn updates the column starting at pos based on the generator or bubble column below it.
+// updateBubbleColumn creates, redirects, or removes consecutive bubble column blocks above pos.
 func updateBubbleColumn(pos cube.Pos, tx *world.Tx) {
 	dragDown, active := bubbleColumnDirection(tx.Block(pos.Side(cube.FaceDown)))
 	for !pos.OutOfBounds(tx.Range()) {
