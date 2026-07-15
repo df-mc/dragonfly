@@ -8,10 +8,8 @@
 
   [Network.NetherNet]
     # Address is the TCP address used for NetherNet HTTP signaling. If empty, Network.Address is used.
+    # The listener serves plaintext HTTP. Terminate HTTPS with a reverse proxy such as Caddy or nginx.
     Address = ""
-    # CertificateFile and KeyFile enable HTTPS signaling. If both are empty, plaintext HTTP is used.
-    CertificateFile = ""
-    KeyFile = ""
 
 [Server]
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the

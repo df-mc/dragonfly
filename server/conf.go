@@ -223,12 +223,9 @@ type UserConfig struct {
 		// NetherNet holds settings for the NetherNet HTTP signaling listener.
 		NetherNet struct {
 			// Address is the TCP address used for NetherNet HTTP signaling. If empty,
-			// Network.Address is used.
+			// Network.Address is used. The listener serves plaintext HTTP; HTTPS
+			// should be terminated by a reverse proxy.
 			Address string
-			// CertificateFile and KeyFile enable HTTPS signaling. If both are empty,
-			// the listener serves plaintext HTTP.
-			CertificateFile string
-			KeyFile         string
 		}
 	}
 	Server struct {

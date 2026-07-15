@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -42,9 +41,6 @@ func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 
 func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	nnConf := uc.Network.NetherNet
-	if (nnConf.CertificateFile == "") != (nnConf.KeyFile == "") {
-		return nil, errors.New("create NetherNet listener: certificate and key files must both be set")
-	}
 	address := nnConf.Address
 	if address == "" {
 		address = uc.Network.Address
@@ -52,12 +48,6 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	tcp, err := net.Listen("tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("listen NetherNet HTTP: %w", err)
-	}
-	if nnConf.CertificateFile != "" {
-		if _, err := tls.LoadX509KeyPair(nnConf.CertificateFile, nnConf.KeyFile); err != nil {
-			_ = tcp.Close()
-			return nil, fmt.Errorf("read NetherNet certificate key pair: %w", err)
-		}
 	}
 	log := conf.Log.With("net origin", "nethernet-http")
 	handler := endpoint.HandlerConfig{Logger: log}.New()
@@ -83,17 +73,12 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 		IdleTimeout:       30 * time.Second,
 	}
 	go func() {
-		var err error
-		if nnConf.CertificateFile != "" {
-			err = httpServer.ServeTLS(tcp, nnConf.CertificateFile, nnConf.KeyFile)
-		} else {
-			err = httpServer.Serve(tcp)
-		}
+		err := httpServer.Serve(tcp)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, net.ErrClosed) {
 			conf.Log.Error("NetherNet HTTP listener closed unexpectedly: " + err.Error())
 		}
 	}()
-	conf.Log.Info("NetherNet listener running.", "addr", tcp.Addr(), "https", nnConf.CertificateFile != "")
+	conf.Log.Info("NetherNet listener running.", "addr", tcp.Addr())
 	return listener{Listener: l, close: httpServer.Close}, nil
 }
 
