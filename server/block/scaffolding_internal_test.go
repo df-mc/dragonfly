@@ -14,11 +14,11 @@ func TestScaffoldingPlacementPosSideways(t *testing.T) {
 	defer w.Close()
 
 	base := cube.Pos{0, 0, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(base, Scaffolding{}, nil)
 	})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		for _, face := range []cube.Face{cube.FaceNorth, cube.FaceSouth, cube.FaceEast, cube.FaceWest, cube.FaceUp} {
 			want := base.Side(face)
 			got, ok := scaffoldingPlacementPos(base, face, tx, Scaffolding{})
@@ -39,13 +39,13 @@ func TestScaffoldingPlacementPosBottomFaceTowers(t *testing.T) {
 	w := world.Config{Synchronous: true}.New()
 	defer w.Close()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, Scaffolding{}, nil)
 		tx.SetBlock(cube.Pos{0, 1, 0}, Scaffolding{}, nil)
 		tx.SetBlock(cube.Pos{0, 2, 0}, Scaffolding{}, nil)
 	})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		got, ok := scaffoldingPlacementPos(cube.Pos{0, 0, 0}, cube.FaceDown, tx, Scaffolding{})
 		if !ok {
 			t.Fatal("expected placement to succeed")
@@ -66,14 +66,14 @@ func TestScaffoldingPlacementPosSidewaysOccupiedTargetFails(t *testing.T) {
 	defer w.Close()
 
 	// A 50-block tall tower, plus an unrelated single branch block one step to the west of its base.
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		for y := 0; y < 50; y++ {
 			tx.SetBlock(cube.Pos{0, y, 0}, Scaffolding{}, nil)
 		}
 		tx.SetBlock(cube.Pos{-1, 0, 0}, Scaffolding{}, nil)
 	})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		// Clicking the east face of the branch block points back at the tower, whose neighbouring cell is
 		// already occupied. This must fail rather than place at the top of the 50-tall tower.
 		if _, ok := scaffoldingPlacementPos(cube.Pos{-1, 0, 0}, cube.FaceEast, tx, Scaffolding{}); ok {
@@ -91,13 +91,13 @@ func TestScaffoldingPlacementPosTopFaceOfLowerBlockTowers(t *testing.T) {
 	w := world.Config{Synchronous: true}.New()
 	defer w.Close()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, Scaffolding{}, nil)
 		tx.SetBlock(cube.Pos{0, 1, 0}, Scaffolding{}, nil)
 		tx.SetBlock(cube.Pos{0, 2, 0}, Scaffolding{}, nil)
 	})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		// Click the bottom block's top face, even though blocks 1 and 2 already sit above it.
 		got, ok := scaffoldingPlacementPos(cube.Pos{0, 0, 0}, cube.FaceUp, tx, Scaffolding{})
 		if !ok {
@@ -116,7 +116,7 @@ func TestScaffoldingBuildUpFromBranchTip(t *testing.T) {
 	w := world.Config{Synchronous: true}.New()
 	defer w.Close()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, Stone{}, nil)
 		tx.SetBlock(cube.Pos{0, 1, 0}, Scaffolding{}, nil)
 		tx.SetBlock(cube.Pos{-1, 1, 0}, Scaffolding{Stability: 1}, nil)
@@ -126,7 +126,7 @@ func TestScaffoldingBuildUpFromBranchTip(t *testing.T) {
 
 	tip := cube.Pos{-2, 1, 0}
 	var above cube.Pos
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		resolved, ok := scaffoldingPlacementPos(tip, cube.FaceUp, tx, Scaffolding{})
 		if !ok {
 			t.Fatal("expected build-up from the branch tip to resolve successfully")
@@ -139,7 +139,7 @@ func TestScaffoldingBuildUpFromBranchTip(t *testing.T) {
 		w.AdvanceTick()
 	}
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		s, ok := tx.Block(above).(Scaffolding)
 		if !ok {
 			t.Fatalf("expected scaffolding above the branch tip at %v, got %v", above, tx.Block(above))
@@ -159,7 +159,7 @@ func TestScaffoldingRecognisedAsLavaFlammableNeighbour(t *testing.T) {
 	defer w.Close()
 
 	air := cube.Pos{0, 0, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(air.Side(cube.FaceEast), Scaffolding{}, nil)
 
 		if !neighboursLavaFlammable(air, tx) {

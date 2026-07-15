@@ -27,7 +27,7 @@ func TestScaffoldingStabilityExtends(t *testing.T) {
 	defer w.Close()
 
 	base := cube.Pos{0, 1, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
 		tx.SetBlock(base, block.Scaffolding{}, nil)
 		tx.SetBlock(cube.Pos{1, 1, 0}, block.Scaffolding{}, nil)
@@ -35,7 +35,7 @@ func TestScaffoldingStabilityExtends(t *testing.T) {
 	})
 	advanceTicks(w, 5)
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		for pos, want := range map[cube.Pos]int{base: 0, {1, 1, 0}: 1, {2, 1, 0}: 2} {
 			s, ok := tx.Block(pos).(block.Scaffolding)
 			if !ok {
@@ -53,7 +53,7 @@ func TestScaffoldingColumnCollapses(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
 		tx.SetBlock(cube.Pos{0, 1, 0}, block.Scaffolding{}, nil)
 		tx.SetBlock(cube.Pos{0, 2, 0}, block.Scaffolding{}, nil)
@@ -62,12 +62,12 @@ func TestScaffoldingColumnCollapses(t *testing.T) {
 	advanceTicks(w, 3)
 
 	// Remove the bottom scaffolding block: the two blocks above it should lose their support and break.
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 1, 0}, block.Air{}, nil)
 	})
 	advanceTicks(w, 10)
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		for _, pos := range []cube.Pos{{0, 2, 0}, {0, 3, 0}} {
 			if b := tx.Block(pos); b != (block.Air{}) {
 				t.Errorf("expected scaffolding at %v to collapse, got %v", pos, b)
@@ -83,12 +83,12 @@ func TestScaffoldingUnsupportedFalls(t *testing.T) {
 	defer w.Close()
 
 	pos := cube.Pos{0, 5, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(pos, block.Scaffolding{Stability: 7}, nil)
 	})
 	advanceTicks(w, 3)
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		if b := tx.Block(pos); b != (block.Air{}) {
 			t.Errorf("expected unsupported scaffolding to fall, got %v", b)
 		}
@@ -102,7 +102,7 @@ func TestScaffoldingMaxHorizontalReach(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
 		for x := 0; x <= 7; x++ {
 			tx.SetBlock(cube.Pos{x, 1, 0}, block.Scaffolding{}, nil)
@@ -110,7 +110,7 @@ func TestScaffoldingMaxHorizontalReach(t *testing.T) {
 	})
 	advanceTicks(w, 10)
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		for x := 0; x <= 6; x++ {
 			pos := cube.Pos{x, 1, 0}
 			s, ok := tx.Block(pos).(block.Scaffolding)
@@ -136,7 +136,7 @@ func TestScaffoldingNotInstantlyDestroyedNextToLava(t *testing.T) {
 	defer w.Close()
 
 	pos := cube.Pos{0, 1, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		// Grounded (Stability 0) so the block can never be destroyed by an unrelated stability collapse: any
 		// destruction observed here can only come from an immediate lava-adjacency side effect, if one existed.
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
@@ -166,7 +166,7 @@ func TestScaffoldingNotInstantlyDestroyedNextToFire(t *testing.T) {
 	defer w.Close()
 
 	pos := cube.Pos{0, 1, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		// Grounded (Stability 0) so the block can never be destroyed by an unrelated stability collapse: any
 		// destruction observed here can only come from the fire adjacency itself.
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
@@ -188,11 +188,11 @@ func TestScaffoldingCannotBePlacedInLava(t *testing.T) {
 	defer w.Close()
 
 	pos := cube.Pos{0, 0, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(pos, block.Lava{Depth: 8}, nil)
 	})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		used := block.Scaffolding{}.UseOnBlock(pos, cube.FaceUp, mgl64.Vec3{}, tx, nil, &item.UseContext{})
 		if used {
 			t.Error("expected placement into lava to fail")
@@ -213,15 +213,15 @@ func TestScaffoldingNeverWaterlogs(t *testing.T) {
 	defer w.Close()
 
 	pos := cube.Pos{0, 0, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetLiquid(pos, block.Water{Depth: 8})
 	})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(pos, block.Scaffolding{}, nil)
 	})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		if _, ok := tx.Block(pos).(block.Scaffolding); !ok {
 			t.Fatalf("expected scaffolding at %v, got %v", pos, tx.Block(pos))
 		}
@@ -260,12 +260,12 @@ func TestScaffoldingPlacementSetsStabilityCheckImmediately(t *testing.T) {
 	defer w.Close()
 
 	base := cube.Pos{0, 1, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
 		tx.SetBlock(base, block.Scaffolding{}, nil)
 	})
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		// A nil user never implements block.Placer, so place() falls back to a plain tx.SetBlock that never
 		// touches ctx.CountSub - UseOnBlock's bool return only reflects a real Player's PlaceBlock outcome, so
 		// it is not asserted here. The block being placed with the correct state is what this test verifies.
@@ -305,7 +305,7 @@ func TestScaffoldingSupportsTorchOnTop(t *testing.T) {
 	defer w.Close()
 
 	pos := cube.Pos{0, 0, 0}
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(pos, block.Scaffolding{}, nil)
 
 		// A nil user never implements block.Placer, so place() falls back to a plain tx.SetBlock that never
@@ -341,7 +341,7 @@ func TestScaffoldingResetsFallDistanceOnlyWhileSneaking(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
 
-	<-w.Exec(func(tx *world.Tx) {
+	w.Do(func(tx *world.Tx) {
 		sneaking := &fakeFallEntity{sneaking: true, fallDistance: 10}
 		block.Scaffolding{}.EntityInside(cube.Pos{}, tx, sneaking)
 		if sneaking.fallDistance != 0 {
