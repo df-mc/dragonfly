@@ -2,11 +2,8 @@ package world
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/go-gl/mathgl/mgl64"
 )
-
-type Context = event.Context[*Tx]
 
 // Handler handles events that are called by a world. Implementations of
 // Handler may be used to listen to specific events such as when an Entity is
@@ -63,9 +60,9 @@ type Handler interface {
 	// The affected entities, affected blocks, item drop chance, and whether the
 	// explosion spawns fire may be altered.
 	HandleExplosion(ctx *Context, position mgl64.Vec3, entities *[]Entity, blocks *[]cube.Pos, itemDropChance *float64, spawnFire *bool)
-	// HandleRedstoneUpdate handles a redstone update at a position. ctx.Cancel() may be called
-	// to cancel the redstone update.
-	HandleRedstoneUpdate(ctx *Context, pos cube.Pos)
+	// HandleRedstoneUpdate handles a redstone update proposed by the World redstone engine. ctx.Cancel() may be
+	// called to suppress the proposed redstone mutation and any propagation from that mutation.
+	HandleRedstoneUpdate(ctx *Context, update RedstoneUpdate)
 	// HandleClose handles the World being closed. HandleClose may be used as a
 	// moment to finish code running on other goroutines that operates on the
 	// World specifically. HandleClose is called directly before the World stops
@@ -92,5 +89,5 @@ func (NopHandler) HandleLeavesDecay(*Context, cube.Pos)                         
 func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                                 {}
 func (NopHandler) HandleEntityDespawn(*Tx, Entity)                                               {}
 func (NopHandler) HandleExplosion(*Context, mgl64.Vec3, *[]Entity, *[]cube.Pos, *float64, *bool) {}
-func (NopHandler) HandleRedstoneUpdate(*Context, cube.Pos)                                       {}
+func (NopHandler) HandleRedstoneUpdate(*Context, RedstoneUpdate)                                 {}
 func (NopHandler) HandleClose(*Tx)                                                               {}

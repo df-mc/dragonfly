@@ -98,6 +98,7 @@ func (i *ItemBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		_ = e.Close()
 		bl.CollectCooldown = 8
 		tx.SetBlock(blockPos, bl, nil)
+		return nil
 	}
 	return i.passive.Tick(e, tx)
 }
