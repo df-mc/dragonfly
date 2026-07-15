@@ -7,7 +7,3 @@
 /world/
 /players/
 /resources/
-
-# Local NetherNet TLS material
-/cert.pem
-/key.pem
