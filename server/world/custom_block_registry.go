@@ -65,12 +65,12 @@ func AddCustomBlocks(registry BlockRegistry, entries []protocol.BlockEntry) erro
 		count := 1
 		for _, values := range propertyValues {
 			if count > (maxCustomBlockStates-total)/len(values) {
-				return fmt.Errorf("custom block states exceed limit of %d", maxCustomBlockStates)
+				return fmt.Errorf("custom block %s: states exceed limit of %d", entry.Name, maxCustomBlockStates)
 			}
 			count *= len(values)
 		}
 		if count > maxCustomBlockStates-total {
-			return fmt.Errorf("custom block states exceed limit of %d", maxCustomBlockStates)
+			return fmt.Errorf("custom block %s: states exceed limit of %d", entry.Name, maxCustomBlockStates)
 		}
 		total += count
 		spaces = append(spaces, customBlockStateSpace{entry.Name, propertyNames, propertyValues})

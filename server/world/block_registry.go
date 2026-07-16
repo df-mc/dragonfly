@@ -150,46 +150,56 @@ func (br *BasicBlockRegistry) BlockCount() int {
 	return len(br.blockInfos)
 }
 
+// blockInfoOrDefault returns the blockInfo for rid, or the default unknown-block info when rid is out of range. Chunk
+// decoding preserves unknown network hashes as raw palette values, so out-of-range runtime IDs can legitimately reach
+// these lookups.
+func (br *BasicBlockRegistry) blockInfoOrDefault(rid uint32) blockInfo {
+	if rid >= uint32(len(br.blockInfos)) {
+		return defaultUnknownBlockInfo()
+	}
+	return br.blockInfos[rid]
+}
+
 func (br *BasicBlockRegistry) RandomTickBlock(rid uint32) bool {
 	if !br.finalized {
 		panic("BlockRegistry.RandomTickBlock called on non finalized BlockRegistry")
 	}
-	return br.blockInfos[rid].get(blockFlagRandomTick)
+	return br.blockInfoOrDefault(rid).get(blockFlagRandomTick)
 }
 
 func (br *BasicBlockRegistry) FilteringBlock(rid uint32) uint8 {
 	if !br.finalized {
 		panic("BlockRegistry.FilteringBlock called on non finalized BlockRegistry")
 	}
-	return br.blockInfos[rid].getLightFilter()
+	return br.blockInfoOrDefault(rid).getLightFilter()
 }
 
 func (br *BasicBlockRegistry) LightBlock(rid uint32) uint8 {
 	if !br.finalized {
 		panic("BlockRegistry.LightBlock called on non finalized BlockRegistry")
 	}
-	return br.blockInfos[rid].getLight()
+	return br.blockInfoOrDefault(rid).getLight()
 }
 
 func (br *BasicBlockRegistry) NBTBlock(rid uint32) bool {
 	if !br.finalized {
 		panic("BlockRegistry.NBTBlock called on non finalized BlockRegistry")
 	}
-	return br.blockInfos[rid].get(blockFlagNBT)
+	return br.blockInfoOrDefault(rid).get(blockFlagNBT)
 }
 
 func (br *BasicBlockRegistry) LiquidDisplacingBlock(rid uint32) bool {
 	if !br.finalized {
 		panic("BlockRegistry.LiquidDisplacingBlock called on non finalized BlockRegistry")
 	}
-	return br.blockInfos[rid].get(blockFlagLiquidDisplacing)
+	return br.blockInfoOrDefault(rid).get(blockFlagLiquidDisplacing)
 }
 
 func (br *BasicBlockRegistry) LiquidBlock(rid uint32) bool {
 	if !br.finalized {
 		panic("BlockRegistry.LiquidBlock called on non finalized BlockRegistry")
 	}
-	return br.blockInfos[rid].get(blockFlagLiquid)
+	return br.blockInfoOrDefault(rid).get(blockFlagLiquid)
 }
 
 func (br *BasicBlockRegistry) Blocks() []Block {
