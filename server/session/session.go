@@ -486,7 +486,7 @@ func (s *Session) changeDimension(dim int32, silent bool, c Controllable) {
 
 	s.writePacket(&packet.ChangeDimension{
 		Dimension:       dim,
-		Position:        vec64To32(c.Position().Add(entityOffset(c))),
+		Position:        vec64To32(entityNetworkPosition(c, c.Position())),
 		LoadingScreenID: protocol.Option(id),
 	})
 	s.writePacket(&packet.StopSound{StopAll: silent})

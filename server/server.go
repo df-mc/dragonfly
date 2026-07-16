@@ -438,7 +438,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 		d.GameMode = w.DefaultGameMode()
 	}
 
-	data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, 1.62})
+	data.PlayerPosition = vec64To32(d.Position).Add(mgl32.Vec3{0, float32(player.Type.NetworkOffset())})
 	dim, _ := world.DimensionID(w.Dimension())
 	data.Dimension = int32(dim)
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
@@ -478,7 +478,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 
 		PlayerGameMode:    int32(gm),
 		PlayerPermissions: packet.PermissionLevelMember,
-		PlayerPosition:    vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, 1.62})),
+		PlayerPosition:    vec64To32(srv.world.Spawn().Vec3Centre().Add(mgl64.Vec3{0, player.Type.NetworkOffset()})),
 
 		Items:        srv.itemEntries(),
 		CustomBlocks: srv.customBlocks,
