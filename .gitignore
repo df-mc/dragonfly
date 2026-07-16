@@ -7,3 +7,7 @@
 /world/
 /players/
 /resources/
+
+# NetherNet server identity key
+identity.pem
+nethernet_identity.pem
