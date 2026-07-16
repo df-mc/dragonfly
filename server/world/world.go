@@ -64,6 +64,12 @@ type World struct {
 	// from this map after some time of not being used.
 	chunks map[ChunkPos]*Column
 
+	// tickRegions maintains the partition of loaded chunks into tick regions,
+	// updated whenever the chunks map gains or loses a chunk. tickBatches is
+	// scratch space for the per-tick gather jobs, reused across ticks.
+	tickRegions regionPartition
+	tickBatches []tickBatch
+
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
 	// can find the correct Entity.
@@ -1173,6 +1179,7 @@ func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 	}
 	clear(c.Entities)
 	delete(w.chunks, pos)
+	w.tickRegions.removeChunk(pos)
 }
 
 // Close closes the world and saves all chunks currently loaded.
@@ -1328,6 +1335,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 	case err == nil:
 		col := w.columnFrom(column, pos)
 		w.chunks[pos] = col
+		w.tickRegions.addChunk(pos, col)
 		for _, e := range col.Entities {
 			w.entities[e] = pos
 			e.setAndUnlockWorld(w)
@@ -1338,6 +1346,7 @@ func (w *World) loadChunk(pos ChunkPos) (*Column, error) {
 		// The provider doesn't have a chunk saved at this position, so we generate a new one.
 		col := newColumn(chunk.New(w.conf.Blocks, w.Range()))
 		w.chunks[pos] = col
+		w.tickRegions.addChunk(pos, col)
 
 		w.conf.Generator.GenerateChunk(pos, col.Chunk)
 		return col, nil

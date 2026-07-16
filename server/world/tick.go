@@ -123,23 +123,21 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 	}
 }
 
-// tickBlocksRandomly executes random block ticks in loaded chunks within range of loaders.
+// tickBlocksRandomly executes random block ticks in loaded chunks within range of loaders. The read-only
+// chunk scan is gathered in parallel per tick region; all block callbacks run on the owner afterwards.
 func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
-	var (
-		r             = int32(tx.World().tickRange())
-		g             randUint4
-		blockEntities []cube.Pos
-		randomBlocks  []cube.Pos
-	)
+	w := tx.World()
+	r := int32(w.tickRange())
 	if r == 0 {
 		// NOP if the simulation distance is 0.
 		return
 	}
 
-	loaded := make([]ChunkPos, 0, len(loaders))
-	if tx.World().conf.Synchronous {
-		loaded = slices.Collect(maps.Keys(tx.World().chunks))
-	} else {
+	// Synchronous worlds tick all loaded chunks, regardless of loaders.
+	all := w.conf.Synchronous
+	var loaded []ChunkPos
+	if !all {
+		loaded = make([]ChunkPos, 0, len(loaders))
 		for _, loader := range loaders {
 			loader.mu.RLock()
 			pos := loader.pos
@@ -147,22 +145,77 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 
 			loaded = append(loaded, pos)
 		}
+		if len(loaded) == 0 {
+			// Without loaders, no chunk can be within simulation distance.
+			return
+		}
 	}
 
-	for pos, c := range tx.World().chunks {
-		if !t.anyWithinDistance(pos, loaded, r) {
+	n := 0
+	for _, reg := range w.tickRegions.all(w.chunks) {
+		state := regionIn
+		if !all {
+			if state = reg.rangeState(loaded, r); state == regionOut {
+				// The whole region is out of simulation distance of every loader.
+				continue
+			}
+		}
+		for chunks := range slices.Chunk(reg.chunks, regionBatchSize) {
+			if n == len(w.tickBatches) {
+				w.tickBatches = append(w.tickBatches, tickBatch{})
+			}
+			b := &w.tickBatches[n]
+			n++
+			b.chunks, b.checkRange = chunks, state == regionPartial
+			b.blockEntities, b.randomBlocks = b.blockEntities[:0], b.randomBlocks[:0]
+			// Seeding batches serially up front keeps results deterministic regardless of scheduling.
+			b.pcg.Seed(w.r.Uint64(), w.r.Uint64())
+		}
+	}
+	// Drop chunk references held by scratch batches unused this tick.
+	for i := n; i < len(w.tickBatches); i++ {
+		w.tickBatches[i].chunks = nil
+	}
+	batches := w.tickBatches[:n]
+
+	runTickJobs(w.conf.TickWorkers, batches, func(b *tickBatch) {
+		t.gatherTickCandidates(w, b, loaded, r)
+	})
+
+	for i := range batches {
+		for _, pos := range batches[i].randomBlocks {
+			if rb, ok := tx.Block(pos).(RandomTicker); ok {
+				rb.RandomTick(pos, tx, w.r)
+			}
+		}
+	}
+	for i := range batches {
+		for _, pos := range batches[i].blockEntities {
+			if tb, ok := tx.Block(pos).(TickerBlock); ok {
+				tb.Tick(tick, pos, tx)
+			}
+		}
+	}
+}
+
+// gatherTickCandidates scans a batch's chunks for random tick candidates and ticking block entities. It
+// runs concurrently with other batches and must only read World state, never mutate it.
+func (t ticker) gatherTickCandidates(w *World, b *tickBatch, loaded []ChunkPos, r int32) {
+	var g randUint4
+	for _, rc := range b.chunks {
+		if b.checkRange && !t.anyWithinDistance(rc.pos, loaded, r) {
 			// No loaders in this chunk that are within the simulation distance, so proceed to the next.
 			continue
 		}
-		blockEntities = append(blockEntities, slices.Collect(maps.Keys(c.BlockEntities))...)
+		b.blockEntities = slices.AppendSeq(b.blockEntities, maps.Keys(rc.col.BlockEntities))
 
-		cx, cz := int(pos[0]<<4), int(pos[1]<<4)
+		cx, cz := int(rc.pos[0]<<4), int(rc.pos[1]<<4)
 
 		// We generate up to j random positions for every sub chunk.
-		for j := 0; j < tx.World().conf.RandomTickSpeed; j++ {
-			x, y, z := g.uint4(tx.World().r), g.uint4(tx.World().r), g.uint4(tx.World().r)
+		for j := 0; j < w.conf.RandomTickSpeed; j++ {
+			x, y, z := g.uint4(&b.pcg), g.uint4(&b.pcg), g.uint4(&b.pcg)
 
-			for i, sub := range c.Sub() {
+			for i, sub := range rc.col.Sub() {
 				if sub.Empty() {
 					// SubChunk is empty, so skip it right away.
 					continue
@@ -170,26 +223,15 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 				// Generally we would want to make sure the block has its block entities, but provided blocks
 				// with block entities are generally ticked already, we are safe to assume that blocks
 				// implementing the RandomTicker don't rely on additional block entity data.
-				if rid := sub.Layers()[0].At(x, y, z); tx.World().conf.Blocks.RandomTickBlock(rid) {
-					subY := (i + (tx.Range().Min() >> 4)) << 4
-					randomBlocks = append(randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
+				if rid := sub.Layers()[0].At(x, y, z); w.conf.Blocks.RandomTickBlock(rid) {
+					subY := (i + (w.ra.Min() >> 4)) << 4
+					b.randomBlocks = append(b.randomBlocks, cube.Pos{cx + int(x), subY + int(y), cz + int(z)})
 
 					// Only generate new coordinates if a tickable block was actually found. If not, we can just re-use
 					// the coordinates for the next sub chunk.
-					x, y, z = g.uint4(tx.World().r), g.uint4(tx.World().r), g.uint4(tx.World().r)
+					x, y, z = g.uint4(&b.pcg), g.uint4(&b.pcg), g.uint4(&b.pcg)
 				}
 			}
-		}
-	}
-
-	for _, pos := range randomBlocks {
-		if rb, ok := tx.Block(pos).(RandomTicker); ok {
-			rb.RandomTick(pos, tx, tx.World().r)
-		}
-	}
-	for _, pos := range blockEntities {
-		if tb, ok := tx.Block(pos).(TickerBlock); ok {
-			tb.Tick(tick, pos, tx)
 		}
 	}
 }
@@ -266,9 +308,9 @@ type randUint4 struct {
 }
 
 // uint4 returns a random uint4.
-func (g *randUint4) uint4(r *rand.Rand) uint8 {
+func (g *randUint4) uint4(src rand.Source) uint8 {
 	if g.n == 0 {
-		g.x = r.Uint64()
+		g.x = src.Uint64()
 		g.n = 16
 	}
 	val := g.x & 0b1111
