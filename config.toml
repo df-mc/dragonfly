@@ -4,7 +4,7 @@
   # server is already running on this port, please select a different port.
   Address = ":19132"
   # Transport controls which network transports are listened on. Valid values are raknet, nethernet and both.
-  Transport = "nethernet"
+  Transport = "raknet"
 
   [Network.NetherNet]
     # Address is the TCP address used for NetherNet HTTP signaling. If empty, Network.Address is used.
