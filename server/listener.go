@@ -2,12 +2,18 @@ package server
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/session"
@@ -39,12 +45,92 @@ func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 	return listener{Listener: l}, nil
 }
 
+// importPrivateKey reads an PEM file containing an [ecdsa.PrivateKey] and returns
+// it for use by the NetherNet listener.
+func importPrivateKey(path string) (*ecdsa.PrivateKey, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err // already wrapped in os.PathError
+	}
+	block, _ := pem.Decode(b)
+	if block == nil {
+		return nil, errors.New("invalid PEM block")
+	}
+	switch block.Type {
+	case "EC PRIVATE KEY":
+		return x509.ParseECPrivateKey(block.Bytes)
+	case "PRIVATE KEY":
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("parse private key: %w", err)
+		}
+		k, ok := key.(*ecdsa.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("must be *ecdsa.PrivateKey: %T", key)
+		}
+		return k, nil
+	default:
+		return nil, fmt.Errorf("invalid block type: %s", block.Type)
+	}
+}
+
+// exportPrivateKey writes an PEM file containing the [ecdsa.PrivateKey].
+func exportPrivateKey(path string, key *ecdsa.PrivateKey) error {
+	keyBytes, err := x509.MarshalECPrivateKey(key)
+	if err != nil {
+		return fmt.Errorf("encode: %w", err)
+	}
+	return os.WriteFile(path, pem.EncodeToMemory(&pem.Block{
+		Type:  "EC PRIVATE KEY",
+		Bytes: keyBytes,
+	}), 0644)
+}
+
 func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	nnConf := uc.Network.NetherNet
 	address := nnConf.Address
 	if address == "" {
 		address = uc.Network.Address
 	}
+	if nnConf.Domain == "" {
+		nnConf.Domain = "self"
+	}
+
+	lcfg := nethernet.ListenConfig{
+		Log:            conf.Log.With("net origin", "nethernet"),
+		AllowAnonymous: conf.AuthDisabled,
+	}
+	var key *ecdsa.PrivateKey
+	if nnConf.KeyFile != "" {
+		var err error
+		key, err = importPrivateKey(nnConf.KeyFile)
+		if os.IsNotExist(err) {
+			key, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+			if err != nil {
+				return nil, fmt.Errorf("generate key: %w", err)
+			}
+			// If we generated a new key for the NetherNet listener, save it.
+			// Otherwise, players may be prompted to trust the server identity
+			// after every restart.
+			if err := exportPrivateKey(nnConf.KeyFile, key); err != nil {
+				return nil, fmt.Errorf("export private key: %w", err)
+			}
+			lcfg.Log.Info("Generated a private key for NetherNet listener.", "path", nnConf.KeyFile)
+		} else if err != nil {
+			return nil, fmt.Errorf("import key file: %w", err)
+		}
+	} else {
+		var err error
+		key, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		if err != nil {
+			return nil, fmt.Errorf("generate key: %w", err)
+		}
+		lcfg.Log.Warn("Using a temporary private key for the NetherNet listener. Players connecting over plain HTTP may see the TOFU (Trust On First Use) prompt every time the server restarts.")
+	}
+	lcfg.IssueServerIdentity = func(ctx context.Context) (*nethernet.Identity, error) {
+		return nethernet.GenerateServerIdentity(key, nnConf.Domain)
+	}
+
 	tcp, err := net.Listen("tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("listen NetherNet HTTP: %w", err)
@@ -53,12 +139,8 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	handler := endpoint.HandlerConfig{Logger: log}.New()
 	cfg := listenerConfig(conf)
 	l, err := cfg.ListenNetwork(minecraft.NetherNet{
-		Signaling: handler,
-		ListenConfig: nethernet.ListenConfig{
-			Log:               conf.Log.With("net origin", "nethernet"),
-			AllowAnonymous:    conf.AuthDisabled,
-			DisableTrickleICE: true,
-		},
+		Signaling:    handler,
+		ListenConfig: lcfg,
 	}, handler.NetworkID())
 	if err != nil {
 		_ = tcp.Close()

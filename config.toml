@@ -4,12 +4,18 @@
   # server is already running on this port, please select a different port.
   Address = ":19132"
   # Transport controls which network transports are listened on. Valid values are raknet, nethernet and both.
-  Transport = "raknet"
+  Transport = "nethernet"
 
   [Network.NetherNet]
     # Address is the TCP address used for NetherNet HTTP signaling. If empty, Network.Address is used.
     # The listener serves plaintext HTTP. Terminate HTTPS with a reverse proxy such as Caddy or nginx.
     Address = ""
+    # KeyFile is the path to the PEM file containing the private key used to identify this listener
+    # when clients connect over plain HTTP. If the file does not exist, a new key is generated and
+    # saved there.
+    KeyFile = "identity.pem"
+    # Domain is the domain that may be displayed to players connecting over plain HTTP.
+    Domain = "self"
 
 [Server]
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the
