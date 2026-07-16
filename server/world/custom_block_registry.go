@@ -31,13 +31,18 @@ var traitLookup = map[string][]any{
 func NewCustomBlockRegistry(entries []protocol.BlockEntry) (BlockRegistry, error) {
 	DefaultBlockRegistry.Finalize()
 	registry := DefaultBlockRegistry.Clone()
-	if err := addCustomBlocks(registry, entries); err != nil {
+	if err := AddCustomBlocks(registry, entries); err != nil {
 		return nil, err
 	}
 	return registry, nil
 }
 
-func addCustomBlocks(registry *BasicBlockRegistry, entries []protocol.BlockEntry) error {
+// AddCustomBlocks appends custom block states to registry while preserving its existing runtime IDs.
+func AddCustomBlocks(registry BlockRegistry, entries []protocol.BlockEntry) error {
+	basicRegistry, ok := registry.(*BasicBlockRegistry)
+	if !ok {
+		return fmt.Errorf("unsupported block registry type %T", registry)
+	}
 	scratch := make([]byte, 0, 0xff)
 	for _, entry := range entries {
 		if namespace, _, _ := strings.Cut(entry.Name, ":"); namespace == "minecraft" {
@@ -52,7 +57,7 @@ func addCustomBlocks(registry *BasicBlockRegistry, entries []protocol.BlockEntry
 		err = forEachCustomBlockState(propertyNames, propertyValues, func(properties map[string]any) error {
 			state := BlockState{Name: entry.Name, Properties: properties}
 			var stateErr error
-			scratch, stateErr = registry.addCustomBlockState(state, scratch)
+			scratch, stateErr = basicRegistry.addCustomBlockState(state, scratch)
 			return stateErr
 		})
 		if err != nil {
