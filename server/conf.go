@@ -226,9 +226,10 @@ type UserConfig struct {
 			// Network.Address is used. The listener serves plaintext HTTP; HTTPS
 			// should be terminated by a reverse proxy.
 			Address string
-			// KeyFile is the path to the PEM file containing the private key used to identify this listener
-			// when clients connect over plain HTTP. If the file does not exist, a new key is generated and
-			// saved there.
+			// KeyFile is the path to the PEM file containing the P-384 ECDSA private
+			// key used to identify this listener when clients connect over plain HTTP.
+			// If the file does not exist, a new key is generated and saved there. If
+			// empty, a temporary key is generated and not saved.
 			KeyFile string
 			// Domain is the domain that may be displayed to players connecting over plain HTTP.
 			Domain string
@@ -390,7 +391,7 @@ func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
 	c.Network.Transport = "raknet"
-	c.Network.NetherNet.KeyFile, c.Network.NetherNet.Domain = "identity.pem", "self"
+	c.Network.NetherNet.KeyFile, c.Network.NetherNet.Domain = "nethernet_identity.pem", "self"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true

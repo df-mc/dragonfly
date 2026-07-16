@@ -45,8 +45,8 @@ func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 	return listener{Listener: l}, nil
 }
 
-// importPrivateKey reads an PEM file containing an [ecdsa.PrivateKey] and returns
-// it for use by the NetherNet listener.
+// importPrivateKey reads a PEM file containing a P-384 [ecdsa.PrivateKey] and
+// returns it for use by the NetherNet listener.
 func importPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -56,34 +56,57 @@ func importPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 	if block == nil {
 		return nil, errors.New("invalid PEM block")
 	}
+	var key *ecdsa.PrivateKey
 	switch block.Type {
 	case "EC PRIVATE KEY":
-		return x509.ParseECPrivateKey(block.Bytes)
+		key, err = x509.ParseECPrivateKey(block.Bytes)
 	case "PRIVATE KEY":
-		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		var parsed any
+		parsed, err = x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return nil, fmt.Errorf("parse private key: %w", err)
 		}
-		k, ok := key.(*ecdsa.PrivateKey)
+		var ok bool
+		key, ok = parsed.(*ecdsa.PrivateKey)
 		if !ok {
-			return nil, fmt.Errorf("must be *ecdsa.PrivateKey: %T", key)
+			return nil, fmt.Errorf("must be *ecdsa.PrivateKey: %T", parsed)
 		}
-		return k, nil
 	default:
 		return nil, fmt.Errorf("invalid block type: %s", block.Type)
 	}
+	if err != nil {
+		return nil, fmt.Errorf("parse private key: %w", err)
+	}
+	if key.Curve != elliptic.P384() {
+		return nil, fmt.Errorf("private key must use P-384, got %s", key.Curve.Params().Name)
+	}
+	return key, nil
 }
 
-// exportPrivateKey writes an PEM file containing the [ecdsa.PrivateKey].
+// exportPrivateKey writes a PEM file containing the [ecdsa.PrivateKey].
 func exportPrivateKey(path string, key *ecdsa.PrivateKey) error {
 	keyBytes, err := x509.MarshalECPrivateKey(key)
 	if err != nil {
 		return fmt.Errorf("encode: %w", err)
 	}
-	return os.WriteFile(path, pem.EncodeToMemory(&pem.Block{
+	b := pem.EncodeToMemory(&pem.Block{
 		Type:  "EC PRIVATE KEY",
 		Bytes: keyBytes,
-	}), 0644)
+	})
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(b); err != nil {
+		_ = f.Close()
+		_ = os.Remove(path)
+		return fmt.Errorf("write: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(path)
+		return fmt.Errorf("close: %w", err)
+	}
+	return nil
 }
 
 func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
