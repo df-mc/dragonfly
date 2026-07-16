@@ -26,6 +26,14 @@ var traitLookup = map[string][]any{
 	},
 }
 
+const maxCustomBlockStates = 1 << 16
+
+type customBlockStateSpace struct {
+	name       string
+	properties []string
+	values     [][]any
+}
+
 // NewCustomBlockRegistry returns an independent registry with default block runtime IDs preserved and custom block
 // states appended after the default registry.
 func NewCustomBlockRegistry(entries []protocol.BlockEntry) (BlockRegistry, error) {
@@ -43,7 +51,8 @@ func AddCustomBlocks(registry BlockRegistry, entries []protocol.BlockEntry) erro
 	if !ok {
 		return fmt.Errorf("unsupported block registry type %T", registry)
 	}
-	scratch := make([]byte, 0, 0xff)
+	spaces := make([]customBlockStateSpace, 0, len(entries))
+	total := 0
 	for _, entry := range entries {
 		if namespace, _, _ := strings.Cut(entry.Name, ":"); namespace == "minecraft" {
 			continue
@@ -53,9 +62,24 @@ func AddCustomBlocks(registry BlockRegistry, entries []protocol.BlockEntry) erro
 		if err != nil {
 			return fmt.Errorf("custom block %s: %w", entry.Name, err)
 		}
+		count := 1
+		for _, values := range propertyValues {
+			if count > (maxCustomBlockStates-total)/len(values) {
+				return fmt.Errorf("custom block states exceed limit of %d", maxCustomBlockStates)
+			}
+			count *= len(values)
+		}
+		if count > maxCustomBlockStates-total {
+			return fmt.Errorf("custom block states exceed limit of %d", maxCustomBlockStates)
+		}
+		total += count
+		spaces = append(spaces, customBlockStateSpace{entry.Name, propertyNames, propertyValues})
+	}
 
-		err = forEachCustomBlockState(propertyNames, propertyValues, func(properties map[string]any) error {
-			state := BlockState{Name: entry.Name, Properties: properties}
+	scratch := make([]byte, 0, 0xff)
+	for _, space := range spaces {
+		err := forEachCustomBlockState(space.properties, space.values, func(properties map[string]any) error {
+			state := BlockState{Name: space.name, Properties: properties}
 			var stateErr error
 			scratch, stateErr = basicRegistry.addCustomBlockState(state, scratch)
 			return stateErr
