@@ -42,8 +42,9 @@ func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 	return p
 }
 
-func (ptype) EncodeEntity() string   { return "minecraft:player" }
-func (ptype) NetworkOffset() float64 { return 1.621 }
+func (ptype) EncodeEntity() string { return "minecraft:player" }
+
+func (ptype) NetworkOffset() float64 { return 1.62001 }
 func (ptype) BBox(e world.Entity) cube.BBox {
 	p := e.(*Player)
 	s := p.Scale()
