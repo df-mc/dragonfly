@@ -1,24 +1,19 @@
 package chunk
 
-import (
-	"maps"
-	"slices"
-)
+import "slices"
 
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
 type SubChunk struct {
-	air                      uint32
-	storages                 []*PalettedStorage
-	blockLight               []uint8
-	skyLight                 []uint8
-	opaqueBlockNetworkHashes map[uint32]uint32
+	air        uint32
+	storages   []*PalettedStorage
+	blockLight []uint8
+	skyLight   []uint8
 }
 
 // Equals returns if the sub chunk passed is equal to the current one.
 func (sub *SubChunk) Equals(s *SubChunk) bool {
-	if s.air != sub.air || len(s.storages) != len(sub.storages) ||
-		!maps.Equal(s.opaqueBlockNetworkHashes, sub.opaqueBlockNetworkHashes) {
+	if s.air != sub.air || len(s.storages) != len(sub.storages) {
 		return false
 	}
 
@@ -39,11 +34,10 @@ func NewSubChunk(air uint32) *SubChunk {
 // Clone returns an independent copy of the SubChunk.
 func (sub *SubChunk) Clone() *SubChunk {
 	clone := &SubChunk{
-		air:                      sub.air,
-		storages:                 make([]*PalettedStorage, len(sub.storages)),
-		blockLight:               cloneLight(sub.blockLight),
-		skyLight:                 cloneLight(sub.skyLight),
-		opaqueBlockNetworkHashes: maps.Clone(sub.opaqueBlockNetworkHashes),
+		air:        sub.air,
+		storages:   make([]*PalettedStorage, len(sub.storages)),
+		blockLight: cloneLight(sub.blockLight),
+		skyLight:   cloneLight(sub.skyLight),
 	}
 	for i, storage := range sub.storages {
 		clone.storages[i] = storage.Clone()

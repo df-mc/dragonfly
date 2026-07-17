@@ -104,9 +104,9 @@ func customBlockPropertySpace(entry protocol.BlockEntry) ([]string, [][]any, err
 		if !ok {
 			return nil, nil, fmt.Errorf("expected property name to be string, got %T", v["name"])
 		}
-		enum, err := customBlockEnum(v["enum"])
-		if err != nil {
-			return nil, nil, fmt.Errorf("property %s enum: %w", name, err)
+		enum, ok := v["enum"].([]any)
+		if !ok {
+			return nil, nil, fmt.Errorf("expected property %s enum to be []any, got %T", name, v["enum"])
 		}
 		if len(enum) == 0 {
 			return nil, nil, fmt.Errorf("expected property %s enum to contain at least one value", name)
@@ -152,34 +152,6 @@ func customBlockPropertySpace(entry protocol.BlockEntry) ([]string, [][]any, err
 	}
 
 	return propertyNames, propertyValues, nil
-}
-
-func customBlockEnum(value any) ([]any, error) {
-	var values []any
-	switch value := value.(type) {
-	case []any:
-		values = value
-	case []uint8:
-		values = make([]any, len(value))
-		for i, v := range value {
-			values[i] = v
-		}
-	case []int32:
-		values = make([]any, len(value))
-		for i, v := range value {
-			values[i] = v
-		}
-	default:
-		return nil, fmt.Errorf("expected a list, got %T", value)
-	}
-	for i, value := range values {
-		switch value.(type) {
-		case bool, uint8, int32, string:
-		default:
-			return nil, fmt.Errorf("unsupported value at index %d: %T", i, value)
-		}
-	}
-	return values, nil
 }
 
 func customBlockMaps(value any, field string) ([]map[string]any, error) {
