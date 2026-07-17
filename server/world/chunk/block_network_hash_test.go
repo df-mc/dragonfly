@@ -70,6 +70,35 @@ func TestEncodeWithBlockNetworkHashesConvertsRuntimeIDsWithoutMutatingChunk(t *t
 	}
 }
 
+func TestEncodeWithBlockNetworkHashesPreservesUnknownHashCollidingWithRuntimeID(t *testing.T) {
+	br := networkHashTestRegistry{
+		air:             0,
+		hashToRuntimeID: map[uint32]uint32{100: 1},
+		runtimeIDToHash: map[uint32]uint32{1: 100, 2: 200},
+	}
+	c := New(br, cube.Range{0, 15})
+	c.SetBlock(1, 2, 3, 0, 2)
+
+	c.ConvertBlockNetworkHashesToRuntimeIDs()
+	c.CompactForRuntimeCache()
+	if got := c.Block(1, 2, 3, 0); got == 2 {
+		t.Fatal("unknown network hash remained ambiguous with runtime ID 2")
+	} else if _, registered := br.RuntimeIDToHash(got); registered {
+		t.Fatalf("unknown network hash converted to registered runtime ID %d", got)
+	}
+
+	data := EncodeWithBlockNetworkHashes(c)
+	buf := bytes.NewBuffer(data.SubChunks[0])
+	index := byte(0)
+	decoded, err := decodeSubChunk(buf, c, &index, NetworkEncoding)
+	if err != nil {
+		t.Fatalf("decode encoded subchunk: %v", err)
+	}
+	if got := decoded.Block(1, 2, 3, 0); got != 2 {
+		t.Fatalf("unknown network hash encoded as %d, want 2", got)
+	}
+}
+
 type networkHashTestRegistry struct {
 	air             uint32
 	hashToRuntimeID map[uint32]uint32

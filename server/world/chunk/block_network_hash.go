@@ -1,7 +1,9 @@
 package chunk
 
+import "math"
+
 // ConvertBlockNetworkHashesToRuntimeIDs converts block palette values from network hashes to registry runtime IDs.
-// Unknown hashes are preserved unchanged.
+// Unknown hashes are preserved opaquely so values that overlap registry runtime IDs survive re-encoding.
 func (chunk *Chunk) ConvertBlockNetworkHashesToRuntimeIDs() {
 	if chunk == nil {
 		return
@@ -12,7 +14,7 @@ func (chunk *Chunk) ConvertBlockNetworkHashesToRuntimeIDs() {
 }
 
 // ConvertBlockNetworkHashesToRuntimeIDs converts block palette values from network hashes to registry runtime IDs.
-// Unknown hashes are preserved unchanged.
+// Unknown hashes are preserved opaquely so values that overlap registry runtime IDs survive re-encoding.
 func (sub *SubChunk) ConvertBlockNetworkHashesToRuntimeIDs(br BlockRegistry) {
 	if sub == nil || br == nil {
 		return
@@ -21,13 +23,49 @@ func (sub *SubChunk) ConvertBlockNetworkHashesToRuntimeIDs(br BlockRegistry) {
 		if storage == nil {
 			continue
 		}
-		storage.palette.Replace(func(runtimeID uint32) uint32 {
-			if converted, ok := br.HashToRuntimeID(runtimeID); ok {
+		storage.palette.Replace(func(networkHash uint32) uint32 {
+			if converted, ok := br.HashToRuntimeID(networkHash); ok {
 				return converted
 			}
-			return runtimeID
+			if _, collides := br.RuntimeIDToHash(networkHash); collides {
+				return sub.opaqueBlockNetworkHashRuntimeID(br, networkHash)
+			}
+			return networkHash
 		})
 	}
+}
+
+func (sub *SubChunk) opaqueBlockNetworkHashRuntimeID(br BlockRegistry, networkHash uint32) uint32 {
+	for runtimeID, hash := range sub.opaqueBlockNetworkHashes {
+		if hash == networkHash {
+			return runtimeID
+		}
+	}
+	if sub.opaqueBlockNetworkHashes == nil {
+		sub.opaqueBlockNetworkHashes = make(map[uint32]uint32)
+	}
+	for runtimeID := uint32(math.MaxUint32); ; runtimeID-- {
+		if _, registered := br.RuntimeIDToHash(runtimeID); registered {
+			continue
+		}
+		if _, registered := br.HashToRuntimeID(runtimeID); registered {
+			continue
+		}
+		if _, used := sub.opaqueBlockNetworkHashes[runtimeID]; used || sub.hasPaletteValue(runtimeID) {
+			continue
+		}
+		sub.opaqueBlockNetworkHashes[runtimeID] = networkHash
+		return runtimeID
+	}
+}
+
+func (sub *SubChunk) hasPaletteValue(value uint32) bool {
+	for _, storage := range sub.storages {
+		if storage != nil && storage.palette.Index(value) >= 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // EncodeWithBlockNetworkHashes encodes c for the network with block palette runtime IDs converted to network hashes.
@@ -69,6 +107,9 @@ func (sub *SubChunk) convertRuntimeIDsToBlockNetworkHashes(br BlockRegistry) {
 			continue
 		}
 		storage.palette.Replace(func(runtimeID uint32) uint32 {
+			if hash, ok := sub.opaqueBlockNetworkHashes[runtimeID]; ok {
+				return hash
+			}
 			if hash, ok := br.RuntimeIDToHash(runtimeID); ok {
 				return hash
 			}

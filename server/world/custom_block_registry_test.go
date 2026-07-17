@@ -1,6 +1,7 @@
 package world
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -92,5 +93,53 @@ func TestNewCustomBlockRegistryPreservesVanillaRuntimeIDs(t *testing.T) {
 	}
 	if got, want := basic.AirRuntimeID(), DefaultBlockRegistry.AirRuntimeID(); got != want {
 		t.Fatalf("AirRuntimeID() = %d, want %d", got, want)
+	}
+}
+
+func TestNewCustomBlockRegistryAcceptsWireEnumSlices(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		values []any
+		state  any
+	}{
+		{name: "integer", values: []any{int32(0), int32(1)}, state: int32(1)},
+		{name: "boolean", values: []any{false, true}, state: uint8(1)},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			entry := protocol.BlockEntry{
+				Name: "dragonfly:wire_block_" + test.name,
+				Properties: map[string]any{"properties": []any{map[string]any{
+					"name": "dragonfly:value",
+					"enum": test.values,
+				}}},
+			}
+			buf := bytes.NewBuffer(nil)
+			entry.Marshal(protocol.NewWriter(buf, 0))
+			var decoded protocol.BlockEntry
+			decoded.Marshal(protocol.NewReader(buf, 0, true))
+
+			registry, err := NewCustomBlockRegistry([]protocol.BlockEntry{decoded})
+			if err != nil {
+				t.Fatalf("NewCustomBlockRegistry() error = %v", err)
+			}
+			if _, ok := registry.StateToRuntimeID("dragonfly:wire_block_"+test.name, map[string]any{
+				"dragonfly:value": test.state,
+			}); !ok {
+				t.Fatal("wire-decoded custom state missing from registry")
+			}
+		})
+	}
+}
+
+func TestNewCustomBlockRegistryRejectsUnsupportedEnumScalar(t *testing.T) {
+	_, err := NewCustomBlockRegistry([]protocol.BlockEntry{{
+		Name: "dragonfly:invalid_scalar",
+		Properties: map[string]any{"properties": []any{map[string]any{
+			"name": "dragonfly:value",
+			"enum": []any{int64(1)},
+		}}},
+	}})
+	if err == nil || !strings.Contains(err.Error(), "unsupported value") {
+		t.Fatalf("NewCustomBlockRegistry() error = %v, want unsupported value error", err)
 	}
 }
