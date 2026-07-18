@@ -24,7 +24,7 @@ func (r RedstoneLamp) LightEmissionLevel() uint8 {
 }
 
 // RedstonePowerUpdate lights the lamp as soon as it is powered. Turning off
-// is delayed by two redstone ticks, keeping the lamp lit through short pulses.
+// is delayed by three redstone ticks, keeping the lamp lit through short pulses.
 func (r RedstoneLamp) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, power int) (world.Block, bool) {
 	if power > 0 {
 		if r.Lit {
@@ -34,7 +34,7 @@ func (r RedstoneLamp) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, power int)
 		return r, true
 	}
 	if r.Lit {
-		tx.ScheduleBlockUpdate(pos, r, redstoneTicks(2))
+		tx.ScheduleBlockUpdate(pos, r, redstoneTicks(3))
 	}
 	return r, false
 }

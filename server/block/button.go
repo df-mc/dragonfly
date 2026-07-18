@@ -120,7 +120,11 @@ func (b Button) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Face) int
 
 // BreakInfo ...
 func (b Button) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(Button{Type: b.Type}))
+	effective := pickaxeEffective
+	if b.Type.Wood() {
+		effective = axeEffective
+	}
+	return newBreakInfo(0.5, alwaysHarvestable, effective, oneOf(Button{Type: b.Type}))
 }
 
 // SideClosed ...

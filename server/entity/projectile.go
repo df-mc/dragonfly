@@ -209,10 +209,9 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		// Blocks without a collision box, such as buttons, are passed through
 		// by the trace, so the block of the cell the projectile comes to rest
 		// in is notified as well.
-		if rest := bpos.Side(r.Face()); rest != bpos {
-			if h, ok := tx.Block(rest).(block.ProjectileHitter); ok {
-				h.ProjectileHit(rest, tx, e, r.Face())
-			}
+		rest := bpos.Side(r.Face())
+		if h, ok := tx.Block(rest).(block.ProjectileHitter); ok {
+			h.ProjectileHit(rest, tx, e, r.Face())
 		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m, tx)

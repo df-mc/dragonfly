@@ -43,16 +43,18 @@ func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 
 // EntityStepOn powers the plate when an entity stands on it.
 func (p PressurePlate) EntityStepOn(pos cube.Pos, tx *world.Tx, e world.Entity) {
-	power := p.entityPower(e)
-	if power == 0 {
+	if p.entityPower(e) == 0 {
 		return
 	}
-	if p.Type.Weighted() {
-		power = max(power, p.detectPower(pos, tx))
-	}
-	if p.Power == power {
+	if p.Power > 0 {
+		// The plate is already active. Its scheduled tick keeps the (weighted)
+		// level current, so a stepping entity only needs to defer the release.
 		tx.ScheduleBlockUpdate(pos, p, p.releaseDelay())
 		return
+	}
+	power := p.stepPower()
+	if p.Type.Weighted() {
+		power = max(power, p.detectPower(pos, tx))
 	}
 	p.Power = power
 	tx.SetBlock(pos, p, nil)
@@ -101,7 +103,11 @@ func (p PressurePlate) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Fa
 
 // BreakInfo ...
 func (p PressurePlate) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(PressurePlate{Type: p.Type}))
+	effective := pickaxeEffective
+	if p.Type.Wood() {
+		effective = axeEffective
+	}
+	return newBreakInfo(0.5, alwaysHarvestable, effective, oneOf(PressurePlate{Type: p.Type}))
 }
 
 // SideClosed ...
@@ -144,12 +150,9 @@ func (p PressurePlate) entityPower(e world.Entity) int {
 }
 
 // detectsEntity reports whether an entity activates the plate. Stone-like
-// plates only react to living entities, players and armour stands; snowballs
-// never activate a plate.
+// plates only react to living entities, players and armour stands; wooden and
+// weighted plates react to any entity.
 func (p PressurePlate) detectsEntity(e world.Entity) bool {
-	if pressurePlateEntityName(e) == "minecraft:snowball" {
-		return false
-	}
 	if !p.Type.Wood() && !p.Type.Weighted() {
 		return pressurePlateStoneEntity(e)
 	}
