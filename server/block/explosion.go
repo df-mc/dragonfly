@@ -1,17 +1,17 @@
 package block
 
 import (
+	"math"
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
 // ExplosionConfig is the configuration for an explosion. The world, position, size, sound, particle, and more can all
@@ -133,7 +133,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		}
 	}
 
-	ctx := event.C(tx)
+	ctx := tx.Event()
 	spawnFire := c.SpawnFire
 	itemDropChance := c.ItemDropChance
 	if tx.World().Handler().HandleExplosion(ctx, explosionPos, &affectedEntities, &affectedBlocks, &itemDropChance, &spawnFire); ctx.Cancelled() {
@@ -152,11 +152,12 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		if explodable, ok := bl.(Explodable); ok {
 			explodable.Explode(explosionPos, pos, tx, c)
 		} else if breakable, ok := bl.(Breakable); ok {
+			// Clear the block first so break handlers see the post-break world, this is required by things such as redstone updates.
+			tx.SetBlock(pos, nil, nil)
 			breakHandler := breakable.BreakInfo().BreakHandler
 			if breakHandler != nil {
 				breakHandler(pos, tx, nil)
 			}
-			tx.SetBlock(pos, nil, nil)
 			if itemDropChance > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(tx, drop, pos.Vec3Centre())

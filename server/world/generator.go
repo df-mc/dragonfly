@@ -1,6 +1,8 @@
 package world
 
 import (
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
@@ -9,7 +11,7 @@ import (
 // generate chunks when the provider of the world cannot find a chunk at a given chunk position.
 type Generator interface {
 	// GenerateChunk generates a chunk at a chunk position passed. The generator sets blocks in the chunk that
-	// is passed to the method.
+	// is passed to the method. With more than one chunk load worker, GenerateChunk is called concurrently.
 	GenerateChunk(pos ChunkPos, chunk *chunk.Chunk)
 	// DefaultSpawn returns the default spawn position for worlds using this generator in the dimension passed.
 	DefaultSpawn(dim Dimension) cube.Pos
@@ -25,59 +27,19 @@ func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
 // DefaultSpawn ...
 func (NopGenerator) DefaultSpawn(Dimension) cube.Pos { return cube.Pos{} }
 
-// chunkRequest ...
-type chunkRequest struct {
-	pos        ChunkPos
-	callbacks  []chunkCallback
-	generating bool
-
-	close  chan struct{}
-	col    *chunk.Column
-	result *Column
+// lockedGenerator wraps a Generator, serialising GenerateChunk calls for
+// generators that are not safe for concurrent use.
+type lockedGenerator struct {
+	mu sync.Mutex
+	g  Generator
 }
 
-// Do adds callback to list of all callbacks.
-func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) {
-	r.callbacks = append(r.callbacks, receiver)
-	if !r.generating {
-		r.generating = true
-		w := tx.World()
-		go r.load(w)
-	}
+func (l *lockedGenerator) GenerateChunk(pos ChunkPos, c *chunk.Chunk) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.g.GenerateChunk(pos, c)
 }
 
-// doImmediate waits till chunk is loaded and returns it.
-func (r *chunkRequest) doImmediate(tx *Tx) *Column {
-	<-r.close
-	r.signal(tx)
-	return r.result
+func (l *lockedGenerator) DefaultSpawn(dim Dimension) cube.Pos {
+	return l.g.DefaultSpawn(dim)
 }
-
-// load loads chunk or generates it.
-func (r *chunkRequest) load(w *World) {
-	r.col = w.loadChunk(r.pos)
-	close(r.close)
-	select {
-	case <-w.closing:
-		return
-	default:
-		w.Exec(r.signal)
-	}
-}
-
-// signal calls all callbacks and adds chunk to the world.
-func (r *chunkRequest) signal(tx *Tx) {
-	if r.result != nil {
-		return
-	}
-	w := tx.World()
-	pos := r.pos
-
-	delete(w.chunkRequests, pos)
-	r.result = w.addChunk(pos, r.col)
-	for _, recv := range r.callbacks {
-		recv(tx, r.result)
-	}
-}
-
-type chunkCallback = func(tx *Tx, chunk *Column)

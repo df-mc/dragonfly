@@ -46,6 +46,14 @@ func (b BlastFurnace) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
+// LightEmissionLevel ...
+func (b BlastFurnace) LightEmissionLevel() uint8 {
+	if b.Lit {
+		return 13
+	}
+	return 0
+}
+
 // EncodeItem ...
 func (b BlastFurnace) EncodeItem() (name string, meta int16) {
 	return "minecraft:blast_furnace", 0
