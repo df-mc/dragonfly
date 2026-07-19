@@ -7,7 +7,7 @@ import (
 )
 
 // chunkRequest tracks a chunk that is being loaded or generated in the
-// background. Everyone waiting for the same chunk shares a single request.
+// background. All callers waiting for the same chunk share a single request.
 type chunkRequest struct {
 	pos       ChunkPos
 	callbacks []chunkCallback
@@ -56,7 +56,7 @@ func (r *chunkRequest) load(w *World) {
 }
 
 // abort cancels a request that will never be carried out because the world is
-// closing, releasing anyone waiting on it.
+// closing, releasing any callers waiting on it.
 func (r *chunkRequest) abort() {
 	close(r.done)
 }
@@ -66,14 +66,9 @@ func (r *chunkRequest) abort() {
 func (p *chunkWorkerPool) schedule(r *chunkRequest) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if p.closed {
-		return false
-	}
-	select {
-	case <-p.w.closeStarted:
+	if p.closed || p.w.closed.Load() {
 		p.closed = true
 		return false
-	default:
 	}
 	select {
 	case p.queue <- r:
@@ -87,11 +82,9 @@ func (p *chunkWorkerPool) schedule(r *chunkRequest) bool {
 func (p *chunkWorkerPool) handle() {
 	defer p.wg.Done()
 	for {
-		select {
-		case <-p.w.closeStarted:
+		if p.w.closed.Load() {
 			p.drainAndAbort()
 			return
-		default:
 		}
 		select {
 		case r := <-p.queue:
@@ -123,8 +116,8 @@ func (p *chunkWorkerPool) wait() {
 	p.wg.Wait()
 }
 
-// signal adds the finished chunk to the world and calls everyone waiting for
-// it. It always runs inside a world transaction.
+// signal adds the finished chunk to the world and calls all callers waiting
+// for it. It always runs inside a world transaction.
 func (r *chunkRequest) signal(tx *Tx) {
 	if r.signalled {
 		return
@@ -135,10 +128,8 @@ func (r *chunkRequest) signal(tx *Tx) {
 	pos := r.pos
 
 	delete(w.chunkRequests, pos)
-	select {
-	case <-w.closeStarted:
+	if w.closed.Load() {
 		return
-	default:
 	}
 	if r.err != nil {
 		w.conf.Log.Error("load chunk: "+r.err.Error(), "X", pos[0], "Z", pos[1])
@@ -148,10 +139,8 @@ func (r *chunkRequest) signal(tx *Tx) {
 		return
 	}
 	r.result = w.addChunk(pos, r.col)
-	select {
-	case <-w.closeStarted:
+	if w.closed.Load() {
 		return
-	default:
 	}
 	for _, recv := range r.callbacks {
 		recv(tx, r.result)
