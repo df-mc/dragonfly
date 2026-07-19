@@ -53,6 +53,8 @@ type World struct {
 	chunks              map[ChunkPos]*Column
 	chunkRequests       map[ChunkPos]*chunkRequest
 	chunkRequestHandler chunkRequestHandler
+	providerMu          sync.Mutex
+	generatorMu         sync.Mutex
 
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
@@ -576,20 +578,20 @@ func (tx *Tx) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // the sky and block light. The light value returned is a value in the range
 // 0-15, where 0 means there is no light present, whereas 15 means the block is
 // fully lit.
-func (w *World) light(pos cube.Pos) uint8 {
-	if pos[1] < w.ra[0] {
+func (tx *Tx) light(pos cube.Pos) uint8 {
+	if pos[1] < tx.w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > w.ra[1] {
+	if pos[1] > tx.w.ra[1] {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
-	c, ok := w.loadedChunk(chunkPosFromBlockPos(pos))
-	if ok {
-		return c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
+	c, ok := tx.w.loadedChunk(chunkPosFromBlockPos(pos))
+	if !ok {
+		return 0
 	}
-	return 0
+	return c.Light(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 }
 
 // skyLight returns the skylight level at the position passed. This light level
@@ -865,7 +867,7 @@ func (w *World) PlayerSpawn(id uuid.UUID) cube.Pos {
 	if w == nil {
 		return cube.Pos{}
 	}
-	pos, exist, err := w.conf.Provider.LoadPlayerSpawnPosition(id)
+	pos, exist, err := w.loadProviderPlayerSpawnPosition(id)
 	if err != nil {
 		w.conf.Log.Error("load player spawn: "+err.Error(), "ID", id)
 		return w.Spawn()
@@ -883,7 +885,7 @@ func (w *World) SetPlayerSpawn(id uuid.UUID, pos cube.Pos) {
 	if w == nil {
 		return
 	}
-	if err := w.conf.Provider.SavePlayerSpawnPosition(id, pos); err != nil {
+	if err := w.saveProviderPlayerSpawnPosition(id, pos); err != nil {
 		w.conf.Log.Error("save player spawn: "+err.Error(), "ID", id)
 	}
 }
@@ -1053,7 +1055,7 @@ func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
 			f(tx, pos, c)
 		}
 		w.conf.Log.Debug("Updating level.dat values...")
-		w.conf.Provider.SaveSettings(w.set)
+		w.saveProviderSettings(w.set)
 	}
 }
 
@@ -1061,7 +1063,7 @@ func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
 func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 	if !w.conf.ReadOnly && c.modified {
 		c.Compact()
-		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos)); err != nil {
+		if err := w.storeProviderColumn(pos, w.columnTo(c, pos)); err != nil {
 			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 		}
 	}
@@ -1096,12 +1098,12 @@ func (w *World) close() {
 		// Let user code run anything that needs to be finished before closing.
 		w.Handler().HandleClose(tx)
 		w.Handle(NopHandler{})
-
-		w.save(w.closeChunk)(tx)
 	})
 
 	close(w.closing)
 	w.running.Wait()
+
+	<-w.Exec(w.save(w.closeChunk))
 
 	close(w.queueClosing)
 	w.queueing.Wait()
@@ -1217,38 +1219,56 @@ func (tx *Tx) chunk(pos ChunkPos) *Column {
 	if ok {
 		return c
 	}
-	return tx.w.addChunk(pos, tx.w.loadChunk(pos))
+	col, err := tx.w.loadChunk(pos)
+	if err != nil {
+		tx.w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+	}
+	if col == nil {
+		return tx.w.emptyColumn()
+	}
+	return tx.w.addChunk(pos, col)
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk
 // if one doesn't currently exist.
-func (w *World) loadChunk(pos ChunkPos) *chunk.Column {
-	column, err := w.conf.Provider.LoadColumn(pos, w.conf.Dim)
+func (w *World) loadChunk(pos ChunkPos) (*chunk.Column, error) {
+	column, err := w.loadProviderColumn(pos)
 	if err == nil {
-		return column
+		return column, nil
 	}
 	if !errors.Is(err, leveldb.ErrNotFound) {
-		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+		return nil, err
 	}
 	ch := chunk.New(w.conf.Blocks, w.Range())
+	if w.conf.ChunkLoadWorkers == 1 {
+		w.generatorMu.Lock()
+		defer w.generatorMu.Unlock()
+	}
 	w.conf.Generator.GenerateChunk(pos, ch)
-	return &chunk.Column{Chunk: ch}
+	return &chunk.Column{Chunk: ch}, nil
 }
 
-// loadChunkAsync ...
-func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) {
+func (w *World) emptyColumn() *Column {
+	return w.columnFrom(&chunk.Column{Chunk: chunk.New(w.conf.Blocks, w.Range())}, ChunkPos{})
+}
+
+// loadChunkAsync queues a chunk load or generation request and returns false if
+// the request could not be scheduled.
+func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) bool {
 	if c, ok := w.chunks[pos]; ok {
 		callback(tx, c)
-		return
+		return true
 	}
 	req, ok := w.chunkRequests[pos]
 	if ok {
-		req.Do(tx, callback)
-		return
+		return req.Do(tx, callback)
 	}
-	req = &chunkRequest{pos: pos, close: make(chan struct{})}
-	req.Do(tx, callback)
+	req = &chunkRequest{pos: pos, done: make(chan struct{})}
+	if !req.Do(tx, callback) {
+		return false
+	}
 	w.chunkRequests[pos] = req
+	return true
 }
 
 // addChunk ...
@@ -1268,9 +1288,40 @@ func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 func (w *World) chunkFromAsyncPool(tx *Tx, pos ChunkPos) (*Column, bool) {
 	req, ok := w.chunkRequests[pos]
 	if ok {
-		return req.doImmediate(tx), true
+		c := req.doImmediate(tx)
+		return c, c != nil
 	}
 	return nil, false
+}
+
+func (w *World) loadProviderColumn(pos ChunkPos) (*chunk.Column, error) {
+	w.providerMu.Lock()
+	defer w.providerMu.Unlock()
+	return w.conf.Provider.LoadColumn(pos, w.conf.Dim)
+}
+
+func (w *World) storeProviderColumn(pos ChunkPos, col *chunk.Column) error {
+	w.providerMu.Lock()
+	defer w.providerMu.Unlock()
+	return w.conf.Provider.StoreColumn(pos, w.conf.Dim, col)
+}
+
+func (w *World) saveProviderSettings(s *Settings) {
+	w.providerMu.Lock()
+	defer w.providerMu.Unlock()
+	w.conf.Provider.SaveSettings(s)
+}
+
+func (w *World) loadProviderPlayerSpawnPosition(id uuid.UUID) (cube.Pos, bool, error) {
+	w.providerMu.Lock()
+	defer w.providerMu.Unlock()
+	return w.conf.Provider.LoadPlayerSpawnPosition(id)
+}
+
+func (w *World) saveProviderPlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
+	w.providerMu.Lock()
+	defer w.providerMu.Unlock()
+	return w.conf.Provider.SavePlayerSpawnPosition(id, pos)
 }
 
 // calculateLight calculates the light in the chunk passed and spreads the

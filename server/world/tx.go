@@ -106,7 +106,7 @@ func (tx *Tx) HighestBlock(x, z int) int {
 // 0-15, where 0 means there is no light present, whereas 15 means the block is
 // fully lit.
 func (tx *Tx) Light(pos cube.Pos) uint8 {
-	return tx.World().light(pos)
+	return tx.light(pos)
 }
 
 // SkyLight returns the skylight level at the position passed. This light level

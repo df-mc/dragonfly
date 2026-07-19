@@ -20,6 +20,7 @@ type Loader struct {
 	pos       ChunkPos
 	loadQueue []ChunkPos
 	loaded    map[ChunkPos]*Column
+	pending   map[ChunkPos]struct{}
 
 	closed bool
 }
@@ -29,7 +30,7 @@ type Loader struct {
 // The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
-	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*Column), viewer: v}
+	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*Column), pending: make(map[ChunkPos]struct{}), viewer: v}
 	l.world(world)
 	return l
 }
@@ -54,6 +55,7 @@ func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 		}
 	})
 	clear(l.loaded)
+	clear(l.pending)
 	l.w.viewerMu.Lock()
 	delete(l.w.viewers, l)
 	l.w.viewerMu.Unlock()
@@ -101,15 +103,21 @@ func (l *Loader) Load(tx *Tx, n int) {
 		}
 		pos := l.loadQueue[0]
 		w := tx.World()
+		l.pending[pos] = struct{}{}
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
 		l.mu.Unlock()
 
-		w.loadChunkAsync(tx, pos, func(tx2 *Tx, chunk *Column) {
+		if !w.loadChunkAsync(tx, pos, func(tx2 *Tx, chunk *Column) {
 			l.viewChunk(tx2, pos, chunk)
-		})
+		}) {
+			l.mu.Lock()
+			delete(l.pending, pos)
+			l.queueLoad(pos)
+			l.mu.Unlock()
+		}
 	}
 }
 
@@ -119,6 +127,17 @@ func (l *Loader) viewChunk(tx *Tx, pos ChunkPos, c *Column) {
 	defer l.mu.Unlock()
 
 	if l.closed || l.viewer == nil || l.w == nil || l.w != tx.World() {
+		return
+	}
+	delete(l.pending, pos)
+	if c == nil {
+		l.queueLoad(pos)
+		return
+	}
+	if _, ok := l.loaded[pos]; ok {
+		return
+	}
+	if !l.withinLoadRadius(pos) {
 		return
 	}
 	l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
@@ -146,6 +165,7 @@ func (l *Loader) Close(tx *Tx) {
 		tx.World().removeViewer(tx, pos, l)
 	}
 	l.loaded = map[ChunkPos]*Column{}
+	clear(l.pending)
 
 	l.w.viewerMu.Lock()
 	delete(l.w.viewers, l)
@@ -167,13 +187,35 @@ func (l *Loader) world(new *World) {
 // and should therefore be removed.
 func (l *Loader) evictUnused(tx *Tx) {
 	for pos := range l.loaded {
-		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
-		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
-		if int(dist) > l.r {
+		if !l.withinLoadRadius(pos) {
 			delete(l.loaded, pos)
 			l.w.removeViewer(tx, pos, l)
 		}
 	}
+}
+
+func (l *Loader) withinLoadRadius(pos ChunkPos) bool {
+	diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
+	dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
+	return int32(math.Round(dist)) <= int32(l.r)
+}
+
+func (l *Loader) queueLoad(pos ChunkPos) {
+	if l.closed || l.w == nil || !l.withinLoadRadius(pos) {
+		return
+	}
+	if _, ok := l.loaded[pos]; ok {
+		return
+	}
+	if _, ok := l.pending[pos]; ok {
+		return
+	}
+	for _, queued := range l.loadQueue {
+		if queued == pos {
+			return
+		}
+	}
+	l.loadQueue = append(l.loadQueue, pos)
 }
 
 // populateLoadQueue populates the load queue of the loader. This method is called once to create the order in
@@ -196,6 +238,10 @@ func (l *Loader) populateLoadQueue() {
 			pos := ChunkPos{x + l.pos[0], z + l.pos[1]}
 			if _, ok := l.loaded[pos]; ok {
 				// The chunk was already loaded, so we don't need to do anything.
+				continue
+			}
+			if _, ok := l.pending[pos]; ok {
+				// The chunk is already queued to be loaded.
 				continue
 			}
 			if m, ok := queue[chunkDistance]; ok {

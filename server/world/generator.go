@@ -9,7 +9,8 @@ import (
 // generate chunks when the provider of the world cannot find a chunk at a given chunk position.
 type Generator interface {
 	// GenerateChunk generates a chunk at a chunk position passed. The generator sets blocks in the chunk that
-	// is passed to the method.
+	// is passed to the method. GenerateChunk may be called concurrently when Config.ChunkLoadWorkers is greater
+	// than 1, so Generator implementations used with multiple chunk load workers must be safe for concurrent calls.
 	GenerateChunk(pos ChunkPos, chunk *chunk.Chunk)
 	// DefaultSpawn returns the default spawn position for worlds using this generator in the dimension passed.
 	DefaultSpawn(dim Dimension) cube.Pos

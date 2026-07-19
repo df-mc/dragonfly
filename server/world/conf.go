@@ -49,9 +49,10 @@ type Config struct {
 	// ChunkUnloadInterval should not be used to prevent chunks from unloading
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
-	// ChunkLoadWorkers specifies the number of concurrent workers used to process
-	// asynchronous chunk loads. Synchronous chunk loads are not limited by this
-	// value. If set to 0 or lower, a conservative default is used.
+	// ChunkLoadWorkers specifies the number of workers used to asynchronously
+	// load or generate chunks. Provider calls remain serialised, but when this
+	// value is greater than 1, Generator.GenerateChunk may be called
+	// concurrently. If set to 0 or lower, a serial default is used.
 	ChunkLoadWorkers int
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per
@@ -139,7 +140,7 @@ func (conf Config) New() *World {
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
-	chunkRequests := newAsyncChunkRequestHandler(w)
+	chunkRequests := newWorkerPoolChunkRequestHandler(w)
 	w.chunkRequestHandler = chunkRequests
 	w.weather = weather{w: w}
 	var h Handler = NopHandler{}

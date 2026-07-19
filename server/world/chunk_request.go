@@ -1,86 +1,124 @@
 package world
 
-import "github.com/df-mc/dragonfly/server/world/chunk"
+import (
+	"sync"
 
-// chunkRequest tracks one asynchronous chunk load for a specific position and
-// collects all callbacks waiting for that chunk.
+	"github.com/df-mc/dragonfly/server/world/chunk"
+)
+
+// chunkRequest tracks one asynchronous chunk acquisition and collects all
+// callbacks waiting for that chunk. Acquisition may load an existing column from
+// the provider or generate a new one if the provider returns ErrNotFound.
 type chunkRequest struct {
-	pos        ChunkPos
-	callbacks  []chunkCallback
-	generating bool
+	pos       ChunkPos
+	callbacks []chunkCallback
+	queued    bool
+	aborted   bool
+	signalled bool
 
-	close  chan struct{}
+	done   chan struct{}
 	col    *chunk.Column
+	err    error
 	result *Column
 }
 
 // defaultChunkLoadWorkers is the number of asynchronous chunk load workers
 // started when Config.ChunkLoadWorkers is not set.
-const defaultChunkLoadWorkers = 4
+const defaultChunkLoadWorkers = 1
 
 // chunkCallback is called on the transaction path after a chunk is installed.
 type chunkCallback = func(tx *Tx, chunk *Column)
 
-// chunkRequestHandler dispatches asynchronous chunk requests to a loading strategy.
+// chunkRequestHandler schedules asynchronous chunk acquisition requests.
 type chunkRequestHandler interface {
-	handleChunkRequest(*chunkRequest)
+	handleChunkRequest(*chunkRequest) bool
 }
 
-// asyncChunkRequestHandler dispatches chunk requests to a bounded worker queue.
-type asyncChunkRequestHandler struct {
-	w     *World
-	queue chan *chunkRequest
+// workerPoolChunkRequestHandler processes chunk requests using a bounded worker
+// pool.
+type workerPoolChunkRequestHandler struct {
+	w      *World
+	queue  chan *chunkRequest
+	mu     sync.Mutex
+	closed bool
 }
 
-func newAsyncChunkRequestHandler(w *World) *asyncChunkRequestHandler {
-	return &asyncChunkRequestHandler{w: w, queue: make(chan *chunkRequest, 4096)}
+func newWorkerPoolChunkRequestHandler(w *World) *workerPoolChunkRequestHandler {
+	return &workerPoolChunkRequestHandler{w: w, queue: make(chan *chunkRequest, 4096)}
 }
 
-// Do registers receiver to be called when the chunk is loaded. The first call
-// starts the asynchronous load.
-func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) {
+// Do registers receiver to be called when the chunk is loaded or generated. The
+// first call queues the request; later calls only add callbacks. Do returns
+// false if the world is closing and the request could not be queued.
+func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) bool {
 	r.callbacks = append(r.callbacks, receiver)
-	if !r.generating {
-		r.generating = true
-		tx.World().chunkRequestHandler.handleChunkRequest(r)
+	if !r.queued {
+		r.queued = true
+		return tx.World().chunkRequestHandler.handleChunkRequest(r)
 	}
+	return true
 }
 
-// doImmediate waits until the chunk is loaded and returns it.
+// doImmediate waits until the chunk is loaded or generated and returns it.
 func (r *chunkRequest) doImmediate(tx *Tx) *Column {
-	<-r.close
+	<-r.done
 	r.signal(tx)
 	return r.result
 }
 
-// load reads or generates the chunk, then schedules installation back onto the
-// world transaction queue.
+// load reads the chunk from the provider or generates a new one, then schedules
+// installation back onto the world transaction queue.
 func (r *chunkRequest) load(w *World) {
-	r.col = w.loadChunk(r.pos)
-	close(r.close)
+	r.col, r.err = w.loadChunk(r.pos)
+	close(r.done)
+	go r.queueSignal(w)
+}
+
+func (r *chunkRequest) queueSignal(w *World) {
 	select {
+	case w.queue <- normalTransaction{c: make(chan struct{}), f: r.signal}:
 	case <-w.closing:
 		return
-	default:
-		w.Exec(r.signal)
 	}
 }
 
-// handleChunkRequest queues r on the bounded asynchronous chunk loading pool.
-func (h *asyncChunkRequestHandler) handleChunkRequest(r *chunkRequest) {
+// abort marks r as terminal without a chunk. It is only used during world
+// shutdown for queued requests that will never be processed.
+func (r *chunkRequest) abort() {
+	r.aborted = true
+	close(r.done)
+}
+
+// handleChunkRequest queues r on the bounded worker pool without blocking the
+// world transaction goroutine. The mutex prevents a request from being accepted
+// after the pool starts draining during shutdown.
+func (h *workerPoolChunkRequestHandler) handleChunkRequest(r *chunkRequest) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.closed {
+		return false
+	}
+	select {
+	case <-h.w.closing:
+		h.closed = true
+		return false
+	default:
+	}
 	select {
 	case h.queue <- r:
-	case <-h.w.closing:
-		close(r.close)
+		return true
+	default:
+		return false
 	}
 }
 
 // handle processes the chunk load queue until the world closes.
-func (h *asyncChunkRequestHandler) handle() {
+func (h *workerPoolChunkRequestHandler) handle() {
 	defer h.w.running.Done()
 	for {
 		select {
 		case <-h.w.closing:
+			h.drainAndAbort()
 			return
 		default:
 		}
@@ -88,21 +126,62 @@ func (h *asyncChunkRequestHandler) handle() {
 		case r := <-h.queue:
 			r.load(h.w)
 		case <-h.w.closing:
+			h.drainAndAbort()
 			return
 		}
 	}
 }
 
-// signal installs the loaded chunk and invokes all waiting callbacks.
+// drainAndAbort cancels all queued requests and marks the handler as closed.
+func (h *workerPoolChunkRequestHandler) drainAndAbort() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.closed = true
+	for {
+		select {
+		case r := <-h.queue:
+			r.abort()
+		default:
+			return
+		}
+	}
+}
+
+// signal installs the loaded or generated chunk and invokes all waiting
+// callbacks. It runs on the world transaction queue.
 func (r *chunkRequest) signal(tx *Tx) {
-	if r.result != nil {
+	if r.signalled {
 		return
 	}
+	r.signalled = true
+
 	w := tx.World()
 	pos := r.pos
 
 	delete(w.chunkRequests, pos)
+	if r.aborted {
+		return
+	}
+	select {
+	case <-w.closing:
+		return
+	default:
+	}
+	if r.err != nil {
+		w.conf.Log.Error("load chunk: "+r.err.Error(), "X", pos[0], "Z", pos[1])
+		if r.col == nil {
+			for _, recv := range r.callbacks {
+				recv(tx, nil)
+			}
+			return
+		}
+	}
 	r.result = w.addChunk(pos, r.col)
+	select {
+	case <-w.closing:
+		return
+	default:
+	}
 	for _, recv := range r.callbacks {
 		recv(tx, r.result)
 	}
