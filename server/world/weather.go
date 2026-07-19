@@ -25,7 +25,7 @@ func (w weather) StartWeatherCycle() {
 // is returned if the temperature in the Biome at that position is sufficiently
 // low, if it is raining and if it's above the top-most obstructing block.
 func (tx *Tx) snowingAt(pos cube.Pos) bool {
-	w := tx.w
+	w := tx.World()
 	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
@@ -43,7 +43,7 @@ func (tx *Tx) snowingAt(pos cube.Pos) bool {
 // for it not to be snow and if the block is above the top-most obstructing
 // block.
 func (tx *Tx) rainingAt(pos cube.Pos) bool {
-	w := tx.w
+	w := tx.World()
 	if w == nil || !w.Dimension().WeatherCycle() {
 		return false
 	}
@@ -60,7 +60,7 @@ func (tx *Tx) rainingAt(pos cube.Pos) bool {
 // True is returned if rainingAt returns true and if it is thundering in the
 // world.
 func (tx *Tx) thunderingAt(pos cube.Pos) bool {
-	w := tx.w
+	w := tx.World()
 	raining := tx.rainingAt(pos)
 	w.set.Lock()
 	a := w.set.Thundering && raining

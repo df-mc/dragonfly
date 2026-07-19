@@ -216,7 +216,7 @@ func (w *World) EntityRegistry() EntityRegistry {
 // at that position, the chunk is loaded, or generated if it could not be found
 // in the world save, and the block returned.
 func (tx *Tx) block(pos cube.Pos) Block {
-	return tx.w.blockInChunk(tx.chunk(chunkPosFromBlockPos(pos)), pos)
+	return tx.World().blockInChunk(tx.chunk(chunkPosFromBlockPos(pos)), pos)
 }
 
 // blockLoaded reads a block from a position only if its chunk is already loaded.
@@ -273,7 +273,7 @@ func (tx *Tx) biome(pos cube.Pos) Biome {
 	id := int(tx.chunk(chunkPosFromBlockPos(pos)).Biome(uint8(pos[0]), int16(pos[1]), uint8(pos[2])))
 	b, ok := BiomeByID(id)
 	if !ok {
-		tx.w.conf.Log.Error("biome not found by ID", "ID", id)
+		tx.World().conf.Log.Error("biome not found by ID", "ID", id)
 	}
 	return b
 }
@@ -349,7 +349,7 @@ type SetOpts struct {
 // needing to set a lot of blocks to the world. BuildStructure may be used
 // instead.
 func (tx *Tx) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
-	w := tx.w
+	w := tx.World()
 	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
@@ -463,7 +463,7 @@ func (tx *Tx) setBiome(pos cube.Pos, b Biome) {
 // method operates on a per-chunk basis, setting all blocks within a single
 // chunk part of the Structure before moving on to the next chunk.
 func (tx *Tx) buildStructure(pos cube.Pos, s Structure) {
-	w := tx.w
+	w := tx.World()
 	dim := s.Dimensions()
 	width, height, length := dim[0], dim[1], dim[2]
 	maxX, maxY, maxZ := pos[0]+width, pos[1]+height, pos[2]+length
@@ -546,7 +546,7 @@ func (tx *Tx) buildStructure(pos cube.Pos, s Structure) {
 // Liquid may be in the foreground or in any other layer. If found, the Liquid
 // is returned. If not, the bool returned is false.
 func (tx *Tx) liquid(pos cube.Pos) (Liquid, bool) {
-	w := tx.w
+	w := tx.World()
 	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return nil, false
@@ -581,7 +581,7 @@ func (tx *Tx) liquid(pos cube.Pos) (Liquid, bool) {
 // overwritten. If nil is passed for the Liquid, any Liquid currently present
 // will be removed.
 func (tx *Tx) setLiquid(pos cube.Pos, b Liquid) {
-	w := tx.w
+	w := tx.World()
 	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return
@@ -663,7 +663,7 @@ func (w *World) removeLiquidOnLayer(c *chunk.Chunk, x uint8, y int16, z, layer u
 // additionalLiquid checks if the block at a position has additional liquid on
 // another layer and returns the liquid if so.
 func (tx *Tx) additionalLiquid(pos cube.Pos) (Liquid, bool) {
-	w := tx.w
+	w := tx.World()
 	if pos.OutOfBounds(w.Range()) {
 		// Fast way out.
 		return nil, false
@@ -685,15 +685,16 @@ func (tx *Tx) additionalLiquid(pos cube.Pos) (Liquid, bool) {
 // 0-15, where 0 means there is no light present, whereas 15 means the block is
 // fully lit.
 func (tx *Tx) light(pos cube.Pos) uint8 {
-	if pos[1] < tx.w.ra[0] {
+	w := tx.World()
+	if pos[1] < w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > tx.w.ra[1] {
+	if pos[1] > w.ra[1] {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
-	c, ok := tx.w.loadedChunk(chunkPosFromBlockPos(pos))
+	c, ok := w.loadedChunk(chunkPosFromBlockPos(pos))
 	if !ok {
 		return 0
 	}
@@ -705,11 +706,12 @@ func (tx *Tx) light(pos cube.Pos) uint8 {
 // value, similarly to light, is a value in the range 0-15, where 0 means no
 // light is present.
 func (tx *Tx) skyLight(pos cube.Pos) uint8 {
-	if pos[1] < tx.w.ra[0] {
+	w := tx.World()
+	if pos[1] < w.ra[0] {
 		// Fast way out.
 		return 0
 	}
-	if pos[1] > tx.w.ra[1] {
+	if pos[1] > w.ra[1] {
 		// Above the rest of the world, so full skylight.
 		return 15
 	}
@@ -1338,22 +1340,23 @@ func (w *World) loadedChunk(pos ChunkPos) (*Column, bool) {
 // did not yet exist. Additionally, chunks newly loaded have the light in them
 // calculated before they are returned.
 func (tx *Tx) chunk(pos ChunkPos) *Column {
-	c, ok := tx.w.chunks[pos]
+	w := tx.World()
+	c, ok := w.chunks[pos]
 	if ok {
 		return c
 	}
-	c, ok = tx.w.chunkFromAsyncPool(tx, pos)
+	c, ok = w.chunkFromAsyncPool(tx, pos)
 	if ok {
 		return c
 	}
-	col, err := tx.w.loadChunk(pos)
+	col, err := w.loadChunk(pos)
 	if err != nil {
-		tx.w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
+		w.conf.Log.Error("load chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 	}
 	if col == nil {
-		return tx.w.emptyColumn()
+		return w.emptyColumn()
 	}
-	return tx.w.addChunk(pos, col)
+	return w.addChunk(pos, col)
 }
 
 // loadChunk attempts to load a chunk from the provider, or generates a chunk
