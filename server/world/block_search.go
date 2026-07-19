@@ -35,7 +35,7 @@ func (w *World) blocksWithin(pos cube.Pos, radius int, blocks ...Block) iter.Seq
 				if col, ok := w.chunks[chunkPos]; ok {
 					c = col.Chunk
 				} else {
-					col, err := w.conf.Provider.LoadColumn(chunkPos, w.conf.Dim)
+					col, err := w.loadProviderColumn(chunkPos)
 					if err != nil {
 						if !errors.Is(err, leveldb.ErrNotFound) && !logged {
 							// Log only the first error: a systemic provider failure would otherwise log once per chunk.
