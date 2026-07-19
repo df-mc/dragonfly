@@ -76,6 +76,19 @@ type Config struct {
 	// If left nil, DefaultBlockRegistry is used. For a non-default registry,
 	// use NewBlockRegistry(), register blocks/states, and call Finalize().
 	Blocks BlockRegistry
+
+	// Synchronous removes the World's own background goroutines. Immediate tasks
+	// from World.Do and Call run on the calling goroutine, the World is not saved
+	// or unloaded automatically, and time only passes on explicit
+	// World.AdvanceTick calls. World.DoAfter and entity work scheduled before an
+	// entity enters a world still use background goroutines and wall-clock
+	// delays; callers must synchronise on the returned Task. This makes
+	// Synchronous Worlds well suited to unit tests that need a World to interact
+	// with.
+	// A Synchronous World must be driven from one goroutine. Do, Call and
+	// AdvanceTick are not safe to call concurrently, including from delayed
+	// item or death callbacks.
+	Synchronous bool
 }
 
 // New creates a new World using the Config conf. The World returned will start
@@ -127,11 +140,13 @@ func (conf Config) New() *World {
 	s := conf.Provider.Settings()
 	w := &World{
 		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
+		redstone:         newRedstoneEngine(s.CurrentTick),
 		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
 		chunkRequests:    make(map[ChunkPos]*chunkRequest),
 		queueClosing:     make(chan struct{}),
+		closeStarted:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
 		r:                rand.New(conf.RandSource),
@@ -146,17 +161,19 @@ func (conf Config) New() *World {
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
 
-	w.queueing.Add(1)
-	w.running.Add(2 + conf.ChunkLoadWorkers)
-
 	t := ticker{interval: time.Second / 20}
-	go t.tickLoop(w)
-	go w.autoSave()
-	go w.handleTransactions()
-	for range conf.ChunkLoadWorkers {
-		go chunkRequests.handle()
+	if !conf.Synchronous {
+		w.queueing.Add(1)
+		w.running.Add(2 + conf.ChunkLoadWorkers)
+
+		go t.tickLoop(w)
+		go w.autoSave()
+		go w.handleTransactions()
+		for range conf.ChunkLoadWorkers {
+			go chunkRequests.handle()
+		}
 	}
 
-	<-w.Exec(t.tick)
+	<-w.exec(t.tick)
 	return w
 }

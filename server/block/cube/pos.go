@@ -96,21 +96,29 @@ func (p Pos) Side(face Face) Pos {
 // Face returns the face that the other Pos was on compared to the current Pos.
 // The other Pos is assumed to be a direct neighbour of the current Pos.
 func (p Pos) Face(other Pos) Face {
-	switch other {
-	case p.Add(Pos{0, 1}):
-		return FaceUp
-	case p.Add(Pos{0, -1}):
-		return FaceDown
-	case p.Add(Pos{0, 0, -1}):
-		return FaceNorth
-	case p.Add(Pos{0, 0, 1}):
-		return FaceSouth
-	case p.Add(Pos{-1, 0, 0}):
-		return FaceWest
-	case p.Add(Pos{1, 0, 0}):
-		return FaceEast
+	face, _ := p.NeighbourFace(other)
+	return face
+}
+
+// NeighbourFace returns the face that the other Pos was on compared to the
+// current Pos, if the other Pos is a direct neighbour of the current Pos.
+// Example: Pos{0, 0, 0}.NeighbourFace(Pos{0, 1, 0}) returns FaceUp, true.
+func (p Pos) NeighbourFace(other Pos) (Face, bool) {
+	switch other.Sub(p) {
+	case Pos{0, 1, 0}:
+		return FaceUp, true
+	case Pos{0, -1, 0}:
+		return FaceDown, true
+	case Pos{0, 0, -1}:
+		return FaceNorth, true
+	case Pos{0, 0, 1}:
+		return FaceSouth, true
+	case Pos{-1, 0, 0}:
+		return FaceWest, true
+	case Pos{1, 0, 0}:
+		return FaceEast, true
 	}
-	return FaceUp
+	return FaceUp, false
 }
 
 // Neighbours calls the function passed for each of the block position's

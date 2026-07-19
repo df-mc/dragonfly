@@ -55,6 +55,9 @@ func (s Stairs) Instrument() sound.Instrument {
 	if _, ok := s.Block.(Planks); ok {
 		return sound.Bass()
 	}
+	if _, ok := s.Block.(BambooMosaic); ok {
+		return sound.Bass()
+	}
 	return sound.BassDrum()
 }
 
@@ -92,6 +95,11 @@ func toStairsDirection(v cube.Direction) int32 {
 // SideClosed ...
 func (s Stairs) SideClosed(pos, side cube.Pos, tx *world.Tx) bool {
 	return s.Model().FaceSolid(pos, pos.Face(side), tx)
+}
+
+// CanRedstoneWireStepDown ...
+func (Stairs) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+	return false
 }
 
 // allStairs returns all states of stairs.

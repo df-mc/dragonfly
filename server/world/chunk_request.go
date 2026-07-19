@@ -99,7 +99,7 @@ func (h *workerPoolChunkRequestHandler) handleChunkRequest(r *chunkRequest) bool
 		return false
 	}
 	select {
-	case <-h.w.closing:
+	case <-h.w.closeStarted:
 		h.closed = true
 		return false
 	default:
@@ -112,12 +112,12 @@ func (h *workerPoolChunkRequestHandler) handleChunkRequest(r *chunkRequest) bool
 	}
 }
 
-// handle processes the chunk load queue until the world closes.
+// handle processes the chunk load queue until the world starts closing.
 func (h *workerPoolChunkRequestHandler) handle() {
 	defer h.w.running.Done()
 	for {
 		select {
-		case <-h.w.closing:
+		case <-h.w.closeStarted:
 			h.drainAndAbort()
 			return
 		default:
@@ -125,7 +125,7 @@ func (h *workerPoolChunkRequestHandler) handle() {
 		select {
 		case r := <-h.queue:
 			r.load(h.w)
-		case <-h.w.closing:
+		case <-h.w.closeStarted:
 			h.drainAndAbort()
 			return
 		}
@@ -163,7 +163,7 @@ func (r *chunkRequest) signal(tx *Tx) {
 		return
 	}
 	select {
-	case <-w.closing:
+	case <-w.closeStarted:
 		return
 	default:
 	}
@@ -178,7 +178,7 @@ func (r *chunkRequest) signal(tx *Tx) {
 	}
 	r.result = w.addChunk(pos, r.col)
 	select {
-	case <-w.closing:
+	case <-w.closeStarted:
 		return
 	default:
 	}

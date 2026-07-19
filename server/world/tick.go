@@ -24,13 +24,21 @@ func (t ticker) tickLoop(w *World) {
 	for {
 		select {
 		case <-tc.C:
-			<-w.Exec(t.tick)
+			<-w.exec(t.tick)
 		case <-w.closing:
 			// World is being closed: Stop ticking and get rid of a task.
 			w.running.Done()
 			return
 		}
 	}
+}
+
+// AdvanceTick advances the World by a single tick. It is generally only useful
+// for Worlds created with Config.Synchronous set: other Worlds tick
+// automatically 20 times per second. Synchronous Worlds tick loaded chunks
+// even when no viewers are present.
+func (w *World) AdvanceTick() {
+	<-w.exec(ticker{}.tick)
 }
 
 // tick performs a tick on the World and updates the time, weather, blocks and
@@ -45,8 +53,9 @@ func (t ticker) tick(tx *Tx) {
 		// the player should spawn at the highest position in the world.
 		w.set.Spawn[1] = tx.highestObstructingBlock(s[0], s[2]) + 1
 	}
-	if len(viewers) == 0 && w.set.CurrentTick != 0 {
-		// Don't continue ticking if no viewers are in the world.
+	if len(viewers) == 0 && w.set.CurrentTick != 0 && !w.conf.Synchronous {
+		// Don't continue ticking if no viewers are in the world. Synchronous
+		// worlds only tick on explicit AdvanceTick calls, so they always tick.
 		w.set.Unlock()
 		return
 	}
@@ -92,6 +101,7 @@ func (t ticker) tick(tx *Tx) {
 	w.scheduledUpdates.tick(tx, tick)
 	t.tickBlocksRandomly(tx, loaders, tick)
 	t.performNeighbourUpdates(tx)
+	w.redstone.tick(tx, tick)
 }
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
@@ -113,8 +123,7 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 	}
 }
 
-// tickBlocksRandomly executes random block ticks in each sub chunk in the world that has at least one viewer
-// registered from the viewers passed.
+// tickBlocksRandomly executes random block ticks in loaded chunks within range of loaders.
 func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 	var (
 		r             = int32(tx.World().tickRange())
@@ -128,12 +137,16 @@ func (t ticker) tickBlocksRandomly(tx *Tx, loaders []*Loader, tick int64) {
 	}
 
 	loaded := make([]ChunkPos, 0, len(loaders))
-	for _, loader := range loaders {
-		loader.mu.RLock()
-		pos := loader.pos
-		loader.mu.RUnlock()
+	if tx.World().conf.Synchronous {
+		loaded = slices.Collect(maps.Keys(tx.World().chunks))
+	} else {
+		for _, loader := range loaders {
+			loader.mu.RLock()
+			pos := loader.pos
+			loader.mu.RUnlock()
 
-		loaded = append(loaded, pos)
+			loaded = append(loaded, pos)
+		}
 	}
 
 	for pos, c := range tx.World().chunks {
@@ -238,7 +251,7 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 			}
 		}
 
-		if len(c.viewers) > 0 {
+		if tx.World().conf.Synchronous || len(c.viewers) > 0 {
 			if te, ok := e.(TickerEntity); ok {
 				te.Tick(tx, tick)
 			}
@@ -327,10 +340,7 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Block, delay time.Duration) {
 	resTick := queue.currentTick + int64(max(delay/(time.Second/20), 1))
 	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(b)}
-	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
-		// Already have a tick scheduled for this position that will occur after
-		// the delay passed. Block updates can only be scheduled if they are
-		// after any currently scheduled updates.
+	if t, ok := queue.furthestTicks[index]; ok && t >= resTick && t > queue.currentTick {
 		return
 	}
 	queue.furthestTicks[index] = resTick
@@ -353,6 +363,9 @@ func (queue *scheduledTickQueue) removeChunk(pos ChunkPos) {
 	queue.ticks = slices.DeleteFunc(queue.ticks, func(tick scheduledTick) bool {
 		return chunkPosFromBlockPos(tick.pos) == pos
 	})
+	maps.DeleteFunc(queue.furthestTicks, func(index scheduledTickIndex, _ int64) bool {
+		return chunkPosFromBlockPos(index.pos) == pos
+	})
 }
 
 // add adds a slice of scheduled ticks to the queue. It assumes no duplicate
@@ -362,10 +375,9 @@ func (queue *scheduledTickQueue) add(ticks []scheduledTick) {
 	for _, t := range ticks {
 		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
 		if existing, ok := queue.furthestTicks[index]; ok {
-			// Make sure we find the furthest tick for each of the ticks added.
-			// Some ticks may have the same block and position, in which case we
-			// need to set the furthest tick.
 			queue.furthestTicks[index] = max(existing, t.t)
+		} else {
+			queue.furthestTicks[index] = t.t
 		}
 	}
 }

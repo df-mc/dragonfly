@@ -1,11 +1,12 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // Kelp is an underwater block which can grow on top of solids underwater.
@@ -24,7 +25,7 @@ func (k Kelp) SmeltInfo() item.SmeltInfo {
 }
 
 // BoneMeal ...
-func (k Kelp) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (k Kelp) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	for y := pos.Y(); y <= tx.Range()[1]; y++ {
 		currentPos := cube.Pos{pos.X(), y, pos.Z()}
 		block := tx.Block(currentPos)
@@ -36,11 +37,11 @@ func (k Kelp) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 		}
 		if water, ok := block.(Water); ok && water.Depth == 8 {
 			tx.SetBlock(currentPos, Kelp{Age: k.Age + 1}, nil)
-			return true
+			return item.BoneMealResultSmall
 		}
 		break
 	}
-	return false
+	return item.BoneMealResultNone
 }
 
 // BreakInfo ...

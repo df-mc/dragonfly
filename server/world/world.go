@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb"
@@ -34,6 +33,16 @@ type World struct {
 	queueClosing chan struct{}
 	queueing     sync.WaitGroup
 
+	// scheduleMu serialises task scheduling against the close transitions
+	// below. scheduling counts in-flight scheduled work that close must drain.
+	scheduleMu sync.Mutex
+	scheduling sync.WaitGroup
+	// closed flips once close starts; new tasks fail with ErrWorldClosed.
+	// closeAcceptingEntityTasks is true only during the close transaction, when
+	// entity Close methods may still schedule final work that close drains.
+	closed                    atomic.Bool
+	closeAcceptingEntityTasks atomic.Bool
+
 	// advance is a bool that specifies if this World should advance the current
 	// tick, time and weather saved in the Settings struct held by the World.
 	advance bool
@@ -45,8 +54,11 @@ type World struct {
 
 	weather
 
-	closing chan struct{}
-	running sync.WaitGroup
+	// closeStarted closes as soon as World.Close begins, before the close
+	// transaction runs; closing closes once the world stops ticking.
+	closeStarted chan struct{}
+	closing      chan struct{}
+	running      sync.WaitGroup
 
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
@@ -68,6 +80,7 @@ type World struct {
 	// tick value passed, the block update will be performed and the entry will
 	// be removed from the map.
 	scheduledUpdates *scheduledTickQueue
+	redstone         *redstoneEngine
 	neighbourUpdates []neighbourUpdate
 
 	viewerMu sync.Mutex
@@ -117,20 +130,65 @@ func (w *World) BlockRegistry() BlockRegistry {
 	return w.conf.Blocks
 }
 
-// ExecFunc is a function that performs a synchronised transaction on a World.
-type ExecFunc func(tx *Tx)
+// execFunc is a function that performs a synchronised transaction on a World.
+type execFunc func(tx *Tx)
 
-// Exec performs a synchronised transaction f on a World. Exec returns a channel
-// that is closed once the transaction is complete.
-func (w *World) Exec(f ExecFunc) <-chan struct{} {
+// exec runs f on the World, bypassing the closed check that Do/DoAfter/Call
+// apply — reserved for the World's own machinery (ticking, saving, chunk
+// unload, the close transaction), which must queue work after close begins.
+// The returned channel closes when done; waiting on it from the owner deadlocks.
+func (w *World) exec(f execFunc) <-chan struct{} {
 	c := make(chan struct{})
-	w.queue <- normalTransaction{c: c, f: f}
+	ntx := normalTransaction{c: c, f: f}
+	if w.conf.Synchronous {
+		ntx.Run(w)
+		return c
+	}
+	w.queue <- ntx
 	return c
 }
 
-func (w *World) weakExec(invalid *atomic.Bool, cond *sync.Cond, f ExecFunc) <-chan bool {
+func (w *World) weakExec(valid func() bool, cond *sync.Cond, f execFunc, allowClosed bool) <-chan bool {
 	c := make(chan bool, 1)
-	w.queue <- weakTransaction{c: c, f: f, invalid: invalid, cond: cond}
+	if w.conf.Synchronous {
+		run := valid == nil || valid()
+		if run {
+			// As in weakTransaction.Run, f must not run under cond.L: it may
+			// relock it, e.g. through RemoveEntity.
+			cond.L.Unlock()
+			tx := newTx(w)
+			f(tx)
+			tx.close()
+			tx.runDeferred()
+			cond.L.Lock()
+		}
+		c <- run
+		return c
+	}
+	w.scheduleMu.Lock()
+	if w.closed.Load() && !w.closeAcceptingEntityTasks.Load() && !allowClosed {
+		w.scheduleMu.Unlock()
+		c <- false
+		return c
+	}
+	wtx := weakTransaction{c: c, f: f, valid: valid, cond: cond}
+	select {
+	case w.queue <- wtx:
+		w.scheduleMu.Unlock()
+	default:
+		w.scheduling.Add(1)
+		w.scheduleMu.Unlock()
+		go func() {
+			defer w.scheduling.Done()
+			select {
+			case w.queue <- wtx:
+			case <-w.closing:
+				wtx.fail()
+			case <-w.queueClosing:
+				wtx.fail()
+			}
+		}()
+	}
 	return c
 }
 
@@ -159,6 +217,24 @@ func (w *World) EntityRegistry() EntityRegistry {
 // in the world save, and the block returned.
 func (tx *Tx) block(pos cube.Pos) Block {
 	return tx.w.blockInChunk(tx.chunk(chunkPosFromBlockPos(pos)), pos)
+}
+
+// blockLoaded reads a block from a position only if its chunk is already loaded.
+func (w *World) blockLoaded(pos cube.Pos) (Block, bool) {
+	if pos.OutOfBounds(w.ra) {
+		return w.conf.Blocks.Air(), false
+	}
+	c, ok := w.chunks[chunkPosFromBlockPos(pos)]
+	if !ok {
+		return w.conf.Blocks.Air(), false
+	}
+	rid := c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0)
+	if w.conf.Blocks.NBTBlock(rid) {
+		if b, ok := c.BlockEntities[pos]; ok {
+			return b, true
+		}
+	}
+	return w.conf.Blocks.BlockByRuntimeIDOrAir(rid), true
 }
 
 // blockInChunk reads a block from a chunk at the position passed. The block
@@ -206,7 +282,7 @@ func (tx *Tx) biome(pos cube.Pos) Biome {
 // block at the x and z values passed in the World.
 func (w *World) HighestLightBlocker(x, z int) int {
 	var y int
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Tx) {
 		y = tx.highestLightBlocker(x, z)
 	})
 	return y
@@ -252,6 +328,10 @@ type SetOpts struct {
 	// performance is very important, or where it is known no liquid can be
 	// present anyway.
 	DisableLiquidDisplacement bool
+	// DisableRedstoneUpdates makes SetBlock not invalidate the redstone engine
+	// around the changed block. This is used by the redstone engine while
+	// applying its own block-state updates to avoid duplicate same-tick work.
+	DisableRedstoneUpdates bool
 }
 
 // setBlock writes a block to the position passed. If a chunk is not yet loaded
@@ -282,10 +362,27 @@ func (tx *Tx) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	c := tx.chunk(chunkPosFromBlockPos(pos))
 
 	rid := w.conf.Blocks.BlockRuntimeID(b)
+	redstoneAfterRelevant := isRedstoneRelevant(b)
+	needOldBlock := !opts.DisableRedstoneUpdates || !redstoneAfterRelevant
+	needOldRID := needOldBlock || (rid != w.conf.Blocks.AirRuntimeID() && !opts.DisableLiquidDisplacement)
+
+	var oldRID uint32
+	if needOldRID {
+		oldRID = c.Block(x, y, z, 0)
+	}
+	var oldBlock Block
+	if needOldBlock {
+		oldBlock = w.conf.Blocks.BlockByRuntimeIDOrAir(oldRID)
+		if w.conf.Blocks.NBTBlock(oldRID) {
+			if blockEntity, ok := c.BlockEntities[pos]; ok {
+				oldBlock = blockEntity
+			}
+		}
+	}
 
 	var before uint32
 	if rid != w.conf.Blocks.AirRuntimeID() && !opts.DisableLiquidDisplacement {
-		before = c.Block(x, y, z, 0)
+		before = oldRID
 	}
 
 	c.modified = true
@@ -329,12 +426,19 @@ func (tx *Tx) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		}
 	}
 
+	if redstoneAfterRelevant || (needOldBlock && isRedstoneRelevant(oldBlock)) {
+		w.redstone.forget(pos)
+	}
+
 	for _, viewer := range viewers {
 		viewer.ViewBlockUpdate(pos, b, 0)
 	}
 
 	if !opts.DisableBlockUpdates {
 		w.doBlockUpdatesAround(pos)
+	}
+	if !opts.DisableRedstoneUpdates {
+		w.redstone.invalidateAroundBlockChange(pos, oldBlock, b, RedstoneUpdateCauseBlockUpdate, w.Range())
 	}
 }
 
@@ -487,6 +591,7 @@ func (tx *Tx) setLiquid(pos cube.Pos, b Liquid) {
 	if b == nil {
 		w.removeLiquids(c, pos)
 		w.doBlockUpdatesAround(pos)
+		w.redstone.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, w.Range())
 		return
 	}
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
@@ -510,6 +615,7 @@ func (tx *Tx) setLiquid(pos cube.Pos, b Liquid) {
 	c.modified = true
 
 	w.doBlockUpdatesAround(pos)
+	w.redstone.invalidateAround(pos, pos, RedstoneUpdateCauseBlockUpdate, w.Range())
 }
 
 // removeLiquids removes any liquid blocks that may be present at a specific
@@ -698,7 +804,7 @@ func (w *World) addParticle(pos mgl64.Vec3, p Particle) {
 // playSound plays a sound at a specific position in the World. Viewers of that
 // position will be able to hear the sound if they are close enough.
 func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
-	ctx := event.C(tx)
+	ctx := tx.Event()
 	if w.Handler().HandleSound(ctx, s, pos); ctx.Cancelled() {
 		return
 	}
@@ -714,11 +820,16 @@ func (w *World) playSound(tx *Tx, pos mgl64.Vec3, s Sound) {
 // loaded. addEntity panics if the EntityHandle is already in a world.
 // addEntity returns the Entity created by the EntityHandle.
 func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
-	handle.setAndUnlockWorld(w)
-	pos := chunkPosFromVec3(handle.data.Pos)
-	w.entities[handle] = pos
+	return w.addEntityAt(tx, handle, handle.data.Pos)
+}
 
-	c := tx.chunk(pos)
+// addEntityAt adds an EntityHandle to a World at the position passed.
+func (w *World) addEntityAt(tx *Tx, handle *EntityHandle, pos mgl64.Vec3) Entity {
+	handle.setAndUnlockWorldAt(w, pos)
+	chunkPos := chunkPosFromVec3(handle.data.Pos)
+	w.entities[handle] = chunkPos
+
+	c := tx.chunk(chunkPos)
 	c.Entities, c.modified = append(c.Entities, handle), true
 
 	e := handle.mustEntity(tx)
@@ -727,6 +838,7 @@ func (w *World) addEntity(tx *Tx, handle *EntityHandle) Entity {
 		showEntity(e, v)
 	}
 	w.Handler().HandleEntitySpawn(tx, e)
+	handle.markWorldReady(w)
 	return e
 }
 
@@ -1041,11 +1153,11 @@ func (w *World) PortalDestination(dim Dimension) *World {
 
 // Save saves the World to the provider.
 func (w *World) Save() {
-	<-w.Exec(w.save(w.saveChunk))
+	<-w.exec(w.save(w.saveChunk))
 }
 
 // save saves all loaded chunks to the World's provider.
-func (w *World) save(f func(*Tx, ChunkPos, *Column)) ExecFunc {
+func (w *World) save(f func(*Tx, ChunkPos, *Column)) execFunc {
 	return func(tx *Tx) {
 		if w.conf.ReadOnly {
 			return
@@ -1075,6 +1187,7 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 	w.saveChunk(tx, pos, c)
 	w.scheduledUpdates.removeChunk(pos)
+	w.redstone.removeChunk(pos)
 	// Note: We close c.Entities here because some entities may remove
 	// themselves from the world in their Close method, which can lead to
 	// unexpected conditions.
@@ -1094,16 +1207,30 @@ func (w *World) Close() error {
 // close stops the World from ticking, saves all chunks to the Provider and
 // updates the world's settings.
 func (w *World) close() {
-	<-w.Exec(func(tx *Tx) {
+	w.scheduleMu.Lock()
+	w.closed.Store(true)
+	close(w.closeStarted)
+	w.scheduleMu.Unlock()
+
+	w.scheduling.Wait()
+	w.scheduleMu.Lock()
+	w.closeAcceptingEntityTasks.Store(true)
+	w.scheduleMu.Unlock()
+	<-w.exec(func(tx *Tx) {
 		// Let user code run anything that needs to be finished before closing.
 		w.Handler().HandleClose(tx)
+		tx.runDeferred()
 		w.Handle(NopHandler{})
+
+		w.save(w.closeChunk)(tx)
 	})
+	w.scheduleMu.Lock()
+	w.closeAcceptingEntityTasks.Store(false)
+	w.scheduleMu.Unlock()
+	w.scheduling.Wait()
 
 	close(w.closing)
 	w.running.Wait()
-
-	<-w.Exec(w.save(w.closeChunk))
 
 	close(w.queueClosing)
 	w.queueing.Wait()
@@ -1259,6 +1386,12 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) boo
 		callback(tx, c)
 		return true
 	}
+	if w.conf.Synchronous {
+		// Synchronous worlds have no chunk load workers: load the chunk on the
+		// calling goroutine instead.
+		callback(tx, tx.chunk(pos))
+		return true
+	}
 	req, ok := w.chunkRequests[pos]
 	if ok {
 		return req.Do(tx, callback)
@@ -1271,13 +1404,16 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) boo
 	return true
 }
 
-// addChunk ...
+// addChunk installs a loaded or generated chunk on the world, taking ownership
+// of any entities stored in it. It must only be called on the world's owner
+// goroutine.
 func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 	column := w.columnFrom(c, pos)
 	w.chunks[pos] = column
 	for _, e := range column.Entities {
 		w.entities[e] = pos
-		e.w = w
+		e.setAndUnlockWorld(w)
+		e.markWorldReady(w)
 	}
 	chunk.LightArea([]*chunk.Chunk{column.Chunk}, int(pos[0]), int(pos[1])).Fill()
 	w.calculateLight(pos)
@@ -1374,7 +1510,7 @@ func (w *World) autoSave() {
 	for {
 		select {
 		case <-closeUnused.C:
-			<-w.Exec(w.closeUnusedChunks)
+			<-w.exec(w.closeUnusedChunks)
 		case <-save.C:
 			w.Save()
 		case <-w.closing:

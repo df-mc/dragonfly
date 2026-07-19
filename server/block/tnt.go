@@ -1,19 +1,32 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // TNT is an explosive block that can be primed to generate an explosion.
 type TNT struct {
 	solid
+}
+
+var _ world.RedstonePowerAction = TNT{}
+
+func (TNT) RedstoneNonConductive() {}
+
+// RedstonePowerAction primes TNT when it first receives redstone power.
+func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower int) {
+	if oldPower > 0 || newPower == 0 {
+		return
+	}
+	t.Ignite(pos, tx, nil)
 }
 
 // ProjectileHit ...

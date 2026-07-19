@@ -126,7 +126,7 @@ func TestChunkLoadWorkersGenerateConcurrently(t *testing.T) {
 
 	done := make(chan struct{}, 2)
 	var queued bool
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Tx) {
 		queued = w.loadChunkAsync(tx, ChunkPos{0, 0}, func(*Tx, *Column) { done <- struct{}{} }) &&
 			w.loadChunkAsync(tx, ChunkPos{1, 0}, func(*Tx, *Column) { done <- struct{}{} })
 	})
@@ -179,7 +179,7 @@ func TestChunkLoadProviderErrorDoesNotGenerateOrInstall(t *testing.T) {
 	}
 
 	syncPos := ChunkPos{1, 0}
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Tx) {
 		syncCol := tx.chunk(syncPos)
 		if syncCol == nil || syncCol.Chunk == nil {
 			t.Fatal("tx.chunk returned nil column after provider error")
@@ -194,7 +194,7 @@ func TestChunkLoadProviderErrorDoesNotGenerateOrInstall(t *testing.T) {
 
 	gotCallback := make(chan *Column, 1)
 	asyncPos := ChunkPos{2, 0}
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Tx) {
 		if !w.loadChunkAsync(tx, asyncPos, func(_ *Tx, col *Column) {
 			gotCallback <- col
 		}) {
@@ -210,7 +210,7 @@ func TestChunkLoadProviderErrorDoesNotGenerateOrInstall(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for async provider-error callback")
 	}
-	<-w.Exec(func(*Tx) {
+	<-w.exec(func(*Tx) {
 		if _, ok := w.chunks[asyncPos]; ok {
 			t.Fatal("async provider-error callback installed a column")
 		}
@@ -237,7 +237,7 @@ func TestSingleChunkLoadWorkerSerialisesGenerateChunk(t *testing.T) {
 	defer w.Close()
 
 	asyncDone := make(chan struct{}, 1)
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Tx) {
 		if !w.loadChunkAsync(tx, ChunkPos{0, 0}, func(*Tx, *Column) { asyncDone <- struct{}{} }) {
 			t.Fatal("async chunk load request was not queued")
 		}
@@ -288,7 +288,7 @@ func TestSingleChunkLoadWorkerDoesNotDeadlockWhenSignalQueueIsFull(t *testing.T)
 	}
 	w := Config{Provider: notFoundColumnProvider{}, Generator: gen, ChunkLoadWorkers: 1}.New()
 
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Tx) {
 		if !w.loadChunkAsync(tx, posA, func(*Tx, *Column) {}) {
 			t.Fatal("first async chunk load request was not queued")
 		}
@@ -308,7 +308,7 @@ func TestSingleChunkLoadWorkerDoesNotDeadlockWhenSignalQueueIsFull(t *testing.T)
 	waitForB := make(chan struct{})
 	txChunkReturned := make(chan struct{})
 	go func() {
-		<-w.Exec(func(tx *Tx) {
+		<-w.exec(func(tx *Tx) {
 			close(txStarted)
 			<-waitForB
 			tx.chunk(posB)
@@ -363,7 +363,7 @@ func TestWorldCloseWithInFlightAsyncChunkLoadDoesNotInstall(t *testing.T) {
 	w := Config{Provider: provider, Generator: gen, ChunkLoadWorkers: 1}.New()
 	loader := NewLoader(1, w, viewer)
 
-	<-w.Exec(func(tx *Tx) {
+	<-w.exec(func(tx *Tx) {
 		loader.Load(tx, 1)
 	})
 	select {

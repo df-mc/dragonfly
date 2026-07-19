@@ -31,7 +31,7 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 	if !ok {
 		return fmt.Errorf("no anvil container opened")
 	}
-	if len(filterStrings) < int(a.FilterStringIndex) {
+	if index := int(a.FilterStringIndex); len(filterStrings) > 0 && (index < 0 || index >= len(filterStrings)) {
 		return fmt.Errorf("filter string index %v is out of bounds", a.FilterStringIndex)
 	}
 

@@ -3,7 +3,6 @@ package world
 import (
 	"iter"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -11,18 +10,59 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Tx represents a synchronised transaction performed on a World. Most
-// operations on a World can only be called through a transaction. Tx is not
-// safe for use by multiple goroutines concurrently.
+// Tx is the owner transaction handle passed to world callbacks. It is the
+// only way to perform world operations and is valid only during its callback.
 type Tx struct {
-	w      *World
-	closed bool
+	w        *World
+	closed   bool
+	deferred []scheduledTransaction
+}
+
+// Context is a cancellable event scope passed to Handler events. It embeds the
+// owner transaction, so world operations are available directly on it.
+type Context struct {
+	*Tx
+	cancel bool
+}
+
+// newTx returns a fresh transaction on World w.
+func newTx(w *World) *Tx {
+	return &Tx{w: w}
+}
+
+// Event returns a fresh Context for dispatching one Handler event on this
+// transaction, so cancelling one event cannot affect another.
+func (tx *Tx) Event() *Context {
+	return &Context{Tx: tx}
+}
+
+// Cancelled returns whether the Context has been cancelled by an event handler.
+func (ctx *Context) Cancelled() bool { return ctx.cancel }
+
+// Cancel cancels the Context. It is used by event handlers to signal that the
+// default behaviour of the event should not run.
+func (ctx *Context) Cancel() { ctx.cancel = true }
+
+// Defer schedules f to run on the owner after the current callback completes
+// and before the parent Task completes. Deferred callbacks run FIFO in
+// registration order, unlike Go defer's LIFO order.
+func (tx *Tx) Defer(f func(tx *Tx)) *Task {
+	return tx.DeferErr(func(tx *Tx) error {
+		f(tx)
+		return nil
+	})
+}
+
+// DeferErr schedules f to run on the owner after the current callback
+// completes, recording any returned error on the Task.
+func (tx *Tx) DeferErr(f func(tx *Tx) error) *Task {
+	return tx.deferTask(f)
 }
 
 // Range returns the lower and upper bounds of the World that the Tx is
 // operating on.
 func (tx *Tx) Range() cube.Range {
-	return tx.w.ra
+	return tx.World().ra
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded
@@ -48,6 +88,19 @@ func (tx *Tx) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 // in the world save, and the block returned.
 func (tx *Tx) Block(pos cube.Pos) Block {
 	return tx.block(pos)
+}
+
+// BlockLoaded returns the block at the position passed if the chunk containing it is already loaded. It returns false
+// without loading or generating the chunk when the block is unavailable.
+func (tx *Tx) BlockLoaded(pos cube.Pos) (Block, bool) {
+	return tx.World().blockLoaded(pos)
+}
+
+// BlocksWithin returns an iterator over the positions of blocks matching any of the block states passed, within a
+// horizontal square radius around pos. Chunks not in memory are read from the world save; missing chunks are
+// skipped, not generated. Only the primary block layer is searched and blocks are matched by their state alone.
+func (tx *Tx) BlocksWithin(pos cube.Pos, radius int, blocks ...Block) iter.Seq[cube.Pos] {
+	return tx.World().blocksWithin(pos, radius, blocks...)
 }
 
 // Liquid attempts to return a Liquid block at the position passed. This
@@ -198,6 +251,13 @@ func (tx *Tx) AddEntity(e *EntityHandle) Entity {
 	return tx.World().addEntity(tx, e)
 }
 
+// AddEntityAt adds an EntityHandle to a World at the position passed. The Entity will be visible to all viewers of
+// the World that have the chunk at the position passed. AddEntityAt panics if the EntityHandle is already in a world.
+// AddEntityAt returns the Entity created by the EntityHandle.
+func (tx *Tx) AddEntityAt(e *EntityHandle, pos mgl64.Vec3) Entity {
+	return tx.World().addEntityAt(tx, e, pos)
+}
+
 // RemoveEntity removes an Entity from the World that is currently present in
 // it. Any viewers of the Entity will no longer be able to see it.
 // RemoveEntity returns the EntityHandle of the Entity. After removing an Entity
@@ -277,8 +337,19 @@ func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
 	}
 }
 
-// World returns the World of the Tx. It panics if the transaction was already
-// marked complete.
+func (tx *Tx) deferTask(f func(tx *Tx) error) *Task {
+	if tx.closed {
+		panic("world.Tx: use of transaction after transaction finishes is not permitted")
+	}
+	task := newTask()
+	tx.deferred = append(tx.deferred, scheduledTransaction{task: task, f: f})
+	return task
+}
+
+// World returns the Tx's World. It panics once the callback has
+// completed. Treat the result as the off-owner handle: blocking calls like
+// Save and Close deadlock from inside the callback, so do world operations
+// through the Tx instead.
 func (tx *Tx) World() *World {
 	if tx.closed {
 		panic("world.Tx: use of transaction after transaction finishes is not permitted")
@@ -286,13 +357,31 @@ func (tx *Tx) World() *World {
 	return tx.w
 }
 
+// CurrentTick returns the current tick of the transaction's world.
+func (tx *Tx) CurrentTick() int64 {
+	w := tx.World()
+	w.set.Lock()
+	defer w.set.Unlock()
+	return w.set.CurrentTick
+}
+
 // close finishes the Tx, causing any following call on the Tx to panic.
 func (tx *Tx) close() {
 	tx.closed = true
 }
 
+func (tx *Tx) runDeferred() {
+	for len(tx.deferred) > 0 {
+		deferred := tx.deferred
+		tx.deferred = nil
+		for _, st := range deferred {
+			st.Run(tx.w)
+		}
+	}
+}
+
 // normalTransaction is added to the transaction queue for transactions created
-// using World.Exec().
+// using World.exec().
 type normalTransaction struct {
 	c chan struct{}
 	f func(tx *Tx)
@@ -301,30 +390,32 @@ type normalTransaction struct {
 // Run creates a *Tx, calls ntx.f, closes the transaction and finally closes
 // ntx.c.
 func (ntx normalTransaction) Run(w *World) {
-	tx := &Tx{w: w}
+	tx := newTx(w)
 	ntx.f(tx)
 	tx.close()
+	tx.runDeferred()
 	close(ntx.c)
 }
 
-// weakTransaction is a transaction that may be cancelled by setting its invalid
-// bool to false before the transaction is run.
+// weakTransaction is a transaction that may be cancelled by its validity
+// predicate before the transaction is run.
 type weakTransaction struct {
-	c       chan bool
-	f       func(tx *Tx)
-	invalid *atomic.Bool
-	cond    *sync.Cond
+	c     chan bool
+	f     func(tx *Tx)
+	valid func() bool
+	cond  *sync.Cond
 }
 
-// Run runs the transaction, first checking if its invalid bool is false and
-// creating a *Tx if so. Afterwards, a bool indicating if the transaction was
-// run is added to wtx.c. Finally, wtx.cond.Broadcast() is called.
+// Run runs the transaction, first checking if it is still valid and creating a
+// *Tx if so. Afterwards, a bool indicating if the transaction was run is added
+// to wtx.c. Finally, wtx.cond.Broadcast() is called.
 func (wtx weakTransaction) Run(w *World) {
-	valid := !wtx.invalid.Load()
+	valid := wtx.valid == nil || wtx.valid()
 	if valid {
-		tx := &Tx{w: w}
+		tx := newTx(w)
 		wtx.f(tx)
 		tx.close()
+		tx.runDeferred()
 	}
 	// We have to acquire a lock on wtx.cond.L here to make sure cond.Wait()
 	// has been called before we call cond.Broadcast(). If not, we might
@@ -333,5 +424,14 @@ func (wtx weakTransaction) Run(w *World) {
 	defer wtx.cond.L.Unlock()
 
 	wtx.c <- valid
+	wtx.cond.Broadcast()
+}
+
+// fail delivers false to a weak transaction that will never run, using the
+// same condition handshake as Run so a waiter in cond.Wait is woken.
+func (wtx weakTransaction) fail() {
+	wtx.cond.L.Lock()
+	defer wtx.cond.L.Unlock()
+	wtx.c <- false
 	wtx.cond.Broadcast()
 }

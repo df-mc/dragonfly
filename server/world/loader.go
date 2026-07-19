@@ -49,7 +49,7 @@ func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	defer l.mu.Unlock()
 
 	loaded := maps.Clone(l.loaded)
-	l.w.Exec(func(tx *Tx) {
+	l.w.exec(func(tx *Tx) {
 		for pos := range loaded {
 			tx.World().removeViewer(tx, pos, l)
 		}

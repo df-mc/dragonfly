@@ -23,6 +23,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/hud"
+	"github.com/df-mc/dragonfly/server/player/input"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -279,6 +280,10 @@ func (s *Session) invByID(id int32, tx *world.Tx) (*inventory.Inventory, bool) {
 		switch id {
 		case protocol.ContainerLevelEntity:
 			return s.openedWindow.Load(), true
+		case protocol.ContainerShulkerBox:
+			if _, shulkerbox := tx.Block(*s.openedPos.Load()).(block.ShulkerBox); shulkerbox {
+				return s.openedWindow.Load(), true
+			}
 		case protocol.ContainerBarrel:
 			if _, barrel := tx.Block(*s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
@@ -905,6 +910,45 @@ func (s *Session) SendDebugShapes(dim world.Dimension) {
 	s.writePacket(&packet.PrimitiveShapes{Shapes: shapes})
 }
 
+// LockInput applies an input lock to the player, disabling the specified input. If the lock is already
+// applied, this is a no-op.
+func (s *Session) LockInput(l input.Lock) {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks |= l.Uint32()
+}
+
+// UnlockInput removes an input lock from the player, re-enabling the specified input. If the lock is not
+// currently applied, this is a no-op.
+func (s *Session) UnlockInput(l input.Lock) {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks &^= l.Uint32()
+}
+
+// ClearInputLocks removes all input locks from the player, re-enabling all inputs.
+func (s *Session) ClearInputLocks() {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks = 0
+}
+
+// InputLocked checks if a specific input lock is currently applied to the player.
+func (s *Session) InputLocked(l input.Lock) bool {
+	s.inputLocksMu.RLock()
+	defer s.inputLocksMu.RUnlock()
+	return s.inputLocks&l.Uint32() != 0
+}
+
+// SendInputLocks sends the current input lock state to the client.
+func (s *Session) SendInputLocks() {
+	s.inputLocksMu.RLock()
+	defer s.inputLocksMu.RUnlock()
+	s.writePacket(&packet.UpdateClientInputLocks{
+		Locks: s.inputLocks,
+	})
+}
+
 // queueDebugShapeUpdate queues a debug shape mutation to be applied the next time debug shapes are sent.
 func (s *Session) queueDebugShapeUpdate(update debugShapeUpdate) {
 	s.debugShapesMu.Lock()
@@ -1117,6 +1161,14 @@ func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) int64 {
 		handle = shape.Entity
 	case *debug.Text:
 		handle = shape.Entity
+	case *debug.Cylinder:
+		handle = shape.Entity
+	case *debug.Pyramid:
+		handle = shape.Entity
+	case *debug.Ellipsoid:
+		handle = shape.Entity
+	case *debug.Cone:
+		handle = shape.Entity
 	}
 	if handle == nil {
 		return 0
@@ -1138,7 +1190,7 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	switch shape := shape.(type) {
 	case *debug.Arrow:
-		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeArrow))
+		ps.Type = protocol.Option(protocol.PrimitiveShapeArrow)
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.ExtraShapeData = &protocol.ArrowShape{
@@ -1148,30 +1200,30 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 			Segments:         protocol.Option(valueOrDefault(uint8(shape.HeadSegments), 4)),
 		}
 	case *debug.Box:
-		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeBox))
+		ps.Type = protocol.Option(protocol.PrimitiveShapeBox)
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.BoxShape{BoxBound: valueOrDefault(vec64To32(shape.Bounds), mgl32.Vec3{1, 1, 1})}
 	case *debug.Circle:
-		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeCircle))
+		ps.Type = protocol.Option(protocol.PrimitiveShapeCircle)
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
 	case *debug.Line:
-		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeLine))
+		ps.Type = protocol.Option(protocol.PrimitiveShapeLine)
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.ExtraShapeData = &protocol.LineShape{LineEndLocation: vec64To32(shape.EndPosition)}
 	case *debug.Sphere:
-		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeSphere))
+		ps.Type = protocol.Option(protocol.PrimitiveShapeSphere)
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
 		ps.ExtraShapeData = &protocol.SphereShape{Segments: valueOrDefault(uint8(shape.Segments), 20)}
 	case *debug.Text:
-		ps.Type = protocol.Option(uint8(protocol.PrimitiveShapeText))
+		ps.Type = protocol.Option(protocol.PrimitiveShapeText)
 		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
 		ps.Location = protocol.Option(vec64To32(shape.Position))
 		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
@@ -1192,6 +1244,51 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 			textData.BackgroundColour = protocol.Option(shape.BackgroundColour)
 		}
 		ps.ExtraShapeData = textData
+	case *debug.Cylinder:
+		ps.Type = protocol.Option(protocol.PrimitiveShapeCylinder)
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		base := valueOrDefault(shape.BaseRadius, mgl64.Vec2{1, 1})
+		top := valueOrDefault(shape.TopRadius, base)
+		ps.ExtraShapeData = &protocol.CylinderShape{
+			RadiusX:     mgl32.Vec2{float32(base[0]), float32(top[0])},
+			RadiusZ:     mgl32.Vec2{float32(base[1]), float32(top[1])},
+			Height:      valueOrDefault(float32(shape.Height), 1),
+			NumSegments: valueOrDefault(uint8(shape.Segments), 20),
+		}
+	case *debug.Pyramid:
+		ps.Type = protocol.Option(protocol.PrimitiveShapePyramid)
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		pyramid := &protocol.PyramidShape{
+			Width:  valueOrDefault(float32(shape.Width), 1),
+			Height: valueOrDefault(float32(shape.Height), 1),
+		}
+		if shape.Depth != 0 {
+			pyramid.Depth = protocol.Option(float32(shape.Depth))
+		}
+		ps.ExtraShapeData = pyramid
+	case *debug.Ellipsoid:
+		ps.Type = protocol.Option(protocol.PrimitiveShapeEllipsoid)
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.ExtraShapeData = &protocol.EllipsoidShape{
+			Radii:           valueOrDefault(vec64To32(shape.Radii), mgl32.Vec3{1, 1, 1}),
+			SegmentsPerAxis: valueOrDefault(uint8(shape.SegmentsPerAxis), 20),
+		}
+	case *debug.Cone:
+		ps.Type = protocol.Option(protocol.PrimitiveShapeCone)
+		ps.Colour = protocol.Option(valueOrDefault(shape.Colour, white))
+		ps.Location = protocol.Option(vec64To32(shape.Position))
+		ps.Scale = protocol.Option(valueOrDefault(float32(shape.Scale), 1))
+		ps.ExtraShapeData = &protocol.ConeShape{
+			Radii:       valueOrDefault(vec2To32(shape.Radii), mgl32.Vec2{1, 1}),
+			Height:      valueOrDefault(float32(shape.Height), 1),
+			NumSegments: valueOrDefault(uint8(shape.Segments), 20),
+		}
 	default:
 		panic(fmt.Sprintf("unknown debug shape type %T", shape))
 	}
