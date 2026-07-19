@@ -111,8 +111,8 @@ func (l *Loader) Load(tx *Tx, n int) {
 		l.loadQueue = l.loadQueue[1:]
 		l.mu.Unlock()
 
-		if !w.loadChunkAsync(tx, pos, func(tx2 *Tx, chunk *Column) {
-			l.viewChunk(tx2, pos, chunk)
+		if !w.loadChunkAsync(tx, pos, func(tx2 *Tx, col *Column) {
+			l.viewChunk(tx2, pos, col)
 		}) {
 			l.mu.Lock()
 			delete(l.pending, pos)
