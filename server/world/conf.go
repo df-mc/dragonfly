@@ -50,8 +50,9 @@ type Config struct {
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
 	// ChunkLoadWorkers is the number of background workers that load and
-	// generate chunks, defaulting to 1. Higher values are faster, but require
-	// the Generator to be safe for concurrent use.
+	// generate chunks, defaulting to 1. Higher values generate chunks faster,
+	// but require the Generator to be safe for concurrent use. Provider reads
+	// remain serialised regardless.
 	ChunkLoadWorkers int
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per

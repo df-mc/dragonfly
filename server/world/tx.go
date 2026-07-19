@@ -166,7 +166,8 @@ func (tx *Tx) Light(pos cube.Pos) uint8 {
 // SkyLight returns the skylight level at the position passed. This light level
 // is not influenced by blocks that emit light, such as torches. The light
 // value, similarly to Light, is a value in the range 0-15, where 0 means no
-// light is present.
+// light is present. Unlike Light, SkyLight loads or generates the chunk at the
+// position if it is not currently loaded.
 func (tx *Tx) SkyLight(pos cube.Pos) uint8 {
 	return tx.skyLight(pos)
 }
