@@ -87,10 +87,9 @@ func (l *Loader) Move(tx *Tx, pos mgl64.Vec3) {
 	l.populateLoadQueue()
 }
 
-// Load queues up to n chunks around the centre of the chunk to be loaded, starting with the middle and
-// working outwards. Chunks are loaded in the background: the Viewer passed through construction in New
-// has its ViewChunk method called for every chunk once it is ready, which may be after Load returns.
-// Load does nothing for n <= 0.
+// Load queues up to n chunks around the loader's centre, from the middle outwards, to be loaded in
+// the background. The Viewer's ViewChunk is called for each chunk once ready, which may be after Load
+// returns. Load does nothing for n <= 0.
 func (l *Loader) Load(tx *Tx, n int) {
 	for i := 0; i < n; i++ {
 		l.mu.Lock()

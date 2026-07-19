@@ -7,7 +7,7 @@ import (
 )
 
 // chunkRequest tracks a chunk that is being loaded or generated in the
-// background. Everyone waiting for the same chunk shares a single request.
+// background. All callers waiting for the same chunk share a single request.
 type chunkRequest struct {
 	pos       ChunkPos
 	callbacks []chunkCallback
@@ -56,7 +56,7 @@ func (r *chunkRequest) load(w *World) {
 }
 
 // abort cancels a request that will never be carried out because the world is
-// closing, releasing anyone waiting on it.
+// closing, releasing any callers waiting on it.
 func (r *chunkRequest) abort() {
 	close(r.done)
 }
@@ -123,8 +123,8 @@ func (p *chunkWorkerPool) wait() {
 	p.wg.Wait()
 }
 
-// signal adds the finished chunk to the world and calls everyone waiting for
-// it. It always runs inside a world transaction.
+// signal adds the finished chunk to the world and calls all callers waiting
+// for it. It always runs inside a world transaction.
 func (r *chunkRequest) signal(tx *Tx) {
 	if r.signalled {
 		return
