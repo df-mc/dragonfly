@@ -101,6 +101,9 @@ type Session struct {
 
 	viewLayer *world.ViewLayer
 
+	inputLocksMu sync.RWMutex
+	inputLocks   uint32
+
 	closeBackground chan struct{}
 
 	br world.BlockRegistry
@@ -146,7 +149,7 @@ type Conn interface {
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
-var Nop = &Session{}
+var Nop = &Session{conf: Config{Log: slog.New(slog.DiscardHandler)}}
 
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
@@ -164,6 +167,9 @@ type Config struct {
 
 	JoinMessage, QuitMessage chat.Translation
 
+	// HandleStop is called once when the Session is closed. The transaction is
+	// nil if the Controllable could not be restored to any world, such as when
+	// both its current world and respawn destination closed during teardown.
 	HandleStop func(*world.Tx, Controllable)
 	// BlockRegistry overrides the registry used for network serialization. If nil, world.DefaultBlockRegistry is used.
 	BlockRegistry world.BlockRegistry
@@ -289,6 +295,9 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
 // manages. Close ensures the method only runs code on the first call.
+// A nil transaction may be passed for a Controllable that is no longer in any
+// world; world-bound teardown (container close, chunk loader, entity removal)
+// is then skipped.
 func (s *Session) Close(tx *world.Tx, c Controllable) {
 	s.once.Do(func() {
 		s.close(tx, c)
@@ -298,8 +307,10 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) close(tx *world.Tx, c Controllable) {
-	c.MoveItemsToInventory()
-	s.closeCurrentContainer(tx, false)
+	if tx != nil {
+		c.MoveItemsToInventory()
+		s.closeCurrentContainer(tx, false)
+	}
 	if s.viewLayer != nil {
 		_ = s.viewLayer.Close()
 	}
@@ -311,7 +322,9 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	_ = s.offHand.Close()
 	_ = s.armour.Close()
 
-	s.chunkLoader.Close(tx)
+	if tx != nil {
+		s.chunkLoader.Close(tx)
+	}
 
 	if !s.conf.QuitMessage.Zero() {
 		chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
@@ -320,7 +333,9 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	// Note: Be aware of where RemoveEntity is called. This must not be done too
 	// early.
-	tx.RemoveEntity(c)
+	if tx != nil {
+		tx.RemoveEntity(c)
+	}
 	_ = s.ent.Close()
 
 	// This should always be called last due to the timing of the removal of
@@ -351,6 +366,22 @@ func (s *Session) Latency() time.Duration {
 	return s.conn.Latency()
 }
 
+// withControllable runs f with the current Controllable on its world owner.
+// It is for off-owner session goroutines; callbacks that already have a
+// *world.Tx should use it directly instead.
+func (s *Session) withControllable(ctx context.Context, f func(tx *world.Tx, c Controllable) error) error {
+	_, err := world.CallRef(ctx, world.NewEntityRef[Controllable](s.ent), func(tx *world.Tx, c Controllable) (struct{}, error) {
+		return struct{}{}, f(tx, c)
+	})
+	return err
+}
+
+// sessionOwnerStopped reports whether err means the session's player can no
+// longer run owner callbacks, so session goroutines should stop quietly.
+func sessionOwnerStopped(err error) bool {
+	return errors.Is(err, world.ErrEntityClosed) || errors.Is(err, world.ErrWorldClosed) || errors.Is(err, world.ErrTaskCancelled)
+}
+
 // ClientData returns the login.ClientData of the underlying *minecraft.Conn.
 func (s *Session) ClientData() login.ClientData {
 	return s.conn.ClientData()
@@ -363,24 +394,33 @@ func (s *Session) handlePackets() {
 		// First close the Controllable. This might lead to a world change
 		// (player might be dead while disconnecting, in which case it will
 		// respawn first).
-		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			_ = e.(Controllable).Close()
-		})
+		if err := s.withControllable(context.Background(), func(_ *world.Tx, c Controllable) error {
+			_ = c.Close()
+			return nil
+		}); err != nil && !sessionOwnerStopped(err) {
+			s.conf.Log.Debug("close controllable: " + err.Error())
+		}
 		// Because the player might no longer be in the same world after
 		// closing, we create a new transaction
-		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			s.Close(tx, e.(Controllable))
-		})
+		if err := s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
+			s.Close(tx, c)
+			return nil
+		}); err != nil && !sessionOwnerStopped(err) {
+			s.conf.Log.Debug("close session: " + err.Error())
+		}
 	}()
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
 			return
 		}
-		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			err = s.handlePacket(pk, tx, e.(Controllable))
+		err = s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
+			return s.handlePacket(pk, tx, c)
 		})
 		if err != nil {
+			if sessionOwnerStopped(err) {
+				return
+			}
 			s.conf.Log.Debug("process packet: " + err.Error())
 			return
 		}
@@ -399,20 +439,23 @@ func (s *Session) background() {
 		i          int
 	)
 
-	s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-		co := e.(Controllable)
-		r = s.sendAvailableCommands(co, softEnums)
-		enums, enumValues = s.enums(co)
-	})
+	if err := s.withControllable(context.Background(), func(_ *world.Tx, c Controllable) error {
+		r = s.sendAvailableCommands(c, softEnums)
+		enums, enumValues = s.enums(c)
+		return nil
+	}); err != nil {
+		if !sessionOwnerStopped(err) {
+			s.conf.Log.Debug("prepare command updates: " + err.Error())
+		}
+		return
+	}
 
 	t := time.NewTicker(time.Second / 20)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
-			s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-				c := e.(Controllable)
-
+			if err := s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
 				if i++; i%20 == 0 {
 					// Enum resending happens relatively often and frequent updates are more important than with full
 					// command changes. Those are generally only related to permission changes, which doesn't happen often.
@@ -425,7 +468,13 @@ func (s *Session) background() {
 					}
 				}
 				s.sendChunks(tx, c)
-			})
+				return nil
+			}); err != nil {
+				if !sessionOwnerStopped(err) {
+					s.conf.Log.Debug("update session background: " + err.Error())
+				}
+				return
+			}
 		case <-s.closeBackground:
 			return
 		}

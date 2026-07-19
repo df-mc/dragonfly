@@ -27,8 +27,9 @@ type Living interface {
 	Hurt(damage float64, src world.DamageSource) (n float64, vulnerable bool)
 	// Heal heals the entity for a given amount of health. The source passed represents the cause of the
 	// healing, for example FoodHealingSource if the entity healed by having a full food bar. If the health
-	// added to the original health exceeds the entity's max health, Heal may not add the full amount.
-	Heal(health float64, src world.HealingSource)
+	// added to the original health exceeds the entity's max health, Heal may not add the full amount, Heal
+	// returns the amount of health regenerated.
+	Heal(health float64, src world.HealingSource) float64
 	// KnockBack knocks the entity back with a given force and height. A source is passed which indicates the
 	// source of the velocity, typically the position of an attacking entity. The source is used to calculate
 	// the direction which the entity should be knocked back in.
