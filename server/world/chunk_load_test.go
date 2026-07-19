@@ -405,3 +405,12 @@ func TestWorldCloseWithInFlightAsyncChunkLoadDoesNotInstall(t *testing.T) {
 		t.Fatal("in-flight async chunk was installed after closing")
 	}
 }
+
+// TestChunkDistanceLargeCoordinates ensures chunk distances do not overflow
+// for positions far apart, such as after teleporting across the world.
+func TestChunkDistanceLargeCoordinates(t *testing.T) {
+	a, b := ChunkPos{1_875_000, 1_875_000}, ChunkPos{-1_875_000, -1_875_000}
+	if d := chunkDistance(a, b); d != 5_303_301 {
+		t.Fatalf("chunkDistance(%v, %v) = %d, want 5303301", a, b, d)
+	}
+}

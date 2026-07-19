@@ -47,13 +47,10 @@ func (r *chunkRequest) doImmediate(tx *Tx) *Column {
 	return r.result
 }
 
-// load loads or generates the chunk, calculates its light and hands it back to
-// the world to be added.
+// load loads or generates the chunk and hands it back to the world to be
+// added.
 func (r *chunkRequest) load(w *World) {
 	r.col, r.err = w.loadChunk(r.pos)
-	if r.err == nil {
-		chunk.LightArea([]*chunk.Chunk{r.col.Chunk}, int(r.pos[0]), int(r.pos[1])).Fill()
-	}
 	close(r.done)
 	w.Do(r.signal)
 }

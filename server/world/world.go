@@ -1352,23 +1352,23 @@ func (tx *Tx) chunk(pos ChunkPos) *Column {
 	if col == nil {
 		return w.emptyColumn()
 	}
-	chunk.LightArea([]*chunk.Chunk{col.Chunk}, int(pos[0]), int(pos[1])).Fill()
 	return w.addChunk(pos, col)
 }
 
-// loadChunk attempts to load a chunk from the provider, or generates a chunk
-// if one doesn't currently exist.
+// loadChunk loads a chunk from the provider, or generates a chunk if one
+// doesn't currently exist, and calculates the light within it.
 func (w *World) loadChunk(pos ChunkPos) (*chunk.Column, error) {
 	column, err := w.conf.Provider.LoadColumn(pos, w.conf.Dim)
-	if err == nil {
-		return column, nil
+	if err != nil {
+		if !errors.Is(err, leveldb.ErrNotFound) {
+			return nil, err
+		}
+		ch := chunk.New(w.conf.Blocks, w.Range())
+		w.conf.Generator.GenerateChunk(pos, ch)
+		column = &chunk.Column{Chunk: ch}
 	}
-	if !errors.Is(err, leveldb.ErrNotFound) {
-		return nil, err
-	}
-	ch := chunk.New(w.conf.Blocks, w.Range())
-	w.conf.Generator.GenerateChunk(pos, ch)
-	return &chunk.Column{Chunk: ch}, nil
+	chunk.LightArea([]*chunk.Chunk{column.Chunk}, int(pos[0]), int(pos[1])).Fill()
+	return column, nil
 }
 
 // emptyColumn returns an empty column, used as a stand-in when a chunk could

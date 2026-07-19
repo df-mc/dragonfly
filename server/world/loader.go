@@ -202,8 +202,8 @@ func (l *Loader) withinLoadRadius(pos ChunkPos) bool {
 
 // chunkDistance returns the rounded distance between two chunk positions.
 func chunkDistance(a, b ChunkPos) int32 {
-	diffX, diffZ := a[0]-b[0], a[1]-b[1]
-	return int32(math.Round(math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))))
+	diffX, diffZ := float64(a[0])-float64(b[0]), float64(a[1])-float64(b[1])
+	return int32(math.Round(math.Sqrt(diffX*diffX + diffZ*diffZ)))
 }
 
 // queueLoad adds pos back to the load queue, unless it is already loaded,
@@ -251,16 +251,12 @@ func (l *Loader) populateLoadQueue() {
 				// The chunk is already queued to be loaded.
 				continue
 			}
-			if m, ok := queue[dist]; ok {
-				queue[dist] = append(m, pos)
-				continue
-			}
-			queue[dist] = []ChunkPos{pos}
+			queue[dist] = append(queue[dist], pos)
 		}
 	}
 
 	l.loadQueue = l.loadQueue[:0]
-	for i := int32(0); i < r; i++ {
+	for i := int32(0); i <= r; i++ {
 		l.loadQueue = append(l.loadQueue, queue[i]...)
 	}
 }
