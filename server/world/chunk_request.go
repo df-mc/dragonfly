@@ -66,14 +66,9 @@ func (r *chunkRequest) abort() {
 func (p *chunkWorkerPool) schedule(r *chunkRequest) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if p.closed {
-		return false
-	}
-	select {
-	case <-p.w.closeStarted:
+	if p.closed || p.w.closed.Load() {
 		p.closed = true
 		return false
-	default:
 	}
 	select {
 	case p.queue <- r:
@@ -87,11 +82,9 @@ func (p *chunkWorkerPool) schedule(r *chunkRequest) bool {
 func (p *chunkWorkerPool) handle() {
 	defer p.wg.Done()
 	for {
-		select {
-		case <-p.w.closeStarted:
+		if p.w.closed.Load() {
 			p.drainAndAbort()
 			return
-		default:
 		}
 		select {
 		case r := <-p.queue:
@@ -135,10 +128,8 @@ func (r *chunkRequest) signal(tx *Tx) {
 	pos := r.pos
 
 	delete(w.chunkRequests, pos)
-	select {
-	case <-w.closeStarted:
+	if w.closed.Load() {
 		return
-	default:
 	}
 	if r.err != nil {
 		w.conf.Log.Error("load chunk: "+r.err.Error(), "X", pos[0], "Z", pos[1])
@@ -148,10 +139,8 @@ func (r *chunkRequest) signal(tx *Tx) {
 		return
 	}
 	r.result = w.addChunk(pos, r.col)
-	select {
-	case <-w.closeStarted:
+	if w.closed.Load() {
 		return
-	default:
 	}
 	for _, recv := range r.callbacks {
 		recv(tx, r.result)
