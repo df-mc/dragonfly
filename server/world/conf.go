@@ -138,6 +138,15 @@ func (conf Config) New() *World {
 		conf.RandSource = rand.NewPCG(t, t)
 	}
 	s := conf.Provider.Settings()
+
+	// Providers and Generators are not required to be safe for concurrent use,
+	// so serialise all calls to them here. With more than one chunk load
+	// worker, the Generator is called concurrently and must handle that
+	// itself.
+	conf.Provider = &lockedProvider{p: conf.Provider}
+	if conf.ChunkLoadWorkers == 1 {
+		conf.Generator = &lockedGenerator{g: conf.Generator}
+	}
 	w := &World{
 		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
 		redstone:         newRedstoneEngine(s.CurrentTick),

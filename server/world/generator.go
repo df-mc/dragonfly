@@ -1,6 +1,8 @@
 package world
 
 import (
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
@@ -25,3 +27,21 @@ func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
 
 // DefaultSpawn ...
 func (NopGenerator) DefaultSpawn(Dimension) cube.Pos { return cube.Pos{} }
+
+// lockedGenerator wraps a Generator and serialises calls to GenerateChunk. It
+// is used when only a single chunk load worker runs, so that the Generator
+// does not need to be safe for concurrent use.
+type lockedGenerator struct {
+	mu sync.Mutex
+	g  Generator
+}
+
+func (l *lockedGenerator) GenerateChunk(pos ChunkPos, c *chunk.Chunk) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.g.GenerateChunk(pos, c)
+}
+
+func (l *lockedGenerator) DefaultSpawn(dim Dimension) cube.Pos {
+	return l.g.DefaultSpawn(dim)
+}

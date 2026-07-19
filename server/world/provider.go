@@ -1,6 +1,8 @@
 package world
 
 import (
+	"sync"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/goleveldb/leveldb"
@@ -58,3 +60,53 @@ func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (cube.Pos, bool, error) {
 }
 func (NopProvider) SavePlayerSpawnPosition(uuid.UUID, cube.Pos) error { return nil }
 func (NopProvider) Close() error                                      { return nil }
+
+// lockedProvider wraps a Provider and serialises all calls to it with a
+// mutex, so that the Provider itself does not need to be safe for concurrent
+// use.
+type lockedProvider struct {
+	mu sync.Mutex
+	p  Provider
+}
+
+func (l *lockedProvider) Settings() *Settings {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.p.Settings()
+}
+
+func (l *lockedProvider) SaveSettings(s *Settings) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.p.SaveSettings(s)
+}
+
+func (l *lockedProvider) LoadPlayerSpawnPosition(id uuid.UUID) (cube.Pos, bool, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.p.LoadPlayerSpawnPosition(id)
+}
+
+func (l *lockedProvider) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.p.SavePlayerSpawnPosition(id, pos)
+}
+
+func (l *lockedProvider) LoadColumn(pos ChunkPos, dim Dimension) (*chunk.Column, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.p.LoadColumn(pos, dim)
+}
+
+func (l *lockedProvider) StoreColumn(pos ChunkPos, dim Dimension, col *chunk.Column) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.p.StoreColumn(pos, dim, col)
+}
+
+func (l *lockedProvider) Close() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.p.Close()
+}
