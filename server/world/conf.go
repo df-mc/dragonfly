@@ -138,8 +138,10 @@ func (conf Config) New() *World {
 	}
 	s := conf.Provider.Settings()
 
-	// Providers and Generators are not required to be safe for concurrent
-	// use, so serialise calls to them here.
+	// The Provider is called from both the owner goroutine and the chunk load
+	// workers, so serialise all calls to it. The Generator is only called by
+	// workers: with one worker it is serialised here, with more the Generator
+	// must be safe for concurrent use itself.
 	conf.Provider = &lockedProvider{p: conf.Provider}
 	if conf.ChunkLoadWorkers == 1 {
 		conf.Generator = &lockedGenerator{g: conf.Generator}
@@ -161,8 +163,7 @@ func (conf Config) New() *World {
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
-	chunkRequests := newWorkerPoolChunkRequestHandler(w)
-	w.chunkRequestHandler = chunkRequests
+	w.chunkWorkers = newChunkWorkerPool(w)
 	w.weather = weather{w: w}
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
@@ -170,13 +171,14 @@ func (conf Config) New() *World {
 	t := ticker{interval: time.Second / 20}
 	if !conf.Synchronous {
 		w.queueing.Add(1)
-		w.running.Add(2 + conf.ChunkLoadWorkers)
+		w.running.Add(2)
 
 		go t.tickLoop(w)
 		go w.autoSave()
 		go w.handleTransactions()
+		w.chunkWorkers.wg.Add(conf.ChunkLoadWorkers)
 		for range conf.ChunkLoadWorkers {
-			go chunkRequests.handle()
+			go w.chunkWorkers.handle()
 		}
 	}
 

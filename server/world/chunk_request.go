@@ -11,8 +11,6 @@ import (
 type chunkRequest struct {
 	pos       ChunkPos
 	callbacks []chunkCallback
-	queued    bool
-	aborted   bool
 	signalled bool
 
 	done   chan struct{}
@@ -21,40 +19,25 @@ type chunkRequest struct {
 	result *Column
 }
 
-// defaultChunkLoadWorkers is the number of asynchronous chunk load workers
-// started when Config.ChunkLoadWorkers is not set.
+// defaultChunkLoadWorkers is the number of chunk load workers started when
+// Config.ChunkLoadWorkers is not set.
 const defaultChunkLoadWorkers = 1
 
 // chunkCallback is called with a chunk once it has been added to the world.
-type chunkCallback = func(tx *Tx, chunk *Column)
+type chunkCallback = func(tx *Tx, col *Column)
 
-// chunkRequestHandler decides how chunk requests are carried out.
-type chunkRequestHandler interface {
-	handleChunkRequest(*chunkRequest) bool
-}
+// chunkWorkerPool runs chunk requests on a fixed number of background workers.
+type chunkWorkerPool struct {
+	w     *World
+	queue chan *chunkRequest
+	wg    sync.WaitGroup
 
-// workerPoolChunkRequestHandler runs chunk requests on a fixed number of
-// background workers.
-type workerPoolChunkRequestHandler struct {
-	w      *World
-	queue  chan *chunkRequest
 	mu     sync.Mutex
 	closed bool
 }
 
-func newWorkerPoolChunkRequestHandler(w *World) *workerPoolChunkRequestHandler {
-	return &workerPoolChunkRequestHandler{w: w, queue: make(chan *chunkRequest, 4096)}
-}
-
-// Do calls receiver once the chunk is ready, starting the request if it was
-// not yet started. It returns false if the request could not be queued.
-func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) bool {
-	r.callbacks = append(r.callbacks, receiver)
-	if !r.queued {
-		r.queued = true
-		return tx.World().chunkRequestHandler.handleChunkRequest(r)
-	}
-	return true
+func newChunkWorkerPool(w *World) *chunkWorkerPool {
+	return &chunkWorkerPool{w: w, queue: make(chan *chunkRequest, 4096)}
 }
 
 // doImmediate blocks until the chunk is ready and returns it.
@@ -64,45 +47,39 @@ func (r *chunkRequest) doImmediate(tx *Tx) *Column {
 	return r.result
 }
 
-// load loads or generates the chunk and hands it back to the world to be
-// added.
+// load loads or generates the chunk, calculates its light and hands it back to
+// the world to be added.
 func (r *chunkRequest) load(w *World) {
 	r.col, r.err = w.loadChunk(r.pos)
-	close(r.done)
-	go r.queueSignal(w)
-}
-
-func (r *chunkRequest) queueSignal(w *World) {
-	select {
-	case w.queue <- normalTransaction{c: make(chan struct{}), f: r.signal}:
-	case <-w.closing:
-		return
+	if r.err == nil {
+		chunk.LightArea([]*chunk.Chunk{r.col.Chunk}, int(r.pos[0]), int(r.pos[1])).Fill()
 	}
+	close(r.done)
+	w.Do(r.signal)
 }
 
 // abort cancels a request that will never be carried out because the world is
 // closing, releasing anyone waiting on it.
 func (r *chunkRequest) abort() {
-	r.aborted = true
 	close(r.done)
 }
 
-// handleChunkRequest hands r to the workers without blocking. It returns false
-// if the request cannot be accepted, e.g. when the world is closing.
-func (h *workerPoolChunkRequestHandler) handleChunkRequest(r *chunkRequest) bool {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if h.closed {
+// schedule hands r to the workers without blocking. It returns false if the
+// request cannot be accepted, e.g. when the world is closing.
+func (p *chunkWorkerPool) schedule(r *chunkRequest) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.closed {
 		return false
 	}
 	select {
-	case <-h.w.closeStarted:
-		h.closed = true
+	case <-p.w.closeStarted:
+		p.closed = true
 		return false
 	default:
 	}
 	select {
-	case h.queue <- r:
+	case p.queue <- r:
 		return true
 	default:
 		return false
@@ -110,38 +87,43 @@ func (h *workerPoolChunkRequestHandler) handleChunkRequest(r *chunkRequest) bool
 }
 
 // handle continuously processes chunk requests until the world starts closing.
-func (h *workerPoolChunkRequestHandler) handle() {
-	defer h.w.running.Done()
+func (p *chunkWorkerPool) handle() {
+	defer p.wg.Done()
 	for {
 		select {
-		case <-h.w.closeStarted:
-			h.drainAndAbort()
+		case <-p.w.closeStarted:
+			p.drainAndAbort()
 			return
 		default:
 		}
 		select {
-		case r := <-h.queue:
-			r.load(h.w)
-		case <-h.w.closeStarted:
-			h.drainAndAbort()
+		case r := <-p.queue:
+			r.load(p.w)
+		case <-p.w.closeStarted:
+			p.drainAndAbort()
 			return
 		}
 	}
 }
 
 // drainAndAbort cancels all remaining requests and stops accepting new ones.
-func (h *workerPoolChunkRequestHandler) drainAndAbort() {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.closed = true
+func (p *chunkWorkerPool) drainAndAbort() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.closed = true
 	for {
 		select {
-		case r := <-h.queue:
+		case r := <-p.queue:
 			r.abort()
 		default:
 			return
 		}
 	}
+}
+
+// wait blocks until all workers have stopped.
+func (p *chunkWorkerPool) wait() {
+	p.wg.Wait()
 }
 
 // signal adds the finished chunk to the world and calls everyone waiting for
@@ -156,9 +138,6 @@ func (r *chunkRequest) signal(tx *Tx) {
 	pos := r.pos
 
 	delete(w.chunkRequests, pos)
-	if r.aborted {
-		return
-	}
 	select {
 	case <-w.closeStarted:
 		return
@@ -166,12 +145,10 @@ func (r *chunkRequest) signal(tx *Tx) {
 	}
 	if r.err != nil {
 		w.conf.Log.Error("load chunk: "+r.err.Error(), "X", pos[0], "Z", pos[1])
-		if r.col == nil {
-			for _, recv := range r.callbacks {
-				recv(tx, nil)
-			}
-			return
+		for _, recv := range r.callbacks {
+			recv(tx, nil)
 		}
+		return
 	}
 	r.result = w.addChunk(pos, r.col)
 	select {

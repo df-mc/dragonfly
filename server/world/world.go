@@ -62,9 +62,9 @@ type World struct {
 
 	// chunks holds a cache of chunks currently loaded. These chunks are cleared
 	// from this map after some time of not being used.
-	chunks              map[ChunkPos]*Column
-	chunkRequests       map[ChunkPos]*chunkRequest
-	chunkRequestHandler chunkRequestHandler
+	chunks        map[ChunkPos]*Column
+	chunkRequests map[ChunkPos]*chunkRequest
+	chunkWorkers  *chunkWorkerPool
 
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
@@ -1231,6 +1231,7 @@ func (w *World) close() {
 
 	close(w.closing)
 	w.running.Wait()
+	w.chunkWorkers.wait()
 
 	close(w.queueClosing)
 	w.queueing.Wait()
@@ -1327,10 +1328,7 @@ func showEntity(e Entity, viewer Viewer) {
 // loadedChunk returns chunk & true only if chunk at position passed is loaded.
 func (w *World) loadedChunk(pos ChunkPos) (*Column, bool) {
 	c, ok := w.chunks[pos]
-	if ok {
-		return c, true
-	}
-	return nil, false
+	return c, ok
 }
 
 // chunk reads a chunk from the position passed. If a chunk at that position is
@@ -1354,6 +1352,7 @@ func (tx *Tx) chunk(pos ChunkPos) *Column {
 	if col == nil {
 		return w.emptyColumn()
 	}
+	chunk.LightArea([]*chunk.Chunk{col.Chunk}, int(pos[0]), int(pos[1])).Fill()
 	return w.addChunk(pos, col)
 }
 
@@ -1391,12 +1390,12 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) boo
 		callback(tx, tx.chunk(pos))
 		return true
 	}
-	req, ok := w.chunkRequests[pos]
-	if ok {
-		return req.Do(tx, callback)
+	if req, ok := w.chunkRequests[pos]; ok {
+		req.callbacks = append(req.callbacks, callback)
+		return true
 	}
-	req = &chunkRequest{pos: pos, done: make(chan struct{})}
-	if !req.Do(tx, callback) {
+	req := &chunkRequest{pos: pos, done: make(chan struct{}), callbacks: []chunkCallback{callback}}
+	if !w.chunkWorkers.schedule(req) {
 		return false
 	}
 	w.chunkRequests[pos] = req
@@ -1404,7 +1403,8 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) boo
 }
 
 // addChunk adds a loaded or generated chunk to the world, spawning saved
-// entities and calculating light. It must be called within a transaction.
+// entities and spreading light to neighbouring chunks. The chunk passed must
+// already have its own light calculated.
 func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 	column := w.columnFrom(c, pos)
 	w.chunks[pos] = column
@@ -1413,7 +1413,6 @@ func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 		e.setAndUnlockWorld(w)
 		e.markWorldReady(w)
 	}
-	chunk.LightArea([]*chunk.Chunk{column.Chunk}, int(pos[0]), int(pos[1])).Fill()
 	w.calculateLight(pos)
 	return column
 }

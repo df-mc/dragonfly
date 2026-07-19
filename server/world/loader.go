@@ -197,9 +197,13 @@ func (l *Loader) evictUnused(tx *Tx) {
 
 // withinLoadRadius checks if a chunk position is within the Loader's radius.
 func (l *Loader) withinLoadRadius(pos ChunkPos) bool {
-	diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
-	dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
-	return int32(math.Round(dist)) <= int32(l.r)
+	return chunkDistance(pos, l.pos) <= int32(l.r)
+}
+
+// chunkDistance returns the rounded distance between two chunk positions.
+func chunkDistance(a, b ChunkPos) int32 {
+	diffX, diffZ := a[0]-b[0], a[1]-b[1]
+	return int32(math.Round(math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))))
 }
 
 // queueLoad adds pos back to the load queue, unless it is already loaded,
@@ -233,13 +237,12 @@ func (l *Loader) populateLoadQueue() {
 	r := int32(l.r)
 	for x := -r; x <= r; x++ {
 		for z := -r; z <= r; z++ {
-			distance := math.Sqrt(float64(x*x) + float64(z*z))
-			chunkDistance := int32(math.Round(distance))
-			if chunkDistance > r {
+			pos := ChunkPos{x + l.pos[0], z + l.pos[1]}
+			dist := chunkDistance(pos, l.pos)
+			if dist > r {
 				// The chunk was outside the chunk radius.
 				continue
 			}
-			pos := ChunkPos{x + l.pos[0], z + l.pos[1]}
 			if _, ok := l.loaded[pos]; ok {
 				// The chunk was already loaded, so we don't need to do anything.
 				continue
@@ -248,11 +251,11 @@ func (l *Loader) populateLoadQueue() {
 				// The chunk is already queued to be loaded.
 				continue
 			}
-			if m, ok := queue[chunkDistance]; ok {
-				queue[chunkDistance] = append(m, pos)
+			if m, ok := queue[dist]; ok {
+				queue[dist] = append(m, pos)
 				continue
 			}
-			queue[chunkDistance] = []ChunkPos{pos}
+			queue[dist] = []ChunkPos{pos}
 		}
 	}
 
