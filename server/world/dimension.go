@@ -1,8 +1,10 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
+	"slices"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 var (
@@ -40,6 +42,7 @@ func DimensionID(dim Dimension) (int, bool) {
 type dimensionRegistry struct {
 	dimensions map[int]Dimension
 	ids        map[Dimension]int
+	custom     []Dimension
 }
 
 // newDimensionRegistry returns an initialised dimensionRegistry.
@@ -69,6 +72,24 @@ func (reg *dimensionRegistry) LookupID(dim Dimension) (int, bool) {
 	return id, ok
 }
 
+// RegisterDimension registers dimension.
+func (reg *dimensionRegistry) RegisterDimension(dim Dimension) {
+	reg.custom = append(reg.custom, dim)
+	id := 1000 + len(reg.custom)
+	reg.dimensions[id] = dim
+	reg.ids[dim] = id
+}
+
+// RegisterDimension registers custom dimension.
+func RegisterDimension(dim Dimension) {
+	dimensionReg.RegisterDimension(dim)
+}
+
+// CustomDimensions returns custom dimensions.
+func CustomDimensions() []Dimension {
+	return slices.Clone(dimensionReg.custom)
+}
+
 type (
 	// Dimension is a dimension of a World. It influences a variety of
 	// properties of a World such as the building range, the sky colour and the
@@ -81,6 +102,7 @@ type (
 		LavaSpreadDuration() time.Duration
 		WeatherCycle() bool
 		TimeCycle() bool
+		String() string
 	}
 	overworld struct{}
 	nether    struct{}
