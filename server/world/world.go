@@ -1,6 +1,7 @@
 package world
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -277,11 +278,11 @@ func (tx *Tx) biome(pos cube.Pos) Biome {
 }
 
 // HighestLightBlocker gets the Y value of the highest fully light blocking
-// block at the x and z values passed in the World.
+// block at the x and z values passed in the World. It must not be called from
+// within a transaction; use Tx.HighestLightBlocker instead.
 func (w *World) HighestLightBlocker(x, z int) int {
-	var y int
-	<-w.exec(func(tx *Tx) {
-		y = tx.highestLightBlocker(x, z)
+	y, _ := Call(context.Background(), w, func(tx *Tx) (int, error) {
+		return tx.highestLightBlocker(x, z), nil
 	})
 	return y
 }
