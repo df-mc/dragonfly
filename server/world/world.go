@@ -1386,8 +1386,7 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) boo
 		return true
 	}
 	if w.conf.Synchronous {
-		// Synchronous worlds have no chunk load workers: load the chunk on the
-		// calling goroutine instead.
+		// Synchronous worlds have no chunk workers; load on the calling goroutine.
 		callback(tx, tx.chunk(pos))
 		return true
 	}

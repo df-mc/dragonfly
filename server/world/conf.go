@@ -138,10 +138,9 @@ func (conf Config) New() *World {
 	}
 	s := conf.Provider.Settings()
 
-	// The Provider is called from both the owner goroutine and the chunk load
-	// workers, so serialise all calls to it. The Generator is only called by
-	// workers: with one worker it is serialised here, with more the Generator
-	// must be safe for concurrent use itself.
+	// The Provider is shared between the owner and the chunk load workers, so
+	// serialise calls to it. A single chunk load worker also keeps the
+	// Generator serialised.
 	conf.Provider = &lockedProvider{p: conf.Provider}
 	if conf.ChunkLoadWorkers == 1 {
 		conf.Generator = &lockedGenerator{g: conf.Generator}

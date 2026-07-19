@@ -157,7 +157,8 @@ func (tx *Tx) HighestBlock(x, z int) int {
 // Light returns the light level at the position passed. This is the highest of
 // the sky- and block light. The light value returned is a value in the range
 // 0-15, where 0 means there is no light present, whereas 15 means the block is
-// fully lit.
+// fully lit. Light does not load chunks: 0 is returned for positions in chunks
+// that are not currently loaded.
 func (tx *Tx) Light(pos cube.Pos) uint8 {
 	return tx.light(pos)
 }
