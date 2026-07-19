@@ -1372,12 +1372,15 @@ func (w *World) loadChunk(pos ChunkPos) (*chunk.Column, error) {
 	return &chunk.Column{Chunk: ch}, nil
 }
 
+// emptyColumn returns an empty column, used as a stand-in when a chunk could
+// not be loaded.
 func (w *World) emptyColumn() *Column {
 	return w.columnFrom(&chunk.Column{Chunk: chunk.New(w.conf.Blocks, w.Range())}, ChunkPos{})
 }
 
-// loadChunkAsync queues a chunk load or generation request and returns false if
-// the request could not be scheduled.
+// loadChunkAsync asks for the chunk at pos to be loaded or generated in the
+// background, calling callback once it is ready. It returns false if the
+// request could not be scheduled; the caller may simply retry later.
 func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) bool {
 	if c, ok := w.chunks[pos]; ok {
 		callback(tx, c)
@@ -1401,9 +1404,9 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) boo
 	return true
 }
 
-// addChunk installs a loaded or generated chunk on the world, taking ownership
-// of any entities stored in it. It must only be called on the world's owner
-// goroutine.
+// addChunk adds a freshly loaded or generated chunk to the world, spawning
+// any entities saved in it and calculating its light. It must only be called
+// from within a world transaction.
 func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 	column := w.columnFrom(c, pos)
 	w.chunks[pos] = column
@@ -1417,7 +1420,9 @@ func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 	return column
 }
 
-// chunkFromAsyncPool ...
+// chunkFromAsyncPool returns the chunk at pos if it is currently being loaded
+// in the background, waiting for that load to finish. The bool returned is
+// false if no such chunk was underway.
 func (w *World) chunkFromAsyncPool(tx *Tx, pos ChunkPos) (*Column, bool) {
 	req, ok := w.chunkRequests[pos]
 	if ok {

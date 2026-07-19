@@ -121,7 +121,8 @@ func (l *Loader) Load(tx *Tx, n int) {
 	}
 }
 
-// viewChunk adds chunk to the Viewer.
+// viewChunk passes a loaded chunk to the Loader's Viewer. If the chunk failed
+// to load, it is queued to be loaded again.
 func (l *Loader) viewChunk(tx *Tx, pos ChunkPos, c *Column) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -194,12 +195,16 @@ func (l *Loader) evictUnused(tx *Tx) {
 	}
 }
 
+// withinLoadRadius checks if a chunk position falls within the radius of the
+// Loader.
 func (l *Loader) withinLoadRadius(pos ChunkPos) bool {
 	diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
 	dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
 	return int32(math.Round(dist)) <= int32(l.r)
 }
 
+// queueLoad adds pos back to the load queue, unless it is already loaded,
+// queued, or no longer within the radius of the Loader.
 func (l *Loader) queueLoad(pos ChunkPos) {
 	if l.closed || l.w == nil || !l.withinLoadRadius(pos) {
 		return

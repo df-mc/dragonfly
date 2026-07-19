@@ -6,9 +6,8 @@ import (
 	"github.com/df-mc/dragonfly/server/world/chunk"
 )
 
-// chunkRequest tracks one asynchronous chunk acquisition and collects all
-// callbacks waiting for that chunk. Acquisition may load an existing column from
-// the provider or generate a new one if the provider returns ErrNotFound.
+// chunkRequest tracks a chunk that is being loaded or generated in the
+// background. Everyone waiting for the same chunk shares a single request.
 type chunkRequest struct {
 	pos       ChunkPos
 	callbacks []chunkCallback
@@ -26,16 +25,16 @@ type chunkRequest struct {
 // started when Config.ChunkLoadWorkers is not set.
 const defaultChunkLoadWorkers = 1
 
-// chunkCallback is called on the transaction path after a chunk is installed.
+// chunkCallback is called with a chunk once it has been added to the world.
 type chunkCallback = func(tx *Tx, chunk *Column)
 
-// chunkRequestHandler schedules asynchronous chunk acquisition requests.
+// chunkRequestHandler decides how chunk requests are carried out.
 type chunkRequestHandler interface {
 	handleChunkRequest(*chunkRequest) bool
 }
 
-// workerPoolChunkRequestHandler processes chunk requests using a bounded worker
-// pool.
+// workerPoolChunkRequestHandler runs chunk requests on a fixed number of
+// background workers.
 type workerPoolChunkRequestHandler struct {
 	w      *World
 	queue  chan *chunkRequest
@@ -47,9 +46,9 @@ func newWorkerPoolChunkRequestHandler(w *World) *workerPoolChunkRequestHandler {
 	return &workerPoolChunkRequestHandler{w: w, queue: make(chan *chunkRequest, 4096)}
 }
 
-// Do registers receiver to be called when the chunk is loaded or generated. The
-// first call queues the request; later calls only add callbacks. Do returns
-// false if the world is closing and the request could not be queued.
+// Do calls receiver once the chunk is ready. The first call starts the
+// request; later calls simply wait for the same chunk. Do returns false if the
+// request could not be queued, e.g. because the world is closing.
 func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) bool {
 	r.callbacks = append(r.callbacks, receiver)
 	if !r.queued {
@@ -59,15 +58,15 @@ func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) bool {
 	return true
 }
 
-// doImmediate waits until the chunk is loaded or generated and returns it.
+// doImmediate blocks until the chunk is ready and returns it.
 func (r *chunkRequest) doImmediate(tx *Tx) *Column {
 	<-r.done
 	r.signal(tx)
 	return r.result
 }
 
-// load reads the chunk from the provider or generates a new one, then schedules
-// installation back onto the world transaction queue.
+// load loads or generates the chunk and hands it back to the world to be
+// added.
 func (r *chunkRequest) load(w *World) {
 	r.col, r.err = w.loadChunk(r.pos)
 	close(r.done)
@@ -82,16 +81,16 @@ func (r *chunkRequest) queueSignal(w *World) {
 	}
 }
 
-// abort marks r as terminal without a chunk. It is only used during world
-// shutdown for queued requests that will never be processed.
+// abort cancels a request that will never be carried out because the world is
+// closing, releasing anyone waiting on it.
 func (r *chunkRequest) abort() {
 	r.aborted = true
 	close(r.done)
 }
 
-// handleChunkRequest queues r on the bounded worker pool without blocking the
-// world transaction goroutine. The mutex prevents a request from being accepted
-// after the pool starts draining during shutdown.
+// handleChunkRequest hands r to the workers. It returns false, without
+// blocking, if the workers cannot accept the request, e.g. because their queue
+// is full or the world is closing. The caller may simply retry later.
 func (h *workerPoolChunkRequestHandler) handleChunkRequest(r *chunkRequest) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -112,7 +111,7 @@ func (h *workerPoolChunkRequestHandler) handleChunkRequest(r *chunkRequest) bool
 	}
 }
 
-// handle processes the chunk load queue until the world starts closing.
+// handle continuously processes chunk requests until the world starts closing.
 func (h *workerPoolChunkRequestHandler) handle() {
 	defer h.w.running.Done()
 	for {
@@ -132,7 +131,7 @@ func (h *workerPoolChunkRequestHandler) handle() {
 	}
 }
 
-// drainAndAbort cancels all queued requests and marks the handler as closed.
+// drainAndAbort cancels all remaining requests and stops accepting new ones.
 func (h *workerPoolChunkRequestHandler) drainAndAbort() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -147,8 +146,8 @@ func (h *workerPoolChunkRequestHandler) drainAndAbort() {
 	}
 }
 
-// signal installs the loaded or generated chunk and invokes all waiting
-// callbacks. It runs on the world transaction queue.
+// signal adds the finished chunk to the world and calls everyone waiting for
+// it. It always runs inside a world transaction.
 func (r *chunkRequest) signal(tx *Tx) {
 	if r.signalled {
 		return
