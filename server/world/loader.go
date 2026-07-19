@@ -195,8 +195,7 @@ func (l *Loader) evictUnused(tx *Tx) {
 	}
 }
 
-// withinLoadRadius checks if a chunk position falls within the radius of the
-// Loader.
+// withinLoadRadius checks if a chunk position is within the Loader's radius.
 func (l *Loader) withinLoadRadius(pos ChunkPos) bool {
 	diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
 	dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))

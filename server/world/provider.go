@@ -61,9 +61,8 @@ func (NopProvider) LoadPlayerSpawnPosition(uuid.UUID) (cube.Pos, bool, error) {
 func (NopProvider) SavePlayerSpawnPosition(uuid.UUID, cube.Pos) error { return nil }
 func (NopProvider) Close() error                                      { return nil }
 
-// lockedProvider wraps a Provider and serialises all calls to it with a
-// mutex, so that the Provider itself does not need to be safe for concurrent
-// use.
+// lockedProvider wraps a Provider, serialising all calls for providers that
+// are not safe for concurrent use.
 type lockedProvider struct {
 	mu sync.Mutex
 	p  Provider

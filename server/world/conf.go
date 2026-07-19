@@ -50,9 +50,8 @@ type Config struct {
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
 	// ChunkLoadWorkers is the number of background workers that load and
-	// generate chunks. It defaults to 1, which keeps chunk generation fully
-	// sequential. Higher values make loading and generating chunks faster,
-	// but require the Generator to be safe for concurrent use.
+	// generate chunks, defaulting to 1. Higher values are faster, but require
+	// the Generator to be safe for concurrent use.
 	ChunkLoadWorkers int
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per
@@ -139,10 +138,8 @@ func (conf Config) New() *World {
 	}
 	s := conf.Provider.Settings()
 
-	// Providers and Generators are not required to be safe for concurrent use,
-	// so serialise all calls to them here. With more than one chunk load
-	// worker, the Generator is called concurrently and must handle that
-	// itself.
+	// Providers and Generators are not required to be safe for concurrent
+	// use, so serialise calls to them here.
 	conf.Provider = &lockedProvider{p: conf.Provider}
 	if conf.ChunkLoadWorkers == 1 {
 		conf.Generator = &lockedGenerator{g: conf.Generator}

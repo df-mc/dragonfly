@@ -11,8 +11,7 @@ import (
 // generate chunks when the provider of the world cannot find a chunk at a given chunk position.
 type Generator interface {
 	// GenerateChunk generates a chunk at a chunk position passed. The generator sets blocks in the chunk that
-	// is passed to the method. If Config.ChunkLoadWorkers is greater than 1, GenerateChunk may be called from
-	// multiple goroutines at once, and the Generator must be safe for concurrent use.
+	// is passed to the method. With more than one chunk load worker, GenerateChunk is called concurrently.
 	GenerateChunk(pos ChunkPos, chunk *chunk.Chunk)
 	// DefaultSpawn returns the default spawn position for worlds using this generator in the dimension passed.
 	DefaultSpawn(dim Dimension) cube.Pos
@@ -28,9 +27,8 @@ func (NopGenerator) GenerateChunk(ChunkPos, *chunk.Chunk) {}
 // DefaultSpawn ...
 func (NopGenerator) DefaultSpawn(Dimension) cube.Pos { return cube.Pos{} }
 
-// lockedGenerator wraps a Generator and serialises calls to GenerateChunk. It
-// is used when only a single chunk load worker runs, so that the Generator
-// does not need to be safe for concurrent use.
+// lockedGenerator wraps a Generator, serialising GenerateChunk calls for
+// generators that are not safe for concurrent use.
 type lockedGenerator struct {
 	mu sync.Mutex
 	g  Generator

@@ -46,9 +46,8 @@ func newWorkerPoolChunkRequestHandler(w *World) *workerPoolChunkRequestHandler {
 	return &workerPoolChunkRequestHandler{w: w, queue: make(chan *chunkRequest, 4096)}
 }
 
-// Do calls receiver once the chunk is ready. The first call starts the
-// request; later calls simply wait for the same chunk. Do returns false if the
-// request could not be queued, e.g. because the world is closing.
+// Do calls receiver once the chunk is ready, starting the request if it was
+// not yet started. It returns false if the request could not be queued.
 func (r *chunkRequest) Do(tx *Tx, receiver chunkCallback) bool {
 	r.callbacks = append(r.callbacks, receiver)
 	if !r.queued {
@@ -88,9 +87,8 @@ func (r *chunkRequest) abort() {
 	close(r.done)
 }
 
-// handleChunkRequest hands r to the workers. It returns false, without
-// blocking, if the workers cannot accept the request, e.g. because their queue
-// is full or the world is closing. The caller may simply retry later.
+// handleChunkRequest hands r to the workers without blocking. It returns false
+// if the request cannot be accepted, e.g. when the world is closing.
 func (h *workerPoolChunkRequestHandler) handleChunkRequest(r *chunkRequest) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()

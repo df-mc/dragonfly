@@ -1378,9 +1378,8 @@ func (w *World) emptyColumn() *Column {
 	return w.columnFrom(&chunk.Column{Chunk: chunk.New(w.conf.Blocks, w.Range())}, ChunkPos{})
 }
 
-// loadChunkAsync asks for the chunk at pos to be loaded or generated in the
-// background, calling callback once it is ready. It returns false if the
-// request could not be scheduled; the caller may simply retry later.
+// loadChunkAsync loads or generates the chunk at pos in the background,
+// calling callback once ready. It returns false if it could not be scheduled.
 func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) bool {
 	if c, ok := w.chunks[pos]; ok {
 		callback(tx, c)
@@ -1404,9 +1403,8 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) boo
 	return true
 }
 
-// addChunk adds a freshly loaded or generated chunk to the world, spawning
-// any entities saved in it and calculating its light. It must only be called
-// from within a world transaction.
+// addChunk adds a loaded or generated chunk to the world, spawning saved
+// entities and calculating light. It must be called within a transaction.
 func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 	column := w.columnFrom(c, pos)
 	w.chunks[pos] = column
@@ -1420,9 +1418,8 @@ func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 	return column
 }
 
-// chunkFromAsyncPool returns the chunk at pos if it is currently being loaded
-// in the background, waiting for that load to finish. The bool returned is
-// false if no such chunk was underway.
+// chunkFromAsyncPool waits for a pending background load of the chunk at pos,
+// returning false if none was underway.
 func (w *World) chunkFromAsyncPool(tx *Tx, pos ChunkPos) (*Column, bool) {
 	req, ok := w.chunkRequests[pos]
 	if ok {
