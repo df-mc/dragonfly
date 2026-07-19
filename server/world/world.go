@@ -1232,7 +1232,7 @@ func (w *World) close() {
 
 	close(w.closing)
 	w.running.Wait()
-	w.chunkWorkers.wait()
+	w.chunkWorkers.wg.Wait()
 
 	close(w.queueClosing)
 	w.queueing.Wait()

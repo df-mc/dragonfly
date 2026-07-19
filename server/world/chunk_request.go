@@ -111,11 +111,6 @@ func (p *chunkWorkerPool) drainAndAbort() {
 	}
 }
 
-// wait blocks until all workers have stopped.
-func (p *chunkWorkerPool) wait() {
-	p.wg.Wait()
-}
-
 // signal adds the finished chunk to the world and calls all callers waiting
 // for it. It always runs inside a world transaction.
 func (r *chunkRequest) signal(tx *Tx) {
