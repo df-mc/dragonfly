@@ -28,7 +28,7 @@ type PressurePlate struct {
 
 // Model ...
 func (PressurePlate) Model() world.BlockModel {
-	return model.Carpet{}
+	return model.Empty{}
 }
 
 // UseOnBlock places the pressure plate on a solid surface.
@@ -41,9 +41,9 @@ func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	return placed(ctx)
 }
 
-// EntityStepOn powers the plate when an entity stands on it.
-func (p PressurePlate) EntityStepOn(pos cube.Pos, tx *world.Tx, e world.Entity) {
-	if p.entityPower(e) == 0 {
+// EntityInside powers the plate when an entity enters its activation area.
+func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+	if p.entityPower(e) == 0 || !pressurePlateEntityIntersects(e, pressurePlateActivationBox(pos)) {
 		return
 	}
 	if p.Power > 0 {
@@ -236,7 +236,7 @@ func pressurePlateEntityName(e world.Entity) string {
 // pressurePlateActivationBox is the box entities must intersect to press the
 // plate at a position.
 func pressurePlateActivationBox(pos cube.Pos) cube.BBox {
-	return cube.Box(float64(pos[0]), float64(pos[1]), float64(pos[2]), float64(pos[0]+1), float64(pos[1])+0.25, float64(pos[2]+1))
+	return cube.Box(float64(pos[0])+0.125, float64(pos[1]), float64(pos[2])+0.125, float64(pos[0])+0.875, float64(pos[1])+0.25, float64(pos[2])+0.875)
 }
 
 func pressurePlateEntityIntersects(e world.Entity, box cube.BBox) bool {

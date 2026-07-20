@@ -51,7 +51,7 @@ func (b Button) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _
 
 // ProjectileHit presses wooden buttons hit by an arrow.
 func (b Button) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
-	if !b.Type.Wood() || e.H().Type().EncodeEntity() != "minecraft:arrow" {
+	if !b.Type.Wood() || e.H().Type().EncodeEntity() != "minecraft:arrow" || !buttonArrowIntersects(b, pos, e) {
 		return
 	}
 	b.press(pos, tx)
@@ -81,7 +81,7 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !b.Pressed {
 		return
 	}
-	if b.Type.Wood() && arrowWithin(pos, tx) {
+	if b.Type.Wood() && arrowWithin(b, pos, tx) {
 		tx.ScheduleBlockUpdate(pos, b, b.pressDuration())
 		return
 	}
@@ -90,16 +90,50 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	tx.PlaySound(pos.Vec3Centre(), sound.Click{})
 }
 
-// arrowWithin reports whether an arrow intersects the block space at pos.
-func arrowWithin(pos cube.Pos, tx *world.Tx) bool {
-	box := cube.Box(0, 0, 0, 1, 1, 1).Translate(pos.Vec3())
+// arrowWithin reports whether an arrow intersects the button at pos.
+func arrowWithin(b Button, pos cube.Pos, tx *world.Tx) bool {
+	box := buttonBox(b).Translate(pos.Vec3())
 	for e := range tx.EntitiesWithin(box.Grow(1)) {
-		if e.H().Type().EncodeEntity() == "minecraft:arrow" &&
-			e.H().Type().BBox(e).Translate(e.Position()).IntersectsWith(box) {
+		if e.H().Type().EncodeEntity() == "minecraft:arrow" && buttonArrowIntersects(b, pos, e) {
 			return true
 		}
 	}
 	return false
+}
+
+func buttonArrowIntersects(b Button, pos cube.Pos, e world.Entity) bool {
+	return e.H().Type().BBox(e).Translate(e.Position()).IntersectsWith(buttonBox(b).Translate(pos.Vec3()))
+}
+
+// buttonBox returns the projectile-sensitive shape of a button. Buttons have
+// no physical collision box, but projectiles must touch their visible shape.
+func buttonBox(b Button) cube.BBox {
+	const (
+		minLong  = 5.0 / 16
+		maxLong  = 11.0 / 16
+		minShort = 6.0 / 16
+		maxShort = 10.0 / 16
+	)
+	depth := 2.0 / 16
+	if b.Pressed {
+		depth = 1.0 / 16
+	}
+	switch b.Facing {
+	case cube.FaceDown:
+		return cube.Box(minLong, 1-depth, minShort, maxLong, 1, maxShort)
+	case cube.FaceUp:
+		return cube.Box(minLong, 0, minShort, maxLong, depth, maxShort)
+	case cube.FaceNorth:
+		return cube.Box(minLong, minShort, 1-depth, maxLong, maxShort, 1)
+	case cube.FaceSouth:
+		return cube.Box(minLong, minShort, 0, maxLong, maxShort, depth)
+	case cube.FaceWest:
+		return cube.Box(1-depth, minShort, minLong, 1, maxShort, maxLong)
+	case cube.FaceEast:
+		return cube.Box(0, minShort, minLong, depth, maxShort, maxLong)
+	default:
+		panic("invalid button face")
+	}
 }
 
 // RedstonePower returns maximum power while the button is pressed.
@@ -121,10 +155,12 @@ func (b Button) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Face) int
 // BreakInfo ...
 func (b Button) BreakInfo() BreakInfo {
 	effective := pickaxeEffective
+	harvestable := pickaxeHarvestable
 	if b.Type.Wood() {
 		effective = axeEffective
+		harvestable = alwaysHarvestable
 	}
-	return newBreakInfo(0.5, alwaysHarvestable, effective, oneOf(Button{Type: b.Type}))
+	return newBreakInfo(0.5, harvestable, effective, oneOf(Button{Type: b.Type}))
 }
 
 // SideClosed ...

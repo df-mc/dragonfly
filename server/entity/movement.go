@@ -61,9 +61,16 @@ func StepOnBlock(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
 	}
 }
 
-// checkSteppers calls EntityStepOn on the block the entity stands on after
-// the movement, mirroring the behaviour of players for other entities.
+// checkSteppers handles pressure plates intersecting the entity and the block
+// it stands on after movement, mirroring player behaviour.
 func (m *Movement) checkSteppers(tx *world.Tx) {
+	box := m.e.H().Type().BBox(m.e).Translate(m.pos).Grow(-0.0001)
+	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+	for pos := range cube.Range3D(low, high) {
+		if plate, ok := tx.Block(pos).(block.PressurePlate); ok {
+			plate.EntityInside(pos, tx, m.e)
+		}
+	}
 	if m.onGround {
 		StepOnBlock(tx, m.e, m.pos)
 	}
