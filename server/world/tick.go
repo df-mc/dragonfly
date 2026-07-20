@@ -51,7 +51,7 @@ func (t ticker) tick(tx *Tx) {
 	if s := w.set.Spawn; s[1] > tx.Range()[1] && w.Dimension() == Overworld {
 		// Vanilla will set the spawn position's Y value to max to indicate that
 		// the player should spawn at the highest position in the world.
-		w.set.Spawn[1] = w.highestObstructingBlock(s[0], s[2]) + 1
+		w.set.Spawn[1] = tx.highestObstructingBlock(s[0], s[2]) + 1
 	}
 	if len(viewers) == 0 && w.set.CurrentTick != 0 && !w.conf.Synchronous {
 		// Don't continue ticking if no viewers are in the world. Synchronous
@@ -115,7 +115,7 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 		if ticker, ok := tx.Block(pos).(NeighbourUpdateTicker); ok {
 			ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
 		}
-		if liquid, ok := tx.World().additionalLiquid(pos); ok {
+		if liquid, ok := tx.additionalLiquid(pos); ok {
 			if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
 				ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
 			}
@@ -317,7 +317,7 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 		b := tx.Block(t.pos)
 		if ticker, ok := b.(ScheduledTicker); ok && w.conf.Blocks.BlockHash(b) == t.bhash {
 			ticker.ScheduledTick(t.pos, tx, w.r)
-		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && w.conf.Blocks.BlockHash(liquid) == t.bhash {
+		} else if liquid, ok := tx.additionalLiquid(t.pos); ok && w.conf.Blocks.BlockHash(liquid) == t.bhash {
 			if ticker, ok := liquid.(ScheduledTicker); ok {
 				ticker.ScheduledTick(t.pos, tx, w.r)
 			}
