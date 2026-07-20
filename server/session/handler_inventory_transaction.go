@@ -176,7 +176,9 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 // handleUseItemTransaction ...
 func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.UseItemTransactionData, s *Session, c Controllable) error {
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
-	if data.ClientPrediction == protocol.ClientPredictionSuccess || data.ActionType == protocol.UseItemActionBreakBlock {
+	if data.ClientPrediction == protocol.ClientPredictionSuccess ||
+		data.ActionType == protocol.UseItemActionBreakBlock ||
+		data.ActionType == protocol.UseItemActionClickAir {
 		// Suppress echoing the swing animation only when the client has already predicted it locally.
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)

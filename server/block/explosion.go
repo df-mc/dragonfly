@@ -142,7 +142,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 
 	for _, e := range affectedEntities {
 		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
+			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * ExplosionExposure(tx, explosionPos, e)
 			explodable.Explode(explosionPos, impact, c)
 		}
 	}
@@ -180,48 +180,43 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	tx.PlaySound(explosionPos, c.Sound)
 }
 
-// exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
-func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
-	pos := e.Position()
-	box := e.H().Type().BBox(e).Translate(pos)
-
+// ExplosionExposure returns the fraction of an entity's bounding box visible
+// from an explosion origin.
+func ExplosionExposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
+	box := e.H().Type().BBox(e).Translate(e.Position())
 	boxMin, boxMax := box.Min(), box.Max()
-	diff := boxMax.Sub(boxMin).Mul(2.0).Add(mgl64.Vec3{1, 1, 1})
-
-	step := mgl64.Vec3{1.0 / diff[0], 1.0 / diff[1], 1.0 / diff[2]}
-	if step[0] < 0.0 || step[1] < 0.0 || step[2] < 0.0 {
-		return 0.0
+	diff := boxMax.Sub(boxMin).Mul(2).Add(mgl64.Vec3{1, 1, 1})
+	step := mgl64.Vec3{1 / diff[0], 1 / diff[1], 1 / diff[2]}
+	if step[0] < 0 || step[1] < 0 || step[2] < 0 {
+		return 0
 	}
 
-	xOffset := (1.0 - math.Floor(diff[0])/diff[0]) / 2.0
-	zOffset := (1.0 - math.Floor(diff[2])/diff[2]) / 2.0
-
-	var checks, misses float64
-	for x := 0.0; x <= 1.0; x += step[0] {
-		for y := 0.0; y <= 1.0; y += step[1] {
-			for z := 0.0; z <= 1.0; z += step[2] {
+	xOffset := (1 - math.Floor(diff[0])/diff[0]) / 2
+	zOffset := (1 - math.Floor(diff[2])/diff[2]) / 2
+	var visible, total float64
+	for x := 0.0; x <= 1; x += step[0] {
+		for y := 0.0; y <= 1; y += step[1] {
+			for z := 0.0; z <= 1; z += step[2] {
 				point := mgl64.Vec3{
-					lerp(x, boxMin[0], boxMax[0]) + xOffset,
-					lerp(y, boxMin[1], boxMax[1]),
-					lerp(z, boxMin[2], boxMax[2]) + zOffset,
+					lerp(boxMin[0], boxMax[0], x) + xOffset,
+					lerp(boxMin[1], boxMax[1], y),
+					lerp(boxMin[2], boxMax[2], z) + zOffset,
 				}
-				var collided bool
-				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (cont bool) {
-					_, collided = trace.BlockIntercept(pos, tx, tx.Block(pos), origin, point)
-					return !collided
+				blocked := false
+				trace.TraverseBlocks(origin, point, func(pos cube.Pos) bool {
+					_, blocked = trace.BlockIntercept(pos, tx, tx.Block(pos), origin, point)
+					return !blocked
 				})
-
-				if !collided {
-					misses++
+				if !blocked {
+					visible++
 				}
-				checks++
+				total++
 			}
 		}
 	}
-	return misses / checks
+	return visible / total
 }
 
-// lerp returns the linear interpolation between a and b at t.
 func lerp(a, b, t float64) float64 {
-	return b + a*(t-b)
+	return a + t*(b-a)
 }
