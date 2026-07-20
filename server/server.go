@@ -591,6 +591,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		ReadOnly:            srv.conf.ReadOnlyWorld,
 		SaveInterval:        srv.conf.SaveInterval,
 		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		ChunkLoadWorkers:    srv.conf.ChunkLoadWorkers,
 		Entities:            srv.conf.Entities,
 		Blocks:              srv.conf.Blocks,
 		PortalDestination: func(dim world.Dimension) *world.World {
