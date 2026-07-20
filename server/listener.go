@@ -21,26 +21,30 @@ type Listener interface {
 	io.Closer
 }
 
-// listenerFunc may be used to return a *minecraft.Listener using a Config. It
+// listenerFunc returns a function that creates a *minecraft.Listener on the address passed. Listeners
+// created with the same group share their player count, so that MaxPlayers applies across all of them. It
 // is the standard listener used when UserConfig.Config() is called.
-func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
-	cfg := minecraft.ListenConfig{
-		MaximumPlayers:         conf.MaxPlayers,
-		StatusProvider:         conf.StatusProvider,
-		AuthenticationDisabled: conf.AuthDisabled,
-		ResourcePacks:          conf.Resources,
-		TexturePacksRequired:   conf.ResourcesRequired,
-		Compression:            conf.Compression,
+func listenerFunc(address string, group *minecraft.ListenerGroup) func(conf Config) (Listener, error) {
+	return func(conf Config) (Listener, error) {
+		cfg := minecraft.ListenConfig{
+			MaximumPlayers:         conf.MaxPlayers,
+			ListenerGroup:          group,
+			StatusProvider:         conf.StatusProvider,
+			AuthenticationDisabled: conf.AuthDisabled,
+			ResourcePacks:          conf.Resources,
+			TexturePacksRequired:   conf.ResourcesRequired,
+			Compression:            conf.Compression,
+		}
+		if conf.Log.Enabled(context.Background(), slog.LevelDebug) {
+			cfg.ErrorLog = conf.Log.With("net origin", "gophertunnel")
+		}
+		l, err := cfg.Listen("raknet", address)
+		if err != nil {
+			return nil, fmt.Errorf("create minecraft listener (%v): %w", address, err)
+		}
+		conf.Log.Info("Listener running.", "addr", l.Addr())
+		return listener{l}, nil
 	}
-	if conf.Log.Enabled(context.Background(), slog.LevelDebug) {
-		cfg.ErrorLog = conf.Log.With("net origin", "gophertunnel")
-	}
-	l, err := cfg.Listen("raknet", uc.Network.Address)
-	if err != nil {
-		return nil, fmt.Errorf("create minecraft listener: %w", err)
-	}
-	conf.Log.Info("Listener running.", "addr", l.Addr())
-	return listener{l}, nil
 }
 
 // listener is a Listener implementation that wraps around a minecraft.Listener so that it can be listened on by

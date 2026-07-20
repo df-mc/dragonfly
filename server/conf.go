@@ -191,10 +191,11 @@ func (conf Config) New() *Server {
 		p:        make(map[uuid.UUID]*onlinePlayer),
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
-	for _, lf := range conf.Listeners {
-		l, err := lf(conf)
+	for _, lf := range srv.conf.Listeners {
+		l, err := lf(srv.conf)
 		if err != nil {
 			conf.Log.Error("create listener: " + err.Error())
+			continue
 		}
 		srv.listeners = append(srv.listeners, l)
 	}
@@ -219,6 +220,9 @@ type UserConfig struct {
 		// Address is the address on which the server should listen. Players may
 		// connect to this address in order to join.
 		Address string
+		// AddressV6 is the IPv6 address on which the server should listen. Leave
+		// empty to disable the IPv6 listener.
+		AddressV6 string
 	}
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
@@ -308,7 +312,11 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 			return conf, fmt.Errorf("create player provider: %w", err)
 		}
 	}
-	conf.Listeners = append(conf.Listeners, uc.listenerFunc)
+	group := new(minecraft.ListenerGroup)
+	conf.Listeners = append(conf.Listeners, listenerFunc(uc.Network.Address, group))
+	if uc.Network.AddressV6 != "" {
+		conf.Listeners = append(conf.Listeners, listenerFunc(uc.Network.AddressV6, group))
+	}
 	return conf, nil
 }
 
@@ -349,6 +357,7 @@ func loadGenerator(dim world.Dimension) world.Generator {
 func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
+	c.Network.AddressV6 = "[::]:19133"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true
