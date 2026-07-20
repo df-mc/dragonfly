@@ -262,6 +262,12 @@ func (p *Player) SendJukeboxPopup(a ...any) {
 	p.session().SendJukeboxPopup(format(a))
 }
 
+// SendJukeboxPopupt sends a translatable jukebox popup to the player and parameterises it using the arguments passed.
+// SendJukeboxPopupt panics if an incorrect amount of arguments is passed.
+func (p *Player) SendJukeboxPopupt(t chat.Translation, a ...any) {
+	p.session().SendJukeboxTranslation(t, p.locale, a)
+}
+
 // SendToast sends a toast to the player. This toast is shown at the top of the screen, similar to achievements or pack
 // loading.
 func (p *Player) SendToast(title, message string) {
