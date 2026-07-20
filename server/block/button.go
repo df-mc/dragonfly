@@ -35,7 +35,7 @@ func (Button) Model() world.BlockModel {
 // UseOnBlock places the button attached to the clicked face.
 func (b Button) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, b)
-	if !used || !redstoneAttachmentSupported(tx, pos, face) {
+	if !used || !attachmentSupported(tx, pos, face) {
 		return false
 	}
 	b.Facing = face
@@ -70,7 +70,7 @@ func (b Button) press(pos cube.Pos, tx *world.Tx) {
 
 // NeighbourUpdateTick breaks the button if its supporting block is removed.
 func (b Button) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if !redstoneAttachmentSupported(tx, pos, b.Facing) {
+	if !attachmentSupported(tx, pos, b.Facing) {
 		breakBlock(b, pos, tx)
 	}
 }

@@ -34,7 +34,7 @@ func (PressurePlate) Model() world.BlockModel {
 // UseOnBlock places the pressure plate on a solid surface.
 func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, p)
-	if !used || !redstoneFloorComponentSupported(tx, pos) {
+	if !used || !attachmentSupported(tx, pos, cube.FaceUp) {
 		return false
 	}
 	place(tx, pos, p, user, ctx)
@@ -64,7 +64,7 @@ func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) 
 
 // NeighbourUpdateTick breaks the pressure plate if its supporting block is removed.
 func (p PressurePlate) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if !redstoneFloorComponentSupported(tx, pos) {
+	if !attachmentSupported(tx, pos, cube.FaceUp) {
 		breakBlock(p, pos, tx)
 	}
 }
