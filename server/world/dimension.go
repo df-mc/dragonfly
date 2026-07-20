@@ -1,8 +1,12 @@
 package world
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
+	"fmt"
+	"math"
+	"slices"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
 var (
@@ -40,6 +44,14 @@ func DimensionID(dim Dimension) (int, bool) {
 type dimensionRegistry struct {
 	dimensions map[int]Dimension
 	ids        map[Dimension]int
+	custom     []DimensionRegistration
+}
+
+// DimensionRegistration holds a custom dimension's registration data.
+type DimensionRegistration struct {
+	ID        int
+	Name      string
+	Dimension Dimension
 }
 
 // newDimensionRegistry returns an initialised dimensionRegistry.
@@ -67,6 +79,39 @@ func (reg *dimensionRegistry) Lookup(id int) (Dimension, bool) {
 func (reg *dimensionRegistry) LookupID(dim Dimension) (int, bool) {
 	id, ok := reg.ids[dim]
 	return id, ok
+}
+
+// RegisterDimension registers a custom dimension.
+func (reg *dimensionRegistry) RegisterDimension(id int, name string, dim Dimension) error {
+	if id < 1000 || id > math.MaxInt32 {
+		return fmt.Errorf("custom dimension ID must be between 1000 and %d", math.MaxInt32)
+	}
+	if name == "" {
+		return fmt.Errorf("custom dimension name must not be empty")
+	}
+	if dim == nil {
+		return fmt.Errorf("custom dimension must not be nil")
+	}
+	if _, ok := reg.dimensions[id]; ok {
+		return fmt.Errorf("dimension ID %d is already registered", id)
+	}
+	if existing, ok := reg.ids[dim]; ok {
+		return fmt.Errorf("dimension is already registered with ID %d", existing)
+	}
+	reg.dimensions[id] = dim
+	reg.ids[dim] = id
+	reg.custom = append(reg.custom, DimensionRegistration{ID: id, Name: name, Dimension: dim})
+	return nil
+}
+
+// RegisterDimension registers a custom dimension.
+func RegisterDimension(id int, name string, dim Dimension) error {
+	return dimensionReg.RegisterDimension(id, name, dim)
+}
+
+// CustomDimensions returns all registered custom dimensions.
+func CustomDimensions() []DimensionRegistration {
+	return slices.Clone(dimensionReg.custom)
 }
 
 type (
