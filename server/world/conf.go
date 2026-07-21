@@ -49,6 +49,10 @@ type Config struct {
 	// ChunkUnloadInterval should not be used to prevent chunks from unloading
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
+	// ChunkLoadWorkers is the number of background workers that load and generate
+	// chunks, defaulting to 1. Values above 1 generate chunks concurrently and
+	// require a concurrency-safe Generator.
+	ChunkLoadWorkers int
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per
 	// sub chunk, so the default value is 3. Setting this value to -1 or lower
@@ -72,11 +76,17 @@ type Config struct {
 	// use NewBlockRegistry(), register blocks/states, and call Finalize().
 	Blocks BlockRegistry
 
-	// Synchronous makes the World run without any background goroutines.
-	// Transactions from World.Exec run on the calling goroutine, the World is
-	// not saved or unloaded automatically, and time only passes on explicit
-	// World.AdvanceTick calls. This makes Synchronous Worlds deterministic and
-	// well suited to unit tests that need a World to interact with.
+	// Synchronous removes the World's own background goroutines. Immediate tasks
+	// from World.Do and Call run on the calling goroutine, the World is not saved
+	// or unloaded automatically, and time only passes on explicit
+	// World.AdvanceTick calls. World.DoAfter and entity work scheduled before an
+	// entity enters a world still use background goroutines and wall-clock
+	// delays; callers must synchronise on the returned Task. This makes
+	// Synchronous Worlds well suited to unit tests that need a World to interact
+	// with.
+	// A Synchronous World must be driven from one goroutine. Do, Call and
+	// AdvanceTick are not safe to call concurrently, including from delayed
+	// item or death callbacks.
 	Synchronous bool
 }
 
@@ -94,6 +104,9 @@ func (conf Config) New() *World {
 	}
 	if conf.ChunkUnloadInterval <= 0 {
 		conf.ChunkUnloadInterval = time.Minute * 2
+	}
+	if conf.ChunkLoadWorkers <= 0 {
+		conf.ChunkLoadWorkers = defaultChunkLoadWorkers
 	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}
@@ -124,12 +137,23 @@ func (conf Config) New() *World {
 		conf.RandSource = rand.NewPCG(t, t)
 	}
 	s := conf.Provider.Settings()
+
+	// Serialise Provider calls (made by both the owner and the chunk load workers)
+	// and, with a single worker, Generator calls, for implementations that aren't
+	// concurrency-safe.
+	conf.Provider = &lockedProvider{p: conf.Provider}
+	if conf.ChunkLoadWorkers == 1 {
+		conf.Generator = &lockedGenerator{g: conf.Generator}
+	}
 	w := &World{
 		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
+		redstone:         newRedstoneEngine(s.CurrentTick),
 		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
+		chunkRequests:    make(map[ChunkPos]*chunkRequest),
 		queueClosing:     make(chan struct{}),
+		closeStarted:     make(chan struct{}),
 		closing:          make(chan struct{}),
 		queue:            make(chan transaction, 128),
 		r:                rand.New(conf.RandSource),
@@ -138,6 +162,7 @@ func (conf Config) New() *World {
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
+	w.chunkWorkers = newChunkWorkerPool(w)
 	w.weather = weather{w: w}
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
@@ -150,8 +175,12 @@ func (conf Config) New() *World {
 		go t.tickLoop(w)
 		go w.autoSave()
 		go w.handleTransactions()
+		w.chunkWorkers.wg.Add(conf.ChunkLoadWorkers)
+		for range conf.ChunkLoadWorkers {
+			go w.chunkWorkers.handle()
+		}
 	}
 
-	<-w.Exec(t.tick)
+	<-w.exec(t.tick)
 	return w
 }

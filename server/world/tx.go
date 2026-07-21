@@ -3,27 +3,66 @@ package world
 import (
 	"iter"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/player/chat"
-	"github.com/df-mc/dragonfly/server/world/redstone"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Tx represents a synchronised transaction performed on a World. Most
-// operations on a World can only be called through a transaction. Tx is not
-// safe for use by multiple goroutines concurrently.
+// Tx is the owner transaction handle passed to world callbacks. It is the
+// only way to perform world operations and is valid only during its callback.
 type Tx struct {
-	w      *World
-	closed bool
+	w        *World
+	closed   bool
+	deferred []scheduledTransaction
+}
+
+// Context is a cancellable event scope passed to Handler events. It embeds the
+// owner transaction, so world operations are available directly on it.
+type Context struct {
+	*Tx
+	cancel bool
+}
+
+// newTx returns a fresh transaction on World w.
+func newTx(w *World) *Tx {
+	return &Tx{w: w}
+}
+
+// Event returns a fresh Context for dispatching one Handler event on this
+// transaction, so cancelling one event cannot affect another.
+func (tx *Tx) Event() *Context {
+	return &Context{Tx: tx}
+}
+
+// Cancelled returns whether the Context has been cancelled by an event handler.
+func (ctx *Context) Cancelled() bool { return ctx.cancel }
+
+// Cancel cancels the Context. It is used by event handlers to signal that the
+// default behaviour of the event should not run.
+func (ctx *Context) Cancel() { ctx.cancel = true }
+
+// Defer schedules f to run on the owner after the current callback completes
+// and before the parent Task completes. Deferred callbacks run FIFO in
+// registration order, unlike Go defer's LIFO order.
+func (tx *Tx) Defer(f func(tx *Tx)) *Task {
+	return tx.DeferErr(func(tx *Tx) error {
+		f(tx)
+		return nil
+	})
+}
+
+// DeferErr schedules f to run on the owner after the current callback
+// completes, recording any returned error on the Task.
+func (tx *Tx) DeferErr(f func(tx *Tx) error) *Task {
+	return tx.deferTask(f)
 }
 
 // Range returns the lower and upper bounds of the World that the Tx is
 // operating on.
 func (tx *Tx) Range() cube.Range {
-	return tx.w.ra
+	return tx.World().ra
 }
 
 // SetBlock writes a block to the position passed. If a chunk is not yet loaded
@@ -41,21 +80,34 @@ func (tx *Tx) Range() cube.Range {
 // needing to set a lot of blocks to the world. BuildStructure may be used
 // instead.
 func (tx *Tx) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
-	tx.World().setBlock(pos, b, opts)
+	tx.setBlock(pos, b, opts)
 }
 
 // Block reads a block from the position passed. If a chunk is not yet loaded
 // at that position, the chunk is loaded, or generated if it could not be found
 // in the world save, and the block returned.
 func (tx *Tx) Block(pos cube.Pos) Block {
-	return tx.World().block(pos)
+	return tx.block(pos)
+}
+
+// BlockLoaded returns the block at the position passed if the chunk containing it is already loaded. It returns false
+// without loading or generating the chunk when the block is unavailable.
+func (tx *Tx) BlockLoaded(pos cube.Pos) (Block, bool) {
+	return tx.World().blockLoaded(pos)
+}
+
+// BlocksWithin returns an iterator over the positions of blocks matching any of the block states passed, within a
+// horizontal square radius around pos. Chunks not in memory are read from the world save; missing chunks are
+// skipped, not generated. Only the primary block layer is searched and blocks are matched by their state alone.
+func (tx *Tx) BlocksWithin(pos cube.Pos, radius int, blocks ...Block) iter.Seq[cube.Pos] {
+	return tx.World().blocksWithin(pos, radius, blocks...)
 }
 
 // Liquid attempts to return a Liquid block at the position passed. This
 // Liquid may be in the foreground or in any other layer. If found, the Liquid
 // is returned. If not, the bool returned is false.
 func (tx *Tx) Liquid(pos cube.Pos) (Liquid, bool) {
-	return tx.World().liquid(pos)
+	return tx.liquid(pos)
 }
 
 // SetLiquid sets a Liquid at a specific position in the World. Unlike
@@ -65,7 +117,7 @@ func (tx *Tx) Liquid(pos cube.Pos) (Liquid, bool) {
 // overwritten. If nil is passed for the Liquid, any Liquid currently present
 // will be removed.
 func (tx *Tx) SetLiquid(pos cube.Pos, b Liquid) {
-	tx.World().setLiquid(pos, b)
+	tx.setLiquid(pos, b)
 }
 
 // BuildStructure builds a Structure passed at a specific position in the
@@ -76,7 +128,7 @@ func (tx *Tx) SetLiquid(pos cube.Pos, b Liquid) {
 // method operates on a per-chunk basis, setting all blocks within a single
 // chunk part of the Structure before moving on to the next chunk.
 func (tx *Tx) BuildStructure(pos cube.Pos, s Structure) {
-	tx.World().buildStructure(pos, s)
+	tx.buildStructure(pos, s)
 }
 
 // ScheduleBlockUpdate schedules a block update at the position passed for the
@@ -92,50 +144,52 @@ func (tx *Tx) ScheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
 // HighestLightBlocker gets the Y value of the highest fully light blocking
 // block at the x and z values passed in the World.
 func (tx *Tx) HighestLightBlocker(x, z int) int {
-	return tx.World().HighestLightBlocker(x, z)
+	return tx.highestLightBlocker(x, z)
 }
 
 // HighestBlock looks up the highest non-air block in the World at a specific x
 // and z. The y value of the highest block is returned, or 0 if no blocks were
 // present in the column.
 func (tx *Tx) HighestBlock(x, z int) int {
-	return tx.World().highestBlock(x, z)
+	return tx.highestBlock(x, z)
 }
 
 // Light returns the light level at the position passed. This is the highest of
 // the sky- and block light. The light value returned is a value in the range
 // 0-15, where 0 means there is no light present, whereas 15 means the block is
-// fully lit.
+// fully lit. Light does not load chunks: 0 is returned for positions in chunks
+// that are not currently loaded.
 func (tx *Tx) Light(pos cube.Pos) uint8 {
-	return tx.World().light(pos)
+	return tx.light(pos)
 }
 
 // SkyLight returns the skylight level at the position passed. This light level
 // is not influenced by blocks that emit light, such as torches. The light
 // value, similarly to Light, is a value in the range 0-15, where 0 means no
-// light is present.
+// light is present. Unlike Light, SkyLight loads or generates the chunk at the
+// position if it is not currently loaded.
 func (tx *Tx) SkyLight(pos cube.Pos) uint8 {
-	return tx.World().skyLight(pos)
+	return tx.skyLight(pos)
 }
 
 // SetBiome sets the Biome at the position passed. If a chunk is not yet loaded
 // at that position, the chunk is first loaded or generated if it could not be
 // found in the world save.
 func (tx *Tx) SetBiome(pos cube.Pos, b Biome) {
-	tx.World().setBiome(pos, b)
+	tx.setBiome(pos, b)
 }
 
 // Biome reads the Biome at the position passed. If a chunk is not yet loaded
 // at that position, the chunk is loaded, or generated if it could not be found
 // in the world save, and the Biome returned.
 func (tx *Tx) Biome(pos cube.Pos) Biome {
-	return tx.World().biome(pos)
+	return tx.biome(pos)
 }
 
 // Temperature returns the temperature in the World at a specific position.
 // Higher altitudes and different biomes influence the temperature returned.
 func (tx *Tx) Temperature(pos cube.Pos) float64 {
-	return tx.World().temperature(pos)
+	return tx.temperature(pos)
 }
 
 // RainingAt checks if it is raining at a specific cube.Pos in the World. True
@@ -143,21 +197,21 @@ func (tx *Tx) Temperature(pos cube.Pos) float64 {
 // for it not to be snow and if the block is above the top-most obstructing
 // block.
 func (tx *Tx) RainingAt(pos cube.Pos) bool {
-	return tx.World().rainingAt(pos)
+	return tx.rainingAt(pos)
 }
 
 // SnowingAt checks if it is snowing at a specific cube.Pos in the World. True
 // is returned if the temperature in the Biome at that position is sufficiently
 // low, if it is raining and if it's above the top-most obstructing block.
 func (tx *Tx) SnowingAt(pos cube.Pos) bool {
-	return tx.World().snowingAt(pos)
+	return tx.snowingAt(pos)
 }
 
 // ThunderingAt checks if it is thundering at a specific cube.Pos in the World.
 // True is returned if RainingAt returns true and if it is thundering in the
 // world.
 func (tx *Tx) ThunderingAt(pos cube.Pos) bool {
-	return tx.World().thunderingAt(pos)
+	return tx.thunderingAt(pos)
 }
 
 // Raining checks if it is raining anywhere in the World.
@@ -197,6 +251,13 @@ func (tx *Tx) PlaySound(pos mgl64.Vec3, s Sound) {
 // AddEntity returns the Entity created by the EntityHandle.
 func (tx *Tx) AddEntity(e *EntityHandle) Entity {
 	return tx.World().addEntity(tx, e)
+}
+
+// AddEntityAt adds an EntityHandle to a World at the position passed. The Entity will be visible to all viewers of
+// the World that have the chunk at the position passed. AddEntityAt panics if the EntityHandle is already in a world.
+// AddEntityAt returns the Entity created by the EntityHandle.
+func (tx *Tx) AddEntityAt(e *EntityHandle, pos mgl64.Vec3) Entity {
+	return tx.World().addEntityAt(tx, e, pos)
 }
 
 // RemoveEntity removes an Entity from the World that is currently present in
@@ -278,46 +339,19 @@ func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
 	}
 }
 
-// RedstonePower returns the redstone power emitted by the block at pos toward a neighbouring receiver.
-// The face argument is relative to the receiving block.
-func (tx *Tx) RedstonePower(pos cube.Pos, face cube.Face, accountForDust bool) (power int) {
-	b := tx.Block(pos)
-	if c, ok := b.(Conductor); ok {
-		return c.WeakPower(pos, face, tx, accountForDust)
+func (tx *Tx) deferTask(f func(tx *Tx) error) *Task {
+	if tx.closed {
+		panic("world.Tx: use of transaction after transaction finishes is not permitted")
 	}
-	// The wiki states that in the future some blocks may be transparent but still relay redstone.
-	// If a block implements RedstonePowerRelayer, it should always be prioritised over lightDiffuser.
-	if r, ok := b.(RedstonePowerRelayer); ok {
-		if !r.RelaysRedstonePowerThrough() {
-			return 0
-		}
-	} else if d, ok := b.(lightDiffuser); ok && d.LightDiffusionLevel() != 15 {
-		return 0
-	}
-	for _, f := range cube.Faces() {
-		if !b.Model().FaceSolid(pos, f, tx) {
-			return 0
-		}
-	}
-	for _, f := range cube.Faces() {
-		c, ok := tx.Block(pos.Side(f)).(Conductor)
-		if !ok {
-			continue
-		}
-		sourcePos := pos.Side(f)
-		power = max(power, c.StrongPower(sourcePos, f, tx, accountForDust))
-		if !accountForDust {
-			continue
-		}
-		if weakBlockPowerer, ok := c.(WeakBlockPowerer); ok && weakBlockPowerer.WeaklyPowersBlocks() {
-			power = max(power, c.WeakPower(sourcePos, f, tx, accountForDust))
-		}
-	}
-	return power
+	task := newTask()
+	tx.deferred = append(tx.deferred, scheduledTransaction{task: task, f: f})
+	return task
 }
 
-// World returns the World of the Tx. It panics if the transaction was already
-// marked complete.
+// World returns the Tx's World. It panics once the callback has
+// completed. Treat the result as the off-owner handle: blocking calls like
+// Save and Close deadlock from inside the callback, so do world operations
+// through the Tx instead.
 func (tx *Tx) World() *World {
 	if tx.closed {
 		panic("world.Tx: use of transaction after transaction finishes is not permitted")
@@ -333,18 +367,23 @@ func (tx *Tx) CurrentTick() int64 {
 	return w.set.CurrentTick
 }
 
-// Redstone returns the transient redstone runtime state owned by the transaction's world.
-func (tx *Tx) Redstone() *redstone.State {
-	return &tx.World().redstone
-}
-
 // close finishes the Tx, causing any following call on the Tx to panic.
 func (tx *Tx) close() {
 	tx.closed = true
 }
 
+func (tx *Tx) runDeferred() {
+	for len(tx.deferred) > 0 {
+		deferred := tx.deferred
+		tx.deferred = nil
+		for _, st := range deferred {
+			st.Run(tx.w)
+		}
+	}
+}
+
 // normalTransaction is added to the transaction queue for transactions created
-// using World.Exec().
+// using World.exec().
 type normalTransaction struct {
 	c chan struct{}
 	f func(tx *Tx)
@@ -353,30 +392,32 @@ type normalTransaction struct {
 // Run creates a *Tx, calls ntx.f, closes the transaction and finally closes
 // ntx.c.
 func (ntx normalTransaction) Run(w *World) {
-	tx := &Tx{w: w}
+	tx := newTx(w)
 	ntx.f(tx)
 	tx.close()
+	tx.runDeferred()
 	close(ntx.c)
 }
 
-// weakTransaction is a transaction that may be cancelled by setting its invalid
-// bool to false before the transaction is run.
+// weakTransaction is a transaction that may be cancelled by its validity
+// predicate before the transaction is run.
 type weakTransaction struct {
-	c       chan bool
-	f       func(tx *Tx)
-	invalid *atomic.Bool
-	cond    *sync.Cond
+	c     chan bool
+	f     func(tx *Tx)
+	valid func() bool
+	cond  *sync.Cond
 }
 
-// Run runs the transaction, first checking if its invalid bool is false and
-// creating a *Tx if so. Afterwards, a bool indicating if the transaction was
-// run is added to wtx.c. Finally, wtx.cond.Broadcast() is called.
+// Run runs the transaction, first checking if it is still valid and creating a
+// *Tx if so. Afterwards, a bool indicating if the transaction was run is added
+// to wtx.c. Finally, wtx.cond.Broadcast() is called.
 func (wtx weakTransaction) Run(w *World) {
-	valid := !wtx.invalid.Load()
+	valid := wtx.valid == nil || wtx.valid()
 	if valid {
-		tx := &Tx{w: w}
+		tx := newTx(w)
 		wtx.f(tx)
 		tx.close()
+		tx.runDeferred()
 	}
 	// We have to acquire a lock on wtx.cond.L here to make sure cond.Wait()
 	// has been called before we call cond.Broadcast(). If not, we might
@@ -385,5 +426,14 @@ func (wtx weakTransaction) Run(w *World) {
 	defer wtx.cond.L.Unlock()
 
 	wtx.c <- valid
+	wtx.cond.Broadcast()
+}
+
+// fail delivers false to a weak transaction that will never run, using the
+// same condition handshake as Run so a waiter in cond.Wait is woken.
+func (wtx weakTransaction) fail() {
+	wtx.cond.L.Lock()
+	defer wtx.cond.L.Unlock()
+	wtx.c <- false
 	wtx.cond.Broadcast()
 }

@@ -24,6 +24,9 @@ type Viewer interface {
 	// ViewEntityMovement views the movement of an Entity. The Entity is moved with a delta position, yaw and
 	// pitch, which, when applied to the respective values of the Entity, will result in the final values.
 	ViewEntityMovement(e Entity, pos mgl64.Vec3, rot cube.Rotation, onGround bool)
+	// ViewEntityDisplacement views server-authoritative movement of an Entity to an absolute position. Unlike regular
+	// movement, displacement must also be sent to the controlling session.
+	ViewEntityDisplacement(e Entity, pos mgl64.Vec3, rot cube.Rotation, onGround bool)
 	// ViewEntityVelocity views the velocity of an Entity. It is called right before a call to
 	// ViewEntityMovement so that the Viewer may interpolate the movement itself.
 	ViewEntityVelocity(e Entity, vel mgl64.Vec3)
@@ -88,6 +91,7 @@ func (NopViewer) ViewEntity(Entity)                                             
 func (NopViewer) HideEntity(Entity)                                                          {}
 func (NopViewer) ViewEntityGameMode(Entity)                                                  {}
 func (NopViewer) ViewEntityMovement(Entity, mgl64.Vec3, cube.Rotation, bool)                 {}
+func (NopViewer) ViewEntityDisplacement(Entity, mgl64.Vec3, cube.Rotation, bool)             {}
 func (NopViewer) ViewEntityVelocity(Entity, mgl64.Vec3)                                      {}
 func (NopViewer) ViewEntityTeleport(Entity, mgl64.Vec3)                                      {}
 func (NopViewer) ViewChunk(ChunkPos, Dimension, map[cube.Pos]Block, *chunk.Chunk)            {}

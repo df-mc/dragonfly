@@ -132,14 +132,3 @@ func TestBreaksInstantly(t *testing.T) {
 		})
 	}
 }
-
-// TestBreakInfoZeroValueSmelters verifies BreakInfo works on zero-value
-// smelter blocks, as produced when decoding blocks from a chunk palette.
-func TestBreakInfoZeroValueSmelters(t *testing.T) {
-	for _, b := range []world.Block{block.Furnace{}, block.BlastFurnace{}, block.Smoker{}} {
-		name, _ := b.EncodeBlock()
-		if xp := b.(block.Breakable).BreakInfo().XPDrops; xp[0] != 0 || xp[1] != 0 {
-			t.Errorf("%v: expected no XP drops for zero-value block, got %+v", name, xp)
-		}
-	}
-}

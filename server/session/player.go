@@ -23,6 +23,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/hud"
+	"github.com/df-mc/dragonfly/server/player/input"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -279,6 +280,10 @@ func (s *Session) invByID(id int32, tx *world.Tx) (*inventory.Inventory, bool) {
 		switch id {
 		case protocol.ContainerLevelEntity:
 			return s.openedWindow.Load(), true
+		case protocol.ContainerShulkerBox:
+			if _, shulkerbox := tx.Block(*s.openedPos.Load()).(block.ShulkerBox); shulkerbox {
+				return s.openedWindow.Load(), true
+			}
 		case protocol.ContainerBarrel:
 			if _, barrel := tx.Block(*s.openedPos.Load()).(block.Barrel); barrel {
 				return s.openedWindow.Load(), true
@@ -903,6 +908,45 @@ func (s *Session) SendDebugShapes(dim world.Dimension) {
 	s.debugShapesMu.Unlock()
 
 	s.writePacket(&packet.PrimitiveShapes{Shapes: shapes})
+}
+
+// LockInput applies an input lock to the player, disabling the specified input. If the lock is already
+// applied, this is a no-op.
+func (s *Session) LockInput(l input.Lock) {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks |= l.Uint32()
+}
+
+// UnlockInput removes an input lock from the player, re-enabling the specified input. If the lock is not
+// currently applied, this is a no-op.
+func (s *Session) UnlockInput(l input.Lock) {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks &^= l.Uint32()
+}
+
+// ClearInputLocks removes all input locks from the player, re-enabling all inputs.
+func (s *Session) ClearInputLocks() {
+	s.inputLocksMu.Lock()
+	defer s.inputLocksMu.Unlock()
+	s.inputLocks = 0
+}
+
+// InputLocked checks if a specific input lock is currently applied to the player.
+func (s *Session) InputLocked(l input.Lock) bool {
+	s.inputLocksMu.RLock()
+	defer s.inputLocksMu.RUnlock()
+	return s.inputLocks&l.Uint32() != 0
+}
+
+// SendInputLocks sends the current input lock state to the client.
+func (s *Session) SendInputLocks() {
+	s.inputLocksMu.RLock()
+	defer s.inputLocksMu.RUnlock()
+	s.writePacket(&packet.UpdateClientInputLocks{
+		Locks: s.inputLocks,
+	})
 }
 
 // queueDebugShapeUpdate queues a debug shape mutation to be applied the next time debug shapes are sent.
