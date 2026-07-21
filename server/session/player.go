@@ -223,6 +223,13 @@ func (s *Session) sendArmourTrimData() {
 	s.writePacket(&packet.TrimData{Patterns: trimPatterns, Materials: trimMaterials})
 }
 
+// ResyncInventory resends the main and off-hand inventories to the client. It reverts a client-side
+// prediction the server did not carry out, such as an arrow a released bow did not consume.
+func (s *Session) ResyncInventory() {
+	s.sendInv(s.inv, protocol.WindowIDInventory)
+	s.sendInv(s.offHand, protocol.WindowIDOffHand)
+}
+
 // sendInv sends the inventory passed to the client with the window ID.
 func (s *Session) sendInv(inv *inventory.Inventory, windowID uint32) {
 	pk := &packet.InventoryContent{
