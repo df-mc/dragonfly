@@ -5,14 +5,17 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// number represents a floating-point number supported by a bounding box.
 type number interface {
 	~float32 | ~float64
 }
 
+// vec3 represents a three-dimensional vector of floating-point numbers.
 type vec3[T number] interface {
 	~[3]T
 }
 
+// boundingBox represents an axis-aligned bounding box backed by a vector type.
 type boundingBox[T number, V vec3[T]] struct {
 	min, max V
 }
