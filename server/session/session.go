@@ -100,7 +100,6 @@ type Session struct {
 	debugShapeUpdates []debugShapeUpdate
 
 	viewLayer *world.ViewLayer
-	spawned   atomic.Bool
 
 	closeBackground chan struct{}
 
@@ -169,18 +168,10 @@ type Config struct {
 }
 
 func (conf Config) New(conn Conn) *Session {
-	return conf.NewWithChunkRadius(conn, conn.ChunkRadius())
-}
-
-// NewWithChunkRadius creates a session with an explicit initial chunk radius. It is used when the connection's
-// initial RequestChunkRadius may still be in flight.
-func (conf Config) NewWithChunkRadius(conn Conn, radius int) *Session {
-	if radius > conf.MaxChunkRadius {
-		radius = conf.MaxChunkRadius
-		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(radius)})
-	}
-	if radius < 1 {
-		radius = 1
+	r := conn.ChunkRadius()
+	if r > conf.MaxChunkRadius {
+		r = conf.MaxChunkRadius
+		_ = conn.WritePacket(&packet.ChunkRadiusUpdated{ChunkRadius: int32(r)})
 	}
 	if conf.Log == nil {
 		conf.Log = slog.Default()
@@ -197,7 +188,7 @@ func (conf Config) NewWithChunkRadius(conn Conn, radius int) *Session {
 		entities:               map[uint64]*world.EntityHandle{},
 		hiddenEntities:         map[uuid.UUID]struct{}{},
 		blobs:                  map[uint64][]byte{},
-		chunkRadius:            int32(radius),
+		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
 		emoteChatMuted:         conf.EmoteChatMuted,
 		conn:                   conn,
@@ -227,7 +218,8 @@ func (conf Config) NewWithChunkRadius(conn Conn, radius int) *Session {
 
 	s.registerHandlers()
 	s.sendBiomes()
-	s.sendCreativeContent()
+	groups, items := creativeContent(s.br)
+	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
 	s.sendArmourTrimData()
 	s.SendSpeed(0.1)
@@ -244,11 +236,6 @@ func (conf Config) NewWithChunkRadius(conn Conn, radius int) *Session {
 	return s
 }
 
-func (s *Session) sendCreativeContent() {
-	groups, items := creativeContent(s.br)
-	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
-}
-
 // SetHandle sets the world.EntityHandle of the Session and attaches a skin to
 // other players on join.
 func (s *Session) SetHandle(handle *world.EntityHandle, skin skin.Skin) {
@@ -261,17 +248,14 @@ func (s *Session) SetHandle(handle *world.EntityHandle, skin skin.Skin) {
 }
 
 // Spawn makes the Controllable passed spawn in the world.World.
+// The function passed will be called when the session stops running.
 func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.SendHealth(c.Health(), c.MaxHealth(), c.Absorption())
 	s.SendExperience(c.ExperienceLevel(), c.ExperienceProgress())
 	s.SendFood(c.Food(), 0, 0)
 
 	pos := c.Position()
-	if s.chunkLoader == nil {
-		s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
-	} else {
-		s.chunkLoader.ChangeRadius(tx, int(s.chunkRadius))
-	}
+	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), s)
 	s.chunkLoader.Move(tx, pos)
 	s.writePacket(&packet.NetworkChunkPublisherUpdate{
 		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
@@ -291,7 +275,6 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
 
-	s.spawned.Store(true)
 	chat.Global.Subscribe(c)
 	if !s.conf.JoinMessage.Zero() {
 		chat.Global.Writet(s.conf.JoinMessage, s.conn.IdentityData().DisplayName)
@@ -299,31 +282,6 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 
 	go s.background()
 	go s.handlePackets()
-}
-
-// PrepareSpawn sends enough terrain for a client to finish its loading screen without publishing a player entity or
-// starting gameplay packet handling. Spawn reuses the loader after the connection acknowledges initialisation.
-func (s *Session) PrepareSpawn(pos mgl64.Vec3, tx *world.Tx) {
-	s.chunkLoader = world.NewLoader(int(s.chunkRadius), tx.World(), preparedSpawnViewer{s: s})
-	s.chunkLoader.Move(tx, pos)
-	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
-		Radius:   uint32(s.chunkRadius) << 4,
-	})
-	s.chunkLoader.Load(tx, 1)
-}
-
-// ClosePreparedSpawn releases a loader created by PrepareSpawn and closes the connection before a player entity was
-// published.
-func (s *Session) ClosePreparedSpawn(tx *world.Tx) {
-	if s.viewLayer != nil {
-		_ = s.viewLayer.Close()
-	}
-	if s.chunkLoader != nil {
-		s.chunkLoader.Close(tx)
-	}
-	close(s.closeBackground)
-	_ = s.conn.Close()
 }
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
@@ -352,12 +310,10 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	s.chunkLoader.Close(tx)
 
-	if s.spawned.Load() {
-		if !s.conf.QuitMessage.Zero() {
-			chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
-		}
-		chat.Global.Unsubscribe(c)
+	if !s.conf.QuitMessage.Zero() {
+		chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
 	}
+	chat.Global.Unsubscribe(c)
 
 	// Note: Be aware of where RemoveEntity is called. This must not be done too
 	// early.
@@ -552,33 +508,6 @@ func (s *Session) ChangingDimension() bool {
 // ChunkRadius returns the chunk radius of the session.
 func (s *Session) ChunkRadius() int32 {
 	return s.chunkRadius
-}
-
-// SyncChunkRadius applies the chunk radius consumed by the connection during the initial spawn handshake. This is
-// needed by staged spawns, whose session starts before RequestChunkRadius is handled by the connection.
-func (s *Session) SyncChunkRadius(tx *world.Tx, pos mgl64.Vec3) {
-	radius := int32(s.conn.ChunkRadius())
-	if radius <= 0 {
-		radius = s.chunkRadius
-	}
-	if radius > s.maxChunkRadius {
-		radius = s.maxChunkRadius
-	}
-	if radius != s.chunkRadius {
-		s.chunkRadius = radius
-	}
-	if s.chunkLoader != nil {
-		s.chunkLoader.Close(tx)
-		s.chunkLoader = nil
-	}
-	s.writePacket(&packet.ChunkRadiusUpdated{ChunkRadius: radius})
-	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
-		Radius:   uint32(radius) << 4,
-	})
-	// gophertunnel completes the initial radius exchange with an empty CreativeContent packet. Re-publish the
-	// session's actual creative inventory after that exchange so the empty packet cannot replace it.
-	s.sendCreativeContent()
 }
 
 // handlePacket handles an incoming packet, processing it accordingly. If the packet had invalid data or was

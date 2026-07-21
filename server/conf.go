@@ -185,7 +185,6 @@ func (conf Config) New() *Server {
 		conf:     conf,
 		incoming: make(chan incoming),
 		p:        make(map[uuid.UUID]*onlinePlayer),
-		pending:  make(map[uuid.UUID]struct{}),
 		world:    &world.World{}, nether: &world.World{}, end: &world.World{},
 	}
 	for _, lf := range conf.Listeners {

@@ -16,21 +16,8 @@ import (
 // but also solves issues with block entities such as item frames and lecterns as of v1.19.10.
 const subChunkRequests = true
 
-type preparedSpawnViewer struct {
-	world.NopViewer
-	s *Session
-}
-
-func (v preparedSpawnViewer) ViewChunk(pos world.ChunkPos, dim world.Dimension, blockEntities map[cube.Pos]world.Block, c *chunk.Chunk) {
-	v.s.sendNetworkChunk(pos, dim, c, blockEntities)
-}
-
 // ViewChunk ...
 func (s *Session) ViewChunk(pos world.ChunkPos, dim world.Dimension, blockEntities map[cube.Pos]world.Block, c *chunk.Chunk) {
-	if !s.spawned.Load() {
-		s.sendNetworkChunk(pos, dim, c, blockEntities)
-		return
-	}
 	if !s.conn.ClientCacheEnabled() {
 		s.sendNetworkChunk(pos, dim, c, blockEntities)
 		return
@@ -151,7 +138,7 @@ func (s *Session) dimensionID(dim world.Dimension) int32 {
 // sendBlobHashes sends chunk blob hashes of the data of the chunk and stores the data in a map of blobs. Only
 // data that the client doesn't yet have will be sent over the network.
 func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	if subChunkRequests && s.spawned.Load() {
+	if subChunkRequests {
 		biomes := chunk.EncodeBiomes(c, chunk.NetworkEncoding)
 		if hash := xxhash.Sum64(biomes); s.trackBlob(hash, biomes) {
 			s.writePacket(&packet.LevelChunk{
@@ -214,7 +201,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chu
 
 // sendNetworkChunk sends a network encoded chunk to the client.
 func (s *Session) sendNetworkChunk(pos world.ChunkPos, dim world.Dimension, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
-	if subChunkRequests && s.spawned.Load() {
+	if subChunkRequests {
 		s.writePacket(&packet.LevelChunk{
 			Dimension:       s.dimensionID(dim),
 			SubChunkCount:   protocol.SubChunkRequestModeLimited,

@@ -57,8 +57,6 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they
 	// leave, they are removed from the map.
 	p map[uuid.UUID]*onlinePlayer
-	// pending holds UUIDs reserved by connections that are still completing their spawn handshake.
-	pending map[uuid.UUID]struct{}
 	// pwg is a sync.WaitGroup used to wait for all players to be disconnected
 	// before server shutdown, so that their data is saved properly.
 	pwg sync.WaitGroup
@@ -73,8 +71,6 @@ type incoming struct {
 	s    *session.Session
 	p    *onlinePlayer
 	w    *world.World
-	// published is closed after Accept has added the player to the world and server player map.
-	published chan struct{}
 }
 
 // onlinePlayer holds the entity handle, XUID and name of a player.
@@ -137,16 +133,14 @@ func (srv *Server) Accept() iter.Seq[*player.Player] {
 			if !ok {
 				return
 			}
+			srv.pmu.Lock()
+			srv.p[inc.p.handle.UUID()] = inc.p
+			srv.pmu.Unlock()
+
 			ret := false
 			<-inc.w.Exec(func(tx *world.Tx) {
-				inc.s.SetHandle(inc.p.handle, inc.conf.Skin)
 				p := tx.AddEntity(inc.p.handle).(*player.Player)
-				srv.pmu.Lock()
-				srv.p[inc.p.handle.UUID()] = inc.p
-				delete(srv.pending, inc.p.handle.UUID())
-				srv.pmu.Unlock()
 				inc.s.Spawn(p, tx)
-				close(inc.published)
 				ret = !yield(p)
 			})
 			if ret {
@@ -303,16 +297,6 @@ func (srv *Server) Close() error {
 func (srv *Server) close() {
 	srv.conf.Log.Info("Server closing...")
 
-	srv.conf.Log.Debug("Closing listeners...")
-	for _, l := range srv.listeners {
-		if err := l.Close(); err != nil {
-			srv.conf.Log.Error("Close listener: " + err.Error())
-		}
-	}
-	// Listener goroutines cancel in-progress spawn handshakes and wait for their provisional world loaders to be
-	// released. Worlds must remain open until that cleanup has completed.
-	srv.wg.Wait()
-
 	srv.conf.Log.Debug("Disconnecting players...")
 	for p := range srv.Players(nil) {
 		p.Disconnect(chat.MessageServerDisconnect.Resolve(p.Locale()))
@@ -328,6 +312,13 @@ func (srv *Server) close() {
 	for _, w := range []*world.World{srv.end, srv.nether, srv.world} {
 		if err := w.Close(); err != nil {
 			srv.conf.Log.Error(fmt.Sprintf("Close dimension %v: ", w.Dimension()) + err.Error())
+		}
+	}
+
+	srv.conf.Log.Debug("Closing listeners...")
+	for _, l := range srv.listeners {
+		if err := l.Close(); err != nil {
+			srv.conf.Log.Error("Close listener: " + err.Error())
 		}
 	}
 }
@@ -438,18 +429,6 @@ func (srv *Server) wait() {
 // channel.
 func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) {
 	id := uuid.MustParse(conn.IdentityData().Identity)
-	if !srv.reservePlayer(id) {
-		_ = l.Disconnect(conn, "Already logged in.")
-		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
-		return
-	}
-	reserved := true
-	defer func() {
-		if reserved {
-			srv.releasePlayer(id)
-		}
-	}()
-
 	data := srv.defaultGameData()
 
 	d, w, err := srv.conf.PlayerProvider.Load(id, srv.dimension)
@@ -466,73 +445,19 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 
 	data.EmoteChatMuted = srv.conf.MuteEmoteChat
 
-	var inc incoming
-	if mcConn, ok := conn.(*minecraft.Conn); ok {
-		err = mcConn.SendStartGame(data)
-		if err == nil {
-			err = conn.WritePacket(&packet.ItemRegistry{Items: srv.customItems})
-			if err == nil {
-				s := srv.createSession(conn, w, 1)
-				<-w.Exec(func(tx *world.Tx) {
-					s.PrepareSpawn(d.Position, tx)
-				})
-				err = mcConn.DoSpawnContext(ctx)
-				if err != nil {
-					<-w.Exec(func(tx *world.Tx) {
-						s.ClosePreparedSpawn(tx)
-					})
-				} else {
-					<-w.Exec(func(tx *world.Tx) {
-						s.SyncChunkRadius(tx, d.Position)
-					})
-					inc = srv.createPlayer(id, conn, d, w, s)
-				}
-			}
-		}
-	} else {
-		err = conn.StartGameContext(ctx, data)
-		if err == nil {
-			err = conn.WritePacket(&packet.ItemRegistry{Items: srv.customItems})
-			if err == nil {
-				inc = srv.createPlayer(id, conn, d, w, srv.createSession(conn, w, conn.ChunkRadius()))
-			}
-		}
-	}
-	if err != nil {
+	if err := conn.StartGameContext(ctx, data); err != nil {
 		_ = l.Disconnect(conn, "Connection timeout.")
 
 		srv.conf.Log.Debug("spawn failed: "+err.Error(), "raddr", conn.RemoteAddr())
 		return
 	}
-	select {
-	case srv.incoming <- inc:
-		<-inc.published
-		reserved = false
-	case <-ctx.Done():
-		<-inc.w.Exec(func(tx *world.Tx) {
-			inc.s.ClosePreparedSpawn(tx)
-		})
-		srv.pwg.Done()
+	if _, ok := srv.Player(id); ok {
+		_ = l.Disconnect(conn, "Already logged in.")
+		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
+		return
 	}
-}
-
-func (srv *Server) reservePlayer(id uuid.UUID) bool {
-	srv.pmu.Lock()
-	defer srv.pmu.Unlock()
-	if _, ok := srv.p[id]; ok {
-		return false
-	}
-	if _, ok := srv.pending[id]; ok {
-		return false
-	}
-	srv.pending[id] = struct{}{}
-	return true
-}
-
-func (srv *Server) releasePlayer(id uuid.UUID) {
-	srv.pmu.Lock()
-	delete(srv.pending, id)
-	srv.pmu.Unlock()
+	_ = conn.WritePacket(&packet.ItemRegistry{Items: srv.customItems})
+	srv.incoming <- srv.createPlayer(id, conn, d, w)
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It
@@ -587,13 +512,11 @@ func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
 	srv.pmu.Lock()
 	_, ok := srv.p[c.UUID()]
 	delete(srv.p, c.UUID())
-	delete(srv.pending, c.UUID())
 	srv.pmu.Unlock()
 	if !ok {
 		// When a player disconnects immediately after a session is started, it
 		// might not be added to the players map yet. This is expected, but we
 		// need to be careful not to crash when this happens.
-		srv.pwg.Done()
 		return
 	}
 
@@ -605,8 +528,10 @@ func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
 
 // createPlayer creates a new player instance using the UUID and connection
 // passed.
-func (srv *Server) createSession(conn session.Conn, w *world.World, chunkRadius int) *session.Session {
-	return session.Config{
+func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Config, w *world.World) incoming {
+	srv.pwg.Add(1)
+
+	s := session.Config{
 		Log:            srv.conf.Log,
 		MaxChunkRadius: srv.conf.MaxChunkRadius,
 		EmoteChatMuted: srv.conf.MuteEmoteChat,
@@ -614,11 +539,7 @@ func (srv *Server) createSession(conn session.Conn, w *world.World, chunkRadius 
 		QuitMessage:    srv.conf.QuitMessage,
 		HandleStop:     srv.handleSessionClose,
 		BlockRegistry:  w.BlockRegistry(),
-	}.NewWithChunkRadius(conn, chunkRadius)
-}
-
-func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Config, w *world.World, s *session.Session) incoming {
-	srv.pwg.Add(1)
+	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName
 	conf.XUID = conn.IdentityData().XUID
@@ -628,11 +549,8 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	conf.Session = s
 
 	handle := world.EntitySpawnOpts{Position: conf.Position, ID: id}.New(player.Type, conf)
-	return incoming{
-		s: s, w: w, conf: conf,
-		p:         &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle},
-		published: make(chan struct{}),
-	}
+	s.SetHandle(handle, conf.Skin)
+	return incoming{s: s, w: w, conf: conf, p: &onlinePlayer{name: conf.Name, xuid: conf.XUID, handle: handle}}
 }
 
 // createWorld loads a world with a specific dimension using the provider set
