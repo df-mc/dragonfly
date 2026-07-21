@@ -14,7 +14,7 @@ func Components(identifier string, b world.CustomBlock, blockID int32) map[strin
 	builder := NewComponentBuilder(identifier, components, blockID)
 	if emitter, ok := b.(block.LightEmitter); ok {
 		builder.AddComponent("minecraft:light_emission", map[string]any{
-			"emission": emitter.LightEmissionLevel(),
+			"emission": int32(emitter.LightEmissionLevel()),
 		})
 	}
 	if diffuser, ok := b.(block.LightDiffuser); ok {
