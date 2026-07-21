@@ -66,8 +66,11 @@ func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
 }
 
 func (l *sessionList) sendSessionTo(s, to *Session) {
-	runtimeID := uint64(selfEntityRuntimeID)
+	s.entityMutex.RLock()
+	name := s.name
+	s.entityMutex.RUnlock()
 
+	runtimeID := uint64(selfEntityRuntimeID)
 	to.entityMutex.Lock()
 	if s != to {
 		to.currentEntityRuntimeID += 1
@@ -79,14 +82,45 @@ func (l *sessionList) sendSessionTo(s, to *Session) {
 
 	to.writePacket(&packet.PlayerList{
 		ActionType: packet.PlayerListActionAdd,
-		Entries: []protocol.PlayerListEntry{{
-			UUID:           s.ent.UUID(),
-			EntityUniqueID: int64(runtimeID),
-			Username:       s.conn.IdentityData().DisplayName,
-			XUID:           s.conn.IdentityData().XUID,
-			Skin:           skinToProtocol(s.joinSkin),
-		}},
+		Entries:    []protocol.PlayerListEntry{playerListEntry(s, runtimeID, name, s.joinSkin)},
 	})
+}
+
+// UpdateName changes the player list name of a session and resends its entry to
+// every session so the new name is shown on the pause screen. The current skin
+// is resent with it to avoid reverting a skin changed during the session.
+func (l *sessionList) UpdateName(s *Session, name string, sk skin.Skin) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	s.entityMutex.Lock()
+	s.name = name
+	s.entityMutex.Unlock()
+
+	for _, to := range l.s {
+		to.entityMutex.RLock()
+		runtimeID, ok := to.entityRuntimeIDs[s.ent]
+		to.entityMutex.RUnlock()
+		if !ok {
+			continue
+		}
+		to.writePacket(&packet.PlayerList{
+			ActionType: packet.PlayerListActionAdd,
+			Entries:    []protocol.PlayerListEntry{playerListEntry(s, runtimeID, name, sk)},
+		})
+	}
+}
+
+// playerListEntry builds the player list entry of a session, with the name and
+// skin passed, as shown to a recipient that holds the runtime ID passed.
+func playerListEntry(s *Session, runtimeID uint64, name string, sk skin.Skin) protocol.PlayerListEntry {
+	return protocol.PlayerListEntry{
+		UUID:           s.ent.UUID(),
+		EntityUniqueID: int64(runtimeID),
+		Username:       name,
+		XUID:           s.conn.IdentityData().XUID,
+		Skin:           skinToProtocol(sk),
+	}
 }
 
 func (l *sessionList) unsendSessionFrom(s, from *Session) {

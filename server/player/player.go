@@ -443,6 +443,24 @@ func (p *Player) NameTag() string {
 	return p.nameTag
 }
 
+// SetPlayerListName changes the name shown for the player in the player list on the pause screen. Unlike
+// SetNameTag, it does not change the name tag displayed over the player in-game.
+func (p *Player) SetPlayerListName(name string) {
+	if p.session() == session.Nop {
+		return
+	}
+	p.session().UpdatePlayerListName(name, p.Skin())
+}
+
+// PlayerListName returns the name shown for the player in the player list on the pause screen, as changed
+// using SetPlayerListName. It defaults to the player's name.
+func (p *Player) PlayerListName() string {
+	if p.session() == session.Nop {
+		return p.Name()
+	}
+	return p.session().PlayerListName()
+}
+
 // SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the player's
 // name tag.
 func (p *Player) SetScoreTag(a ...any) {

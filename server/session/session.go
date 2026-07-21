@@ -69,6 +69,10 @@ type Session struct {
 	// spawn for the player list, but otherwise updated immediately when the
 	// player is viewed.
 	joinSkin skin.Skin
+	// name is the name shown for the session in the player list on the pause
+	// screen. It defaults to the connection's display name. Guarded by
+	// entityMutex.
+	name string
 
 	breakingPos cube.Pos
 
@@ -250,7 +254,23 @@ func (s *Session) SetHandle(handle *world.EntityHandle, skin skin.Skin) {
 	s.entities[selfEntityRuntimeID] = handle
 
 	s.joinSkin = skin
+	s.name = s.conn.IdentityData().DisplayName
 	sessions.Add(s)
+}
+
+// PlayerListName returns the name shown for the Session in the player list on
+// the pause screen, which defaults to the connection's display name.
+func (s *Session) PlayerListName() string {
+	s.entityMutex.RLock()
+	defer s.entityMutex.RUnlock()
+	return s.name
+}
+
+// UpdatePlayerListName changes the name shown for the Session in the player
+// list on the pause screen and resends its entry, with the skin passed, to
+// every session.
+func (s *Session) UpdatePlayerListName(name string, sk skin.Skin) {
+	sessions.UpdateName(s, name, sk)
 }
 
 // Spawn makes the Controllable passed spawn in the world.World.
