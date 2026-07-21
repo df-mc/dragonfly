@@ -194,5 +194,22 @@ func (p pressurePlate) String() string {
 
 // PressurePlateTypes ...
 func PressurePlateTypes() []PressurePlateType {
-	return []PressurePlateType{StonePressurePlate(), PolishedBlackstonePressurePlate(), OakPressurePlate(), SprucePressurePlate(), BirchPressurePlate(), JunglePressurePlate(), AcaciaPressurePlate(), DarkOakPressurePlate(), MangrovePressurePlate(), CherryPressurePlate(), BambooPressurePlate(), CrimsonPressurePlate(), WarpedPressurePlate(), PaleOakPressurePlate(), LightWeightedPressurePlate(), HeavyWeightedPressurePlate()}
+	return []PressurePlateType{
+		StonePressurePlate(),
+		PolishedBlackstonePressurePlate(),
+		OakPressurePlate(),
+		SprucePressurePlate(),
+		BirchPressurePlate(),
+		JunglePressurePlate(),
+		AcaciaPressurePlate(),
+		DarkOakPressurePlate(),
+		MangrovePressurePlate(),
+		CherryPressurePlate(),
+		BambooPressurePlate(),
+		CrimsonPressurePlate(),
+		WarpedPressurePlate(),
+		PaleOakPressurePlate(),
+		LightWeightedPressurePlate(),
+		HeavyWeightedPressurePlate(),
+	}
 }

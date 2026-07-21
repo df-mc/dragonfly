@@ -167,5 +167,20 @@ func (b button) String() string {
 
 // ButtonTypes ...
 func ButtonTypes() []ButtonType {
-	return []ButtonType{StoneButton(), PolishedBlackstoneButton(), OakButton(), SpruceButton(), BirchButton(), JungleButton(), AcaciaButton(), DarkOakButton(), MangroveButton(), CherryButton(), BambooButton(), CrimsonButton(), WarpedButton(), PaleOakButton()}
+	return []ButtonType{
+		StoneButton(),
+		PolishedBlackstoneButton(),
+		OakButton(),
+		SpruceButton(),
+		BirchButton(),
+		JungleButton(),
+		AcaciaButton(),
+		DarkOakButton(),
+		MangroveButton(),
+		CherryButton(),
+		BambooButton(),
+		CrimsonButton(),
+		WarpedButton(),
+		PaleOakButton(),
+	}
 }
