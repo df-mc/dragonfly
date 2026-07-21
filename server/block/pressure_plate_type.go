@@ -194,9 +194,5 @@ func (p pressurePlate) String() string {
 
 // PressurePlateTypes ...
 func PressurePlateTypes() []PressurePlateType {
-	types := make([]PressurePlateType, 16)
-	for i := range types {
-		types[i] = PressurePlateType{pressurePlate(i)}
-	}
-	return types
+	return []PressurePlateType{StonePressurePlate(), PolishedBlackstonePressurePlate(), OakPressurePlate(), SprucePressurePlate(), BirchPressurePlate(), JunglePressurePlate(), AcaciaPressurePlate(), DarkOakPressurePlate(), MangrovePressurePlate(), CherryPressurePlate(), BambooPressurePlate(), CrimsonPressurePlate(), WarpedPressurePlate(), PaleOakPressurePlate(), LightWeightedPressurePlate(), HeavyWeightedPressurePlate()}
 }

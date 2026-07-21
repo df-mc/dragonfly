@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -26,11 +25,6 @@ type PressurePlate struct {
 	Power int
 }
 
-// Model ...
-func (PressurePlate) Model() world.BlockModel {
-	return model.Empty{}
-}
-
 // UseOnBlock places the pressure plate on a solid surface.
 func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, p)
@@ -43,7 +37,7 @@ func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 
 // EntityInside powers the plate when an entity enters its activation area.
 func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
-	if p.entityPower(e) == 0 || !pressurePlateEntityIntersects(e, pressurePlateActivationBox(pos)) {
+	if !p.detects(e) || !entityIntersects(e, pressurePlateActivationBox(pos)) {
 		return
 	}
 	if p.Power > 0 {
@@ -52,9 +46,9 @@ func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) 
 		tx.ScheduleBlockUpdate(pos, p, p.releaseDelay())
 		return
 	}
-	power := p.stepPower()
+	power := 15
 	if p.Type.Weighted() {
-		power = max(power, p.detectPower(pos, tx))
+		power = max(1, p.detectPower(pos, tx))
 	}
 	p.Power = power
 	tx.SetBlock(pos, p, nil)
@@ -130,78 +124,51 @@ func (p PressurePlate) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (p PressurePlate) EncodeBlock() (string, map[string]any) {
-	return "minecraft:" + p.Type.String(), map[string]any{"redstone_signal": int32(max(0, min(p.Power, 15)))}
+	return "minecraft:" + p.Type.String(), map[string]any{"redstone_signal": int32(world.ClampRedstonePower(p.Power))}
 }
 
-// stepPower is the power a single detected entity contributes: the first
-// analog level for weighted plates and full power otherwise.
-func (p PressurePlate) stepPower() int {
-	if p.Type.Weighted() {
-		return 1
+// detects reports whether an entity activates the plate. Stone-like plates only
+// react to living entities and armour stands; wooden and weighted plates react
+// to any entity.
+func (p PressurePlate) detects(e world.Entity) bool {
+	if p.Type.Wood() || p.Type.Weighted() {
+		return true
 	}
-	return 15
-}
-
-func (p PressurePlate) entityPower(e world.Entity) int {
-	if !p.detectsEntity(e) {
-		return 0
+	if living, ok := e.(pressurePlateLivingEntity); ok {
+		return !living.Dead()
 	}
-	return p.stepPower()
+	return e.H().Type().EncodeEntity() == "minecraft:armor_stand"
 }
 
-// detectsEntity reports whether an entity activates the plate. Stone-like
-// plates only react to living entities, players and armour stands; wooden and
-// weighted plates react to any entity.
-func (p PressurePlate) detectsEntity(e world.Entity) bool {
-	if !p.Type.Wood() && !p.Type.Weighted() {
-		return pressurePlateStoneEntity(e)
-	}
-	return true
-}
-
-// detectPower scans the entities intersecting the plate's activation box and
-// returns the power level they produce.
-func (p PressurePlate) detectPower(pos cube.Pos, tx *world.Tx) int {
-	box := pressurePlateActivationBox(pos)
-	entities := 0
+// entitiesOn counts the entities intersecting the plate's activation box,
+// stopping early once limit is reached.
+func (p PressurePlate) entitiesOn(pos cube.Pos, tx *world.Tx, limit int) int {
+	box, n := pressurePlateActivationBox(pos), 0
 	for e := range tx.EntitiesWithin(box.Grow(1)) {
-		if p.entityPower(e) == 0 || !pressurePlateEntityIntersects(e, box) {
+		if !p.detects(e) || !entityIntersects(e, box) {
 			continue
 		}
-		if !p.Type.Weighted() {
-			return 15
-		}
-		entities++
-		if entities >= p.weightedMaxEntities() {
-			return 15
+		if n++; n >= limit {
+			break
 		}
 	}
-	if p.Type.Weighted() {
-		return p.weightedPower(entities)
+	return n
+}
+
+// detectPower returns the power level the entities on the plate produce.
+// Weighted plates emit one level per entity, or per ten entities rounded up for
+// the heavy variant; every other plate emits full power for any entity at all.
+func (p PressurePlate) detectPower(pos cube.Pos, tx *world.Tx) int {
+	switch p.Type {
+	case LightWeightedPressurePlate():
+		return p.entitiesOn(pos, tx, 15)
+	case HeavyWeightedPressurePlate():
+		return (p.entitiesOn(pos, tx, 150) + 9) / 10
+	}
+	if p.entitiesOn(pos, tx, 1) > 0 {
+		return 15
 	}
 	return 0
-}
-
-// weightedPower converts an entity count to the analog power of a weighted
-// plate: one level per entity for light plates and per ten entities, rounded
-// up, for heavy plates.
-func (p PressurePlate) weightedPower(entities int) int {
-	if entities <= 0 {
-		return 0
-	}
-	if p.Type == HeavyWeightedPressurePlate() {
-		return min(15, (entities+9)/10)
-	}
-	return min(15, entities)
-}
-
-// weightedMaxEntities is the entity count at which a weighted plate reaches
-// full power, so scanning may stop early.
-func (p PressurePlate) weightedMaxEntities() int {
-	if p.Type == HeavyWeightedPressurePlate() {
-		return 141
-	}
-	return 15
 }
 
 // releaseDelay is the delay before the plate re-checks its entities: 0.5
@@ -213,38 +180,18 @@ func (p PressurePlate) releaseDelay() time.Duration {
 	return time.Second
 }
 
+// pressurePlateLivingEntity is implemented by entities that can die. Health is
+// part of the interface so that only entities with a full health state match,
+// even though Dead alone decides whether the plate reacts.
 type pressurePlateLivingEntity interface {
 	Health() float64
 	Dead() bool
 }
 
-func pressurePlateStoneEntity(e world.Entity) bool {
-	if living, ok := e.(pressurePlateLivingEntity); ok {
-		return living.Health() > 0 && !living.Dead()
-	}
-	return pressurePlateEntityName(e) == "minecraft:player" || pressurePlateEntityName(e) == "minecraft:armor_stand"
-}
-
-func pressurePlateEntityName(e world.Entity) string {
-	h := e.H()
-	if h == nil || h.Type() == nil {
-		return ""
-	}
-	return h.Type().EncodeEntity()
-}
-
 // pressurePlateActivationBox is the box entities must intersect to press the
 // plate at a position.
 func pressurePlateActivationBox(pos cube.Pos) cube.BBox {
-	return cube.Box(float64(pos[0])+0.125, float64(pos[1]), float64(pos[2])+0.125, float64(pos[0])+0.875, float64(pos[1])+0.25, float64(pos[2])+0.875)
-}
-
-func pressurePlateEntityIntersects(e world.Entity, box cube.BBox) bool {
-	h := e.H()
-	if h == nil || h.Type() == nil {
-		return false
-	}
-	return h.Type().BBox(e).Translate(e.Position()).IntersectsWith(box)
+	return cube.Box(0.125, 0, 0.125, 0.875, 0.25, 0.875).Translate(pos.Vec3())
 }
 
 // allPressurePlates ...

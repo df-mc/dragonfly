@@ -167,6 +167,7 @@ func init() {
 	registerAll(allBlastFurnaces())
 	registerAll(allBoneBlock())
 	registerAll(allBrewingStands())
+	registerAll(allButtons())
 	registerAll(allCactus())
 	registerAll(allCake())
 	registerAll(allCampfires())
@@ -203,12 +204,9 @@ func init() {
 	registerAll(allLadders())
 	registerAll(allLanterns())
 	registerAll(allLava())
-	registerAll(allButtons())
 	registerAll(allLeaves())
 	registerAll(allLecterns())
 	registerAll(allLevers())
-	registerAll(allPressurePlates())
-	registerAll(allRedstoneLamps())
 	registerAll(allLight())
 	registerAll(allLitPumpkins())
 	registerAll(allLogs())
@@ -220,11 +218,13 @@ func init() {
 	registerAll(allPinkPetals())
 	registerAll(allPlanks())
 	registerAll(allPotato())
+	registerAll(allPressurePlates())
 	registerAll(allPrismarine())
 	registerAll(allPumpkinStems())
 	registerAll(allPumpkins())
 	registerAll(allPurpurs())
 	registerAll(allQuartz())
+	registerAll(allRedstoneLamps())
 	registerAll(allRedstoneTorches())
 	registerAll(allRedstoneWires())
 	registerAll(allSandstones())
@@ -285,6 +285,9 @@ func init() {
 	world.RegisterItem(Bookshelf{})
 	world.RegisterItem(BrewingStand{})
 	world.RegisterItem(Bricks{})
+	for _, t := range ButtonTypes() {
+		world.RegisterItem(Button{Type: t})
+	}
 	world.RegisterItem(Cactus{})
 	world.RegisterItem(Cake{})
 	world.RegisterItem(Calcite{})
@@ -358,13 +361,6 @@ func init() {
 	world.RegisterItem(Lapis{})
 	world.RegisterItem(Lectern{})
 	world.RegisterItem(Lever{})
-	world.RegisterItem(RedstoneLamp{})
-	for _, t := range ButtonTypes() {
-		world.RegisterItem(Button{Type: t})
-	}
-	for _, t := range PressurePlateTypes() {
-		world.RegisterItem(PressurePlate{Type: t})
-	}
 	world.RegisterItem(LilyPad{})
 	world.RegisterItem(Magma{})
 	world.RegisterItem(LitPumpkin{})
@@ -394,6 +390,9 @@ func init() {
 	world.RegisterItem(PolishedBlackstoneBrick{Cracked: true})
 	world.RegisterItem(PolishedBlackstoneBrick{})
 	world.RegisterItem(Potato{})
+	for _, t := range PressurePlateTypes() {
+		world.RegisterItem(PressurePlate{Type: t})
+	}
 	world.RegisterItem(PumpkinSeeds{})
 	world.RegisterItem(Pumpkin{Carved: true})
 	world.RegisterItem(Pumpkin{})
@@ -407,6 +406,7 @@ func init() {
 	world.RegisterItem(RawGold{})
 	world.RegisterItem(RawIron{})
 	world.RegisterItem(RedstoneBlock{})
+	world.RegisterItem(RedstoneLamp{})
 	world.RegisterItem(RedstoneTorch{})
 	world.RegisterItem(RedstoneWire{})
 	world.RegisterItem(ReinforcedDeepslate{})

@@ -50,19 +50,18 @@ func StepOnBlock(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 	y := int(math.Floor(box.Min()[1] - 0.0001))
 
-	for x := low[0]; x <= high[0]; x++ {
-		for z := low[2]; z <= high[2]; z++ {
-			pos := cube.Pos{x, y, z}
-			if stepper, ok := tx.Block(pos).(block.EntityStepper); ok {
-				stepper.EntityStepOn(pos, tx, e)
-				return
-			}
+	for pos := range cube.Range3D(cube.Pos{low[0], y, low[2]}, cube.Pos{high[0], y, high[2]}) {
+		if stepper, ok := tx.Block(pos).(block.EntityStepper); ok {
+			stepper.EntityStepOn(pos, tx, e)
+			return
 		}
 	}
 }
 
 // checkSteppers handles pressure plates intersecting the entity and the block
-// it stands on after movement, mirroring player behaviour.
+// it stands on after movement, mirroring player behaviour. Only pressure plates
+// are dispatched here: every other block.EntityInsider is deliberately left to
+// entity physics, as documented on Ent.checkPortalInsiders.
 func (m *Movement) checkSteppers(tx *world.Tx) {
 	box := m.e.H().Type().BBox(m.e).Translate(m.pos).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())

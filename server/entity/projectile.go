@@ -206,9 +206,12 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
 			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
-		// Blocks without a collision box, such as buttons, are passed through
-		// by the trace, so the block of the cell the projectile comes to rest
-		// in is notified as well.
+		// TODO: trace.BlockIntercept returns early for blocks whose model has
+		// no BBox (model.Empty), so the trace passes straight through buttons
+		// and the like. Until the trace layer can report pass-through hits, the
+		// block of the cell the projectile comes to rest in is notified as well.
+		// Implementations must therefore verify the projectile really touches
+		// them, as Button.ProjectileHit does.
 		rest := bpos.Side(r.Face())
 		if h, ok := tx.Block(rest).(block.ProjectileHitter); ok {
 			h.ProjectileHit(rest, tx, e, r.Face())

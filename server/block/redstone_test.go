@@ -18,7 +18,7 @@ func runWorld(w *world.World, f func(*world.Tx)) {
 }
 
 func TestWoodenButtonRemainsPressedWithArrowOnBoundary(t *testing.T) {
-	w := world.Config{Synchronous: true, Entities: redstoneArrowTestEntityRegistry()}.New()
+	w := world.Config{Synchronous: true}.New()
 	defer w.Close()
 
 	pos := cube.Pos{0, 64, 0}
@@ -34,6 +34,29 @@ func TestWoodenButtonRemainsPressedWithArrowOnBoundary(t *testing.T) {
 
 	if !pressed {
 		t.Fatal("wooden button released while an arrow bounding box intersected its boundary")
+	}
+}
+
+func TestWeightedPressurePlateCountsEntities(t *testing.T) {
+	for _, count := range []int{0, 1, 3} {
+		w := world.Config{Synchronous: true}.New()
+
+		pos := cube.Pos{0, 64, 0}
+		var power int
+		runWorld(w, func(tx *world.Tx) {
+			plate := PressurePlate{Type: LightWeightedPressurePlate()}
+			tx.SetBlock(pos, plate, nil)
+			for i := range count {
+				tx.AddEntityAt(world.EntitySpawnOpts{}.New(redstoneArrowTestEntityType{}, redstoneTNTTestEntityConfig{}),
+					mgl64.Vec3{0.5, 64.05, 0.5 + float64(i)*0.01})
+			}
+			power = plate.detectPower(pos, tx)
+		})
+		_ = w.Close()
+
+		if power != count {
+			t.Fatalf("light weighted plate with %v entities: want power %v, got %v", count, count, power)
+		}
 	}
 }
 
@@ -981,10 +1004,6 @@ func redstoneBreakDropTestEntityRegistry() world.EntityRegistry {
 			return opts.New(redstoneTNTTestEntityType{}, redstoneTNTTestEntityConfig{})
 		},
 	}.New([]world.EntityType{redstoneTNTTestEntityType{}})
-}
-
-func redstoneArrowTestEntityRegistry() world.EntityRegistry {
-	return world.EntityRegistryConfig{}.New([]world.EntityType{redstoneArrowTestEntityType{}})
 }
 
 type redstoneTNTTestEntityConfig struct{}

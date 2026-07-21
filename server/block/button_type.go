@@ -85,7 +85,7 @@ func (b button) Uint8() uint8 {
 // Wood reports whether the button is made of wood, giving it a longer press
 // duration and letting arrows press it.
 func (b button) Wood() bool {
-	return b >= 2
+	return b >= 2 && b <= 13
 }
 
 // Flammable reports whether the button can burn, making it usable as furnace
@@ -167,9 +167,5 @@ func (b button) String() string {
 
 // ButtonTypes ...
 func ButtonTypes() []ButtonType {
-	types := make([]ButtonType, 14)
-	for i := range types {
-		types[i] = ButtonType{button(i)}
-	}
-	return types
+	return []ButtonType{StoneButton(), PolishedBlackstoneButton(), OakButton(), SpruceButton(), BirchButton(), JungleButton(), AcaciaButton(), DarkOakButton(), MangroveButton(), CherryButton(), BambooButton(), CrimsonButton(), WarpedButton(), PaleOakButton()}
 }

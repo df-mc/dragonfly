@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -27,11 +26,6 @@ type Button struct {
 	Pressed bool
 }
 
-// Model ...
-func (Button) Model() world.BlockModel {
-	return model.Empty{}
-}
-
 // UseOnBlock places the button attached to the clicked face.
 func (b Button) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, b)
@@ -51,10 +45,9 @@ func (b Button) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _
 
 // ProjectileHit presses wooden buttons hit by an arrow.
 func (b Button) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
-	if !b.Type.Wood() || e.H().Type().EncodeEntity() != "minecraft:arrow" || !buttonArrowIntersects(b, pos, e) {
-		return
+	if b.Type.Wood() && b.arrowIntersects(e, buttonBox(b).Translate(pos.Vec3())) {
+		b.press(pos, tx)
 	}
-	b.press(pos, tx)
 }
 
 // press activates an unpressed button and schedules its release.
@@ -81,7 +74,7 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !b.Pressed {
 		return
 	}
-	if b.Type.Wood() && arrowWithin(b, pos, tx) {
+	if b.Type.Wood() && b.arrowWithin(pos, tx) {
 		tx.ScheduleBlockUpdate(pos, b, b.pressDuration())
 		return
 	}
@@ -91,49 +84,40 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 }
 
 // arrowWithin reports whether an arrow intersects the button at pos.
-func arrowWithin(b Button, pos cube.Pos, tx *world.Tx) bool {
+func (b Button) arrowWithin(pos cube.Pos, tx *world.Tx) bool {
 	box := buttonBox(b).Translate(pos.Vec3())
 	for e := range tx.EntitiesWithin(box.Grow(1)) {
-		if e.H().Type().EncodeEntity() == "minecraft:arrow" && buttonArrowIntersects(b, pos, e) {
+		if b.arrowIntersects(e, box) {
 			return true
 		}
 	}
 	return false
 }
 
-func buttonArrowIntersects(b Button, pos cube.Pos, e world.Entity) bool {
-	return e.H().Type().BBox(e).Translate(e.Position()).IntersectsWith(buttonBox(b).Translate(pos.Vec3()))
+// arrowIntersects reports whether an entity is an arrow overlapping the box passed.
+func (Button) arrowIntersects(e world.Entity, box cube.BBox) bool {
+	return e.H().Type().EncodeEntity() == "minecraft:arrow" && entityIntersects(e, box)
 }
 
-// buttonBox returns the projectile-sensitive shape of a button. Buttons have
-// no physical collision box, but projectiles must touch their visible shape.
+// buttonBox returns the projectile-sensitive shape of a button: a 6x4 pane
+// centred on the face it is attached to, protruding out of it. Buttons have no
+// physical collision box, but projectiles must touch their visible shape.
 func buttonBox(b Button) cube.BBox {
-	const (
-		minLong  = 5.0 / 16
-		maxLong  = 11.0 / 16
-		minShort = 6.0 / 16
-		maxShort = 10.0 / 16
-	)
 	depth := 2.0 / 16
 	if b.Pressed {
 		depth = 1.0 / 16
 	}
-	switch b.Facing {
-	case cube.FaceDown:
-		return cube.Box(minLong, 1-depth, minShort, maxLong, 1, maxShort)
-	case cube.FaceUp:
-		return cube.Box(minLong, 0, minShort, maxLong, depth, maxShort)
-	case cube.FaceNorth:
-		return cube.Box(minLong, minShort, 1-depth, maxLong, maxShort, 1)
-	case cube.FaceSouth:
-		return cube.Box(minLong, minShort, 0, maxLong, maxShort, depth)
-	case cube.FaceWest:
-		return cube.Box(1-depth, minShort, minLong, 1, maxShort, maxLong)
-	case cube.FaceEast:
-		return cube.Box(0, minShort, minLong, depth, maxShort, maxLong)
-	default:
-		panic("invalid button face")
+	long, short := cube.X, cube.Z
+	switch b.Facing.Axis() {
+	case cube.X:
+		long, short = cube.Z, cube.Y
+	case cube.Z:
+		short = cube.Y
 	}
+	return cube.Box(0.5, 0.5, 0.5, 0.5, 0.5, 0.5).
+		Stretch(long, 3.0/16).Stretch(short, 2.0/16).
+		TranslateTowards(b.Facing.Opposite(), 0.5).
+		ExtendTowards(b.Facing, depth)
 }
 
 // RedstonePower returns maximum power while the button is pressed.
