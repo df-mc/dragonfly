@@ -144,6 +144,7 @@ func TestDispenserLaunchesOwnerlessProjectiles(t *testing.T) {
 		it   world.Item
 		want string
 	}{
+		{name: "arrow", it: item.Arrow{}, want: "minecraft:arrow"},
 		{name: "snowball", it: item.Snowball{}, want: "minecraft:snowball"},
 		{name: "egg", it: item.Egg{}, want: "minecraft:egg"},
 		{name: "splash potion", it: item.SplashPotion{}, want: "minecraft:splash_potion"},
@@ -173,30 +174,6 @@ func TestDispenserLaunchesOwnerlessProjectiles(t *testing.T) {
 			})
 		})
 	}
-}
-
-func TestDispenserLaunchesArrows(t *testing.T) {
-	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
-	defer func() { _ = w.Close() }()
-
-	pos := cube.Pos{0, 0, 0}
-	runDispenserWorld(t, w, func(tx *world.Tx) {
-		d := block.NewDispenser()
-		d.Facing = cube.FaceEast
-		_ = d.Inventory(tx, pos).SetItem(0, item.NewStack(item.Arrow{}, 1))
-		tx.SetBlock(pos, d, nil)
-		d.ScheduledTick(pos, tx, rand.New(rand.NewPCG(1, 2)))
-	})
-
-	runDispenserWorld(t, w, func(tx *world.Tx) {
-		for e := range tx.Entities() {
-			if got := e.H().Type().EncodeEntity(); got != "minecraft:arrow" {
-				t.Fatalf("expected dispenser to launch an arrow, got %q", got)
-			}
-			return
-		}
-		t.Fatal("expected dispenser to create an arrow entity")
-	})
 }
 
 func TestDispenserFillsBucketFromSource(t *testing.T) {
