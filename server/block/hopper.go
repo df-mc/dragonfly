@@ -156,6 +156,22 @@ func (h Hopper) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
+// RedstoneUpdate updates the hopper's locked state to match the power it receives from neighbouring blocks.
+func (h Hopper) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
+	powered := false
+	for _, face := range cube.Faces() {
+		if tx.RedstonePower(pos.Side(face), face, true) > 0 {
+			powered = true
+			break
+		}
+	}
+	if h.Powered == powered {
+		return
+	}
+	h.Powered = powered
+	tx.SetBlock(pos, h, &world.SetOpts{DisableBlockUpdates: true})
+}
+
 // HopperInsertable represents a block that can have its contents inserted into by a hopper.
 type HopperInsertable interface {
 	// InsertItem handles the insert logic for that block.
@@ -177,7 +193,7 @@ func (h Hopper) insertItem(pos cube.Pos, tx *world.Tx) bool {
 				continue
 			}
 
-			_, err := container.Inventory(tx, pos).AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
+			_, err := container.Inventory(tx, destPos).AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
 			if err != nil {
 				// The destination is full.
 				return false
