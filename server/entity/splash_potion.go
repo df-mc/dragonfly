@@ -19,7 +19,7 @@ func NewSplashPotion(opts world.EntitySpawnOpts, t potion.Potion, owner world.En
 	conf.Potion = t
 	conf.Particle = particle.Splash{Colour: colour}
 	conf.Hit = potionSplash(1, t, false)
-	conf.Owner = owner.H()
+	conf.Owner = ownerHandle(owner)
 
 	return opts.New(SplashPotionType, conf)
 }

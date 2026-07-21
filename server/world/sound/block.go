@@ -126,6 +126,9 @@ type DoorCrash struct{ sound }
 // Click is a clicking sound.
 type Click struct{ sound }
 
+// ClickFail is a clicking sound played when a dispenser fails to dispense an item.
+type ClickFail struct{ sound }
+
 // Ignite is a sound played when using a flint & steel.
 type Ignite struct{ sound }
 

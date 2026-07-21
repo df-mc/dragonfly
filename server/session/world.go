@@ -567,6 +567,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.ClickFail:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventSoundClickFail,
+			Position:  vec64To32(pos),
+		})
+		return
 	case sound.SignWaxed:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventWaxOn,
@@ -1229,6 +1235,8 @@ func (s *Session) openNormalContainer(b block.Container, pos cube.Pos, tx *world
 		containerType = protocol.ContainerTypeSmoker
 	case block.Hopper:
 		containerType = protocol.ContainerTypeHopper
+	case block.Dispenser:
+		containerType = protocol.ContainerTypeDispenser
 	}
 
 	s.openedContainerID.Store(uint32(containerType))

@@ -17,7 +17,7 @@ func TestHopperInsertUsesDestinationPosition(t *testing.T) {
 	pairPos := cube.Pos{1, 0, 0}
 
 	var inserted bool
-	<-w.Exec(func(tx *world.Tx) {
+	runWorld(w, func(tx *world.Tx) {
 		destination := NewChest()
 		destination.Facing = cube.North
 		destination.paired = true
@@ -54,19 +54,22 @@ func TestHopperTracksRedstoneLock(t *testing.T) {
 	hopperPos := cube.Pos{0, 0, 0}
 	powerPos := hopperPos.Side(cube.FaceEast)
 
-	<-w.Exec(func(tx *world.Tx) {
+	runWorld(w, func(tx *world.Tx) {
 		tx.SetBlock(hopperPos, NewHopper(), nil)
 		tx.SetBlock(powerPos, RedstoneBlock{}, nil)
-		updateAroundRedstone(powerPos, tx)
-
+	})
+	w.AdvanceTick()
+	runWorld(w, func(tx *world.Tx) {
 		hopper := tx.Block(hopperPos).(Hopper)
 		if !hopper.Powered {
 			t.Error("hopper remained unlocked while receiving redstone power")
 		}
 
 		tx.SetBlock(powerPos, Air{}, nil)
-		updateAroundRedstone(powerPos, tx)
-		hopper = tx.Block(hopperPos).(Hopper)
+	})
+	w.AdvanceTick()
+	runWorld(w, func(tx *world.Tx) {
+		hopper := tx.Block(hopperPos).(Hopper)
 		if hopper.Powered {
 			t.Error("hopper remained locked after redstone power was removed")
 		}
