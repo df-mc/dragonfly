@@ -178,6 +178,7 @@ const (
 	hashReinforcedDeepslate
 	hashResin
 	hashResinBricks
+	hashRespawnAnchor
 	hashSand
 	hashSandstone
 	hashSeaLantern
@@ -925,6 +926,10 @@ func (Resin) Hash() (uint64, uint64) {
 
 func (r ResinBricks) Hash() (uint64, uint64) {
 	return hashResinBricks, uint64(boolByte(r.Chiseled))
+}
+
+func (r RespawnAnchor) Hash() (uint64, uint64) {
+	return hashRespawnAnchor, uint64(r.Charges)
 }
 
 func (s Sand) Hash() (uint64, uint64) {

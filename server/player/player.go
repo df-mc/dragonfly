@@ -53,6 +53,8 @@ type playerData struct {
 	s        *session.Session
 	h        Handler
 
+	worldByDimension func(world.Dimension) *world.World
+
 	inv, offHand, enderChest, ui *inventory.Inventory
 	armour                       *inventory.Armour
 	heldSlot                     *uint32
@@ -915,9 +917,7 @@ func finishDying(p *Player) {
 		// position server side so that in the future, the client won't respawn
 		// on the death location when disconnecting. The client should not see
 		// the movement itself yet, though.
-		pos, _, _, _ := p.spawnLocation()
-
-		p.data.Pos = pos.Vec3()
+		p.data.Pos = p.disconnectPosition().Vec3Middle()
 	}
 }
 
@@ -973,11 +973,25 @@ func (p *Player) respawn(f func(p *Player)) {
 		return
 	}
 
-	blockPos, w, spawnObstructed, _ := p.spawnLocation()
+	blockPos, w, resolve, notValid := p.spawnLocation()
 	pos := blockPos.Vec3Middle()
+	obstructed, useRespawn := false, false
 
-	if spawnObstructed {
-		p.Messaget(chat.MessageBedNotValid)
+	// A missing or obstructed respawn block sends the player to the world
+	// spawn of the overworld instead.
+	fallback := p.tx.World().PortalDestination(p.tx.World().Dimension())
+
+	// Resolve respawn blocks in the current world before the handler runs so
+	// changing only the destination world keeps the vanilla safe position.
+	sameWorldRespawn := resolve && w == p.tx.World()
+	if sameWorldRespawn {
+		resolve = false
+		if spawn, ok := safeSpawnLocation(p.tx, blockPos); ok {
+			pos = spawn.Vec3Middle()
+		} else {
+			w, pos, obstructed = fallback, fallback.Spawn().Vec3Middle(), true
+			sameWorldRespawn = false
+		}
 	}
 
 	p.addHealth(p.MaxHealth())
@@ -986,7 +1000,24 @@ func (p *Player) respawn(f func(p *Player)) {
 	p.Extinguish()
 	p.ResetFallDistance()
 
+	prevPos, prevW := pos, w
 	p.Handler().HandleRespawn(p, &pos, &w)
+	if pos != prevPos || w != prevW {
+		// A handler changed the respawn position or world, so that position is
+		// used as-is instead of resolving one around the respawn block.
+		resolve, obstructed, useRespawn = false, false, false
+	} else if sameWorldRespawn {
+		// A handler may mutate the respawn block or its surroundings without
+		// changing pos or w, so resolve it again before committing the respawn.
+		if spawn, ok := safeSpawnLocation(p.tx, blockPos); ok {
+			pos, useRespawn = spawn.Vec3Middle(), true
+		} else {
+			w, pos, obstructed = fallback, fallback.Spawn().Vec3Middle(), true
+		}
+	}
+	if useRespawn {
+		useRespawnBlock(p.tx, blockPos)
+	}
 
 	sess := p.session()
 	src := p.tx.World()
@@ -1001,22 +1032,7 @@ func (p *Player) respawn(f func(p *Player)) {
 		}
 		np.quit("respawn failed")
 	}
-	task := w.Do(func(tx *world.Tx) {
-		np := tx.AddEntity(handle).(*Player)
-		np.Teleport(pos)
-		np.session().SendRespawn(pos, p)
-		np.SetVisible()
-		if f != nil {
-			f(np)
-		}
-	})
-	if errors.Is(task.Err(), world.ErrWorldClosed) {
-		// The destination refused synchronously: re-add through the still-open
-		// source context. This also keeps synchronous worlds fully inline.
-		restore(p.tx)
-		return
-	}
-	task.OnDone(func(err error) {
+	restoreAsync := func(err error) {
 		// Only ErrWorldClosed means the entity was never re-added. A callback
 		// panic is left alone: the entity is live.
 		if !errors.Is(err, world.ErrWorldClosed) {
@@ -1035,27 +1051,117 @@ func (p *Player) respawn(f func(p *Player)) {
 			sess.Close(nil, p)
 			sess.CloseConnection()
 		})
+	}
+	finish := func(tx *world.Tx, pos mgl64.Vec3, obstructed bool) {
+		np := tx.AddEntity(handle).(*Player)
+		if obstructed {
+			np.Messaget(notValid)
+		}
+		np.Teleport(pos)
+		np.session().SendRespawn(pos, p)
+		np.SetVisible()
+		if f != nil {
+			f(np)
+		}
+	}
+	task := w.Do(func(tx *world.Tx) {
+		if !resolve {
+			finish(tx, pos, obstructed)
+			return
+		}
+		if spawn, ok := safeSpawnLocation(tx, blockPos); ok {
+			useRespawnBlock(tx, blockPos)
+			finish(tx, spawn.Vec3Middle(), false)
+			return
+		}
+		if fallback == tx.World() {
+			finish(tx, fallback.Spawn().Vec3Middle(), true)
+			return
+		}
+		fallback.Do(func(tx *world.Tx) {
+			finish(tx, fallback.Spawn().Vec3Middle(), true)
+		}).OnDone(restoreAsync)
 	})
+	if errors.Is(task.Err(), world.ErrWorldClosed) {
+		// The destination refused synchronously: re-add through the still-open
+		// source context. This also keeps synchronous worlds fully inline.
+		restore(p.tx)
+		return
+	}
+	task.OnDone(restoreAsync)
 }
 
-// spawnLocation designates a players safe spawn location.
-func (p *Player) spawnLocation() (playerSpawn cube.Pos, w *world.World, spawnBlockBroken bool, previousDimension world.Dimension) {
-	tx := p.tx
-	w = tx.World()
-	previousDimension = w.Dimension()
-	playerSpawn = w.PlayerSpawn(p.UUID())
-	if b, ok := tx.Block(playerSpawn).(block.Bed); ok && b.CanRespawnOn() {
-		pos, ok := b.SafeSpawn(playerSpawn, tx)
-		if ok {
-			return pos, w, false, previousDimension
+// disconnectPosition returns a safe position in the player's current world to persist if they disconnect while dead.
+func (p *Player) disconnectPosition() cube.Pos {
+	blockPos, spawnWorld, resolve, _ := p.spawnLocation()
+	if resolve && spawnWorld == p.tx.World() {
+		if spawn, ok := safeSpawnLocation(p.tx, blockPos); ok {
+			return spawn
+		}
+	}
+	// spawnLocation returns the spawn of the world it resolved for anything
+	// that does not need resolving, so the world spawn covers those too.
+	return p.tx.World().Spawn()
+}
+
+type respawnBlock interface {
+	CanRespawnOn() bool
+	SafeSpawn(cube.Pos, *world.Tx) (cube.Pos, bool)
+}
+
+// spawnLocation designates a player's respawn location and world. If resolve
+// is true, pos holds the position of the player's respawn block (a bed or
+// respawn anchor) in w. It must still be resolved to a safe spawn position
+// around the block with safeSpawnLocation in a transaction on w once the
+// player actually respawns, as resolving may consume a respawn anchor charge.
+// notValid is the message sent to the player if the respawn block turns out
+// to be missing or obstructed.
+func (p *Player) spawnLocation() (pos cube.Pos, w *world.World, resolve bool, notValid chat.Translation) {
+	w = p.tx.World()
+	notValid = chat.MessageBedNotValid
+	if spawn, ok := w.PlayerSpawnPoint(p.UUID()); ok {
+		if spawn.Dim == world.Nether {
+			notValid = chat.MessageRespawnAnchorNotValid
+		}
+		spawnWorld := w
+		if p.worldByDimension != nil {
+			spawnWorld = p.worldByDimension(spawn.Dim)
+		} else if spawn.Dim != w.Dimension() {
+			spawnWorld = nil
+		}
+		if spawnWorld != nil {
+			return spawn.Pos, spawnWorld, true, notValid
 		}
 	}
 
 	// We can use the principle here that returning through a portal of a specific dimension inside that dimension will
 	// always bring us back to the overworld.
 	w = w.PortalDestination(w.Dimension())
-	worldSpawn := w.Spawn()
-	return worldSpawn, w, playerSpawn != worldSpawn, previousDimension
+	return w.Spawn(), w, false, notValid
+}
+
+// safeSpawnLocation checks if playerSpawn points at a valid respawn block in
+// tx and returns the block's safe respawn position.
+func safeSpawnLocation(tx *world.Tx, playerSpawn cube.Pos) (cube.Pos, bool) {
+	if b, ok := tx.Block(playerSpawn).(respawnBlock); ok && b.CanRespawnOn() {
+		return b.SafeSpawn(playerSpawn, tx)
+	}
+	return cube.Pos{}, false
+}
+
+// respawnBlockConsumer is implemented by respawnBlock blocks that are spent by
+// respawning at them, such as the respawn anchor. Beds do not implement it.
+type respawnBlockConsumer interface {
+	UseRespawn(cube.Pos, *world.Tx)
+}
+
+// useRespawnBlock applies side effects such as consuming a respawn-anchor
+// charge. It must only be called once safeSpawnLocation found a spawn at
+// playerSpawn, so that a block is never spent without the player arriving.
+func useRespawnBlock(tx *world.Tx, playerSpawn cube.Pos) {
+	if b, ok := tx.Block(playerSpawn).(respawnBlockConsumer); ok {
+		b.UseRespawn(playerSpawn, tx)
+	}
 }
 
 // StartSprinting makes a player start sprinting, increasing the speed of the player by 30% and making
