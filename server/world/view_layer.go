@@ -76,13 +76,13 @@ func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
 	return *nameTag, true
 }
 
-func (v *ViewLayer) ShowNameTag(entity Entity, show bool) {
+func (v *ViewLayer) AlwaysShowNameTag(entity Entity, show bool) {
 	v.update(entity, func(l *layer) {
 		l.alwaysShowNameTag = &show
 	})
 }
 
-func (v *ViewLayer) ViewNameTag(entity Entity) (bool) {
+func (v *ViewLayer) IsAlwaysShowNameTag(entity Entity) (bool) {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
