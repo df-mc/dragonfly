@@ -28,8 +28,6 @@ type Hopper struct {
 	// colour codes.
 	CustomName string
 
-	// LastTick is the last world tick that the hopper was ticked.
-	LastTick int64
 	// TransferCooldown is the duration in ticks until the hopper can transfer items again.
 	TransferCooldown int64
 	// CollectCooldown is the duration in ticks until the hopper can collect items again.
@@ -134,20 +132,28 @@ func (h Hopper) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 }
 
 // Tick ...
-func (h Hopper) Tick(currentTick int64, pos cube.Pos, tx *world.Tx) {
-	h.TransferCooldown--
-	h.CollectCooldown--
-	h.LastTick = currentTick
+func (h Hopper) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
+	cooldownChanged := h.TransferCooldown > 0 || h.CollectCooldown > 0
+	if h.TransferCooldown > 0 {
+		h.TransferCooldown--
+	}
+	if h.CollectCooldown > 0 {
+		h.CollectCooldown--
+	}
 
 	if !h.Powered && h.TransferCooldown <= 0 {
 		inserted := h.insertItem(pos, tx)
 		extracted := h.extractItem(pos, tx)
 		if inserted || extracted {
 			h.TransferCooldown = 8
+			tx.SetBlock(pos, h, nil)
+			return
 		}
 	}
 
-	tx.SetBlock(pos, h, nil)
+	if cooldownChanged {
+		tx.SetBlockEntity(pos, h)
+	}
 }
 
 // HopperInsertable represents a block that can have its contents inserted into by a hopper.
