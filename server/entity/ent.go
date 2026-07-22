@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -43,11 +42,11 @@ func (e *Ent) Behaviour() Behaviour {
 }
 
 // Explode propagates the explosion behaviour of the underlying Behaviour.
-func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
+func (e *Ent) Explode(src world.ExplosionSource, impact float64) {
 	if expl, ok := e.Behaviour().(interface {
-		Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig)
+		Explode(e *Ent, src world.ExplosionSource, impact float64)
 	}); ok {
-		expl.Explode(e, src, impact, conf)
+		expl.Explode(e, src, impact)
 	}
 }
 

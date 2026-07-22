@@ -1,14 +1,15 @@
 package entity
 
 import (
+	"math"
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
 // NewTNT creates a new primed TNT entity.
@@ -30,7 +31,9 @@ var tntConf = PassiveBehaviourConfig{
 
 // explodeTNT creates an explosion at the position of e.
 func explodeTNT(e *Ent, tx *world.Tx) {
-	block.ExplosionConfig{ItemDropChance: 1}.Explode(tx, e.Position())
+	block.ExplosionConfig{ItemDropChance: 1}.Explode(tx, world.EntityExplosionSource{
+		Entity: e,
+	})
 }
 
 // TNTType is a world.EntityType implementation for TNT.
