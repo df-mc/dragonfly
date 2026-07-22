@@ -59,6 +59,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if gl, ok := e.(glider); ok && gl.Gliding() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagGliding)
 	}
+	if sp, ok := e.(spinner); ok && sp.Spinning() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagDamageNearbyMobs)
+	}
 	if bb, ok := e.(baby); ok && bb.Baby() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagBaby)
 	}
@@ -83,6 +86,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 	if c, ok := e.(arrow); ok && c.Critical() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCritical)
+	}
+	if r, ok := e.(returning); ok && r.Returning() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagReturnTrident)
 	}
 	if g, ok := e.(gameMode); ok {
 		if g.GameMode().HasCollision() {
@@ -232,6 +238,10 @@ type glider interface {
 	Gliding() bool
 }
 
+type spinner interface {
+	Spinning() bool
+}
+
 type baby interface {
 	Baby() bool
 }
@@ -297,6 +307,10 @@ type using interface {
 
 type arrow interface {
 	Critical() bool
+}
+
+type returning interface {
+	Returning() bool
 }
 
 type orb interface {

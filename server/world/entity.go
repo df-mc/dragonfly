@@ -502,6 +502,7 @@ type EntityRegistryConfig struct {
 	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
 	Lightning          func(opts EntitySpawnOpts) *EntityHandle
+	Trident            func(opts EntitySpawnOpts, conf TridentSpawnConfig) *EntityHandle
 }
 
 // ArrowSpawnConfig holds the options used to spawn an arrow entity.
@@ -524,6 +525,18 @@ type ArrowSpawnConfig struct {
 	PiercingLevel int
 	// Tip specifies the potion tip carried by the arrow.
 	Tip any
+}
+
+// TridentSpawnConfig holds the options used to spawn a trident entity.
+type TridentSpawnConfig struct {
+	// Damage specifies the damage dealt by the trident.
+	Damage float64
+	// Owner is the entity that threw the trident.
+	Owner Entity
+	// Item is the item.Stack the trident was thrown with.
+	Item any
+	// DisablePickup specifies if entities are able to pickup the trident.
+	DisablePickup bool
 }
 
 // New creates an EntityRegistry using conf and the EntityTypes passed.

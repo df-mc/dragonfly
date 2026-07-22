@@ -25,6 +25,7 @@ var DefaultRegistry = conf.New([]world.EntityType{
 	SplashPotionType,
 	TNTType,
 	TextType,
+	TridentType,
 })
 
 var conf = world.EntityRegistryConfig{
@@ -46,6 +47,16 @@ var conf = world.EntityRegistryConfig{
 	},
 	SplashPotion: func(opts world.EntitySpawnOpts, t any, owner world.Entity) *world.EntityHandle {
 		return NewSplashPotion(opts, t.(potion.Potion), owner)
+	},
+	Trident: func(opts world.EntitySpawnOpts, conf world.TridentSpawnConfig) *world.EntityHandle {
+		c := TridentBehaviourConfig{Damage: conf.Damage, DisablePickup: conf.DisablePickup}
+		if conf.Owner != nil {
+			c.Owner = conf.Owner.H()
+		}
+		if conf.Item != nil {
+			c.Item = conf.Item.(item.Stack)
+		}
+		return opts.New(TridentType, c)
 	},
 	Arrow: func(opts world.EntitySpawnOpts, arrow world.ArrowSpawnConfig) *world.EntityHandle {
 		tip := arrow.Tip.(potion.Potion)
