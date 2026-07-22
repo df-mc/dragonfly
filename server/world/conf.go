@@ -49,6 +49,10 @@ type Config struct {
 	// ChunkUnloadInterval should not be used to prevent chunks from unloading
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
+	// ChunkLoadWorkers is the number of background workers that load and generate
+	// chunks, defaulting to 1. Values above 1 generate chunks concurrently and
+	// require a concurrency-safe Generator.
+	ChunkLoadWorkers int
 	// RandomTickSpeed specifies the rate at which blocks should be ticked in
 	// the World. By default, each sub chunk has 3 blocks randomly ticked per
 	// sub chunk, so the default value is 3. Setting this value to -1 or lower
@@ -101,6 +105,9 @@ func (conf Config) New() *World {
 	if conf.ChunkUnloadInterval <= 0 {
 		conf.ChunkUnloadInterval = time.Minute * 2
 	}
+	if conf.ChunkLoadWorkers <= 0 {
+		conf.ChunkLoadWorkers = defaultChunkLoadWorkers
+	}
 	if conf.Generator == nil {
 		conf.Generator = NopGenerator{}
 	}
@@ -130,12 +137,21 @@ func (conf Config) New() *World {
 		conf.RandSource = rand.NewPCG(t, t)
 	}
 	s := conf.Provider.Settings()
+
+	// Serialise Provider calls (made by both the owner and the chunk load workers)
+	// and, with a single worker, Generator calls, for implementations that aren't
+	// concurrency-safe.
+	conf.Provider = &lockedProvider{p: conf.Provider}
+	if conf.ChunkLoadWorkers == 1 {
+		conf.Generator = &lockedGenerator{g: conf.Generator}
+	}
 	w := &World{
 		scheduledUpdates: newScheduledTickQueue(s.CurrentTick),
 		redstone:         newRedstoneEngine(s.CurrentTick),
 		entities:         make(map[*EntityHandle]ChunkPos),
 		viewers:          make(map[*Loader]Viewer),
 		chunks:           make(map[ChunkPos]*Column),
+		chunkRequests:    make(map[ChunkPos]*chunkRequest),
 		queueClosing:     make(chan struct{}),
 		closeStarted:     make(chan struct{}),
 		closing:          make(chan struct{}),
@@ -146,6 +162,7 @@ func (conf Config) New() *World {
 		ra:               conf.Dim.Range(),
 		set:              s,
 	}
+	w.chunkWorkers = newChunkWorkerPool(w)
 	w.weather = weather{w: w}
 	var h Handler = NopHandler{}
 	w.handler.Store(&h)
@@ -158,6 +175,10 @@ func (conf Config) New() *World {
 		go t.tickLoop(w)
 		go w.autoSave()
 		go w.handleTransactions()
+		w.chunkWorkers.wg.Add(conf.ChunkLoadWorkers)
+		for range conf.ChunkLoadWorkers {
+			go w.chunkWorkers.handle()
+		}
 	}
 
 	<-w.exec(t.tick)

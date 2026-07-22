@@ -8,9 +8,10 @@ import (
 
 // layer stores the appearance overrides that a ViewLayer applies to an entity.
 type layer struct {
-	nameTag    *string
-	scoreTag   *string
-	visibility VisibilityLevel
+	nameTag           *string
+	alwaysShowNameTag *bool
+	scoreTag          *string
+	visibility        VisibilityLevel
 }
 
 // ViewLayerUpdater handles immediate updates after a ViewLayer changes how an entity is viewed.
@@ -73,6 +74,34 @@ func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
 		return "", false
 	}
 	return *nameTag, true
+}
+
+// ViewAlwaysShowNameTag overwrites whether the public name tag of the entity is shown at all distances and
+// allows this ViewLayer to view it at a different distance.
+func (v *ViewLayer) ViewAlwaysShowNameTag(entity Entity, alwaysShow bool) {
+	v.update(entity, func(l *layer) {
+		l.alwaysShowNameTag = &alwaysShow
+	})
+}
+
+// ViewPublicAlwaysShowNameTag removes the always show name tag override from the entity, causing the public
+// always show state to be viewed again.
+func (v *ViewLayer) ViewPublicAlwaysShowNameTag(entity Entity) {
+	v.update(entity, func(l *layer) {
+		l.alwaysShowNameTag = nil
+	})
+}
+
+// AlwaysShowNameTag returns the overwritten always show state of the entity and whether an override was set.
+func (v *ViewLayer) AlwaysShowNameTag(entity Entity) (bool, bool) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
+	alwaysShow := v.entities[entity.H()].alwaysShowNameTag
+	if alwaysShow == nil {
+		return false, false
+	}
+	return *alwaysShow, true
 }
 
 // ViewScoreTag overwrites the public score tag of the entity and allows this ViewLayer to view a different score tag.
@@ -167,7 +196,7 @@ func (v *ViewLayer) Close() error {
 
 // empty checks if the layer does not override any public entity metadata.
 func (l layer) empty() bool {
-	return l.nameTag == nil && l.scoreTag == nil && l.visibility == PublicVisibility()
+	return l.nameTag == nil && l.alwaysShowNameTag == nil && l.scoreTag == nil && l.visibility == PublicVisibility()
 }
 
 func (v *ViewLayer) refresh(entity Entity) {

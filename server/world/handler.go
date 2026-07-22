@@ -59,7 +59,7 @@ type Handler interface {
 	// to cancel the explosion.
 	// The affected entities, affected blocks, item drop chance, and whether the
 	// explosion spawns fire may be altered.
-	HandleExplosion(ctx *Context, position mgl64.Vec3, entities *[]Entity, blocks *[]cube.Pos, itemDropChance *float64, spawnFire *bool)
+	HandleExplosion(ctx *Context, src ExplosionSource, entities *[]Entity, blocks *[]cube.Pos, itemDropChance *float64, spawnFire *bool)
 	// HandleRedstoneUpdate handles a redstone update proposed by the World redstone engine. ctx.Cancel() may be
 	// called to suppress the proposed redstone mutation and any propagation from that mutation.
 	HandleRedstoneUpdate(ctx *Context, update RedstoneUpdate)
@@ -78,16 +78,17 @@ var _ Handler = (*NopHandler)(nil)
 // Users may embed NopHandler to avoid having to implement each method.
 type NopHandler struct{}
 
-func (NopHandler) HandleLiquidFlow(*Context, cube.Pos, cube.Pos, Liquid, Block)                  {}
-func (NopHandler) HandleLiquidDecay(*Context, cube.Pos, Liquid, Liquid)                          {}
-func (NopHandler) HandleLiquidHarden(*Context, cube.Pos, Block, Block, Block)                    {}
-func (NopHandler) HandleSound(*Context, Sound, mgl64.Vec3)                                       {}
-func (NopHandler) HandleFireSpread(*Context, cube.Pos, cube.Pos)                                 {}
-func (NopHandler) HandleBlockBurn(*Context, cube.Pos)                                            {}
-func (NopHandler) HandleCropTrample(*Context, cube.Pos)                                          {}
-func (NopHandler) HandleLeavesDecay(*Context, cube.Pos)                                          {}
-func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                                 {}
-func (NopHandler) HandleEntityDespawn(*Tx, Entity)                                               {}
-func (NopHandler) HandleExplosion(*Context, mgl64.Vec3, *[]Entity, *[]cube.Pos, *float64, *bool) {}
-func (NopHandler) HandleRedstoneUpdate(*Context, RedstoneUpdate)                                 {}
-func (NopHandler) HandleClose(*Tx)                                                               {}
+func (NopHandler) HandleLiquidFlow(*Context, cube.Pos, cube.Pos, Liquid, Block) {}
+func (NopHandler) HandleLiquidDecay(*Context, cube.Pos, Liquid, Liquid)         {}
+func (NopHandler) HandleLiquidHarden(*Context, cube.Pos, Block, Block, Block)   {}
+func (NopHandler) HandleSound(*Context, Sound, mgl64.Vec3)                      {}
+func (NopHandler) HandleFireSpread(*Context, cube.Pos, cube.Pos)                {}
+func (NopHandler) HandleBlockBurn(*Context, cube.Pos)                           {}
+func (NopHandler) HandleCropTrample(*Context, cube.Pos)                         {}
+func (NopHandler) HandleLeavesDecay(*Context, cube.Pos)                         {}
+func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                {}
+func (NopHandler) HandleEntityDespawn(*Tx, Entity)                              {}
+func (NopHandler) HandleExplosion(*Context, ExplosionSource, *[]Entity, *[]cube.Pos, *float64, *bool) {
+}
+func (NopHandler) HandleRedstoneUpdate(*Context, RedstoneUpdate) {}
+func (NopHandler) HandleClose(*Tx)                               {}

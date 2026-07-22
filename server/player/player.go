@@ -44,6 +44,7 @@ type playerData struct {
 	xuid              string
 	locale            language.Tag
 	nameTag, scoreTag string
+	alwaysShowNameTag bool
 	absorptionHealth  float64
 	scale             float64
 
@@ -443,6 +444,19 @@ func (p *Player) NameTag() string {
 	return p.nameTag
 }
 
+// SetAlwaysShowNameTag changes whether the name tag of the player is shown at all distances instead of only
+// when the player is looked at from up close. By default, the name tag is always shown.
+func (p *Player) SetAlwaysShowNameTag(alwaysShow bool) {
+	p.alwaysShowNameTag = alwaysShow
+	p.updateState()
+}
+
+// AlwaysShowNameTag returns whether the name tag of the player is shown at all distances. It can be changed
+// using SetAlwaysShowNameTag.
+func (p *Player) AlwaysShowNameTag() bool {
+	return p.alwaysShowNameTag
+}
+
 // SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the player's
 // name tag.
 func (p *Player) SetScoreTag(a ...any) {
@@ -700,9 +714,10 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 }
 
 // Explode ...
-func (p *Player) Explode(explosionPos mgl64.Vec3, impact float64, c block.ExplosionConfig) {
+func (p *Player) Explode(src world.ExplosionSource, impact float64) {
+	explosionPos := src.Position()
 	diff := p.Position().Sub(explosionPos)
-	p.Hurt(math.Floor((impact*impact+impact)*3.5*c.Size*2+1), entity.ExplosionDamageSource{})
+	p.Hurt(math.Floor((impact*impact+impact)*3.5*src.Size()*2+1), entity.ExplosionDamageSource{Source: src})
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
 }
 
@@ -2688,6 +2703,16 @@ func (p *Player) ViewNameTag(entity world.Entity, nameTag string) {
 // ViewPublicNameTag removes the name tag override of the entity for this player.
 func (p *Player) ViewPublicNameTag(entity world.Entity) {
 	p.session().ViewPublicNameTag(entity)
+}
+
+// ViewAlwaysShowNameTag overrides whether the entity's name tag is shown at all distances for this player.
+func (p *Player) ViewAlwaysShowNameTag(entity world.Entity, alwaysShow bool) {
+	p.session().ViewAlwaysShowNameTag(entity, alwaysShow)
+}
+
+// ViewPublicAlwaysShowNameTag removes the always-show name tag override of the entity for this player.
+func (p *Player) ViewPublicAlwaysShowNameTag(entity world.Entity) {
+	p.session().ViewPublicAlwaysShowNameTag(entity)
 }
 
 // ViewScoreTag overrides the public score tag of the entity for this player.
