@@ -28,6 +28,10 @@ type ExplosionConfig struct {
 	// the item drop chance is 1/Size. If negative, no items will be dropped by
 	// the explosion. If set to 1 or higher, all items are dropped.
 	ItemDropChance float64
+	// UnblockableByShield specifies if the explosion damage should not be blockable by shields.
+	UnblockableByShield bool
+	// Source is the entity that caused the explosion, if known.
+	Source world.Entity
 
 	// Sound is the sound to play when the explosion is created. If set to nil, this will default to the sound of a
 	// regular explosion.
@@ -35,6 +39,21 @@ type ExplosionConfig struct {
 	// Particle is the particle to spawn when the explosion is created. If set to nil, this will default to the particle
 	// of a regular huge explosion.
 	Particle world.Particle
+}
+
+// configuredExplosionSource carries shield-specific explosion properties through the generic source API.
+type configuredExplosionSource struct {
+	world.ExplosionSource
+	source              world.Entity
+	unblockableByShield bool
+}
+
+// ShieldBlockInfo returns the information needed to block this explosion with a shield.
+func (s configuredExplosionSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if s.unblockableByShield {
+		return world.ShieldBlockInfo{}, false
+	}
+	return world.ShieldBlockInfo{Origin: s.Position(), Source: s.source, BlockWhenImmune: true}, true
 }
 
 // ExplodableEntity represents an entity that can be exploded.
@@ -77,6 +96,11 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 	if c.RandSource == nil {
 		t := uint64(time.Now().UnixNano())
 		c.RandSource = rand.NewPCG(t, t)
+	}
+	src = configuredExplosionSource{
+		ExplosionSource:     src,
+		source:              c.Source,
+		unblockableByShield: c.UnblockableByShield,
 	}
 	size, explosionPos := src.Size(), src.Position()
 	if c.ItemDropChance == 0 {

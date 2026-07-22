@@ -52,3 +52,11 @@ func (ThornsDamageSource) ReducedByResistance() bool { return true }
 func (ThornsDamageSource) ReducedByArmour() bool     { return false }
 func (ThornsDamageSource) Fire() bool                { return false }
 func (ThornsDamageSource) IgnoreTotem() bool         { return false }
+
+// ShieldBlockInfo returns the position of the thorns owner.
+func (s ThornsDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if s.Owner == nil {
+		return world.ShieldBlockInfo{}, false
+	}
+	return world.ShieldBlockInfo{Origin: s.Owner.Position()}, true
+}

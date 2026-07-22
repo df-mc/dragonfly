@@ -20,41 +20,51 @@ var _ world.RedstonePowerAction = TNT{}
 
 func (TNT) RedstoneNonConductive() {}
 
-// RedstonePowerAction primes TNT when it first receives redstone power.
+// RedstonePowerAction primes shield-unblockable TNT when it first receives redstone power.
 func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower int) {
 	if oldPower > 0 || newPower == 0 {
 		return
 	}
-	t.Ignite(pos, tx, nil)
+	spawnTnt(pos, tx, world.TNTSpawnConfig{Fuse: time.Second * 4, UnblockableByShield: true})
 }
 
-// ProjectileHit ...
+// ProjectileHit ignites TNT hit by a burning projectile, attributing it to the projectile owner.
 func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
 	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
-		t.Ignite(pos, tx, nil)
+		spawnTnt(pos, tx, world.TNTSpawnConfig{Fuse: time.Second * 4, Source: tntIgnitionSourceHandle(e)})
 	}
 }
 
-// Activate ...
+// Activate ignites TNT using a Fire Aspect item.
 func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
-		t.Ignite(pos, tx, nil)
+		t.Ignite(pos, tx, u)
 		ctx.DamageItem(1)
 		return true
 	}
 	return false
 }
 
-// Ignite ...
-func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
-	spawnTnt(pos, tx, time.Second*4)
+// Ignite primes the TNT with source credited for the resulting explosion.
+func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
+	spawnTnt(pos, tx, world.TNTSpawnConfig{Fuse: time.Second * 4, Source: tntIgnitionSourceHandle(source)})
 	return true
 }
 
-// Explode ...
-func (t TNT) Explode(_ world.ExplosionSource, pos cube.Pos, tx *world.Tx) {
-	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))))
+// Explode primes TNT with a short random fuse, preserving the explosion source and shield blockability.
+func (t TNT) Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx) {
+	conf := world.TNTSpawnConfig{
+		Fuse: time.Second/2 + time.Duration(rand.IntN(int(time.Second+time.Second/2))),
+	}
+	if s, ok := src.(world.ShieldBlockInfoSource); ok {
+		info, blockable := s.ShieldBlockInfo()
+		conf.UnblockableByShield = !blockable
+		if info.Source != nil {
+			conf.Source = info.Source.H()
+		}
+	}
+	spawnTnt(pos, tx, conf)
 }
 
 // BreakInfo ...
@@ -77,10 +87,29 @@ func (t TNT) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:tnt", map[string]interface{}{"explode_bit": false}
 }
 
-// spawnTnt creates a new TNT entity at the given position with the given fuse duration.
-func spawnTnt(pos cube.Pos, tx *world.Tx, fuse time.Duration) {
+// ownerEntity exposes the owner of a projectile-like entity.
+type ownerEntity interface {
+	ProjectileOwner() *world.EntityHandle
+}
+
+// tntIgnitionSourceHandle returns the entity credited for an ignition, resolving projectile owners.
+func tntIgnitionSourceHandle(source world.Entity) *world.EntityHandle {
+	if source == nil {
+		return nil
+	}
+	if o, ok := source.(ownerEntity); ok {
+		if owner := o.ProjectileOwner(); owner != nil {
+			return owner
+		}
+	}
+	return source.H()
+}
+
+// spawnTnt replaces the block with primed TNT carrying its explosion source and shield blockability.
+func spawnTnt(pos cube.Pos, tx *world.Tx, conf world.TNTSpawnConfig) {
 	tx.PlaySound(pos.Vec3Centre(), sound.TNT{})
 	tx.SetBlock(pos, nil, nil)
 	opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
-	tx.AddEntity(tx.World().EntityRegistry().Config().TNT(opts, fuse))
+	registry := tx.World().EntityRegistry().Config()
+	tx.AddEntity(registry.TNTWithConfig(opts, conf))
 }

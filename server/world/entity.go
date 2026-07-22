@@ -472,6 +472,47 @@ type DamageSource interface {
 	IgnoreTotem() bool
 }
 
+// ShieldBlockInfo describes how a shield may block a damage source.
+type ShieldBlockInfo struct {
+	Origin                           mgl64.Vec3
+	Source                           Entity
+	BlockWhenImmune, BlockZeroDamage bool
+}
+
+// ShieldBlockInfoSource exposes the information needed to block a source with a shield.
+type ShieldBlockInfoSource interface {
+	ShieldBlockInfo() (ShieldBlockInfo, bool)
+}
+
+// ShieldBlockSource is implemented by damage sources that shields may block.
+type ShieldBlockSource interface {
+	DamageSource
+	ShieldBlockInfoSource
+}
+
+// HurtResult describes the outcome of a call to Hurt on a living entity.
+type HurtResult uint8
+
+const (
+	// HurtIgnored indicates that the hit did not run the normal damage path.
+	HurtIgnored HurtResult = iota
+	// HurtAccepted indicates that the hit ran the normal damage path.
+	HurtAccepted
+	// HurtCancelled indicates that a handler cancelled the hurt event.
+	HurtCancelled
+	// HurtBlocked indicates that a shield blocked the hit.
+	HurtBlocked
+)
+
+// Accepted reports whether the hit ran the normal damage path.
+func (r HurtResult) Accepted() bool { return r == HurtAccepted }
+
+// Blocked reports whether a shield blocked the hit.
+func (r HurtResult) Blocked() bool { return r == HurtBlocked }
+
+// Cancelled reports whether a handler cancelled the hurt event.
+func (r HurtResult) Cancelled() bool { return r == HurtCancelled }
+
 // HealingSource represents a source of healing for an Entity. This source may
 // be passed to the Heal() method of a living Entity.
 type HealingSource interface {
@@ -488,11 +529,14 @@ type EntityRegistry struct {
 // EntityRegistryConfig holds functions used by the block and item packages to
 // create entities as a result of their behaviour. ALL functions of
 // EntityRegistryConfig must be filled out for the behaviour of these blocks and
-// items not to fail.
+// items not to fail, except those explicitly documented as optional.
 type EntityRegistryConfig struct {
-	Item               func(opts EntitySpawnOpts, it any) *EntityHandle
-	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
-	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
+	Item         func(opts EntitySpawnOpts, it any) *EntityHandle
+	FallingBlock func(opts EntitySpawnOpts, bl Block) *EntityHandle
+	// TNT creates TNT with a fuse and backs the optional TNTWithConfig field.
+	TNT func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
+	// TNTWithConfig optionally creates TNT with additional spawn configuration.
+	TNTWithConfig      func(opts EntitySpawnOpts, conf TNTSpawnConfig) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, conf ArrowSpawnConfig) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
@@ -526,8 +570,20 @@ type ArrowSpawnConfig struct {
 	Tip any
 }
 
+// TNTSpawnConfig holds additional properties of a primed TNT entity.
+type TNTSpawnConfig struct {
+	Fuse                time.Duration
+	Source              *EntityHandle
+	UnblockableByShield bool
+}
+
 // New creates an EntityRegistry using conf and the EntityTypes passed.
 func (conf EntityRegistryConfig) New(ent []EntityType) EntityRegistry {
+	if conf.TNTWithConfig == nil && conf.TNT != nil {
+		conf.TNTWithConfig = func(opts EntitySpawnOpts, tnt TNTSpawnConfig) *EntityHandle {
+			return conf.TNT(opts, tnt.Fuse)
+		}
+	}
 	m := make(map[string]EntityType, len(ent))
 	for _, e := range ent {
 		name := e.EncodeEntity()

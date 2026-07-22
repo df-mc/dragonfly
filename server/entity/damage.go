@@ -42,6 +42,8 @@ type (
 		// Projectile and Owner are the world.Entity that dealt the damage and
 		// the one that fired the projectile respectively.
 		Projectile, Owner world.Entity
+		// Piercing is true if the projectile bypasses shields.
+		Piercing bool
 	}
 
 	// ExplosionDamageSource is used for damage caused by an explosion.
@@ -96,3 +98,36 @@ func (ExplosionDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool 
 	return e == enchantment.BlastProtection
 }
 func (ExplosionDamageSource) IgnoreTotem() bool { return false }
+
+// ShieldBlockInfo returns the position of an attack if its attacker is available.
+func (s AttackDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if s.Attacker == nil {
+		return world.ShieldBlockInfo{}, false
+	}
+	return world.ShieldBlockInfo{Origin: s.Attacker.Position()}, true
+}
+
+// ShieldBlockInfo returns the position of a projectile or its owner.
+func (s ProjectileDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if s.Piercing {
+		return world.ShieldBlockInfo{}, false
+	}
+	if s.Projectile != nil {
+		return world.ShieldBlockInfo{Origin: s.Projectile.Position(), BlockWhenImmune: true, BlockZeroDamage: true}, true
+	}
+	if s.Owner != nil {
+		return world.ShieldBlockInfo{Origin: s.Owner.Position(), BlockWhenImmune: true, BlockZeroDamage: true}, true
+	}
+	return world.ShieldBlockInfo{}, false
+}
+
+// ShieldBlockInfo returns the origin and source of a shield-blockable explosion.
+func (s ExplosionDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if s.Source == nil {
+		return world.ShieldBlockInfo{}, false
+	}
+	if source, ok := s.Source.(world.ShieldBlockInfoSource); ok {
+		return source.ShieldBlockInfo()
+	}
+	return world.ShieldBlockInfo{Origin: s.Source.Position(), BlockWhenImmune: true}, true
+}
