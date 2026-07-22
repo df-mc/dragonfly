@@ -372,11 +372,7 @@ func (srv *Server) listen(l Listener) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if msg, ok := srv.conf.Allower.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
-				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
-				_ = c.Close()
-				return
-			}
+
 			srv.finaliseConn(ctx, c, l)
 		}()
 	}
@@ -591,6 +587,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		ReadOnly:            srv.conf.ReadOnlyWorld,
 		SaveInterval:        srv.conf.SaveInterval,
 		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		ChunkLoadWorkers:    srv.conf.ChunkLoadWorkers,
 		Entities:            srv.conf.Entities,
 		Blocks:              srv.conf.Blocks,
 		PortalDestination: func(dim world.Dimension) *world.World {
