@@ -86,7 +86,7 @@ func (v *ViewLayer) IsAlwaysShowNameTag(entity Entity) (bool) {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
-	view := v.entities[entity.H()].alwaysViewShowTag
+	view := v.entities[entity.H()].alwaysShowNameTag
 	if alwaysShowNameTag == nil {
 		return true
 	}
