@@ -117,6 +117,10 @@ func (e *Ent) NameTag() string {
 	return e.data.Name
 }
 
+func (e *Ent) AlwaysShowNameTag() bool {
+	return e.data.AlwaysShowName
+}
+
 // SetNameTag changes the name tag of an entity. The name tag is removed if an
 // empty string is passed.
 func (e *Ent) SetNameTag(s string) {
