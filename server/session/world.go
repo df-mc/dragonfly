@@ -1111,7 +1111,7 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	}
 	if nt, ok := s.viewLayer.NameTag(e); ok {
 		metadata[protocol.EntityDataKeyName] = nt
-		alwaysShowName := s.viewLayer.IsAlwaysShowNameTag()
+		alwaysShowName := s.viewLayer.IsAlwaysShowNameTag(e)
 		if nt != "" {
 			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
 			wasAlwaysShowName := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
