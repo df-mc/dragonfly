@@ -125,6 +125,12 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Sessi
 	if flags.Load(packet.InputFlagStartJumping) {
 		c.Jump()
 	}
+	if flags.Load(packet.InputFlagStartSpinAttack) {
+		c.StartSpinning()
+	}
+	if flags.Load(packet.InputFlagStopSpinAttack) {
+		c.StopSpinning()
+	}
 	if flags.Load(packet.InputFlagStartCrawling) {
 		c.StartCrawling()
 	}

@@ -56,7 +56,7 @@ type playerData struct {
 	armour                       *inventory.Armour
 	heldSlot                     *uint32
 
-	sneaking, sprinting, swimming, gliding, crawling, flying,
+	sneaking, sprinting, swimming, gliding, spinning, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
 
 	sleeping bool
@@ -66,6 +66,7 @@ type playerData struct {
 
 	glideTicks   int64
 	fireTicks    int64
+	riptideTicks int64
 	fallDistance float64
 
 	breathing         bool
@@ -660,6 +661,12 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 
 	p.Wake()
 
+	if s, ok := src.(entity.AttackDamageSource); ok {
+		if attacker, ok := s.Attacker.(*Player); ok && attacker.Spinning() {
+			attacker.StopSpinning()
+		}
+	}
+
 	if p.Dead() {
 		p.kill(src)
 	}
@@ -1204,6 +1211,43 @@ func (p *Player) StopGliding() {
 	}
 	p.gliding = false
 	p.glideTicks = 0
+	p.updateState()
+}
+
+// StartSpinning makes the player start spinning if it is not currently doing so.
+func (p *Player) StartSpinning() {
+	if p.spinning {
+		p.riptideTicks = 20
+		return
+	}
+	trident, _ := p.HeldItems()
+	if _, ok := trident.Item().(item.Trident); !ok || trident.Durability() < 14 {
+		// Vanilla does not allow using a trident that would break as a result.
+		return
+	}
+	if _, ok := trident.Enchantment(enchantment.Riptide); !ok {
+		return
+	}
+
+	// TODO; According to java edition this should be 20 ticks, but nukkit puts it as (50 + (riptideLevel << 5))
+	p.riptideTicks = 20
+
+	p.spinning = true
+	p.updateState()
+}
+
+// Spinning checks if the player is currently spinning.
+func (p *Player) Spinning() bool {
+	return p.spinning
+}
+
+// StopSpinning makes the player stop spinning if it is currently doing so.
+func (p *Player) StopSpinning() {
+	if !p.spinning {
+		return
+	}
+	p.spinning = false
+	p.riptideTicks = 0
 	p.updateState()
 }
 
@@ -1844,6 +1888,12 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 	if s, ok := i.Enchantment(enchantment.Sharpness); ok {
 		dmg += enchantment.Sharpness.Addend(s.Level())
+		for _, v := range p.tx.Viewers(living.Position()) {
+			v.ViewEntityAction(living, entity.EnchantedHitAction{})
+		}
+	}
+	if s, ok := i.Enchantment(enchantment.Impaling); ok && entity.Wet(living, p.tx) {
+		dmg += enchantment.Impaling.Addend(s.Level())
 		for _, v := range p.tx.Viewers(living.Position()) {
 			v.ViewEntityAction(living, entity.EnchantedHitAction{})
 		}
@@ -2608,6 +2658,17 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	}
 	if p.insideOfSolid() {
 		p.Hurt(1, entity.SuffocationDamageSource{})
+	}
+
+	if p.Spinning() {
+		if p.collidedHorizontally {
+			p.StopSpinning()
+		}
+		if p.riptideTicks > 0 {
+			p.riptideTicks -= 1
+		} else {
+			p.StopSpinning()
+		}
 	}
 
 	if p.OnFireDuration() > 0 {
