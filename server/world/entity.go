@@ -104,6 +104,7 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 	handle.worldless.Store(true)
 	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	handle.data.Name = opts.NameTag
+	handle.data.AlwaysShowNameTag = true
 	conf.Apply(&handle.data)
 	return handle
 }
@@ -124,6 +125,7 @@ func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
 		cond:      sync.NewCond(&sync.Mutex{}),
 		worldless: &atomic.Bool{},
 		closed:    make(chan struct{}),
+		data:      EntityData{AlwaysShowNameTag: true},
 	}
 	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
 	handle.decodeNBT(data)
@@ -414,12 +416,12 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 
 // EntityData holds data shared by every entity. It is kept in an EntityHandle.
 type EntityData struct {
-	Pos, Vel     mgl64.Vec3
-	Rot          cube.Rotation
-	Name         string
-	AlwaysShowName *bool
-	FireDuration time.Duration
-	Age          time.Duration
+	Pos, Vel          mgl64.Vec3
+	Rot               cube.Rotation
+	Name              string
+	AlwaysShowNameTag bool
+	FireDuration      time.Duration
+	Age               time.Duration
 
 	Data any
 }

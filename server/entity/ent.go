@@ -117,13 +117,17 @@ func (e *Ent) NameTag() string {
 	return e.data.Name
 }
 
+// AlwaysShowNameTag reports whether the name tag of the entity is shown at all distances.
 func (e *Ent) AlwaysShowNameTag() bool {
-	alwaysShowNameTag := e.data.AlwaysShowName
-	if (alwaysShowNameTag == nil) {
-		return true
+	return e.data.AlwaysShowNameTag
+}
+
+// SetAlwaysShowNameTag sets whether the name tag of the entity is shown at all distances.
+func (e *Ent) SetAlwaysShowNameTag(alwaysShow bool) {
+	e.data.AlwaysShowNameTag = alwaysShow
+	for _, v := range e.tx.Viewers(e.Position()) {
+		v.ViewEntityState(e)
 	}
-	
-	return *alwaysShowNameTag
 }
 
 // SetNameTag changes the name tag of an entity. The name tag is removed if an

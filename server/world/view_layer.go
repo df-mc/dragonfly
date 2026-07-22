@@ -8,10 +8,10 @@ import (
 
 // layer stores the appearance overrides that a ViewLayer applies to an entity.
 type layer struct {
-	nameTag    *string
+	nameTag           *string
 	alwaysShowNameTag *bool
-	scoreTag   *string
-	visibility VisibilityLevel
+	scoreTag          *string
+	visibility        VisibilityLevel
 }
 
 // ViewLayerUpdater handles immediate updates after a ViewLayer changes how an entity is viewed.
@@ -76,21 +76,29 @@ func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
 	return *nameTag, true
 }
 
-func (v *ViewLayer) AlwaysShowNameTag(entity Entity, show bool) {
+// ViewAlwaysShowNameTag overrides whether the entity's name tag is shown at all distances for this ViewLayer.
+func (v *ViewLayer) ViewAlwaysShowNameTag(entity Entity, alwaysShow bool) {
 	v.update(entity, func(l *layer) {
-		l.alwaysShowNameTag = &show
+		l.alwaysShowNameTag = &alwaysShow
 	})
 }
 
-func (v *ViewLayer) IsAlwaysShowNameTag(entity Entity) (bool) {
+// ViewPublicAlwaysShowNameTag removes the always-show name tag override from the entity.
+func (v *ViewLayer) ViewPublicAlwaysShowNameTag(entity Entity) {
+	v.update(entity, func(l *layer) {
+		l.alwaysShowNameTag = nil
+	})
+}
+
+// AlwaysShowNameTag returns the overwritten always-show state of the entity and whether an override was set.
+func (v *ViewLayer) AlwaysShowNameTag(entity Entity) (bool, bool) {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
-
-	view := v.entities[entity.H()].alwaysShowNameTag
-	if view == nil {
-		return true
+	alwaysShow := v.entities[entity.H()].alwaysShowNameTag
+	if alwaysShow == nil {
+		return false, false
 	}
-	return *view
+	return *alwaysShow, true
 }
 
 // ViewScoreTag overwrites the public score tag of the entity and allows this ViewLayer to view a different score tag.
@@ -185,7 +193,7 @@ func (v *ViewLayer) Close() error {
 
 // empty checks if the layer does not override any public entity metadata.
 func (l layer) empty() bool {
-	return l.nameTag == nil && l.scoreTag == nil && l.visibility == PublicVisibility()
+	return l.nameTag == nil && l.alwaysShowNameTag == nil && l.scoreTag == nil && l.visibility == PublicVisibility()
 }
 
 func (v *ViewLayer) refresh(entity Entity) {

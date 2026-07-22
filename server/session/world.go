@@ -1109,30 +1109,17 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	if s.viewLayer == nil {
 		return metadata
 	}
-	if nt, ok := s.viewLayer.NameTag(e); ok {
-		metadata[protocol.EntityDataKeyName] = nt
-		alwaysShowName := s.viewLayer.IsAlwaysShowNameTag(e)
-		if nt != "" {
-			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
-			wasAlwaysShowName := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			if alwaysShowName && !wasAlwaysShowName {
-				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			} else if !alwaysShowName && wasAlwaysShowName {
-				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			}
-
-			if !metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
-				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
-			}
-		} else {
-			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
-			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName) {
-				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			}
-			if metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName) {
-				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
-			}
+	nameTag, nameTagSet := s.viewLayer.NameTag(e)
+	alwaysShow, alwaysShowSet := s.viewLayer.AlwaysShowNameTag(e)
+	if nameTagSet || alwaysShowSet {
+		if !nameTagSet {
+			nameTag, _ = metadata[protocol.EntityDataKeyName].(string)
 		}
+		if !alwaysShowSet {
+			value, ok := metadata[protocol.EntityDataKeyAlwaysShowNameTag].(uint8)
+			alwaysShow = !ok || value != 0
+		}
+		writeNameTagMetadata(metadata, nameTag, alwaysShow)
 	}
 	if st, ok := s.viewLayer.ScoreTag(e); ok {
 		metadata[protocol.EntityDataKeyScore] = st

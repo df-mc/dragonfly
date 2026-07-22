@@ -108,27 +108,11 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagIgnited)
 	}
 	if n, ok := e.(named); ok {
-		name := n.NameTag()
-		alwaysShow := n.AlwaysShowNameTag()
-		m[protocol.EntityDataKeyName] = name
-
-		if name == "" {
-			m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
-			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
-		} else {
-			m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
-
-			wasAlwaysShow := m.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-
-			if alwaysShow && !wasAlwaysShow {
-				m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			} else if !alwaysShow && wasAlwaysShow {
-				m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			}
-
-			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+		alwaysShow := true
+		if a, ok := e.(alwaysShowNameTag); ok {
+			alwaysShow = a.AlwaysShowNameTag()
 		}
+		writeNameTagMetadata(m, n.NameTag(), alwaysShow)
 	}
 	if sc, ok := e.(scoreTag); ok {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
@@ -198,6 +182,23 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 }
 
+// writeNameTagMetadata writes a name tag and its related visibility properties to metadata.
+func writeNameTagMetadata(metadata protocol.EntityMetadata, nameTag string, alwaysShow bool) {
+	metadata[protocol.EntityDataKeyName] = nameTag
+	metadata[protocol.EntityDataKeyAlwaysShowNameTag] = boolByte(nameTag != "" && alwaysShow)
+	if nameTag == "" {
+		metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+		metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+		return
+	}
+	if alwaysShow {
+		metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+	} else {
+		metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+	}
+	metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+}
+
 type sneaker interface {
 	Sneaking() bool
 }
@@ -246,6 +247,9 @@ type owned interface {
 
 type named interface {
 	NameTag() string
+}
+
+type alwaysShowNameTag interface {
 	AlwaysShowNameTag() bool
 }
 
