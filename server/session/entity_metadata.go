@@ -121,9 +121,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 
 			wasAlwaysShow := m.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
 
-			if alwaysShow & !wasAlwaysShow {
+			if alwaysShow && !wasAlwaysShow {
 				m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			} else if !alwaysShow & wasAlwaysShow {
+			} else if !alwaysShow && wasAlwaysShow {
 				m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
 			}
 
