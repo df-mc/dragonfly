@@ -44,6 +44,7 @@ type playerData struct {
 	xuid              string
 	locale            language.Tag
 	nameTag, scoreTag string
+	alwaysShowNameTag bool
 	absorptionHealth  float64
 	scale             float64
 
@@ -441,6 +442,19 @@ func (p *Player) SetNameTag(name string) {
 // NameTag returns the current name tag of the Player as shown in-game. It can be changed using SetNameTag.
 func (p *Player) NameTag() string {
 	return p.nameTag
+}
+
+// SetAlwaysShowNameTag changes whether the name tag of the player is shown at all distances instead of only
+// when the player is looked at from up close. By default, the name tag is always shown.
+func (p *Player) SetAlwaysShowNameTag(alwaysShow bool) {
+	p.alwaysShowNameTag = alwaysShow
+	p.updateState()
+}
+
+// AlwaysShowNameTag returns whether the name tag of the player is shown at all distances. It can be changed
+// using SetAlwaysShowNameTag.
+func (p *Player) AlwaysShowNameTag() bool {
+	return p.alwaysShowNameTag
 }
 
 // SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the player's
@@ -2688,6 +2702,16 @@ func (p *Player) ViewNameTag(entity world.Entity, nameTag string) {
 // ViewPublicNameTag removes the name tag override of the entity for this player.
 func (p *Player) ViewPublicNameTag(entity world.Entity) {
 	p.session().ViewPublicNameTag(entity)
+}
+
+// ViewAlwaysShowNameTag overrides whether the entity's name tag is shown at all distances for this player.
+func (p *Player) ViewAlwaysShowNameTag(entity world.Entity, alwaysShow bool) {
+	p.session().ViewAlwaysShowNameTag(entity, alwaysShow)
+}
+
+// ViewPublicAlwaysShowNameTag removes the always-show name tag override of the entity for this player.
+func (p *Player) ViewPublicAlwaysShowNameTag(entity world.Entity) {
+	p.session().ViewPublicAlwaysShowNameTag(entity)
 }
 
 // ViewScoreTag overrides the public score tag of the entity for this player.
