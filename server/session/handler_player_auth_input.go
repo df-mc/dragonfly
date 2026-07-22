@@ -145,7 +145,13 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Sessi
 		}
 	}
 	if flags.Load(packet.InputFlagStopFlying) {
-		c.StopFlying()
+		if !c.GameMode().HasCollision() {
+			// Modes without collision, such as spectator, fly permanently and
+			// may not stop, so correct the client that tried to.
+			s.SendAbilities(c)
+		} else {
+			c.StopFlying()
+		}
 	}
 }
 
