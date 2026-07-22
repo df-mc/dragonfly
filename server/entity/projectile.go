@@ -206,6 +206,16 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
 			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
+		// TODO: trace.BlockIntercept returns early for blocks whose model has
+		// no BBox (model.Empty), so the trace passes straight through buttons
+		// and the like. Until the trace layer can report pass-through hits, the
+		// block of the cell the projectile comes to rest in is notified as well.
+		// Implementations must therefore verify the projectile really touches
+		// them, as Button.ProjectileHit does.
+		rest := bpos.Side(r.Face())
+		if h, ok := tx.Block(rest).(block.ProjectileHitter); ok {
+			h.ProjectileHit(rest, tx, e, r.Face())
+		}
 		if lt.conf.SurviveBlockCollision {
 			lt.hitBlockSurviving(e, r, m, tx)
 			return m
@@ -330,13 +340,15 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 	}
 
 	var (
-		end = pos.Add(vel)
-		hit trace.Result
-		ok  bool
+		end      = pos.Add(vel)
+		hit      trace.Result
+		onGround bool
+		ok       bool
 	)
 	if !mgl64.FloatEqual(end.Sub(pos).LenSqr(), 0) {
 		if hit, ok = trace.Perform(pos, end, tx, e.H().Type().BBox(e).Grow(1.0), lt.ignores(e)); ok {
-			if _, ok := hit.(trace.BlockResult); ok {
+			if r, ok := hit.(trace.BlockResult); ok {
+				onGround = r.Face() == cube.FaceUp
 				// Undo the gravity because the velocity as a result of gravity
 				// at the point of collision should be 0.
 				vel[1] = (vel[1] + lt.mc.Gravity) / (1 - lt.mc.Drag)
@@ -353,7 +365,7 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 			end = hit.Position()
 		}
 	}
-	return &Movement{v: viewers, e: e, pos: end, vel: vel, dpos: end.Sub(pos), dvel: vel.Sub(velBefore), rot: rot}, hit
+	return &Movement{v: viewers, e: e, pos: end, vel: vel, dpos: end.Sub(pos), dvel: vel.Sub(velBefore), rot: rot, onGround: onGround}, hit
 }
 
 // ignores returns a function to ignore entities in trace.Perform that are
