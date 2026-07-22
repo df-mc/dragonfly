@@ -12,14 +12,14 @@ import (
 
 // NewSplashPotion creates a splash potion. SplashPotion is an item that grants
 // effects when thrown.
-func NewSplashPotion(opts world.EntitySpawnOpts, t potion.Potion, owner world.Entity) *world.EntityHandle {
+func NewSplashPotion(opts world.EntitySpawnOpts, t potion.Potion, owner *world.EntityHandle) *world.EntityHandle {
 	colour, _ := effect.ResultingColour(t.Effects())
 
 	conf := splashPotionConf
 	conf.Potion = t
 	conf.Particle = particle.Splash{Colour: colour}
 	conf.Hit = potionSplash(1, t, false)
-	conf.Owner = ownerHandle(owner)
+	conf.Owner = owner
 
 	return opts.New(SplashPotionType, conf)
 }

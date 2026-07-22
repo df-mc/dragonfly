@@ -12,14 +12,14 @@ import (
 // NewLingeringPotion creates a new lingering potion. LingeringPotion is a
 // variant of a splash potion that can be thrown to leave clouds with status
 // effects that linger on the ground in an area.
-func NewLingeringPotion(opts world.EntitySpawnOpts, t potion.Potion, owner world.Entity) *world.EntityHandle {
+func NewLingeringPotion(opts world.EntitySpawnOpts, t potion.Potion, owner *world.EntityHandle) *world.EntityHandle {
 	colour, _ := effect.ResultingColour(t.Effects())
 
 	conf := splashPotionConf
 	conf.Potion = t
 	conf.Particle = particle.Splash{Colour: colour}
 	conf.Hit = potionSplash(0.25, t, true)
-	conf.Owner = ownerHandle(owner)
+	conf.Owner = owner
 	return opts.New(LingeringPotionType, conf)
 }
 

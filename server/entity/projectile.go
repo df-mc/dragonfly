@@ -17,19 +17,12 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// ownerHandle returns the handle of the owner passed, or nil if the projectile has no owner. Projectiles launched by
-// blocks such as dispensers are ownerless, so callers may pass a nil world.Entity.
-func ownerHandle(owner world.Entity) *world.EntityHandle {
-	if owner == nil {
-		return nil
-	}
-	return owner.H()
-}
-
 // ProjectileBehaviourConfig allows the configuration of projectiles. Calling
 // ProjectileBehaviourConfig.New() creates a ProjectileBehaviour using these
 // settings.
 type ProjectileBehaviourConfig struct {
+	// Owner is the handle of the entity that launched the projectile. It may be
+	// nil if the projectile has no owner.
 	Owner *world.EntityHandle
 	// Gravity is the amount of Y velocity subtracted every tick.
 	Gravity float64

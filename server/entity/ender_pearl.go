@@ -10,10 +10,13 @@ import (
 )
 
 // NewEnderPearl creates an EnderPearl entity. EnderPearl is a smooth, greenish-
-// blue item used to teleport.
-func NewEnderPearl(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
+// blue item used to teleport. Owner must not be nil.
+func NewEnderPearl(opts world.EntitySpawnOpts, owner *world.EntityHandle) *world.EntityHandle {
+	if owner == nil {
+		panic("ender pearl owner must not be nil")
+	}
 	conf := enderPearlConf
-	conf.Owner = owner.H()
+	conf.Owner = owner
 	return opts.New(EnderPearlType, conf)
 }
 

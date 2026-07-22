@@ -15,21 +15,22 @@ func NewFirework(opts world.EntitySpawnOpts, firework item.Firework) *world.Enti
 }
 
 // NewFireworkAttached creates a firework entity with an owner that the firework
-// may be attached to.
-func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, owner world.Entity) *world.EntityHandle {
+// may be attached to. Owner must not be nil.
+func NewFireworkAttached(opts world.EntitySpawnOpts, firework item.Firework, owner *world.EntityHandle) *world.EntityHandle {
+	if owner == nil {
+		panic("attached firework owner must not be nil")
+	}
 	return newFirework(opts, firework, owner, 0, 0, true)
 }
 
-func newFirework(opts world.EntitySpawnOpts, firework item.Firework, owner world.Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
+func newFirework(opts world.EntitySpawnOpts, firework item.Firework, owner *world.EntityHandle, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
 	conf := fireworkConf
 	conf.SidewaysVelocityMultiplier = sidewaysVelocityMultiplier
 	conf.UpwardsAcceleration = upwardsAcceleration
 	conf.Firework = firework
 	conf.ExistenceDuration = firework.RandomisedDuration()
 	conf.Attached = attached
-	if attached {
-		conf.Owner = ownerHandle(owner)
-	}
+	conf.Owner = owner
 	return opts.New(FireworkType, conf)
 }
 

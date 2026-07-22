@@ -493,14 +493,14 @@ type EntityRegistryConfig struct {
 	Item               func(opts EntitySpawnOpts, it any) *EntityHandle
 	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
 	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
-	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
+	BottleOfEnchanting func(opts EntitySpawnOpts, owner *EntityHandle) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, conf ArrowSpawnConfig) *EntityHandle
-	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	EnderPearl         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	Firework           func(opts EntitySpawnOpts, firework Item, owner Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *EntityHandle
-	LingeringPotion    func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
-	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
-	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
+	Egg                func(opts EntitySpawnOpts, owner *EntityHandle) *EntityHandle
+	EnderPearl         func(opts EntitySpawnOpts, owner *EntityHandle) *EntityHandle
+	Firework           func(opts EntitySpawnOpts, firework Item, owner *EntityHandle, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *EntityHandle
+	LingeringPotion    func(opts EntitySpawnOpts, t any, owner *EntityHandle) *EntityHandle
+	Snowball           func(opts EntitySpawnOpts, owner *EntityHandle) *EntityHandle
+	SplashPotion       func(opts EntitySpawnOpts, t any, owner *EntityHandle) *EntityHandle
 	Lightning          func(opts EntitySpawnOpts) *EntityHandle
 }
 
@@ -508,8 +508,9 @@ type EntityRegistryConfig struct {
 type ArrowSpawnConfig struct {
 	// Damage specifies the base damage dealt by the arrow.
 	Damage float64
-	// Owner is the entity that fired the arrow.
-	Owner Entity
+	// Owner is the handle of the entity that fired the arrow. It may be nil if
+	// the arrow has no owner.
+	Owner *EntityHandle
 	// Critical specifies if the arrow should deal critical damage.
 	Critical bool
 	// DisablePickup specifies if picking up the arrow should be disabled.

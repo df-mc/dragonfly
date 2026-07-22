@@ -35,22 +35,22 @@ var conf = world.EntityRegistryConfig{
 	EnderPearl:         NewEnderPearl,
 	FallingBlock:       NewFallingBlock,
 	Lightning:          NewLightning,
-	Firework: func(opts world.EntitySpawnOpts, firework world.Item, owner world.Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
+	Firework: func(opts world.EntitySpawnOpts, firework world.Item, owner *world.EntityHandle, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
 		return newFirework(opts, firework.(item.Firework), owner, sidewaysVelocityMultiplier, upwardsAcceleration, attached)
 	},
 	Item: func(opts world.EntitySpawnOpts, it any) *world.EntityHandle {
 		return NewItem(opts, it.(item.Stack))
 	},
-	LingeringPotion: func(opts world.EntitySpawnOpts, t any, owner world.Entity) *world.EntityHandle {
+	LingeringPotion: func(opts world.EntitySpawnOpts, t any, owner *world.EntityHandle) *world.EntityHandle {
 		return NewLingeringPotion(opts, t.(potion.Potion), owner)
 	},
-	SplashPotion: func(opts world.EntitySpawnOpts, t any, owner world.Entity) *world.EntityHandle {
+	SplashPotion: func(opts world.EntitySpawnOpts, t any, owner *world.EntityHandle) *world.EntityHandle {
 		return NewSplashPotion(opts, t.(potion.Potion), owner)
 	},
 	Arrow: func(opts world.EntitySpawnOpts, arrow world.ArrowSpawnConfig) *world.EntityHandle {
 		tip := arrow.Tip.(potion.Potion)
 		conf := arrowConf
-		conf.Damage, conf.Potion, conf.Owner = arrow.Damage, tip, ownerHandle(arrow.Owner)
+		conf.Damage, conf.Potion, conf.Owner = arrow.Damage, tip, arrow.Owner
 		conf.KnockBackForceAddend = float64(arrow.PunchLevel) * enchantment.Punch.KnockBackMultiplier()
 		conf.DisablePickup = arrow.DisablePickup
 		if arrow.ObtainArrowOnPickup {

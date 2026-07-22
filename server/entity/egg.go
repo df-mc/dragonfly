@@ -8,9 +8,9 @@ import (
 
 // NewEgg creates an Egg entity. Egg is as a throwable entity that can be used
 // to spawn chicks.
-func NewEgg(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
+func NewEgg(opts world.EntitySpawnOpts, owner *world.EntityHandle) *world.EntityHandle {
 	conf := eggConf
-	conf.Owner = ownerHandle(owner)
+	conf.Owner = owner
 	return opts.New(EggType, conf)
 }
 
