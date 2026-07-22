@@ -9,6 +9,7 @@ import (
 // layer stores the appearance overrides that a ViewLayer applies to an entity.
 type layer struct {
 	nameTag    *string
+	alwaysShowNameTag *bool
 	scoreTag   *string
 	visibility VisibilityLevel
 }
@@ -73,6 +74,23 @@ func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
 		return "", false
 	}
 	return *nameTag, true
+}
+
+func (v *ViewLayer) ShowNameTag(entity Entity, show bool) {
+	v.update(entity, func(l *layer) {
+		l.alwaysShowNameTag = &show
+	})
+}
+
+func (v *ViewLayer) ViewNameTag(entity Entity) (bool) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+
+	view := v.entities[entity.H()].alwaysViewShowTag
+	if alwaysShowNameTag == nil {
+		return true
+	}
+	return *alwaysShowNameTag
 }
 
 // ViewScoreTag overwrites the public score tag of the entity and allows this ViewLayer to view a different score tag.
