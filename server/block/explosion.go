@@ -14,8 +14,8 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// ExplosionConfig is the configuration for an explosion. The world, position, size, sound, particle, and more can all
-// be configured through this configuration.
+// ExplosionConfig is the configuration for an explosion. The sound, particle, item drop chance and more can all be
+// configured through this configuration. The position and size come from the world.ExplosionSource passed to Explode.
 type ExplosionConfig struct {
 	// RandSource is the source to use for the explosion "randomness". If set
 	// to nil, RandSource defaults to a `rand.PCG`source seeded with
@@ -39,14 +39,13 @@ type ExplosionConfig struct {
 
 // ExplodableEntity represents an entity that can be exploded.
 type ExplodableEntity interface {
-	// Explode is called when an explosion occurs. The entity can then react to the explosion using the configuration
-	// and impact provided.
+	// Explode is called when an explosion occurs. The entity can react using the source and impact provided.
 	Explode(src world.ExplosionSource, impact float64)
 }
 
 // Explodable represents a block that can be exploded.
 type Explodable interface {
-	// Explode is called when an explosion occurs. The block can react to the explosion using the configuration passed.
+	// Explode is called when an explosion occurs. The block can react using the source and configuration passed.
 	Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx, c ExplosionConfig)
 }
 
@@ -79,14 +78,10 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 		t := uint64(time.Now().UnixNano())
 		c.RandSource = rand.NewPCG(t, t)
 	}
-	size := src.Size()
-	if size == 0 {
-		size = 4
-	}
+	size, explosionPos := src.Size(), src.Position()
 	if c.ItemDropChance == 0 {
 		c.ItemDropChance = 1.0 / size
 	}
-	explosionPos := src.Position()
 
 	r, d := rand.New(c.RandSource), size*2
 	box := cube.Box(

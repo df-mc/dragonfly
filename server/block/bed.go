@@ -107,7 +107,7 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 			SpawnFire: true,
 		}.Explode(tx, world.BlockExplosionSource{
 			Block:         b,
-			Pos:           pos.Vec3Centre(),
+			Pos:           pos,
 			ExplosionSize: 5,
 		})
 		return true
