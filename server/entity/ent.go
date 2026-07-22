@@ -123,7 +123,7 @@ func (e *Ent) AlwaysShowNameTag() bool {
 		return true
 	}
 	
-	return e.data.AlwaysShowName
+	return *alwaysShowNameTag
 }
 
 // SetNameTag changes the name tag of an entity. The name tag is removed if an
