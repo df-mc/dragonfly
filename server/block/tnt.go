@@ -53,7 +53,7 @@ func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 }
 
 // Explode ...
-func (t TNT) Explode(_ world.ExplosionSource, pos cube.Pos, tx *world.Tx, _ ExplosionConfig) {
+func (t TNT) Explode(_ world.ExplosionSource, pos cube.Pos, tx *world.Tx) {
 	spawnTnt(pos, tx, time.Second/2+time.Duration(rand.IntN(int(time.Second+time.Second/2))))
 }
 

@@ -10,7 +10,8 @@ const defaultExplosionSize = 4
 
 // ExplosionSource represents the source of an explosion.
 type ExplosionSource interface {
-	// Position returns the position at the centre of the explosion.
+	// Position returns the position at the centre of the explosion. It must
+	// return the same position for the duration of an explosion.
 	Position() mgl64.Vec3
 	// Size returns the radius which entities/blocks are affected within.
 	Size() float64

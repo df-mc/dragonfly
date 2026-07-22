@@ -45,8 +45,8 @@ type ExplodableEntity interface {
 
 // Explodable represents a block that can be exploded.
 type Explodable interface {
-	// Explode is called when an explosion occurs. The block can react using the source and configuration passed.
-	Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx, c ExplosionConfig)
+	// Explode is called when an explosion occurs. The block can react using the source passed.
+	Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx)
 }
 
 // rays ...
@@ -145,7 +145,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 	for _, pos := range affectedBlocks {
 		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
-			explodable.Explode(src, pos, tx, c)
+			explodable.Explode(src, pos, tx)
 		} else if breakable, ok := bl.(Breakable); ok {
 			// Clear the block first so break handlers see the post-break world, this is required by things such as redstone updates.
 			tx.SetBlock(pos, nil, nil)
