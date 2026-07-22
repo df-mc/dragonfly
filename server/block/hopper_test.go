@@ -40,6 +40,18 @@ func TestHopperInsertUsesDestinationPosition(t *testing.T) {
 		if _, ok := tx.Block(hopperPos).(Hopper); !ok {
 			t.Errorf("hopper block replaced with %T while resolving destination inventory", tx.Block(hopperPos))
 		}
+		received := 0
+		for _, stack := range tx.Block(destinationPos).(Chest).Inventory(tx, destinationPos).Slots() {
+			if _, ok := stack.Item().(item.Stick); ok {
+				received += stack.Count()
+			}
+		}
+		if received != 1 {
+			t.Errorf("destination chest received %d sticks, want 1", received)
+		}
+		if stack, _ := hopper.inventory.Item(0); !stack.Empty() {
+			t.Errorf("hopper source slot was not decremented: got %v", stack)
+		}
 	})
 
 	if !inserted {
