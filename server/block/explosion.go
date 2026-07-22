@@ -14,11 +14,9 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// ExplosionConfig is the configuration for an explosion. The world, position, size, sound, particle, and more can all
-// be configured through this configuration.
+// ExplosionConfig is the configuration for an explosion. The sound, particle, item drop chance and more can all be
+// configured through this configuration. The position and size come from the world.ExplosionSource passed to Explode.
 type ExplosionConfig struct {
-	// Size is the size of the explosion, it is effectively the radius which entities/blocks will be affected within.
-	Size float64
 	// RandSource is the source to use for the explosion "randomness". If set
 	// to nil, RandSource defaults to a `rand.PCG`source seeded with
 	// `time.Now().UnixNano()`.
@@ -43,17 +41,31 @@ type ExplosionConfig struct {
 	Particle world.Particle
 }
 
+// configuredExplosionSource carries shield-specific explosion properties through the generic source API.
+type configuredExplosionSource struct {
+	world.ExplosionSource
+	source              world.Entity
+	unblockableByShield bool
+}
+
+// ShieldBlockInfo returns the information needed to block this explosion with a shield.
+func (s configuredExplosionSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
+	if s.unblockableByShield {
+		return world.ShieldBlockInfo{}, false
+	}
+	return world.ShieldBlockInfo{Origin: s.Position(), Source: s.source, BlockWhenImmune: true}, true
+}
+
 // ExplodableEntity represents an entity that can be exploded.
 type ExplodableEntity interface {
-	// Explode is called when an explosion occurs. The entity can then react to the explosion using the configuration
-	// and impact provided.
-	Explode(explosionPos mgl64.Vec3, impact float64, c ExplosionConfig)
+	// Explode is called when an explosion occurs. The entity can react using the source and impact provided.
+	Explode(src world.ExplosionSource, impact float64)
 }
 
 // Explodable represents a block that can be exploded.
 type Explodable interface {
-	// Explode is called when an explosion occurs. The block can react to the explosion using the configuration passed.
-	Explode(explosionPos mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig)
+	// Explode is called when an explosion occurs. The block can react using the source passed.
+	Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx)
 }
 
 // rays ...
@@ -74,7 +86,7 @@ func init() {
 }
 
 // Explode performs the explosion as specified by the configuration.
-func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
+func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 	if c.Sound == nil {
 		c.Sound = sound.Explosion{}
 	}
@@ -85,14 +97,17 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		t := uint64(time.Now().UnixNano())
 		c.RandSource = rand.NewPCG(t, t)
 	}
-	if c.Size == 0 {
-		c.Size = 4
+	src = configuredExplosionSource{
+		ExplosionSource:     src,
+		source:              c.Source,
+		unblockableByShield: c.UnblockableByShield,
 	}
+	size, explosionPos := src.Size(), src.Position()
 	if c.ItemDropChance == 0 {
-		c.ItemDropChance = 1.0 / c.Size
+		c.ItemDropChance = 1.0 / size
 	}
 
-	r, d := rand.New(c.RandSource), c.Size*2
+	r, d := rand.New(c.RandSource), size*2
 	box := cube.Box(
 		math.Floor(explosionPos[0]-d-1),
 		math.Floor(explosionPos[1]-d-1),
@@ -113,26 +128,33 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		affectedEntities = append(affectedEntities, e)
 	}
 
-	affectedBlocks := make([]cube.Pos, 0, 32)
+	affectedBlocks, seen := make([]cube.Pos, 0, 32), make(map[cube.Pos]struct{}, 32)
 	for _, ray := range rays {
 		pos := explosionPos
-		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
+		for blastForce := size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
 			currentBlock := tx.Block(current)
 
-			resistance := 0.0
+			resistance, resists := 0.0, false
 			if l, ok := tx.Liquid(current); ok {
-				resistance = l.BlastResistance()
+				resistance, resists = l.BlastResistance(), true
 			} else if i, ok := currentBlock.(Breakable); ok {
-				resistance = i.BreakInfo().BlastResistance
+				resistance, resists = i.BreakInfo().BlastResistance, true
 			} else if _, ok = currentBlock.(Air); !ok {
 				// Completely stop the ray if the current block is not air and unbreakable.
 				break
 			}
 
 			pos = pos.Add(ray)
-			if blastForce -= (resistance/5 + 0.3) * 0.3; blastForce > 0 {
-				affectedBlocks = append(affectedBlocks, current)
+			// Air offers no resistance to the ray, only blocks and liquids reduce its force beyond the step decay.
+			if resists {
+				blastForce -= (resistance + 0.3) * 0.3
+			}
+			if blastForce > 0 {
+				if _, ok := seen[current]; !ok {
+					seen[current] = struct{}{}
+					affectedBlocks = append(affectedBlocks, current)
+				}
 			}
 		}
 	}
@@ -140,21 +162,21 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 	ctx := tx.Event()
 	spawnFire := c.SpawnFire
 	itemDropChance := c.ItemDropChance
-	if tx.World().Handler().HandleExplosion(ctx, explosionPos, &affectedEntities, &affectedBlocks, &itemDropChance, &spawnFire); ctx.Cancelled() {
+	if tx.World().Handler().HandleExplosion(ctx, src, &affectedEntities, &affectedBlocks, &itemDropChance, &spawnFire); ctx.Cancelled() {
 		return
 	}
 
 	for _, e := range affectedEntities {
 		if explodable, ok := e.(ExplodableEntity); ok {
 			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
-			explodable.Explode(explosionPos, impact, c)
+			explodable.Explode(src, impact)
 		}
 	}
 
 	for _, pos := range affectedBlocks {
 		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
-			explodable.Explode(explosionPos, pos, tx, c)
+			explodable.Explode(src, pos, tx)
 		} else if breakable, ok := bl.(Breakable); ok {
 			// Clear the block first so break handlers see the post-break world, this is required by things such as redstone updates.
 			tx.SetBlock(pos, nil, nil)

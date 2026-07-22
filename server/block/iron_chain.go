@@ -36,7 +36,7 @@ func (c IronChain) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 
 // BreakInfo ...
 func (c IronChain) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(6)
 }
 
 // EncodeItem ...

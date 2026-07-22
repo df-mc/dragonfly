@@ -9,7 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 // TNT is an explosive block that can be primed to generate an explosion.
@@ -54,16 +53,18 @@ func (t TNT) Ignite(pos cube.Pos, tx *world.Tx, source world.Entity) bool {
 }
 
 // Explode primes TNT with a short random fuse, preserving the explosion source and shield blockability.
-func (t TNT) Explode(_ mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig) {
-	var source *world.EntityHandle
-	if c.Source != nil {
-		source = c.Source.H()
+func (t TNT) Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx) {
+	conf := world.TNTSpawnConfig{
+		Fuse: time.Second/2 + time.Duration(rand.IntN(int(time.Second+time.Second/2))),
 	}
-	spawnTnt(pos, tx, world.TNTSpawnConfig{
-		Fuse:                time.Second/2 + time.Duration(rand.IntN(int(time.Second+time.Second/2))),
-		Source:              source,
-		UnblockableByShield: c.UnblockableByShield,
-	})
+	if s, ok := src.(world.ShieldBlockInfoSource); ok {
+		info, blockable := s.ShieldBlockInfo()
+		conf.UnblockableByShield = !blockable
+		if info.Source != nil {
+			conf.Source = info.Source.H()
+		}
+	}
+	spawnTnt(pos, tx, conf)
 }
 
 // BreakInfo ...

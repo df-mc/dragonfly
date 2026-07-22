@@ -4,7 +4,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 )
 
 type (
@@ -49,14 +48,8 @@ type (
 
 	// ExplosionDamageSource is used for damage caused by an explosion.
 	ExplosionDamageSource struct {
-		// Origin is the position from which the explosion damage originated.
-		Origin mgl64.Vec3
-		// HasOrigin is true if Origin is a meaningful explosion source position.
-		HasOrigin bool
-		// UnblockableByShield is true if shields may not block the explosion damage.
-		UnblockableByShield bool
-		// Source is the entity that caused the explosion, if known.
-		Source world.Entity
+		// Source is the source of the explosion that dealt the damage.
+		Source world.ExplosionSource
 	}
 )
 
@@ -130,8 +123,11 @@ func (s ProjectileDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) 
 
 // ShieldBlockInfo returns the origin and source of a shield-blockable explosion.
 func (s ExplosionDamageSource) ShieldBlockInfo() (world.ShieldBlockInfo, bool) {
-	if !s.HasOrigin || s.UnblockableByShield {
+	if s.Source == nil {
 		return world.ShieldBlockInfo{}, false
 	}
-	return world.ShieldBlockInfo{Origin: s.Origin, Source: s.Source, BlockWhenImmune: true}, true
+	if source, ok := s.Source.(world.ShieldBlockInfoSource); ok {
+		return source.ShieldBlockInfo()
+	}
+	return world.ShieldBlockInfo{Origin: s.Source.Position(), BlockWhenImmune: true}, true
 }

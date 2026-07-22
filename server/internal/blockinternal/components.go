@@ -13,12 +13,12 @@ func Components(identifier string, b world.CustomBlock, blockID int32) map[strin
 	components := componentsFromProperties(b.Properties())
 	builder := NewComponentBuilder(identifier, components, blockID)
 	if emitter, ok := b.(block.LightEmitter); ok {
-		builder.AddComponent("minecraft:block_light_emission", map[string]any{
-			"emission": float32(emitter.LightEmissionLevel() / 15),
+		builder.AddComponent("minecraft:light_emission", map[string]any{
+			"emission": int32(emitter.LightEmissionLevel()),
 		})
 	}
 	if diffuser, ok := b.(block.LightDiffuser); ok {
-		builder.AddComponent("minecraft:block_light_filter", map[string]any{
+		builder.AddComponent("minecraft:light_dampening", map[string]any{
 			"lightLevel": int32(diffuser.LightDiffusionLevel()),
 		})
 	}
@@ -63,7 +63,7 @@ func componentsFromProperties(props customblock.Properties) map[string]any {
 	if props.Geometry != "" {
 		components["minecraft:geometry"] = map[string]any{"identifier": props.Geometry}
 	} else if props.Cube {
-		components["minecraft:unit_cube"] = map[string]any{}
+		components["minecraft:geometry"] = map[string]any{"identifier": "minecraft:geometry.full_block"}
 	}
 	if props.MapColour != "" {
 		components["minecraft:map_color"] = map[string]any{"value": props.MapColour}

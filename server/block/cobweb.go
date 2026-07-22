@@ -47,7 +47,7 @@ func (c Cobweb) BreakInfo() BreakInfo {
 			}
 			return nil
 		},
-	).withBlastResistance(4)
+	)
 }
 
 // HasLiquidDrops ...

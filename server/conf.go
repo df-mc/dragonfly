@@ -117,6 +117,10 @@ type Config struct {
 	// ChunkUnloadInterval should not be used to prevent chunks from unloading
 	// altogether. This should be done using a Loader with a custom Viewer.
 	ChunkUnloadInterval time.Duration
+	// ChunkLoadWorkers is the number of background workers that load and generate
+	// chunks in each world, defaulting to 1. Values above 1 generate chunks
+	// concurrently and require a concurrency-safe Generator.
+	ChunkLoadWorkers int
 	// Entities is a world.EntityRegistry with all entity types registered that
 	// may be added to the Server's worlds. If no entity types are registered,
 	// Entities will be set to entity.DefaultRegistry.

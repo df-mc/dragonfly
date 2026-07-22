@@ -131,7 +131,7 @@ func TestSynchronousAdvanceTickTicksViewerlessBlockEntities(t *testing.T) {
 	pos := cube.Pos{0, 4, 0}
 	tb := &testTickerBlock{}
 	<-w.exec(func(tx *Tx) {
-		col := tx.World().chunk(chunkPosFromBlockPos(pos))
+		col := tx.chunk(chunkPosFromBlockPos(pos))
 		chest, ok := tx.World().conf.Blocks.BlockByName("minecraft:chest", map[string]any{"minecraft:cardinal_direction": "north"})
 		if !ok {
 			t.Fatal("expected chest block to be registered")

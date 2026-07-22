@@ -24,6 +24,22 @@ func (s *Session) ViewPublicNameTag(entity world.Entity) {
 	s.viewLayer.ViewPublicNameTag(entity)
 }
 
+// ViewAlwaysShowNameTag overrides whether the entity's name tag is shown at all distances for this session.
+func (s *Session) ViewAlwaysShowNameTag(entity world.Entity, alwaysShow bool) {
+	if s.viewLayer == nil {
+		return
+	}
+	s.viewLayer.ViewAlwaysShowNameTag(entity, alwaysShow)
+}
+
+// ViewPublicAlwaysShowNameTag removes the always-show name tag override from the entity for this session.
+func (s *Session) ViewPublicAlwaysShowNameTag(entity world.Entity) {
+	if s.viewLayer == nil {
+		return
+	}
+	s.viewLayer.ViewPublicAlwaysShowNameTag(entity)
+}
+
 // ViewScoreTag overwrites the public score tag of the entity and immediately refreshes it for this session.
 func (s *Session) ViewScoreTag(entity world.Entity, scoreTag string) {
 	if s.viewLayer == nil {

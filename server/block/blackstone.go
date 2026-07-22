@@ -38,7 +38,7 @@ func (b Blackstone) BreakInfo() BreakInfo {
 		hardness = 2
 	}
 
-	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, drops).withBlastResistance(30)
+	return newBreakInfo(hardness, pickaxeHarvestable, pickaxeEffective, drops).withBlastResistance(6)
 }
 
 // EncodeItem ...
