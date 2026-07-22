@@ -118,6 +118,9 @@ func (e *Ent) NameTag() string {
 }
 
 func (e *Ent) AlwaysShowNameTag() bool {
+	alwaysShowNameTag := e.data.AlwaysShowName
+	if (alwaysShowNameTag == nil) return true;
+	
 	return e.data.AlwaysShowName
 }
 
