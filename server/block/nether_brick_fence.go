@@ -14,7 +14,7 @@ type NetherBrickFence struct {
 
 // BreakInfo ...
 func (n NetherBrickFence) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n)).withBlastResistance(30)
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n)).withBlastResistance(6)
 }
 
 // SideClosed ...

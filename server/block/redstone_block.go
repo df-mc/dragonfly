@@ -14,7 +14,7 @@ type RedstoneBlock struct {
 }
 
 func (r RedstoneBlock) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(r)).withBlastResistance(30)
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(r)).withBlastResistance(6)
 }
 
 func (r RedstoneBlock) EncodeItem() (name string, meta int16) {

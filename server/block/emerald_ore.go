@@ -19,7 +19,7 @@ func (e EmeraldOre) BreakInfo() BreakInfo {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
 	}, pickaxeEffective, oreDrops(item.Emerald{}, e)).withXPDropRange(3, 7)
 	if e.Type == DeepslateOre() {
-		i = i.withBlastResistance(15)
+		i = i.withBlastResistance(3)
 	}
 	return i
 }

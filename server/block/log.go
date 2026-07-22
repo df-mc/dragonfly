@@ -34,7 +34,12 @@ func (l Log) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (l Log) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
+	breakInfo := newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
+	if l.Wood == MangroveWood() && !l.Stripped {
+		// Mangrove logs have a much lower blast resistance than all other logs.
+		return breakInfo.withBlastResistance(0.4)
+	}
+	return breakInfo
 }
 
 // SmeltInfo ...

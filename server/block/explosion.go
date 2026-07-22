@@ -104,26 +104,33 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 		affectedEntities = append(affectedEntities, e)
 	}
 
-	affectedBlocks := make([]cube.Pos, 0, 32)
+	affectedBlocks, seen := make([]cube.Pos, 0, 32), make(map[cube.Pos]struct{}, 32)
 	for _, ray := range rays {
 		pos := explosionPos
 		for blastForce := size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
 			currentBlock := tx.Block(current)
 
-			resistance := 0.0
+			resistance, resists := 0.0, false
 			if l, ok := tx.Liquid(current); ok {
-				resistance = l.BlastResistance()
+				resistance, resists = l.BlastResistance(), true
 			} else if i, ok := currentBlock.(Breakable); ok {
-				resistance = i.BreakInfo().BlastResistance
+				resistance, resists = i.BreakInfo().BlastResistance, true
 			} else if _, ok = currentBlock.(Air); !ok {
 				// Completely stop the ray if the current block is not air and unbreakable.
 				break
 			}
 
 			pos = pos.Add(ray)
-			if blastForce -= (resistance/5 + 0.3) * 0.3; blastForce > 0 {
-				affectedBlocks = append(affectedBlocks, current)
+			// Air offers no resistance to the ray, only blocks and liquids reduce its force beyond the step decay.
+			if resists {
+				blastForce -= (resistance + 0.3) * 0.3
+			}
+			if blastForce > 0 {
+				if _, ok := seen[current]; !ok {
+					seen[current] = struct{}{}
+					affectedBlocks = append(affectedBlocks, current)
+				}
 			}
 		}
 	}
