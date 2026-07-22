@@ -417,7 +417,7 @@ type EntityData struct {
 	Pos, Vel     mgl64.Vec3
 	Rot          cube.Rotation
 	Name         string
-	AlwaysShowName bool
+	AlwaysShowName *bool
 	FireDuration time.Duration
 	Age          time.Duration
 
