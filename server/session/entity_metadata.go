@@ -200,17 +200,16 @@ func writeNameTagMetadata(m protocol.EntityMetadata, nameTag string, alwaysShow 
 
 	m[protocol.EntityDataKeyName] = nameTag
 	m[protocol.EntityDataKeyAlwaysShowNameTag] = boolByte(always)
-	setFlag(m, protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName, show)
-	setFlag(m, protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName, always)
-}
-
-// setFlag sets or unsets a flag in metadata depending on the value passed.
-func setFlag(m protocol.EntityMetadata, key uint32, flag uint8, v bool) {
-	if v {
-		m.SetFlag(key, flag)
-		return
+	if show {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+	} else {
+		m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
 	}
-	m.UnsetFlag(key, flag)
+	if always {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+	} else {
+		m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+	}
 }
 
 type sneaker interface {
