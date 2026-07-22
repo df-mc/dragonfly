@@ -80,7 +80,10 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 
 // BreakInfo ...
 func (b BlastFurnace) BreakInfo() BreakInfo {
-	xp := b.Experience()
+	xp := 0
+	if b.smelter != nil {
+		xp = b.Experience()
+	}
 	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(BlastFurnace{})).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, i := range b.Inventory(tx, pos).Clear() {
 			dropItem(tx, i, pos.Vec3())
