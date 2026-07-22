@@ -1221,8 +1221,8 @@ func (p *Player) StartSpinning() {
 		return
 	}
 	trident, _ := p.HeldItems()
-	if _, ok := trident.Item().(item.Trident); !ok || trident.Durability() < 14 {
-		// Vanilla does not allow using a trident that would break as a result.
+	// Vanilla does not allow using a trident that is about to break.
+	if _, ok := trident.Item().(item.Trident); !ok || trident.Durability() <= 14 {
 		return
 	}
 	if _, ok := trident.Enchantment(enchantment.Riptide); !ok {

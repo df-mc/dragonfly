@@ -805,10 +805,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = packet.SoundEventTridentRiptide1
 		case 2:
 			pk.SoundType = packet.SoundEventTridentRiptide2
-		case 3:
-			pk.SoundType = packet.SoundEventTridentRiptide3
 		default:
-			panic(fmt.Errorf("riptide enchantment level (%v) does not have sound", so.Level))
+			pk.SoundType = packet.SoundEventTridentRiptide3
 		}
 	case sound.ItemThrow:
 		pk.SoundType, pk.EntityType = packet.SoundEventThrow, "minecraft:player"

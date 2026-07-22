@@ -34,7 +34,7 @@ func (Trident) EnchantmentValue() int {
 // DurabilityInfo ...
 func (Trident) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
-		MaxDurability:    250,
+		MaxDurability:    251,
 		BrokenItem:       simpleItem(Stack{}),
 		AttackDurability: 1,
 		BreakDurability:  2,
@@ -51,10 +51,14 @@ func (Trident) RepairableBy(i Stack) bool {
 // enchanted with riptide, launches the releaser in the direction it is facing.
 func (Trident) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration time.Duration) {
 	if duration.Milliseconds()/50 < 10 {
-		// The trident must be charged for at least ten ticks before it can be released.
+		// The trident must be charged for at least ten ticks.
 		return
 	}
 	held, left := releaser.HeldItems()
+	if held.Durability() <= 14 {
+		// Tridents with low durability cannot be released.
+		return
+	}
 
 	riptide := 0
 	for _, enchant := range held.Enchantments() {
@@ -110,8 +114,8 @@ func (Trident) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duratio
 	tx.PlaySound(releaser.Position(), sound.TridentThrow{})
 }
 
-// touchingWaterOrRain checks if the world.Entity passed is currently either
-// standing in water or exposed to rain.
+// touchingWaterOrRain checks if the world.Entity passed has water at its feet
+// or eyes, or is exposed to rain.
 func touchingWaterOrRain(e world.Entity, tx *world.Tx) bool {
 	pos := cube.PosFromVec3(e.Position())
 	if tx.RainingAt(pos) {
