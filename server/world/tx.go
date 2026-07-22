@@ -83,6 +83,13 @@ func (tx *Tx) SetBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	tx.setBlock(pos, b, opts)
 }
 
+// SetBlockEntity updates block entity data without notifying viewers, updating
+// neighbouring blocks or invalidating redstone. The chunk is marked modified.
+// It falls back to SetBlock if b has no block entity data or its state differs.
+func (tx *Tx) SetBlockEntity(pos cube.Pos, b Block) {
+	tx.setBlockEntity(pos, b)
+}
+
 // Block reads a block from the position passed. If a chunk is not yet loaded
 // at that position, the chunk is loaded, or generated if it could not be found
 // in the world save, and the block returned.

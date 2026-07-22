@@ -441,6 +441,24 @@ func (tx *Tx) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 	}
 }
 
+// setBlockEntity updates block entity data without triggering block updates.
+func (tx *Tx) setBlockEntity(pos cube.Pos, b Block) {
+	w := tx.World()
+	if pos.OutOfBounds(w.Range()) {
+		// Fast way out.
+		return
+	}
+	c := tx.chunk(chunkPosFromBlockPos(pos))
+
+	rid := w.conf.Blocks.BlockRuntimeID(b)
+	if !w.conf.Blocks.NBTBlock(rid) || c.Block(uint8(pos[0]), int16(pos[1]), uint8(pos[2]), 0) != rid {
+		tx.setBlock(pos, b, nil)
+		return
+	}
+	c.BlockEntities[pos] = b
+	c.modified = true
+}
+
 // setBiome sets the Biome at the position passed. If a chunk is not yet loaded
 // at that position, the chunk is first loaded or generated if it could not be
 // found in the world save.
