@@ -1115,9 +1115,9 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 		if nt != "" {
 			metadata[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
 			wasAlwaysShowName := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			if alwaysShowName & !wasAlwaysShowName {
+			if alwaysShowName && !wasAlwaysShowName {
 				metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			} else if !alwaysShowName & wasAlwaysShowName {
+			} else if !alwaysShowName && wasAlwaysShowName {
 				metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
 			}
 
