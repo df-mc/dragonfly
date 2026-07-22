@@ -54,6 +54,37 @@ type Bucket struct {
 	Content BucketContent
 }
 
+// Dispense fills or empties the bucket at the block in front of a dispenser, or returns DispenseDefault if the bucket
+// cannot interact with the target.
+func (b Bucket) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	front := pos.Side(face)
+	if b.Empty() {
+		liquid, ok := tx.Liquid(front)
+		if !ok || liquid.LiquidDepth() != 8 || liquid.LiquidFalling() {
+			return DispenseDefault
+		}
+		ctx.NewItem = NewStack(Bucket{Content: LiquidBucketContent(liquid)}, 1)
+		ctx.SubtractFromCount(1)
+		tx.SetLiquid(front, nil)
+		tx.PlaySound(front.Vec3Centre(), sound.BucketFill{Liquid: liquid})
+		return DispenseSuccess
+	}
+
+	liquid, ok := b.Content.Liquid()
+	if !ok {
+		return DispenseDefault
+	}
+	liquid = liquid.WithDepth(8, false)
+	if target := tx.Block(front); !canDisplace(target, liquid) && !replaceableWith(target, liquid) {
+		return DispenseDefault
+	}
+	ctx.NewItem = NewStack(Bucket{}, 1)
+	ctx.SubtractFromCount(1)
+	tx.SetLiquid(front, liquid)
+	tx.PlaySound(front.Vec3Centre(), sound.BucketEmpty{Liquid: liquid})
+	return DispenseSuccess
+}
+
 // MaxCount returns 16.
 func (b Bucket) MaxCount() int {
 	if b.Empty() {

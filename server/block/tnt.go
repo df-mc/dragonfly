@@ -16,6 +16,24 @@ type TNT struct {
 	solid
 }
 
+// Dispense primes TNT at the block in front of a dispenser.
+func (TNT) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *item.DispenseContext) item.DispenseResult {
+	if tx.World().EntityRegistry().Config().TNT == nil {
+		return item.DispenseFailure
+	}
+	front := pos.Side(face)
+	b := tx.Block(front)
+	if _, air := b.(Air); !air {
+		replaceable, ok := b.(Replaceable)
+		if !ok || !replaceable.ReplaceableBy(TNT{}) {
+			return item.DispenseFailure
+		}
+	}
+	ctx.SubtractFromCount(1)
+	spawnTnt(front, tx, time.Second*4)
+	return item.DispenseSuccess
+}
+
 var _ world.RedstonePowerAction = TNT{}
 
 func (TNT) RedstoneNonConductive() {}

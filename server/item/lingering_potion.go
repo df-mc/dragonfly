@@ -1,6 +1,7 @@
 package item
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -11,6 +12,17 @@ import (
 type LingeringPotion struct {
 	// Type is the type of lingering potion.
 	Type potion.Potion
+}
+
+// Dispense launches the potion from a dispenser.
+func (l LingeringPotion) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	create := tx.World().EntityRegistry().Config().LingeringPotion
+	if create == nil {
+		return DispenseFailure
+	}
+	return dispenseProjectile(pos, face, tx, ctx, sound.ItemThrow{}, func(opts world.EntitySpawnOpts) *world.EntityHandle {
+		return create(opts, l.Type, nil)
+	})
 }
 
 // MaxCount ...

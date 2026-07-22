@@ -137,11 +137,36 @@ func (d Dispenser) dispense(pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
 	}
 	slot := nonEmpty[r.IntN(len(nonEmpty))]
 	stack := slots[slot]
-	name, _ := stack.Item().EncodeItem()
-	if behaviour, ok := dispenserBehaviours[name]; ok {
-		return behaviour(d, slot, stack, pos, tx, r)
+	if behaviour, ok := stack.Item().(item.Dispensable); ok {
+		ctx := &item.DispenseContext{Rand: r}
+		switch behaviour.Dispense(pos, d.Facing, tx, ctx) {
+		case item.DispenseSuccess:
+			return d.applyDispenseContext(slot, stack, ctx, pos, tx, r)
+		case item.DispenseFailure:
+			return false
+		}
 	}
 	return d.dropDispensedItem(slot, stack, pos, tx, r)
+}
+
+func (d Dispenser) applyDispenseContext(slot int, stack item.Stack, ctx *item.DispenseContext, pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
+	stack = stack.Damage(ctx.Damage).Grow(-ctx.CountSub)
+	if ctx.NewItem.Empty() {
+		return d.inventory.SetItem(slot, stack) == nil
+	}
+	if stack.Empty() {
+		return d.inventory.SetItem(slot, ctx.NewItem) == nil
+	}
+	added, err := d.inventory.AddItem(ctx.NewItem)
+	if err != nil {
+		create := tx.World().EntityRegistry().Config().Item
+		if create == nil {
+			return false
+		}
+		remaining := ctx.NewItem.Grow(added - ctx.NewItem.Count())
+		tx.AddEntity(create(dispenserDropOpts(pos, d.Facing, r), remaining))
+	}
+	return d.inventory.SetItem(slot, stack) == nil
 }
 
 func (d Dispenser) dropDispensedItem(slot int, stack item.Stack, pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
@@ -158,20 +183,6 @@ func (d Dispenser) dropDispensedItem(slot int, stack item.Stack, pos cube.Pos, t
 	tx.AddEntity(create(opts, dropped))
 	tx.PlaySound(pos.Vec3Centre(), sound.Click{})
 	return true
-}
-
-func (d Dispenser) replaceDispensedItem(slot int, original, replacement item.Stack, pos cube.Pos, tx *world.Tx, r *rand.Rand) bool {
-	if original.Count() == 1 {
-		return d.inventory.SetItem(slot, replacement) == nil
-	}
-	if _, err := d.inventory.AddItem(replacement); err != nil {
-		create := tx.World().EntityRegistry().Config().Item
-		if create == nil {
-			return false
-		}
-		tx.AddEntity(create(dispenserDropOpts(pos, d.Facing, r), replacement))
-	}
-	return d.inventory.SetItem(slot, original.Grow(-1)) == nil
 }
 
 // dispenserDirection returns the unit vector pointing out of the front of a dispenser with the face passed. An invalid

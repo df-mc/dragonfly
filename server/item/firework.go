@@ -18,6 +18,17 @@ type Firework struct {
 	Explosions []FireworkExplosion
 }
 
+// Dispense launches the firework from a dispenser.
+func (f Firework) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	create := tx.World().EntityRegistry().Config().Firework
+	if create == nil {
+		return DispenseFailure
+	}
+	return dispenseProjectile(pos, face, tx, ctx, sound.FireworkLaunch{}, func(opts world.EntitySpawnOpts) *world.EntityHandle {
+		return create(opts, f, nil, 1.15, 0.04, false)
+	})
+}
+
 // Use ...
 func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	if g, ok := user.(interface {

@@ -23,6 +23,22 @@ const (
 // BoneMeal is an item used to force growth in plants & crops.
 type BoneMeal struct{}
 
+// Dispense applies bone meal to the block in front of a dispenser.
+func (b BoneMeal) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	front := pos.Side(face)
+	affected, ok := tx.Block(front).(BoneMealAffected)
+	if !ok {
+		return DispenseFailure
+	}
+	result := affected.BoneMeal(front, tx)
+	if result == BoneMealResultNone {
+		return DispenseFailure
+	}
+	ctx.SubtractFromCount(1)
+	tx.AddParticle(front.Vec3(), particle.BoneMeal{Area: result == BoneMealResultArea})
+	return DispenseSuccess
+}
+
 // BoneMealAffected represents a block that is affected when bone meal is used on it.
 type BoneMealAffected interface {
 	// BoneMeal attempts to affect the block using a bone meal item.

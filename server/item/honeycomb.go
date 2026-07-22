@@ -10,18 +10,36 @@ import (
 // Honeycomb is an item obtained from bee nests and beehives.
 type Honeycomb struct{}
 
-// UseOnBlock handles the logic of using an ink sac on a sign. Glowing ink sacs turn the text of these signs glowing,
-// whereas normal ink sacs revert them back to non-glowing text.
-func (Honeycomb) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
-	if wa, ok := tx.Block(pos).(waxable); ok {
-		if res, ok := wa.Wax(pos, user.Position()); ok {
-			tx.SetBlock(pos, res, nil)
-			tx.PlaySound(pos.Vec3(), sound.SignWaxed{})
-			ctx.SubtractFromCount(1)
-			return true
-		}
+// Dispense waxes the block in front of a dispenser.
+func (Honeycomb) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	if !waxBlock(pos.Side(face), pos.Vec3Centre(), tx) {
+		return DispenseFailure
 	}
-	return false
+	ctx.SubtractFromCount(1)
+	return DispenseSuccess
+}
+
+// UseOnBlock waxes the block at pos if it supports waxing.
+func (Honeycomb) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+	if !waxBlock(pos, user.Position(), tx) {
+		return false
+	}
+	ctx.SubtractFromCount(1)
+	return true
+}
+
+func waxBlock(pos cube.Pos, source mgl64.Vec3, tx *world.Tx) bool {
+	wa, ok := tx.Block(pos).(waxable)
+	if !ok {
+		return false
+	}
+	res, ok := wa.Wax(pos, source)
+	if !ok {
+		return false
+	}
+	tx.SetBlock(pos, res, nil)
+	tx.PlaySound(pos.Vec3(), sound.SignWaxed{})
+	return true
 }
 
 // waxable represents a block that may be waxed.

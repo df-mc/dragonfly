@@ -42,6 +42,38 @@ func TestEmptyDispenserPlaysFailureClick(t *testing.T) {
 	}
 }
 
+type testDispensable struct{}
+
+func (testDispensable) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *item.DispenseContext) item.DispenseResult {
+	ctx.SubtractFromCount(1)
+	tx.SetBlock(pos.Side(face), block.RedstoneBlock{}, nil)
+	return item.DispenseSuccess
+}
+
+func (testDispensable) EncodeItem() (string, int16) { return "test:dispensable", 0 }
+
+func TestDispenserUsesItemDispenseBehaviour(t *testing.T) {
+	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
+	defer func() { _ = w.Close() }()
+
+	pos := cube.Pos{}
+	front := pos.Side(cube.FaceEast)
+	runDispenserWorld(t, w, func(tx *world.Tx) {
+		d := block.NewDispenser()
+		d.Facing = cube.FaceEast
+		_ = d.Inventory(tx, pos).SetItem(0, item.NewStack(testDispensable{}, 1))
+		d.ScheduledTick(pos, tx, rand.New(rand.NewPCG(19, 20)))
+
+		if _, ok := tx.Block(front).(block.RedstoneBlock); !ok {
+			t.Fatalf("expected custom dispense behaviour to run, got %T", tx.Block(front))
+		}
+		stack, _ := d.Inventory(tx, pos).Item(0)
+		if !stack.Empty() {
+			t.Fatalf("expected custom dispense behaviour to consume its item, got %v", stack)
+		}
+	})
+}
+
 func TestDispenserDoesNotReplayTargetIgnitionSound(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer func() { _ = w.Close() }()
