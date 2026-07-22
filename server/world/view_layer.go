@@ -87,10 +87,10 @@ func (v *ViewLayer) IsAlwaysShowNameTag(entity Entity) (bool) {
 	defer v.mu.RUnlock()
 
 	view := v.entities[entity.H()].alwaysShowNameTag
-	if alwaysShowNameTag == nil {
+	if view == nil {
 		return true
 	}
-	return *alwaysShowNameTag
+	return *view
 }
 
 // ViewScoreTag overwrites the public score tag of the entity and allows this ViewLayer to view a different score tag.
