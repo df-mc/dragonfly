@@ -6,6 +6,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -16,6 +17,23 @@ type Behaviour interface {
 	// specifies the movement of the entity over the tick. Nil may be returned
 	// if the entity did not move.
 	Tick(e *Ent, tx *world.Tx) *Movement
+}
+
+// ItemAcceptor is an interface that Behaviours or world.Entity may implement
+// to accept items from players.
+type ItemAcceptor interface {
+	// AcceptItem returns whether the entity accepts the item stack passed. This
+	// may be called when a player tries to interact with the entity.
+	AcceptItem(from world.Entity, tx *world.Tx, ctx *item.UseContext) bool
+}
+
+// Attackable is an interface that Behaviours or world.Entity may implement
+// to allow entities to be attacked by other entities.
+type Attackable interface {
+	// Attack is called when the entity is attacked by an attacker. Unlike world.Living
+	// entities, no damage value is passed. Used for entities that do not have health but
+	// can still be interacted with through attacks like armour stands.
+	Attack(attacker world.Entity, tx *world.Tx)
 }
 
 // Ent is a world.Entity implementation that allows entity implementations to
@@ -139,6 +157,26 @@ func (e *Ent) SetAlwaysShowNameTag(alwaysShow bool) {
 func (e *Ent) updateState() {
 	for _, v := range e.tx.Viewers(e.data.Pos) {
 		v.ViewEntityState(e)
+	}
+}
+
+// AcceptItem returns whether the entity accepts the item stack passed. This may be
+// called when a player tries to interact with the entity.
+func (e *Ent) AcceptItem(from world.Entity, tx *world.Tx, ctx *item.UseContext) bool {
+	if acceptor, ok := e.Behaviour().(interface {
+		AcceptItem(e *Ent, from world.Entity, tx *world.Tx, ctx *item.UseContext) bool
+	}); ok {
+		return acceptor.AcceptItem(e, from, tx, ctx)
+	}
+	return false
+}
+
+// Attack is called when the entity is attacked by an attacker.
+func (e *Ent) Attack(attacker world.Entity, tx *world.Tx) {
+	if attackable, ok := e.Behaviour().(interface {
+		Attack(e *Ent, attacker world.Entity, tx *world.Tx)
+	}); ok {
+		attackable.Attack(e, attacker, tx)
 	}
 }
 
