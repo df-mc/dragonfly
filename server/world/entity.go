@@ -94,17 +94,11 @@ func (opts EntitySpawnOpts) New(t EntityType, conf EntityConfig) *EntityHandle {
 		opts.ID = uuid.New()
 		clear(opts.ID[:8])
 	}
-	handle := &EntityHandle{
-		id:        opts.ID,
-		t:         t,
-		cond:      sync.NewCond(&sync.Mutex{}),
-		worldless: &atomic.Bool{},
-		closed:    make(chan struct{}),
-	}
+	handle := newEntityHandle(t)
+	handle.id = opts.ID
 	handle.worldless.Store(true)
 	handle.data.Pos, handle.data.Rot, handle.data.Vel = opts.Position, opts.Rotation, opts.Velocity
 	handle.data.Name = opts.NameTag
-	handle.data.AlwaysShowNameTag = true
 	conf.Apply(&handle.data)
 	return handle
 }
@@ -117,16 +111,22 @@ func NewEntity(t EntityType, conf EntityConfig) *EntityHandle {
 	return opts.New(t, conf)
 }
 
-// entityFromData reads an entity from the decoded NBT data passed and returns
-// an EntityHandle.
-func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
-	handle := &EntityHandle{
+// newEntityHandle creates an EntityHandle for the EntityType passed, holding
+// the EntityData that every entity starts out with.
+func newEntityHandle(t EntityType) *EntityHandle {
+	return &EntityHandle{
 		t:         t,
 		cond:      sync.NewCond(&sync.Mutex{}),
 		worldless: &atomic.Bool{},
 		closed:    make(chan struct{}),
 		data:      EntityData{AlwaysShowNameTag: true},
 	}
+}
+
+// entityFromData reads an entity from the decoded NBT data passed and returns
+// an EntityHandle.
+func entityFromData(t EntityType, id int64, data map[string]any) *EntityHandle {
+	handle := newEntityHandle(t)
 	binary.LittleEndian.PutUint64(handle.id[8:], uint64(id))
 	handle.decodeNBT(data)
 	t.DecodeNBT(data, &handle.data)

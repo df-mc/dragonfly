@@ -76,24 +76,27 @@ func (v *ViewLayer) NameTag(entity Entity) (string, bool) {
 	return *nameTag, true
 }
 
-// ViewAlwaysShowNameTag overrides whether the entity's name tag is shown at all distances for this ViewLayer.
+// ViewAlwaysShowNameTag overwrites whether the public name tag of the entity is shown at all distances and
+// allows this ViewLayer to view it at a different distance.
 func (v *ViewLayer) ViewAlwaysShowNameTag(entity Entity, alwaysShow bool) {
 	v.update(entity, func(l *layer) {
 		l.alwaysShowNameTag = &alwaysShow
 	})
 }
 
-// ViewPublicAlwaysShowNameTag removes the always-show name tag override from the entity.
+// ViewPublicAlwaysShowNameTag removes the always show name tag override from the entity, causing the public
+// always show state to be viewed again.
 func (v *ViewLayer) ViewPublicAlwaysShowNameTag(entity Entity) {
 	v.update(entity, func(l *layer) {
 		l.alwaysShowNameTag = nil
 	})
 }
 
-// AlwaysShowNameTag returns the overwritten always-show state of the entity and whether an override was set.
+// AlwaysShowNameTag returns the overwritten always show state of the entity and whether an override was set.
 func (v *ViewLayer) AlwaysShowNameTag(entity Entity) (bool, bool) {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
+
 	alwaysShow := v.entities[entity.H()].alwaysShowNameTag
 	if alwaysShow == nil {
 		return false, false

@@ -432,17 +432,6 @@ func (p *Player) DisableInstantRespawn() {
 	p.session().EnableInstantRespawn(false)
 }
 
-// AlwaysShowNameTag reports whether the name tag of the Player is shown at all distances.
-func (p *Player) AlwaysShowNameTag() bool {
-	return p.alwaysShowNameTag
-}
-
-// SetAlwaysShowNameTag sets whether the name tag of the Player is shown at all distances.
-func (p *Player) SetAlwaysShowNameTag(alwaysShow bool) {
-	p.alwaysShowNameTag = alwaysShow
-	p.updateState()
-}
-
 // SetNameTag changes the name tag displayed over the player in-game. Changing the name tag does not change
 // the player's name in, for example, the player list or the chat.
 func (p *Player) SetNameTag(name string) {
@@ -453,6 +442,19 @@ func (p *Player) SetNameTag(name string) {
 // NameTag returns the current name tag of the Player as shown in-game. It can be changed using SetNameTag.
 func (p *Player) NameTag() string {
 	return p.nameTag
+}
+
+// SetAlwaysShowNameTag changes whether the name tag of the player is shown at all distances instead of only
+// when the player is looked at from up close. By default, the name tag is always shown.
+func (p *Player) SetAlwaysShowNameTag(alwaysShow bool) {
+	p.alwaysShowNameTag = alwaysShow
+	p.updateState()
+}
+
+// AlwaysShowNameTag returns whether the name tag of the player is shown at all distances. It can be changed
+// using SetAlwaysShowNameTag.
+func (p *Player) AlwaysShowNameTag() bool {
+	return p.alwaysShowNameTag
 }
 
 // SetScoreTag changes the score tag displayed over the player in-game. The score tag is displayed under the player's

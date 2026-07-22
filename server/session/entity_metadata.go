@@ -107,12 +107,8 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeyFuseTime] = int32(t.Fuse().Milliseconds() / 50)
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagIgnited)
 	}
-	if n, ok := e.(named); ok {
-		alwaysShow := true
-		if a, ok := e.(alwaysShowNameTag); ok {
-			alwaysShow = a.AlwaysShowNameTag()
-		}
-		writeNameTagMetadata(m, n.NameTag(), alwaysShow)
+	if nameTag, alwaysShow, ok := nameTagState(e); ok {
+		writeNameTagMetadata(m, nameTag, alwaysShow)
 	}
 	if sc, ok := e.(scoreTag); ok {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
@@ -182,21 +178,39 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 }
 
+// nameTagState returns the public name tag of an entity, whether that name tag is shown at all distances
+// and whether the entity has a name tag at all. Entities that do not report an always show state show
+// their name tag at all distances.
+func nameTagState(e any) (string, bool, bool) {
+	alwaysShow := true
+	if a, ok := e.(alwaysShowNameTag); ok {
+		alwaysShow = a.AlwaysShowNameTag()
+	}
+	n, ok := e.(named)
+	if !ok {
+		return "", alwaysShow, false
+	}
+	return n.NameTag(), alwaysShow, true
+}
+
 // writeNameTagMetadata writes a name tag and its related visibility properties to metadata.
-func writeNameTagMetadata(metadata protocol.EntityMetadata, nameTag string, alwaysShow bool) {
-	metadata[protocol.EntityDataKeyName] = nameTag
-	metadata[protocol.EntityDataKeyAlwaysShowNameTag] = boolByte(nameTag != "" && alwaysShow)
-	if nameTag == "" {
-		metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-		metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+func writeNameTagMetadata(m protocol.EntityMetadata, nameTag string, alwaysShow bool) {
+	show := nameTag != ""
+	always := show && alwaysShow
+
+	m[protocol.EntityDataKeyName] = nameTag
+	m[protocol.EntityDataKeyAlwaysShowNameTag] = boolByte(always)
+	setFlag(m, protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName, show)
+	setFlag(m, protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName, always)
+}
+
+// setFlag sets or unsets a flag in metadata depending on the value passed.
+func setFlag(m protocol.EntityMetadata, key uint32, flag uint8, v bool) {
+	if v {
+		m.SetFlag(key, flag)
 		return
 	}
-	if alwaysShow {
-		metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-	} else {
-		metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-	}
-	metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+	m.UnsetFlag(key, flag)
 }
 
 type sneaker interface {

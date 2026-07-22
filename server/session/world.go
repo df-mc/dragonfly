@@ -1109,15 +1109,15 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 	if s.viewLayer == nil {
 		return metadata
 	}
-	nameTag, nameTagSet := s.viewLayer.NameTag(e)
-	alwaysShow, alwaysShowSet := s.viewLayer.AlwaysShowNameTag(e)
-	if nameTagSet || alwaysShowSet {
-		if !nameTagSet {
-			nameTag, _ = metadata[protocol.EntityDataKeyName].(string)
+	nt, ntSet := s.viewLayer.NameTag(e)
+	as, asSet := s.viewLayer.AlwaysShowNameTag(e)
+	if ntSet || asSet {
+		nameTag, alwaysShow, _ := nameTagState(e)
+		if ntSet {
+			nameTag = nt
 		}
-		if !alwaysShowSet {
-			value, ok := metadata[protocol.EntityDataKeyAlwaysShowNameTag].(uint8)
-			alwaysShow = !ok || value != 0
+		if asSet {
+			alwaysShow = as
 		}
 		writeNameTagMetadata(metadata, nameTag, alwaysShow)
 	}
@@ -1125,14 +1125,7 @@ func (s *Session) entityMetadata(e world.Entity) protocol.EntityMetadata {
 		metadata[protocol.EntityDataKeyScore] = st
 	}
 	if visibility := s.viewLayer.Visibility(e); visibility.EnforceVisibility() {
-		invisibleFlag := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
-		shouldForceVisible := visibility == world.EnforceVisible() && invisibleFlag
-		shouldForceInvisible := visibility == world.EnforceInvisible() && !invisibleFlag
-		if shouldForceVisible {
-			metadata.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
-		} else if shouldForceInvisible {
-			metadata.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible)
-		}
+		setFlag(metadata, protocol.EntityDataKeyFlags, protocol.EntityDataFlagInvisible, visibility == world.EnforceInvisible())
 	}
 	return metadata
 }
