@@ -44,7 +44,7 @@ type playerData struct {
 	xuid              string
 	locale            language.Tag
 	nameTag, scoreTag string
-	alwaysShowNameTag bool
+	alwaysShowNameTag *bool
 	absorptionHealth  float64
 	scale             float64
 
@@ -433,6 +433,9 @@ func (p *Player) DisableInstantRespawn() {
 }
 
 func (p *Player) AlwaysShowNameTag() bool {
+	alwaysShowNameTag := p.alwaysShowNameTag
+	if (alwaysShowNameTag == nil) return true
+	
 	return p.alwaysShowNameTag
 }
 
