@@ -44,6 +44,7 @@ type playerData struct {
 	xuid              string
 	locale            language.Tag
 	nameTag, scoreTag string
+	alwaysShowNameTag bool
 	absorptionHealth  float64
 	scale             float64
 
@@ -429,6 +430,15 @@ func (p *Player) EnableInstantRespawn() {
 // DisableInstantRespawn disables the vanilla instant respawn for the player.
 func (p *Player) DisableInstantRespawn() {
 	p.session().EnableInstantRespawn(false)
+}
+
+func (p *Player) AlwaysShowNameTag() bool {
+	return p.alwaysShowNameTag
+}
+
+func (p *Player) SetAlwaysShowNameTag(show bool) {
+	p.alwaysShowNameTag = show
+	p.updateState()
 }
 
 // SetNameTag changes the name tag displayed over the player in-game. Changing the name tag does not change
