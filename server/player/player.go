@@ -434,7 +434,9 @@ func (p *Player) DisableInstantRespawn() {
 
 func (p *Player) AlwaysShowNameTag() bool {
 	alwaysShowNameTag := p.alwaysShowNameTag
-	if (alwaysShowNameTag == nil) return true
+	if (alwaysShowNameTag == nil) {
+		return true
+	}
 	
 	return p.alwaysShowNameTag
 }
