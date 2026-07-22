@@ -109,14 +109,24 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 	if n, ok := e.(named); ok {
 		name := n.NameTag()
+		alwaysShow := n.AlwaysShowNameTag()
 		m[protocol.EntityDataKeyName] = name
+
 		if name == "" {
 			m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
 			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
 			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
 		} else {
 			m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
-			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+
+			wasAlwaysShow := metadata.Flag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+
+			if alwaysShow && !wasAlwaysShow {
+				m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			} else if !alwaysShow && wasAlwaysShow {
+				m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+			}
+
 			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
 		}
 	}
@@ -236,6 +246,7 @@ type owned interface {
 
 type named interface {
 	NameTag() string
+	AlwaysShowNameTag() bool
 }
 
 type scoreTag interface {
