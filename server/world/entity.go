@@ -508,6 +508,8 @@ type EntityRegistryConfig struct {
 type ArrowSpawnConfig struct {
 	// Damage specifies the base damage dealt by the arrow.
 	Damage float64
+	// PowerLevel specifies the level of the Power enchantment applied to the arrow.
+	PowerLevel int
 	// Owner is the entity that fired the arrow.
 	Owner Entity
 	// Critical specifies if the arrow should deal critical damage.

@@ -133,7 +133,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	}
 
 	arrowConf := world.ArrowSpawnConfig{
-		Damage:              9,
+		Damage:              1,
 		Owner:               releaser,
 		Critical:            true,
 		ObtainArrowOnPickup: !creative,

@@ -51,6 +51,7 @@ var conf = world.EntityRegistryConfig{
 		tip := arrow.Tip.(potion.Potion)
 		conf := arrowConf
 		conf.Damage, conf.Potion, conf.Owner = arrow.Damage, tip, arrow.Owner.H()
+		conf.powerLevel = arrow.PowerLevel
 		conf.KnockBackForceAddend = float64(arrow.PunchLevel) * enchantment.Punch.KnockBackMultiplier()
 		conf.DisablePickup = arrow.DisablePickup
 		if arrow.ObtainArrowOnPickup {

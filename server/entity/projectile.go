@@ -32,6 +32,10 @@ type ProjectileBehaviourConfig struct {
 	// back. The base damage is multiplied with the velocity of the projectile
 	// to calculate the final damage of the projectile.
 	Damage float64
+	// damageCalculator calculates the final damage of the projectile. If nil,
+	// Damage is multiplied by the projectile's velocity.
+	damageCalculator func(baseDamage, velocity float64, critical bool, powerLevel int) float64
+	powerLevel       int
 	// Potion is the potion effect that is applied to an entity when the
 	// projectile hits it.
 	Potion potion.Potion
@@ -294,9 +298,14 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
 	owner, _ := lt.conf.Owner.Entity(e.tx)
 	src := ProjectileDamageSource{Projectile: e, Owner: owner}
-	dmg := math.Ceil(lt.conf.Damage * vel.Len())
-	if lt.conf.Critical {
-		dmg += rand.Float64() * dmg / 2
+	var dmg float64
+	if lt.conf.damageCalculator == nil {
+		dmg = math.Ceil(lt.conf.Damage * vel.Len())
+		if lt.conf.Critical {
+			dmg += rand.Float64() * dmg / 2
+		}
+	} else {
+		dmg = lt.conf.damageCalculator(lt.conf.Damage, vel.Len(), lt.conf.Critical, lt.conf.powerLevel)
 	}
 	// TODO: Piercing arrows should bypass shield blocking when shields are implemented.
 	if _, vulnerable := l.Hurt(dmg, src); vulnerable {
