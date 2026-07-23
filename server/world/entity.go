@@ -389,8 +389,8 @@ func (e *EntityHandle) setAndUnlockWorldAt(w *World, pos mgl64.Vec3) {
 	e.cond.Broadcast()
 }
 
-// decodeNBT decodes the position, velocity, rotation, age, on-fire duration and
-// name tag of an entity.
+// decodeNBT decodes the position, velocity, rotation, age, on-fire duration,
+// name tag and components of an entity.
 func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Pos = readVec3(m, "Pos")
 	e.data.Vel = readVec3(m, "Motion")
@@ -398,20 +398,27 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Age = time.Duration(readInt16(m, "Age")) * (time.Second / 20)
 	e.data.FireDuration = time.Duration(readInt16(m, "Fire")) * time.Second / 20
 	e.data.Name, _ = m["NameTag"].(string)
+	if comp, ok := m["Components"].(map[string]any); ok {
+		e.data.decodeComponentsNBT(comp)
+	}
 }
 
-// encodeNBT encodes the position, velocity, rotation, age, on-fire duration and
-// name tag of an entity.
+// encodeNBT encodes the position, velocity, rotation, age, on-fire duration,
+// name tag and components of an entity.
 func (e *EntityHandle) encodeNBT() map[string]any {
-	return map[string]any{
+	m := map[string]any{
 		"Pos":     []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
 		"Motion":  []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
 		"Yaw":     float32(e.data.Rot[0]),
 		"Pitch":   float32(e.data.Rot[1]),
 		"Fire":    int16(e.data.FireDuration.Seconds() * 20),
-		"Age":     int16(e.data.Age / (time.Second * 20)),
+		"Age":     int16(e.data.Age / (time.Second / 20)),
 		"NameTag": e.data.Name,
 	}
+	if comp := e.data.encodeComponentsNBT(); comp != nil {
+		m["Components"] = comp
+	}
+	return m
 }
 
 // EntityData holds data shared by every entity. It is kept in an EntityHandle.
@@ -424,6 +431,15 @@ type EntityData struct {
 	Age               time.Duration
 
 	Data any
+
+	// components holds the entity's attached components, sorted by
+	// ComponentID. unknownComponents retains saved data of component types
+	// not registered in this process, so it survives the next save.
+	components        []componentSlot
+	unknownComponents map[string]any
+	// tickers caches the components implementing TickerComponent, in attach
+	// order. It is invalidated (set to nil) whenever components change.
+	tickers []TickerComponent
 }
 
 // Entity represents an Entity in the world, typically an object that may be moved around and can be
