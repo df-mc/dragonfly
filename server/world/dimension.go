@@ -83,8 +83,8 @@ func (reg *dimensionRegistry) LookupID(dim Dimension) (int, bool) {
 
 // RegisterDimension registers a custom dimension.
 func (reg *dimensionRegistry) RegisterDimension(id int, name string, dim Dimension) error {
-	if id < 1000 || id > math.MaxInt32 {
-		return fmt.Errorf("custom dimension ID must be between 1000 and %d", math.MaxInt32)
+	if id < 1000 || id > math.MaxUint16 {
+		return fmt.Errorf("custom dimension ID must be between 1000 and %d", math.MaxUint16)
 	}
 	if name == "" {
 		return fmt.Errorf("custom dimension name must not be empty")
@@ -92,11 +92,26 @@ func (reg *dimensionRegistry) RegisterDimension(id int, name string, dim Dimensi
 	if dim == nil {
 		return fmt.Errorf("custom dimension must not be nil")
 	}
+	r := dim.Range()
+	if r.Min() > r.Max() {
+		return fmt.Errorf("custom dimension range must not be empty")
+	}
+	if r.Min()%16 != 0 || (r.Max()+1)%16 != 0 {
+		return fmt.Errorf("custom dimension range must align with 16-block sub-chunks")
+	}
+	if r.Min() < math.MinInt16 || r.Max() > math.MaxInt16 {
+		return fmt.Errorf("custom dimension range must be between %d and %d", math.MinInt16, math.MaxInt16)
+	}
 	if _, ok := reg.dimensions[id]; ok {
 		return fmt.Errorf("dimension ID %d is already registered", id)
 	}
 	if existing, ok := reg.ids[dim]; ok {
 		return fmt.Errorf("dimension is already registered with ID %d", existing)
+	}
+	for _, existing := range reg.custom {
+		if existing.Name == name {
+			return fmt.Errorf("dimension name %q is already registered", name)
+		}
 	}
 	reg.dimensions[id] = dim
 	reg.ids[dim] = id

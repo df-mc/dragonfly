@@ -445,7 +445,7 @@ func (srv *Server) makeDimensionData() {
 		r := registration.Dimension.Range()
 		srv.customDimensions = append(srv.customDimensions, protocol.DimensionDefinition{
 			Name:          registration.Name,
-			Range:         [2]int32{int32(r.Min()), int32(r.Max())},
+			Range:         [2]int32{int32(r.Max() + 1), int32(r.Min())},
 			Generator:     protocol.GeneratorVoid,
 			DimensionType: int32(registration.ID),
 		})
