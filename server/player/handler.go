@@ -50,6 +50,10 @@ type Handler interface {
 	// the original cause of the immunity frame. In this case, the damage is
 	// reduced but the player is still knocked back.
 	HandleHurt(ctx *Context, damage *float64, immune bool, attackImmunity *time.Duration, src world.DamageSource)
+	// HandleSetOnFire handles the player being set on fire by any source.
+	// The fire duration passed is after fire protection modifiers and may be changed
+	// by assigning to *duration.
+	HandleSetOnFire(ctx *Context, duration *time.Duration)
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(p *Player, src world.DamageSource, keepInv *bool)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
@@ -191,6 +195,7 @@ func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64,
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
 func (NopHandler) HandleHurt(*Context, *float64, bool, *time.Duration, world.DamageSource) {}
+func (NopHandler) HandleSetOnFire(*Context, *time.Duration)                                {}
 func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource)                      {}
 func (NopHandler) HandleFoodLoss(*Context, int, *int)                                      {}
 func (NopHandler) HandleDeath(*Player, world.DamageSource, *bool)                          {}
