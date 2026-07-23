@@ -27,9 +27,9 @@ type ExplosionConfig struct {
 	// SuppressUnderwaterImpact prevents the explosion from affecting entities through liquid layers. Bedrock Edition
 	// applies this to every explosion.
 	SuppressUnderwaterImpact bool
-	// ClipBlocksBelowOrigin prevents the explosion from destroying blocks below its block Y level. Entities below
-	// that level may still be damaged.
-	ClipBlocksBelowOrigin bool
+	// PreventBlockDamageBelowOrigin prevents the explosion from destroying blocks below the block Y level of its
+	// origin. Entity damage is unaffected.
+	PreventBlockDamageBelowOrigin bool
 	// ItemDropChance specifies how item drops should be handled. By default,
 	// the item drop chance is 1/Size. If negative, no items will be dropped by
 	// the explosion. If set to 1 or higher, all items are dropped.
@@ -116,7 +116,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 		pos := explosionPos
 		for blastForce := size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			if c.ClipBlocksBelowOrigin && current.Y() < minY {
+			if c.PreventBlockDamageBelowOrigin && current.Y() < minY {
 				break
 			}
 			currentBlock := tx.Block(current)
