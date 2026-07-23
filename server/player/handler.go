@@ -196,6 +196,7 @@ func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64,
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
 func (NopHandler) HandleHurt(*Context, *float64, bool, *time.Duration, world.DamageSource) {}
+func (NopHandler) HandleSetOnFire(*Context, *int64)                                        {}
 func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource)                      {}
 func (NopHandler) HandleFoodLoss(*Context, int, *int)                                      {}
 func (NopHandler) HandleDeath(*Player, world.DamageSource, *bool)                          {}
