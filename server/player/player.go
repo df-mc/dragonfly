@@ -1410,6 +1410,12 @@ func (p *Player) SetOnFire(duration time.Duration) {
 	if level := p.Armour().HighestEnchantmentLevel(enchantment.FireProtection); level > 0 {
 		ticks -= int64(math.Floor(float64(ticks) * float64(level) * 0.15))
 	}
+
+	ctx := newContext(p)
+	if p.Handler().HandleSetOnFire(ctx, &ticks); ctx.Cancelled() {
+		return
+	}
+
 	p.fireTicks = ticks
 	p.updateState()
 }
