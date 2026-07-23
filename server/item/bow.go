@@ -85,7 +85,7 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 	}
 	projectile := tx.AddEntity(create(opts, world.ArrowSpawnConfig{
 		Damage:              damage,
-		Owner:               releaser,
+		Owner:               releaser.H(),
 		Critical:            force >= 1,
 		ObtainArrowOnPickup: !creative && consume,
 		PunchLevel:          punchLevel,

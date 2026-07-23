@@ -13,7 +13,9 @@ import (
 // FireworkBehaviourConfig holds optional parameters for a FireworkBehaviour.
 type FireworkBehaviourConfig struct {
 	Firework item.Firework
-	Owner    *world.EntityHandle
+	// Owner is the handle of the entity that launched the firework. It may be
+	// nil if the firework has no owner.
+	Owner *world.EntityHandle
 	// ExistenceDuration is the duration that an entity with this behaviour
 	// should last. Once this time expires, the entity is closed. If
 	// ExistenceDuration is 0, the entity will never expire automatically.
@@ -66,7 +68,8 @@ func (f *FireworkBehaviour) Attached() bool {
 	return f.conf.Attached
 }
 
-// Owner returns the world.Entity that launched the firework.
+// Owner returns the handle of the entity that launched the firework, or nil if
+// the firework has no owner.
 func (f *FireworkBehaviour) Owner() *world.EntityHandle {
 	return f.conf.Owner
 }

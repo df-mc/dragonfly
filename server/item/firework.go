@@ -18,6 +18,17 @@ type Firework struct {
 	Explosions []FireworkExplosion
 }
 
+// Dispense launches the firework from a dispenser.
+func (f Firework) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	create := tx.World().EntityRegistry().Config().Firework
+	if create == nil {
+		return DispenseFailure
+	}
+	return dispenseProjectile(pos, face, tx, ctx, sound.FireworkLaunch{}, func(opts world.EntitySpawnOpts) *world.EntityHandle {
+		return create(opts, f, nil, 1.15, 0.04, false)
+	})
+}
+
 // Use ...
 func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	if g, ok := user.(interface {
@@ -31,7 +42,7 @@ func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	tx.PlaySound(pos, sound.FireworkLaunch{})
 	create := tx.World().EntityRegistry().Config().Firework
 	opts := world.EntitySpawnOpts{Position: pos, Rotation: user.Rotation()}
-	tx.AddEntity(create(opts, f, user, 1.15, 0.04, true))
+	tx.AddEntity(create(opts, f, user.H(), 1.15, 0.04, true))
 
 	ctx.SubtractFromCount(1)
 	return true
@@ -42,7 +53,7 @@ func (f Firework) UseOnBlock(pos cube.Pos, _ cube.Face, clickPos mgl64.Vec3, tx 
 	fpos := pos.Vec3().Add(clickPos)
 	create := tx.World().EntityRegistry().Config().Firework
 	opts := world.EntitySpawnOpts{Position: fpos, Rotation: cube.Rotation{rand.Float64() * 360, 90}}
-	tx.AddEntity(create(opts, f, user, 1.15, 0.04, false))
+	tx.AddEntity(create(opts, f, user.H(), 1.15, 0.04, false))
 	tx.PlaySound(fpos, sound.FireworkLaunch{})
 
 	ctx.SubtractFromCount(1)

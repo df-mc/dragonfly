@@ -3,6 +3,7 @@ package item
 import (
 	"encoding/binary"
 	"image/color"
+	"math/rand/v2"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -47,6 +48,43 @@ type Usable interface {
 	// Use returns a bool indicating if the item was used successfully.
 	Use(tx *world.Tx, user User, ctx *UseContext) bool
 }
+
+// Dispensable represents an item with specialised behaviour when used by a dispenser.
+type Dispensable interface {
+	// Dispense performs the item's dispenser behaviour. The position and face are those of the dispenser. Mutations to
+	// the dispensed stack are recorded in ctx and applied by the dispenser after Dispense returns successfully.
+	Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult
+}
+
+// DispenseResult describes the outcome of specialised item behaviour in a dispenser.
+type DispenseResult uint8
+
+const (
+	// DispenseDefault falls back to ejecting the item normally.
+	DispenseDefault DispenseResult = iota
+	// DispenseSuccess applies the DispenseContext to the selected dispenser slot.
+	DispenseSuccess
+	// DispenseFailure leaves the selected item unchanged and plays the dispenser failure sound.
+	DispenseFailure
+)
+
+// DispenseContext records mutations to a dispensed item and provides the random source of the dispenser activation.
+type DispenseContext struct {
+	// Damage is the amount of damage applied to the selected item after a successful dispense.
+	Damage int
+	// CountSub is the number of items removed from the selected stack after a successful dispense.
+	CountSub int
+	// NewItem is returned to the dispenser inventory after a successful dispense.
+	NewItem Stack
+	// Rand is the random source of the dispenser activation.
+	Rand *rand.Rand
+}
+
+// DamageItem damages the selected item by d after a successful dispense.
+func (ctx *DispenseContext) DamageItem(d int) { ctx.Damage += d }
+
+// SubtractFromCount subtracts d from the selected stack after a successful dispense.
+func (ctx *DispenseContext) SubtractFromCount(d int) { ctx.CountSub += d }
 
 // Throwable represents a custom item that can be thrown such as a projectile. This will only have an effect on
 // non-vanilla items.

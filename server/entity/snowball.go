@@ -6,10 +6,10 @@ import (
 	"github.com/df-mc/dragonfly/server/world/particle"
 )
 
-// NewSnowball creates a snowball entity at a position with an owner entity.
-func NewSnowball(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
+// NewSnowball creates a snowball entity at a position. Owner may be nil.
+func NewSnowball(opts world.EntitySpawnOpts, owner *world.EntityHandle) *world.EntityHandle {
 	conf := snowballConf
-	conf.Owner = owner.H()
+	conf.Owner = owner
 	return opts.New(SnowballType, conf)
 }
 

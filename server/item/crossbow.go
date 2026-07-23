@@ -134,7 +134,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 
 	arrowConf := world.ArrowSpawnConfig{
 		Damage:              9,
-		Owner:               releaser,
+		Owner:               releaser.H(),
 		Critical:            true,
 		ObtainArrowOnPickup: !creative,
 		PiercingLevel:       pierceLevel,
@@ -172,7 +172,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ar
 			Position: torsoPosition(releaser),
 			Velocity: dirVec.Mul(0.8),
 			Rotation: rot.Neg(),
-		}, firework, releaser, 1.0, 0, false)
+		}, firework, releaser.H(), 1.0, 0, false)
 		tx.AddEntity(projectile)
 	} else {
 		createArrow := tx.World().EntityRegistry().Config().Arrow

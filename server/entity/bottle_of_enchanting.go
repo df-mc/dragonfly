@@ -10,9 +10,9 @@ import (
 )
 
 // NewBottleOfEnchanting ...
-func NewBottleOfEnchanting(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
+func NewBottleOfEnchanting(opts world.EntitySpawnOpts, owner *world.EntityHandle) *world.EntityHandle {
 	conf := bottleOfEnchantingConf
-	conf.Owner = owner.H()
+	conf.Owner = owner
 	return opts.New(BottleOfEnchantingType, conf)
 }
 

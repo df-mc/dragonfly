@@ -21,6 +21,8 @@ import (
 // ProjectileBehaviourConfig.New() creates a ProjectileBehaviour using these
 // settings.
 type ProjectileBehaviourConfig struct {
+	// Owner is the handle of the entity that launched the projectile. It may be
+	// nil if the projectile has no owner.
 	Owner *world.EntityHandle
 	// Gravity is the amount of Y velocity subtracted every tick.
 	Gravity float64

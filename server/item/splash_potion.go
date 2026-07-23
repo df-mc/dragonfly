@@ -14,6 +14,17 @@ type SplashPotion struct {
 	Type potion.Potion
 }
 
+// Dispense launches the potion from a dispenser.
+func (s SplashPotion) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	create := tx.World().EntityRegistry().Config().SplashPotion
+	if create == nil {
+		return DispenseFailure
+	}
+	return dispenseProjectile(pos, face, tx, ctx, sound.ItemThrow{}, func(opts world.EntitySpawnOpts) *world.EntityHandle {
+		return create(opts, s.Type, nil)
+	})
+}
+
 // MaxCount ...
 func (s SplashPotion) MaxCount() int {
 	return 1
@@ -23,7 +34,7 @@ func (s SplashPotion) MaxCount() int {
 func (s SplashPotion) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	create := tx.World().EntityRegistry().Config().SplashPotion
 	opts := world.EntitySpawnOpts{Position: eyePosition(user), Velocity: throwableOffset(user.Rotation()).Vec3().Mul(0.5)}
-	tx.AddEntity(create(opts, s.Type, user))
+	tx.AddEntity(create(opts, s.Type, user.H()))
 	tx.PlaySound(user.Position(), sound.ItemThrow{})
 
 	ctx.SubtractFromCount(1)

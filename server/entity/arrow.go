@@ -12,28 +12,28 @@ import (
 
 // NewArrow creates a new Arrow and returns it. It is equivalent to calling NewTippedArrow with `potion.Potion{}` as
 // tip.
-func NewArrow(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
+func NewArrow(opts world.EntitySpawnOpts, owner *world.EntityHandle) *world.EntityHandle {
 	return NewTippedArrowWithDamage(opts, 2.0, owner, potion.Potion{})
 }
 
 // NewArrowWithDamage creates a new Arrow with the given base damage, and returns it. It is equivalent to calling
 // NewTippedArrowWithDamage with `potion.Potion{}` as tip.
-func NewArrowWithDamage(opts world.EntitySpawnOpts, damage float64, owner world.Entity) *world.EntityHandle {
+func NewArrowWithDamage(opts world.EntitySpawnOpts, damage float64, owner *world.EntityHandle) *world.EntityHandle {
 	return NewTippedArrowWithDamage(opts, damage, owner, potion.Potion{})
 }
 
 // NewTippedArrow creates a new Arrow with a potion effect added to an entity when hit.
-func NewTippedArrow(opts world.EntitySpawnOpts, owner world.Entity, tip potion.Potion) *world.EntityHandle {
+func NewTippedArrow(opts world.EntitySpawnOpts, owner *world.EntityHandle, tip potion.Potion) *world.EntityHandle {
 	return NewTippedArrowWithDamage(opts, 2.0, owner, tip)
 }
 
 // NewTippedArrowWithDamage creates a new Arrow with a potion effect added to an entity when hit and, and returns it.
 // It uses the given damage as the base damage.
-func NewTippedArrowWithDamage(opts world.EntitySpawnOpts, damage float64, owner world.Entity, tip potion.Potion) *world.EntityHandle {
+func NewTippedArrowWithDamage(opts world.EntitySpawnOpts, damage float64, owner *world.EntityHandle, tip potion.Potion) *world.EntityHandle {
 	conf := arrowConf
 	conf.Damage = damage
 	conf.Potion = tip
-	conf.Owner = owner.H()
+	conf.Owner = owner
 	return opts.New(ArrowType, conf)
 }
 

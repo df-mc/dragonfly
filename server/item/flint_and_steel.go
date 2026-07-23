@@ -13,6 +13,37 @@ import (
 // FlintAndSteel is an item used to light blocks on fire.
 type FlintAndSteel struct{}
 
+// Dispense ignites the block in front of a dispenser.
+func (FlintAndSteel) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	front := pos.Side(face)
+	if target, ok := tx.Block(front).(ignitable); ok {
+		if !target.Ignite(front, tx, nil) {
+			return DispenseFailure
+		}
+		ctx.DamageItem(1)
+		return DispenseSuccess
+	}
+
+	beforeName, _ := tx.Block(front).EncodeBlock()
+	if beforeName == "minecraft:fire" || beforeName == "minecraft:soul_fire" {
+		return DispenseFailure
+	}
+	starter, ok := fire().(interface {
+		Start(*world.Tx, cube.Pos)
+	})
+	if !ok {
+		return DispenseFailure
+	}
+	starter.Start(tx, front)
+	afterName, _ := tx.Block(front).EncodeBlock()
+	if beforeName == afterName {
+		return DispenseFailure
+	}
+	tx.PlaySound(front.Vec3Centre(), sound.Ignite{})
+	ctx.DamageItem(1)
+	return DispenseSuccess
+}
+
 // MaxCount ...
 func (f FlintAndSteel) MaxCount() int {
 	return 1

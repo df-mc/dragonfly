@@ -9,6 +9,34 @@ import (
 // GlassBottle is an item that can hold various liquids.
 type GlassBottle struct{}
 
+// Dispense fills the bottle from the block or liquid in front of a dispenser, falling back to ordinary ejection when
+// no bottle-filling target is present.
+func (GlassBottle) Dispense(pos cube.Pos, face cube.Face, tx *world.Tx, ctx *DispenseContext) DispenseResult {
+	front := pos.Side(face)
+	b := tx.Block(front)
+	filler, fromBlock := b.(bottleFiller)
+	if !fromBlock {
+		liquid, ok := tx.Liquid(front)
+		if !ok {
+			return DispenseDefault
+		}
+		filler, ok = liquid.(bottleFiller)
+		if !ok {
+			return DispenseDefault
+		}
+	}
+	result, filled, ok := filler.FillBottle()
+	if !ok {
+		return DispenseDefault
+	}
+	if fromBlock && result != b {
+		tx.SetBlock(front, result, nil)
+	}
+	ctx.NewItem = filled
+	ctx.SubtractFromCount(1)
+	return DispenseSuccess
+}
+
 // bottleFiller is implemented by blocks that can fill bottles by clicking on them.
 type bottleFiller interface {
 	// FillBottle fills a GlassBottle by interacting with a block. Blocks that implement this interface return both the
