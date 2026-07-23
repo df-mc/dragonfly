@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
@@ -41,8 +43,24 @@ var arrowConf = ProjectileBehaviourConfig{
 	Gravity:               0.05,
 	Drag:                  0.01,
 	Damage:                2.0,
+	damageCalculator:      calculateArrowDamage,
 	Sound:                 sound.ArrowHit{},
 	SurviveBlockCollision: true,
+}
+
+// calculateArrowDamage calculates arrow damage using Bedrock Edition's formula. Arrows
+// add 97% of their velocity to their base damage. Critical arrows deal 9-10
+// damage before Power is applied.
+func calculateArrowDamage(baseDamage, velocity float64, critical bool, powerLevel int) float64 {
+	damage := baseDamage + velocity*0.97
+	if critical {
+		damage += rand.Float64()*damage/2 + rand.Float64()*2
+		damage = min(10, max(9, damage))
+	}
+	if powerLevel > 0 {
+		damage *= 1 + float64(powerLevel+1)*0.25
+	}
+	return damage
 }
 
 // boolByte returns 1 if the bool passed is true, or 0 if it is false.
@@ -70,6 +88,8 @@ func (arrowType) BBox(world.Entity) cube.BBox {
 func (arrowType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := arrowConf
 	conf.Damage = float64(nbtconv.Float32(m, "Damage"))
+	conf.powerLevel = int(nbtconv.Uint8(m, "enchantPower"))
+	conf.Critical = nbtconv.Bool(m, "crit")
 	conf.Potion = potion.From(nbtconv.Int32(m, "auxValue") - 1)
 	conf.DisablePickup = !nbtconv.Bool(m, "player")
 	if !nbtconv.Bool(m, "isCreative") {
@@ -85,12 +105,13 @@ func (arrowType) EncodeNBT(data *world.EntityData) map[string]any {
 	b := data.Data.(*ProjectileBehaviour)
 	m := map[string]any{
 		"Damage":       float32(b.conf.Damage),
+		"crit":         boolByte(b.conf.Critical),
 		"enchantPunch": byte(b.conf.KnockBackForceAddend / enchantment.Punch.KnockBackMultiplier()),
 		"auxValue":     int32(b.conf.Potion.Uint8() + 1),
 		"player":       boolByte(!b.conf.DisablePickup),
 		"isCreative":   boolByte(b.conf.PickupItem.Empty()),
 	}
-	// TODO: Save critical flag if Minecraft ever saves it?
+	m["enchantPower"] = byte(b.conf.powerLevel)
 	if b.collided {
 		m["StuckToBlockPos"] = nbtconv.PosToInt32Slice(b.collisionPos)
 	}
