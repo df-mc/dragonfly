@@ -64,7 +64,7 @@ type PassiveBehaviour struct {
 // Explode adds velocity to a passive entity to blast it away from the
 // explosion's source.
 func (p *PassiveBehaviour) Explode(e *Ent, src world.ExplosionSource, impact float64) {
-	e.data.Vel = e.data.Vel.Add(e.data.Pos.Sub(src.Position()).Normalize().Mul(impact))
+	e.data.Vel = e.data.Vel.Add(ExplosionImpulse(e, src, impact))
 }
 
 // Fuse returns the leftover time until PassiveBehaviourConfig.Expire is called,
