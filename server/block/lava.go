@@ -166,14 +166,20 @@ func (l Lava) Harden(pos cube.Pos, tx *world.Tx, flownIntoBy *cube.Pos) bool {
 				}
 				return
 			}
-			if waterBlock, ok := tx.Block(neighbour).(Water); ok {
-				water = waterBlock
-				if l.Depth == 8 && !l.Falling {
-					b = Obsidian{}
-					return
-				}
-				b = Cobblestone{}
+			liquid, ok := tx.Liquid(neighbour)
+			if !ok {
+				return
 			}
+			waterBlock, ok := liquid.(Water)
+			if !ok {
+				return
+			}
+			water = waterBlock
+			if l.Depth == 8 && !l.Falling {
+				b = Obsidian{}
+				return
+			}
+			b = Cobblestone{}
 		}, tx.Range())
 		if b != nil {
 			ctx := tx.Event()
@@ -186,7 +192,10 @@ func (l Lava) Harden(pos cube.Pos, tx *world.Tx, flownIntoBy *cube.Pos) bool {
 		}
 		return false
 	}
-	water, ok = tx.Block(*flownIntoBy).(Water)
+	liquid, liquidFound := tx.Liquid(*flownIntoBy)
+	if liquidFound {
+		water, ok = liquid.(Water)
+	}
 	if !ok {
 		return false
 	}
