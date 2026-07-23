@@ -103,7 +103,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 	for e := range tx.EntitiesWithin(box.Grow(2)) {
 		pos := e.Position()
 		dist := pos.Sub(explosionPos).Len()
-		if dist > d || dist == 0 {
+		if dist > d {
 			continue
 		}
 
