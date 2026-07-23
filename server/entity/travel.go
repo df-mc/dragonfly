@@ -20,6 +20,10 @@ type PortalTravelComputer struct {
 	Teleport func(e Traveller, pos mgl64.Vec3)
 	// SpawnPoint returns the position the entity arrives at when returning from the End; if nil the world spawn is used.
 	SpawnPoint func(tx *world.Tx) mgl64.Vec3
+	// EndSpawn resolves a destination world and a function that validates its spawn when returning from the End. The
+	// outer callback runs outside a world transaction; resolve runs in the transaction that inserts the entity. If
+	// either return is nil, the regular SpawnPoint or world-spawn fallback is used.
+	EndSpawn func(defaultDestination *world.World) (destination *world.World, resolve func(*world.Tx) (mgl64.Vec3, bool))
 	// Player specifies if the entity is a player. Players arrive one block lower on the End platform than other
 	// entities.
 	Player bool
@@ -177,7 +181,7 @@ func (t *PortalTravelComputer) travel(e Traveller, tx *world.Tx, destination *wo
 		return
 	}
 
-	go t.transfer(handle, source, destination, origin, pos, sourceDim, destinationDim)
+	go t.transfer(handle, source, destination, origin, pos, sourceDim)
 }
 
 // travelQueued moves the entity after the current transaction finishes. This is used by callers such as players that
@@ -214,32 +218,48 @@ func (t *PortalTravelComputer) travelQueued(e Traveller, tx *world.Tx, destinati
 			t.mu.Unlock()
 			return
 		}
-		go t.transfer(handle, source, destination, origin, pos, sourceDim, destinationDim)
+		go t.transfer(handle, source, destination, origin, pos, sourceDim)
 	})
 }
 
 // transfer adds the removed entity to the destination world at the arrival position. If no destination portal was
 // found and the entity may not create one, the entity is returned to its origin in the source world instead.
-func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, destination *world.World, origin mgl64.Vec3, pos cube.Pos, sourceDim, destinationDim world.Dimension) {
-	travelled, err := world.Call(context.Background(), destination, func(tx *world.Tx) (bool, error) {
-		spawn, ok := t.destinationSpawn(tx, sourceDim, pos)
-		if !ok {
-			return false, nil
+func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, destination *world.World, origin mgl64.Vec3, pos cube.Pos, sourceDim world.Dimension) {
+	// addToWorld inserts the entity into w at the position resolve returns, in the transaction that inserts it. It
+	// reports whether the entity actually arrived.
+	addToWorld := func(w *world.World, resolve func(*world.Tx) (mgl64.Vec3, bool)) bool {
+		travelled, err := world.Call(context.Background(), w, func(tx *world.Tx) (bool, error) {
+			spawn, ok := resolve(tx)
+			if !ok {
+				return false, nil
+			}
+			if e, ok := tx.AddEntityAt(handle, spawn).(Traveller); ok {
+				t.finishTravel(e, spawn, sourceDim, w.Dimension())
+			}
+			return true, nil
+		})
+		return err == nil && travelled
+	}
+	defaultSpawn := func(tx *world.Tx) (mgl64.Vec3, bool) {
+		return t.destinationSpawn(tx, sourceDim, pos)
+	}
+
+	travelled := false
+	if sourceDim == world.End && destination.Dimension() == world.Overworld && t.EndSpawn != nil {
+		if w, resolve := t.EndSpawn(destination); w != nil && resolve != nil {
+			travelled = addToWorld(w, resolve)
 		}
-		if e, ok := tx.AddEntityAt(handle, spawn).(Traveller); ok {
-			t.finishTravel(e, spawn, sourceDim, destinationDim)
-		}
-		return true, nil
-	})
-	if err != nil {
-		travelled = false
 	}
 	if !travelled {
-		_, err = world.Call(context.Background(), source, func(tx *world.Tx) (struct{}, error) {
+		// Either no End respawn point applied, or the saved one changed or became obstructed before insertion. Fall
+		// back to the default destination.
+		travelled = addToWorld(destination, defaultSpawn)
+	}
+	if !travelled {
+		if _, err := world.Call(context.Background(), source, func(tx *world.Tx) (struct{}, error) {
 			tx.AddEntityAt(handle, origin)
 			return struct{}{}, nil
-		})
-		if err != nil {
+		}); err != nil {
 			_ = handle.Close()
 		}
 	}
