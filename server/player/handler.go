@@ -50,10 +50,9 @@ type Handler interface {
 	// the original cause of the immunity frame. In this case, the damage is
 	// reduced but the player is still knocked back.
 	HandleHurt(ctx *Context, damage *float64, immune bool, attackImmunity *time.Duration, src world.DamageSource)
-	// HandleSetOnFire handles the player being set on fire from any source
-	// ctx.Cancel may be called to cancel the player from receiving fire ticks
-	// Ticks may be updates to change the fire tick duration, provided ticks are post
-	// fire protection calculation.
+	// HandleSetOnFire handles the player being set on fire by any source.
+	// The fire duration passed is after fire protection modifiers and may be changed
+	// by assigning to *ticks.
 	HandleSetOnFire(ctx *Context, ticks *int64)
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(p *Player, src world.DamageSource, keepInv *bool)
