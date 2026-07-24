@@ -8,7 +8,7 @@ import (
 const (
 	bubbleColumnRisePerTick        = 0.06
 	bubbleColumnSurfaceRisePerTick = 0.10
-	bubbleColumnSinkPerTick        = -0.30
+	bubbleColumnSinkPerTick        = -0.03
 	bubbleColumnSurfaceSinkPerTick = -0.03
 	bubbleColumnRiseSpeedLimit     = 0.70
 	bubbleColumnSurfaceRiseLimit   = 1.80
