@@ -9,10 +9,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-type endCrystalSupport interface {
-	SupportsEndCrystal() bool
-}
-
 type endCrystalBehaviour struct {
 	showBase      bool
 	beamTarget    cube.Pos
@@ -25,14 +21,16 @@ func (b endCrystalBehaviour) Apply(data *world.EntityData) {
 }
 
 // Tick continuously generates fire at the End crystal's position while in the
-// End, if the block at that position is air.
+// End, if the block at that position is air and the block below it is not air.
 func (endCrystalBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	if tx.World().Dimension() == world.End {
 		pos := cube.PosFromVec3(e.Position())
-		if _, ok := tx.Block(pos).(block.Air); ok {
-			fire := block.Fire{}
-			tx.SetBlock(pos, fire, nil)
-			tx.ScheduleBlockUpdate(pos, fire, time.Duration(30+rand.IntN(10))*time.Second/20)
+		if _, air := tx.Block(pos.Side(cube.FaceDown)).(block.Air); !air {
+			if _, air := tx.Block(pos).(block.Air); air {
+				fire := block.Fire{}
+				tx.SetBlock(pos, fire, nil)
+				tx.ScheduleBlockUpdate(pos, fire, time.Duration(30+rand.IntN(10))*time.Second/20)
+			}
 		}
 	}
 	return nil
@@ -77,18 +75,9 @@ func explodeEndCrystal(e *Ent, explosionSize float64) {
 	if _, ok := e.H().Entity(e.tx); !ok {
 		return
 	}
-	protectBlocksBelow := endCrystalProtectsBlocksBelow(e.tx, cube.PosFromVec3(e.Position()))
 	_ = e.Close()
-	block.ExplosionConfig{
-		SuppressUnderwaterImpact:      true,
-		PreventBlockDamageBelowOrigin: protectBlocksBelow,
-	}.Explode(e.tx, world.EntityExplosionSource{
+	block.ExplosionConfig{SuppressUnderwaterImpact: true}.Explode(e.tx, world.EntityExplosionSource{
 		Entity:        e,
 		ExplosionSize: explosionSize,
 	})
-}
-
-func endCrystalProtectsBlocksBelow(tx *world.Tx, pos cube.Pos) bool {
-	support, ok := tx.Block(pos.Side(cube.FaceDown)).(endCrystalSupport)
-	return ok && support.SupportsEndCrystal()
 }
