@@ -56,6 +56,11 @@ func ActivateNetherPortal(tx *world.Tx, pos cube.Pos) bool {
 	if !ok || !p.Framed() || p.Activated() {
 		return false
 	}
+	ctx := tx.Event()
+	positions := append([]cube.Pos(nil), p.Positions()...)
+	if tx.World().Handler().HandlePortalActivate(ctx, world.Nether, positions); ctx.Cancelled() {
+		return false
+	}
 	p.Activate()
 	return true
 }
@@ -218,6 +223,18 @@ func CreateNetherPortal(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 		axis = cube.Z
 	}
 
+	// Buffer the blocks the portal is made up of so a world.Handler may cancel the creation before any of them are
+	// written to the world. affected holds each position exactly once, in the order it was first set.
+	ob, pb := obsidian(), portal(axis)
+	blocks := make(map[cube.Pos]world.Block)
+	var affected []cube.Pos
+	setBlock := func(pos cube.Pos, b world.Block) {
+		if _, ok := blocks[pos]; !ok {
+			affected = append(affected, pos)
+		}
+		blocks[pos] = b
+	}
+
 	if distance < 0.0 {
 		// If all else fails, we can simply create a floating platform in the void with the portal on it.
 		resultPos[1] = min(max(resultPos[1], 70), r.Max()-10)
@@ -230,9 +247,10 @@ func CreateNetherPortal(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 						resultPos.Z() + safeWidth*coEff2 - safeBeforeAfter*coEff1,
 					}
 
-					tx.SetBlock(entryPos, nil, nil)
 					if height < 0 {
-						tx.SetBlock(entryPos, obsidian(), nil)
+						setBlock(entryPos, ob)
+					} else {
+						setBlock(entryPos, nil)
 					}
 				}
 			}
@@ -250,12 +268,21 @@ func CreateNetherPortal(tx *world.Tx, pos cube.Pos) (Nether, bool) {
 			}
 
 			if width == -1 || width == 2 || height == -1 || height == 3 {
-				tx.SetBlock(entryPos, obsidian(), nil)
+				setBlock(entryPos, ob)
 				continue
 			}
 			positions = append(positions, entryPos)
-			tx.SetBlock(entryPos, portal(axis), nil)
+			setBlock(entryPos, pb)
 		}
+	}
+
+	ctx := tx.Event()
+	handlerPositions := append([]cube.Pos(nil), affected...)
+	if tx.World().Handler().HandlePortalCreate(ctx, world.Nether, handlerPositions); ctx.Cancelled() {
+		return Nether{}, false
+	}
+	for _, pos := range affected {
+		tx.SetBlock(pos, blocks[pos], nil)
 	}
 
 	return Nether{
