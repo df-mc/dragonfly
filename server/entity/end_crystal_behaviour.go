@@ -67,8 +67,7 @@ func explodeEndCrystal(e *Ent, explosionSize float64) {
 	}
 	_ = e.Close()
 	block.ExplosionConfig{
-		SuppressUnderwaterImpact:      true,
-		PreventBlockDamageBelowOrigin: true,
+		SuppressUnderwaterImpact: true,
 	}.Explode(e.tx, world.EntityExplosionSource{
 		Entity:        e,
 		ExplosionSize: explosionSize,

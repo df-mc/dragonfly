@@ -38,7 +38,7 @@ func (e EndCrystal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *worl
 		}
 	}
 
-	opts := world.EntitySpawnOpts{Position: pos.Vec3().Add(mgl64.Vec3{0.5, 1, 0.5})}
+	opts := world.EntitySpawnOpts{Position: pos.Side(cube.FaceUp).Vec3Middle()}
 	tx.AddEntity(tx.World().EntityRegistry().Config().EndCrystal(opts))
 	ctx.SubtractFromCount(1)
 	return true
