@@ -1871,6 +1871,20 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 
 	dmg := i.AttackDamage()
+	isSmashAttack, smashFallDistance := false, 0.0
+	if _, ok := i.Item().(item.Mace); ok && p.FallDistance() > 1.5 {
+		smashFallDistance = p.FallDistance()
+		switch {
+		case smashFallDistance <= 3:
+			dmg += smashFallDistance * 4
+		case smashFallDistance <= 8:
+			dmg += 3*4 + (smashFallDistance-3)*2
+		default:
+			dmg += 3*4 + 5*2 + (smashFallDistance - 8)
+		}
+		isSmashAttack = true
+		p.ResetFallDistance()
+	}
 	if strength, ok := p.Effect(effect.Strength); ok {
 		dmg += dmg * effect.Strength.Multiplier(strength.Level())
 	}
@@ -1894,7 +1908,14 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
 	}
 
-	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
+	if isSmashAttack && vulnerable {
+		targetPos := living.Position()
+		p.tx.PlaySound(targetPos, sound.MaceSmash{Ground: true, Heavy: smashFallDistance > 5})
+		p.tx.AddParticle(targetPos, particle.SmashAttack{})
+		p.maceSmashAreaEffect(living, dmg)
+	} else {
+		p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
+	}
 	if !vulnerable {
 		return true
 	}
@@ -1914,6 +1935,30 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		}
 	}
 	return true
+}
+
+// maceSmashAreaEffect deals area damage around the target for mace smash attacks.
+func (p *Player) maceSmashAreaEffect(target entity.Living, primaryDamage float64) {
+	const radius = 2.5
+
+	targetPos := target.Position()
+	nearby := p.tx.EntitiesWithin(target.H().Type().BBox(target).Translate(targetPos).Grow(radius))
+	for victim := range nearby {
+		if victim.H() == target.H() || victim.H() == p.H() {
+			continue
+		}
+		living, ok := victim.(entity.Living)
+		if !ok || living.Dead() {
+			continue
+		}
+		distance := living.Position().Sub(targetPos).Len()
+		if distance > radius {
+			continue
+		}
+
+		falloff := 1 - distance/radius
+		living.Hurt(primaryDamage*0.5*falloff, entity.AttackDamageSource{Attacker: p})
+	}
 }
 
 // StartBreaking makes the player start breaking the block at the position passed using the item currently

@@ -500,6 +500,16 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticleLegacyEvent | 88,
 			Position:  vec64To32(pos),
 		})
+	case particle.WindCharge:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticlesWindExplosion,
+			Position:  vec64To32(pos),
+		})
+	case particle.SmashAttack:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleSmashAttackGroundDust,
+			Position:  vec64To32(pos),
+		})
 	}
 }
 
@@ -874,6 +884,17 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			Position:  vec64To32(pos),
 		})
 		return
+	case sound.WindCharge:
+		pk.SoundType = packet.SoundEventWindChargeBurst
+	case sound.MaceSmash:
+		switch {
+		case so.Heavy && so.Ground:
+			pk.SoundType = packet.SoundEventMaceHeavySmashGround
+		case !so.Ground:
+			pk.SoundType = packet.SoundEventMaceSmashAir
+		default:
+			pk.SoundType = packet.SoundEventMaceSmashGround
+		}
 	case sound.ShulkerBoxClose:
 		pk.SoundType = packet.SoundEventShulkerBoxClosed
 	case sound.ShulkerBoxOpen:
