@@ -1410,6 +1410,14 @@ func (p *Player) SetOnFire(duration time.Duration) {
 	if level := p.Armour().HighestEnchantmentLevel(enchantment.FireProtection); level > 0 {
 		ticks -= int64(math.Floor(float64(ticks) * float64(level) * 0.15))
 	}
+
+	duration = time.Duration(ticks) * time.Second / 20
+	ctx := newContext(p)
+	if p.Handler().HandleSetOnFire(ctx, &duration); ctx.Cancelled() {
+		return
+	}
+
+	ticks = int64(duration.Seconds() * 20)
 	p.fireTicks = ticks
 	p.updateState()
 }
@@ -1847,7 +1855,19 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	p.SwingArm()
 
 	if !isLiving {
-		return false
+		if !entity.DamageableEntity(e) {
+			return false
+		}
+		i, left := p.HeldItems()
+		if durable, ok := i.Item().(item.Durable); ok {
+			p.SetHeldItems(p.damageItem(i, durable.DurabilityInfo().AttackDurability), left)
+		}
+		n, vulnerable, _ := entity.HurtEntity(e, i.AttackDamage(), entity.AttackDamageSource{Attacker: p})
+		p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
+		if vulnerable {
+			p.Exhaust(0.1)
+		}
+		return true
 	}
 
 	dmg := i.AttackDamage()
