@@ -1,0 +1,59 @@
+name: PR deployment canary
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+jobs:
+
+  validate:
+    name: Validate artifact handoff
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == 'HashimTheArab/dragonfly' &&
+      github.event.workflow_run.head_branch == 'agent/fix-pr-deployment'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Resolve pull request
+        id: pull_request
+        uses: actions/github-script@v8
+        env:
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          script: |
+            const {data: pulls} = await github.rest.pulls.list({
+              ...context.repo,
+              state: 'open',
+              head: `${process.env.HEAD_OWNER}:${process.env.HEAD_BRANCH}`,
+              per_page: 100,
+            });
+            const matches = pulls.filter(pull => pull.head.sha === process.env.HEAD_SHA);
+            if (matches.length !== 1) {
+              core.setFailed(`Expected exactly one matching pull request, found ${matches.length}.`);
+              return;
+            }
+            core.setOutput('number', matches[0].number);
+
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: dragonfly_exe
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Validate deployment artifact
+        env:
+          PR_NUMBER: ${{ steps.pull_request.outputs.number }}
+        run: |
+          test "$PR_NUMBER" = 1355
+          test -s dragonfly_exe
+          file dragonfly_exe | grep -q 'ELF 64-bit'
