@@ -14,6 +14,7 @@ var DefaultRegistry = conf.New([]world.EntityType{
 	ArrowType,
 	BottleOfEnchantingType,
 	EggType,
+	EndCrystalType,
 	EnderPearlType,
 	ExperienceOrbType,
 	FallingBlockType,
@@ -31,6 +32,7 @@ var DefaultRegistry = conf.New([]world.EntityType{
 var conf = world.EntityRegistryConfig{
 	TNT:                NewTNT,
 	Egg:                NewEgg,
+	EndCrystal:         NewEndCrystal,
 	Snowball:           NewSnowball,
 	BottleOfEnchanting: NewBottleOfEnchanting,
 	EnderPearl:         NewEnderPearl,
