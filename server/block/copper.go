@@ -37,7 +37,7 @@ func (c Copper) Strip() (world.Block, world.Sound, bool) {
 func (c Copper) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
-	}, pickaxeEffective, oneOf(c)).withBlastResistance(30)
+	}, pickaxeEffective, oneOf(c)).withBlastResistance(6)
 }
 
 // Wax waxes the copper block to stop it from oxidising further.

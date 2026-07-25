@@ -206,15 +206,23 @@ func blockBBoxsAround(tx *world.Tx, box cube.BBox) []cube.BBox {
 	grown := box.Grow(0.25)
 	min, max := grown.Min(), grown.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	// The maximum bounds are exclusive: A block starting exactly at the box's
+	// maximum cannot collide with it.
 	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
 
-	// A prediction of one BBox per block, plus an additional 2, in case
-	blockBBoxs := make([]cube.BBox, 0, (maxX-minX)*(maxY-minY)*(maxZ-minZ)+2)
-	for y := minY; y <= maxY; y++ {
-		for x := minX; x <= maxX; x++ {
-			for z := minZ; z <= maxZ; z++ {
+	// A prediction of one BBox per block, plus an additional 2, in case. Allocate
+	// it lazily so that entities moving through air do not allocate an empty slice
+	// every tick.
+	predicted := (maxX-minX)*(maxY-minY)*(maxZ-minZ) + 2
+	var blockBBoxs []cube.BBox
+	for y := minY; y < maxY; y++ {
+		for x := minX; x < maxX; x++ {
+			for z := minZ; z < maxZ; z++ {
 				pos := cube.Pos{x, y, z}
 				boxes := tx.Block(pos).Model().BBox(pos, tx)
+				if len(boxes) != 0 && blockBBoxs == nil {
+					blockBBoxs = make([]cube.BBox, 0, predicted)
+				}
 				for _, box := range boxes {
 					blockBBoxs = append(blockBBoxs, box.Translate(mgl64.Vec3{float64(x), float64(y), float64(z)}))
 				}

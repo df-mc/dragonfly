@@ -76,9 +76,9 @@ func (w Water) LiquidFalling() bool {
 	return w.Falling
 }
 
-// BlastResistance always returns 500.
+// BlastResistance ...
 func (Water) BlastResistance() float64 {
-	return 500
+	return 100
 }
 
 // HasLiquidDrops ...
