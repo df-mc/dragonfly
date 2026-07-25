@@ -52,6 +52,17 @@ type Explodable interface {
 	Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx)
 }
 
+type explosionBlockInfo struct {
+	resistance float64
+	flags      uint8
+}
+
+const (
+	explosionBlockResists uint8 = 1 << iota
+	explosionBlockStopsRay
+	explosionBlockAffected
+)
+
 // rays ...
 var rays = make([]mgl64.Vec3, 0, 1352)
 
@@ -107,33 +118,45 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 		affectedEntities = append(affectedEntities, e)
 	}
 
-	affectedBlocks, seen := make([]cube.Pos, 0, 32), make(map[cube.Pos]struct{}, 32)
+	estimatedBlocks := max(32, min(4096, int(size*size*size*16)))
+	if _, ok := tx.Liquid(cube.PosFromVec3(explosionPos)); ok {
+		// Liquids such as water stop a regular TNT blast at the source, so avoid reserving space for a full blast.
+		estimatedBlocks = 32
+	}
+	affectedBlocks := make([]cube.Pos, 0, estimatedBlocks)
+	blockCache := make(map[cube.Pos]explosionBlockInfo, estimatedBlocks)
 	for _, ray := range rays {
 		pos := explosionPos
 		for blastForce := size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			currentBlock := tx.Block(current)
-
-			resistance, resists := 0.0, false
-			if l, ok := tx.Liquid(current); ok {
-				resistance, resists = l.BlastResistance(), true
-			} else if i, ok := currentBlock.(Breakable); ok {
-				resistance, resists = i.BreakInfo().BlastResistance, true
-			} else if _, ok = currentBlock.(Air); !ok {
+			info, ok := blockCache[current]
+			if !ok {
+				currentBlock := tx.Block(current)
+				if l, ok := tx.Liquid(current); ok {
+					info.resistance = l.BlastResistance()
+					info.flags = explosionBlockResists
+				} else if i, ok := currentBlock.(Breakable); ok {
+					info.resistance = i.BreakInfo().BlastResistance
+					info.flags = explosionBlockResists
+				} else if _, ok = currentBlock.(Air); !ok {
+					info.flags = explosionBlockStopsRay
+				}
+				blockCache[current] = info
+			}
+			if info.flags&explosionBlockStopsRay != 0 {
 				// Completely stop the ray if the current block is not air and unbreakable.
 				break
 			}
 
 			pos = pos.Add(ray)
 			// Air offers no resistance to the ray, only blocks and liquids reduce its force beyond the step decay.
-			if resists {
-				blastForce -= (resistance + 0.3) * 0.3
+			if info.flags&explosionBlockResists != 0 {
+				blastForce -= (info.resistance + 0.3) * 0.3
 			}
-			if blastForce > 0 {
-				if _, ok := seen[current]; !ok {
-					seen[current] = struct{}{}
-					affectedBlocks = append(affectedBlocks, current)
-				}
+			if blastForce > 0 && info.flags&explosionBlockAffected == 0 {
+				info.flags |= explosionBlockAffected
+				blockCache[current] = info
+				affectedBlocks = append(affectedBlocks, current)
 			}
 		}
 	}
