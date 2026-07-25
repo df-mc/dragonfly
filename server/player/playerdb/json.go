@@ -96,7 +96,7 @@ func (p *Provider) toJson(d player.Config, w *world.World) jsonData {
 			MainHandSlot: uint32(d.HeldSlot),
 		}),
 		EnderChestInventory: encodeItems(d.EnderChestInventory.Slots()),
-		Dimension:           uint8(dim),
+		Dimension:           int32(dim),
 	}
 }
 
@@ -121,7 +121,7 @@ type jsonData struct {
 	FallDistance                     float64
 	WindChargeFallBase               float64
 	WindChargeFallProtection         bool
-	Dimension                        uint8
+	Dimension                        int32
 }
 
 type jsonInventoryData struct {

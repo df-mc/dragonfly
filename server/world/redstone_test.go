@@ -28,9 +28,11 @@ func (minimalRedstoneTestHandler) HandleFireSpread(*Context, cube.Pos, cube.Pos)
 func (minimalRedstoneTestHandler) HandleBlockBurn(*Context, cube.Pos)                           {}
 func (minimalRedstoneTestHandler) HandleCropTrample(*Context, cube.Pos)                         {}
 func (minimalRedstoneTestHandler) HandleLeavesDecay(*Context, cube.Pos)                         {}
+func (minimalRedstoneTestHandler) HandlePortalCreate(*Context, Dimension, []cube.Pos)           {}
+func (minimalRedstoneTestHandler) HandlePortalActivate(*Context, Dimension, []cube.Pos)         {}
 func (minimalRedstoneTestHandler) HandleEntitySpawn(*Tx, Entity)                                {}
 func (minimalRedstoneTestHandler) HandleEntityDespawn(*Tx, Entity)                              {}
-func (minimalRedstoneTestHandler) HandleExplosion(*Context, mgl64.Vec3, *[]Entity, *[]cube.Pos, *float64, *bool) {
+func (minimalRedstoneTestHandler) HandleExplosion(*Context, ExplosionSource, *[]Entity, *[]cube.Pos, *float64, *bool) {
 }
 func (minimalRedstoneTestHandler) HandleClose(*Tx) {}
 

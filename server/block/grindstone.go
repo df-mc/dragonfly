@@ -21,7 +21,7 @@ type Grindstone struct {
 
 // BreakInfo ...
 func (g Grindstone) BreakInfo() BreakInfo {
-	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(g)).withBlastResistance(30)
+	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(g)).withBlastResistance(6)
 }
 
 // Activate ...

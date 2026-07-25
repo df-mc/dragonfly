@@ -160,8 +160,8 @@ func (lt *ProjectileBehaviour) Reflectable() bool {
 
 // Explode adds velocity to a projectile to blast it away from the explosion's
 // source.
-func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
-	e.data.Vel = e.Velocity().Add(e.Position().Sub(src).Normalize().Mul(impact))
+func (lt *ProjectileBehaviour) Explode(e *Ent, src world.ExplosionSource, impact float64) {
+	e.data.Vel = e.Velocity().Add(e.Position().Sub(src.Position()).Normalize().Mul(impact))
 }
 
 // Potion returns the potion.Potion that is applied to an entity if hit by the
@@ -206,9 +206,10 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	if lt.conf.IgnitedByBlocks {
 		igniteProjectileAlongPath(e, tx, e.Position(), m.pos)
 	}
+	attackHandled := false
 	if r, ok := result.(trace.EntityResult); ok {
 		if attackable, ok := r.Entity().(Attackable); ok {
-			attackable.Attack(e)
+			attackHandled = attackable.Attack(e)
 		}
 	}
 	e.data.Pos, e.data.Vel, e.data.Rot = m.pos, m.vel, m.rot
@@ -228,12 +229,12 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 	switch r := result.(type) {
 	case trace.EntityResult:
-		if l, ok := r.Entity().(Living); ok {
-			if lt.conf.Damage >= 0 {
-				lt.hitEntity(l, e, vel)
-			}
+		if lt.conf.Damage >= 0 {
+			lt.hitEntity(r.Entity(), e, vel)
 		}
-		lt.collidedEntities = append(lt.collidedEntities, r.Entity().H())
+		if DamageableEntity(r.Entity()) || attackHandled {
+			lt.collidedEntities = append(lt.collidedEntities, r.Entity().H())
+		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
 		if h, ok := tx.Block(bpos).(block.ProjectileHitter); ok {
@@ -349,10 +350,9 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 	}
 }
 
-// hitEntity is called when a projectile hits a Living. It deals damage to the
-// entity and knocks it back. Additionally, it applies any potion effects and
-// fire if applicable.
-func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
+// hitEntity is called when a projectile hits an entity. It deals damage to the
+// entity if possible, and applies Living-specific effects such as knockback.
+func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.Vec3) {
 	owner, _ := lt.conf.Owner.Entity(e.tx)
 	src := ProjectileDamageSource{Projectile: e, Owner: owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
@@ -360,7 +360,11 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
 		dmg += rand.Float64() * dmg / 2
 	}
 	// TODO: Piercing arrows should bypass shield blocking when shields are implemented.
-	if _, vulnerable := l.Hurt(dmg, src); vulnerable {
+	if _, vulnerable, ok := HurtEntity(victim, dmg, src); ok && vulnerable {
+		l, ok := victim.(Living)
+		if !ok {
+			return
+		}
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
@@ -447,7 +451,7 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 }
 
 func projectileCanHitDefault(e world.Entity) bool {
-	if _, ok := e.(Living); ok {
+	if DamageableEntity(e) {
 		return true
 	}
 	r, ok := e.(reflectable)
