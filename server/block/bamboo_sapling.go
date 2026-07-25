@@ -53,7 +53,7 @@ func (b BambooSapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // BreakInfo ...
 func (b BambooSapling) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, axeEffective, oneOf(Bamboo{}))
+	return newBreakInfo(0, alwaysHarvestable, axeEffective, oneOf(Bamboo{})).withBlastResistance(1)
 }
 
 // HasLiquidDrops ...
