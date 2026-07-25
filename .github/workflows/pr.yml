@@ -25,3 +25,13 @@ jobs:
         run: |
           go generate ./server/block/
           git diff --exit-code
+
+      - name: Build deployment artifact
+        run: go build -o dragonfly_exe -v .
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v7
+        with:
+          path: dragonfly_exe
+          archive: false
+          retention-days: 1
