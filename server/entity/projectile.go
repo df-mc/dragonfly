@@ -64,6 +64,12 @@ type ProjectileBehaviourConfig struct {
 	// collide with an entity. If nil, projectiles only collide with Living
 	// entities.
 	EntityCollisionFilter func(world.Entity) bool
+	// Attack optionally handles an attack against the projectile. This is used
+	// by projectiles such as wind charges that may be reflected.
+	Attack func(e *Ent, attacker world.Entity) bool
+	// IgnitedByBlocks specifies if the projectile is set on fire when passing
+	// through projectile-igniting blocks and liquids.
+	IgnitedByBlocks bool
 	// SurviveBlockCollision specifies if a projectile with this
 	// ProjectileBehaviour should survive collision with a block. If set to
 	// false, the projectile will break when hitting a block (like a snowball).
@@ -137,6 +143,21 @@ func (lt *ProjectileBehaviour) Owner() *world.EntityHandle {
 	return lt.conf.Owner
 }
 
+// SetOwner changes the owner of the projectile.
+func (lt *ProjectileBehaviour) SetOwner(owner *world.EntityHandle) {
+	lt.conf.Owner = owner
+}
+
+// Attack handles an attack against the projectile.
+func (lt *ProjectileBehaviour) Attack(e *Ent, attacker world.Entity) bool {
+	return lt.conf.Attack != nil && lt.conf.Attack(e, attacker)
+}
+
+// Reflectable reports whether attacks against the projectile may be handled.
+func (lt *ProjectileBehaviour) Reflectable() bool {
+	return lt.conf.Attack != nil
+}
+
 // Explode adds velocity to a projectile to blast it away from the explosion's
 // source.
 func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
@@ -182,6 +203,14 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	}
 	vel := e.Velocity()
 	m, result := lt.tickMovement(e, tx)
+	if lt.conf.IgnitedByBlocks {
+		igniteProjectileAlongPath(e, tx, e.Position(), m.pos)
+	}
+	if r, ok := result.(trace.EntityResult); ok {
+		if attackable, ok := r.Entity().(Attackable); ok {
+			attackable.Attack(e)
+		}
+	}
 	e.data.Pos, e.data.Vel, e.data.Rot = m.pos, m.vel, m.rot
 
 	lt.collisionPos, lt.collided, lt.ageCollided = cube.Pos{}, false, 0
@@ -224,6 +253,34 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		lt.close = true
 	}
 	return m
+}
+
+func igniteProjectileAlongPath(e *Ent, tx *world.Tx, start, end mgl64.Vec3) {
+	bbox := e.H().Type().BBox(e)
+	swept := bbox.Translate(start).Extend(end.Sub(start))
+	for pos := range cube.Range3D(cube.PosFromVec3(swept.Min()), cube.PosFromVec3(swept.Max())) {
+		voxel := cube.Box(
+			float64(pos[0]), float64(pos[1]), float64(pos[2]),
+			float64(pos[0]+1), float64(pos[1]+1), float64(pos[2]+1),
+		)
+		// Expanding the voxel by the projectile's relative bounds turns the
+		// swept-box test into an exact segment-versus-box test.
+		expanded := cube.Box(
+			voxel.Min()[0]-bbox.Max()[0], voxel.Min()[1]-bbox.Max()[1], voxel.Min()[2]-bbox.Max()[2],
+			voxel.Max()[0]-bbox.Min()[0], voxel.Max()[1]-bbox.Min()[1], voxel.Max()[2]-bbox.Min()[2],
+		)
+		if !trace.BBoxIntersects(expanded, start, end) {
+			continue
+		}
+		if igniter, ok := tx.Block(pos).(block.ProjectileIgniter); ok {
+			igniter.IgniteProjectile(e)
+		}
+		if liquid, ok := tx.Liquid(pos); ok {
+			if igniter, ok := liquid.(block.ProjectileIgniter); ok {
+				igniter.IgniteProjectile(e)
+			}
+		}
+	}
 }
 
 // tickAttached performs the attached logic for a projectile. It checks if the
@@ -372,7 +429,7 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 				itself := e.H() == other.H()
 				collides := false
 				if lt.conf.EntityCollisionFilter == nil {
-					_, collides = other.(Living)
+					collides = projectileCanHitDefault(other)
 				} else {
 					collides = lt.conf.EntityCollisionFilter(other)
 				}
@@ -387,4 +444,12 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 			}
 		}
 	}
+}
+
+func projectileCanHitDefault(e world.Entity) bool {
+	if _, ok := e.(Living); ok {
+		return true
+	}
+	r, ok := e.(reflectable)
+	return ok && r.Reflectable()
 }

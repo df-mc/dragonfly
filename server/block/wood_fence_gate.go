@@ -92,8 +92,13 @@ func (f WoodFenceGate) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.
 	return true
 }
 
-// WindChargeAffected ...
-func (WoodFenceGate) WindChargeAffected() {}
+// WindChargeInteractionPos ...
+func (WoodFenceGate) WindChargeInteractionPos(pos cube.Pos) cube.Pos { return pos }
+
+// WindChargeInteract ...
+func (f WoodFenceGate) WindChargeInteract(pos cube.Pos, tx *world.Tx) {
+	f.Activate(pos, cube.FaceUp, tx, nil, nil)
+}
 
 // SideClosed ...
 func (f WoodFenceGate) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {

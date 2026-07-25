@@ -64,9 +64,11 @@ type playerData struct {
 
 	usingSince time.Time
 
-	glideTicks   int64
-	fireTicks    int64
-	fallDistance float64
+	glideTicks               int64
+	fireTicks                int64
+	fallDistance             float64
+	windChargeFallBase       float64
+	windChargeFallProtection bool
 
 	breathing         bool
 	airSupplyTicks    int
@@ -271,6 +273,13 @@ func (p *Player) SendToast(title, message string) {
 // ResetFallDistance resets the player's fall distance.
 func (p *Player) ResetFallDistance() {
 	p.fallDistance = 0
+}
+
+// clearWindChargeFallProtection resets fall distance and ends any active
+// wind-charge fall protection.
+func (p *Player) clearWindChargeFallProtection() {
+	p.ResetFallDistance()
+	p.windChargeFallProtection = false
 }
 
 // FallDistance returns the player's fall distance.
@@ -542,18 +551,56 @@ func (p *Player) Heal(health float64, source world.HealingSource) float64 {
 
 // updateFallState is called to update the entities falling state.
 func (p *Player) updateFallState(distanceThisTick float64) {
+	if p.windChargeFallProtection {
+		distanceThisTick = windChargeFallDistanceDelta(p.Position().Y(), distanceThisTick, p.windChargeFallBase)
+	}
 	switch {
 	case p.OnGround():
 		p.fallDistance -= distanceThisTick
 		if p.fallDistance > 3 {
 			p.fall(p.fallDistance)
 		}
-		p.ResetFallDistance()
+		p.clearWindChargeFallProtection()
 	case distanceThisTick < 0 && distanceThisTick < p.fallDistance:
 		p.fallDistance -= distanceThisTick
 	default:
-		p.ResetFallDistance()
+		if p.windChargeFallProtection {
+			p.fallDistance = 0
+		} else {
+			p.ResetFallDistance()
+		}
 	}
+}
+
+// NegateFallDamageFromWindCharge makes the player's fall distance start at the
+// affected player's launch height instead of the apex of the resulting launch.
+func (p *Player) NegateFallDamageFromWindCharge(launchY float64) {
+	p.windChargeFallBase = launchY
+	p.windChargeFallProtection = true
+	p.fallDistance = 0
+}
+
+// WindChargeKnockbackMultiplier returns the multiplier applied to wind-charge
+// knockback after accounting for Blast Protection and armour knockback
+// resistance.
+func (p *Player) WindChargeKnockbackMultiplier() float64 {
+	level := p.Armour().HighestEnchantmentLevel(enchantment.BlastProtection)
+	blastProtection := max(0, 1-float64(level)*0.15)
+	return blastProtection * max(0, 1-p.Armour().KnockBackResistance())
+}
+
+func windChargeFallDistanceDelta(currentY, delta, baseY float64) float64 {
+	if delta >= 0 {
+		return delta
+	}
+	if currentY >= baseY {
+		return 0
+	}
+	previousY := currentY - delta
+	if previousY > baseY {
+		return currentY - baseY
+	}
+	return delta
 }
 
 // fall is called when a falling entity hits the ground.
@@ -969,7 +1016,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	p.hunger.Reset()
 	p.sendFood()
 	p.Extinguish()
-	p.ResetFallDistance()
+	p.clearWindChargeFallProtection()
 
 	p.Handler().HandleRespawn(p, &pos, &w)
 
@@ -1832,6 +1879,9 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	p.SwingArm()
 
 	if !isLiving {
+		if attackable, ok := e.(entity.Attackable); ok {
+			return attackable.Attack(p)
+		}
 		return false
 	}
 
@@ -2241,7 +2291,7 @@ func (p *Player) teleport(pos mgl64.Vec3) {
 	}
 	p.data.Pos = pos
 	p.data.Vel = mgl64.Vec3{}
-	p.ResetFallDistance()
+	p.clearWindChargeFallProtection()
 }
 
 // Move moves the player from one position to another in the world, by adding the delta passed to the current
@@ -3313,34 +3363,36 @@ func (p *Player) Data() Config {
 	p.hunger.mu.RLock()
 	defer p.hunger.mu.RUnlock()
 	return Config{
-		Session:             p.s,
-		Skin:                p.skin,
-		XUID:                p.xuid,
-		UUID:                p.UUID(),
-		Name:                p.nameTag,
-		Locale:              p.locale,
-		GameMode:            p.gameMode,
-		Position:            p.Position(),
-		Rotation:            p.Rotation(),
-		Velocity:            p.Velocity(),
-		Health:              p.Health(),
-		MaxHealth:           p.MaxHealth(),
-		FoodTick:            p.hunger.foodTick,
-		Food:                p.hunger.foodLevel,
-		Exhaustion:          p.hunger.exhaustionLevel,
-		Saturation:          p.hunger.saturationLevel,
-		AirSupply:           p.airSupplyTicks,
-		MaxAirSupply:        p.maxAirSupplyTicks,
-		EnchantmentSeed:     p.enchantSeed,
-		Experience:          p.experience.Experience(),
-		HeldSlot:            int(*p.heldSlot),
-		Inventory:           p.inv,
-		OffHand:             p.offHand,
-		Armour:              p.armour,
-		EnderChestInventory: p.enderChest,
-		FireTicks:           p.fireTicks,
-		FallDistance:        p.fallDistance,
-		Effects:             p.Effects(),
+		Session:                  p.s,
+		Skin:                     p.skin,
+		XUID:                     p.xuid,
+		UUID:                     p.UUID(),
+		Name:                     p.nameTag,
+		Locale:                   p.locale,
+		GameMode:                 p.gameMode,
+		Position:                 p.Position(),
+		Rotation:                 p.Rotation(),
+		Velocity:                 p.Velocity(),
+		Health:                   p.Health(),
+		MaxHealth:                p.MaxHealth(),
+		FoodTick:                 p.hunger.foodTick,
+		Food:                     p.hunger.foodLevel,
+		Exhaustion:               p.hunger.exhaustionLevel,
+		Saturation:               p.hunger.saturationLevel,
+		AirSupply:                p.airSupplyTicks,
+		MaxAirSupply:             p.maxAirSupplyTicks,
+		EnchantmentSeed:          p.enchantSeed,
+		Experience:               p.experience.Experience(),
+		HeldSlot:                 int(*p.heldSlot),
+		Inventory:                p.inv,
+		OffHand:                  p.offHand,
+		Armour:                   p.armour,
+		EnderChestInventory:      p.enderChest,
+		FireTicks:                p.fireTicks,
+		FallDistance:             p.fallDistance,
+		WindChargeFallBase:       p.windChargeFallBase,
+		WindChargeFallProtection: p.windChargeFallProtection,
+		Effects:                  p.Effects(),
 	}
 }
 

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"math"
+	"time"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -17,6 +18,7 @@ const (
 	windChargeExplosionDiameter   = windChargeExplosionPower * 2
 	windChargeKnockbackMultiplier = 1.22
 	windChargeBlockHitOffset      = 0.25
+	windChargeReflectImmunity     = 500 * time.Millisecond
 )
 
 // NewWindCharge creates a wind charge entity at a position with an owner
@@ -24,7 +26,9 @@ const (
 // a burst of wind on impact.
 func NewWindCharge(opts world.EntitySpawnOpts, owner world.Entity) *world.EntityHandle {
 	conf := windChargeConf
-	conf.Owner = owner.H()
+	if owner != nil {
+		conf.Owner = owner.H()
+	}
 	return opts.New(WindChargeType, conf)
 }
 
@@ -32,6 +36,8 @@ var windChargeConf = ProjectileBehaviourConfig{
 	Damage:                -1,
 	Hit:                   windChargeBurst,
 	EntityCollisionFilter: windChargeCanHit,
+	Attack:                reflectWindCharge,
+	IgnitedByBlocks:       true,
 }
 
 // windChargeBurst is called when a wind charge hits a target. It deals 1 HP
@@ -51,7 +57,7 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 	}
 	if er, ok := target.(trace.EntityResult); ok {
 		if l, ok := er.Entity().(Living); ok {
-			l.Hurt(1, ProjectileDamageSource{Projectile: e, Owner: owner})
+			windChargeHitLiving(e, l, owner)
 		}
 	}
 
@@ -65,7 +71,7 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 		math.Floor(pos[2]+d+1),
 	)
 	for other := range tx.EntitiesWithin(box) {
-		if other.H() == e.H() || !windChargeCanHitType(other.H().Type().EncodeEntity()) {
+		if other.H() == e.H() {
 			continue
 		}
 		moving, ok := other.(interface {
@@ -73,6 +79,11 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 			SetVelocity(mgl64.Vec3)
 		})
 		if !ok {
+			continue
+		}
+		// Entities beyond the burst radius are never knocked back, so skip the
+		// exposure ray casts that windChargeKnockback would discard anyway.
+		if other.Position().Sub(pos).Len() > windChargeExplosionDiameter {
 			continue
 		}
 		velocity := moving.Velocity()
@@ -83,16 +94,34 @@ func windChargeBurst(e *Ent, tx *world.Tx, target trace.Result) {
 			velocity,
 			block.ExplosionExposure(tx, pos, other),
 		)
+		if receiver, ok := other.(interface {
+			WindChargeKnockbackMultiplier() float64
+		}); ok {
+			knockedBack = velocity.Add(knockedBack.Sub(velocity).Mul(receiver.WindChargeKnockbackMultiplier()))
+		}
 		if knockedBack != velocity {
-			moving.SetVelocity(knockedBack)
+			applyWindChargeKnockback(other, moving, velocity, knockedBack)
 		}
 	}
 
-	if r, ok := target.(trace.BlockResult); ok {
-		blockPos := r.BlockPosition()
-		if b, ok := tx.Block(blockPos).(block.WindChargeAffected); ok {
-			b.Activate(blockPos, r.Face(), tx, nil, nil)
-		}
+	windChargeAffectBlocks(tx, pos)
+}
+
+func applyWindChargeKnockback(other world.Entity, moving interface {
+	SetVelocity(mgl64.Vec3)
+}, velocity, knockedBack mgl64.Vec3) {
+	if receiver, ok := other.(interface {
+		NegateFallDamageFromWindCharge(float64)
+	}); ok && knockedBack.Y() > velocity.Y() {
+		receiver.NegateFallDamageFromWindCharge(other.Position().Y())
+	}
+	moving.SetVelocity(knockedBack)
+}
+
+func windChargeHitLiving(e *Ent, target Living, owner world.Entity) {
+	_, vulnerable := target.Hurt(1, ProjectileDamageSource{Projectile: e, Owner: owner})
+	if flammable, ok := target.(Flammable); ok && vulnerable && e.OnFireDuration() > 0 {
+		flammable.SetOnFire(5 * time.Second)
 	}
 }
 
@@ -114,13 +143,81 @@ func windChargeBlockExplosionPosition(hit mgl64.Vec3, face cube.Face) mgl64.Vec3
 }
 
 func windChargeCanHit(e world.Entity) bool {
+	if _, immune := e.H().Type().(WindChargeCollisionImmune); immune {
+		return false
+	}
 	return windChargeCanHitType(e.H().Type().EncodeEntity())
 }
 
-func windChargeCanHitType(name string) bool {
-	return name != "minecraft:wind_charge_projectile" &&
-		name != "minecraft:end_crystal" &&
-		name != "minecraft:ender_crystal"
+func windChargeCanHitType(identifier string) bool {
+	switch identifier {
+	case "minecraft:end_crystal", "minecraft:ender_crystal",
+		"minecraft:wind_charge_projectile", "minecraft:breeze_wind_charge_projectile":
+		return false
+	default:
+		return true
+	}
+}
+
+func windChargeAffectBlocks(tx *world.Tx, burst mgl64.Vec3) {
+	radius := windChargeExplosionPower
+	radiusSq := radius * radius
+	min := cube.PosFromVec3(burst.Sub(mgl64.Vec3{radius, radius, radius}))
+	max := cube.PosFromVec3(burst.Add(mgl64.Vec3{radius, radius, radius}))
+	affected := make(map[cube.Pos]struct{})
+	for pos := range cube.Range3D(min, max) {
+		if pos.Vec3Centre().Sub(burst).LenSqr() > radiusSq {
+			continue
+		}
+		b, ok := tx.Block(pos).(block.WindChargeAffected)
+		if !ok {
+			continue
+		}
+		interactionPos := b.WindChargeInteractionPos(pos)
+		if _, ok := affected[interactionPos]; ok {
+			continue
+		}
+		affected[interactionPos] = struct{}{}
+		// Most blocks interact in place; only multi-block structures such as
+		// doors redirect to another position, which must interact using its
+		// own block value rather than the one found here.
+		if interactionPos == pos {
+			b.WindChargeInteract(pos, tx)
+			continue
+		}
+		if target, ok := tx.Block(interactionPos).(block.WindChargeAffected); ok {
+			target.WindChargeInteract(interactionPos, tx)
+		}
+	}
+}
+
+func reflectWindCharge(e *Ent, attacker world.Entity) bool {
+	if e.Age() < windChargeReflectImmunity {
+		return true
+	}
+	direction := attacker.Rotation().Vec3()
+	owner := attacker.H()
+	if projectile, ok := attacker.(*Ent); ok {
+		if behaviour, ok := projectile.Behaviour().(*ProjectileBehaviour); ok {
+			direction = projectile.Velocity()
+			owner = behaviour.Owner()
+			if owner != nil {
+				if ownerEntity, ok := owner.Entity(e.tx); ok {
+					direction = ownerEntity.Rotation().Vec3()
+				}
+			}
+		}
+	}
+	if direction.LenSqr() == 0 {
+		return true
+	}
+	speed := e.Velocity().Len()
+	if speed == 0 {
+		speed = 1.5
+	}
+	e.SetVelocity(direction.Normalize().Mul(speed))
+	e.Behaviour().(*ProjectileBehaviour).SetOwner(owner)
+	return true
 }
 
 // WindChargeType is a world.EntityType implementation for WindCharge.
@@ -128,11 +225,18 @@ var WindChargeType windChargeType
 
 type windChargeType struct{}
 
+// WindChargeCollisionImmune is implemented by entity types that wind charges
+// pass through without bursting.
+type WindChargeCollisionImmune interface {
+	WindChargeCollisionImmune()
+}
+
 func (windChargeType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
-func (windChargeType) EncodeEntity() string { return "minecraft:wind_charge_projectile" }
+func (windChargeType) EncodeEntity() string       { return "minecraft:wind_charge_projectile" }
+func (windChargeType) WindChargeCollisionImmune() {}
 func (windChargeType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.15625, -0.15, -0.15625, 0.15625, 0.1625, 0.15625)
 }

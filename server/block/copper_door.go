@@ -150,8 +150,18 @@ func (d CopperDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.Use
 	return true
 }
 
-// WindChargeAffected ...
-func (CopperDoor) WindChargeAffected() {}
+// WindChargeInteractionPos ...
+func (d CopperDoor) WindChargeInteractionPos(pos cube.Pos) cube.Pos {
+	if d.Top {
+		return pos.Side(cube.FaceDown)
+	}
+	return pos
+}
+
+// WindChargeInteract ...
+func (d CopperDoor) WindChargeInteract(pos cube.Pos, tx *world.Tx) {
+	d.Activate(pos, cube.FaceUp, tx, nil, nil)
+}
 
 func (d CopperDoor) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	attemptOxidation(pos, tx, r, d)

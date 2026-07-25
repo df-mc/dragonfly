@@ -93,8 +93,13 @@ func (t CopperTrapdoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item
 	return true
 }
 
-// WindChargeAffected ...
-func (CopperTrapdoor) WindChargeAffected() {}
+// WindChargeInteractionPos ...
+func (CopperTrapdoor) WindChargeInteractionPos(pos cube.Pos) cube.Pos { return pos }
+
+// WindChargeInteract ...
+func (t CopperTrapdoor) WindChargeInteract(pos cube.Pos, tx *world.Tx) {
+	t.Activate(pos, cube.FaceUp, tx, nil, nil)
+}
 
 func (t CopperTrapdoor) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	attemptOxidation(pos, tx, r, t)
