@@ -32,6 +32,7 @@ jobs:
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v7
         with:
+          # Direct uploads use the file name as the artifact name.
           path: dragonfly_exe
           archive: false
           retention-days: 1
