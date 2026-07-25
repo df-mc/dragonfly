@@ -47,8 +47,9 @@ type Server struct {
 
 	world, nether, end *world.World
 
-	customBlocks []protocol.BlockEntry
-	customItems  []protocol.ItemEntry
+	customBlocks     []protocol.BlockEntry
+	customItems      []protocol.ItemEntry
+	customDimensions []protocol.DimensionDefinition
 
 	listeners []Listener
 	incoming  chan incoming
@@ -372,11 +373,7 @@ func (srv *Server) listen(l Listener) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if msg, ok := srv.conf.Allower.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
-				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
-				_ = c.Close()
-				return
-			}
+
 			srv.finaliseConn(ctx, c, l)
 		}()
 	}
@@ -387,6 +384,7 @@ func (srv *Server) listen(l Listener) {
 func (srv *Server) startListening() {
 	srv.makeBlockEntries()
 	srv.makeItemComponents()
+	srv.makeDimensionData()
 
 	srv.wg.Add(len(srv.listeners))
 	for _, l := range srv.listeners {
@@ -431,6 +429,21 @@ func (srv *Server) makeItemComponents() {
 			RuntimeID:      int16(rid),
 			Version:        entryVersion,
 			Data:           iteminternal.Components(it),
+		})
+	}
+}
+
+// makeDimensionData initialises the server's custom dimensions list.
+func (srv *Server) makeDimensionData() {
+	dimensions := world.CustomDimensions()
+	srv.customDimensions = make([]protocol.DimensionDefinition, 0, len(dimensions))
+	for _, registration := range dimensions {
+		r := registration.Dimension.Range()
+		srv.customDimensions = append(srv.customDimensions, protocol.DimensionDefinition{
+			Name:          registration.Name,
+			Range:         [2]int32{int32(r.Max() + 1), int32(r.Min())},
+			Generator:     protocol.GeneratorVoid,
+			DimensionType: int32(registration.ID),
 		})
 	}
 }
@@ -509,6 +522,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
 			ServerAuthoritativeBlockBreaking: true,
 		},
+		Dimensions: srv.customDimensions,
 	}
 }
 
@@ -591,6 +605,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		ReadOnly:            srv.conf.ReadOnlyWorld,
 		SaveInterval:        srv.conf.SaveInterval,
 		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		ChunkLoadWorkers:    srv.conf.ChunkLoadWorkers,
 		Entities:            srv.conf.Entities,
 		Blocks:              srv.conf.Blocks,
 		PortalDestination: func(dim world.Dimension) *world.World {
