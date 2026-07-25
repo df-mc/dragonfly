@@ -1,6 +1,9 @@
 package entity
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -18,10 +21,17 @@ func (b endCrystalBehaviour) Apply(data *world.EntityData) {
 }
 
 // Tick continuously generates fire at the End crystal's position while in the
-// End, if the block at that position is air.
+// End, if the block at that position is air and the block below it is not air.
 func (endCrystalBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	if tx.World().Dimension() == world.End {
-		block.Fire{}.Start(tx, cube.PosFromVec3(e.Position()))
+		pos := cube.PosFromVec3(e.Position())
+		if _, air := tx.Block(pos.Side(cube.FaceDown)).(block.Air); !air {
+			if _, air := tx.Block(pos).(block.Air); air {
+				fire := block.Fire{}
+				tx.SetBlock(pos, fire, nil)
+				tx.ScheduleBlockUpdate(pos, fire, time.Duration(30+rand.IntN(10))*time.Second/20)
+			}
+		}
 	}
 	return nil
 }
