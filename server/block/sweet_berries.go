@@ -33,7 +33,7 @@ func (SweetBerries) ConsumeDuration() time.Duration {
 
 // Consume ...
 func (SweetBerries) Consume(_ *world.Tx, c item.Consumer) item.Stack {
-	c.Saturate(2, 0.4)
+	c.Saturate(2, 1.2)
 	return item.Stack{}
 }
 
@@ -100,11 +100,7 @@ func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, user ite
 
 // EntityInside ...
 func (s SweetBerries) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
-	if s.Growth < 1 {
-		return
-	}
-	living, ok := e.(livingEntity)
-	if !ok {
+	if h := e.H(); h != nil && h.Type().EncodeEntity() == "minecraft:item" {
 		return
 	}
 	if fall, ok := e.(fallDistanceEntity); ok {
@@ -121,6 +117,13 @@ func (s SweetBerries) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 		v.SetVelocity(vel)
 	}
 
+	if s.Growth < 1 {
+		return
+	}
+	living, ok := e.(livingEntity)
+	if !ok {
+		return
+	}
 	if math.Abs(movement[0]) >= 0.003 || math.Abs(movement[2]) >= 0.003 {
 		if _, vulnerable := living.Hurt(1, DamageSource{Block: s}); vulnerable {
 			tx.PlaySound(pos.Vec3Centre(), sound.SweetBerryBushHurt{})
@@ -137,11 +140,23 @@ func (s SweetBerries) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 
 // RandomTick ...
 func (s SweetBerries) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	if s.Growth >= 3 || tx.Light(pos.Side(cube.FaceUp)) < 9 || r.IntN(5) != 0 {
+	abovePos := pos.Side(cube.FaceUp)
+	if s.Growth >= 3 || sweetBerryGrowthBlocked(abovePos, tx) || tx.Light(abovePos) < 9 || r.IntN(5) != 0 {
 		return
 	}
 	s.Growth++
 	tx.SetBlock(pos, s, nil)
+}
+
+// sweetBerryGrowthBlocked reports whether an opaque full block prevents a sweet berry bush from growing.
+func sweetBerryGrowthBlocked(pos cube.Pos, tx *world.Tx) bool {
+	above := tx.Block(pos)
+	boxes := above.Model().BBox(pos, tx)
+	if len(boxes) != 1 || boxes[0] != cube.Box(0, 0, 0, 1, 1, 1) {
+		return false
+	}
+	diffuser, ok := above.(LightDiffuser)
+	return !ok || diffuser.LightDiffusionLevel() == 15
 }
 
 // BreakInfo ...
