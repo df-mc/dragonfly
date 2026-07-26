@@ -641,7 +641,11 @@ type actorIdentifier struct {
 func (s *Session) sendAvailableEntities(w *world.World) {
 	var identifiers []actorIdentifier
 	for _, t := range w.EntityRegistry().Types() {
-		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
+		id := t.EncodeEntity()
+		if networkType, ok := t.(NetworkEncodeableEntity); ok {
+			id = networkType.NetworkEncodeEntity()
+		}
+		identifiers = append(identifiers, actorIdentifier{ID: id})
 	}
 	serialisedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {

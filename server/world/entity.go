@@ -438,7 +438,7 @@ type EntityData struct {
 	componentOrder    []string
 	unknownComponents map[string]any
 	// tickers is cleared whenever components change.
-	tickers []TickerComponent
+	tickers []componentSlot
 }
 
 // Entity represents an Entity in the world, typically an object that may be moved around and can be

@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/df-mc/dragonfly/server/internal/colour"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
@@ -272,12 +271,12 @@ func anySlot(v any) componentSlot {
 	return componentSlot{id: info.id, v: rv.Interface()}
 }
 
-func (e *EntityHandle) tickerComponents() []TickerComponent {
+func (e *EntityHandle) tickerComponents() []componentSlot {
 	if e.data.tickers == nil {
-		e.data.tickers = []TickerComponent{}
+		e.data.tickers = []componentSlot{}
 		for _, slot := range e.data.components {
-			if t, ok := slot.v.(TickerComponent); ok {
-				e.data.tickers = append(e.data.tickers, t)
+			if _, ok := slot.v.(TickerComponent); ok {
+				e.data.tickers = append(e.data.tickers, slot)
 			}
 		}
 	}
@@ -286,7 +285,12 @@ func (e *EntityHandle) tickerComponents() []TickerComponent {
 
 func tickComponents(tx *Tx, e Entity, current int64) bool {
 	h := e.H()
-	for _, ticker := range h.tickerComponents() {
+	for _, slot := range h.tickerComponents() {
+		i, attached := findComponent(&h.data, slot.id)
+		if !attached || h.data.components[i].v != slot.v {
+			continue
+		}
+		ticker := slot.v.(TickerComponent)
 		if _, persistent := ticker.(NBTSaver); persistent {
 			markComponentPersistenceDirty(h)
 		}
@@ -433,75 +437,26 @@ func newEntityMetadata() *EntityMetadata {
 
 // SetScoreTag sets the text below the entity's name tag.
 func (m *EntityMetadata) SetScoreTag(s string) {
-	m.Set(protocol.EntityDataKeyScore, s)
+	protocol.EntityDataScore.Set(m.metadata, s)
+	m.resets[protocol.EntityDataScore.ID()] = ""
 }
 
 // SetVariant sets the entity's visual variant.
 func (m *EntityMetadata) SetVariant(v int32) {
-	m.Set(protocol.EntityDataKeyVariant, v)
+	protocol.EntityDataVariant.Set(m.metadata, v)
+	m.resets[protocol.EntityDataVariant.ID()] = int32(0)
 }
 
 // SetScale sets the entity's render scale.
 func (m *EntityMetadata) SetScale(s float64) {
-	m.metadata[protocol.EntityDataKeyScale] = float32(s)
-	m.resets[protocol.EntityDataKeyScale] = float32(1)
+	protocol.EntityDataScale.Set(m.metadata, float32(s))
+	m.resets[protocol.EntityDataScale.ID()] = float32(1)
 }
 
 // SetColour sets the entity's effect colour.
 func (m *EntityMetadata) SetColour(c color.RGBA) {
-	m.Set(protocol.EntityDataKeyEffectColor, colour.Int32FromRGBA(c))
-}
-
-// Set sets a raw protocol metadata value. It panics if the value cannot be
-// encoded.
-func (m *EntityMetadata) Set(key uint32, value any) {
-	switch v := value.(type) {
-	case byte:
-		m.metadata[key] = v
-		m.resets[key] = byte(0)
-	case int16:
-		m.metadata[key] = v
-		m.resets[key] = int16(0)
-	case int32:
-		m.metadata[key] = v
-		m.resets[key] = int32(0)
-	case float32:
-		m.metadata[key] = v
-		m.resets[key] = float32(0)
-	case int64:
-		m.metadata[key] = v
-		m.resets[key] = int64(0)
-	case string:
-		m.metadata[key] = v
-		m.resets[key] = ""
-	case map[string]any:
-		m.metadata[key] = v
-		m.resets[key] = map[string]any{}
-	case protocol.BlockPos:
-		m.metadata[key] = v
-		m.resets[key] = protocol.BlockPos{}
-	case mgl32.Vec3:
-		m.metadata[key] = v
-		m.resets[key] = mgl32.Vec3{}
-	case int:
-		m.metadata[key] = int32(v)
-		m.resets[key] = int32(0)
-	case uint32:
-		m.metadata[key] = int32(v)
-		m.resets[key] = int32(0)
-	case float64:
-		m.metadata[key] = float32(v)
-		m.resets[key] = float32(0)
-	case bool:
-		var b byte
-		if v {
-			b = 1
-		}
-		m.metadata[key] = b
-		m.resets[key] = byte(0)
-	default:
-		panic(fmt.Sprintf("world.EntityMetadata: value of type %T cannot be encoded as actor metadata", value))
-	}
+	protocol.EntityDataEffectColor.Set(m.metadata, colour.Int32FromRGBA(c))
+	m.resets[protocol.EntityDataEffectColor.ID()] = int32(0)
 }
 
 // AddComponentMetadata merges metadata contributed by e's components into dst.
@@ -528,9 +483,17 @@ func mergeComponentMetadata(dst, src protocol.EntityMetadata) {
 	for key, value := range src {
 		switch key {
 		case protocol.EntityDataKeyPlayerFlags:
-			dst[key] = dst[key].(byte) | value.(byte)
+			var flags byte
+			if existing, ok := dst[key]; ok {
+				flags = existing.(byte)
+			}
+			dst[key] = flags | value.(byte)
 		case protocol.EntityDataKeyFlags, protocol.EntityDataKeyFlagsTwo:
-			dst[key] = dst[key].(int64) | value.(int64)
+			var flags int64
+			if existing, ok := dst[key]; ok {
+				flags = existing.(int64)
+			}
+			dst[key] = flags | value.(int64)
 		default:
 			dst[key] = value
 		}
