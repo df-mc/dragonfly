@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	colourconv "github.com/df-mc/dragonfly/server/internal/colour"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -169,7 +170,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeyDataChangeRate] = float32(math.SmallestNonzeroFloat32)
 
 		colour, am := effect.ResultingColour(c.Effects())
-		m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
+		m[protocol.EntityDataKeyEffectColor] = colourconv.Int32FromRGBAOpaqueBlack(colour)
 		if am {
 			m[protocol.EntityDataKeyEffectAmbience] = byte(1)
 		} else {
