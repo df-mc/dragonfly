@@ -210,7 +210,11 @@ func (t ticker) anyWithinDistance(pos ChunkPos, loaded []ChunkPos, r int32) bool
 // tickEntities ticks all entities in the world, making sure they are still located in the correct chunks and
 // updating where necessary.
 func (t ticker) tickEntities(tx *Tx, tick int64) {
-	for handle, lastPos := range tx.World().entities {
+	for _, handle := range slices.Clone(tx.World().entityTickOrder) {
+		lastPos, ok := tx.World().entities[handle]
+		if !ok {
+			continue
+		}
 		e := handle.mustEntity(tx)
 		chunkPos := chunkPosFromVec3(handle.data.Pos)
 
