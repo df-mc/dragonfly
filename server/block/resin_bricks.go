@@ -11,7 +11,7 @@ type ResinBricks struct {
 
 // BreakInfo ...
 func (r ResinBricks) BreakInfo() BreakInfo {
-	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(r)).withBlastResistance(30)
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(r)).withBlastResistance(6)
 }
 
 // EncodeItem ...

@@ -93,7 +93,7 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(c, rand.IntN(2)+2)}
 		}
 		return []item.Stack{item.NewStack(c, 1)}
-	}).withBlastResistance(15)
+	}).withBlastResistance(3)
 }
 
 // CompostChance ...

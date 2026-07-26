@@ -105,7 +105,7 @@ func (i *ItemBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 // Explode reacts to explosions. The item entity is destroyed, unless the item
 // type is blast proof.
-func (i *ItemBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
+func (i *ItemBehaviour) Explode(e *Ent, _ world.ExplosionSource, impact float64) {
 	if impact > 0 {
 		if expl, ok := i.Item().Item().(interface{ BlastProof() bool }); ok && expl.BlastProof() {
 			return
