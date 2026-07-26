@@ -399,7 +399,7 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.FireDuration = time.Duration(readInt16(m, "Fire")) * time.Second / 20
 	e.data.Name, _ = m["NameTag"].(string)
 	if comp, ok := m["Components"].(map[string]any); ok {
-		e.data.decodeComponentsNBT(comp)
+		e.data.decodeComponentsNBT(comp, readStringSlice(m["ComponentOrder"]))
 	}
 }
 
@@ -417,6 +417,7 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 	}
 	if comp := e.data.encodeComponentsNBT(); comp != nil {
 		m["Components"] = comp
+		m["ComponentOrder"] = e.data.encodeComponentOrderNBT()
 	}
 	return m
 }
@@ -432,10 +433,12 @@ type EntityData struct {
 
 	Data any
 
-	// components holds the entity's attached components, sorted by
-	// ComponentID. unknownComponents retains saved data of component types
-	// not registered in this process, so it survives the next save.
+	// components holds the entity's attached components in attachment order.
+	// componentOrder also retains the positions of runtime-only and unknown
+	// components across reloads. unknownComponents retains their saved data so
+	// it survives the next save.
 	components        []componentSlot
+	componentOrder    []string
 	unknownComponents map[string]any
 	// tickers caches the components implementing TickerComponent, in attach
 	// order. It is invalidated (set to nil) whenever components change.
@@ -606,4 +609,21 @@ func readRotation(m map[string]any) cube.Rotation {
 func readInt16(m map[string]any, k string) int16 {
 	v, _ := m[k].(int16)
 	return v
+}
+
+func readStringSlice(v any) []string {
+	switch values := v.(type) {
+	case []string:
+		return values
+	case []any:
+		strings := make([]string, 0, len(values))
+		for _, value := range values {
+			if s, ok := value.(string); ok {
+				strings = append(strings, s)
+			}
+		}
+		return strings
+	default:
+		return nil
+	}
 }

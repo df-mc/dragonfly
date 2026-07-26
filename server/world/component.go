@@ -9,6 +9,9 @@ import (
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
 // Component capabilities: a component attached to an entity may implement any
@@ -17,10 +20,8 @@ import (
 type (
 	// TickerComponent is implemented by components that run logic on every
 	// tick of the entity they are attached to. Components tick in attach
-	// order, before the entity's main behaviour. A component may attach or
-	// detach components, including itself, during its tick. Ticking runs for
-	// entities built on entity.Ent and for players; other world.Entity
-	// implementations must run EntityHandle.TickerComponents themselves.
+	// order, before the entity's own TickerEntity logic. A component may
+	// attach or detach components, including itself, during its tick.
 	TickerComponent interface {
 		Tick(tx *Tx, e Entity, current int64)
 	}
@@ -128,15 +129,30 @@ func findComponent(data *EntityData, id ComponentID) (int, bool) {
 	return -1, false
 }
 
+// componentRegistrySnapshot returns the slice of registered component info,
+// indexed by ComponentID. The registry only ever grows and existing entries
+// are never modified, so the returned header stays valid after the lock is
+// released.
+func componentRegistrySnapshot() []*componentInfo {
+	components.Lock()
+	defer components.Unlock()
+	return components.byID
+}
+
 // Of returns a pointer to the entity's component of type T for in-place
 // mutation, or nil if the entity has no such component attached. Always
 // nil-check the result for entities whose components are not your own. Of
 // must be called from the World's owner goroutine, like all entity state
 // access.
 func (k ComponentKey[T]) Of(e Entity) *T {
-	data := &e.H().data
+	h := e.H()
+	data := &h.data
 	if i, ok := findComponent(data, k.id); ok {
-		return data.components[i].v.(*T)
+		v := data.components[i].v.(*T)
+		if _, persistent := any(v).(NBTSaver); persistent {
+			markComponentPersistenceDirty(h)
+		}
+		return v
 	}
 	return nil
 }
@@ -146,6 +162,9 @@ func (k ComponentKey[T]) Of(e Entity) *T {
 func (k ComponentKey[T]) Attach(e Entity, v T) {
 	h := e.H()
 	attachSlot(&h.data, componentSlot{id: k.id, v: &v})
+	if _, persistent := any(&v).(NBTSaver); persistent {
+		markComponentPersistenceDirty(h)
+	}
 	if _, ok := any(&v).(MetaSyncer); ok {
 		MarkMetaDirty(e)
 	}
@@ -158,7 +177,16 @@ func (k ComponentKey[T]) Detach(e Entity) {
 	if i, ok := findComponent(&h.data, k.id); ok {
 		v := h.data.components[i].v
 		h.data.components = slices.Delete(h.data.components, i, i+1)
+		name := componentRegistrySnapshot()[k.id].name
+		if _, retained := h.data.unknownComponents[name]; !retained {
+			h.data.componentOrder = slices.DeleteFunc(h.data.componentOrder, func(entry string) bool {
+				return entry == name
+			})
+		}
 		h.data.tickers = nil
+		if _, persistent := v.(NBTSaver); persistent {
+			markComponentPersistenceDirty(h)
+		}
 		if _, ok := v.(MetaSyncer); ok {
 			MarkMetaDirty(e)
 		}
@@ -178,13 +206,47 @@ func MarkMetaDirty(e Entity) {
 	}
 }
 
+// markComponentPersistenceDirty marks the chunk containing h for persistence.
+// Component values are mutable pointers, so persistent components are marked
+// conservatively when accessed or ticked as well as when attached or detached.
+func markComponentPersistenceDirty(h *EntityHandle) {
+	if h.w == nil {
+		return
+	}
+	pos, ok := h.w.entities[h]
+	if !ok {
+		return
+	}
+	if c, ok := h.w.loadedChunk(pos); ok {
+		c.modified = true
+	}
+}
+
 // attachSlot adds a slot to the component slice of an EntityData, replacing
 // an existing component with the same ID in place, so attach order is kept.
 func attachSlot(data *EntityData, slot componentSlot) {
+	byID := componentRegistrySnapshot()
+	name := byID[slot.id].name
 	if i, ok := findComponent(data, slot.id); ok {
 		data.components[i] = slot
 	} else {
-		data.components = append(data.components, slot)
+		orderIndex := slices.Index(data.componentOrder, name)
+		if orderIndex == -1 {
+			data.componentOrder = append(data.componentOrder, name)
+			data.components = append(data.components, slot)
+		} else {
+			insertAt := len(data.components)
+			for i, attached := range data.components {
+				if slices.Index(data.componentOrder, byID[attached.id].name) > orderIndex {
+					insertAt = i
+					break
+				}
+			}
+			data.components = slices.Insert(data.components, insertAt, slot)
+		}
+	}
+	if _, persistent := slot.v.(NBTSaver); persistent && data.unknownComponents != nil {
+		delete(data.unknownComponents, name)
 	}
 	data.tickers = nil
 }
@@ -267,6 +329,9 @@ func anySlot(v any) componentSlot {
 func (e *EntityHandle) Components() iter.Seq[any] {
 	return func(yield func(any) bool) {
 		for _, slot := range e.data.components {
+			if _, persistent := slot.v.(NBTSaver); persistent {
+				markComponentPersistenceDirty(e)
+			}
 			if !yield(slot.v) {
 				return
 			}
@@ -295,6 +360,23 @@ func (e *EntityHandle) TickerComponents() []TickerComponent {
 	return e.data.tickers
 }
 
+// tickComponents ticks the entity's component snapshot until it finishes or a
+// component removes or closes the entity. It reports whether the entity may
+// continue through its own tick logic.
+func tickComponents(tx *Tx, e Entity, current int64) bool {
+	h := e.H()
+	for _, ticker := range h.TickerComponents() {
+		if _, persistent := ticker.(NBTSaver); persistent {
+			markComponentPersistenceDirty(h)
+		}
+		ticker.Tick(tx, e, current)
+		if h.Closed() || h.w != tx.World() {
+			return false
+		}
+	}
+	return true
+}
+
 // encodeComponentsNBT encodes all components implementing NBTSaver, along
 // with any component data of unknown types read earlier, so unknown
 // components round-trip losslessly through the world save.
@@ -302,12 +384,7 @@ func (data *EntityData) encodeComponentsNBT() map[string]any {
 	if len(data.components) == 0 && len(data.unknownComponents) == 0 {
 		return nil
 	}
-	components.Lock()
-	// byID only ever grows and existing entries are never modified, so a
-	// snapshot of the slice header is safe to read after unlocking.
-	byID := components.byID
-	components.Unlock()
-
+	byID := componentRegistrySnapshot()
 	m := make(map[string]any, len(data.components)+len(data.unknownComponents))
 	for _, slot := range data.components {
 		if saver, ok := slot.v.(NBTSaver); ok {
@@ -315,7 +392,9 @@ func (data *EntityData) encodeComponentsNBT() map[string]any {
 		}
 	}
 	for name, raw := range data.unknownComponents {
-		m[name] = raw
+		if _, known := m[name]; !known {
+			m[name] = raw
+		}
 	}
 	if len(m) == 0 {
 		return nil
@@ -323,21 +402,96 @@ func (data *EntityData) encodeComponentsNBT() map[string]any {
 	return m
 }
 
+// orderedNames returns the keys of m ordered by the primary sequence first
+// (skipping names absent from m and duplicates), then any remaining keys in
+// sorted order. It gives persisted components a deterministic order that
+// follows attachment where known and stays stable across saves written before
+// order was stored.
+func orderedNames(primary []string, m map[string]any) []string {
+	names := make([]string, 0, len(m))
+	seen := make(map[string]struct{}, len(m))
+	for _, name := range primary {
+		if _, ok := m[name]; !ok {
+			continue
+		}
+		if _, dup := seen[name]; dup {
+			continue
+		}
+		names = append(names, name)
+		seen[name] = struct{}{}
+	}
+	for _, name := range slices.Sorted(maps.Keys(m)) {
+		if _, ok := seen[name]; !ok {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// encodeComponentOrderNBT returns attached and retained component names in
+// attachment order. Runtime-only component names are included when another
+// component has state to persist so their relative position survives reload.
+func (data *EntityData) encodeComponentOrderNBT() []string {
+	byID := componentRegistrySnapshot()
+	present := make(map[string]any, len(data.components)+len(data.unknownComponents))
+	for _, slot := range data.components {
+		present[byID[slot.id].name] = nil
+	}
+	for name := range data.unknownComponents {
+		present[name] = nil
+	}
+	return orderedNames(data.componentOrder, present)
+}
+
+// decodedComponentOrder preserves every name in the persisted order,
+// including runtime-only components without NBT and temporarily unknown
+// components, then appends payload names absent from older order data.
+func decodedComponentOrder(order []string, m map[string]any) []string {
+	names := make([]string, 0, len(order)+len(m))
+	seen := make(map[string]struct{}, len(order)+len(m))
+	for _, name := range order {
+		if name == "" {
+			continue
+		}
+		if _, duplicate := seen[name]; duplicate {
+			continue
+		}
+		names = append(names, name)
+		seen[name] = struct{}{}
+	}
+	for _, name := range slices.Sorted(maps.Keys(m)) {
+		if _, exists := seen[name]; !exists {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
 // decodeComponentsNBT restores components from the "Components" compound of
 // an entity's saved NBT. Entries of unregistered component names or with
 // malformed values are retained verbatim for the next save. Components are
-// restored in sorted name order, keeping attach order deterministic.
-func (data *EntityData) decodeComponentsNBT(m map[string]any) {
+// restored in the persisted order, with names missing from order appended in
+// sorted order for compatibility with saves written before order was stored.
+func (data *EntityData) decodeComponentsNBT(m map[string]any, order []string) {
+	data.componentOrder = decodedComponentOrder(order, m)
 	retain := func(name string, raw any) {
 		if data.unknownComponents == nil {
 			data.unknownComponents = make(map[string]any)
 		}
 		data.unknownComponents[name] = raw
 	}
-	for _, name := range slices.Sorted(maps.Keys(m)) {
-		sub, ok := m[name].(map[string]any)
+	// componentOrder already contains every key of m (decodedComponentOrder
+	// appends any missing ones), so iterating it restores components in the
+	// persisted order. Names without a payload are runtime-only positions with
+	// nothing to load; attachSlot keeps data.components ordered regardless.
+	for _, name := range data.componentOrder {
+		raw, ok := m[name]
 		if !ok {
-			retain(name, m[name])
+			continue
+		}
+		sub, ok := raw.(map[string]any)
+		if !ok {
+			retain(name, raw)
 			continue
 		}
 		components.Lock()
@@ -348,9 +502,12 @@ func (data *EntityData) decodeComponentsNBT(m map[string]any) {
 			continue
 		}
 		v := info.new()
-		if saver, ok := v.(NBTSaver); ok {
-			saver.LoadNBT(sub)
+		saver, ok := v.(NBTSaver)
+		if !ok {
+			retain(name, sub)
+			continue
 		}
+		saver.LoadNBT(sub)
 		attachSlot(data, componentSlot{id: info.id, v: v})
 	}
 }
@@ -378,14 +535,14 @@ type EntityMetaFlag struct {
 // The most commonly used actor flags. Values mirror the protocol's actor
 // flags.
 var (
-	MetaFlagOnFire    = EntityMetaFlag{bit: 0}
-	MetaFlagSneaking  = EntityMetaFlag{bit: 1}
-	MetaFlagSprinting = EntityMetaFlag{bit: 3}
-	MetaFlagInvisible = EntityMetaFlag{bit: 5}
-	MetaFlagCritical  = EntityMetaFlag{bit: 13}
-	MetaFlagNoAI      = EntityMetaFlag{bit: 16}
-	MetaFlagLingering = EntityMetaFlag{bit: 47}
-	MetaFlagEnchanted = EntityMetaFlag{bit: 52}
+	MetaFlagOnFire    = EntityMetaFlag{bit: protocol.EntityDataFlagOnFire}
+	MetaFlagSneaking  = EntityMetaFlag{bit: protocol.EntityDataFlagSneaking}
+	MetaFlagSprinting = EntityMetaFlag{bit: protocol.EntityDataFlagSprinting}
+	MetaFlagInvisible = EntityMetaFlag{bit: protocol.EntityDataFlagInvisible}
+	MetaFlagCritical  = EntityMetaFlag{bit: protocol.EntityDataFlagCritical}
+	MetaFlagNoAI      = EntityMetaFlag{bit: protocol.EntityDataFlagNoAI}
+	MetaFlagLingering = EntityMetaFlag{bit: protocol.EntityDataFlagLingering}
+	MetaFlagEnchanted = EntityMetaFlag{bit: protocol.EntityDataFlagEnchanted}
 )
 
 // SetFlag sets an actor flag, combined with the flags already present on the
@@ -402,25 +559,25 @@ func (m *EntityMetadata) SetFlagBit(key uint32, bit uint8) {
 
 // SetScoreTag sets the text displayed below the entity's name tag.
 func (m *EntityMetadata) SetScoreTag(s string) {
-	m.values[84] = s // protocol.EntityDataKeyScore
+	m.values[protocol.EntityDataKeyScore] = s
 }
 
 // SetVariant sets the entity's variant, used by clients to pick textures and,
 // for some entity types, block appearances.
 func (m *EntityMetadata) SetVariant(v int32) {
-	m.values[2] = v // protocol.EntityDataKeyVariant
+	m.values[protocol.EntityDataKeyVariant] = v
 }
 
 // SetScale sets the entity's render scale.
 func (m *EntityMetadata) SetScale(s float64) {
-	m.values[38] = float32(s) // protocol.EntityDataKeyScale
+	m.values[protocol.EntityDataKeyScale] = float32(s)
 }
 
 // SetColour sets the entity's effect colour, used for tints such as potion
 // swirls.
 func (m *EntityMetadata) SetColour(c color.RGBA) {
-	// protocol.EntityDataKeyEffectColor, encoded as ARGB.
-	m.values[8] = int32(uint32(c.A)<<24 | uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B))
+	// Encoded as ARGB.
+	m.values[protocol.EntityDataKeyEffectColor] = int32(uint32(c.A)<<24 | uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B))
 }
 
 // Set sets a metadata value under a raw protocol actor data key, for values
@@ -429,7 +586,7 @@ func (m *EntityMetadata) SetColour(c color.RGBA) {
 // as they would otherwise fail every metadata packet sent for the entity.
 func (m *EntityMetadata) Set(key uint32, value any) {
 	switch v := value.(type) {
-	case byte, int16, int32, float32, int64, string, map[string]any:
+	case byte, int16, int32, float32, int64, string, map[string]any, protocol.BlockPos, mgl32.Vec3:
 		m.values[key] = v
 	case int:
 		m.values[key] = int32(v)

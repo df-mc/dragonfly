@@ -70,9 +70,17 @@ func validateSpecComponents(s Spec) error {
 	if s.Components == nil {
 		return nil
 	}
-	var comps []any
+	return validateComponents(s.Components())
+}
+
+// validateComponents validates a list of component values, rejecting
+// unregistered types, duplicates and more than one value implementing
+// Behaviour. Behaviour values are excluded from the component-type validation;
+// applyDefaults installs the single Behaviour as the entity's main behaviour.
+func validateComponents(values []any) error {
+	comps := make([]any, 0, len(values))
 	behaviours := 0
-	for _, v := range s.Components() {
+	for _, v := range values {
 		if _, ok := v.(Behaviour); ok {
 			if behaviours++; behaviours > 1 {
 				return fmt.Errorf("more than one component implements Behaviour")
@@ -89,14 +97,7 @@ func validateSpecComponents(s Spec) error {
 // added to a world using Tx.AddEntity. New panics if an extra component's
 // type was not registered with world.RegisterComponent.
 func (t *Type) New(opts world.EntitySpawnOpts, components ...any) *world.EntityHandle {
-	extras := make([]any, 0, len(components))
-	for _, v := range components {
-		if _, ok := v.(Behaviour); ok {
-			continue
-		}
-		extras = append(extras, v)
-	}
-	if err := world.ValidateComponents(extras...); err != nil {
+	if err := validateComponents(components); err != nil {
 		panic("entity.Type.New: " + t.spec.Name + ": " + err.Error())
 	}
 	return opts.New(t, specConfig{t: t, extra: components})

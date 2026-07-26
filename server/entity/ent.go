@@ -161,13 +161,6 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	}
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
-	for _, t := range e.handle.TickerComponents() {
-		t.Tick(tx, e, current)
-	}
-	if e.handle.Closed() {
-		// A ticking component closed the entity.
-		return
-	}
 	var m *Movement
 	if b := e.Behaviour(); b != nil {
 		m = b.Tick(e, tx)

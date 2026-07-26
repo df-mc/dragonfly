@@ -59,6 +59,9 @@ type Session struct {
 	entityRuntimeIDs map[*world.EntityHandle]uint64
 	entities         map[uint64]*world.EntityHandle
 	hiddenEntities   map[uuid.UUID]struct{}
+	// componentMetadata tracks the actor metadata keys last contributed by
+	// components so incremental updates can reset keys that disappear.
+	componentMetadata map[*world.EntityHandle]protocol.EntityMetadata
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot                     *uint32
@@ -193,6 +196,7 @@ func (conf Config) New(conn Conn) *Session {
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
 		hiddenEntities:         map[uuid.UUID]struct{}{},
+		componentMetadata:      map[*world.EntityHandle]protocol.EntityMetadata{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
@@ -341,6 +345,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)
+	clear(s.componentMetadata)
 	s.entityMutex.Unlock()
 }
 

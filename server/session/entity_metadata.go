@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -48,8 +50,9 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 // through world.MetaSyncer into the metadata map. Components run after the
 // built-in metadata and overwrite values on conflict; flag bits are combined.
 func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata) {
+	h := e.H()
 	var wm *world.EntityMetadata
-	for c := range e.H().Components() {
+	for c := range h.Components() {
 		if syncer, ok := c.(world.MetaSyncer); ok {
 			if wm == nil {
 				wm = world.NewEntityMetadata()
@@ -57,28 +60,82 @@ func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata
 			syncer.SyncMeta(e, wm)
 		}
 	}
-	if wm == nil {
-		return
-	}
-	for key, v := range wm.Values() {
-		m[key] = v
-	}
-	for key, bits := range wm.Flags() {
-		// Most flag keys hold an int64, but some, such as
-		// EntityDataKeyPlayerFlags, hold a byte. Match the existing type so
-		// built-in flags are kept and the entry stays decodable.
-		switch existing := m[key].(type) {
-		case int64:
-			m[key] = existing | bits
-		case byte:
-			m[key] = existing | byte(bits)
-		default:
-			if key == protocol.EntityDataKeyPlayerFlags {
-				m[key] = byte(bits)
-			} else {
-				m[key] = bits
-			}
+	var current protocol.EntityMetadata
+	if wm != nil {
+		current = protocol.EntityMetadata{}
+		for key, v := range wm.Values() {
+			current[key] = v
+			m[key] = v
 		}
+		for key, bits := range wm.Flags() {
+			mergeComponentFlag(current, key, bits)
+			mergeComponentFlag(m, key, bits)
+		}
+	}
+
+	s.entityMutex.Lock()
+	previous := s.componentMetadata[h]
+	if len(current) == 0 {
+		delete(s.componentMetadata, h)
+	} else {
+		if s.componentMetadata == nil {
+			s.componentMetadata = map[*world.EntityHandle]protocol.EntityMetadata{}
+		}
+		s.componentMetadata[h] = current
+	}
+	s.entityMutex.Unlock()
+
+	for key, old := range previous {
+		if _, stillSet := current[key]; stillSet {
+			continue
+		}
+		if _, builtIn := m[key]; !builtIn {
+			m[key] = zeroComponentMetadataValue(old)
+		}
+	}
+}
+
+// mergeComponentFlag combines component flag bits with a metadata map while
+// preserving the protocol type used by the key.
+func mergeComponentFlag(m protocol.EntityMetadata, key uint32, bits int64) {
+	switch existing := m[key].(type) {
+	case int64:
+		m[key] = existing | bits
+	case byte:
+		m[key] = existing | byte(bits)
+	default:
+		if key == protocol.EntityDataKeyPlayerFlags {
+			m[key] = byte(bits)
+		} else {
+			m[key] = bits
+		}
+	}
+}
+
+// zeroComponentMetadataValue returns the protocol-encodable zero value with
+// the same actor metadata type as v.
+func zeroComponentMetadataValue(v any) any {
+	switch v.(type) {
+	case byte:
+		return byte(0)
+	case int16:
+		return int16(0)
+	case int32:
+		return int32(0)
+	case float32:
+		return float32(0)
+	case string:
+		return ""
+	case map[string]any:
+		return map[string]any{}
+	case protocol.BlockPos:
+		return protocol.BlockPos{}
+	case int64:
+		return int64(0)
+	case mgl32.Vec3:
+		return mgl32.Vec3{}
+	default:
+		panic(fmt.Sprintf("session: unsupported component metadata value type %T", v))
 	}
 }
 
