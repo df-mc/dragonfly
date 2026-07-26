@@ -14,58 +14,40 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
-// Component capabilities: a component attached to an entity may implement any
-// of the interfaces below. All of them are called on the World's owner
-// goroutine only, like all other entity state.
 type (
-	// TickerComponent is implemented by components that run logic on every
-	// tick of the entity they are attached to. Components tick in attach
-	// order, before the entity's own TickerEntity logic. A component may
-	// attach or detach components, including itself, during its tick.
+	// TickerComponent runs before the entity on each tick. Components run in
+	// attachment order and may attach or detach components while ticking.
 	TickerComponent interface {
 		Tick(tx *Tx, e Entity, current int64)
 	}
-	// MetaSyncer is implemented by components that contribute to the
-	// client-visible metadata of the entity they are attached to. SyncMeta is
-	// called whenever the entity's metadata is built. Components run after
-	// built-in metadata and overwrite it on conflict. After mutating a
-	// MetaSyncer component through ComponentKey.Of, call MarkMetaDirty.
+	// MetaSyncer adds client-visible entity metadata. Component values override
+	// built-in values. Call MarkMetaDirty after changing metadata state.
 	MetaSyncer interface {
 		SyncMeta(e Entity, m *EntityMetadata)
 	}
-	// NBTSaver is implemented by components that persist with the entity in
-	// the world save. Components that do not implement NBTSaver are attached
-	// at runtime only. LoadNBT is called on a fresh component value and must
-	// tolerate missing or malformed data, e.g. by using the nbtconv helpers.
+	// NBTSaver persists a component with its entity. LoadNBT must handle
+	// missing or malformed fields.
 	NBTSaver interface {
 		SaveNBT() map[string]any
 		LoadNBT(m map[string]any)
 	}
 )
 
-// ComponentID uniquely identifies a registered component type within the
-// process. IDs are assigned by RegisterComponent.
+// ComponentID identifies a registered component type.
 type ComponentID uint32
 
-// ComponentKey provides typed access to a component of type T on entities.
-// Keys are created once per component type using RegisterComponent and are
-// usually stored in a package-level variable.
+// ComponentKey provides typed access to a registered component.
 type ComponentKey[T any] struct {
 	id ComponentID
 }
 
-// componentInfo holds the runtime information of a registered component type.
 type componentInfo struct {
 	id   ComponentID
 	name string
 	typ  reflect.Type
-	// new returns a fresh *T as any, used when loading components from NBT.
-	new func() any
+	new  func() any
 }
 
-// components is the process-wide component registry. Registration is expected
-// to happen during package initialisation; lookups on hot paths go through
-// ComponentKey and do not touch this registry.
 var components = struct {
 	sync.Mutex
 	byName map[string]*componentInfo
@@ -76,12 +58,9 @@ var components = struct {
 	byType: map[reflect.Type]*componentInfo{},
 }
 
-// RegisterComponent registers T as an entity component under a stable,
-// namespaced name such as "myplugin:charged" and returns the typed key used
-// to access it. The name is used to persist the component if T implements
-// NBTSaver. RegisterComponent is intended to be called from package-level
-// variable initialisation and panics if the name or type is already
-// registered, or if T is a pointer type.
+// RegisterComponent registers T under a namespaced name and returns its key.
+// The name is used in saved data. RegisterComponent panics if the name or type
+// is already registered, or if T is a pointer.
 func RegisterComponent[T any](name string) ComponentKey[T] {
 	if !strings.Contains(name, ":") {
 		panic("world.RegisterComponent: name must be namespaced, e.g. 'myplugin:charged', got " + name)
@@ -111,15 +90,11 @@ func RegisterComponent[T any](name string) ComponentKey[T] {
 	return ComponentKey[T]{id: info.id}
 }
 
-// componentSlot is a single component attached to an entity. The value is
-// always a pointer to the registered component type.
 type componentSlot struct {
 	id ComponentID
 	v  any
 }
 
-// findComponent returns the slot index of a component ID in the component
-// slice of an EntityData. The slice is small, so a linear scan is cheap.
 func findComponent(data *EntityData, id ComponentID) (int, bool) {
 	for i, slot := range data.components {
 		if slot.id == id {
@@ -129,21 +104,16 @@ func findComponent(data *EntityData, id ComponentID) (int, bool) {
 	return -1, false
 }
 
-// componentRegistrySnapshot returns the slice of registered component info,
-// indexed by ComponentID. The registry only ever grows and existing entries
-// are never modified, so the returned header stays valid after the lock is
-// released.
+// componentRegistrySnapshot is safe after unlocking because entries never
+// change or move.
 func componentRegistrySnapshot() []*componentInfo {
 	components.Lock()
 	defer components.Unlock()
 	return components.byID
 }
 
-// Of returns a pointer to the entity's component of type T for in-place
-// mutation, or nil if the entity has no such component attached. Always
-// nil-check the result for entities whose components are not your own. Of
-// must be called from the World's owner goroutine, like all entity state
-// access.
+// Of returns the entity's component, or nil if it is not attached. Call Of
+// only from the world's owner goroutine.
 func (k ComponentKey[T]) Of(e Entity) *T {
 	h := e.H()
 	data := &h.data
@@ -157,21 +127,17 @@ func (k ComponentKey[T]) Of(e Entity) *T {
 	return nil
 }
 
-// Attach adds a component of type T to the entity, replacing any existing
-// one, and resends the entity's metadata to viewers if T contributes to it.
+// Attach adds or replaces the entity's component.
 func (k ComponentKey[T]) Attach(e Entity, v T) {
 	h := e.H()
 	attachSlot(&h.data, componentSlot{id: k.id, v: &v})
 	if _, persistent := any(&v).(NBTSaver); persistent {
 		markComponentPersistenceDirty(h)
 	}
-	if _, ok := any(&v).(MetaSyncer); ok {
-		MarkMetaDirty(e)
-	}
+	MarkMetaDirty(e)
 }
 
-// Detach removes the component of type T from the entity, if attached, and
-// resends the entity's metadata to viewers if T contributed to it.
+// Detach removes the entity's component if it is attached.
 func (k ComponentKey[T]) Detach(e Entity) {
 	h := e.H()
 	if i, ok := findComponent(&h.data, k.id); ok {
@@ -187,15 +153,12 @@ func (k ComponentKey[T]) Detach(e Entity) {
 		if _, persistent := v.(NBTSaver); persistent {
 			markComponentPersistenceDirty(h)
 		}
-		if _, ok := v.(MetaSyncer); ok {
-			MarkMetaDirty(e)
-		}
+		MarkMetaDirty(e)
 	}
 }
 
-// MarkMetaDirty resends the entity's metadata to its viewers. Call it after
-// mutating a MetaSyncer component through ComponentKey.Of; Attach and Detach
-// call it automatically.
+// MarkMetaDirty sends the entity's latest metadata to its viewers. Attach and
+// Detach call it automatically.
 func MarkMetaDirty(e Entity) {
 	h := e.H()
 	if h.w == nil {
@@ -206,9 +169,7 @@ func MarkMetaDirty(e Entity) {
 	}
 }
 
-// markComponentPersistenceDirty marks the chunk containing h for persistence.
-// Component values are mutable pointers, so persistent components are marked
-// conservatively when accessed or ticked as well as when attached or detached.
+// Persistent components are marked dirty when they may have changed.
 func markComponentPersistenceDirty(h *EntityHandle) {
 	if h.w == nil {
 		return
@@ -222,8 +183,6 @@ func markComponentPersistenceDirty(h *EntityHandle) {
 	}
 }
 
-// attachSlot adds a slot to the component slice of an EntityData, replacing
-// an existing component with the same ID in place, so attach order is kept.
 func attachSlot(data *EntityData, slot componentSlot) {
 	byID := componentRegistrySnapshot()
 	name := byID[slot.id].name
@@ -251,19 +210,15 @@ func attachSlot(data *EntityData, slot componentSlot) {
 	data.tickers = nil
 }
 
-// AttachComponent attaches a component value of any registered component type
-// to an EntityData. It is intended for entity construction, i.e. in
-// EntityConfig.Apply or EntityType.DecodeNBT implementations; use
-// ComponentKey.Attach for entities that are in a world. AttachComponent
-// panics if the value's type was not registered with RegisterComponent.
-// Pointer values are attached as-is and must not be shared between entities.
+// AttachComponent adds a registered component while constructing or loading
+// an entity. Use ComponentKey.Attach for entities already in a world.
+// Do not share pointer components between entities.
 func AttachComponent(data *EntityData, v any) {
 	attachSlot(data, anySlot(v))
 }
 
-// AttachComponentIfAbsent attaches a component like AttachComponent, but
-// keeps an existing component of the same type, if present. It returns true
-// if the component was attached.
+// AttachComponentIfAbsent adds a component only when it is not already
+// attached. It reports whether the component was added.
 func AttachComponentIfAbsent(data *EntityData, v any) bool {
 	slot := anySlot(v)
 	if _, ok := findComponent(data, slot.id); ok {
@@ -273,11 +228,8 @@ func AttachComponentIfAbsent(data *EntityData, v any) bool {
 	return true
 }
 
-// ValidateComponents checks that every value passed is of a registered
-// component type and that no type occurs twice, returning an error describing
-// the first violation found. It allows entity specs to be validated eagerly
-// at registration time, so mistakes surface at init instead of at first
-// spawn.
+// ValidateComponents checks that each component is registered and appears
+// once.
 func ValidateComponents(values ...any) error {
 	seen := make(map[ComponentID]struct{}, len(values))
 	for _, v := range values {
@@ -293,8 +245,6 @@ func ValidateComponents(values ...any) error {
 	return nil
 }
 
-// lookupComponentType resolves the componentInfo of a value passed either as
-// T or *T.
 func lookupComponentType(v any) (*componentInfo, bool) {
 	typ := reflect.TypeOf(v)
 	if typ.Kind() == reflect.Pointer {
@@ -306,9 +256,6 @@ func lookupComponentType(v any) (*componentInfo, bool) {
 	return info, ok
 }
 
-// anySlot converts an untyped component value, passed either as T or *T, to
-// a componentSlot holding a *T. Non-pointer values are copied to a fresh
-// pointer, so a shared prototype value is never aliased between entities.
 func anySlot(v any) componentSlot {
 	info, ok := lookupComponentType(v)
 	if !ok {
@@ -323,10 +270,8 @@ func anySlot(v any) componentSlot {
 	return componentSlot{id: info.id, v: rv.Interface()}
 }
 
-// Components yields all components attached to the entity in attach order.
-// Values yielded are pointers to the registered component types and must not
-// be modified. Use ComponentKey.Of to obtain a component for mutation.
-// Components must only be used from the World's owner goroutine.
+// Components yields attached components in order. Treat the values as
+// read-only and call Components only from the world's owner goroutine.
 func (e *EntityHandle) Components() iter.Seq[any] {
 	return func(yield func(any) bool) {
 		for _, slot := range e.data.components {
@@ -337,15 +282,10 @@ func (e *EntityHandle) Components() iter.Seq[any] {
 	}
 }
 
-// noTickers is the cached ticker slice of entities without any, so their
-// cache does not read as invalidated on every tick.
 var noTickers = make([]TickerComponent, 0)
 
-// TickerComponents returns the entity's components implementing
-// TickerComponent in attach order. The returned slice is cached and must not
-// be modified. Attach and Detach invalidate the cache, so ticking components
-// may attach and detach components, including themselves: the tick pipeline
-// finishes the snapshot it started with.
+// TickerComponents returns a read-only snapshot in attachment order. Changes
+// made while ticking apply on the next tick.
 func (e *EntityHandle) TickerComponents() []TickerComponent {
 	if e.data.tickers == nil {
 		e.data.tickers = noTickers
@@ -358,9 +298,6 @@ func (e *EntityHandle) TickerComponents() []TickerComponent {
 	return e.data.tickers
 }
 
-// tickComponents ticks the entity's component snapshot until it finishes or a
-// component removes or closes the entity. It reports whether the entity may
-// continue through its own tick logic.
 func tickComponents(tx *Tx, e Entity, current int64) bool {
 	h := e.H()
 	for _, ticker := range h.TickerComponents() {
@@ -375,9 +312,7 @@ func tickComponents(tx *Tx, e Entity, current int64) bool {
 	return true
 }
 
-// encodeComponentsNBT encodes all components implementing NBTSaver, along
-// with any component data of unknown types read earlier, so unknown
-// components round-trip losslessly through the world save.
+// encodeComponentsNBT preserves saved data for unknown components.
 func (data *EntityData) encodeComponentsNBT() map[string]any {
 	if len(data.components) == 0 && len(data.unknownComponents) == 0 {
 		return nil
@@ -400,11 +335,7 @@ func (data *EntityData) encodeComponentsNBT() map[string]any {
 	return m
 }
 
-// orderedNames returns the keys of m ordered by the primary sequence first
-// (skipping names absent from m and duplicates), then any remaining keys in
-// sorted order. It gives persisted components a deterministic order that
-// follows attachment where known and stays stable across saves written before
-// order was stored.
+// orderedNames keeps the saved order and appends new names alphabetically.
 func orderedNames(primary []string, m map[string]any) []string {
 	names := make([]string, 0, len(m))
 	seen := make(map[string]struct{}, len(m))
@@ -426,9 +357,8 @@ func orderedNames(primary []string, m map[string]any) []string {
 	return names
 }
 
-// encodeComponentOrderNBT returns attached and retained component names in
-// attachment order. Runtime-only component names are included when another
-// component has state to persist so their relative position survives reload.
+// encodeComponentOrderNBT includes runtime-only positions when component data
+// is saved.
 func (data *EntityData) encodeComponentOrderNBT() []string {
 	byID := componentRegistrySnapshot()
 	present := make(map[string]any, len(data.components)+len(data.unknownComponents))
@@ -441,9 +371,7 @@ func (data *EntityData) encodeComponentOrderNBT() []string {
 	return orderedNames(data.componentOrder, present)
 }
 
-// decodedComponentOrder preserves every name in the persisted order,
-// including runtime-only components without NBT and temporarily unknown
-// components, then appends payload names absent from older order data.
+// decodedComponentOrder restores saved order and appends missing names.
 func decodedComponentOrder(order []string, m map[string]any) []string {
 	names := make([]string, 0, len(order)+len(m))
 	seen := make(map[string]struct{}, len(order)+len(m))
@@ -465,11 +393,7 @@ func decodedComponentOrder(order []string, m map[string]any) []string {
 	return names
 }
 
-// decodeComponentsNBT restores components from the "Components" compound of
-// an entity's saved NBT. Entries of unregistered component names or with
-// malformed values are retained verbatim for the next save. Components are
-// restored in the persisted order, with names missing from order appended in
-// sorted order for compatibility with saves written before order was stored.
+// decodeComponentsNBT keeps unknown or malformed data for the next save.
 func (data *EntityData) decodeComponentsNBT(m map[string]any, order []string) {
 	data.componentOrder = decodedComponentOrder(order, m)
 	retain := func(name string, raw any) {
@@ -478,10 +402,6 @@ func (data *EntityData) decodeComponentsNBT(m map[string]any, order []string) {
 		}
 		data.unknownComponents[name] = raw
 	}
-	// componentOrder already contains every key of m (decodedComponentOrder
-	// appends any missing ones), so iterating it restores components in the
-	// persisted order. Names without a payload are runtime-only positions with
-	// nothing to load; attachSlot keeps data.components ordered regardless.
 	for _, name := range data.componentOrder {
 		raw, ok := m[name]
 		if !ok {
@@ -510,153 +430,113 @@ func (data *EntityData) decodeComponentsNBT(m map[string]any, order []string) {
 	}
 }
 
-// EntityMetadata holds client-visible metadata contributed by components
-// through MetaSyncer. Keys and flag bits mirror the protocol's actor
-// metadata; the session layer merges them into the packets it sends.
+type metadata = protocol.EntityMetadata
+
+// EntityMetadata stores metadata contributed by a component.
 type EntityMetadata struct {
-	values   map[uint32]any
-	defaults map[uint32]any
-	flags    map[uint32]int64
+	metadata
+	resets protocol.EntityMetadata
 }
 
-// NewEntityMetadata returns an empty EntityMetadata.
+// NewEntityMetadata creates empty component metadata.
 func NewEntityMetadata() *EntityMetadata {
 	return &EntityMetadata{
-		values:   map[uint32]any{},
-		defaults: map[uint32]any{},
-		flags:    map[uint32]int64{},
+		metadata: protocol.NewEntityMetadata(),
+		resets:   protocol.NewEntityMetadata(),
 	}
 }
 
-// SetFlag sets an actor flag using protocol.EntityDataKey* and
-// protocol.EntityDataFlag* constants. The flag is combined with flags already
-// present on the entity.
-func (m *EntityMetadata) SetFlag(key uint32, bit uint8) {
-	switch key {
-	case protocol.EntityDataKeyPlayerFlags:
-		if bit >= 8 {
-			panic("world.EntityMetadata: player flag bit must be less than 8")
-		}
-		m.defaults[key] = byte(0)
-	case protocol.EntityDataKeyFlags, protocol.EntityDataKeyFlagsTwo:
-		if bit >= 64 {
-			panic("world.EntityMetadata: actor flag bit must be less than 64")
-		}
-		m.defaults[key] = int64(0)
-	default:
-		panic(fmt.Sprintf("world.EntityMetadata: key %d is not an actor flag key", key))
-	}
-	m.flags[key] |= 1 << bit
-}
-
-// SetScoreTag sets the text displayed below the entity's name tag.
+// SetScoreTag sets the text below the entity's name tag.
 func (m *EntityMetadata) SetScoreTag(s string) {
-	m.values[protocol.EntityDataKeyScore] = s
-	m.defaults[protocol.EntityDataKeyScore] = ""
+	m.metadata[protocol.EntityDataKeyScore] = s
+	m.resets[protocol.EntityDataKeyScore] = ""
 }
 
-// SetVariant sets the entity's variant, used by clients to pick textures and,
-// for some entity types, block appearances.
+// SetVariant sets the entity's visual variant.
 func (m *EntityMetadata) SetVariant(v int32) {
-	m.values[protocol.EntityDataKeyVariant] = v
-	m.defaults[protocol.EntityDataKeyVariant] = int32(0)
+	m.metadata[protocol.EntityDataKeyVariant] = v
+	m.resets[protocol.EntityDataKeyVariant] = int32(0)
 }
 
 // SetScale sets the entity's render scale.
 func (m *EntityMetadata) SetScale(s float64) {
-	m.values[protocol.EntityDataKeyScale] = float32(s)
-	m.defaults[protocol.EntityDataKeyScale] = float32(1)
+	m.metadata[protocol.EntityDataKeyScale] = float32(s)
+	m.resets[protocol.EntityDataKeyScale] = float32(1)
 }
 
-// SetColour sets the entity's effect colour, used for tints such as potion
-// swirls.
+// SetColour sets the entity's effect colour.
 func (m *EntityMetadata) SetColour(c color.RGBA) {
 	// Encoded as ARGB.
-	m.values[protocol.EntityDataKeyEffectColor] = int32(uint32(c.A)<<24 | uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B))
-	m.defaults[protocol.EntityDataKeyEffectColor] = int32(0)
+	m.metadata[protocol.EntityDataKeyEffectColor] = int32(uint32(c.A)<<24 | uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B))
+	m.resets[protocol.EntityDataKeyEffectColor] = int32(0)
 }
 
-// Set sets a metadata value under a raw protocol actor data key, for values
-// without a typed setter. Values are converted to their protocol-encodable
-// equivalents where needed; Set panics on values the protocol cannot encode,
-// as they would otherwise fail every metadata packet sent for the entity.
+// Set sets a raw protocol metadata value. It panics if the value cannot be
+// encoded.
 func (m *EntityMetadata) Set(key uint32, value any) {
 	switch v := value.(type) {
 	case byte:
-		m.values[key] = v
-		m.defaults[key] = byte(0)
+		m.metadata[key] = v
+		m.resets[key] = byte(0)
 	case int16:
-		m.values[key] = v
-		m.defaults[key] = int16(0)
+		m.metadata[key] = v
+		m.resets[key] = int16(0)
 	case int32:
-		m.values[key] = v
-		m.defaults[key] = int32(0)
+		m.metadata[key] = v
+		m.resets[key] = int32(0)
 	case float32:
-		m.values[key] = v
-		m.defaults[key] = float32(0)
+		m.metadata[key] = v
+		m.resets[key] = float32(0)
 	case int64:
-		m.values[key] = v
-		m.defaults[key] = int64(0)
+		m.metadata[key] = v
+		m.resets[key] = int64(0)
 	case string:
-		m.values[key] = v
-		m.defaults[key] = ""
+		m.metadata[key] = v
+		m.resets[key] = ""
 	case map[string]any:
-		m.values[key] = v
-		m.defaults[key] = map[string]any{}
+		m.metadata[key] = v
+		m.resets[key] = map[string]any{}
 	case protocol.BlockPos:
-		m.values[key] = v
-		m.defaults[key] = protocol.BlockPos{}
+		m.metadata[key] = v
+		m.resets[key] = protocol.BlockPos{}
 	case mgl32.Vec3:
-		m.values[key] = v
-		m.defaults[key] = mgl32.Vec3{}
+		m.metadata[key] = v
+		m.resets[key] = mgl32.Vec3{}
 	case int:
-		m.values[key] = int32(v)
-		m.defaults[key] = int32(0)
+		m.metadata[key] = int32(v)
+		m.resets[key] = int32(0)
 	case uint32:
-		m.values[key] = int32(v)
-		m.defaults[key] = int32(0)
+		m.metadata[key] = int32(v)
+		m.resets[key] = int32(0)
 	case float64:
-		m.values[key] = float32(v)
-		m.defaults[key] = float32(0)
+		m.metadata[key] = float32(v)
+		m.resets[key] = float32(0)
 	case bool:
 		var b byte
 		if v {
 			b = 1
 		}
-		m.values[key] = b
-		m.defaults[key] = byte(0)
+		m.metadata[key] = b
+		m.resets[key] = byte(0)
 	default:
 		panic(fmt.Sprintf("world.EntityMetadata: value of type %T cannot be encoded as actor metadata", value))
 	}
 }
 
-// Values returns the metadata values set. The returned map is a read-only
-// view for the session layer.
-func (m *EntityMetadata) Values() map[uint32]any { return m.values }
+// Values returns the metadata values.
+func (m *EntityMetadata) Values() protocol.EntityMetadata { return m.metadata }
 
-// Defaults returns the values used to reset metadata keys when a component no
-// longer contributes them. The returned map is a read-only view for the
-// session layer.
-func (m *EntityMetadata) Defaults() map[uint32]any { return m.defaults }
+// ResetValues returns the values sent when metadata is removed.
+func (m *EntityMetadata) ResetValues() protocol.EntityMetadata { return m.resets }
 
-// Flags returns the flag bits set per key. The returned map is a read-only
-// view for the session layer.
-func (m *EntityMetadata) Flags() map[uint32]int64 { return m.flags }
-
-// Spawner is implemented by EntityTypes that can construct entities from
-// spawn options and a list of extra components, such as types created with
-// the entity package's Spec registry. It enables Tx.SpawnEntity.
+// Spawner creates entities with optional extra components.
 type Spawner interface {
 	EntityType
 	New(opts EntitySpawnOpts, components ...any) *EntityHandle
 }
 
-// SpawnEntity spawns an entity of the EntityType registered under the name
-// passed in the World of the Tx, with any extra components attached. It
-// returns false if no type with that name is registered in the World's
-// EntityRegistry or if the type does not implement Spawner. Passing a
-// component of an unregistered type is a programmer error and panics, like
-// ComponentKey.Attach.
+// SpawnEntity creates and adds a registered entity type. It returns false if
+// the type is unknown or does not implement Spawner. Invalid components panic.
 func (tx *Tx) SpawnEntity(name string, opts EntitySpawnOpts, components ...any) (Entity, bool) {
 	t, ok := tx.World().EntityRegistry().Lookup(name)
 	if !ok {

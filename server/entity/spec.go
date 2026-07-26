@@ -9,47 +9,29 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Spec declaratively describes an entity type, replacing hand-written
-// world.EntityType implementations. Types created from a Spec are composed of
-// components; see world.RegisterComponent.
+// Spec describes a component-based entity type.
 type Spec struct {
-	// Name is the namespaced identifier the entity is registered and saved
-	// under, e.g. "myplugin:wisp".
+	// Name is the namespaced ID used for registration and saves.
 	Name string
-	// NetworkID is the identifier sent to clients, allowing an entity to
-	// render as an existing client-side type, e.g. "minecraft:vex". It
-	// defaults to Name.
+	// NetworkID is the client-side entity ID. It defaults to Name.
 	NetworkID string
-	// Box is the bounding box of entities of this type.
+	// Box is the entity's bounding box.
 	Box cube.BBox
-	// Components returns the components attached to entities of this type at
-	// spawn. It must return fresh values on every call: pointer components
-	// returned from a shared value would alias state between entities. A
-	// component implementing Behaviour becomes the entity's main behaviour;
-	// it is bridged at runtime only and is not persisted with the entity,
-	// even if it implements world.NBTSaver.
+	// Components returns fresh components for each entity. A Behaviour becomes
+	// the entity's main behaviour and is not persisted as a component.
 	Components func() []any
 }
 
-// Type is a world.EntityType created from a Spec. Entities of a Type are
-// spawned with Type.New or Tx.SpawnEntity and must be registered in the
-// World's EntityRegistry (world.Config.Entities) to load from the world save.
+// Type implements world.EntityType for a Spec. Register it in the world's
+// EntityRegistry to load saved entities of this type.
 type Type struct {
 	spec Spec
 }
 
-// specTypes tracks registered Specs by name to reject duplicates early, at
-// registration rather than at EntityRegistry construction.
 var specTypes sync.Map
 
-// RegisterType registers a Spec and returns the Type for it. The Spec is
-// validated eagerly: its Components are checked for unregistered types,
-// duplicates and multiple Behaviours, so mistakes surface at init instead of
-// at first spawn. Component types must therefore be registered before
-// RegisterType runs: within a single package, declare component keys above
-// spec variables. RegisterType is intended to be called from package-level
-// variable initialisation and panics if the Spec is invalid or its name is
-// already registered.
+// RegisterType registers a Spec. Register its component types first.
+// RegisterType panics if the Spec is invalid or already registered.
 func RegisterType(s Spec) *Type {
 	if !strings.Contains(s.Name, ":") {
 		panic("entity.RegisterType: Spec.Name must be namespaced, e.g. 'myplugin:wisp', got " + s.Name)
@@ -64,8 +46,6 @@ func RegisterType(s Spec) *Type {
 	return t
 }
 
-// validateSpecComponents checks a Spec's component list for unregistered
-// component types, duplicates and multiple Behaviours.
 func validateSpecComponents(s Spec) error {
 	if s.Components == nil {
 		return nil
@@ -73,10 +53,6 @@ func validateSpecComponents(s Spec) error {
 	return validateComponents(s.Components())
 }
 
-// validateComponents validates a list of component values, rejecting
-// unregistered types, duplicates and more than one value implementing
-// Behaviour. Behaviour values are excluded from the component-type validation;
-// applyDefaults installs the single Behaviour as the entity's main behaviour.
 func validateComponents(values []any) error {
 	comps := make([]any, 0, len(values))
 	behaviours := 0
@@ -92,10 +68,8 @@ func validateComponents(values []any) error {
 	return world.ValidateComponents(comps...)
 }
 
-// New creates an entity handle of this Type with the Spec's default
-// components and any extra components passed attached. The handle may be
-// added to a world using Tx.AddEntity. New panics if an extra component's
-// type was not registered with world.RegisterComponent.
+// New creates an entity with the Spec's components and any extras passed.
+// It panics if the extra components are invalid.
 func (t *Type) New(opts world.EntitySpawnOpts, components ...any) *world.EntityHandle {
 	if err := validateComponents(components); err != nil {
 		panic("entity.Type.New: " + t.spec.Name + ": " + err.Error())
@@ -103,8 +77,7 @@ func (t *Type) New(opts world.EntitySpawnOpts, components ...any) *world.EntityH
 	return opts.New(t, specConfig{t: t, extra: components})
 }
 
-// Open returns an Ent for the handle. Entities of a Type run their component
-// logic and, if a Behaviour component is present, that behaviour.
+// Open opens an entity of this type.
 func (t *Type) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	return Open(tx, handle, data)
 }
@@ -112,8 +85,7 @@ func (t *Type) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 // EncodeEntity returns the Spec's name.
 func (t *Type) EncodeEntity() string { return t.spec.Name }
 
-// NetworkEncodeEntity returns the identifier the entity renders as
-// client-side: the Spec's NetworkID, or its Name if unset.
+// NetworkEncodeEntity returns the client-side entity ID.
 func (t *Type) NetworkEncodeEntity() string {
 	if t.spec.NetworkID != "" {
 		return t.spec.NetworkID
@@ -124,33 +96,24 @@ func (t *Type) NetworkEncodeEntity() string {
 // BBox returns the Spec's bounding box.
 func (t *Type) BBox(world.Entity) cube.BBox { return t.spec.Box }
 
-// DecodeNBT attaches the Spec's default components where the saved data,
-// decoded before this call, did not already restore them.
+// DecodeNBT adds default components missing from the saved entity.
 func (t *Type) DecodeNBT(_ map[string]any, data *world.EntityData) {
 	applyDefaults(t, data, nil)
 }
 
-// EncodeNBT returns no extra data: component state is persisted with the
-// entity itself through world.NBTSaver. A Behaviour among the Spec's
-// components is not persisted; it is recreated from the Spec on load.
+// EncodeNBT returns no extra data. Components save their own state.
 func (t *Type) EncodeNBT(*world.EntityData) map[string]any { return nil }
 
-// specConfig is the world.EntityConfig used by Type.New.
 type specConfig struct {
 	t     *Type
 	extra []any
 }
 
-// Apply attaches the Spec's default components followed by the extra
-// components passed to New.
+// Apply adds the Spec's components followed by the extras.
 func (c specConfig) Apply(data *world.EntityData) {
 	applyDefaults(c.t, data, c.extra)
 }
 
-// applyDefaults attaches a Type's default components to data without
-// replacing components already present, then attaches extra components,
-// which do replace. A component implementing Behaviour is set as the
-// entity's main behaviour instead.
 func applyDefaults(t *Type, data *world.EntityData, extra []any) {
 	if t.spec.Components != nil {
 		for _, comp := range t.spec.Components() {

@@ -390,8 +390,7 @@ func (e *EntityHandle) setAndUnlockWorldAt(w *World, pos mgl64.Vec3) {
 	e.cond.Broadcast()
 }
 
-// decodeNBT decodes the position, velocity, rotation, age, on-fire duration,
-// name tag and components of an entity.
+// decodeNBT decodes shared entity data.
 func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Pos = readVec3(m, "Pos")
 	e.data.Vel = readVec3(m, "Motion")
@@ -404,8 +403,7 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 	}
 }
 
-// encodeNBT encodes the position, velocity, rotation, age, on-fire duration,
-// name tag and components of an entity.
+// encodeNBT encodes shared entity data.
 func (e *EntityHandle) encodeNBT() map[string]any {
 	age := min(e.data.Age/(time.Second/20), time.Duration(math.MaxInt16))
 	m := map[string]any{
@@ -435,15 +433,11 @@ type EntityData struct {
 
 	Data any
 
-	// components holds the entity's attached components in attachment order.
-	// componentOrder also retains the positions of runtime-only and unknown
-	// components across reloads. unknownComponents retains their saved data so
-	// it survives the next save.
+	// Components are kept in attachment order. Unknown data is preserved.
 	components        []componentSlot
 	componentOrder    []string
 	unknownComponents map[string]any
-	// tickers caches the components implementing TickerComponent, in attach
-	// order. It is invalidated (set to nil) whenever components change.
+	// tickers is cleared whenever components change.
 	tickers []TickerComponent
 }
 

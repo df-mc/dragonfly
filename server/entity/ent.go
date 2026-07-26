@@ -37,8 +37,7 @@ func (e *Ent) H() *world.EntityHandle {
 	return e.handle
 }
 
-// Behaviour returns the entity's main Behaviour, or nil for entities composed
-// purely of components, such as those created from a Spec without one.
+// Behaviour returns the entity's main behaviour, if it has one.
 func (e *Ent) Behaviour() Behaviour {
 	if b, ok := e.data.Data.(Behaviour); ok {
 		return b

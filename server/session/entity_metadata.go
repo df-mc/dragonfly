@@ -1,6 +1,7 @@
 package session
 
 import (
+	"maps"
 	"math"
 	"time"
 
@@ -44,9 +45,8 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	return m
 }
 
-// addComponentMetadata merges metadata contributed by the entity's components
-// through world.MetaSyncer into the metadata map. Components run after the
-// built-in metadata and overwrite values on conflict; flag bits are combined.
+// addComponentMetadata applies component values after built-in metadata.
+// Values override built-ins, while flags are combined.
 func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata) {
 	h := e.H()
 	var wm *world.EntityMetadata
@@ -61,16 +61,9 @@ func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata
 	var current protocol.EntityMetadata
 	var defaults protocol.EntityMetadata
 	if wm != nil {
-		current = protocol.EntityMetadata{}
-		for key, v := range wm.Values() {
-			current[key] = v
-			m[key] = v
-		}
-		for key, bits := range wm.Flags() {
-			mergeComponentFlag(current, key, bits)
-			mergeComponentFlag(m, key, bits)
-		}
-		defaults = protocol.EntityMetadata(wm.Defaults())
+		current = maps.Clone(wm.Values())
+		mergeComponentMetadata(m, current)
+		defaults = wm.ResetValues()
 	}
 
 	s.entityMutex.Lock()
@@ -95,19 +88,16 @@ func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata
 	}
 }
 
-// mergeComponentFlag combines component flag bits with a metadata map while
-// preserving the protocol type used by the key.
-func mergeComponentFlag(m protocol.EntityMetadata, key uint32, bits int64) {
-	switch existing := m[key].(type) {
-	case int64:
-		m[key] = existing | bits
-	case byte:
-		m[key] = existing | byte(bits)
-	default:
-		if key == protocol.EntityDataKeyPlayerFlags {
-			m[key] = byte(bits)
-		} else {
-			m[key] = bits
+// mergeComponentMetadata keeps built-in and component flags.
+func mergeComponentMetadata(dst, src protocol.EntityMetadata) {
+	for key, value := range src {
+		switch key {
+		case protocol.EntityDataKeyPlayerFlags:
+			dst[key] = dst[key].(byte) | value.(byte)
+		case protocol.EntityDataKeyFlags, protocol.EntityDataKeyFlagsTwo:
+			dst[key] = dst[key].(int64) | value.(int64)
+		default:
+			dst[key] = value
 		}
 	}
 }
