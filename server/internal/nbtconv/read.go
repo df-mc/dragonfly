@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/constraints"
@@ -135,17 +134,6 @@ func Pos(x map[string]any, k string) cube.Pos {
 // PosToInt32Slice converts a cube.Pos to a []int32 with 3 elements.
 func PosToInt32Slice(x cube.Pos) []int32 {
 	return []int32{int32(x[0]), int32(x[1]), int32(x[2])}
-}
-
-// MapItem converts an item's name, count, damage (and properties when it is a block) in a map obtained by decoding NBT
-// to a world.Item.
-func MapItem(x map[string]any, k string) item.Stack {
-	return item.MapNBT(x, k)
-}
-
-// Item decodes the data of an item into an item stack.
-func Item(data map[string]any, s *item.Stack) item.Stack {
-	return item.ReadNBT(data, s)
 }
 
 // Block decodes the data of a block into a world.Block.
