@@ -3,7 +3,6 @@ package world
 import (
 	"fmt"
 	"image/color"
-	"iter"
 	"maps"
 	"reflect"
 	"slices"
@@ -273,21 +272,9 @@ func anySlot(v any) componentSlot {
 	return componentSlot{id: info.id, v: rv.Interface()}
 }
 
-func (e *EntityHandle) components() iter.Seq[any] {
-	return func(yield func(any) bool) {
-		for _, slot := range e.data.components {
-			if !yield(slot.v) {
-				return
-			}
-		}
-	}
-}
-
-var noTickers = make([]TickerComponent, 0)
-
 func (e *EntityHandle) tickerComponents() []TickerComponent {
 	if e.data.tickers == nil {
-		e.data.tickers = noTickers
+		e.data.tickers = []TickerComponent{}
 		for _, slot := range e.data.components {
 			if t, ok := slot.v.(TickerComponent); ok {
 				e.data.tickers = append(e.data.tickers, t)
@@ -440,7 +427,7 @@ type EntityMetadata struct {
 func newEntityMetadata() *EntityMetadata {
 	return &EntityMetadata{
 		metadata: protocol.NewEntityMetadata(),
-		resets:   protocol.NewEntityMetadata(),
+		resets:   protocol.EntityMetadata{},
 	}
 }
 
@@ -522,8 +509,8 @@ func (m *EntityMetadata) Set(key uint32, value any) {
 // Call AddComponentMetadata only from the world's owner goroutine.
 func AddComponentMetadata(e Entity, dst protocol.EntityMetadata) (current, resets protocol.EntityMetadata) {
 	var metadata *EntityMetadata
-	for component := range e.H().components() {
-		if syncer, ok := component.(MetaSyncer); ok {
+	for _, component := range e.H().data.components {
+		if syncer, ok := component.v.(MetaSyncer); ok {
 			if metadata == nil {
 				metadata = newEntityMetadata()
 			}
