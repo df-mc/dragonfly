@@ -90,6 +90,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if r, ok := e.(returning); ok && r.Returning() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagReturnTrident)
 	}
+	if g, ok := e.(glint); ok && g.Glint() {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagEnchanted)
+	}
 	if g, ok := e.(gameMode); ok {
 		if g.GameMode().HasCollision() {
 			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasCollision)
