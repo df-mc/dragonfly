@@ -59,8 +59,9 @@ type Session struct {
 	entityRuntimeIDs map[*world.EntityHandle]uint64
 	entities         map[uint64]*world.EntityHandle
 	hiddenEntities   map[uuid.UUID]struct{}
-	// componentMetadata tracks the actor metadata keys last contributed by
-	// components so incremental updates can reset keys that disappear.
+	// componentMetadata tracks reset values for actor metadata keys last
+	// contributed by components, so incremental updates can clear keys that
+	// disappear.
 	componentMetadata map[*world.EntityHandle]protocol.EntityMetadata
 
 	// heldSlot is the slot in the inventory that the controllable is holding.

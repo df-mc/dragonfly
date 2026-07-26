@@ -1,7 +1,6 @@
 package session
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -61,6 +59,7 @@ func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata
 		}
 	}
 	var current protocol.EntityMetadata
+	var defaults protocol.EntityMetadata
 	if wm != nil {
 		current = protocol.EntityMetadata{}
 		for key, v := range wm.Values() {
@@ -71,6 +70,7 @@ func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata
 			mergeComponentFlag(current, key, bits)
 			mergeComponentFlag(m, key, bits)
 		}
+		defaults = protocol.EntityMetadata(wm.Defaults())
 	}
 
 	s.entityMutex.Lock()
@@ -81,16 +81,16 @@ func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata
 		if s.componentMetadata == nil {
 			s.componentMetadata = map[*world.EntityHandle]protocol.EntityMetadata{}
 		}
-		s.componentMetadata[h] = current
+		s.componentMetadata[h] = defaults
 	}
 	s.entityMutex.Unlock()
 
-	for key, old := range previous {
+	for key, reset := range previous {
 		if _, stillSet := current[key]; stillSet {
 			continue
 		}
 		if _, builtIn := m[key]; !builtIn {
-			m[key] = zeroComponentMetadataValue(old)
+			m[key] = reset
 		}
 	}
 }
@@ -109,33 +109,6 @@ func mergeComponentFlag(m protocol.EntityMetadata, key uint32, bits int64) {
 		} else {
 			m[key] = bits
 		}
-	}
-}
-
-// zeroComponentMetadataValue returns the protocol-encodable zero value with
-// the same actor metadata type as v.
-func zeroComponentMetadataValue(v any) any {
-	switch v.(type) {
-	case byte:
-		return byte(0)
-	case int16:
-		return int16(0)
-	case int32:
-		return int32(0)
-	case float32:
-		return float32(0)
-	case string:
-		return ""
-	case map[string]any:
-		return map[string]any{}
-	case protocol.BlockPos:
-		return protocol.BlockPos{}
-	case int64:
-		return int64(0)
-	case mgl32.Vec3:
-		return mgl32.Vec3{}
-	default:
-		panic(fmt.Sprintf("session: unsupported component metadata value type %T", v))
 	}
 }
 

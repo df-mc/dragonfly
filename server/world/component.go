@@ -324,14 +324,12 @@ func anySlot(v any) componentSlot {
 }
 
 // Components yields all components attached to the entity in attach order.
-// Values yielded are pointers to the registered component types. It must
-// only be used from the World's owner goroutine.
+// Values yielded are pointers to the registered component types and must not
+// be modified. Use ComponentKey.Of to obtain a component for mutation.
+// Components must only be used from the World's owner goroutine.
 func (e *EntityHandle) Components() iter.Seq[any] {
 	return func(yield func(any) bool) {
 		for _, slot := range e.data.components {
-			if _, persistent := slot.v.(NBTSaver); persistent {
-				markComponentPersistenceDirty(e)
-			}
 			if !yield(slot.v) {
 				return
 			}
@@ -516,61 +514,58 @@ func (data *EntityData) decodeComponentsNBT(m map[string]any, order []string) {
 // through MetaSyncer. Keys and flag bits mirror the protocol's actor
 // metadata; the session layer merges them into the packets it sends.
 type EntityMetadata struct {
-	values map[uint32]any
-	flags  map[uint32]int64
+	values   map[uint32]any
+	defaults map[uint32]any
+	flags    map[uint32]int64
 }
 
 // NewEntityMetadata returns an empty EntityMetadata.
 func NewEntityMetadata() *EntityMetadata {
-	return &EntityMetadata{values: map[uint32]any{}, flags: map[uint32]int64{}}
+	return &EntityMetadata{
+		values:   map[uint32]any{},
+		defaults: map[uint32]any{},
+		flags:    map[uint32]int64{},
+	}
 }
 
-// EntityMetaFlag is a single boolean actor flag that components may set
-// through EntityMetadata.SetFlag.
-type EntityMetaFlag struct {
-	key uint32
-	bit uint8
-}
-
-// The most commonly used actor flags. Values mirror the protocol's actor
-// flags.
-var (
-	MetaFlagOnFire    = EntityMetaFlag{bit: protocol.EntityDataFlagOnFire}
-	MetaFlagSneaking  = EntityMetaFlag{bit: protocol.EntityDataFlagSneaking}
-	MetaFlagSprinting = EntityMetaFlag{bit: protocol.EntityDataFlagSprinting}
-	MetaFlagInvisible = EntityMetaFlag{bit: protocol.EntityDataFlagInvisible}
-	MetaFlagCritical  = EntityMetaFlag{bit: protocol.EntityDataFlagCritical}
-	MetaFlagNoAI      = EntityMetaFlag{bit: protocol.EntityDataFlagNoAI}
-	MetaFlagLingering = EntityMetaFlag{bit: protocol.EntityDataFlagLingering}
-	MetaFlagEnchanted = EntityMetaFlag{bit: protocol.EntityDataFlagEnchanted}
-)
-
-// SetFlag sets an actor flag, combined with the flags already present on the
-// entity.
-func (m *EntityMetadata) SetFlag(f EntityMetaFlag) {
-	m.flags[f.key] |= 1 << f.bit
-}
-
-// SetFlagBit sets a single flag bit under a raw protocol actor data key, for
-// flags without an EntityMetaFlag value.
-func (m *EntityMetadata) SetFlagBit(key uint32, bit uint8) {
+// SetFlag sets an actor flag using protocol.EntityDataKey* and
+// protocol.EntityDataFlag* constants. The flag is combined with flags already
+// present on the entity.
+func (m *EntityMetadata) SetFlag(key uint32, bit uint8) {
+	switch key {
+	case protocol.EntityDataKeyPlayerFlags:
+		if bit >= 8 {
+			panic("world.EntityMetadata: player flag bit must be less than 8")
+		}
+		m.defaults[key] = byte(0)
+	case protocol.EntityDataKeyFlags, protocol.EntityDataKeyFlagsTwo:
+		if bit >= 64 {
+			panic("world.EntityMetadata: actor flag bit must be less than 64")
+		}
+		m.defaults[key] = int64(0)
+	default:
+		panic(fmt.Sprintf("world.EntityMetadata: key %d is not an actor flag key", key))
+	}
 	m.flags[key] |= 1 << bit
 }
 
 // SetScoreTag sets the text displayed below the entity's name tag.
 func (m *EntityMetadata) SetScoreTag(s string) {
 	m.values[protocol.EntityDataKeyScore] = s
+	m.defaults[protocol.EntityDataKeyScore] = ""
 }
 
 // SetVariant sets the entity's variant, used by clients to pick textures and,
 // for some entity types, block appearances.
 func (m *EntityMetadata) SetVariant(v int32) {
 	m.values[protocol.EntityDataKeyVariant] = v
+	m.defaults[protocol.EntityDataKeyVariant] = int32(0)
 }
 
 // SetScale sets the entity's render scale.
 func (m *EntityMetadata) SetScale(s float64) {
 	m.values[protocol.EntityDataKeyScale] = float32(s)
+	m.defaults[protocol.EntityDataKeyScale] = float32(1)
 }
 
 // SetColour sets the entity's effect colour, used for tints such as potion
@@ -578,6 +573,7 @@ func (m *EntityMetadata) SetScale(s float64) {
 func (m *EntityMetadata) SetColour(c color.RGBA) {
 	// Encoded as ARGB.
 	m.values[protocol.EntityDataKeyEffectColor] = int32(uint32(c.A)<<24 | uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B))
+	m.defaults[protocol.EntityDataKeyEffectColor] = int32(0)
 }
 
 // Set sets a metadata value under a raw protocol actor data key, for values
@@ -586,20 +582,49 @@ func (m *EntityMetadata) SetColour(c color.RGBA) {
 // as they would otherwise fail every metadata packet sent for the entity.
 func (m *EntityMetadata) Set(key uint32, value any) {
 	switch v := value.(type) {
-	case byte, int16, int32, float32, int64, string, map[string]any, protocol.BlockPos, mgl32.Vec3:
+	case byte:
 		m.values[key] = v
+		m.defaults[key] = byte(0)
+	case int16:
+		m.values[key] = v
+		m.defaults[key] = int16(0)
+	case int32:
+		m.values[key] = v
+		m.defaults[key] = int32(0)
+	case float32:
+		m.values[key] = v
+		m.defaults[key] = float32(0)
+	case int64:
+		m.values[key] = v
+		m.defaults[key] = int64(0)
+	case string:
+		m.values[key] = v
+		m.defaults[key] = ""
+	case map[string]any:
+		m.values[key] = v
+		m.defaults[key] = map[string]any{}
+	case protocol.BlockPos:
+		m.values[key] = v
+		m.defaults[key] = protocol.BlockPos{}
+	case mgl32.Vec3:
+		m.values[key] = v
+		m.defaults[key] = mgl32.Vec3{}
 	case int:
 		m.values[key] = int32(v)
+		m.defaults[key] = int32(0)
 	case uint32:
 		m.values[key] = int32(v)
+		m.defaults[key] = int32(0)
 	case float64:
 		m.values[key] = float32(v)
+		m.defaults[key] = float32(0)
 	case bool:
 		var b byte
 		if v {
 			b = 1
 		}
 		m.values[key] = b
+		m.defaults[key] = byte(0)
 	default:
 		panic(fmt.Sprintf("world.EntityMetadata: value of type %T cannot be encoded as actor metadata", value))
 	}
@@ -608,6 +633,11 @@ func (m *EntityMetadata) Set(key uint32, value any) {
 // Values returns the metadata values set. The returned map is a read-only
 // view for the session layer.
 func (m *EntityMetadata) Values() map[uint32]any { return m.values }
+
+// Defaults returns the values used to reset metadata keys when a component no
+// longer contributes them. The returned map is a read-only view for the
+// session layer.
+func (m *EntityMetadata) Defaults() map[uint32]any { return m.defaults }
 
 // Flags returns the flag bits set per key. The returned map is a read-only
 // view for the session layer.

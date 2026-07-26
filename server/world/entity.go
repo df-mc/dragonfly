@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"maps"
+	"math"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -406,13 +407,14 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 // encodeNBT encodes the position, velocity, rotation, age, on-fire duration,
 // name tag and components of an entity.
 func (e *EntityHandle) encodeNBT() map[string]any {
+	age := min(e.data.Age/(time.Second/20), time.Duration(math.MaxInt16))
 	m := map[string]any{
 		"Pos":     []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
 		"Motion":  []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
 		"Yaw":     float32(e.data.Rot[0]),
 		"Pitch":   float32(e.data.Rot[1]),
 		"Fire":    int16(e.data.FireDuration.Seconds() * 20),
-		"Age":     int16(e.data.Age / (time.Second / 20)),
+		"Age":     int16(age),
 		"NameTag": e.data.Name,
 	}
 	if comp := e.data.encodeComponentsNBT(); comp != nil {
