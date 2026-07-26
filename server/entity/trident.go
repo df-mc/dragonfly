@@ -30,9 +30,7 @@ type TridentBehaviourConfig struct {
 	// Damage is the base damage dealt by the trident. Defaults to 8 if left
 	// as 0.
 	Damage float64
-	// Item is the trident item.Stack the projectile was thrown with. The
-	// enchantments on the stack, such as loyalty, channeling and impaling,
-	// influence the behaviour of the trident.
+	// Item is the trident item.Stack the projectile was thrown with.
 	Item item.Stack
 	// DisablePickup specifies if picking up the trident should be disabled.
 	// This is the case for tridents thrown in creative mode.
@@ -66,9 +64,7 @@ func (conf TridentBehaviourConfig) New() *TridentBehaviour {
 	return &TridentBehaviour{ProjectileBehaviour: proj.New(), conf: conf}
 }
 
-// TridentBehaviour implements the behaviour of thrown tridents. Unlike most
-// projectiles, tridents survive hitting an entity and may return to their
-// owner if enchanted with loyalty.
+// TridentBehaviour implements the behaviour of thrown tridents.
 type TridentBehaviour struct {
 	*ProjectileBehaviour
 	conf TridentBehaviourConfig

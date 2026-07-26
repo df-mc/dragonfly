@@ -18,7 +18,7 @@ func (Trident) MaxCount() int {
 
 // AttackDamage ...
 func (Trident) AttackDamage() float64 {
-	return 9
+	return 8.0
 }
 
 // HandEquipped ...
@@ -114,8 +114,8 @@ func (Trident) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duratio
 	tx.PlaySound(releaser.Position(), sound.TridentThrow{})
 }
 
-// touchingWaterOrRain checks if the world.Entity passed has water at its feet
-// or eyes, or is exposed to rain.
+// touchingWaterOrRain checks if the world.Entity passed is standing in
+// water or exposed to rain.
 func touchingWaterOrRain(e world.Entity, tx *world.Tx) bool {
 	pos := cube.PosFromVec3(e.Position())
 	if tx.RainingAt(pos) {
