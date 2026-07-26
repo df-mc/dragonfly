@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -32,7 +33,7 @@ func (SweetBerries) ConsumeDuration() time.Duration {
 
 // Consume ...
 func (SweetBerries) Consume(_ *world.Tx, c item.Consumer) item.Stack {
-	c.Saturate(2, 1.2)
+	c.Saturate(2, 0.4)
 	return item.Stack{}
 }
 
@@ -54,22 +55,18 @@ func (s SweetBerries) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 }
 
 // BoneMeal ...
-func (s SweetBerries) BoneMeal(pos cube.Pos, creative bool, tx *world.Tx) bool {
+func (s SweetBerries) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if s.Growth >= 3 {
-		return false
+		return item.BoneMealResultNone
 	}
-	if creative {
-		s.Growth = 3
-	} else {
-		s.Growth++
-	}
+	s.Growth++
 	tx.SetBlock(pos, s, nil)
-	return true
+	return item.BoneMealResultSmall
 }
 
 // FlammabilityInfo ...
 func (SweetBerries) FlammabilityInfo() FlammabilityInfo {
-	return newFlammabilityInfo(30, 100, false)
+	return newFlammabilityInfo(60, 100, false)
 }
 
 // HasLiquidDrops ...
@@ -78,9 +75,15 @@ func (SweetBerries) HasLiquidDrops() bool {
 }
 
 // Activate ...
-func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
+func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, user item.User, _ *item.UseContext) bool {
 	if s.Growth < 2 {
 		return false
+	}
+	if s.Growth < 3 && user != nil {
+		held, _ := user.HeldItems()
+		if _, ok := held.Item().(item.BoneMeal); ok {
+			return false
+		}
 	}
 
 	count := rand.IntN(2) + 1
@@ -91,14 +94,21 @@ func (s SweetBerries) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.U
 
 	s.Growth = 1
 	tx.SetBlock(pos, s, nil)
+	tx.PlaySound(pos.Vec3Centre(), sound.SweetBerryBushPick{})
 	return true
 }
 
 // EntityInside ...
-func (s SweetBerries) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
+func (s SweetBerries) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
+	if s.Growth < 1 {
+		return
+	}
 	living, ok := e.(livingEntity)
 	if !ok {
 		return
+	}
+	if fall, ok := e.(fallDistanceEntity); ok {
+		fall.ResetFallDistance()
 	}
 
 	var movement mgl64.Vec3
@@ -111,11 +121,10 @@ func (s SweetBerries) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 		v.SetVelocity(vel)
 	}
 
-	if s.Growth < 1 {
-		return
-	}
 	if math.Abs(movement[0]) >= 0.003 || math.Abs(movement[2]) >= 0.003 {
-		living.Hurt(0.5, DamageSource{Block: s})
+		if _, vulnerable := living.Hurt(0.5, DamageSource{Block: s}); vulnerable {
+			tx.PlaySound(pos.Vec3Centre(), sound.SweetBerryBushHurt{})
+		}
 	}
 }
 
@@ -137,7 +146,7 @@ func (s SweetBerries) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // BreakInfo ...
 func (s SweetBerries) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		var count int
 		switch {
 		case s.Growth >= 3:

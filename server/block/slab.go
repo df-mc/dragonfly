@@ -63,6 +63,9 @@ func (s Slab) Instrument() sound.Instrument {
 	if _, ok := s.Block.(Planks); ok {
 		return sound.Bass()
 	}
+	if _, ok := s.Block.(BambooMosaic); ok {
+		return sound.Bass()
+	}
 	return sound.BassDrum()
 }
 
@@ -102,13 +105,20 @@ func (s Slab) LightDiffusionLevel() uint8 {
 	return 0
 }
 
+// CanRedstoneWireStepDown ...
+func (s Slab) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+	return s.Double
+}
+
 // BreakInfo ...
 func (s Slab) BreakInfo() BreakInfo {
-	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
+	hardness, blastResistance, harvestable, effective := 2.0, 6.0, pickaxeHarvestable, pickaxeEffective
 
 	switch block := s.Block.(type) {
 	case Stone, Sandstone, Quartz, Purpur, Blackstone, PolishedBlackstoneBrick:
 	// These slab types do not match their block's hardness or blast resistance
+	case EndBricks:
+		hardness = 3
 	case StoneBricks:
 		if block.Type == MossyStoneBricks() {
 			hardness = 1.5

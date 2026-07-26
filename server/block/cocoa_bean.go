@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // CocoaBean is a crop block found in jungle biomes.
@@ -20,13 +21,13 @@ type CocoaBean struct {
 }
 
 // BoneMeal ...
-func (c CocoaBean) BoneMeal(pos cube.Pos, _ bool, tx *world.Tx) bool {
+func (c CocoaBean) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if c.Age == 2 {
-		return false
+		return item.BoneMealResultNone
 	}
 	c.Age++
 	tx.SetBlock(pos, c, nil)
-	return true
+	return item.BoneMealResultSmall
 }
 
 // HasLiquidDrops ...
@@ -92,7 +93,7 @@ func (c CocoaBean) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(c, rand.IntN(2)+2)}
 		}
 		return []item.Stack{item.NewStack(c, 1)}
-	}).withBlastResistance(15)
+	}).withBlastResistance(3)
 }
 
 // CompostChance ...

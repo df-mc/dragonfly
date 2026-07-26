@@ -2,6 +2,7 @@ package chunk
 
 import (
 	"math"
+	"slices"
 )
 
 // paletteSize is the size of a palette. It indicates the amount of bits occupied per value stored.
@@ -21,6 +22,16 @@ type Palette struct {
 // newPalette returns a new Palette with size and a slice of added values.
 func newPalette(size paletteSize, values []uint32) *Palette {
 	return &Palette{size: size, values: values, last: math.MaxUint32}
+}
+
+// Clone returns an independent copy of the Palette.
+func (palette *Palette) Clone() *Palette {
+	return &Palette{
+		last:      palette.last,
+		lastIndex: palette.lastIndex,
+		size:      palette.size,
+		values:    slices.Clone(palette.values),
+	}
 }
 
 // Len returns the amount of unique values in the Palette.

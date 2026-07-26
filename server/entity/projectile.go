@@ -1,6 +1,12 @@
 package entity
 
 import (
+	"iter"
+	"math"
+	"math/rand/v2"
+	"slices"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
@@ -9,10 +15,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"iter"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
 // ProjectileBehaviourConfig allows the configuration of projectiles. Calling
@@ -80,6 +82,10 @@ type ProjectileBehaviourConfig struct {
 	// CollisionPosition specifies the position that the projectile is stuck
 	// in. If non-empty, the entity will not move.
 	CollisionPosition cube.Pos
+	// PiercingLevel is the crossbow Piercing enchantment level. The projectile
+	// passes through PiercingLevel entities and damages PiercingLevel+1 in
+	// total. A value of 0 means no piercing.
+	PiercingLevel int
 }
 
 func (conf ProjectileBehaviourConfig) Apply(data *world.EntityData) {
@@ -92,16 +98,24 @@ func (conf ProjectileBehaviourConfig) New() *ProjectileBehaviour {
 	if conf.ParticleCount == 0 && conf.Particle != nil {
 		conf.ParticleCount = 1
 	}
-	return &ProjectileBehaviour{conf: conf, collided: conf.CollisionPosition != cube.Pos{}, collisionPos: conf.CollisionPosition, mc: &MovementComputer{
-		Gravity:           conf.Gravity,
-		Drag:              conf.Drag,
-		DragBeforeGravity: true,
-	}}
+	return &ProjectileBehaviour{
+		BaseBehaviour: NewBaseBehaviour(),
+		conf:          conf,
+		collided:      conf.CollisionPosition != cube.Pos{},
+		collisionPos:  conf.CollisionPosition,
+		mc: &MovementComputer{
+			Gravity:           conf.Gravity,
+			Drag:              conf.Drag,
+			DragBeforeGravity: true,
+		},
+	}
 }
 
 // ProjectileBehaviour implements the behaviour of projectiles. Its specifics
 // may be configured using ProjectileBehaviourConfig.
 type ProjectileBehaviour struct {
+	BaseBehaviour
+
 	conf        ProjectileBehaviourConfig
 	mc          *MovementComputer
 	ageCollided int
@@ -109,6 +123,9 @@ type ProjectileBehaviour struct {
 
 	collisionPos cube.Pos
 	collided     bool
+
+	collidedEntities []*world.EntityHandle
+	portalTravel     bool
 }
 
 // Owner returns the owner of the projectile.
@@ -118,8 +135,8 @@ func (lt *ProjectileBehaviour) Owner() *world.EntityHandle {
 
 // Explode adds velocity to a projectile to blast it away from the explosion's
 // source.
-func (lt *ProjectileBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
-	e.data.Vel = e.Velocity().Add(e.Position().Sub(src).Normalize().Mul(impact))
+func (lt *ProjectileBehaviour) Explode(e *Ent, src world.ExplosionSource, impact float64) {
+	e.data.Vel = e.Velocity().Add(e.Position().Sub(src.Position()).Normalize().Mul(impact))
 }
 
 // Potion returns the potion.Potion that is applied to an entity if hit by the
@@ -132,6 +149,16 @@ func (lt *ProjectileBehaviour) Potion() potion.Potion {
 // and if the projectile has not collided.
 func (lt *ProjectileBehaviour) Critical() bool {
 	return lt.conf.Critical && !lt.collided
+}
+
+// HandlePortalTravel records that this projectile has travelled between dimensions through a portal.
+func (lt *ProjectileBehaviour) HandlePortalTravel(world.Dimension, world.Dimension) {
+	lt.portalTravel = true
+}
+
+// PortalTravel reports whether this projectile has travelled between dimensions through a portal.
+func (lt *ProjectileBehaviour) PortalTravel() bool {
+	return lt.portalTravel
 }
 
 // Tick runs the tick-based behaviour of a ProjectileBehaviour and returns the
@@ -151,7 +178,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	}
 	vel := e.Velocity()
 	m, result := lt.tickMovement(e, tx)
-	e.data.Pos, e.data.Vel = m.pos, m.vel
+	e.data.Pos, e.data.Vel, e.data.Rot = m.pos, m.vel, m.rot
 
 	lt.collisionPos, lt.collided, lt.ageCollided = cube.Pos{}, false, 0
 
@@ -168,8 +195,11 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 	switch r := result.(type) {
 	case trace.EntityResult:
-		if l, ok := r.Entity().(Living); ok && lt.conf.Damage >= 0 {
-			lt.hitEntity(l, e, vel)
+		if lt.conf.Damage >= 0 {
+			lt.hitEntity(r.Entity(), e, vel)
+		}
+		if DamageableEntity(r.Entity()) {
+			lt.collidedEntities = append(lt.collidedEntities, r.Entity().H())
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
@@ -180,12 +210,15 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 			lt.hitBlockSurviving(e, r, m, tx)
 			return m
 		}
+		lt.close = true
 	}
 	if lt.conf.Hit != nil {
 		lt.conf.Hit(e, tx, result)
 	}
 
-	lt.close = true
+	if len(lt.collidedEntities) > lt.conf.PiercingLevel {
+		lt.close = true
+	}
 	return m
 }
 
@@ -247,6 +280,7 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 		lt.collisionPos, lt.collided = r.BlockPosition(), true
 
 		for _, v := range tx.Viewers(m.pos) {
+			v.ViewEntityTeleport(e, m.pos)
 			v.ViewEntityAction(e, ArrowShakeAction{Duration: time.Millisecond * 350})
 			v.ViewEntityState(e)
 		}
@@ -254,17 +288,21 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 	}
 }
 
-// hitEntity is called when a projectile hits a Living. It deals damage to the
-// entity and knocks it back. Additionally, it applies any potion effects and
-// fire if applicable.
-func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) {
+// hitEntity is called when a projectile hits an entity. It deals damage to the
+// entity if possible, and applies Living-specific effects such as knockback.
+func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.Vec3) {
 	owner, _ := lt.conf.Owner.Entity(e.tx)
 	src := ProjectileDamageSource{Projectile: e, Owner: owner}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, vulnerable := l.Hurt(dmg, src); vulnerable {
+	// TODO: Piercing arrows should bypass shield blocking when shields are implemented.
+	if _, vulnerable, ok := HurtEntity(victim, dmg, src); ok && vulnerable {
+		l, ok := victim.(Living)
+		if !ok {
+			return
+		}
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
@@ -312,7 +350,7 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 				mx, my, mz := hit.Face().Axis().Vec3().Mul(-2).Add(mgl64.Vec3{1, 1, 1}).Elem()
 
 				vel = mgl64.Vec3{x * mx, y * my, z * mz}
-			} else {
+			} else if lt.conf.PiercingLevel == 0 {
 				vel = zeroVec3
 			}
 			end = hit.Position()
@@ -322,15 +360,19 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 }
 
 // ignores returns a function to ignore entities in trace.Perform that are
-// either a spectator, not living, the entity itself or its owner in the first
-// 5 ticks.
+// either a spectator, not damageable, the entity itself, its owner in the first
+// 5 ticks, or an entity it already collided with.
 func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 	return func(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
 		return func(yield func(world.Entity) bool) {
 			for other := range seq {
 				g, ok := other.(interface{ GameMode() world.GameMode })
-				_, living := other.(Living)
-				if (ok && !g.GameMode().HasCollision()) || e.H() == other.H() || !living || (e.data.Age < time.Second/4 && lt.conf.Owner == other.H()) {
+				spectator := ok && !g.GameMode().HasCollision()
+				itself := e.H() == other.H()
+				damageable := DamageableEntity(other)
+				owner := e.data.Age < time.Second/4 && lt.conf.Owner == other.H()
+				collidedEntity := slices.Contains(lt.collidedEntities, other.H())
+				if spectator || itself || !damageable || owner || collidedEntity {
 					continue
 				}
 				if !yield(other) {

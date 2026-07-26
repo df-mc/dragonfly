@@ -57,17 +57,17 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		h.resendInventories(s)
 		return
 	case *protocol.UseItemOnEntityTransactionData:
-		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
+		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
 		return h.handleUseItemOnEntityTransaction(data, s, tx, c)
 	case *protocol.UseItemTransactionData:
-		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
+		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
 		return h.handleUseItemTransaction(data, s, c)
 	case *protocol.ReleaseItemTransactionData:
-		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(data.HeldItem.Stack), c); err != nil {
+		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
 		return h.handleReleaseItemTransaction(c)
@@ -95,17 +95,18 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 		expected item.Stack
 	)
 	for _, action := range pk.Actions {
-		if action.SourceType == protocol.InventoryActionSourceWorld && action.InventorySlot == 0 {
-			if old := stackToItem(action.OldItem.Stack); !old.Empty() {
+		switch {
+		case action.SourceType == protocol.InventoryActionSourceWorld && action.InventorySlot == 0:
+			if old := stackToItem(s.br, action.OldItem.Stack); !old.Empty() {
 				return fmt.Errorf("unexpected non-empty old item in transaction action: %#v", action.OldItem)
 			}
 			count = int(action.NewItem.Stack.Count)
-		} else if action.SourceType == protocol.InventoryActionSourceContainer && action.WindowID == protocol.WindowIDInventory {
-			if expected = stackToItem(action.OldItem.Stack); expected.Empty() {
+		case action.SourceType == protocol.InventoryActionSourceContainer && action.WindowID == protocol.WindowIDInventory:
+			if expected = stackToItem(s.br, action.OldItem.Stack); expected.Empty() {
 				return fmt.Errorf("unexpected empty old item in transaction action: %#v", action.OldItem)
 			}
 			slot = int(action.InventorySlot)
-		} else {
+		default:
 			return fmt.Errorf("unexpected action type in drop item transaction")
 		}
 	}
@@ -175,8 +176,11 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 // handleUseItemTransaction ...
 func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.UseItemTransactionData, s *Session, c Controllable) error {
 	pos := cube.Pos{int(data.BlockPosition[0]), int(data.BlockPosition[1]), int(data.BlockPosition[2])}
-	s.swingingArm.Store(true)
-	defer s.swingingArm.Store(false)
+	if data.ClientPrediction == protocol.ClientPredictionSuccess || data.ActionType == protocol.UseItemActionBreakBlock {
+		// Suppress echoing the swing animation only when the client has already predicted it locally.
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
+	}
 
 	// We reset the inventory so that we can send the held item update without the client already
 	// having done that client-side.

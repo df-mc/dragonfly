@@ -66,6 +66,11 @@ type ItemBehaviour struct {
 	pickupDelay time.Duration
 }
 
+// PortalTravelComputer returns the interdimensional travel state for the behaviour.
+func (i *ItemBehaviour) PortalTravelComputer() *PortalTravelComputer {
+	return i.passive.PortalTravelComputer()
+}
+
 // Item returns the item.Stack held by the entity.
 func (i *ItemBehaviour) Item() item.Stack {
 	return i.i
@@ -93,13 +98,14 @@ func (i *ItemBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		_ = e.Close()
 		bl.CollectCooldown = 8
 		tx.SetBlock(blockPos, bl, nil)
+		return nil
 	}
 	return i.passive.Tick(e, tx)
 }
 
 // Explode reacts to explosions. The item entity is destroyed, unless the item
 // type is blast proof.
-func (i *ItemBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
+func (i *ItemBehaviour) Explode(e *Ent, _ world.ExplosionSource, impact float64) {
 	if impact > 0 {
 		if expl, ok := i.Item().Item().(interface{ BlastProof() bool }); ok && expl.BlastProof() {
 			return

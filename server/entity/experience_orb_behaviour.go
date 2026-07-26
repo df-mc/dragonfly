@@ -1,11 +1,12 @@
 package entity
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"time"
 )
 
 // ExperienceOrbBehaviourConfig holds optional parameters for the creation of
@@ -47,12 +48,16 @@ func (conf ExperienceOrbBehaviourConfig) New() *ExperienceOrbBehaviour {
 
 // ExperienceOrbBehaviour implements Behaviour for an experience orb entity.
 type ExperienceOrbBehaviour struct {
-	conf ExperienceOrbBehaviourConfig
-
+	conf    ExperienceOrbBehaviourConfig
 	passive *PassiveBehaviour
 
 	lastSearch time.Time
 	target     *world.EntityHandle
+}
+
+// PortalTravelComputer returns the interdimensional travel state for the behaviour.
+func (exp *ExperienceOrbBehaviour) PortalTravelComputer() *PortalTravelComputer {
+	return exp.passive.PortalTravelComputer()
 }
 
 // Experience returns the amount of experience the orb carries.
@@ -86,7 +91,7 @@ func (exp *ExperienceOrbBehaviour) tick(e *Ent, tx *world.Tx) {
 func (exp *ExperienceOrbBehaviour) findTarget(tx *world.Tx, pos mgl64.Vec3) {
 	exp.target = nil
 	for o := range tx.EntitiesWithin(followBox.Translate(pos)) {
-		if _, ok := o.(experienceCollector); ok {
+		if ec, ok := o.(experienceCollector); ok && ec.CanCollectExperience() {
 			exp.target = o.H()
 			break
 		}
@@ -119,4 +124,6 @@ type experienceCollector interface {
 	// whether the player was able to collect the experience, or not, due to the
 	// 100ms delay between experience collection.
 	CollectExperience(value int) bool
+	// CanCollectExperience returns whether the player can collect experience or not.
+	CanCollectExperience() bool
 }

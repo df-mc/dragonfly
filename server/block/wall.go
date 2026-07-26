@@ -224,13 +224,15 @@ func (w Wall) calculatePost(tx *world.Tx, pos cube.Pos) (Wall, bool) {
 	}
 	if !post {
 		// If a wall has two connections that are in different axis then it becomes a post regardless of the above block.
-		post = connections < 2
-		if connections >= 2 {
-			if w.NorthConnection != NoWallConnection() && w.SouthConnection != NoWallConnection() {
+		if connections < 2 {
+			post = true
+		} else {
+			switch {
+			case w.NorthConnection != NoWallConnection() && w.SouthConnection != NoWallConnection():
 				post = w.EastConnection != NoWallConnection() || w.WestConnection != NoWallConnection()
-			} else if w.EastConnection != NoWallConnection() && w.WestConnection != NoWallConnection() {
+			case w.EastConnection != NoWallConnection() && w.WestConnection != NoWallConnection():
 				post = w.NorthConnection != NoWallConnection() || w.SouthConnection != NoWallConnection()
-			} else {
+			default:
 				post = true
 			}
 		}

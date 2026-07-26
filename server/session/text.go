@@ -1,12 +1,13 @@
 package session
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"golang.org/x/text/language"
-	"time"
 )
 
 // SendMessage ...
@@ -145,7 +146,7 @@ func (s *Session) SendBossBar(text string, colour uint8, healthPercentage float6
 		EventType:          packet.BossEventShow,
 		BossBarTitle:       text,
 		HealthPercentage:   float32(healthPercentage),
-		Colour:             uint32(colour),
+		Colour:             colour,
 	})
 }
 

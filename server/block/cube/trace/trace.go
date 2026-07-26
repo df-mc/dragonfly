@@ -30,19 +30,20 @@ func TraverseBlocks(start, end mgl64.Vec3, f func(pos cube.Pos) (con bool)) {
 			return
 		}
 
-		if max[0] < max[1] && max[0] < max[2] {
+		switch {
+		case max[0] < max[1] && max[0] < max[2]:
 			if max[0] > r {
 				return
 			}
 			b[0] += stepX
 			max[0] += delta[0]
-		} else if max[1] < max[2] {
+		case max[1] < max[2]:
 			if max[1] > r {
 				return
 			}
 			b[1] += stepY
 			max[1] += delta[1]
-		} else {
+		default:
 			if max[2] > r {
 				return
 			}

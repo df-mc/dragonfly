@@ -38,12 +38,20 @@ func (b BlastFurnace) Tick(_ int64, pos cube.Pos, tx *world.Tx) {
 	if b.Lit && rand.Float64() <= 0.016 { // Every three or so seconds.
 		tx.PlaySound(pos.Vec3Centre(), sound.BlastFurnaceCrackle{})
 	}
-	if lit := b.smelter.tickSmelting(time.Second*5, time.Millisecond*200, b.Lit, func(i item.SmeltInfo) bool {
+	if lit := b.tickSmelting(time.Second*5, time.Millisecond*200, b.Lit, func(i item.SmeltInfo) bool {
 		return i.Ores
 	}); b.Lit != lit {
 		b.Lit = lit
 		tx.SetBlock(pos, b, nil)
 	}
+}
+
+// LightEmissionLevel ...
+func (b BlastFurnace) LightEmissionLevel() uint8 {
+	if b.Lit {
+		return 13
+	}
+	return 0
 }
 
 // EncodeItem ...
@@ -72,7 +80,10 @@ func (b BlastFurnace) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 
 // BreakInfo ...
 func (b BlastFurnace) BreakInfo() BreakInfo {
-	xp := b.Experience()
+	xp := 0
+	if b.smelter != nil {
+		xp = b.Experience()
+	}
 	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(BlastFurnace{})).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		for _, i := range b.Inventory(tx, pos).Clear() {
 			dropItem(tx, i, pos.Vec3())
