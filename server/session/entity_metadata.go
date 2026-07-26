@@ -1,7 +1,6 @@
 package session
 
 import (
-	"maps"
 	"math"
 	"time"
 
@@ -49,22 +48,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 // Values override built-ins, while flags are combined.
 func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata) {
 	h := e.H()
-	var wm *world.EntityMetadata
-	for c := range h.Components() {
-		if syncer, ok := c.(world.MetaSyncer); ok {
-			if wm == nil {
-				wm = world.NewEntityMetadata()
-			}
-			syncer.SyncMeta(e, wm)
-		}
-	}
-	var current protocol.EntityMetadata
-	var defaults protocol.EntityMetadata
-	if wm != nil {
-		current = maps.Clone(wm.Values())
-		mergeComponentMetadata(m, current)
-		defaults = wm.ResetValues()
-	}
+	current, defaults := world.AddComponentMetadata(e, m)
 
 	s.entityMutex.Lock()
 	previous := s.componentMetadata[h]
@@ -84,20 +68,6 @@ func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata
 		}
 		if _, builtIn := m[key]; !builtIn {
 			m[key] = reset
-		}
-	}
-}
-
-// mergeComponentMetadata keeps built-in and component flags.
-func mergeComponentMetadata(dst, src protocol.EntityMetadata) {
-	for key, value := range src {
-		switch key {
-		case protocol.EntityDataKeyPlayerFlags:
-			dst[key] = dst[key].(byte) | value.(byte)
-		case protocol.EntityDataKeyFlags, protocol.EntityDataKeyFlagsTwo:
-			dst[key] = dst[key].(int64) | value.(int64)
-		default:
-			dst[key] = value
 		}
 	}
 }

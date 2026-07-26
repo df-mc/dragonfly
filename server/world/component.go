@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/df-mc/dragonfly/server/internal/colour"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -33,16 +34,15 @@ type (
 	}
 )
 
-// ComponentID identifies a registered component type.
-type ComponentID uint32
+type componentID uint32
 
 // ComponentKey provides typed access to a registered component.
 type ComponentKey[T any] struct {
-	id ComponentID
+	id componentID
 }
 
 type componentInfo struct {
-	id   ComponentID
+	id   componentID
 	name string
 	typ  reflect.Type
 	new  func() any
@@ -79,7 +79,7 @@ func RegisterComponent[T any](name string) ComponentKey[T] {
 		panic(fmt.Sprintf("world.RegisterComponent: type %v already registered as %v", typ, info.name))
 	}
 	info := &componentInfo{
-		id:   ComponentID(len(components.byID)),
+		id:   componentID(len(components.byID)),
 		name: name,
 		typ:  typ,
 		new:  func() any { return new(T) },
@@ -91,11 +91,11 @@ func RegisterComponent[T any](name string) ComponentKey[T] {
 }
 
 type componentSlot struct {
-	id ComponentID
+	id componentID
 	v  any
 }
 
-func findComponent(data *EntityData, id ComponentID) (int, bool) {
+func findComponent(data *EntityData, id componentID) (int, bool) {
 	for i, slot := range data.components {
 		if slot.id == id {
 			return i, true
@@ -231,7 +231,7 @@ func AttachComponentIfAbsent(data *EntityData, v any) bool {
 // ValidateComponents checks that each component is registered and appears
 // once.
 func ValidateComponents(values ...any) error {
-	seen := make(map[ComponentID]struct{}, len(values))
+	seen := make(map[componentID]struct{}, len(values))
 	for _, v := range values {
 		info, ok := lookupComponentType(v)
 		if !ok {
@@ -247,6 +247,9 @@ func ValidateComponents(values ...any) error {
 
 func lookupComponentType(v any) (*componentInfo, bool) {
 	typ := reflect.TypeOf(v)
+	if typ == nil {
+		return nil, false
+	}
 	if typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
@@ -270,9 +273,7 @@ func anySlot(v any) componentSlot {
 	return componentSlot{id: info.id, v: rv.Interface()}
 }
 
-// Components yields attached components in order. Treat the values as
-// read-only and call Components only from the world's owner goroutine.
-func (e *EntityHandle) Components() iter.Seq[any] {
+func (e *EntityHandle) components() iter.Seq[any] {
 	return func(yield func(any) bool) {
 		for _, slot := range e.data.components {
 			if !yield(slot.v) {
@@ -284,9 +285,7 @@ func (e *EntityHandle) Components() iter.Seq[any] {
 
 var noTickers = make([]TickerComponent, 0)
 
-// TickerComponents returns a read-only snapshot in attachment order. Changes
-// made while ticking apply on the next tick.
-func (e *EntityHandle) TickerComponents() []TickerComponent {
+func (e *EntityHandle) tickerComponents() []TickerComponent {
 	if e.data.tickers == nil {
 		e.data.tickers = noTickers
 		for _, slot := range e.data.components {
@@ -300,7 +299,7 @@ func (e *EntityHandle) TickerComponents() []TickerComponent {
 
 func tickComponents(tx *Tx, e Entity, current int64) bool {
 	h := e.H()
-	for _, ticker := range h.TickerComponents() {
+	for _, ticker := range h.tickerComponents() {
 		if _, persistent := ticker.(NBTSaver); persistent {
 			markComponentPersistenceDirty(h)
 		}
@@ -438,8 +437,7 @@ type EntityMetadata struct {
 	resets protocol.EntityMetadata
 }
 
-// NewEntityMetadata creates empty component metadata.
-func NewEntityMetadata() *EntityMetadata {
+func newEntityMetadata() *EntityMetadata {
 	return &EntityMetadata{
 		metadata: protocol.NewEntityMetadata(),
 		resets:   protocol.NewEntityMetadata(),
@@ -448,14 +446,12 @@ func NewEntityMetadata() *EntityMetadata {
 
 // SetScoreTag sets the text below the entity's name tag.
 func (m *EntityMetadata) SetScoreTag(s string) {
-	m.metadata[protocol.EntityDataKeyScore] = s
-	m.resets[protocol.EntityDataKeyScore] = ""
+	m.Set(protocol.EntityDataKeyScore, s)
 }
 
 // SetVariant sets the entity's visual variant.
 func (m *EntityMetadata) SetVariant(v int32) {
-	m.metadata[protocol.EntityDataKeyVariant] = v
-	m.resets[protocol.EntityDataKeyVariant] = int32(0)
+	m.Set(protocol.EntityDataKeyVariant, v)
 }
 
 // SetScale sets the entity's render scale.
@@ -466,9 +462,7 @@ func (m *EntityMetadata) SetScale(s float64) {
 
 // SetColour sets the entity's effect colour.
 func (m *EntityMetadata) SetColour(c color.RGBA) {
-	// Encoded as ARGB.
-	m.metadata[protocol.EntityDataKeyEffectColor] = int32(uint32(c.A)<<24 | uint32(c.R)<<16 | uint32(c.G)<<8 | uint32(c.B))
-	m.resets[protocol.EntityDataKeyEffectColor] = int32(0)
+	m.Set(protocol.EntityDataKeyEffectColor, colour.Int32FromRGBA(c))
 }
 
 // Set sets a raw protocol metadata value. It panics if the value cannot be
@@ -523,26 +517,52 @@ func (m *EntityMetadata) Set(key uint32, value any) {
 	}
 }
 
-// Values returns the metadata values.
-func (m *EntityMetadata) Values() protocol.EntityMetadata { return m.metadata }
+// AddComponentMetadata merges metadata contributed by e's components into dst.
+// It returns the current values and the values used to reset removed metadata.
+// Call AddComponentMetadata only from the world's owner goroutine.
+func AddComponentMetadata(e Entity, dst protocol.EntityMetadata) (current, resets protocol.EntityMetadata) {
+	var metadata *EntityMetadata
+	for component := range e.H().components() {
+		if syncer, ok := component.(MetaSyncer); ok {
+			if metadata == nil {
+				metadata = newEntityMetadata()
+			}
+			syncer.SyncMeta(e, metadata)
+		}
+	}
+	if metadata == nil {
+		return nil, nil
+	}
+	mergeComponentMetadata(dst, metadata.metadata)
+	return metadata.metadata, metadata.resets
+}
 
-// ResetValues returns the values sent when metadata is removed.
-func (m *EntityMetadata) ResetValues() protocol.EntityMetadata { return m.resets }
+func mergeComponentMetadata(dst, src protocol.EntityMetadata) {
+	for key, value := range src {
+		switch key {
+		case protocol.EntityDataKeyPlayerFlags:
+			dst[key] = dst[key].(byte) | value.(byte)
+		case protocol.EntityDataKeyFlags, protocol.EntityDataKeyFlagsTwo:
+			dst[key] = dst[key].(int64) | value.(int64)
+		default:
+			dst[key] = value
+		}
+	}
+}
 
-// Spawner creates entities with optional extra components.
-type Spawner interface {
+type spawner interface {
 	EntityType
 	New(opts EntitySpawnOpts, components ...any) *EntityHandle
 }
 
 // SpawnEntity creates and adds a registered entity type. It returns false if
-// the type is unknown or does not implement Spawner. Invalid components panic.
+// the type is unknown or cannot be spawned this way. Invalid components panic.
 func (tx *Tx) SpawnEntity(name string, opts EntitySpawnOpts, components ...any) (Entity, bool) {
 	t, ok := tx.World().EntityRegistry().Lookup(name)
 	if !ok {
 		return nil, false
 	}
-	spawner, ok := t.(Spawner)
+	spawner, ok := t.(spawner)
 	if !ok {
 		return nil, false
 	}
