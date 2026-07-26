@@ -888,6 +888,14 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		return
 	case sound.DecoratedPotInsertFailed:
 		pk.SoundType = packet.SoundEventDecoratedPotInsertFail
+	case sound.Custom:
+		s.writePacket(&packet.PlaySound{
+			SoundName: so.Name,
+			Position:  vec64To32(pos),
+			Volume:    float32(so.Volume),
+			Pitch:     float32(so.Pitch),
+		})
+		return
 	case sound.LightningExplode:
 		s.writePacket(&packet.PlaySound{
 			SoundName: "ambient.weather.lightning.impact",
