@@ -122,7 +122,7 @@ func (s SweetBerries) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	}
 
 	if math.Abs(movement[0]) >= 0.003 || math.Abs(movement[2]) >= 0.003 {
-		if _, vulnerable := living.Hurt(0.5, DamageSource{Block: s}); vulnerable {
+		if _, vulnerable := living.Hurt(1, DamageSource{Block: s}); vulnerable {
 			tx.PlaySound(pos.Vec3Centre(), sound.SweetBerryBushHurt{})
 		}
 	}
