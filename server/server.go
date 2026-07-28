@@ -541,25 +541,32 @@ func (srv *Server) dimension(dimension world.Dimension) *world.World {
 // handleSessionClose handles the closing of a session. It removes the player
 // of the session from the server.
 func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
-	srv.pmu.Lock()
-	_, ok := srv.p[c.UUID()]
-	delete(srv.p, c.UUID())
-	srv.pmu.Unlock()
-	if !ok {
+	id := c.UUID()
+	if _, online := srv.Player(id); !online {
 		// When a player disconnects immediately after a session is started, it
 		// might not be added to the players map yet. This is expected, but we
 		// need to be careful not to crash when this happens.
 		return
 	}
 
-	if tx != nil {
-		if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data(), tx.World()); err != nil {
-			srv.conf.Log.Error("Save player data: " + err.Error())
+	data := c.(*player.Player).Data()
+	w := tx.World()
+	go func() {
+		if tx != nil {
+			if err := srv.conf.PlayerProvider.Save(id, data, w); err != nil {
+				srv.conf.Log.Error("Save player data: " + err.Error())
+			}
+		} else {
+			srv.conf.Log.Error("Save player data: player's worlds closed before teardown; data not saved", "uuid", c.UUID())
 		}
-	} else {
-		srv.conf.Log.Error("Save player data: player's worlds closed before teardown; data not saved", "uuid", c.UUID())
-	}
-	srv.pwg.Done()
+
+		// removing player from the list after saving their data,
+		// to prevent possible race condition exploits.
+		srv.pmu.Lock()
+		delete(srv.p, c.UUID())
+		srv.pmu.Unlock()
+		srv.pwg.Done()
+	}()
 }
 
 // createPlayer creates a new player instance using the UUID and connection
