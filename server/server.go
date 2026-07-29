@@ -542,31 +542,34 @@ func (srv *Server) dimension(dimension world.Dimension) *world.World {
 // of the session from the server.
 func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
 	id := c.UUID()
+	if tx == nil {
+		srv.conf.Log.Error("Save player data: player's worlds closed before teardown; data not saved", "uuid", c.UUID())
+		srv.removePlayerFromList(id)
+		return
+	}
+
 	if _, online := srv.Player(id); !online {
 		// When a player disconnects immediately after a session is started, it
 		// might not be added to the players map yet. This is expected, but we
 		// need to be careful not to crash when this happens.
 		return
 	}
-
 	data := c.(*player.Player).Data()
 	w := tx.World()
 	go func() {
-		if tx != nil {
-			if err := srv.conf.PlayerProvider.Save(id, data, w); err != nil {
-				srv.conf.Log.Error("Save player data: " + err.Error())
-			}
-		} else {
-			srv.conf.Log.Error("Save player data: player's worlds closed before teardown; data not saved", "uuid", c.UUID())
+		if err := srv.conf.PlayerProvider.Save(id, data, w); err != nil {
+			srv.conf.Log.Error("Save player data: " + err.Error())
 		}
-
-		// removing player from the list after saving their data,
-		// to prevent possible race condition exploits.
-		srv.pmu.Lock()
-		delete(srv.p, c.UUID())
-		srv.pmu.Unlock()
-		srv.pwg.Done()
+		srv.removePlayerFromList(id)
 	}()
+}
+
+// removePlayerFromList removes player from the server's internal player list.
+func (srv *Server) removePlayerFromList(id uuid.UUID) {
+	srv.pmu.Lock()
+	delete(srv.p, id)
+	srv.pmu.Unlock()
+	srv.pwg.Done()
 }
 
 // createPlayer creates a new player instance using the UUID and connection
