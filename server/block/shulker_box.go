@@ -264,6 +264,12 @@ func (s ShulkerBox) CreativeDrops() []item.Stack {
 	return []item.Stack{item.NewStack(s, 1)}
 }
 
+// Explode destroys the shulker box and drops it with its contents intact.
+func (s ShulkerBox) Explode(_ world.ExplosionSource, pos cube.Pos, tx *world.Tx) {
+	tx.SetBlock(pos, nil, nil)
+	dropItem(tx, item.NewStack(s, 1), pos.Vec3Centre())
+}
+
 func (s ShulkerBox) MaxCount() int {
 	return 1
 }
