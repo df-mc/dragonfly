@@ -179,7 +179,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ar
 		arrowConf.Tip = c.Item.Item().(Arrow).Tip
 		arrow := createArrow(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(5.15),
+			Velocity: dirVec.Mul(5),
 			Rotation: rot.Neg(),
 		}, arrowConf)
 		tx.AddEntity(arrow)
