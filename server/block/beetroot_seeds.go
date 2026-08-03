@@ -21,16 +21,16 @@ func (BeetrootSeeds) SameCrop(c Crop) bool {
 }
 
 // BoneMeal ...
-func (b BeetrootSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (b BeetrootSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if b.Growth == 7 {
-		return false
+		return item.BoneMealResultNone
 	}
 	if rand.Float64() < 0.75 {
 		b.Growth++
 		tx.SetBlock(pos, b, nil)
-		return true
+		return item.BoneMealResultSmall
 	}
-	return false
+	return item.BoneMealResultNone
 }
 
 // UseOnBlock ...

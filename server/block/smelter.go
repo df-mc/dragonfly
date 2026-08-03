@@ -221,7 +221,8 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 		s.remainingDuration -= time.Millisecond * 50
 
 		// If we have a valid smeltable item, process a single stage of smelting.
-		if canSmelt {
+		switch {
+		case canSmelt:
 			// Increase the cook duration by a tick.
 			s.cookDuration += time.Millisecond * 50
 
@@ -243,10 +244,10 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 				s.cookDuration -= requirement
 				s.experience += int(earned)
 			}
-		} else if s.remainingDuration == 0 {
+		case s.remainingDuration == 0:
 			// We've run out of fuel, so we need to reset the max duration too.
 			s.maxDuration = 0
-		} else {
+		default:
 			// We still have some remaining fuel, but the input isn't smeltable, so we reset the cook duration.
 			s.cookDuration = 0
 		}

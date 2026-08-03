@@ -30,6 +30,8 @@ func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
 		AuthenticationDisabled: conf.AuthDisabled,
 		ResourcePacks:          conf.Resources,
 		TexturePacksRequired:   conf.ResourcesRequired,
+		Compression:            conf.Compression,
+		Allow:                  conf.Allower.Allow,
 	}
 	if conf.Log.Enabled(context.Background(), slog.LevelDebug) {
 		cfg.ErrorLog = conf.Log.With("net origin", "gophertunnel")

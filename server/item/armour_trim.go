@@ -47,8 +47,9 @@ func trimMaterialFromString(name string) (ArmourTrimMaterial, bool) {
 		return NetherQuartz{}, true
 	case "resin":
 		return ResinBrick{}, true
+	case "redstone":
+		return RedstoneWire{}, true
 	}
-	// TODO: add redstone material once pr is merged
 	return nil, false
 }
 
@@ -65,6 +66,7 @@ func ArmourTrimMaterials() []world.Item {
 		NetheriteIngot{},
 		NetherQuartz{},
 		ResinBrick{},
+		RedstoneWire{},
 	}
 }
 

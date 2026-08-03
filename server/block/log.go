@@ -34,7 +34,12 @@ func (l Log) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (l Log) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
+	breakInfo := newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(l))
+	if l.Wood == MangroveWood() && !l.Stripped {
+		// Mangrove logs have a much lower blast resistance than all other logs.
+		return breakInfo.withBlastResistance(0.4)
+	}
+	return breakInfo
 }
 
 // SmeltInfo ...
@@ -106,6 +111,9 @@ func (l Log) EncodeBlock() (name string, properties map[string]any) {
 // allLogs returns a list of all possible log states.
 func allLogs() (logs []world.Block) {
 	for _, w := range WoodTypes() {
+		if w == BambooWood() {
+			continue
+		}
 		for axis := cube.Axis(0); axis < 3; axis++ {
 			logs = append(logs, Log{Axis: axis, Stripped: true, Wood: w})
 			logs = append(logs, Log{Axis: axis, Stripped: false, Wood: w})

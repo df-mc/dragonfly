@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/dialogue"
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/hud"
+	"github.com/df-mc/dragonfly/server/player/input"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -32,6 +33,7 @@ type Controllable interface {
 	chat.Subscriber
 	hud.Renderer
 	debug.Renderer
+	input.Restricter
 
 	Locale() language.Tag
 

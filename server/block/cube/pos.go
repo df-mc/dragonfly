@@ -39,6 +39,13 @@ func (p Pos) OutOfBounds(r Range) bool {
 	return y > r[1] || y < r[0]
 }
 
+// Within reports if the position lies within the inclusive minimum and maximum bounds passed.
+func (p Pos) Within(min, max Pos) bool {
+	return p[0] >= min[0] && p[0] <= max[0] &&
+		p[1] >= min[1] && p[1] <= max[1] &&
+		p[2] >= min[2] && p[2] <= max[2]
+}
+
 // Add adds two positions together and returns a new combined one.
 func (p Pos) Add(pos Pos) Pos {
 	return Pos{p[0] + pos[0], p[1] + pos[1], p[2] + pos[2]}
@@ -89,21 +96,29 @@ func (p Pos) Side(face Face) Pos {
 // Face returns the face that the other Pos was on compared to the current Pos.
 // The other Pos is assumed to be a direct neighbour of the current Pos.
 func (p Pos) Face(other Pos) Face {
-	switch other {
-	case p.Add(Pos{0, 1}):
-		return FaceUp
-	case p.Add(Pos{0, -1}):
-		return FaceDown
-	case p.Add(Pos{0, 0, -1}):
-		return FaceNorth
-	case p.Add(Pos{0, 0, 1}):
-		return FaceSouth
-	case p.Add(Pos{-1, 0, 0}):
-		return FaceWest
-	case p.Add(Pos{1, 0, 0}):
-		return FaceEast
+	face, _ := p.NeighbourFace(other)
+	return face
+}
+
+// NeighbourFace returns the face that the other Pos was on compared to the
+// current Pos, if the other Pos is a direct neighbour of the current Pos.
+// Example: Pos{0, 0, 0}.NeighbourFace(Pos{0, 1, 0}) returns FaceUp, true.
+func (p Pos) NeighbourFace(other Pos) (Face, bool) {
+	switch other.Sub(p) {
+	case Pos{0, 1, 0}:
+		return FaceUp, true
+	case Pos{0, -1, 0}:
+		return FaceDown, true
+	case Pos{0, 0, -1}:
+		return FaceNorth, true
+	case Pos{0, 0, 1}:
+		return FaceSouth, true
+	case Pos{-1, 0, 0}:
+		return FaceWest, true
+	case Pos{1, 0, 0}:
+		return FaceEast, true
 	}
-	return FaceUp
+	return FaceUp, false
 }
 
 // Neighbours calls the function passed for each of the block position's
@@ -159,7 +174,7 @@ func Range3D(p1, p2 Pos) iter.Seq[Pos] {
 		for x := min[0]; x <= max[0]; x++ {
 			for y := min[1]; y <= max[1]; y++ {
 				for z := min[2]; z <= max[2]; z++ {
-					if !yield(min.Add(Pos{x, y, z})) {
+					if !yield(Pos{x, y, z}) {
 						return
 					}
 				}

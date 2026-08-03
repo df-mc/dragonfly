@@ -1,10 +1,11 @@
 package world
 
 import (
-	"github.com/go-gl/mathgl/mgl64"
 	"maps"
 	"math"
 	"sync"
+
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Loader implements the loading of the world. A loader can typically be moved around the world to load
@@ -19,6 +20,7 @@ type Loader struct {
 	pos       ChunkPos
 	loadQueue []ChunkPos
 	loaded    map[ChunkPos]*Column
+	pending   map[ChunkPos]struct{}
 
 	closed bool
 }
@@ -28,7 +30,7 @@ type Loader struct {
 // The Viewer passed will handle the loading of chunks, including the viewing of entities that were loaded in
 // those chunks.
 func NewLoader(chunkRadius int, world *World, v Viewer) *Loader {
-	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*Column), viewer: v}
+	l := &Loader{r: chunkRadius, loaded: make(map[ChunkPos]*Column), pending: make(map[ChunkPos]struct{}), viewer: v}
 	l.world(world)
 	return l
 }
@@ -47,12 +49,13 @@ func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	defer l.mu.Unlock()
 
 	loaded := maps.Clone(l.loaded)
-	l.w.Exec(func(tx *Tx) {
+	l.w.exec(func(tx *Tx) {
 		for pos := range loaded {
 			tx.World().removeViewer(tx, pos, l)
 		}
 	})
 	clear(l.loaded)
+	clear(l.pending)
 	l.w.viewerMu.Lock()
 	delete(l.w.viewers, l)
 	l.w.viewerMu.Unlock()
@@ -84,33 +87,64 @@ func (l *Loader) Move(tx *Tx, pos mgl64.Vec3) {
 	l.populateLoadQueue()
 }
 
-// Load loads n chunks around the centre of the chunk, starting with the middle and working outwards. For
-// every chunk loaded, the Viewer passed through construction in New has its ViewChunk method called.
-// Load does nothing for n <= 0.
+// Load queues up to n chunks around the loader's centre, from the middle outwards, to be loaded in
+// the background. The Viewer's ViewChunk is called for each chunk once ready, which may be after Load
+// returns. Load does nothing for n <= 0.
 func (l *Loader) Load(tx *Tx, n int) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.closed || l.w == nil {
-		return
-	}
 	for i := 0; i < n; i++ {
+		l.mu.Lock()
+		if l.closed || l.w == nil {
+			l.mu.Unlock()
+			return
+		}
 		if len(l.loadQueue) == 0 {
+			l.mu.Unlock()
 			break
 		}
-
 		pos := l.loadQueue[0]
-		c := tx.w.chunk(pos)
-
-		l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
-		l.w.addViewer(tx, c, l)
-
-		l.loaded[pos] = c
+		w := tx.World()
+		l.pending[pos] = struct{}{}
 
 		// Shift the first element from the load queue off so that we can take a new one during the next
 		// iteration.
 		l.loadQueue = l.loadQueue[1:]
+		l.mu.Unlock()
+
+		if !w.loadChunkAsync(tx, pos, func(tx2 *Tx, col *Column) {
+			l.viewChunk(tx2, pos, col)
+		}) {
+			l.mu.Lock()
+			delete(l.pending, pos)
+			l.queueLoad(pos)
+			l.mu.Unlock()
+		}
 	}
+}
+
+// viewChunk passes a loaded chunk to the Loader's Viewer. If the chunk failed
+// to load, it is queued to be loaded again.
+func (l *Loader) viewChunk(tx *Tx, pos ChunkPos, c *Column) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.closed || l.viewer == nil || l.w == nil || l.w != tx.World() {
+		return
+	}
+	delete(l.pending, pos)
+	if c == nil {
+		l.queueLoad(pos)
+		return
+	}
+	if _, ok := l.loaded[pos]; ok {
+		return
+	}
+	if !l.withinLoadRadius(pos) {
+		return
+	}
+	l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
+	l.w.addViewer(tx, c, l)
+
+	l.loaded[pos] = c
 }
 
 // Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
@@ -132,6 +166,7 @@ func (l *Loader) Close(tx *Tx) {
 		tx.World().removeViewer(tx, pos, l)
 	}
 	l.loaded = map[ChunkPos]*Column{}
+	clear(l.pending)
 
 	l.w.viewerMu.Lock()
 	delete(l.w.viewers, l)
@@ -153,13 +188,42 @@ func (l *Loader) world(new *World) {
 // and should therefore be removed.
 func (l *Loader) evictUnused(tx *Tx) {
 	for pos := range l.loaded {
-		diffX, diffZ := pos[0]-l.pos[0], pos[1]-l.pos[1]
-		dist := math.Sqrt(float64(diffX*diffX) + float64(diffZ*diffZ))
-		if int(dist) > l.r {
+		if !l.withinLoadRadius(pos) {
 			delete(l.loaded, pos)
 			l.w.removeViewer(tx, pos, l)
 		}
 	}
+}
+
+// withinLoadRadius checks if a chunk position is within the Loader's radius.
+func (l *Loader) withinLoadRadius(pos ChunkPos) bool {
+	return chunkDistance(pos, l.pos) <= int32(l.r)
+}
+
+// chunkDistance returns the rounded distance between two chunk positions.
+func chunkDistance(a, b ChunkPos) int32 {
+	diffX, diffZ := float64(a[0])-float64(b[0]), float64(a[1])-float64(b[1])
+	return int32(math.Round(math.Sqrt(diffX*diffX + diffZ*diffZ)))
+}
+
+// queueLoad adds pos back to the load queue, unless it is already loaded,
+// queued, or no longer within the radius of the Loader.
+func (l *Loader) queueLoad(pos ChunkPos) {
+	if l.closed || l.w == nil || !l.withinLoadRadius(pos) {
+		return
+	}
+	if _, ok := l.loaded[pos]; ok {
+		return
+	}
+	if _, ok := l.pending[pos]; ok {
+		return
+	}
+	for _, queued := range l.loadQueue {
+		if queued == pos {
+			return
+		}
+	}
+	l.loadQueue = append(l.loadQueue, pos)
 }
 
 // populateLoadQueue populates the load queue of the loader. This method is called once to create the order in
@@ -173,27 +237,26 @@ func (l *Loader) populateLoadQueue() {
 	r := int32(l.r)
 	for x := -r; x <= r; x++ {
 		for z := -r; z <= r; z++ {
-			distance := math.Sqrt(float64(x*x) + float64(z*z))
-			chunkDistance := int32(math.Round(distance))
-			if chunkDistance > r {
+			pos := ChunkPos{x + l.pos[0], z + l.pos[1]}
+			dist := chunkDistance(pos, l.pos)
+			if dist > r {
 				// The chunk was outside the chunk radius.
 				continue
 			}
-			pos := ChunkPos{x + l.pos[0], z + l.pos[1]}
 			if _, ok := l.loaded[pos]; ok {
 				// The chunk was already loaded, so we don't need to do anything.
 				continue
 			}
-			if m, ok := queue[chunkDistance]; ok {
-				queue[chunkDistance] = append(m, pos)
+			if _, ok := l.pending[pos]; ok {
+				// The chunk is already queued to be loaded.
 				continue
 			}
-			queue[chunkDistance] = []ChunkPos{pos}
+			queue[dist] = append(queue[dist], pos)
 		}
 	}
 
 	l.loadQueue = l.loadQueue[:0]
-	for i := int32(0); i < r; i++ {
+	for i := int32(0); i <= r; i++ {
 		l.loadQueue = append(l.loadQueue, queue[i]...)
 	}
 }

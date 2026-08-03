@@ -38,13 +38,13 @@ func (c Carrot) Consume(_ *world.Tx, co item.Consumer) item.Stack {
 }
 
 // BoneMeal ...
-func (c Carrot) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (c Carrot) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if c.Growth == 7 {
-		return false
+		return item.BoneMealResultNone
 	}
 	c.Growth = min(c.Growth+rand.IntN(4)+2, 7)
 	tx.SetBlock(pos, c, nil)
-	return true
+	return item.BoneMealResultSmall
 }
 
 // UseOnBlock ...

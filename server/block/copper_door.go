@@ -158,7 +158,7 @@ func (d CopperDoor) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 func (d CopperDoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierStone.HarvestLevel
-	}, pickaxeEffective, oneOf(d))
+	}, pickaxeEffective, oneOf(d)).withBlastResistance(6)
 }
 
 // SideClosed ...

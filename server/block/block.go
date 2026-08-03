@@ -1,14 +1,15 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Activatable represents a block that may be activated by a viewer of the world. When activated, the block
@@ -53,6 +54,14 @@ type LightDiffuser interface {
 	LightDiffusionLevel() uint8
 }
 
+// RedstoneWireStepDowner represents a block with custom behaviour for redstone wire providing power when travelling
+// down it.
+type RedstoneWireStepDowner interface {
+	// CanRedstoneWireStepDown returns whether redstone wire may provide power while travelling down the block at
+	// pos from the wire position passed.
+	CanRedstoneWireStepDown(pos, from cube.Pos, tx *world.Tx) bool
+}
+
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,
 // which may be replaced by clicking it with another block.
 type Replaceable interface {
@@ -71,6 +80,12 @@ type EntityLander interface {
 type EntityInsider interface {
 	// EntityInside is called when an entity goes inside the block's 1x1x1 axis aligned bounding box.
 	EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity)
+}
+
+// EntityStepper represents a block that reacts to an entity standing on top of it.
+type EntityStepper interface {
+	// EntityStepOn is called every tick while an entity is standing on the top face of the block.
+	EntityStepOn(pos cube.Pos, tx *world.Tx, e world.Entity)
 }
 
 // ProjectileHitter represents a block that handles being hit by a projectile.
@@ -319,6 +334,14 @@ type bassDrum struct{}
 // Instrument ...
 func (bassDrum) Instrument() sound.Instrument {
 	return sound.BassDrum()
+}
+
+// flute is a struct that may be embedded for blocks that create a flute sound.
+type flute struct{}
+
+// Instrument ...
+func (flute) Instrument() sound.Instrument {
+	return sound.Flute()
 }
 
 // newSmeltInfo returns a new SmeltInfo with the given values.

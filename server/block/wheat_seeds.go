@@ -21,13 +21,13 @@ func (WheatSeeds) SameCrop(c Crop) bool {
 }
 
 // BoneMeal ...
-func (s WheatSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (s WheatSeeds) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if s.Growth == 7 {
-		return false
+		return item.BoneMealResultNone
 	}
 	s.Growth = min(s.Growth+rand.IntN(4)+2, 7)
 	tx.SetBlock(pos, s, nil)
-	return true
+	return item.BoneMealResultSmall
 }
 
 // UseOnBlock ...

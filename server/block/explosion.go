@@ -1,24 +1,22 @@
 package block
 
 import (
+	"math"
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand/v2"
-	"time"
 )
 
-// ExplosionConfig is the configuration for an explosion. The world, position, size, sound, particle, and more can all
-// be configured through this configuration.
+// ExplosionConfig is the configuration for an explosion. The sound, particle, item drop chance and more can all be
+// configured through this configuration. The position and size come from the world.ExplosionSource passed to Explode.
 type ExplosionConfig struct {
-	// Size is the size of the explosion, it is effectively the radius which entities/blocks will be affected within.
-	Size float64
 	// RandSource is the source to use for the explosion "randomness". If set
 	// to nil, RandSource defaults to a `rand.PCG`source seeded with
 	// `time.Now().UnixNano()`.
@@ -26,6 +24,9 @@ type ExplosionConfig struct {
 	// SpawnFire will cause the explosion to randomly start fires in 1/3 of all destroyed air blocks that are
 	// above opaque blocks.
 	SpawnFire bool
+	// SuppressUnderwaterImpact prevents the explosion from affecting entities through liquid layers. Bedrock Edition
+	// applies this to every explosion.
+	SuppressUnderwaterImpact bool
 	// ItemDropChance specifies how item drops should be handled. By default,
 	// the item drop chance is 1/Size. If negative, no items will be dropped by
 	// the explosion. If set to 1 or higher, all items are dropped.
@@ -41,16 +42,26 @@ type ExplosionConfig struct {
 
 // ExplodableEntity represents an entity that can be exploded.
 type ExplodableEntity interface {
-	// Explode is called when an explosion occurs. The entity can then react to the explosion using the configuration
-	// and impact provided.
-	Explode(explosionPos mgl64.Vec3, impact float64, c ExplosionConfig)
+	// Explode is called when an explosion occurs. The entity can react using the source and impact provided.
+	Explode(src world.ExplosionSource, impact float64)
 }
 
 // Explodable represents a block that can be exploded.
 type Explodable interface {
-	// Explode is called when an explosion occurs. The block can react to the explosion using the configuration passed.
-	Explode(explosionPos mgl64.Vec3, pos cube.Pos, tx *world.Tx, c ExplosionConfig)
+	// Explode is called when an explosion occurs. The block can react using the source passed.
+	Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx)
 }
+
+type explosionBlockInfo struct {
+	resistance float64
+	flags      uint8
+}
+
+const (
+	explosionBlockResists uint8 = 1 << iota
+	explosionBlockStopsRay
+	explosionBlockAffected
+)
 
 // rays ...
 var rays = make([]mgl64.Vec3, 0, 1352)
@@ -70,7 +81,7 @@ func init() {
 }
 
 // Explode performs the explosion as specified by the configuration.
-func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
+func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 	if c.Sound == nil {
 		c.Sound = sound.Explosion{}
 	}
@@ -81,14 +92,12 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		t := uint64(time.Now().UnixNano())
 		c.RandSource = rand.NewPCG(t, t)
 	}
-	if c.Size == 0 {
-		c.Size = 4
-	}
+	size, explosionPos := src.Size(), src.Position()
 	if c.ItemDropChance == 0 {
-		c.ItemDropChance = 1.0 / c.Size
+		c.ItemDropChance = 1.0 / size
 	}
 
-	r, d := rand.New(c.RandSource), c.Size*2
+	r, d := rand.New(c.RandSource), size*2
 	box := cube.Box(
 		math.Floor(explosionPos[0]-d-1),
 		math.Floor(explosionPos[1]-d-1),
@@ -109,54 +118,81 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 		affectedEntities = append(affectedEntities, e)
 	}
 
-	affectedBlocks := make([]cube.Pos, 0, 32)
+	estimatedBlocks := max(32, min(4096, int(size*size*size*16)))
+	if _, ok := tx.Liquid(cube.PosFromVec3(explosionPos)); ok {
+		// Liquids such as water stop a regular TNT blast at the source, so avoid reserving space for a full blast.
+		estimatedBlocks = 32
+	}
+	affectedBlocks := make([]cube.Pos, 0, estimatedBlocks)
+	blockCache := make(map[cube.Pos]explosionBlockInfo, estimatedBlocks)
 	for _, ray := range rays {
 		pos := explosionPos
-		for blastForce := c.Size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
+		for blastForce := size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			currentBlock := tx.Block(current)
-
-			resistance := 0.0
-			if l, ok := tx.Liquid(current); ok {
-				resistance = l.BlastResistance()
-			} else if i, ok := currentBlock.(Breakable); ok {
-				resistance = i.BreakInfo().BlastResistance
-			} else if _, ok = currentBlock.(Air); !ok {
+			info, ok := blockCache[current]
+			if !ok {
+				currentBlock := tx.Block(current)
+				if l, ok := tx.Liquid(current); ok {
+					info.resistance = l.BlastResistance()
+					info.flags = explosionBlockResists
+				} else if i, ok := currentBlock.(Breakable); ok {
+					info.resistance = i.BreakInfo().BlastResistance
+					info.flags = explosionBlockResists
+				} else if _, ok = currentBlock.(Air); !ok {
+					info.flags = explosionBlockStopsRay
+				}
+				blockCache[current] = info
+			}
+			if info.flags&explosionBlockStopsRay != 0 {
 				// Completely stop the ray if the current block is not air and unbreakable.
 				break
 			}
 
 			pos = pos.Add(ray)
-			if blastForce -= (resistance/5 + 0.3) * 0.3; blastForce > 0 {
+			// Air offers no resistance to the ray, only blocks and liquids reduce its force beyond the step decay.
+			if info.flags&explosionBlockResists != 0 {
+				blastForce -= (info.resistance + 0.3) * 0.3
+			}
+			if blastForce > 0 && info.flags&explosionBlockAffected == 0 {
+				info.flags |= explosionBlockAffected
+				blockCache[current] = info
 				affectedBlocks = append(affectedBlocks, current)
 			}
 		}
 	}
 
-	ctx := event.C(tx)
+	ctx := tx.Event()
 	spawnFire := c.SpawnFire
 	itemDropChance := c.ItemDropChance
-	if tx.World().Handler().HandleExplosion(ctx, explosionPos, &affectedEntities, &affectedBlocks, &itemDropChance, &spawnFire); ctx.Cancelled() {
+	if tx.World().Handler().HandleExplosion(ctx, src, &affectedEntities, &affectedBlocks, &itemDropChance, &spawnFire); ctx.Cancelled() {
 		return
 	}
 
 	for _, e := range affectedEntities {
-		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
-			explodable.Explode(explosionPos, impact, c)
+		explodable, ok := e.(ExplodableEntity)
+		if !ok {
+			continue
 		}
+		impact := (1 - e.Position().Sub(explosionPos).Len()/d) * c.exposure(tx, explosionPos, e)
+		if c.SuppressUnderwaterImpact && impact <= 0 {
+			// The blast never reached the entity. Skip the call entirely, as entities with a constant damage term,
+			// such as players, would otherwise still be hurt through the liquid that blocked it.
+			continue
+		}
+		explodable.Explode(src, impact)
 	}
 
 	for _, pos := range affectedBlocks {
 		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
-			explodable.Explode(explosionPos, pos, tx, c)
+			explodable.Explode(src, pos, tx)
 		} else if breakable, ok := bl.(Breakable); ok {
+			// Clear the block first so break handlers see the post-break world, this is required by things such as redstone updates.
+			tx.SetBlock(pos, nil, nil)
 			breakHandler := breakable.BreakInfo().BreakHandler
 			if breakHandler != nil {
 				breakHandler(pos, tx, nil)
 			}
-			tx.SetBlock(pos, nil, nil)
 			if itemDropChance > r.Float64() {
 				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
 					dropItem(tx, drop, pos.Vec3Centre())
@@ -180,7 +216,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, explosionPos mgl64.Vec3) {
 }
 
 // exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
-func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
+func (c ExplosionConfig) exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 	pos := e.Position()
 	box := e.H().Type().BBox(e).Translate(pos)
 
@@ -206,6 +242,12 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 				}
 				var collided bool
 				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (cont bool) {
+					if c.SuppressUnderwaterImpact {
+						if _, liquid := tx.Liquid(pos); liquid {
+							collided = true
+							return false
+						}
+					}
 					_, collided = trace.BlockIntercept(pos, tx, tx.Block(pos), origin, point)
 					return !collided
 				})

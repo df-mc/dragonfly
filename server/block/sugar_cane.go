@@ -1,11 +1,12 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // SugarCane is a plant block that generates naturally near water.
@@ -63,7 +64,7 @@ func (c SugarCane) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 }
 
 // BoneMeal ...
-func (c SugarCane) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (c SugarCane) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	for _, ok := tx.Block(pos.Side(cube.FaceDown)).(SugarCane); ok; _, ok = tx.Block(pos.Side(cube.FaceDown)).(SugarCane) {
 		pos = pos.Side(cube.FaceDown)
 	}
@@ -73,9 +74,9 @@ func (c SugarCane) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 				tx.SetBlock(pos.Add(cube.Pos{0, y}), SugarCane{}, nil)
 			}
 		}
-		return true
+		return item.BoneMealResultSmall
 	}
-	return false
+	return item.BoneMealResultNone
 }
 
 // canGrowHere implements logic to check if sugar cane can live/grow here.

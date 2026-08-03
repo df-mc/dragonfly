@@ -18,13 +18,17 @@ type ServerBoundLoadingScreenHandler struct {
 func (h *ServerBoundLoadingScreenHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, _ Controllable) error {
 	pk := p.(*packet.ServerBoundLoadingScreen)
 	v, ok := pk.LoadingScreenID.Value()
-	if !ok || h.expectedID.Load() == 0 {
+	expected := h.expectedID.Load()
+
+	switch {
+	case !ok || expected == 0:
 		return nil
-	} else if v != h.expectedID.Load() {
-		return fmt.Errorf("expected loading screen ID %d, got %d", h.expectedID.Load(), v)
-	} else if pk.Type == packet.LoadingScreenTypeEnd {
+	case v != expected:
+		return fmt.Errorf("expected loading screen ID %d, got %d", expected, v)
+	case pk.Type == packet.LoadingScreenTypeEnd:
 		s.changingDimension.Store(false)
 		h.expectedID.Store(0)
 	}
+
 	return nil
 }

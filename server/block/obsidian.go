@@ -2,6 +2,7 @@ package block
 
 import (
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Obsidian is a dark purple block known for its high blast resistance and strength, most commonly found when
@@ -37,9 +38,20 @@ func (o Obsidian) EncodeBlock() (string, map[string]any) {
 	return "minecraft:obsidian", nil
 }
 
+// Frame returns true if the block can form part of a nether portal frame in the dimension passed. Crying obsidian
+// cannot be used as a frame block.
+func (o Obsidian) Frame(dimension world.Dimension) bool {
+	return dimension == world.Nether && !o.Crying
+}
+
+// SupportsEndCrystal returns whether an End crystal may be placed on the obsidian.
+func (o Obsidian) SupportsEndCrystal() bool {
+	return !o.Crying
+}
+
 // BreakInfo ...
 func (o Obsidian) BreakInfo() BreakInfo {
 	return newBreakInfo(35, func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierDiamond.HarvestLevel
-	}, pickaxeEffective, oneOf(o)).withBlastResistance(6000)
+	}, pickaxeEffective, oneOf(o)).withBlastResistance(1200)
 }

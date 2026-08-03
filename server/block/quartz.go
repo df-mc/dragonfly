@@ -45,7 +45,7 @@ func (q QuartzPillar) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 // BreakInfo ...
 func (q Quartz) BreakInfo() BreakInfo {
 	if q.Smooth {
-		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(q)).withBlastResistance(30)
+		return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(q)).withBlastResistance(6)
 	}
 	return newBreakInfo(0.8, pickaxeHarvestable, pickaxeEffective, oneOf(q))
 }

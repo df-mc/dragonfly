@@ -1,12 +1,12 @@
 package block
 
 import (
-	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
-	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/sound"
 	"math/rand/v2"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 // Lava is a light-emitting fluid block that causes fire damage.
@@ -86,6 +86,11 @@ func (Lava) HasLiquidDrops() bool {
 	return false
 }
 
+// LiquidRemoveBlock plays a fizz sound at the position of the removed block.
+func (Lava) LiquidRemoveBlock(pos cube.Pos, tx *world.Tx, _ world.Block) {
+	tx.PlaySound(pos.Vec3Centre(), sound.Fizz{})
+}
+
 // LightDiffusionLevel always returns 2.
 func (Lava) LightDiffusionLevel() uint8 {
 	return 2
@@ -133,9 +138,9 @@ func (l Lava) LiquidFalling() bool {
 	return l.Falling
 }
 
-// BlastResistance always returns 500.
+// BlastResistance ...
 func (Lava) BlastResistance() float64 {
-	return 500
+	return 100
 }
 
 // LiquidType returns 10 as a unique identifier for the lava liquid.
@@ -171,7 +176,7 @@ func (l Lava) Harden(pos cube.Pos, tx *world.Tx, flownIntoBy *cube.Pos) bool {
 			}
 		}, tx.Range())
 		if b != nil {
-			ctx := event.C(tx)
+			ctx := tx.Event()
 			if tx.World().Handler().HandleLiquidHarden(ctx, pos, l, water, b); ctx.Cancelled() {
 				return false
 			}
@@ -191,7 +196,7 @@ func (l Lava) Harden(pos cube.Pos, tx *world.Tx, flownIntoBy *cube.Pos) bool {
 	} else {
 		b = Cobblestone{}
 	}
-	ctx := event.C(tx)
+	ctx := tx.Event()
 	if tx.World().Handler().HandleLiquidHarden(ctx, pos, l, water, b); ctx.Cancelled() {
 		return false
 	}
