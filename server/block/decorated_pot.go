@@ -40,6 +40,10 @@ func (p DecoratedPot) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // ProjectileHit ...
 func (p DecoratedPot) ProjectileHit(pos cube.Pos, tx *world.Tx, _ world.Entity, _ cube.Face) {
+	var drops []item.Stack
+	if extra := p.BreakInfo().AdditionalDrops; extra != nil {
+		drops = extra(pos, tx, nil)
+	}
 	for _, d := range p.Decorations {
 		if d == nil {
 			dropItem(tx, item.NewStack(item.Brick{}, 1), pos.Vec3Centre())
@@ -48,6 +52,9 @@ func (p DecoratedPot) ProjectileHit(pos cube.Pos, tx *world.Tx, _ world.Entity, 
 		dropItem(tx, item.NewStack(d, 1), pos.Vec3Centre())
 	}
 	breakBlockNoDrops(p, pos, tx)
+	for _, drop := range drops {
+		dropItem(tx, drop, pos.Vec3Centre())
+	}
 }
 
 // Pick ...
@@ -120,10 +127,11 @@ func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.U
 
 // BreakInfo ...
 func (p DecoratedPot) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(DecoratedPot{Decorations: p.Decorations})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, oneOf(DecoratedPot{Decorations: p.Decorations})).withAdditionalDrops(func(cube.Pos, *world.Tx, item.User) []item.Stack {
 		if !p.Item.Empty() {
-			dropItem(tx, p.Item, pos.Vec3Centre())
+			return []item.Stack{p.Item}
 		}
+		return nil
 	})
 }
 

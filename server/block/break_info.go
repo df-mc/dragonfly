@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
+	"github.com/go-gl/mathgl/mgl64"
 )
 
 // Breakable represents a block that may be broken by a player in survival mode. Blocks not include are blocks
@@ -129,6 +130,14 @@ type BreakInfo struct {
 	Effective func(t item.Tool) bool
 	// Drops is a function called to get the drops of the block if it is broken using the item passed.
 	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
+	// AdditionalDrops is an observational function called to get drops that are not dependent on the tool used to
+	// break the block. It is called before the cancellable break event and before the block is cleared, so it must not
+	// mutate the world or the block's inventories. The user is nil when the block is broken without a player, such as
+	// by an explosion.
+	AdditionalDrops func(pos cube.Pos, tx *world.Tx, u item.User) []item.Stack
+	// AdditionalDropPosition optionally returns the position at which AdditionalDrops are spawned. It must be
+	// observational and pure. If nil, additional drops are spawned at the block centre.
+	AdditionalDropPosition func(pos cube.Pos) mgl64.Vec3
 	// BreakHandler is called after the block has broken.
 	BreakHandler func(pos cube.Pos, w *world.Tx, u item.User)
 	// XPDrops is the range of XP a block can drop when broken.
@@ -165,6 +174,18 @@ func (b BreakInfo) withBlastResistance(res float64) BreakInfo {
 // withBreakHandler sets the BreakHandler field of the BreakInfo struct to the passed value.
 func (b BreakInfo) withBreakHandler(handler func(pos cube.Pos, w *world.Tx, u item.User)) BreakInfo {
 	b.BreakHandler = handler
+	return b
+}
+
+// withAdditionalDrops sets the AdditionalDrops field of the BreakInfo struct to the function passed.
+func (b BreakInfo) withAdditionalDrops(drops func(pos cube.Pos, tx *world.Tx, u item.User) []item.Stack) BreakInfo {
+	b.AdditionalDrops = drops
+	return b
+}
+
+// withAdditionalDropPosition sets the AdditionalDropPosition field of the BreakInfo struct to the function passed.
+func (b BreakInfo) withAdditionalDropPosition(position func(pos cube.Pos) mgl64.Vec3) BreakInfo {
+	b.AdditionalDropPosition = position
 	return b
 }
 
@@ -402,11 +423,31 @@ func cropSeedDrops(seed, crop world.Item, growth int) func(item.Tool, []item.Enc
 // breakBlock removes a block, shows breaking particles and drops the drops of
 // the block as items.
 func breakBlock(b world.Block, pos cube.Pos, tx *world.Tx) {
+	breakable, ok := b.(Breakable)
+	if !ok {
+		breakBlockNoDrops(b, pos, tx)
+		return
+	}
+
+	info := breakable.BreakInfo()
+	drops := info.Drops(item.ToolNone{}, nil)
+	additionalDropCount := 0
+	if info.AdditionalDrops != nil {
+		additional := info.AdditionalDrops(pos, tx, nil)
+		additionalDropCount = len(additional)
+		drops = append(drops, additional...)
+	}
+	additionalDropPos := pos.Vec3Centre()
+	if additionalDropCount > 0 && info.AdditionalDropPosition != nil {
+		additionalDropPos = info.AdditionalDropPosition(pos)
+	}
 	breakBlockNoDrops(b, pos, tx)
-	if breakable, ok := b.(Breakable); ok {
-		for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
-			dropItem(tx, drop, pos.Vec3Centre())
+	for i, drop := range drops {
+		dropPos := pos.Vec3Centre()
+		if i >= len(drops)-additionalDropCount {
+			dropPos = additionalDropPos
 		}
+		dropItem(tx, drop, dropPos)
 	}
 }
 

@@ -2137,7 +2137,8 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 		return
 	}
 	held, _ := p.HeldItems()
-	drops := p.drops(held, b)
+	drops, additionalDropCount, additionalDropPosition := p.drops(pos, held, b)
+	originalDrops := slices.Clone(drops)
 
 	xp := 0
 	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
@@ -2166,8 +2167,13 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 			p.tx.AddEntity(orb)
 		}
 	}
-	for _, drop := range drops {
-		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre(), Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
+	preserveAdditionalPosition := additionalDropPosition != nil && additionalDropCount > 0 && len(drops) >= additionalDropCount && slices.EqualFunc(drops[len(drops)-additionalDropCount:], originalDrops[len(originalDrops)-additionalDropCount:], item.Stack.Equal)
+	for i, drop := range drops {
+		dropPos := pos.Vec3Centre()
+		if preserveAdditionalPosition && i >= len(drops)-additionalDropCount {
+			dropPos = additionalDropPosition(pos)
+		}
+		opts := world.EntitySpawnOpts{Position: dropPos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
 		p.tx.AddEntity(entity.NewItem(opts, drop))
 	}
 
@@ -2183,20 +2189,26 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 }
 
 // drops returns the drops that the player can get from the block passed using the item held.
-func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
+func (p *Player) drops(pos cube.Pos, held item.Stack, b world.Block) (drops []item.Stack, additionalDropCount int, additionalDropPosition func(cube.Pos) mgl64.Vec3) {
 	t, ok := held.Item().(item.Tool)
 	if !ok {
 		t = item.ToolNone{}
 	}
-	var drops []item.Stack
-	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
-		if breakable.BreakInfo().Harvestable(t) {
-			drops = breakable.BreakInfo().Drops(t, held.Enchantments())
+	if breakable, ok := b.(block.Breakable); ok {
+		info := breakable.BreakInfo()
+		if !p.GameMode().CreativeInventory() && info.Harvestable(t) {
+			drops = append(drops, info.Drops(t, held.Enchantments())...)
+		}
+		if info.AdditionalDrops != nil {
+			additional := info.AdditionalDrops(pos, p.tx, p)
+			drops = append(drops, additional...)
+			additionalDropCount = len(additional)
+			additionalDropPosition = info.AdditionalDropPosition
 		}
 	} else if it, ok := b.(world.Item); ok && !p.GameMode().CreativeInventory() {
 		drops = []item.Stack{item.NewStack(it, 1)}
 	}
-	return drops
+	return drops, additionalDropCount, additionalDropPosition
 }
 
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to

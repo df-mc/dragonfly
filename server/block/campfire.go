@@ -61,12 +61,14 @@ func (c Campfire) BreakInfo() BreakInfo {
 			return []item.Stack{item.NewStack(SoulSoil{}, 1)}
 		}
 		panic("should never happen")
-	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	}).withAdditionalDrops(func(cube.Pos, *world.Tx, item.User) []item.Stack {
+		var drops []item.Stack
 		for _, v := range c.Items {
 			if !v.Item.Empty() {
-				dropItem(tx, v.Item, pos.Vec3Centre())
+				drops = append(drops, v.Item)
 			}
 		}
+		return drops
 	})
 }
 

@@ -86,10 +86,11 @@ func (i ItemFrame) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *wo
 
 // BreakInfo ...
 func (i ItemFrame) BreakInfo() BreakInfo {
-	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, oneOf(ItemFrame{Glowing: i.Glowing})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
+	return newBreakInfo(0.25, alwaysHarvestable, nothingEffective, oneOf(ItemFrame{Glowing: i.Glowing})).withAdditionalDrops(func(cube.Pos, *world.Tx, item.User) []item.Stack {
 		if !i.Item.Empty() {
-			dropItem(tx, i.Item, pos.Vec3Centre())
+			return []item.Stack{i.Item}
 		}
+		return nil
 	})
 }
 
