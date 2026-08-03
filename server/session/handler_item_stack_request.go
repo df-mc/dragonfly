@@ -102,9 +102,9 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 					break
 				}
 			}
-			err = h.handleCraft(a, s, tx)
+			err = h.handleCraft(a, s, tx, c)
 		case *protocol.AutoCraftRecipeStackRequestAction:
-			err = h.handleAutoCraft(a, s, tx)
+			err = h.handleAutoCraft(a, s, tx, c)
 		case *protocol.CraftRecipeOptionalStackRequestAction:
 			err = h.handleCraftRecipeOptional(a, s, req.FilterStrings, c, tx)
 		case *protocol.CraftLoomRecipeStackRequestAction:
