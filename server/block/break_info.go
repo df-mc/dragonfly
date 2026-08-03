@@ -130,13 +130,12 @@ type BreakInfo struct {
 	Effective func(t item.Tool) bool
 	// Drops is a function called to get the drops of the block if it is broken using the item passed.
 	Drops func(t item.Tool, enchantments []item.Enchantment) []item.Stack
-	// AdditionalDrops is an observational function called to get drops that are not dependent on the tool used to
-	// break the block. It is called before the cancellable break event and before the block is cleared, so it must not
-	// mutate the world or the block's inventories. The user is nil when the block is broken without a player, such as
-	// by an explosion.
+	// AdditionalDrops returns drops that do not depend on the tool used to break the block. It is called before the
+	// cancellable break event and before the block is cleared, so it must not change the world or any inventory. u is
+	// nil when the block is broken without a player, such as by an explosion.
 	AdditionalDrops func(pos cube.Pos, tx *world.Tx, u item.User) []item.Stack
-	// AdditionalDropPosition optionally returns the position at which AdditionalDrops are spawned. It must be
-	// observational and pure. If nil, additional drops are spawned at the block centre.
+	// AdditionalDropPosition returns the position at which AdditionalDrops are spawned. If nil, they are spawned at
+	// the block centre. The function must not change the world or any inventory.
 	AdditionalDropPosition func(pos cube.Pos) mgl64.Vec3
 	// BreakHandler is called after the block has broken.
 	BreakHandler func(pos cube.Pos, w *world.Tx, u item.User)
