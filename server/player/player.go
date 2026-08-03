@@ -2182,28 +2182,18 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 	}
 }
 
-type creativeDropper interface {
-	CreativeDrops() []item.Stack
-}
-
 // drops returns the drops that the player can get from the block passed using the item held.
 func (p *Player) drops(held item.Stack, b world.Block) []item.Stack {
 	t, ok := held.Item().(item.Tool)
 	if !ok {
 		t = item.ToolNone{}
 	}
-	if p.GameMode().CreativeInventory() {
-		if b, ok := b.(creativeDropper); ok {
-			return b.CreativeDrops()
-		}
-		return nil
-	}
 	var drops []item.Stack
-	if breakable, ok := b.(block.Breakable); ok {
+	if breakable, ok := b.(block.Breakable); ok && !p.GameMode().CreativeInventory() {
 		if breakable.BreakInfo().Harvestable(t) {
 			drops = breakable.BreakInfo().Drops(t, held.Enchantments())
 		}
-	} else if it, ok := b.(world.Item); ok {
+	} else if it, ok := b.(world.Item); ok && !p.GameMode().CreativeInventory() {
 		drops = []item.Stack{item.NewStack(it, 1)}
 	}
 	return drops
