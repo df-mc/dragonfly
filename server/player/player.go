@@ -2167,10 +2167,11 @@ func (p *Player) BreakBlock(pos cube.Pos) {
 			p.tx.AddEntity(orb)
 		}
 	}
-	preserveAdditionalPosition := additionalDropPosition != nil && additionalDropCount > 0 && len(drops) >= additionalDropCount && slices.EqualFunc(drops[len(drops)-additionalDropCount:], originalDrops[len(originalDrops)-additionalDropCount:], item.Stack.Equal)
+	additionalDropStart, additionalDropEnd, preserveAdditionalPosition := unchangedAdditionalDropRange(drops, originalDrops, additionalDropCount)
+	preserveAdditionalPosition = preserveAdditionalPosition && additionalDropPosition != nil
 	for i, drop := range drops {
 		dropPos := pos.Vec3Centre()
-		if preserveAdditionalPosition && i >= len(drops)-additionalDropCount {
+		if preserveAdditionalPosition && i >= additionalDropStart && i < additionalDropEnd {
 			dropPos = additionalDropPosition(pos)
 		}
 		opts := world.EntitySpawnOpts{Position: dropPos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
@@ -2209,6 +2210,31 @@ func (p *Player) drops(pos cube.Pos, held item.Stack, b world.Block) (drops []it
 		drops = []item.Stack{item.NewStack(it, 1)}
 	}
 	return drops, additionalDropCount, additionalDropPosition
+}
+
+// unchangedAdditionalDropRange returns the current range of the original additional drops if a handler left them
+// together and unchanged.
+func unchangedAdditionalDropRange(drops, original []item.Stack, additionalCount int) (start, end int, ok bool) {
+	if additionalCount <= 0 || additionalCount > len(original) {
+		return 0, 0, false
+	}
+	if len(drops) >= len(original) && slices.EqualFunc(drops[:len(original)], original, item.Stack.Equal) {
+		return len(original) - additionalCount, len(original), true
+	}
+	additional := original[len(original)-additionalCount:]
+	match := -1
+	for candidate := 0; candidate+additionalCount <= len(drops); candidate++ {
+		if slices.EqualFunc(drops[candidate:candidate+additionalCount], additional, item.Stack.Equal) {
+			if match >= 0 {
+				return 0, 0, false
+			}
+			match = candidate
+		}
+	}
+	if match < 0 {
+		return 0, 0, false
+	}
+	return match, match + additionalCount, true
 }
 
 // PickBlock makes the player pick a block in the world at a position passed. If the player is unable to
