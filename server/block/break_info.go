@@ -39,7 +39,7 @@ type BreakContext struct {
 	// AquaAffinity is true if the player wears a helmet enchanted with Aqua Affinity, negating the
 	// underwater mining penalty.
 	AquaAffinity bool
-	// Flying is true if the player is flying, which makes Airborne to not apply mining speed penalty.
+	// Flying is true if the player is flying, which suppresses the airborne mining speed penalty.
 	Flying bool
 	// Airborne is true if the player is not on the ground, which slows mining by 5x.
 	Airborne bool
