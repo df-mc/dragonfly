@@ -413,7 +413,7 @@ func (srv *Server) makeBlockEntries() {
 // at startup
 func (srv *Server) makeItemComponents() {
 	custom := world.CustomItems()
-	srv.customItems = make([]protocol.ItemEntry, len(custom))
+	srv.customItems = make([]protocol.ItemEntry, 0, len(custom))
 
 	for _, it := range custom {
 		name, _ := it.EncodeItem()
