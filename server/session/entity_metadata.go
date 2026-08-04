@@ -93,7 +93,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeyValue] = int32(o.Experience())
 	}
 	if f, ok := e.(firework); ok {
-		m[protocol.EntityDataKeyDisplayTileRuntimeID] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
+		m[protocol.EntityDataKeyDisplayTileRuntimeID] = item.WriteNBT(item.NewStack(f.Firework(), 1), false)
 		if o, ok := e.(owned); ok && f.Attached() && o.Owner() != nil {
 			m[protocol.EntityDataKeyCustomDisplay] = int64(s.handleRuntimeID(o.Owner()))
 		}

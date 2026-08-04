@@ -118,7 +118,7 @@ func (i ItemFrame) EncodeBlock() (name string, properties map[string]any) {
 func (i ItemFrame) DecodeNBT(data map[string]any) any {
 	i.DropChance = float64(nbtconv.Float32(data, "ItemDropChance"))
 	i.Rotations = int(nbtconv.Uint8(data, "ItemRotation"))
-	i.Item = nbtconv.MapItem(data, "Item")
+	i.Item = item.MapNBT(data, "Item")
 	return i
 }
 
@@ -133,7 +133,7 @@ func (i ItemFrame) EncodeNBT() map[string]any {
 		m["id"] = "GlowItemFrame"
 	}
 	if !i.Item.Empty() {
-		m["Item"] = nbtconv.WriteItem(i.Item, true)
+		m["Item"] = item.WriteNBT(i.Item, true)
 	}
 	return m
 }

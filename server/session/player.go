@@ -14,7 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -987,7 +986,7 @@ func stackFromItem(br world.BlockRegistry, it item.Stack) protocol.ItemStack {
 		HasNetworkID:   true,
 		Count:          uint16(it.Count()),
 		BlockRuntimeID: int32(blockRuntimeID),
-		NBTData:        nbtconv.WriteItem(it, false),
+		NBTData:        item.WriteNBT(it, false),
 	}
 }
 
@@ -1011,7 +1010,7 @@ func stackToItem(br world.BlockRegistry, it protocol.ItemStack) item.Stack {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
-	return nbtconv.Item(it.NBTData, &s)
+	return item.ReadNBT(it.NBTData, &s)
 }
 
 // instanceFromItem converts an item.Stack to its network ItemInstance representation.

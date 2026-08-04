@@ -6,7 +6,6 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -38,7 +37,7 @@ func (conf ItemBehaviourConfig) New() *ItemBehaviour {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.MaxCount() - i.Count())
 	}
-	i = nbtconv.Item(nbtconv.WriteItem(i, true), nil)
+	i = item.ReadNBT(item.WriteNBT(i, true), nil)
 
 	if conf.PickupDelay == 0 {
 		conf.PickupDelay = time.Second / 2
