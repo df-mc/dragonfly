@@ -217,11 +217,17 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 
 // exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
 func (c ExplosionConfig) exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
-	pos := e.Position()
-	box := e.H().Type().BBox(e).Translate(pos)
+	return c.Exposure(tx, origin, e.H().Type().BBox(e).Translate(e.Position()))
+}
 
+// Exposure returns the fraction of rays from origin to box that reach it without hitting a
+// block in src. SuppressUnderwaterImpact only applies if src is a world.LiquidSource.
+func (c ExplosionConfig) Exposure(src world.BlockSource, origin mgl64.Vec3, box cube.BBox) float64 {
 	boxMin, boxMax := box.Min(), box.Max()
 	diff := boxMax.Sub(boxMin).Mul(2.0).Add(mgl64.Vec3{1, 1, 1})
+	if diff[0] <= 0 || diff[1] <= 0 || diff[2] <= 0 {
+		return 0.0
+	}
 
 	step := mgl64.Vec3{1.0 / diff[0], 1.0 / diff[1], 1.0 / diff[2]}
 	if step[0] < 0.0 || step[1] < 0.0 || step[2] < 0.0 {
@@ -230,6 +236,9 @@ func (c ExplosionConfig) exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entit
 
 	xOffset := (1.0 - math.Floor(diff[0])/diff[0]) / 2.0
 	zOffset := (1.0 - math.Floor(diff[2])/diff[2]) / 2.0
+
+	liquids, underwater := src.(world.LiquidSource)
+	underwater = underwater && c.SuppressUnderwaterImpact
 
 	var checks, misses float64
 	for x := 0.0; x <= 1.0; x += step[0] {
@@ -240,24 +249,33 @@ func (c ExplosionConfig) exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entit
 					lerp(y, boxMin[1], boxMax[1]),
 					lerp(z, boxMin[2], boxMax[2]) + zOffset,
 				}
+				checks++
+				if point.Sub(origin).LenSqr() == 0 {
+					// Nothing can block a ray of no length.
+					misses++
+					continue
+				}
+
 				var collided bool
 				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (cont bool) {
-					if c.SuppressUnderwaterImpact {
-						if _, liquid := tx.Liquid(pos); liquid {
+					if underwater {
+						if _, liquid := liquids.Liquid(pos); liquid {
 							collided = true
 							return false
 						}
 					}
-					_, collided = trace.BlockIntercept(pos, tx, tx.Block(pos), origin, point)
+					collided = trace.BlockIntersects(pos, src, src.Block(pos), origin, point)
 					return !collided
 				})
 
 				if !collided {
 					misses++
 				}
-				checks++
 			}
 		}
+	}
+	if checks == 0 {
+		return 0.0
 	}
 	return misses / checks
 }
