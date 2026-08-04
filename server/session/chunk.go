@@ -142,13 +142,13 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chu
 		biomes := chunk.EncodeBiomes(c, chunk.NetworkEncoding)
 		if hash := xxhash.Sum64(biomes); s.trackBlob(hash, biomes) {
 			s.writePacket(&packet.LevelChunk{
-				Dimension:       s.dimensionID(dim),
-				SubChunkCount:   protocol.SubChunkRequestModeLimited,
-				Position:        protocol.ChunkPos(pos),
-				HighestSubChunk: c.HighestFilledSubChunk(),
-				BlobHashes:      []uint64{hash},
-				RawPayload:      []byte{0},
-				CacheEnabled:    true,
+				Dimension:     s.dimensionID(dim),
+				SubChunkCount: protocol.SubChunkRequestModeLimited,
+				Position:      protocol.ChunkPos(pos),
+				SubChunkLimit: protocol.Option(int32(c.HighestFilledSubChunk())),
+				BlobHashes:    []uint64{hash},
+				RawPayload:    []byte{0},
+				CacheEnabled:  true,
 			})
 			return
 		}
@@ -203,11 +203,11 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chu
 func (s *Session) sendNetworkChunk(pos world.ChunkPos, dim world.Dimension, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	if subChunkRequests {
 		s.writePacket(&packet.LevelChunk{
-			Dimension:       s.dimensionID(dim),
-			SubChunkCount:   protocol.SubChunkRequestModeLimited,
-			Position:        protocol.ChunkPos(pos),
-			HighestSubChunk: c.HighestFilledSubChunk(),
-			RawPayload:      append(chunk.EncodeBiomes(c, chunk.NetworkEncoding), 0),
+			Dimension:     s.dimensionID(dim),
+			SubChunkCount: protocol.SubChunkRequestModeLimited,
+			Position:      protocol.ChunkPos(pos),
+			SubChunkLimit: protocol.Option(int32(c.HighestFilledSubChunk())),
+			RawPayload:    append(chunk.EncodeBiomes(c, chunk.NetworkEncoding), 0),
 		})
 		return
 	}

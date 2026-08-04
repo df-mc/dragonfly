@@ -81,7 +81,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 	case Controllable:
 		_, actualPlayer := sessions.Lookup(v.UUID())
 		if !actualPlayer {
-			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionAdd, Entries: []protocol.PlayerListEntry{{
+			s.writePacket(&packet.PlayerList{Entries: []protocol.PlayerListEntry{{
+				ActionType:     protocol.PlayerListActionAdd,
 				UUID:           v.UUID(),
 				EntityUniqueID: int64(runtimeID),
 				Username:       v.Name(),
@@ -108,8 +109,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 			},
 		})
 		if !actualPlayer {
-			s.writePacket(&packet.PlayerList{ActionType: packet.PlayerListActionRemove, Entries: []protocol.PlayerListEntry{{
-				UUID: v.UUID(),
+			s.writePacket(&packet.PlayerList{Entries: []protocol.PlayerListEntry{{
+				ActionType: protocol.PlayerListActionRemove,
+				UUID:       v.UUID(),
 			}}})
 		} else {
 			s.ViewSkin(e)
