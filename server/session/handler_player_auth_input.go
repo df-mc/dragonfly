@@ -69,24 +69,36 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 // handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
 func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session, tx *world.Tx, c Controllable) error {
 	if pk.InputData.Load(packet.InputFlagPerformItemInteraction) {
-		if err := h.handleUseItemData(pk.ItemInteractionData, s, c); err != nil {
+		data, ok := pk.ItemInteractionData.Value()
+		if !ok {
+			return fmt.Errorf("item interaction flag set without item interaction data")
+		}
+		if err := h.handleUseItemData(data, s, c); err != nil {
 			return err
 		}
 	}
 	if pk.InputData.Load(packet.InputFlagPerformBlockActions) {
-		if err := h.handleBlockActions(pk.BlockActions, s, c); err != nil {
+		actions, ok := pk.BlockActions.Value()
+		if !ok {
+			return fmt.Errorf("block actions flag set without block actions")
+		}
+		if err := h.handleBlockActions(actions, s, c); err != nil {
 			return err
 		}
 	}
 	h.handleInputFlags(pk.InputData, s, c)
 
 	if pk.InputData.Load(packet.InputFlagPerformItemStackRequest) {
+		request, ok := pk.ItemStackRequest.Value()
+		if !ok {
+			return fmt.Errorf("item stack request flag set without item stack request")
+		}
 		s.inTransaction.Store(true)
 		defer s.inTransaction.Store(false)
 
 		// As of 1.18 this is now used for sending item stack requests such as when mining a block.
 		sh := s.handlers[packet.IDItemStackRequest].(*ItemStackRequestHandler)
-		if err := sh.handleRequest(pk.ItemStackRequest, s, tx, c); err != nil {
+		if err := sh.handleRequest(request, s, tx, c); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
 			s.conf.Log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
@@ -96,7 +108,7 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 }
 
 // handleInputFlags handles the toggleable input flags set in a PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Session, c Controllable) {
+func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.InputFlags, s *Session, c Controllable) {
 	if flags.Load(packet.InputFlagStartSprinting) {
 		c.StartSprinting()
 	}
