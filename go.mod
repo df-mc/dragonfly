@@ -10,7 +10,7 @@ require (
 	github.com/go-gl/mathgl v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/sandertv/gophertunnel v1.57.2-0.20260720171832-1706d533aa80
+	github.com/sandertv/gophertunnel v1.57.2-0.20260805192436-b36ddade9b46
 	github.com/segmentio/fasthash v1.0.3
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
 	golang.org/x/mod v0.32.0
@@ -54,5 +54,3 @@ require (
 	golang.org/x/time v0.10.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
-
-replace github.com/sandertv/gophertunnel => github.com/hashimthearab/gophertunnel v1.25.3-0.20260805191301-0339703709dc
