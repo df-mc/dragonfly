@@ -24,8 +24,8 @@ func Components(identifier string, b world.CustomBlock, blockID int32) map[strin
 		})
 	}
 	if _, ok := b.(block.Breakable); ok {
-		// The component's value is the seconds the client takes to destroy the block, not
-		// its hardness. Bedrock has no per-tool speed component, so the bare-handed
+		// The component's value is the seconds the client takes to destroy the block.
+		// Bedrock has no per-tool speed component, so the bare-handed
 		// duration is the only one a static definition can carry.
 		seconds := block.BreakDuration(b, item.Stack{}, block.BreakContext{}).Seconds()
 		builder.AddComponent("minecraft:destructible_by_mining", map[string]any{"value": float32(seconds)})
