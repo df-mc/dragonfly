@@ -44,6 +44,9 @@ type Settings struct {
 	// TickRange is the radius in chunks around a Viewer that has its blocks and entities ticked when the world is
 	// ticked. If set to 0, blocks and entities will never be ticked.
 	TickRange int32
+	// FallDamage specifies if entities take damage from falling in this World. If set to false, falls are
+	// harmless. It matches the falldamage game rule.
+	FallDamage bool
 }
 
 // defaultSettings returns the default Settings for a new World.
@@ -55,5 +58,6 @@ func defaultSettings() *Settings {
 		TimeCycle:       true,
 		WeatherCycle:    true,
 		TickRange:       6,
+		FallDamage:      true,
 	}
 }
