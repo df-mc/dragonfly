@@ -278,6 +278,12 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
 			Mode:            packet.MoveModeTeleport,
+			// TeleportData is written whether or not it is set, so a
+			// MoveModeTeleport with no data leaves the client with a teleport
+			// it has no cause for.
+			TeleportData: protocol.Option(protocol.TeleportData{
+				TeleportCause: packet.TeleportCauseUnknown,
+			}),
 		})
 		return
 	}
