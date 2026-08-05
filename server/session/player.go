@@ -1154,7 +1154,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 }
 
 // shapeAttachedEntityRuntimeID returns the runtime ID of the entity attached to a debug shape.
-func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) int64 {
+func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) uint64 {
 	var handle *world.EntityHandle
 	switch shape := shape.(type) {
 	case *debug.Arrow:
@@ -1181,12 +1181,12 @@ func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) int64 {
 	if handle == nil {
 		return 0
 	}
-	return int64(s.handleRuntimeID(handle))
+	return s.handleRuntimeID(handle)
 }
 
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
 // for some fields such as colour, scale and other per-shape properties.
-func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID int64) protocol.PrimitiveShape {
+func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID uint64) protocol.PrimitiveShape {
 	dimID, _ := world.DimensionID(dim)
 	ps := protocol.PrimitiveShape{
 		NetworkID:   uint64(shape.ShapeID()),
