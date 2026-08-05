@@ -48,10 +48,10 @@ func (m Material) WithAmbientOcclusion() Material {
 
 // WithAmbientOcclusionIntensity returns a copy of the Material with ambient occlusion applied
 // at the intensity given, where 0 disables it and 1 is the vanilla strength. The client
-// expects an intensity between 0 and 1.
+// expects an intensity between 0 and 10.
 func (m Material) WithAmbientOcclusionIntensity(intensity float32) Material {
-	if intensity < 0 || intensity > 1 {
-		panic("customblock: ambient occlusion intensity must be between 0 and 1")
+	if intensity < 0 || intensity > 10 {
+		panic("customblock: ambient occlusion intensity must be between 0 and 10")
 	}
 	m.ambientOcclusion = intensity
 	return m
