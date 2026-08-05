@@ -143,7 +143,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chu
 		if hash := xxhash.Sum64(biomes); s.trackBlob(hash, biomes) {
 			s.writePacket(&packet.LevelChunk{
 				Dimension:     s.dimensionID(dim),
-				SubChunkCount: protocol.SubChunkRequestModeLimited,
+				SubChunkCount: 0,
 				Position:      protocol.ChunkPos(pos),
 				SubChunkLimit: protocol.Option(int32(c.HighestFilledSubChunk())),
 				BlobHashes:    []uint64{hash},
@@ -204,7 +204,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, dim world.Dimension, c *c
 	if subChunkRequests {
 		s.writePacket(&packet.LevelChunk{
 			Dimension:     s.dimensionID(dim),
-			SubChunkCount: protocol.SubChunkRequestModeLimited,
+			SubChunkCount: 0,
 			Position:      protocol.ChunkPos(pos),
 			SubChunkLimit: protocol.Option(int32(c.HighestFilledSubChunk())),
 			RawPayload:    append(chunk.EncodeBiomes(c, chunk.NetworkEncoding), 0),
