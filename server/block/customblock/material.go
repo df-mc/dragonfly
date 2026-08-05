@@ -48,8 +48,11 @@ func (m Material) WithAmbientOcclusion() Material {
 
 // WithAmbientOcclusionIntensity returns a copy of the Material with ambient occlusion applied
 // at the intensity given, where 0 disables it and 1 is the vanilla strength. The client
-// expects an intensity between 0 and 10.
+// expects an intensity between 0 and 1.
 func (m Material) WithAmbientOcclusionIntensity(intensity float32) Material {
+	if intensity < 0 || intensity > 1 {
+		panic("customblock: ambient occlusion intensity must be between 0 and 1")
+	}
 	m.ambientOcclusion = intensity
 	return m
 }
@@ -63,11 +66,9 @@ func (m Material) WithoutAmbientOcclusion() Material {
 // Encode returns the material encoded as a map that can be sent over the network to the client.
 func (m Material) Encode() map[string]any {
 	return map[string]any{
-		"texture":       m.texture,
-		"render_method": m.renderMethod.String(),
-		"face_dimming":  m.faceDimming,
-		// The client reads this as an intensity, not a flag: a bool here is silently
-		// rejected and the block renders unlit.
+		"texture":           m.texture,
+		"render_method":     m.renderMethod.String(),
+		"face_dimming":      m.faceDimming,
 		"ambient_occlusion": m.ambientOcclusion,
 	}
 }
