@@ -84,10 +84,10 @@ github.com/pion/webrtc/v4 v4.2.10-0.20260224155637-aa3b95c72dd2 h1:k2diaAQwjS83Z
 github.com/pion/webrtc/v4 v4.2.10-0.20260224155637-aa3b95c72dd2/go.mod h1:9EmLZve0H76eTzf8v2FmchZ6tcBXtDgpfTEu+drW6SY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217 h1:UZQq2253Q+7co/C9Et62RYPBggzz+L+2yqGlvQhSNM8=
-github.com/sandertv/go-raknet v1.15.1-0.20260112202637-beca0b10c217/go.mod h1:/yysjwfCXm2+2OY8mBazLzcxJ3irnylKCyG3FLgUPVU=
-github.com/sandertv/gophertunnel v1.57.2-0.20260805192436-b36ddade9b46 h1:nI+WwVzUNPPiSJerW/exAgpHzO3+FcAEAnEWMw1+MnQ=
-github.com/sandertv/gophertunnel v1.57.2-0.20260805192436-b36ddade9b46/go.mod h1:Frjuk3g1EEGRYjzyrEMS4j/hDvTcez2STfuRHkRPlNU=
+github.com/sandertv/go-raknet v1.15.2-0.20260705184311-0d1fd09e2cf6 h1:Oj7QsiwWTOLmCpOjjmW0Qwde4BE8F5+Kjz817qzICyk=
+github.com/sandertv/go-raknet v1.15.2-0.20260705184311-0d1fd09e2cf6/go.mod h1:/yysjwfCXm2+2OY8mBazLzcxJ3irnylKCyG3FLgUPVU=
+github.com/sandertv/gophertunnel v1.58.0 h1:j7Q+ujZShOSY0gNTFw6iHepD3yJF1cbTllnK/AtQuw8=
+github.com/sandertv/gophertunnel v1.58.0/go.mod h1:Lc+biKFJEg2zX4yagHK04XnjH53nzS9nrjgQHsi+h+8=
 github.com/segmentio/fasthash v1.0.3 h1:EI9+KE1EwvMLBWwjpRDc+fEM+prwxDYbslddQGtrmhM=
 github.com/segmentio/fasthash v1.0.3/go.mod h1:waKX8l2N8yckOgmSsXJi7x1ZfdKZ4x7KRMzBtS3oedY=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
