@@ -278,6 +278,9 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
 			Mode:            packet.MoveModeTeleport,
+			TeleportData: protocol.Option(protocol.TeleportData{
+				TeleportCause: packet.TeleportCauseUnknown,
+			}),
 		})
 		return
 	}
