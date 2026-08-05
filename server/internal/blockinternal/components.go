@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -22,9 +23,12 @@ func Components(identifier string, b world.CustomBlock, blockID int32) map[strin
 			"lightLevel": int32(diffuser.LightDiffusionLevel()),
 		})
 	}
-	if breakable, ok := b.(block.Breakable); ok {
-		info := breakable.BreakInfo()
-		builder.AddComponent("minecraft:destructible_by_mining", map[string]any{"value": float32(info.Hardness)})
+	if _, ok := b.(block.Breakable); ok {
+		// The component's value is the seconds the client takes to destroy the block.
+		// Bedrock has no per-tool speed component, so the bare-handed
+		// duration is the only one a static definition can carry.
+		seconds := block.BreakDuration(b, item.Stack{}, block.BreakContext{}).Seconds()
+		builder.AddComponent("minecraft:destructible_by_mining", map[string]any{"value": float32(seconds)})
 	}
 	if frictional, ok := b.(block.Frictional); ok {
 		builder.AddComponent("minecraft:friction", map[string]any{"value": float32(frictional.Friction())})
