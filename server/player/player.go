@@ -2263,7 +2263,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 // Move, it immediately changes the position and rotation of the player, rather than showing an animation.
 func (p *Player) TeleportRotated(pos mgl64.Vec3, rot cube.Rotation) {
 	ctx := newContext(p)
-	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
+	if p.Handler().HandleTeleport(ctx, pos, rot); ctx.Cancelled() {
 		return
 	}
 	p.data.Rot = rot
