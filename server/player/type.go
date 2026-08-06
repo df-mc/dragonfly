@@ -28,7 +28,12 @@ func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.Entity
 		return allowedInOffhand && it.OffHand()
 	})
 
-	pd.armour.Handle(armourHandler{p: p})
+	armourInventory := pd.armour.Inventory()
+	next := armourInventory.Handler()
+	if h, ok := next.(armourHandler); ok {
+		next = h.next
+	}
+	armourInventory.Handle(armourHandler{p: p, next: next})
 
 	if pd.s != nil {
 		pd.s.HandleInventories(tx, p, pd.inv, pd.offHand, pd.enderChest, pd.ui, pd.armour, pd.heldSlot)
