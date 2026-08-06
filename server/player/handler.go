@@ -138,6 +138,10 @@ type Handler interface {
 	HandleItemPickup(ctx *Context, i *item.Stack)
 	// HandleHeldSlotChange handles the player changing the slot they are currently holding.
 	HandleHeldSlotChange(ctx *Context, from, to int)
+	// HandleArmourEquip handles an item being placed into one of the player's armour slots. It is called
+	// before the item is equipped, so ctx.Cancel() may be used to prevent it. slot is 0 for the helmet and 3
+	// for the boots.
+	HandleArmourEquip(ctx *Context, slot int, before, after item.Stack)
 	// HandleItemDrop handles the player dropping an item on the ground.
 	// ctx.Cancel() may be called to prevent the player from dropping the item.Stack passed on the ground.
 	HandleItemDrop(ctx *Context, s item.Stack)
@@ -166,6 +170,7 @@ var _ Handler = NopHandler{}
 
 func (NopHandler) HandleItemDrop(*Context, item.Stack)                                     {}
 func (NopHandler) HandleHeldSlotChange(*Context, int, int)                                 {}
+func (NopHandler) HandleArmourEquip(*Context, int, item.Stack, item.Stack)                 {}
 func (NopHandler) HandleMove(*Context, mgl64.Vec3, cube.Rotation)                          {}
 func (NopHandler) HandleJump(*Player)                                                      {}
 func (NopHandler) HandleTeleport(*Context, mgl64.Vec3)                                     {}
