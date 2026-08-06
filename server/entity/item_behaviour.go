@@ -115,31 +115,42 @@ func (i *ItemBehaviour) Explode(e *Ent, _ world.ExplosionSource, impact float64)
 
 // tick checks if the item can be picked up or merged with nearby item stacks.
 func (i *ItemBehaviour) tick(e *Ent, tx *world.Tx) {
-	if i.pickupDelay == 0 {
+	if i.pickupDelay <= 0 {
 		i.checkNearby(e, tx)
-	} else if i.pickupDelay < math.MaxInt16*(time.Second/20) {
+		return
+	}
+	if i.pickupDelay < math.MaxInt16*(time.Second/20) {
 		i.pickupDelay -= time.Second / 20
 	}
 }
+
+// collectRadius is how far a collector may be to pick an item up, mergeRadius
+// how far apart two item entities may be to merge.
+var (
+	collectRadius = mgl64.Vec3{1, 0.5, 1}
+	mergeRadius   = mgl64.Vec3{0.5, 0, 0.5}
+)
 
 // checkNearby checks the nearby entities for item collectors and other item
 // stacks. If a collector is found in range, the item will be picked up. If
 // another item stack with the same item type is found in range, the item
 // stacks will merge.
 func (i *ItemBehaviour) checkNearby(e *Ent, tx *world.Tx) {
-	pos := e.Position()
-	bbox := e.H().Type().BBox(e)
-	grown := bbox.GrowVec3(mgl64.Vec3{1, 0.5, 1}).Translate(pos)
+	bbox := e.H().Type().BBox(e).Translate(e.Position())
+	collect, merge := bbox.GrowVec3(collectRadius), bbox.GrowVec3(mergeRadius)
 
-	for other := range tx.EntitiesWithin(bbox.Translate(pos).Grow(2)) {
-		if e.H() == other.H() || !other.H().Type().BBox(other).Translate(other.Position()).IntersectsWith(grown) {
+	for other := range tx.EntitiesWithin(bbox.Grow(2)) {
+		if e.H() == other.H() {
 			continue
 		}
+		otherBBox := other.H().Type().BBox(other).Translate(other.Position())
 		if collector, ok := other.(Collector); ok {
-			// A collector was within range to pick up the entity.
-			i.collect(e, collector, tx)
-			return
-		} else if other.H().Type() == ItemType {
+			if otherBBox.IntersectsWith(collect) {
+				// A collector was within range to pick up the entity.
+				i.collect(e, collector, tx)
+				return
+			}
+		} else if other.H().Type() == ItemType && otherBBox.IntersectsWith(merge) {
 			// Another item entity was in range to merge with.
 			if i.merge(e, other.(*Ent), tx) {
 				return
@@ -148,24 +159,43 @@ func (i *ItemBehaviour) checkNearby(e *Ent, tx *world.Tx) {
 	}
 }
 
-// merge merges the item entity with another item entity.
+// merge merges two item entities into one. Both stacks must fit into one and
+// both items must have landed. The bigger stack is the one that stays, keeping
+// the lower age and the higher pickup delay of the two.
 func (i *ItemBehaviour) merge(e *Ent, other *Ent, tx *world.Tx) bool {
-	pos := e.Position()
 	otherBehaviour := other.Behaviour().(*ItemBehaviour)
-	if otherBehaviour.i.Count() == otherBehaviour.i.MaxCount() || i.i.Count() == i.i.MaxCount() || !i.i.Comparable(otherBehaviour.i) {
-		// Either stack is already filled up to the maximum, meaning we can't
-		// change anything any way, other the stack types weren't comparable.
+	if !i.passive.mc.OnGround() || !otherBehaviour.passive.mc.OnGround() {
 		return false
 	}
-	a, b := otherBehaviour.i.AddStack(i.i)
-
-	tx.AddEntity(NewItem(world.EntitySpawnOpts{Position: other.Position(), Velocity: other.Velocity()}, a))
-	if !b.Empty() {
-		tx.AddEntity(NewItem(world.EntitySpawnOpts{Position: pos, Velocity: e.Velocity()}, b))
+	if !i.i.Comparable(otherBehaviour.i) || i.i.Count()+otherBehaviour.i.Count() > i.i.MaxCount() {
+		return false
 	}
-	_ = e.Close()
-	_ = other.Close()
+
+	dst, dstEnt, src, srcEnt := otherBehaviour, other, i, e
+	if otherBehaviour.i.Count() < i.i.Count() {
+		dst, dstEnt, src, srcEnt = i, e, otherBehaviour, other
+	}
+
+	if srcEnt.data.Age < dstEnt.data.Age {
+		dstEnt.data.Age = srcEnt.data.Age
+	}
+	if src.pickupDelay > dst.pickupDelay {
+		dst.pickupDelay = src.pickupDelay
+	}
+	dst.setStack(dstEnt, dst.i.Grow(src.i.Count()), tx)
+
+	_ = srcEnt.Close()
 	return true
+}
+
+// setStack changes the item stack held by the entity. The stack only reaches
+// the client when the entity is added, so it is sent to viewers again.
+func (i *ItemBehaviour) setStack(e *Ent, s item.Stack, tx *world.Tx) {
+	i.i = s
+	for _, v := range tx.Viewers(e.Position()) {
+		v.HideEntity(e)
+		v.ViewEntity(e)
+	}
 }
 
 // collect makes a collector collect the item (or at least part of it).

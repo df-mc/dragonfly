@@ -125,7 +125,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 				EntityUniqueID:  int64(runtimeID),
 				EntityRuntimeID: runtimeID,
 				Item:            instanceFromItem(s.br, v.Behaviour().(*entity.ItemBehaviour).Item()),
-				Position:        vec64To32(v.Position()),
+				Position:        vec64To32(v.Position().Add(entityOffset(e))),
 				Velocity:        vec64To32(v.Velocity()),
 				EntityMetadata:  metadata,
 			})
@@ -150,7 +150,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 		EntityRuntimeID: runtimeID,
 		EntityType:      id,
 		EntityMetadata:  metadata,
-		Position:        vec64To32(e.Position()),
+		Position:        vec64To32(e.Position().Add(entityOffset(e))),
 		Velocity:        vec64To32(vel),
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
@@ -213,18 +213,38 @@ func (s *Session) ViewEntityDisplacement(e world.Entity, pos mgl64.Vec3, rot cub
 }
 
 func (s *Session) viewEntityAbsoluteMovement(id uint64, e world.Entity, pos mgl64.Vec3, rot cube.Rotation, onGround, authoritative bool) {
-	flags := byte(0)
-	if onGround {
-		flags |= packet.MoveFlagOnGround
+	pos = pos.Add(entityOffset(e))
+
+	if authoritative || id == selfEntityRuntimeID {
+		// The movement must land exactly where the server put it.
+		flags := byte(0)
+		if onGround {
+			flags |= packet.MoveFlagOnGround
+		}
+		if authoritative {
+			flags |= packet.MoveFlagTeleport
+		}
+		s.writePacket(&packet.MoveActorAbsolute{
+			EntityRuntimeID: id,
+			Position:        vec64To32(pos),
+			Rotation:        vec64To32(mgl64.Vec3{rot.Pitch(), rot.Yaw(), rot.Yaw()}),
+			Flags:           flags,
+		})
+		return
 	}
-	if authoritative {
-		flags |= packet.MoveFlagTeleport
-	}
-	s.writePacket(&packet.MoveActorAbsolute{
+
+	// MoveActorAbsolute sets the position the moment it arrives, making the
+	// entity step from tick to tick. MoveActorDelta is interpolated instead.
+	p := vec64To32(pos)
+	s.writePacket(&packet.MoveActorDelta{
 		EntityRuntimeID: id,
-		Position:        vec64To32(pos.Add(entityOffset(e))),
-		Rotation:        vec64To32(mgl64.Vec3{rot.Pitch(), rot.Yaw(), rot.Yaw()}),
-		Flags:           flags,
+		PositionX:       protocol.Option(p[0]),
+		PositionY:       protocol.Option(p[1]),
+		PositionZ:       protocol.Option(p[2]),
+		RotationX:       protocol.Option(float32(rot.Pitch())),
+		RotationY:       protocol.Option(float32(rot.Yaw())),
+		RotationYHead:   protocol.Option(float32(rot.Yaw())),
+		OnGround:        onGround,
 	})
 }
 
