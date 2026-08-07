@@ -86,7 +86,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 				UUID:           v.UUID(),
 				EntityUniqueID: int64(runtimeID),
 				Username:       v.Name(),
-				BuildPlatform:  int32(protocol.DeviceDedicated),
+				BuildPlatform:  int32(protocol.DeviceUnknown),
 				Skin:           skinToProtocol(v.Skin()),
 			}}})
 		}
