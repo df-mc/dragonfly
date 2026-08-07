@@ -582,6 +582,9 @@ func (p *Player) fall(distance float64) {
 	if h, ok := b.(block.EntityLander); ok {
 		h.EntityLand(pos, p.tx, p, &distance)
 	}
+	if !p.tx.World().FallDamage() {
+		return
+	}
 	dmg := distance - 3
 	if boost, ok := p.Effect(effect.JumpBoost); ok {
 		dmg -= float64(boost.Level())

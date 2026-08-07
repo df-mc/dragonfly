@@ -247,6 +247,7 @@ func (d *Data) Settings() *world.Settings {
 		DefaultGameMode: mode,
 		Difficulty:      difficulty,
 		TickRange:       d.ServerChunkTickRange,
+		FallDamage:      d.FallDamage,
 	}
 }
 
@@ -268,6 +269,7 @@ func (d *Data) PutSettings(s *world.Settings) {
 	}
 	d.CurrentTick = s.CurrentTick
 	d.ServerChunkTickRange = s.TickRange
+	d.FallDamage = s.FallDamage
 	mode, _ := world.GameModeID(s.DefaultGameMode)
 	d.GameType = int32(mode)
 	difficulty, _ := world.DifficultyID(s.Difficulty)
