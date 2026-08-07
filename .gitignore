@@ -8,6 +8,5 @@
 /players/
 /resources/
 
-# NetherNet server identity key
-identity.pem
-nethernet_identity.pem
+# NetherNet server identity keys
+/keys
