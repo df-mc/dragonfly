@@ -45,18 +45,18 @@ func NewShapeless(input []Item, output item.Stack, block string) Shapeless {
 	}}
 }
 
-// ShulkerBox is a shapeless recipe crafting items that must retain their user data, such as their contents
-// or colour, when crafted. Vanilla uses these recipes for dyeing items such as shulker boxes, bundles and
-// harnesses.
-type ShulkerBox struct {
+// UserDataShapeless is a shapeless recipe crafting items that must retain their user data, such as their
+// contents or colour, when crafted. Vanilla uses these recipes for dyeing items such as shulker boxes,
+// bundles and harnesses.
+type UserDataShapeless struct {
 	recipe
 }
 
-// NewShulkerBox creates a new shulker box recipe and returns it. The recipe can only be crafted on the block
-// passed in the parameters. If the block given is a crafting table, the recipe can also be crafted in the
-// 2x2 crafting grid in the player's inventory.
-func NewShulkerBox(input []Item, output item.Stack, block string) ShulkerBox {
-	return ShulkerBox{recipe: recipe{
+// NewUserDataShapeless creates a new user data shapeless recipe and returns it. The recipe can only be
+// crafted on the block passed in the parameters. If the block given is a crafting table, the recipe can
+// also be crafted in the 2x2 crafting grid in the player's inventory.
+func NewUserDataShapeless(input []Item, output item.Stack, block string) UserDataShapeless {
+	return UserDataShapeless{recipe: recipe{
 		input:  input,
 		output: []item.Stack{output},
 		block:  block,

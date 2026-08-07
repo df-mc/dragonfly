@@ -58,10 +58,10 @@ type potionContainerChangeRecipe struct {
 //lint:ignore U1000 Function is used through compiler directives.
 func registerVanilla() {
 	var craftingRecipes struct {
-		Shaped     []shapedRecipe    `nbt:"shaped"`
-		Shapeless  []shapelessRecipe `nbt:"shapeless"`
-		ShulkerBox []shapelessRecipe `nbt:"shulker_box"`
-		Multi      []string          `nbt:"multi"`
+		Shaped            []shapedRecipe    `nbt:"shaped"`
+		Shapeless         []shapelessRecipe `nbt:"shapeless"`
+		UserDataShapeless []shapelessRecipe `nbt:"shulker_box"`
+		Multi             []string          `nbt:"multi"`
 	}
 	if err := nbt.Unmarshal(vanillaCraftingData, &craftingRecipes); err != nil {
 		panic(err)
@@ -75,14 +75,14 @@ func registerVanilla() {
 		Register(NewMulti(u))
 	}
 
-	for _, s := range craftingRecipes.ShulkerBox {
+	for _, s := range craftingRecipes.UserDataShapeless {
 		input, ok := s.Input.Items()
 		output, okTwo := s.Output.Stacks()
 		if !ok || !okTwo {
 			// This can be expected to happen, as some recipes contain blocks or items that aren't currently implemented.
 			continue
 		}
-		Register(ShulkerBox{recipe{
+		Register(UserDataShapeless{recipe{
 			input:    input,
 			output:   output,
 			block:    s.Block,
