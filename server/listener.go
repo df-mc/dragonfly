@@ -61,6 +61,9 @@ func importPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 	switch block.Type {
 	case "EC PRIVATE KEY":
 		key, err = x509.ParseECPrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("parse private key: %w", err)
+		}
 	case "PRIVATE KEY":
 		parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
@@ -73,9 +76,6 @@ func importPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 		}
 	default:
 		return nil, fmt.Errorf("invalid block type: %s", block.Type)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("parse private key: %w", err)
 	}
 	if key.Curve != elliptic.P384() {
 		return nil, fmt.Errorf("private key must use P-384, got %s", key.Curve.Params().Name)
@@ -93,7 +93,7 @@ func exportPrivateKey(path string, key *ecdsa.PrivateKey) error {
 		Type:  "EC PRIVATE KEY",
 		Bytes: keyBytes,
 	})
-	if err := os.MkdirAll(filepath.Dir(path), 0600); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return fmt.Errorf("make parent directories: %w", err)
 	}
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
@@ -112,6 +112,9 @@ func exportPrivateKey(path string, key *ecdsa.PrivateKey) error {
 	return nil
 }
 
+// netherNetListenerFunc may be used to return a *minecraft.Listener accepting NetherNet
+// connections, negotiated over a plaintext HTTP signaling endpoint served on the configured
+// address. It is used when UserConfig.Config() is called with a NetherNet transport enabled.
 func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	nnConf := uc.Network.NetherNet
 	address := nnConf.Address
@@ -174,7 +177,6 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	}
 
 	httpServer := &http.Server{
-		Addr:              address,
 		Handler:           logHTTPRequests(log, handler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -190,9 +192,11 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	return listener{Listener: l, close: httpServer.Close}, nil
 }
 
+// logHTTPRequests logs signaling requests at debug level before passing them to next. The
+// endpoint is publicly reachable, so anything louder would let pings and scanners spam the log.
 func logHTTPRequests(log *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info("NetherNet HTTP request.", "method", r.Method, "path", r.URL.Path, "raddr", r.RemoteAddr)
+		log.Debug("NetherNet HTTP request.", "method", r.Method, "path", r.URL.Path, "raddr", r.RemoteAddr)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -217,7 +221,7 @@ func listenerConfig(conf Config) minecraft.ListenConfig {
 // Server.
 type listener struct {
 	*minecraft.Listener
-	close func() error
+	close func() error // stops the sidecar HTTP signaling server, if any
 }
 
 // Accept blocks until the next connection is established and returns it. An error is returned if the Listener was

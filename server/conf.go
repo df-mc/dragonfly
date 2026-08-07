@@ -235,7 +235,8 @@ type UserConfig struct {
 			// If the file does not exist, a new key is generated and saved there. If
 			// empty, a temporary key is generated and not saved.
 			KeyFile string
-			// Domain is the domain that may be displayed to players connecting over plain HTTP.
+			// Domain is the domain that may be shown in the trust prompt to players
+			// connecting over plain HTTP.
 			Domain string
 		}
 	}

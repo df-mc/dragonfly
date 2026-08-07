@@ -14,7 +14,7 @@
     # this listener when clients connect over plain HTTP. If the file does not exist, a new key is
     # generated and saved there. If empty, a temporary key is generated and not saved.
     KeyFile = "keys/server_identity_key.pem"
-    # Domain is the domain that may be displayed to players connecting over plain HTTP.
+    # Domain is the domain that may be shown in the trust prompt to players connecting over plain HTTP.
     Domain = "self"
 
 [Server]
