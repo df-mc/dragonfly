@@ -50,7 +50,7 @@ func (itemType) BBox(world.Entity) cube.BBox {
 
 func (itemType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := itemConf
-	conf.Item = nbtconv.MapItem(m, "Item")
+	conf.Item = item.MapNBT(m, "Item")
 	conf.PickupDelay = time.Duration(nbtconv.Int64(m, "PickupDelay")) * (time.Second / 20)
 
 	data.Data = conf.New()
@@ -61,6 +61,6 @@ func (itemType) EncodeNBT(data *world.EntityData) map[string]any {
 	return map[string]any{
 		"Health":      int16(5),
 		"PickupDelay": int64(b.pickupDelay / (time.Second * 20)),
-		"Item":        nbtconv.WriteItem(b.Item(), true),
+		"Item":        item.WriteNBT(b.Item(), true),
 	}
 }

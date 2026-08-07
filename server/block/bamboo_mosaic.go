@@ -18,7 +18,7 @@ func (BambooMosaic) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (b BambooMosaic) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(b)).withBlastResistance(15)
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(b)).withBlastResistance(3)
 }
 
 // RepairsWoodTools ...

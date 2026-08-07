@@ -243,7 +243,7 @@ func (c Campfire) EncodeNBT() map[string]any {
 	for i, v := range c.Items {
 		id := strconv.Itoa(i + 1)
 		if !v.Item.Empty() {
-			m["Item"+id] = nbtconv.WriteItem(v.Item, true)
+			m["Item"+id] = item.WriteNBT(v.Item, true)
 			m["ItemTime"+id] = uint8(v.Time.Milliseconds() / 50)
 		}
 	}
@@ -255,7 +255,7 @@ func (c Campfire) DecodeNBT(data map[string]any) any {
 	for i := 0; i < 4; i++ {
 		id := strconv.Itoa(i + 1)
 		c.Items[i] = CampfireItem{
-			Item: nbtconv.MapItem(data, "Item"+id),
+			Item: item.MapNBT(data, "Item"+id),
 			Time: time.Duration(nbtconv.Int16(data, "ItemTime"+id)) * time.Millisecond * 50,
 		}
 	}

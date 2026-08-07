@@ -30,7 +30,7 @@ type CopperGolemStatue struct {
 
 // BreakInfo ...
 func (c CopperGolemStatue) BreakInfo() BreakInfo {
-	return newBreakInfo(3, alwaysHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
+	return newBreakInfo(3, alwaysHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(6)
 }
 
 // Activate ...

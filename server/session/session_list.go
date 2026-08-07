@@ -78,12 +78,13 @@ func (l *sessionList) sendSessionTo(s, to *Session) {
 	to.entityMutex.Unlock()
 
 	to.writePacket(&packet.PlayerList{
-		ActionType: packet.PlayerListActionAdd,
 		Entries: []protocol.PlayerListEntry{{
+			ActionType:     protocol.PlayerListActionAdd,
 			UUID:           s.ent.UUID(),
 			EntityUniqueID: int64(runtimeID),
 			Username:       s.conn.IdentityData().DisplayName,
 			XUID:           s.conn.IdentityData().XUID,
+			BuildPlatform:  int32(s.conn.ClientData().DeviceOS),
 			Skin:           skinToProtocol(s.joinSkin),
 		}},
 	})
@@ -96,8 +97,10 @@ func (l *sessionList) unsendSessionFrom(s, from *Session) {
 	from.entityMutex.Unlock()
 
 	from.writePacket(&packet.PlayerList{
-		ActionType: packet.PlayerListActionRemove,
-		Entries:    []protocol.PlayerListEntry{{UUID: s.ent.UUID()}},
+		Entries: []protocol.PlayerListEntry{{
+			ActionType: protocol.PlayerListActionRemove,
+			UUID:       s.ent.UUID(),
+		}},
 	})
 }
 

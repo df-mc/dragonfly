@@ -39,6 +39,8 @@ type BreakContext struct {
 	// AquaAffinity is true if the player wears a helmet enchanted with Aqua Affinity, negating the
 	// underwater mining penalty.
 	AquaAffinity bool
+	// Flying is true if the player is flying, which suppresses the airborne mining speed penalty.
+	Flying bool
 	// Airborne is true if the player is not on the ground, which slows mining by 5x.
 	Airborne bool
 }
@@ -85,7 +87,7 @@ func BreakDuration(b world.Block, i item.Stack, ctx BreakContext) time.Duration 
 	if ctx.Underwater && !ctx.AquaAffinity {
 		speed /= 5
 	}
-	if ctx.Airborne {
+	if ctx.Airborne && !ctx.Flying {
 		speed /= 5
 	}
 
@@ -139,11 +141,11 @@ type BreakInfo struct {
 }
 
 // newBreakInfo creates a BreakInfo struct with the properties passed. The XPDrops field is 0 by default. The blast
-// resistance is set to the block's hardness*5 by default.
+// resistance is set to the block's hardness by default.
 func newBreakInfo(hardness float64, harvestable func(item.Tool) bool, effective func(item.Tool) bool, drops func(item.Tool, []item.Enchantment) []item.Stack) BreakInfo {
 	return BreakInfo{
 		Hardness:        hardness,
-		BlastResistance: hardness * 5,
+		BlastResistance: hardness,
 		Harvestable:     harvestable,
 		Effective:       effective,
 		Drops:           drops,

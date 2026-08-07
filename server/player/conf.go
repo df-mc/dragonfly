@@ -84,6 +84,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 		maxAirSupplyTicks:   conf.MaxAirSupply,
 		breathing:           true,
 		nameTag:             conf.Name,
+		alwaysShowNameTag:   true,
 		fireTicks:           conf.FireTicks,
 		fallDistance:        conf.FallDistance,
 	}

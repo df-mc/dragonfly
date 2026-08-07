@@ -256,7 +256,7 @@ func (t *PortalTravelComputer) transfer(handle *world.EntityHandle, source, dest
 }
 
 // destinationSpawn returns the position the entity should be placed at in the destination world. False is returned
-// if no linked nether portal was found and the entity may not create one.
+// if no linked nether portal was found and none could be created.
 func (t *PortalTravelComputer) destinationSpawn(tx *world.Tx, sourceDim world.Dimension, pos cube.Pos) (mgl64.Vec3, bool) {
 	if tx.World().Dimension() == world.End {
 		portal.GenerateEndSpawnPlatform(tx)
@@ -279,7 +279,7 @@ func (t *PortalTravelComputer) destinationSpawn(tx *world.Tx, sourceDim world.Di
 	if n, ok := portal.FindOrCreateNetherPortal(tx, pos, portalSearchRadius); ok {
 		return n.Spawn().Vec3Middle(), true
 	}
-	return pos.Vec3Middle(), true
+	return mgl64.Vec3{}, false
 }
 
 // finishTravel runs the post-transfer portal hook and places the traveller at
