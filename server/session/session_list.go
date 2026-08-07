@@ -130,6 +130,10 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 	if fullID == "" {
 		fullID = uuid.New().String()
 	}
+	model := s.Model
+	if len(model) == 0 {
+		model = []byte("{}")
+	}
 	return protocol.Skin{
 		PlayFabID:                 s.PlayFabID,
 		SkinID:                    uuid.New().String(),
@@ -140,7 +144,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		CapeImageWidth:            uint32(s.Cape.Bounds().Max.X),
 		CapeImageHeight:           uint32(s.Cape.Bounds().Max.Y),
 		CapeData:                  s.Cape.Pix,
-		SkinGeometry:              s.Model,
+		SkinGeometry:              model,
 		PersonaSkin:               s.Persona,
 		CapeID:                    uuid.New().String(),
 		FullID:                    fullID,
