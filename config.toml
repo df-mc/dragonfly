@@ -16,11 +16,6 @@
     KeyFile = "keys/server_identity_key.pem"
     # Domain is the domain that may be shown in the trust prompt to players connecting over plain HTTP.
     Domain = "self"
-    # ReadHeaderTimeout, ReadTimeout and IdleTimeout are applied to the HTTP signaling server. Zero
-    # values fall back to 5s, 10s and 30s respectively.
-    ReadHeaderTimeout = "5s"
-    ReadTimeout = "10s"
-    IdleTimeout = "30s"
 
 [Server]
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the

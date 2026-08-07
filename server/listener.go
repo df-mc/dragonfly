@@ -1,7 +1,6 @@
 package server
 
 import (
-	"cmp"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -144,36 +143,66 @@ func netherNetKey(path string, log *slog.Logger) (*ecdsa.PrivateKey, error) {
 }
 
 // netherNetListenerFunc may be used to return a *minecraft.Listener accepting NetherNet
-// connections, negotiated over a plaintext HTTP signaling endpoint served on the configured
-// address. It is used when UserConfig.Config() is called with a NetherNet transport enabled.
+// connections. It is used when UserConfig.Config() is called with a NetherNet transport enabled.
 func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	nnConf := uc.Network.NetherNet
 	address := nnConf.Address
 	if address == "" {
 		address = uc.Network.Address
 	}
-	if nnConf.Domain == "" {
-		nnConf.Domain = "self"
-	}
-
-	lcfg := nethernet.ListenConfig{
-		Log:            conf.Log.With("net origin", "nethernet"),
-		AllowAnonymous: conf.AuthDisabled,
-	}
-	key, err := netherNetKey(nnConf.KeyFile, lcfg.Log)
+	key, err := netherNetKey(nnConf.KeyFile, conf.Log.With("net origin", "nethernet"))
 	if err != nil {
 		return nil, err
 	}
-	lcfg.IssueServerIdentity = func(ctx context.Context) (*nethernet.Identity, error) {
-		return nethernet.GenerateServerIdentity(key, nnConf.Domain)
+	return NetherNetConfig{Address: address, Key: key, Domain: nnConf.Domain}.Listener(conf)
+}
+
+// NetherNetConfig may be used to create a NetherNet Listener for a Server, accepting
+// connections negotiated over a plaintext HTTP signaling endpoint. Its Listener method
+// matches the Config.Listeners function signature.
+type NetherNetConfig struct {
+	// Address is the TCP address the HTTP signaling endpoint is served on. HTTPS should
+	// be terminated by a reverse proxy.
+	Address string
+	// Key identifies the listener to players connecting over plain HTTP. If nil, a
+	// temporary key is generated, causing clients using Trust On First Use (TOFU) to
+	// treat every server restart as a new identity.
+	Key *ecdsa.PrivateKey
+	// Domain is the domain that may be shown in the trust prompt to players connecting
+	// over plain HTTP. If empty, "self" is used.
+	Domain string
+	// HTTPServer optionally configures the server used to serve the signaling endpoint.
+	// Its Handler is set by Listener; all other fields may be set freely. If nil, a
+	// server with 5s/10s/30s read-header/read/idle timeouts is used.
+	HTTPServer *http.Server
+}
+
+// Listener returns a Listener accepting NetherNet connections signaled over HTTP.
+func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
+	log := conf.Log.With("net origin", "nethernet")
+	if nc.Key == nil {
+		var err error
+		if nc.Key, err = netherNetKey("", log); err != nil {
+			return nil, err
+		}
+	}
+	if nc.Domain == "" {
+		nc.Domain = "self"
+	}
+	lcfg := nethernet.ListenConfig{
+		Log:            log,
+		AllowAnonymous: conf.AuthDisabled,
+		IssueServerIdentity: func(ctx context.Context) (*nethernet.Identity, error) {
+			return nethernet.GenerateServerIdentity(nc.Key, nc.Domain)
+		},
 	}
 
-	tcp, err := net.Listen("tcp", address)
+	tcp, err := net.Listen("tcp", nc.Address)
 	if err != nil {
 		return nil, fmt.Errorf("listen NetherNet HTTP: %w", err)
 	}
-	log := conf.Log.With("net origin", "nethernet-http")
-	handler := endpoint.HandlerConfig{Logger: log}.New()
+	httpLog := conf.Log.With("net origin", "nethernet-http")
+	handler := endpoint.HandlerConfig{Logger: httpLog}.New()
 	cfg := listenerConfig(conf)
 	l, err := cfg.ListenNetwork(minecraft.NetherNet{
 		Signaling:    handler,
@@ -184,12 +213,15 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 		return nil, fmt.Errorf("create NetherNet listener: %w", err)
 	}
 
-	httpServer := &http.Server{
-		Handler:           logHTTPRequests(log, handler),
-		ReadHeaderTimeout: cmp.Or(nnConf.ReadHeaderTimeout, 5*time.Second),
-		ReadTimeout:       cmp.Or(nnConf.ReadTimeout, 10*time.Second),
-		IdleTimeout:       cmp.Or(nnConf.IdleTimeout, 30*time.Second),
+	httpServer := nc.HTTPServer
+	if httpServer == nil {
+		httpServer = &http.Server{
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			IdleTimeout:       30 * time.Second,
+		}
 	}
+	httpServer.Handler = logHTTPRequests(httpLog, handler)
 	go func() {
 		err := httpServer.Serve(tcp)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, net.ErrClosed) {
