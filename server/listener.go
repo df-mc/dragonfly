@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/session"
@@ -61,8 +62,7 @@ func importPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 	case "EC PRIVATE KEY":
 		key, err = x509.ParseECPrivateKey(block.Bytes)
 	case "PRIVATE KEY":
-		var parsed any
-		parsed, err = x509.ParsePKCS8PrivateKey(block.Bytes)
+		parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return nil, fmt.Errorf("parse private key: %w", err)
 		}
@@ -93,6 +93,9 @@ func exportPrivateKey(path string, key *ecdsa.PrivateKey) error {
 		Type:  "EC PRIVATE KEY",
 		Bytes: keyBytes,
 	})
+	if err := os.MkdirAll(filepath.Dir(path), 0600); err != nil {
+		return fmt.Errorf("make parent directories: %w", err)
+	}
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return err

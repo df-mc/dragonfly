@@ -391,7 +391,7 @@ func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
 	c.Network.Transport = "raknet"
-	c.Network.NetherNet.KeyFile, c.Network.NetherNet.Domain = "nethernet_identity.pem", "self"
+	c.Network.NetherNet.KeyFile, c.Network.NetherNet.Domain = "keys/server_identity_key.pem", "self"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true
