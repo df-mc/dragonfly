@@ -44,14 +44,6 @@ func (e *PanicError) Error() string {
 // Unwrap returns ErrTaskPanicked so errors.Is works.
 func (e *PanicError) Unwrap() error { return ErrTaskPanicked }
 
-// rethrowPanic re-panics with the original panic value if err wraps a
-// *PanicError. It does nothing for any other error, including nil.
-func rethrowPanic(err error) {
-	if pe, ok := errors.AsType[*PanicError](err); ok {
-		panic(pe.Value)
-	}
-}
-
 // callContext normalises a possibly-nil caller context and reports whether it
 // was cancelled before any work was scheduled.
 func callContext(ctx context.Context) (context.Context, error) {
@@ -81,7 +73,6 @@ func awaitTask[T any](ctx context.Context, task *Task, result *T) (T, error) {
 	var zero T
 	completed := func() (T, error) {
 		if err := task.Err(); err != nil {
-			rethrowPanic(err)
 			return zero, err
 		}
 		return *result, nil
