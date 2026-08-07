@@ -29,17 +29,30 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		// Don't do anything for these actions.
 	case protocol.PlayerActionStopSleeping:
 		c.Wake()
-	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
+	case protocol.PlayerActionStartBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.breakingPos = cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
-		c.StartBreaking(s.breakingPos, cube.Face(face))
+		breakingPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
+		s.breakingPos = &breakingPos
+		c.StartBreaking(breakingPos, cube.Face(face))
+	case protocol.PlayerActionContinueDestroyBlock:
+		breakingPos := cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
+		if s.breakingPos != nil && *s.breakingPos == breakingPos {
+			break
+		}
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
+
+		s.breakingPos = &breakingPos
+		c.StartBreaking(breakingPos, cube.Face(face))
 	case protocol.PlayerActionAbortBreak:
+		s.breakingPos = nil
 		c.AbortBreaking()
 	case protocol.PlayerActionPredictDestroyBlock, protocol.PlayerActionStopBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
+		s.breakingPos = nil
 		c.FinishBreaking()
 	case protocol.PlayerActionCrackBreak:
 		// Don't do anything for this action. It is no longer used. Block
