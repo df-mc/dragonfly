@@ -238,6 +238,11 @@ type UserConfig struct {
 			// Domain is the domain that may be shown in the trust prompt to players
 			// connecting over plain HTTP.
 			Domain string
+			// ReadHeaderTimeout, ReadTimeout and IdleTimeout are applied to the HTTP
+			// signaling server. Zero values fall back to 5s, 10s and 30s respectively.
+			ReadHeaderTimeout time.Duration
+			ReadTimeout       time.Duration
+			IdleTimeout       time.Duration
 		}
 	}
 	Server struct {
@@ -397,6 +402,9 @@ func DefaultConfig() UserConfig {
 	c.Network.Address = ":19132"
 	c.Network.Transport = "raknet"
 	c.Network.NetherNet.KeyFile, c.Network.NetherNet.Domain = "keys/server_identity_key.pem", "self"
+	c.Network.NetherNet.ReadHeaderTimeout = time.Second * 5
+	c.Network.NetherNet.ReadTimeout = time.Second * 10
+	c.Network.NetherNet.IdleTimeout = time.Second * 30
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true

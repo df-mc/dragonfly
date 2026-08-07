@@ -1,6 +1,7 @@
 package server
 
 import (
+	"cmp"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -112,6 +113,36 @@ func exportPrivateKey(path string, key *ecdsa.PrivateKey) error {
 	return nil
 }
 
+// netherNetKey returns the private key identifying the NetherNet listener, imported from path
+// if it exists and generated otherwise. Generated keys are persisted to path so that the server
+// identity survives restarts; an empty path yields an unsaved temporary key.
+func netherNetKey(path string, log *slog.Logger) (*ecdsa.PrivateKey, error) {
+	if path == "" {
+		key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		if err != nil {
+			return nil, fmt.Errorf("generate key: %w", err)
+		}
+		log.Warn("Using a temporary private key for the NetherNet listener. Players connecting over plain HTTP may see the TOFU (Trust On First Use) prompt every time the server restarts.")
+		return key, nil
+	}
+	key, err := importPrivateKey(path)
+	if os.IsNotExist(err) {
+		key, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		if err != nil {
+			return nil, fmt.Errorf("generate key: %w", err)
+		}
+		// Save the generated key so that players are not prompted to trust a
+		// new server identity after every restart.
+		if err := exportPrivateKey(path, key); err != nil {
+			return nil, fmt.Errorf("export private key: %w", err)
+		}
+		log.Info("Generated a private key for NetherNet listener.", "path", path)
+	} else if err != nil {
+		return nil, fmt.Errorf("import key file: %w", err)
+	}
+	return key, nil
+}
+
 // netherNetListenerFunc may be used to return a *minecraft.Listener accepting NetherNet
 // connections, negotiated over a plaintext HTTP signaling endpoint served on the configured
 // address. It is used when UserConfig.Config() is called with a NetherNet transport enabled.
@@ -129,32 +160,9 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 		Log:            conf.Log.With("net origin", "nethernet"),
 		AllowAnonymous: conf.AuthDisabled,
 	}
-	var key *ecdsa.PrivateKey
-	if nnConf.KeyFile != "" {
-		var err error
-		key, err = importPrivateKey(nnConf.KeyFile)
-		if os.IsNotExist(err) {
-			key, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-			if err != nil {
-				return nil, fmt.Errorf("generate key: %w", err)
-			}
-			// If we generated a new key for the NetherNet listener, save it.
-			// Otherwise, players may be prompted to trust the server identity
-			// after every restart.
-			if err := exportPrivateKey(nnConf.KeyFile, key); err != nil {
-				return nil, fmt.Errorf("export private key: %w", err)
-			}
-			lcfg.Log.Info("Generated a private key for NetherNet listener.", "path", nnConf.KeyFile)
-		} else if err != nil {
-			return nil, fmt.Errorf("import key file: %w", err)
-		}
-	} else {
-		var err error
-		key, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-		if err != nil {
-			return nil, fmt.Errorf("generate key: %w", err)
-		}
-		lcfg.Log.Warn("Using a temporary private key for the NetherNet listener. Players connecting over plain HTTP may see the TOFU (Trust On First Use) prompt every time the server restarts.")
+	key, err := netherNetKey(nnConf.KeyFile, lcfg.Log)
+	if err != nil {
+		return nil, err
 	}
 	lcfg.IssueServerIdentity = func(ctx context.Context) (*nethernet.Identity, error) {
 		return nethernet.GenerateServerIdentity(key, nnConf.Domain)
@@ -178,9 +186,9 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 
 	httpServer := &http.Server{
 		Handler:           logHTTPRequests(log, handler),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		IdleTimeout:       30 * time.Second,
+		ReadHeaderTimeout: cmp.Or(nnConf.ReadHeaderTimeout, 5*time.Second),
+		ReadTimeout:       cmp.Or(nnConf.ReadTimeout, 10*time.Second),
+		IdleTimeout:       cmp.Or(nnConf.IdleTimeout, 30*time.Second),
 	}
 	go func() {
 		err := httpServer.Serve(tcp)
