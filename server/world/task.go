@@ -28,7 +28,7 @@ var (
 
 // PanicError is the Task error for a fire-and-forget callback that panicked. It
 // matches errors.Is(err, ErrTaskPanicked) and keeps the original panic value
-// and stack. Synchronous Call functions re-panic with Value automatically.
+// and stack.
 type PanicError struct {
 	// Value is the recovered panic value.
 	Value any
@@ -306,9 +306,7 @@ func (w *World) DoAfter(delay time.Duration, f func(tx *Tx)) *Task {
 // Call runs f on w's owner and waits for its typed result. It is for
 // off-owner code such as tests, startup and background goroutines; if you
 // already have a *world.Tx, just use it directly. Calling it from the
-// owner itself (any scheduled callback or Handler event) deadlocks. If f
-// panics, Call re-panics with the original value on the waiting goroutine after
-// logging the original stack through the World's Logger. Context cancellation
+// owner itself (any scheduled callback or Handler event) deadlocks. Context cancellation
 // stops pending work, but Call waits for a callback that has already started.
 func Call[T any](ctx context.Context, w *World, f func(tx *Tx) (T, error)) (T, error) {
 	var zero T
@@ -327,7 +325,6 @@ func Call[T any](ctx context.Context, w *World, f func(tx *Tx) (T, error)) (T, e
 
 // CallEntity runs f with the EntityHandle's entity on its current world owner
 // and waits for the typed result. Off-owner code only, like Call. If f panics,
-// CallEntity re-panics with the original value on the waiting goroutine.
 func CallEntity[T any](ctx context.Context, h *EntityHandle, f func(tx *Tx, e Entity) (T, error)) (T, error) {
 	return CallRef(ctx, NewEntityRef[Entity](h), f)
 }
