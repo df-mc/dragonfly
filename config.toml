@@ -4,6 +4,9 @@
   # server is already running on this port, please select a different port.
   Address = ":19132"
   # Transport controls which network transports are listened on. Valid values are raknet, nethernet and both.
+  # Bedrock clients probe https/http on the entered port then :443/:80 for a NetherNet signaling endpoint and
+  # use NetherNet when one answers, falling back to RakNet otherwise. With "both" on one address, RakNet (UDP)
+  # and NetherNet signaling (TCP) share the port without conflict.
   Transport = "raknet"
 
   [Network.NetherNet]
@@ -15,6 +18,7 @@
     # generated and saved there. If empty, a temporary key is generated and not saved.
     KeyFile = "keys/server_identity_key.pem"
     # Domain is the domain that may be shown in the trust prompt to players connecting over plain HTTP.
+    # Setting it to the host players actually connect to gives a clearer prompt than the "self" default.
     Domain = "self"
 
 [Server]

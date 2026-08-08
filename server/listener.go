@@ -172,9 +172,16 @@ type NetherNetConfig struct {
 	// over plain HTTP. If empty, "self" is used.
 	Domain string
 	// HTTPServer optionally configures the server used to serve the signaling endpoint.
-	// Its Handler is set by Listener; all other fields may be set freely. If nil, a
-	// server with 5s/10s/30s read-header/read/idle timeouts is used.
+	// Its Handler is set by Listener; TLSConfig is ignored because the endpoint is served
+	// as plaintext HTTP with HTTPS terminated by a reverse proxy. All other fields may be
+	// set freely. If nil, a server with 5s/10s/30s read-header/read/idle timeouts is used.
 	HTTPServer *http.Server
+	// Credentials optionally supplies ICE (STUN/TURN) servers to the signaling handler.
+	// It is required for servers behind NAT or a tunnel, where the reachable game path
+	// cannot be established from host candidates alone; the HTTP endpoint only carries
+	// signaling. If nil, no STUN/TURN servers are advertised and only host candidates
+	// are gathered.
+	Credentials func(ctx context.Context) (*nethernet.Credentials, error)
 }
 
 // Listener returns a Listener accepting NetherNet connections signaled over HTTP.
@@ -202,7 +209,7 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 		return nil, fmt.Errorf("listen NetherNet HTTP: %w", err)
 	}
 	httpLog := conf.Log.With("net origin", "nethernet-http")
-	handler := endpoint.HandlerConfig{Logger: httpLog}.New()
+	handler := endpoint.HandlerConfig{Logger: httpLog, Credentials: nc.Credentials}.New()
 	cfg := listenerConfig(conf)
 	l, err := cfg.ListenNetwork(minecraft.NetherNet{
 		Signaling:    handler,

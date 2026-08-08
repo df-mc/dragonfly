@@ -200,6 +200,9 @@ func (conf Config) New() *Server {
 		}
 		srv.listeners = append(srv.listeners, l)
 	}
+	if len(conf.Listeners) > 0 && len(srv.listeners) == 0 {
+		conf.Log.Error("no listeners could be created; the server is unreachable")
+	}
 
 	creative_registerCreativeItems()
 	recipe_registerVanilla()
