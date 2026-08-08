@@ -1,6 +1,13 @@
 package session
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/world"
+)
+
+type viewLayerArmour struct {
+	helmet, chestplate, leggings, boots item.Stack
+}
 
 // ViewLayer returns the session's ViewLayer. The layer may be used to override how entities are viewed
 // by this session, such as with a different name tag or visibility state.
@@ -62,6 +69,39 @@ func (s *Session) ViewVisibility(entity world.Entity, level world.VisibilityLeve
 		return
 	}
 	s.viewLayer.ViewVisibility(entity, level)
+	s.viewLayerArmourChanged(entity)
+}
+
+// ViewArmour overwrites the public armour of the entity and immediately refreshes it for this session.
+func (s *Session) ViewArmour(entity world.Entity, helmet, chestplate, leggings, boots item.Stack) {
+	if s.viewLayer == nil {
+		return
+	}
+	s.viewLayerArmourMu.Lock()
+	s.viewLayerArmour[entity.H()] = viewLayerArmour{
+		helmet:     helmet,
+		chestplate: chestplate,
+		leggings:   leggings,
+		boots:      boots,
+	}
+	s.viewLayerArmourMu.Unlock()
+	s.viewLayerArmourChanged(entity)
+}
+
+// ViewNoArmour hides the armour of the entity and immediately refreshes it for this session.
+func (s *Session) ViewNoArmour(entity world.Entity) {
+	s.ViewArmour(entity, item.Stack{}, item.Stack{}, item.Stack{}, item.Stack{})
+}
+
+// ViewPublicArmour removes the armour override from the entity and immediately refreshes it for this session.
+func (s *Session) ViewPublicArmour(entity world.Entity) {
+	if s.viewLayer == nil {
+		return
+	}
+	s.viewLayerArmourMu.Lock()
+	delete(s.viewLayerArmour, entity.H())
+	s.viewLayerArmourMu.Unlock()
+	s.viewLayerArmourChanged(entity)
 }
 
 // RemoveViewLayer removes all overrides for the entity and immediately refreshes it for this session.
@@ -70,6 +110,10 @@ func (s *Session) RemoveViewLayer(entity world.Entity) {
 		return
 	}
 	s.viewLayer.Remove(entity)
+	s.viewLayerArmourMu.Lock()
+	delete(s.viewLayerArmour, entity.H())
+	s.viewLayerArmourMu.Unlock()
+	s.viewLayerArmourChanged(entity)
 }
 
 // ViewLayerEntityChanged refreshes the entity metadata for this session if the entity is currently visible.
@@ -78,6 +122,21 @@ func (s *Session) ViewLayerEntityChanged(e world.Entity) {
 		return
 	}
 	s.ViewEntityState(e)
+}
+
+// viewLayerArmourChanged refreshes the entity armour for this session if the entity is currently visible.
+func (s *Session) viewLayerArmourChanged(e world.Entity) {
+	if s.entityHidden(e) || !s.viewingEntity(e.H()) {
+		return
+	}
+	s.ViewEntityArmour(e)
+}
+
+func (s *Session) viewedArmour(entity world.Entity) (viewLayerArmour, bool) {
+	s.viewLayerArmourMu.RLock()
+	armour, ok := s.viewLayerArmour[entity.H()]
+	s.viewLayerArmourMu.RUnlock()
+	return armour, ok
 }
 
 // viewingEntity checks if this session currently has a runtime ID assigned to the entity handle.
