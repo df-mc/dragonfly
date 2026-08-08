@@ -186,19 +186,27 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 
 // BreakInfo ...
 func (c Chest) BreakInfo() BreakInfo {
-	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(2.5, alwaysHarvestable, axeEffective, oneOf(c)).withAdditionalDrops(func(cube.Pos, *world.Tx, item.User) []item.Stack {
+		return c.breakDrops()
+	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
 		if c.paired {
 			pairPos := c.pairPos(pos)
-			if _, pair, ok := c.unpair(tx, pos); ok {
-				c.paired = false
+			if ch, pair, ok := c.unpair(tx, pos); ok {
+				ch.Inventory(tx, pos).Clear()
 				tx.SetBlock(pairPos, pair, nil)
+				return
 			}
 		}
 
-		for _, i := range c.Inventory(tx, pos).Clear() {
-			dropItem(tx, i, pos.Vec3Centre())
-		}
+		c.Inventory(tx, pos).Clear()
 	})
+}
+
+func (c Chest) breakDrops() []item.Stack {
+	if c.inventory == nil {
+		return nil
+	}
+	return c.inventory.Items()
 }
 
 // FuelInfo ...

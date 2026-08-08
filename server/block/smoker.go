@@ -84,10 +84,10 @@ func (s Smoker) BreakInfo() BreakInfo {
 	if s.smelter != nil {
 		xp = s.Experience()
 	}
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(Smoker{})).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
-		for _, i := range s.Inventory(tx, pos).Clear() {
-			dropItem(tx, i, pos.Vec3())
-		}
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(Smoker{})).withXPDropRange(xp, xp).withAdditionalDrops(func(pos cube.Pos, tx *world.Tx, _ item.User) []item.Stack {
+		return s.Inventory(tx, pos).Items()
+	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
+		s.Inventory(tx, pos).Clear()
 	})
 }
 

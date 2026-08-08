@@ -83,10 +83,10 @@ func (f Furnace) BreakInfo() BreakInfo {
 	if f.smelter != nil {
 		xp = f.Experience()
 	}
-	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(Furnace{})).withXPDropRange(xp, xp).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
-		for _, i := range f.Inventory(tx, pos).Clear() {
-			dropItem(tx, i, pos.Vec3())
-		}
+	return newBreakInfo(3.5, alwaysHarvestable, pickaxeEffective, oneOf(Furnace{})).withXPDropRange(xp, xp).withAdditionalDrops(func(pos cube.Pos, tx *world.Tx, _ item.User) []item.Stack {
+		return f.Inventory(tx, pos).Items()
+	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
+		f.Inventory(tx, pos).Clear()
 	})
 }
 

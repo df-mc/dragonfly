@@ -114,10 +114,10 @@ func (b BrewingStand) DecodeNBT(data map[string]any) any {
 
 // BreakInfo ...
 func (b BrewingStand) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(BrewingStand{})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
-		for _, i := range b.Inventory(tx, pos).Clear() {
-			dropItem(tx, i, pos.Vec3Centre())
-		}
+	return newBreakInfo(0.5, alwaysHarvestable, pickaxeEffective, oneOf(BrewingStand{})).withAdditionalDrops(func(pos cube.Pos, tx *world.Tx, _ item.User) []item.Stack {
+		return b.Inventory(tx, pos).Items()
+	}).withBreakHandler(func(pos cube.Pos, tx *world.Tx, _ item.User) {
+		b.Inventory(tx, pos).Clear()
 	})
 }
 
