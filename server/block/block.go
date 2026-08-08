@@ -178,6 +178,22 @@ func firstReplaceable(tx *world.Tx, pos cube.Pos, face cube.Face, with world.Blo
 	return pos, face, false
 }
 
+// attachmentSupported reports whether the block at pos may attach to the
+// adjacent block through face.
+func attachmentSupported(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
+	support := pos.Side(face.Opposite())
+	if support.OutOfBounds(tx.Range()) {
+		return false
+	}
+	return tx.Block(support).Model().FaceSolid(support, face, tx)
+}
+
+// entityIntersects reports whether the bounding box of the entity passed
+// overlaps the box passed.
+func entityIntersects(e world.Entity, box cube.BBox) bool {
+	return e.H().Type().BBox(e).Translate(e.Position()).IntersectsWith(box)
+}
+
 // place places the block passed at the position passed. If the user implements the block.Placer interface, it
 // will use its PlaceBlock method. If not, the block is placed without interaction from the user.
 func place(tx *world.Tx, pos cube.Pos, b world.Block, user item.User, ctx *item.UseContext) {

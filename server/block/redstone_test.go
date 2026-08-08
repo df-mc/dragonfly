@@ -17,6 +17,49 @@ func runWorld(w *world.World, f func(*world.Tx)) {
 	w.Do(f).Wait(context.Background())
 }
 
+func TestWoodenButtonRemainsPressedWithArrowOnBoundary(t *testing.T) {
+	w := world.Config{Synchronous: true}.New()
+	defer w.Close()
+
+	pos := cube.Pos{0, 64, 0}
+	var pressed bool
+	runWorld(w, func(tx *world.Tx) {
+		button := Button{Type: OakButton(), Facing: cube.FaceWest, Pressed: true}
+		tx.SetBlock(pos, button, nil)
+		tx.AddEntityAt(world.EntitySpawnOpts{}.New(redstoneArrowTestEntityType{}, redstoneTNTTestEntityConfig{}), mgl64.Vec3{1, 64.5, 0.5})
+
+		button.ScheduledTick(pos, tx, nil)
+		pressed = tx.Block(pos).(Button).Pressed
+	})
+
+	if !pressed {
+		t.Fatal("wooden button released while an arrow bounding box intersected its boundary")
+	}
+}
+
+func TestWeightedPressurePlateCountsEntities(t *testing.T) {
+	for _, count := range []int{0, 1, 3} {
+		w := world.Config{Synchronous: true}.New()
+
+		pos := cube.Pos{0, 64, 0}
+		var power int
+		runWorld(w, func(tx *world.Tx) {
+			plate := PressurePlate{Type: LightWeightedPressurePlate()}
+			tx.SetBlock(pos, plate, nil)
+			for i := range count {
+				tx.AddEntityAt(world.EntitySpawnOpts{}.New(redstoneArrowTestEntityType{}, redstoneTNTTestEntityConfig{}),
+					mgl64.Vec3{0.5, 64.05, 0.5 + float64(i)*0.01})
+			}
+			power = plate.detectPower(pos, tx)
+		})
+		_ = w.Close()
+
+		if power != count {
+			t.Fatalf("light weighted plate with %v entities: want power %v, got %v", count, count, power)
+		}
+	}
+}
+
 func TestRedstoneWirePowersBlockBelowButNotAbove(t *testing.T) {
 	wire := RedstoneWire{Power: 15}
 	pos := cube.Pos{0, 64, 0}
@@ -979,6 +1022,21 @@ func (redstoneTNTTestEntityType) BBox(world.Entity) cube.BBox {
 }
 func (redstoneTNTTestEntityType) DecodeNBT(map[string]any, *world.EntityData) {}
 func (redstoneTNTTestEntityType) EncodeNBT(*world.EntityData) map[string]any {
+	return nil
+}
+
+type redstoneArrowTestEntityType struct{}
+
+func (redstoneArrowTestEntityType) Open(_ *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+	return redstoneTNTTestEntity{handle: handle, data: data}
+}
+
+func (redstoneArrowTestEntityType) EncodeEntity() string { return "minecraft:arrow" }
+func (redstoneArrowTestEntityType) BBox(world.Entity) cube.BBox {
+	return cube.Box(-0.125, 0, -0.125, 0.125, 0.25, 0.125)
+}
+func (redstoneArrowTestEntityType) DecodeNBT(map[string]any, *world.EntityData) {}
+func (redstoneArrowTestEntityType) EncodeNBT(*world.EntityData) map[string]any {
 	return nil
 }
 
