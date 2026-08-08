@@ -231,7 +231,9 @@ type UserConfig struct {
 		NetherNet struct {
 			// Address is the TCP address used for NetherNet HTTP signaling. If empty,
 			// Network.Address is used. The listener serves plaintext HTTP; HTTPS
-			// should be terminated by a reverse proxy.
+			// should be terminated by a reverse proxy. Clients only probe the port
+			// they enter, then 443 and 80, so any other port must be fronted by a
+			// reverse proxy on one of those.
 			Address string
 			// KeyFile is the path to the PEM file containing the P-384 ECDSA private
 			// key used to identify this listener when clients connect over plain HTTP.
