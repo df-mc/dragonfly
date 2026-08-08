@@ -13,7 +13,20 @@ type Context struct {
 }
 
 // NewEventContext returns a Context for one event dispatch concerning p.
+// tx and p must come from the same active owner callback.
 func NewEventContext(tx *world.Tx, p *Player) *Context {
+	if tx == nil {
+		panic("player: nil transaction")
+	}
+	if p == nil {
+		panic("player: nil player")
+	}
+	if p.tx != tx {
+		panic("player: transaction and player do not belong to the same callback")
+	}
+	// Validate the transaction while constructing the context so stale contexts
+	// fail at the call site rather than on a later world operation.
+	_ = tx.World()
 	return &Context{Context: tx.Event(), p: p}
 }
 
