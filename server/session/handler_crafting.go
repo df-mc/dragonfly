@@ -72,7 +72,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
 		// Try dynamic recipes if no static recipe matches
-		return h.tryDynamicCraft(s, tx, int(a.TimesCrafted))
+		return h.tryDynamicCraft(s, tx, int(a.NumberOfCrafts))
 	}
 	_, shaped := craft.(recipe.Shaped)
 	_, shapeless := craft.(recipe.Shapeless)
@@ -83,7 +83,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
 	}
 
-	timesCrafted := int(a.TimesCrafted)
+	timesCrafted := int(a.NumberOfCrafts)
 	if timesCrafted < 1 {
 		return fmt.Errorf("times crafted must be at least 1")
 	}
