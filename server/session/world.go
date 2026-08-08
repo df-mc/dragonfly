@@ -745,6 +745,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventBarrelOpen
 	case sound.BlockBreaking:
 		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(s.br.BlockRuntimeID(so.Block))
+	case sound.SweetBerryBushHurt:
+		pk.SoundType = packet.SoundEventSweetBerryBushHurt
+	case sound.SweetBerryBushPick:
+		pk.SoundType = packet.SoundEventSweetBerryBushPick
 	case sound.ItemBreak:
 		pk.SoundType = packet.SoundEventBreak
 	case sound.ItemUseOn:

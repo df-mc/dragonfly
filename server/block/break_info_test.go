@@ -114,6 +114,11 @@ func TestBreaksInstantly(t *testing.T) {
 			want:  true,
 		},
 		{
+			name:  "sweet berry bush breaks instantly",
+			block: block.SweetBerries{},
+			want:  true,
+		},
+		{
 			name:  "positive-hardness block does not break instantly",
 			block: block.Netherrack{},
 			want:  false,
