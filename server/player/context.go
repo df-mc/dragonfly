@@ -12,9 +12,9 @@ type Context struct {
 	p *Player
 }
 
-// NewContext returns a fresh event context for p.
+// NewEventContext returns a fresh event context for p.
 // tx and p must come from the same active owner callback.
-func NewContext(tx *world.Tx, p *Player) *Context {
+func NewEventContext(tx *world.Tx, p *Player) *Context {
 	if tx == nil || p == nil || p.tx != tx {
 		panic("player: transaction and player do not belong to the same callback")
 	}
@@ -42,7 +42,7 @@ func (ctx *Context) DeferErr(f func(ctx *Context) error) *world.Task {
 	h := ctx.p.H()
 	return ctx.Context.DeferErr(func(tx *world.Tx) error {
 		if e, ok := h.Entity(tx); ok {
-			return f(NewContext(tx, e.(*Player)))
+			return f(NewEventContext(tx, e.(*Player)))
 		}
 		if h.Closed() {
 			return world.ErrEntityClosed
