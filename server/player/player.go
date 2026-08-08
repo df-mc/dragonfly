@@ -715,10 +715,14 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 
 // Explode ...
 func (p *Player) Explode(src world.ExplosionSource, impact float64) {
-	explosionPos := src.Position()
-	diff := p.Position().Sub(explosionPos)
+	// Java uses Blast Protection's explosion-specific resistance here, not innate armour knockback resistance.
+	resistance := min(float64(p.Armour().HighestEnchantmentLevel(enchantment.BlastProtection))*0.15, 1)
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*src.Size()*2+1), entity.ExplosionDamageSource{Source: src})
-	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
+
+	impulse := entity.ExplosionImpulse(p, src, impact*(1-resistance))
+	velocity := p.Velocity().Add(impulse)
+	p.data.Vel = velocity
+	p.SetVelocity(velocity)
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
