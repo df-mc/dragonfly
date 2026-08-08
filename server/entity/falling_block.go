@@ -27,7 +27,7 @@ func (t fallingBlockType) Open(tx *world.Tx, handle *world.EntityHandle, data *w
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 func (fallingBlockType) EncodeEntity() string   { return "minecraft:falling_block" }
-func (fallingBlockType) NetworkOffset() float64 { return 0.49 }
+func (fallingBlockType) NetworkOffset() float64 { return 0.5 }
 func (fallingBlockType) BBox(world.Entity) cube.BBox {
 	return cube.Box(-0.49, 0, -0.49, 0.49, 0.98, 0.49)
 }
