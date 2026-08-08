@@ -69,8 +69,14 @@ func (e *Ent) SetVelocity(v mgl64.Vec3) {
 
 // Teleport teleports the entity to the position given.
 func (e *Ent) Teleport(pos mgl64.Vec3) {
+	e.TeleportRotated(pos, e.Rotation())
+}
+
+// TeleportRotated teleports the entity to the position given, facing the rotation passed.
+func (e *Ent) TeleportRotated(pos mgl64.Vec3, rot cube.Rotation) {
 	viewers := e.tx.Viewers(e.data.Pos)
 	e.data.Pos = pos
+	e.data.Rot = rot
 	for _, v := range viewers {
 		v.ViewEntityTeleport(e, pos)
 	}
