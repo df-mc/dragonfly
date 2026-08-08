@@ -61,6 +61,17 @@ func (s *Session) SendJukeboxPopup(message string) {
 	})
 }
 
+// SendJukeboxTranslation sends a jukebox popup localised for a specific language.Tag.
+func (s *Session) SendJukeboxTranslation(t chat.Translation, l language.Tag, a []any) {
+	tr := t.F(a...)
+	s.writePacket(&packet.Text{
+		TextType:         packet.TextTypeJukeboxPopup,
+		NeedsTranslation: true,
+		Message:          tr.Resolve(l),
+		Parameters:       tr.Params(l),
+	})
+}
+
 // SendToast ...
 func (s *Session) SendToast(title, message string) {
 	s.writePacket(&packet.ToastRequest{
