@@ -8,19 +8,23 @@ type Material struct {
 	renderMethod Method
 	// faceDimming is if the material should be dimmed by the direction it's facing.
 	faceDimming bool
-	// ambientOcclusion is if the material should have ambient occlusion applied when lighting.
-	ambientOcclusion bool
+	// ambientOcclusion is how strongly ambient occlusion is applied to the material when
+	// lighting it, with 0 disabling it and 1 being the vanilla strength.
+	ambientOcclusion float32
 }
 
 // NewMaterial returns a new Material with the provided information. It enables face dimming by default and ambient
 // occlusion based on the render method given.
 func NewMaterial(texture string, method Method) Material {
-	return Material{
-		texture:          texture,
-		renderMethod:     method,
-		faceDimming:      true,
-		ambientOcclusion: method.AmbientOcclusion(),
+	m := Material{
+		texture:      texture,
+		renderMethod: method,
+		faceDimming:  true,
 	}
+	if method.AmbientOcclusion() {
+		m.ambientOcclusion = 1
+	}
+	return m
 }
 
 // WithFaceDimming returns a copy of the Material with face dimming enabled.
@@ -35,15 +39,27 @@ func (m Material) WithoutFaceDimming() Material {
 	return m
 }
 
-// WithAmbientOcclusion returns a copy of the Material with ambient occlusion enabled.
+// WithAmbientOcclusion returns a copy of the Material with ambient occlusion enabled at the
+// vanilla strength. Use WithAmbientOcclusionIntensity to pick a different one.
 func (m Material) WithAmbientOcclusion() Material {
-	m.ambientOcclusion = true
+	m.ambientOcclusion = 1
+	return m
+}
+
+// WithAmbientOcclusionIntensity returns a copy of the Material with ambient occlusion applied
+// at the intensity given, where 0 disables it and 1 is the vanilla strength. The client
+// expects an intensity between 0 and 10.
+func (m Material) WithAmbientOcclusionIntensity(intensity float32) Material {
+	if intensity < 0 || intensity > 10 {
+		panic("customblock: ambient occlusion intensity must be between 0 and 10")
+	}
+	m.ambientOcclusion = intensity
 	return m
 }
 
 // WithoutAmbientOcclusion returns a copy of the Material with ambient occlusion disabled.
 func (m Material) WithoutAmbientOcclusion() Material {
-	m.ambientOcclusion = false
+	m.ambientOcclusion = 0
 	return m
 }
 
