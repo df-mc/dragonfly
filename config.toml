@@ -3,11 +3,11 @@
   # The address of the server, including the port. The server will be listening on this address. If another
   # server is already running on this port, please select a different port.
   Address = ":19132"
-  # Transport controls which network transports are listened on. Valid values are raknet, nethernet and both.
+  # Transport lists the network transports listened on. Valid values are "raknet" and "nethernet".
   # Bedrock clients probe https/http on the entered port then :443/:80 for a NetherNet signaling endpoint and
-  # use NetherNet when one answers, falling back to RakNet otherwise. With "both" on one address, RakNet (UDP)
-  # and NetherNet signaling (TCP) share the port without conflict.
-  Transport = "raknet"
+  # use NetherNet when one answers, falling back to RakNet otherwise. With both transports on one address,
+  # RakNet (UDP) and NetherNet signaling (TCP) share the port without conflict.
+  Transport = ["raknet"]
 
   [Network.NetherNet]
     # Address is the TCP address used for NetherNet HTTP signaling. If empty, Network.Address is used.

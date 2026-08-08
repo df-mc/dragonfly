@@ -224,9 +224,10 @@ type UserConfig struct {
 		// Address is the address on which the server should listen. Players may
 		// connect to this address in order to join.
 		Address string
-		// Transport controls which network transports are listened on. Valid values
-		// are "raknet", "nethernet" and "both". If empty, "raknet" is used.
-		Transport string
+		// Transport lists the network transports listened on. Valid values are
+		// "raknet" and "nethernet". If empty, only RakNet is used. Custom
+		// transports are added programmatically through Config.Listeners.
+		Transport []string
 		// NetherNet holds settings for the NetherNet HTTP signaling listener.
 		NetherNet struct {
 			// Address is the TCP address used for NetherNet HTTP signaling. If empty,
@@ -314,7 +315,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
 	}
-	transport, err := parseNetworkTransport(uc.Network.Transport)
+	listeners, err := uc.transportListeners()
 	if err != nil {
 		return conf, err
 	}
@@ -337,30 +338,36 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 			return conf, fmt.Errorf("create player provider: %w", err)
 		}
 	}
-	if transport.raknet {
-		conf.Listeners = append(conf.Listeners, uc.listenerFunc)
-	}
-	if transport.nethernet {
-		conf.Listeners = append(conf.Listeners, uc.netherNetListenerFunc)
-	}
+	conf.Listeners = append(conf.Listeners, listeners...)
 	return conf, nil
 }
 
-type networkTransport struct {
-	raknet, nethernet bool
-}
-
-func parseNetworkTransport(s string) (networkTransport, error) {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "", "raknet":
-		return networkTransport{raknet: true}, nil
-	case "nethernet":
-		return networkTransport{nethernet: true}, nil
-	case "both":
-		return networkTransport{raknet: true, nethernet: true}, nil
-	default:
-		return networkTransport{}, fmt.Errorf("unknown network transport %q", s)
+// transportListeners maps the transport names in UserConfig.Network.Transport to
+// their listener functions, defaulting to RakNet when none are named. Duplicate
+// names are listened on once.
+func (uc UserConfig) transportListeners() ([]func(Config) (Listener, error), error) {
+	names := uc.Network.Transport
+	if len(names) == 0 {
+		names = []string{"raknet"}
 	}
+	var listeners []func(Config) (Listener, error)
+	seen := make(map[string]bool, len(names))
+	for _, name := range names {
+		name = strings.ToLower(strings.TrimSpace(name))
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		switch name {
+		case "raknet":
+			listeners = append(listeners, uc.listenerFunc)
+		case "nethernet":
+			listeners = append(listeners, uc.netherNetListenerFunc)
+		default:
+			return nil, fmt.Errorf("unknown network transport %q", name)
+		}
+	}
+	return listeners, nil
 }
 
 // loadResources loads all resource packs found in a directory passed.
@@ -400,7 +407,7 @@ func loadGenerator(dim world.Dimension) world.Generator {
 func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
-	c.Network.Transport = "raknet"
+	c.Network.Transport = []string{"raknet"}
 	c.Network.NetherNet.KeyFile, c.Network.NetherNet.Domain = "keys/server_identity_key.pem", "self"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
