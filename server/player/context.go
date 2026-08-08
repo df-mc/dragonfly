@@ -13,8 +13,8 @@ type Context struct {
 }
 
 // NewContext returns a Context for one event dispatch concerning p.
-func NewContext(p *Player) *Context {
-	return &Context{Context: p.tx.Event(), p: p}
+func NewContext(tx *world.Tx, p *Player) *Context {
+	return &Context{Context: tx.Event(), p: p}
 }
 
 // Player returns the player the event concerns, valid only during the
@@ -37,7 +37,7 @@ func (ctx *Context) DeferErr(f func(ctx *Context) error) *world.Task {
 	h := ctx.p.H()
 	return ctx.Context.DeferErr(func(tx *world.Tx) error {
 		if e, ok := h.Entity(tx); ok {
-			return f(NewContext(e.(*Player)))
+			return f(NewContext(tx, e.(*Player)))
 		}
 		if h.Closed() {
 			return world.ErrEntityClosed
