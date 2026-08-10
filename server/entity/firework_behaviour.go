@@ -131,7 +131,10 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 			victim.(Living).Hurt(dmg, src)
 			continue
 		}
-		if _, ok := trace.Perform(pos, tpos, tx, victim.H().Type().BBox(victim).Grow(0.3), nil); ok {
+		res, ok := trace.Perform(pos, tpos, tx, victim.H().Type().BBox(victim).Grow(0.3), nil)
+		if _, blocked := res.(trace.BlockResult); ok && !blocked {
+			// A block between the firework and the victim stops the damage: Perform reports a hit for the block it
+			// stopped at as well as for an entity, so the hit has to be the entity to count.
 			victim.(Living).Hurt(dmg, src)
 		}
 	}
