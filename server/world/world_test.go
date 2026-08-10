@@ -257,3 +257,29 @@ func (*testTickerBlock) EncodeNBT() map[string]any {
 func (b *testTickerBlock) Tick(int64, cube.Pos, *Tx) {
 	b.ticks++
 }
+
+// TestCloseChunkRemovesEntities verifies that unloading a chunk removes the entities in it from the World. An Entity
+// is not required to remove itself in its Close method, and a handle left behind is ticked for as long as the World
+// runs, keeps the Entity's data alive, and starts ticking again if the chunk is loaded a second time.
+func TestCloseChunkRemovesEntities(t *testing.T) {
+	w := Config{Synchronous: true}.New()
+	defer w.Close()
+
+	h := EntitySpawnOpts{Position: mgl64.Vec3{8, 4, 8}}.New(testEntityType{}, testEntityConfig{})
+	<-w.exec(func(tx *Tx) {
+		tx.AddEntity(h)
+	})
+	if got := len(w.entities); got != 1 {
+		t.Fatalf("entities = %v, want 1", got)
+	}
+
+	// No viewer was ever added for the chunk, so unloading it closes the entity in it.
+	<-w.exec(w.closeUnusedChunks)
+
+	if got := len(w.entities); got != 0 {
+		t.Errorf("entities = %v after unloading the chunk, want 0", got)
+	}
+	if got := len(w.chunks); got != 0 {
+		t.Errorf("chunks = %v after unloading, want 0", got)
+	}
+}
