@@ -46,7 +46,9 @@ type Settings struct {
 	TickRange int32
 }
 
-// defaultSettings returns the default Settings for a new World.
+// defaultSettings returns the default Settings for a new World. The rain and thunder times are not left at 0: those
+// counters toggle the weather they control when they reach 0, so a World would start in a thunderstorm on its first
+// tick.
 func defaultSettings() *Settings {
 	return &Settings{
 		Name:            "World",
@@ -54,6 +56,8 @@ func defaultSettings() *Settings {
 		Difficulty:      DifficultyNormal,
 		TimeCycle:       true,
 		WeatherCycle:    true,
+		RainTime:        12000,
+		ThunderTime:     12000,
 		TickRange:       6,
 	}
 }

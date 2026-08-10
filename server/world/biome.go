@@ -60,8 +60,24 @@ func Biomes() []Biome {
 	return bs
 }
 
-// ocean returns an ocean biome.
+// ocean returns the ocean biome, or an unknown biome if no biome is registered.
 func ocean() Biome {
-	o, _ := BiomeByID(0)
-	return o
+	if o, ok := BiomeByID(0); ok {
+		return o
+	}
+	return unknownBiome{}
 }
+
+// unknownBiome is returned in place of a Biome that is not registered. Biomes are registered by importing
+// server/world/biome, which a World created directly from a Config does not necessarily do, and every caller of
+// BiomeByID assumes a Biome it can call methods on.
+type unknownBiome struct{}
+
+func (unknownBiome) Temperature() float64    { return 0.5 }
+func (unknownBiome) Rainfall() float64       { return 0 }
+func (unknownBiome) Depth() float64          { return 0.1 }
+func (unknownBiome) Scale() float64          { return 0.1 }
+func (unknownBiome) WaterColour() color.RGBA { return color.RGBA{R: 0x44, G: 0xaf, B: 0xf5, A: 0xff} }
+func (unknownBiome) Tags() []string          { return nil }
+func (unknownBiome) String() string          { return "unknown" }
+func (unknownBiome) EncodeBiome() int        { return 0 }
