@@ -244,7 +244,7 @@ func (c Campfire) EncodeNBT() map[string]any {
 		id := strconv.Itoa(i + 1)
 		if !v.Item.Empty() {
 			m["Item"+id] = item.WriteNBT(v.Item, true)
-			m["ItemTime"+id] = uint8(v.Time.Milliseconds() / 50)
+			m["ItemTime"+id] = int16(v.Time.Milliseconds() / 50)
 		}
 	}
 	return m
