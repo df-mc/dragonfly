@@ -948,7 +948,7 @@ func (p *Player) MoveItemsToInventory() {
 		if n, err := p.inv.AddItem(i); err != nil {
 			// We couldn't add the item to the main inventory (probably because
 			// it was full), so we drop it instead.
-			p.Drop(i.Grow(i.Count() - n))
+			p.Drop(i.Grow(-n))
 		}
 	}
 }
@@ -3280,7 +3280,7 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 	n, err := p.Inventory().AddItem(ctx.NewItem)
 	if err != nil {
 		// Not all items could be added to the inventory, so drop the rest.
-		p.Drop(ctx.NewItem.Grow(ctx.NewItem.Count() - n))
+		p.Drop(ctx.NewItem.Grow(-n))
 	}
 	if p.Dead() {
 		p.dropItems()
