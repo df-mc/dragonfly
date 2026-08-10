@@ -308,8 +308,14 @@ type flammableEntity interface {
 // dropItem ...
 func dropItem(tx *world.Tx, it item.Stack, pos mgl64.Vec3) {
 	create := tx.World().EntityRegistry().Config().Item
-	opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
-	tx.AddEntity(create(opts, it))
+	// An item entity holds at most a maximum sized stack and silently discards anything above it, so a bigger stack is
+	// dropped as several entities rather than losing the remainder.
+	for !it.Empty() {
+		n := min(it.Count(), it.MaxCount())
+		opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}
+		tx.AddEntity(create(opts, it.Grow(n-it.Count())))
+		it = it.Grow(-n)
+	}
 }
 
 // bass is a struct that may be embedded for blocks that create a bass sound.
