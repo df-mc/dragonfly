@@ -1298,19 +1298,23 @@ func (w *World) addWorldViewer(l *Loader) {
 // addViewer adds a viewer to the World at a given position. Any events that
 // happen in the chunk at that position, such as block and entity changes, will
 // be sent to the viewer.
-func (w *World) addViewer(tx *Tx, c *Column, loader *Loader) {
-	c.viewers = append(c.viewers, loader.viewer)
+// The Viewer is passed separately from the Loader it belongs to: the Loader
+// releases its lock before calling this, so a concurrent Close may clear its
+// Viewer in the meantime.
+func (w *World) addViewer(tx *Tx, c *Column, loader *Loader, viewer Viewer) {
+	c.viewers = append(c.viewers, viewer)
 	c.loaders = append(c.loaders, loader)
 
 	for _, entity := range c.Entities {
-		showEntity(entity.mustEntity(tx), loader.viewer)
+		showEntity(entity.mustEntity(tx), viewer)
 	}
 }
 
 // removeViewer removes a viewer from a chunk position. All entities will be
 // hidden from the viewer and no more calls will be made when events in the
-// chunk happen.
-func (w *World) removeViewer(tx *Tx, pos ChunkPos, loader *Loader) {
+// chunk happen. The Viewer is passed separately from the Loader for the same
+// reason as it is in addViewer.
+func (w *World) removeViewer(tx *Tx, pos ChunkPos, loader *Loader, viewer Viewer) {
 	if w == nil {
 		return
 	}
@@ -1325,7 +1329,7 @@ func (w *World) removeViewer(tx *Tx, pos ChunkPos, loader *Loader) {
 
 	// Hide all entities in the chunk from the viewer.
 	for _, entity := range c.Entities {
-		loader.viewer.HideEntity(entity.mustEntity(tx))
+		viewer.HideEntity(entity.mustEntity(tx))
 	}
 }
 
