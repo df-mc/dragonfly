@@ -71,7 +71,7 @@ func (p DecoratedPot) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 // InsertItem ...
 func (p DecoratedPot) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range h.inventory.Slots() {
-		if !sourceStack.Empty() && sourceStack.Comparable(p.Item) {
+		if !sourceStack.Empty() && sourceStack.Comparable(p.Item) && p.Item.Count() < p.Item.MaxCount() {
 			if p.Item.Empty() {
 				p.Item = sourceStack.Grow(-sourceStack.Count() + 1)
 			} else {
