@@ -1193,7 +1193,9 @@ func (w *World) save(f func(*Tx, ChunkPos, *Column)) execFunc {
 
 // saveChunk saves a chunk and its entities to disk after compacting the chunk.
 func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
-	if !w.conf.ReadOnly && c.modified {
+	// A Column holding block entities is always written. The contents of a container live behind a pointer the block
+	// entity holds, so they are changed without the Column being touched at all and cannot set the modified flag.
+	if !w.conf.ReadOnly && (c.modified || len(c.BlockEntities) > 0) {
 		c.Compact()
 		if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos)); err != nil {
 			w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
