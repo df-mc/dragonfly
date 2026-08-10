@@ -2759,7 +2759,7 @@ func (p *Player) RemoveViewLayer(entity world.Entity) {
 // tickAirSupply tick's the player's air supply, consuming it when underwater, and replenishing it when out of water.
 func (p *Player) tickAirSupply() {
 	if !p.canBreathe() {
-		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration); ok && rand.Float64() <= enchantment.Respiration.Chance(r.Level()) {
+		if r, ok := p.Armour().Helmet().Enchantment(enchantment.Respiration); ok && rand.Float64() < enchantment.Respiration.Chance(r.Level()) {
 			// respiration grants a chance to avoid drowning damage every tick.
 			return
 		}
