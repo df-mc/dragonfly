@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+// isFire checks if the block passed is fire. Fire is compared by name rather than by value: it carries an age that
+// climbs as it burns down, so a fire that has been alight for a moment is not equal to a freshly placed one.
+func isFire(b world.Block) bool {
+	name, _ := b.EncodeBlock()
+	return name == "minecraft:fire" || name == "minecraft:soul_fire"
+}
+
 // SplashableBlock is a block that can be splashed with a splash bottle.
 type SplashableBlock interface {
 	world.Block
@@ -67,12 +74,12 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, t
 			switch result := res.(type) {
 			case trace.BlockResult:
 				blockPos := result.BlockPosition().Side(result.Face())
-				if tx.Block(blockPos) == fire() {
+				if isFire(tx.Block(blockPos)) {
 					tx.SetBlock(blockPos, nil, nil)
 				}
 
 				for _, f := range cube.HorizontalFaces() {
-					if h := blockPos.Side(f); tx.Block(h) == fire() {
+					if h := blockPos.Side(f); isFire(tx.Block(h)) {
 						tx.SetBlock(h, nil, nil)
 					}
 
