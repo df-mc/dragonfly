@@ -87,7 +87,8 @@ func (l Lectern) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, 
 		return false
 	}
 
-	l.Book, l.Page = held, 0
+	// Only one book is taken from the stack held, so only one may be put on the lectern.
+	l.Book, l.Page = held.Grow(-held.Count()+1), 0
 	tx.SetBlock(pos, l, nil)
 
 	tx.PlaySound(pos.Vec3Centre(), sound.LecternBookPlace{})
