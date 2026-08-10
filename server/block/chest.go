@@ -182,8 +182,13 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	for _, dir := range []cube.Direction{c.Facing.RotateLeft(), c.Facing.RotateRight()} {
 		if ch, pair, ok := c.pair(tx, pos, pos.Side(dir.Face())); ok {
 			place(tx, pos, ch, user, ctx)
+			if !placed(ctx) {
+				// The chest was not placed after all, so the chest it would have paired with must not be told that it
+				// was: it would be left paired with a position holding no chest.
+				return false
+			}
 			tx.SetBlock(ch.pairPos(pos), pair, nil)
-			return placed(ctx)
+			return true
 		}
 	}
 
@@ -229,9 +234,19 @@ func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok boo
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
 	}
+	if len(c.viewers) != 0 {
+		// The inventories are replaced below, so anyone looking at this chest is left holding one that is no longer
+		// part of it. Close them first, as unpair does.
+		c.close(tx, pos)
+	}
+	if len(pair.viewers) != 0 {
+		pair.close(tx, pairPos)
+	}
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{})
-	left, right := c.inventory.Clone(nil), pair.inventory.Clone(nil)
+	// The existing inventories are used rather than copies of them: a copy would leave anyone already looking at
+	// either chest holding an inventory that is no longer part of it.
+	left, right := c.inventory, pair.inventory
 	if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
 		left, right = right, left
 	}
@@ -275,14 +290,16 @@ func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
 		c.close(tx, pos)
 	}
 
-	c.inventory = c.inventory.Clone(func(slot int, _, after item.Stack) {
+	// The inventories are kept and only the function called on a slot change is replaced. Copying them would leave
+	// anyone still looking at either chest holding an inventory that is no longer part of it.
+	c.inventory.SlotFunc(func(slot int, _, after item.Stack) {
 		c.viewerMu.RLock()
 		defer c.viewerMu.RUnlock()
 		for viewer := range c.viewers {
 			viewer.ViewSlotChange(slot, after)
 		}
 	})
-	pair.inventory = pair.inventory.Clone(func(slot int, _, after item.Stack) {
+	pair.inventory.SlotFunc(func(slot int, _, after item.Stack) {
 		pair.viewerMu.RLock()
 		defer pair.viewerMu.RUnlock()
 		for viewer := range pair.viewers {
