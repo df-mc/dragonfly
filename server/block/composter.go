@@ -82,7 +82,6 @@ func (c Composter) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (c Composter) BreakInfo() BreakInfo {
-	// The composter dropped is empty: an item carrying the level would place a composter that is still full.
 	return newBreakInfo(0.6, alwaysHarvestable, axeEffective, oneOf(Composter{})).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if c.Level == 8 {
 			dropItem(tx, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
