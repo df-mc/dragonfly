@@ -249,7 +249,7 @@ func (w weather) adjustPositionToEntities(tx *Tx, vec mgl64.Vec3) mgl64.Vec3 {
 			// block at its position is eligible to be struck by lightning. We
 			// first save all entity positions where this is the case.
 			pos := cube.PosFromVec3(e.Position())
-			if tx.HighestBlock(pos[0], pos[1]) < pos[2] {
+			if tx.HighestBlock(pos[0], pos[2]) < pos[1] {
 				list = append(list, e.Position())
 			}
 		}
