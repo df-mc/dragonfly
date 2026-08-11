@@ -96,5 +96,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomDye},
 		Slot:      loomDyeSlot,
 	}, dye.Grow(-timesCrafted), s, tx)
-	return h.createResults(s, tx, input.WithItem(b))
+	// Only timesCrafted banners are consumed above, so only that many may be produced: input.WithItem keeps the count
+	// of the whole input stack.
+	return h.createResults(s, tx, input.Grow(timesCrafted-input.Count()).WithItem(b))
 }
