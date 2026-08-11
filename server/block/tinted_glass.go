@@ -7,9 +7,9 @@ type TintedGlass struct {
 	clicksAndSticks
 }
 
-// SuffocationImmune always returns true. Tinted glass blocks light entirely but, like regular glass, never
+// PreventsSuffocation always returns true. Tinted glass blocks light entirely but, like regular glass, never
 // suffocates an entity standing inside it.
-func (TintedGlass) SuffocationImmune() bool {
+func (TintedGlass) PreventsSuffocation() bool {
 	return true
 }
 

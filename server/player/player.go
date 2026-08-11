@@ -2890,7 +2890,7 @@ func (p *Player) insideOfSolid() bool {
 		// Transparent.
 		return false
 	}
-	if immune, ok := b.(block.NonSuffocating); ok && immune.SuffocationImmune() {
+	if immune, ok := b.(block.NonSuffocating); ok && immune.PreventsSuffocation() {
 		return false
 	}
 	for _, blockBox := range b.Model().BBox(pos, p.tx) {

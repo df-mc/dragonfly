@@ -58,8 +58,8 @@ type LightDiffuser interface {
 // inside it. This is distinct from LightDiffuser: a block may block all light while still being safe to
 // stand inside, such as tinted glass.
 type NonSuffocating interface {
-	// SuffocationImmune returns true if the block never causes suffocation damage to entities inside it.
-	SuffocationImmune() bool
+	// PreventsSuffocation returns true if the block never causes suffocation damage to entities inside it.
+	PreventsSuffocation() bool
 }
 
 // RedstoneWireStepDowner represents a block with custom behaviour for redstone wire providing power when travelling
