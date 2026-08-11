@@ -1215,13 +1215,7 @@ func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 		ent := e.mustEntity(tx)
 		_ = ent.Close()
 		if _, ok := w.entities[e]; ok && !w.closed.Load() {
-			// The Entity did not remove itself from the World in its Close
-			// method. An EntityHandle left behind here is ticked for as long
-			// as the World runs, keeps the Entity's data alive, and starts
-			// ticking again if the chunk is loaded a second time, so it is
-			// removed here instead. This is not done while the World is
-			// closing, as entities may still schedule work on their handle
-			// from Close there.
+			// Not while the World is closing: entities may still schedule work on their handle from Close there.
 			w.removeEntity(ent, tx)
 			_ = e.Close()
 		}
