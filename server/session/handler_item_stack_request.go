@@ -436,7 +436,6 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 
 	before, _ := inv.Item(sl)
 	if err := inv.SetItem(sl, i); err != nil {
-		// The inventory refused to hold the item, so nothing changed and nothing may be recorded as changed.
 		return err
 	}
 

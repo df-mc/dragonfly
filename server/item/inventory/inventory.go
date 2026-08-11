@@ -221,7 +221,6 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 		}
 		f, ok := inv.setItem(slot, a)
 		if !ok {
-			// The validator refused the item, so nothing was stored and nothing may be counted as added.
 			continue
 		}
 		//noinspection GoDeferInLoop
