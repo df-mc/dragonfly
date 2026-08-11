@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -9,13 +10,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"time"
 )
-
-// isFire checks if the block passed is fire. Fire is compared by name rather than by value: it carries an age that
-// climbs as it burns down, so a fire that has been alight for a moment is not equal to a freshly placed one.
-func isFire(b world.Block) bool {
-	name, _ := b.EncodeBlock()
-	return name == "minecraft:fire" || name == "minecraft:soul_fire"
-}
 
 // SplashableBlock is a block that can be splashed with a splash bottle.
 type SplashableBlock interface {
@@ -74,12 +68,13 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, t
 			switch result := res.(type) {
 			case trace.BlockResult:
 				blockPos := result.BlockPosition().Side(result.Face())
-				if isFire(tx.Block(blockPos)) {
+				if _, ok := tx.Block(blockPos).(block.Fire); ok {
 					tx.SetBlock(blockPos, nil, nil)
 				}
 
 				for _, f := range cube.HorizontalFaces() {
-					if h := blockPos.Side(f); isFire(tx.Block(h)) {
+					h := blockPos.Side(f)
+					if _, ok := tx.Block(h).(block.Fire); ok {
 						tx.SetBlock(h, nil, nil)
 					}
 
