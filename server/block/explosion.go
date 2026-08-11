@@ -187,15 +187,31 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 		if explodable, ok := bl.(Explodable); ok {
 			explodable.Explode(src, pos, tx)
 		} else if breakable, ok := bl.(Breakable); ok {
+			info := breakable.BreakInfo()
+			var additionalDrops []item.Stack
+			if info.AdditionalDrops != nil {
+				additionalDrops = info.AdditionalDrops(pos, tx, nil)
+			}
 			// Clear the block first so break handlers see the post-break world, this is required by things such as redstone updates.
 			tx.SetBlock(pos, nil, nil)
-			breakHandler := breakable.BreakInfo().BreakHandler
+			breakHandler := info.BreakHandler
 			if breakHandler != nil {
 				breakHandler(pos, tx, nil)
 			}
 			if itemDropChance > r.Float64() {
-				for _, drop := range breakable.BreakInfo().Drops(item.ToolNone{}, nil) {
+				for _, drop := range info.Drops(item.ToolNone{}, nil) {
 					dropItem(tx, drop, pos.Vec3Centre())
+				}
+			}
+			// Additional drops are independent of the ordinary harvest-drop chance. A negative chance remains the
+			// documented explicit setting that suppresses all item drops.
+			if itemDropChance >= 0 {
+				additionalDropPos := pos.Vec3Centre()
+				if len(additionalDrops) > 0 && info.AdditionalDropPosition != nil {
+					additionalDropPos = info.AdditionalDropPosition(pos)
+				}
+				for _, drop := range additionalDrops {
+					dropItem(tx, drop, additionalDropPos)
 				}
 			}
 		}

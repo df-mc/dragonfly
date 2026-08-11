@@ -251,7 +251,17 @@ func shulkerPushDelta(facing cube.Face, shulkerBBox, entityBBox cube.BBox) (delt
 }
 
 func (s ShulkerBox) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, oneOf(s))
+	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, simpleDrops()).withAdditionalDrops(func(_ cube.Pos, _ *world.Tx, u item.User) []item.Stack {
+		s = s.initialised()
+		if u != nil {
+			if g, ok := u.(interface{ GameMode() world.GameMode }); ok && g.GameMode().CreativeInventory() {
+				if s.inventory.Empty() {
+					return nil
+				}
+			}
+		}
+		return []item.Stack{item.NewStack(s, 1)}
+	})
 }
 
 func (s ShulkerBox) MaxCount() int {

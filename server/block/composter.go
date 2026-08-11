@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
+	"github.com/go-gl/mathgl/mgl64"
 	"math/rand/v2"
 	"time"
 )
@@ -82,10 +83,13 @@ func (c Composter) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (c Composter) BreakInfo() BreakInfo {
-	return newBreakInfo(0.6, alwaysHarvestable, axeEffective, oneOf(c)).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(0.6, alwaysHarvestable, axeEffective, oneOf(c)).withAdditionalDrops(func(cube.Pos, *world.Tx, item.User) []item.Stack {
 		if c.Level == 8 {
-			dropItem(tx, item.NewStack(item.BoneMeal{}, 1), pos.Side(cube.FaceUp).Vec3Middle())
+			return []item.Stack{item.NewStack(item.BoneMeal{}, 1)}
 		}
+		return nil
+	}).withAdditionalDropPosition(func(pos cube.Pos) mgl64.Vec3 {
+		return pos.Side(cube.FaceUp).Vec3Middle()
 	})
 }
 
