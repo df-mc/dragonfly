@@ -3023,10 +3023,6 @@ func (p *Player) checkEntitySteppers() {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround(deltaPos mgl64.Vec3) bool {
-	// The box is extended back over the movement of this tick, so that ground moved past within a single tick is not
-	// missed. It is never extended upwards: Extend grows every axis on its own, so a box extended back over a fall
-	// would cover a corner the player never occupied, and a block moved past sideways, such as the bottom edge of an
-	// overhang, would be read as ground.
 	sweep := deltaPos.Mul(-1.0)
 	sweep[1] = min(sweep[1], 0)
 	box := Type.BBox(p).Translate(p.Position()).Extend(mgl64.Vec3{0, -0.05}).Extend(sweep)
