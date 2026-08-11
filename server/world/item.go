@@ -3,9 +3,10 @@ package world
 import (
 	_ "embed"
 	"fmt"
+	"image"
+
 	"github.com/df-mc/dragonfly/server/item/category"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"image"
 )
 
 // Item represents an item that may be added to an inventory. It has a method to encode the item to an ID and
@@ -46,7 +47,7 @@ func RegisterItem(item Item) {
 		customItems = append(customItems, c)
 	}
 	if _, ok := itemNamesToRuntimeIDs[name]; !ok {
-		panic(fmt.Sprintf("item name %v does not have a runtime ID", name))
+		panic(fmt.Sprintf("item name %v does not have a runtime ID and does not match the CustomItem interface", name))
 	}
 	items[h] = item
 }
