@@ -6,7 +6,6 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -38,7 +37,7 @@ func (conf ItemBehaviourConfig) New() *ItemBehaviour {
 	if i.Count() > i.MaxCount() {
 		i = i.Grow(i.MaxCount() - i.Count())
 	}
-	i = nbtconv.Item(nbtconv.WriteItem(i, true), nil)
+	i = item.ReadNBT(item.WriteNBT(i, true), nil)
 
 	if conf.PickupDelay == 0 {
 		conf.PickupDelay = time.Second / 2
@@ -105,7 +104,7 @@ func (i *ItemBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 // Explode reacts to explosions. The item entity is destroyed, unless the item
 // type is blast proof.
-func (i *ItemBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
+func (i *ItemBehaviour) Explode(e *Ent, _ world.ExplosionSource, impact float64) {
 	if impact > 0 {
 		if expl, ok := i.Item().Item().(interface{ BlastProof() bool }); ok && expl.BlastProof() {
 			return

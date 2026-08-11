@@ -134,7 +134,7 @@ func (l Lectern) EncodeNBT() map[string]any {
 		"id":      "Lectern",
 	}
 	if r, ok := l.Book.Item().(readableBook); ok {
-		m["book"] = nbtconv.WriteItem(l.Book, true)
+		m["book"] = item.WriteNBT(l.Book, true)
 		m["totalPages"] = int32(r.TotalPages())
 	}
 	return m
@@ -143,7 +143,7 @@ func (l Lectern) EncodeNBT() map[string]any {
 // DecodeNBT ...
 func (l Lectern) DecodeNBT(m map[string]any) any {
 	l.Page = int(nbtconv.Int32(m, "page"))
-	l.Book = nbtconv.MapItem(m, "book")
+	l.Book = item.MapNBT(m, "book")
 	return l
 }
 

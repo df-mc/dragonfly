@@ -3,7 +3,6 @@ package block
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -55,7 +54,7 @@ func (j Jukebox) FuelInfo() item.FuelInfo {
 
 // BreakInfo ...
 func (j Jukebox) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(Jukebox{})).withBlastResistance(30).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(Jukebox{})).withBlastResistance(6).withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
 		if _, hasDisc := j.Disc(); hasDisc {
 			dropItem(tx, j.Item, pos.Vec3())
 			tx.PlaySound(pos.Vec3Centre(), sound.MusicDiscEnd{})
@@ -109,14 +108,14 @@ func (j Jukebox) Disc() (sound.DiscType, bool) {
 func (j Jukebox) EncodeNBT() map[string]any {
 	m := map[string]any{"id": "Jukebox"}
 	if _, hasDisc := j.Disc(); hasDisc {
-		m["RecordItem"] = nbtconv.WriteItem(j.Item, true)
+		m["RecordItem"] = item.WriteNBT(j.Item, true)
 	}
 	return m
 }
 
 // DecodeNBT ...
 func (j Jukebox) DecodeNBT(data map[string]any) any {
-	s := nbtconv.MapItem(data, "RecordItem")
+	s := item.MapNBT(data, "RecordItem")
 	if _, ok := s.Item().(item.MusicDisc); ok {
 		j.Item = s
 	}
