@@ -158,8 +158,6 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 
 	m := e.Behaviour().Tick(e, tx)
 	if e.handle.Closed() {
-		// The behaviour closed the entity, so the rest of the tick would run on an entity that is no longer in the
-		// world and would age it past the point it stopped existing.
 		return
 	}
 	if e.finishPendingPortalTravel(tx) {
