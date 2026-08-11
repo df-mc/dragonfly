@@ -53,6 +53,15 @@ func (m Material) Encode() map[string]any {
 		"texture":           m.texture,
 		"render_method":     m.renderMethod.String(),
 		"face_dimming":      m.faceDimming,
-		"ambient_occlusion": m.ambientOcclusion,
+		"ambient_occlusion": ambientOcclusionValue(m.ambientOcclusion),
 	}
+}
+
+// ambientOcclusionValue converts the convenient boolean Material option to the
+// numeric value expected by minecraft:material_instances since format 1.26.20.
+func ambientOcclusionValue(enabled bool) float32 {
+	if enabled {
+		return 1
+	}
+	return 0
 }
