@@ -244,9 +244,7 @@ func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok boo
 	}
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{})
-	// The existing inventories are used rather than copies of them: a copy would leave anyone already looking at
-	// either chest holding an inventory that is no longer part of it.
-	left, right := c.inventory, pair.inventory
+	left, right := c.inventory.Clone(nil), pair.inventory.Clone(nil)
 	if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
 		left, right = right, left
 	}
@@ -290,16 +288,14 @@ func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
 		c.close(tx, pos)
 	}
 
-	// The inventories are kept and only the function called on a slot change is replaced. Copying them would leave
-	// anyone still looking at either chest holding an inventory that is no longer part of it.
-	c.inventory.SlotFunc(func(slot int, _, after item.Stack) {
+	c.inventory = c.inventory.Clone(func(slot int, _, after item.Stack) {
 		c.viewerMu.RLock()
 		defer c.viewerMu.RUnlock()
 		for viewer := range c.viewers {
 			viewer.ViewSlotChange(slot, after)
 		}
 	})
-	pair.inventory.SlotFunc(func(slot int, _, after item.Stack) {
+	pair.inventory = pair.inventory.Clone(func(slot int, _, after item.Stack) {
 		pair.viewerMu.RLock()
 		defer pair.viewerMu.RUnlock()
 		for viewer := range pair.viewers {
