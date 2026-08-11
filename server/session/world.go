@@ -336,7 +336,6 @@ func (s *Session) ViewEntityArmour(e world.Entity) {
 
 	inv := armoured.Armour()
 	if inv == nil {
-		// The entity has an Armour method, but carries no armour inventory.
 		return
 	}
 
