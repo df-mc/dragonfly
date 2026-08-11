@@ -47,7 +47,7 @@ func RegisterItem(item Item) {
 		customItems = append(customItems, c)
 	}
 	if _, ok := itemNamesToRuntimeIDs[name]; !ok {
-		panic(fmt.Sprintf("item name %v does not have a runtime ID and does not match the CustomItem interface", name))
+		panic(fmt.Sprintf("item registered with name %v does not exist in the vanilla item runtime ID table", name))
 	}
 	items[h] = item
 }
