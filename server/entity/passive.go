@@ -1,11 +1,10 @@
 package entity
 
 import (
-	"github.com/df-mc/dragonfly/server/block"
-	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"time"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // PassiveBehaviourConfig holds optional parameters for a PassiveBehaviour.
@@ -64,8 +63,8 @@ type PassiveBehaviour struct {
 
 // Explode adds velocity to a passive entity to blast it away from the
 // explosion's source.
-func (p *PassiveBehaviour) Explode(e *Ent, src mgl64.Vec3, impact float64, _ block.ExplosionConfig) {
-	e.data.Vel = e.data.Vel.Add(e.data.Pos.Sub(src).Normalize().Mul(impact))
+func (p *PassiveBehaviour) Explode(e *Ent, src world.ExplosionSource, impact float64) {
+	e.data.Vel = e.data.Vel.Add(e.data.Pos.Sub(src.Position()).Normalize().Mul(impact))
 }
 
 // Fuse returns the leftover time until PassiveBehaviourConfig.Expire is called,

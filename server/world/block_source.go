@@ -8,7 +8,7 @@ type BlockSource interface {
 	Block(cube.Pos) Block
 }
 
-// worldSource is a wrapper around a World that implements BlockSource.
-type worldSource struct{ w *World }
+// worldSource is a wrapper around a world transaction that implements BlockSource.
+type worldSource struct{ tx *Tx }
 
-func (w worldSource) Block(pos cube.Pos) Block { return w.w.block(pos) }
+func (w worldSource) Block(pos cube.Pos) Block { return w.tx.block(pos) }

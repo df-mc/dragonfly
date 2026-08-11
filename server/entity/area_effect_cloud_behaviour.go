@@ -98,7 +98,7 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		}
 	}
 
-	if int16(e.Age()/(time.Second*20))%10 != 0 {
+	if (e.Age()/(time.Second/20))%10 != 0 {
 		// Area effect clouds only trigger updates every ten ticks.
 		return nil
 	}

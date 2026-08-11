@@ -2,7 +2,6 @@ package item
 
 import (
 	"time"
-	_ "unsafe"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -226,24 +225,14 @@ func (Crossbow) EncodeItem() (name string, meta int16) {
 
 // DecodeNBT ...
 func (c Crossbow) DecodeNBT(data map[string]any) any {
-	c.Item = mapItem(data, "chargedItem")
+	c.Item = MapNBT(data, "chargedItem")
 	return c
 }
 
 // EncodeNBT ...
 func (c Crossbow) EncodeNBT() map[string]any {
 	if !c.Item.Empty() {
-		return map[string]any{"chargedItem": writeItem(c.Item, true)}
+		return map[string]any{"chargedItem": WriteNBT(c.Item, true)}
 	}
 	return nil
 }
-
-// noinspection ALL
-//
-//go:linkname writeItem github.com/df-mc/dragonfly/server/internal/nbtconv.WriteItem
-func writeItem(s Stack, disk bool) map[string]any
-
-// noinspection ALL
-//
-//go:linkname mapItem github.com/df-mc/dragonfly/server/internal/nbtconv.MapItem
-func mapItem(x map[string]any, k string) Stack
