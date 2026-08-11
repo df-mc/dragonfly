@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -43,11 +42,11 @@ func (e *Ent) Behaviour() Behaviour {
 }
 
 // Explode propagates the explosion behaviour of the underlying Behaviour.
-func (e *Ent) Explode(src mgl64.Vec3, impact float64, conf block.ExplosionConfig) {
+func (e *Ent) Explode(src world.ExplosionSource, impact float64) {
 	if expl, ok := e.Behaviour().(interface {
-		Explode(e *Ent, src mgl64.Vec3, impact float64, conf block.ExplosionConfig)
+		Explode(e *Ent, src world.ExplosionSource, impact float64)
 	}); ok {
-		expl.Explode(e, src, impact, conf)
+		expl.Explode(e, src, impact)
 	}
 }
 
@@ -100,9 +99,7 @@ func (e *Ent) SetOnFire(duration time.Duration) {
 
 	e.data.FireDuration = duration
 	if stateChanged {
-		for _, v := range e.tx.Viewers(e.data.Pos) {
-			v.ViewEntityState(e)
-		}
+		e.updateState()
 	}
 }
 
@@ -121,7 +118,25 @@ func (e *Ent) NameTag() string {
 // empty string is passed.
 func (e *Ent) SetNameTag(s string) {
 	e.data.Name = s
-	for _, v := range e.tx.Viewers(e.Position()) {
+	e.updateState()
+}
+
+// AlwaysShowNameTag returns whether the name tag of the entity is shown at all
+// distances instead of only when the entity is looked at from up close.
+func (e *Ent) AlwaysShowNameTag() bool {
+	return e.data.AlwaysShowNameTag
+}
+
+// SetAlwaysShowNameTag changes whether the name tag of the entity is shown at
+// all distances instead of only when the entity is looked at from up close.
+func (e *Ent) SetAlwaysShowNameTag(alwaysShow bool) {
+	e.data.AlwaysShowNameTag = alwaysShow
+	e.updateState()
+}
+
+// updateState updates the state of the entity for all viewers of the entity.
+func (e *Ent) updateState() {
+	for _, v := range e.tx.Viewers(e.data.Pos) {
 		v.ViewEntityState(e)
 	}
 }

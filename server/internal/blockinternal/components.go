@@ -4,6 +4,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/customblock"
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
@@ -13,18 +14,21 @@ func Components(identifier string, b world.CustomBlock, blockID int32) map[strin
 	components := componentsFromProperties(b.Properties())
 	builder := NewComponentBuilder(identifier, components, blockID)
 	if emitter, ok := b.(block.LightEmitter); ok {
-		builder.AddComponent("minecraft:block_light_emission", map[string]any{
-			"emission": float32(emitter.LightEmissionLevel() / 15),
+		builder.AddComponent("minecraft:light_emission", map[string]any{
+			"emission": int32(emitter.LightEmissionLevel()),
 		})
 	}
 	if diffuser, ok := b.(block.LightDiffuser); ok {
-		builder.AddComponent("minecraft:block_light_filter", map[string]any{
+		builder.AddComponent("minecraft:light_dampening", map[string]any{
 			"lightLevel": int32(diffuser.LightDiffusionLevel()),
 		})
 	}
-	if breakable, ok := b.(block.Breakable); ok {
-		info := breakable.BreakInfo()
-		builder.AddComponent("minecraft:destructible_by_mining", map[string]any{"value": float32(info.Hardness)})
+	if _, ok := b.(block.Breakable); ok {
+		// The component's value is the seconds the client takes to destroy the block.
+		// Bedrock has no per-tool speed component, so the bare-handed
+		// duration is the only one a static definition can carry.
+		seconds := block.BreakDuration(b, item.Stack{}, block.BreakContext{}).Seconds()
+		builder.AddComponent("minecraft:destructible_by_mining", map[string]any{"value": float32(seconds)})
 	}
 	if frictional, ok := b.(block.Frictional); ok {
 		builder.AddComponent("minecraft:friction", map[string]any{"value": float32(frictional.Friction())})
@@ -63,7 +67,7 @@ func componentsFromProperties(props customblock.Properties) map[string]any {
 	if props.Geometry != "" {
 		components["minecraft:geometry"] = map[string]any{"identifier": props.Geometry}
 	} else if props.Cube {
-		components["minecraft:unit_cube"] = map[string]any{}
+		components["minecraft:geometry"] = map[string]any{"identifier": "minecraft:geometry.full_block"}
 	}
 	if props.MapColour != "" {
 		components["minecraft:map_color"] = map[string]any{"value": props.MapColour}
