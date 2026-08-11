@@ -36,7 +36,7 @@ func countDrops(tx *world.Tx) map[string]int {
 		if s.Empty() {
 			continue
 		}
-		name, _ := s.Item().(world.Item).EncodeItem()
+		name, _ := s.Item().EncodeItem()
 		m[name] += s.Count()
 	}
 	return m
