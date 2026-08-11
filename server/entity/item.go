@@ -60,7 +60,7 @@ func (itemType) EncodeNBT(data *world.EntityData) map[string]any {
 	b := data.Data.(*ItemBehaviour)
 	return map[string]any{
 		"Health":      int16(5),
-		"PickupDelay": int64(b.pickupDelay / (time.Second * 20)),
+		"PickupDelay": int64(b.pickupDelay / (time.Second / 20)),
 		"Item":        item.WriteNBT(b.Item(), true),
 	}
 }
