@@ -59,6 +59,8 @@ type Session struct {
 	entityRuntimeIDs map[*world.EntityHandle]uint64
 	entities         map[uint64]*world.EntityHandle
 	hiddenEntities   map[uuid.UUID]struct{}
+	// componentMetadata stores reset values for component metadata.
+	componentMetadata map[*world.EntityHandle]protocol.EntityMetadata
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot                     *uint32
@@ -193,6 +195,7 @@ func (conf Config) New(conn Conn) *Session {
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
 		hiddenEntities:         map[uuid.UUID]struct{}{},
+		componentMetadata:      map[*world.EntityHandle]protocol.EntityMetadata{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
@@ -341,6 +344,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)
+	clear(s.componentMetadata)
 	s.entityMutex.Unlock()
 }
 
@@ -637,7 +641,11 @@ type actorIdentifier struct {
 func (s *Session) sendAvailableEntities(w *world.World) {
 	var identifiers []actorIdentifier
 	for _, t := range w.EntityRegistry().Types() {
-		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
+		id := t.EncodeEntity()
+		if networkType, ok := t.(NetworkEncodeableEntity); ok {
+			id = networkType.NetworkEncodeEntity()
+		}
+		identifiers = append(identifiers, actorIdentifier{ID: id})
 	}
 	serialisedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {

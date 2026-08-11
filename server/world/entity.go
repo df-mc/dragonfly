@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"maps"
+	"math"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -389,8 +390,7 @@ func (e *EntityHandle) setAndUnlockWorldAt(w *World, pos mgl64.Vec3) {
 	e.cond.Broadcast()
 }
 
-// decodeNBT decodes the position, velocity, rotation, age, on-fire duration and
-// name tag of an entity.
+// decodeNBT decodes shared entity data.
 func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Pos = readVec3(m, "Pos")
 	e.data.Vel = readVec3(m, "Motion")
@@ -398,20 +398,28 @@ func (e *EntityHandle) decodeNBT(m map[string]any) {
 	e.data.Age = time.Duration(readInt16(m, "Age")) * (time.Second / 20)
 	e.data.FireDuration = time.Duration(readInt16(m, "Fire")) * time.Second / 20
 	e.data.Name, _ = m["NameTag"].(string)
+	if comp, ok := m["Components"].(map[string]any); ok {
+		e.data.decodeComponentsNBT(comp, readStringSlice(m["ComponentOrder"]))
+	}
 }
 
-// encodeNBT encodes the position, velocity, rotation, age, on-fire duration and
-// name tag of an entity.
+// encodeNBT encodes shared entity data.
 func (e *EntityHandle) encodeNBT() map[string]any {
-	return map[string]any{
+	age := min(e.data.Age/(time.Second/20), time.Duration(math.MaxInt16))
+	m := map[string]any{
 		"Pos":     []float32{float32(e.data.Pos[0]), float32(e.data.Pos[1]), float32(e.data.Pos[2])},
 		"Motion":  []float32{float32(e.data.Vel[0]), float32(e.data.Vel[1]), float32(e.data.Vel[2])},
 		"Yaw":     float32(e.data.Rot[0]),
 		"Pitch":   float32(e.data.Rot[1]),
 		"Fire":    int16(e.data.FireDuration.Seconds() * 20),
-		"Age":     int16(e.data.Age / (time.Second * 20)),
+		"Age":     int16(age),
 		"NameTag": e.data.Name,
 	}
+	if comp := e.data.encodeComponentsNBT(); comp != nil {
+		m["Components"] = comp
+		m["ComponentOrder"] = e.data.encodeComponentOrderNBT()
+	}
+	return m
 }
 
 // EntityData holds data shared by every entity. It is kept in an EntityHandle.
@@ -424,6 +432,13 @@ type EntityData struct {
 	Age               time.Duration
 
 	Data any
+
+	// Components are kept in attachment order. Unknown data is preserved.
+	components        []componentSlot
+	componentOrder    []string
+	unknownComponents map[string]any
+	// tickers is cleared whenever components change.
+	tickers []componentSlot
 }
 
 // Entity represents an Entity in the world, typically an object that may be moved around and can be
@@ -590,4 +605,21 @@ func readRotation(m map[string]any) cube.Rotation {
 func readInt16(m map[string]any, k string) int16 {
 	v, _ := m[k].(int16)
 	return v
+}
+
+func readStringSlice(v any) []string {
+	switch values := v.(type) {
+	case []string:
+		return values
+	case []any:
+		strings := make([]string, 0, len(values))
+		for _, value := range values {
+			if s, ok := value.(string); ok {
+				strings = append(strings, s)
+			}
+		}
+		return strings
+	default:
+		return nil
+	}
 }

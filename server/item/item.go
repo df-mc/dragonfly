@@ -1,8 +1,6 @@
 package item
 
 import (
-	"encoding/binary"
-	"image/color"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -243,24 +241,6 @@ func torsoPosition(e world.Entity) mgl64.Vec3 {
 		pos = pos.Add(mgl64.Vec3{0, torso.TorsoHeight()})
 	}
 	return pos
-}
-
-// Int32FromRGBA converts a color.RGBA into an int32. These int32s are present in things such as signs and dyed leather armour.
-func int32FromRGBA(x color.RGBA) int32 {
-	if x.R == 0 && x.G == 0 && x.B == 0 {
-		// Default to black colour. The default (0x000000) is a transparent colour. Text with this colour will not show
-		// up on the sign.
-		return int32(-0x1000000)
-	}
-	return int32(binary.BigEndian.Uint32([]byte{x.A, x.R, x.G, x.B}))
-}
-
-// rgbaFromInt32 converts an int32 into a color.RGBA. These int32s are present in things such as signs and dyed leather armour.
-func rgbaFromInt32(x int32) color.RGBA {
-	b := make([]byte, 4)
-	binary.BigEndian.PutUint32(b, uint32(x))
-
-	return color.RGBA{A: b[0], R: b[1], G: b[2], B: b[3]}
 }
 
 // boolByte returns 1 if the bool passed is true, or 0 if it is false.

@@ -1,8 +1,10 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
+
+	colourconv "github.com/df-mc/dragonfly/server/internal/colour"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Boots are a defensive item that may be equipped in the boots armour slot. They come in several tiers, like
@@ -99,7 +101,7 @@ func (b Boots) EncodeItem() (name string, meta int16) {
 func (b Boots) DecodeNBT(data map[string]any) any {
 	if t, ok := b.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
-			t.Colour = rgbaFromInt32(v)
+			t.Colour = colourconv.RGBAFromInt32(v)
 			b.Tier = t
 		}
 	}
@@ -111,7 +113,7 @@ func (b Boots) DecodeNBT(data map[string]any) any {
 func (b Boots) EncodeNBT() map[string]any {
 	m := map[string]any{}
 	if t, ok := b.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
-		m["customColor"] = int32FromRGBA(t.Colour)
+		m["customColor"] = colourconv.Int32FromRGBAOpaqueBlack(t.Colour)
 	}
 	writeTrim(m, b.Trim)
 	return m

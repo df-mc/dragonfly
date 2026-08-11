@@ -12,7 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
+	colourconv "github.com/df-mc/dragonfly/server/internal/colour"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
@@ -187,6 +187,7 @@ func (s *Session) HideEntity(e world.Entity) {
 		delete(s.entityRuntimeIDs, e.H())
 		delete(s.entities, id)
 	}
+	delete(s.componentMetadata, e.H())
 	s.entityMutex.Unlock()
 	if !ok {
 		// The entity was already removed some other way. We don't need to send a packet.
@@ -436,7 +437,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			s.writePacket(&packet.LevelEvent{
 				EventType: packet.LevelEventParticleLegacyEvent | 57,
 				Position:  vec64To32(pos),
-				EventData: nbtconv.Int32FromRGBA(pa.Colour),
+				EventData: colourconv.Int32FromRGBAOpaqueBlack(pa.Colour),
 			})
 			return
 		}
@@ -485,7 +486,7 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleLegacyEvent | 33,
 			Position:  vec64To32(pos),
-			EventData: nbtconv.Int32FromRGBA(pa.Colour),
+			EventData: colourconv.Int32FromRGBAOpaqueBlack(pa.Colour),
 		})
 	case particle.WaterDrip:
 		s.writePacket(&packet.LevelEvent{

@@ -1,8 +1,7 @@
 package world
 
 import (
-	"encoding/binary"
-
+	"github.com/df-mc/dragonfly/server/internal/colour"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
@@ -59,20 +58,15 @@ func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 		}
 
 		def := protocol.BiomeDefinition{
-			NameIndex:   int16(nameIndex),
-			BiomeID:     biomeID,
-			Temperature: float32(b.Temperature()),
-			Downfall:    float32(b.Rainfall()),
-			Depth:       float32(b.Depth()),
-			Scale:       float32(b.Scale()),
-			MapWaterColour: int32(binary.BigEndian.Uint32([]byte{
-				b.WaterColour().A,
-				b.WaterColour().R,
-				b.WaterColour().G,
-				b.WaterColour().B,
-			})),
-			Rain: b.Rainfall() > 0,
-			Tags: protocol.Option[[]uint16](tagIndices),
+			NameIndex:      int16(nameIndex),
+			BiomeID:        biomeID,
+			Temperature:    float32(b.Temperature()),
+			Downfall:       float32(b.Rainfall()),
+			Depth:          float32(b.Depth()),
+			Scale:          float32(b.Scale()),
+			MapWaterColour: colour.Int32FromRGBA(b.WaterColour()),
+			Rain:           b.Rainfall() > 0,
+			Tags:           protocol.Option[[]uint16](tagIndices),
 		}
 
 		encodedBiomes = append(encodedBiomes, def)

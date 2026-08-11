@@ -1,14 +1,16 @@
 package block
 
 import (
+	"image/color"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
+	colourconv "github.com/df-mc/dragonfly/server/internal/colour"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
-	"time"
 )
 
 // Sign is a non-solid block that can display text on the front and back of the block.
@@ -192,14 +194,14 @@ func (s Sign) DecodeNBT(data map[string]any) any {
 		// The NBT format changed in 1.19.80 to have separate data for each side of the sign. The old format must still
 		// be supported for backwards compatibility.
 		s.Front.Text = nbtconv.String(data, "Text")
-		s.Front.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(data, "SignTextColor"))
+		s.Front.BaseColour = colourconv.RGBAFromInt32(nbtconv.Int32(data, "SignTextColor"))
 		s.Front.Glowing = nbtconv.Bool(data, "IgnoreLighting") && nbtconv.Bool(data, "TextIgnoreLegacyBugResolved")
 		return s
 	}
 
 	front, ok := data["FrontText"].(map[string]any)
 	if ok {
-		s.Front.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(front, "Color"))
+		s.Front.BaseColour = colourconv.RGBAFromInt32(nbtconv.Int32(front, "Color"))
 		s.Front.Glowing = nbtconv.Bool(front, "GlowingText")
 		s.Front.Text = nbtconv.String(front, "Text")
 		s.Front.Owner = nbtconv.String(front, "Owner")
@@ -207,7 +209,7 @@ func (s Sign) DecodeNBT(data map[string]any) any {
 
 	back, ok := data["BackText"].(map[string]any)
 	if ok {
-		s.Back.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(back, "Color"))
+		s.Back.BaseColour = colourconv.RGBAFromInt32(nbtconv.Int32(back, "Color"))
 		s.Back.Glowing = nbtconv.Bool(back, "GlowingText")
 		s.Back.Text = nbtconv.String(back, "Text")
 		s.Back.Owner = nbtconv.String(back, "Owner")
@@ -222,13 +224,13 @@ func (s Sign) EncodeNBT() map[string]any {
 		"id":      "Sign",
 		"IsWaxed": boolByte(s.Waxed),
 		"FrontText": map[string]any{
-			"SignTextColor":  nbtconv.Int32FromRGBA(s.Front.BaseColour),
+			"SignTextColor":  colourconv.Int32FromRGBAOpaqueBlack(s.Front.BaseColour),
 			"IgnoreLighting": boolByte(s.Front.Glowing),
 			"Text":           s.Front.Text,
 			"TextOwner":      s.Front.Owner,
 		},
 		"BackText": map[string]any{
-			"SignTextColor":  nbtconv.Int32FromRGBA(s.Back.BaseColour),
+			"SignTextColor":  colourconv.Int32FromRGBAOpaqueBlack(s.Back.BaseColour),
 			"IgnoreLighting": boolByte(s.Back.Glowing),
 			"Text":           s.Back.Text,
 			"TextOwner":      s.Back.Owner,

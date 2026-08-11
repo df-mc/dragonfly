@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
+	colourconv "github.com/df-mc/dragonfly/server/internal/colour"
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/potion"
@@ -40,7 +41,36 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	if ent, ok := e.(*entity.Ent); ok {
 		s.addSpecificMetadata(ent.Behaviour(), m)
 	}
+	s.addComponentMetadata(e, m)
 	return m
+}
+
+// addComponentMetadata applies component values after built-in metadata.
+// Values override built-ins, while flags are combined.
+func (s *Session) addComponentMetadata(e world.Entity, m protocol.EntityMetadata) {
+	h := e.H()
+	current, defaults := world.AddComponentMetadata(e, m)
+
+	s.entityMutex.Lock()
+	previous := s.componentMetadata[h]
+	if len(current) == 0 {
+		delete(s.componentMetadata, h)
+	} else {
+		if s.componentMetadata == nil {
+			s.componentMetadata = map[*world.EntityHandle]protocol.EntityMetadata{}
+		}
+		s.componentMetadata[h] = defaults
+	}
+	s.entityMutex.Unlock()
+
+	for key, reset := range previous {
+		if _, stillSet := current[key]; stillSet {
+			continue
+		}
+		if _, builtIn := m[key]; !builtIn {
+			m[key] = reset
+		}
+	}
 }
 
 func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
@@ -140,7 +170,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeyDataChangeRate] = float32(math.SmallestNonzeroFloat32)
 
 		colour, am := effect.ResultingColour(c.Effects())
-		m[protocol.EntityDataKeyEffectColor] = nbtconv.Int32FromRGBA(colour)
+		m[protocol.EntityDataKeyEffectColor] = colourconv.Int32FromRGBAOpaqueBlack(colour)
 		if am {
 			m[protocol.EntityDataKeyEffectAmbience] = byte(1)
 		} else {
