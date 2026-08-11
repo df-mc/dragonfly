@@ -315,8 +315,6 @@ func (s *Session) invByID(id int32, tx *world.Tx) (*inventory.Inventory, bool) {
 				// An ender chest hands out the player's own inventory rather than one the block holds.
 				return inv, true
 			}
-			// The window is only usable while the block it was opened for is still a container holding it. Breaking
-			// that block, or pairing it into a double chest, replaces the inventory the window was opened with.
 			if container, ok := tx.Block(pos).(block.Container); ok && container.Inventory(tx, pos) == inv {
 				return inv, true
 			}

@@ -183,8 +183,6 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 		if ch, pair, ok := c.pair(tx, pos, pos.Side(dir.Face())); ok {
 			place(tx, pos, ch, user, ctx)
 			if !placed(ctx) {
-				// The chest was not placed after all, so the chest it would have paired with must not be told that it
-				// was: it would be left paired with a position holding no chest.
 				return false
 			}
 			tx.SetBlock(ch.pairPos(pos), pair, nil)
@@ -235,8 +233,6 @@ func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok boo
 		return c, pair, false
 	}
 	if len(c.viewers) != 0 {
-		// The inventories are replaced below, so anyone looking at this chest is left holding one that is no longer
-		// part of it. Close them first, as unpair does.
 		c.close(tx, pos)
 	}
 	if len(pair.viewers) != 0 {
