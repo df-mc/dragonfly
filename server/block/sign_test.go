@@ -72,11 +72,11 @@ func TestCampfireNBTRoundTrip(t *testing.T) {
 		t.Errorf("Items[0].Time = %v, want %v", got.Items[0].Time, c.Items[0].Time)
 	}
 
-	// The cook timer Campfire.Activate actually sets is 30s = 600 ticks, which
-	// does not fit in the uint8 EncodeNBT writes.
+	// A campfire cooks for 30 seconds, which is 600 ticks. The tag holding that is an int in the format, and the
+	// value has to survive being written as one.
 	full := Campfire{Type: NormalFire()}
 	full.Items[0] = CampfireItem{Item: item.NewStack(item.Porkchop{}, 1), Time: time.Second * 30}
-	if v := full.EncodeNBT()["ItemTime1"]; v != any(uint8(0)) && v != any(int16(600)) {
-		t.Errorf("encoded ItemTime1 = %#v (%T), want a value representing 600 ticks", v, v)
+	if got := full.EncodeNBT()["ItemTime1"]; got != any(int32(600)) {
+		t.Errorf("encoded ItemTime1 = %#v (%T), want int32(600)", got, got)
 	}
 }
