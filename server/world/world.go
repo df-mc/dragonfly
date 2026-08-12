@@ -1205,7 +1205,9 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 // Afterwards, scheduled updates from that chunk are removed and all entities
 // in it are closed.
 func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
-	w.saveChunk(tx, pos, c)
+	if w.conf.SaveInterval > 0 {
+		w.saveChunk(tx, pos, c)
+	}
 	w.scheduledUpdates.removeChunk(pos)
 	w.redstone.removeChunk(pos)
 	// Note: We close c.Entities here because some entities may remove
