@@ -308,8 +308,8 @@ type flammableEntity interface {
 // dropItem ...
 func dropItem(tx *world.Tx, it item.Stack, pos mgl64.Vec3) {
 	create := tx.World().EntityRegistry().Config().Item
-	// An item entity holds at most a maximum sized stack and silently discards anything above it, so a bigger stack is
-	// dropped as several entities rather than losing the remainder.
+	// An item entity holds at most a maximum sized stack and discards the rest, so a bigger stack is dropped as
+	// several entities.
 	for !it.Empty() {
 		n := min(it.Count(), it.MaxCount())
 		opts := world.EntitySpawnOpts{Position: pos, Velocity: mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}}

@@ -2589,8 +2589,8 @@ func (p *Player) Drop(s item.Stack) int {
 	if p.Handler().HandleItemDrop(ctx, s); ctx.Cancelled() {
 		return 0
 	}
-	// An item entity holds at most a maximum sized stack and silently discards anything above it, so a bigger stack is
-	// dropped as several entities rather than reporting items that were never dropped.
+	// An item entity holds at most a maximum sized stack and discards the rest, so a bigger stack is dropped as
+	// several entities.
 	var dropped int
 	for !s.Empty() {
 		n := min(s.Count(), s.MaxCount())
