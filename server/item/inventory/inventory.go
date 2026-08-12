@@ -376,7 +376,6 @@ func (inv *Inventory) setItem(slot int, it item.Stack) func() {
 	}
 	before := inv.slots[slot]
 	inv.slots[slot] = it
-	// The function is read while the lock is held: SlotFunc and Close may replace it before the closure runs.
 	f := inv.f
 	return func() {
 		f(slot, before, it)
