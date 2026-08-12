@@ -69,8 +69,10 @@ type World struct {
 
 	// entities holds a map of entities currently loaded and the last ChunkPos
 	// that the Entity was in. These are tracked so that a call to RemoveEntity
-	// can find the correct Entity.
-	entities map[*EntityHandle]ChunkPos
+	// can find the correct Entity. entityTickOrder preserves insertion order so
+	// same-tick entity interactions do not depend on random map iteration.
+	entities        map[*EntityHandle]ChunkPos
+	entityTickOrder []*EntityHandle
 
 	r *rand.Rand
 
@@ -848,6 +850,7 @@ func (w *World) addEntityAt(tx *Tx, handle *EntityHandle, pos mgl64.Vec3) Entity
 	handle.setAndUnlockWorldAt(w, pos)
 	chunkPos := chunkPosFromVec3(handle.data.Pos)
 	w.entities[handle] = chunkPos
+	w.entityTickOrder = append(w.entityTickOrder, handle)
 
 	c := tx.chunk(chunkPos)
 	c.Entities, c.modified = append(c.Entities, handle), true
@@ -883,6 +886,7 @@ func (w *World) removeEntity(e Entity, tx *Tx) *EntityHandle {
 		v.HideEntity(e)
 	}
 	delete(w.entities, handle)
+	w.entityTickOrder = sliceutil.DeleteVal(w.entityTickOrder, handle)
 	handle.unsetAndLockWorld()
 	return handle
 }
@@ -1429,6 +1433,7 @@ func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 	w.chunks[pos] = column
 	for _, e := range column.Entities {
 		w.entities[e] = pos
+		w.entityTickOrder = append(w.entityTickOrder, e)
 		e.setAndUnlockWorld(w)
 		e.markWorldReady(w)
 	}

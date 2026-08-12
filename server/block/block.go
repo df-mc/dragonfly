@@ -21,6 +21,22 @@ type Activatable interface {
 	Activate(pos cube.Pos, clickedFace cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool
 }
 
+// WindChargeAffected represents a block that reacts to a wind charge burst.
+type WindChargeAffected interface {
+	// WindChargeInteractionPos returns the position at which the interaction
+	// should be applied. Multi-block structures use this to collapse multiple
+	// affected positions into one interaction.
+	WindChargeInteractionPos(pos cube.Pos) cube.Pos
+	// WindChargeInteract applies the block's wind charge interaction.
+	WindChargeInteract(pos cube.Pos, tx *world.Tx)
+}
+
+// ProjectileIgniter represents a block or liquid that sets projectiles passing
+// through it on fire.
+type ProjectileIgniter interface {
+	IgniteProjectile(e world.Entity)
+}
+
 // Pickable represents a block that may give a different item then the block itself when picked.
 type Pickable interface {
 	// Pick returns the item that is picked when the block is picked.
