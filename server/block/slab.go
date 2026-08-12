@@ -128,8 +128,6 @@ func (s Slab) BreakInfo() BreakInfo {
 		hardness, blastResistance, harvestable, effective = breakInfo.Hardness, breakInfo.BlastResistance, breakInfo.Harvestable, breakInfo.Effective
 	}
 	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
-		// The dropped item must not carry the double state: placing it back would make another double slab, which is
-		// worth two of the item it came from.
 		single := Slab{Block: s.Block}
 		if s.Double {
 			return []item.Stack{item.NewStack(single, 2)}
