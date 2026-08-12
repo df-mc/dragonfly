@@ -55,8 +55,8 @@ func defaultSettings() *Settings {
 		Difficulty:      DifficultyNormal,
 		TimeCycle:       true,
 		WeatherCycle:    true,
-		RainTime:        int64(rand.IntN(168000) + 12000),
-		ThunderTime:     int64(rand.IntN(168000) + 12000),
+		RainTime:        int64(rand.IntN(8400)+600) * 20,
+		ThunderTime:     int64(rand.IntN(8400)+600) * 20,
 		TickRange:       6,
 	}
 }
