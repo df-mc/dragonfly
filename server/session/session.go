@@ -332,8 +332,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	// early.
 	if tx != nil {
 		tx.RemoveEntity(c)
-		// The handle is only closed once the entity has been removed from its world: closing one that is still in a
-		// world panics. Without a transaction the entity cannot be removed, so its handle is left alone.
+		// Closing a handle that is still in a world panics.
 		_ = s.ent.Close()
 	}
 
