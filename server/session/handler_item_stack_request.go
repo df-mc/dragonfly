@@ -170,8 +170,7 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 		return err
 	}
 
-	// The destination is written before the source, so that a destination the inventory refuses to hold leaves the
-	// source untouched rather than destroying the item.
+	// The destination is written first: a refused write there must leave the source untouched.
 	if err := h.setItemInSlot(to, dest.Grow(int(count)), s, tx); err != nil {
 		return err
 	}
@@ -202,8 +201,7 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 		return err
 	}
 
-	// The destination is written before the source, so that a destination the inventory refuses to hold leaves the
-	// source untouched rather than destroying the item.
+	// The destination is written first: a refused write there must leave the source untouched.
 	if err := h.setItemInSlot(a.Destination, i, s, tx); err != nil {
 		return err
 	}
