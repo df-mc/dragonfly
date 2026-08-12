@@ -26,7 +26,7 @@ type Candle struct {
 
 // BreakInfo ...
 func (c Candle) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(c, c.AdditionalCandles+1)))
+	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(Candle{Colour: c.Colour}, c.AdditionalCandles+1)))
 }
 
 // Model ...
