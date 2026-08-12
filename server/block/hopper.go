@@ -11,6 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 // Hopper is a low-capacity storage block that can be used to collect item entities directly above it, as well as to
@@ -36,14 +37,18 @@ type Hopper struct {
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
 	viewers   map[ContainerViewer]struct{}
+	dirty     *atomic.Bool
 }
 
 // NewHopper creates a new initialised hopper. The inventory is properly initialised.
 func NewHopper() Hopper {
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{}, 1)
+	d := new(atomic.Bool)
 	return Hopper{
 		inventory: inventory.New(5, func(slot int, _, item item.Stack) {
+			d.Store(true)
+
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {
@@ -52,10 +57,21 @@ func NewHopper() Hopper {
 		}),
 		viewerMu: m,
 		viewers:  v,
+		dirty:    d,
 	}
 }
 
 func (Hopper) ContainerSize() int { return 5 }
+
+// Changed ...
+func (h Hopper) Changed() bool {
+	return h.dirty.Load()
+}
+
+// ResetChanged ...
+func (h Hopper) ResetChanged() {
+	h.dirty.Store(false)
+}
 
 // Model ...
 func (Hopper) Model() world.BlockModel {

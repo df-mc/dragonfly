@@ -8,6 +8,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -21,12 +22,16 @@ type brewer struct {
 	duration   time.Duration
 	fuelAmount int32
 	fuelTotal  int32
+
+	dirty atomic.Bool
 }
 
 // newBrewer creates a new initialised brewer. The inventory is properly initialised.
 func newBrewer() *brewer {
 	b := &brewer{viewers: make(map[ContainerViewer]struct{})}
 	b.inventory = inventory.New(5, func(slot int, _, item item.Stack) {
+		b.dirty.Store(true)
+
 		b.mu.Lock()
 		defer b.mu.Unlock()
 		for viewer := range b.viewers {
@@ -34,6 +39,16 @@ func newBrewer() *brewer {
 		}
 	})
 	return b
+}
+
+// Changed ...
+func (b *brewer) Changed() bool {
+	return b.dirty.Load()
+}
+
+// ResetChanged ...
+func (b *brewer) ResetChanged() {
+	b.dirty.Store(false)
 }
 
 // InsertItem ...

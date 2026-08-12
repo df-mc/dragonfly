@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,12 +24,16 @@ type smelter struct {
 	cookDuration      time.Duration
 	maxDuration       time.Duration
 	experience        int
+
+	dirty atomic.Bool
 }
 
 // newSmelter initialises a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
 func newSmelter() *smelter {
 	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
 	s.inventory = inventory.New(3, func(slot int, _, item item.Stack) {
+		s.dirty.Store(true)
+
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		for viewer := range s.viewers {
@@ -36,6 +41,16 @@ func newSmelter() *smelter {
 		}
 	})
 	return s
+}
+
+// Changed ...
+func (s *smelter) Changed() bool {
+	return s.dirty.Load()
+}
+
+// ResetChanged ...
+func (s *smelter) ResetChanged() {
+	s.dirty.Store(false)
 }
 
 // InsertItem ...
