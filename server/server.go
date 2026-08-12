@@ -58,6 +58,9 @@ type Server struct {
 	// p holds a map of all players currently connected to the server. When they
 	// leave, they are removed from the map.
 	p map[uuid.UUID]*onlinePlayer
+	// saving holds the UUIDs of players whose data is still being saved. New
+	// sessions are rejected until their previous data has been persisted.
+	saving map[uuid.UUID]struct{}
 	// pwg is a sync.WaitGroup used to wait for all players to be disconnected
 	// before server shutdown, so that their data is saved properly.
 	pwg sync.WaitGroup
@@ -460,6 +463,11 @@ func (srv *Server) wait() {
 // channel.
 func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) {
 	id := uuid.MustParse(conn.IdentityData().Identity)
+	if srv.playerConnectedOrSaving(id) {
+		_ = l.Disconnect(conn, "Already logged in.")
+		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
+		return
+	}
 	data := srv.defaultGameData()
 
 	d, w, err := srv.conf.PlayerProvider.Load(id, srv.dimension)
@@ -482,7 +490,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 		srv.conf.Log.Debug("spawn failed: "+err.Error(), "raddr", conn.RemoteAddr())
 		return
 	}
-	if _, ok := srv.Player(id); ok {
+	if srv.playerConnectedOrSaving(id) {
 		_ = l.Disconnect(conn, "Already logged in.")
 		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
 		return
@@ -541,24 +549,52 @@ func (srv *Server) dimension(dimension world.Dimension) *world.World {
 // handleSessionClose handles the closing of a session. It removes the player
 // of the session from the server.
 func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
+	id := c.UUID()
+	if tx == nil {
+		srv.conf.Log.Error("Save player data: player's worlds closed before teardown; data not saved", "uuid", c.UUID())
+		srv.removePlayerFromList(id)
+		return
+	}
+
 	srv.pmu.Lock()
-	_, ok := srv.p[c.UUID()]
-	delete(srv.p, c.UUID())
-	srv.pmu.Unlock()
-	if !ok {
+	if _, ok := srv.p[id]; !ok {
+		srv.pmu.Unlock()
 		// When a player disconnects immediately after a session is started, it
 		// might not be added to the players map yet. This is expected, but we
 		// need to be careful not to crash when this happens.
 		return
 	}
+	delete(srv.p, id)
+	srv.saving[id] = struct{}{}
+	srv.pmu.Unlock()
 
-	if tx != nil {
-		if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data(), tx.World()); err != nil {
+	data := c.(*player.Player).Data()
+	w := tx.World()
+	go func() {
+		if err := srv.conf.PlayerProvider.Save(id, data, w); err != nil {
 			srv.conf.Log.Error("Save player data: " + err.Error())
 		}
-	} else {
-		srv.conf.Log.Error("Save player data: player's worlds closed before teardown; data not saved", "uuid", c.UUID())
-	}
+		srv.pmu.Lock()
+		delete(srv.saving, id)
+		srv.pmu.Unlock()
+		srv.pwg.Done()
+	}()
+}
+
+// playerConnectedOrSaving checks if a player is connected or still saving.
+func (srv *Server) playerConnectedOrSaving(id uuid.UUID) bool {
+	srv.pmu.RLock()
+	defer srv.pmu.RUnlock()
+	_, connected := srv.p[id]
+	_, saving := srv.saving[id]
+	return connected || saving
+}
+
+// removePlayerFromList removes player from the server's internal player list.
+func (srv *Server) removePlayerFromList(id uuid.UUID) {
+	srv.pmu.Lock()
+	delete(srv.p, id)
+	srv.pmu.Unlock()
 	srv.pwg.Done()
 }
 
