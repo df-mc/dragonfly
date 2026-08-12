@@ -332,7 +332,6 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	// early.
 	if tx != nil {
 		tx.RemoveEntity(c)
-		// Closing a handle that is still in a world panics.
 		_ = s.ent.Close()
 	}
 
