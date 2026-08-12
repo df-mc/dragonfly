@@ -174,10 +174,10 @@ type NBTer interface {
 // touched, which would otherwise leave the Column unaware that it has to be written again.
 type NBTChanger interface {
 	NBTer
-	// Changed reports whether the block entity changed since ResetChanged was last called.
-	Changed() bool
-	// ResetChanged records the block entity as unchanged. It is called once it has been written.
-	ResetChanged()
+	// NBTChanged reports whether the block entity changed since ResetNBTChanged was last called.
+	NBTChanged() bool
+	// ResetNBTChanged records the block entity as unchanged. It is called once it has been written.
+	ResetNBTChanged()
 }
 
 // LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without

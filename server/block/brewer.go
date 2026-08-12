@@ -41,13 +41,13 @@ func newBrewer() *brewer {
 	return b
 }
 
-// Changed ...
-func (b *brewer) Changed() bool {
+// NBTChanged ...
+func (b *brewer) NBTChanged() bool {
 	return b.dirty.Load()
 }
 
-// ResetChanged ...
-func (b *brewer) ResetChanged() {
+// ResetNBTChanged ...
+func (b *brewer) ResetNBTChanged() {
 	b.dirty.Store(false)
 }
 

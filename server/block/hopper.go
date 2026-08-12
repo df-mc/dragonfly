@@ -63,13 +63,13 @@ func NewHopper() Hopper {
 
 func (Hopper) ContainerSize() int { return 5 }
 
-// Changed ...
-func (h Hopper) Changed() bool {
+// NBTChanged ...
+func (h Hopper) NBTChanged() bool {
 	return h.dirty.Load()
 }
 
-// ResetChanged ...
-func (h Hopper) ResetChanged() {
+// ResetNBTChanged ...
+func (h Hopper) ResetNBTChanged() {
 	h.dirty.Store(false)
 }
 

@@ -67,13 +67,13 @@ func (c Chest) ContainerSize() int {
 	return 27
 }
 
-// Changed ...
-func (c Chest) Changed() bool {
+// NBTChanged ...
+func (c Chest) NBTChanged() bool {
 	return c.dirty.Load()
 }
 
-// ResetChanged ...
-func (c Chest) ResetChanged() {
+// ResetNBTChanged ...
+func (c Chest) ResetNBTChanged() {
 	c.dirty.Store(false)
 }
 

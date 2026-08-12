@@ -43,13 +43,13 @@ func newSmelter() *smelter {
 	return s
 }
 
-// Changed ...
-func (s *smelter) Changed() bool {
+// NBTChanged ...
+func (s *smelter) NBTChanged() bool {
 	return s.dirty.Load()
 }
 
-// ResetChanged ...
-func (s *smelter) ResetChanged() {
+// ResetNBTChanged ...
+func (s *smelter) ResetNBTChanged() {
 	s.dirty.Store(false)
 }
 

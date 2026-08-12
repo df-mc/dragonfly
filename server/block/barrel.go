@@ -58,13 +58,13 @@ func NewBarrel() Barrel {
 
 func (Barrel) ContainerSize() int { return 27 }
 
-// Changed ...
-func (b Barrel) Changed() bool {
+// NBTChanged ...
+func (b Barrel) NBTChanged() bool {
 	return b.dirty.Load()
 }
 
-// ResetChanged ...
-func (b Barrel) ResetChanged() {
+// ResetNBTChanged ...
+func (b Barrel) ResetNBTChanged() {
 	b.dirty.Store(false)
 }
 

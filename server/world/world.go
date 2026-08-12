@@ -1204,7 +1204,7 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 	c.modified = false
 	for _, b := range c.BlockEntities {
 		if ch, ok := b.(NBTChanger); ok {
-			ch.ResetChanged()
+			ch.ResetNBTChanged()
 		}
 	}
 }
@@ -1216,7 +1216,7 @@ func (c *Column) changed() bool {
 		return true
 	}
 	for _, b := range c.BlockEntities {
-		if ch, ok := b.(NBTChanger); ok && ch.Changed() {
+		if ch, ok := b.(NBTChanger); ok && ch.NBTChanged() {
 			return true
 		}
 	}

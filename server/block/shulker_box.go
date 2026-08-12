@@ -77,13 +77,13 @@ func NewShulkerBox() ShulkerBox {
 
 func (ShulkerBox) ContainerSize() int { return 27 }
 
-// Changed ...
-func (s ShulkerBox) Changed() bool {
+// NBTChanged ...
+func (s ShulkerBox) NBTChanged() bool {
 	return s.dirty.Load()
 }
 
-// ResetChanged ...
-func (s ShulkerBox) ResetChanged() {
+// ResetNBTChanged ...
+func (s ShulkerBox) ResetNBTChanged() {
 	s.dirty.Store(false)
 }
 
