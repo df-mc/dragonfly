@@ -68,10 +68,7 @@ func ocean() Biome {
 	return unknownBiome{}
 }
 
-// unknownBiome is returned in place of a Biome that is not registered. Biomes are registered by importing
-// server/world/biome, which a World created directly from a Config does not necessarily do, and every caller of
-// BiomeByID assumes a Biome it can call methods on. It encodes back to the ID it was read from, so that a biome
-// dragonfly does not know is written back as it was found rather than as a different biome.
+// unknownBiome is returned in place of a Biome that is not registered. It encodes back to the ID it was read from.
 type unknownBiome struct {
 	id int
 }
