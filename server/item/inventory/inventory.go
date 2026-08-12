@@ -376,8 +376,7 @@ func (inv *Inventory) setItem(slot int, it item.Stack) func() {
 	}
 	before := inv.slots[slot]
 	inv.slots[slot] = it
-	// The function is read here rather than in the closure below: the closure runs after the inventory is unlocked,
-	// and SlotFunc and Close may write inv.f from another goroutine in the meantime.
+	// The function is read while the lock is held: SlotFunc and Close may replace it before the closure runs.
 	f := inv.f
 	return func() {
 		f(slot, before, it)
