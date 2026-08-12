@@ -23,6 +23,12 @@ type BlockBreaking struct {
 	sound
 }
 
+// SweetBerryBushHurt is played when an entity is hurt by a sweet berry bush.
+type SweetBerryBushHurt struct{ sound }
+
+// SweetBerryBushPick is played when berries are picked from a sweet berry bush.
+type SweetBerryBushPick struct{ sound }
+
 // GlassBreak is a sound played when a glass block or item is broken.
 type GlassBreak struct{ sound }
 
