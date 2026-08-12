@@ -148,10 +148,7 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	fromInv, fromSlot := h.resolveSlot(from, s, tx)
 	toInv, toSlot := h.resolveSlot(to, s, tx)
 	if fromInv == toInv && fromSlot == toSlot {
-		// Both slots are read before either is written, so moving a slot onto itself would write the source and then
-		// overwrite it with the destination, growing the stack by the count moved out of nothing. The slots are
-		// compared once resolved: several container IDs address the same inventory, so comparing those would let one
-		// slot be named twice under two of them.
+		// Both slots are read before either is written, so moving a slot onto itself would duplicate the count moved.
 		return fmt.Errorf("source and destination slot are the same")
 	}
 	i, _ := h.itemInSlot(from, s, tx)
