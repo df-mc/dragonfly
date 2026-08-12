@@ -70,8 +70,11 @@ func ocean() Biome {
 
 // unknownBiome is returned in place of a Biome that is not registered. Biomes are registered by importing
 // server/world/biome, which a World created directly from a Config does not necessarily do, and every caller of
-// BiomeByID assumes a Biome it can call methods on.
-type unknownBiome struct{}
+// BiomeByID assumes a Biome it can call methods on. It encodes back to the ID it was read from, so that a biome
+// dragonfly does not know is written back as it was found rather than as a different biome.
+type unknownBiome struct {
+	id int
+}
 
 func (unknownBiome) Temperature() float64    { return 0.5 }
 func (unknownBiome) Rainfall() float64       { return 0 }
@@ -80,4 +83,4 @@ func (unknownBiome) Scale() float64          { return 0.1 }
 func (unknownBiome) WaterColour() color.RGBA { return color.RGBA{R: 0x44, G: 0xaf, B: 0xf5, A: 0xff} }
 func (unknownBiome) Tags() []string          { return nil }
 func (unknownBiome) String() string          { return "unknown" }
-func (unknownBiome) EncodeBiome() int        { return 0 }
+func (b unknownBiome) EncodeBiome() int      { return b.id }
