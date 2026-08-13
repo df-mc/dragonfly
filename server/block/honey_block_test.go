@@ -6,84 +6,119 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// fakeFallEntity is a minimal world.Entity that tracks a fall distance and velocity, used to test
-// block.HoneyBlock's fall damage reduction without spinning up a full player/entity.
-type fakeFallEntity struct {
-	fall float64
-	vel  mgl64.Vec3
-}
+// honeyPos is the position the tests below place their honey block at.
+var honeyPos = cube.Pos{0, 60, 0}
 
-func (*fakeFallEntity) Close() error                 { return nil }
-func (*fakeFallEntity) H() *world.EntityHandle       { return nil }
-func (*fakeFallEntity) Position() mgl64.Vec3         { return mgl64.Vec3{} }
-func (*fakeFallEntity) Rotation() cube.Rotation      { return cube.Rotation{} }
-func (e *fakeFallEntity) FallDistance() float64      { return e.fall }
-func (e *fakeFallEntity) ResetFallDistance()         { e.fall = 0 }
-func (e *fakeFallEntity) Velocity() mgl64.Vec3       { return e.vel }
-func (e *fakeFallEntity) SetVelocity(vel mgl64.Vec3) { e.vel = vel }
+// fallOntoHoney runs f with a Player that fell from y=70 in the column at x and came to rest at restY,
+// in a world holding a honey block at honeyPos.
+func fallOntoHoney(t *testing.T, x, restY float64, f func(tx *world.Tx, p *player.Player)) {
+	t.Helper()
 
-// TestHoneyBlockEntityLandReducesNotAbsorbsFallDistance verifies that landing on a honey block
-// only reduces the effective fall distance used for damage by 80%, rather than absorbing it
-// entirely (which would negate all fall damage regardless of fall height).
-func TestHoneyBlockEntityLandReducesNotAbsorbsFallDistance(t *testing.T) {
-	e := &fakeFallEntity{fall: 10}
-	distance := e.fall
-
-	block.HoneyBlock{}.EntityLand(cube.Pos{}, nil, e, &distance)
-
-	// Without honey, damage-relevant distance would be 10-3=7. With an 80% reduction, the
-	// damage-relevant distance (distance-3) should be 0.2*7=1.4, i.e. distance should be 4.4.
-	if want := 4.4; !mgl64.FloatEqualThreshold(distance, want, 1e-9) {
-		t.Errorf("expected reduced distance %v, got %v", want, distance)
-	}
-	if distance == 0 {
-		t.Errorf("honey block must not absorb all fall distance")
-	}
-}
-
-// TestHoneyBlockEntityInsideSlowsSlideAndResetsFallDistance verifies that an entity sliding down the
-// side of a honey block has its downward velocity capped and its fall distance reset, so it descends
-// slowly and takes no fall damage.
-func TestHoneyBlockEntityInsideSlowsSlideAndResetsFallDistance(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
 
+	pos := mgl64.Vec3{x, 70, 0.5}
+	handle := world.EntitySpawnOpts{Position: pos}.New(player.Type, player.Config{Position: pos})
 	w.Do(func(tx *world.Tx) {
-		e := &fakeFallEntity{fall: 10, vel: mgl64.Vec3{0.4, -0.5, 0.4}}
+		tx.SetBlock(honeyPos, block.HoneyBlock{}, nil)
+		tx.AddEntity(handle)
 
-		block.HoneyBlock{}.EntityInside(cube.Pos{}, tx, e)
+		e, ok := handle.Entity(tx)
+		if !ok {
+			t.Fatal("player was not added to the world")
+		}
+		p := e.(*player.Player)
+		for p.Position()[1] > restY {
+			p.Move(mgl64.Vec3{0, -min(2, p.Position()[1]-restY), 0}, 0, 0)
+		}
+		if p.FallDistance() == 0 {
+			t.Fatal("player did not accumulate a fall distance to test with")
+		}
+		f(tx, p)
+	})
+}
 
-		if want := -0.05; !mgl64.FloatEqualThreshold(e.Velocity()[1], want, 1e-9) {
-			t.Errorf("expected downward velocity to be capped at %v, got %v", want, e.Velocity()[1])
+// onGround reports whether the server considers p to be standing on a block, replicating the check
+// Player.checkOnGround makes with a zero movement delta.
+func onGround(tx *world.Tx, p *player.Player) bool {
+	box := player.Type.BBox(p).Translate(p.Position()).Extend(mgl64.Vec3{0, -0.05})
+	grown := box.Grow(1)
+	epsilon := mgl64.Vec3{mgl64.Epsilon, mgl64.Epsilon, mgl64.Epsilon}
+	low, high := cube.PosFromVec3(grown.Min().Add(epsilon)), cube.PosFromVec3(grown.Max().Sub(epsilon))
+
+	for x := low[0]; x <= high[0]; x++ {
+		for z := low[2]; z <= high[2]; z++ {
+			for y := low[1]; y < high[1]; y++ {
+				pos := cube.Pos{x, y, z}
+				for _, bb := range tx.Block(pos).Model().BBox(pos, tx) {
+					if bb.Translate(pos.Vec3()).IntersectsWith(box) {
+						return true
+					}
+				}
+			}
 		}
-		// Falling faster than -0.13 also scales horizontal momentum by -0.05/velY = 0.1.
-		if want := 0.04; !mgl64.FloatEqualThreshold(e.Velocity()[0], want, 1e-9) {
-			t.Errorf("expected horizontal velocity to be scaled to %v, got %v", want, e.Velocity()[0])
-		}
-		if e.fall != 0 {
-			t.Errorf("expected fall distance to be reset to 0, got %v", e.fall)
+	}
+	return false
+}
+
+// TestHoneyBlockStandingOnIsOnGround verifies that a player resting on a honey block is on the ground as
+// far as the server is concerned. Fall damage is only dealt from the OnGround branch of
+// Player.updateFallState, so a block shorter than the height the client rests players at would leave the
+// server thinking the player is airborne and never damage it, at any fall height.
+func TestHoneyBlockStandingOnIsOnGround(t *testing.T) {
+	fallOntoHoney(t, 0.5, 61, func(tx *world.Tx, p *player.Player) {
+		if !onGround(tx, p) {
+			t.Error("expected a player resting on a honey block to be on the ground")
 		}
 	})
 }
 
-// TestHoneyBlockEntityInsideIgnoresUpwardMovement verifies that an entity moving upwards fast enough
-// (for example, jumping past the block) is not caught and slowed by the sliding logic.
-func TestHoneyBlockEntityInsideIgnoresUpwardMovement(t *testing.T) {
-	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
-	defer w.Close()
+// TestHoneyBlockEntityLand verifies that a honey block reduces fall damage by 80%, using the example the
+// wiki gives: a fall that would normally deal 10 damage deals 2 on a honey block. A fall is damaged for
+// every block past the first three, so the fall dealing 10 damage normally is one of 13 blocks.
+func TestHoneyBlockEntityLand(t *testing.T) {
+	fallOntoHoney(t, 0.5, 61, func(tx *world.Tx, p *player.Player) {
+		distance := 13.0
+		block.HoneyBlock{}.EntityLand(honeyPos, tx, p, &distance)
 
-	w.Do(func(tx *world.Tx) {
-		vel := mgl64.Vec3{0, 0.42, 0}
-		e := &fakeFallEntity{fall: 10, vel: vel}
+		if want, got := 2.0, distance-3; !mgl64.FloatEqualThreshold(got, want, 1e-9) {
+			t.Errorf("expected a fall damaging for 10 to damage for %v on honey, got %v", want, got)
+		}
+	})
+}
 
-		block.HoneyBlock{}.EntityInside(cube.Pos{}, tx, e)
+// TestHoneyBlockLandingOnTopStillHurts verifies that a player that came to rest on top of a honey block
+// keeps its fall distance and is still damaged for the fall. Player.Move calls EntityInside before it
+// works out fall damage, so resetting the fall distance here would make falling onto a honey block from
+// any height harmless. The player rests a fraction below the top of the block, as positions come from
+// the client as float32 with the eye height subtracted.
+func TestHoneyBlockLandingOnTopStillHurts(t *testing.T) {
+	fallOntoHoney(t, 0.5, 60.999999, func(tx *world.Tx, p *player.Player) {
+		fall := p.FallDistance()
 
-		if e.Velocity() != vel {
-			t.Errorf("expected upward velocity %v to be left untouched, got %v", vel, e.Velocity())
+		block.HoneyBlock{}.EntityInside(honeyPos, tx, p)
+
+		if p.FallDistance() != fall {
+			t.Errorf("expected fall distance %v to be kept for damage, got %v", fall, p.FallDistance())
+		}
+	})
+}
+
+// TestHoneyBlockSlidingResetsFallDistance verifies that a player sliding down the side of a honey block
+// has its fall distance reset and takes no fall damage. The client stops a player exactly against the
+// side of the block, so it rests at the side of the block plus half its own width and overlaps it by
+// nothing at all, which must still count as sliding down it.
+func TestHoneyBlockSlidingResetsFallDistance(t *testing.T) {
+	fallOntoHoney(t, 15.0/16+0.3, 60, func(tx *world.Tx, p *player.Player) {
+		block.HoneyBlock{}.EntityInside(honeyPos, tx, p)
+
+		if p.FallDistance() != 0 {
+			t.Errorf("expected fall distance 0, got %v", p.FallDistance())
 		}
 	})
 }
