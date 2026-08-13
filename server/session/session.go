@@ -417,7 +417,7 @@ func (s *Session) handlePackets() {
 			readPackets <- pk
 		}
 	}()
-	packets := make([]packet.Packet, 0, 1024)
+	packets := make([]packet.Packet, 0, 512)
 	for {
 		first, ok := <-readPackets
 		if !ok {
