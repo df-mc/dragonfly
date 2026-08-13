@@ -417,12 +417,13 @@ func (s *Session) handlePackets() {
 			readPackets <- pk
 		}
 	}()
+	packets := make([]packet.Packet, 0, 1024)
 	for {
 		first, ok := <-readPackets
 		if !ok {
 			return
 		}
-		packets := []packet.Packet{first}
+		packets = append(packets[:0], first)
 		// Allow a short window for packets arriving in the same burst to be batched together.
 		timer := time.NewTimer(time.Millisecond)
 	collect:
@@ -431,10 +432,13 @@ func (s *Session) handlePackets() {
 			case pk, ok := <-readPackets:
 				if !ok {
 					timer.Stop()
-					return
+					break collect
 				}
 				packets = append(packets, pk)
-
+				if len(packets) >= cap(packets) {
+					timer.Stop()
+					break collect
+				}
 			case <-timer.C:
 				break collect
 			}
