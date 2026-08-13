@@ -1203,8 +1203,6 @@ func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) uint64 {
 	return s.handleRuntimeID(handle)
 }
 
-// debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
-// for some fields such as colour, scale and other per-shape properties.
 // debugShapeTiming returns how long a debug shape remains before the client removes it and the distance beyond which
 // the client stops drawing it. Every shape carries both, but they are fields rather than methods, so each type has to
 // be named.
@@ -1234,6 +1232,8 @@ func debugShapeTiming(shape debug.Shape) (time.Duration, float64) {
 	return 0, 0
 }
 
+// debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
+// for some fields such as colour, scale and other per-shape properties.
 func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID uint64) protocol.PrimitiveShape {
 	dimID, _ := world.DimensionID(dim)
 	ps := protocol.PrimitiveShape{
