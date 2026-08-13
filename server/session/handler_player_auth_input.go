@@ -46,20 +46,19 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 
 	newPos := vec32To64(pk.Position)
 	deltaPos, deltaYaw, deltaPitch := newPos.Sub(pos), float64(pk.Yaw)-yaw, float64(pk.Pitch)-pitch
-	if mgl64.FloatEqual(deltaPos.Len(), 0) && mgl64.FloatEqual(deltaYaw, 0) && mgl64.FloatEqual(deltaPitch, 0) {
-		// The PlayerAuthInput packet is sent every tick, so don't do anything if the position and rotation
-		// were unchanged.
-		return nil
-	}
 
-	if expected := s.teleportPos.Load(); expected != nil {
-		if newPos.Sub(*expected).Len() > 1 {
-			// The player has moved before it received the teleport packet. Ignore this movement entirely and
-			// wait for the client to sync itself back to the server. Once we get a movement that is close
-			// enough to the teleport position, we'll allow the player to move around again.
-			return nil
+	// The PlayerAuthInput packet is sent every tick, so don't check for teleport if the position and rotation
+	// were unchanged.
+	if !mgl64.FloatEqual(deltaPos.Len(), 0) || !mgl64.FloatEqual(deltaYaw, 0) || !mgl64.FloatEqual(deltaPitch, 0) {
+		if expected := s.teleportPos.Load(); expected != nil {
+			if newPos.Sub(*expected).Len() > 1 {
+				// The player has moved before it received the teleport packet. Ignore this movement entirely and
+				// wait for the client to sync itself back to the server. Once we get a movement that is close
+				// enough to the teleport position, we'll allow the player to move around again.
+				return nil
+			}
+			s.teleportPos.Store(nil)
 		}
-		s.teleportPos.Store(nil)
 	}
 
 	s.moving = true
@@ -70,24 +69,36 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 // handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
 func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session, tx *world.Tx, c Controllable) error {
 	if pk.InputData.Load(packet.InputFlagPerformItemInteraction) {
-		if err := h.handleUseItemData(pk.ItemInteractionData, s, c); err != nil {
+		data, ok := pk.ItemInteractionData.Value()
+		if !ok {
+			return fmt.Errorf("item interaction flag set without item interaction data")
+		}
+		if err := h.handleUseItemData(data, s, c); err != nil {
 			return err
 		}
 	}
 	if pk.InputData.Load(packet.InputFlagPerformBlockActions) {
-		if err := h.handleBlockActions(pk.BlockActions, s, c); err != nil {
+		actions, ok := pk.BlockActions.Value()
+		if !ok {
+			return fmt.Errorf("block actions flag set without block actions")
+		}
+		if err := h.handleBlockActions(actions, s, c); err != nil {
 			return err
 		}
 	}
 	h.handleInputFlags(pk.InputData, s, c)
 
 	if pk.InputData.Load(packet.InputFlagPerformItemStackRequest) {
+		request, ok := pk.ItemStackRequest.Value()
+		if !ok {
+			return fmt.Errorf("item stack request flag set without item stack request")
+		}
 		s.inTransaction.Store(true)
 		defer s.inTransaction.Store(false)
 
 		// As of 1.18 this is now used for sending item stack requests such as when mining a block.
 		sh := s.handlers[packet.IDItemStackRequest].(*ItemStackRequestHandler)
-		if err := sh.handleRequest(pk.ItemStackRequest, s, tx, c); err != nil {
+		if err := sh.handleRequest(request, s, tx, c); err != nil {
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
 			s.conf.Log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
@@ -97,18 +108,19 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 }
 
 // handleInputFlags handles the toggleable input flags set in a PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.Bitset, s *Session, c Controllable) {
+func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.InputFlags, s *Session, c Controllable) {
 	if flags.Load(packet.InputFlagStartSprinting) {
 		c.StartSprinting()
 	}
 	if flags.Load(packet.InputFlagStopSprinting) {
 		c.StopSprinting()
 	}
-	if flags.Load(packet.InputFlagStartSneaking) {
-		c.StartSneaking()
-	}
-	if flags.Load(packet.InputFlagStopSneaking) {
-		c.StopSneaking()
+	if sneaking := flags.Load(packet.InputFlagSneaking); sneaking != c.Sneaking() {
+		if sneaking {
+			c.StartSneaking()
+		} else {
+			c.StopSneaking()
+		}
 	}
 	if flags.Load(packet.InputFlagStartSwimming) {
 		c.StartSwimming()

@@ -31,7 +31,8 @@ import (
 type Runnable interface {
 	// Run runs the Command, using the arguments passed to the Command. The source is passed to the method,
 	// which is the source of the Command execution, and the output is passed, to which messages may be
-	// added which get sent to the source.
+	// added which get sent to the source. tx is nil for sources not attached to
+	// a world, such as a console source. Runnables that use tx must nil-check it.
 	Run(src Source, o *Output, tx *world.Tx)
 }
 
@@ -123,6 +124,9 @@ func (cmd Command) Aliases() []string {
 // If parsing of all Runnables was unsuccessful, a command output with an error message is sent to the Source
 // passed, and the Run method of the Runnables are not called.
 // The Source passed must not be nil. The method will panic if a nil Source is passed.
+// tx may be nil for sources that are not attached to a world. Selector parsing
+// reports an error when it requires a transaction; Runnable bodies must
+// independently nil-check tx before using it.
 func (cmd Command) Execute(args string, source Source, tx *world.Tx) {
 	if source == nil {
 		panic("execute: invalid command source: source must not be nil")

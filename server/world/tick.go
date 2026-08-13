@@ -24,7 +24,7 @@ func (t ticker) tickLoop(w *World) {
 	for {
 		select {
 		case <-tc.C:
-			<-w.Exec(t.tick)
+			<-w.exec(t.tick)
 		case <-w.closing:
 			// World is being closed: Stop ticking and get rid of a task.
 			w.running.Done()
@@ -38,7 +38,7 @@ func (t ticker) tickLoop(w *World) {
 // automatically 20 times per second. Synchronous Worlds tick loaded chunks
 // even when no viewers are present.
 func (w *World) AdvanceTick() {
-	<-w.Exec(ticker{}.tick)
+	<-w.exec(ticker{}.tick)
 }
 
 // tick performs a tick on the World and updates the time, weather, blocks and
@@ -51,7 +51,7 @@ func (t ticker) tick(tx *Tx) {
 	if s := w.set.Spawn; s[1] > tx.Range()[1] && w.Dimension() == Overworld {
 		// Vanilla will set the spawn position's Y value to max to indicate that
 		// the player should spawn at the highest position in the world.
-		w.set.Spawn[1] = w.highestObstructingBlock(s[0], s[2]) + 1
+		w.set.Spawn[1] = tx.highestObstructingBlock(s[0], s[2]) + 1
 	}
 	if len(viewers) == 0 && w.set.CurrentTick != 0 && !w.conf.Synchronous {
 		// Don't continue ticking if no viewers are in the world. Synchronous
@@ -106,6 +106,7 @@ func (t ticker) tick(tx *Tx) {
 	w.scheduledUpdates.tick(tx, tick)
 	t.tickBlocksRandomly(tx, loaders, tick)
 	t.performNeighbourUpdates(tx)
+	w.redstone.tick(tx, tick)
 }
 
 // performNeighbourUpdates performs all block updates that came as a result of a neighbouring block being changed.
@@ -119,7 +120,7 @@ func (t ticker) performNeighbourUpdates(tx *Tx) {
 		if ticker, ok := tx.Block(pos).(NeighbourUpdateTicker); ok {
 			ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
 		}
-		if liquid, ok := tx.World().additionalLiquid(pos); ok {
+		if liquid, ok := tx.additionalLiquid(pos); ok {
 			if ticker, ok := liquid.(NeighbourUpdateTicker); ok {
 				ticker.NeighbourUpdateTick(pos, changedNeighbour, tx)
 			}
@@ -321,7 +322,7 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 		b := tx.Block(t.pos)
 		if ticker, ok := b.(ScheduledTicker); ok && w.conf.Blocks.BlockHash(b) == t.bhash {
 			ticker.ScheduledTick(t.pos, tx, w.r)
-		} else if liquid, ok := tx.World().additionalLiquid(t.pos); ok && w.conf.Blocks.BlockHash(liquid) == t.bhash {
+		} else if liquid, ok := tx.additionalLiquid(t.pos); ok && w.conf.Blocks.BlockHash(liquid) == t.bhash {
 			if ticker, ok := liquid.(ScheduledTicker); ok {
 				ticker.ScheduledTick(t.pos, tx, w.r)
 			}
@@ -344,10 +345,7 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Block, delay time.Duration) {
 	resTick := queue.currentTick + int64(max(delay/(time.Second/20), 1))
 	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(b)}
-	if t, ok := queue.furthestTicks[index]; ok && t >= resTick {
-		// Already have a tick scheduled for this position that will occur after
-		// the delay passed. Block updates can only be scheduled if they are
-		// after any currently scheduled updates.
+	if t, ok := queue.furthestTicks[index]; ok && t >= resTick && t > queue.currentTick {
 		return
 	}
 	queue.furthestTicks[index] = resTick
@@ -370,6 +368,9 @@ func (queue *scheduledTickQueue) removeChunk(pos ChunkPos) {
 	queue.ticks = slices.DeleteFunc(queue.ticks, func(tick scheduledTick) bool {
 		return chunkPosFromBlockPos(tick.pos) == pos
 	})
+	maps.DeleteFunc(queue.furthestTicks, func(index scheduledTickIndex, _ int64) bool {
+		return chunkPosFromBlockPos(index.pos) == pos
+	})
 }
 
 // add adds a slice of scheduled ticks to the queue. It assumes no duplicate
@@ -379,10 +380,9 @@ func (queue *scheduledTickQueue) add(ticks []scheduledTick) {
 	for _, t := range ticks {
 		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
 		if existing, ok := queue.furthestTicks[index]; ok {
-			// Make sure we find the furthest tick for each of the ticks added.
-			// Some ticks may have the same block and position, in which case we
-			// need to set the furthest tick.
 			queue.furthestTicks[index] = max(existing, t.t)
+		} else {
+			queue.furthestTicks[index] = t.t
 		}
 	}
 }

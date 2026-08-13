@@ -111,7 +111,7 @@ func (r RedstoneOre) LightEmissionLevel() uint8 {
 func (r RedstoneOre) BreakInfo() BreakInfo {
 	return newBreakInfo(r.Type.Hardness(), func(t item.Tool) bool {
 		return t.ToolType() == item.TypePickaxe && t.HarvestLevel() >= item.ToolTierIron.HarvestLevel
-	}, pickaxeEffective, discreteDrops(RedstoneWire{}, RedstoneOre{Type: r.Type}, 4, 5, 8)).withXPDropRange(1, 5).withBlastResistance(15)
+	}, pickaxeEffective, discreteDrops(RedstoneWire{}, RedstoneOre{Type: r.Type}, 4, 5, 8)).withXPDropRange(1, 5).withBlastResistance(3)
 }
 
 // SmeltInfo ...

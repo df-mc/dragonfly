@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
 	"github.com/df-mc/dragonfly/server/world"
@@ -177,12 +176,12 @@ func (f Fire) tick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 // this might end up not happening.
 func (f Fire) spread(from, to cube.Pos, tx *world.Tx, r *rand.Rand) {
 	if _, air := tx.Block(to).(Air); !air {
-		ctx := event.C(tx)
+		ctx := tx.Event()
 		if tx.World().Handler().HandleBlockBurn(ctx, to); ctx.Cancelled() {
 			return
 		}
 	}
-	ctx := event.C(tx)
+	ctx := tx.Event()
 	if tx.World().Handler().HandleFireSpread(ctx, from, to); ctx.Cancelled() {
 		return
 	}

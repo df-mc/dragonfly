@@ -22,13 +22,13 @@ type Note struct {
 	Powered bool
 }
 
-// playNote ...
+// playNote emits the configured note sound and particle at pos.
 func (n Note) playNote(pos cube.Pos, tx *world.Tx) {
 	tx.PlaySound(pos.Vec3(), sound.Note{Instrument: n.instrument(pos, tx), Pitch: n.Pitch})
 	tx.AddParticle(pos.Vec3(), particle.Note{Instrument: n.Instrument(), Pitch: n.Pitch})
 }
 
-// updateInstrument ...
+// instrument returns the note block instrument selected by the block below it.
 func (n Note) instrument(pos cube.Pos, tx *world.Tx) sound.Instrument {
 	if instrumentBlock, ok := tx.Block(pos.Side(cube.FaceDown)).(interface {
 		Instrument() sound.Instrument
@@ -38,19 +38,16 @@ func (n Note) instrument(pos cube.Pos, tx *world.Tx) sound.Instrument {
 	return sound.Piano()
 }
 
-// DecodeNBT ...
 func (n Note) DecodeNBT(data map[string]any) any {
 	n.Pitch = int(nbtconv.Uint8(data, "note"))
 	n.Powered = nbtconv.Bool(data, "powered")
 	return n
 }
 
-// EncodeNBT ...
 func (n Note) EncodeNBT() map[string]any {
 	return map[string]any{"note": byte(n.Pitch), "powered": boolByte(n.Powered)}
 }
 
-// Activate tunes and plays the note block when there is room above it.
 func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	if !n.canPlay(pos, tx) {
 		return false
@@ -61,19 +58,24 @@ func (n Note) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *
 	return true
 }
 
-// RedstoneUpdate updates the note block's powered state and plays the note when it first becomes powered.
-func (n Note) RedstoneUpdate(pos cube.Pos, tx *world.Tx) {
-	poweredFaces := n.poweredFaces(pos, tx)
-	powered := len(poweredFaces) > 0
+// RedstonePowerUpdate records power changes; sound is deferred to post-update so cancellation can suppress it.
+func (n Note) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, power int) (world.Block, bool) {
+	powered := power > 0
 	if powered == n.Powered {
-		return
+		return n, false
 	}
 	n.Powered = powered
-	if powered && n.canPlay(pos, tx) {
-		n.playNote(pos, tx)
+	return n, true
+}
+
+// RedstonePowerPostUpdate plays the note after an uncancelled rising redstone edge.
+func (n Note) RedstonePowerPostUpdate(pos cube.Pos, tx *world.Tx, before, after world.Block, _, _ int) {
+	beforeNote, beforeOK := before.(Note)
+	afterNote, afterOK := after.(Note)
+	if !beforeOK || !afterOK || beforeNote.Powered || !afterNote.Powered || !afterNote.canPlay(pos, tx) {
+		return
 	}
-	tx.SetBlock(pos, n, &world.SetOpts{DisableBlockUpdates: true})
-	updateAroundRedstone(pos, tx, poweredFaces...)
+	afterNote.playNote(pos, tx)
 }
 
 // canPlay reports whether the block above the note block is air.
@@ -82,33 +84,18 @@ func (n Note) canPlay(pos cube.Pos, tx *world.Tx) bool {
 	return ok
 }
 
-func (n Note) poweredFaces(pos cube.Pos, tx *world.Tx) []cube.Face {
-	var faces []cube.Face
-	for _, face := range cube.Faces() {
-		adjacentPos := pos.Side(face)
-		if power := tx.RedstonePower(adjacentPos, face, true); power > 0 {
-			faces = append(faces, face)
-		}
-	}
-	return faces
-}
-
-// BreakInfo ...
 func (n Note) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, alwaysHarvestable, axeEffective, oneOf(Note{}))
 }
 
-// FuelInfo ...
 func (Note) FuelInfo() item.FuelInfo {
 	return newFuelInfo(time.Second * 15)
 }
 
-// EncodeItem ...
 func (n Note) EncodeItem() (name string, meta int16) {
 	return "minecraft:noteblock", 0
 }
 
-// EncodeBlock ...
 func (n Note) EncodeBlock() (name string, properties map[string]any) {
 	return "minecraft:noteblock", nil
 }

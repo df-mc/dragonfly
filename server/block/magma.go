@@ -34,7 +34,7 @@ func (Magma) EntityStepOn(_ cube.Pos, _ *world.Tx, e world.Entity) {
 
 // BreakInfo ...
 func (m Magma) BreakInfo() BreakInfo {
-	return newBreakInfo(0.5, pickaxeHarvestable, pickaxeEffective, oneOf(m)).withBlastResistance(30)
+	return newBreakInfo(0.5, pickaxeHarvestable, pickaxeEffective, oneOf(m))
 }
 
 // EncodeItem ...

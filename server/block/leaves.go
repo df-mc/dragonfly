@@ -4,7 +4,6 @@ import (
 	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -68,7 +67,7 @@ func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 			tx.SetBlock(pos, l, nil)
 			return
 		}
-		ctx := event.C(tx)
+		ctx := tx.Event()
 		if tx.World().Handler().HandleLeavesDecay(ctx, pos); ctx.Cancelled() {
 			// Prevent immediate re-updating.
 			l.ShouldUpdate = false

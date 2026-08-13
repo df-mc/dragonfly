@@ -29,6 +29,12 @@ func encodeSlabBlock(block world.Block, double bool) (id string, suffix string) 
 		return "bamboo_mosaic", suffix
 	case Bricks:
 		return "brick", suffix
+	case Cinnabar:
+		if !block.Chiseled {
+			return "cinnabar", suffix
+		}
+	case CinnabarBricks:
+		return "cinnabar_brick", suffix
 	case Cobblestone:
 		if block.Mossy {
 			return "mossy_cobblestone", suffix
@@ -88,6 +94,10 @@ func encodeSlabBlock(block world.Block, double bool) (id string, suffix string) 
 		if !block.Cracked {
 			return "polished_blackstone_brick", suffix
 		}
+	case PolishedCinnabar:
+		return "polished_cinnabar", suffix
+	case PolishedSulfur:
+		return "polished_sulfur", suffix
 	case PolishedTuff:
 		return "polished_tuff", suffix
 	case Prismarine:
@@ -138,6 +148,12 @@ func encodeSlabBlock(block world.Block, double bool) (id string, suffix string) 
 			return "mossy_stone_brick", suffix
 		}
 		return "stone_brick", suffix
+	case Sulfur:
+		if !block.Chiseled {
+			return "sulfur", suffix
+		}
+	case SulfurBricks:
+		return "sulfur_brick", suffix
 	case Tuff:
 		if !block.Chiseled {
 			return "tuff", suffix
@@ -159,6 +175,8 @@ func SlabBlocks() []world.Block {
 		Blackstone{Type: PolishedBlackstone()},
 		Blackstone{},
 		Bricks{},
+		Cinnabar{},
+		CinnabarBricks{},
 		Cobblestone{Mossy: true},
 		Cobblestone{},
 		DeepslateBricks{},
@@ -174,6 +192,8 @@ func SlabBlocks() []world.Block {
 		NetherBricks{Type: RedNetherBricks()},
 		NetherBricks{},
 		PolishedBlackstoneBrick{},
+		PolishedCinnabar{},
+		PolishedSulfur{},
 		PolishedTuff{},
 		Purpur{},
 		Quartz{Smooth: true},
@@ -183,6 +203,8 @@ func SlabBlocks() []world.Block {
 		StoneBricks{},
 		Stone{Smooth: true},
 		Stone{},
+		Sulfur{},
+		SulfurBricks{},
 		Tuff{},
 		TuffBricks{},
 	}

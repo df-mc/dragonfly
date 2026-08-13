@@ -2,7 +2,6 @@ package entity
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -49,12 +48,12 @@ func (fireworkType) BBox(world.Entity) cube.BBox { return cube.BBox{} }
 
 func (fireworkType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := fireworkConf
-	conf.Firework = nbtconv.MapItem(m, "Item").Item().(item.Firework)
+	conf.Firework = item.MapNBT(m, "Item").Item().(item.Firework)
 	conf.ExistenceDuration = conf.Firework.RandomisedDuration()
 
 	data.Data = conf.New()
 }
 
 func (fireworkType) EncodeNBT(data *world.EntityData) map[string]any {
-	return map[string]any{"Item": nbtconv.WriteItem(item.NewStack(data.Data.(*FireworkBehaviour).Firework(), 1), true)}
+	return map[string]any{"Item": item.WriteNBT(item.NewStack(data.Data.(*FireworkBehaviour).Firework(), 1), true)}
 }

@@ -23,7 +23,7 @@ type CopperBars struct {
 
 // BreakInfo ...
 func (c CopperBars) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(30)
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(6)
 }
 
 // SideClosed ...

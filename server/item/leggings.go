@@ -65,7 +65,7 @@ func (l Leggings) Leggings() bool {
 // DurabilityInfo ...
 func (l Leggings) DurabilityInfo() DurabilityInfo {
 	return DurabilityInfo{
-		MaxDurability: int(l.Tier.BaseDurability() + l.Tier.BaseDurability()/2.5),
+		MaxDurability: int(l.Tier.BaseDurability() + l.Tier.BaseDurability()/2.75),
 		BrokenItem:    simpleItem(Stack{}),
 	}
 }
