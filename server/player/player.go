@@ -48,10 +48,11 @@ type playerData struct {
 	absorptionHealth  float64
 	scale             float64
 
-	gameMode world.GameMode
-	skin     skin.Skin
-	s        *session.Session
-	h        Handler
+	gameMode   world.GameMode
+	permission session.PermissionLevel
+	skin       skin.Skin
+	s          *session.Session
+	h          Handler
 
 	inv, offHand, enderChest, ui *inventory.Inventory
 	armour                       *inventory.Armour
@@ -1544,6 +1545,25 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 // The game mode may be changed using Player.SetGameMode().
 func (p *Player) GameMode() world.GameMode {
 	return p.gameMode
+}
+
+// SetPermissionLevel changes the permission level the Player's client displays
+// for itself. It unlocks vanilla functionality that the client restricts to a
+// permission level, such as the command button in the chat window, but does not
+// authorise the Player to do anything by itself: cmd.Allower decides which
+// commands a Player may run.
+func (p *Player) SetPermissionLevel(level session.PermissionLevel) {
+	if p.permission == level {
+		return
+	}
+	p.permission = level
+	p.session().SendAbilities(p)
+}
+
+// PermissionLevel returns the permission level the Player's client displays for
+// itself, as set by SetPermissionLevel.
+func (p *Player) PermissionLevel() session.PermissionLevel {
+	return p.permission
 }
 
 // HasCooldown returns true if the item passed has an active cooldown, meaning it currently cannot be used again. If the
