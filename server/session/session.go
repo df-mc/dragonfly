@@ -406,20 +406,53 @@ func (s *Session) handlePackets() {
 			s.conf.Log.Debug("close session: " + err.Error())
 		}
 	}()
-	for {
-		pk, err := s.conn.ReadPacket()
-		if err != nil {
-			return
-		}
-		err = s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
-			return s.handlePacket(pk, tx, c)
-		})
-		if err != nil {
-			if sessionOwnerStopped(err) {
+	readPackets := make(chan packet.Packet, 512)
+	go func() {
+		defer close(readPackets)
+		for {
+			pk, err := s.conn.ReadPacket()
+			if err != nil {
 				return
 			}
-			s.conf.Log.Debug("process packet: " + err.Error())
-			return
+			readPackets <- pk
+		}
+	}()
+	for {
+		select {
+		case first, ok := <-readPackets:
+			if !ok {
+				return
+			}
+			packets := []packet.Packet{first}
+			for {
+				var exit bool
+				select {
+				case pk, ok := <-readPackets:
+					if !ok {
+						return
+					}
+					packets = append(packets, pk)
+				default:
+					exit = true
+				}
+				if exit {
+					break
+				}
+			}
+			if err := s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
+				for _, pk := range packets {
+					if err := s.handlePacket(pk, tx, c); err != nil {
+						return err
+					}
+				}
+				return nil
+			}); err != nil {
+				if sessionOwnerStopped(err) {
+					return
+				}
+				s.conf.Log.Debug("process packet: " + err.Error())
+				return
+			}
 		}
 	}
 }
