@@ -418,41 +418,40 @@ func (s *Session) handlePackets() {
 		}
 	}()
 	for {
-		select {
-		case first, ok := <-readPackets:
-			if !ok {
-				return
-			}
-			packets := []packet.Packet{first}
-			for {
-				var exit bool
-				select {
-				case pk, ok := <-readPackets:
-					if !ok {
-						return
-					}
-					packets = append(packets, pk)
-				default:
-					exit = true
-				}
-				if exit {
-					break
-				}
-			}
-			if err := s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
-				for _, pk := range packets {
-					if err := s.handlePacket(pk, tx, c); err != nil {
-						return err
-					}
-				}
-				return nil
-			}); err != nil {
-				if sessionOwnerStopped(err) {
+		first, ok := <-readPackets
+		if !ok {
+			return
+		}
+		packets := []packet.Packet{first}
+		// Allow a short window for packets arriving in the same burst to be batched together.
+		timer := time.NewTimer(time.Millisecond)
+	collect:
+		for {
+			select {
+			case pk, ok := <-readPackets:
+				if !ok {
+					timer.Stop()
 					return
 				}
-				s.conf.Log.Debug("process packet: " + err.Error())
+				packets = append(packets, pk)
+
+			case <-timer.C:
+				break collect
+			}
+		}
+		if err := s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
+			for _, pk := range packets {
+				if err := s.handlePacket(pk, tx, c); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+			if sessionOwnerStopped(err) {
 				return
 			}
+			s.conf.Log.Debug("process packet: " + err.Error())
+			return
 		}
 	}
 }
