@@ -25,8 +25,7 @@ func DoAfter(h *world.EntityHandle, delay time.Duration, f func(tx *world.Tx, p 
 }
 
 // Call runs f with the player identified by h on its current world owner and
-// waits for its typed result. If f panics, Call re-panics with the original
-// value on the waiting goroutine.
+// waits for its typed result.
 func Call[T any](ctx context.Context, h *world.EntityHandle, f func(tx *world.Tx, p *Player) (T, error)) (T, error) {
 	return world.CallRef(ctx, NewRef(h), f)
 }
