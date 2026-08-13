@@ -1203,10 +1203,10 @@ func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) uint64 {
 	return s.handleRuntimeID(handle)
 }
 
-// debugShapeTiming returns how long a debug shape remains before the client removes it and the distance beyond which
+// debugShapeLimits returns how long a debug shape remains before the client removes it and the distance beyond which
 // the client stops drawing it. Every shape carries both, but they are fields rather than methods, so each type has to
 // be named.
-func debugShapeTiming(shape debug.Shape) (time.Duration, float64) {
+func debugShapeLimits(shape debug.Shape) (time.Duration, float64) {
 	switch shape := shape.(type) {
 	case *debug.Arrow:
 		return shape.Duration, shape.MaxRenderDistance
@@ -1243,7 +1243,7 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 	if attachedEntityID > 0 {
 		ps.AttachedToEntityID = protocol.Option(int64(attachedEntityID))
 	}
-	if d, dist := debugShapeTiming(shape); d > 0 || dist > 0 {
+	if d, dist := debugShapeLimits(shape); d > 0 || dist > 0 {
 		if d > 0 {
 			ps.TotalTimeLeft = protocol.Option(float32(d.Seconds()))
 		}
