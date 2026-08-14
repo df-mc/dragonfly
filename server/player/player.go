@@ -2086,8 +2086,9 @@ const (
 )
 
 // StartBrushing makes the player start brushing the block at the position passed with the brush held in its
-// main hand. The face passed is the face of the block that the item was used on. Any block may be brushed, but
-// only blocks that implement block.Brushable have an item extracted from them.
+// main hand. Any block may be brushed, but only blocks implementing block.Brushable have an item extracted
+// from them. Aiming at another block while brushing changes the block brushed without resetting the timer, as
+// the progress made is stored in the block itself.
 // If the player is not holding a brush, if no block is present at the position or if the block is out of
 // range, StartBrushing stops any brushing in progress and returns immediately.
 func (p *Player) StartBrushing(pos cube.Pos, face cube.Face) {
@@ -2096,13 +2097,10 @@ func (p *Player) StartBrushing(pos cube.Pos, face cube.Face) {
 		return
 	}
 	if !p.brushing {
-		// Only reset the timer if the player was not already brushing. Aiming at a different block while
-		// brushing merely changes the block being brushed, as the progress made is stored in the block itself.
 		p.brushing, p.brushingTicks = true, 0
 	}
 	p.brushingPos, p.brushingFace = pos, face
 	if !p.usingItem {
-		// Marking the player as using an item makes it move at a reduced speed for as long as it is brushing.
 		p.usingItem = true
 		p.updateState()
 	}
@@ -2122,9 +2120,9 @@ func (p *Player) AbortBrushing() {
 }
 
 // ContinueBrushing makes the player continue brushing the block it is aimed at after a call to
-// Player.StartBrushing(). A brushing action is performed on the block every 10 ticks, the first of which
-// happens 6 ticks after the player started brushing. Brushing a block that cannot be brushed only shows
-// particles and plays a sound: It costs no durability.
+// Player.StartBrushing(). A brushing action is performed every 10 ticks, the first of which happens 6 ticks
+// after the player started brushing. Brushing a block that cannot be brushed only shows particles and plays a
+// sound: It costs no durability. A player is slowed down and cannot sprint while brushing.
 func (p *Player) ContinueBrushing() {
 	if !p.brushing {
 		return
@@ -2133,7 +2131,6 @@ func (p *Player) ContinueBrushing() {
 		p.AbortBrushing()
 		return
 	}
-	// A player cannot sprint while it is using an item, which includes brushing a block.
 	p.StopSprinting()
 
 	if p.brushingTicks++; p.brushingTicks%brushInterval != brushDelay {

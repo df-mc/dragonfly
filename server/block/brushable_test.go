@@ -21,7 +21,7 @@ func TestSuspiciousBlockBrushing(t *testing.T) {
 	pos, loot := cube.Pos{0, 1, 0}, item.NewStack(item.Diamond{}, 1)
 	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
-		tx.SetBlock(pos, block.SuspiciousBlock{Item: loot}, nil)
+		tx.SetBlock(pos, block.SuspiciousSand{Item: loot}, nil)
 	})
 
 	dust := []int{1, 1, 2, 2, 2, 3, 3, 3, 3}
@@ -41,7 +41,7 @@ func TestSuspiciousBlockBrushing(t *testing.T) {
 		if err != nil {
 			t.Fatalf("read block: %v", err)
 		}
-		if s, ok := b.(block.SuspiciousBlock); !ok || s.Dust != expected {
+		if s, ok := b.(block.SuspiciousSand); !ok || s.Dust != expected {
 			t.Fatalf("expected %v dust after %v brushing actions, got %v", expected, i+1, b)
 		}
 	}
@@ -94,7 +94,7 @@ func TestSuspiciousBlockBrushingResets(t *testing.T) {
 	pos := cube.Pos{0, 1, 0}
 	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
-		tx.SetBlock(pos, block.SuspiciousBlock{Gravel: true}, nil)
+		tx.SetBlock(pos, block.SuspiciousGravel{}, nil)
 		for range 6 {
 			tx.Block(pos).(block.Brushable).Brush(pos, tx, cube.FaceUp)
 		}
@@ -109,7 +109,7 @@ func TestSuspiciousBlockBrushingResets(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read block: %v", err)
 	}
-	if s, ok := b.(block.SuspiciousBlock); !ok || s.Dust != 0 {
+	if s, ok := b.(block.SuspiciousGravel); !ok || s.Dust != 0 {
 		t.Errorf("expected suspicious gravel to lose its brushing progress, got %v", b)
 	}
 }
@@ -123,7 +123,7 @@ func TestSuspiciousBlockNBT(t *testing.T) {
 	pos, loot := cube.Pos{0, 1, 0}, item.NewStack(item.Emerald{}, 1)
 	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
-		tx.SetBlock(pos, block.SuspiciousBlock{Item: loot}, nil)
+		tx.SetBlock(pos, block.SuspiciousSand{Item: loot}, nil)
 		for range 4 {
 			tx.Block(pos).(block.Brushable).Brush(pos, tx, cube.FaceEast)
 		}
@@ -146,7 +146,7 @@ func TestSuspiciousBlockNBT(t *testing.T) {
 		}
 	}
 
-	decoded := block.SuspiciousBlock{Dust: 2}.DecodeNBT(data).(block.SuspiciousBlock)
+	decoded := block.SuspiciousSand{Dust: 2}.DecodeNBT(data).(block.SuspiciousSand)
 	if !decoded.Item.Equal(loot) {
 		t.Errorf("expected decoded block to hold %v, got %v", loot, decoded.Item)
 	}
@@ -164,7 +164,7 @@ func TestSuspiciousBlockBreaksOnLanding(t *testing.T) {
 	ground, pos := cube.Pos{0, 0, 0}, cube.Pos{0, 2, 0}
 	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(ground, block.Stone{}, nil)
-		tx.SetBlock(pos, block.SuspiciousBlock{}, nil)
+		tx.SetBlock(pos, block.SuspiciousSand{}, nil)
 	})
 	for range 20 {
 		w.AdvanceTick()
