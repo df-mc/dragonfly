@@ -155,6 +155,25 @@ func TestSuspiciousBlockNBT(t *testing.T) {
 	}
 }
 
+// TestSuspiciousBlockLootTableNBT verifies that the loot table of a suspicious block that was not brushed yet
+// survives a block entity data round trip, so that saving a vanilla world does not lose it.
+func TestSuspiciousBlockLootTableNBT(t *testing.T) {
+	data := map[string]any{
+		"id":              "BrushableBlock",
+		"type":            "minecraft:suspicious_gravel",
+		"brush_count":     int32(0),
+		"brush_direction": byte(6),
+		"LootTable":       "loot_tables/entities/brushable/trail_ruins_common.json",
+		"LootTableSeed":   int32(1234567),
+	}
+	encoded := block.SuspiciousGravel{}.DecodeNBT(data).(block.SuspiciousGravel).EncodeNBT()
+	for _, k := range []string{"LootTable", "LootTableSeed"} {
+		if encoded[k] != data[k] {
+			t.Errorf("expected %v to survive as %v, got %v", k, data[k], encoded[k])
+		}
+	}
+}
+
 // TestSuspiciousBlockBreaksOnLanding verifies that a suspicious block that falls breaks without dropping
 // anything instead of being placed back into the world.
 func TestSuspiciousBlockBreaksOnLanding(t *testing.T) {

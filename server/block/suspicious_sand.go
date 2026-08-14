@@ -4,6 +4,7 @@ import (
 	"math/rand/v2"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
@@ -24,6 +25,11 @@ type SuspiciousSand struct {
 	Dust int
 	// Item is the item brushed out of the block. Blocks placed by a player hold none.
 	Item item.Stack
+	// LootTable is the loot table the item held by the block is rolled from when it is first brushed.
+	// Dragonfly has no loot tables, so it is only kept to avoid losing it when a vanilla world is saved.
+	LootTable string
+	// LootTableSeed is the seed LootTable is rolled with. A seed of 0 means a random seed is used.
+	LootTableSeed int32
 }
 
 // Brush ...
@@ -77,7 +83,6 @@ func (s SuspiciousSand) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 // Landed ...
 func (s SuspiciousSand) Landed(tx *world.Tx, pos cube.Pos) {
 	tx.AddParticle(pos.Vec3Centre(), particle.BlockBreak{Block: s})
-	tx.PlaySound(pos.Vec3Centre(), sound.BlockBreaking{Block: s})
 }
 
 // BreaksOnLanding ...
@@ -103,12 +108,17 @@ func (s SuspiciousSand) EncodeBlock() (string, map[string]any) {
 // EncodeNBT ...
 func (s SuspiciousSand) EncodeNBT() map[string]any {
 	name, _ := s.EncodeItem()
-	return s.encodeNBT(name, s.Item)
+	m := s.encodeNBT(name, s.Item)
+	if s.LootTable != "" {
+		m["LootTable"], m["LootTableSeed"] = s.LootTable, s.LootTableSeed
+	}
+	return m
 }
 
 // DecodeNBT ...
 func (s SuspiciousSand) DecodeNBT(data map[string]any) any {
 	s.Item = item.MapNBT(data, "item")
+	s.LootTable, s.LootTableSeed = nbtconv.String(data, "LootTable"), nbtconv.Int32(data, "LootTableSeed")
 	s.brushProgress = s.decodeNBT(data)
 	return s
 }

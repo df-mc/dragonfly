@@ -45,7 +45,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		// Don't do anything for this action. It is no longer used. Block
 		// cracking is done fully server-side.
 	case protocol.PlayerActionStartItemUseOn:
-		c.StartBrushing(cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}, cube.Face(face))
+		// TODO: Properly utilize these actions.
 	case protocol.PlayerActionStopItemUseOn:
 		c.AbortBrushing()
 		c.ReleaseItem()
