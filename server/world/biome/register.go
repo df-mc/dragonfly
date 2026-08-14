@@ -80,6 +80,7 @@ func init() {
 	world.RegisterBiome(SoulSandValley{})
 	world.RegisterBiome(StonyPeaks{})
 	world.RegisterBiome(StonyShore{})
+	world.RegisterBiome(SulfurCaves{})
 	world.RegisterBiome(SunflowerPlains{})
 	world.RegisterBiome(SwampHills{})
 	world.RegisterBiome(Swamp{})

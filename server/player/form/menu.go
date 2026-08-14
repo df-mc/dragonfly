@@ -3,16 +3,17 @@ package form
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"reflect"
+
+	"github.com/df-mc/dragonfly/server/world"
 )
 
-// Menu represents a menu form. These menus are made up of a title and a body, with a number of buttons which
-// come below the body. These buttons may also have images on the side of them.
+// Menu represents a menu form. These menus are made up of a title and a body, with a number of elements which
+// come below the body. These elements can include buttons, dividers, headers, and labels.
 type Menu struct {
 	title, body string
 	submittable MenuSubmittable
-	buttons     []Button
+	elements    []MenuElement
 }
 
 // NewMenu creates a new Menu form using the MenuSubmittable passed to handle the output of the form. The
@@ -30,10 +31,10 @@ func NewMenu(submittable MenuSubmittable, title ...any) Menu {
 // MarshalJSON ...
 func (m Menu) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
-		"type":    "form",
-		"title":   m.title,
-		"content": m.body,
-		"buttons": m.Buttons(),
+		"type":     "form",
+		"title":    m.title,
+		"content":  m.body,
+		"elements": m.Elements(),
 	})
 }
 
@@ -44,10 +45,43 @@ func (m Menu) WithBody(body ...any) Menu {
 	return m
 }
 
-// WithButtons creates a copy of the Menu form and appends the buttons passed to the existing buttons, after
+// AddButton appends a button to the menu's element list and returns the updated Menu.
+func (m Menu) AddButton(button Button) Menu {
+	m.elements = append(m.elements, button)
+	return m
+}
+
+// AddDivider appends a divider to the menu's element list and returns the updated Menu.
+func (m Menu) AddDivider(divider Divider) Menu {
+	m.elements = append(m.elements, divider)
+	return m
+}
+
+// AddHeader appends a header to the menu's element list and returns the updated Menu.
+func (m Menu) AddHeader(header Header) Menu {
+	m.elements = append(m.elements, header)
+	return m
+}
+
+// AddLabel appends a label to the menu's element list and returns the updated Menu.
+func (m Menu) AddLabel(label Label) Menu {
+	m.elements = append(m.elements, label)
+	return m
+}
+
+// WithButtons creates a copy of the Menu form and appends the buttons passed to the existing elements, after
 // which the new Menu form is returned.
 func (m Menu) WithButtons(buttons ...Button) Menu {
-	m.buttons = append(m.buttons, buttons...)
+	for _, b := range buttons {
+		m.elements = append(m.elements, b)
+	}
+	return m
+}
+
+// WithElements creates a copy of the Menu form and appends the elements passed to the existing elements, after
+// which the new Menu form is returned. This allows adding any MenuElement type.
+func (m Menu) WithElements(elements ...MenuElement) Menu {
+	m.elements = append(m.elements, elements...)
 	return m
 }
 
@@ -61,8 +95,8 @@ func (m Menu) Body() string {
 	return m.body
 }
 
-// Buttons returns a list of all buttons of the MenuSubmittable. It parses them from the fields using
-// reflection and returns them.
+// Buttons returns a list of all buttons of the MenuSubmittable. It collects buttons from the MenuSubmittable
+// fields and any buttons added via WithButtons(), AddButton().
 func (m Menu) Buttons() []Button {
 	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
 	v.Set(reflect.ValueOf(m.submittable))
@@ -73,11 +107,34 @@ func (m Menu) Buttons() []Button {
 		if !field.CanSet() {
 			continue
 		}
-		// Each exported field is guaranteed to be of type Button.
-		buttons = append(buttons, field.Interface().(Button))
+		if b, ok := field.Interface().(Button); ok {
+			buttons = append(buttons, b)
+		}
 	}
-	buttons = append(buttons, m.buttons...)
+	for _, elem := range m.elements {
+		if b, ok := elem.(Button); ok {
+			buttons = append(buttons, b)
+		}
+	}
 	return buttons
+}
+
+// Elements returns all elements of this menu form. It collects elements from the MenuSubmittable
+// fields and any elements added via WithElements().
+func (m Menu) Elements() []MenuElement {
+	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
+	v.Set(reflect.ValueOf(m.submittable))
+
+	elements := make([]MenuElement, 0, v.NumField()+len(m.elements))
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if !field.CanSet() {
+			continue
+		}
+		elements = append(elements, field.Interface().(MenuElement))
+	}
+	elements = append(elements, m.elements...)
+	return elements
 }
 
 // SubmitJSON submits a JSON value to the menu, containing the index of the button clicked.
@@ -102,8 +159,8 @@ func (m Menu) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 	return nil
 }
 
-// verify verifies if the form is valid, checking all fields are of the type Button. It panics if the form is
-// not valid.
+// verify verifies if the form is valid, checking all exported fields implement MenuElement.
+// It panics if the form is not valid.
 func (m Menu) verify() {
 	v := reflect.New(reflect.TypeOf(m.submittable)).Elem()
 	v.Set(reflect.ValueOf(m.submittable))
@@ -111,8 +168,8 @@ func (m Menu) verify() {
 		if !v.Field(i).CanSet() {
 			continue
 		}
-		if _, ok := v.Field(i).Interface().(Button); !ok {
-			panic("all exported fields must be of the type form.Button")
+		if _, ok := v.Field(i).Interface().(MenuElement); !ok {
+			panic("all exported fields must implement form.MenuElement")
 		}
 	}
 }

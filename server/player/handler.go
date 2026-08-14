@@ -6,15 +6,12 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
-	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 )
-
-type Context = event.Context[*Player]
 
 // Handler handles events that are called by a player. Implementations of Handler may be used to listen to
 // specific events such as when a player chats or moves.
@@ -53,6 +50,10 @@ type Handler interface {
 	// the original cause of the immunity frame. In this case, the damage is
 	// reduced but the player is still knocked back.
 	HandleHurt(ctx *Context, damage *float64, immune bool, attackImmunity *time.Duration, src world.DamageSource)
+	// HandleSetOnFire handles the player being set on fire by any source.
+	// The fire duration passed is after fire protection modifiers and may be changed
+	// by assigning to *duration.
+	HandleSetOnFire(ctx *Context, duration *time.Duration)
 	// HandleKnockBack handles the player being knocked back. ctx.Cancel() may be called to cancel knockback.
 	HandleKnockBack(ctx *Context, src *mgl64.Vec3, force, height *float64)
 	// HandleDeath handles the player dying to a particular damage cause.
@@ -124,6 +125,8 @@ type Handler interface {
 	// HandleSignEdit handles the player editing a sign. It is called for every keystroke while editing a sign and
 	// has both the old text passed and the text after the edit. This typically only has a change of one character.
 	HandleSignEdit(ctx *Context, pos cube.Pos, frontSide bool, oldText, newText string)
+	// HandleSleep handles the player beginning the sleep action. ctx.Cancel() may be called to cancel the action.
+	HandleSleep(ctx *Context, sendReminder *bool)
 	// HandleLecternPageTurn handles the player turning a page in a lectern. ctx.Cancel() may be called to cancel the
 	// page turn. The page number may be changed by assigning to *page.
 	HandleLecternPageTurn(ctx *Context, pos cube.Pos, oldPage int, newPage *int)
@@ -137,9 +140,8 @@ type Handler interface {
 	HandleItemPickup(ctx *Context, i *item.Stack)
 	// HandleHeldSlotChange handles the player changing the slot they are currently holding.
 	HandleHeldSlotChange(ctx *Context, from, to int)
-	// HandleItemDrop handles the player dropping an item on the ground. The dropped item entity is passed.
-	// ctx.Cancel() may be called to prevent the player from dropping the entity.Item passed on the ground.
-	// e.Item() may be called to obtain the item stack dropped.
+	// HandleItemDrop handles the player dropping an item on the ground.
+	// ctx.Cancel() may be called to prevent the player from dropping the item.Stack passed on the ground.
 	HandleItemDrop(ctx *Context, s item.Stack)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
@@ -182,6 +184,7 @@ func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)     
 func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
 func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}
 func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)                 {}
+func (NopHandler) HandleSleep(*Context, *bool)                                             {}
 func (NopHandler) HandleLecternPageTurn(*Context, cube.Pos, int, *int)                     {}
 func (NopHandler) HandleItemPickup(*Context, *item.Stack)                                  {}
 func (NopHandler) HandleItemUse(*Context)                                                  {}
@@ -194,6 +197,7 @@ func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64,
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
 func (NopHandler) HandleHurt(*Context, *float64, bool, *time.Duration, world.DamageSource) {}
+func (NopHandler) HandleSetOnFire(*Context, *time.Duration)                                {}
 func (NopHandler) HandleKnockBack(*Context, *mgl64.Vec3, *float64, *float64)               {}
 func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource)                      {}
 func (NopHandler) HandleFoodLoss(*Context, int, *int)                                      {}

@@ -5,13 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"golang.org/x/tools/go/packages"
 	"io"
 	"log"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 func main() {
@@ -224,6 +225,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		name = t.Name
 	case *ast.SelectorExpr:
 		name = t.Sel.Name
+	case *ast.StarExpr:
+		return "", 0 // Ignore this field
 	default:
 		log.Fatalf("unknown field type %#v\n", expr)
 		return "", 0
@@ -241,9 +244,11 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 			return "uint64(" + s + ".FaceUint8())", 3
 		}
 		return "uint64(" + s + ".Uint8())", 5
+	case "OptionalColour":
+		return "uint64(" + s + ".Uint8())", 5
 	case "GrindstoneAttachment":
 		return "uint64(" + s + ".Uint8())", 2
-	case "WoodType", "FlowerType", "DoubleFlowerType", "Colour":
+	case "WoodType", "LeavesType", "FlowerType", "DoubleFlowerType", "Colour":
 		// Assuming these were all based on metadata, it should be safe to assume a bit size of 4 for this.
 		return "uint64(" + s + ".Uint8())", 4
 	case "CoralType", "SkullType":
@@ -253,6 +258,8 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 		return "uint64(" + s + ".Uint8())", 2
 	case "OreType", "FireType", "DoubleTallGrassType":
 		return "uint64(" + s + ".Uint8())", 1
+	case "BambooLeafSize":
+		return "uint64(" + s + ".Uint8())", 2
 	case "Direction", "Axis":
 		return "uint64(" + s + ")", 2
 	case "Face":

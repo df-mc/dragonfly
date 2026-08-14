@@ -302,7 +302,9 @@ func (inv *Inventory) Merge(inv2 *Inventory, f func(int, item.Stack, item.Stack)
 	defer inv2.mu.RUnlock()
 
 	n := New(len(inv.slots)+len(inv2.slots), f)
-	n.slots = append(inv.slots, inv2.slots...)
+	n.slots = make([]item.Stack, 0, len(inv.slots)+len(inv2.slots))
+	n.slots = append(n.slots, inv.slots...)
+	n.slots = append(n.slots, inv2.slots...)
 	return n
 }
 

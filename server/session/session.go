@@ -82,6 +82,8 @@ type Session struct {
 	changingDimension              atomic.Bool
 	moving                         bool
 
+	lastChunkPos world.ChunkPos
+
 	recipes map[uint32]recipe.Recipe
 
 	blobMu                sync.Mutex
@@ -95,10 +97,23 @@ type Session struct {
 
 	debugShapesMu     sync.RWMutex
 	debugShapes       map[int]debug.Shape
-	debugShapesAdd    chan debug.Shape
-	debugShapesRemove chan int
+	debugShapeUpdates []debugShapeUpdate
+
+	viewLayer *world.ViewLayer
+
+	inputLocksMu sync.RWMutex
+	inputLocks   uint32
 
 	closeBackground chan struct{}
+
+	br world.BlockRegistry
+}
+
+// debugShapeUpdate represents a pending debug shape mutation. If shape is nil, the update removes the
+// debug shape with the matching ID. Updates are applied in order when the session sends debug shapes.
+type debugShapeUpdate struct {
+	id    int
+	shape debug.Shape
 }
 
 // Conn represents a connection that packets are read from and written to by a Session. In addition, it holds some
@@ -132,7 +147,7 @@ type Conn interface {
 }
 
 // Nop represents a no-operation session. It does not do anything when sending a packet to it.
-var Nop = &Session{}
+var Nop = &Session{conf: Config{Log: slog.New(slog.DiscardHandler)}}
 
 // selfEntityRuntimeID is the entity runtime (or unique) ID of the controllable that the session holds.
 const selfEntityRuntimeID = 1
@@ -150,7 +165,12 @@ type Config struct {
 
 	JoinMessage, QuitMessage chat.Translation
 
+	// HandleStop is called once when the Session is closed. The transaction is
+	// nil if the Controllable could not be restored to any world, such as when
+	// both its current world and respawn destination closed during teardown.
 	HandleStop func(*world.Tx, Controllable)
+	// BlockRegistry overrides the registry used for network serialization. If nil, world.DefaultBlockRegistry is used.
+	BlockRegistry world.BlockRegistry
 }
 
 func (conf Config) New(conn Conn) *Session {
@@ -185,9 +205,9 @@ func (conf Config) New(conn Conn) *Session {
 		hudUpdates:             make(map[hud.Element]bool),
 		hiddenHud:              make(map[hud.Element]struct{}),
 		debugShapes:            make(map[int]debug.Shape),
-		debugShapesAdd:         make(chan debug.Shape, 256),
-		debugShapesRemove:      make(chan int, 256),
+		debugShapeUpdates:      make([]debugShapeUpdate, 0, 256),
 	}
+	s.viewLayer = world.NewViewLayer(s)
 	s.openedWindow.Store(inventory.New(1, nil))
 	s.openedPos.Store(&cube.Pos{})
 
@@ -196,9 +216,15 @@ func (conf Config) New(conn Conn) *Session {
 	s.currentScoreboard.Store(&scoreboardName)
 	s.currentLines.Store(&scoreboardLines)
 
+	if conf.BlockRegistry == nil {
+		s.br = world.DefaultBlockRegistry
+	} else {
+		s.br = conf.BlockRegistry
+	}
+
 	s.registerHandlers()
 	s.sendBiomes()
-	groups, items := creativeContent()
+	groups, items := creativeContent(s.br)
 	s.writePacket(&packet.CreativeContent{Groups: groups, Items: items})
 	s.sendRecipes()
 	s.sendArmourTrimData()
@@ -266,6 +292,9 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 
 // Close closes the session, which in turn closes the controllable and the connection that the session
 // manages. Close ensures the method only runs code on the first call.
+// A nil transaction may be passed for a Controllable that is no longer in any
+// world; world-bound teardown (container close, chunk loader, entity removal)
+// is then skipped.
 func (s *Session) Close(tx *world.Tx, c Controllable) {
 	s.once.Do(func() {
 		s.close(tx, c)
@@ -275,8 +304,13 @@ func (s *Session) Close(tx *world.Tx, c Controllable) {
 // close closes the session, which in turn closes the controllable and the connection that the session
 // manages.
 func (s *Session) close(tx *world.Tx, c Controllable) {
-	c.MoveItemsToInventory()
-	s.closeCurrentContainer(tx)
+	if tx != nil {
+		c.MoveItemsToInventory()
+		s.closeCurrentContainer(tx, false)
+	}
+	if s.viewLayer != nil {
+		_ = s.viewLayer.Close()
+	}
 
 	s.conf.HandleStop(tx, c)
 
@@ -285,7 +319,9 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	_ = s.offHand.Close()
 	_ = s.armour.Close()
 
-	s.chunkLoader.Close(tx)
+	if tx != nil {
+		s.chunkLoader.Close(tx)
+	}
 
 	if !s.conf.QuitMessage.Zero() {
 		chat.Global.Writet(s.conf.QuitMessage, s.conn.IdentityData().DisplayName)
@@ -294,12 +330,14 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 
 	// Note: Be aware of where RemoveEntity is called. This must not be done too
 	// early.
-	tx.RemoveEntity(c)
+	if tx != nil {
+		tx.RemoveEntity(c)
+	}
 	_ = s.ent.Close()
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.
-	sessions.Remove(s)
+	sessions.Remove(s, c)
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)
@@ -325,6 +363,22 @@ func (s *Session) Latency() time.Duration {
 	return s.conn.Latency()
 }
 
+// withControllable runs f with the current Controllable on its world owner.
+// It is for off-owner session goroutines; callbacks that already have a
+// *world.Tx should use it directly instead.
+func (s *Session) withControllable(ctx context.Context, f func(tx *world.Tx, c Controllable) error) error {
+	_, err := world.CallRef(ctx, world.NewEntityRef[Controllable](s.ent), func(tx *world.Tx, c Controllable) (struct{}, error) {
+		return struct{}{}, f(tx, c)
+	})
+	return err
+}
+
+// sessionOwnerStopped reports whether err means the session's player can no
+// longer run owner callbacks, so session goroutines should stop quietly.
+func sessionOwnerStopped(err error) bool {
+	return errors.Is(err, world.ErrEntityClosed) || errors.Is(err, world.ErrWorldClosed) || errors.Is(err, world.ErrTaskCancelled)
+}
+
 // ClientData returns the login.ClientData of the underlying *minecraft.Conn.
 func (s *Session) ClientData() login.ClientData {
 	return s.conn.ClientData()
@@ -337,24 +391,33 @@ func (s *Session) handlePackets() {
 		// First close the Controllable. This might lead to a world change
 		// (player might be dead while disconnecting, in which case it will
 		// respawn first).
-		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			_ = e.(Controllable).Close()
-		})
+		if err := s.withControllable(context.Background(), func(_ *world.Tx, c Controllable) error {
+			_ = c.Close()
+			return nil
+		}); err != nil && !sessionOwnerStopped(err) {
+			s.conf.Log.Debug("close controllable: " + err.Error())
+		}
 		// Because the player might no longer be in the same world after
 		// closing, we create a new transaction
-		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			s.Close(tx, e.(Controllable))
-		})
+		if err := s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
+			s.Close(tx, c)
+			return nil
+		}); err != nil && !sessionOwnerStopped(err) {
+			s.conf.Log.Debug("close session: " + err.Error())
+		}
 	}()
 	for {
 		pk, err := s.conn.ReadPacket()
 		if err != nil {
 			return
 		}
-		s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-			err = s.handlePacket(pk, tx, e.(Controllable))
+		err = s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
+			return s.handlePacket(pk, tx, c)
 		})
 		if err != nil {
+			if sessionOwnerStopped(err) {
+				return
+			}
 			s.conf.Log.Debug("process packet: " + err.Error())
 			return
 		}
@@ -368,37 +431,47 @@ func (s *Session) background() {
 		r          map[string]map[int]cmd.Runnable
 		enums      map[string]cmd.Enum
 		enumValues map[string][]string
+		softEnums  = make(map[string]struct{})
 		ok         bool
 		i          int
 	)
 
-	s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-		co := e.(Controllable)
-		r = s.sendAvailableCommands(co)
-		enums, enumValues = s.enums(co)
-	})
+	if err := s.withControllable(context.Background(), func(_ *world.Tx, c Controllable) error {
+		r = s.sendAvailableCommands(c, softEnums)
+		enums, enumValues = s.enums(c)
+		return nil
+	}); err != nil {
+		if !sessionOwnerStopped(err) {
+			s.conf.Log.Debug("prepare command updates: " + err.Error())
+		}
+		return
+	}
 
 	t := time.NewTicker(time.Second / 20)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
-			s.ent.ExecWorld(func(tx *world.Tx, e world.Entity) {
-				c := e.(Controllable)
-
+			if err := s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
 				if i++; i%20 == 0 {
 					// Enum resending happens relatively often and frequent updates are more important than with full
 					// command changes. Those are generally only related to permission changes, which doesn't happen often.
-					s.resendEnums(enums, enumValues, c)
+					r = s.resendEnums(enums, enumValues, softEnums, r, c)
 				}
 				if i%100 == 0 {
 					// Try to resend commands only every 5 seconds.
-					if r, ok = s.resendCommands(r, c); ok {
+					if r, ok = s.resendCommands(r, c, softEnums); ok {
 						enums, enumValues = s.enums(c)
 					}
 				}
 				s.sendChunks(tx, c)
-			})
+				return nil
+			}); err != nil {
+				if !sessionOwnerStopped(err) {
+					s.conf.Log.Debug("update session background: " + err.Error())
+				}
+				return
+			}
 		case <-s.closeBackground:
 			return
 		}
@@ -408,15 +481,21 @@ func (s *Session) background() {
 // sendChunks sends the next up to 4 chunks to the connection. What chunks are loaded depends on the connection of
 // the chunk loader and the chunks that were previously loaded.
 func (s *Session) sendChunks(tx *world.Tx, c Controllable) {
+	var worldSwitched bool
 	if w := tx.World(); s.chunkLoader.World() != w && w != nil {
+		worldSwitched = true
 		s.handleWorldSwitch(w, tx, c)
 	}
 	pos := c.Position()
 	s.chunkLoader.Move(tx, pos)
-	s.writePacket(&packet.NetworkChunkPublisherUpdate{
-		Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
-		Radius:   uint32(s.chunkRadius) << 4,
-	})
+	chunkPos := world.ChunkPos{int32(pos[0]) << 4, int32(pos[2]) << 4}
+	if s.lastChunkPos != chunkPos || worldSwitched {
+		s.lastChunkPos = chunkPos
+		s.writePacket(&packet.NetworkChunkPublisherUpdate{
+			Position: protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])},
+			Radius:   uint32(s.chunkRadius) << 4,
+		})
+	}
 
 	s.blobMu.Lock()
 	const maxChunkTransactions = 8
@@ -560,9 +639,9 @@ func (s *Session) sendAvailableEntities(w *world.World) {
 	for _, t := range w.EntityRegistry().Types() {
 		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
 	}
-	serializedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
+	serialisedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {
 		panic("should never happen")
 	}
-	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serializedEntityData})
+	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serialisedEntityData})
 }

@@ -2,7 +2,6 @@ package playerdb
 
 import (
 	"bytes"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
@@ -10,9 +9,9 @@ import (
 // InventoryData is a struct that contains all data of the player inventories.
 type InventoryData struct {
 	// Items contains all the items in the player's main inventory.
-	// This excludes armor and offhand.
+	// This excludes armour and offhand.
 	Items []item.Stack
-	// Boots, Leggings, Chestplate, Helmet are armor pieces that belong to the slot corresponding to the name.
+	// Boots, Leggings, Chestplate, Helmet are armour pieces that belong to the slot corresponding to the name.
 	Boots      item.Stack
 	Leggings   item.Stack
 	Chestplate item.Stack
@@ -69,13 +68,13 @@ func decodeItems(encoded []jsonSlot, items []item.Stack) {
 	}
 }
 
-func encodeItem(item item.Stack) []byte {
-	if item.Empty() {
+func encodeItem(stack item.Stack) []byte {
+	if stack.Empty() {
 		return nil
 	}
 
 	var b bytes.Buffer
-	itemNBT := nbtconv.WriteItem(item, true)
+	itemNBT := item.WriteNBT(stack, true)
 	encoder := nbt.NewEncoderWithEncoding(&b, nbt.LittleEndian)
 	err := encoder.Encode(itemNBT)
 	if err != nil {
@@ -91,5 +90,5 @@ func decodeItem(data []byte) item.Stack {
 	if err != nil {
 		return item.Stack{}
 	}
-	return nbtconv.Item(itemNBT, nil)
+	return item.ReadNBT(itemNBT, nil)
 }

@@ -1,13 +1,14 @@
 package block
 
 import (
+	"math/rand/v2"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
-	"time"
 )
 
 // Flower is a non-solid plant that occur in a variety of shapes and colours. They are primarily used for decoration
@@ -32,7 +33,8 @@ func (f Flower) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 }
 
 // BoneMeal ...
-func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
+func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (result item.BoneMealResult) {
+	result = item.BoneMealResultNone
 	if f.Type == WitherRose() {
 		return
 	}
@@ -54,7 +56,7 @@ func (f Flower) BoneMeal(pos cube.Pos, tx *world.Tx) (success bool) {
 			}
 		}
 		tx.SetBlock(p, Flower{Type: flowerType}, nil)
-		success = true
+		result = item.BoneMealResultArea
 	}
 	return
 }

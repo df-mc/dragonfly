@@ -1,11 +1,12 @@
 package particle
 
 import (
+	"image/color"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
-	"image/color"
 )
 
 // Flame is a particle shown around torches. It can have any colour specified with the Colour field.
@@ -49,7 +50,14 @@ type PunchBlock struct {
 type BlockForceField struct{ particle }
 
 // BoneMeal is a particle that shows up on bone meal usage.
-type BoneMeal struct{ particle }
+type BoneMeal struct {
+	particle
+
+	// Area specifies whether the particle effect should be for area. If false,
+	// a small burst is used for minor growth. If true, a large burst is used
+	// for significant growth.
+	Area bool
+}
 
 // Note is a particle that shows up on note block interactions.
 type Note struct {

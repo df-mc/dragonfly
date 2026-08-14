@@ -105,6 +105,10 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 		if len(data) == 0 {
 			return fmt.Errorf("form JSON data array does not have enough values")
 		}
+		if elementReadonly(e) {
+			data = data[1:]
+			continue
+		}
 		elem, err := f.parseValue(e, data[0])
 		if err != nil {
 			return fmt.Errorf("error parsing form response value: %w", err)
@@ -118,6 +122,16 @@ func (f Custom) SubmitJSON(b []byte, submitter Submitter, tx *world.Tx) error {
 	return nil
 }
 
+// elementReadonly returns true if the element is read only.
+func elementReadonly(e Element) bool {
+	switch e.(type) {
+	case Divider, Header, Label:
+		return true
+	default:
+		return false
+	}
+}
+
 // parseValue parses a value into the Element passed and returns it as a reflection Value. If the value is not
 // valid for the element, an error is returned.
 func (f Custom) parseValue(elem Element, s any) (reflect.Value, error) {
@@ -125,8 +139,6 @@ func (f Custom) parseValue(elem Element, s any) (reflect.Value, error) {
 	var value reflect.Value
 
 	switch element := elem.(type) {
-	case Label:
-		value = reflect.ValueOf(element)
 	case Input:
 		element.value, ok = s.(string)
 		if !ok {

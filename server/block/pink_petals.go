@@ -21,14 +21,14 @@ type PinkPetals struct {
 }
 
 // BoneMeal ...
-func (p PinkPetals) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (p PinkPetals) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if p.AdditionalCount < 3 {
 		p.AdditionalCount++
 		tx.SetBlock(pos, p, nil)
-		return true
+		return item.BoneMealResultSmall
 	}
 	dropItem(tx, item.NewStack(p, 1), pos.Vec3Centre())
-	return true
+	return item.BoneMealResultSmall
 }
 
 // UseOnBlock ...
@@ -70,7 +70,7 @@ func (PinkPetals) HasLiquidDrops() bool {
 
 // BreakInfo ...
 func (p PinkPetals) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(p, p.AdditionalCount+1)))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(PinkPetals{}, p.AdditionalCount+1)))
 }
 
 // FlammabilityInfo ...

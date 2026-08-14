@@ -6,6 +6,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
 	"github.com/df-mc/dragonfly/server/player/skin"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -33,14 +34,23 @@ func (l *sessionList) Add(s *Session) {
 	l.s = append(l.s, s)
 }
 
-func (l *sessionList) Remove(s *Session) {
+func (l *sessionList) Remove(s *Session, entity world.Entity) {
 	l.mu.Lock()
-	defer l.mu.Unlock()
-
+	removedFrom := slices.Clone(l.s)
 	for _, other := range l.s {
 		l.unsendSessionFrom(s, other)
 	}
 	l.s = sliceutil.DeleteVal(l.s, s)
+	l.mu.Unlock()
+
+	if entity == nil {
+		return
+	}
+	for _, other := range removedFrom {
+		if other.viewLayer != nil {
+			other.viewLayer.Remove(entity)
+		}
+	}
 }
 
 func (l *sessionList) Lookup(id uuid.UUID) (*Session, bool) {
@@ -68,12 +78,13 @@ func (l *sessionList) sendSessionTo(s, to *Session) {
 	to.entityMutex.Unlock()
 
 	to.writePacket(&packet.PlayerList{
-		ActionType: packet.PlayerListActionAdd,
 		Entries: []protocol.PlayerListEntry{{
+			ActionType:     protocol.PlayerListActionAdd,
 			UUID:           s.ent.UUID(),
 			EntityUniqueID: int64(runtimeID),
 			Username:       s.conn.IdentityData().DisplayName,
 			XUID:           s.conn.IdentityData().XUID,
+			BuildPlatform:  int32(protocol.DeviceUnknown),
 			Skin:           skinToProtocol(s.joinSkin),
 		}},
 	})
@@ -86,8 +97,10 @@ func (l *sessionList) unsendSessionFrom(s, from *Session) {
 	from.entityMutex.Unlock()
 
 	from.writePacket(&packet.PlayerList{
-		ActionType: packet.PlayerListActionRemove,
-		Entries:    []protocol.PlayerListEntry{{UUID: s.ent.UUID()}},
+		Entries: []protocol.PlayerListEntry{{
+			ActionType: protocol.PlayerListActionRemove,
+			UUID:       s.ent.UUID(),
+		}},
 	})
 }
 
@@ -117,6 +130,10 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 	if fullID == "" {
 		fullID = uuid.New().String()
 	}
+	model := s.Model
+	if len(model) == 0 {
+		model = []byte("{}")
+	}
 	return protocol.Skin{
 		PlayFabID:                 s.PlayFabID,
 		SkinID:                    uuid.New().String(),
@@ -127,7 +144,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		CapeImageWidth:            uint32(s.Cape.Bounds().Max.X),
 		CapeImageHeight:           uint32(s.Cape.Bounds().Max.Y),
 		CapeData:                  s.Cape.Pix,
-		SkinGeometry:              s.Model,
+		SkinGeometry:              model,
 		PersonaSkin:               s.Persona,
 		CapeID:                    uuid.New().String(),
 		FullID:                    fullID,

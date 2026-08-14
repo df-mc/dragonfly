@@ -51,6 +51,11 @@ type FireworkBehaviour struct {
 	passive *PassiveBehaviour
 }
 
+// PortalTravelComputer returns the interdimensional travel state for the behaviour.
+func (f *FireworkBehaviour) PortalTravelComputer() *PortalTravelComputer {
+	return f.passive.PortalTravelComputer()
+}
+
 // Firework returns the underlying item.Firework of the FireworkBehaviour.
 func (f *FireworkBehaviour) Firework() item.Firework {
 	return f.conf.Firework

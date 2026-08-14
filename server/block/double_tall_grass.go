@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math/rand/v2"
 )
 
 // DoubleTallGrass is a two-block high variety of grass.
@@ -57,15 +56,7 @@ func (d DoubleTallGrass) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (d DoubleTallGrass) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
-		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
-			return []item.Stack{item.NewStack(d, 1)}
-		}
-		if rand.Float32() > 0.57 {
-			return []item.Stack{item.NewStack(WheatSeeds{}, 1)}
-		}
-		return nil
-	})
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, grassDrops(d))
 }
 
 // CompostChance ...

@@ -286,7 +286,7 @@ func (Vines) canSpreadTo(tx *world.Tx, pos cube.Pos) bool {
 
 // canSpread returns true if the vines can spread from the given position. Vines
 // may only spread horizontally or upwards if there are fewer than 4 vines within
-// a 9x9x3 area centered around the Vines.
+// a 9x9x3 area centred around the Vines.
 func (v Vines) canSpread(tx *world.Tx, pos cube.Pos) bool {
 	var count int
 	for x := -4; x <= 4; x++ {
@@ -294,7 +294,7 @@ func (v Vines) canSpread(tx *world.Tx, pos cube.Pos) bool {
 			for y := -1; y <= 1; y++ {
 				if _, ok := tx.Block(pos.Add(cube.Pos{x, y, z})).(Vines); ok {
 					count++
-					// The center vine is counted, for a max of 4+1=5.
+					// The centre vine is counted, for a max of 4+1=5.
 					if count >= 5 {
 						return false
 					}

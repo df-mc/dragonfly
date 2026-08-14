@@ -72,20 +72,6 @@ func NewSmithingTrim(base, addition, template Item, block string) SmithingTrim {
 	}}
 }
 
-// Furnace represents a recipe only craftable in a furnace.
-type Furnace struct {
-	recipe
-}
-
-// NewFurnace creates a new furnace recipe and returns it.
-func NewFurnace(input Item, output item.Stack, block string) Furnace {
-	return Furnace{recipe: recipe{
-		input:  []Item{input},
-		output: []item.Stack{output},
-		block:  block,
-	}}
-}
-
 // PotionContainerChange is a recipe to convert a potion from one type to another, such as from a drinkable potion to a
 // splash potion, or from a splash potion to a lingering potion.
 type PotionContainerChange struct {

@@ -10,7 +10,7 @@ type TilledGrass struct{}
 
 // BBox returns a physics.BBox that spans an entire block.
 func (TilledGrass) BBox(cube.Pos, world.BlockSource) []cube.BBox {
-	return []cube.BBox{full.ExtendTowards(cube.FaceDown, 0.0625)}
+	return []cube.BBox{full.ExtendTowards(cube.FaceUp, -0.0625)}
 }
 
 // FaceSolid always returns true.

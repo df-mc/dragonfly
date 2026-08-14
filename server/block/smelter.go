@@ -25,7 +25,7 @@ type smelter struct {
 	experience        int
 }
 
-// newSmelter initializes a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
+// newSmelter initialises a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
 func newSmelter() *smelter {
 	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
 	s.inventory = inventory.New(3, func(slot int, _, item item.Stack) {
@@ -189,13 +189,13 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 	fuel, _ := s.inventory.Item(1)
 	product, _ := s.inventory.Item(2)
 
-	// Initialize some default smelt info, and update it if we can smelt the item.
+	// Initialise some default smelt info, and update it if we can smelt the item.
 	var inputInfo item.SmeltInfo
 	if i, ok := input.Item().(item.Smeltable); ok && supported(i.SmeltInfo()) {
 		inputInfo = i.SmeltInfo()
 	}
 
-	// Initialize some default fuel info, and update it if it can be used as fuel.
+	// Initialise some default fuel info, and update it if it can be used as fuel.
 	var fuelInfo item.FuelInfo
 	if f, ok := fuel.Item().(item.Fuel); ok {
 		fuelInfo = f.FuelInfo()
@@ -221,7 +221,8 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 		s.remainingDuration -= time.Millisecond * 50
 
 		// If we have a valid smeltable item, process a single stage of smelting.
-		if canSmelt {
+		switch {
+		case canSmelt:
 			// Increase the cook duration by a tick.
 			s.cookDuration += time.Millisecond * 50
 
@@ -243,10 +244,10 @@ func (s *smelter) tickSmelting(requirement, decrement time.Duration, lit bool, s
 				s.cookDuration -= requirement
 				s.experience += int(earned)
 			}
-		} else if s.remainingDuration == 0 {
+		case s.remainingDuration == 0:
 			// We've run out of fuel, so we need to reset the max duration too.
 			s.maxDuration = 0
-		} else {
+		default:
 			// We still have some remaining fuel, but the input isn't smeltable, so we reset the cook duration.
 			s.cookDuration = 0
 		}

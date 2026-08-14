@@ -1,12 +1,13 @@
 package session
 
 import (
+	"time"
+
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"golang.org/x/text/language"
-	"time"
 )
 
 // SendMessage ...
@@ -94,9 +95,10 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 		s.currentLines.Store(&lines)
 	} else {
 		// Remove all current lines from the scoreboard. We can't replace them without removing them.
-		pk := &packet.SetScore{ActionType: packet.ScoreboardActionRemove}
+		pk := &packet.SetScore{}
 		for i := range currentLines {
 			pk.Entries = append(pk.Entries, protocol.ScoreboardEntry{
+				IdentityType:  protocol.ScoreboardIdentityRemove,
 				EntryID:       int64(i),
 				ObjectiveName: currentName,
 				Score:         int32(i),
@@ -106,7 +108,7 @@ func (s *Session) SendScoreboard(sb *scoreboard.Scoreboard) {
 			s.writePacket(pk)
 		}
 	}
-	pk := &packet.SetScore{ActionType: packet.ScoreboardActionModify}
+	pk := &packet.SetScore{}
 	for k, line := range sb.Lines() {
 		if len(line) == 0 {
 			line = "§" + colours[k]
@@ -145,7 +147,7 @@ func (s *Session) SendBossBar(text string, colour uint8, healthPercentage float6
 		EventType:          packet.BossEventShow,
 		BossBarTitle:       text,
 		HealthPercentage:   float32(healthPercentage),
-		Colour:             uint32(colour),
+		Colour:             colour,
 	})
 }
 

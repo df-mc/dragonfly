@@ -60,6 +60,12 @@ type BarrelClose struct{ sound }
 // Deny is a sound played when a block is placed or broken above a 'Deny' block from Education edition.
 type Deny struct{ sound }
 
+// ShulkerBoxOpen is a sound played when a shulker box is opened.
+type ShulkerBoxOpen struct{ sound }
+
+// ShulkerBoxClose is a sound played when a shulker box is closed.
+type ShulkerBoxClose struct{ sound }
+
 // DoorOpen is a sound played when a door is opened.
 type DoorOpen struct {
 	// Block is the block which is being opened, for which a sound should be played. The sound played depends on the
@@ -185,6 +191,12 @@ type ComposterReady struct{ sound }
 // PotionBrewed is a sound played when a potion is brewed.
 type PotionBrewed struct{ sound }
 
+// PowerOn is a sound played when a redstone component is powered on.
+type PowerOn struct{ sound }
+
+// PowerOff is a sound played when a redstone component is powered off.
+type PowerOff struct{ sound }
+
 // LecternBookPlace is a sound played when a book is placed in a lectern.
 type LecternBookPlace struct{ sound }
 
@@ -209,6 +221,12 @@ type DecoratedPotInserted struct {
 
 // DecoratedPotInsertFailed is a sound played when an item fails to be inserted into a decorated pot.
 type DecoratedPotInsertFailed struct{ sound }
+
+// EnderEyePlaced is a sound played when an eye of ender is placed into an end portal frame.
+type EnderEyePlaced struct{ sound }
+
+// EndPortalCreated is a sound played when a complete end portal frame ring is activated.
+type EndPortalCreated struct{ sound }
 
 // sound implements the world.Sound interface.
 type sound struct{}

@@ -1,12 +1,13 @@
 package block
 
 import (
+	"math"
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"math/rand/v2"
 )
 
 // SeaPickle is a small stationary underwater block that emits light, and is typically found in colonies of up to
@@ -41,12 +42,12 @@ func (SeaPickle) canSurvive(pos cube.Pos, tx *world.Tx) bool {
 }
 
 // BoneMeal ...
-func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
+func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) item.BoneMealResult {
 	if s.Dead {
-		return false
+		return item.BoneMealResultNone
 	}
 	if coral, ok := tx.Block(pos.Side(cube.FaceDown)).(CoralBlock); !ok || coral.Dead {
-		return false
+		return item.BoneMealResultNone
 	}
 
 	if s.AdditionalCount != 3 {
@@ -74,7 +75,7 @@ func (s SeaPickle) BoneMeal(pos cube.Pos, tx *world.Tx) bool {
 		}
 	}
 
-	return true
+	return item.BoneMealResultSmall
 }
 
 // UseOnBlock ...
@@ -144,7 +145,7 @@ func (s SeaPickle) LightEmissionLevel() uint8 {
 
 // BreakInfo ...
 func (s SeaPickle) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.AdditionalCount+1)))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(SeaPickle{}, s.AdditionalCount+1)))
 }
 
 // FlammabilityInfo ...

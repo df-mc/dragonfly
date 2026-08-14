@@ -7,7 +7,7 @@ type DeepFrozenOcean struct{}
 
 // Temperature ...
 func (DeepFrozenOcean) Temperature() float64 {
-	return 0
+	return 0.5
 }
 
 // Rainfall ...
@@ -32,7 +32,7 @@ func (DeepFrozenOcean) WaterColour() color.RGBA {
 
 // Tags ...
 func (DeepFrozenOcean) Tags() []string {
-	return []string{"deep", "frozen", "monster", "ocean", "overworld", "spawns_cold_variant_farm_animals", "spawns_cold_variant_frogs", "spawns_polar_bears_on_alternate_blocks"}
+	return []string{"deep", "frozen", "monster", "ocean", "overworld", "spawns_cold_variant_farm_animals", "spawns_cold_variant_frogs", "spawns_polar_bears_on_alternate_blocks", "fast_fishing", "high_seas"}
 }
 
 // String ...

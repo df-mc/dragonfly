@@ -1,6 +1,6 @@
 package item
 
-// BannerPattern is an item used to customize banners inside looms.
+// BannerPattern is an item used to customise banners inside looms.
 type BannerPattern struct {
 	// Type represents the type of banner pattern. These types do not include all patterns that can be applied to a
 	// banner.

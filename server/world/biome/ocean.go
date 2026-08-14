@@ -32,7 +32,7 @@ func (Ocean) WaterColour() color.RGBA {
 
 // Tags ...
 func (Ocean) Tags() []string {
-	return []string{"monster", "ocean", "overworld"}
+	return []string{"monster", "ocean", "overworld", "fast_fishing", "high_seas"}
 }
 
 // String ...

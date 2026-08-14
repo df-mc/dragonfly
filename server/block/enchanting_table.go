@@ -8,7 +8,7 @@ import (
 )
 
 // EnchantingTable is a block that allows players to spend their experience point levels to enchant tools, weapons,
-// books, armor, and certain other items.
+// books, armour, and certain other items.
 type EnchantingTable struct {
 	transparent
 	bassDrum
@@ -22,7 +22,7 @@ func (e EnchantingTable) Model() world.BlockModel {
 
 // BreakInfo ...
 func (e EnchantingTable) BreakInfo() BreakInfo {
-	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(e)).withBlastResistance(6000)
+	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(e)).withBlastResistance(1200)
 }
 
 // SideClosed ...

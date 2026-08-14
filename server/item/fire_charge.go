@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/portal"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"math/rand/v2"
@@ -27,6 +28,9 @@ func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 	} else if s := pos.Side(face); tx.Block(s) == air() {
 		ctx.SubtractFromCount(1)
 		tx.PlaySound(s.Vec3Centre(), sound.FireCharge{})
+		if portal.ActivateNetherPortal(tx, s) {
+			return true
+		}
 
 		flame := fire()
 		tx.SetBlock(s, flame, nil)

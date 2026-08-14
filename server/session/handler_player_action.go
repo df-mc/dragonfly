@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -24,14 +25,10 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		return errSelfRuntimeID
 	}
 	switch action {
-	case protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone:
+	case protocol.PlayerActionStartSleeping, protocol.PlayerActionRespawn, protocol.PlayerActionDimensionChangeDone:
 		// Don't do anything for these actions.
 	case protocol.PlayerActionStopSleeping:
-		if mode := c.GameMode(); !mode.Visible() && !mode.HasCollision() {
-			// As of v1.19.50, the client sends this packet when switching to spectator mode... even if it wasn't
-			// sleeping in the first place. This accounts for that.
-			return nil
-		}
+		c.Wake()
 	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)

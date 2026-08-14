@@ -47,8 +47,9 @@ type Server struct {
 
 	world, nether, end *world.World
 
-	customBlocks []protocol.BlockEntry
-	customItems  []protocol.ItemEntry
+	customBlocks     []protocol.BlockEntry
+	customItems      []protocol.ItemEntry
+	customDimensions []protocol.DimensionDefinition
 
 	listeners []Listener
 	incoming  chan incoming
@@ -115,9 +116,12 @@ func (srv *Server) Listen() {
 
 // Accept accepts incoming players into the server, returning an iterator that
 // yields players that join the server while blocking otherwise. The iterator
-// returned ends when the Server is closed using a call to Close. Players
-// returned are only valid within the block of the for loop used to iterate over
-// them:
+// returned ends when the Server is closed using a call to Close. The loop body
+// runs on the player's world owner: blocking there stalls that world, and
+// calling world.Call, world.CallEntity, world.CallRef, or Task.Wait for the
+// same owner deadlocks. Players returned are only valid within the block of the
+// for loop used to iterate over them. Use p.H() with player.Do for work that
+// outlives the loop body:
 //
 //	for p := range srv.Accept() {
 //	  // p is valid here
@@ -137,12 +141,24 @@ func (srv *Server) Accept() iter.Seq[*player.Player] {
 			srv.p[inc.p.handle.UUID()] = inc.p
 			srv.pmu.Unlock()
 
-			ret := false
-			<-inc.w.Exec(func(tx *world.Tx) {
+			ret, err := world.Call(context.Background(), inc.w, func(tx *world.Tx) (bool, error) {
 				p := tx.AddEntity(inc.p.handle).(*player.Player)
 				inc.s.Spawn(p, tx)
-				ret = !yield(p)
+				return !yield(p), nil
 			})
+			if err != nil {
+				srv.pmu.Lock()
+				delete(srv.p, inc.p.handle.UUID())
+				srv.pmu.Unlock()
+				srv.pwg.Done()
+				// Join failed before spawn: the entity was never added, so close
+				// the orphaned handle and fully tear the session down (Disconnect
+				// only writes a packet; CloseConnection frees the conn/goroutines).
+				_ = inc.p.handle.Close()
+				inc.s.Disconnect("join failed")
+				inc.s.CloseConnection()
+				continue
+			}
 			if ret {
 				return
 			}
@@ -191,8 +207,14 @@ func (srv *Server) PlayerCount() int {
 
 // Players returns an iterator that yields players currently online. If Players
 // is called from within a transaction, the respective transaction should be
-// passed. Passing nil is otherwise valid. Players returned are only valid
-// within the block of the for loop used to iterate over them:
+// passed. Passing nil is otherwise valid. Each loop body runs on the yielded
+// player's world owner, so blocking stalls that world and calling world.Call,
+// world.CallEntity, world.CallRef, or Task.Wait for the same owner deadlocks.
+// Players in other worlds are yielded by blocking on those owners sequentially;
+// mirrored handlers in two worlds can therefore deadlock each other. For
+// fan-out, collect Player.H values and schedule each with player.Do instead.
+// Players returned are only valid within the block of the for loop used to
+// iterate over them:
 //
 //	for p := range srv.Players(nil) {
 //	  // p is valid here
@@ -204,7 +226,8 @@ func (srv *Server) PlayerCount() int {
 //
 // Collecting all values from the iterator using a function such as
 // slices.Collect immediately invalidates the players because their transactions
-// will be finished.
+// will be finished. Use Player.H(), player.NewRef, or player.Do when a
+// player must be referenced after the iterator callback returns.
 func (srv *Server) Players(tx *world.Tx) iter.Seq[*player.Player] {
 	srv.pmu.RLock()
 	handles := make([]*world.EntityHandle, 0, len(srv.p))
@@ -223,10 +246,12 @@ func (srv *Server) Players(tx *world.Tx) iter.Seq[*player.Player] {
 					continue
 				}
 			}
-			ret := false
-			handle.ExecWorld(func(tx *world.Tx, e world.Entity) {
-				ret = !yield(e.(*player.Player))
+			ret, err := player.Call(context.Background(), handle, func(_ *world.Tx, p *player.Player) (bool, error) {
+				return !yield(p), nil
 			})
+			if err != nil {
+				continue
+			}
 			if ret {
 				break
 			}
@@ -348,11 +373,7 @@ func (srv *Server) listen(l Listener) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if msg, ok := srv.conf.Allower.Allow(c.RemoteAddr(), c.IdentityData(), c.ClientData()); !ok {
-				_ = c.WritePacket(&packet.Disconnect{HideDisconnectionScreen: msg == "", Message: msg})
-				_ = c.Close()
-				return
-			}
+
 			srv.finaliseConn(ctx, c, l)
 		}()
 	}
@@ -363,6 +384,7 @@ func (srv *Server) listen(l Listener) {
 func (srv *Server) startListening() {
 	srv.makeBlockEntries()
 	srv.makeItemComponents()
+	srv.makeDimensionData()
 
 	srv.wg.Add(len(srv.listeners))
 	for _, l := range srv.listeners {
@@ -370,11 +392,11 @@ func (srv *Server) startListening() {
 	}
 }
 
-// makeBlockEntries initializes the server's block components map using the
+// makeBlockEntries initialises the server's block components map using the
 // registered custom blocks. It allows block components to be created only once
 // at startup.
 func (srv *Server) makeBlockEntries() {
-	custom := slices.Collect(maps.Values(world.CustomBlocks()))
+	custom := slices.Collect(maps.Values(srv.conf.Blocks.CustomBlocks()))
 	srv.customBlocks = make([]protocol.BlockEntry, len(custom))
 
 	for i, b := range custom {
@@ -386,14 +408,14 @@ func (srv *Server) makeBlockEntries() {
 	}
 }
 
-// makeItemComponents initializes the server's item components map using the
+// makeItemComponents initialises the server's item components map using the
 // registered custom items. It allows item components to be created only once
 // at startup
 func (srv *Server) makeItemComponents() {
 	custom := world.CustomItems()
 	srv.customItems = make([]protocol.ItemEntry, len(custom))
 
-	for _, it := range custom {
+	for i, it := range custom {
 		name, _ := it.EncodeItem()
 		rid, _, _ := world.ItemRuntimeID(it)
 		_, isCustomBlock := it.(world.CustomBlock)
@@ -401,12 +423,27 @@ func (srv *Server) makeItemComponents() {
 		if isCustomBlock {
 			entryVersion = protocol.ItemEntryVersionNone
 		}
-		srv.customItems = append(srv.customItems, protocol.ItemEntry{
+		srv.customItems[i] = protocol.ItemEntry{
 			Name:           name,
 			ComponentBased: !isCustomBlock,
 			RuntimeID:      int16(rid),
 			Version:        entryVersion,
 			Data:           iteminternal.Components(it),
+		}
+	}
+}
+
+// makeDimensionData initialises the server's custom dimensions list.
+func (srv *Server) makeDimensionData() {
+	dimensions := world.CustomDimensions()
+	srv.customDimensions = make([]protocol.DimensionDefinition, 0, len(dimensions))
+	for _, registration := range dimensions {
+		r := registration.Dimension.Range()
+		srv.customDimensions = append(srv.customDimensions, protocol.DimensionDefinition{
+			Name:          registration.Name,
+			Range:         [2]int32{int32(r.Max() + 1), int32(r.Min())},
+			Generator:     protocol.GeneratorVoid,
+			DimensionType: int32(registration.ID),
 		})
 	}
 }
@@ -485,6 +522,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
 			ServerAuthoritativeBlockBreaking: true,
 		},
+		Dimensions: srv.customDimensions,
 	}
 }
 
@@ -514,8 +552,12 @@ func (srv *Server) handleSessionClose(tx *world.Tx, c session.Controllable) {
 		return
 	}
 
-	if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data(), tx.World()); err != nil {
-		srv.conf.Log.Error("Save player data: " + err.Error())
+	if tx != nil {
+		if err := srv.conf.PlayerProvider.Save(c.UUID(), c.(*player.Player).Data(), tx.World()); err != nil {
+			srv.conf.Log.Error("Save player data: " + err.Error())
+		}
+	} else {
+		srv.conf.Log.Error("Save player data: player's worlds closed before teardown; data not saved", "uuid", c.UUID())
 	}
 	srv.pwg.Done()
 }
@@ -532,6 +574,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 		JoinMessage:    srv.conf.JoinMessage,
 		QuitMessage:    srv.conf.QuitMessage,
 		HandleStop:     srv.handleSessionClose,
+		BlockRegistry:  w.BlockRegistry(),
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName
@@ -554,20 +597,26 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	logger.Debug("Loading dimension...")
 
 	conf := world.Config{
-		Log:             logger,
-		Dim:             dim,
-		Provider:        srv.conf.WorldProvider,
-		Generator:       srv.conf.Generator(dim),
-		RandomTickSpeed: srv.conf.RandomTickSpeed,
-		ReadOnly:        srv.conf.ReadOnlyWorld,
-		Entities:        srv.conf.Entities,
+		Log:                 logger,
+		Dim:                 dim,
+		Provider:            srv.conf.WorldProvider,
+		Generator:           srv.conf.Generator(dim),
+		RandomTickSpeed:     srv.conf.RandomTickSpeed,
+		ReadOnly:            srv.conf.ReadOnlyWorld,
+		SaveInterval:        srv.conf.SaveInterval,
+		ChunkUnloadInterval: srv.conf.ChunkUnloadInterval,
+		ChunkLoadWorkers:    srv.conf.ChunkLoadWorkers,
+		Entities:            srv.conf.Entities,
+		Blocks:              srv.conf.Blocks,
 		PortalDestination: func(dim world.Dimension) *world.World {
-			if dim == world.Nether {
+			switch dim {
+			case world.Nether:
 				return *nether
-			} else if dim == world.End {
+			case world.End:
 				return *end
+			default:
+				return nil
 			}
-			return nil
 		},
 	}
 	w := conf.New()
