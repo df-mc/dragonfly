@@ -1203,33 +1203,32 @@ func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) uint64 {
 	return s.handleRuntimeID(handle)
 }
 
-// debugShapeLimits returns how long a debug shape remains before the client removes it and the distance beyond which
-// the client stops drawing it. Every shape carries both, but they are fields rather than methods, so each type has to
-// be named.
-func debugShapeLimits(shape debug.Shape) (time.Duration, float64) {
+// debugShapeMaxDistance returns the distance beyond which the client stops drawing a debug shape. Every shape
+// carries one, but it is a field rather than a method, so each type has to be named.
+func debugShapeMaxDistance(shape debug.Shape) float64 {
 	switch shape := shape.(type) {
 	case *debug.Arrow:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Box:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Circle:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Line:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Sphere:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Text:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Cylinder:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Pyramid:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Ellipsoid:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	case *debug.Cone:
-		return shape.Duration, shape.MaxRenderDistance
+		return shape.MaxRenderDistance
 	}
-	return 0, 0
+	return 0
 }
 
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
@@ -1243,13 +1242,8 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 	if attachedEntityID > 0 {
 		ps.AttachedToEntityID = protocol.Option(int64(attachedEntityID))
 	}
-	if d, dist := debugShapeLimits(shape); d > 0 || dist > 0 {
-		if d > 0 {
-			ps.TotalTimeLeft = protocol.Option(float32(d.Seconds()))
-		}
-		if dist > 0 {
-			ps.MaxRenderDistance = protocol.Option(float32(dist))
-		}
+	if dist := debugShapeMaxDistance(shape); dist > 0 {
+		ps.MaxRenderDistance = protocol.Option(float32(dist))
 	}
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	switch shape := shape.(type) {

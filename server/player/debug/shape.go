@@ -3,7 +3,6 @@ package debug
 import (
 	"image/color"
 	"sync/atomic"
-	"time"
 
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -54,9 +53,6 @@ type Arrow struct {
 	// HeadSegments is the number of segments that the head of the arrow will be drawn with. The more
 	// segments, the smoother the head will look. If zero, it will default to 4.
 	HeadSegments int
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -77,9 +73,6 @@ type Box struct {
 	// Bounds is the size of the box in the world, acting as an offset from the Position. If empty,
 	// it will default to a 1x1x1 box.
 	Bounds mgl64.Vec3
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -101,9 +94,6 @@ type Circle struct {
 	// Segments is the number of segments that the circle will be drawn with. The more segments, the smoother
 	// the circle will look. If empty, it will default to 20.
 	Segments int
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -122,9 +112,6 @@ type Line struct {
 	// EndPosition is the end position of the line in the world. The line will be drawn from Position to
 	// EndPosition.
 	EndPosition mgl64.Vec3
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -146,9 +133,6 @@ type Sphere struct {
 	// Segments is the number of segments that the circle will be drawn with. The more segments, the smoother
 	// the circle will look. If empty, it will default to 20.
 	Segments int
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -189,9 +173,6 @@ type Text struct {
 	// HideBackfaceText specifies whether the text should be hidden on the back side of the shape.
 	// Has no visible effect unless LockRotation is also set.
 	HideBackfaceText bool
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -222,9 +203,6 @@ type Cylinder struct {
 	// Segments is the number of segments that the cylinder will be drawn with. The more segments, the
 	// smoother the cylinder will look. If zero, it will default to 20.
 	Segments int
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -249,9 +227,6 @@ type Pyramid struct {
 	Depth float64
 	// Height is the height of the pyramid. If zero, it will default to 1.0.
 	Height float64
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -276,9 +251,6 @@ type Ellipsoid struct {
 	// SegmentsPerAxis is the number of segments that the ellipsoid will be drawn with per axis. The more
 	// segments, the smoother the ellipsoid will look. If zero, it will default to 20.
 	SegmentsPerAxis int
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
@@ -305,9 +277,6 @@ type Cone struct {
 	// Segments is the number of segments that the cone will be drawn with. The more segments, the smoother
 	// the cone will look. If zero, it will default to 20.
 	Segments int
-	// Duration is how long the shape remains before the client removes it on its own. If zero, the shape remains
-	// until it is removed explicitly.
-	Duration time.Duration
 	// MaxRenderDistance is the distance from the camera beyond which the client stops drawing the shape. If zero,
 	// the client draws it at any distance.
 	MaxRenderDistance float64
