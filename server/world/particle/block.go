@@ -35,12 +35,10 @@ type BlockBreak struct {
 	Block world.Block
 }
 
-// BrushDust is a particle shown when a block is brushed with a brush. It is textured like the block that the
-// particle holds.
+// BrushDust is a particle shown when a block is brushed with a brush.
 type BrushDust struct {
 	particle
-	// Block is the block of which particles should be shown. The particles will change depending on what
-	// block is brushed.
+	// Block is the block of which particles should be shown, textured like the block brushed.
 	Block world.Block
 }
 

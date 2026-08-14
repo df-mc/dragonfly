@@ -10,23 +10,19 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
-// SuspiciousGravel is a fragile, gravity affected block that holds a single item which may be extracted from it
-// by brushing it with a brush.
+// SuspiciousGravel is a fragile, gravity affected block holding an item that may be brushed out of it.
 type SuspiciousGravel struct {
 	gravityAffected
 	solid
 	snare
 	brushProgress
 
-	// Hanging specifies if the block has no block below it. It is a Bedrock Edition specific state which
-	// Dragonfly itself never sets: It is only kept so that blocks loaded from a world that has it set encode
-	// back to the same block state.
+	// Hanging is a Bedrock Edition state Dragonfly never sets itself. It is kept so blocks loaded from a
+	// world encode back to the same block state.
 	Hanging bool
-	// Dust is the amount of dust brushed off the block, ranging from 0 to 3. It is updated automatically as
-	// the block is brushed and should not normally be set manually.
+	// Dust is the amount of dust brushed off the block, from 0 to 3. It is updated while brushing.
 	Dust int
-	// Item is the item extracted from the block once brushing it completes. Suspicious blocks placed by a
-	// player hold no item and produce nothing when brushed.
+	// Item is the item brushed out of the block. Blocks placed by a player hold none.
 	Item item.Stack
 }
 

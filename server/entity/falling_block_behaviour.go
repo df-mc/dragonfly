@@ -141,7 +141,6 @@ type landable interface {
 
 // fragile ...
 type fragile interface {
-	// BreaksOnLanding returns whether the block breaks without dropping anything when it lands, instead of
-	// being placed back into the world.
+	// BreaksOnLanding returns whether the block breaks instead of being placed when it lands.
 	BreaksOnLanding() bool
 }

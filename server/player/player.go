@@ -2079,18 +2079,14 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 }
 
 const (
-	// brushDelay is the amount of ticks after which the first brushing action is performed on a block.
-	brushDelay = 6
-	// brushInterval is the amount of ticks between two brushing actions performed on a block.
+	// brushDelay is the tick the first brushing action happens on, brushInterval the ticks between the rest.
+	brushDelay    = 6
 	brushInterval = 10
 )
 
-// StartBrushing makes the player start brushing the block at the position passed with the brush held in its
-// main hand. Any block may be brushed, but only blocks implementing block.Brushable have an item extracted
-// from them. Aiming at another block while brushing changes the block brushed without resetting the timer, as
-// the progress made is stored in the block itself.
-// If the player is not holding a brush, if no block is present at the position or if the block is out of
-// range, StartBrushing stops any brushing in progress and returns immediately.
+// StartBrushing makes the player start brushing the block at the position passed with the brush it holds. Any
+// block may be brushed, but only blocks implementing block.Brushable produce an item. Aiming at another block
+// does not reset the timer, as the progress is stored in the block itself.
 func (p *Player) StartBrushing(pos cube.Pos, face cube.Face) {
 	if !p.canBrush(pos) {
 		p.AbortBrushing()
@@ -2106,8 +2102,7 @@ func (p *Player) StartBrushing(pos cube.Pos, face cube.Face) {
 	}
 }
 
-// AbortBrushing makes the player stop brushing the block it is currently brushing, or returns immediately if
-// the player isn't brushing anything.
+// AbortBrushing makes the player stop brushing, or returns immediately if it isn't brushing anything.
 func (p *Player) AbortBrushing() {
 	if !p.brushing {
 		return
@@ -2119,10 +2114,8 @@ func (p *Player) AbortBrushing() {
 	}
 }
 
-// ContinueBrushing makes the player continue brushing the block it is aimed at after a call to
-// Player.StartBrushing(). A brushing action is performed every 10 ticks, the first of which happens 6 ticks
-// after the player started brushing. Brushing a block that cannot be brushed only shows particles and plays a
-// sound: It costs no durability. A player is slowed down and cannot sprint while brushing.
+// ContinueBrushing performs a brushing action every 10 ticks after a call to Player.StartBrushing, the first
+// of which happens 6 ticks in. Only fully brushing a block costs durability.
 func (p *Player) ContinueBrushing() {
 	if !p.brushing {
 		return
@@ -2152,7 +2145,7 @@ func (p *Player) ContinueBrushing() {
 	p.session().SendBrushingComplete(held)
 }
 
-// canBrush checks if the player is currently able to brush the block at the position passed.
+// canBrush checks if the player can currently brush the block at the position passed.
 func (p *Player) canBrush(pos cube.Pos) bool {
 	if !p.GameMode().AllowsInteraction() || !p.canReach(pos.Vec3Centre()) {
 		return false
