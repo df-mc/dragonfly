@@ -6,6 +6,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
@@ -55,7 +56,7 @@ type Handler interface {
 	// by assigning to *duration.
 	HandleSetOnFire(ctx *Context, duration *time.Duration)
 	// HandleKnockBack handles the player being knocked back. ctx.Cancel() may be called to cancel knockback.
-	HandleKnockBack(ctx *Context, src *mgl64.Vec3, force, height *float64)
+	HandleKnockBack(ctx *Context, src *mgl64.Vec3, force, height *float64, knockbackSource entity.KnockbackSource)
 	// HandleDeath handles the player dying to a particular damage cause.
 	HandleDeath(p *Player, src world.DamageSource, keepInv *bool)
 	// HandleRespawn handles the respawning of the player in the world. The spawn position passed may be
@@ -198,10 +199,11 @@ func (NopHandler) HandleExperienceGain(*Context, *int)                          
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
 func (NopHandler) HandleHurt(*Context, *float64, bool, *time.Duration, world.DamageSource) {}
 func (NopHandler) HandleSetOnFire(*Context, *time.Duration)                                {}
-func (NopHandler) HandleKnockBack(*Context, *mgl64.Vec3, *float64, *float64)               {}
-func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource)                      {}
-func (NopHandler) HandleFoodLoss(*Context, int, *int)                                      {}
-func (NopHandler) HandleDeath(*Player, world.DamageSource, *bool)                          {}
-func (NopHandler) HandleRespawn(*Player, *mgl64.Vec3, **world.World)                       {}
-func (NopHandler) HandleQuit(*Player)                                                      {}
-func (NopHandler) HandleDiagnostics(*Player, session.Diagnostics)                          {}
+func (NopHandler) HandleKnockBack(*Context, *mgl64.Vec3, *float64, *float64, entity.KnockbackSource) {
+}
+func (NopHandler) HandleHeal(*Context, *float64, world.HealingSource) {}
+func (NopHandler) HandleFoodLoss(*Context, int, *int)                 {}
+func (NopHandler) HandleDeath(*Player, world.DamageSource, *bool)     {}
+func (NopHandler) HandleRespawn(*Player, *mgl64.Vec3, **world.World)  {}
+func (NopHandler) HandleQuit(*Player)                                 {}
+func (NopHandler) HandleDiagnostics(*Player, session.Diagnostics)     {}
