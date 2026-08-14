@@ -208,6 +208,7 @@ const (
 	hashSugarCane
 	hashSulfur
 	hashSulfurBricks
+	hashSuspiciousBlock
 	hashTNT
 	hashTerracotta
 	hashTintedGlass
@@ -1046,6 +1047,10 @@ func (s Sulfur) Hash() (uint64, uint64) {
 
 func (SulfurBricks) Hash() (uint64, uint64) {
 	return hashSulfurBricks, 0
+}
+
+func (s SuspiciousBlock) Hash() (uint64, uint64) {
+	return hashSuspiciousBlock, uint64(boolByte(s.Gravel)) | uint64(boolByte(s.Hanging))<<1 | uint64(s.Dust)<<2
 }
 
 func (TNT) Hash() (uint64, uint64) {

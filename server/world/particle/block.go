@@ -35,6 +35,15 @@ type BlockBreak struct {
 	Block world.Block
 }
 
+// BrushDust is a particle shown when a block is brushed with a brush. It is textured like the block that the
+// particle holds.
+type BrushDust struct {
+	particle
+	// Block is the block of which particles should be shown. The particles will change depending on what
+	// block is brushed.
+	Block world.Block
+}
+
 // PunchBlock is a particle shown when a player is punching a block. It shows particles of a specific block
 // type at a particular face of a block.
 type PunchBlock struct {

@@ -785,6 +785,16 @@ func (s *Session) SendChargeItemComplete() {
 	})
 }
 
+// SendBrushingComplete sends a packet to indicate that brushing a block with the item passed has been
+// completed.
+func (s *Session) SendBrushingComplete(i item.Stack) {
+	rid, _, _ := world.ItemRuntimeID(i.Item())
+	s.writePacket(&packet.CompletedUsingItem{
+		UsedItemID: int16(rid),
+		UseMethod:  packet.UseItemBrushingCompleted,
+	})
+}
+
 // ShowHudElement shows a HUD element to the player if it is not already shown. If the element is waiting to
 // be hidden, it will be removed from the updates and remain visible to the player.
 func (s *Session) ShowHudElement(e hud.Element) {
