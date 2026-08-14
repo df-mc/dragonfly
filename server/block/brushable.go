@@ -51,6 +51,16 @@ func (p brushProgress) advance(dust int, tick int64, face cube.Face) brushProgre
 	return p
 }
 
+// decaying returns the progress along with whether it should lose a brushing action at the tick passed.
+// Progress restored from disk has no reset deadline left, in which case a new one is started.
+func (p brushProgress) decaying(tick int64) (brushProgress, bool) {
+	if p.resetsAt == 0 {
+		p.resetsAt = tick + brushResetDelay
+		return p, false
+	}
+	return p, tick >= p.resetsAt
+}
+
 // completed returns whether the block was fully brushed.
 func (p brushProgress) completed() bool {
 	return p.count >= brushesRequired

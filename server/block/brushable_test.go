@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -152,6 +153,52 @@ func TestSuspiciousBlockNBT(t *testing.T) {
 	}
 	if decoded.Dust != 2 {
 		t.Errorf("expected decoded block to keep its dust, got %v", decoded.Dust)
+	}
+}
+
+// TestSuspiciousBlockDecayAfterReload verifies that a suspicious block restored from a chunk that was saved
+// during its reset delay starts that delay again, instead of losing its brushing progress right away.
+func TestSuspiciousBlockDecayAfterReload(t *testing.T) {
+	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
+	defer w.Close()
+
+	pos := cube.Pos{0, 1, 0}
+	restored := block.SuspiciousSand{Dust: 2}.DecodeNBT(map[string]any{
+		"brush_count":     int32(4),
+		"brush_direction": byte(cube.FaceUp),
+	}).(block.SuspiciousSand)
+
+	w.Do(func(tx *world.Tx) {
+		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
+		tx.SetBlock(pos, restored, nil)
+		tx.ScheduleBlockUpdate(pos, restored, 2*time.Second/20)
+	})
+
+	dust := func() int {
+		b, err := world.Call(context.Background(), w, func(tx *world.Tx) (world.Block, error) {
+			return tx.Block(pos), nil
+		})
+		if err != nil {
+			t.Fatalf("read block: %v", err)
+		}
+		s, ok := b.(block.SuspiciousSand)
+		if !ok {
+			t.Fatalf("expected suspicious sand, got %v", b)
+		}
+		return s.Dust
+	}
+
+	for range 20 {
+		w.AdvanceTick()
+	}
+	if d := dust(); d != 2 {
+		t.Errorf("expected the block to keep its dust during the restarted reset delay, got %v", d)
+	}
+	for range 40 {
+		w.AdvanceTick()
+	}
+	if d := dust(); d != 0 {
+		t.Errorf("expected the block to have lost its brushing progress, got %v", d)
 	}
 }
 

@@ -54,13 +54,14 @@ func (s SuspiciousSand) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) 
 	if s.count == 0 {
 		return
 	}
-	if tx.CurrentTick() < s.resetsAt {
-		tx.ScheduleBlockUpdate(pos, s, brushDecayInterval)
-		return
+	progress, decay := s.decaying(tx.CurrentTick())
+	if decay {
+		progress = progress.decayed()
 	}
-	s.brushProgress = s.decayed()
-	s.Dust = s.dust()
-	tx.SetBlock(pos, s, nil)
+	if progress != s.brushProgress {
+		s.brushProgress, s.Dust = progress, progress.dust()
+		tx.SetBlock(pos, s, nil)
+	}
 	if s.count > 0 {
 		tx.ScheduleBlockUpdate(pos, s, brushDecayInterval)
 	}
