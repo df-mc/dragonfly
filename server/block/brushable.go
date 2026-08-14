@@ -13,8 +13,10 @@ import (
 const (
 	// brushesRequired is the number of brushing actions needed to fully brush a suspicious block.
 	brushesRequired = 10
-	// brushResetDelay is the amount of ticks a block keeps its brushing progress after being brushed.
-	brushResetDelay = 40
+	// brushResetDelay is the amount of ticks a block keeps its brushing progress after being brushed, with
+	// brushResetInterval being the same delay as a duration.
+	brushResetDelay    = 40
+	brushResetInterval = brushResetDelay * time.Second / 20
 	// brushDecayInterval is the time between two brushing progress losses.
 	brushDecayInterval = 2 * time.Second / 20
 	// brushDirectionNone is the brush_direction of a block that has not been brushed yet.
@@ -51,14 +53,14 @@ func (p brushProgress) advance(dust int, tick int64, face cube.Face) brushProgre
 	return p
 }
 
-// decaying returns the progress along with whether it should lose a brushing action at the tick passed.
-// Progress restored from disk has no reset deadline left, in which case a new one is started.
-func (p brushProgress) decaying(tick int64) (brushProgress, bool) {
-	if p.resetsAt == 0 {
-		p.resetsAt = tick + brushResetDelay
-		return p, false
+// decaying returns the time left before the block loses a brushing action, along with whether it should lose
+// one at the tick passed. Progress restored from disk has no deadline left: Its scheduled block update was
+// saved with the delay that still remained, so the block is due as soon as that update fires again.
+func (p brushProgress) decaying(tick int64) (time.Duration, bool) {
+	if p.resetsAt == 0 || tick >= p.resetsAt {
+		return 0, true
 	}
-	return p, tick >= p.resetsAt
+	return time.Duration(p.resetsAt-tick) * time.Second / 20, false
 }
 
 // completed returns whether the block was fully brushed.

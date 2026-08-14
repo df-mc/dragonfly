@@ -45,7 +45,7 @@ func (s SuspiciousGravel) Brush(pos cube.Pos, tx *world.Tx, face cube.Face) bool
 	}
 	s.Dust = s.dust()
 	tx.SetBlock(pos, s, nil)
-	tx.ScheduleBlockUpdate(pos, s, brushDecayInterval)
+	tx.ScheduleBlockUpdate(pos, s, brushResetInterval)
 	return false
 }
 
@@ -54,14 +54,13 @@ func (s SuspiciousGravel) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand
 	if s.count == 0 {
 		return
 	}
-	progress, decay := s.decaying(tx.CurrentTick())
-	if decay {
-		progress = progress.decayed()
+	if left, decay := s.decaying(tx.CurrentTick()); !decay {
+		tx.ScheduleBlockUpdate(pos, s, left)
+		return
 	}
-	if progress != s.brushProgress {
-		s.brushProgress, s.Dust = progress, progress.dust()
-		tx.SetBlock(pos, s, nil)
-	}
+	progress := s.decayed()
+	s.brushProgress, s.Dust = progress, progress.dust()
+	tx.SetBlock(pos, s, nil)
 	if s.count > 0 {
 		tx.ScheduleBlockUpdate(pos, s, brushDecayInterval)
 	}

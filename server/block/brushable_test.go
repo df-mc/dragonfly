@@ -157,7 +157,8 @@ func TestSuspiciousBlockNBT(t *testing.T) {
 }
 
 // TestSuspiciousBlockDecayAfterReload verifies that a suspicious block restored from a chunk that was saved
-// during its reset delay starts that delay again, instead of losing its brushing progress right away.
+// during its reset delay keeps the part of that delay that was still left, which is carried by the scheduled
+// block update the world persists along with the chunk.
 func TestSuspiciousBlockDecayAfterReload(t *testing.T) {
 	w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
 	defer w.Close()
@@ -168,10 +169,12 @@ func TestSuspiciousBlockDecayAfterReload(t *testing.T) {
 		"brush_direction": byte(cube.FaceUp),
 	}).(block.SuspiciousSand)
 
+	// A chunk saved 20 ticks into the reset delay restores its scheduled update with the 20 ticks that were
+	// left on it.
 	w.Do(func(tx *world.Tx) {
 		tx.SetBlock(cube.Pos{0, 0, 0}, block.Stone{}, nil)
 		tx.SetBlock(pos, restored, nil)
-		tx.ScheduleBlockUpdate(pos, restored, 2*time.Second/20)
+		tx.ScheduleBlockUpdate(pos, restored, 20*time.Second/20)
 	})
 
 	dust := func() int {
@@ -188,13 +191,13 @@ func TestSuspiciousBlockDecayAfterReload(t *testing.T) {
 		return s.Dust
 	}
 
-	for range 20 {
+	for range 15 {
 		w.AdvanceTick()
 	}
 	if d := dust(); d != 2 {
-		t.Errorf("expected the block to keep its dust during the restarted reset delay, got %v", d)
+		t.Errorf("expected the block to keep its dust for the rest of the reset delay, got %v", d)
 	}
-	for range 40 {
+	for range 20 {
 		w.AdvanceTick()
 	}
 	if d := dust(); d != 0 {
