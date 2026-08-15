@@ -8,8 +8,7 @@ type Material struct {
 	renderMethod Method
 	// faceDimming is if the material should be dimmed by the direction it's facing.
 	faceDimming bool
-	// ambientOcclusion is how strongly ambient occlusion is applied to the material when
-	// lighting it, with 0 disabling it and 1 being the vanilla strength.
+	// ambientOcclusion controls how much ambient occlusion is applied when lighting.
 	ambientOcclusion float32
 }
 
@@ -17,12 +16,13 @@ type Material struct {
 // occlusion based on the render method given.
 func NewMaterial(texture string, method Method) Material {
 	m := Material{
-		texture:      texture,
-		renderMethod: method,
-		faceDimming:  true,
+		texture:          texture,
+		renderMethod:     method,
+		faceDimming:      true,
+		ambientOcclusion: 1,
 	}
-	if method.AmbientOcclusion() {
-		m.ambientOcclusion = 1
+	if !method.AmbientOcclusion() {
+		m.ambientOcclusion = 0
 	}
 	return m
 }
@@ -40,17 +40,16 @@ func (m Material) WithoutFaceDimming() Material {
 }
 
 // WithAmbientOcclusion returns a copy of the Material with ambient occlusion enabled at the
-// vanilla strength. Use WithAmbientOcclusionIntensity to pick a different one.
+// vanilla strength. Use WithAmbientOcclusionIntensity to set a different intensity.
 func (m Material) WithAmbientOcclusion() Material {
 	m.ambientOcclusion = 1
 	return m
 }
 
 // WithAmbientOcclusionIntensity returns a copy of the Material with ambient occlusion applied
-// at the intensity given, where 0 disables it and 1 is the vanilla strength. The client
-// expects an intensity between 0 and 10.
+// at the intensity passed. The intensity must be between 0 and 10 inclusive.
 func (m Material) WithAmbientOcclusionIntensity(intensity float32) Material {
-	if intensity < 0 || intensity > 10 {
+	if !(intensity >= 0 && intensity <= 10) {
 		panic("customblock: ambient occlusion intensity must be between 0 and 10")
 	}
 	m.ambientOcclusion = intensity
