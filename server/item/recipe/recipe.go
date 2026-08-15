@@ -3,6 +3,7 @@ package recipe
 import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/google/uuid"
 )
 
 // Recipe is implemented by all recipe types.
@@ -42,6 +43,44 @@ func NewShapeless(input []Item, output item.Stack, block string) Shapeless {
 		output: []item.Stack{output},
 		block:  block,
 	}}
+}
+
+// UserDataShapeless is a shapeless recipe crafting items that must retain their user data, such as their
+// contents or colour, when crafted. Vanilla uses these recipes for dyeing items such as shulker boxes,
+// bundles and harnesses.
+type UserDataShapeless struct {
+	recipe
+}
+
+// NewUserDataShapeless creates a new user data shapeless recipe and returns it. The recipe can only be
+// crafted on the block passed in the parameters. If the block given is a crafting table, the recipe can
+// also be crafted in the 2x2 crafting grid in the player's inventory.
+func NewUserDataShapeless(input []Item, output item.Stack, block string) UserDataShapeless {
+	return UserDataShapeless{recipe: recipe{
+		input:  input,
+		output: []item.Stack{output},
+		block:  block,
+	}}
+}
+
+// Multi is a special recipe with behaviour hardcoded in the vanilla client, such as map cloning/extending,
+// book cloning, banner duplication and firework crafting. It has no inputs or outputs: It is identified only
+// by its UUID, and sending it enables the behaviour of that recipe client-side.
+type Multi struct {
+	recipe
+	uuid uuid.UUID
+}
+
+// NewMulti creates a new multi recipe from the UUID passed and returns it. The UUID must be one of the UUIDs
+// hardcoded in the vanilla client for the recipe to have any effect.
+func NewMulti(id uuid.UUID) Multi {
+	return Multi{uuid: id, recipe: recipe{block: "crafting_table"}}
+}
+
+// UUID returns the UUID of the recipe, which identifies the hardcoded behaviour of the recipe in the vanilla
+// client.
+func (m Multi) UUID() uuid.UUID {
+	return m.uuid
 }
 
 // SmithingTransform represents a recipe only craftable on a smithing table.
