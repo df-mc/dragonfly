@@ -182,6 +182,10 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 		explodable.Explode(src, impact)
 	}
 
+	blast := make(map[cube.Pos]struct{}, len(affectedBlocks))
+	for _, pos := range affectedBlocks {
+		blast[pos] = struct{}{}
+	}
 	for _, pos := range affectedBlocks {
 		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
@@ -198,6 +202,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 					dropItem(tx, drop, pos.Vec3Centre())
 				}
 			}
+			removeDependents(pos, tx, blast)
 		}
 	}
 
@@ -265,4 +270,20 @@ func (c ExplosionConfig) exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entit
 // lerp returns the linear interpolation between a and b at t.
 func lerp(a, b, t float64) float64 {
 	return b + a*(t-b)
+}
+
+// removeDependents removes the blocks in the blast of an explosion that depended on the block at the position passed.
+// Neighbour updates only run at the end of a tick, so the other half of a block such as a door or a bed would still be
+// standing when the explosion reaches it and would drop a second item of its own.
+func removeDependents(pos cube.Pos, tx *world.Tx, blast map[cube.Pos]struct{}) {
+	pos.Neighbours(func(neighbour cube.Pos) {
+		if _, ok := blast[neighbour]; !ok {
+			// Blocks outside the blast are removed by the neighbour updates at the end of the tick, which drop no
+			// items of their own.
+			return
+		}
+		if ticker, ok := tx.Block(neighbour).(world.NeighbourUpdateTicker); ok {
+			ticker.NeighbourUpdateTick(neighbour, pos, tx)
+		}
+	}, tx.Range())
 }
