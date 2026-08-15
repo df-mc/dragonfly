@@ -137,6 +137,18 @@ type Cooldown interface {
 	Cooldown() time.Duration
 }
 
+// CooldownTyped represents an item that has a typed cooldown, such as an attack or use cooldown.
+type CooldownTyped interface {
+	// CooldownType returns the type of cooldown of the item, such as "attack" or "use".
+	CooldownType() string
+}
+
+// StackedByData represents an item that is stacked by its metadata value, such as fish or golden apples.
+type StackedByData interface {
+	// StackedByData returns whether the item is stacked by its metadata value.
+	StackedByData() bool
+}
+
 // nameable represents a block that may be named. These are often containers such as chests, which have a
 // name displayed in their interface.
 type nameable interface {
