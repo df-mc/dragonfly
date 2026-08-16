@@ -149,6 +149,24 @@ type StackedByData interface {
 	StackedByData() bool
 }
 
+// MiningSpeed represents an item with a custom mining speed.
+type MiningSpeed interface {
+	// MiningSpeed returns the mining speed of the item.
+	MiningSpeed() float64
+}
+
+// FrameCount represents an item with a custom amount of animation frames in its icon texture.
+type FrameCount interface {
+	// FrameCount returns the amount of animation frames in the icon texture of the item.
+	FrameCount() int
+}
+
+// CanDestroyInCreative represents an item that can be used to destroy blocks in creative mode.
+type CanDestroyInCreative interface {
+	// CanDestroyInCreative returns whether the item can be used to destroy blocks in creative mode.
+	CanDestroyInCreative() bool
+}
+
 // nameable represents a block that may be named. These are often containers such as chests, which have a
 // name displayed in their interface.
 type nameable interface {

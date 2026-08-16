@@ -17,10 +17,6 @@ func Components(it world.CustomItem) map[string]any {
 	builder := NewComponentBuilder(it.Name(), identifier, category)
 
 	if x, ok := it.(item.Armour); ok {
-		builder.AddComponent("minecraft:armor", map[string]any{
-			"protection": int32(x.DefencePoints()),
-		})
-
 		var slot string
 		switch it.(type) {
 		case item.HelmetType:
@@ -33,7 +29,8 @@ func Components(it world.CustomItem) map[string]any {
 			slot = "slot.armor.feet"
 		}
 		builder.AddComponent("minecraft:wearable", map[string]any{
-			"slot": slot,
+			"slot":       slot,
+			"protection": int32(x.DefencePoints()),
 		})
 	}
 	if x, ok := it.(item.Consumable); ok {
@@ -110,6 +107,15 @@ func Components(it world.CustomItem) map[string]any {
 	}
 	if x, ok := it.(item.StackedByData); ok {
 		builder.AddProperty("stacked_by_data", x.StackedByData())
+	}
+	if x, ok := it.(item.MiningSpeed); ok {
+		builder.AddProperty("mining_speed", float32(x.MiningSpeed()))
+	}
+	if x, ok := it.(item.FrameCount); ok {
+		builder.AddProperty("frame_count", int32(x.FrameCount()))
+	}
+	if x, ok := it.(item.CanDestroyInCreative); ok {
+		builder.AddProperty("can_destroy_in_creative", x.CanDestroyInCreative())
 	}
 	if x, ok := it.(item.Throwable); ok {
 		// The data in minecraft:projectile is only used by vanilla server-side, but we must send at least an empty map
