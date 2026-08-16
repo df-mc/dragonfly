@@ -106,6 +106,7 @@ const (
 	hashHayBale
 	hashHoneycomb
 	hashHopper
+	hashIce
 	hashInfestedCobblestone
 	hashInfestedDeepslate
 	hashInfestedStone
@@ -638,6 +639,10 @@ func (Honeycomb) Hash() (uint64, uint64) {
 
 func (h Hopper) Hash() (uint64, uint64) {
 	return hashHopper, uint64(h.Facing) | uint64(boolByte(h.Powered))<<3
+}
+
+func (Ice) Hash() (uint64, uint64) {
+	return hashIce, 0
 }
 
 func (InfestedCobblestone) Hash() (uint64, uint64) {
