@@ -16,7 +16,7 @@ func Components(it world.CustomItem) (map[string]any, error) {
 
 	parts := strings.SplitN(identifier, ":", 1)
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("indetifier %s must contain namespace.", identifier)
+		return nil, fmt.Errorf("identifier %s must contain namespace.", identifier)
 	}
 	name := parts[1]
 
