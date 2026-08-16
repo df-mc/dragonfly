@@ -28,6 +28,16 @@ func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx
 			}
 			tx.SetBlock(pos, res, nil)
 			tx.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
+			if d, ok := b.(tillDropper); ok {
+				dir := pos.Side(face).Vec3().Sub(pos.Vec3())
+				vel := dir.Mul(0.1)
+				vel[1] += 0.1
+				create := tx.World().EntityRegistry().Config().Item
+				for _, drop := range d.TillDrops() {
+					opts := world.EntitySpawnOpts{Position: pos.Vec3Centre().Add(dir.Mul(0.625)), Velocity: vel}
+					tx.AddEntity(create(opts, drop))
+				}
+			}
 			ctx.DamageItem(1)
 			return true
 		}
@@ -40,6 +50,12 @@ type tillable interface {
 	// Till returns a block that results from tilling it. If tilling it does not have a result, the bool returned
 	// is false.
 	Till() (world.Block, bool)
+}
+
+// tillDropper represents a block that drops items when a hoe is used on it.
+type tillDropper interface {
+	// TillDrops returns the items dropped when a hoe is used on the block.
+	TillDrops() []Stack
 }
 
 // MaxCount ...
