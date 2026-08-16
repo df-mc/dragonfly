@@ -47,36 +47,7 @@ func (g Grass) SoilFor(block world.Block) bool {
 
 // RandomTick handles the ticking of grass, which may or may not result in the spreading of grass onto dirt.
 func (g Grass) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
-	aboveLight := tx.Light(pos.Side(cube.FaceUp))
-	if aboveLight < 4 {
-		// The light above the block is too low: The grass turns to dirt.
-		tx.SetBlock(pos, Dirt{}, nil)
-		return
-	}
-	if aboveLight < 9 {
-		// Don't attempt to spread if the light level is lower than 9.
-		return
-	}
-
-	// Generate a single uint32 as we only need 28 bits (7 bits each iteration).
-	n := r.Uint32()
-
-	// Four attempts to spread to another block.
-	for i := 0; i < 4; i++ {
-		x, y, z := int(n)%3, int(n>>2)%5, int(n>>5)%3
-		n >>= 7
-
-		spreadPos := pos.Add(cube.Pos{x - 1, y - 3, z - 1})
-		// Don't spread grass to locations where dirt is exposed to hardly any light.
-		if tx.Light(spreadPos.Side(cube.FaceUp)) < 4 {
-			continue
-		}
-		b := tx.Block(spreadPos)
-		if dirt, ok := b.(Dirt); !ok || dirt.Coarse {
-			continue
-		}
-		tx.SetBlock(spreadPos, g, nil)
-	}
+	spreadDirt(g, pos, tx, r, -3)
 }
 
 // BoneMeal ...
