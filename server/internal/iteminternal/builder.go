@@ -66,7 +66,7 @@ func (builder *ComponentBuilder) applyDefaultProperties(x map[string]any) {
 // applyDefaultComponents applies the default components to the provided map. It is important that this method does not
 // modify the builder's components map directly otherwise Empty() will return false in future use of the builder.
 func (builder *ComponentBuilder) applyDefaultComponents(x, properties map[string]any) {
-	x["components"] = properties
+	x["item_properties"] = properties
 	x["minecraft:display_name"] = map[string]any{
 		"value": builder.name,
 	}
