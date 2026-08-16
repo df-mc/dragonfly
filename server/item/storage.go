@@ -16,8 +16,8 @@ type StorageInfo struct {
 	// WeightInStorageItem is the weight of the item itself when stored inside another storage item.
 	WeightInStorageItem int
 	// NumViewableSlots is the number of slots that may be viewed when interacting with the item. If set to
-	// zero, no bundle interaction component is sent.
-	NumViewableSlots int
+	// zero, no bundle interaction component is sent. Default is 12. Value must be >= 1. Value must be <= 64.
+	NumViewableSlots uint8
 	// AllowNestedStorageItems is true if other storage items may be stored inside the item.
 	AllowNestedStorageItems bool
 	// AllowedItems is a list of item identifiers that may be stored inside the item.

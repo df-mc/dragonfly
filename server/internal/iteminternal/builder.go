@@ -1,8 +1,9 @@
 package iteminternal
 
 import (
-	"github.com/df-mc/dragonfly/server/item/category"
 	"maps"
+
+	"github.com/df-mc/dragonfly/server/item/category"
 )
 
 // ComponentBuilder represents a builder that can be used to construct an item components map to be sent to a client.
@@ -65,7 +66,7 @@ func (builder *ComponentBuilder) applyDefaultProperties(x map[string]any) {
 // applyDefaultComponents applies the default components to the provided map. It is important that this method does not
 // modify the builder's components map directly otherwise Empty() will return false in future use of the builder.
 func (builder *ComponentBuilder) applyDefaultComponents(x, properties map[string]any) {
-	x["item_properties"] = properties
+	x["components"] = properties
 	x["minecraft:display_name"] = map[string]any{
 		"value": builder.name,
 	}

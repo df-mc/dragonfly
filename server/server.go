@@ -92,7 +92,7 @@ func New() *Server {
 // Listen starts running the server's listeners. Connections will be accepted
 // until the listeners are closed using a call to Close. Once Listen is called,
 // players may be accepted using Server.Accept().
-func (srv *Server) Listen() {
+func (srv *Server) Listen() error {
 	t := time.Now()
 	if !srv.started.CompareAndSwap(nil, &t) {
 		panic("start server: already started")
@@ -110,8 +110,11 @@ func (srv *Server) Listen() {
 	}
 
 	srv.conf.Log.Info("Dragonfly server started.", "mc-version", protocol.CurrentVersion, "go-version", info.GoVersion, "commit", revision)
-	srv.startListening()
+	if err := srv.startListening(); err != nil {
+		return err
+	}
 	go srv.wait()
+	return nil
 }
 
 // Accept accepts incoming players into the server, returning an iterator that
@@ -381,15 +384,18 @@ func (srv *Server) listen(l Listener) {
 
 // startListening starts making the EncodeBlock listener listen, accepting new
 // connections from players.
-func (srv *Server) startListening() {
+func (srv *Server) startListening() error {
 	srv.makeBlockEntries()
-	srv.makeItemComponents()
+	if err := srv.makeItemComponents(); err != nil {
+		return err
+	}
 	srv.makeDimensionData()
 
 	srv.wg.Add(len(srv.listeners))
 	for _, l := range srv.listeners {
 		go srv.listen(l)
 	}
+	return nil
 }
 
 // makeBlockEntries initialises the server's block components map using the
@@ -411,7 +417,7 @@ func (srv *Server) makeBlockEntries() {
 // makeItemComponents initialises the server's item components map using the
 // registered custom items. It allows item components to be created only once
 // at startup
-func (srv *Server) makeItemComponents() {
+func (srv *Server) makeItemComponents() error {
 	custom := world.CustomItems()
 	srv.customItems = make([]protocol.ItemEntry, len(custom))
 
@@ -423,14 +429,21 @@ func (srv *Server) makeItemComponents() {
 		if isCustomBlock {
 			entryVersion = protocol.ItemEntryVersionNone
 		}
+
+		components, err := iteminternal.Components(it)
+		if err != nil {
+			return fmt.Errorf("failed to register components for %s: %w", name, err)
+		}
+
 		srv.customItems[i] = protocol.ItemEntry{
 			Name:           name,
 			ComponentBased: !isCustomBlock,
 			RuntimeID:      int16(rid),
 			Version:        entryVersion,
-			Data:           iteminternal.Components(it),
+			Data:           components,
 		}
 	}
+	return nil
 }
 
 // makeDimensionData initialises the server's custom dimensions list.

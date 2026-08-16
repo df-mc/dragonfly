@@ -13,5 +13,5 @@ type EnchantableInfo struct {
 	// Slot is the enchantment slot of the item, such as "melee_spear" or "sword".
 	Slot string
 	// Value is the enchantment value of the item.
-	Value int
+	Value uint
 }
