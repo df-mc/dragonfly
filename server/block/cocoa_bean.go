@@ -88,13 +88,16 @@ func (c CocoaBean) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // BreakInfo ...
 func (c CocoaBean) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, axeEffective, func(item.Tool, []item.Enchantment) []item.Stack {
+	return newBreakInfo(0.2, alwaysHarvestable, anyEffective(item.TypeAxe, item.TypeSword), func(item.Tool, []item.Enchantment) []item.Stack {
 		if c.Age == 2 {
 			return []item.Stack{item.NewStack(c, rand.IntN(2)+2)}
 		}
 		return []item.Stack{item.NewStack(c, 1)}
 	}).withBlastResistance(3)
 }
+
+// SwordMiningSpeed ...
+func (CocoaBean) SwordMiningSpeed() float64 { return 1.5 }
 
 // CompostChance ...
 func (CocoaBean) CompostChance() float64 {

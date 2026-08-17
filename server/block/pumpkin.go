@@ -40,8 +40,11 @@ func (p Pumpkin) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *worl
 
 // BreakInfo ...
 func (p Pumpkin) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(p))
+	return newBreakInfo(1, alwaysHarvestable, anyEffective(item.TypeAxe, item.TypeSword), oneOf(p))
 }
+
+// SwordMiningSpeed ...
+func (Pumpkin) SwordMiningSpeed() float64 { return 1.5 }
 
 // CompostChance ...
 func (Pumpkin) CompostChance() float64 {
