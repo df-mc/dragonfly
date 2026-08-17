@@ -16,7 +16,7 @@ func Components(it world.CustomItem) (map[string]any, error) {
 
 	parts := strings.SplitN(identifier, ":", 1)
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("identifier %s must contain namespace.", identifier)
+		return nil, fmt.Errorf("identifier %s must contain namespace", identifier)
 	}
 	name := parts[1]
 
@@ -183,7 +183,7 @@ func Components(it world.CustomItem) (map[string]any, error) {
 		info := x.StorageInfo()
 		if info.NumViewableSlots != 0 {
 			if info.NumViewableSlots < 1 || info.NumViewableSlots > 64 {
-				return nil, fmt.Errorf("NumViewableSlots %d out of range 1-64.", info.NumViewableSlots)
+				return nil, fmt.Errorf("NumViewableSlots %d out of range 1-64", info.NumViewableSlots)
 			}
 			builder.AddComponent("bundle_interaction", map[string]any{
 				"num_viewable_slots": int32(info.NumViewableSlots),
