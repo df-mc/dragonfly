@@ -47,8 +47,11 @@ func (m MossCarpet) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 
 // BreakInfo ...
 func (m MossCarpet) BreakInfo() BreakInfo {
-	return newBreakInfo(0.1, alwaysHarvestable, nothingEffective, oneOf(m))
+	return newBreakInfo(0.1, alwaysHarvestable, swordEffective, oneOf(m))
 }
+
+// SwordMiningSpeed ...
+func (MossCarpet) SwordMiningSpeed() float64 { return 1.5 }
 
 // CompostChance ...
 func (MossCarpet) CompostChance() float64 {

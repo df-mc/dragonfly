@@ -50,8 +50,14 @@ func (Vines) FlammabilityInfo() FlammabilityInfo {
 func (v Vines) BreakInfo() BreakInfo {
 	return newBreakInfo(0.2, func(t item.Tool) bool {
 		return t.ToolType() == item.TypeShears
-	}, axeEffective, oneOf(v))
+	}, anyEffective(item.TypeAxe, item.TypeSword, item.TypeShears), oneOf(v))
 }
+
+// SwordMiningSpeed ...
+func (Vines) SwordMiningSpeed() float64 { return 1.5 }
+
+// ShearsMiningSpeed ...
+func (Vines) ShearsMiningSpeed() float64 { return 2 }
 
 // EntityInside ...
 func (Vines) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {

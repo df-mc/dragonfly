@@ -89,6 +89,12 @@ func (l Leaves) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// SwordMiningSpeed ...
+func (Leaves) SwordMiningSpeed() float64 { return 1.5 }
+
+// ShearsMiningSpeed ...
+func (Leaves) ShearsMiningSpeed() float64 { return 15 }
+
 // FlammabilityInfo ...
 func (l Leaves) FlammabilityInfo() FlammabilityInfo {
 	return newFlammabilityInfo(30, 60, true)
@@ -96,9 +102,7 @@ func (l Leaves) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (l Leaves) BreakInfo() BreakInfo {
-	return newBreakInfo(0.2, alwaysHarvestable, func(t item.Tool) bool {
-		return t.ToolType() == item.TypeShears || t.ToolType() == item.TypeHoe
-	}, func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
+	return newBreakInfo(0.2, alwaysHarvestable, anyEffective(item.TypeShears, item.TypeHoe, item.TypeSword), func(t item.Tool, enchantments []item.Enchantment) []item.Stack {
 		if t.ToolType() == item.TypeShears || hasSilkTouch(enchantments) {
 			return []item.Stack{item.NewStack(l, 1)}
 		}
