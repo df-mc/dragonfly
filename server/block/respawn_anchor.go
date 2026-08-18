@@ -19,9 +19,6 @@ type RespawnAnchor struct {
 	Charges int
 }
 
-// Placed blocks retain only encoded block-state properties, so anchor explosion power cannot be configured per block.
-const respawnAnchorExplosionSize = 5
-
 // Activate ...
 func (r RespawnAnchor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
@@ -66,7 +63,7 @@ func (r RespawnAnchor) explode(pos cube.Pos, tx *world.Tx) {
 	ExplosionConfig{SpawnFire: true}.explode(tx, world.BlockExplosionSource{
 		Block:         r,
 		Pos:           pos,
-		ExplosionSize: respawnAnchorExplosionSize,
+		ExplosionSize: 5,
 	}, respawnAnchorTouchesWater(pos, tx))
 }
 
