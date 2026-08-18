@@ -17,10 +17,10 @@ type RespawnAnchor struct {
 
 	// Charges is the amount of glowstone charges stored in the respawn anchor, in the range 0-4.
 	Charges int
-	// ExplosionSize is the size of the explosion created when the respawn anchor is used outside the Nether. It
-	// defaults to 5.
-	ExplosionSize float64
 }
+
+// Placed blocks retain only encoded block-state properties, so anchor explosion power cannot be configured per block.
+const respawnAnchorExplosionSize = 5
 
 // Activate ...
 func (r RespawnAnchor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
@@ -63,14 +63,10 @@ func (r RespawnAnchor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.
 
 // explode creates the Respawn anchor's incendiary explosion.
 func (r RespawnAnchor) explode(pos cube.Pos, tx *world.Tx) {
-	size := r.ExplosionSize
-	if size == 0 {
-		size = 5
-	}
 	ExplosionConfig{SpawnFire: true}.explode(tx, world.BlockExplosionSource{
 		Block:         r,
 		Pos:           pos,
-		ExplosionSize: size,
+		ExplosionSize: respawnAnchorExplosionSize,
 	}, respawnAnchorTouchesWater(pos, tx))
 }
 
