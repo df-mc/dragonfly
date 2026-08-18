@@ -164,7 +164,6 @@ type positionTrackingEntry struct {
 	Y         int32 `nbt:"y"`
 	Z         int32 `nbt:"z"`
 	Dimension int32 `nbt:"dimension"`
-	Active    bool  `nbt:"active"`
 }
 
 // FillDefault fills out d with all the default level.dat values.
@@ -263,7 +262,7 @@ func (d *Data) Settings() *world.Settings {
 	for _, entry := range d.DragonflyPositionTracking {
 		entries = append(entries, world.PositionTrackingEntry{
 			Handle: entry.Handle, Position: cube.Pos{int(entry.X), int(entry.Y), int(entry.Z)},
-			Dimension: int(entry.Dimension), Active: entry.Active,
+			Dimension: int(entry.Dimension),
 		})
 	}
 	s.LoadPositionTrackingData(world.PositionTrackingData{Next: d.DragonflyPositionTrackingNext, Entries: entries})
@@ -298,7 +297,7 @@ func (d *Data) PutSettings(s *world.Settings) {
 	for _, entry := range trackingData.Entries {
 		d.DragonflyPositionTracking = append(d.DragonflyPositionTracking, positionTrackingEntry{
 			Handle: entry.Handle, X: int32(entry.Position[0]), Y: int32(entry.Position[1]), Z: int32(entry.Position[2]),
-			Dimension: int32(entry.Dimension), Active: entry.Active,
+			Dimension: int32(entry.Dimension),
 		})
 	}
 }

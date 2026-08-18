@@ -46,6 +46,7 @@ type Settings struct {
 	// ticked. If set to 0, blocks and entities will never be ticked.
 	TickRange int32
 
+	trackerMu       sync.Mutex
 	positionTracker *PositionTracker
 }
 

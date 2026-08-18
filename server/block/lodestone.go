@@ -56,6 +56,10 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 // ScheduledTick sends the delayed position tracking update for newly linked
 // lodestone compasses.
 func (l Lodestone) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	if l.trackingHandle == 0 {
+		// The linked lodestone was replaced by an unlinked one before the tick ran.
+		return
+	}
 	viewers := tx.Viewers(pos.Vec3Centre())
 	if len(viewers) == 0 {
 		return

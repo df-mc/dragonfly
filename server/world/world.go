@@ -360,13 +360,7 @@ func (tx *Tx) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := tx.chunk(chunkPosFromBlockPos(pos))
-	old := w.blockInChunk(c, pos)
-	if tracked, ok := old.(PositionTrackingBlock); ok && tracked.TrackingHandle() != 0 {
-		replacement, keepsHandle := b.(PositionTrackingBlock)
-		if !keepsHandle || replacement.TrackingHandle() != tracked.TrackingHandle() {
-			w.UntrackPosition(pos)
-		}
-	}
+	b = w.retrackBlock(pos, w.blockInChunk(c, pos), b)
 
 	rid := w.conf.Blocks.BlockRuntimeID(b)
 	redstoneAfterRelevant := isRedstoneRelevant(b)
@@ -394,12 +388,6 @@ func (tx *Tx) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 	c.modified = true
 	c.SetBlock(x, y, z, 0, rid)
-	if tracked, ok := b.(PositionTrackingBlock); ok {
-		handle := tracked.TrackingHandle()
-		if handle != 0 || w.PositionTrackingHandleAt(pos) != 0 {
-			b = tracked.WithTrackingHandle(w.TrackPosition(pos, handle))
-		}
-	}
 	if w.conf.Blocks.NBTBlock(rid) {
 		c.BlockEntities[pos] = b
 	} else {
@@ -546,6 +534,7 @@ func (tx *Tx) buildStructure(pos cube.Pos, s Structure) {
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
 								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
+								b = w.retrackBlock(nbtPos, c.BlockEntities[nbtPos], b)
 								if w.conf.Blocks.NBTBlock(rid) {
 									c.BlockEntities[nbtPos] = b
 								} else {
