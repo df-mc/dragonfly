@@ -18,7 +18,7 @@ type Lodestone struct {
 	trackingHandle int32
 }
 
-// BreakInfo returns the lodestone's hardness, blast resistance and drops.
+// BreakInfo ...
 func (l Lodestone) BreakInfo() BreakInfo {
 	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(Lodestone{}))
 }
@@ -68,28 +68,28 @@ func (l Lodestone) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 }
 
-// TrackingHandle returns the position tracking handle assigned to the block.
+// TrackingHandle ...
 func (l Lodestone) TrackingHandle() int32 { return l.trackingHandle }
 
-// WithTrackingHandle returns the lodestone with a position tracking handle assigned.
+// WithTrackingHandle ...
 func (l Lodestone) WithTrackingHandle(handle int32) world.Block {
 	l.trackingHandle = handle
 	return l
 }
 
-// EncodeNBT encodes the Bedrock lodestone block actor data.
+// EncodeNBT ...
 func (l Lodestone) EncodeNBT() map[string]any {
 	return map[string]any{"id": "Lodestone", "trackingHandle": l.trackingHandle}
 }
 
-// DecodeNBT decodes the Bedrock lodestone block actor data.
+// DecodeNBT ...
 func (l Lodestone) DecodeNBT(data map[string]any) any {
 	l.trackingHandle = nbtconv.Int32(data, "trackingHandle")
 	return l
 }
 
-// EncodeItem encodes the lodestone as an item.
+// EncodeItem ...
 func (Lodestone) EncodeItem() (string, int16) { return "minecraft:lodestone", 0 }
 
-// EncodeBlock encodes the lodestone as a block.
+// EncodeBlock ...
 func (Lodestone) EncodeBlock() (string, map[string]any) { return "minecraft:lodestone", nil }

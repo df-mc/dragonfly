@@ -1049,6 +1049,7 @@ func stackToItem(br world.BlockRegistry, it protocol.ItemStack) item.Stack {
 		// Decode compasses even without NBT so the lodestone compass registry
 		// variant cannot leak its registration handle.
 		t = compass.DecodeNBT(it.NBTData).(world.Item)
+		//noinspection SpellCheckingInspection
 	} else if nbter, ok := t.(world.NBTer); ok && len(it.NBTData) != 0 {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}
