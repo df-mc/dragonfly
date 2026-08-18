@@ -263,7 +263,9 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 		if !ok {
 			continue
 		}
-		if _, ok := collector.Collect(lt.conf.PickupItem); !ok {
+		if n, ok := collector.Collect(lt.conf.PickupItem); !ok || n == 0 {
+			// The collector could not hold the item, so the projectile must stay where it is rather than being
+			// destroyed with nobody having received it.
 			continue
 		}
 
@@ -272,6 +274,8 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 		for _, viewer := range tx.Viewers(e.Position()) {
 			viewer.ViewEntityAction(e, PickedUpAction{Collector: collector})
 		}
+		// Only one collector may pick the projectile up: every further one would receive a copy of it.
+		return
 	}
 }
 

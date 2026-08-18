@@ -71,7 +71,7 @@ func (p DecoratedPot) ExtractItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 // InsertItem ...
 func (p DecoratedPot) InsertItem(h Hopper, pos cube.Pos, tx *world.Tx) bool {
 	for sourceSlot, sourceStack := range h.inventory.Slots() {
-		if !sourceStack.Empty() && sourceStack.Comparable(p.Item) {
+		if !sourceStack.Empty() && sourceStack.Comparable(p.Item) && p.Item.Count() < p.Item.MaxCount() {
 			if p.Item.Empty() {
 				p.Item = sourceStack.Grow(-sourceStack.Count() + 1)
 			} else {
@@ -171,14 +171,14 @@ func (p DecoratedPot) EncodeNBT() map[string]any {
 		"sherds": sherds,
 	}
 	if !p.Item.Empty() {
-		m["item"] = nbtconv.WriteItem(p.Item, true)
+		m["item"] = item.WriteNBT(p.Item, true)
 	}
 	return m
 }
 
 // DecodeNBT ...
 func (p DecoratedPot) DecodeNBT(data map[string]any) any {
-	p.Item = nbtconv.MapItem(data, "item")
+	p.Item = item.MapNBT(data, "item")
 	p.Decorations = [4]PotDecoration{}
 	if sherds := nbtconv.Slice(data, "sherds"); sherds != nil {
 		for i, name := range sherds {

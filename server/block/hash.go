@@ -213,6 +213,7 @@ const (
 	hashSulfurBricks
 	hashTNT
 	hashTerracotta
+	hashTintedGlass
 	hashTorch
 	hashTuff
 	hashTuffBricks
@@ -1068,6 +1069,10 @@ func (TNT) Hash() (uint64, uint64) {
 
 func (Terracotta) Hash() (uint64, uint64) {
 	return hashTerracotta, 0
+}
+
+func (TintedGlass) Hash() (uint64, uint64) {
+	return hashTintedGlass, 0
 }
 
 func (t Torch) Hash() (uint64, uint64) {

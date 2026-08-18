@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -67,12 +68,13 @@ func potionSplash(durMul float64, pot potion.Potion, linger bool) func(e *Ent, t
 			switch result := res.(type) {
 			case trace.BlockResult:
 				blockPos := result.BlockPosition().Side(result.Face())
-				if tx.Block(blockPos) == fire() {
+				if _, ok := tx.Block(blockPos).(block.Fire); ok {
 					tx.SetBlock(blockPos, nil, nil)
 				}
 
 				for _, f := range cube.HorizontalFaces() {
-					if h := blockPos.Side(f); tx.Block(h) == fire() {
+					h := blockPos.Side(f)
+					if _, ok := tx.Block(h).(block.Fire); ok {
 						tx.SetBlock(h, nil, nil)
 					}
 

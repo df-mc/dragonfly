@@ -1,12 +1,9 @@
 package nbtconv
 
 import (
-	"bytes"
-	"encoding/gob"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
 	"golang.org/x/exp/constraints"
@@ -139,38 +136,6 @@ func PosToInt32Slice(x cube.Pos) []int32 {
 	return []int32{int32(x[0]), int32(x[1]), int32(x[2])}
 }
 
-// MapItem converts an item's name, count, damage (and properties when it is a block) in a map obtained by decoding NBT
-// to a world.Item.
-func MapItem(x map[string]any, k string) item.Stack {
-	if m, ok := x[k].(map[string]any); ok {
-		return Item(m, nil)
-	}
-	return item.Stack{}
-}
-
-// Item decodes the data of an item into an item stack.
-func Item(data map[string]any, s *item.Stack) item.Stack {
-	disk, tag := s == nil, data
-	if disk {
-		t, ok := data["tag"].(map[string]any)
-		if !ok {
-			t = map[string]any{}
-		}
-		tag = t
-
-		a := readItemStack(data, tag)
-		s = &a
-	}
-
-	readAnvilCost(tag, s)
-	readDamage(tag, s, disk)
-	readDisplay(tag, s)
-	readDragonflyData(tag, s)
-	readEnchantments(tag, s)
-	readUnbreakable(tag, s)
-	return *s
-}
-
 // Block decodes the data of a block into a world.Block.
 func Block(m map[string]any, k string) world.Block {
 	if mk, ok := m[k].(map[string]any); ok {
@@ -180,104 +145,4 @@ func Block(m map[string]any, k string) world.Block {
 		return b
 	}
 	return nil
-}
-
-// readItemStack reads an item.Stack from the NBT in the map passed.
-func readItemStack(m, t map[string]any) item.Stack {
-	var it world.Item
-	if blockItem, ok := Block(m, "Block").(world.Item); ok {
-		it = blockItem
-	}
-	if v, ok := world.ItemByName(String(m, "Name"), Int16(m, "Damage")); ok {
-		it = v
-	}
-	if it == nil {
-		return item.Stack{}
-	}
-	if n, ok := it.(world.NBTer); ok {
-		it = n.DecodeNBT(t).(world.Item)
-	}
-	return item.NewStack(it, int(Uint8(m, "Count")))
-}
-
-// readDamage reads the damage value stored in the NBT with the Damage tag and saves it to the item.Stack passed.
-func readDamage(m map[string]any, s *item.Stack, disk bool) {
-	if disk {
-		*s = s.Damage(int(Int16(m, "Damage")))
-		return
-	}
-	*s = s.Damage(int(Int32(m, "Damage")))
-}
-
-// readAnvilCost ...
-func readAnvilCost(m map[string]any, s *item.Stack) {
-	*s = s.WithAnvilCost(int(Int32(m, "RepairCost")))
-}
-
-// readEnchantments reads the enchantments stored in the ench tag of the NBT passed and stores it into an item.Stack.
-func readEnchantments(m map[string]any, s *item.Stack) {
-	enchantments, ok := m["ench"].([]map[string]any)
-	if !ok {
-		for _, e := range Slice(m, "ench") {
-			if v, ok := e.(map[string]any); ok {
-				enchantments = append(enchantments, v)
-			}
-		}
-	}
-	for _, ench := range enchantments {
-		if t, ok := item.EnchantmentByID(int(Int16(ench, "id"))); ok {
-			*s = s.WithForcedEnchantments(item.NewEnchantment(t, int(Int16(ench, "lvl"))))
-		}
-	}
-}
-
-// readDisplay reads the display data present in the display field in the NBT. It includes a custom name of the item
-// and the lore.
-func readDisplay(m map[string]any, s *item.Stack) {
-	if display, ok := m["display"].(map[string]any); ok {
-		if name, ok := display["Name"].(string); ok {
-			// Only add the custom name if actually set.
-			*s = s.WithCustomName(name)
-		}
-		if lore, ok := display["Lore"].([]string); ok {
-			*s = s.WithLore(lore...)
-		} else if lore, ok := display["Lore"].([]any); ok {
-			loreLines := make([]string, 0, len(lore))
-			for _, l := range lore {
-				loreLines = append(loreLines, l.(string))
-			}
-			*s = s.WithLore(loreLines...)
-		}
-	}
-}
-
-// readDragonflyData reads data written to the dragonflyData field in the NBT of an item and adds it to the item.Stack
-// passed.
-func readDragonflyData(m map[string]any, s *item.Stack) {
-	if customData, ok := m["dragonflyData"]; ok {
-		d, ok := customData.([]byte)
-		if !ok {
-			if itf, ok := customData.([]any); ok {
-				for _, v := range itf {
-					b, _ := v.(byte)
-					d = append(d, b)
-				}
-			}
-		}
-		var values []mapValue
-		if err := gob.NewDecoder(bytes.NewBuffer(d)).Decode(&values); err != nil {
-			panic("error decoding item user data: " + err.Error())
-		}
-		for _, val := range values {
-			*s = s.WithValue(val.K, val.V)
-		}
-	}
-}
-
-// readUnbreakable reads the unbreakable value stored in the NBT with the Unbreakable tag and saves it to the item.Stack
-// passed.
-func readUnbreakable(m map[string]any, s *item.Stack) {
-	if Bool(m, "Unbreakable") {
-		*s = s.AsUnbreakable()
-	}
 }

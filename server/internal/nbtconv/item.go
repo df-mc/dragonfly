@@ -1,6 +1,7 @@
 package nbtconv
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 )
 
@@ -8,7 +9,7 @@ import (
 func InvFromNBT(inv *inventory.Inventory, items []any) {
 	for _, itemData := range items {
 		data, _ := itemData.(map[string]any)
-		it := Item(data, nil)
+		it := item.ReadNBT(data, nil)
 		if it.Empty() {
 			continue
 		}
@@ -23,7 +24,7 @@ func InvToNBT(inv *inventory.Inventory) []any {
 		if i.Empty() {
 			continue
 		}
-		data := WriteItem(i, true)
+		data := item.WriteNBT(i, true)
 		data["Slot"] = byte(index)
 		items = append(items, data)
 	}
