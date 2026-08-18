@@ -41,6 +41,11 @@ type OffsetEntity interface {
 	NetworkOffset() float64
 }
 
+const (
+	horizontalPlayerNetworkOffset = 0.4
+	sneakingPlayerNetworkOffset   = 1.27001
+)
+
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
@@ -243,6 +248,18 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 			if _, sleeping := sl.Sleeping(); sleeping {
 				return mgl64.Vec3{0, 0.2}
 			}
+		}
+		if sw, ok := e.(swimmer); ok && sw.Swimming() {
+			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
+		}
+		if cr, ok := e.(crawler); ok && cr.Crawling() {
+			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
+		}
+		if gl, ok := e.(glider); ok && gl.Gliding() {
+			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
+		}
+		if sn, ok := e.(sneaker); ok && sn.Sneaking() {
+			return mgl64.Vec3{0, sneakingPlayerNetworkOffset}
 		}
 	}
 	if offset, ok := e.H().Type().(OffsetEntity); ok {
