@@ -71,6 +71,9 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		Slot:      smithingTemplateSlot,
 	}, template.Grow(-1), s, tx)
 
+	// Only one input item is consumed above, so only one may be produced: input.WithItem keeps the count of the whole
+	// input stack.
+	result := input.Grow(1 - input.Count())
 	if _, ok = craft.(recipe.SmithingTrim); ok {
 		var trim item.ArmourTrim
 		if t, ok := template.Item().(item.SmithingTemplate); ok {
@@ -85,7 +88,7 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		if !ok {
 			return fmt.Errorf("input item is not trimmable")
 		}
-		return h.createResults(s, tx, input.WithItem(trimmable.WithTrim(trim)))
+		return h.createResults(s, tx, result.WithItem(trimmable.WithTrim(trim)))
 	}
-	return h.createResults(s, tx, input.WithItem(craft.Output()[0].Item()))
+	return h.createResults(s, tx, result.WithItem(craft.Output()[0].Item()))
 }

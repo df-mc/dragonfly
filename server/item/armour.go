@@ -88,7 +88,7 @@ func (ArmourTierGold) Name() string                 { return "golden" }
 // ArmourTierChain is the ArmourTier of chain armour.
 type ArmourTierChain struct{}
 
-func (ArmourTierChain) BaseDurability() float64      { return 166 }
+func (ArmourTierChain) BaseDurability() float64      { return 165 }
 func (ArmourTierChain) Toughness() float64           { return 0 }
 func (ArmourTierChain) KnockBackResistance() float64 { return 0 }
 func (ArmourTierChain) EnchantmentValue() int        { return 12 }
@@ -115,7 +115,7 @@ func (ArmourTierDiamond) Name() string                 { return "diamond" }
 // ArmourTierNetherite is the ArmourTier of netherite armour.
 type ArmourTierNetherite struct{}
 
-func (ArmourTierNetherite) BaseDurability() float64      { return 408 }
+func (ArmourTierNetherite) BaseDurability() float64      { return 407 }
 func (ArmourTierNetherite) Toughness() float64           { return 3 }
 func (ArmourTierNetherite) KnockBackResistance() float64 { return 0.1 }
 func (ArmourTierNetherite) EnchantmentValue() int        { return 15 }
