@@ -22,29 +22,6 @@ type RespawnAnchor struct {
 	ExplosionSize float64
 }
 
-// respawnAnchorSpawnOffsets holds the vanilla respawn search priority around an
-// anchor: per column (cardinals before diagonals) at the anchor's level and the
-// level above it, then the columns one level below, then on top of the anchor.
-var respawnAnchorSpawnOffsets = []cube.Pos{
-	{0, 0, -1}, {0, 1, -1},
-	{-1, 0, 0}, {-1, 1, 0},
-	{0, 0, 1}, {0, 1, 1},
-	{1, 0, 0}, {1, 1, 0},
-	{-1, 0, -1}, {-1, 1, -1},
-	{1, 0, -1}, {1, 1, -1},
-	{-1, 0, 1}, {-1, 1, 1},
-	{1, 0, 1}, {1, 1, 1},
-	{0, -1, -1},
-	{-1, -1, 0},
-	{0, -1, 1},
-	{1, -1, 0},
-	{-1, -1, -1},
-	{1, -1, -1},
-	{-1, -1, 1},
-	{1, -1, 1},
-	{0, 1, 0},
-}
-
 // Activate ...
 func (r RespawnAnchor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
@@ -76,7 +53,7 @@ func (r RespawnAnchor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.
 	}
 
 	if spawn, ok := tx.World().PlayerSpawnPoint(user.UUID()); ok && spawn.Pos == pos && spawn.Dim == world.Nether {
-		return true
+		return false
 	}
 	tx.World().SetPlayerSpawn(user.UUID(), pos)
 	tx.PlaySound(pos.Vec3Centre(), sound.RespawnAnchorSetSpawn{})
@@ -120,10 +97,16 @@ func (r RespawnAnchor) SafeSpawn(pos cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	if !r.CanRespawnOn() || tx.World().Dimension() != world.Nether {
 		return cube.Pos{}, false
 	}
-	for _, offset := range respawnAnchorSpawnOffsets {
-		spawn := pos.Add(offset)
-		if respawnAnchorSpawnClear(spawn, tx) {
-			return spawn, true
+	if respawnAnchorSpawnClear(pos, tx) {
+		return pos, true
+	}
+	// Search the surrounding 4x4 area in vanilla order, with X as the outer axis and Z as the inner axis.
+	for x := -1; x <= 2; x++ {
+		for z := -1; z <= 2; z++ {
+			spawn := pos.Add(cube.Pos{x, 0, z})
+			if respawnAnchorSpawnClear(spawn, tx) {
+				return spawn, true
+			}
 		}
 	}
 	return cube.Pos{}, false
@@ -177,20 +160,22 @@ func respawnAnchorSpawnClear(pos cube.Pos, tx *world.Tx) bool {
 		return false
 	}
 	below := pos.Side(cube.FaceDown)
-	if below.OutOfBounds(tx.Range()) || !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx) {
+	if below.OutOfBounds(tx.Range()) || !respawnAnchorSolid(below, tx) {
 		return false
 	}
-
-	occupied := cube.Box(0, 0, 0, 1, 2, 1).Translate(pos.Vec3())
 	for y := 0; y < 2; y++ {
-		blockPos := pos.Add(cube.Pos{0, y})
-		if _, liquid := tx.Liquid(blockPos); liquid {
+		if respawnAnchorSolid(pos.Add(cube.Pos{0, y}), tx) {
 			return false
 		}
-		for _, box := range tx.Block(blockPos).Model().BBox(blockPos, tx) {
-			if box.Translate(blockPos.Vec3()).IntersectsWith(occupied) {
-				return false
-			}
+	}
+	return true
+}
+
+func respawnAnchorSolid(pos cube.Pos, tx *world.Tx) bool {
+	model := tx.Block(pos).Model()
+	for _, face := range cube.Faces() {
+		if !model.FaceSolid(pos, face, tx) {
+			return false
 		}
 	}
 	return true
