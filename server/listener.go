@@ -34,18 +34,6 @@ type Listener interface {
 	io.Closer
 }
 
-// listenerFunc may be used to return a *minecraft.Listener using a Config. It
-// is the standard listener used when UserConfig.Config() is called.
-func (uc UserConfig) listenerFunc(conf Config) (Listener, error) {
-	cfg := listenerConfig(conf)
-	l, err := cfg.Listen("raknet", uc.Network.Address)
-	if err != nil {
-		return nil, fmt.Errorf("create minecraft listener: %w", err)
-	}
-	conf.Log.Info("Listener running.", "addr", l.Addr())
-	return listener{Listener: l}, nil
-}
-
 // importPrivateKey reads a PEM file containing a P-384 [ecdsa.PrivateKey] and
 // returns it for use by the NetherNet listener.
 func importPrivateKey(path string) (*ecdsa.PrivateKey, error) {
@@ -142,19 +130,16 @@ func netherNetKey(path string, log *slog.Logger) (*ecdsa.PrivateKey, error) {
 	return key, nil
 }
 
-// netherNetListenerFunc may be used to return a *minecraft.Listener accepting NetherNet
-// connections. It is used when UserConfig.Config() is called with a NetherNet transport enabled.
+// netherNetListenerFunc may be used to return a *minecraft.Listener accepting
+// NetherNet connections. It is the standard listener used when UserConfig.Config
+// is called.
 func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	nnConf := uc.Network.NetherNet
-	address := nnConf.Address
-	if address == "" {
-		address = uc.Network.Address
-	}
 	key, err := netherNetKey(nnConf.KeyFile, conf.Log.With("net origin", "nethernet"))
 	if err != nil {
 		return nil, err
 	}
-	return NetherNetConfig{Address: address, Key: key, Domain: nnConf.Domain}.Listener(conf)
+	return NetherNetConfig{Address: uc.Network.Address, Key: key, Domain: nnConf.Domain}.Listener(conf)
 }
 
 // NetherNetConfig may be used to create a NetherNet Listener for a Server, accepting

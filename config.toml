@@ -1,20 +1,11 @@
 
 [Network]
-  # The address of the server, including the port. The server will be listening on this address. If another
-  # server is already running on this port, please select a different port.
+  # Address is the TCP address used for NetherNet HTTP signaling. The listener serves plaintext HTTP;
+  # terminate HTTPS with a reverse proxy such as Caddy or nginx. Clients only probe the port they enter,
+  # then 443 and 80, so any other port must be fronted by a reverse proxy on one of those.
   Address = ":19132"
-  # Transport lists the network transports listened on. Valid values are "raknet" and "nethernet".
-  # Bedrock clients probe https/http on the entered port then :443/:80 for a NetherNet signaling endpoint and
-  # use NetherNet when one answers, falling back to RakNet otherwise. With both transports on one address,
-  # RakNet (UDP) and NetherNet signaling (TCP) share the port without conflict.
-  Transport = ["raknet"]
 
   [Network.NetherNet]
-    # Address is the TCP address used for NetherNet HTTP signaling. If empty, Network.Address is used.
-    # The listener serves plaintext HTTP. Terminate HTTPS with a reverse proxy such as Caddy or nginx.
-    # Clients only probe the port they enter, then 443 and 80, so any other port here must be fronted
-    # by a reverse proxy on one of those.
-    Address = ""
     # KeyFile is the path to the PEM file containing the P-384 ECDSA private key used to identify
     # this listener when clients connect over plain HTTP. If the file does not exist, a new key is
     # generated and saved there. If empty, a temporary key is generated and not saved.
