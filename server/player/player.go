@@ -2659,21 +2659,20 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	}
 	if p.riddenEntity != nil {
 		rideable, ok := p.RidingEntity(tx)
-		if !ok {
+		switch {
+		case !ok:
 			// The rideable may have been removed independently of the rider.
 			// Drop the stale handle before the next metadata update.
 			p.clearRidingState()
 			p.updateState()
-		} else if p.seatIndex < 0 || p.seatIndex >= len(rideable.SeatPositions()) {
+		case p.seatIndex < 0 || p.seatIndex >= len(rideable.SeatPositions()):
 			// A rideable may change its seat layout while passengers are
 			// present. Never advertise an out-of-range seat to the client.
 			rideable.RemoveRider(p.H())
 			p.clearRidingState()
 			p.updateState()
-		} else {
-			if p.syncRideableState(tx, rideable) {
-				p.updateState()
-			}
+		case p.syncRideableState(tx, rideable):
+			p.updateState()
 		}
 	}
 	if _, ok := p.tx.Liquid(cube.PosFromVec3(p.Position())); !ok {
