@@ -59,15 +59,12 @@ type playerData struct {
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
-	shieldBlockingInput, shieldBlockingCached, shieldUsePending,
-	shieldBlocked, shieldDamaged bool
+	shield shieldState
 
 	sleeping bool
 	sleepPos cube.Pos
 
-	usingSince, shieldBlockingSince time.Time
-	shieldBlockTick                 int64
-	shieldBlockWorld                *world.World
+	usingSince time.Time
 
 	glideTicks   int64
 	fireTicks    int64
@@ -1148,7 +1145,7 @@ func (p *Player) StartSneaking() {
 		p.StopSprinting()
 	}
 	p.sneaking = true
-	p.updateShieldBlockingState(time.Now())
+	p.updateShieldBlockingState()
 	p.updateState()
 }
 
@@ -1168,7 +1165,7 @@ func (p *Player) StopSneaking() {
 		return
 	}
 	p.sneaking = false
-	p.updateShieldBlockingState(time.Now())
+	p.updateShieldBlockingState()
 	p.updateState()
 }
 
@@ -1508,11 +1505,10 @@ func (p *Player) UpdateHeldItemState() {
 // updateHeldItemState refreshes shield state after a held item changes.
 func (p *Player) updateHeldItemState() bool {
 	mainHand, _ := p.HeldItems()
-	if p.shieldBlockingInput && !p.canStartShieldBlockingInput(mainHand) {
-		p.shieldUsePending = false
-		p.shieldBlockingInput = false
+	if p.shield.input && !p.canStartShieldBlockingInput(mainHand) {
+		p.shield.input = false
 	}
-	return p.updateShieldBlockingState(time.Now())
+	return p.updateShieldBlockingState()
 }
 
 // SetHeldSlot updates the held slot of the player to the slot provided. The
@@ -1590,23 +1586,18 @@ func (p *Player) GameMode() world.GameMode {
 // HasCooldown returns true if the item passed has an active cooldown, meaning it currently cannot be used again. If the
 // world.Item passed is nil, HasCooldown always returns false.
 func (p *Player) HasCooldown(item world.Item) bool {
-	return p.hasCooldownAt(item, time.Now(), true)
-}
-
-// hasCooldownAt reports whether item is on cooldown, optionally removing an expired entry.
-func (p *Player) hasCooldownAt(item world.Item, now time.Time, cleanExpired bool) bool {
 	if item == nil {
 		return false
 	}
 	name, _ := item.EncodeItem()
-	otherTime, ok := p.cooldowns[name]
+	if name == shieldItemName {
+		return p.shieldCooldownActive()
+	}
+	until, ok := p.cooldowns[name]
 	if !ok {
 		return false
 	}
-	if now.After(otherTime) {
-		if !cleanExpired {
-			return false
-		}
+	if time.Now().After(until) {
 		delete(p.cooldowns, name)
 		return false
 	}
@@ -1624,7 +1615,12 @@ func (p *Player) setCooldown(item world.Item, cooldown time.Duration, updateShie
 		return
 	}
 	name, _ := item.EncodeItem()
-	p.cooldowns[name] = time.Now().Add(cooldown)
+	if name == shieldItemName {
+		// The shield cooldown lives on the tick-based shield state, not in the wall-clock map.
+		p.setShieldCooldown(cooldown)
+	} else {
+		p.cooldowns[name] = time.Now().Add(cooldown)
+	}
 	p.session().ViewItemCooldown(item, cooldown)
 	if name == shieldItemName && updateShieldState {
 		if changed := p.resetShieldBlocking(); changed && p.tx != nil {
@@ -1638,27 +1634,20 @@ func (p *Player) setCooldown(item world.Item, cooldown time.Duration, updateShie
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
 	i, _ := p.HeldItems()
-	shieldUseHandled := p.consumePendingShieldUse(i)
 	if p.HasCooldown(i.Item()) {
-		if shieldUseHandled {
-			p.startOffHandShieldBlockingInput()
-		} else {
-			p.startOffHandShieldBlockingInputAfterItemUse()
-		}
+		p.startOffHandShieldBlockingInputAfterItemUse()
 		return
 	}
-	if !shieldUseHandled {
-		ctx := NewEventContext(p.tx, p)
-		if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
-			return
-		}
+	ctx := NewEventContext(p.tx, p)
+	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
+		return
 	}
 	i, left := p.HeldItems()
 	it := i.Item()
 	if p.startShieldBlockingInput(i) {
 		return
 	}
-	if p.shieldBlockingInput && !p.useItemStartsShieldBlocking(i) {
+	if p.shield.input && !p.useItemStartsShieldBlocking(i) {
 		p.SetShieldBlockingInput(false)
 	}
 
@@ -1752,7 +1741,7 @@ func (p *Player) UseItem() {
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
-	if p.shieldBlockingInput {
+	if p.shield.input {
 		p.SetShieldBlockingInput(false)
 	}
 	if !p.usingItem || !p.canRelease() || !p.GameMode().AllowsInteraction() {
@@ -1835,19 +1824,16 @@ func (p *Player) UsingItem() bool {
 		return true
 	}
 	_, hand, ok := p.heldShield()
-	return ok && hand == shieldHandMain && !p.shieldBlockingSince.IsZero()
+	return ok && hand == shieldHandMain && p.shield.prepared
 }
 
 // SetShieldBlockingInput updates whether the player is holding the control that raises shields.
 func (p *Player) SetShieldBlockingInput(down bool) {
-	if p.shieldBlockingInput == down {
+	if p.shield.input == down {
 		return
 	}
-	if !down {
-		p.shieldUsePending = false
-	}
-	p.shieldBlockingInput = down
-	if changed := p.updateShieldBlockingState(time.Now()); changed && p.tx != nil {
+	p.shield.input = down
+	if changed := p.updateShieldBlockingState(); changed && p.tx != nil {
 		p.updateState()
 	}
 }
@@ -2736,6 +2722,7 @@ func (p *Player) Latency() time.Duration {
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
 func (p *Player) Tick(tx *world.Tx, current int64) {
+	p.shieldTick()
 	if p.clearShieldBlockState(tx.World(), current) {
 		p.updateState()
 	}
@@ -2810,7 +2797,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			delete(p.cooldowns, it)
 		}
 	}
-	if p.updateShieldBlockingState(now) {
+	if p.updateShieldBlockingState() {
 		p.updateState()
 	}
 

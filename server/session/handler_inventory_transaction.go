@@ -70,7 +70,7 @@ func (h *InventoryTransactionHandler) Handle(p packet.Packet, s *Session, tx *wo
 		if err = s.VerifyAndSetHeldSlot(int(data.HotBarSlot), stackToItem(s.br, data.HeldItem.Stack), c); err != nil {
 			return
 		}
-		return h.handleReleaseItemTransaction(c)
+		return h.handleReleaseItemTransaction(s, c)
 	}
 	return fmt.Errorf("unhandled inventory transaction type %T", pk.TransactionData)
 }
@@ -141,6 +141,7 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 
 // handleUseItemOnEntityTransaction ...
 func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *protocol.UseItemOnEntityTransactionData, s *Session, tx *world.Tx, c Controllable) error {
+	s.clearShieldUsePending()
 	s.swingingArm.Store(true)
 	defer s.swingingArm.Store(false)
 
@@ -191,6 +192,8 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	// Because of the new inventory system, the client will expect a transaction confirmation, but instead of doing that
 	// it's much easier to just resend the inventory.
 	h.resendInventories(s)
+	// Any UseItem transaction settles a shield use already handled through auth input.
+	shieldUseHandled := s.consumeShieldUsePending(c)
 
 	switch data.ActionType {
 	case protocol.UseItemActionBreakBlock:
@@ -198,7 +201,9 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 	case protocol.UseItemActionClickBlock:
 		c.UseItemOnBlock(pos, cube.Face(data.BlockFace), vec32To64(data.ClickedPosition))
 	case protocol.UseItemActionClickAir:
-		c.UseItem()
+		if !shieldUseHandled {
+			c.UseItem()
+		}
 	default:
 		return fmt.Errorf("unhandled UseItem ActionType %v", data.ActionType)
 	}
@@ -206,7 +211,8 @@ func (h *InventoryTransactionHandler) handleUseItemTransaction(data *protocol.Us
 }
 
 // handleReleaseItemTransaction ...
-func (h *InventoryTransactionHandler) handleReleaseItemTransaction(c Controllable) error {
+func (h *InventoryTransactionHandler) handleReleaseItemTransaction(s *Session, c Controllable) error {
+	s.clearShieldUsePending()
 	c.ReleaseItem()
 	return nil
 }

@@ -66,11 +66,14 @@ func (h *ItemStackRequestHandler) handleCraftRecipeOptional(a *protocol.CraftRec
 		} else {
 			_, book := material.Item().(item.EnchantedBook)
 			_, durable := input.Item().(item.Durable)
+			inputName, inputMeta := input.Item().EncodeItem()
+			materialName, materialMeta := material.Item().EncodeItem()
+			sameType := inputName == materialName && inputMeta == materialMeta
 
 			// Ensure that the input item is repairable, or the material item is an enchanted book. If not, this is an
 			// invalid scenario, and we should return an error.
 			enchantedBook := book && len(material.Enchantments()) > 0
-			if !enchantedBook && (input.Item() != material.Item() || !durable) {
+			if !enchantedBook && (!sameType || !durable) {
 				return fmt.Errorf("input item is not repairable/same type or material item is not an enchanted book")
 			}
 

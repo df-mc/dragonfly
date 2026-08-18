@@ -31,7 +31,7 @@ func (r ShieldDecorationRecipe) Match(input []Item) (output []item.Stack, ok boo
 		}
 		switch it := stack.Item().(type) {
 		case item.Shield:
-			if foundShield || it.Banner != nil {
+			if foundShield || it.Decorated() {
 				return nil, false
 			}
 			shield, foundShield = stack, true

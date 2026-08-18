@@ -485,6 +485,11 @@ type ShieldBlockInfoSource interface {
 	ShieldBlockInfo() (ShieldBlockInfo, bool)
 }
 
+// ShieldDisabler is implemented by entities and items whose attacks disable shields.
+type ShieldDisabler interface {
+	ShieldDisableDuration() time.Duration
+}
+
 // HurtResult describes the outcome of a call to Hurt on a living entity.
 type HurtResult uint8
 

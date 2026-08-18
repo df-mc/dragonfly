@@ -1,7 +1,6 @@
 package player
 
 import (
-	"math"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
@@ -13,16 +12,59 @@ import (
 )
 
 const (
-	shieldBlockDelay                   = time.Second / 4
-	shieldAttackCooldown               = time.Second / 2
-	shieldDisableCooldown              = 5 * time.Second
-	shieldExplosionKnockBackMultiplier = 0.2
-	shieldDamageThreshold              = 3
-	shieldItemName                     = "minecraft:shield"
+	shieldBlockDelayTicks              int64 = 5
+	shieldAttackCooldown                     = time.Second / 2
+	shieldTickDuration                       = time.Second / 20
+	shieldExplosionKnockBackMultiplier       = 0.2
+	shieldItemName                           = "minecraft:shield"
 
 	shieldAttackerKnockBackForce  = 0.4
 	shieldAttackerKnockBackHeight = 0.4
 )
+
+// shieldState holds the player's active shield input, timing and transient visual state.
+type shieldState struct {
+	tick, worldTick, readyAt, cooldownUntil int64
+	input, prepared, blocking               bool
+	blocked, damaged                        bool
+	blockTick                               int64
+	tickWorld, blockWorld                   *world.World
+}
+
+// shieldTick returns a monotonic player-local tick synchronised with the current world tick.
+func (p *Player) shieldTick() int64 {
+	if p.tx == nil {
+		return p.shield.tick
+	}
+	w, current := p.tx.World(), p.tx.CurrentTick()
+	if p.shield.tickWorld != w {
+		p.shield.tickWorld, p.shield.worldTick = w, current
+		return p.shield.tick
+	}
+	if current > p.shield.worldTick {
+		p.shield.tick += current - p.shield.worldTick
+		p.shield.worldTick = current
+	}
+	return p.shield.tick
+}
+
+// shieldCooldownActive reports whether the shield cooldown is still running.
+func (p *Player) shieldCooldownActive() bool {
+	return p.shieldTick() < p.shield.cooldownUntil
+}
+
+// shieldTicks returns the number of game ticks covered by duration.
+func shieldTicks(duration time.Duration) int64 {
+	if duration <= 0 {
+		return 0
+	}
+	return int64((duration + shieldTickDuration - 1) / shieldTickDuration)
+}
+
+// setShieldCooldown sets the shield cooldown using the player's monotonic shield tick counter.
+func (p *Player) setShieldCooldown(duration time.Duration) {
+	p.shield.cooldownUntil = p.shieldTick() + shieldTicks(duration)
+}
 
 // shieldHand identifies the hand holding a shield.
 type shieldHand int
@@ -32,12 +74,6 @@ const (
 	shieldHandOff
 )
 
-// shieldDisabler is implemented by attackers that disable shields without an axe.
-// TODO(2): Implement CanDisableShield on the Warden when Warden support is added.
-type shieldDisabler interface {
-	CanDisableShield() bool
-}
-
 // shieldKnockBacker is implemented by attackers that can be knocked back when their melee hit is blocked.
 type shieldKnockBacker interface {
 	KnockBack(src mgl64.Vec3, force, height float64)
@@ -45,68 +81,69 @@ type shieldKnockBacker interface {
 
 // ShieldBlocking returns true if the player is currently blocking with a shield.
 func (p *Player) ShieldBlocking() bool {
-	_, _, ok := p.blockingShieldAt(time.Now())
+	_, _, ok := p.blockingShield()
 	return ok
 }
 
 // ShieldBlockState reports the transient visual state of the most recent shield block.
 func (p *Player) ShieldBlockState() (blocked, damaged bool) {
-	return p.shieldBlocked, p.shieldDamaged
+	return p.shield.blocked, p.shield.damaged
 }
 
 // recordShieldBlock records the visual state for a shield block until the next tick.
 func (p *Player) recordShieldBlock(durabilityDamage int, currentWorld *world.World, currentTick int64) {
-	p.shieldBlocked, p.shieldDamaged = durabilityDamage == 0, durabilityDamage > 0
-	p.shieldBlockWorld, p.shieldBlockTick = currentWorld, currentTick
+	p.shield.blocked, p.shield.damaged = durabilityDamage == 0, durabilityDamage > 0
+	p.shield.blockWorld, p.shield.blockTick = currentWorld, currentTick
 }
 
 // clearShieldBlockState clears transient shield block visuals and reports whether they changed.
 func (p *Player) clearShieldBlockState(currentWorld *world.World, currentTick int64) bool {
-	changed := p.shieldBlocked || p.shieldDamaged
-	if !changed || currentWorld == p.shieldBlockWorld && currentTick <= p.shieldBlockTick {
+	changed := p.shield.blocked || p.shield.damaged
+	if !changed || currentWorld == p.shield.blockWorld && currentTick <= p.shield.blockTick {
 		return false
 	}
-	p.shieldBlocked, p.shieldDamaged = false, false
-	p.shieldBlockWorld = nil
+	p.shield.blocked, p.shield.damaged = false, false
+	p.shield.blockWorld = nil
 	return true
 }
 
 // updateShieldBlockingState refreshes cached visible shield state, reporting whether it changed.
-func (p *Player) updateShieldBlockingState(now time.Time) bool {
-	wasPrepared, wasBlocking := !p.shieldBlockingSince.IsZero(), p.shieldBlockingCached
-	if !p.canBlockWithShieldAt(now) {
-		p.shieldBlockingSince = time.Time{}
-		p.shieldBlockingCached = false
+func (p *Player) updateShieldBlockingState() bool {
+	now := p.shieldTick()
+	wasPrepared, wasBlocking := p.shield.prepared, p.shield.blocking
+	if !p.canBlockWithShield() {
+		p.shield.prepared = false
+		p.shield.blocking = false
 		return wasPrepared || wasBlocking
 	}
 	if !wasPrepared {
-		p.shieldBlockingSince = now
+		p.shield.prepared = true
+		p.shield.readyAt = now + shieldBlockDelayTicks
 	}
-	p.shieldBlockingCached = !now.Before(p.shieldBlockingSince.Add(shieldBlockDelay))
-	return !wasPrepared || wasBlocking != p.shieldBlockingCached
+	p.shield.blocking = now >= p.shield.readyAt
+	return !wasPrepared || wasBlocking != p.shield.blocking
 }
 
 // resetShieldBlocking lowers the shield and reports whether visible state changed.
 func (p *Player) resetShieldBlocking() bool {
-	wasPrepared, wasBlocking := !p.shieldBlockingSince.IsZero(), p.shieldBlockingCached
-	p.shieldBlockingSince = time.Time{}
-	p.shieldBlockingCached = false
-	p.shieldUsePending = false
+	wasPrepared, wasBlocking := p.shield.prepared, p.shield.blocking
+	p.shield.prepared = false
+	p.shield.blocking = false
 	return wasPrepared || wasBlocking
 }
 
-// canBlockWithShieldAt reports whether the player may raise a shield at now.
-func (p *Player) canBlockWithShieldAt(now time.Time) bool {
-	if !p.shieldInputActiveAt(now, true) {
+// canBlockWithShield reports whether the player may raise a shield.
+func (p *Player) canBlockWithShield() bool {
+	if !p.shieldInputActive() {
 		return false
 	}
 	_, _, ok := p.heldShield()
 	return ok
 }
 
-// shieldInputActiveAt reports whether shield input is active without a cooldown at now.
-func (p *Player) shieldInputActiveAt(now time.Time, cleanExpiredCooldown bool) bool {
-	return (p.Sneaking() || p.shieldBlockingInput) && !p.hasCooldownAt(item.Shield{}, now, cleanExpiredCooldown)
+// shieldInputActive reports whether shield input is active without a cooldown.
+func (p *Player) shieldInputActive() bool {
+	return (p.Sneaking() || p.shield.input) && !p.shieldCooldownActive()
 }
 
 // heldShield returns the active shield, preferring the off hand as the client does.
@@ -121,10 +158,9 @@ func (p *Player) heldShield() (item.Stack, shieldHand, bool) {
 	return item.Stack{}, 0, false
 }
 
-// blockingShieldAt returns the shield ready to block at now.
-func (p *Player) blockingShieldAt(now time.Time) (item.Stack, shieldHand, bool) {
-	if p.shieldBlockingSince.IsZero() || now.Before(p.shieldBlockingSince.Add(shieldBlockDelay)) ||
-		!p.shieldInputActiveAt(now, false) {
+// blockingShield returns the shield ready to block.
+func (p *Player) blockingShield() (item.Stack, shieldHand, bool) {
+	if !p.shield.prepared || p.shieldTick() < p.shield.readyAt || !p.shieldInputActive() {
 		return item.Stack{}, 0, false
 	}
 	return p.heldShield()
@@ -132,8 +168,7 @@ func (p *Player) blockingShieldAt(now time.Time) (item.Stack, shieldHand, bool) 
 
 // delayShieldAfterAttack lowers shields briefly after an attack.
 func (p *Player) delayShieldAfterAttack() {
-	until := time.Now().Add(shieldAttackCooldown)
-	if current, ok := p.cooldowns[shieldItemName]; ok && current.After(until) {
+	if p.shield.cooldownUntil > p.shieldTick()+shieldTicks(shieldAttackCooldown) {
 		return
 	}
 	p.setCooldown(item.Shield{}, shieldAttackCooldown, true)
@@ -148,9 +183,9 @@ func (p *Player) setHeldShield(hand shieldHand, shield item.Stack) {
 	_ = p.offHand.SetItem(0, shield)
 }
 
-// shieldForDamageAt returns the raised shield if it blocks info at now.
-func (p *Player) shieldForDamageAt(info world.ShieldBlockInfo, now time.Time) (item.Stack, shieldHand, bool) {
-	shield, hand, ok := p.blockingShieldAt(now)
+// shieldForDamage returns the raised shield if it blocks info.
+func (p *Player) shieldForDamage(info world.ShieldBlockInfo) (item.Stack, shieldHand, bool) {
+	shield, hand, ok := p.blockingShield()
 	if !ok || !p.facingShieldDamageSource(info.Origin) {
 		return item.Stack{}, 0, false
 	}
@@ -183,33 +218,29 @@ func shieldDisableCooldownFrom(src world.DamageSource) (time.Duration, bool) {
 	if !ok {
 		return 0, false
 	}
-	if attacker, ok := attack.Attacker.(shieldDisabler); ok && attacker.CanDisableShield() {
-		return shieldDisableCooldown, true
+	// TODO(2): Implement world.ShieldDisabler on the Warden when Warden support is added.
+	if attacker, ok := attack.Attacker.(world.ShieldDisabler); ok {
+		if cooldown := attacker.ShieldDisableDuration(); cooldown > 0 {
+			return cooldown, true
+		}
 	}
 	attacker, ok := attack.Attacker.(item.Carrier)
 	if !ok {
 		return 0, false
 	}
 	mainHand, _ := attacker.HeldItems()
-	tool, ok := mainHand.Item().(item.Tool)
-	if !ok || tool.ToolType() != item.TypeAxe {
+	disabler, ok := mainHand.Item().(world.ShieldDisabler)
+	if !ok {
 		return 0, false
 	}
-	return shieldDisableCooldown, true
+	cooldown := disabler.ShieldDisableDuration()
+	return cooldown, cooldown > 0
 }
 
 // shieldShouldBlockDamage reports whether an eligible hit should reach shield handling. Damage reduced to zero before
 // the handler still reaches the shield, while a handler that deliberately reduces positive damage to zero suppresses it.
 func shieldShouldBlockDamage(raw, beforeHandler, afterHandler float64, info world.ShieldBlockInfo) bool {
 	return afterHandler > 0 || beforeHandler <= 0 && (raw > 0 || info.BlockZeroDamage)
-}
-
-// shieldDurabilityDamage returns durability lost from blocking dmg.
-func shieldDurabilityDamage(dmg float64) int {
-	if dmg < shieldDamageThreshold {
-		return 0
-	}
-	return int(math.Floor(dmg)) + 1
 }
 
 // useItemStartsShieldBlocking reports whether item use should raise a held shield.
@@ -236,11 +267,7 @@ func (p *Player) StartShieldBlockingInput() bool {
 		return false
 	}
 	mainHand, _ = p.HeldItems()
-	if !p.startShieldBlockingInput(mainHand) {
-		return false
-	}
-	p.shieldUsePending = true
-	return true
+	return p.startShieldBlockingInput(mainHand)
 }
 
 // canStartShieldBlockingInput reports whether mainHand use may raise a shield.
@@ -248,7 +275,7 @@ func (p *Player) canStartShieldBlockingInput(mainHand item.Stack) bool {
 	if !p.useItemStartsShieldBlocking(mainHand) {
 		return false
 	}
-	return !p.HasCooldown(item.Shield{})
+	return !p.shieldCooldownActive()
 }
 
 // startShieldBlockingInput raises the shield if using mainHand allows it, returning true if it did.
@@ -300,15 +327,6 @@ func (p *Player) canStartOffHandShieldBlockingInput() bool {
 	return p.canStartShieldBlockingInput(item.Stack{})
 }
 
-// consumePendingShieldUse consumes a shield use already handled through auth input.
-func (p *Player) consumePendingShieldUse(mainHand item.Stack) bool {
-	if !p.shieldUsePending {
-		return false
-	}
-	p.shieldUsePending = false
-	return p.canStartShieldBlockingInput(mainHand)
-}
-
 // knockBackShieldAttacker knocks back a blocked melee attacker.
 func (p *Player) knockBackShieldAttacker(src world.DamageSource) bool {
 	attack, ok := src.(entity.AttackDamageSource)
@@ -325,17 +343,16 @@ func (p *Player) knockBackShieldAttacker(src world.DamageSource) bool {
 
 // blockDamageWithShield applies shield effects and reports whether dmg was blocked.
 func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource, info world.ShieldBlockInfo) bool {
-	now := time.Now()
 	if info.Source != nil {
 		if h := info.Source.H(); h != nil && h == p.H() {
 			return false
 		}
 	}
-	shield, hand, ok := p.shieldForDamageAt(info, now)
+	shield, hand, ok := p.shieldForDamage(info)
 	if !ok {
 		return false
 	}
-	durabilityDamage := shieldDurabilityDamage(dmg)
+	durabilityDamage := shield.Item().(item.Shield).BlockDurabilityDamage(dmg)
 	if durabilityDamage > 0 {
 		p.setHeldShield(hand, p.damageItem(shield, durabilityDamage))
 	}
@@ -350,7 +367,7 @@ func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource, info
 		p.setCooldown(item.Shield{}, cooldown, false)
 		p.resetShieldBlocking()
 	} else {
-		p.updateShieldBlockingState(now)
+		p.updateShieldBlockingState()
 	}
 	if p.tx != nil {
 		p.updateState()

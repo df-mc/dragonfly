@@ -110,6 +110,10 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 // handleInputFlags handles the toggleable input flags set in a PlayerAuthInput packet.
 func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.InputFlags, s *Session, c Controllable) {
 	wasSneaking := c.Sneaking()
+	startingItemUse := flags.Load(packet.InputFlagStartUsingItem)
+	if !startingItemUse {
+		s.clearShieldUsePending()
+	}
 	if flags.Load(packet.InputFlagStartSprinting) {
 		c.StartSprinting()
 	}
@@ -147,10 +151,15 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.InputFlags, s *S
 	if setter, ok := c.(shieldBlockingInputSetter); ok {
 		if down, ok := shieldBlockingInput(flags, wasSneaking, c.Sneaking()); ok {
 			setter.SetShieldBlockingInput(down)
+			if !down {
+				s.clearShieldUsePending()
+			}
 		}
 	}
-	if starter, ok := c.(shieldBlockingInputStarter); ok && flags.Load(packet.InputFlagStartUsingItem) {
-		starter.StartShieldBlockingInput()
+	if starter, ok := c.(shieldBlockingInputStarter); ok && startingItemUse {
+		if starter.StartShieldBlockingInput() {
+			s.markShieldUsePending(c)
+		}
 	}
 	if flags.Load(packet.InputFlagMissedSwing) {
 		s.swingingArm.Store(true)
