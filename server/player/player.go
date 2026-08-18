@@ -648,7 +648,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, world.HurtR
 	}
 	// Handlers run first so damage they cancel or reduce to zero does not consume a shield.
 	if info, ok := shieldBlockInfo(src); ok {
-		if (damageLeft > 0 || damageBeforeHandler <= 0 && dmg == 0 && info.BlockZeroDamage) && p.blockDamageWithShield(dmg, src, info) {
+		if shieldShouldBlockDamage(dmg, damageBeforeHandler, damageLeft, info) && p.blockDamageWithShield(dmg, src, info) {
 			return 0, world.HurtBlocked
 		}
 	}

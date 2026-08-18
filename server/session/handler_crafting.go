@@ -16,8 +16,10 @@ import (
 func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
-		// Try dynamic recipes if no static recipe matches
-		return h.tryDynamicCraft(s, tx, int(a.NumberOfCrafts))
+		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
+	}
+	if multi, ok := craft.(recipe.Multi); ok {
+		return h.tryDynamicCraft(multi, s, tx, int(a.NumberOfCrafts))
 	}
 	_, shaped := craft.(recipe.Shaped)
 	_, shapeless := craft.(recipe.Shapeless)
@@ -71,8 +73,10 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
 	if !ok {
-		// Try dynamic recipes if no static recipe matches
-		return h.tryDynamicCraft(s, tx, int(a.NumberOfCrafts))
+		return fmt.Errorf("recipe with network id %v does not exist", a.RecipeNetworkID)
+	}
+	if multi, ok := craft.(recipe.Multi); ok {
+		return h.tryDynamicCraft(multi, s, tx, int(a.NumberOfCrafts))
 	}
 	_, shaped := craft.(recipe.Shaped)
 	_, shapeless := craft.(recipe.Shapeless)
@@ -240,8 +244,8 @@ func grow(i recipe.Item, count int) recipe.Item {
 	panic(fmt.Errorf("unexpected recipe item %T", i))
 }
 
-// tryDynamicCraft attempts to match the items in the crafting grid with any registered dynamic recipes.
-func (h *ItemStackRequestHandler) tryDynamicCraft(s *Session, tx *world.Tx, timesCrafted int) error {
+// tryDynamicCraft attempts to match the items in the crafting grid with the selected dynamic recipe.
+func (h *ItemStackRequestHandler) tryDynamicCraft(selected recipe.Multi, s *Session, tx *world.Tx, timesCrafted int) error {
 	if timesCrafted < 1 {
 		return fmt.Errorf("times crafted must be at least 1")
 	}
@@ -261,9 +265,9 @@ func (h *ItemStackRequestHandler) tryDynamicCraft(s *Session, tx *world.Tx, time
 		}
 	}
 
-	// Try to match with any dynamic recipe
+	// Match only the dynamic recipe selected by the client's multi-recipe ID.
 	for _, dynamicRecipe := range recipe.DynamicRecipes() {
-		if dynamicRecipe.Block() != "crafting_table" {
+		if dynamicRecipe.Block() != "crafting_table" || dynamicRecipe.UUID() != selected.UUID() {
 			continue
 		}
 

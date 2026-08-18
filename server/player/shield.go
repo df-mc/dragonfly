@@ -32,9 +32,14 @@ const (
 	shieldHandOff
 )
 
-// shieldDisabler exposes the item used to attack a shield.
-type shieldDisabler interface {
+// shieldItemHolder exposes the item used to attack a shield.
+type shieldItemHolder interface {
 	HeldItems() (item.Stack, item.Stack)
+}
+
+// shieldDisabler is implemented by attackers that disable shields without an axe.
+type shieldDisabler interface {
+	CanDisableShield() bool
 }
 
 // shieldKnockBacker is implemented by attackers that can be knocked back when their melee hit is blocked.
@@ -165,7 +170,10 @@ func shieldDisableCooldownFrom(src world.DamageSource) (time.Duration, bool) {
 	if !ok {
 		return 0, false
 	}
-	attacker, ok := attack.Attacker.(shieldDisabler)
+	if attacker, ok := attack.Attacker.(shieldDisabler); ok && attacker.CanDisableShield() {
+		return shieldDisableCooldown, true
+	}
+	attacker, ok := attack.Attacker.(shieldItemHolder)
 	if !ok {
 		return 0, false
 	}
@@ -175,6 +183,12 @@ func shieldDisableCooldownFrom(src world.DamageSource) (time.Duration, bool) {
 		return 0, false
 	}
 	return shieldDisableCooldown, true
+}
+
+// shieldShouldBlockDamage reports whether an eligible hit should reach shield handling. Damage reduced to zero before
+// the handler still reaches the shield, while a handler that deliberately reduces positive damage to zero suppresses it.
+func shieldShouldBlockDamage(raw, beforeHandler, afterHandler float64, info world.ShieldBlockInfo) bool {
+	return afterHandler > 0 || beforeHandler <= 0 && (raw > 0 || info.BlockZeroDamage)
 }
 
 // shieldDurabilityDamage returns durability lost from blocking dmg.
