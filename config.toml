@@ -8,6 +8,9 @@
   # this listener when clients connect over plain HTTP. If the file does not exist, a new key is
   # generated and saved there. If empty, a temporary key is generated and not saved.
   KeyFile = "keys/server_identity_key.pem"
+  # Domain is the identity-provider domain advertised to players connecting over plain HTTP.
+  # Set it to the hostname players use to connect, or leave "self" for the default identity.
+  Domain = "self"
 
 [Server]
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the

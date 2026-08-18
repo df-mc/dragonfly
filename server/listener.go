@@ -138,7 +138,7 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NetherNetConfig{Address: uc.Network.Address, Key: key}.Listener(conf)
+	return NetherNetConfig{Address: uc.Network.Address, Key: key, Domain: uc.Network.Domain}.Listener(conf)
 }
 
 // NetherNetConfig may be used to create a NetherNet Listener for a Server, accepting

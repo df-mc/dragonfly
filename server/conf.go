@@ -229,6 +229,9 @@ type UserConfig struct {
 		// If the file does not exist, a new key is generated and saved there. If
 		// empty, a temporary key is generated and not saved.
 		KeyFile string
+		// Domain is the identity-provider domain advertised to players connecting
+		// over plain HTTP. If empty, "self" is used.
+		Domain string
 	}
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
@@ -360,6 +363,7 @@ func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
 	c.Network.KeyFile = "keys/server_identity_key.pem"
+	c.Network.Domain = "self"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true
