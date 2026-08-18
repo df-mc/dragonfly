@@ -38,6 +38,7 @@ type shieldItemHolder interface {
 }
 
 // shieldDisabler is implemented by attackers that disable shields without an axe.
+// TODO(2): Implement CanDisableShield on the Warden when Warden support is added.
 type shieldDisabler interface {
 	CanDisableShield() bool
 }

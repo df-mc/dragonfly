@@ -9,6 +9,7 @@ import (
 type (
 	// AttackDamageSource is used for damage caused by other entities, for
 	// example when a player attacks another player.
+	// TODO(2): Give the Warden's sonic boom a dedicated unblockable source when Warden support is added.
 	AttackDamageSource struct {
 		// Attacker holds the attacking entity. The entity may be a player or
 		// any other entity.
