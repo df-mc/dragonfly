@@ -59,12 +59,15 @@ type playerData struct {
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
-	shieldBlockingInput, shieldBlockingCached, shieldUsePending bool
+	shieldBlockingInput, shieldBlockingCached, shieldUsePending,
+	shieldBlocked, shieldDamaged bool
 
 	sleeping bool
 	sleepPos cube.Pos
 
 	usingSince, shieldBlockingSince time.Time
+	shieldBlockTick                 int64
+	shieldBlockWorld                *world.World
 
 	glideTicks   int64
 	fireTicks    int64
@@ -2735,6 +2738,9 @@ func (p *Player) Latency() time.Duration {
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
 func (p *Player) Tick(tx *world.Tx, current int64) {
+	if p.clearShieldBlockState(tx.World(), current) {
+		p.updateState()
+	}
 	if p.Dead() {
 		return
 	}
@@ -2806,7 +2812,8 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			delete(p.cooldowns, it)
 		}
 	}
-	if p.updateShieldBlockingState(now) {
+	shieldStateChanged := p.updateShieldBlockingState(now)
+	if shieldStateChanged {
 		p.updateState()
 	}
 

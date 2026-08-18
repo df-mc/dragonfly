@@ -52,6 +52,28 @@ func (p *Player) ShieldBlocking() bool {
 	return p.shieldBlockingAt(time.Now())
 }
 
+// ShieldBlockState reports the transient visual state of the most recent shield block.
+func (p *Player) ShieldBlockState() (blocked, damaged bool) {
+	return p.shieldBlocked, p.shieldDamaged
+}
+
+// recordShieldBlock records the visual state for a shield block until the next tick.
+func (p *Player) recordShieldBlock(durabilityDamage int, currentWorld *world.World, currentTick int64) {
+	p.shieldBlocked, p.shieldDamaged = durabilityDamage == 0, durabilityDamage > 0
+	p.shieldBlockWorld, p.shieldBlockTick = currentWorld, currentTick
+}
+
+// clearShieldBlockState clears transient shield block visuals and reports whether they changed.
+func (p *Player) clearShieldBlockState(currentWorld *world.World, currentTick int64) bool {
+	changed := p.shieldBlocked || p.shieldDamaged
+	if !changed || currentWorld == p.shieldBlockWorld && currentTick <= p.shieldBlockTick {
+		return false
+	}
+	p.shieldBlocked, p.shieldDamaged = false, false
+	p.shieldBlockWorld = nil
+	return true
+}
+
 // shieldBlockingAt reports whether the shield is ready to block at now.
 func (p *Player) shieldBlockingAt(now time.Time) bool {
 	_, _, ok := p.blockingShieldAt(now)
@@ -322,9 +344,16 @@ func (p *Player) blockDamageWithShield(dmg float64, src world.DamageSource, info
 	if !ok {
 		return false
 	}
-	if damage := shieldDurabilityDamage(dmg); damage > 0 {
-		p.setHeldShield(hand, p.damageItem(shield, damage))
+	durabilityDamage := shieldDurabilityDamage(dmg)
+	if durabilityDamage > 0 {
+		p.setHeldShield(hand, p.damageItem(shield, durabilityDamage))
 	}
+	var currentWorld *world.World
+	currentTick := int64(0)
+	if p.tx != nil {
+		currentWorld, currentTick = p.tx.World(), p.tx.CurrentTick()
+	}
+	p.recordShieldBlock(durabilityDamage, currentWorld, currentTick)
 	if p.tx != nil {
 		p.tx.PlaySound(p.Position(), sound.ShieldBlock{})
 	}

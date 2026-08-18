@@ -39,6 +39,55 @@ func TestSpecialAttackerDisablesShield(t *testing.T) {
 	}
 }
 
+func TestShieldBlockVisualState(t *testing.T) {
+	p := &Player{playerData: &playerData{}}
+	w := new(world.World)
+	p.recordShieldBlock(0, w, 10)
+	if blocked, damaged := p.ShieldBlockState(); !blocked || damaged {
+		t.Fatalf("non-damaging block state = (%v, %v), want (true, false)", blocked, damaged)
+	}
+	p.recordShieldBlock(4, w, 10)
+	if blocked, damaged := p.ShieldBlockState(); blocked || !damaged {
+		t.Fatalf("damaging block state = (%v, %v), want (false, true)", blocked, damaged)
+	}
+	if p.clearShieldBlockState(w, 10) {
+		t.Fatal("clearShieldBlockState() cleared state during its originating tick")
+	}
+	if !p.clearShieldBlockState(w, 11) {
+		t.Fatal("clearShieldBlockState() did not report a transient state")
+	}
+	if blocked, damaged := p.ShieldBlockState(); blocked || damaged {
+		t.Fatalf("cleared block state = (%v, %v), want (false, false)", blocked, damaged)
+	}
+}
+
+func TestShieldBlockVisualStateClearsAcrossWorlds(t *testing.T) {
+	p := &Player{playerData: &playerData{}}
+	p.recordShieldBlock(4, new(world.World), 100)
+	if !p.clearShieldBlockState(new(world.World), 1) {
+		t.Fatal("clearShieldBlockState() retained state from a different world tick domain")
+	}
+}
+
+func TestDeadPlayerClearsShieldBlockVisualState(t *testing.T) {
+	p := &Player{
+		data: &world.EntityData{},
+		playerData: &playerData{
+			health: entity.NewHealthManager(0, 20),
+		},
+	}
+	w := world.Config{Synchronous: true}.New()
+	defer w.Close()
+	w.Do(func(tx *world.Tx) {
+		p.tx = tx
+		p.recordShieldBlock(4, tx.World(), 10)
+		p.Tick(tx, 11)
+	})
+	if blocked, damaged := p.ShieldBlockState(); blocked || damaged {
+		t.Fatalf("dead player retained shield block state (%v, %v)", blocked, damaged)
+	}
+}
+
 type specialShieldDisabler struct{}
 
 func (specialShieldDisabler) CanDisableShield() bool  { return true }

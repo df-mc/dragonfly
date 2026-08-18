@@ -84,6 +84,10 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if b, ok := e.(shieldBlocker); ok && b.ShieldBlocking() {
 		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagBlocking&63)
 	}
+	if b, ok := e.(shieldBlockState); ok {
+		blocked, damaged := b.ShieldBlockState()
+		setShieldBlockState(m, blocked, damaged)
+	}
 	if c, ok := e.(arrow); ok && c.Critical() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCritical)
 	}
@@ -191,6 +195,16 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 }
 
+// setShieldBlockState writes the transient flags used for shield block animations.
+func setShieldBlockState(m protocol.EntityMetadata, blocked, damaged bool) {
+	if blocked {
+		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagBlockedUsingShield&63)
+	}
+	if damaged {
+		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagBlockedUsingDamagedShield&63)
+	}
+}
+
 // nameTagState returns the public name tag of an entity, whether that name tag is shown at all distances
 // and whether the entity has a name tag at all. Entities that do not report an always show state show
 // their name tag at all distances.
@@ -257,6 +271,10 @@ type breather interface {
 
 type shieldBlocker interface {
 	ShieldBlocking() bool
+}
+
+type shieldBlockState interface {
+	ShieldBlockState() (blocked, damaged bool)
 }
 
 type immobile interface {
