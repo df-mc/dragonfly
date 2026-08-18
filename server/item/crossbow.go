@@ -2,7 +2,6 @@ package item
 
 import (
 	"time"
-	_ "unsafe"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -158,7 +157,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 // CanCharge ...
 func (c Crossbow) CanCharge(releaser Releaser, _ *world.Tx, ctx *UseContext) bool {
 	_, found := c.findProjectile(releaser, ctx)
-	return found && !c.Item.Empty()
+	return found && c.Item.Empty()
 }
 
 // shoot fires the crossbow's loaded projectiles.
@@ -187,7 +186,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ar
 }
 
 // applyDamage applies damage on a UseContext based on the projectile loaded
-// in the crossboww.
+// in the crossbow.
 func (c Crossbow) applyDamage(ctx *UseContext) {
 	if _, ok := c.Item.Item().(Firework); ok {
 		ctx.DamageItem(3)
@@ -226,24 +225,14 @@ func (Crossbow) EncodeItem() (name string, meta int16) {
 
 // DecodeNBT ...
 func (c Crossbow) DecodeNBT(data map[string]any) any {
-	c.Item = mapItem(data, "chargedItem")
+	c.Item = MapNBT(data, "chargedItem")
 	return c
 }
 
 // EncodeNBT ...
 func (c Crossbow) EncodeNBT() map[string]any {
 	if !c.Item.Empty() {
-		return map[string]any{"chargedItem": writeItem(c.Item, true)}
+		return map[string]any{"chargedItem": WriteNBT(c.Item, true)}
 	}
 	return nil
 }
-
-// noinspection ALL
-//
-//go:linkname writeItem github.com/df-mc/dragonfly/server/internal/nbtconv.WriteItem
-func writeItem(s Stack, disk bool) map[string]any
-
-// noinspection ALL
-//
-//go:linkname mapItem github.com/df-mc/dragonfly/server/internal/nbtconv.MapItem
-func mapItem(x map[string]any, k string) Stack

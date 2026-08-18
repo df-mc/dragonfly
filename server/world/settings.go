@@ -1,6 +1,7 @@
 package world
 
 import (
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 
@@ -56,6 +57,8 @@ func defaultSettings() *Settings {
 		Difficulty:      DifficultyNormal,
 		TimeCycle:       true,
 		WeatherCycle:    true,
+		RainTime:        int64(rand.IntN(8400)+600) * 20,
+		ThunderTime:     int64(rand.IntN(8400)+600) * 20,
 		TickRange:       6,
 		positionTracker: NewPositionTracker(),
 	}

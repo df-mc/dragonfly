@@ -1,6 +1,7 @@
 package nbtconv
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 )
 
@@ -8,7 +9,7 @@ import (
 func InvFromNBT(inv *inventory.Inventory, items []any) {
 	for _, itemData := range items {
 		data, _ := itemData.(map[string]any)
-		it := Item(data, nil)
+		it := item.ReadNBT(data, nil)
 		if it.Empty() {
 			continue
 		}
@@ -17,13 +18,13 @@ func InvFromNBT(inv *inventory.Inventory, items []any) {
 }
 
 // InvToNBT encodes an inventory to a data slice which may be encoded as NBT.
-func InvToNBT(inv *inventory.Inventory) []map[string]any {
-	var items []map[string]any
+func InvToNBT(inv *inventory.Inventory) []any {
+	var items []any
 	for index, i := range inv.Slots() {
 		if i.Empty() {
 			continue
 		}
-		data := WriteItem(i, true)
+		data := item.WriteNBT(i, true)
 		data["Slot"] = byte(index)
 		items = append(items, data)
 	}

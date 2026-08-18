@@ -44,6 +44,20 @@ func (a Axis) RotateRight() Axis {
 	return a.RotateLeft()
 }
 
+// Faces returns the negative and positive Face along the Axis. For X it
+// returns FaceWest, FaceEast; for Y, FaceDown, FaceUp; for Z, FaceNorth,
+// FaceSouth.
+func (a Axis) Faces() (negative, positive Face) {
+	switch a {
+	case X:
+		return FaceWest, FaceEast
+	case Y:
+		return FaceDown, FaceUp
+	default:
+		return FaceNorth, FaceSouth
+	}
+}
+
 // Vec3 returns a unit Vec3 of either (1, 0, 0), (0, 1, 0) or (0, 0, 1),
 // depending on the Axis.
 func (a Axis) Vec3() mgl64.Vec3 {

@@ -112,11 +112,13 @@ func (s Slab) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
 
 // BreakInfo ...
 func (s Slab) BreakInfo() BreakInfo {
-	hardness, blastResistance, harvestable, effective := 2.0, 30.0, pickaxeHarvestable, pickaxeEffective
+	hardness, blastResistance, harvestable, effective := 2.0, 6.0, pickaxeHarvestable, pickaxeEffective
 
 	switch block := s.Block.(type) {
 	case Stone, Sandstone, Quartz, Purpur, Blackstone, PolishedBlackstoneBrick:
 	// These slab types do not match their block's hardness or blast resistance
+	case EndBricks:
+		hardness = 3
 	case StoneBricks:
 		if block.Type == MossyStoneBricks() {
 			hardness = 1.5
@@ -126,10 +128,11 @@ func (s Slab) BreakInfo() BreakInfo {
 		hardness, blastResistance, harvestable, effective = breakInfo.Hardness, breakInfo.BlastResistance, breakInfo.Harvestable, breakInfo.Effective
 	}
 	return newBreakInfo(hardness, harvestable, effective, func(tool item.Tool, enchantments []item.Enchantment) []item.Stack {
+		single := Slab{Block: s.Block}
 		if s.Double {
-			return []item.Stack{item.NewStack(s, 2)}
+			return []item.Stack{item.NewStack(single, 2)}
 		}
-		return []item.Stack{item.NewStack(s, 1)}
+		return []item.Stack{item.NewStack(single, 1)}
 	}).withBlastResistance(blastResistance)
 }
 

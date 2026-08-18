@@ -23,6 +23,9 @@ type NamedTarget interface {
 
 // targets returns all Targets selectable by the Source passed.
 func targets(tx *world.Tx) (entities []Target, players []NamedTarget) {
+	if tx == nil {
+		return nil, nil
+	}
 	ent := sliceutil.Convert[Target](slices.Collect(tx.Entities()))
 	pl := sliceutil.Convert[NamedTarget](slices.Collect(tx.Players()))
 	return ent, pl

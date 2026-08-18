@@ -275,6 +275,9 @@ func (p parser) parseTargets(line *Line, tx *world.Tx) ([]Target, error) {
 	if !ok {
 		return nil, line.UsageError()
 	}
+	if strings.HasPrefix(first, "@") && tx == nil {
+		return nil, MessageNoTargets.F()
+	}
 	switch first[:min(len(first), 2)] {
 	case "@p":
 		pos := line.src.Position()
