@@ -1,0 +1,31 @@
+package block
+
+// PotentSulfur is a concentrated sulfur block variant that can be chiseled.
+type PotentSulfur struct {
+	solid
+	bassDrum
+
+	// Chiseled specifies if the potent sulfur block is chiseled.
+	Chiseled bool
+}
+
+// BreakInfo ...
+func (p PotentSulfur) BreakInfo() BreakInfo {
+	return newBreakInfo(1.5, pickaxeHarvestable, pickaxeEffective, oneOf(p)).withBlastResistance(6)
+}
+
+// EncodeItem ...
+func (p PotentSulfur) EncodeItem() (name string, meta int16) {
+	if p.Chiseled {
+		return "minecraft:chiseled_potent_sulfur", 0
+	}
+	return "minecraft:potent_sulfur", 0
+}
+
+// EncodeBlock ...
+func (p PotentSulfur) EncodeBlock() (string, map[string]any) {
+	if p.Chiseled {
+		return "minecraft:chiseled_potent_sulfur", nil
+	}
+	return "minecraft:potent_sulfur", nil
+}
