@@ -134,12 +134,11 @@ func netherNetKey(path string, log *slog.Logger) (*ecdsa.PrivateKey, error) {
 // NetherNet connections. It is the standard listener used when UserConfig.Config
 // is called.
 func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
-	nnConf := uc.Network.NetherNet
-	key, err := netherNetKey(nnConf.KeyFile, conf.Log.With("net origin", "nethernet"))
+	key, err := netherNetKey(uc.Network.KeyFile, conf.Log.With("net origin", "nethernet"))
 	if err != nil {
 		return nil, err
 	}
-	return NetherNetConfig{Address: uc.Network.Address, Key: key, Domain: nnConf.Domain}.Listener(conf)
+	return NetherNetConfig{Address: uc.Network.Address, Key: key}.Listener(conf)
 }
 
 // NetherNetConfig may be used to create a NetherNet Listener for a Server, accepting

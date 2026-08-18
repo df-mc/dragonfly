@@ -224,17 +224,11 @@ type UserConfig struct {
 		// endpoint should listen. Players may connect to this address in order to
 		// join.
 		Address string
-		// NetherNet holds settings for the NetherNet HTTP signaling listener.
-		NetherNet struct {
-			// KeyFile is the path to the PEM file containing the P-384 ECDSA private
-			// key used to identify this listener when clients connect over plain HTTP.
-			// If the file does not exist, a new key is generated and saved there. If
-			// empty, a temporary key is generated and not saved.
-			KeyFile string
-			// Domain is the domain that may be shown in the trust prompt to players
-			// connecting over plain HTTP.
-			Domain string
-		}
+		// KeyFile is the path to the PEM file containing the P-384 ECDSA private
+		// key used to identify this listener when clients connect over plain HTTP.
+		// If the file does not exist, a new key is generated and saved there. If
+		// empty, a temporary key is generated and not saved.
+		KeyFile string
 	}
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
@@ -365,7 +359,7 @@ func loadGenerator(dim world.Dimension) world.Generator {
 func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
-	c.Network.NetherNet.KeyFile, c.Network.NetherNet.Domain = "keys/server_identity_key.pem", "self"
+	c.Network.KeyFile = "keys/server_identity_key.pem"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true

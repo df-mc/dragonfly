@@ -4,15 +4,10 @@
   # terminate HTTPS with a reverse proxy such as Caddy or nginx. Clients only probe the port they enter,
   # then 443 and 80, so any other port must be fronted by a reverse proxy on one of those.
   Address = ":19132"
-
-  [Network.NetherNet]
-    # KeyFile is the path to the PEM file containing the P-384 ECDSA private key used to identify
-    # this listener when clients connect over plain HTTP. If the file does not exist, a new key is
-    # generated and saved there. If empty, a temporary key is generated and not saved.
-    KeyFile = "keys/server_identity_key.pem"
-    # Domain is the domain that may be shown in the trust prompt to players connecting over plain HTTP.
-    # Setting it to the host players actually connect to gives a clearer prompt than the "self" default.
-    Domain = "self"
+  # KeyFile is the path to the PEM file containing the P-384 ECDSA private key used to identify
+  # this listener when clients connect over plain HTTP. If the file does not exist, a new key is
+  # generated and saved there. If empty, a temporary key is generated and not saved.
+  KeyFile = "keys/server_identity_key.pem"
 
 [Server]
   # The name as it shows up in the server list. Minecraft colour codes may be used in this name to format the
