@@ -64,7 +64,7 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
-	return h.createResults(s, tx, repeatStacks(craft.Output(), timesCrafted)...)
+	return h.createResults(s, tx, item.RepeatStacks(craft.Output(), timesCrafted)...)
 }
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
@@ -147,7 +147,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		}
 	}
 
-	return h.createResults(s, tx, repeatStacks(craft.Output(), timesCrafted)...)
+	return h.createResults(s, tx, item.RepeatStacks(craft.Output(), timesCrafted)...)
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
@@ -209,25 +209,6 @@ func matchingStacks(has, expected recipe.Item) bool {
 		panic(fmt.Errorf("client has unexpected recipe item %T", has))
 	}
 	panic(fmt.Errorf("tried to match with unexpected recipe item %T", expected))
-}
-
-// repeatStacks multiplies the count of all item stacks provided by the number of repetitions provided. Item
-// stacks where the new count would exceed the item's max count are split into multiple item stacks.
-func repeatStacks(items []item.Stack, repetitions int) []item.Stack {
-	output := make([]item.Stack, 0, len(items))
-	for _, o := range items {
-		count, maxCount := o.Count(), o.MaxCount()
-		total := count * repetitions
-
-		stacks := int(math.Ceil(float64(total) / float64(maxCount)))
-		for i := 0; i < stacks; i++ {
-			inc := min(total, maxCount)
-			total -= inc
-
-			output = append(output, o.Grow(inc-count))
-		}
-	}
-	return output
 }
 
 func grow(i recipe.Item, count int) recipe.Item {
@@ -305,7 +286,7 @@ func (h *ItemStackRequestHandler) tryDynamicCraft(s *Session, tx *world.Tx, time
 			}
 		}
 
-		return h.createResults(s, tx, repeatStacks(output, timesCrafted)...)
+		return h.createResults(s, tx, item.RepeatStacks(output, timesCrafted)...)
 	}
 
 	return fmt.Errorf("no matching recipe found for crafting grid")
