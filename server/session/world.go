@@ -249,17 +249,13 @@ func entityOffset(e world.Entity) mgl64.Vec3 {
 				return mgl64.Vec3{0, 0.2}
 			}
 		}
-		if sw, ok := e.(swimmer); ok && sw.Swimming() {
-			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
-		}
-		if cr, ok := e.(crawler); ok && cr.Crawling() {
-			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
-		}
-		if gl, ok := e.(glider); ok && gl.Gliding() {
-			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
-		}
-		if sn, ok := e.(sneaker); ok && sn.Sneaking() {
-			return mgl64.Vec3{0, sneakingPlayerNetworkOffset}
+		if pose, ok := e.(playerPose); ok {
+			switch {
+			case pose.Swimming() || pose.Crawling() || pose.Gliding():
+				return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
+			case pose.Sneaking():
+				return mgl64.Vec3{0, sneakingPlayerNetworkOffset}
+			}
 		}
 	}
 	if offset, ok := e.H().Type().(OffsetEntity); ok {
