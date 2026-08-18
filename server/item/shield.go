@@ -107,10 +107,10 @@ func shieldColourFromNBT(id int32) Colour {
 	if id < 0 || id > 15 {
 		return ColourWhite()
 	}
-	return Colours()[uint8(^id)&0xf]
+	return invertColourID(int16(id))
 }
 
 // shieldColourNBT returns the inverted dye ID used by banner NBT.
 func shieldColourNBT(colour Colour) int32 {
-	return int32(^colour.Uint8() & 0xf)
+	return int32(invertColour(colour))
 }

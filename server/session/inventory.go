@@ -9,6 +9,14 @@ type heldItemStateUpdater interface {
 	UpdateHeldItemState()
 }
 
+// invSlot maps a protocol slot to the inventory's server-side slot: the off hand always uses slot 0.
+func (s *Session) invSlot(inv *inventory.Inventory, slot int) int {
+	if inv == s.offHand {
+		return 0
+	}
+	return slot
+}
+
 // heldItemSlot reports whether the inventory slot is currently held.
 func (s *Session) heldItemSlot(inv *inventory.Inventory, slot int) bool {
 	return inv == s.offHand || inv == s.inv && s.heldSlot != nil && slot == int(*s.heldSlot)

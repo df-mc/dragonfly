@@ -407,12 +407,7 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 		return item.Stack{}, fmt.Errorf("unable to find container with ID %v", slot.Container.ContainerID)
 	}
 
-	sl := int(slot.Slot)
-	if inv == s.offHand {
-		sl = 0
-	}
-
-	i, err := inv.Item(sl)
+	i, err := inv.Item(s.invSlot(inv, int(slot.Slot)))
 	if err != nil {
 		return i, err
 	}
@@ -422,11 +417,7 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 // setItemInSlot sets an item stack in the slot of a container present in the slot info.
 func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session, tx *world.Tx) {
 	inv, _ := s.invByID(int32(slot.Container.ContainerID), tx)
-
-	sl := int(slot.Slot)
-	if inv == s.offHand {
-		sl = 0
-	}
+	sl := s.invSlot(inv, int(slot.Slot))
 
 	before, _ := inv.Item(sl)
 	_ = inv.SetItem(sl, i)
@@ -496,11 +487,7 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session, tx *world.Tx) {
 	for container, slots := range h.changes {
 		for slot, info := range slots {
 			inv, _ := s.invByID(int32(container), tx)
-			sl := int(slot)
-			if inv == s.offHand {
-				sl = 0
-			}
-			_ = inv.SetItem(sl, info.before)
+			_ = inv.SetItem(s.invSlot(inv, int(slot)), info.before)
 		}
 	}
 

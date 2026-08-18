@@ -12,13 +12,11 @@ var (
 )
 
 // ShieldDecorationRecipe applies a banner design to an undecorated shield.
-type ShieldDecorationRecipe struct {
-	block string
-}
+type ShieldDecorationRecipe struct{}
 
 // NewShieldDecorationRecipe creates the dynamic shield decoration recipe.
 func NewShieldDecorationRecipe() ShieldDecorationRecipe {
-	return ShieldDecorationRecipe{block: "crafting_table"}
+	return ShieldDecorationRecipe{}
 }
 
 // Match checks for exactly one undecorated shield and one banner in any crafting-grid slots.
@@ -39,7 +37,7 @@ func (r ShieldDecorationRecipe) Match(input []Item) (output []item.Stack, ok boo
 			shield, foundShield = stack, true
 		default:
 			name, _ := it.EncodeItem()
-			banner, ok := it.(interface{ EncodeNBT() map[string]any })
+			banner, ok := it.(world.NBTer)
 			if name != "minecraft:banner" || !ok || foundBanner {
 				return nil, false
 			}
@@ -54,8 +52,8 @@ func (r ShieldDecorationRecipe) Match(input []Item) (output []item.Stack, ok boo
 }
 
 // Block returns the crafting table used for shield decoration.
-func (r ShieldDecorationRecipe) Block() string {
-	return r.block
+func (ShieldDecorationRecipe) Block() string {
+	return "crafting_table"
 }
 
 // UUID returns the hardcoded shield decoration recipe ID.

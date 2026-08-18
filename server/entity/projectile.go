@@ -337,22 +337,23 @@ func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.
 
 // emitHitEffects emits the configured effects for a final, non-deflected hit.
 func (lt *ProjectileBehaviour) emitHitEffects(tx *world.Tx, result trace.Result) {
+	pos := result.Position()
 	for i := 0; i < lt.conf.ParticleCount; i++ {
-		tx.AddParticle(result.Position(), lt.conf.Particle)
+		tx.AddParticle(pos, lt.conf.Particle)
 	}
 	if lt.conf.Sound != nil {
-		tx.PlaySound(result.Position(), lt.conf.Sound)
+		tx.PlaySound(pos, lt.conf.Sound)
 	}
 }
 
 // deflect reverses a shield-blocked projectile and moves it clear of the blocker.
 func (lt *ProjectileBehaviour) deflect(e *Ent, vel mgl64.Vec3) {
-	if vel.Len() == 0 {
+	l := vel.Len()
+	if l == 0 {
 		return
 	}
-	reflected := vel.Mul(-1)
-	e.SetVelocity(reflected)
-	e.data.Pos = e.Position().Add(reflected.Normalize().Mul(0.05))
+	e.SetVelocity(vel.Mul(-1))
+	e.data.Pos = e.Position().Sub(vel.Mul(0.05 / l))
 }
 
 // tickMovement ticks the movement of a projectile. It updates the position and

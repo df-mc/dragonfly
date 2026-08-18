@@ -1495,9 +1495,7 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(*p.heldSlot), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
-	if changed := p.updateHeldItemState(); changed && p.tx != nil {
-		p.updateState()
-	}
+	p.UpdateHeldItemState()
 }
 
 // UpdateHeldItemState refreshes state derived from the player's held items.
@@ -2812,8 +2810,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			delete(p.cooldowns, it)
 		}
 	}
-	shieldStateChanged := p.updateShieldBlockingState(now)
-	if shieldStateChanged {
+	if p.updateShieldBlockingState(now) {
 		p.updateState()
 	}
 

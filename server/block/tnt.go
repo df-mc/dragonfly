@@ -20,7 +20,8 @@ var _ world.RedstonePowerAction = TNT{}
 
 func (TNT) RedstoneNonConductive() {}
 
-// RedstonePowerAction primes shield-unblockable TNT when it first receives redstone power.
+// RedstonePowerAction primes TNT when it first receives redstone power. Redstone-primed TNT is not
+// blockable by shields.
 func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower int) {
 	if oldPower > 0 || newPower == 0 {
 		return
@@ -28,14 +29,14 @@ func (t TNT) RedstonePowerAction(pos cube.Pos, tx *world.Tx, oldPower, newPower 
 	spawnTnt(pos, tx, world.TNTSpawnConfig{Fuse: time.Second * 4, UnblockableByShield: true})
 }
 
-// ProjectileHit ignites TNT hit by a burning projectile, attributing it to the projectile owner.
+// ProjectileHit ...
 func (t TNT) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
 	if f, ok := e.(flammableEntity); ok && f.OnFireDuration() > 0 {
-		spawnTnt(pos, tx, world.TNTSpawnConfig{Fuse: time.Second * 4, Source: tntIgnitionSourceHandle(e)})
+		t.Ignite(pos, tx, e)
 	}
 }
 
-// Activate ignites TNT using a Fire Aspect item.
+// Activate ...
 func (t TNT) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, ctx *item.UseContext) bool {
 	held, _ := u.HeldItems()
 	if _, ok := held.Enchantment(enchantment.FireAspect); ok {
@@ -105,11 +106,10 @@ func tntIgnitionSourceHandle(source world.Entity) *world.EntityHandle {
 	return source.H()
 }
 
-// spawnTnt replaces the block with primed TNT carrying its explosion source and shield blockability.
+// spawnTnt replaces the block at pos with a primed TNT entity spawned with conf.
 func spawnTnt(pos cube.Pos, tx *world.Tx, conf world.TNTSpawnConfig) {
 	tx.PlaySound(pos.Vec3Centre(), sound.TNT{})
 	tx.SetBlock(pos, nil, nil)
 	opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
-	registry := tx.World().EntityRegistry().Config()
-	tx.AddEntity(registry.TNTWithConfig(opts, conf))
+	tx.AddEntity(tx.World().EntityRegistry().Config().TNTWithConfig(opts, conf))
 }

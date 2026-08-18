@@ -84,7 +84,7 @@ func (h *InventoryTransactionHandler) resendInventories(s *Session) {
 }
 
 // handleNormalTransaction validates and handles an item drop transaction, refreshing held item state if needed.
-func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.InventoryTransaction, s *Session, tx *world.Tx, c interface{ Drop(item.Stack) int }) error {
+func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.InventoryTransaction, s *Session, tx *world.Tx, c Controllable) error {
 	if len(pk.Actions) != 2 {
 		return fmt.Errorf("expected two actions for dropping an item, got %d", len(pk.Actions))
 	}

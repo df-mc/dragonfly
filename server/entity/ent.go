@@ -41,10 +41,10 @@ func (e *Ent) Behaviour() Behaviour {
 	return e.data.Data.(Behaviour)
 }
 
-// ProjectileOwner returns the entity that owns this Ent, if it has projectile behaviour.
+// ProjectileOwner returns the entity that owns this Ent, if its behaviour exposes an owner.
 func (e *Ent) ProjectileOwner() *world.EntityHandle {
-	if projectile, ok := e.Behaviour().(*ProjectileBehaviour); ok {
-		return projectile.Owner()
+	if owned, ok := e.Behaviour().(interface{ Owner() *world.EntityHandle }); ok {
+		return owned.Owner()
 	}
 	return nil
 }

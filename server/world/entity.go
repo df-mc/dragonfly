@@ -485,12 +485,6 @@ type ShieldBlockInfoSource interface {
 	ShieldBlockInfo() (ShieldBlockInfo, bool)
 }
 
-// ShieldBlockSource is implemented by damage sources that shields may block.
-type ShieldBlockSource interface {
-	DamageSource
-	ShieldBlockInfoSource
-}
-
 // HurtResult describes the outcome of a call to Hurt on a living entity.
 type HurtResult uint8
 

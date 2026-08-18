@@ -111,10 +111,12 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 		t := uint64(time.Now().UnixNano())
 		c.RandSource = rand.NewPCG(t, t)
 	}
-	src = configuredExplosionSource{
-		ExplosionSource:     src,
-		source:              c.Source,
-		unblockableByShield: c.UnblockableByShield,
+	if c.Source != nil || c.UnblockableByShield {
+		src = configuredExplosionSource{
+			ExplosionSource:     src,
+			source:              c.Source,
+			unblockableByShield: c.UnblockableByShield,
+		}
 	}
 	size, explosionPos := src.Size(), src.Position()
 	if c.ItemDropChance == 0 {

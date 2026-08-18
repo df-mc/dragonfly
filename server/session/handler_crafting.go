@@ -266,8 +266,9 @@ func (h *ItemStackRequestHandler) tryDynamicCraft(selected recipe.Multi, s *Sess
 	}
 
 	// Match only the dynamic recipe selected by the client's multi-recipe ID.
+	selectedID := selected.UUID()
 	for _, dynamicRecipe := range recipe.DynamicRecipes() {
-		if dynamicRecipe.Block() != "crafting_table" || dynamicRecipe.UUID() != selected.UUID() {
+		if dynamicRecipe.Block() != "crafting_table" || dynamicRecipe.UUID() != selectedID {
 			continue
 		}
 

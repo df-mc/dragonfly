@@ -104,13 +104,7 @@ func (t tntType) DecodeNBT(m map[string]any, data *world.EntityData) {
 // EncodeNBT encodes the TNT fuse and non-default shield blockability.
 func (tntType) EncodeNBT(data *world.EntityData) map[string]any {
 	fuse, unblockableByShield := tntFuseAndUnblockableByShield(data.Data)
-	ticks := fuse / (time.Second / 20)
-	if ticks < 0 {
-		ticks = 0
-	} else if ticks > math.MaxInt16 {
-		ticks = math.MaxInt16
-	}
-	m := map[string]any{"Fuse": int16(ticks)}
+	m := map[string]any{"Fuse": int16(min(max(fuse/(time.Second/20), 0), math.MaxInt16))}
 	if unblockableByShield {
 		m["DragonflyUnblockableByShield"] = uint8(1)
 	}
