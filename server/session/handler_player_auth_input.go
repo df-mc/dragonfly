@@ -42,9 +42,9 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 		}
 	}
 
-	if rd, ok := c.RidingEntity(tx); ok && rd.ControllingRider() != nil {
-		if s.entityRuntimeID(c) == s.entityRuntimeID(rd.ControllingRider()) {
-			rd.MoveInput(mgl64.Vec2{float64(pk.MoveVector.X()), float64(pk.MoveVector.Y())}, pk.Yaw, pk.Pitch)
+	if rideable, ok := c.RidingEntity(tx); ok {
+		if controller := rideable.ControllingRider(); controller == c.H() {
+			rideable.MoveInput(mgl64.Vec2{float64(pk.MoveVector.X()), float64(pk.MoveVector.Y())}, pk.Yaw, pk.Pitch)
 		}
 	}
 

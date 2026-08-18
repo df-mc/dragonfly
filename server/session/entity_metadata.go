@@ -43,6 +43,15 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	return m
 }
 
+// seatOffset returns the current seat offset without retaining an entity or a
+// transaction. Riders expose a value copy for metadata encoding.
+func (s *Session) seatOffset(e any) (mgl64.Vec3, bool) {
+	if r, ok := e.(entity.Rider); ok {
+		return r.SeatOffset()
+	}
+	return mgl64.Vec3{}, false
+}
+
 func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSneaking)
@@ -103,11 +112,32 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if sc, ok := e.(scaled); ok {
 		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
 	}
-	if r, ok := e.(rider); ok {
-		if pos, ok := r.SeatPosition(); ok {
-			m[protocol.EntityDataKeySeatOffset] = vec64To32(pos)
-			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
-		}
+	if pos, ok := s.seatOffset(e); ok {
+		m[protocol.EntityDataKeySeatOffset] = vec64To32(pos)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
+	} else if rider, ok := e.(entity.Rider); ok && rider.SeatIndex() >= 0 {
+		// A custom rider may expose no offset getter. Its valid seat index still
+		// carries the protocol riding state; the seat defaults to the actor
+		// origin until the implementation supplies a position.
+		m[protocol.EntityDataKeySeatOffset] = vec64To32(mgl64.Vec3{})
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
+	}
+	if r, ok := e.(entity.Rideable); ok {
+		// The client treats -1 as no controlling seat. Sending the reset is
+		// necessary because actor metadata updates are partial.
+		m[protocol.EntityDataKeyControllingSeatIndex] = int32(r.ControllingSeatIndex())
+	}
+	if lock, ok := e.(interface{ SeatLockPassengerRotation() bool }); ok {
+		m[protocol.EntityDataKeySeatLockPassengerRotation] = boolByte(lock.SeatLockPassengerRotation())
+	}
+	if degrees, ok := e.(interface{ SeatLockPassengerRotationDegrees() float32 }); ok {
+		m[protocol.EntityDataKeySeatLockPassengerRotationDegrees] = degrees.SeatLockPassengerRotationDegrees()
+	}
+	if offset, ok := e.(interface{ SeatRotationOffset() float32 }); ok {
+		m[protocol.EntityDataKeySeatRotationOffset] = offset.SeatRotationOffset()
+	}
+	if degrees, ok := e.(interface{ SeatRotationOffsetDegrees() float32 }); ok {
+		m[protocol.EntityDataKeySeatRotationOffsetDegrees] = degrees.SeatRotationOffsetDegrees()
 	}
 	if t, ok := e.(tnt); ok {
 		m[protocol.EntityDataKeyFuseTime] = int32(t.Fuse().Milliseconds() / 50)
@@ -331,10 +361,6 @@ type firework interface {
 
 type gameMode interface {
 	GameMode() world.GameMode
-}
-
-type rider interface {
-	SeatPosition() (mgl64.Vec3, bool)
 }
 
 type sleeper interface {

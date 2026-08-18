@@ -59,6 +59,14 @@ type playerData struct {
 
 	riddenEntity *world.EntityHandle
 	seatIndex    int
+	// controlling is a replay cache for the rider-side link. The rideable is
+	// authoritative; every mount, seat change, dismount, and tick synchronises
+	// this value from its controller handle.
+	controlling bool
+	// seatPosition is the last seat offset sent to the client. It is kept as a
+	// value so metadata generation never has to retain or resolve an entity
+	// outside its owner transaction.
+	seatPosition mgl64.Vec3
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
@@ -900,6 +908,10 @@ func (p *Player) DeathPosition() (mgl64.Vec3, world.Dimension, bool) {
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
 func (p *Player) kill(src world.DamageSource) {
+	// A dead rider cannot remain attached while its player is hidden or
+	// respawned. This is a forced teardown, so a dismount handler cannot keep a
+	// closed relationship alive.
+	p.dismountEntity(p.tx, false)
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
@@ -997,6 +1009,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	if !p.Dead() || p.session() == session.Nop {
 		return
 	}
+	p.dismountEntity(p.tx, false)
 
 	blockPos, w, spawnObstructed, _ := p.spawnLocation()
 	pos := blockPos.Vec3Middle()
@@ -2638,6 +2651,31 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	if p.Dead() {
 		return
 	}
+	if p.prevWorld != nil && p.prevWorld != tx.World() && p.riddenEntity != nil {
+		// A player handle may cross worlds, but a riding relationship may not.
+		// The old rideable cannot be resolved through the new transaction, so
+		// clear the relationship before emitting new-world metadata.
+		p.clearRidingState()
+	}
+	if p.riddenEntity != nil {
+		rideable, ok := p.RidingEntity(tx)
+		if !ok {
+			// The rideable may have been removed independently of the rider.
+			// Drop the stale handle before the next metadata update.
+			p.clearRidingState()
+			p.updateState()
+		} else if p.seatIndex < 0 || p.seatIndex >= len(rideable.SeatPositions()) {
+			// A rideable may change its seat layout while passengers are
+			// present. Never advertise an out-of-range seat to the client.
+			rideable.RemoveRider(p.H())
+			p.clearRidingState()
+			p.updateState()
+		} else {
+			if p.syncRideableState(tx, rideable) {
+				p.updateState()
+			}
+		}
+	}
 	if _, ok := p.tx.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -2874,11 +2912,23 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 }
 
 // RidingEntity returns the entity that the rider is currently sitting on.
+// The returned entity is valid only for tx.
 func (p *Player) RidingEntity(tx *world.Tx) (entity.Rideable, bool) {
-	if rideable, ok := p.riddenEntity.Entity(tx); ok {
-		return rideable.(entity.Rideable), true
+	if p.riddenEntity == nil || tx == nil {
+		return nil, false
 	}
-	return nil, false
+	e, ok := p.riddenEntity.Entity(tx)
+	if !ok {
+		return nil, false
+	}
+	rideable, ok := e.(entity.Rideable)
+	return rideable, ok
+}
+
+// RidingEntityHandle returns the stable handle of the current rideable, or nil
+// when the player is not mounted.
+func (p *Player) RidingEntityHandle() *world.EntityHandle {
+	return p.riddenEntity
 }
 
 // SeatIndex returns the position of where the rider is sitting.
@@ -2886,68 +2936,261 @@ func (p *Player) SeatIndex() int {
 	return p.seatIndex
 }
 
-// ChangeSeat sets the seat index of the player if it is currently riding an entity and if the seat index
-// is valid.
-func (p *Player) ChangeSeat(tx *world.Tx, seatIndex int) {
-	riddenEntity, ok := p.RidingEntity(tx)
-	if !ok || seatIndex < 0 || len(riddenEntity.SeatPositions()) <= seatIndex {
-		return
-	}
-	p.seatIndex = seatIndex
-	p.updateState()
-	for _, v := range p.viewers() {
-		v.ViewEntityMount(p, riddenEntity, p.seatIndex == 0)
-	}
+// RidingEntityController reports whether the player currently occupies the
+// controlling role for its rideable. The rideable remains authoritative when
+// selecting or changing that role.
+func (p *Player) RidingEntityController() bool {
+	return p.controlling
 }
 
-// SeatPosition returns the position of the seat the player is currently sitting on. If the player is not
-// currently riding an entity, the second return value is false.
-func (p *Player) SeatPosition(tx *world.Tx) (mgl64.Vec3, bool) {
-	riddenEntity, ok := p.RidingEntity(tx)
-	if !ok || p.seatIndex == -1 || len(riddenEntity.SeatPositions()) <= p.seatIndex {
+// SeatOffset returns the seat offset currently advertised for the player. It
+// is a value copy and does not retain a transaction-owned entity.
+func (p *Player) SeatOffset() (mgl64.Vec3, bool) {
+	if p.riddenEntity == nil || p.seatIndex < 0 {
 		return mgl64.Vec3{}, false
 	}
-	return riddenEntity.SeatPositions()[p.seatIndex], true
+	return p.seatPosition, true
 }
 
-// MountEntity mounts the Rider to an entity if the entity is Rideable and if there is a seat available.
-func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex int) {
-	ctx := NewEventContext(tx, p)
-	if p.h.HandleMountEntity(ctx, rideable, &seatIndex); ctx.Cancelled() {
-		return
-	}
-
-	if rd := p.riddenEntity; rd != nil {
-		p.DismountEntity(tx)
-	}
-
-	p.riddenEntity = rideable.H()
-	p.seatIndex = seatIndex
-
-	p.updateState()
-	for _, v := range p.viewers() {
-		v.ViewEntityMount(p, rideable, seatIndex == 0)
-	}
-}
-
-// DismountEntity dismounts the player from an entity.
-func (p *Player) DismountEntity(tx *world.Tx) {
-	riddenEntity, ok := p.RidingEntity(tx)
+// ChangeSeat sets the seat index of the player if it is currently riding an
+// entity and if the target seat is valid and free.
+func (p *Player) ChangeSeat(tx *world.Tx, seatIndex int) {
+	rideable, ok := p.RidingEntity(tx)
 	if !ok {
 		return
 	}
-	ctx := NewEventContext(tx, p)
-	if p.h.HandleDismountEntity(ctx, riddenEntity); ctx.Cancelled() {
+	positions := rideable.SeatPositions()
+	if seatIndex < 0 || seatIndex >= len(positions) || seatIndex == p.seatIndex {
 		return
 	}
 
-	p.riddenEntity = nil
-	p.seatIndex = -1
+	beforeController := controllerState(rideable)
+	if !rideable.AddRider(p.H(), seatIndex) {
+		return
+	}
+	p.seatIndex = seatIndex
+	p.seatPosition = positions[seatIndex]
+	afterController := controllerState(rideable)
+	p.syncRideableState(tx, rideable)
 
 	p.updateState()
 	for _, v := range p.viewers() {
-		v.ViewEntityDismount(p, riddenEntity)
+		v.ViewEntityMount(p, rideable, p.controlling)
+		if controllerStateChanged(beforeController, afterController) {
+			if beforeController.handle != nil && beforeController.handle != p.H() {
+				p.viewRiderMount(v, tx, beforeController.handle, rideable, false)
+			}
+			if afterController.handle != nil && afterController.handle != p.H() {
+				p.viewRiderMount(v, tx, afterController.handle, rideable, true)
+			}
+			v.ViewEntityState(rideable)
+		}
 	}
+}
+
+// SeatPosition returns the position of the seat the player is currently
+// sitting on. If the player is not currently riding an entity, the second
+// return value is false.
+func (p *Player) SeatPosition(tx *world.Tx) (mgl64.Vec3, bool) {
+	rideable, ok := p.RidingEntity(tx)
+	if !ok || p.seatIndex < 0 {
+		return mgl64.Vec3{}, false
+	}
+	positions := rideable.SeatPositions()
+	if p.seatIndex >= len(positions) {
+		return mgl64.Vec3{}, false
+	}
+	p.seatPosition = positions[p.seatIndex]
+	return p.seatPosition, true
+}
+
+// MountEntity mounts the Rider to an entity if the entity is Rideable and if
+// there is a seat available.
+func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex int) {
+	if tx == nil || rideable == nil || rideable.H() == nil {
+		return
+	}
+	if _, ok := rideable.H().Entity(tx); !ok {
+		return
+	}
+	positions := rideable.SeatPositions()
+	if seatIndex < 0 || seatIndex >= len(positions) {
+		return
+	}
+
+	mountHandled := false
+	if current, ok := p.RidingEntity(tx); ok {
+		if current.H() == rideable.H() && p.seatIndex == seatIndex {
+			return
+		}
+		ctx := NewEventContext(tx, p)
+		if p.h.HandleMountEntity(ctx, rideable, &seatIndex); ctx.Cancelled() {
+			return
+		}
+		positions = rideable.SeatPositions()
+		if seatIndex < 0 || seatIndex >= len(positions) {
+			return
+		}
+		mountHandled = true
+		p.dismountEntity(tx, true)
+		if p.riddenEntity != nil {
+			return
+		}
+	} else if p.riddenEntity != nil {
+		// The old handle is no longer in this transaction's world. Do not carry
+		// a stale relationship into the new world.
+		p.clearRidingState()
+	}
+
+	if !mountHandled {
+		ctx := NewEventContext(tx, p)
+		if p.h.HandleMountEntity(ctx, rideable, &seatIndex); ctx.Cancelled() {
+			return
+		}
+	}
+	positions = rideable.SeatPositions()
+	if seatIndex < 0 || seatIndex >= len(positions) {
+		return
+	}
+
+	beforeController := controllerState(rideable)
+	if !rideable.AddRider(p.H(), seatIndex) {
+		return
+	}
+	p.riddenEntity = rideable.H()
+	p.seatIndex = seatIndex
+	p.seatPosition = positions[seatIndex]
+	afterController := controllerState(rideable)
+	p.syncRideableState(tx, rideable)
+
+	p.updateState()
+	for _, v := range p.viewers() {
+		v.ViewEntityMount(p, rideable, p.controlling)
+		if controllerStateChanged(beforeController, afterController) {
+			if beforeController.handle != nil && beforeController.handle != p.H() {
+				p.viewRiderMount(v, tx, beforeController.handle, rideable, false)
+			}
+			if afterController.handle != nil && afterController.handle != p.H() {
+				p.viewRiderMount(v, tx, afterController.handle, rideable, true)
+			}
+			v.ViewEntityState(rideable)
+		}
+	}
+}
+
+// DismountEntity dismounts the player from an entity. A handler may cancel a
+// client-requested dismount.
+func (p *Player) DismountEntity(tx *world.Tx) {
+	p.dismountEntity(tx, true)
+}
+
+func (p *Player) dismountEntity(tx *world.Tx, callHandler bool) {
+	if p.riddenEntity == nil {
+		p.clearRidingState()
+		return
+	}
+	rideable, ok := p.RidingEntity(tx)
+	if !ok {
+		p.clearRidingState()
+		return
+	}
+	if callHandler {
+		ctx := NewEventContext(tx, p)
+		if p.h.HandleDismountEntity(ctx, rideable); ctx.Cancelled() {
+			return
+		}
+	}
+
+	beforeController := controllerState(rideable)
+	rideable.RemoveRider(p.H())
+	afterController := controllerState(rideable)
+	p.clearRidingState()
+	p.syncRideableState(tx, rideable)
+
+	p.updateState()
+	for _, v := range p.viewers() {
+		v.ViewEntityDismount(p, rideable)
+		if controllerStateChanged(beforeController, afterController) {
+			if afterController.handle != nil {
+				p.viewRiderMount(v, tx, afterController.handle, rideable, true)
+			}
+			v.ViewEntityState(rideable)
+		}
+	}
+}
+
+func (p *Player) clearRidingState() {
+	p.riddenEntity = nil
+	p.seatIndex = -1
+	p.controlling = false
+	p.seatPosition = mgl64.Vec3{}
+}
+
+type ridingController struct {
+	handle *world.EntityHandle
+	seat   int
+}
+
+func controllerState(rideable entity.Rideable) ridingController {
+	return ridingController{handle: rideable.ControllingRider(), seat: rideable.ControllingSeatIndex()}
+}
+
+func controllerStateChanged(a, b ridingController) bool {
+	return a.handle != b.handle || a.seat != b.seat
+}
+
+// syncRideableState copies the rideable's handle-backed registrations into
+// live player rider caches while both entities are available in tx.
+func (p *Player) syncRideableState(tx *world.Tx, rideable entity.Rideable) bool {
+	positions := rideable.SeatPositions()
+	controller := rideable.ControllingRider()
+	selfChanged := false
+	for _, rider := range rideable.Riders() {
+		if rider.Handle == nil || rider.SeatIndex < 0 || rider.SeatIndex >= len(positions) {
+			rideable.RemoveRider(rider.Handle)
+			continue
+		}
+		entityValue, ok := rider.Handle.Entity(tx)
+		if !ok {
+			// A relationship never crosses worlds. The rideable owns removal of
+			// registrations that cannot be resolved in its current world.
+			rideable.RemoveRider(rider.Handle)
+			continue
+		}
+		registered, ok := entityValue.(entity.Rider)
+		if !ok || registered.RidingEntityHandle() != rideable.H() {
+			rideable.RemoveRider(rider.Handle)
+			continue
+		}
+		other, ok := entityValue.(*Player)
+		if !ok {
+			continue
+		}
+		changed := other.seatIndex != rider.SeatIndex || other.seatPosition != positions[rider.SeatIndex] || other.controlling != (controller == rider.Handle)
+		other.seatIndex = rider.SeatIndex
+		other.seatPosition = positions[rider.SeatIndex]
+		other.controlling = controller == rider.Handle
+		if changed {
+			if other == p {
+				selfChanged = true
+			} else {
+				other.updateState()
+			}
+		}
+	}
+	return selfChanged
+}
+
+func (p *Player) viewRiderMount(v world.Viewer, tx *world.Tx, handle *world.EntityHandle, rideable entity.Rideable, driver bool) {
+	e, ok := handle.Entity(tx)
+	if !ok {
+		return
+	}
+	rider, ok := e.(entity.Rider)
+	if !ok {
+		return
+	}
+	v.ViewEntityMount(rider, rideable, driver)
 }
 
 // canBreathe returns true if the player can currently breathe.
@@ -3425,7 +3668,7 @@ func (p *Player) Close() error {
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close(msg string) {
-	p.DismountEntity(p.tx)
+	p.dismountEntity(p.tx, false)
 	// If the player is being disconnected while they are dead, we respawn the player
 	// so that the player logic works correctly the next time they join.
 	if p.Dead() && p.session() != nil {

@@ -161,12 +161,14 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	var valid bool
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
+		valid = c.UseItemOnEntity(e)
 		if rideable, ok := e.(entity.Rideable); ok {
-			if nextSeatIndex, ok := rideable.NextFreeSeatIndex(vec32To64(data.ClickedPosition)); ok {
-				c.MountEntity(tx, rideable, nextSeatIndex)
+			if valid {
+				if nextSeatIndex, ok := rideable.NextFreeSeatIndex(vec32To64(data.ClickedPosition)); ok {
+					c.MountEntity(tx, rideable, nextSeatIndex)
+				}
 			}
 		}
-		valid = c.UseItemOnEntity(e)
 	case protocol.UseItemOnEntityActionAttack:
 		valid = c.AttackEntity(e)
 	default:
