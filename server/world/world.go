@@ -1009,7 +1009,8 @@ func (w *World) PlayerSpawnPoint(id uuid.UUID) (PlayerSpawn, bool) {
 	if w == nil {
 		return PlayerSpawn{}, false
 	}
-	spawn, exists, err := w.conf.Provider.LoadPlayerSpawn(id)
+	provider := w.conf.Provider.(PlayerSpawnProvider)
+	spawn, exists, err := provider.LoadPlayerSpawn(id)
 	if err != nil {
 		w.conf.Log.Error("load player spawn: "+err.Error(), "ID", id)
 		return PlayerSpawn{}, false
@@ -1024,7 +1025,8 @@ func (w *World) SetPlayerSpawn(id uuid.UUID, pos cube.Pos) {
 	if w == nil {
 		return
 	}
-	if err := w.conf.Provider.SavePlayerSpawn(id, PlayerSpawn{Pos: pos, Dim: w.Dimension()}); err != nil {
+	provider := w.conf.Provider.(PlayerSpawnProvider)
+	if err := provider.SavePlayerSpawn(id, PlayerSpawn{Pos: pos, Dim: w.Dimension()}); err != nil {
 		w.conf.Log.Error("save player spawn: "+err.Error(), "ID", id)
 	}
 }
@@ -1038,6 +1040,17 @@ func (w *World) SetRequiredSleepDuration(duration time.Duration) {
 	w.set.Lock()
 	defer w.set.Unlock()
 	w.set.RequiredSleepTicks = duration.Milliseconds() / 50
+}
+
+// RespawnBlocksExplode reports whether beds and respawn anchors explode when used outside their respawn-valid
+// dimension.
+func (w *World) RespawnBlocksExplode() bool {
+	if w == nil {
+		return false
+	}
+	w.set.Lock()
+	defer w.set.Unlock()
+	return w.set.RespawnBlocksExplode
 }
 
 // DefaultGameMode returns the default game mode of the world. When players

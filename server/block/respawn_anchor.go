@@ -69,7 +69,9 @@ func (r RespawnAnchor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.
 
 	if tx.World().Dimension() != world.Nether {
 		tx.SetBlock(pos, nil, nil)
-		r.explode(pos, tx)
+		if tx.World().RespawnBlocksExplode() {
+			r.explode(pos, tx)
+		}
 		return true
 	}
 
@@ -88,11 +90,24 @@ func (r RespawnAnchor) explode(pos cube.Pos, tx *world.Tx) {
 	if size == 0 {
 		size = 5
 	}
-	ExplosionConfig{SpawnFire: true}.Explode(tx, world.BlockExplosionSource{
+	ExplosionConfig{SpawnFire: true}.explode(tx, world.BlockExplosionSource{
 		Block:         r,
 		Pos:           pos,
 		ExplosionSize: size,
-	})
+	}, respawnAnchorTouchesWater(pos, tx))
+}
+
+// respawnAnchorTouchesWater reports whether water touches any face of the anchor. Vanilla treats the resulting
+// explosion as underwater in this case.
+func respawnAnchorTouchesWater(pos cube.Pos, tx *world.Tx) bool {
+	for _, face := range cube.Faces() {
+		if liquid, ok := tx.Liquid(pos.Side(face)); ok {
+			if _, water := liquid.(Water); water {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // CanRespawnOn ...

@@ -72,24 +72,58 @@ func (db *DB) LoadPlayerSpawn(id uuid.UUID) (spawn world.PlayerSpawn, exists boo
 	if !exists || err != nil {
 		return world.PlayerSpawn{}, exists, err
 	}
-	spawn, err = playerSpawnFromData(serverData, id)
-	return spawn, true, err
+	return playerSpawnFromData(serverData, id)
 }
 
-func playerSpawnFromData(serverData map[string]any, id uuid.UUID) (world.PlayerSpawn, error) {
-	x, xOK := serverData["SpawnX"].(int32)
-	y, yOK := serverData["SpawnY"].(int32)
-	z, zOK := serverData["SpawnZ"].(int32)
-	if !xOK || !yOK || !zOK {
-		return world.PlayerSpawn{}, fmt.Errorf("error reading spawn fields from server data for player %v", id)
-	}
-	spawn := world.PlayerSpawn{Pos: cube.Pos{int(x), int(y), int(z)}, Dim: world.Overworld}
-	if dimID, ok := serverData["SpawnDimension"].(int32); ok {
-		if dim, ok := world.DimensionByID(int(dimID)); ok {
-			spawn.Dim = dim
+func playerSpawnFromData(serverData map[string]any, id uuid.UUID) (world.PlayerSpawn, bool, error) {
+	if pos, exists, err := playerSpawnPosition(serverData, "SpawnBlockPosition", id); exists || err != nil {
+		if err != nil {
+			return world.PlayerSpawn{}, true, err
 		}
+		dimID, ok := serverData["SpawnDimension"].(int32)
+		if !ok {
+			return world.PlayerSpawn{}, true, fmt.Errorf("error reading spawn dimension from server data for player %v", id)
+		}
+		dim, ok := world.DimensionByID(int(dimID))
+		if !ok {
+			return world.PlayerSpawn{}, false, nil
+		}
+		return world.PlayerSpawn{Pos: pos, Dim: dim}, true, nil
 	}
-	return spawn, nil
+	if pos, exists, err := playerSpawnPosition(serverData, "Spawn", id); exists || err != nil {
+		if err != nil {
+			return world.PlayerSpawn{}, true, err
+		}
+		var dim world.Dimension = world.Overworld
+		if dimID, ok := serverData["SpawnDimension"].(int32); ok {
+			var valid bool
+			dim, valid = world.DimensionByID(int(dimID))
+			if !valid {
+				return world.PlayerSpawn{}, false, nil
+			}
+		}
+		return world.PlayerSpawn{Pos: pos, Dim: dim}, true, nil
+	}
+	if pos, exists, err := playerSpawnPosition(serverData, "BedPosition", id); exists || err != nil {
+		return world.PlayerSpawn{Pos: pos, Dim: world.Overworld}, exists, err
+	}
+	return world.PlayerSpawn{}, false, nil
+}
+
+func playerSpawnPosition(serverData map[string]any, prefix string, id uuid.UUID) (cube.Pos, bool, error) {
+	x, xExists := serverData[prefix+"X"]
+	y, yExists := serverData[prefix+"Y"]
+	z, zExists := serverData[prefix+"Z"]
+	if !xExists && !yExists && !zExists {
+		return cube.Pos{}, false, nil
+	}
+	xPos, xOK := x.(int32)
+	yPos, yOK := y.(int32)
+	zPos, zOK := z.(int32)
+	if !xOK || !yOK || !zOK {
+		return cube.Pos{}, true, fmt.Errorf("error reading %s fields from server data for player %v", prefix, id)
+	}
+	return cube.Pos{int(xPos), int(yPos), int(zPos)}, true, nil
 }
 
 // loadPlayerData loads the data stored in a LevelDB database for a specific UUID.
@@ -121,6 +155,10 @@ func (db *DB) loadPlayerData(id uuid.UUID) (serverData map[string]interface{}, k
 
 // SavePlayerSpawn saves the player spawn position passed to the levelDB database.
 func (db *DB) SavePlayerSpawn(id uuid.UUID, spawn world.PlayerSpawn) error {
+	dim, ok := world.DimensionID(spawn.Dim)
+	if !ok {
+		return fmt.Errorf("save player spawn: unregistered dimension")
+	}
 	_, err := db.ldb.Get([]byte("player_"+id.String()), nil)
 	d := make(map[string]interface{})
 	k := "player_server_" + id.String()
@@ -136,10 +174,10 @@ func (db *DB) SavePlayerSpawn(id uuid.UUID, spawn world.PlayerSpawn) error {
 	} else if d, k, _, err = db.loadPlayerData(id); err != nil {
 		return err
 	}
-	d["SpawnX"], d["SpawnY"], d["SpawnZ"] = int32(spawn.Pos.X()), int32(spawn.Pos.Y()), int32(spawn.Pos.Z())
-	// An unregistered Dimension resolves to 0 here, so that the spawn falls
-	// back to the Overworld instead of a stale, previously saved dimension.
-	dim, _ := world.DimensionID(spawn.Dim)
+	x, y, z := int32(spawn.Pos.X()), int32(spawn.Pos.Y()), int32(spawn.Pos.Z())
+	d["SpawnBlockPositionX"], d["SpawnBlockPositionY"], d["SpawnBlockPositionZ"] = x, y, z
+	// Retain the position-only fields for worlds last opened with older versions.
+	d["SpawnX"], d["SpawnY"], d["SpawnZ"] = x, y, z
 	d["SpawnDimension"] = int32(dim)
 
 	data, err := nbt.MarshalEncoding(d, nbt.LittleEndian)
@@ -150,6 +188,17 @@ func (db *DB) SavePlayerSpawn(id uuid.UUID, spawn world.PlayerSpawn) error {
 		return fmt.Errorf("write server data for player %v: %w", id, err)
 	}
 	return nil
+}
+
+// LoadPlayerSpawnPosition loads a position-only player spawn for Provider compatibility.
+func (db *DB) LoadPlayerSpawnPosition(id uuid.UUID) (cube.Pos, bool, error) {
+	spawn, exists, err := db.LoadPlayerSpawn(id)
+	return spawn.Pos, exists, err
+}
+
+// SavePlayerSpawnPosition saves an Overworld player spawn for Provider compatibility.
+func (db *DB) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
+	return db.SavePlayerSpawn(id, world.PlayerSpawn{Pos: pos, Dim: world.Overworld})
 }
 
 // LoadColumn reads a world.Column from the DB at a position and dimension in

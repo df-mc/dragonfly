@@ -515,6 +515,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		CustomBlocks: srv.customBlocks,
 		GameRules: []protocol.GameRule{
 			{Name: "naturalregeneration", Value: false},
+			{Name: "respawnblocksexplode", Value: srv.world.RespawnBlocksExplode()},
 			{Name: "locatorBar", Value: false},
 		},
 

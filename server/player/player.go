@@ -1037,10 +1037,6 @@ func (p *Player) respawn(f func(p *Player)) {
 			w, pos, obstructed = fallback, fallback.Spawn().Vec3Middle(), true
 		}
 	}
-	if useRespawn {
-		useRespawnBlock(p.tx, blockPos)
-	}
-
 	sess := p.session()
 	src := p.tx.World()
 	handle := p.tx.RemoveEntity(p)
@@ -1074,8 +1070,11 @@ func (p *Player) respawn(f func(p *Player)) {
 			sess.CloseConnection()
 		})
 	}
-	finish := func(tx *world.Tx, pos mgl64.Vec3, obstructed bool) {
+	finish := func(tx *world.Tx, pos mgl64.Vec3, obstructed, consumeRespawnBlock bool) {
 		np := tx.AddEntity(handle).(*Player)
+		if consumeRespawnBlock {
+			useRespawnBlock(tx, blockPos)
+		}
 		if obstructed {
 			np.Messaget(notValid)
 		}
@@ -1088,20 +1087,19 @@ func (p *Player) respawn(f func(p *Player)) {
 	}
 	task := w.Do(func(tx *world.Tx) {
 		if !resolve {
-			finish(tx, pos, obstructed)
+			finish(tx, pos, obstructed, useRespawn)
 			return
 		}
 		if spawn, ok := safeSpawnLocation(tx, blockPos); ok {
-			useRespawnBlock(tx, blockPos)
-			finish(tx, spawn.Vec3Middle(), false)
+			finish(tx, spawn.Vec3Middle(), false, true)
 			return
 		}
 		if fallback == tx.World() {
-			finish(tx, fallback.Spawn().Vec3Middle(), true)
+			finish(tx, fallback.Spawn().Vec3Middle(), true, false)
 			return
 		}
 		fallback.Do(func(tx *world.Tx) {
-			finish(tx, fallback.Spawn().Vec3Middle(), true)
+			finish(tx, fallback.Spawn().Vec3Middle(), true, false)
 		}).OnDone(restoreAsync)
 	})
 	if errors.Is(task.Err(), world.ErrWorldClosed) {
