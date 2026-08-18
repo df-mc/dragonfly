@@ -1,41 +1,83 @@
 name: Deploy
 on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
   pull_request_target:
-    types: [opened, synchronize, reopened, closed]
+    types: [closed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
 jobs:
 
   deploy:
     name: Deploy
-    if: github.event.action != 'closed'
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v6
+      - name: Resolve pull request
+        id: pull_request
+        uses: actions/github-script@v8
+        env:
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         with:
-          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          script: |
+            const {data: pulls} = await github.rest.pulls.list({
+              ...context.repo,
+              state: 'open',
+              head: `${process.env.HEAD_OWNER}:${process.env.HEAD_BRANCH}`,
+              per_page: 100,
+            });
+            const matches = pulls.filter(pull => pull.head.sha === process.env.HEAD_SHA);
+            if (matches.length > 1) {
+              core.setFailed(`Expected at most one matching pull request, found ${matches.length}.`);
+              return;
+            }
+            if (matches.length === 0) {
+              core.notice('The workflow run no longer belongs to the current head of an open pull request.');
+              return;
+            }
+            core.setOutput('number', matches[0].number);
 
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - name: Download deployment artifact
+        if: steps.pull_request.outputs.number != ''
+        uses: actions/download-artifact@v8
         with:
-          go-version-file: go.mod
-
-      - name: Build
-        run: go build -o dragonfly_exe -v .
+          name: dragonfly_exe
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
 
       - name: Deploy test server
+        if: steps.pull_request.outputs.number != ''
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          PR_NUMBER: ${{ steps.pull_request.outputs.number }}
         run: |
-          curl -X POST https://df-mc.dev/pullrequest \
-            -H "X-API-Key: ${{ secrets.API_KEY }}" \
-            -F "pr=${{ github.event.pull_request.number }}" \
+          curl --fail-with-body --silent --show-error \
+            -X POST https://df-mc.dev/pullrequest \
+            -H "X-API-Key: $API_KEY" \
+            -F "pr=$PR_NUMBER" \
             -F "binary=@dragonfly_exe"
 
   cleanup:
     name: Cleanup
-    if: github.event.action == 'closed'
+    if: github.event_name == 'pull_request_target' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Delete test server
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          curl -X DELETE https://df-mc.dev/pullrequest/${{ github.event.pull_request.number }} \
-            -H "X-API-Key: ${{ secrets.API_KEY }}"
+          curl --fail-with-body --silent --show-error \
+            -X DELETE "https://df-mc.dev/pullrequest/$PR_NUMBER" \
+            -H "X-API-Key: $API_KEY"

@@ -95,13 +95,14 @@ func (h *InventoryTransactionHandler) handleNormalTransaction(pk *packet.Invento
 		expected item.Stack
 	)
 	for _, action := range pk.Actions {
+		windowID, hasWindowID := action.WindowID.Value()
 		switch {
 		case action.SourceType == protocol.InventoryActionSourceWorld && action.InventorySlot == 0:
 			if old := stackToItem(s.br, action.OldItem.Stack); !old.Empty() {
 				return fmt.Errorf("unexpected non-empty old item in transaction action: %#v", action.OldItem)
 			}
 			count = int(action.NewItem.Stack.Count)
-		case action.SourceType == protocol.InventoryActionSourceContainer && action.WindowID == protocol.WindowIDInventory:
+		case action.SourceType == protocol.InventoryActionSourceContainer && hasWindowID && windowID == protocol.WindowIDInventory:
 			if expected = stackToItem(s.br, action.OldItem.Stack); expected.Empty() {
 				return fmt.Errorf("unexpected empty old item in transaction action: %#v", action.OldItem)
 			}

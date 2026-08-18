@@ -66,6 +66,21 @@ func ActivateEndPortal(tx *world.Tx, framePos cube.Pos) bool {
 			continue
 		}
 		ep := endPortal()
+		active := true
+		for _, pos := range interior {
+			if tx.Block(pos) != ep {
+				active = false
+				break
+			}
+		}
+		if active {
+			return false
+		}
+		ctx := tx.Event()
+		positions := append([]cube.Pos(nil), interior...)
+		if tx.World().Handler().HandlePortalActivate(ctx, world.End, positions); ctx.Cancelled() {
+			return false
+		}
 		for _, pos := range interior {
 			if tx.Block(pos) != ep {
 				tx.SetBlock(pos, ep, nil)

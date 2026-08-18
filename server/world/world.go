@@ -273,6 +273,7 @@ func (tx *Tx) biome(pos cube.Pos) Biome {
 	b, ok := BiomeByID(id)
 	if !ok {
 		tx.World().conf.Log.Error("biome not found by ID", "ID", id)
+		return unknownBiome{id: id}
 	}
 	return b
 }

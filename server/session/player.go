@@ -14,7 +14,6 @@ import (
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
-	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -113,9 +112,16 @@ func (s *Session) sendBiomes() {
 
 // sendRecipes sends the current crafting recipes to the session.
 func (s *Session) sendRecipes() {
-	recipes := make([]protocol.Recipe, 0, len(recipe.Recipes()))
-	potionRecipes := make([]protocol.PotionRecipe, 0)
-	potionContainerChange := make([]protocol.PotionContainerChangeRecipe, 0)
+	var (
+		shapedRecipes            []protocol.ShapedRecipe
+		shapelessRecipes         []protocol.ShapelessRecipe
+		userDataShapelessRecipes []protocol.UserDataShapelessRecipe
+		multiRecipes             []protocol.MultiRecipe
+		smithingTransformRecipes []protocol.SmithingTransformRecipe
+		smithingTrimRecipes      []protocol.SmithingTrimRecipe
+		potionRecipes            []protocol.PotionRecipe
+		potionContainerChange    []protocol.PotionContainerChangeRecipe
+	)
 
 	for index, i := range recipe.Recipes() {
 		networkID := uint32(index) + 1
@@ -123,7 +129,7 @@ func (s *Session) sendRecipes() {
 
 		switch i := i.(type) {
 		case recipe.Shapeless:
-			recipes = append(recipes, &protocol.ShapelessRecipe{
+			shapelessRecipes = append(shapelessRecipes, protocol.ShapelessRecipe{
 				RecipeID:        uuid.New().String(),
 				Priority:        int32(i.Priority()),
 				Input:           stacksToIngredientItems(s.br, i.Input()),
@@ -131,8 +137,22 @@ func (s *Session) sendRecipes() {
 				Block:           i.Block(),
 				RecipeNetworkID: networkID,
 			})
+		case recipe.UserDataShapeless:
+			userDataShapelessRecipes = append(userDataShapelessRecipes, protocol.UserDataShapelessRecipe{ShapelessRecipe: protocol.ShapelessRecipe{
+				RecipeID:        uuid.New().String(),
+				Priority:        int32(i.Priority()),
+				Input:           stacksToIngredientItems(s.br, i.Input()),
+				Output:          stacksToRecipeStacks(s.br, i.Output()),
+				Block:           i.Block(),
+				RecipeNetworkID: networkID,
+			}})
+		case recipe.Multi:
+			multiRecipes = append(multiRecipes, protocol.MultiRecipe{
+				UUID:            i.UUID(),
+				RecipeNetworkID: networkID,
+			})
 		case recipe.Shaped:
-			recipes = append(recipes, &protocol.ShapedRecipe{
+			shapedRecipes = append(shapedRecipes, protocol.ShapedRecipe{
 				RecipeID:        uuid.New().String(),
 				Priority:        int32(i.Priority()),
 				Width:           int32(i.Shape().Width()),
@@ -140,11 +160,12 @@ func (s *Session) sendRecipes() {
 				Input:           stacksToIngredientItems(s.br, i.Input()),
 				Output:          stacksToRecipeStacks(s.br, i.Output()),
 				Block:           i.Block(),
+				AssumeSymmetry:  true,
 				RecipeNetworkID: networkID,
 			})
 		case recipe.SmithingTransform:
 			input, output := stacksToIngredientItems(s.br, i.Input()), stacksToRecipeStacks(s.br, i.Output())
-			recipes = append(recipes, &protocol.SmithingTransformRecipe{
+			smithingTransformRecipes = append(smithingTransformRecipes, protocol.SmithingTransformRecipe{
 				RecipeID:        uuid.New().String(),
 				Base:            input[0],
 				Addition:        input[1],
@@ -155,7 +176,7 @@ func (s *Session) sendRecipes() {
 			})
 		case recipe.SmithingTrim:
 			input := stacksToIngredientItems(s.br, i.Input())
-			recipes = append(recipes, &protocol.SmithingTrimRecipe{
+			smithingTrimRecipes = append(smithingTrimRecipes, protocol.SmithingTrimRecipe{
 				RecipeID:        uuid.New().String(),
 				Base:            input[0],
 				Addition:        input[1],
@@ -189,7 +210,17 @@ func (s *Session) sendRecipes() {
 			})
 		}
 	}
-	s.writePacket(&packet.CraftingData{Recipes: recipes, PotionRecipes: potionRecipes, PotionContainerChangeRecipes: potionContainerChange, ClearRecipes: true})
+	s.writePacket(&packet.CraftingData{
+		ShapedRecipes:                shapedRecipes,
+		ShapelessRecipes:             shapelessRecipes,
+		MultiRecipes:                 multiRecipes,
+		UserDataShapelessRecipes:     userDataShapelessRecipes,
+		SmithingTransformRecipes:     smithingTransformRecipes,
+		SmithingTrimRecipes:          smithingTrimRecipes,
+		PotionRecipes:                potionRecipes,
+		PotionContainerChangeRecipes: potionContainerChange,
+		ClearRecipes:                 true,
+	})
 }
 
 // sendArmourTrimData sends the armour trim data.
@@ -984,10 +1015,9 @@ func stackFromItem(br world.BlockRegistry, it item.Stack) protocol.ItemStack {
 			NetworkID:     rid,
 			MetadataValue: uint32(meta),
 		},
-		HasNetworkID:   true,
 		Count:          uint16(it.Count()),
 		BlockRuntimeID: int32(blockRuntimeID),
-		NBTData:        nbtconv.WriteItem(it, false),
+		NBTData:        item.WriteNBT(it, false),
 	}
 }
 
@@ -1011,7 +1041,7 @@ func stackToItem(br world.BlockRegistry, it protocol.ItemStack) item.Stack {
 		t = nbter.DecodeNBT(it.NBTData).(world.Item)
 	}
 	s := item.NewStack(t, int(it.Count))
-	return nbtconv.Item(it.NBTData, &s)
+	return item.ReadNBT(it.NBTData, &s)
 }
 
 // instanceFromItem converts an item.Stack to its network ItemInstance representation.
@@ -1042,16 +1072,13 @@ func stacksToIngredientItems(_ world.BlockRegistry, inputs []recipe.Item) []prot
 				items = append(items, protocol.ItemDescriptorCount{Descriptor: &protocol.InvalidItemDescriptor{}})
 				continue
 			}
-			rid, meta, ok := world.ItemRuntimeID(i.Item())
-			if !ok {
-				panic("should never happen")
-			}
-			if _, ok = i.Value("variants"); ok {
+			name, meta := i.Item().EncodeItem()
+			if _, ok := i.Value("variants"); ok {
 				meta = math.MaxInt16 // Used to indicate that the item has multiple selectable variants.
 			}
 			d = &protocol.DefaultItemDescriptor{
-				NetworkID:     int16(rid),
-				MetadataValue: meta,
+				Name:          name,
+				MetadataValue: int32(meta),
 			}
 		case recipe.ItemTag:
 			d = &protocol.ItemTagItemDescriptor{Tag: i.Tag()}
@@ -1069,7 +1096,7 @@ func creativeContent(br world.BlockRegistry) ([]protocol.CreativeGroup, []protoc
 	groups := make([]protocol.CreativeGroup, 0, len(creative.Groups()))
 	for _, group := range creative.Groups() {
 		groups = append(groups, protocol.CreativeGroup{
-			Category: int32(group.Category.Uint8()),
+			Category: group.Category.Uint8(),
 			Name:     group.Name,
 			Icon:     deleteDamage(stackFromItem(br, group.Icon)),
 		})
@@ -1146,7 +1173,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 }
 
 // shapeAttachedEntityRuntimeID returns the runtime ID of the entity attached to a debug shape.
-func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) int64 {
+func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) uint64 {
 	var handle *world.EntityHandle
 	switch shape := shape.(type) {
 	case *debug.Arrow:
@@ -1173,19 +1200,19 @@ func (s *Session) shapeAttachedEntityRuntimeID(shape debug.Shape) int64 {
 	if handle == nil {
 		return 0
 	}
-	return int64(s.handleRuntimeID(handle))
+	return s.handleRuntimeID(handle)
 }
 
 // debugShapeToProtocol converts a debug shape to its protocol representation. It also provides defaults
 // for some fields such as colour, scale and other per-shape properties.
-func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID int64) protocol.PrimitiveShape {
+func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntityID uint64) protocol.PrimitiveShape {
 	dimID, _ := world.DimensionID(dim)
 	ps := protocol.PrimitiveShape{
 		NetworkID:   uint64(shape.ShapeID()),
 		DimensionID: protocol.Option(int32(dimID)),
 	}
 	if attachedEntityID > 0 {
-		ps.AttachedToEntityID = protocol.Option(attachedEntityID)
+		ps.AttachedToEntityID = protocol.Option(int64(attachedEntityID))
 	}
 	white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	switch shape := shape.(type) {
@@ -1299,9 +1326,6 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 func gameTypeFromMode(mode world.GameMode) int32 {
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		return packet.GameTypeCreative
-	}
-	if !mode.Visible() && !mode.HasCollision() {
-		return packet.GameTypeSurvivalSpectator
 	}
 	return packet.GameTypeSurvival
 }

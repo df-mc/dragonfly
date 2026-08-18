@@ -189,13 +189,11 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	deflected := false
 	switch r := result.(type) {
 	case trace.EntityResult:
-		if l, ok := r.Entity().(Living); ok {
-			if lt.conf.Damage >= 0 {
-				deflected = lt.hitEntity(l, e, vel)
-			}
-			if !deflected {
-				lt.collidedEntities = append(lt.collidedEntities, l.H())
-			}
+		if lt.conf.Damage >= 0 {
+			deflected = lt.hitEntity(r.Entity(), e, vel)
+		}
+		if !deflected && DamageableEntity(r.Entity()) {
+			lt.collidedEntities = append(lt.collidedEntities, r.Entity().H())
 		}
 	case trace.BlockResult:
 		bpos := r.BlockPosition()
@@ -258,7 +256,9 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 		if !ok {
 			continue
 		}
-		if _, ok := collector.Collect(lt.conf.PickupItem); !ok {
+		if n, ok := collector.Collect(lt.conf.PickupItem); !ok || n == 0 {
+			// The collector could not hold the item, so the projectile must stay where it is rather than being
+			// destroyed with nobody having received it.
 			continue
 		}
 
@@ -267,6 +267,8 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 		for _, viewer := range tx.Viewers(e.Position()) {
 			viewer.ViewEntityAction(e, PickedUpAction{Collector: collector})
 		}
+		// Only one collector may pick the projectile up: every further one would receive a copy of it.
+		return
 	}
 }
 
@@ -293,11 +295,10 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 	}
 }
 
-// hitEntity is called when a projectile hits a Living. It deals damage to the
-// entity and knocks it back. Additionally, it applies any potion effects and
-// fire if applicable.
+// hitEntity is called when a projectile hits an entity. It deals damage to the
+// entity if possible, and applies Living-specific effects such as knockback.
 // It returns true if a shield deflected the projectile.
-func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool {
+func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.Vec3) bool {
 	var owner world.Entity
 	if lt.conf.Owner != nil {
 		owner, _ = lt.conf.Owner.Entity(e.tx)
@@ -307,10 +308,15 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	if _, result := l.Hurt(dmg, src); result.Blocked() {
-		lt.deflect(e, vel)
-		return true
-	} else if result.Accepted() {
+	if l, ok := victim.(Living); ok {
+		_, result := l.Hurt(dmg, src)
+		if result.Blocked() {
+			lt.deflect(e, vel)
+			return true
+		}
+		if !result.Accepted() {
+			return false
+		}
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
 		for _, eff := range lt.conf.Potion.Effects() {
@@ -323,6 +329,8 @@ func (lt *ProjectileBehaviour) hitEntity(l Living, e *Ent, vel mgl64.Vec3) bool 
 		if flammable, ok := l.(Flammable); ok && e.OnFireDuration() > 0 {
 			flammable.SetOnFire(time.Second * 5)
 		}
+	} else {
+		HurtEntity(victim, dmg, src)
 	}
 	return false
 }
@@ -389,7 +397,7 @@ func (lt *ProjectileBehaviour) tickMovement(e *Ent, tx *world.Tx) (*Movement, tr
 }
 
 // ignores returns a function to ignore entities in trace.Perform that are
-// either a spectator, not living, the entity itself, its owner in the first
+// either a spectator, not damageable, the entity itself, its owner in the first
 // 5 ticks, or an entity it already collided with.
 func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 	return func(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
@@ -398,10 +406,10 @@ func (lt *ProjectileBehaviour) ignores(e *Ent) trace.EntityFilter {
 				g, ok := other.(interface{ GameMode() world.GameMode })
 				spectator := ok && !g.GameMode().HasCollision()
 				itself := e.H() == other.H()
-				_, living := other.(Living)
+				damageable := DamageableEntity(other)
 				owner := e.data.Age < time.Second/4 && lt.conf.Owner == other.H()
 				collidedEntity := slices.Contains(lt.collidedEntities, other.H())
-				if spectator || itself || !living || owner || collidedEntity {
+				if spectator || itself || !damageable || owner || collidedEntity {
 					continue
 				}
 				if !yield(other) {

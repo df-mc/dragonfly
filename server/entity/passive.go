@@ -86,7 +86,7 @@ func (p *PassiveBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 
 	m := p.mc.TickMovement(e, e.data.Pos, e.data.Vel, e.data.Rot, tx)
 	e.data.Pos, e.data.Vel = m.pos, m.vel
-	p.fallDistance = math.Max(p.fallDistance-m.dvel[1], 0)
+	p.fallDistance = math.Max(p.fallDistance-m.dpos[1], 0)
 
 	p.fuse = p.conf.ExistenceDuration - e.Age()
 

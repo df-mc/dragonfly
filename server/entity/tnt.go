@@ -95,7 +95,7 @@ func (tntType) BBox(world.Entity) cube.BBox {
 func (t tntType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	data.Data = tntBehaviourConfig{
 		TNTSpawnConfig: world.TNTSpawnConfig{
-			Fuse:                nbtconv.TickDuration[uint8](m, "Fuse"),
+			Fuse:                nbtconv.TickDuration[int16](m, "Fuse"),
 			UnblockableByShield: nbtconv.Bool(m, "DragonflyUnblockableByShield"),
 		},
 	}.New()
@@ -104,13 +104,13 @@ func (t tntType) DecodeNBT(m map[string]any, data *world.EntityData) {
 // EncodeNBT encodes the TNT fuse and non-default shield blockability.
 func (tntType) EncodeNBT(data *world.EntityData) map[string]any {
 	fuse, unblockableByShield := tntFuseAndUnblockableByShield(data.Data)
-	ticks := fuse.Milliseconds() / 50
+	ticks := fuse / (time.Second / 20)
 	if ticks < 0 {
 		ticks = 0
-	} else if ticks > 255 {
-		ticks = 255
+	} else if ticks > math.MaxInt16 {
+		ticks = math.MaxInt16
 	}
-	m := map[string]any{"Fuse": uint8(ticks)}
+	m := map[string]any{"Fuse": int16(ticks)}
 	if unblockableByShield {
 		m["DragonflyUnblockableByShield"] = uint8(1)
 	}

@@ -177,7 +177,7 @@ func (h Hopper) insertItem(pos cube.Pos, tx *world.Tx) bool {
 				continue
 			}
 
-			_, err := container.Inventory(tx, pos).AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
+			_, err := container.Inventory(tx, destPos).AddItem(sourceStack.Grow(-sourceStack.Count() + 1))
 			if err != nil {
 				// The destination is full.
 				return false

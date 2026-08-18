@@ -258,7 +258,7 @@ func (p *Player) startOffHandShieldBlockingInputAfterItemUse() bool {
 
 // handleShieldItemUse reports whether the item use handler permits raising the shield.
 func (p *Player) handleShieldItemUse() bool {
-	ctx := newContext(p)
+	ctx := NewEventContext(p.tx, p)
 	p.Handler().HandleItemUse(ctx)
 	return !ctx.Cancelled()
 }
