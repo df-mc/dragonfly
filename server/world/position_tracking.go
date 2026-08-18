@@ -62,6 +62,8 @@ func NewPositionTracker() *PositionTracker {
 }
 
 func (s *Settings) tracker() *PositionTracker {
+	s.Lock()
+	defer s.Unlock()
 	if s.positionTracker == nil {
 		s.positionTracker = NewPositionTracker()
 	}
@@ -133,7 +135,9 @@ func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 		handle = existing
 	}
 	if handle == 0 {
-		for handle == 0 || t.byHandle[handle].active {
+		// Handles are never reused: a retired handle still belongs to the position it was issued for, so a
+		// compass linked to it must keep spinning rather than start pointing at an unrelated lodestone.
+		for handle == 0 {
 			t.next++
 			handle = t.next
 		}

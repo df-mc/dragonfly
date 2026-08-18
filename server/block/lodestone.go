@@ -20,7 +20,7 @@ type Lodestone struct {
 
 // BreakInfo returns the lodestone's hardness, blast resistance and drops.
 func (l Lodestone) BreakInfo() BreakInfo {
-	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(Lodestone{})).withBlastResistance(17.5)
+	return newBreakInfo(3.5, pickaxeHarvestable, pickaxeEffective, oneOf(Lodestone{}))
 }
 
 // Activate links or relinks a compass to the lodestone.
@@ -43,7 +43,6 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 		// Relinking a lodestone compass updates the complete stack in-place.
 		ctx.NewItem = linked
 		ctx.ReplaceHeldItem = true
-		ctx.SubtractFromCount(held.Count())
 	} else {
 		// Linking regular compasses consumes one and produces one separate
 		// lodestone compass, leaving the rest of the regular stack untouched.
