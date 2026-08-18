@@ -64,8 +64,8 @@ func (areaEffectCloudType) DecodeNBT(m map[string]any, data *world.EntityData) {
 		RadiusUseGrowth:    float64(nbtconv.Float32(m, "RadiusOnUse")),
 		RadiusTickGrowth:   float64(nbtconv.Float32(m, "RadiusPerTick")),
 		Duration:           nbtconv.TickDuration[int32](m, "Duration"),
-		DurationUseGrowth:  nbtconv.TickDuration[int32](m, "ReapplicationDelay"),
-		ReapplicationDelay: nbtconv.TickDuration[int32](m, "DurationOnUse"),
+		DurationUseGrowth:  nbtconv.TickDuration[int32](m, "DurationOnUse"),
+		ReapplicationDelay: nbtconv.TickDuration[int32](m, "ReapplicationDelay"),
 	}.New()
 }
 
@@ -73,11 +73,11 @@ func (areaEffectCloudType) EncodeNBT(data *world.EntityData) map[string]any {
 	a := data.Data.(*AreaEffectCloudBehaviour)
 	return map[string]any{
 		"PotionId":           int32(a.conf.Potion.Uint8()),
-		"ReapplicationDelay": int32(a.conf.ReapplicationDelay),
+		"ReapplicationDelay": int32(a.conf.ReapplicationDelay / (time.Second / 20)),
 		"RadiusPerTick":      float32(a.conf.RadiusTickGrowth),
 		"RadiusOnUse":        float32(a.conf.RadiusUseGrowth),
-		"DurationOnUse":      int32(a.conf.DurationUseGrowth),
+		"DurationOnUse":      int32(a.conf.DurationUseGrowth / (time.Second / 20)),
 		"Radius":             float32(a.radius),
-		"Duration":           int32(a.duration),
+		"Duration":           int32(a.duration / (time.Second / 20)),
 	}
 }

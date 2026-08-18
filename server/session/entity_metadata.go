@@ -93,7 +93,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeyValue] = int32(o.Experience())
 	}
 	if f, ok := e.(firework); ok {
-		m[protocol.EntityDataKeyDisplayTileRuntimeID] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
+		m[protocol.EntityDataKeyDisplayFirework] = item.WriteNBT(item.NewStack(f.Firework(), 1), false)
 		if o, ok := e.(owned); ok && f.Attached() && o.Owner() != nil {
 			m[protocol.EntityDataKeyCustomDisplay] = int64(s.handleRuntimeID(o.Owner()))
 		}
@@ -113,21 +113,21 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeyFuseTime] = int32(t.Fuse().Milliseconds() / 50)
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagIgnited)
 	}
-	if n, ok := e.(named); ok {
-		name := n.NameTag()
-		m[protocol.EntityDataKeyName] = name
-		if name == "" {
-			m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(0)
-			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
-		} else {
-			m[protocol.EntityDataKeyAlwaysShowNameTag] = uint8(1)
-			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
-			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
-		}
+	if nameTag, alwaysShow, ok := nameTagState(e); ok {
+		writeNameTagMetadata(m, nameTag, alwaysShow)
 	}
 	if sc, ok := e.(scoreTag); ok {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
+	}
+	if c, ok := e.(endCrystal); ok {
+		if c.ShowBase() {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowBottom)
+		} else {
+			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowBottom)
+		}
+		if target, ok := c.BeamTarget(); ok {
+			m[protocol.EntityDataKeyBlockTarget] = protocol.BlockPos{int32(target[0]), int32(target[1]), int32(target[2])}
+		}
 	}
 	if sl, ok := e.(sleeper); ok {
 		if pos, ok := sl.Sleeping(); ok {
@@ -194,6 +194,40 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 }
 
+// nameTagState returns the public name tag of an entity, whether that name tag is shown at all distances
+// and whether the entity has a name tag at all. Entities that do not report an always show state show
+// their name tag at all distances.
+func nameTagState(e any) (string, bool, bool) {
+	alwaysShow := true
+	if a, ok := e.(alwaysShowNameTag); ok {
+		alwaysShow = a.AlwaysShowNameTag()
+	}
+	n, ok := e.(named)
+	if !ok {
+		return "", alwaysShow, false
+	}
+	return n.NameTag(), alwaysShow, true
+}
+
+// writeNameTagMetadata writes a name tag and its related visibility properties to metadata.
+func writeNameTagMetadata(m protocol.EntityMetadata, nameTag string, alwaysShow bool) {
+	show := nameTag != ""
+	always := show && alwaysShow
+
+	m[protocol.EntityDataKeyName] = nameTag
+	m[protocol.EntityDataKeyAlwaysShowNameTag] = boolByte(always)
+	if show {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+	} else {
+		m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowName)
+	}
+	if always {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+	} else {
+		m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagAlwaysShowName)
+	}
+}
+
 type sneaker interface {
 	Sneaking() bool
 }
@@ -244,8 +278,17 @@ type named interface {
 	NameTag() string
 }
 
+type alwaysShowNameTag interface {
+	AlwaysShowNameTag() bool
+}
+
 type scoreTag interface {
 	ScoreTag() string
+}
+
+type endCrystal interface {
+	ShowBase() bool
+	BeamTarget() (cube.Pos, bool)
 }
 
 type splash interface {

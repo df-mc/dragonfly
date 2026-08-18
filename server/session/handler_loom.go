@@ -59,7 +59,10 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 
 	// The action contains the pattern that the client wanted to apply, so parse the ID and check if it is a valid
 	// pattern.
-	expectedPattern := block.BannerPatternByID(a.Pattern)
+	expectedPattern, exists := block.BannerPatternByID(a.Pattern)
+	if !exists {
+		return fmt.Errorf("unknown banner pattern id %q", a.Pattern)
+	}
 
 	// Some banner patterns have equivalent banner pattern items that are required to craft the pattern. If the expected
 	// pattern has a pattern item, check if the player input the correct pattern item.
@@ -93,5 +96,7 @@ func (h *ItemStackRequestHandler) handleLoomCraft(a *protocol.CraftLoomRecipeSta
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerLoomDye},
 		Slot:      loomDyeSlot,
 	}, dye.Grow(-timesCrafted), s, tx)
-	return h.createResults(s, tx, input.WithItem(b))
+	// Only timesCrafted banners are consumed above, so only that many may be produced: input.WithItem keeps the count
+	// of the whole input stack.
+	return h.createResults(s, tx, input.Grow(timesCrafted-input.Count()).WithItem(b))
 }

@@ -23,16 +23,24 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chu
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
 func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
-	var (
-		c   = New(br, r)
-		err error
-	)
+	c := New(br, r)
+	// The declared count may exceed the number of sub-chunks supported by the
+	// dimension's vertical range, so validate it before indexing c.sub.
+	if count < 0 || count > len(c.sub) {
+		return nil, fmt.Errorf("invalid sub-chunk count %d: chunk range has %d sub-chunks", count, len(c.sub))
+	}
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		c.sub[index], err = decodeSubChunk(buf, c, &index, NetworkEncoding)
+		sub, err := decodeSubChunk(buf, c, &index, NetworkEncoding)
 		if err != nil {
 			return nil, err
 		}
+		// Version 9 sub-chunks replace index with an absolute Y from the payload.
+		// Validate that translated index before using it to access the chunk.
+		if int(index) >= len(c.sub) {
+			return nil, fmt.Errorf("invalid sub-chunk index %d: chunk range has %d sub-chunks", index, len(c.sub))
+		}
+		c.sub[index] = sub
 	}
 	var last *PalettedStorage
 	for i := 0; i < len(c.sub); i++ {

@@ -1,11 +1,12 @@
 package entity
 
 import (
+	"math"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"math"
-	"time"
 )
 
 // ExperienceOrbBehaviourConfig holds optional parameters for the creation of
@@ -47,12 +48,16 @@ func (conf ExperienceOrbBehaviourConfig) New() *ExperienceOrbBehaviour {
 
 // ExperienceOrbBehaviour implements Behaviour for an experience orb entity.
 type ExperienceOrbBehaviour struct {
-	conf ExperienceOrbBehaviourConfig
-
+	conf    ExperienceOrbBehaviourConfig
 	passive *PassiveBehaviour
 
 	lastSearch time.Time
 	target     *world.EntityHandle
+}
+
+// PortalTravelComputer returns the interdimensional travel state for the behaviour.
+func (exp *ExperienceOrbBehaviour) PortalTravelComputer() *PortalTravelComputer {
+	return exp.passive.PortalTravelComputer()
 }
 
 // Experience returns the amount of experience the orb carries.

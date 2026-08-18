@@ -16,6 +16,10 @@ type NPCRequestHandler struct {
 // Handle ...
 func (h *NPCRequestHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.NPCRequest)
+	if h.entityRuntimeID == 0 {
+		// No dialogue is currently open for this session, so there is nothing to submit or close.
+		return nil
+	}
 	switch pk.RequestType {
 	case packet.NPCRequestActionExecuteAction:
 		if err := h.dialogue.Submit(uint(pk.ActionType), c, tx); err != nil {

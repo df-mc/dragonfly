@@ -1,12 +1,13 @@
 package entity
 
 import (
+	"iter"
+	"time"
+
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
-	"iter"
-	"time"
 )
 
 // AreaEffectCloudBehaviourConfig contains optional parameters for an area
@@ -66,6 +67,11 @@ type AreaEffectCloudBehaviour struct {
 	targets  map[*world.EntityHandle]time.Duration
 }
 
+// PortalTravelComputer returns the interdimensional travel state for the behaviour.
+func (a *AreaEffectCloudBehaviour) PortalTravelComputer() *PortalTravelComputer {
+	return a.stationary.PortalTravelComputer()
+}
+
 // Radius returns the current radius of the area effect cloud.
 func (a *AreaEffectCloudBehaviour) Radius() float64 {
 	return a.radius
@@ -92,7 +98,7 @@ func (a *AreaEffectCloudBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		}
 	}
 
-	if int16(e.Age()/(time.Second*20))%10 != 0 {
+	if (e.Age()/(time.Second/20))%10 != 0 {
 		// Area effect clouds only trigger updates every ten ticks.
 		return nil
 	}
