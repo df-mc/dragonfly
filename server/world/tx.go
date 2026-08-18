@@ -148,6 +148,11 @@ func (tx *Tx) ScheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
 	tx.World().scheduleBlockUpdate(pos, b, delay)
 }
 
+// CancelBlockUpdate cancels all scheduled updates for the block type at pos.
+func (tx *Tx) CancelBlockUpdate(pos cube.Pos, b Block) {
+	tx.World().cancelBlockUpdate(pos, b)
+}
+
 // HighestLightBlocker gets the Y value of the highest fully light blocking
 // block at the x and z values passed in the World.
 func (tx *Tx) HighestLightBlocker(x, z int) int {

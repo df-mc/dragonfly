@@ -575,6 +575,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventPressurePlateClickOn
 	case sound.PressurePlateClickOff:
 		pk.SoundType = packet.SoundEventPressurePlateClickOff
+	case sound.ButtonClickOn:
+		pk.SoundType = packet.SoundEventButtonClickOn
+	case sound.ButtonClickOff:
+		pk.SoundType = packet.SoundEventButtonClickOff
 	case sound.Click:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundClick,

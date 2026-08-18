@@ -17,6 +17,49 @@ func runWorld(w *world.World, f func(*world.Tx)) {
 	w.Do(f).Wait(context.Background())
 }
 
+func TestButtonsUseDistinctPressAndReleaseSounds(t *testing.T) {
+	h := &redstoneSoundTestHandler{}
+	w := world.Config{Synchronous: true}.New()
+	defer w.Close()
+	w.Handle(h)
+
+	runWorld(w, func(tx *world.Tx) {
+		pos := cube.Pos{0, 64, 0}
+		button := Button{Type: StoneButton(), Facing: cube.FaceUp}
+		button.press(pos, tx)
+		button.Pressed = true
+		button.ScheduledTick(pos, tx, nil)
+	})
+
+	if h.buttonOnSounds != 1 || h.buttonOffSounds != 1 {
+		t.Fatalf("button sounds: got on=%v off=%v, want one of each", h.buttonOnSounds, h.buttonOffSounds)
+	}
+}
+
+func TestPressurePlatesIgnoreSpectators(t *testing.T) {
+	w := world.Config{Synchronous: true}.New()
+	defer w.Close()
+
+	runWorld(w, func(tx *world.Tx) {
+		handle := world.EntitySpawnOpts{}.New(redstoneSpectatorTestEntityType{}, redstoneTNTTestEntityConfig{})
+		tx.AddEntity(handle)
+		e, ok := handle.Entity(tx)
+		if !ok {
+			t.Fatal("spectator entity was not added")
+		}
+		for _, plate := range []PressurePlate{
+			{Type: StonePressurePlate()},
+			{Type: OakPressurePlate()},
+			{Type: LightWeightedPressurePlate()},
+			{Type: HeavyWeightedPressurePlate()},
+		} {
+			if plate.detects(e) {
+				t.Errorf("%v detected a spectator", plate.Type.Name())
+			}
+		}
+	})
+}
+
 func TestWoodenButtonRemainsPressedWithArrowOnBoundary(t *testing.T) {
 	w := world.Config{Synchronous: true}.New()
 	defer w.Close()
@@ -981,12 +1024,17 @@ func (v *redstoneWireTestBlockUpdateViewer) blockUpdateCount(pos cube.Pos) int {
 type redstoneSoundTestHandler struct {
 	world.NopHandler
 
-	noteSounds int
+	noteSounds, buttonOnSounds, buttonOffSounds int
 }
 
 func (h *redstoneSoundTestHandler) HandleSound(_ *world.Context, s world.Sound, _ mgl64.Vec3) {
-	if _, ok := s.(sound.Note); ok {
+	switch s.(type) {
+	case sound.Note:
 		h.noteSounds++
+	case sound.ButtonClickOn:
+		h.buttonOnSounds++
+	case sound.ButtonClickOff:
+		h.buttonOffSounds++
 	}
 }
 
@@ -1039,6 +1087,16 @@ func (redstoneArrowTestEntityType) DecodeNBT(map[string]any, *world.EntityData) 
 func (redstoneArrowTestEntityType) EncodeNBT(*world.EntityData) map[string]any {
 	return nil
 }
+
+type redstoneSpectatorTestEntityType struct{ redstoneTNTTestEntityType }
+
+func (redstoneSpectatorTestEntityType) Open(_ *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
+	return redstoneSpectatorTestEntity{redstoneTNTTestEntity{handle: handle, data: data}}
+}
+
+type redstoneSpectatorTestEntity struct{ redstoneTNTTestEntity }
+
+func (redstoneSpectatorTestEntity) GameMode() world.GameMode { return world.GameModeSpectator }
 
 type redstoneTNTTestEntity struct {
 	handle *world.EntityHandle

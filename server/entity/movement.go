@@ -63,15 +63,20 @@ func StepOnBlock(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
 // are dispatched here: every other block.EntityInsider is deliberately left to
 // entity physics, as documented on Ent.checkPortalInsiders.
 func (m *Movement) checkSteppers(tx *world.Tx) {
-	box := m.e.H().Type().BBox(m.e).Translate(m.pos).Grow(-0.0001)
+	checkPressurePlates(tx, m.e, m.pos)
+	if m.onGround {
+		StepOnBlock(tx, m.e, m.pos)
+	}
+}
+
+// checkPressurePlates calls EntityInside on each pressure plate intersecting an entity at pos.
+func checkPressurePlates(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
+	box := e.H().Type().BBox(e).Translate(pos).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 	for pos := range cube.Range3D(low, high) {
 		if plate, ok := tx.Block(pos).(block.PressurePlate); ok {
-			plate.EntityInside(pos, tx, m.e)
+			plate.EntityInside(pos, tx, e)
 		}
-	}
-	if m.onGround {
-		StepOnBlock(tx, m.e, m.pos)
 	}
 }
 

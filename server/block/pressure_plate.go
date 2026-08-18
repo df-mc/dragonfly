@@ -41,9 +41,7 @@ func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) 
 		return
 	}
 	if p.Power > 0 {
-		// The plate is already active. Its scheduled tick keeps the (weighted)
-		// level current, so a stepping entity only needs to defer the release.
-		tx.ScheduleBlockUpdate(pos, p, p.releaseDelay())
+		// The scheduled tick keeps the level current while the plate is active.
 		return
 	}
 	power := 15
@@ -131,6 +129,9 @@ func (p PressurePlate) EncodeBlock() (string, map[string]any) {
 // react to living entities and armour stands; wooden and weighted plates react
 // to any entity.
 func (p PressurePlate) detects(e world.Entity) bool {
+	if player, ok := e.(interface{ GameMode() world.GameMode }); ok && !player.GameMode().HasCollision() {
+		return false
+	}
 	if p.Type.Wood() || p.Type.Weighted() {
 		return true
 	}

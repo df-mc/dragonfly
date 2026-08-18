@@ -58,7 +58,7 @@ func (b Button) press(pos cube.Pos, tx *world.Tx) {
 	b.Pressed = true
 	tx.SetBlock(pos, b, nil)
 	tx.ScheduleBlockUpdate(pos, b, b.pressDuration())
-	tx.PlaySound(pos.Vec3Centre(), sound.Click{})
+	tx.PlaySound(pos.Vec3Centre(), sound.ButtonClickOn{})
 }
 
 // NeighbourUpdateTick breaks the button if its supporting block is removed.
@@ -80,7 +80,7 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 	b.Pressed = false
 	tx.SetBlock(pos, b, nil)
-	tx.PlaySound(pos.Vec3Centre(), sound.Click{})
+	tx.PlaySound(pos.Vec3Centre(), sound.ButtonClickOff{})
 }
 
 // arrowWithin reports whether an arrow intersects the button at pos.

@@ -2,6 +2,7 @@ package block
 
 import (
 	"math/rand/v2"
+	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
@@ -24,19 +25,25 @@ func (r RedstoneLamp) LightEmissionLevel() uint8 {
 }
 
 // RedstonePowerUpdate lights the lamp as soon as it is powered. Turning off
-// is delayed by three redstone ticks, keeping the lamp lit through short pulses.
+// is delayed by four game ticks, keeping the lamp lit through short pulses.
 func (r RedstoneLamp) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, power int) (world.Block, bool) {
 	lit := power > 0
+	if lit {
+		tx.CancelBlockUpdate(pos, r)
+	}
 	if lit == r.Lit {
 		return r, false
 	}
 	if !lit {
-		tx.ScheduleBlockUpdate(pos, r, redstoneTicks(3))
+		tx.ScheduleBlockUpdate(pos, r, redstoneLampOffDelay)
 		return r, false
 	}
 	r.Lit = true
 	return r, true
 }
+
+// Bedrock turns an unpowered redstone lamp off after four game ticks.
+const redstoneLampOffDelay = 4 * time.Second / 20
 
 // ScheduledTick turns the lamp off if it is still unpowered.
 func (r RedstoneLamp) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
