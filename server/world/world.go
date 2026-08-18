@@ -1009,8 +1009,7 @@ func (w *World) PlayerSpawnPoint(id uuid.UUID) (PlayerSpawn, bool) {
 	if w == nil {
 		return PlayerSpawn{}, false
 	}
-	provider := w.conf.Provider.(PlayerSpawnProvider)
-	spawn, exists, err := provider.LoadPlayerSpawn(id)
+	spawn, exists, err := w.conf.Provider.LoadPlayerSpawn(id)
 	if err != nil {
 		w.conf.Log.Error("load player spawn: "+err.Error(), "ID", id)
 		return PlayerSpawn{}, false
@@ -1025,8 +1024,7 @@ func (w *World) SetPlayerSpawn(id uuid.UUID, pos cube.Pos) {
 	if w == nil {
 		return
 	}
-	provider := w.conf.Provider.(PlayerSpawnProvider)
-	if err := provider.SavePlayerSpawn(id, PlayerSpawn{Pos: pos, Dim: w.Dimension()}); err != nil {
+	if err := w.conf.Provider.SavePlayerSpawn(id, PlayerSpawn{Pos: pos, Dim: w.Dimension()}); err != nil {
 		w.conf.Log.Error("save player spawn: "+err.Error(), "ID", id)
 	}
 }

@@ -190,17 +190,6 @@ func (db *DB) SavePlayerSpawn(id uuid.UUID, spawn world.PlayerSpawn) error {
 	return nil
 }
 
-// LoadPlayerSpawnPosition loads a position-only player spawn for Provider compatibility.
-func (db *DB) LoadPlayerSpawnPosition(id uuid.UUID) (cube.Pos, bool, error) {
-	spawn, exists, err := db.LoadPlayerSpawn(id)
-	return spawn.Pos, exists, err
-}
-
-// SavePlayerSpawnPosition saves an Overworld player spawn for Provider compatibility.
-func (db *DB) SavePlayerSpawnPosition(id uuid.UUID, pos cube.Pos) error {
-	return db.SavePlayerSpawn(id, world.PlayerSpawn{Pos: pos, Dim: world.Overworld})
-}
-
 // LoadColumn reads a world.Column from the DB at a position and dimension in
 // the DB. If no column at that position exists, errors.Is(err,
 // leveldb.ErrNotFound) equals true.

@@ -8,35 +8,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/go-gl/mathgl/mgl64"
-	"github.com/google/uuid"
 )
-
-func TestLegacyPlayerSpawnProviderCompatibility(t *testing.T) {
-	provider := &legacyPlayerSpawnProvider{Provider: NopProvider{}}
-	w := Config{Dim: Nether, Provider: provider, Synchronous: true}.New()
-	t.Cleanup(func() { _ = w.Close() })
-	id, want := uuid.New(), cube.Pos{4, 64, 8}
-	w.SetPlayerSpawn(id, want)
-	got, exists := w.PlayerSpawnPoint(id)
-	if !exists || got.Pos != want || got.Dim != Overworld {
-		t.Fatalf("PlayerSpawnPoint() = %v, %t, want {%v Overworld}, true", got, exists, want)
-	}
-}
-
-type legacyPlayerSpawnProvider struct {
-	Provider
-	pos    cube.Pos
-	exists bool
-}
-
-func (p *legacyPlayerSpawnProvider) LoadPlayerSpawnPosition(uuid.UUID) (cube.Pos, bool, error) {
-	return p.pos, p.exists, nil
-}
-
-func (p *legacyPlayerSpawnProvider) SavePlayerSpawnPosition(_ uuid.UUID, pos cube.Pos) error {
-	p.pos, p.exists = pos, true
-	return nil
-}
 
 // TestSynchronousWorldDo verifies that Do on a synchronous World runs the task
 // on the calling goroutine and returns a completed task.
