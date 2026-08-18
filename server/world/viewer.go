@@ -57,10 +57,9 @@ type Viewer interface {
 	ViewEntityState(e Entity)
 	// ViewEntityAnimation starts viewing an animation performed by an Entity.
 	ViewEntityAnimation(e Entity, a EntityAnimation)
-	// ViewEntityMount views one entity mounting another. It is called when any entity mounts another or
-	// changes its role (passenger or driver).
+	// ViewEntityMount shows an entity riding another entity.
 	ViewEntityMount(rider Entity, rideable Entity, driver bool)
-	// ViewEntityDismount views one entity dismounting another. It is called when any entity is dismounted.
+	// ViewEntityDismount shows an entity getting off another entity.
 	ViewEntityDismount(rider Entity, rideable Entity)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.

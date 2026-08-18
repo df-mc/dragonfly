@@ -5,40 +5,27 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Rider is an entity that can ride another entity.
-//
-// Entity values obtained from a transaction are only valid for that
-// transaction. RidingEntity therefore resolves the stored relationship using
-// the transaction supplied by the caller, while the relationship itself is
-// kept by an entity handle.
+// Rider is an entity riding another entity.
 type Rider interface {
 	world.Entity
 
-	// RidingEntity returns the rideable in tx, if the rider is mounted and the
-	// rideable is still in the same world.
+	// RidingEntity returns the entity being ridden.
 	RidingEntity(tx *world.Tx) (Rideable, bool)
-	// SeatIndex returns the rider's seat index, or -1 when the rider is not
-	// mounted.
+	// SeatIndex returns the current seat, or -1 if not riding.
 	SeatIndex() int
-	// MountEntity mounts the rider at seatIndex when that seat is valid and
-	// available.
+	// MountEntity puts the rider in a seat.
 	MountEntity(tx *world.Tx, rideable Rideable, seatIndex int)
-	// DismountEntity dismounts the rider. Calling it while unmounted is safe.
+	// DismountEntity removes the rider from its seat.
 	DismountEntity(tx *world.Tx)
-	// RidingEntityHandle returns the stable handle of the current rideable, or
-	// nil when the rider is not mounted.
+	// RidingEntityHandle returns the handle of the entity being ridden.
 	RidingEntityHandle() *world.EntityHandle
-	// RidingEntityController reports the controller state last synchronised from
-	// the rideable. It is used when replaying links after this rider becomes
-	// visible to a client.
+	// RidingEntityController reports whether this rider controls the rideable.
 	RidingEntityController() bool
-	// SeatOffset returns the value copied from the rideable's current seat
-	// geometry for metadata encoding.
+	// SeatOffset returns the rider's position relative to the rideable.
 	SeatOffset() (mgl64.Vec3, bool)
 }
 
-// RiderSeat identifies a registered rider without extending the lifetime of
-// its transaction-scoped entity value.
+// RiderSeat holds a rider and its seat number.
 type RiderSeat struct {
 	Handle    *world.EntityHandle
 	SeatIndex int
@@ -48,31 +35,20 @@ type RiderSeat struct {
 type Rideable interface {
 	world.Entity
 
-	// SeatPositions returns seat offsets relative to the rideable's position.
-	// The index in the returned slice is the seat index.
+	// SeatPositions returns every seat position relative to the rideable.
 	SeatPositions() []mgl64.Vec3
-	// NextFreeSeatIndex returns the preferred free seat for a click position,
-	// or (-1, false) when no seat is available.
+	// NextFreeSeatIndex finds a free seat for the given click position.
 	NextFreeSeatIndex(clickPos mgl64.Vec3) (int, bool)
-	// ControllingRider returns the stable handle of the rider that currently
-	// controls the rideable, or nil. A rideable may choose its controller
-	// independently of seat order.
+	// ControllingRider returns the rider controlling the rideable.
 	ControllingRider() *world.EntityHandle
-	// ControllingSeatIndex returns the seat index currently advertised as
-	// controlling, or -1 when there is no controller. It must be the
-	// registration associated with ControllingRider.
+	// ControllingSeatIndex returns the controlling seat, or -1 if there is none.
 	ControllingSeatIndex() int
-	// Riders returns handle-backed seat assignments. The rideable owns these
-	// registrations and must not retain entity values obtained from a
-	// transaction. While operating in a transaction, it must remove a
-	// registration whose handle cannot resolve in that transaction.
+	// Riders returns all occupied seats.
 	Riders() []RiderSeat
-	// AddRider atomically registers rider at seatIndex and returns whether the
-	// assignment was accepted. Re-registering the same handle changes its seat.
-	// A false result leaves the existing assignment unchanged.
+	// AddRider puts a rider in a seat and reports whether it succeeded.
 	AddRider(rider *world.EntityHandle, seatIndex int) bool
-	// RemoveRider unregisters rider. It is safe when rider is not registered.
+	// RemoveRider removes a rider.
 	RemoveRider(rider *world.EntityHandle)
-	// MoveInput forwards input from the controlling rider.
+	// MoveInput handles movement from the controlling rider.
 	MoveInput(vector mgl64.Vec2, yaw, pitch float32)
 }

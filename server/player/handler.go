@@ -142,11 +142,9 @@ type Handler interface {
 	// HandleItemDrop handles the player dropping an item on the ground.
 	// ctx.Cancel() may be called to prevent the player from dropping the item.Stack passed on the ground.
 	HandleItemDrop(ctx *Context, s item.Stack)
-	// HandleMountEntity handles when a player mounts an entity. ctx.Cancel() may be called to cancel the player mounting
-	// an entity.
+	// HandleMountEntity handles a player getting on an entity. It may change the seat or cancel the action.
 	HandleMountEntity(ctx *Context, rideable entity.Rideable, seatIndex *int)
-	// HandleDismountEntity handles when a player mounts an entity. ctx.Cancel() may be called to force the player
-	// to re-mount the entity.
+	// HandleDismountEntity handles a player getting off an entity. It may cancel the action.
 	HandleDismountEntity(ctx *Context, rideable entity.Rideable)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.

@@ -59,13 +59,7 @@ type playerData struct {
 
 	riddenEntity *world.EntityHandle
 	seatIndex    int
-	// controlling is a replay cache for the rider-side link. The rideable is
-	// authoritative; every mount, seat change, dismount, and tick synchronises
-	// this value from its controller handle.
-	controlling bool
-	// seatPosition is the last seat offset sent to the client. It is kept as a
-	// value so metadata generation never has to retain or resolve an entity
-	// outside its owner transaction.
+	controlling  bool
 	seatPosition mgl64.Vec3
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
@@ -908,9 +902,7 @@ func (p *Player) DeathPosition() (mgl64.Vec3, world.Dimension, bool) {
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
 func (p *Player) kill(src world.DamageSource) {
-	// A dead rider cannot remain attached while its player is hidden or
-	// respawned. This is a forced teardown, so a dismount handler cannot keep a
-	// closed relationship alive.
+	// Death always ends the riding relationship.
 	p.dismountEntity(p.tx, false)
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
@@ -2652,22 +2644,18 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		return
 	}
 	if p.prevWorld != nil && p.prevWorld != tx.World() && p.riddenEntity != nil {
-		// A player handle may cross worlds, but a riding relationship may not.
-		// The old rideable cannot be resolved through the new transaction, so
-		// clear the relationship before emitting new-world metadata.
+		// Riding relationships do not cross worlds.
 		p.clearRidingState()
 	}
 	if p.riddenEntity != nil {
 		rideable, ok := p.RidingEntity(tx)
 		switch {
 		case !ok:
-			// The rideable may have been removed independently of the rider.
-			// Drop the stale handle before the next metadata update.
+			// Stop riding if the rideable no longer exists.
 			p.clearRidingState()
 			p.updateState()
 		case p.seatIndex < 0 || p.seatIndex >= len(rideable.SeatPositions()):
-			// A rideable may change its seat layout while passengers are
-			// present. Never advertise an out-of-range seat to the client.
+			// Stop riding if the seat no longer exists.
 			rideable.RemoveRider(p.H())
 			p.clearRidingState()
 			p.updateState()
@@ -2910,8 +2898,7 @@ func (p *Player) SetMaxAirSupply(duration time.Duration) {
 	p.updateState()
 }
 
-// RidingEntity returns the entity that the rider is currently sitting on.
-// The returned entity is valid only for tx.
+// RidingEntity returns the entity the player is riding.
 func (p *Player) RidingEntity(tx *world.Tx) (entity.Rideable, bool) {
 	if p.riddenEntity == nil || tx == nil {
 		return nil, false
@@ -2924,26 +2911,22 @@ func (p *Player) RidingEntity(tx *world.Tx) (entity.Rideable, bool) {
 	return rideable, ok
 }
 
-// RidingEntityHandle returns the stable handle of the current rideable, or nil
-// when the player is not mounted.
+// RidingEntityHandle returns the handle of the entity being ridden.
 func (p *Player) RidingEntityHandle() *world.EntityHandle {
 	return p.riddenEntity
 }
 
-// SeatIndex returns the position of where the rider is sitting.
+// SeatIndex returns the player's current seat.
 func (p *Player) SeatIndex() int {
 	return p.seatIndex
 }
 
-// RidingEntityController reports whether the player currently occupies the
-// controlling role for its rideable. The rideable remains authoritative when
-// selecting or changing that role.
+// RidingEntityController reports whether the player controls the rideable.
 func (p *Player) RidingEntityController() bool {
 	return p.controlling
 }
 
-// SeatOffset returns the seat offset currently advertised for the player. It
-// is a value copy and does not retain a transaction-owned entity.
+// SeatOffset returns the player's position relative to the rideable.
 func (p *Player) SeatOffset() (mgl64.Vec3, bool) {
 	if p.riddenEntity == nil || p.seatIndex < 0 {
 		return mgl64.Vec3{}, false
@@ -2951,8 +2934,7 @@ func (p *Player) SeatOffset() (mgl64.Vec3, bool) {
 	return p.seatPosition, true
 }
 
-// ChangeSeat sets the seat index of the player if it is currently riding an
-// entity and if the target seat is valid and free.
+// ChangeSeat moves the player to another free seat.
 func (p *Player) ChangeSeat(tx *world.Tx, seatIndex int) {
 	rideable, ok := p.RidingEntity(tx)
 	if !ok {
@@ -2987,9 +2969,7 @@ func (p *Player) ChangeSeat(tx *world.Tx, seatIndex int) {
 	}
 }
 
-// SeatPosition returns the position of the seat the player is currently
-// sitting on. If the player is not currently riding an entity, the second
-// return value is false.
+// SeatPosition returns the player's current seat position.
 func (p *Player) SeatPosition(tx *world.Tx) (mgl64.Vec3, bool) {
 	rideable, ok := p.RidingEntity(tx)
 	if !ok || p.seatIndex < 0 {
@@ -3003,8 +2983,7 @@ func (p *Player) SeatPosition(tx *world.Tx) (mgl64.Vec3, bool) {
 	return p.seatPosition, true
 }
 
-// MountEntity mounts the Rider to an entity if the entity is Rideable and if
-// there is a seat available.
+// MountEntity puts the player in a seat on an entity.
 func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex int) {
 	if tx == nil || rideable == nil || rideable.H() == nil {
 		return
@@ -3036,8 +3015,7 @@ func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex i
 			return
 		}
 	} else if p.riddenEntity != nil {
-		// The old handle is no longer in this transaction's world. Do not carry
-		// a stale relationship into the new world.
+		// Clear a riding relationship left over from another world.
 		p.clearRidingState()
 	}
 
@@ -3077,8 +3055,7 @@ func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex i
 	}
 }
 
-// DismountEntity dismounts the player from an entity. A handler may cancel a
-// client-requested dismount.
+// DismountEntity removes the player from the entity being ridden.
 func (p *Player) DismountEntity(tx *world.Tx) {
 	p.dismountEntity(tx, true)
 }
@@ -3138,8 +3115,7 @@ func controllerStateChanged(a, b ridingController) bool {
 	return a.handle != b.handle || a.seat != b.seat
 }
 
-// syncRideableState copies the rideable's handle-backed registrations into
-// live player rider caches while both entities are available in tx.
+// syncRideableState updates every player riding the entity.
 func (p *Player) syncRideableState(tx *world.Tx, rideable entity.Rideable) bool {
 	positions := rideable.SeatPositions()
 	controller := rideable.ControllingRider()
@@ -3151,8 +3127,7 @@ func (p *Player) syncRideableState(tx *world.Tx, rideable entity.Rideable) bool 
 		}
 		entityValue, ok := rider.Handle.Entity(tx)
 		if !ok {
-			// A relationship never crosses worlds. The rideable owns removal of
-			// registrations that cannot be resolved in its current world.
+			// Remove riders that are no longer in this world.
 			rideable.RemoveRider(rider.Handle)
 			continue
 		}

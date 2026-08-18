@@ -43,8 +43,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	return m
 }
 
-// seatOffset returns the current seat offset without retaining an entity or a
-// transaction. Riders expose a value copy for metadata encoding.
+// seatOffset returns the rider's current seat position.
 func (s *Session) seatOffset(e any) (mgl64.Vec3, bool) {
 	if r, ok := e.(entity.Rider); ok {
 		return r.SeatOffset()
@@ -116,15 +115,12 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeySeatOffset] = vec64To32(pos)
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
 	} else if rider, ok := e.(entity.Rider); ok && rider.SeatIndex() >= 0 {
-		// A custom rider may expose no offset getter. Its valid seat index still
-		// carries the protocol riding state; the seat defaults to the actor
-		// origin until the implementation supplies a position.
+		// Use the entity position when no seat position is available.
 		m[protocol.EntityDataKeySeatOffset] = vec64To32(mgl64.Vec3{})
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
 	}
 	if r, ok := e.(entity.Rideable); ok {
-		// The client treats -1 as no controlling seat. Sending the reset is
-		// necessary because actor metadata updates are partial.
+		// A value of -1 clears the controlling seat.
 		m[protocol.EntityDataKeyControllingSeatIndex] = int32(r.ControllingSeatIndex())
 	}
 	if lock, ok := e.(interface{ SeatLockPassengerRotation() bool }); ok {

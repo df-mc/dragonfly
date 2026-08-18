@@ -58,9 +58,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 	if s.entityHidden(e) {
 		return
 	}
-	// Links are not replayed by the client when an actor is added later. Once
-	// this actor has been encoded, replay any relationship whose other endpoint
-	// is already known to this session.
+	// Restore riding links after the entity is added.
 	defer s.viewEntityLinks(e)
 	var runtimeID uint64
 
@@ -309,14 +307,12 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	})
 }
 
-// ViewEntityMount views an entity mounting another entity. The link is sent
-// only when both endpoints are currently known to this session.
+// ViewEntityMount shows an entity riding another entity.
 func (s *Session) ViewEntityMount(rider world.Entity, rideable world.Entity, driver bool) {
 	s.viewEntityMountHandles(rider.H(), rideable.H(), driver)
 }
 
-// ViewEntityDismount views an ordinary dismount. Immediate removal is reserved
-// for a rideable or rider being removed from the world.
+// ViewEntityDismount shows an entity getting off another entity.
 func (s *Session) ViewEntityDismount(rider world.Entity, rideable world.Entity) {
 	s.viewEntityDismount(rider, rideable, false)
 }
