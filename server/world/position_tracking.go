@@ -118,10 +118,7 @@ func (s *Settings) LoadPositionTrackingData(data PositionTrackingData) {
 	}
 }
 
-// TrackPosition activates a tracking handle for pos. A handle still active at
-// pos is reused, but one retired by breaking the block it belonged to is not:
-// a lodestone rebuilt in the same spot forms a new group, leaving compasses
-// linked to the old one spinning.
+// TrackPosition activates a tracking handle for pos, reusing the one already active there if any.
 func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 	dim, _ := DimensionID(w.Dimension())
 	t := w.set.tracker()
@@ -132,12 +129,12 @@ func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 		t.byPosition = map[[4]int]int32{}
 	}
 	key := [4]int{dim, pos[0], pos[1], pos[2]}
+	// The wiki states a lodestone rebuilt in the same spot keeps compasses linked to the old one, but in-game
+	// testing shows it forms a new group, so a handle retired by UntrackPosition is never revived.
 	if existing := t.byPosition[key]; existing != 0 && t.byHandle[existing].active {
 		handle = existing
 	}
 	if handle == 0 {
-		// Handles are never reused: a retired handle still belongs to the position it was issued for, so a
-		// compass linked to it must keep spinning rather than start pointing at an unrelated lodestone.
 		for handle == 0 {
 			t.next++
 			handle = t.next
@@ -165,8 +162,7 @@ func (w *World) PositionTrackingHandleAt(pos cube.Pos) int32 {
 	return handle
 }
 
-// UntrackPosition marks the tracking handle at pos as unavailable. Its position
-// association is retained so replacing the lodestone can reactivate it.
+// UntrackPosition retires the tracking handle at pos, making compasses linked to it spin.
 func (w *World) UntrackPosition(pos cube.Pos) {
 	dim, _ := DimensionID(w.Dimension())
 	t := w.set.tracker()
