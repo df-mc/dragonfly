@@ -208,13 +208,6 @@ type glider interface {
 	Gliding() bool
 }
 
-type playerPose interface {
-	sneaker
-	swimmer
-	crawler
-	glider
-}
-
 type baby interface {
 	Baby() bool
 }
