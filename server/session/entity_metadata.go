@@ -93,7 +93,7 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 		m[protocol.EntityDataKeyValue] = int32(o.Experience())
 	}
 	if f, ok := e.(firework); ok {
-		m[protocol.EntityDataKeyDisplayTileRuntimeID] = nbtconv.WriteItem(item.NewStack(f.Firework(), 1), false)
+		m[protocol.EntityDataKeyDisplayFirework] = item.WriteNBT(item.NewStack(f.Firework(), 1), false)
 		if o, ok := e.(owned); ok && f.Attached() && o.Owner() != nil {
 			m[protocol.EntityDataKeyCustomDisplay] = int64(s.handleRuntimeID(o.Owner()))
 		}
@@ -112,6 +112,16 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 	if sc, ok := e.(scoreTag); ok {
 		m[protocol.EntityDataKeyScore] = sc.ScoreTag()
+	}
+	if c, ok := e.(endCrystal); ok {
+		if c.ShowBase() {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowBottom)
+		} else {
+			m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShowBottom)
+		}
+		if target, ok := c.BeamTarget(); ok {
+			m[protocol.EntityDataKeyBlockTarget] = protocol.BlockPos{int32(target[0]), int32(target[1]), int32(target[2])}
+		}
 	}
 	if sl, ok := e.(sleeper); ok {
 		if pos, ok := sl.Sleeping(); ok {
@@ -268,6 +278,11 @@ type alwaysShowNameTag interface {
 
 type scoreTag interface {
 	ScoreTag() string
+}
+
+type endCrystal interface {
+	ShowBase() bool
+	BeamTarget() (cube.Pos, bool)
 }
 
 type splash interface {

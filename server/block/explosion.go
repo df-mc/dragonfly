@@ -24,6 +24,9 @@ type ExplosionConfig struct {
 	// SpawnFire will cause the explosion to randomly start fires in 1/3 of all destroyed air blocks that are
 	// above opaque blocks.
 	SpawnFire bool
+	// SuppressUnderwaterImpact prevents the explosion from affecting entities through liquid layers. Bedrock Edition
+	// applies this to every explosion.
+	SuppressUnderwaterImpact bool
 	// ItemDropChance specifies how item drops should be handled. By default,
 	// the item drop chance is 1/Size. If negative, no items will be dropped by
 	// the explosion. If set to 1 or higher, all items are dropped.
@@ -48,6 +51,17 @@ type Explodable interface {
 	// Explode is called when an explosion occurs. The block can react using the source passed.
 	Explode(src world.ExplosionSource, pos cube.Pos, tx *world.Tx)
 }
+
+type explosionBlockInfo struct {
+	resistance float64
+	flags      uint8
+}
+
+const (
+	explosionBlockResists uint8 = 1 << iota
+	explosionBlockStopsRay
+	explosionBlockAffected
+)
 
 // rays ...
 var rays = make([]mgl64.Vec3, 0, 1352)
@@ -104,33 +118,45 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 		affectedEntities = append(affectedEntities, e)
 	}
 
-	affectedBlocks, seen := make([]cube.Pos, 0, 32), make(map[cube.Pos]struct{}, 32)
+	estimatedBlocks := max(32, min(4096, int(size*size*size*16)))
+	if _, ok := tx.Liquid(cube.PosFromVec3(explosionPos)); ok {
+		// Liquids such as water stop a regular TNT blast at the source, so avoid reserving space for a full blast.
+		estimatedBlocks = 32
+	}
+	affectedBlocks := make([]cube.Pos, 0, estimatedBlocks)
+	blockCache := make(map[cube.Pos]explosionBlockInfo, estimatedBlocks)
 	for _, ray := range rays {
 		pos := explosionPos
 		for blastForce := size * (0.7 + r.Float64()*0.6); blastForce > 0.0; blastForce -= 0.225 {
 			current := cube.PosFromVec3(pos)
-			currentBlock := tx.Block(current)
-
-			resistance, resists := 0.0, false
-			if l, ok := tx.Liquid(current); ok {
-				resistance, resists = l.BlastResistance(), true
-			} else if i, ok := currentBlock.(Breakable); ok {
-				resistance, resists = i.BreakInfo().BlastResistance, true
-			} else if _, ok = currentBlock.(Air); !ok {
+			info, ok := blockCache[current]
+			if !ok {
+				currentBlock := tx.Block(current)
+				if l, ok := tx.Liquid(current); ok {
+					info.resistance = l.BlastResistance()
+					info.flags = explosionBlockResists
+				} else if i, ok := currentBlock.(Breakable); ok {
+					info.resistance = i.BreakInfo().BlastResistance
+					info.flags = explosionBlockResists
+				} else if _, ok = currentBlock.(Air); !ok {
+					info.flags = explosionBlockStopsRay
+				}
+				blockCache[current] = info
+			}
+			if info.flags&explosionBlockStopsRay != 0 {
 				// Completely stop the ray if the current block is not air and unbreakable.
 				break
 			}
 
 			pos = pos.Add(ray)
 			// Air offers no resistance to the ray, only blocks and liquids reduce its force beyond the step decay.
-			if resists {
-				blastForce -= (resistance + 0.3) * 0.3
+			if info.flags&explosionBlockResists != 0 {
+				blastForce -= (info.resistance + 0.3) * 0.3
 			}
-			if blastForce > 0 {
-				if _, ok := seen[current]; !ok {
-					seen[current] = struct{}{}
-					affectedBlocks = append(affectedBlocks, current)
-				}
+			if blastForce > 0 && info.flags&explosionBlockAffected == 0 {
+				info.flags |= explosionBlockAffected
+				blockCache[current] = info
+				affectedBlocks = append(affectedBlocks, current)
 			}
 		}
 	}
@@ -143,12 +169,23 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 	}
 
 	for _, e := range affectedEntities {
-		if explodable, ok := e.(ExplodableEntity); ok {
-			impact := (1 - e.Position().Sub(explosionPos).Len()/d) * exposure(tx, explosionPos, e)
-			explodable.Explode(src, impact)
+		explodable, ok := e.(ExplodableEntity)
+		if !ok {
+			continue
 		}
+		impact := (1 - e.Position().Sub(explosionPos).Len()/d) * c.exposure(tx, explosionPos, e)
+		if c.SuppressUnderwaterImpact && impact <= 0 {
+			// The blast never reached the entity. Skip the call entirely, as entities with a constant damage term,
+			// such as players, would otherwise still be hurt through the liquid that blocked it.
+			continue
+		}
+		explodable.Explode(src, impact)
 	}
 
+	blast := make(map[cube.Pos]struct{}, len(affectedBlocks))
+	for _, pos := range affectedBlocks {
+		blast[pos] = struct{}{}
+	}
 	for _, pos := range affectedBlocks {
 		bl := tx.Block(pos)
 		if explodable, ok := bl.(Explodable); ok {
@@ -165,6 +202,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 					dropItem(tx, drop, pos.Vec3Centre())
 				}
 			}
+			removeDependents(pos, tx, blast)
 		}
 	}
 
@@ -183,7 +221,7 @@ func (c ExplosionConfig) Explode(tx *world.Tx, src world.ExplosionSource) {
 }
 
 // exposure returns the exposure of an explosion to an entity, used to calculate the impact of an explosion.
-func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
+func (c ExplosionConfig) exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 	pos := e.Position()
 	box := e.H().Type().BBox(e).Translate(pos)
 
@@ -209,6 +247,12 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 				}
 				var collided bool
 				trace.TraverseBlocks(origin, point, func(pos cube.Pos) (cont bool) {
+					if c.SuppressUnderwaterImpact {
+						if _, liquid := tx.Liquid(pos); liquid {
+							collided = true
+							return false
+						}
+					}
 					_, collided = trace.BlockIntercept(pos, tx, tx.Block(pos), origin, point)
 					return !collided
 				})
@@ -226,4 +270,20 @@ func exposure(tx *world.Tx, origin mgl64.Vec3, e world.Entity) float64 {
 // lerp returns the linear interpolation between a and b at t.
 func lerp(a, b, t float64) float64 {
 	return b + a*(t-b)
+}
+
+// removeDependents removes the blocks in the blast of an explosion that depended on the block at the position passed.
+// Neighbour updates only run at the end of a tick, so the other half of a block such as a door or a bed would still be
+// standing when the explosion reaches it and would drop a second item of its own.
+func removeDependents(pos cube.Pos, tx *world.Tx, blast map[cube.Pos]struct{}) {
+	pos.Neighbours(func(neighbour cube.Pos) {
+		if _, ok := blast[neighbour]; !ok {
+			// Blocks outside the blast are removed by the neighbour updates at the end of the tick, which drop no
+			// items of their own.
+			return
+		}
+		if ticker, ok := tx.Block(neighbour).(world.NeighbourUpdateTicker); ok {
+			ticker.NeighbourUpdateTick(neighbour, pos, tx)
+		}
+	}, tx.Range())
 }

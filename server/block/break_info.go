@@ -39,6 +39,8 @@ type BreakContext struct {
 	// AquaAffinity is true if the player wears a helmet enchanted with Aqua Affinity, negating the
 	// underwater mining penalty.
 	AquaAffinity bool
+	// Flying is true if the player is flying, which suppresses the airborne mining speed penalty.
+	Flying bool
 	// Airborne is true if the player is not on the ground, which slows mining by 5x.
 	Airborne bool
 }
@@ -85,7 +87,7 @@ func BreakDuration(b world.Block, i item.Stack, ctx BreakContext) time.Duration 
 	if ctx.Underwater && !ctx.AquaAffinity {
 		speed /= 5
 	}
-	if ctx.Airborne {
+	if ctx.Airborne && !ctx.Flying {
 		speed /= 5
 	}
 

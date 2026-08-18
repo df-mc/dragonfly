@@ -415,7 +415,7 @@ func (srv *Server) makeItemComponents() {
 	custom := world.CustomItems()
 	srv.customItems = make([]protocol.ItemEntry, len(custom))
 
-	for _, it := range custom {
+	for i, it := range custom {
 		name, _ := it.EncodeItem()
 		rid, _, _ := world.ItemRuntimeID(it)
 		_, isCustomBlock := it.(world.CustomBlock)
@@ -423,13 +423,13 @@ func (srv *Server) makeItemComponents() {
 		if isCustomBlock {
 			entryVersion = protocol.ItemEntryVersionNone
 		}
-		srv.customItems = append(srv.customItems, protocol.ItemEntry{
+		srv.customItems[i] = protocol.ItemEntry{
 			Name:           name,
 			ComponentBased: !isCustomBlock,
 			RuntimeID:      int16(rid),
 			Version:        entryVersion,
 			Data:           iteminternal.Components(it),
-		})
+		}
 	}
 }
 
