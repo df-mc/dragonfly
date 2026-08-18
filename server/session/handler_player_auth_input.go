@@ -109,6 +109,11 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 
 // handleInputFlags handles the toggleable input flags set in a PlayerAuthInput packet.
 func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.InputFlags, s *Session, c Controllable) {
+	wasSneaking := c.Sneaking()
+	startingItemUse := flags.Load(packet.InputFlagStartUsingItem)
+	if !startingItemUse {
+		s.clearShieldUsePending()
+	}
 	if flags.Load(packet.InputFlagStartSprinting) {
 		c.StartSprinting()
 	}
@@ -143,6 +148,19 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.InputFlags, s *S
 	if flags.Load(packet.InputFlagStopCrawling) {
 		c.StopCrawling()
 	}
+	if setter, ok := c.(shieldBlockingInputSetter); ok {
+		if down, ok := shieldBlockingInput(flags, wasSneaking, c.Sneaking()); ok {
+			setter.SetShieldBlockingInput(down)
+			if !down {
+				s.clearShieldUsePending()
+			}
+		}
+	}
+	if starter, ok := c.(shieldBlockingInputStarter); ok && startingItemUse {
+		if starter.StartShieldBlockingInput() {
+			s.markShieldUsePending(c)
+		}
+	}
 	if flags.Load(packet.InputFlagMissedSwing) {
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
@@ -159,6 +177,31 @@ func (h PlayerAuthInputHandler) handleInputFlags(flags protocol.InputFlags, s *S
 	if flags.Load(packet.InputFlagStopFlying) {
 		c.StopFlying()
 	}
+}
+
+// shieldBlockingInputSetter sets whether the shield input is held.
+type shieldBlockingInputSetter interface {
+	SetShieldBlockingInput(down bool)
+}
+
+// shieldBlockingInputStarter starts blocking after an item-use input.
+type shieldBlockingInputStarter interface {
+	StartShieldBlockingInput() bool
+}
+
+// shieldBlockingInput derives shield input from the packet's sneak flags. The second return value reports
+// whether the flags contain a conclusive update.
+func shieldBlockingInput(flags protocol.InputFlags, wasSneaking, sneaking bool) (bool, bool) {
+	if flags.Load(packet.InputFlagSneaking) || flags.Load(packet.InputFlagSneakDown) || flags.Load(packet.InputFlagStartSneaking) || flags.Load(packet.InputFlagSneakCurrentRaw) {
+		if !wasSneaking && !sneaking {
+			return false, false
+		}
+		return true, true
+	}
+	if flags.Load(packet.InputFlagStopSneaking) || flags.Load(packet.InputFlagSneakReleasedRaw) {
+		return false, true
+	}
+	return false, false
 }
 
 // handleUseItemData handles the protocol.UseItemTransactionData found in a packet.PlayerAuthInput.

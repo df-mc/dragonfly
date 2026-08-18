@@ -3,7 +3,63 @@ package recipe
 import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/google/uuid"
 )
+
+var (
+	shieldDecorationRecipeID = uuid.MustParse("00000000-0000-0000-0000-0000000000c8")
+	decoratedPotRecipeID     = uuid.MustParse("685a742a-c42e-4a4e-88ea-5eb83fc98e5b")
+)
+
+// ShieldDecorationRecipe applies a banner design to an undecorated shield.
+type ShieldDecorationRecipe struct{}
+
+// NewShieldDecorationRecipe creates the dynamic shield decoration recipe.
+func NewShieldDecorationRecipe() ShieldDecorationRecipe {
+	return ShieldDecorationRecipe{}
+}
+
+// Match checks for exactly one undecorated shield and one banner in any crafting-grid slots.
+func (r ShieldDecorationRecipe) Match(input []Item) (output []item.Stack, ok bool) {
+	var shield item.Stack
+	var bannerNBT map[string]any
+	foundShield, foundBanner := false, false
+	for _, ingredient := range input {
+		stack, ok := ingredient.(item.Stack)
+		if !ok || stack.Empty() {
+			continue
+		}
+		switch it := stack.Item().(type) {
+		case item.Shield:
+			if foundShield || it.Decorated() {
+				return nil, false
+			}
+			shield, foundShield = stack, true
+		default:
+			name, _ := it.EncodeItem()
+			banner, ok := it.(world.NBTer)
+			if name != "minecraft:banner" || !ok || foundBanner {
+				return nil, false
+			}
+			bannerNBT, foundBanner = banner.EncodeNBT(), true
+		}
+	}
+	if !foundShield || !foundBanner {
+		return nil, false
+	}
+	decorated := item.Shield{}.DecodeNBT(bannerNBT).(item.Shield)
+	return []item.Stack{shield.Grow(1 - shield.Count()).WithItem(decorated)}, true
+}
+
+// Block returns the crafting table used for shield decoration.
+func (ShieldDecorationRecipe) Block() string {
+	return "crafting_table"
+}
+
+// UUID returns the hardcoded shield decoration recipe ID.
+func (ShieldDecorationRecipe) UUID() uuid.UUID {
+	return shieldDecorationRecipeID
+}
 
 // DecoratedPotRecipe is a dynamic recipe for crafting decorated pots. The output depends on which
 // pottery sherds or bricks are used in the crafting grid.
@@ -117,4 +173,9 @@ func (r DecoratedPotRecipe) Match(input []Item) (output []item.Stack, ok bool) {
 // Block returns the block used to craft this recipe.
 func (r DecoratedPotRecipe) Block() string {
 	return r.block
+}
+
+// UUID returns the hardcoded decorated pot recipe ID.
+func (DecoratedPotRecipe) UUID() uuid.UUID {
+	return decoratedPotRecipeID
 }

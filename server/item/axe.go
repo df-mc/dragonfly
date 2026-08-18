@@ -82,6 +82,11 @@ func (a Axe) AttackDamage() float64 {
 	return a.Tier.BaseAttackDamage + 2
 }
 
+// ShieldDisableDuration returns how long an axe attack disables a shield.
+func (Axe) ShieldDisableDuration() time.Duration {
+	return 5 * time.Second
+}
+
 // ToolType ...
 func (a Axe) ToolType() ToolType {
 	return TypeAxe

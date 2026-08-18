@@ -204,4 +204,5 @@ func registerVanilla() {
 
 	// Register dynamic recipes
 	RegisterDynamic(NewDecoratedPotRecipe())
+	RegisterDynamic(NewShieldDecorationRecipe())
 }
