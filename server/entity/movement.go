@@ -44,7 +44,7 @@ func (m *Movement) Send() {
 	}
 }
 
-// StepOnBlock calls EntityStepOn on the block beneath an entity at pos.
+// StepOnBlock notifies the block beneath an entity.
 func StepOnBlock(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
 	box := e.H().Type().BBox(e).Translate(pos).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
@@ -58,10 +58,7 @@ func StepOnBlock(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
 	}
 }
 
-// checkSteppers handles pressure plates intersecting the entity and the block
-// it stands on after movement, mirroring player behaviour. Only pressure plates
-// are dispatched here: every other block.EntityInsider is deliberately left to
-// entity physics, as documented on Ent.checkPortalInsiders.
+// checkSteppers checks pressure plates and the block beneath the entity.
 func (m *Movement) checkSteppers(tx *world.Tx) {
 	checkPressurePlates(tx, m.e, m.pos)
 	if m.onGround {
@@ -69,7 +66,7 @@ func (m *Movement) checkSteppers(tx *world.Tx) {
 	}
 }
 
-// checkPressurePlates calls EntityInside on each pressure plate intersecting an entity at pos.
+// checkPressurePlates notifies each pressure plate touching an entity.
 func checkPressurePlates(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
 	box := e.H().Type().BBox(e).Translate(pos).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())

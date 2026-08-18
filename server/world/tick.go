@@ -347,7 +347,6 @@ func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Bloc
 	queue.ticks = append(queue.ticks, scheduledTick{pos: pos, t: resTick, b: b, bhash: index.hash})
 }
 
-// cancel removes all scheduled ticks for the block type at pos.
 func (queue *scheduledTickQueue) cancel(br BlockRegistry, pos cube.Pos, b Block) {
 	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(b)}
 	queue.ticks = slices.DeleteFunc(queue.ticks, func(t scheduledTick) bool {

@@ -11,22 +11,21 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// Button is a non-solid block that emits redstone power for a short duration
-// when pressed.
+// Button emits redstone power for a short time when pressed.
 type Button struct {
 	empty
 	transparent
 	sourceWaterDisplacer
 
-	// Type is the material the button is made of.
+	// Type is the button material.
 	Type ButtonType
-	// Facing is the face of the block that the button is attached to.
+	// Facing is the face the button points towards.
 	Facing cube.Face
-	// Pressed is true while the button emits power.
+	// Pressed reports whether the button is active.
 	Pressed bool
 }
 
-// UseOnBlock places the button attached to the clicked face.
+// UseOnBlock places a button on the clicked face.
 func (b Button) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, b)
 	if !used || !attachmentSupported(tx, pos, face) {
@@ -37,20 +36,19 @@ func (b Button) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// Activate presses the button and schedules its release.
+// Activate presses the button.
 func (b Button) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ *item.UseContext) bool {
 	b.press(pos, tx)
 	return true
 }
 
-// ProjectileHit presses wooden buttons hit by an arrow.
+// ProjectileHit presses a wooden button when struck by an arrow.
 func (b Button) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
 	if b.Type.Wood() && b.arrowIntersects(e, buttonBox(b).Translate(pos.Vec3())) {
 		b.press(pos, tx)
 	}
 }
 
-// press activates an unpressed button and schedules its release.
 func (b Button) press(pos cube.Pos, tx *world.Tx) {
 	if b.Pressed {
 		return
@@ -61,15 +59,14 @@ func (b Button) press(pos cube.Pos, tx *world.Tx) {
 	tx.PlaySound(pos.Vec3Centre(), sound.ButtonClickOn{})
 }
 
-// NeighbourUpdateTick breaks the button if its supporting block is removed.
+// NeighbourUpdateTick breaks an unsupported button.
 func (b Button) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !attachmentSupported(tx, pos, b.Facing) {
 		breakBlock(b, pos, tx)
 	}
 }
 
-// ScheduledTick releases a pressed button, unless an arrow rests inside a
-// wooden button, keeping it pressed.
+// ScheduledTick releases the button unless an arrow still holds it down.
 func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !b.Pressed {
 		return
@@ -83,7 +80,6 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	tx.PlaySound(pos.Vec3Centre(), sound.ButtonClickOff{})
 }
 
-// arrowWithin reports whether an arrow intersects the button at pos.
 func (b Button) arrowWithin(pos cube.Pos, tx *world.Tx) bool {
 	box := buttonBox(b).Translate(pos.Vec3())
 	for e := range tx.EntitiesWithin(box.Grow(1)) {
@@ -94,14 +90,11 @@ func (b Button) arrowWithin(pos cube.Pos, tx *world.Tx) bool {
 	return false
 }
 
-// arrowIntersects reports whether an entity is an arrow overlapping the box passed.
 func (Button) arrowIntersects(e world.Entity, box cube.BBox) bool {
 	return e.H().Type().EncodeEntity() == "minecraft:arrow" && entityIntersects(e, box)
 }
 
-// buttonBox returns the projectile-sensitive shape of a button: a 6x4 pane
-// centred on the face it is attached to, protruding out of it. Buttons have no
-// physical collision box, but projectiles must touch their visible shape.
+// buttonBox returns the visible button shape used for projectile hits.
 func buttonBox(b Button) cube.BBox {
 	depth := 2.0 / 16
 	if b.Pressed {
@@ -120,7 +113,7 @@ func buttonBox(b Button) cube.BBox {
 		ExtendTowards(b.Facing, depth)
 }
 
-// RedstonePower returns maximum power while the button is pressed.
+// RedstonePower returns 15 while the button is pressed.
 func (b Button) RedstonePower(cube.Pos, *world.Tx, cube.Face) int {
 	if b.Pressed {
 		return 15
@@ -128,7 +121,7 @@ func (b Button) RedstonePower(cube.Pos, *world.Tx, cube.Face) int {
 	return 0
 }
 
-// RedstoneStrongPower strongly powers the block the button is attached to.
+// RedstoneStrongPower powers the block behind the button.
 func (b Button) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Face) int {
 	if b.Pressed && face == b.Facing.Opposite() {
 		return 15
@@ -136,7 +129,7 @@ func (b Button) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Face) int
 	return 0
 }
 
-// BreakInfo ...
+// BreakInfo returns the button's break information.
 func (b Button) BreakInfo() BreakInfo {
 	effective := pickaxeEffective
 	harvestable := pickaxeHarvestable
@@ -147,12 +140,12 @@ func (b Button) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, harvestable, effective, oneOf(Button{Type: b.Type}))
 }
 
-// SideClosed ...
+// SideClosed reports that buttons do not close block faces.
 func (Button) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// FuelInfo ...
+// FuelInfo returns the button's fuel properties.
 func (b Button) FuelInfo() item.FuelInfo {
 	if b.Type.Flammable() {
 		return newFuelInfo(time.Second * 5)
@@ -160,18 +153,16 @@ func (b Button) FuelInfo() item.FuelInfo {
 	return item.FuelInfo{}
 }
 
-// EncodeItem ...
+// EncodeItem encodes the button as an item.
 func (b Button) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + b.Type.String(), 0
 }
 
-// EncodeBlock ...
+// EncodeBlock encodes the button as a block.
 func (b Button) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + b.Type.String(), map[string]any{"button_pressed_bit": boolByte(b.Pressed), "facing_direction": int32(b.Facing)}
 }
 
-// pressDuration returns how long the button stays pressed: 1.5 seconds for
-// wooden buttons and 1 second for stone-like buttons.
 func (b Button) pressDuration() time.Duration {
 	if b.Type.Wood() {
 		return time.Second * 3 / 2
@@ -179,7 +170,6 @@ func (b Button) pressDuration() time.Duration {
 	return time.Second
 }
 
-// allButtons ...
 func allButtons() (buttons []world.Block) {
 	for _, t := range ButtonTypes() {
 		for _, face := range cube.Faces() {

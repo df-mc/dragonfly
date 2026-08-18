@@ -148,7 +148,7 @@ func (tx *Tx) ScheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) {
 	tx.World().scheduleBlockUpdate(pos, b, delay)
 }
 
-// CancelBlockUpdate cancels all scheduled updates for the block type at pos.
+// CancelBlockUpdate cancels scheduled updates for a block at pos.
 func (tx *Tx) CancelBlockUpdate(pos cube.Pos, b Block) {
 	tx.World().cancelBlockUpdate(pos, b)
 }

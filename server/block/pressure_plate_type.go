@@ -1,91 +1,88 @@
 package block
 
-// PressurePlateType represents the material a pressure plate is made of,
-// including the weighted gold and iron variants.
+// PressurePlateType identifies a pressure plate material.
 type PressurePlateType struct {
 	pressurePlate
 }
 
 type pressurePlate uint8
 
-// StonePressurePlate returns the stone pressure plate variant.
+// StonePressurePlate returns a stone pressure plate type.
 func StonePressurePlate() PressurePlateType {
 	return PressurePlateType{0}
 }
 
-// PolishedBlackstonePressurePlate returns the polished blackstone pressure plate variant.
+// PolishedBlackstonePressurePlate returns a polished blackstone pressure plate type.
 func PolishedBlackstonePressurePlate() PressurePlateType {
 	return PressurePlateType{1}
 }
 
-// OakPressurePlate returns the oak pressure plate variant.
+// OakPressurePlate returns an oak pressure plate type.
 func OakPressurePlate() PressurePlateType {
 	return PressurePlateType{2}
 }
 
-// SprucePressurePlate returns the spruce pressure plate variant.
+// SprucePressurePlate returns a spruce pressure plate type.
 func SprucePressurePlate() PressurePlateType {
 	return PressurePlateType{3}
 }
 
-// BirchPressurePlate returns the birch pressure plate variant.
+// BirchPressurePlate returns a birch pressure plate type.
 func BirchPressurePlate() PressurePlateType {
 	return PressurePlateType{4}
 }
 
-// JunglePressurePlate returns the jungle pressure plate variant.
+// JunglePressurePlate returns a jungle pressure plate type.
 func JunglePressurePlate() PressurePlateType {
 	return PressurePlateType{5}
 }
 
-// AcaciaPressurePlate returns the acacia pressure plate variant.
+// AcaciaPressurePlate returns an acacia pressure plate type.
 func AcaciaPressurePlate() PressurePlateType {
 	return PressurePlateType{6}
 }
 
-// DarkOakPressurePlate returns the dark oak pressure plate variant.
+// DarkOakPressurePlate returns a dark oak pressure plate type.
 func DarkOakPressurePlate() PressurePlateType {
 	return PressurePlateType{7}
 }
 
-// MangrovePressurePlate returns the mangrove pressure plate variant.
+// MangrovePressurePlate returns a mangrove pressure plate type.
 func MangrovePressurePlate() PressurePlateType {
 	return PressurePlateType{8}
 }
 
-// CherryPressurePlate returns the cherry pressure plate variant.
+// CherryPressurePlate returns a cherry pressure plate type.
 func CherryPressurePlate() PressurePlateType {
 	return PressurePlateType{9}
 }
 
-// BambooPressurePlate returns the bamboo pressure plate variant.
+// BambooPressurePlate returns a bamboo pressure plate type.
 func BambooPressurePlate() PressurePlateType {
 	return PressurePlateType{10}
 }
 
-// CrimsonPressurePlate returns the crimson pressure plate variant.
+// CrimsonPressurePlate returns a crimson pressure plate type.
 func CrimsonPressurePlate() PressurePlateType {
 	return PressurePlateType{11}
 }
 
-// WarpedPressurePlate returns the warped pressure plate variant.
+// WarpedPressurePlate returns a warped pressure plate type.
 func WarpedPressurePlate() PressurePlateType {
 	return PressurePlateType{12}
 }
 
-// PaleOakPressurePlate returns the pale oak pressure plate variant.
+// PaleOakPressurePlate returns a pale oak pressure plate type.
 func PaleOakPressurePlate() PressurePlateType {
 	return PressurePlateType{13}
 }
 
-// LightWeightedPressurePlate returns the light weighted (gold) pressure plate
-// variant, which emits one power level per entity on it.
+// LightWeightedPressurePlate returns a light weighted pressure plate type.
 func LightWeightedPressurePlate() PressurePlateType {
 	return PressurePlateType{14}
 }
 
-// HeavyWeightedPressurePlate returns the heavy weighted (iron) pressure plate
-// variant, which emits one power level per ten entities on it.
+// HeavyWeightedPressurePlate returns a heavy weighted pressure plate type.
 func HeavyWeightedPressurePlate() PressurePlateType {
 	return PressurePlateType{15}
 }
@@ -95,25 +92,22 @@ func (p pressurePlate) Uint8() uint8 {
 	return uint8(p)
 }
 
-// Wood reports whether the pressure plate is made of wood, making it react to
-// every entity.
+// Wood reports whether the pressure plate behaves like wood.
 func (p pressurePlate) Wood() bool {
 	return p >= 2 && p <= 13
 }
 
-// Flammable reports whether the pressure plate can burn, making it usable as
-// furnace fuel. Crimson and warped plates are wooden but do not burn.
+// Flammable reports whether the pressure plate can burn.
 func (p pressurePlate) Flammable() bool {
 	return p.Wood() && p != CrimsonPressurePlate().pressurePlate && p != WarpedPressurePlate().pressurePlate
 }
 
-// Weighted reports whether the pressure plate emits an analog power level
-// based on the number of entities on it.
+// Weighted reports whether the plate's signal depends on entity count.
 func (p pressurePlate) Weighted() bool {
 	return p == 14 || p == 15
 }
 
-// Name ...
+// Name returns the pressure plate's display name.
 func (p pressurePlate) Name() string {
 	switch p {
 	case 0:
@@ -152,7 +146,7 @@ func (p pressurePlate) Name() string {
 	panic("unknown pressure plate type")
 }
 
-// String ...
+// String returns the pressure plate's block identifier.
 func (p pressurePlate) String() string {
 	switch p {
 	case 0:
@@ -160,7 +154,6 @@ func (p pressurePlate) String() string {
 	case 1:
 		return "polished_blackstone_pressure_plate"
 	case 2:
-		// Oak pressure plates use the legacy wooden identifier.
 		return "wooden_pressure_plate"
 	case 3:
 		return "spruce_pressure_plate"
@@ -192,7 +185,7 @@ func (p pressurePlate) String() string {
 	panic("unknown pressure plate type")
 }
 
-// PressurePlateTypes ...
+// PressurePlateTypes returns all pressure plate types.
 func PressurePlateTypes() []PressurePlateType {
 	return []PressurePlateType{
 		StonePressurePlate(),

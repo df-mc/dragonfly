@@ -126,16 +126,16 @@ type DoorCrash struct{ sound }
 // Click is a clicking sound.
 type Click struct{ sound }
 
-// ButtonClickOn is played when a button is pressed.
+// ButtonClickOn is the sound of a button being pressed.
 type ButtonClickOn struct{ sound }
 
-// ButtonClickOff is played when a button is released.
+// ButtonClickOff is the sound of a button being released.
 type ButtonClickOff struct{ sound }
 
-// PressurePlateClickOn is played when a pressure plate starts emitting power.
+// PressurePlateClickOn is the sound of a pressure plate being pressed.
 type PressurePlateClickOn struct{ sound }
 
-// PressurePlateClickOff is played when a pressure plate stops emitting power.
+// PressurePlateClickOff is the sound of a pressure plate being released.
 type PressurePlateClickOff struct{ sound }
 
 // Ignite is a sound played when using a flint & steel.

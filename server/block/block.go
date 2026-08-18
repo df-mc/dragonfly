@@ -186,8 +186,7 @@ func firstReplaceable(tx *world.Tx, pos cube.Pos, face cube.Face, with world.Blo
 	return pos, face, false
 }
 
-// attachmentSupported reports whether the block at pos may attach to the
-// adjacent block through face.
+// attachmentSupported checks whether a block can attach through face.
 func attachmentSupported(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
 	support := pos.Side(face.Opposite())
 	if support.OutOfBounds(tx.Range()) {
@@ -196,8 +195,7 @@ func attachmentSupported(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
 	return tx.Block(support).Model().FaceSolid(support, face, tx)
 }
 
-// entityIntersects reports whether the bounding box of the entity passed
-// overlaps the box passed.
+// entityIntersects checks whether an entity overlaps a box.
 func entityIntersects(e world.Entity, box cube.BBox) bool {
 	return e.H().Type().BBox(e).Translate(e.Position()).IntersectsWith(box)
 }

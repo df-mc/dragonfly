@@ -1,78 +1,78 @@
 package block
 
-// ButtonType represents the material a button is made of.
+// ButtonType identifies a button material.
 type ButtonType struct {
 	button
 }
 
 type button uint8
 
-// StoneButton returns the stone button variant.
+// StoneButton returns a stone button type.
 func StoneButton() ButtonType {
 	return ButtonType{0}
 }
 
-// PolishedBlackstoneButton returns the polished blackstone button variant.
+// PolishedBlackstoneButton returns a polished blackstone button type.
 func PolishedBlackstoneButton() ButtonType {
 	return ButtonType{1}
 }
 
-// OakButton returns the oak button variant.
+// OakButton returns an oak button type.
 func OakButton() ButtonType {
 	return ButtonType{2}
 }
 
-// SpruceButton returns the spruce button variant.
+// SpruceButton returns a spruce button type.
 func SpruceButton() ButtonType {
 	return ButtonType{3}
 }
 
-// BirchButton returns the birch button variant.
+// BirchButton returns a birch button type.
 func BirchButton() ButtonType {
 	return ButtonType{4}
 }
 
-// JungleButton returns the jungle button variant.
+// JungleButton returns a jungle button type.
 func JungleButton() ButtonType {
 	return ButtonType{5}
 }
 
-// AcaciaButton returns the acacia button variant.
+// AcaciaButton returns an acacia button type.
 func AcaciaButton() ButtonType {
 	return ButtonType{6}
 }
 
-// DarkOakButton returns the dark oak button variant.
+// DarkOakButton returns a dark oak button type.
 func DarkOakButton() ButtonType {
 	return ButtonType{7}
 }
 
-// MangroveButton returns the mangrove button variant.
+// MangroveButton returns a mangrove button type.
 func MangroveButton() ButtonType {
 	return ButtonType{8}
 }
 
-// CherryButton returns the cherry button variant.
+// CherryButton returns a cherry button type.
 func CherryButton() ButtonType {
 	return ButtonType{9}
 }
 
-// BambooButton returns the bamboo button variant.
+// BambooButton returns a bamboo button type.
 func BambooButton() ButtonType {
 	return ButtonType{10}
 }
 
-// CrimsonButton returns the crimson button variant.
+// CrimsonButton returns a crimson button type.
 func CrimsonButton() ButtonType {
 	return ButtonType{11}
 }
 
-// WarpedButton returns the warped button variant.
+// WarpedButton returns a warped button type.
 func WarpedButton() ButtonType {
 	return ButtonType{12}
 }
 
-// PaleOakButton returns the pale oak button variant.
+// PaleOakButton returns a pale oak button type.
 func PaleOakButton() ButtonType {
 	return ButtonType{13}
 }
@@ -82,19 +82,17 @@ func (b button) Uint8() uint8 {
 	return uint8(b)
 }
 
-// Wood reports whether the button is made of wood, giving it a longer press
-// duration and letting arrows press it.
+// Wood reports whether the button behaves like wood.
 func (b button) Wood() bool {
 	return b >= 2 && b <= 13
 }
 
-// Flammable reports whether the button can burn, making it usable as furnace
-// fuel. Crimson and warped buttons are wooden but do not burn.
+// Flammable reports whether the button can burn.
 func (b button) Flammable() bool {
 	return b.Wood() && b != CrimsonButton().button && b != WarpedButton().button
 }
 
-// Name ...
+// Name returns the button's display name.
 func (b button) Name() string {
 	switch b {
 	case 0:
@@ -129,7 +127,7 @@ func (b button) Name() string {
 	panic("unknown button type")
 }
 
-// String ...
+// String returns the button's block identifier.
 func (b button) String() string {
 	switch b {
 	case 0:
@@ -137,7 +135,6 @@ func (b button) String() string {
 	case 1:
 		return "polished_blackstone_button"
 	case 2:
-		// Oak buttons use the legacy wooden identifier.
 		return "wooden_button"
 	case 3:
 		return "spruce_button"
@@ -165,7 +162,7 @@ func (b button) String() string {
 	panic("unknown button type")
 }
 
-// ButtonTypes ...
+// ButtonTypes returns all button types.
 func ButtonTypes() []ButtonType {
 	return []ButtonType{
 		StoneButton(),

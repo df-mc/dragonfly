@@ -11,21 +11,19 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
-// PressurePlate is a non-solid block that emits redstone power while entities
-// stand on it. Weighted variants emit an analog power level based on the
-// number of entities on the plate.
+// PressurePlate emits redstone power while an entity stands on it.
 type PressurePlate struct {
 	empty
 	transparent
 	sourceWaterDisplacer
 
-	// Type is the material the pressure plate is made of.
+	// Type is the pressure plate material.
 	Type PressurePlateType
-	// Power is the current redstone signal emitted by the plate.
+	// Power is the current signal strength.
 	Power int
 }
 
-// UseOnBlock places the pressure plate on a solid surface.
+// UseOnBlock places a pressure plate on a solid surface.
 func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, p)
 	if !used || !attachmentSupported(tx, pos, cube.FaceUp) {
@@ -35,13 +33,12 @@ func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 	return placed(ctx)
 }
 
-// EntityInside powers the plate when an entity enters its activation area.
+// EntityInside activates the plate for a valid entity.
 func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	if !p.detects(e) || !entityIntersects(e, pressurePlateActivationBox(pos)) {
 		return
 	}
 	if p.Power > 0 {
-		// The scheduled tick keeps the level current while the plate is active.
 		return
 	}
 	power := 15
@@ -54,14 +51,14 @@ func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) 
 	tx.PlaySound(pos.Vec3Centre(), sound.PressurePlateClickOn{})
 }
 
-// NeighbourUpdateTick breaks the pressure plate if its supporting block is removed.
+// NeighbourUpdateTick breaks an unsupported pressure plate.
 func (p PressurePlate) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !attachmentSupported(tx, pos, cube.FaceUp) {
 		breakBlock(p, pos, tx)
 	}
 }
 
-// ScheduledTick releases the plate if no entity keeps it pressed.
+// ScheduledTick updates the plate's power from the entities on it.
 func (p PressurePlate) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	power := p.detectPower(pos, tx)
 	if power > 0 {
@@ -80,12 +77,12 @@ func (p PressurePlate) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	tx.PlaySound(pos.Vec3Centre(), sound.PressurePlateClickOff{})
 }
 
-// RedstonePower returns the plate's analog power level.
+// RedstonePower returns the plate's signal strength.
 func (p PressurePlate) RedstonePower(cube.Pos, *world.Tx, cube.Face) int {
 	return p.Power
 }
 
-// RedstoneStrongPower strongly powers the block below the pressure plate.
+// RedstoneStrongPower powers the block below the plate.
 func (p PressurePlate) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Face) int {
 	if face == cube.FaceDown {
 		return p.Power
@@ -93,7 +90,7 @@ func (p PressurePlate) RedstoneStrongPower(_ cube.Pos, _ *world.Tx, face cube.Fa
 	return 0
 }
 
-// BreakInfo ...
+// BreakInfo returns the plate's break information.
 func (p PressurePlate) BreakInfo() BreakInfo {
 	effective := pickaxeEffective
 	if p.Type.Wood() {
@@ -102,12 +99,12 @@ func (p PressurePlate) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, effective, oneOf(PressurePlate{Type: p.Type}))
 }
 
-// SideClosed ...
+// SideClosed reports that pressure plates do not close block faces.
 func (PressurePlate) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false
 }
 
-// FuelInfo ...
+// FuelInfo returns the plate's fuel properties.
 func (p PressurePlate) FuelInfo() item.FuelInfo {
 	if p.Type.Flammable() {
 		return newFuelInfo(time.Second * 15)
@@ -115,19 +112,17 @@ func (p PressurePlate) FuelInfo() item.FuelInfo {
 	return item.FuelInfo{}
 }
 
-// EncodeItem ...
+// EncodeItem encodes the pressure plate as an item.
 func (p PressurePlate) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + p.Type.String(), 0
 }
 
-// EncodeBlock ...
+// EncodeBlock encodes the pressure plate as a block.
 func (p PressurePlate) EncodeBlock() (string, map[string]any) {
 	return "minecraft:" + p.Type.String(), map[string]any{"redstone_signal": int32(world.ClampRedstonePower(p.Power))}
 }
 
-// detects reports whether an entity activates the plate. Stone-like plates only
-// react to living entities and armour stands; wooden and weighted plates react
-// to any entity.
+// detects checks whether an entity can activate the plate.
 func (p PressurePlate) detects(e world.Entity) bool {
 	if player, ok := e.(interface{ GameMode() world.GameMode }); ok && !player.GameMode().HasCollision() {
 		return false
@@ -141,8 +136,6 @@ func (p PressurePlate) detects(e world.Entity) bool {
 	return e.H().Type().EncodeEntity() == "minecraft:armor_stand"
 }
 
-// entitiesOn counts the entities intersecting the plate's activation box,
-// stopping early once limit is reached.
 func (p PressurePlate) entitiesOn(pos cube.Pos, tx *world.Tx, limit int) int {
 	box, n := pressurePlateActivationBox(pos), 0
 	for e := range tx.EntitiesWithin(box.Grow(1)) {
@@ -156,9 +149,7 @@ func (p PressurePlate) entitiesOn(pos cube.Pos, tx *world.Tx, limit int) int {
 	return n
 }
 
-// detectPower returns the power level the entities on the plate produce.
-// Weighted plates emit one level per entity, or per ten entities rounded up for
-// the heavy variant; every other plate emits full power for any entity at all.
+// detectPower calculates the signal produced by entities on the plate.
 func (p PressurePlate) detectPower(pos cube.Pos, tx *world.Tx) int {
 	switch p.Type {
 	case LightWeightedPressurePlate():
@@ -172,8 +163,6 @@ func (p PressurePlate) detectPower(pos cube.Pos, tx *world.Tx) int {
 	return 0
 }
 
-// releaseDelay is the delay before the plate re-checks its entities: 0.5
-// seconds for weighted plates and 1 second otherwise.
 func (p PressurePlate) releaseDelay() time.Duration {
 	if p.Type.Weighted() {
 		return time.Second / 2
@@ -181,21 +170,16 @@ func (p PressurePlate) releaseDelay() time.Duration {
 	return time.Second
 }
 
-// pressurePlateLivingEntity is implemented by entities that can die. Health is
-// part of the interface so that only entities with a full health state match,
-// even though Dead alone decides whether the plate reacts.
+// pressurePlateLivingEntity is implemented by living entities.
 type pressurePlateLivingEntity interface {
 	Health() float64
 	Dead() bool
 }
 
-// pressurePlateActivationBox is the box entities must intersect to press the
-// plate at a position.
 func pressurePlateActivationBox(pos cube.Pos) cube.BBox {
 	return cube.Box(0.125, 0, 0.125, 0.875, 0.25, 0.875).Translate(pos.Vec3())
 }
 
-// allPressurePlates ...
 func allPressurePlates() (plates []world.Block) {
 	for _, t := range PressurePlateTypes() {
 		for power := 0; power <= 15; power++ {

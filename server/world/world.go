@@ -1108,7 +1108,6 @@ func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) 
 	w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay)
 }
 
-// cancelBlockUpdate cancels all scheduled updates for the block type at pos.
 func (w *World) cancelBlockUpdate(pos cube.Pos, b Block) {
 	if w == nil || pos.OutOfBounds(w.Range()) {
 		return
