@@ -118,9 +118,10 @@ func (s *Settings) LoadPositionTrackingData(data PositionTrackingData) {
 	}
 }
 
-// TrackPosition activates a tracking handle for pos. Existing handles at the
-// same position are reused so a lodestone replaced before a stored compass is
-// read remains linked, matching Bedrock behaviour.
+// TrackPosition activates a tracking handle for pos. A handle still active at
+// pos is reused, but one retired by breaking the block it belonged to is not:
+// a lodestone rebuilt in the same spot forms a new group, leaving compasses
+// linked to the old one spinning.
 func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 	dim, _ := DimensionID(w.Dimension())
 	t := w.set.tracker()
@@ -131,7 +132,7 @@ func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 		t.byPosition = map[[4]int]int32{}
 	}
 	key := [4]int{dim, pos[0], pos[1], pos[2]}
-	if existing := t.byPosition[key]; existing != 0 {
+	if existing := t.byPosition[key]; existing != 0 && t.byHandle[existing].active {
 		handle = existing
 	}
 	if handle == 0 {
@@ -150,16 +151,18 @@ func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 	return handle
 }
 
-// PositionTrackingHandleAt returns the tracking handle associated with pos.
+// PositionTrackingHandleAt returns the tracking handle still active at pos, or
+// 0 if none is.
 func (w *World) PositionTrackingHandleAt(pos cube.Pos) int32 {
 	dim, _ := DimensionID(w.Dimension())
 	t := w.set.tracker()
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if t.byPosition == nil {
+	handle := t.byPosition[[4]int{dim, pos[0], pos[1], pos[2]}]
+	if !t.byHandle[handle].active {
 		return 0
 	}
-	return t.byPosition[[4]int{dim, pos[0], pos[1], pos[2]}]
+	return handle
 }
 
 // UntrackPosition marks the tracking handle at pos as unavailable. Its position
