@@ -45,18 +45,22 @@ type Settings struct {
 	// TickRange is the radius in chunks around a Viewer that has its blocks and entities ticked when the world is
 	// ticked. If set to 0, blocks and entities will never be ticked.
 	TickRange int32
+	// RespawnBlocksExplode specifies whether beds and respawn anchors explode when used in dimensions where they cannot
+	// set a spawn point.
+	RespawnBlocksExplode bool
 }
 
 // defaultSettings returns the default Settings for a new World.
 func defaultSettings() *Settings {
 	return &Settings{
-		Name:            "World",
-		DefaultGameMode: GameModeSurvival,
-		Difficulty:      DifficultyNormal,
-		TimeCycle:       true,
-		WeatherCycle:    true,
-		RainTime:        int64(rand.IntN(8400)+600) * 20,
-		ThunderTime:     int64(rand.IntN(8400)+600) * 20,
-		TickRange:       6,
+		Name:                 "World",
+		DefaultGameMode:      GameModeSurvival,
+		Difficulty:           DifficultyNormal,
+		TimeCycle:            true,
+		WeatherCycle:         true,
+		RespawnBlocksExplode: true,
+		RainTime:             int64(rand.IntN(8400)+600) * 20,
+		ThunderTime:          int64(rand.IntN(8400)+600) * 20,
+		TickRange:            6,
 	}
 }
