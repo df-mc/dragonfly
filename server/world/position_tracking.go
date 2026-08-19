@@ -54,8 +54,8 @@ type PositionTracker struct {
 	byPosition map[[4]int]int32
 }
 
-// NewPositionTracker returns an initialised PositionTracker.
-func NewPositionTracker() *PositionTracker {
+// newPositionTracker returns an initialised PositionTracker.
+func newPositionTracker() *PositionTracker {
 	return &PositionTracker{byHandle: map[int32]trackedPosition{}, byPosition: map[[4]int]int32{}}
 }
 
@@ -65,7 +65,7 @@ func (s *Settings) tracker() *PositionTracker {
 	s.trackerMu.Lock()
 	defer s.trackerMu.Unlock()
 	if s.positionTracker == nil {
-		s.positionTracker = NewPositionTracker()
+		s.positionTracker = newPositionTracker()
 	}
 	return s.positionTracker
 }
@@ -86,16 +86,6 @@ func (s *Settings) PositionTrackingData() PositionTrackingData {
 		data.Entries = append(data.Entries, PositionTrackingEntry{Handle: handle, Position: entry.pos, Dimension: entry.dim})
 	}
 	return data
-}
-
-// PositionTrackingEntries returns a snapshot of the position tracking database.
-func (s *Settings) PositionTrackingEntries() []PositionTrackingEntry {
-	return s.PositionTrackingData().Entries
-}
-
-// LoadPositionTrackingEntries replaces the position tracking database with entries.
-func (s *Settings) LoadPositionTrackingEntries(entries []PositionTrackingEntry) {
-	s.LoadPositionTrackingData(PositionTrackingData{Entries: entries})
 }
 
 // LoadPositionTrackingData replaces the position tracking database with data.

@@ -61,6 +61,6 @@ func defaultSettings() *Settings {
 		RainTime:        int64(rand.IntN(8400)+600) * 20,
 		ThunderTime:     int64(rand.IntN(8400)+600) * 20,
 		TickRange:       6,
-		positionTracker: NewPositionTracker(),
+		positionTracker: newPositionTracker(),
 	}
 }

@@ -96,3 +96,88 @@ func TestTrackerReachableWhileSettingsLocked(t *testing.T) {
 		t.Fatal("reaching the tracker while the Settings lock is held deadlocked")
 	}
 }
+
+// trackedTestBlock stands in for a lodestone: a block entity carrying a position tracking handle.
+type trackedTestBlock struct {
+	handle int32
+}
+
+func (t trackedTestBlock) TrackingHandle() int32 { return t.handle }
+
+func (t trackedTestBlock) WithTrackingHandle(handle int32) Block {
+	t.handle = handle
+	return t
+}
+
+func (trackedTestBlock) EncodeBlock() (string, map[string]any) { return "test:tracked", nil }
+func (trackedTestBlock) Hash() (uint64, uint64)                { return 1 << 41, 0 }
+func (trackedTestBlock) Model() BlockModel                     { return nil }
+func (t trackedTestBlock) EncodeNBT() map[string]any           { return map[string]any{"handle": t.handle} }
+
+func (t trackedTestBlock) DecodeNBT(data map[string]any) any {
+	t.handle, _ = data["handle"].(int32)
+	return t
+}
+
+type plainTestBlock struct{}
+
+func (plainTestBlock) EncodeBlock() (string, map[string]any) { return "test:plain", nil }
+func (plainTestBlock) Hash() (uint64, uint64)                { return 1 << 42, 0 }
+func (plainTestBlock) Model() BlockModel                     { return nil }
+
+func trackedTestRegistry() BlockRegistry {
+	registry := NewBlockRegistry()
+	registry.RegisterBlockState(BlockState{Name: "test:tracked", Properties: map[string]any{}})
+	registry.RegisterBlockState(BlockState{Name: "test:plain", Properties: map[string]any{}})
+	registry.RegisterBlock(trackedTestBlock{})
+	registry.RegisterBlock(plainTestBlock{})
+	return registry
+}
+
+// TestSetBlockEntityRetracksPosition covers Tx.SetBlockEntity, which writes block entity data in place
+// without going through setBlock and so has its own path into the tracking database.
+func TestSetBlockEntityRetracksPosition(t *testing.T) {
+	w := Config{Synchronous: true, Blocks: trackedTestRegistry()}.New()
+	defer w.Close()
+
+	pos := cube.Pos{0, 0, 0}
+	var handle int32
+	w.Do(func(tx *Tx) {
+		tx.SetBlock(pos, trackedTestBlock{}, nil)
+		handle = tx.World().TrackPosition(pos, 0)
+		tx.SetBlock(pos, trackedTestBlock{handle: handle}, nil)
+
+		// Rewriting the block entity with no handle must retire the old one.
+		tx.SetBlockEntity(pos, trackedTestBlock{})
+	})
+	if _, _, ok := w.TrackedPosition(handle); ok {
+		t.Errorf("handle %v still resolves after SetBlockEntity unlinked the block", handle)
+	}
+}
+
+// TestBuildStructureRetracksPosition covers Tx.BuildStructure, which writes blocks without going through
+// setBlock either.
+func TestBuildStructureRetracksPosition(t *testing.T) {
+	w := Config{Synchronous: true, Blocks: trackedTestRegistry()}.New()
+	defer w.Close()
+
+	pos := cube.Pos{0, 0, 0}
+	var handle int32
+	w.Do(func(tx *Tx) {
+		handle = tx.World().TrackPosition(pos, 0)
+		tx.SetBlock(pos, trackedTestBlock{handle: handle}, nil)
+		tx.BuildStructure(pos, plainStructure{})
+	})
+	if _, _, ok := w.TrackedPosition(handle); ok {
+		t.Errorf("handle %v still resolves after a structure replaced the block", handle)
+	}
+}
+
+// plainStructure replaces a single block with one that carries no tracking handle.
+type plainStructure struct{}
+
+func (plainStructure) Dimensions() [3]int { return [3]int{1, 1, 1} }
+
+func (plainStructure) At(_, _, _ int, _ func(x, y, z int) Block) (Block, Liquid) {
+	return plainTestBlock{}, nil
+}

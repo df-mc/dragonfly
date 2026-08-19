@@ -52,8 +52,9 @@ func (s *Session) holdsTrackingCompass(handle int32) bool {
 		compass, ok := stack.Item().(item.Compass)
 		return ok && compass.TrackingHandle == handle
 	}
-	// ui covers the cursor and crafting grid, and openedWindow the container the player is looking into.
-	inventories := []*inventory.Inventory{s.inv, s.offHand, s.ui, s.enderChest, s.openedWindow.Load()}
+	// ui covers the cursor and crafting grid, and openedWindow the container the player is looking into,
+	// including an ender chest, which is stored there while open.
+	inventories := []*inventory.Inventory{s.inv, s.offHand, s.ui, s.openedWindow.Load()}
 	for _, inv := range inventories {
 		if inv == nil {
 			continue
