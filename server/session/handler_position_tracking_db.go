@@ -5,6 +5,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
@@ -19,7 +20,7 @@ const (
 type PositionTrackingDBHandler struct{}
 
 // Handle responds with the tracked position, or marks the target as unavailable.
-func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
+func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, _ Controllable) error {
 	pk, ok := p.(*packet.PositionTrackingDBClientRequest)
 	if !ok {
 		return fmt.Errorf("expected *packet.PositionTrackingDBClientRequest, got %T", p)
@@ -28,7 +29,7 @@ func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.
 		return fmt.Errorf("unknown position tracking request action %d", pk.RequestAction)
 	}
 	pos, dim, found := cube.Pos{}, 0, false
-	if holdsTrackingCompass(c, pk.TrackingID) {
+	if s.holdsTrackingCompass(pk.TrackingID) {
 		pos, dim, found = tx.World().TrackedPosition(pk.TrackingID)
 	}
 	action, status := byte(packet.PositionTrackingDBBroadcastActionUpdate), byte(positionTrackingStatusTracked)
@@ -43,17 +44,25 @@ func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.
 	return nil
 }
 
-func holdsTrackingCompass(c Controllable, handle int32) bool {
+// holdsTrackingCompass reports whether a compass linked to handle sits anywhere the client is currently
+// drawing for this player. Queries for handles it holds no compass for are refused, so lodestone positions
+// cannot be found by walking the handle space.
+func (s *Session) holdsTrackingCompass(handle int32) bool {
 	hasHandle := func(stack item.Stack) bool {
 		compass, ok := stack.Item().(item.Compass)
 		return ok && compass.TrackingHandle == handle
 	}
-	mainHand, offHand := c.HeldItems()
-	if hasHandle(mainHand) || hasHandle(offHand) {
-		return true
+	// ui covers the cursor and crafting grid, and openedWindow the container the player is looking into.
+	inventories := []*inventory.Inventory{s.inv, s.offHand, s.ui, s.enderChest, s.openedWindow.Load()}
+	for _, inv := range inventories {
+		if inv == nil {
+			continue
+		}
+		if _, ok := inv.FirstFunc(hasHandle); ok {
+			return true
+		}
 	}
-	_, ok := c.Inventory().FirstFunc(hasHandle)
-	return ok
+	return false
 }
 
 func positionTrackingPayload(handle int32, pos cube.Pos, dim int, status byte) map[string]any {
