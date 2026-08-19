@@ -32,7 +32,7 @@ func (BambooJungle) WaterColour() color.RGBA {
 
 // Tags ...
 func (BambooJungle) Tags() []string {
-	return []string{"animal", "bamboo", "jungle", "monster", "overworld", "spawns_jungle_mobs", "spawns_warm_variant_farm_animals"}
+	return []string{"animal", "bamboo", "jungle", "monster", "overworld", "spawns_jungle_mobs", "spawns_warm_variant_farm_animals", "has_structure_abandoned_camp"}
 }
 
 // String ...
