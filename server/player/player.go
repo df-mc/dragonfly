@@ -2654,7 +2654,9 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 
 	p.checkBlockCollisions(p.data.Vel)
 	p.onGround = p.checkOnGround(mgl64.Vec3{})
-	p.checkEntitySteppers()
+	if p.OnGround() {
+		entity.StepOnBlock(p.tx, p, p.Position())
+	}
 
 	p.effects.Tick(p, p.tx)
 
@@ -2999,23 +3001,6 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 						collide.EntityInside(blockPos, p.tx, p)
 					}
 				}
-			}
-		}
-	}
-}
-
-// checkEntitySteppers checks if the player is standing on any EntityStepper blocks.
-func (p *Player) checkEntitySteppers() {
-	if !p.OnGround() {
-		return
-	}
-	low, high := p.blocksUnder()
-	for x := low[0]; x <= high[0]; x++ {
-		for z := low[2]; z <= high[2]; z++ {
-			pos := cube.Pos{x, low[1], z}
-			if stepper, ok := p.tx.Block(pos).(block.EntityStepper); ok {
-				stepper.EntityStepOn(pos, p.tx, p)
-				return
 			}
 		}
 	}
