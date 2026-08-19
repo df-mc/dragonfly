@@ -15,6 +15,16 @@ type StainedGlassPane struct {
 
 	// Colour specifies the colour of the block.
 	Colour item.Colour
+	// Connections holds the sides that the glass pane connects to.
+	Connections Connections
+}
+
+// NeighbourUpdateTick ...
+func (p StainedGlassPane) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if connections := calculateConnections(p.Model().(connector), tx, pos); connections != p.Connections {
+		p.Connections = connections
+		tx.SetBlock(pos, p, nil)
+	}
 }
 
 // SideClosed ...
@@ -34,14 +44,16 @@ func (p StainedGlassPane) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (p StainedGlassPane) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + p.Colour.String() + "_stained_glass_pane", nil
+	return "minecraft:" + p.Colour.String() + "_stained_glass_pane", p.Connections.properties()
 }
 
 // allStainedGlassPane returns stained-glass panes with all possible colours.
 func allStainedGlassPane() []world.Block {
 	b := make([]world.Block, 0, 16)
-	for _, c := range item.Colours() {
-		b = append(b, StainedGlassPane{Colour: c})
+	for _, colour := range item.Colours() {
+		for _, c := range allConnections() {
+			b = append(b, StainedGlassPane{Colour: colour, Connections: c})
+		}
 	}
 	return b
 }

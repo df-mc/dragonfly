@@ -10,6 +10,17 @@ import (
 type NetherBrickFence struct {
 	transparent
 	sourceWaterDisplacer
+
+	// Connections holds the sides that the fence connects to.
+	Connections Connections
+}
+
+// NeighbourUpdateTick ...
+func (n NetherBrickFence) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if connections := calculateConnections(n.Model().(connector), tx, pos); connections != n.Connections {
+		n.Connections = connections
+		tx.SetBlock(pos, n, nil)
+	}
 }
 
 // BreakInfo ...
@@ -33,6 +44,14 @@ func (NetherBrickFence) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (NetherBrickFence) EncodeBlock() (string, map[string]any) {
-	return "minecraft:nether_brick_fence", nil
+func (n NetherBrickFence) EncodeBlock() (string, map[string]any) {
+	return "minecraft:nether_brick_fence", n.Connections.properties()
+}
+
+// allNetherBrickFence ...
+func allNetherBrickFence() (fence []world.Block) {
+	for _, c := range allConnections() {
+		fence = append(fence, NetherBrickFence{Connections: c})
+	}
+	return
 }

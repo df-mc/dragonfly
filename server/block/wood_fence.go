@@ -18,6 +18,16 @@ type WoodFence struct {
 	// Wood is the type of wood of the fence. This field must have one of the values found in the wood
 	// package.
 	Wood WoodType
+	// Connections holds the sides that the fence connects to.
+	Connections Connections
+}
+
+// NeighbourUpdateTick ...
+func (w WoodFence) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if connections := calculateConnections(w.Model().(connector), tx, pos); connections != w.Connections {
+		w.Connections = connections
+		tx.SetBlock(pos, w, nil)
+	}
 }
 
 // BreakInfo ...
@@ -48,7 +58,7 @@ func (w WoodFence) FuelInfo() item.FuelInfo {
 
 // EncodeBlock ...
 func (w WoodFence) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + w.Wood.String() + "_fence", nil
+	return "minecraft:" + w.Wood.String() + "_fence", w.Connections.properties()
 }
 
 // Model ...
@@ -64,7 +74,9 @@ func (w WoodFence) EncodeItem() (name string, meta int16) {
 // allFence ...
 func allFence() (fence []world.Block) {
 	for _, w := range WoodTypes() {
-		fence = append(fence, WoodFence{Wood: w})
+		for _, c := range allConnections() {
+			fence = append(fence, WoodFence{Wood: w, Connections: c})
+		}
 	}
 	return
 }

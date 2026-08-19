@@ -58,7 +58,7 @@ func init() {
 	}
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(FletchingTable{})
-	world.RegisterBlock(GlassPane{})
+	registerAll(allGlassPane())
 	world.RegisterBlock(Glass{})
 	world.RegisterBlock(Glowstone{})
 	world.RegisterBlock(Gold{})
@@ -77,7 +77,7 @@ func init() {
 		world.RegisterBlock(b)
 	}
 	world.RegisterBlock(InvisibleBedrock{})
-	world.RegisterBlock(IronBars{})
+	registerAll(allIronBars())
 	world.RegisterBlock(Iron{})
 	world.RegisterBlock(Jukebox{})
 	world.RegisterBlock(Lapis{})
@@ -88,7 +88,7 @@ func init() {
 	world.RegisterBlock(MudBricks{})
 	world.RegisterBlock(Mud{})
 	world.RegisterBlock(Mycelium{})
-	world.RegisterBlock(NetherBrickFence{})
+	registerAll(allNetherBrickFence())
 	world.RegisterBlock(NetherGoldOre{})
 	world.RegisterBlock(NetherQuartzOre{})
 	world.RegisterBlock(NetherSprouts{})
