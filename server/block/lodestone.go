@@ -33,19 +33,15 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 	relink := compass.TrackingHandle != 0
 	l.trackingHandle = tx.World().TrackPosition(pos, l.trackingHandle)
 	tx.SetBlock(pos, l, nil)
-	// Send the tracking update on the next world tick. The inventory slot
-	// containing the linked compass must reach the client in an earlier network
-	// batch; otherwise the in-hand and inventory renderers may cache different
-	// angles.
+	// Delayed a tick so the slot holding the linked compass reaches the client first: otherwise the in-hand
+	// and inventory renderers cache different angles.
 	tx.ScheduleBlockUpdate(pos, l, time.Second/20)
 	linked := held.WithItem(item.Compass{TrackingHandle: l.trackingHandle})
 	if relink {
-		// Relinking a lodestone compass updates the complete stack in-place.
 		ctx.NewItem = linked
 		ctx.ReplaceHeldItem = true
 	} else {
-		// Linking regular compasses consumes one and produces one separate
-		// lodestone compass, leaving the rest of the regular stack untouched.
+		// One compass of the stack is converted, leaving the rest unlinked.
 		ctx.NewItem = linked.Grow(1 - held.Count())
 		ctx.SubtractFromCount(1)
 	}
@@ -53,8 +49,7 @@ func (l Lodestone) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User
 	return true
 }
 
-// ScheduledTick sends the delayed position tracking update for newly linked
-// lodestone compasses.
+// ScheduledTick sends the tracking update delayed by Activate.
 func (l Lodestone) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if l.trackingHandle == 0 {
 		// The linked lodestone was replaced by an unlinked one before the tick ran.

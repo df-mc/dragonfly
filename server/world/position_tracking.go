@@ -32,7 +32,7 @@ type PositionTrackingDestroyAction struct {
 	Handle int32
 }
 
-// BlockAction implements BlockAction.
+// BlockAction serves to implement the world.BlockAction interface.
 func (PositionTrackingDestroyAction) BlockAction() {}
 
 // PositionTrackingUpdateAction provides the target of a tracking handle to a
@@ -43,7 +43,7 @@ type PositionTrackingUpdateAction struct {
 	Dimension int
 }
 
-// BlockAction implements BlockAction.
+// BlockAction serves to implement the world.BlockAction interface.
 func (PositionTrackingUpdateAction) BlockAction() {}
 
 // PositionTracker holds Bedrock position tracking handles shared by the dimensions of a world.
@@ -54,7 +54,6 @@ type PositionTracker struct {
 	byPosition map[[4]int]int32
 }
 
-// newPositionTracker returns an initialised PositionTracker.
 func newPositionTracker() *PositionTracker {
 	return &PositionTracker{byHandle: map[int32]trackedPosition{}, byPosition: map[[4]int]int32{}}
 }
@@ -126,7 +125,7 @@ func (w *World) retrackBlock(pos cube.Pos, old, b Block) Block {
 	return b
 }
 
-// TrackPosition activates a tracking handle for pos, reusing the one already active there if any.
+// TrackPosition assigns a tracking handle to pos, reusing the one already there if any.
 func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 	dim, _ := DimensionID(w.Dimension())
 	t := w.set.tracker()
@@ -158,8 +157,7 @@ func (w *World) TrackPosition(pos cube.Pos, handle int32) int32 {
 	return handle
 }
 
-// PositionTrackingHandleAt returns the tracking handle still active at pos, or
-// 0 if none is.
+// PositionTrackingHandleAt returns the tracking handle at pos, or 0 if there is none.
 func (w *World) PositionTrackingHandleAt(pos cube.Pos) int32 {
 	dim, _ := DimensionID(w.Dimension())
 	t := w.set.tracker()
@@ -193,7 +191,7 @@ func (w *World) UntrackPosition(pos cube.Pos) {
 	}
 }
 
-// TrackedPosition looks up an active position tracking handle.
+// TrackedPosition returns the position a tracking handle resolves to, if it still does.
 func (w *World) TrackedPosition(handle int32) (cube.Pos, int, bool) {
 	t := w.set.tracker()
 	t.mu.Lock()

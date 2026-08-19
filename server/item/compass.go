@@ -18,7 +18,7 @@ func (c Compass) EncodeItem() (name string, meta int16) {
 // Glinted returns true if the compass is linked to a lodestone.
 func (c Compass) Glinted() bool { return c.TrackingHandle != 0 }
 
-// EncodeNBT encodes the position tracking handle understood by the Bedrock client.
+// EncodeNBT ...
 func (c Compass) EncodeNBT() map[string]any {
 	if c.TrackingHandle == 0 {
 		return nil
@@ -26,7 +26,7 @@ func (c Compass) EncodeNBT() map[string]any {
 	return map[string]any{"trackingHandle": c.TrackingHandle}
 }
 
-// DecodeNBT decodes a lodestone compass from NBT.
+// DecodeNBT ...
 func (c Compass) DecodeNBT(data map[string]any) any {
 	c.TrackingHandle = 0
 	switch handle := data["trackingHandle"].(type) {
