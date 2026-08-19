@@ -135,7 +135,7 @@ func trackedTestRegistry() BlockRegistry {
 }
 
 // TestSetBlockEntityRetracksPosition covers Tx.SetBlockEntity, which writes block entity data in place
-// without going through setBlock and so has its own path into the tracking database.
+// rather than going through setBlock.
 func TestSetBlockEntityRetracksPosition(t *testing.T) {
 	w := Config{Synchronous: true, Blocks: trackedTestRegistry()}.New()
 	defer w.Close()
@@ -147,7 +147,6 @@ func TestSetBlockEntityRetracksPosition(t *testing.T) {
 		handle = tx.World().TrackPosition(pos, 0)
 		tx.SetBlock(pos, trackedTestBlock{handle: handle}, nil)
 
-		// Rewriting the block entity with no handle must retire the old one.
 		tx.SetBlockEntity(pos, trackedTestBlock{})
 	})
 	if _, _, ok := w.TrackedPosition(handle); ok {
@@ -155,8 +154,7 @@ func TestSetBlockEntityRetracksPosition(t *testing.T) {
 	}
 }
 
-// TestBuildStructureRetracksPosition covers Tx.BuildStructure, which writes blocks without going through
-// setBlock either.
+// TestBuildStructureRetracksPosition covers Tx.BuildStructure, which does not go through setBlock either.
 func TestBuildStructureRetracksPosition(t *testing.T) {
 	w := Config{Synchronous: true, Blocks: trackedTestRegistry()}.New()
 	defer w.Close()
@@ -173,7 +171,6 @@ func TestBuildStructureRetracksPosition(t *testing.T) {
 	}
 }
 
-// plainStructure replaces a single block with one that carries no tracking handle.
 type plainStructure struct{}
 
 func (plainStructure) Dimensions() [3]int { return [3]int{1, 1, 1} }

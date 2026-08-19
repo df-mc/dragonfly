@@ -19,7 +19,7 @@ const (
 // PositionTrackingDBHandler handles client queries for lodestone compass targets.
 type PositionTrackingDBHandler struct{}
 
-// Handle responds with the tracked position, or marks the target as unavailable.
+// Handle ...
 func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, _ Controllable) error {
 	pk, ok := p.(*packet.PositionTrackingDBClientRequest)
 	if !ok {
