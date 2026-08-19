@@ -40,13 +40,16 @@ func (i Ice) BreakInfo() BreakInfo {
 		if u == nil {
 			return
 		}
+		if gm, ok := u.(interface{ GameMode() world.GameMode }); ok && gm.GameMode().CreativeInventory() {
+			return
+		}
 		held, _ := u.HeldItems()
 		if _, ok := held.Enchantment(enchantment.SilkTouch); ok {
 			return
 		}
 		below := pos.Side(cube.FaceDown)
 		b := tx.Block(below)
-		if _, liquid := b.(world.Liquid); !liquid && len(b.Model().BBox(below, tx)) == 0 {
+		if _, liquid := b.(world.Liquid); !liquid && !b.Model().FaceSolid(below, cube.FaceUp, tx) {
 			return
 		}
 		i.melt(pos, tx)
