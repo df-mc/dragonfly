@@ -457,7 +457,7 @@ func (tx *Tx) setBlockEntity(pos cube.Pos, b Block) {
 		tx.setBlock(pos, b, nil)
 		return
 	}
-	c.BlockEntities[pos] = b
+	c.BlockEntities[pos] = w.retrackBlock(pos, c.BlockEntities[pos], b)
 	c.modified = true
 }
 
