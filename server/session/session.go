@@ -406,15 +406,51 @@ func (s *Session) handlePackets() {
 			s.conf.Log.Debug("close session: " + err.Error())
 		}
 	}()
+	readPackets := make(chan packet.Packet, 512)
+	go func() {
+		defer close(readPackets)
+		for {
+			pk, err := s.conn.ReadPacket()
+			if err != nil {
+				return
+			}
+			readPackets <- pk
+		}
+	}()
+	packets := make([]packet.Packet, 0, 512)
 	for {
-		pk, err := s.conn.ReadPacket()
-		if err != nil {
+		first, ok := <-readPackets
+		if !ok {
 			return
 		}
-		err = s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
-			return s.handlePacket(pk, tx, c)
-		})
-		if err != nil {
+		packets = append(packets[:0], first)
+		// Allow a short window for packets arriving in the same burst to be batched together.
+		timer := time.NewTimer(time.Millisecond)
+	collect:
+		for {
+			select {
+			case pk, ok := <-readPackets:
+				if !ok {
+					timer.Stop()
+					break collect
+				}
+				packets = append(packets, pk)
+				if len(packets) >= cap(packets) {
+					timer.Stop()
+					break collect
+				}
+			case <-timer.C:
+				break collect
+			}
+		}
+		if err := s.withControllable(context.Background(), func(tx *world.Tx, c Controllable) error {
+			for _, pk := range packets {
+				if err := s.handlePacket(pk, tx, c); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
 			if sessionOwnerStopped(err) {
 				return
 			}
