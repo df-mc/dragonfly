@@ -55,6 +55,13 @@ func NewChest() Chest {
 	return c
 }
 
+func (c Chest) ContainerSize() int {
+	if c.paired {
+		return 54
+	}
+	return 27
+}
+
 // Inventory returns the inventory of the chest. The size of the inventory will be 27 or 54, depending on
 // whether the chest is single or double.
 func (c Chest) Inventory(tx *world.Tx, pos cube.Pos) *inventory.Inventory {
