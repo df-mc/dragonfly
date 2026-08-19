@@ -5,13 +5,13 @@ go 1.26.0
 require (
 	github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/df-mc/go-nethernet v1.0.20
+	github.com/df-mc/go-nethernet v1.0.20-0.20260819165039-03e28450b31f
 	github.com/df-mc/goleveldb v1.1.9
 	github.com/df-mc/worldupgrader v1.0.21
 	github.com/go-gl/mathgl v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/sandertv/gophertunnel v1.59.0
+	github.com/sandertv/gophertunnel v1.59.1-0.20260819162346-27901ba2e835
 	github.com/segmentio/fasthash v1.0.3
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
 	golang.org/x/mod v0.32.0

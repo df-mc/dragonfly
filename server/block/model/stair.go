@@ -7,48 +7,41 @@ import (
 )
 
 // Stair is a model for stair-like blocks. These have different solid sides depending on the direction the
-// stairs are facing, the surrounding blocks and whether it is upside down or not.
+// stairs are facing, the corner they form with the stairs around them and whether it is upside down or not.
 type Stair struct {
 	// Facing specifies the direction that the full side of the Stair faces.
 	Facing cube.Direction
 	// UpsideDown turns the Stair upside-down, meaning the full side of the Stair is turned to the top side of the
 	// block.
 	UpsideDown bool
+	// Corner specifies if the Stair forms a corner with the stairs around it.
+	Corner bool
+	// Inner specifies if the corner formed turns inwards, filling up the block rather than a quarter of it. Inner is
+	// only used if Corner is true.
+	Inner bool
+	// Left specifies if the corner formed is on the left side of the Stair. Left is only used if Corner is true.
+	Left bool
 }
 
-// BBox returns a slice of physics.BBox depending on if the Stair is upside down and which direction it is facing.
-// Additionally, these BBoxs depend on the Stair blocks surrounding this one, which can influence the model.
-func (s Stair) BBox(pos cube.Pos, bs world.BlockSource) []cube.BBox {
+// BBox returns a slice of physics.BBox depending on if the Stair is upside down, which direction it is facing and the
+// corner it forms with the stairs around it.
+func (s Stair) BBox(cube.Pos, world.BlockSource) []cube.BBox {
 	b := []cube.BBox{cube.Box(0, 0, 0, 1, 0.5, 1)}
 	if s.UpsideDown {
 		b[0] = cube.Box(0, 0.5, 0, 1, 1, 1)
 	}
-	t := s.cornerType(pos, bs)
-
-	face, oppositeFace := s.Facing.Face(), s.Facing.Opposite().Face()
-	switch t {
-	case noCorner, cornerRightInner, cornerLeftInner:
-		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
-			ExtendTowards(face, 0.5).
-			Stretch(s.Facing.RotateRight().Face().Axis(), 0.5))
+	step := cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5)
+	if !s.Corner || s.Inner {
+		b = append(b, step.ExtendTowards(s.Facing.Face(), 0.5).Stretch(s.Facing.RotateRight().Face().Axis(), 0.5))
 	}
-	switch t {
-	case cornerRightOuter:
-		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
-			ExtendTowards(face, 0.5).
-			ExtendTowards(s.Facing.RotateLeft().Face(), 0.5))
-	case cornerLeftOuter:
-		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
-			ExtendTowards(face, 0.5).
-			ExtendTowards(s.Facing.RotateRight().Face(), 0.5))
-	case cornerRightInner:
-		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
-			ExtendTowards(oppositeFace, 0.5).
-			ExtendTowards(s.Facing.RotateRight().Face(), 0.5))
-	case cornerLeftInner:
-		b = append(b, cube.Box(0.5, 0.5, 0.5, 0.5, 1, 0.5).
-			ExtendTowards(oppositeFace, 0.5).
-			ExtendTowards(s.Facing.RotateLeft().Face(), 0.5))
+	if s.Corner {
+		// An outer corner only fills up the quarter of the block in front of the stairs, while an inner corner fills up
+		// the quarter behind them on top of the step above.
+		face := s.Facing.Face()
+		if s.Inner {
+			face = s.Facing.Opposite().Face()
+		}
+		b = append(b, step.ExtendTowards(face, 0.5).ExtendTowards(s.cornerFace(), 0.5))
 	}
 	if s.UpsideDown {
 		for i := range b[1:] {
@@ -59,60 +52,26 @@ func (s Stair) BBox(pos cube.Pos, bs world.BlockSource) []cube.BBox {
 }
 
 // FaceSolid returns true for all faces of the Stair that are completely filled.
-func (s Stair) FaceSolid(pos cube.Pos, face cube.Face, bs world.BlockSource) bool {
+func (s Stair) FaceSolid(_ cube.Pos, face cube.Face, _ world.BlockSource) bool {
 	// Stairs always have a closed side at the top or bottom based on their orientation.
 	if (face == cube.FaceUp && s.UpsideDown) || (face == cube.FaceDown && !s.UpsideDown) {
 		return true
 	}
-
-	switch t := s.cornerType(pos, bs); t {
-	case cornerRightOuter, cornerLeftOuter:
+	if !s.Corner {
+		// Not a corner, so only the side behind the stairs is closed.
+		return face == s.Facing.Face()
+	}
+	if !s.Inner {
 		// Small corner blocks, they do not block water flowing out horizontally.
 		return false
-	case noCorner:
-		// Not a corner, so only block directly behind the stairs.
-		return s.Facing.Face() == face
-	case cornerRightInner:
-		return face == s.Facing.RotateRight().Face() || face == s.Facing.Face()
-	default:
-		return face == s.Facing.RotateLeft().Face() || face == s.Facing.Face()
 	}
+	return face == s.cornerFace() || face == s.Facing.Face()
 }
 
-const (
-	noCorner = iota
-	cornerRightInner
-	cornerLeftInner
-	cornerRightOuter
-	cornerLeftOuter
-)
-
-// cornerType returns the type of the corner that the stairs form, or 0 if it does not form a corner with any
-// other stairs.
-func (s Stair) cornerType(pos cube.Pos, bs world.BlockSource) uint8 {
-	rotatedFacing := s.Facing.RotateRight()
-	if closedSide, ok := bs.Block(pos.Side(s.Facing.Face())).Model().(Stair); ok && closedSide.UpsideDown == s.UpsideDown {
-		if closedSide.Facing == rotatedFacing {
-			return cornerLeftOuter
-		} else if closedSide.Facing == rotatedFacing.Opposite() {
-			// This will only form a corner if there is not a stair on the right of this one with the same
-			// direction.
-			if side, ok := bs.Block(pos.Side(s.Facing.RotateRight().Face())).Model().(Stair); !ok || side.Facing != s.Facing || side.UpsideDown != s.UpsideDown {
-				return cornerRightOuter
-			}
-			return noCorner
-		}
+// cornerFace returns the face of the side that the corner of the Stair is on.
+func (s Stair) cornerFace() cube.Face {
+	if s.Left {
+		return s.Facing.RotateLeft().Face()
 	}
-	if openSide, ok := bs.Block(pos.Side(s.Facing.Opposite().Face())).Model().(Stair); ok && openSide.UpsideDown == s.UpsideDown {
-		if openSide.Facing == rotatedFacing {
-			// This will only form a corner if there is not a stair on the right of this one with the same
-			// direction.
-			if side, ok := bs.Block(pos.Side(s.Facing.RotateRight().Face())).Model().(Stair); !ok || side.Facing != s.Facing || side.UpsideDown != s.UpsideDown {
-				return cornerRightInner
-			}
-		} else if openSide.Facing == rotatedFacing.Opposite() {
-			return cornerLeftInner
-		}
-	}
-	return noCorner
+	return s.Facing.RotateRight().Face()
 }

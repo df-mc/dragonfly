@@ -21,6 +21,8 @@ type Stairs struct {
 	UpsideDown bool
 	// Facing is the direction that the full side of the stairs is facing.
 	Facing cube.Direction
+	// Corner is the corner that the stairs form with the stairs around them.
+	Corner StairsCorner
 }
 
 // UseOnBlock handles the directional placing of stairs and makes sure they are properly placed upside down
@@ -35,13 +37,58 @@ func (s Stairs) UseOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec3, tx
 		s.UpsideDown = true
 	}
 
+	s.Corner = s.calculateCorner(tx, pos)
 	place(tx, pos, s, user, ctx)
 	return placed(ctx)
 }
 
+// NeighbourUpdateTick ...
+func (s Stairs) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if corner := s.calculateCorner(tx, pos); corner != s.Corner {
+		s.Corner = corner
+		tx.SetBlock(pos, s, nil)
+	}
+}
+
+// calculateCorner calculates the corner that the stairs form with the stairs around them at a position in a world.
+func (s Stairs) calculateCorner(tx *world.Tx, pos cube.Pos) StairsCorner {
+	rotated := s.Facing.RotateRight()
+	if closed, ok := tx.Block(pos.Side(s.Facing.Face())).(Stairs); ok && closed.UpsideDown == s.UpsideDown {
+		if closed.Facing == rotated {
+			return OuterRightStairsCorner()
+		} else if closed.Facing == rotated.Opposite() {
+			if s.continued(tx, pos) {
+				return NoStairsCorner()
+			}
+			return OuterLeftStairsCorner()
+		}
+	}
+	if open, ok := tx.Block(pos.Side(s.Facing.Opposite().Face())).(Stairs); ok && open.UpsideDown == s.UpsideDown {
+		if open.Facing == rotated && !s.continued(tx, pos) {
+			return InnerRightStairsCorner()
+		} else if open.Facing == rotated.Opposite() {
+			return InnerLeftStairsCorner()
+		}
+	}
+	return NoStairsCorner()
+}
+
+// continued returns true if the stairs are continued on their right side by stairs facing the same way. Stairs like
+// these do not form a corner.
+func (s Stairs) continued(tx *world.Tx, pos cube.Pos) bool {
+	side, ok := tx.Block(pos.Side(s.Facing.RotateRight().Face())).(Stairs)
+	return ok && side.Facing == s.Facing && side.UpsideDown == s.UpsideDown
+}
+
 // Model ...
 func (s Stairs) Model() world.BlockModel {
-	return model.Stair{Facing: s.Facing, UpsideDown: s.UpsideDown}
+	return model.Stair{
+		Facing:     s.Facing,
+		UpsideDown: s.UpsideDown,
+		Corner:     s.Corner != NoStairsCorner(),
+		Inner:      s.Corner.Inner(),
+		Left:       s.Corner.Left(),
+	}
 }
 
 // BreakInfo ...
@@ -84,7 +131,7 @@ func (s Stairs) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (s Stairs) EncodeBlock() (name string, properties map[string]any) {
-	return "minecraft:" + encodeStairsBlock(s.Block) + "_stairs", map[string]any{"upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
+	return "minecraft:" + encodeStairsBlock(s.Block) + "_stairs", map[string]any{"minecraft:corner": s.Corner.String(), "upside_down_bit": s.UpsideDown, "weirdo_direction": toStairsDirection(s.Facing)}
 }
 
 // toStairDirection converts a facing to a stair's direction for Minecraft.
@@ -106,7 +153,9 @@ func (Stairs) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
 func allStairs() (stairs []world.Block) {
 	f := func(facing cube.Direction, upsideDown bool) {
 		for _, s := range StairsBlocks() {
-			stairs = append(stairs, Stairs{Facing: facing, UpsideDown: upsideDown, Block: s})
+			for _, corner := range StairsCorners() {
+				stairs = append(stairs, Stairs{Facing: facing, UpsideDown: upsideDown, Block: s, Corner: corner})
+			}
 		}
 	}
 	for i := cube.Direction(0); i <= 3; i++ {
