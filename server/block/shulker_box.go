@@ -71,6 +71,8 @@ func NewShulkerBox() ShulkerBox {
 	return s
 }
 
+func (ShulkerBox) ContainerSize() int { return 27 }
+
 // canStoreInShulkerBox rejects nested shulker boxes.
 func canStoreInShulkerBox(s item.Stack, _ int) bool {
 	if s.Empty() {
