@@ -45,6 +45,9 @@ type Settings struct {
 	// TickRange is the radius in chunks around a Viewer that has its blocks and entities ticked when the world is
 	// ticked. If set to 0, blocks and entities will never be ticked.
 	TickRange int32
+
+	trackerMu       sync.Mutex
+	positionTracker *PositionTracker
 }
 
 // defaultSettings returns the default Settings for a new World.
@@ -58,5 +61,6 @@ func defaultSettings() *Settings {
 		RainTime:        int64(rand.IntN(8400)+600) * 20,
 		ThunderTime:     int64(rand.IntN(8400)+600) * 20,
 		TickRange:       6,
+		positionTracker: newPositionTracker(),
 	}
 }

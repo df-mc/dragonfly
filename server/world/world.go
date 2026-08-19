@@ -360,6 +360,7 @@ func (tx *Tx) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 
 	x, y, z := uint8(pos[0]), int16(pos[1]), uint8(pos[2])
 	c := tx.chunk(chunkPosFromBlockPos(pos))
+	b = w.retrackBlock(pos, w.blockInChunk(c, pos), b)
 
 	rid := w.conf.Blocks.BlockRuntimeID(b)
 	redstoneAfterRelevant := isRedstoneRelevant(b)
@@ -456,7 +457,7 @@ func (tx *Tx) setBlockEntity(pos cube.Pos, b Block) {
 		tx.setBlock(pos, b, nil)
 		return
 	}
-	c.BlockEntities[pos] = b
+	c.BlockEntities[pos] = w.retrackBlock(pos, c.BlockEntities[pos], b)
 	c.modified = true
 }
 
@@ -533,6 +534,7 @@ func (tx *Tx) buildStructure(pos cube.Pos, s Structure) {
 								sub.SetBlock(uint8(xOffset), uint8(yOffset), uint8(zOffset), 0, rid)
 
 								nbtPos := cube.Pos{xOffset, yOffset, zOffset}
+								b = w.retrackBlock(nbtPos, c.BlockEntities[nbtPos], b)
 								if w.conf.Blocks.NBTBlock(rid) {
 									c.BlockEntities[nbtPos] = b
 								} else {
@@ -1588,7 +1590,11 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 			w.conf.Log.Error("read column: block with nbt does not implement NBTer", "block", fmt.Sprintf("%#v", b))
 			continue
 		}
-		col.BlockEntities[be.Pos] = nb.DecodeNBT(be.Data).(Block)
+		decoded := nb.DecodeNBT(be.Data).(Block)
+		if tracked, ok := decoded.(PositionTrackingBlock); ok && tracked.TrackingHandle() != 0 {
+			decoded = tracked.WithTrackingHandle(w.TrackPosition(be.Pos, tracked.TrackingHandle()))
+		}
+		col.BlockEntities[be.Pos] = decoded
 	}
 	scheduled, savedTick := make([]scheduledTick, 0, len(c.ScheduledBlocks)), c.Tick
 	for _, t := range c.ScheduledBlocks {
