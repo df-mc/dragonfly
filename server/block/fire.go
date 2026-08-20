@@ -45,8 +45,7 @@ func neighboursFlammable(pos cube.Pos, tx *world.Tx) bool {
 // infinitelyBurning returns true if fire can infinitely burn at the specified position.
 func infinitelyBurning(pos cube.Pos, tx *world.Tx) bool {
 	switch block := tx.Block(pos.Side(cube.FaceDown)).(type) {
-	// TODO: Magma Block
-	case Netherrack:
+	case Magma, Netherrack:
 		return true
 	case Bedrock:
 		return block.InfiniteBurning

@@ -13,6 +13,13 @@ type Magma struct {
 	bassDrum
 }
 
+// NeighbourUpdateTick updates a bubble column above the magma when it or the block above changes.
+func (Magma) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+	if changedNeighbour == pos || changedNeighbour == pos.Side(cube.FaceUp) {
+		updateBubbleColumn(pos.Side(cube.FaceUp), tx)
+	}
+}
+
 // LightEmissionLevel ...
 func (Magma) LightEmissionLevel() uint8 {
 	return 3

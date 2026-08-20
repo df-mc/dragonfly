@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
@@ -10,7 +11,12 @@ type SoulSand struct {
 	solid
 }
 
-// TODO: Implement bubble columns.
+// NeighbourUpdateTick updates a bubble column above the soul sand when it or the block above changes.
+func (SoulSand) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+	if changedNeighbour == pos || changedNeighbour == pos.Side(cube.FaceUp) {
+		updateBubbleColumn(pos.Side(cube.FaceUp), tx)
+	}
+}
 
 // SoilFor ...
 func (s SoulSand) SoilFor(block world.Block) bool {
