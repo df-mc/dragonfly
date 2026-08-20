@@ -2,6 +2,7 @@ package world
 
 import (
 	"encoding/binary"
+	"slices"
 
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
@@ -42,10 +43,20 @@ func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 		return index
 	}
 
-	encodedBiomes := make([]protocol.BiomeDefinition, 0, len(biomes))
-	for _, b := range biomes {
-		nameIndex := intern(b.String())
+	ids := make([]int, 0, len(biomes))
+	for id := range biomes {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
 
+	for _, id := range ids {
+		intern(biomes[id].String())
+	}
+
+	encodedBiomes := make([]protocol.BiomeDefinition, 0, len(biomes))
+	for _, id := range ids {
+		b := biomes[id]
+		nameIndex := intern(b.String())
 		tags := b.Tags()
 		tagIndices := make([]uint16, len(tags))
 		for i, tag := range tags {
@@ -53,7 +64,6 @@ func BiomeDefinitions() ([]protocol.BiomeDefinition, []string) {
 		}
 
 		var biomeID int16 = -1
-		id := b.EncodeBiome()
 		if id > maxVanillaBiomeID {
 			biomeID = int16(id)
 		}
