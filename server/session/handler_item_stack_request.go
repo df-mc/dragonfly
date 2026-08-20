@@ -145,6 +145,12 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 	if err := h.verifySlots(s, tx, from, to); err != nil {
 		return fmt.Errorf("source slot out of sync: %w", err)
 	}
+	fromInv, fromSlot := h.resolveSlot(from, s, tx)
+	toInv, toSlot := h.resolveSlot(to, s, tx)
+	if fromInv == toInv && fromSlot == toSlot {
+		// Both slots are read before either is written, so moving a slot onto itself would duplicate the count moved.
+		return fmt.Errorf("source and destination slot are the same")
+	}
 	i, _ := h.itemInSlot(from, s, tx)
 	dest, _ := h.itemInSlot(to, s, tx)
 	if !i.Comparable(dest) {
@@ -436,6 +442,11 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	if h.changes[slot.Container.ContainerID] == nil {
 		h.changes[slot.Container.ContainerID] = map[byte]changeInfo{}
 	}
+	if info, ok := h.changes[slot.Container.ContainerID][slot.Slot]; ok {
+		// The slot was already written by an earlier action of this request. Only the item it held before the request
+		// started can restore it, so the earlier one is kept.
+		before = info.before
+	}
 	h.changes[slot.Container.ContainerID][slot.Slot] = changeInfo{
 		after:  respSlot,
 		before: before,
@@ -508,4 +519,16 @@ func call(ctx *inventory.Context, slot int, it item.Stack, f func(ctx *inventory
 		return fmt.Errorf("action was cancelled")
 	}
 	return nil
+}
+
+// resolveSlot returns the Inventory a slot of a request refers to and the index within it. Several container IDs
+// address the same Inventory, and the off hand is recorded under its first slot, so two slots are only the same slot
+// if both of these match.
+func (h *ItemStackRequestHandler) resolveSlot(slot protocol.StackRequestSlotInfo, s *Session, tx *world.Tx) (*inventory.Inventory, int) {
+	inv, _ := s.invByID(int32(slot.Container.ContainerID), tx)
+	sl := int(slot.Slot)
+	if inv == s.offHand {
+		sl = 0
+	}
+	return inv, sl
 }
