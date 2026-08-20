@@ -32,7 +32,7 @@ func (PaleGarden) WaterColour() color.RGBA {
 
 // Tags ...
 func (PaleGarden) Tags() []string {
-	return []string{"monster", "overworld", "pale_garden"}
+	return []string{"monster", "overworld", "pale_garden", "has_structure_abandoned_camp"}
 }
 
 // String ...

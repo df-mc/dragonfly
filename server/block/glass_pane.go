@@ -11,6 +11,17 @@ type GlassPane struct {
 	thin
 	clicksAndSticks
 	sourceWaterDisplacer
+
+	// Connections holds the sides that the glass pane connects to.
+	Connections Connections
+}
+
+// NeighbourUpdateTick ...
+func (p GlassPane) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if connections := calculateConnections(p.Model().(connector), tx, pos); connections != p.Connections {
+		p.Connections = connections
+		tx.SetBlock(pos, p, nil)
+	}
 }
 
 // SideClosed ...
@@ -29,6 +40,14 @@ func (GlassPane) EncodeItem() (name string, meta int16) {
 }
 
 // EncodeBlock ...
-func (GlassPane) EncodeBlock() (string, map[string]any) {
-	return "minecraft:glass_pane", nil
+func (p GlassPane) EncodeBlock() (string, map[string]any) {
+	return "minecraft:glass_pane", p.Connections.properties()
+}
+
+// allGlassPane ...
+func allGlassPane() (panes []world.Block) {
+	for _, c := range allConnections() {
+		panes = append(panes, GlassPane{Connections: c})
+	}
+	return
 }

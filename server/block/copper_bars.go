@@ -19,6 +19,16 @@ type CopperBars struct {
 	Oxidation OxidationType
 	// Waxed bool is whether the copper bars has been waxed with honeycomb.
 	Waxed bool
+	// Connections holds the sides that the copper bars connects to.
+	Connections Connections
+}
+
+// NeighbourUpdateTick ...
+func (c CopperBars) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
+	if connections := calculateConnections(c.Model().(connector), tx, pos); connections != c.Connections {
+		c.Connections = connections
+		tx.SetBlock(pos, c, nil)
+	}
 }
 
 // BreakInfo ...
@@ -80,14 +90,16 @@ func (c CopperBars) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock ...
 func (c CopperBars) EncodeBlock() (name string, properties map[string]any) {
-	return copperBlockName("copper_bars", c.Oxidation, c.Waxed), nil
+	return copperBlockName("copper_bars", c.Oxidation, c.Waxed), c.Connections.properties()
 }
 
 // allCopperBars ...
 func allCopperBars() (bars []world.Block) {
 	f := func(waxed bool) {
 		for _, o := range OxidationTypes() {
-			bars = append(bars, CopperBars{Oxidation: o, Waxed: waxed})
+			for _, conn := range allConnections() {
+				bars = append(bars, CopperBars{Oxidation: o, Waxed: waxed, Connections: conn})
+			}
 		}
 	}
 	f(true)

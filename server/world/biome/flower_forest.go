@@ -32,7 +32,7 @@ func (FlowerForest) WaterColour() color.RGBA {
 
 // Tags ...
 func (FlowerForest) Tags() []string {
-	return []string{"animal", "flower_forest", "monster", "mutated", "overworld", "bee_habitat"}
+	return []string{"animal", "flower_forest", "monster", "mutated", "overworld", "bee_habitat", "has_structure_abandoned_camp"}
 }
 
 // String ...

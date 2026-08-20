@@ -417,7 +417,7 @@ func (c Copper) Hash() (uint64, uint64) {
 }
 
 func (c CopperBars) Hash() (uint64, uint64) {
-	return hashCopperBars, uint64(c.Oxidation.Uint8()) | uint64(boolByte(c.Waxed))<<2
+	return hashCopperBars, uint64(c.Oxidation.Uint8()) | uint64(boolByte(c.Waxed))<<2 | uint64(c.Connections.Uint8())<<3
 }
 
 func (c CopperChain) Hash() (uint64, uint64) {
@@ -592,8 +592,8 @@ func (Glass) Hash() (uint64, uint64) {
 	return hashGlass, 0
 }
 
-func (GlassPane) Hash() (uint64, uint64) {
-	return hashGlassPane, 0
+func (p GlassPane) Hash() (uint64, uint64) {
+	return hashGlassPane, uint64(p.Connections.Uint8())
 }
 
 func (t GlazedTerracotta) Hash() (uint64, uint64) {
@@ -664,8 +664,8 @@ func (Iron) Hash() (uint64, uint64) {
 	return hashIron, 0
 }
 
-func (IronBars) Hash() (uint64, uint64) {
-	return hashIronBars, 0
+func (i IronBars) Hash() (uint64, uint64) {
+	return hashIronBars, uint64(i.Connections.Uint8())
 }
 
 func (c IronChain) Hash() (uint64, uint64) {
@@ -768,8 +768,8 @@ func (m MuddyMangroveRoots) Hash() (uint64, uint64) {
 	return hashMuddyMangroveRoots, uint64(m.Axis)
 }
 
-func (NetherBrickFence) Hash() (uint64, uint64) {
-	return hashNetherBrickFence, 0
+func (n NetherBrickFence) Hash() (uint64, uint64) {
+	return hashNetherBrickFence, uint64(n.Connections.Uint8())
 }
 
 func (n NetherBricks) Hash() (uint64, uint64) {
@@ -1009,7 +1009,7 @@ func (g StainedGlass) Hash() (uint64, uint64) {
 }
 
 func (p StainedGlassPane) Hash() (uint64, uint64) {
-	return hashStainedGlassPane, uint64(p.Colour.Uint8())
+	return hashStainedGlassPane, uint64(p.Colour.Uint8()) | uint64(p.Connections.Uint8())<<4
 }
 
 func (t StainedTerracotta) Hash() (uint64, uint64) {
@@ -1017,7 +1017,7 @@ func (t StainedTerracotta) Hash() (uint64, uint64) {
 }
 
 func (s Stairs) Hash() (uint64, uint64) {
-	return hashStairs, world.BlockHash(s.Block) | uint64(boolByte(s.UpsideDown))<<32 | uint64(s.Facing)<<33
+	return hashStairs, world.BlockHash(s.Block) | uint64(boolByte(s.UpsideDown))<<32 | uint64(s.Facing)<<33 | uint64(s.Corner.Uint8())<<35
 }
 
 func (s Stone) Hash() (uint64, uint64) {
@@ -1033,7 +1033,7 @@ func (s Stonecutter) Hash() (uint64, uint64) {
 }
 
 func (s String) Hash() (uint64, uint64) {
-	return hashString, uint64(boolByte(s.Attached)) | uint64(boolByte(s.Disarmed))<<1 | uint64(boolByte(s.Powered))<<2 | uint64(boolByte(s.Suspended))<<3
+	return hashString, uint64(boolByte(s.Attached)) | uint64(boolByte(s.Disarmed))<<1 | uint64(boolByte(s.Powered))<<2 | uint64(boolByte(s.Suspended))<<3 | uint64(s.Connections.Uint8())<<4
 }
 
 func (c SugarCane) Hash() (uint64, uint64) {
@@ -1097,7 +1097,7 @@ func (d WoodDoor) Hash() (uint64, uint64) {
 }
 
 func (w WoodFence) Hash() (uint64, uint64) {
-	return hashWoodFence, uint64(w.Wood.Uint8())
+	return hashWoodFence, uint64(w.Wood.Uint8()) | uint64(w.Connections.Uint8())<<4
 }
 
 func (f WoodFenceGate) Hash() (uint64, uint64) {
