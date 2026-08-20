@@ -16,6 +16,8 @@ type SwingSounds interface {
 // SwingSoundsInfo is a struct returned by items that implement SwingSounds. It contains the sounds played
 // when the item is swung.
 type SwingSoundsInfo struct {
+	// AttackCriticalHit is the sound played when an attack made with the item hits and deals critical damage.
+	AttackCriticalHit string
 	// AttackHit is the sound played when an attack made with the item hits.
 	AttackHit string
 	// AttackMiss is the sound played when an attack made with the item misses.

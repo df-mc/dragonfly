@@ -38,6 +38,7 @@ func Components(it world.CustomItem) (map[string]any, error) {
 			"slot":                  slot,
 			"protection":            int32(x.DefencePoints()),
 			"hides_player_location": x.HidesPlayerLocation(),
+			"dispensable":           x.Dispensable(),
 		})
 	}
 	if x, ok := it.(item.Consumable); ok {
@@ -102,12 +103,30 @@ func Components(it world.CustomItem) (map[string]any, error) {
 		builder.AddComponent("cooldown", cooldown)
 	}
 	if x, ok := it.(item.Durable); ok {
+		info := x.DurabilityInfo()
+		damageChance := map[string]any{
+			"min": int32(100),
+			"max": int32(100),
+		}
+		if info.DamageChance != [2]int{} {
+			damageChance["min"] = int32(info.DamageChance[0])
+			damageChance["max"] = int32(info.DamageChance[1])
+		}
 		builder.AddComponent("durability", map[string]any{
-			"max_durability": int32(x.DurabilityInfo().MaxDurability),
+			"max_durability": int32(info.MaxDurability),
+			"damage_chance":  damageChance,
 		})
 	}
 	if x, ok := it.(item.MaxCounter); ok {
 		builder.AddProperty("max_stack_size", int32(x.MaxCount()))
+	}
+	if x, ok := it.(item.Icon); ok {
+		textures := x.IconTextures()
+		m := make(map[string]any, len(textures))
+		for k, v := range textures {
+			m[k] = v
+		}
+		builder.AddProperty("minecraft:icon", map[string]any{"textures": m})
 	}
 	if x, ok := it.(item.OffHand); ok {
 		builder.AddProperty("allow_off_hand", x.OffHand())
@@ -124,11 +143,36 @@ func Components(it world.CustomItem) (map[string]any, error) {
 	if x, ok := it.(item.CanDestroyInCreative); ok {
 		builder.AddProperty("can_destroy_in_creative", x.CanDestroyInCreative())
 	}
-	if x, ok := it.(item.Throwable); ok {
-		builder.AddComponent("projectile", map[string]any{})
-		builder.AddComponent("throwable", map[string]any{
-			"do_swing_animation": x.SwingAnimation(),
+	if x, ok := it.(item.Projectile); ok {
+		info := x.ProjectileInfo()
+		builder.AddComponent("projectile", map[string]any{
+			"minimum_critical_power": float32(info.MinimumCriticalPower),
+			"projectile_entity":      info.ProjectileEntity,
 		})
+	} else if _, ok := it.(item.Throwable); ok {
+		builder.AddComponent("projectile", map[string]any{})
+	}
+	if x, ok := it.(item.Throwable); ok {
+		info := x.ThrowableInfo()
+		throwable := map[string]any{
+			"do_swing_animation": info.SwingAnimation,
+		}
+		if info.LaunchPowerScale != 0 {
+			throwable["launch_power_scale"] = float32(info.LaunchPowerScale)
+		}
+		if info.MaxDrawDuration != 0 {
+			throwable["max_draw_duration"] = float32(info.MaxDrawDuration)
+		}
+		if info.MaxLaunchPower != 0 {
+			throwable["max_launch_power"] = float32(info.MaxLaunchPower)
+		}
+		if info.MinDrawDuration != 0 {
+			throwable["min_draw_duration"] = float32(info.MinDrawDuration)
+		}
+		if info.ScalePowerByDrawDuration {
+			throwable["scale_power_by_draw_duration"] = true
+		}
+		builder.AddComponent("throwable", throwable)
 	}
 	if x, ok := it.(item.Glinted); ok {
 		builder.AddComponent("glint", map[string]any{
@@ -231,8 +275,9 @@ func Components(it world.CustomItem) (map[string]any, error) {
 	if x, ok := it.(item.SwingSounds); ok {
 		info := x.SwingSounds()
 		builder.AddComponent("swing_sounds", map[string]any{
-			"attack_hit":  info.AttackHit,
-			"attack_miss": info.AttackMiss,
+			"attack_critical_hit": info.AttackCriticalHit,
+			"attack_hit":          info.AttackHit,
+			"attack_miss":         info.AttackMiss,
 		})
 	}
 	if x, ok := it.(item.KineticWeapon); ok {
@@ -357,7 +402,35 @@ func Components(it world.CustomItem) (map[string]any, error) {
 			"sound_event":       info.SoundEvent,
 		})
 	}
+	if x, ok := it.(item.Shooter); ok {
+		info := x.ShooterInfo()
+		builder.AddComponent("shooter", map[string]any{
+			"ammunition":                   ammunition(info.Ammunition),
+			"charge_on_draw":               info.ChargeOnDraw,
+			"max_draw_duration":            float32(info.MaxDrawDuration),
+			"scale_power_by_draw_duration": info.ScalePowerByDrawDuration,
+		})
+	}
+	if x, ok := it.(item.ShouldDespawn); ok {
+		builder.AddComponent("should_despawn", map[string]any{
+			"value": x.ShouldDespawn(),
+		})
+	}
 	return builder.Construct(), nil
+}
+
+// ammunition converts a slice of ammunition to the data required for the shooter component.
+func ammunition(items []item.Ammunition) []any {
+	ammo := make([]any, 0, len(items))
+	for _, a := range items {
+		ammo = append(ammo, map[string]any{
+			"item":             a.Item,
+			"search_inventory": a.SearchInventory,
+			"use_in_creative":  a.UseInCreative,
+			"use_offhand":      a.UseOffHand,
+		})
+	}
+	return ammo
 }
 
 // repairItems converts the repair materials of an item to the data required for the repairable

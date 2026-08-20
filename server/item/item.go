@@ -51,8 +51,25 @@ type Usable interface {
 // Throwable represents a custom item that can be thrown such as a projectile. This will only have an effect on
 // non-vanilla items.
 type Throwable interface {
-	// SwingAnimation returns true if the client should cause the player's arm to swing when the item is thrown.
-	SwingAnimation() bool
+	// ThrowableInfo returns the throwable information of the item.
+	ThrowableInfo() ThrowableInfo
+}
+
+// ThrowableInfo is a struct returned by items that implement Throwable. It contains the information required for
+// the client to throw the item.
+type ThrowableInfo struct {
+	// SwingAnimation is true if the client should cause the player's arm to swing when the item is thrown.
+	SwingAnimation bool
+	// LaunchPowerScale is the scale at which the power of the throw increases.
+	LaunchPowerScale float64
+	// MaxDrawDuration is the maximum duration to draw a throwable item, in seconds.
+	MaxDrawDuration float64
+	// MaxLaunchPower is the maximum power to launch the throwable item.
+	MaxLaunchPower float64
+	// MinDrawDuration is the minimum duration to draw a throwable item, in seconds.
+	MinDrawDuration float64
+	// ScalePowerByDrawDuration is true if the power of the throw increases with the duration charged.
+	ScalePowerByDrawDuration bool
 }
 
 // OffHand represents an item that can be held in the off hand.
