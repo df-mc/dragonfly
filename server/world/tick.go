@@ -371,13 +371,14 @@ func (queue *scheduledTickQueue) removeChunk(pos ChunkPos) {
 // add adds a slice of scheduled ticks to the queue. It assumes no duplicate
 // ticks are present in the slice.
 func (queue *scheduledTickQueue) add(ticks []scheduledTick) {
-	queue.ticks = append(queue.ticks, ticks...)
 	for _, t := range ticks {
 		index := scheduledTickIndex{pos: t.pos, hash: t.bhash}
-		if existing, ok := queue.furthestTicks[index]; ok {
-			queue.furthestTicks[index] = max(existing, t.t)
-		} else {
-			queue.furthestTicks[index] = t.t
+		if existing, ok := queue.furthestTicks[index]; ok && existing >= t.t && existing > queue.currentTick {
+			// The same block at the same position is already scheduled no earlier than this tick, as schedule also
+			// checks. Adding it again would run it twice, which for a block such as a dropper means it acts twice.
+			continue
 		}
+		queue.furthestTicks[index] = t.t
+		queue.ticks = append(queue.ticks, t)
 	}
 }
