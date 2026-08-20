@@ -199,6 +199,9 @@ func (conf Config) New() *Server {
 		}
 		srv.listeners = append(srv.listeners, l)
 	}
+	if len(conf.Listeners) > 0 && len(srv.listeners) == 0 {
+		conf.Log.Error("no listeners could be created; the server is unreachable")
+	}
 
 	creative_registerCreativeItems()
 	recipe_registerVanilla()
@@ -217,9 +220,18 @@ func (conf Config) New() *Server {
 type UserConfig struct {
 	// Network holds settings related to network aspects of the server.
 	Network struct {
-		// Address is the address on which the server should listen. Players may
-		// connect to this address in order to join.
+		// Address is the TCP address on which the NetherNet HTTP signaling
+		// endpoint should listen. Players may connect to this address in order to
+		// join.
 		Address string
+		// KeyFile is the path to the PEM file containing the P-384 ECDSA private
+		// key used to identify this listener when clients connect over plain HTTP.
+		// If the file does not exist, a new key is generated and saved there. If
+		// empty, a temporary key is generated and not saved.
+		KeyFile string
+		// Domain is the identity-provider domain advertised to players connecting
+		// over plain HTTP. If empty, "self" is used.
+		Domain string
 	}
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
@@ -309,7 +321,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 			return conf, fmt.Errorf("create player provider: %w", err)
 		}
 	}
-	conf.Listeners = append(conf.Listeners, uc.listenerFunc)
+	conf.Listeners = append(conf.Listeners, uc.netherNetListenerFunc)
 	return conf, nil
 }
 
@@ -350,6 +362,8 @@ func loadGenerator(dim world.Dimension) world.Generator {
 func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
+	c.Network.KeyFile = "keys/server_identity_key.pem"
+	c.Network.Domain = "self"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true

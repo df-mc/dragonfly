@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479
 	github.com/cespare/xxhash/v2 v2.3.0
+	github.com/df-mc/go-nethernet v1.0.20
 	github.com/df-mc/goleveldb v1.1.9
 	github.com/df-mc/worldupgrader v1.0.21
 	github.com/go-gl/mathgl v1.2.0
@@ -21,7 +22,6 @@ require (
 require (
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
-	github.com/df-mc/go-nethernet v1.0.20 // indirect
 	github.com/df-mc/go-playfab/v2 v2.0.2 // indirect
 	github.com/df-mc/go-xsapi/v2 v2.0.3 // indirect
 	github.com/df-mc/jsonc v1.0.5 // indirect
