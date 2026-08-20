@@ -148,6 +148,7 @@ const (
 	hashNetherite
 	hashNetherrack
 	hashNote
+	hashNylium
 	hashObsidian
 	hashPackedIce
 	hashPackedMud
@@ -806,6 +807,10 @@ func (Netherrack) Hash() (uint64, uint64) {
 
 func (Note) Hash() (uint64, uint64) {
 	return hashNote, 0
+}
+
+func (n Nylium) Hash() (uint64, uint64) {
+	return hashNylium, uint64(boolByte(n.Warped))
 }
 
 func (o Obsidian) Hash() (uint64, uint64) {
