@@ -106,7 +106,7 @@ func (v Vines) Attachments() (attachments []cube.Direction) {
 
 // UseOnBlock ...
 func (v Vines) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
-	if _, ok := tx.Block(pos).Model().(model.Solid); !ok || face.Axis() == cube.Y {
+	if !v.canSpreadTo(tx, pos) || face.Axis() == cube.Y {
 		return false
 	}
 	pos, face, used := firstReplaceable(tx, pos, face, v)
@@ -277,11 +277,13 @@ func (v Vines) EncodeBlock() (string, map[string]any) {
 	return "minecraft:vine", map[string]any{"vine_direction_bits": int32(bits)}
 }
 
-// canSpreadTo returns true if the vines can spread onto the block at the
-// given position. Vines may only spread onto fully solid blocks.
+// canSpreadTo returns true if the block at the position passed fills a whole cube, as vines need.
 func (Vines) canSpreadTo(tx *world.Tx, pos cube.Pos) bool {
-	_, ok := tx.Block(pos).Model().(model.Solid)
-	return ok
+	switch tx.Block(pos).Model().(type) {
+	case model.Solid, model.Leaves:
+		return true
+	}
+	return false
 }
 
 // canSpread returns true if the vines can spread from the given position. Vines
