@@ -3023,7 +3023,9 @@ func (p *Player) checkEntitySteppers() {
 
 // checkOnGround checks if the player is currently considered to be on the ground.
 func (p *Player) checkOnGround(deltaPos mgl64.Vec3) bool {
-	box := Type.BBox(p).Translate(p.Position()).Extend(mgl64.Vec3{0, -0.05}).Extend(deltaPos.Mul(-1.0))
+	sweep := deltaPos.Mul(-1.0)
+	sweep[1] = min(sweep[1], 0)
+	box := Type.BBox(p).Translate(p.Position()).Extend(mgl64.Vec3{0, -0.05}).Extend(sweep)
 	b := box.Grow(1)
 
 	epsilon := mgl64.Vec3{mgl64.Epsilon, mgl64.Epsilon, mgl64.Epsilon}
