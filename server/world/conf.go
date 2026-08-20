@@ -161,6 +161,7 @@ func (conf Config) New() *World {
 		conf:             conf,
 		ra:               conf.Dim.Range(),
 		set:              s,
+		tick:             s.CurrentTick,
 	}
 	w.chunkWorkers = newChunkWorkerPool(w)
 	w.weather = weather{w: w}
