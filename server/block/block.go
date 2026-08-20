@@ -151,6 +151,16 @@ func abs(x int) int {
 	return -x
 }
 
+func sign(x int) int {
+	if x < 0 {
+		return -1
+	}
+	if x > 0 {
+		return 1
+	}
+	return 0
+}
+
 // replaceableWith checks if the block at the position passed is replaceable with the block passed.
 func replaceableWith(tx *world.Tx, pos cube.Pos, with world.Block) bool {
 	if pos.OutOfBounds(tx.Range()) {

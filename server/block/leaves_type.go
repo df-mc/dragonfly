@@ -113,6 +113,30 @@ func (t leavesType) String() string {
 	panic("unknown leaves type")
 }
 
+// Sapling returns the sapling that the leaves may drop, if there is one.
+func (t leavesType) Sapling() (SaplingType, bool) {
+	switch t {
+	case 0:
+		return OakSapling(), true
+	case 1:
+		return SpruceSapling(), true
+	case 2:
+		return BirchSapling(), true
+	case 3:
+		return JungleSapling(), true
+	case 4:
+		return AcaciaSapling(), true
+	case 5:
+		return DarkOakSapling(), true
+	case 7:
+		return CherrySapling(), true
+	case 8:
+		return PaleOakSapling(), true
+	default:
+		return SaplingType{}, false
+	}
+}
+
 // Wood returns the underlying wood type of the leaves if there is one.
 func (t leavesType) Wood() (WoodType, bool) {
 	switch t {
