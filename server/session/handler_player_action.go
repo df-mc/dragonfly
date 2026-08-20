@@ -47,6 +47,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 	case protocol.PlayerActionStartItemUseOn:
 		// TODO: Properly utilize these actions.
 	case protocol.PlayerActionStopItemUseOn:
+		c.AbortBrushing()
 		c.ReleaseItem()
 	case protocol.PlayerActionStartBuildingBlock:
 		// Don't do anything for this action.
