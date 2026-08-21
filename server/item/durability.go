@@ -19,6 +19,9 @@ type DurabilityInfo struct {
 	// AttackDurability and BreakDurability are the losses in durability that the item sustains when they are
 	// used to do the respective actions.
 	AttackDurability, BreakDurability int
+	// DamageChance is the percentage chance of the item losing durability when damaged, as a min and max value.
+	// Both values default to 100 if unset.
+	DamageChance [2]int
 	// Persistent is true if the item is persistent, i.e. it will not be destroyed when at its last durability stage.
 	Persistent bool
 }

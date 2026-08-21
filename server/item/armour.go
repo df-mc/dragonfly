@@ -16,6 +16,12 @@ type (
 		// resisted upon being attacked. 1 knock back resistance point client-side translates to 10% knock back
 		// reduction.
 		KnockBackResistance() float64
+		// HidesPlayerLocation returns a boolean that determines whether the Player's location is hidden on Locator Maps
+		// and the Locator Bar when the wearable item is worn. Default is false.
+		HidesPlayerLocation() bool
+		// Dispensable returns a boolean that determines whether the wearable item can be dispensed by dispensers,
+		// equipping it on the target. Default is false.
+		Dispensable() bool
 	}
 	// ArmourTier represents the tier, or material, that a piece of armour is made of.
 	ArmourTier interface {

@@ -51,8 +51,25 @@ type Usable interface {
 // Throwable represents a custom item that can be thrown such as a projectile. This will only have an effect on
 // non-vanilla items.
 type Throwable interface {
-	// SwingAnimation returns true if the client should cause the player's arm to swing when the item is thrown.
-	SwingAnimation() bool
+	// ThrowableInfo returns the throwable information of the item.
+	ThrowableInfo() ThrowableInfo
+}
+
+// ThrowableInfo is a struct returned by items that implement Throwable. It contains the information required for
+// the client to throw the item.
+type ThrowableInfo struct {
+	// SwingAnimation is true if the client should cause the player's arm to swing when the item is thrown.
+	SwingAnimation bool
+	// LaunchPowerScale is the scale at which the power of the throw increases.
+	LaunchPowerScale float64
+	// MaxDrawDuration is the maximum duration to draw a throwable item, in seconds.
+	MaxDrawDuration float64
+	// MaxLaunchPower is the maximum power to launch the throwable item.
+	MaxLaunchPower float64
+	// MinDrawDuration is the minimum duration to draw a throwable item, in seconds.
+	MinDrawDuration float64
+	// ScalePowerByDrawDuration is true if the power of the throw increases with the duration charged.
+	ScalePowerByDrawDuration bool
 }
 
 // OffHand represents an item that can be held in the off hand.
@@ -135,6 +152,36 @@ type Weapon interface {
 type Cooldown interface {
 	// Cooldown is the duration of the cooldown.
 	Cooldown() time.Duration
+}
+
+// CooldownTyped represents an item that has a typed cooldown, such as an attack or use cooldown.
+type CooldownTyped interface {
+	// CooldownType returns the type of cooldown of the item, such as "attack" or "use".
+	CooldownType() string
+}
+
+// StackedByData represents an item that is stacked by its metadata value, such as fish or golden apples.
+type StackedByData interface {
+	// StackedByData returns whether the item is stacked by its metadata value.
+	StackedByData() bool
+}
+
+// MiningSpeed represents an item with a custom mining speed.
+type MiningSpeed interface {
+	// MiningSpeed returns the mining speed of the item.
+	MiningSpeed() float64
+}
+
+// FrameCount represents an item with a custom amount of animation frames in its icon texture.
+type FrameCount interface {
+	// FrameCount returns the amount of animation frames in the icon texture of the item.
+	FrameCount() int
+}
+
+// CanDestroyInCreative represents an item that can be used to destroy blocks in creative mode.
+type CanDestroyInCreative interface {
+	// CanDestroyInCreative returns whether the item can be used to destroy blocks in creative mode.
+	CanDestroyInCreative() bool
 }
 
 // nameable represents a block that may be named. These are often containers such as chests, which have a
