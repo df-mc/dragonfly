@@ -57,6 +57,11 @@ type playerData struct {
 	armour                       *inventory.Armour
 	heldSlot                     *uint32
 
+	riddenEntity *world.EntityHandle
+	seatIndex    int
+	controlling  bool
+	seatPosition mgl64.Vec3
+
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
 
@@ -897,6 +902,8 @@ func (p *Player) DeathPosition() (mgl64.Vec3, world.Dimension, bool) {
 
 // kill kills the player, clearing its inventories and resetting it to its base state.
 func (p *Player) kill(src world.DamageSource) {
+	// Death always ends the riding relationship.
+	p.dismountEntity(p.tx, false)
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityAction(p, entity.DeathAction{})
 	}
@@ -994,6 +1001,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	if !p.Dead() || p.session() == session.Nop {
 		return
 	}
+	p.dismountEntity(p.tx, false)
 
 	blockPos, w, spawnObstructed, _ := p.spawnLocation()
 	pos := blockPos.Vec3Middle()
@@ -2635,6 +2643,26 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	if p.Dead() {
 		return
 	}
+	if p.prevWorld != nil && p.prevWorld != tx.World() && p.riddenEntity != nil {
+		// Riding relationships do not cross worlds.
+		p.clearRidingState()
+	}
+	if p.riddenEntity != nil {
+		rideable, ok := p.RidingEntity(tx)
+		switch {
+		case !ok:
+			// Stop riding if the rideable no longer exists.
+			p.clearRidingState()
+			p.updateState()
+		case p.seatIndex < 0 || p.seatIndex >= len(rideable.SeatPositions()):
+			// Stop riding if the seat no longer exists.
+			rideable.RemoveRider(p.H())
+			p.clearRidingState()
+			p.updateState()
+		case p.syncRideableState(tx, rideable):
+			p.updateState()
+		}
+	}
 	if _, ok := p.tx.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -2868,6 +2896,275 @@ func (p *Player) MaxAirSupply() time.Duration {
 func (p *Player) SetMaxAirSupply(duration time.Duration) {
 	p.maxAirSupplyTicks = int(duration.Milliseconds() / 50)
 	p.updateState()
+}
+
+// RidingEntity returns the entity the player is riding.
+func (p *Player) RidingEntity(tx *world.Tx) (entity.Rideable, bool) {
+	if p.riddenEntity == nil || tx == nil {
+		return nil, false
+	}
+	e, ok := p.riddenEntity.Entity(tx)
+	if !ok {
+		return nil, false
+	}
+	rideable, ok := e.(entity.Rideable)
+	return rideable, ok
+}
+
+// RidingEntityHandle returns the handle of the entity being ridden.
+func (p *Player) RidingEntityHandle() *world.EntityHandle {
+	return p.riddenEntity
+}
+
+// SeatIndex returns the player's current seat.
+func (p *Player) SeatIndex() int {
+	return p.seatIndex
+}
+
+// RidingEntityController reports whether the player controls the rideable.
+func (p *Player) RidingEntityController() bool {
+	return p.controlling
+}
+
+// SeatOffset returns the player's position relative to the rideable.
+func (p *Player) SeatOffset() (mgl64.Vec3, bool) {
+	if p.riddenEntity == nil || p.seatIndex < 0 {
+		return mgl64.Vec3{}, false
+	}
+	return p.seatPosition, true
+}
+
+// ChangeSeat moves the player to another free seat.
+func (p *Player) ChangeSeat(tx *world.Tx, seatIndex int) {
+	rideable, ok := p.RidingEntity(tx)
+	if !ok {
+		return
+	}
+	positions := rideable.SeatPositions()
+	if seatIndex < 0 || seatIndex >= len(positions) || seatIndex == p.seatIndex {
+		return
+	}
+
+	beforeController := controllerState(rideable)
+	if !rideable.AddRider(p.H(), seatIndex) {
+		return
+	}
+	p.seatIndex = seatIndex
+	p.seatPosition = positions[seatIndex]
+	afterController := controllerState(rideable)
+	p.syncRideableState(tx, rideable)
+
+	p.updateState()
+	for _, v := range p.viewers() {
+		v.ViewEntityMount(p, rideable, p.controlling)
+		if controllerStateChanged(beforeController, afterController) {
+			if beforeController.handle != nil && beforeController.handle != p.H() {
+				p.viewRiderMount(v, tx, beforeController.handle, rideable, false)
+			}
+			if afterController.handle != nil && afterController.handle != p.H() {
+				p.viewRiderMount(v, tx, afterController.handle, rideable, true)
+			}
+			v.ViewEntityState(rideable)
+		}
+	}
+}
+
+// SeatPosition returns the player's current seat position.
+func (p *Player) SeatPosition(tx *world.Tx) (mgl64.Vec3, bool) {
+	rideable, ok := p.RidingEntity(tx)
+	if !ok || p.seatIndex < 0 {
+		return mgl64.Vec3{}, false
+	}
+	positions := rideable.SeatPositions()
+	if p.seatIndex >= len(positions) {
+		return mgl64.Vec3{}, false
+	}
+	p.seatPosition = positions[p.seatIndex]
+	return p.seatPosition, true
+}
+
+// MountEntity puts the player in a seat on an entity.
+func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex int) {
+	if tx == nil || rideable == nil || rideable.H() == nil {
+		return
+	}
+	if _, ok := rideable.H().Entity(tx); !ok {
+		return
+	}
+	positions := rideable.SeatPositions()
+	if seatIndex < 0 || seatIndex >= len(positions) {
+		return
+	}
+
+	mountHandled := false
+	if current, ok := p.RidingEntity(tx); ok {
+		if current.H() == rideable.H() && p.seatIndex == seatIndex {
+			return
+		}
+		ctx := NewEventContext(tx, p)
+		if p.h.HandleMountEntity(ctx, rideable, &seatIndex); ctx.Cancelled() {
+			return
+		}
+		positions = rideable.SeatPositions()
+		if seatIndex < 0 || seatIndex >= len(positions) {
+			return
+		}
+		mountHandled = true
+		p.dismountEntity(tx, true)
+		if p.riddenEntity != nil {
+			return
+		}
+	} else if p.riddenEntity != nil {
+		// Clear a riding relationship left over from another world.
+		p.clearRidingState()
+	}
+
+	if !mountHandled {
+		ctx := NewEventContext(tx, p)
+		if p.h.HandleMountEntity(ctx, rideable, &seatIndex); ctx.Cancelled() {
+			return
+		}
+	}
+	positions = rideable.SeatPositions()
+	if seatIndex < 0 || seatIndex >= len(positions) {
+		return
+	}
+
+	beforeController := controllerState(rideable)
+	if !rideable.AddRider(p.H(), seatIndex) {
+		return
+	}
+	p.riddenEntity = rideable.H()
+	p.seatIndex = seatIndex
+	p.seatPosition = positions[seatIndex]
+	afterController := controllerState(rideable)
+	p.syncRideableState(tx, rideable)
+
+	p.updateState()
+	for _, v := range p.viewers() {
+		v.ViewEntityMount(p, rideable, p.controlling)
+		if controllerStateChanged(beforeController, afterController) {
+			if beforeController.handle != nil && beforeController.handle != p.H() {
+				p.viewRiderMount(v, tx, beforeController.handle, rideable, false)
+			}
+			if afterController.handle != nil && afterController.handle != p.H() {
+				p.viewRiderMount(v, tx, afterController.handle, rideable, true)
+			}
+			v.ViewEntityState(rideable)
+		}
+	}
+}
+
+// DismountEntity removes the player from the entity being ridden.
+func (p *Player) DismountEntity(tx *world.Tx) {
+	p.dismountEntity(tx, true)
+}
+
+func (p *Player) dismountEntity(tx *world.Tx, callHandler bool) {
+	if p.riddenEntity == nil {
+		p.clearRidingState()
+		return
+	}
+	rideable, ok := p.RidingEntity(tx)
+	if !ok {
+		p.clearRidingState()
+		return
+	}
+	if callHandler {
+		ctx := NewEventContext(tx, p)
+		if p.h.HandleDismountEntity(ctx, rideable); ctx.Cancelled() {
+			return
+		}
+	}
+
+	beforeController := controllerState(rideable)
+	rideable.RemoveRider(p.H())
+	afterController := controllerState(rideable)
+	p.clearRidingState()
+	p.syncRideableState(tx, rideable)
+
+	p.updateState()
+	for _, v := range p.viewers() {
+		v.ViewEntityDismount(p, rideable)
+		if controllerStateChanged(beforeController, afterController) {
+			if afterController.handle != nil {
+				p.viewRiderMount(v, tx, afterController.handle, rideable, true)
+			}
+			v.ViewEntityState(rideable)
+		}
+	}
+}
+
+func (p *Player) clearRidingState() {
+	p.riddenEntity = nil
+	p.seatIndex = -1
+	p.controlling = false
+	p.seatPosition = mgl64.Vec3{}
+}
+
+type ridingController struct {
+	handle *world.EntityHandle
+	seat   int
+}
+
+func controllerState(rideable entity.Rideable) ridingController {
+	return ridingController{handle: rideable.ControllingRider(), seat: rideable.ControllingSeatIndex()}
+}
+
+func controllerStateChanged(a, b ridingController) bool {
+	return a.handle != b.handle || a.seat != b.seat
+}
+
+// syncRideableState updates every player riding the entity.
+func (p *Player) syncRideableState(tx *world.Tx, rideable entity.Rideable) bool {
+	positions := rideable.SeatPositions()
+	controller := rideable.ControllingRider()
+	selfChanged := false
+	for _, rider := range rideable.Riders() {
+		if rider.Handle == nil || rider.SeatIndex < 0 || rider.SeatIndex >= len(positions) {
+			rideable.RemoveRider(rider.Handle)
+			continue
+		}
+		entityValue, ok := rider.Handle.Entity(tx)
+		if !ok {
+			// Remove riders that are no longer in this world.
+			rideable.RemoveRider(rider.Handle)
+			continue
+		}
+		registered, ok := entityValue.(entity.Rider)
+		if !ok || registered.RidingEntityHandle() != rideable.H() {
+			rideable.RemoveRider(rider.Handle)
+			continue
+		}
+		other, ok := entityValue.(*Player)
+		if !ok {
+			continue
+		}
+		changed := other.seatIndex != rider.SeatIndex || other.seatPosition != positions[rider.SeatIndex] || other.controlling != (controller == rider.Handle)
+		other.seatIndex = rider.SeatIndex
+		other.seatPosition = positions[rider.SeatIndex]
+		other.controlling = controller == rider.Handle
+		if changed {
+			if other == p {
+				selfChanged = true
+			} else {
+				other.updateState()
+			}
+		}
+	}
+	return selfChanged
+}
+
+func (p *Player) viewRiderMount(v world.Viewer, tx *world.Tx, handle *world.EntityHandle, rideable entity.Rideable, driver bool) {
+	e, ok := handle.Entity(tx)
+	if !ok {
+		return
+	}
+	rider, ok := e.(entity.Rider)
+	if !ok {
+		return
+	}
+	v.ViewEntityMount(rider, rideable, driver)
 }
 
 // canBreathe returns true if the player can currently breathe.
@@ -3345,6 +3642,7 @@ func (p *Player) Close() error {
 // close closes the player without disconnecting it. It executes code shared by both the closing and the
 // disconnecting of players.
 func (p *Player) close(msg string) {
+	p.dismountEntity(p.tx, false)
 	// If the player is being disconnected while they are dead, we respawn the player
 	// so that the player logic works correctly the next time they join.
 	if p.Dead() && p.session() != nil {
