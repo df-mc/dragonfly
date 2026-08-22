@@ -169,17 +169,6 @@ type NBTer interface {
 	EncodeNBT() map[string]any
 }
 
-// NBTChanger is an NBTer that keeps track of whether it changed since it was last written. The contents of a block
-// entity such as a container live behind a pointer it holds, so they are changed without the Column holding it being
-// touched, which would otherwise leave the Column unaware that it has to be written again.
-type NBTChanger interface {
-	NBTer
-	// NBTChanged reports whether the block entity changed since ResetNBTChanged was last called.
-	NBTChanged() bool
-	// ResetNBTChanged records the block entity as unchanged. It is called once it has been written.
-	ResetNBTChanged()
-}
-
 // LiquidDisplacer represents a block that is able to displace a liquid to a different world layer, without
 // fully removing the liquid.
 type LiquidDisplacer interface {

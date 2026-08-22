@@ -8,7 +8,6 @@ import (
 	"math"
 	"math/rand/v2"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -24,16 +23,12 @@ type smelter struct {
 	cookDuration      time.Duration
 	maxDuration       time.Duration
 	experience        int
-
-	dirty atomic.Bool
 }
 
 // newSmelter initialises a new smelter with the given remaining, maximum, and cook durations and XP, and returns it.
 func newSmelter() *smelter {
 	s := &smelter{viewers: make(map[ContainerViewer]struct{})}
 	s.inventory = inventory.New(3, func(slot int, _, item item.Stack) {
-		s.dirty.Store(true)
-
 		s.mu.Lock()
 		defer s.mu.Unlock()
 		for viewer := range s.viewers {
@@ -41,16 +36,6 @@ func newSmelter() *smelter {
 		}
 	})
 	return s
-}
-
-// NBTChanged ...
-func (s *smelter) NBTChanged() bool {
-	return s.dirty.Load()
-}
-
-// ResetNBTChanged ...
-func (s *smelter) ResetNBTChanged() {
-	s.dirty.Store(false)
 }
 
 // InsertItem ...
@@ -147,7 +132,6 @@ func (s *smelter) ResetExperience() int {
 	defer s.mu.Unlock()
 	xp := s.experience
 	s.experience = 0
-	s.dirty.Store(true)
 	return xp
 }
 
@@ -180,7 +164,6 @@ func (s *smelter) setExperience(xp int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.experience = xp
-	s.dirty.Store(true)
 }
 
 // setDurations sets the remaining, maximum, and cook durations of the smelter to the given values.
@@ -188,7 +171,6 @@ func (s *smelter) setDurations(remaining, max, cook time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook
-	s.dirty.Store(true)
 }
 
 // tickSmelting ticks the smelter, ensuring the necessary items exist in the furnace, and then processing all inputted

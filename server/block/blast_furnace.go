@@ -134,7 +134,6 @@ func (b BlastFurnace) DecodeNBT(data map[string]interface{}) interface{} {
 	b.setExperience(xp)
 	b.setDurations(remaining, maximum, cook)
 	nbtconv.InvFromNBT(b.inventory, nbtconv.Slice(data, "Items"))
-	b.ResetNBTChanged()
 	return b
 }
 

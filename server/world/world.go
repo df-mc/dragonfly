@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"iter"
 	"maps"
+	"math"
 	"math/rand/v2"
 	"slices"
 	"sync"
@@ -19,6 +20,7 @@ import (
 	"github.com/df-mc/goleveldb/leveldb"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
+	"github.com/segmentio/fasthash/fnv1a"
 )
 
 // World implements a Minecraft world. It manages all aspects of what players
@@ -1106,6 +1108,10 @@ func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) 
 		return
 	}
 	w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay)
+	// Scheduled ticks are written with the Column they are in.
+	if c, ok := w.chunks[chunkPosFromBlockPos(pos)]; ok {
+		c.modified = true
+	}
 }
 
 // doBlockUpdatesAround schedules block updates directly around and on the
@@ -1193,34 +1199,111 @@ func (w *World) save(f func(*Tx, ChunkPos, *Column)) execFunc {
 
 // saveChunk saves a chunk and its entities to disk after compacting the chunk.
 func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
-	if w.conf.ReadOnly || !c.changed() {
+	if w.conf.ReadOnly {
+		return
+	}
+	be := c.encodeBlockEntities()
+	h := hashBlockEntities(be)
+	if !c.modified && h == c.beHash {
 		return
 	}
 	c.Compact()
-	if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos)); err != nil {
+	if err := w.conf.Provider.StoreColumn(pos, w.conf.Dim, w.columnTo(c, pos, be)); err != nil {
 		w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 		return
 	}
-	c.modified = len(c.Entities) > 0
-	for _, b := range c.BlockEntities {
-		if ch, ok := b.(NBTChanger); ok {
-			ch.ResetNBTChanged()
-		}
-	}
+	// An entity is mutated in place as it is ticked, so a Column holding
+	// one is never recorded as written.
+	c.modified, c.beHash = len(c.Entities) > 0, h
 }
 
-// changed reports whether the Column holds anything that has not been written yet. A block entity is asked
-// separately: its contents live behind a pointer it holds, so changing them never touches the Column.
-func (c *Column) changed() bool {
-	if c.modified {
-		return true
-	}
-	for _, b := range c.BlockEntities {
-		if ch, ok := b.(NBTChanger); ok && ch.NBTChanged() {
-			return true
+// hashNBT hashes a value of decoded NBT into h. Every type the nbt package
+// encodes is handled without reflection: any other type falls back on its
+// formatted form, which is stable for the arrays and structs left.
+func hashNBT(h uint64, v any) uint64 {
+	switch v := v.(type) {
+	case map[string]any:
+		// A map is ranged in no particular order, so the keys are sorted first,
+		// as networkBlockHash does for block properties.
+		keys := make([]string, 0, len(v))
+		for k := range v {
+			keys = append(keys, k)
 		}
+		slices.Sort(keys)
+		for _, k := range keys {
+			h = hashNBT(fnv1a.AddString64(h, k), v[k])
+		}
+		return h
+	case []any:
+		h = fnv1a.AddUint64(h, uint64(len(v)))
+		for _, e := range v {
+			h = hashNBT(h, e)
+		}
+		return h
+	case string:
+		return fnv1a.AddString64(h, v)
+	case byte:
+		return fnv1a.AddUint64(h, uint64(v))
+	case int16:
+		return fnv1a.AddUint64(h, uint64(uint16(v)))
+	case int32:
+		return fnv1a.AddUint64(h, uint64(uint32(v)))
+	case int64:
+		return fnv1a.AddUint64(h, uint64(v))
+	case float32:
+		return fnv1a.AddUint64(h, uint64(math.Float32bits(v)))
+	case float64:
+		return fnv1a.AddUint64(h, math.Float64bits(v))
+	case bool:
+		if v {
+			return fnv1a.AddUint64(h, 1)
+		}
+		return fnv1a.AddUint64(h, 0)
+	case []byte:
+		return fnv1a.AddBytes64(fnv1a.AddUint64(h, uint64(len(v))), v)
+	case []int32:
+		h = fnv1a.AddUint64(h, uint64(len(v)))
+		for _, e := range v {
+			h = fnv1a.AddUint64(h, uint64(uint32(e)))
+		}
+		return h
+	case []int64:
+		h = fnv1a.AddUint64(h, uint64(len(v)))
+		for _, e := range v {
+			h = fnv1a.AddUint64(h, uint64(e))
+		}
+		return h
+	case nil:
+		return fnv1a.AddUint64(h, 0)
 	}
-	return false
+	return fnv1a.AddString64(h, fmt.Sprintf("%T:%v", v, v))
+}
+
+// encodeBlockEntities encodes every block entity in the Column, in the form it
+// is written to the provider in.
+func (c *Column) encodeBlockEntities() []chunk.BlockEntity {
+	be := make([]chunk.BlockEntity, 0, len(c.BlockEntities))
+	for pos, b := range c.BlockEntities {
+		nb, ok := b.(NBTer)
+		if !ok {
+			continue
+		}
+		be = append(be, chunk.BlockEntity{Pos: pos, Data: nb.EncodeNBT()})
+	}
+	return be
+}
+
+// hashBlockEntities hashes block entities as they are written. A block entity
+// holds its contents behind a pointer, so it is changed without the Column
+// being touched: comparing this against the hash stored when the Column was
+// last written is what notices that.
+func hashBlockEntities(be []chunk.BlockEntity) uint64 {
+	var sum uint64
+	for _, e := range be {
+		h := fnv1a.AddUint64(fnv1a.AddUint64(fnv1a.AddUint64(fnv1a.Init64, uint64(e.Pos[0])), uint64(e.Pos[1])), uint64(e.Pos[2]))
+		sum += hashNBT(h, e.Data)
+	}
+	return sum
 }
 
 // closeChunk saves a chunk and its entities to disk after compacting the chunk.
@@ -1542,6 +1625,8 @@ func (w *World) closeUnusedChunks(tx *Tx) {
 // viewers and loaders.
 type Column struct {
 	modified bool
+	// beHash is the hash of the block entities as they were last written.
+	beHash uint64
 
 	*chunk.Chunk
 	Entities      []*EntityHandle
@@ -1553,12 +1638,12 @@ type Column struct {
 
 // columnTo converts a Column to a chunk.Column so that it can be written to
 // a provider.
-func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
+func (w *World) columnTo(col *Column, pos ChunkPos, be []chunk.BlockEntity) *chunk.Column {
 	scheduled := w.scheduledUpdates.fromChunk(pos)
 	c := &chunk.Column{
 		Chunk:           col.Chunk,
 		Entities:        make([]chunk.Entity, 0, len(col.Entities)),
-		BlockEntities:   make([]chunk.BlockEntity, 0, len(col.BlockEntities)),
+		BlockEntities:   be,
 		ScheduledBlocks: make([]chunk.ScheduledBlockUpdate, 0, len(scheduled)),
 		Tick:            w.scheduledUpdates.currentTick,
 	}
@@ -1567,9 +1652,6 @@ func (w *World) columnTo(col *Column, pos ChunkPos) *chunk.Column {
 		maps.Copy(data, e.t.EncodeNBT(&e.data))
 		data["identifier"] = e.t.EncodeEntity()
 		c.Entities = append(c.Entities, chunk.Entity{ID: int64(binary.LittleEndian.Uint64(e.id[8:])), Data: data})
-	}
-	for pos, be := range col.BlockEntities {
-		c.BlockEntities = append(c.BlockEntities, chunk.BlockEntity{Pos: pos, Data: be.(NBTer).EncodeNBT()})
 	}
 	for _, t := range scheduled {
 		c.ScheduledBlocks = append(c.ScheduledBlocks, chunk.ScheduledBlockUpdate{Pos: t.pos, Block: w.conf.Blocks.BlockRuntimeID(t.b), Tick: t.t})
@@ -1623,5 +1705,7 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 		})
 	}
 	w.scheduledUpdates.add(scheduled)
+	// The Column matches what is on disk until a block entity differs.
+	col.beHash = hashBlockEntities(col.encodeBlockEntities())
 	return col
 }

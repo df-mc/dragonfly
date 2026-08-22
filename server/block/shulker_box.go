@@ -48,7 +48,6 @@ type ShulkerBox struct {
 	progress *atomic.Int32
 	// animationStatus is the current openness state of the shulker box (whether it's opened, closing, etc.).
 	animationStatus *atomic.Int32
-	dirty           *atomic.Bool
 }
 
 // NewShulkerBox creates a new initialised shulker box. The inventory is properly initialised.
@@ -58,12 +57,9 @@ func NewShulkerBox() ShulkerBox {
 		viewers:         make(map[ContainerViewer]struct{}, 1),
 		progress:        new(atomic.Int32),
 		animationStatus: new(atomic.Int32),
-		dirty:           new(atomic.Bool),
 	}
 
 	s.inventory = inventory.New(27, func(slot int, _, after item.Stack) {
-		s.dirty.Store(true)
-
 		s.viewerMu.RLock()
 		defer s.viewerMu.RUnlock()
 		for viewer := range s.viewers {
@@ -76,16 +72,6 @@ func NewShulkerBox() ShulkerBox {
 }
 
 func (ShulkerBox) ContainerSize() int { return 27 }
-
-// NBTChanged ...
-func (s ShulkerBox) NBTChanged() bool {
-	return s.dirty.Load()
-}
-
-// ResetNBTChanged ...
-func (s ShulkerBox) ResetNBTChanged() {
-	s.dirty.Store(false)
-}
 
 // canStoreInShulkerBox rejects nested shulker boxes.
 func canStoreInShulkerBox(s item.Stack, _ int) bool {
@@ -291,7 +277,6 @@ func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
 	s.Facing = cube.Face(nbtconv.Uint8(data, "facing"))
 	s.CustomName = nbtconv.String(data, "CustomName")
-	s.ResetNBTChanged()
 	return s
 }
 

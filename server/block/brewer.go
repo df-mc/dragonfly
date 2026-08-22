@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -22,16 +21,12 @@ type brewer struct {
 	duration   time.Duration
 	fuelAmount int32
 	fuelTotal  int32
-
-	dirty atomic.Bool
 }
 
 // newBrewer creates a new initialised brewer. The inventory is properly initialised.
 func newBrewer() *brewer {
 	b := &brewer{viewers: make(map[ContainerViewer]struct{})}
 	b.inventory = inventory.New(5, func(slot int, _, item item.Stack) {
-		b.dirty.Store(true)
-
 		b.mu.Lock()
 		defer b.mu.Unlock()
 		for viewer := range b.viewers {
@@ -39,16 +34,6 @@ func newBrewer() *brewer {
 		}
 	})
 	return b
-}
-
-// NBTChanged ...
-func (b *brewer) NBTChanged() bool {
-	return b.dirty.Load()
-}
-
-// ResetNBTChanged ...
-func (b *brewer) ResetNBTChanged() {
-	b.dirty.Store(false)
 }
 
 // InsertItem ...
@@ -172,7 +157,6 @@ func (b *brewer) setDuration(duration time.Duration) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.duration = duration
-	b.dirty.Store(true)
 }
 
 // setFuel sets the fuel of the brewer to the given fuel and maximum fuel.
@@ -180,7 +164,6 @@ func (b *brewer) setFuel(fuel, maxFuel int32) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.fuelAmount, b.fuelTotal = fuel, maxFuel
-	b.dirty.Store(true)
 }
 
 // tickBrewing ticks the brewer, ensuring the necessary items exist in the brewer, and then processing all inputted

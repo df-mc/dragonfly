@@ -314,6 +314,9 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 		if t.t > tick {
 			continue
 		}
+		if c, ok := w.chunks[chunkPosFromBlockPos(t.pos)]; ok {
+			c.modified = true
+		}
 		b := tx.Block(t.pos)
 		if ticker, ok := b.(ScheduledTicker); ok && w.conf.Blocks.BlockHash(b) == t.bhash {
 			ticker.ScheduledTick(t.pos, tx, w.r)

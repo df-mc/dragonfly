@@ -134,7 +134,6 @@ func (s Smoker) DecodeNBT(data map[string]interface{}) interface{} {
 	s.setExperience(xp)
 	s.setDurations(remaining, maximum, cook)
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
-	s.ResetNBTChanged()
 	return s
 }
 

@@ -11,7 +11,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -32,18 +31,14 @@ type Barrel struct {
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
 	viewers   map[ContainerViewer]struct{}
-	dirty     *atomic.Bool
 }
 
 // NewBarrel creates a new initialised barrel. The inventory is properly initialised.
 func NewBarrel() Barrel {
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{}, 1)
-	d := new(atomic.Bool)
 	return Barrel{
 		inventory: inventory.New(27, func(slot int, _, item item.Stack) {
-			d.Store(true)
-
 			m.RLock()
 			defer m.RUnlock()
 			for viewer := range v {
@@ -52,21 +47,10 @@ func NewBarrel() Barrel {
 		}),
 		viewerMu: m,
 		viewers:  v,
-		dirty:    d,
 	}
 }
 
 func (Barrel) ContainerSize() int { return 27 }
-
-// NBTChanged ...
-func (b Barrel) NBTChanged() bool {
-	return b.dirty.Load()
-}
-
-// ResetNBTChanged ...
-func (b Barrel) ResetNBTChanged() {
-	b.dirty.Store(false)
-}
 
 // Inventory returns the inventory of the barrel. The size of the inventory will be 27.
 func (b Barrel) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
@@ -167,7 +151,6 @@ func (b Barrel) DecodeNBT(data map[string]any) any {
 	b.Facing = facing
 	b.CustomName = nbtconv.String(data, "CustomName")
 	nbtconv.InvFromNBT(b.inventory, nbtconv.Slice(data, "Items"))
-	b.ResetNBTChanged()
 	return b
 }
 

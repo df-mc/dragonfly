@@ -11,7 +11,6 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -37,7 +36,6 @@ type Chest struct {
 	inventory *inventory.Inventory
 	viewerMu  *sync.RWMutex
 	viewers   map[ContainerViewer]struct{}
-	dirty     *atomic.Bool
 }
 
 // NewChest creates a new initialised chest. The inventory is properly initialised.
@@ -45,12 +43,9 @@ func NewChest() Chest {
 	c := Chest{
 		viewerMu: new(sync.RWMutex),
 		viewers:  make(map[ContainerViewer]struct{}, 1),
-		dirty:    new(atomic.Bool),
 	}
 
 	c.inventory = inventory.New(27, func(slot int, _, after item.Stack) {
-		c.dirty.Store(true)
-
 		c.viewerMu.RLock()
 		defer c.viewerMu.RUnlock()
 		for viewer := range c.viewers {
@@ -65,16 +60,6 @@ func (c Chest) ContainerSize() int {
 		return 54
 	}
 	return 27
-}
-
-// NBTChanged ...
-func (c Chest) NBTChanged() bool {
-	return c.dirty.Load()
-}
-
-// ResetNBTChanged ...
-func (c Chest) ResetNBTChanged() {
-	c.dirty.Store(false)
 }
 
 // Inventory returns the inventory of the chest. The size of the inventory will be 27 or 54, depending on
@@ -250,11 +235,7 @@ func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok boo
 	if pos.Side(c.Facing.RotateRight().Face()) == pairPos {
 		left, right = right, left
 	}
-	cd, pd := c.dirty, pair.dirty
 	double := left.Merge(right, func(slot int, _, item item.Stack) {
-		cd.Store(true)
-		pd.Store(true)
-
 		if slot < 27 {
 			_ = left.SetItem(slot, item)
 		} else {
@@ -295,8 +276,6 @@ func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
 	}
 
 	c.inventory = c.inventory.Clone(func(slot int, _, after item.Stack) {
-		c.dirty.Store(true)
-
 		c.viewerMu.RLock()
 		defer c.viewerMu.RUnlock()
 		for viewer := range c.viewers {
@@ -304,8 +283,6 @@ func (c Chest) unpair(tx *world.Tx, pos cube.Pos) (ch, pair Chest, ok bool) {
 		}
 	})
 	pair.inventory = pair.inventory.Clone(func(slot int, _, after item.Stack) {
-		pair.dirty.Store(true)
-
 		pair.viewerMu.RLock()
 		defer pair.viewerMu.RUnlock()
 		for viewer := range pair.viewers {
@@ -344,7 +321,6 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 	}
 
 	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
-	c.ResetNBTChanged()
 	return c
 }
 
