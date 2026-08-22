@@ -291,6 +291,7 @@ func (s ShulkerBox) DecodeNBT(data map[string]any) any {
 	nbtconv.InvFromNBT(s.inventory, nbtconv.Slice(data, "Items"))
 	s.Facing = cube.Face(nbtconv.Uint8(data, "facing"))
 	s.CustomName = nbtconv.String(data, "CustomName")
+	s.ResetNBTChanged()
 	return s
 }
 

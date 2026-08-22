@@ -172,6 +172,7 @@ func (b *brewer) setDuration(duration time.Duration) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.duration = duration
+	b.dirty.Store(true)
 }
 
 // setFuel sets the fuel of the brewer to the given fuel and maximum fuel.
@@ -179,6 +180,7 @@ func (b *brewer) setFuel(fuel, maxFuel int32) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.fuelAmount, b.fuelTotal = fuel, maxFuel
+	b.dirty.Store(true)
 }
 
 // tickBrewing ticks the brewer, ensuring the necessary items exist in the brewer, and then processing all inputted

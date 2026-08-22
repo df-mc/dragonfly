@@ -1201,7 +1201,7 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 		w.conf.Log.Error("save chunk: "+err.Error(), "X", pos[0], "Z", pos[1])
 		return
 	}
-	c.modified = false
+	c.modified = len(c.Entities) > 0
 	for _, b := range c.BlockEntities {
 		if ch, ok := b.(NBTChanger); ok {
 			ch.ResetNBTChanged()

@@ -344,6 +344,7 @@ func (c Chest) DecodeNBT(data map[string]any) any {
 	}
 
 	nbtconv.InvFromNBT(c.inventory, nbtconv.Slice(data, "Items"))
+	c.ResetNBTChanged()
 	return c
 }
 

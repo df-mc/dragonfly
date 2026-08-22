@@ -147,6 +147,7 @@ func (s *smelter) ResetExperience() int {
 	defer s.mu.Unlock()
 	xp := s.experience
 	s.experience = 0
+	s.dirty.Store(true)
 	return xp
 }
 
@@ -179,6 +180,7 @@ func (s *smelter) setExperience(xp int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.experience = xp
+	s.dirty.Store(true)
 }
 
 // setDurations sets the remaining, maximum, and cook durations of the smelter to the given values.
@@ -186,6 +188,7 @@ func (s *smelter) setDurations(remaining, max, cook time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.remainingDuration, s.maxDuration, s.cookDuration = remaining, max, cook
+	s.dirty.Store(true)
 }
 
 // tickSmelting ticks the smelter, ensuring the necessary items exist in the furnace, and then processing all inputted
