@@ -182,8 +182,11 @@ func (c Chest) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.
 	for _, dir := range []cube.Direction{c.Facing.RotateLeft(), c.Facing.RotateRight()} {
 		if ch, pair, ok := c.pair(tx, pos, pos.Side(dir.Face())); ok {
 			place(tx, pos, ch, user, ctx)
+			if !placed(ctx) {
+				return false
+			}
 			tx.SetBlock(ch.pairPos(pos), pair, nil)
-			return placed(ctx)
+			return true
 		}
 	}
 
@@ -228,6 +231,12 @@ func (c Chest) pair(tx *world.Tx, pos, pairPos cube.Pos) (ch, pair Chest, ok boo
 	pair, ok = tx.Block(pairPos).(Chest)
 	if !ok || c.Facing != pair.Facing || pair.paired && (pair.pairX != pos[0] || pair.pairZ != pos[2]) {
 		return c, pair, false
+	}
+	if len(c.viewers) != 0 {
+		c.close(tx, pos)
+	}
+	if len(pair.viewers) != 0 {
+		pair.close(tx, pairPos)
 	}
 	m := new(sync.RWMutex)
 	v := make(map[ContainerViewer]struct{})

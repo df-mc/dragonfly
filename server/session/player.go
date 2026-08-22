@@ -310,7 +310,14 @@ func (s *Session) invByID(id int32, tx *world.Tx) (*inventory.Inventory, bool) {
 		}
 		switch id {
 		case protocol.ContainerLevelEntity:
-			return s.openedWindow.Load(), true
+			pos, inv := *s.openedPos.Load(), s.openedWindow.Load()
+			if _, enderChest := tx.Block(pos).(block.EnderChest); enderChest {
+				// An ender chest hands out the player's own inventory rather than one the block holds.
+				return inv, true
+			}
+			if container, ok := tx.Block(pos).(block.Container); ok && container.Inventory(tx, pos) == inv {
+				return inv, true
+			}
 		case protocol.ContainerShulkerBox:
 			if _, shulkerbox := tx.Block(*s.openedPos.Load()).(block.ShulkerBox); shulkerbox {
 				return s.openedWindow.Load(), true
