@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"iter"
 	"maps"
-	"math"
 	"math/rand/v2"
 	"slices"
 	"sync"
@@ -1217,14 +1216,11 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 	c.modified, c.beHash = len(c.Entities) > 0, h
 }
 
-// hashNBT hashes a value of decoded NBT into h. Every type the nbt package
-// encodes is handled without reflection: any other type falls back on its
-// formatted form, which is stable for the arrays and structs left.
+// hashNBT hashes a value of decoded NBT into h. The keys of a compound are
+// sorted first, as a map is ranged in no particular order.
 func hashNBT(h uint64, v any) uint64 {
 	switch v := v.(type) {
 	case map[string]any:
-		// A map is ranged in no particular order, so the keys are sorted first,
-		// as networkBlockHash does for block properties.
 		keys := make([]string, 0, len(v))
 		for k := range v {
 			keys = append(keys, k)
@@ -1240,41 +1236,6 @@ func hashNBT(h uint64, v any) uint64 {
 			h = hashNBT(h, e)
 		}
 		return h
-	case string:
-		return fnv1a.AddString64(h, v)
-	case byte:
-		return fnv1a.AddUint64(h, uint64(v))
-	case int16:
-		return fnv1a.AddUint64(h, uint64(uint16(v)))
-	case int32:
-		return fnv1a.AddUint64(h, uint64(uint32(v)))
-	case int64:
-		return fnv1a.AddUint64(h, uint64(v))
-	case float32:
-		return fnv1a.AddUint64(h, uint64(math.Float32bits(v)))
-	case float64:
-		return fnv1a.AddUint64(h, math.Float64bits(v))
-	case bool:
-		if v {
-			return fnv1a.AddUint64(h, 1)
-		}
-		return fnv1a.AddUint64(h, 0)
-	case []byte:
-		return fnv1a.AddBytes64(fnv1a.AddUint64(h, uint64(len(v))), v)
-	case []int32:
-		h = fnv1a.AddUint64(h, uint64(len(v)))
-		for _, e := range v {
-			h = fnv1a.AddUint64(h, uint64(uint32(e)))
-		}
-		return h
-	case []int64:
-		h = fnv1a.AddUint64(h, uint64(len(v)))
-		for _, e := range v {
-			h = fnv1a.AddUint64(h, uint64(e))
-		}
-		return h
-	case nil:
-		return fnv1a.AddUint64(h, 0)
 	}
 	return fnv1a.AddString64(h, fmt.Sprintf("%T:%v", v, v))
 }
@@ -1705,7 +1666,6 @@ func (w *World) columnFrom(c *chunk.Column, _ ChunkPos) *Column {
 		})
 	}
 	w.scheduledUpdates.add(scheduled)
-	// The Column matches what is on disk until a block entity differs.
 	col.beHash = hashBlockEntities(col.encodeBlockEntities())
 	return col
 }
