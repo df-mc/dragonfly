@@ -51,6 +51,7 @@ type Controllable interface {
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
 	GameMode() world.GameMode
+	PermissionLevel() PermissionLevel
 	SetGameMode(mode world.GameMode)
 	Effects() []effect.Effect
 

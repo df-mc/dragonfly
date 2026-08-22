@@ -27,6 +27,9 @@ type Config struct {
 	Locale   language.Tag
 	GameMode world.GameMode
 
+	// PermissionLevel is the permission level the client displays for itself.
+	PermissionLevel session.PermissionLevel
+
 	Position               mgl64.Vec3
 	Rotation               cube.Rotation
 	Velocity               mgl64.Vec3
@@ -72,6 +75,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 		mc:                  &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 		heldSlot:            &slot,
 		gameMode:            conf.GameMode,
+		permission:          conf.PermissionLevel,
 		skin:                conf.Skin,
 		enchantSeed:         conf.EnchantmentSeed,
 		s:                   conf.Session,
