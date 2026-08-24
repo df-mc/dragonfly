@@ -25,6 +25,8 @@ type Smoker struct {
 	Lit bool
 }
 
+func (Smoker) ContainerSize() int { return 3 }
+
 // NewSmoker creates a new initialised smoker. The smelter is properly initialised.
 func NewSmoker(face cube.Direction) Smoker {
 	return Smoker{
