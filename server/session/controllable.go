@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/input"
+	"github.com/df-mc/dragonfly/server/player/permission"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -51,7 +52,7 @@ type Controllable interface {
 	Chat(msg ...any)
 	ExecuteCommand(commandLine string)
 	GameMode() world.GameMode
-	PermissionLevel() PermissionLevel
+	PermissionLevel() permission.Level
 	SetGameMode(mode world.GameMode)
 	Effects() []effect.Effect
 

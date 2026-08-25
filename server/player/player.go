@@ -28,6 +28,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/form"
 	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/input"
+	"github.com/df-mc/dragonfly/server/player/permission"
 	"github.com/df-mc/dragonfly/server/player/scoreboard"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/player/title"
@@ -49,7 +50,7 @@ type playerData struct {
 	scale             float64
 
 	gameMode   world.GameMode
-	permission session.PermissionLevel
+	permission permission.Level
 	skin       skin.Skin
 	s          *session.Session
 	h          Handler
@@ -1552,7 +1553,7 @@ func (p *Player) GameMode() world.GameMode {
 // permission level, such as the command button in the chat window, but does not
 // authorise the Player to do anything by itself: cmd.Allower decides which
 // commands a Player may run.
-func (p *Player) SetPermissionLevel(level session.PermissionLevel) {
+func (p *Player) SetPermissionLevel(level permission.Level) {
 	if p.permission == level {
 		return
 	}
@@ -1562,7 +1563,7 @@ func (p *Player) SetPermissionLevel(level session.PermissionLevel) {
 
 // PermissionLevel returns the permission level the Player's client displays for
 // itself, as set by SetPermissionLevel.
-func (p *Player) PermissionLevel() session.PermissionLevel {
+func (p *Player) PermissionLevel() permission.Level {
 	return p.permission
 }
 
@@ -3408,6 +3409,7 @@ func (p *Player) Data() Config {
 		Name:                p.nameTag,
 		Locale:              p.locale,
 		GameMode:            p.gameMode,
+		PermissionLevel:     p.permission,
 		Position:            p.Position(),
 		Rotation:            p.Rotation(),
 		Velocity:            p.Velocity(),

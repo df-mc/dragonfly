@@ -545,11 +545,11 @@ func (s *Session) SendAbilities(c Controllable) {
 	if mode.AllowsInteraction() {
 		abilities |= protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
 	}
-	permission, commandPermission := c.PermissionLevel().abilityPermissions()
+	perm, cmdPerm := c.PermissionLevel().Permissions()
 	s.writePacket(&packet.UpdateAbilities{AbilityData: protocol.AbilityData{
 		EntityUniqueID:     selfEntityRuntimeID,
-		PlayerPermissions:  permission,
-		CommandPermissions: commandPermission,
+		PlayerPermissions:  perm,
+		CommandPermissions: cmdPerm,
 		Layers: []protocol.AbilityLayer{
 			{
 				Type:             protocol.AbilityLayerTypeBase,
