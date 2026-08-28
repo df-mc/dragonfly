@@ -94,6 +94,7 @@ func (l *sessionList) unsendSessionFrom(s, from *Session) {
 	from.entityMutex.Lock()
 	delete(from.entities, from.entityRuntimeIDs[s.ent])
 	delete(from.entityRuntimeIDs, s.ent)
+	delete(from.componentMetadata, s.ent)
 	from.entityMutex.Unlock()
 
 	from.writePacket(&packet.PlayerList{

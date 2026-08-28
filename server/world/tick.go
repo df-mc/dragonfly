@@ -252,6 +252,9 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 		}
 
 		if tx.World().conf.Synchronous || len(c.viewers) > 0 {
+			if !tickComponents(tx, e, tick) {
+				continue
+			}
 			if te, ok := e.(TickerEntity); ok {
 				te.Tick(tx, tick)
 			}

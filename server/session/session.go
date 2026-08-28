@@ -59,6 +59,8 @@ type Session struct {
 	entityRuntimeIDs map[*world.EntityHandle]uint64
 	entities         map[uint64]*world.EntityHandle
 	hiddenEntities   map[uuid.UUID]struct{}
+	// componentMetadata stores reset values for component metadata.
+	componentMetadata map[*world.EntityHandle]protocol.EntityMetadata
 
 	// heldSlot is the slot in the inventory that the controllable is holding.
 	heldSlot                     *uint32
@@ -193,6 +195,7 @@ func (conf Config) New(conn Conn) *Session {
 		entityRuntimeIDs:       map[*world.EntityHandle]uint64{},
 		entities:               map[uint64]*world.EntityHandle{},
 		hiddenEntities:         map[uuid.UUID]struct{}{},
+		componentMetadata:      map[*world.EntityHandle]protocol.EntityMetadata{},
 		blobs:                  map[uint64][]byte{},
 		chunkRadius:            int32(r),
 		maxChunkRadius:         int32(conf.MaxChunkRadius),
@@ -341,6 +344,7 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	s.entityMutex.Lock()
 	clear(s.entityRuntimeIDs)
 	clear(s.entities)
+	clear(s.componentMetadata)
 	s.entityMutex.Unlock()
 }
 
@@ -635,13 +639,29 @@ type actorIdentifier struct {
 
 // sendAvailableEntities sends all registered entities to the player.
 func (s *Session) sendAvailableEntities(w *world.World) {
-	var identifiers []actorIdentifier
-	for _, t := range w.EntityRegistry().Types() {
-		identifiers = append(identifiers, actorIdentifier{ID: t.EncodeEntity()})
-	}
+	identifiers := availableActorIdentifiers(w.EntityRegistry().Types())
 	serialisedEntityData, err := nbt.Marshal(map[string]any{"idlist": identifiers})
 	if err != nil {
 		panic("should never happen")
 	}
 	s.writePacket(&packet.AvailableActorIdentifiers{SerialisedEntityIdentifiers: serialisedEntityData})
+}
+
+// availableActorIdentifiers returns each client actor ID once, even when
+// multiple logical entity types share the same client representation.
+func availableActorIdentifiers(types []world.EntityType) []actorIdentifier {
+	identifiers := make([]actorIdentifier, 0, len(types))
+	seen := make(map[string]struct{}, len(types))
+	for _, t := range types {
+		id := t.EncodeEntity()
+		if networkType, ok := t.(NetworkEncodeableEntity); ok {
+			id = networkType.NetworkEncodeEntity()
+		}
+		if _, duplicate := seen[id]; duplicate {
+			continue
+		}
+		seen[id] = struct{}{}
+		identifiers = append(identifiers, actorIdentifier{ID: id})
+	}
+	return identifiers
 }

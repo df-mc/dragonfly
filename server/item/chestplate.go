@@ -1,8 +1,10 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
+
+	colourconv "github.com/df-mc/dragonfly/server/internal/colour"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Chestplate is a defensive item that may be equipped in the chestplate slot. Generally, chestplates provide
@@ -103,7 +105,7 @@ func (c Chestplate) EncodeItem() (name string, meta int16) {
 func (c Chestplate) DecodeNBT(data map[string]any) any {
 	if t, ok := c.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
-			t.Colour = rgbaFromInt32(v)
+			t.Colour = colourconv.RGBAFromInt32(v)
 			c.Tier = t
 		}
 	}
@@ -115,7 +117,7 @@ func (c Chestplate) DecodeNBT(data map[string]any) any {
 func (c Chestplate) EncodeNBT() map[string]any {
 	m := map[string]any{}
 	if t, ok := c.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
-		m["customColor"] = int32FromRGBA(t.Colour)
+		m["customColor"] = colourconv.Int32FromRGBAOpaqueBlack(t.Colour)
 	}
 	writeTrim(m, c.Trim)
 	return m

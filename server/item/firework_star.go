@@ -1,5 +1,7 @@
 package item
 
+import colourconv "github.com/df-mc/dragonfly/server/internal/colour"
+
 // FireworkStar is an item used to determine the color, effect, and shape of firework rockets.
 type FireworkStar struct {
 	FireworkExplosion
@@ -9,7 +11,7 @@ type FireworkStar struct {
 func (f FireworkStar) EncodeNBT() map[string]any {
 	return map[string]any{
 		"FireworksItem": f.FireworkExplosion.EncodeNBT(),
-		"customColor":   int32FromRGBA(f.Colour.RGBA()),
+		"customColor":   colourconv.Int32FromRGBAOpaqueBlack(f.Colour.RGBA()),
 	}
 }
 

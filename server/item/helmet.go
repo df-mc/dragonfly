@@ -1,8 +1,10 @@
 package item
 
 import (
-	"github.com/df-mc/dragonfly/server/world"
 	"image/color"
+
+	colourconv "github.com/df-mc/dragonfly/server/internal/colour"
+	"github.com/df-mc/dragonfly/server/world"
 )
 
 // Helmet is a defensive item that may be worn in the head slot. It comes in several tiers, each with
@@ -99,7 +101,7 @@ func (h Helmet) EncodeItem() (name string, meta int16) {
 func (h Helmet) DecodeNBT(data map[string]any) any {
 	if t, ok := h.Tier.(ArmourTierLeather); ok {
 		if v, ok := data["customColor"].(int32); ok {
-			t.Colour = rgbaFromInt32(v)
+			t.Colour = colourconv.RGBAFromInt32(v)
 			h.Tier = t
 		}
 	}
@@ -111,7 +113,7 @@ func (h Helmet) DecodeNBT(data map[string]any) any {
 func (h Helmet) EncodeNBT() map[string]any {
 	m := map[string]any{}
 	if t, ok := h.Tier.(ArmourTierLeather); ok && t.Colour != (color.RGBA{}) {
-		m["customColor"] = int32FromRGBA(t.Colour)
+		m["customColor"] = colourconv.Int32FromRGBAOpaqueBlack(t.Colour)
 	}
 	writeTrim(m, h.Trim)
 	return m
