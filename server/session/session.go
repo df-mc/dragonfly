@@ -81,6 +81,7 @@ type Session struct {
 	changingSlot                   atomic.Bool
 	changingDimension              atomic.Bool
 	moving                         bool
+	shieldUse                      shieldUseState
 
 	lastChunkPos world.ChunkPos
 

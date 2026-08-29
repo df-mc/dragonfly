@@ -59,6 +59,7 @@ type playerData struct {
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
+	shield shieldState
 
 	sleeping bool
 	sleepPos cube.Pos
@@ -620,26 +621,36 @@ func (p *Player) blocksUnder() (low, high cube.Pos) {
 // health that the player currently has, the player is killed and will have to
 // respawn.
 // If the damage passed is negative, Hurt will not do anything. Hurt returns the
-// final damage dealt to the Player and if the Player was vulnerable to this
-// kind of damage.
-func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
+// final damage dealt to the Player and a result describing the outcome.
+func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, world.HurtResult) {
 	if _, ok := p.Effect(effect.FireResistance); (ok && src.Fire()) || p.Dead() || !p.GameMode().AllowsTakingDamage() || dmg < 0 {
-		return 0, false
+		return 0, world.HurtIgnored
 	}
 	totalDamage := p.FinalDamageFrom(dmg, src)
 	damageLeft := totalDamage
 
 	immune := time.Now().Before(p.immuneUntil)
 	if immune {
-		if damageLeft -= p.lastDamage; damageLeft <= 0 {
-			return 0, false
-		}
+		damageLeft -= p.lastDamage
 	}
 
 	immunity := time.Second / 2
+	damageBeforeHandler := damageLeft
+	if immune && damageLeft <= 0 {
+		if info, ok := shieldBlockInfo(src); ok && info.BlockWhenImmune && p.blockDamageWithShield(dmg, src, info) {
+			return 0, world.HurtBlocked
+		}
+		return 0, world.HurtIgnored
+	}
 	ctx := NewEventContext(p.tx, p)
 	if p.Handler().HandleHurt(ctx, &damageLeft, immune, &immunity, src); ctx.Cancelled() {
-		return 0, false
+		return 0, world.HurtCancelled
+	}
+	// Handlers run first so damage they cancel or reduce to zero does not consume a shield.
+	if info, ok := shieldBlockInfo(src); ok {
+		if shieldShouldBlockDamage(dmg, damageBeforeHandler, damageLeft, info) && p.blockDamageWithShield(dmg, src, info) {
+			return 0, world.HurtBlocked
+		}
 	}
 	p.setAttackImmunity(immunity, totalDamage)
 
@@ -657,11 +668,11 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 		if _, ok := offHand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
 			p.SetHeldItems(hand, offHand.Grow(-1))
-			return 0, false
+			return 0, world.HurtIgnored
 		} else if _, ok := hand.Item().(item.Totem); ok {
 			p.applyTotemEffects()
 			p.SetHeldItems(hand.Grow(-1), offHand)
-			return 0, false
+			return 0, world.HurtIgnored
 		}
 	}
 
@@ -699,7 +710,7 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	if p.Dead() {
 		p.kill(src)
 	}
-	return totalDamage, true
+	return totalDamage, world.HurtAccepted
 }
 
 // applyTotemEffects is an unexported function that is used to handle totem effects.
@@ -739,7 +750,10 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 func (p *Player) Explode(src world.ExplosionSource, impact float64) {
 	explosionPos := src.Position()
 	diff := p.Position().Sub(explosionPos)
-	p.Hurt(math.Floor((impact*impact+impact)*3.5*src.Size()*2+1), entity.ExplosionDamageSource{Source: src})
+	_, result := p.Hurt(math.Floor((impact*impact+impact)*3.5*src.Size()*2+1), entity.ExplosionDamageSource{Source: src})
+	if result.Blocked() {
+		impact *= shieldExplosionKnockBackMultiplier
+	}
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
 }
 
@@ -1131,6 +1145,7 @@ func (p *Player) StartSneaking() {
 		p.StopSprinting()
 	}
 	p.sneaking = true
+	p.updateShieldBlockingState()
 	p.updateState()
 }
 
@@ -1150,6 +1165,7 @@ func (p *Player) StopSneaking() {
 		return
 	}
 	p.sneaking = false
+	p.updateShieldBlockingState()
 	p.updateState()
 }
 
@@ -1476,6 +1492,23 @@ func (p *Player) HeldItems() (mainHand, offHand item.Stack) {
 func (p *Player) SetHeldItems(mainHand, offHand item.Stack) {
 	_ = p.inv.SetItem(int(*p.heldSlot), mainHand)
 	_ = p.offHand.SetItem(0, offHand)
+	p.UpdateHeldItemState()
+}
+
+// UpdateHeldItemState refreshes state derived from the player's held items.
+func (p *Player) UpdateHeldItemState() {
+	if changed := p.updateHeldItemState(); changed && p.tx != nil {
+		p.updateState()
+	}
+}
+
+// updateHeldItemState refreshes shield state after a held item changes.
+func (p *Player) updateHeldItemState() bool {
+	mainHand, _ := p.HeldItems()
+	if p.shield.input && !p.canStartShieldBlockingInput(mainHand) {
+		p.shield.input = false
+	}
+	return p.updateShieldBlockingState()
 }
 
 // SetHeldSlot updates the held slot of the player to the slot provided. The
@@ -1501,9 +1534,13 @@ func (p *Player) SetHeldSlot(to int) error {
 	}
 	*p.heldSlot = uint32(to)
 	p.usingItem = false
+	shieldChanged := p.updateHeldItemState()
 
 	for _, viewer := range p.viewers() {
 		viewer.ViewEntityItems(p)
+	}
+	if shieldChanged {
+		p.updateState()
 	}
 	p.session().SendHeldSlot(to, p, false)
 	return nil
@@ -1553,11 +1590,14 @@ func (p *Player) HasCooldown(item world.Item) bool {
 		return false
 	}
 	name, _ := item.EncodeItem()
-	otherTime, ok := p.cooldowns[name]
+	if name == shieldItemName {
+		return p.shieldCooldownActive()
+	}
+	until, ok := p.cooldowns[name]
 	if !ok {
 		return false
 	}
-	if time.Now().After(otherTime) {
+	if time.Now().After(until) {
 		delete(p.cooldowns, name)
 		return false
 	}
@@ -1566,12 +1606,27 @@ func (p *Player) HasCooldown(item world.Item) bool {
 
 // SetCooldown sets a cooldown for an item. If the world.Item passed is nil, nothing happens.
 func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
+	p.setCooldown(item, cooldown, true)
+}
+
+// setCooldown sets an item cooldown and optionally refreshes shield state.
+func (p *Player) setCooldown(item world.Item, cooldown time.Duration, updateShieldState bool) {
 	if item == nil {
 		return
 	}
 	name, _ := item.EncodeItem()
-	p.cooldowns[name] = time.Now().Add(cooldown)
+	if name == shieldItemName {
+		// The shield cooldown lives on the tick-based shield state, not in the wall-clock map.
+		p.setShieldCooldown(cooldown)
+	} else {
+		p.cooldowns[name] = time.Now().Add(cooldown)
+	}
 	p.session().ViewItemCooldown(item, cooldown)
+	if name == shieldItemName && updateShieldState {
+		if changed := p.resetShieldBlocking(); changed && p.tx != nil {
+			p.updateState()
+		}
+	}
 }
 
 // UseItem uses the item currently held in the player's main hand in the air. Generally, nothing happens,
@@ -1579,15 +1634,22 @@ func (p *Player) SetCooldown(item world.Item, cooldown time.Duration) {
 // This generally happens for items such as throwable items like snowballs.
 func (p *Player) UseItem() {
 	i, _ := p.HeldItems()
-	ctx := NewEventContext(p.tx, p)
 	if p.HasCooldown(i.Item()) {
+		p.startOffHandShieldBlockingInputAfterItemUse()
 		return
 	}
+	ctx := NewEventContext(p.tx, p)
 	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
 		return
 	}
 	i, left := p.HeldItems()
 	it := i.Item()
+	if p.startShieldBlockingInput(i) {
+		return
+	}
+	if p.shield.input && !p.useItemStartsShieldBlocking(i) {
+		p.SetShieldBlockingInput(false)
+	}
 
 	if cd, ok := it.(item.Cooldown); ok {
 		p.SetCooldown(it, cd.Cooldown())
@@ -1595,6 +1657,7 @@ func (p *Player) UseItem() {
 
 	if _, ok := it.(item.Releasable); ok {
 		if !p.canRelease() {
+			p.startOffHandShieldBlockingInput()
 			return
 		}
 		p.usingSince, p.usingItem = time.Now(), true
@@ -1624,6 +1687,7 @@ func (p *Player) UseItem() {
 	case item.Usable:
 		useCtx := p.useContext()
 		if !usable.Use(p.tx, p, useCtx) {
+			p.startOffHandShieldBlockingInput()
 			return
 		}
 		// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
@@ -1633,13 +1697,17 @@ func (p *Player) UseItem() {
 		p.addNewItem(useCtx)
 	case item.Consumable:
 		if c, ok := usable.(interface{ CanConsume() bool }); ok && !c.CanConsume() {
-			p.ReleaseItem()
+			if !p.startOffHandShieldBlockingInput() {
+				p.ReleaseItem()
+			}
 			return
 		}
 		if !usable.AlwaysConsumable() && p.GameMode().AllowsTakingDamage() && p.Food() >= 20 {
 			// The item.Consumable is not always consumable, the player is not in creative mode and the
 			// food bar is filled: The item cannot be consumed.
-			p.ReleaseItem()
+			if !p.startOffHandShieldBlockingInput() {
+				p.ReleaseItem()
+			}
 			return
 		}
 		if !p.usingItem {
@@ -1673,6 +1741,9 @@ func (p *Player) UseItem() {
 // ReleaseItem either aborts the using of the item or finished it, depending on the time that elapsed since
 // the item started being used.
 func (p *Player) ReleaseItem() {
+	if p.shield.input {
+		p.SetShieldBlockingInput(false)
+	}
 	if !p.usingItem || !p.canRelease() || !p.GameMode().AllowsInteraction() {
 		p.usingItem = false
 		return
@@ -1747,9 +1818,24 @@ func (p *Player) useDuration() time.Duration {
 }
 
 // UsingItem checks if the Player is currently using an item. True is returned if the Player is currently eating an
-// item or using it over a longer duration such as when using a bow.
+// item or using it over a longer duration such as when using a bow. A raised main-hand shield also counts.
 func (p *Player) UsingItem() bool {
-	return p.usingItem
+	if p.usingItem {
+		return true
+	}
+	_, hand, ok := p.heldShield()
+	return ok && hand == shieldHandMain && p.shield.prepared
+}
+
+// SetShieldBlockingInput updates whether the player is holding the control that raises shields.
+func (p *Player) SetShieldBlockingInput(down bool) {
+	if p.shield.input == down {
+		return
+	}
+	p.shield.input = down
+	if changed := p.updateShieldBlockingState(); changed && p.tx != nil {
+		p.updateState()
+	}
 }
 
 // UseItemOnBlock uses the item held in the main hand of the player on a block at the position passed. The
@@ -1875,6 +1961,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		return false
 	}
 	p.SwingArm()
+	p.delayShieldAfterAttack()
 
 	if !isLiving {
 		if !entity.DamageableEntity(e) {
@@ -1909,7 +1996,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		dmg *= 1.5
 	}
 
-	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
+	n, result := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
 	i, left := p.HeldItems()
 
 	if durable, ok := i.Item().(item.Durable); ok {
@@ -1917,7 +2004,15 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 	}
 
 	p.tx.PlaySound(entity.EyePosition(e), sound.Attack{Damage: !mgl64.FloatEqual(n, 0)})
-	if !vulnerable {
+	// Fire Aspect bypasses shields in Bedrock Edition.
+	if result.Accepted() || result.Blocked() {
+		if f, ok := i.Enchantment(enchantment.FireAspect); ok {
+			if flammable, ok := living.(entity.Flammable); ok {
+				flammable.SetOnFire(enchantment.FireAspect.Duration(f.Level()))
+			}
+		}
+	}
+	if !result.Accepted() {
 		return true
 	}
 	if critical {
@@ -1930,11 +2025,6 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 
 	living.KnockBack(p.Position(), force, height)
 
-	if f, ok := i.Enchantment(enchantment.FireAspect); ok {
-		if flammable, ok := living.(entity.Flammable); ok {
-			flammable.SetOnFire(enchantment.FireAspect.Duration(f.Level()))
-		}
-	}
 	return true
 }
 
@@ -2632,6 +2722,10 @@ func (p *Player) Latency() time.Duration {
 
 // Tick ticks the entity, performing actions such as checking if the player is still breaking a block.
 func (p *Player) Tick(tx *world.Tx, current int64) {
+	p.shieldTick()
+	if p.clearShieldBlockState(tx.World(), current) {
+		p.updateState()
+	}
 	if p.Dead() {
 		return
 	}
@@ -2697,10 +2791,14 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		p.ContinueBreaking(p.breakingFace)
 	}
 
+	now := time.Now()
 	for it, ti := range p.cooldowns {
-		if time.Now().After(ti) {
+		if now.After(ti) {
 			delete(p.cooldowns, it)
 		}
+	}
+	if p.updateShieldBlockingState() {
+		p.updateState()
 	}
 
 	p.session().SendDebugShapes(tx.World().Dimension())
@@ -3189,6 +3287,7 @@ func (p *Player) PunchAir() {
 		return
 	}
 	p.SwingArm()
+	p.delayShieldAfterAttack()
 	p.tx.PlaySound(p.Position(), sound.Attack{})
 }
 
