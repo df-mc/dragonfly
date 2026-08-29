@@ -103,13 +103,15 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 	w := tx.World()
 	if w.Dimension() != world.Overworld {
 		tx.SetBlock(pos, nil, nil)
-		ExplosionConfig{
-			SpawnFire: true,
-		}.Explode(tx, world.BlockExplosionSource{
-			Block:         b,
-			Pos:           pos,
-			ExplosionSize: 5,
-		})
+		if w.RespawnBlocksExplode() {
+			ExplosionConfig{
+				SpawnFire: true,
+			}.Explode(tx, world.BlockExplosionSource{
+				Block:         b,
+				Pos:           pos,
+				ExplosionSize: 5,
+			})
+		}
 		return true
 	}
 
@@ -138,8 +140,8 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 		return false
 	}
 
-	previousSpawn := w.PlayerSpawn(s.UUID())
-	if previousSpawn != headPos {
+	previousSpawn, ok := w.PlayerSpawnPoint(s.UUID())
+	if !ok || previousSpawn.Pos != headPos || previousSpawn.Dim != world.Overworld {
 		w.SetPlayerSpawn(s.UUID(), headPos)
 		s.Messaget(chat.MessageRespawnPointSet)
 	}

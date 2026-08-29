@@ -45,11 +45,10 @@ func (conf Config) Open(dir string) (*DB, error) {
 	_ = os.MkdirAll(filepath.Join(dir, "db"), 0777)
 
 	db := &DB{conf: conf, dir: dir, ldat: &leveldat.Data{}}
+	// Seed vanilla defaults before decoding so older level.dat files retain defaults for fields they do not contain.
+	db.ldat.FillDefault()
 	db.SetBlockRegistry(conf.Blocks)
-	if _, err := os.Stat(filepath.Join(dir, "level.dat")); os.IsNotExist(err) {
-		// A level.dat was not currently present for the world.
-		db.ldat.FillDefault()
-	} else {
+	if _, err := os.Stat(filepath.Join(dir, "level.dat")); !os.IsNotExist(err) {
 		ldat, err := leveldat.ReadFile(filepath.Join(dir, "level.dat"))
 		if err != nil {
 			return nil, fmt.Errorf("open db: read level.dat: %w", err)
