@@ -61,7 +61,7 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 	}
 
 	held, _ := releaser.HeldItems()
-	damage, punchLevel, burnDuration, consume := 2.0, 0, time.Duration(0), !creative
+	powerLevel, punchLevel, burnDuration, consume := 0, 0, time.Duration(0), !creative
 	for _, enchant := range held.Enchantments() {
 		if f, ok := enchant.Type().(interface{ BurnDuration() time.Duration }); ok {
 			burnDuration = f.BurnDuration()
@@ -69,8 +69,8 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		if _, ok := enchant.Type().(interface{ KnockBackMultiplier() float64 }); ok {
 			punchLevel = enchant.Level()
 		}
-		if p, ok := enchant.Type().(interface{ PowerDamage(int) float64 }); ok {
-			damage += p.PowerDamage(enchant.Level())
+		if _, ok := enchant.Type().(interface{ PowerDamage(int) float64 }); ok {
+			powerLevel = enchant.Level()
 		}
 		if i, ok := enchant.Type().(interface{ ConsumesArrows() bool }); ok && !i.ConsumesArrows() {
 			consume = false
@@ -84,7 +84,8 @@ func (Bow) Release(releaser Releaser, tx *world.Tx, ctx *UseContext, duration ti
 		Rotation: releaser.Rotation().Neg(),
 	}
 	projectile := tx.AddEntity(create(opts, world.ArrowSpawnConfig{
-		Damage:              damage,
+		Damage:              1,
+		PowerLevel:          powerLevel,
 		Owner:               releaser,
 		Critical:            force >= 1,
 		ObtainArrowOnPickup: !creative && consume,
