@@ -23,7 +23,7 @@ type RedstoneWire struct {
 
 func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, r)
-	if !used || !redstoneWireSupported(tx, pos) {
+	if !used || !attachmentSupported(tx, pos, cube.FaceUp) {
 		return false
 	}
 	place(tx, pos, r, user, ctx)
@@ -84,7 +84,7 @@ func (r RedstoneWire) RedstonePowerUpdate(_ cube.Pos, _ *world.Tx, power int) (w
 }
 
 func (r RedstoneWire) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if !redstoneWireSupported(tx, pos) {
+	if !attachmentSupported(tx, pos, cube.FaceUp) {
 		breakBlock(r, pos, tx)
 	}
 }
@@ -129,15 +129,6 @@ func allRedstoneWires() (all []world.Block) {
 // redstoneTicks converts redstone ticks to a wall-clock duration at 10 redstone ticks per second.
 func redstoneTicks(ticks int) time.Duration {
 	return time.Duration(max(ticks, 1)) * time.Second / 10
-}
-
-// redstoneWireSupported reports whether redstone wire can stay placed at pos.
-func redstoneWireSupported(tx *world.Tx, pos cube.Pos) bool {
-	below := pos.Side(cube.FaceDown)
-	if below.OutOfBounds(tx.Range()) {
-		return false
-	}
-	return tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx)
 }
 
 // redstoneWireSupportedLoaded checks support without loading neighbouring chunks.

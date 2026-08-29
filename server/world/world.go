@@ -1108,6 +1108,13 @@ func (w *World) scheduleBlockUpdate(pos cube.Pos, b Block, delay time.Duration) 
 	w.scheduledUpdates.schedule(w.conf.Blocks, pos, b, delay)
 }
 
+func (w *World) cancelBlockUpdate(pos cube.Pos, b Block) {
+	if w == nil || pos.OutOfBounds(w.Range()) {
+		return
+	}
+	w.scheduledUpdates.cancel(w.conf.Blocks, pos, b)
+}
+
 // doBlockUpdatesAround schedules block updates directly around and on the
 // position passed.
 func (w *World) doBlockUpdatesAround(pos cube.Pos) {
