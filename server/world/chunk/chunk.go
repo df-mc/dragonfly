@@ -16,11 +16,12 @@ type Chunk struct {
 	br BlockRegistry
 	// air is the runtime ID of air.
 	air uint32
-	// recalculateHeightMap is true if the chunk's height map should be recalculated on the next call to the HeightMap
-	// function.
+	// recalculateHeightMap is true if at least one height-map column is stale.
 	recalculateHeightMap bool
 	// heightMap is the height map of the chunk.
 	heightMap HeightMap
+	// heightMapValid records which columns in heightMap are current.
+	heightMapValid [4]uint64
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
 	// allocated at the indices.
 	sub []*SubChunk
@@ -57,6 +58,7 @@ func (chunk *Chunk) Clone() *Chunk {
 		air:                  chunk.air,
 		recalculateHeightMap: chunk.recalculateHeightMap,
 		heightMap:            slices.Clone(chunk.heightMap),
+		heightMapValid:       chunk.heightMapValid,
 		sub:                  make([]*SubChunk, len(chunk.sub)),
 		biomes:               make([]*PalettedStorage, len(chunk.biomes)),
 	}
@@ -98,6 +100,18 @@ func (chunk *Chunk) Sub() []*SubChunk {
 	return chunk.sub
 }
 
+// SetSubChunk replaces the sub-chunk at index and invalidates the height map.
+func (chunk *Chunk) SetSubChunk(index int16, sub *SubChunk) {
+	chunk.sub[index] = sub
+	chunk.InvalidateHeightMap()
+}
+
+// InvalidateHeightMap marks every height-map column stale.
+func (chunk *Chunk) InvalidateHeightMap() {
+	chunk.heightMapValid = [4]uint64{}
+	chunk.recalculateHeightMap = true
+}
+
 // Block returns the runtime ID of the block at a given x, y and z in a chunk at the given layer. If no
 // sub chunk exists at the given y, the block is assumed to be air.
 func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
@@ -118,7 +132,9 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 		return
 	}
 	sub.Layer(layer).Set(x, uint8(y), z, block)
-	chunk.recalculateHeightMap = true
+	if layer == 0 {
+		chunk.invalidateHeightMapColumn(x, z)
+	}
 }
 
 // Biome returns the biome ID at a specific column in the chunk.
@@ -200,12 +216,42 @@ func (chunk *Chunk) HeightMap() HeightMap {
 	if chunk.recalculateHeightMap {
 		for x := uint8(0); x < 16; x++ {
 			for z := uint8(0); z < 16; z++ {
-				chunk.heightMap.Set(x, z, chunk.highestLightBlocker(x, z, true))
+				chunk.heightMapAt(x, z)
 			}
 		}
 		chunk.recalculateHeightMap = false
 	}
 	return chunk.heightMap
+}
+
+// LightBlockerMap returns a reusable view of the highest fully light-blocking
+// block in each column. Edited columns are recalculated lazily.
+func (chunk *Chunk) LightBlockerMap() LightBlockerMap {
+	return LightBlockerMap{chunk: chunk}
+}
+
+// columnBit returns the word and bit that store a column's validity.
+func columnBit(x, z uint8) (uint16, uint64) {
+	i := uint16(x&15)<<4 | uint16(z&15)
+	return i >> 6, uint64(1) << (i & 63)
+}
+
+// invalidateHeightMapColumn marks a column for recalculation.
+func (chunk *Chunk) invalidateHeightMapColumn(x, z uint8) {
+	word, bit := columnBit(x, z)
+	chunk.heightMapValid[word] &^= bit
+	chunk.recalculateHeightMap = true
+}
+
+// heightMapAt returns a column's cached height, recalculating it when needed.
+func (chunk *Chunk) heightMapAt(x, z uint8) int16 {
+	word, bit := columnBit(x, z)
+	x, z = x&15, z&15
+	if chunk.heightMapValid[word]&bit == 0 {
+		chunk.heightMap.Set(x, z, chunk.highestLightBlocker(x, z, true))
+		chunk.heightMapValid[word] |= bit
+	}
+	return chunk.heightMap.At(x, z)
 }
 
 // Compact compacts the chunk as much as possible, getting rid of any sub chunks that are empty, and compacts
