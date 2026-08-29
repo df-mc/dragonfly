@@ -441,9 +441,11 @@ func (srv *Server) makeDimensionData() {
 		r := registration.Dimension.Range()
 		srv.customDimensions = append(srv.customDimensions, protocol.DimensionDefinition{
 			Name:          registration.Name,
-			Range:         [2]int32{int32(r.Max() + 1), int32(r.Min())},
+			MinimumY:      int32(r.Min()),
+			HeightRange:   int32(r.Height()),
 			Generator:     protocol.GeneratorVoid,
 			DimensionType: int32(registration.ID),
+			DefaultBiome:  "plains",
 		})
 	}
 }
