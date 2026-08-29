@@ -205,6 +205,13 @@ func (f Fire) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	}
 }
 
+// IgniteProjectile ...
+func (Fire) IgniteProjectile(e world.Entity) {
+	if flammable, ok := e.(flammableEntity); ok && flammable.OnFireDuration() < time.Second*8 {
+		flammable.SetOnFire(8 * time.Second)
+	}
+}
+
 // ScheduledTick ...
 func (f Fire) ScheduledTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	f.tick(pos, tx, r)

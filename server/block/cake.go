@@ -121,6 +121,19 @@ func (c Cake) Activate(pos cube.Pos, face cube.Face, tx *world.Tx, u item.User, 
 	return false
 }
 
+// WindChargeInteractionPos ...
+func (Cake) WindChargeInteractionPos(pos cube.Pos) cube.Pos { return pos }
+
+// WindChargeInteract ...
+func (c Cake) WindChargeInteract(pos cube.Pos, tx *world.Tx) {
+	if !c.CandleLit {
+		return
+	}
+	c.CandleLit = false
+	tx.SetBlock(pos, c, nil)
+	tx.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+}
+
 // Ignite ...
 func (c Cake) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	if !c.Candle || c.CandleLit {

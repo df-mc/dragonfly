@@ -27,26 +27,28 @@ type Config struct {
 	Locale   language.Tag
 	GameMode world.GameMode
 
-	Position               mgl64.Vec3
-	Rotation               cube.Rotation
-	Velocity               mgl64.Vec3
-	Health                 float64
-	MaxHealth              float64
-	FoodTick               int
-	Food                   int
-	Exhaustion, Saturation float64
-	AirSupply              int
-	MaxAirSupply           int
-	EnchantmentSeed        int64
-	Experience             int
-	HeldSlot               int
-	Inventory              *inventory.Inventory
-	OffHand                *inventory.Inventory
-	Armour                 *inventory.Armour
-	EnderChestInventory    *inventory.Inventory
-	FireTicks              int64
-	FallDistance           float64
-	Effects                []effect.Effect
+	Position                 mgl64.Vec3
+	Rotation                 cube.Rotation
+	Velocity                 mgl64.Vec3
+	Health                   float64
+	MaxHealth                float64
+	FoodTick                 int
+	Food                     int
+	Exhaustion, Saturation   float64
+	AirSupply                int
+	MaxAirSupply             int
+	EnchantmentSeed          int64
+	Experience               int
+	HeldSlot                 int
+	Inventory                *inventory.Inventory
+	OffHand                  *inventory.Inventory
+	Armour                   *inventory.Armour
+	EnderChestInventory      *inventory.Inventory
+	FireTicks                int64
+	FallDistance             float64
+	WindChargeFallBase       float64
+	WindChargeFallProtection bool
+	Effects                  []effect.Effect
 }
 
 // Apply applies fields from a Config to a world.EntityData, filling out empty
@@ -57,36 +59,38 @@ func (cfg Config) Apply(data *world.EntityData) {
 	data.Name, data.Pos, data.Rot = conf.Name, conf.Position, conf.Rotation
 	slot := uint32(conf.HeldSlot)
 	pdata := &playerData{
-		xuid:                conf.XUID,
-		ui:                  inventory.New(54, nil),
-		inv:                 conf.Inventory,
-		enderChest:          conf.EnderChestInventory,
-		offHand:             conf.OffHand,
-		armour:              conf.Armour,
-		hunger:              newHungerManager(),
-		health:              entity.NewHealthManager(conf.Health, conf.MaxHealth), // 20, 20
-		experience:          entity.NewExperienceManager(),
-		effects:             entity.NewEffectManager(conf.Effects...),
-		locale:              conf.Locale,
-		cooldowns:           make(map[string]time.Time),
-		mc:                  &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
-		heldSlot:            &slot,
-		gameMode:            conf.GameMode,
-		skin:                conf.Skin,
-		enchantSeed:         conf.EnchantmentSeed,
-		s:                   conf.Session,
-		h:                   NopHandler{},
-		speed:               0.1,
-		flightSpeed:         0.05,
-		verticalFlightSpeed: 1.0,
-		scale:               1.0,
-		airSupplyTicks:      conf.AirSupply,
-		maxAirSupplyTicks:   conf.MaxAirSupply,
-		breathing:           true,
-		nameTag:             conf.Name,
-		alwaysShowNameTag:   true,
-		fireTicks:           conf.FireTicks,
-		fallDistance:        conf.FallDistance,
+		xuid:                     conf.XUID,
+		ui:                       inventory.New(54, nil),
+		inv:                      conf.Inventory,
+		enderChest:               conf.EnderChestInventory,
+		offHand:                  conf.OffHand,
+		armour:                   conf.Armour,
+		hunger:                   newHungerManager(),
+		health:                   entity.NewHealthManager(conf.Health, conf.MaxHealth), // 20, 20
+		experience:               entity.NewExperienceManager(),
+		effects:                  entity.NewEffectManager(conf.Effects...),
+		locale:                   conf.Locale,
+		cooldowns:                make(map[string]time.Time),
+		mc:                       &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
+		heldSlot:                 &slot,
+		gameMode:                 conf.GameMode,
+		skin:                     conf.Skin,
+		enchantSeed:              conf.EnchantmentSeed,
+		s:                        conf.Session,
+		h:                        NopHandler{},
+		speed:                    0.1,
+		flightSpeed:              0.05,
+		verticalFlightSpeed:      1.0,
+		scale:                    1.0,
+		airSupplyTicks:           conf.AirSupply,
+		maxAirSupplyTicks:        conf.MaxAirSupply,
+		breathing:                true,
+		nameTag:                  conf.Name,
+		alwaysShowNameTag:        true,
+		fireTicks:                conf.FireTicks,
+		fallDistance:             conf.FallDistance,
+		windChargeFallBase:       conf.WindChargeFallBase,
+		windChargeFallProtection: conf.WindChargeFallProtection,
 	}
 	playerUUID := conf.UUID
 	pdata.portalTravel = &entity.PortalTravelComputer{
