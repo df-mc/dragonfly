@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
 	"github.com/df-mc/dragonfly/server/item/inventory"
+	"github.com/df-mc/dragonfly/server/player/permission"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
@@ -26,6 +27,9 @@ type Config struct {
 	Name     string
 	Locale   language.Tag
 	GameMode world.GameMode
+
+	// PermissionLevel is the permission level the client displays for itself.
+	PermissionLevel permission.Level
 
 	Position               mgl64.Vec3
 	Rotation               cube.Rotation
@@ -72,6 +76,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 		mc:                  &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 		heldSlot:            &slot,
 		gameMode:            conf.GameMode,
+		permission:          conf.PermissionLevel,
 		skin:                conf.Skin,
 		enchantSeed:         conf.EnchantmentSeed,
 		s:                   conf.Session,
