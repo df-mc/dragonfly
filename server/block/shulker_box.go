@@ -253,7 +253,15 @@ func shulkerPushDelta(facing cube.Face, shulkerBBox, entityBBox cube.BBox) (delt
 }
 
 func (s ShulkerBox) BreakInfo() BreakInfo {
-	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective, oneOf(s))
+	return newBreakInfo(2, alwaysHarvestable, pickaxeEffective,
+		func(_ item.Tool, _ []item.Enchantment) []item.Stack { return nil }).
+		// shulker box always has a drop, except when player in creative breaks empty box.
+		withBreakHandler(func(pos cube.Pos, tx *world.Tx, u item.User) {
+			if u != nil && u.GameMode().CreativeInventory() && s.Inventory(tx, pos).Empty() {
+				return
+			}
+			dropItem(tx, item.NewStack(s, 1), pos.Vec3Centre())
+		})
 }
 
 func (s ShulkerBox) MaxCount() int {
