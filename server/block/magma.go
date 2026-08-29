@@ -1,6 +1,8 @@
 package block
 
 import (
+	"math/rand/v2"
+
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/enchantment"
@@ -11,6 +13,23 @@ import (
 type Magma struct {
 	solid
 	bassDrum
+}
+
+// NeighbourUpdateTick schedules the bubble column above the magma to be updated when it or the block above changes.
+func (m Magma) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+	if changedNeighbour == pos || changedNeighbour == pos.Side(cube.FaceUp) {
+		tx.ScheduleBlockUpdate(pos, m, 0)
+	}
+}
+
+// ScheduledTick updates the bubble column above the magma.
+func (Magma) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	updateBubbleColumn(pos.Side(cube.FaceUp), tx)
+}
+
+// RandomTick forms or revalidates the bubble column above magma loaded without block callbacks.
+func (Magma) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	updateBubbleColumn(pos.Side(cube.FaceUp), tx)
 }
 
 // LightEmissionLevel ...

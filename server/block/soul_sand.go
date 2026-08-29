@@ -1,6 +1,9 @@
 package block
 
 import (
+	"math/rand/v2"
+
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
 )
@@ -10,7 +13,22 @@ type SoulSand struct {
 	solid
 }
 
-// TODO: Implement bubble columns.
+// NeighbourUpdateTick schedules the bubble column above the soul sand to be updated when it or the block above changes.
+func (s SoulSand) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *world.Tx) {
+	if changedNeighbour == pos || changedNeighbour == pos.Side(cube.FaceUp) {
+		tx.ScheduleBlockUpdate(pos, s, 0)
+	}
+}
+
+// ScheduledTick updates the bubble column above the soul sand.
+func (SoulSand) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	updateBubbleColumn(pos.Side(cube.FaceUp), tx)
+}
+
+// RandomTick forms or revalidates the bubble column above soul sand loaded without block callbacks.
+func (SoulSand) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
+	updateBubbleColumn(pos.Side(cube.FaceUp), tx)
+}
 
 // SoilFor ...
 func (s SoulSand) SoilFor(block world.Block) bool {
