@@ -371,7 +371,7 @@ func (tx *Tx) CurrentTick() int64 {
 	w := tx.World()
 	w.set.Lock()
 	defer w.set.Unlock()
-	return w.set.CurrentTick
+	return w.currentTickLocked()
 }
 
 // close finishes the Tx, causing any following call on the Tx to panic.
