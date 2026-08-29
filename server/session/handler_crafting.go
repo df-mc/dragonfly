@@ -182,6 +182,11 @@ func (s *Session) craftingOffset() uint32 {
 
 // matchingStacks returns true if the two stacks are the same in a crafting scenario.
 func matchingStacks(has, expected recipe.Item) bool {
+	if has, ok := has.(item.Stack); ok && has.Empty() {
+		// An empty stack has no item to read a name from, and comparing one reports that it matches anything. Neither
+		// is what a caller asking whether a slot holds the item a recipe wants is after.
+		return false
+	}
 	switch expected := expected.(type) {
 	case item.Stack:
 		switch has := has.(type) {
