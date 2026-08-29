@@ -199,18 +199,20 @@ func (s Sign) DecodeNBT(data map[string]any) any {
 
 	front, ok := data["FrontText"].(map[string]any)
 	if ok {
-		s.Front.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(front, "Color"))
-		s.Front.Glowing = nbtconv.Bool(front, "GlowingText")
+		s.Front.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(front, "SignTextColor"))
+		s.Front.Glowing = nbtconv.Bool(front, "IgnoreLighting")
 		s.Front.Text = nbtconv.String(front, "Text")
-		s.Front.Owner = nbtconv.String(front, "Owner")
+		s.Front.Owner = nbtconv.String(front, "TextOwner")
 	}
+
+	s.Waxed = nbtconv.Bool(data, "IsWaxed")
 
 	back, ok := data["BackText"].(map[string]any)
 	if ok {
-		s.Back.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(back, "Color"))
-		s.Back.Glowing = nbtconv.Bool(back, "GlowingText")
+		s.Back.BaseColour = nbtconv.RGBAFromInt32(nbtconv.Int32(back, "SignTextColor"))
+		s.Back.Glowing = nbtconv.Bool(back, "IgnoreLighting")
 		s.Back.Text = nbtconv.String(back, "Text")
-		s.Back.Owner = nbtconv.String(back, "Owner")
+		s.Back.Owner = nbtconv.String(back, "TextOwner")
 	}
 
 	return s

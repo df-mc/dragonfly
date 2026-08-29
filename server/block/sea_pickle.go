@@ -145,7 +145,7 @@ func (s SeaPickle) LightEmissionLevel() uint8 {
 
 // BreakInfo ...
 func (s SeaPickle) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(s, s.AdditionalCount+1)))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(SeaPickle{}, s.AdditionalCount+1)))
 }
 
 // FlammabilityInfo ...

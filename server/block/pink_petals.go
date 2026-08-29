@@ -70,7 +70,7 @@ func (PinkPetals) HasLiquidDrops() bool {
 
 // BreakInfo ...
 func (p PinkPetals) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(p, p.AdditionalCount+1)))
+	return newBreakInfo(0, alwaysHarvestable, nothingEffective, simpleDrops(item.NewStack(PinkPetals{}, p.AdditionalCount+1)))
 }
 
 // FlammabilityInfo ...

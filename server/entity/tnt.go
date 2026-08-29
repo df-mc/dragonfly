@@ -54,10 +54,10 @@ func (tntType) BBox(world.Entity) cube.BBox {
 
 func (t tntType) DecodeNBT(m map[string]any, data *world.EntityData) {
 	conf := tntConf
-	conf.ExistenceDuration = nbtconv.TickDuration[uint8](m, "Fuse")
+	conf.ExistenceDuration = nbtconv.TickDuration[int16](m, "Fuse")
 	data.Data = conf.New()
 }
 
 func (tntType) EncodeNBT(data *world.EntityData) map[string]any {
-	return map[string]any{"Fuse": uint8(data.Data.(*PassiveBehaviour).Fuse().Milliseconds() / 50)}
+	return map[string]any{"Fuse": int16(min(data.Data.(*PassiveBehaviour).Fuse()/(time.Second/20), math.MaxInt16))}
 }

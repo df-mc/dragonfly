@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"maps"
+	"math"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -409,7 +410,7 @@ func (e *EntityHandle) encodeNBT() map[string]any {
 		"Yaw":     float32(e.data.Rot[0]),
 		"Pitch":   float32(e.data.Rot[1]),
 		"Fire":    int16(e.data.FireDuration.Seconds() * 20),
-		"Age":     int16(e.data.Age / (time.Second * 20)),
+		"Age":     int16(min(e.data.Age/(time.Second/20), math.MaxInt16)),
 		"NameTag": e.data.Name,
 	}
 }

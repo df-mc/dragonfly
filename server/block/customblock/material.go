@@ -8,19 +8,23 @@ type Material struct {
 	renderMethod Method
 	// faceDimming is if the material should be dimmed by the direction it's facing.
 	faceDimming bool
-	// ambientOcclusion is if the material should have ambient occlusion applied when lighting.
-	ambientOcclusion bool
+	// ambientOcclusion controls how much ambient occlusion is applied when lighting.
+	ambientOcclusion float32
 }
 
 // NewMaterial returns a new Material with the provided information. It enables face dimming by default and ambient
 // occlusion based on the render method given.
 func NewMaterial(texture string, method Method) Material {
-	return Material{
+	m := Material{
 		texture:          texture,
 		renderMethod:     method,
 		faceDimming:      true,
-		ambientOcclusion: method.AmbientOcclusion(),
+		ambientOcclusion: 1,
 	}
+	if !method.AmbientOcclusion() {
+		m.ambientOcclusion = 0
+	}
+	return m
 }
 
 // WithFaceDimming returns a copy of the Material with face dimming enabled.
@@ -37,13 +41,13 @@ func (m Material) WithoutFaceDimming() Material {
 
 // WithAmbientOcclusion returns a copy of the Material with ambient occlusion enabled.
 func (m Material) WithAmbientOcclusion() Material {
-	m.ambientOcclusion = true
+	m.ambientOcclusion = 1
 	return m
 }
 
 // WithoutAmbientOcclusion returns a copy of the Material with ambient occlusion disabled.
 func (m Material) WithoutAmbientOcclusion() Material {
-	m.ambientOcclusion = false
+	m.ambientOcclusion = 0
 	return m
 }
 
