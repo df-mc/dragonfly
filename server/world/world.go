@@ -1212,7 +1212,13 @@ func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 	// themselves from the world in their Close method, which can lead to
 	// unexpected conditions.
 	for _, e := range slices.Clone(c.Entities) {
-		_ = e.mustEntity(tx).Close()
+		ent := e.mustEntity(tx)
+		_ = ent.Close()
+		if _, ok := w.entities[e]; ok && !w.closed.Load() {
+			// Not while the World is closing: entities may still schedule work on their handle from Close there.
+			w.removeEntity(ent, tx)
+			_ = e.Close()
+		}
 	}
 	clear(c.Entities)
 	delete(w.chunks, pos)
