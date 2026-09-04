@@ -2589,9 +2589,16 @@ func (p *Player) Drop(s item.Stack) int {
 	if p.Handler().HandleItemDrop(ctx, s); ctx.Cancelled() {
 		return 0
 	}
-	opts := world.EntitySpawnOpts{Position: p.Position().Add(mgl64.Vec3{0, 1.4}), Velocity: p.Rotation().Vec3().Mul(0.4)}
-	p.tx.AddEntity(entity.NewItemPickupDelay(opts, s, time.Second*2))
-	return s.Count()
+	// An item entity holds at most a maximum sized stack and discards the rest, so a bigger stack is dropped as
+	// several entities.
+	var dropped int
+	for !s.Empty() {
+		n := min(s.Count(), s.MaxCount())
+		opts := world.EntitySpawnOpts{Position: p.Position().Add(mgl64.Vec3{0, 1.4}), Velocity: p.Rotation().Vec3().Mul(0.4)}
+		p.tx.AddEntity(entity.NewItemPickupDelay(opts, s.Grow(n-s.Count()), time.Second*2))
+		s, dropped = s.Grow(-n), dropped+n
+	}
+	return dropped
 }
 
 // OpenBlockContainer opens a block container, such as a chest, at the position passed. If no container was
