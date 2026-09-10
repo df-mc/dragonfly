@@ -24,7 +24,7 @@ var FallingBlockType fallingBlockType
 type fallingBlockType struct{}
 
 func (t fallingBlockType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 func (fallingBlockType) EncodeEntity() string   { return "minecraft:falling_block" }
 func (fallingBlockType) NetworkOffset() float64 { return 0.49 }

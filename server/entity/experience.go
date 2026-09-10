@@ -89,7 +89,7 @@ func progressFromExperience(experience float64) (level int, progress float64) {
 	var sol float64
 	if d := b*b - 4*a*(c-experience); d > 0 {
 		s := math.Sqrt(d)
-		sol = math.Max((-b+s)/(2*a), (-b-s)/(2*a))
+		sol = max((-b+s)/(2*a), (-b-s)/(2*a))
 	} else if d == 0 {
 		sol = -b / (2 * a)
 	}

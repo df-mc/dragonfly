@@ -19,7 +19,7 @@ var TextType textType
 type textType struct{}
 
 func (t textType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 func (textType) EncodeEntity() string        { return "dragonfly:text" }
 func (textType) BBox(world.Entity) cube.BBox { return cube.BBox{} }

@@ -119,14 +119,17 @@ func (s *Session) ViewEntity(e world.Entity) {
 			s.ViewSkin(e)
 		}
 		return
-	case *entity.Ent:
+	case interface {
+		Behaviour() entity.Behaviour
+		Velocity() mgl64.Vec3
+	}:
 		switch e.H().Type() {
 		case entity.ItemType:
 			s.writePacket(&packet.AddItemActor{
 				EntityUniqueID:  int64(runtimeID),
 				EntityRuntimeID: runtimeID,
 				Item:            instanceFromItem(s.br, v.Behaviour().(*entity.ItemBehaviour).Item()),
-				Position:        vec64To32(v.Position()),
+				Position:        vec64To32(e.Position()),
 				Velocity:        vec64To32(v.Velocity()),
 				EntityMetadata:  metadata,
 			})

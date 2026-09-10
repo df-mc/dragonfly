@@ -17,9 +17,9 @@ type Behaviour interface {
 	Tick(e *Ent, tx *world.Tx) *Movement
 }
 
-// Ent is a world.Entity implementation that allows entity implementations to
-// share a lot of code. It is currently under development and is prone to
-// (breaking) changes.
+// Ent is the live form of an entity within a single world.Tx: it is recreated through a world.EntityType's
+// Open method for every transaction that touches the entity. It carries the base plumbing shared by all
+// entity implementations. Persistent state must live in the entity's Behaviour, never in the Ent itself.
 type Ent struct {
 	tx                *world.Tx
 	handle            *world.EntityHandle
@@ -33,19 +33,67 @@ func Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) *Ent
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 
+// H returns the world.EntityHandle of the entity: its persistent form that outlives the transaction.
 func (e *Ent) H() *world.EntityHandle {
 	return e.handle
 }
 
+// Behaviour returns the Behaviour of the entity, stored in the entity data of its handle. Nil is returned
+// if the entity data holds no Behaviour.
 func (e *Ent) Behaviour() Behaviour {
-	return e.data.Data.(Behaviour)
+	b, _ := e.data.Data.(Behaviour)
+	return b
+}
+
+// Tx returns the transaction the entity was opened in.
+func (e *Ent) Tx() *world.Tx {
+	return e.tx
+}
+
+// Data returns the entity data of the entity's handle, the state that persists across transactions. It is
+// writable, and writing to it is not the same as moving the entity: setting Pos or Vel here changes where the
+// entity is without telling anyone watching it, so a viewer keeps drawing it where it was. Move an entity
+// through its Movement instead, and reach for this only for state no method covers.
+func (e *Ent) Data() *world.EntityData {
+	return e.data
+}
+
+// Base returns the Ent itself. It is promoted by entities that embed Ent, so that the underlying Ent can be
+// recognised wherever behaviour hooks are dispatched.
+func (e *Ent) Base() *Ent {
+	return e
+}
+
+// wrappedEnt is implemented by any entity carrying an Ent: the Ent itself or a struct embedding it.
+type wrappedEnt interface {
+	Base() *Ent
+}
+
+// Hurt dispatches damage to the entity's Behaviour if it implements DamageableBehaviour and reports the
+// entity as invulnerable otherwise. It gives entities that are damageable without being alive the same Hurt
+// method surface that code dealing damage asserts on Living entities.
+func (e *Ent) Hurt(damage float64, src world.DamageSource) (n float64, vulnerable bool) {
+	d, ok := e.Behaviour().(DamageableBehaviour)
+	if !ok {
+		return 0, false
+	}
+	ctx := e.tx.Event()
+	if e.tx.World().Handler().HandleEntityHurt(ctx, e, &damage, src); ctx.Cancelled() {
+		return 0, false
+	}
+	return d.Hurt(e, damage, src)
+}
+
+// ExplodableBehaviour may be implemented by a Behaviour to react to an explosion hitting its entity.
+// Ent.Explode dispatches to it.
+type ExplodableBehaviour interface {
+	// Explode reacts to an explosion with the source and the impact on the entity passed.
+	Explode(e *Ent, src world.ExplosionSource, impact float64)
 }
 
 // Explode propagates the explosion behaviour of the underlying Behaviour.
 func (e *Ent) Explode(src world.ExplosionSource, impact float64) {
-	if expl, ok := e.Behaviour().(interface {
-		Explode(e *Ent, src world.ExplosionSource, impact float64)
-	}); ok {
+	if expl, ok := e.Behaviour().(ExplodableBehaviour); ok {
 		expl.Explode(e, src, impact)
 	}
 }
@@ -134,10 +182,23 @@ func (e *Ent) SetAlwaysShowNameTag(alwaysShow bool) {
 	e.updateState()
 }
 
+// UpdateState resends the entity's metadata to all viewers of the entity. Behaviours call it after changing
+// state that is reflected in entity metadata.
+func (e *Ent) UpdateState() {
+	e.updateState()
+}
+
 // updateState updates the state of the entity for all viewers of the entity.
 func (e *Ent) updateState() {
 	for _, v := range e.tx.Viewers(e.data.Pos) {
 		v.ViewEntityState(e)
+	}
+}
+
+// PlayAction plays a world.EntityAction for all viewers of the entity.
+func (e *Ent) PlayAction(a world.EntityAction) {
+	for _, v := range e.tx.Viewers(e.data.Pos) {
+		v.ViewEntityAction(e, a)
 	}
 }
 
@@ -151,8 +212,11 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 
 	y := e.data.Pos[1]
 	if y < float64(tx.Range()[0]) && current%10 == 0 {
-		_ = e.Close()
-		return
+		// Living entities are hurt by the void in LivingEnt.Tick instead of vanishing silently.
+		if _, living := e.Behaviour().(LivingBehaviour); !living {
+			_ = e.Close()
+			return
+		}
 	}
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
@@ -192,7 +256,7 @@ func (e *Ent) TravelThroughPortal(tx *world.Tx, target world.Dimension) {
 
 // portalTravelComputer returns the behaviour's portal travel state, if any.
 func (e *Ent) portalTravelComputer() *PortalTravelComputer {
-	if b, ok := e.Behaviour().(portalTravelComputerProvider); ok {
+	if b, ok := e.Behaviour().(PortalTravelComputerProvider); ok {
 		return b.PortalTravelComputer()
 	}
 	return nil
@@ -240,4 +304,12 @@ func (e *Ent) checkPortalInsiders() bool {
 		}
 	}
 	return false
+}
+
+// boolByte returns 1 if the bool passed is true, or 0 if it is false.
+func boolByte(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
 }

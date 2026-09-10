@@ -39,7 +39,7 @@ var ItemType itemType
 type itemType struct{}
 
 func (t itemType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 func (itemType) EncodeEntity() string   { return "minecraft:item" }

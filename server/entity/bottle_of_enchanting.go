@@ -39,7 +39,7 @@ var BottleOfEnchantingType bottleOfEnchantingType
 type bottleOfEnchantingType struct{}
 
 func (t bottleOfEnchantingType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 // Glint returns true if the bottle should render with glint. It always returns

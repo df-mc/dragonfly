@@ -68,15 +68,16 @@ func (s *lightningState) tick(e *Ent, tx *world.Tx) {
 func (s *lightningState) dealDamage(e *Ent, tx *world.Tx) {
 	pos := e.Position()
 	bb := e.H().Type().BBox(e).GrowVec3(mgl64.Vec3{3, 6, 3}).Translate(pos.Add(mgl64.Vec3{0, 3}))
-	for e := range tx.EntitiesWithin(bb) {
-		// Only damage entities that weren't already dead.
-		if l, ok := e.(Living); ok && l.Health() > 0 {
-			if s.Damage > 0 {
-				l.Hurt(s.Damage, LightningDamageSource{})
-			}
-			if f, ok := e.(Flammable); ok && f.OnFireDuration() < s.EntityFireDuration {
-				f.SetOnFire(s.EntityFireDuration)
-			}
+	for e := range filterDamageable(tx.EntitiesWithin(bb)) {
+		// Only strike entities that weren't already dead.
+		if l, ok := e.(Living); ok && l.Health() <= 0 {
+			continue
+		}
+		if s.Damage > 0 {
+			HurtEntity(e, s.Damage, LightningDamageSource{})
+		}
+		if f, ok := e.(Flammable); ok && f.OnFireDuration() < s.EntityFireDuration {
+			f.SetOnFire(s.EntityFireDuration)
 		}
 	}
 }
@@ -115,7 +116,7 @@ var LightningType lightningType
 type lightningType struct{}
 
 func (t lightningType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 func (t lightningType) DecodeNBT(_ map[string]any, data *world.EntityData) {
 	data.Data = lightningConf.New()

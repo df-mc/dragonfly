@@ -29,7 +29,7 @@ var LingeringPotionType lingeringPotionType
 type lingeringPotionType struct{}
 
 func (t lingeringPotionType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 func (lingeringPotionType) EncodeEntity() string {

@@ -48,7 +48,7 @@ var AreaEffectCloudType areaEffectCloudType
 type areaEffectCloudType struct{}
 
 func (t areaEffectCloudType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 func (areaEffectCloudType) EncodeEntity() string { return "minecraft:area_effect_cloud" }

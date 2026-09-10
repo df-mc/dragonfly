@@ -28,7 +28,7 @@ var EggType eggType
 type eggType struct{}
 
 func (t eggType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 func (eggType) EncodeEntity() string { return "minecraft:egg" }

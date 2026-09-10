@@ -40,7 +40,7 @@ var FireworkType fireworkType
 type fireworkType struct{}
 
 func (t fireworkType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 func (fireworkType) EncodeEntity() string        { return "minecraft:fireworks_rocket" }

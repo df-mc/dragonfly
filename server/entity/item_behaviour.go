@@ -175,9 +175,7 @@ func (i *ItemBehaviour) collect(e *Ent, collector Collector, tx *world.Tx) {
 	if n == 0 {
 		return
 	}
-	for _, viewer := range tx.Viewers(pos) {
-		viewer.ViewEntityAction(e, PickedUpAction{Collector: collector})
-	}
+	e.PlayAction(PickedUpAction{Collector: collector})
 
 	if n == i.i.Count() {
 		// The collector picked up the entire stack.

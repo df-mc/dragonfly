@@ -52,7 +52,7 @@ var EnderPearlType enderPearlType
 type enderPearlType struct{}
 
 func (t enderPearlType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 func (enderPearlType) EncodeEntity() string { return "minecraft:ender_pearl" }
