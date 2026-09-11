@@ -1779,6 +1779,10 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// used.
 			if useCtx := p.useContext(); act.Activate(pos, face, p.tx, p, useCtx) {
 				p.SwingArm()
+				if useCtx.ReplaceHeldItem && !useCtx.NewItem.Empty() {
+					p.SetHeldItems(useCtx.NewItem, left)
+					return
+				}
 				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
 				p.addNewItem(useCtx)
 				return
