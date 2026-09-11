@@ -739,8 +739,10 @@ func (p *Player) FinalDamageFrom(dmg float64, src world.DamageSource) float64 {
 func (p *Player) Explode(src world.ExplosionSource, impact float64) {
 	explosionPos := src.Position()
 	diff := p.Position().Sub(explosionPos)
-	p.Hurt(math.Floor((impact*impact+impact)*3.5*src.Size()*2+1), entity.ExplosionDamageSource{Source: src})
-	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
+
+	damageSource := entity.ExplosionDamageSource{Source: src}
+	p.Hurt(math.Floor((impact*impact+impact)*3.5*src.Size()*2+1), damageSource)
+	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact, damageSource)
 }
 
 // SetAbsorption sets the absorption health of a player. This extra health shows as golden hearts and do not
@@ -759,17 +761,22 @@ func (p *Player) Absorption() float64 {
 // KnockBack knocks the player back with a given force and height. A source is passed which indicates the
 // source of the velocity, typically the position of an attacking entity. The source is used to calculate the
 // direction which the entity should be knocked back in.
-func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
+func (p *Player) KnockBack(sourcePosition mgl64.Vec3, force, height float64, source entity.KnockbackSource) {
 	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
 		return
 	}
-	p.knockBack(src, force, height)
+	p.knockBack(sourcePosition, force, height, source)
 }
 
 // knockBack is an unexported function that is used to knock the player back. This function does not check if the player
 // can take damage or not.
-func (p *Player) knockBack(src mgl64.Vec3, force, height float64) {
-	velocity := p.Position().Sub(src)
+func (p *Player) knockBack(sourcePosition mgl64.Vec3, force, height float64, source entity.KnockbackSource) {
+	ctx := NewEventContext(p.tx, p)
+	if p.Handler().HandleKnockBack(ctx, &sourcePosition, &force, &height, source); ctx.Cancelled() {
+		return
+	}
+
+	velocity := p.Position().Sub(sourcePosition)
 	velocity[1] = 0
 
 	if velocity.Len() != 0 {
@@ -1909,7 +1916,8 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 		dmg *= 1.5
 	}
 
-	n, vulnerable := living.Hurt(dmg, entity.AttackDamageSource{Attacker: p})
+	src := entity.AttackDamageSource{Attacker: p}
+	n, vulnerable := living.Hurt(dmg, src)
 	i, left := p.HeldItems()
 
 	if durable, ok := i.Item().(item.Durable); ok {
@@ -1928,7 +1936,7 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 
 	p.Exhaust(0.1)
 
-	living.KnockBack(p.Position(), force, height)
+	living.KnockBack(p.Position(), force, height, src)
 
 	if f, ok := i.Enchantment(enchantment.FireAspect); ok {
 		if flammable, ok := living.(entity.Flammable); ok {
