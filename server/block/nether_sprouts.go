@@ -17,7 +17,7 @@ type NetherSprouts struct {
 // NeighbourUpdateTick ...
 func (n NetherSprouts) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	if !supportsVegetation(n, tx.Block(pos.Side(cube.FaceDown))) {
-		breakBlock(n, pos, tx) // TODO: Nylium & mycelium
+		breakBlock(n, pos, tx) // TODO: Mycelium
 	}
 }
 
@@ -28,7 +28,7 @@ func (n NetherSprouts) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx
 		return false
 	}
 	if !supportsVegetation(n, tx.Block(pos.Side(cube.FaceDown))) {
-		return false // TODO: Nylium & mycelium
+		return false // TODO: Mycelium
 	}
 
 	place(tx, pos, n, user, ctx)
