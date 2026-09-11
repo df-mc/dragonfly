@@ -35,34 +35,37 @@ func (l Leaves) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 	return placed(ctx)
 }
 
-// findLog ...
-func findLog(pos cube.Pos, tx *world.Tx, visited *[]cube.Pos, distance int) bool {
-	for _, v := range *visited {
-		if v == pos {
-			return false
+// findLog returns whether a log is within four blocks of the leaves at the position passed, counted through the
+// leaves between them. The blocks around it are searched a step at a time, so each is reached the shortest way.
+func findLog(pos cube.Pos, tx *world.Tx) bool {
+	visited, step := map[cube.Pos]struct{}{pos: {}}, []cube.Pos{pos}
+	for distance := 0; len(step) > 0; distance++ {
+		var next []cube.Pos
+		for _, at := range step {
+			switch tx.Block(at).(type) {
+			case Log, Wood:
+				return true
+			}
+			if _, ok := tx.Block(at).(Leaves); !ok || distance >= 4 {
+				continue
+			}
+			at.Neighbours(func(neighbour cube.Pos) {
+				if _, ok := visited[neighbour]; ok {
+					return
+				}
+				visited[neighbour] = struct{}{}
+				next = append(next, neighbour)
+			}, tx.Range())
 		}
+		step = next
 	}
-	*visited = append(*visited, pos)
-
-	if log, ok := tx.Block(pos).(Log); ok && !log.Stripped {
-		return true
-	}
-	if _, ok := tx.Block(pos).(Leaves); !ok || distance > 6 {
-		return false
-	}
-	logFound := false
-	pos.Neighbours(func(neighbour cube.Pos) {
-		if !logFound && findLog(neighbour, tx, visited, distance+1) {
-			logFound = true
-		}
-	}, tx.Range())
-	return logFound
+	return false
 }
 
 // RandomTick ...
 func (l Leaves) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	if !l.Persistent && l.ShouldUpdate {
-		if findLog(pos, tx, &[]cube.Pos{}, 0) {
+		if findLog(pos, tx) {
 			l.ShouldUpdate = false
 			tx.SetBlock(pos, l, nil)
 			return
@@ -105,8 +108,15 @@ func (l Leaves) BreakInfo() BreakInfo {
 		fortune := fortuneLevel(enchantments)
 		var drops []item.Stack
 
-		// TODO: Drop saplings.
-
+		if sapling, ok := l.Type.Sapling(); ok {
+			chances := []float64{0.05, 0.0625, 0.083333336, 0.1}
+			if l.Type == JungleLeaves() {
+				chances = []float64{0.025, 0.027777778, 0.03125, 0.041666668}
+			}
+			if rand.Float64() < chances[min(fortune, 3)] {
+				drops = append(drops, item.NewStack(Sapling{Type: sapling}, 1))
+			}
+		}
 		stickChances := []float64{0.02, 0.022222222, 0.025, 0.033333333}
 		if rand.Float64() < stickChances[min(fortune, 3)] {
 			drops = append(drops, item.NewStack(item.Stick{}, rand.IntN(2)+1))
