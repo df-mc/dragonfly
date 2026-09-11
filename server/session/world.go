@@ -423,6 +423,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(s.br.BlockRuntimeID(pa.Block)),
 		})
+	case particle.BrushDust:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 86,
+			Position:  vec64To32(pos),
+			EventData: int32(s.br.BlockRuntimeID(pa.Block)),
+		})
 	case particle.PunchBlock:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesCrackBlock,
@@ -748,6 +754,10 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventBarrelOpen
 	case sound.BlockBreaking:
 		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(s.br.BlockRuntimeID(so.Block))
+	case sound.Brushing:
+		pk.SoundType, pk.ExtraData = packet.SoundEventBrush, int32(s.br.BlockRuntimeID(so.Block))
+	case sound.BrushingCompleted:
+		pk.SoundType, pk.ExtraData = packet.SoundEventBrushCompleted, int32(s.br.BlockRuntimeID(so.Block))
 	case sound.ItemBreak:
 		pk.SoundType = packet.SoundEventBreak
 	case sound.ItemUseOn:

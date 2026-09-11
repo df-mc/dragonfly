@@ -105,6 +105,11 @@ type playerData struct {
 
 	breakCounter uint32
 
+	brushing      bool
+	brushingPos   cube.Pos
+	brushingFace  cube.Face
+	brushingTicks int
+
 	hunger *hungerManager
 
 	once sync.Once
@@ -907,6 +912,7 @@ func (p *Player) kill(src world.DamageSource) {
 	p.Handler().HandleDeath(p, src, &keepInv)
 	p.StopSneaking()
 	p.StopSprinting()
+	p.AbortBrushing()
 
 	pos := p.Position()
 	if !keepInv {
@@ -1500,6 +1506,7 @@ func (p *Player) SetHeldSlot(to int) error {
 		return nil
 	}
 	*p.heldSlot = uint32(to)
+	p.AbortBrushing()
 	p.usingItem = false
 
 	for _, viewer := range p.viewers() {
@@ -2069,6 +2076,86 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 		}
 		p.lastBreakDuration = breakTime
 	}
+}
+
+const (
+	// brushDelay is the tick the first brushing action happens on, brushInterval the ticks between the rest.
+	brushDelay    = 6
+	brushInterval = 10
+)
+
+// StartBrushing makes the player start brushing the block at the position passed with the brush it holds. Any
+// block may be brushed, but only blocks implementing block.Brushable produce an item. Aiming at another block
+// does not reset the timer, as the progress is stored in the block itself.
+func (p *Player) StartBrushing(pos cube.Pos, face cube.Face) {
+	if !p.canBrush(pos) {
+		p.AbortBrushing()
+		return
+	}
+	if !p.brushing {
+		p.brushing, p.brushingTicks = true, 0
+	}
+	p.brushingPos, p.brushingFace = pos, face
+	if !p.usingItem {
+		p.usingItem = true
+		p.updateState()
+	}
+}
+
+// AbortBrushing makes the player stop brushing, or returns immediately if it isn't brushing anything.
+func (p *Player) AbortBrushing() {
+	if !p.brushing {
+		return
+	}
+	p.brushing, p.brushingTicks = false, 0
+	if p.usingItem {
+		p.usingItem = false
+		p.updateState()
+	}
+}
+
+// ContinueBrushing performs a brushing action every 10 ticks after a call to Player.StartBrushing, the first
+// of which happens 6 ticks in. Only fully brushing a block costs durability.
+func (p *Player) ContinueBrushing() {
+	if !p.brushing {
+		return
+	}
+	if !p.canBrush(p.brushingPos) {
+		p.AbortBrushing()
+		return
+	}
+	p.StopSprinting()
+
+	if p.brushingTicks++; p.brushingTicks%brushInterval != brushDelay {
+		return
+	}
+	p.SwingArm()
+
+	pos, b := p.brushingPos, p.tx.Block(p.brushingPos)
+	p.tx.AddParticle(block.BrushOffset(pos, p.brushingFace), particle.BrushDust{Block: b})
+	p.tx.PlaySound(pos.Vec3Centre(), sound.Brushing{Block: b})
+
+	brushable, ok := b.(block.Brushable)
+	if !ok || !brushable.Brush(pos, p.tx, p.brushingFace) {
+		return
+	}
+	held, left := p.HeldItems()
+	p.AbortBrushing()
+	p.SetHeldItems(p.damageItem(held, 1), left)
+	p.session().SendBrushingComplete(held)
+}
+
+// canBrush checks if the player can currently brush the block at the position passed.
+func (p *Player) canBrush(pos cube.Pos) bool {
+	if !p.GameMode().AllowsInteraction() || !p.canReach(pos.Vec3Centre()) {
+		return false
+	}
+	if _, air := p.tx.Block(pos).(block.Air); air {
+		return false
+	}
+	held, _ := p.HeldItems()
+	_, ok := held.Item().(item.Brush)
+	return ok
 }
 
 // PlaceBlock makes the player place the block passed at the position passed, granted it is within the range
@@ -2695,6 +2782,9 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	}
 	if p.breaking {
 		p.ContinueBreaking(p.breakingFace)
+	}
+	if p.brushing {
+		p.ContinueBrushing()
 	}
 
 	for it, ti := range p.cooldowns {
