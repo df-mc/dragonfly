@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/world"
 )
 
 // FireworkRocketRecipe is a dynamic recipe for crafting firework rockets.
@@ -32,7 +31,6 @@ func (r FireworkRocketRecipe) Match(input []Item) (output []item.Stack, ok bool)
 	var stars []item.FireworkStar
 	var paperCount int
 	var gunpowderCount int
-	var otherItems int
 
 	for _, it := range input {
 		if it.Empty() {
@@ -58,7 +56,7 @@ func (r FireworkRocketRecipe) Match(input []Item) (output []item.Stack, ok bool)
 		case "minecraft:gunpowder":
 			gunpowderCount += stack.Count()
 		default:
-			otherItems++
+			return nil, false
 		}
 	}
 
