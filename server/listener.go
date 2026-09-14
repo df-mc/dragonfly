@@ -15,11 +15,15 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/go-nethernet"
 	"github.com/df-mc/go-nethernet/endpoint"
+	"github.com/pion/ice/v4"
+	"github.com/pion/webrtc/v4"
 	"github.com/sandertv/gophertunnel/minecraft"
 )
 
@@ -138,7 +142,16 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NetherNetConfig{Address: uc.Network.Address, Key: key, Domain: uc.Network.Domain}.Listener(conf)
+	r, err := parsePortRange(uc.Network.UDPPorts)
+	if err != nil {
+		return nil, fmt.Errorf("parse UDP port range: %w", err)
+	}
+	return NetherNetConfig{
+		Address:  uc.Network.Address,
+		Key:      key,
+		Domain:   uc.Network.Domain,
+		UDPPorts: r,
+	}.Listener(conf)
 }
 
 // NetherNetConfig may be used to create a NetherNet Listener for a Server, accepting
@@ -166,6 +179,97 @@ type NetherNetConfig struct {
 	// signaling. If nil, no STUN/TURN servers are advertised and only host candidates
 	// are gathered.
 	Credentials func(ctx context.Context) (*nethernet.Credentials, error)
+	// UDPPorts configures the range of UDP ports used by the server to establish ICE
+	// connections with the players.
+	UDPPorts PortRange
+}
+
+// parsePortRange parses the given string as a PortRange using the format described in
+// as described in [UserConfig.Network.UDPPorts].
+func parsePortRange(s string) (PortRange, error) {
+	if !strings.Contains(s, "-") {
+		v, err := strconv.ParseUint(s, 10, 16)
+		if err != nil {
+			return PortRange{}, fmt.Errorf("parse single port: %w", err)
+		}
+		return PortRange{uint16(v), uint16(v)}, nil
+	}
+	parts := strings.SplitN(s, "-", 2)
+	if len(parts) != 2 {
+		return PortRange{}, fmt.Errorf("malformed port range: %s", s)
+	}
+	minimum, err := strconv.ParseUint(parts[0], 10, 16)
+	if err != nil {
+		return PortRange{}, fmt.Errorf("parse minimum port: %w", err)
+	}
+	maximum, err := strconv.ParseUint(parts[1], 10, 16)
+	if err != nil {
+		return PortRange{}, fmt.Errorf("parse maximum port: %w", err)
+	}
+	if minimum > maximum {
+		return PortRange{}, fmt.Errorf("invalid port range: %d-%d", minimum, maximum)
+	}
+	// When minimum and maximum are left to the zero value, pion/ice candidate
+	// gatherer replaces them and uses 1 for portMin and 65535 for portMax so
+	// we don't need to validate non-zero values.
+	return PortRange{uint16(minimum), uint16(maximum)}, nil
+}
+
+// PortRange represents a UDP port range specified by the user to limit the
+// range of UDP ports used when establishing ICE connections with the players.
+// The first element is the minimum port, and the second element is the maximum
+// port in the range.
+// When the minimum and maximum ports are the same, a UDP mux is used to
+// share the same port between connections.
+// Callers should use the appropriate methods instead of accessing the elements
+// directly.
+type PortRange [2]uint16
+
+// Min returns the minimum port in r.
+func (r PortRange) Min() uint16 {
+	return r[0]
+}
+
+// Max returns the maximum port in r.
+func (r PortRange) Max() uint16 {
+	return r[1]
+}
+
+// MuxPort returns the port to use for UDP muxing and true if r specifies
+// a single port. Otherwise, it returns 0 and false.
+func (r PortRange) MuxPort() (uint16, bool) {
+	v := r.Min()
+	if v == 0 || v != r.Max() {
+		return 0, false
+	}
+	return v, true
+}
+
+// String returns a string representation of r.
+func (r PortRange) String() string {
+	return strconv.FormatUint(uint64(r.Min()), 10) + "-" + strconv.FormatUint(uint64(r.Max()), 10)
+}
+
+// closeFuncs assembles all Close() functions to be called later.
+type closeFuncs []func() error
+
+// deferClose enqueues f to be called later on Close.
+func (c *closeFuncs) deferClose(f func() error) {
+	*c = append(*c, f)
+}
+
+// Close calls all functions registered in c and returns
+// all errors combined into one error using [errors.Join].
+func (c *closeFuncs) Close() (err error) {
+	for _, f := range *c {
+		if f == nil {
+			continue
+		}
+		if err2 := f(); err2 != nil {
+			err = errors.Join(err, err2)
+		}
+	}
+	return err
 }
 
 // Listener returns a Listener accepting NetherNet connections signaled over HTTP.
@@ -180,7 +284,23 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 	if nc.Domain == "" {
 		nc.Domain = "self"
 	}
+
+	var deferred closeFuncs
+	settingEngine := webrtc.SettingEngine{}
+	if port, ok := nc.UDPPorts.MuxPort(); ok {
+		mux, err := ice.NewMultiUDPMuxFromPort(int(port))
+		if err != nil {
+			return nil, fmt.Errorf("allocate UDP mux: %w", err)
+		}
+		deferred.deferClose(mux.Close)
+		settingEngine.SetICEUDPMux(mux)
+	} else {
+		if err := settingEngine.SetEphemeralUDPPortRange(nc.UDPPorts.Min(), nc.UDPPorts.Max()); err != nil {
+			return nil, fmt.Errorf("configure ephemeral udp port range: %w", err)
+		}
+	}
 	lcfg := nethernet.ListenConfig{
+		API:            webrtc.NewAPI(webrtc.WithSettingEngine(settingEngine)),
 		Log:            log,
 		AllowAnonymous: conf.AuthDisabled,
 		IssueServerIdentity: func(ctx context.Context) (*nethernet.Identity, error) {
@@ -190,8 +310,11 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 
 	tcp, err := net.Listen("tcp", nc.Address)
 	if err != nil {
+		_ = deferred.Close()
 		return nil, fmt.Errorf("listen NetherNet HTTP: %w", err)
 	}
+	deferred.deferClose(tcp.Close)
+
 	httpLog := conf.Log.With("net origin", "nethernet-http")
 	handler := endpoint.HandlerConfig{Logger: httpLog, Credentials: nc.Credentials}.New()
 	cfg := listenerConfig(conf)
@@ -200,7 +323,7 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 		ListenConfig: lcfg,
 	}, handler.NetworkID())
 	if err != nil {
-		_ = tcp.Close()
+		_ = deferred.Close()
 		return nil, fmt.Errorf("create NetherNet listener: %w", err)
 	}
 
@@ -219,8 +342,10 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 			conf.Log.Error("NetherNet HTTP listener closed unexpectedly: " + err.Error())
 		}
 	}()
+	deferred.deferClose(httpServer.Close)
+
 	conf.Log.Info("NetherNet listener running.", "addr", tcp.Addr())
-	return listener{Listener: l, close: httpServer.Close}, nil
+	return listener{Listener: l, close: deferred.Close}, nil
 }
 
 // logHTTPRequests logs signaling requests at debug level before passing them to next. The

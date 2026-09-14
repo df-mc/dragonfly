@@ -232,6 +232,15 @@ type UserConfig struct {
 		// Domain is the identity-provider domain advertised to players connecting
 		// over plain HTTP. If empty, "self" is used.
 		Domain string
+		// UDPPorts specifies the range of UDP ports used by the server to
+		// allocate ICE connections. The following formats are supported:
+		//   [min]-[max]
+		//	 [port]
+		// If min and max are the same, or a single port is specified, the server
+		// uses a UDP mux to share the same port between connections.
+		// Note that when using the min-max format, the server may be unable to
+		// establish new connections when all ports in the range are already in use.
+		UDPPorts string
 	}
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
@@ -364,6 +373,7 @@ func DefaultConfig() UserConfig {
 	c.Network.Address = ":19132"
 	c.Network.KeyFile = "keys/server_identity_key.pem"
 	c.Network.Domain = "self"
+	c.Network.UDPPorts = "19132"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true
