@@ -184,7 +184,7 @@ type NetherNetConfig struct {
 	UDPPorts PortRange
 }
 
-// parsePortRange parses the given string as a PortRange using the format described in
+// parsePortRange parses the given string as a PortRange using the format
 // as described in [UserConfig.Network.UDPPorts].
 func parsePortRange(s string) (PortRange, error) {
 	if !strings.Contains(s, "-") {
