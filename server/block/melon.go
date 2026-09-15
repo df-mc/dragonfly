@@ -11,8 +11,11 @@ type Melon struct {
 
 // BreakInfo ...
 func (m Melon) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, discreteDrops(item.MelonSlice{}, m, 3, 7, 9))
+	return newBreakInfo(1, alwaysHarvestable, anyEffective(item.TypeAxe, item.TypeSword), discreteDrops(item.MelonSlice{}, m, 3, 7, 9))
 }
+
+// SwordMiningSpeed ...
+func (Melon) SwordMiningSpeed() float64 { return 1.5 }
 
 // CompostChance ...
 func (Melon) CompostChance() float64 {
