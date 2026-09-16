@@ -227,6 +227,7 @@ func init() {
 	registerAll(allRedstoneTorches())
 	registerAll(allRedstoneWires())
 	registerAll(allSandstones())
+	registerAll(allSaplings())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
 	registerAll(allSkulls())
@@ -465,6 +466,9 @@ func init() {
 	}
 	for _, t := range AnvilTypes() {
 		world.RegisterItem(Anvil{Type: t})
+	}
+	for _, t := range SaplingTypes() {
+		world.RegisterItem(Sapling{Type: t})
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
