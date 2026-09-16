@@ -49,10 +49,10 @@ func NewPortalTravelComputer() *PortalTravelComputer {
 // Bedrock Edition searches 128 blocks in both dimensions.
 const portalSearchRadius = 128
 
-// portalTravelComputerProvider is implemented by behaviours of entities that can travel through portals.
+// PortalTravelComputerProvider is implemented by behaviours of entities that can travel through portals.
 // Behaviours without a computer never travel. This matches vanilla, where some entities, such as falling blocks,
 // cannot use portals.
-type portalTravelComputerProvider interface {
+type PortalTravelComputerProvider interface {
 	PortalTravelComputer() *PortalTravelComputer
 }
 
@@ -63,7 +63,7 @@ type Traveller interface {
 	Teleport(pos mgl64.Vec3)
 }
 
-type portalTravelHandler interface {
+type PortalTravelHandler interface {
 	HandlePortalTravel(source, destination world.Dimension)
 }
 
@@ -294,15 +294,15 @@ func (t *PortalTravelComputer) finishTravel(e Traveller, pos mgl64.Vec3, source,
 }
 
 // handlePortalTravel dispatches portal travel hooks to Ent behaviours and
-// non-Ent travellers that implement portalTravelHandler.
+// non-Ent travellers that implement PortalTravelHandler.
 func handlePortalTravel(e Traveller, source, destination world.Dimension) {
-	if ent, ok := e.(*Ent); ok {
-		if h, ok := ent.Behaviour().(portalTravelHandler); ok {
+	if w, ok := e.(wrappedEnt); ok {
+		if h, ok := w.Base().Behaviour().(PortalTravelHandler); ok {
 			h.HandlePortalTravel(source, destination)
+			return
 		}
-		return
 	}
-	if h, ok := e.(portalTravelHandler); ok {
+	if h, ok := e.(PortalTravelHandler); ok {
 		h.HandlePortalTravel(source, destination)
 	}
 }

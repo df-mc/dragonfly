@@ -1,10 +1,26 @@
 package entity
 
-import "github.com/df-mc/dragonfly/server/world"
+import (
+	"iter"
 
-// behaviourDamageable represents a Behaviour that may be hurt directly without
-// implementing Living.
-type behaviourDamageable interface {
+	"github.com/df-mc/dragonfly/server/world"
+)
+
+// Hurtable is a world.Entity that may be hurt directly. It is the least the
+// shared damage helpers need of an entity, and is deliberately smaller than
+// Damageable: a falling or burning entity need not carry health of its own.
+type Hurtable interface {
+	world.Entity
+	// Hurt hurts the entity for the damage passed. It returns the damage dealt
+	// and whether the entity was vulnerable to it.
+	Hurt(damage float64, src world.DamageSource) (n float64, vulnerable bool)
+}
+
+// DamageableBehaviour may be implemented by a Behaviour to let its entity take damage without implementing
+// the full Living interface. HurtEntity and Ent.Hurt dispatch to it.
+type DamageableBehaviour interface {
+	// Hurt hurts the entity of the Behaviour. It returns the damage dealt and whether the entity was
+	// vulnerable to it.
 	Hurt(e *Ent, damage float64, src world.DamageSource) (n float64, vulnerable bool)
 }
 
@@ -16,9 +32,10 @@ func HurtEntity(e world.Entity, damage float64, src world.DamageSource) (n float
 		n, vulnerable = l.Hurt(damage, src)
 		return n, vulnerable, true
 	}
-	if ent, ok := e.(*Ent); ok {
-		if d, ok := ent.Behaviour().(behaviourDamageable); ok {
-			n, vulnerable = d.Hurt(ent, damage, src)
+	if w, ok := e.(wrappedEnt); ok {
+		ent := w.Base()
+		if _, ok := ent.Behaviour().(DamageableBehaviour); ok {
+			n, vulnerable = ent.Hurt(damage, src)
 			return n, vulnerable, true
 		}
 	}
@@ -30,9 +47,24 @@ func DamageableEntity(e world.Entity) bool {
 	if _, ok := e.(Living); ok {
 		return true
 	}
-	if ent, ok := e.(*Ent); ok {
-		_, ok = ent.Behaviour().(behaviourDamageable)
+	if w, ok := e.(wrappedEnt); ok {
+		_, ok = w.Base().Behaviour().(DamageableBehaviour)
 		return ok
 	}
 	return false
+}
+
+// filterDamageable filters an entity sequence down to the entities that may be damaged, as reported by
+// DamageableEntity.
+func filterDamageable(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
+	return func(yield func(world.Entity) bool) {
+		for e := range seq {
+			if !DamageableEntity(e) {
+				continue
+			}
+			if !yield(e) {
+				return
+			}
+		}
+	}
 }

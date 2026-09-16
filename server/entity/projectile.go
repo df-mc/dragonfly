@@ -186,7 +186,7 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		return m
 	}
 
-	for i := 0; i < lt.conf.ParticleCount; i++ {
+	for range lt.conf.ParticleCount {
 		tx.AddParticle(result.Position(), lt.conf.Particle)
 	}
 	if lt.conf.Sound != nil {
@@ -261,9 +261,7 @@ func (lt *ProjectileBehaviour) tryPickup(e *Ent, tx *world.Tx) {
 
 		// A collector was within range and able to pick up the entity.
 		lt.close = true
-		for _, viewer := range tx.Viewers(e.Position()) {
-			viewer.ViewEntityAction(e, PickedUpAction{Collector: collector})
-		}
+		e.PlayAction(PickedUpAction{Collector: collector})
 		// Only one collector may pick the projectile up: every further one would receive a copy of it.
 		return
 	}

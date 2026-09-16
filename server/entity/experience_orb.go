@@ -47,7 +47,7 @@ var ExperienceOrbType experienceOrbType
 type experienceOrbType struct{}
 
 func (t experienceOrbType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 func (experienceOrbType) EncodeEntity() string { return "minecraft:xp_orb" }

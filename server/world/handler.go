@@ -63,6 +63,10 @@ type Handler interface {
 	// HandleEntityDespawn handles an Entity being despawned from a World
 	// through a call to Tx.RemoveEntity.
 	HandleEntityDespawn(tx *Tx, e Entity)
+	// HandleEntityHurt handles damage about to be dealt to any entity in the world other than a player,
+	// which is handled by its own Handler instead. ctx.Cancel() may be called to cancel the damage
+	// entirely, and the damage may be changed through the pointer passed.
+	HandleEntityHurt(ctx *Context, e Entity, damage *float64, src DamageSource)
 	// HandleExplosion handles an explosion in the world. ctx.Cancel() may be called
 	// to cancel the explosion.
 	// The affected entities, affected blocks, item drop chance, and whether the
@@ -98,6 +102,7 @@ func (NopHandler) HandlePortalCreate(*Context, Dimension, []cube.Pos)           
 func (NopHandler) HandlePortalActivate(*Context, Dimension, []cube.Pos)         {}
 func (NopHandler) HandleEntitySpawn(*Tx, Entity)                                {}
 func (NopHandler) HandleEntityDespawn(*Tx, Entity)                              {}
+func (NopHandler) HandleEntityHurt(*Context, Entity, *float64, DamageSource)    {}
 func (NopHandler) HandleExplosion(*Context, ExplosionSource, *[]Entity, *[]cube.Pos, *float64, *bool) {
 }
 func (NopHandler) HandleRedstoneUpdate(*Context, RedstoneUpdate) {}

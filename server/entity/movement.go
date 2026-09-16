@@ -23,18 +23,32 @@ type Movement struct {
 	v                    []world.Viewer
 	e                    world.Entity
 	pos, vel, dpos, dvel mgl64.Vec3
-	rot                  cube.Rotation
+	rot, drot            cube.Rotation
 	onGround             bool
 }
 
-// Send sends the Movement to any viewers watching the entity at the time of the movement. If the position/velocity
-// changes were negligible, nothing is sent.
+// NewMovement creates a Movement that moves an Ent to the position, velocity and rotation passed, updating the
+// entity's data accordingly. Behaviours that run their own physics return it from their Tick method to have the
+// movement sent to viewers.
+func NewMovement(e *Ent, pos, vel mgl64.Vec3, rot cube.Rotation, onGround bool) *Movement {
+	prevPos, prevVel, prevRot := e.data.Pos, e.data.Vel, e.data.Rot
+	e.data.Pos, e.data.Vel, e.data.Rot = pos, vel, rot
+	return &Movement{v: e.tx.Viewers(prevPos), e: e,
+		pos: pos, vel: vel, dpos: pos.Sub(prevPos), dvel: vel.Sub(prevVel),
+		rot: rot, drot: cube.Rotation{rot[0] - prevRot[0], rot[1] - prevRot[1]},
+		onGround: onGround,
+	}
+}
+
+// Send sends the Movement to any viewers watching the entity at the time of the movement. If the position, rotation
+// and velocity changes were negligible, nothing is sent.
 func (m *Movement) Send() {
 	posChanged := !m.dpos.ApproxEqualThreshold(zeroVec3, epsilon)
+	rotChanged := math.Abs(m.drot[0]) > epsilon || math.Abs(m.drot[1]) > epsilon
 	velChanged := !m.dvel.ApproxEqualThreshold(zeroVec3, epsilon)
 
 	for _, v := range m.v {
-		if posChanged {
+		if posChanged || rotChanged {
 			v.ViewEntityMovement(m.e, m.pos, m.rot, m.onGround)
 		}
 		if velChanged {
@@ -172,11 +186,11 @@ func (c *MovementComputer) CheckCollision(tx *world.Tx, e world.Entity, pos, vel
 // what blocks need to have their BBox returned.
 func blockBBoxsAround(tx *world.Tx, box cube.BBox) []cube.BBox {
 	grown := box.Grow(0.25)
-	min, max := grown.Min(), grown.Max()
-	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
+	low, high := grown.Min(), grown.Max()
+	minX, minY, minZ := int(math.Floor(low[0])), int(math.Floor(low[1])), int(math.Floor(low[2]))
 	// The maximum bounds are exclusive: A block starting exactly at the box's
 	// maximum cannot collide with it.
-	maxX, maxY, maxZ := int(math.Ceil(max[0])), int(math.Ceil(max[1])), int(math.Ceil(max[2]))
+	maxX, maxY, maxZ := int(math.Ceil(high[0])), int(math.Ceil(high[1])), int(math.Ceil(high[2]))
 
 	// A prediction of one BBox per block, plus an additional 2, in case. Allocate
 	// it lazily so that entities moving through air do not allocate an empty slice

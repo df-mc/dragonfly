@@ -5,7 +5,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"iter"
 	"math"
 	"time"
 )
@@ -98,9 +97,7 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 	owner, _ := f.conf.Owner.Entity(tx)
 	pos, explosions := e.Position(), f.conf.Firework.Explosions
 
-	for _, v := range tx.Viewers(pos) {
-		v.ViewEntityAction(e, FireworkExplosionAction{})
-	}
+	e.PlayAction(FireworkExplosionAction{})
 	for _, explosion := range explosions {
 		if explosion.Shape == item.FireworkShapeHugeSphere() {
 			tx.PlaySound(pos, sound.FireworkHugeBlast{})
@@ -117,7 +114,7 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 	}
 
 	force := float64(len(explosions)*2) + 5.0
-	for victim := range filterLiving(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(5.25))) {
+	for victim := range filterDamageable(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(5.25))) {
 		tpos := victim.Position()
 		dist := pos.Sub(tpos).Len()
 		if dist > 5.0 {
@@ -128,24 +125,11 @@ func (f *FireworkBehaviour) explode(e *Ent, tx *world.Tx) {
 		src := ProjectileDamageSource{Owner: owner, Projectile: e}
 
 		if pos == tpos {
-			victim.(Living).Hurt(dmg, src)
+			HurtEntity(victim, dmg, src)
 			continue
 		}
 		if _, ok := trace.Perform(pos, tpos, tx, victim.H().Type().BBox(victim).Grow(0.3), nil); ok {
-			victim.(Living).Hurt(dmg, src)
-		}
-	}
-}
-
-func filterLiving(seq iter.Seq[world.Entity]) iter.Seq[world.Entity] {
-	return func(yield func(world.Entity) bool) {
-		for e := range seq {
-			if _, living := e.(Living); !living {
-				continue
-			}
-			if !yield(e) {
-				return
-			}
+			HurtEntity(victim, dmg, src)
 		}
 	}
 }

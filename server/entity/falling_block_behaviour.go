@@ -98,11 +98,11 @@ func (f *FallingBlockBehaviour) damageEntities(e *Ent, d damager, pos mgl64.Vec3
 	if dist <= 0 {
 		return
 	}
-	dmg := math.Min(math.Floor(dist*damagePerBlock), maxDamage)
+	dmg := min(math.Floor(dist*damagePerBlock), maxDamage)
 	src := block.DamageSource{Block: f.block}
 
-	for e := range filterLiving(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(0.05))) {
-		e.(Living).Hurt(dmg, src)
+	for e := range filterDamageable(tx.EntitiesWithin(e.H().Type().BBox(e).Translate(pos).Grow(0.05))) {
+		HurtEntity(e, dmg, src)
 	}
 	if b, ok := f.block.(breakable); ok && dmg > 0.0 && rand.Float64() < (dist+1)*0.05 {
 		f.block = b.Break()

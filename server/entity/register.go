@@ -9,7 +9,7 @@ import (
 
 // DefaultRegistry is a world.EntityRegistry that registers all default entities
 // implemented by Dragonfly.
-var DefaultRegistry = conf.New([]world.EntityType{
+var DefaultRegistry = registryConf.New([]world.EntityType{
 	AreaEffectCloudType,
 	ArrowType,
 	BottleOfEnchantingType,
@@ -28,7 +28,7 @@ var DefaultRegistry = conf.New([]world.EntityType{
 	TextType,
 })
 
-var conf = world.EntityRegistryConfig{
+var registryConf = world.EntityRegistryConfig{
 	TNT:                NewTNT,
 	Egg:                NewEgg,
 	EndCrystal:         NewEndCrystal,
@@ -51,15 +51,15 @@ var conf = world.EntityRegistryConfig{
 	},
 	Arrow: func(opts world.EntitySpawnOpts, arrow world.ArrowSpawnConfig) *world.EntityHandle {
 		tip := arrow.Tip.(potion.Potion)
-		conf := arrowConf
-		conf.Damage, conf.Potion, conf.Owner = arrow.Damage, tip, arrow.Owner.H()
-		conf.KnockBackForceAddend = float64(arrow.PunchLevel) * enchantment.Punch.KnockBackMultiplier()
-		conf.DisablePickup = arrow.DisablePickup
+		arrowC := arrowConf
+		arrowC.Damage, arrowC.Potion, arrowC.Owner = arrow.Damage, tip, arrow.Owner.H()
+		arrowC.KnockBackForceAddend = float64(arrow.PunchLevel) * enchantment.Punch.KnockBackMultiplier()
+		arrowC.DisablePickup = arrow.DisablePickup
 		if arrow.ObtainArrowOnPickup {
-			conf.PickupItem = item.NewStack(item.Arrow{Tip: tip}, 1)
+			arrowC.PickupItem = item.NewStack(item.Arrow{Tip: tip}, 1)
 		}
-		conf.Critical = arrow.Critical
-		conf.PiercingLevel = arrow.PiercingLevel
-		return opts.New(ArrowType, conf)
+		arrowC.Critical = arrow.Critical
+		arrowC.PiercingLevel = arrow.PiercingLevel
+		return opts.New(ArrowType, arrowC)
 	},
 }

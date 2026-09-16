@@ -583,7 +583,7 @@ func (b *testMoveBehaviour) Tick(e *Ent, _ *world.Tx) *Movement {
 type testMovingEntType struct{}
 
 func (testMovingEntType) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
-	return &Ent{tx: tx, handle: handle, data: data}
+	return Open(tx, handle, data)
 }
 
 func (testMovingEntType) EncodeEntity() string { return "minecraft:test_moving_ent" }

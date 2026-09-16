@@ -2,6 +2,7 @@ package player
 
 import (
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
@@ -13,12 +14,7 @@ type ptype struct{}
 
 func (t ptype) Open(tx *world.Tx, handle *world.EntityHandle, data *world.EntityData) world.Entity {
 	pd := data.Data.(*playerData)
-	p := &Player{
-		tx:         tx,
-		handle:     handle,
-		data:       data,
-		playerData: pd,
-	}
+	p := &Player{Ent: entity.Open(tx, handle, data), playerData: pd}
 
 	pd.offHand.SlotValidatorFunc(func(s item.Stack, _ int) bool {
 		if s.Empty() {
