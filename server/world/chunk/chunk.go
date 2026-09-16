@@ -150,6 +150,11 @@ func (chunk *Chunk) SkyLight(x uint8, y int16, z uint8) uint8 {
 	return chunk.SubChunk(y).SkyLight(x&15, uint8(y&15), z&15)
 }
 
+// BlockLight returns the block light level at a specific position in the chunk.
+func (chunk *Chunk) BlockLight(x uint8, y int16, z uint8) uint8 {
+	return chunk.SubChunk(y).BlockLight(x&15, uint8(y&15), z&15)
+}
+
 // HighestLightBlocker iterates from the highest non-empty sub chunk downwards to find the Y value of the
 // highest block that completely blocks any light from going through. If none is found, the value returned is
 // the minimum height.

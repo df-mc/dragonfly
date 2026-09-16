@@ -736,6 +736,16 @@ func (tx *Tx) skyLight(pos cube.Pos) uint8 {
 	return tx.chunk(chunkPosFromBlockPos(pos)).SkyLight(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
 }
 
+// blockLight returns the block light level at the position passed. Unlike light, this level is not
+// influenced by the light of the sky.
+func (tx *Tx) blockLight(pos cube.Pos) uint8 {
+	w := tx.World()
+	if pos[1] < w.ra[0] || pos[1] > w.ra[1] {
+		return 0
+	}
+	return tx.chunk(chunkPosFromBlockPos(pos)).BlockLight(uint8(pos[0]), int16(pos[1]), uint8(pos[2]))
+}
+
 // Time returns the current time of the world. The time is incremented every
 // 1/20th of a second, unless World.StopTime() is called.
 func (w *World) Time() int {
