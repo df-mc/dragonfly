@@ -164,6 +164,17 @@ func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
 	return NetherNetConfig{Address: address, Key: key, Domain: nn.Domain, UDPPorts: r}.Listener(conf)
 }
 
+// ListenNetwork returns a Listener accepting connections for conf over any
+// [minecraft.Network] at address, for transports beyond the built-in RakNet and
+// NetherNet ones. Use it from a Config.Listeners function.
+func ListenNetwork(conf Config, network minecraft.Network, address string) (Listener, error) {
+	l, err := listenerConfig(conf).ListenNetwork(network, address)
+	if err != nil {
+		return nil, err
+	}
+	return listener{Listener: l}, nil
+}
+
 // NetherNetConfig may be used to create a NetherNet Listener for a Server, accepting
 // connections negotiated over a plaintext HTTP signaling endpoint. Its Listener method
 // matches the Config.Listeners function signature.
@@ -189,13 +200,12 @@ type NetherNetConfig struct {
 	// signaling. If nil, no STUN/TURN servers are advertised and only host candidates
 	// are gathered.
 	Credentials func(ctx context.Context) (*nethernet.Credentials, error)
-	// UDPPorts configures the range of UDP ports used by the server to establish ICE
-	// connections with the players.
+	// UDPPorts is the UDP port range used for player connections. See PortRange
+	// for how single ports and zero bounds behave.
 	UDPPorts PortRange
 }
 
-// parsePortRange parses the given string as a PortRange using the format
-// as described in [UserConfig.Network.NetherNet.UDPPorts]. An empty string
+// parsePortRange parses "port" or "min-max" as a PortRange. An empty string
 // yields the zero PortRange.
 func parsePortRange(s string) (PortRange, error) {
 	if s == "" {
@@ -206,7 +216,7 @@ func parsePortRange(s string) (PortRange, error) {
 		if err != nil {
 			return PortRange{}, fmt.Errorf("parse single port: %w", err)
 		}
-		return PortRange{uint16(v), uint16(v)}, nil
+		return PortRange{Min: uint16(v), Max: uint16(v)}, nil
 	}
 	parts := strings.SplitN(s, "-", 2)
 	if len(parts) != 2 {
@@ -223,45 +233,15 @@ func parsePortRange(s string) (PortRange, error) {
 	if minimum > maximum {
 		return PortRange{}, fmt.Errorf("invalid port range: %d-%d", minimum, maximum)
 	}
-	// When minimum and maximum are left to the zero value, pion/ice candidate
-	// gatherer replaces them and uses 1 for portMin and 65535 for portMax so
-	// we don't need to validate non-zero values.
-	return PortRange{uint16(minimum), uint16(maximum)}, nil
+	return PortRange{Min: uint16(minimum), Max: uint16(maximum)}, nil
 }
 
-// PortRange represents a UDP port range specified by the user to limit the
-// range of UDP ports used when establishing ICE connections with the players.
-// The first element is the minimum port, and the second element is the maximum
-// port in the range.
-// When the minimum and maximum ports are the same, a UDP mux is used to
-// share the same port between connections.
-// Callers should use the appropriate methods instead of accessing the elements
-// directly.
-type PortRange [2]uint16
-
-// Min returns the minimum port in r.
-func (r PortRange) Min() uint16 {
-	return r[0]
-}
-
-// Max returns the maximum port in r.
-func (r PortRange) Max() uint16 {
-	return r[1]
-}
-
-// MuxPort returns the port to use for UDP muxing and true if r specifies
-// a single port. Otherwise, it returns 0 and false.
-func (r PortRange) MuxPort() (uint16, bool) {
-	v := r.Min()
-	if v == 0 || v != r.Max() {
-		return 0, false
-	}
-	return v, true
-}
-
-// String returns a string representation of r.
-func (r PortRange) String() string {
-	return strconv.FormatUint(uint64(r.Min()), 10) + "-" + strconv.FormatUint(uint64(r.Max()), 10)
+// PortRange is an inclusive UDP port range. A single port (Min == Max) is shared
+// by all connections through a UDP mux; a wider range can run out of ports under
+// load. Zero bounds need no validation: pion/ice's candidate gatherer replaces
+// them with 1 and 65535, so port selection is left to the operating system.
+type PortRange struct {
+	Min, Max uint16
 }
 
 // closeFuncs assembles all Close() functions to be called later.
@@ -301,17 +281,15 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 
 	var deferred closeFuncs
 	settingEngine := webrtc.SettingEngine{}
-	if port, ok := nc.UDPPorts.MuxPort(); ok {
-		mux, err := ice.NewMultiUDPMuxFromPort(int(port))
+	if ports := nc.UDPPorts; ports.Min != 0 && ports.Min == ports.Max {
+		mux, err := ice.NewMultiUDPMuxFromPort(int(ports.Min))
 		if err != nil {
 			return nil, fmt.Errorf("allocate UDP mux: %w", err)
 		}
 		deferred.deferClose(mux.Close)
 		settingEngine.SetICEUDPMux(mux)
-	} else {
-		if err := settingEngine.SetEphemeralUDPPortRange(nc.UDPPorts.Min(), nc.UDPPorts.Max()); err != nil {
-			return nil, fmt.Errorf("configure ephemeral udp port range: %w", err)
-		}
+	} else if err := settingEngine.SetEphemeralUDPPortRange(ports.Min, ports.Max); err != nil {
+		return nil, fmt.Errorf("configure ephemeral udp port range: %w", err)
 	}
 	lcfg := nethernet.ListenConfig{
 		API:            webrtc.NewAPI(webrtc.WithSettingEngine(settingEngine)),
