@@ -170,8 +170,13 @@ func (h *ItemStackRequestHandler) handleTransfer(from, to protocol.StackRequestS
 		return err
 	}
 
-	h.setItemInSlot(from, i.Grow(-int(count)), s, tx)
-	h.setItemInSlot(to, dest.Grow(int(count)), s, tx)
+	// The destination is written first: a refused write there must leave the source untouched.
+	if err := h.setItemInSlot(to, dest.Grow(int(count)), s, tx); err != nil {
+		return err
+	}
+	if err := h.setItemInSlot(from, i.Grow(-int(count)), s, tx); err != nil {
+		return err
+	}
 	h.collectRewards(s, invA, int(from.Slot), tx, c)
 	return nil
 }
@@ -196,8 +201,13 @@ func (h *ItemStackRequestHandler) handleSwap(a *protocol.SwapStackRequestAction,
 		return err
 	}
 
-	h.setItemInSlot(a.Source, dest, s, tx)
-	h.setItemInSlot(a.Destination, i, s, tx)
+	// The destination is written first: a refused write there must leave the source untouched.
+	if err := h.setItemInSlot(a.Destination, i, s, tx); err != nil {
+		return err
+	}
+	if err := h.setItemInSlot(a.Source, dest, s, tx); err != nil {
+		return err
+	}
 	h.collectRewards(s, invA, int(a.Source.Slot), tx, c)
 	h.collectRewards(s, invA, int(a.Destination.Slot), tx, c)
 	return nil
@@ -414,7 +424,7 @@ func (h *ItemStackRequestHandler) itemInSlot(slot protocol.StackRequestSlotInfo,
 }
 
 // setItemInSlot sets an item stack in the slot of a container present in the slot info.
-func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session, tx *world.Tx) {
+func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotInfo, i item.Stack, s *Session, tx *world.Tx) error {
 	inv, _ := s.invByID(int32(slot.Container.ContainerID), tx)
 
 	sl := int(slot.Slot)
@@ -423,7 +433,9 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 	}
 
 	before, _ := inv.Item(sl)
-	_ = inv.SetItem(sl, i)
+	if err := inv.SetItem(sl, i); err != nil {
+		return err
+	}
 
 	respSlot := protocol.StackResponseSlotInfo{
 		Slot:                 slot.Slot,
@@ -451,6 +463,7 @@ func (h *ItemStackRequestHandler) setItemInSlot(slot protocol.StackRequestSlotIn
 		id:        respSlot.StackNetworkID,
 		timestamp: h.current,
 	}
+	return nil
 }
 
 // resolve resolves the request with the ID passed.
@@ -489,7 +502,13 @@ func (h *ItemStackRequestHandler) reject(id int32, s *Session, tx *world.Tx) {
 	for container, slots := range h.changes {
 		for slot, info := range slots {
 			inv, _ := s.invByID(int32(container), tx)
-			_ = inv.SetItem(int(slot), info.before)
+			// The off hand holds a single slot that setItemInSlot records the change of under the slot from the
+			// request, so it has to be mapped back the same way here.
+			sl := int(slot)
+			if inv == s.offHand {
+				sl = 0
+			}
+			_ = inv.SetItem(sl, info.before)
 		}
 	}
 
