@@ -56,6 +56,7 @@ func procPackage(pkg *packages.Package, w io.Writer) {
 	b.writePackage(w)
 	b.writeConstants(w)
 	b.writeNextHash(w)
+	b.writeBlockHash(w)
 	b.writeMethods(w)
 }
 
@@ -129,6 +130,25 @@ func (b *hashBuilder) writeNextHash(w io.Writer) {
 		log.Fatalln(err)
 	}
 	if _, err := fmt.Fprintln(w, "func NextHash() uint64 {\n\tcustomBlockBase++\n\treturn customBlockBase\n}"); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+// writeBlockHash writes the registry-independent hash used for material blocks.
+func (b *hashBuilder) writeBlockHash(w io.Writer) {
+	const helper = `
+// hashBlock packs a material block's type and state into the 32 bits reserved by generated hashes.
+// Each half uses 16 bits so the result does not depend on a registry's size or initialization.
+func hashBlock(b world.Block) uint64 {
+	base, state := b.Hash()
+	if base > 0xffff || state > 0xffff {
+		name, _ := b.EncodeBlock()
+		panic("hash of block " + name + " exceeds 16-bit type or state")
+	}
+	return base | state<<16
+}
+`
+	if _, err := fmt.Fprint(w, helper); err != nil {
 		log.Fatalln(err)
 	}
 }
@@ -237,7 +257,7 @@ func (b *hashBuilder) ftype(structName, s string, expr ast.Expr, directives map[
 	case "int":
 		return "uint64(" + s + ")", 8
 	case "Block":
-		return "world.BlockHash(" + s + ")", 32
+		return "hashBlock(" + s + ")", 32
 	case "Attachment":
 		if _, ok := directives["facing_only"]; ok {
 			log.Println("Found directive: 'facing_only'")
