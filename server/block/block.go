@@ -186,15 +186,6 @@ func firstReplaceable(tx *world.Tx, pos cube.Pos, face cube.Face, with world.Blo
 	return pos, face, false
 }
 
-// attachmentSupported checks whether a block can attach through face.
-func attachmentSupported(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
-	support := pos.Side(face.Opposite())
-	if support.OutOfBounds(tx.Range()) {
-		return false
-	}
-	return tx.Block(support).Model().FaceSolid(support, face, tx)
-}
-
 // entityIntersects checks whether an entity overlaps a box.
 func entityIntersects(e world.Entity, box cube.BBox) bool {
 	return e.H().Type().BBox(e).Translate(e.Position()).IntersectsWith(box)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -28,7 +29,7 @@ type Button struct {
 // UseOnBlock places a button on the clicked face.
 func (b Button) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, face, used := firstReplaceable(tx, pos, face, b)
-	if !used || !attachmentSupported(tx, pos, face) {
+	if !used || !buttonAttachmentSupported(tx, pos, face) {
 		return false
 	}
 	b.Facing = face
@@ -49,7 +50,7 @@ func (b Button) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube
 
 // EntityInside presses a wooden button touched by an arrow or thrown trident.
 func (b Button) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
-	if b.Type.Wood() && b.activatingProjectileIntersects(e, buttonBox(b).Translate(pos.Vec3())) {
+	if b.Type.Wood() && b.activatingProjectileIntersects(e, buttonActivationBox(b.Facing).Translate(pos.Vec3())) {
 		b.press(pos, tx)
 	}
 }
@@ -66,9 +67,27 @@ func (b Button) press(pos cube.Pos, tx *world.Tx) {
 
 // NeighbourUpdateTick breaks an unsupported button.
 func (b Button) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if !attachmentSupported(tx, pos, b.Facing) {
+	if !buttonAttachmentSupported(tx, pos, b.Facing) {
 		breakBlock(b, pos, tx)
 	}
+}
+
+// buttonAttachmentSupported checks full-face support without using stair corner geometry.
+func buttonAttachmentSupported(tx *world.Tx, pos cube.Pos, face cube.Face) bool {
+	support := pos.Side(face.Opposite())
+	if support.OutOfBounds(tx.Range()) {
+		return false
+	}
+	m := tx.Block(support).Model()
+	switch m := m.(type) {
+	case model.Fence, model.Wall, model.Thin:
+		return false
+	case model.Stair:
+		if face.Axis() != cube.Y {
+			return face == m.Facing.Face()
+		}
+	}
+	return m.FaceSolid(support, face, tx)
 }
 
 // ScheduledTick releases the button unless an activating projectile still holds it down.
@@ -87,7 +106,7 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 
 // activatingProjectileWithin reports whether an activating projectile intersects the button.
 func (b Button) activatingProjectileWithin(pos cube.Pos, tx *world.Tx) bool {
-	box := buttonBox(b).Translate(pos.Vec3())
+	box := buttonActivationBox(b.Facing).Translate(pos.Vec3())
 	for e := range tx.EntitiesWithin(box.Grow(1)) {
 		if b.activatingProjectileIntersects(e, box) {
 			return true
@@ -106,14 +125,10 @@ func (Button) activatingProjectileIntersects(e world.Entity, box cube.BBox) bool
 	}
 }
 
-// buttonBox returns the visible button shape used for projectile hits.
-func buttonBox(b Button) cube.BBox {
-	depth := 2.0 / 16
-	if b.Pressed {
-		depth = 1.0 / 16
-	}
+// buttonActivationBox returns the projectile detection box, which does not shrink when pressed.
+func buttonActivationBox(face cube.Face) cube.BBox {
 	long, short := cube.X, cube.Z
-	switch b.Facing.Axis() {
+	switch face.Axis() {
 	case cube.X:
 		long, short = cube.Z, cube.Y
 	case cube.Z:
@@ -121,8 +136,8 @@ func buttonBox(b Button) cube.BBox {
 	}
 	return cube.Box(0.5, 0.5, 0.5, 0.5, 0.5, 0.5).
 		Stretch(long, 3.0/16).Stretch(short, 2.0/16).
-		TranslateTowards(b.Facing.Opposite(), 0.5).
-		ExtendTowards(b.Facing, depth)
+		TranslateTowards(face.Opposite(), 0.5).
+		ExtendTowards(face, 2.0/16)
 }
 
 // RedstonePower returns 15 while the button is pressed.

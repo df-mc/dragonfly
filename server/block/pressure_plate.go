@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -26,7 +27,7 @@ type PressurePlate struct {
 // UseOnBlock places a pressure plate on a solid surface.
 func (p PressurePlate) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
 	pos, _, used := firstReplaceable(tx, pos, face, p)
-	if !used || !attachmentSupported(tx, pos, cube.FaceUp) {
+	if !used || !pressurePlateSupported(tx, pos) {
 		return false
 	}
 	place(tx, pos, p, user, ctx)
@@ -57,9 +58,22 @@ func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) 
 
 // NeighbourUpdateTick breaks an unsupported pressure plate.
 func (p PressurePlate) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
-	if !attachmentSupported(tx, pos, cube.FaceUp) {
+	if !pressurePlateSupported(tx, pos) {
 		breakBlock(p, pos, tx)
 	}
+}
+
+// pressurePlateSupported accepts centre support, including panes and iron bars.
+func pressurePlateSupported(tx *world.Tx, pos cube.Pos) bool {
+	support := pos.Side(cube.FaceDown)
+	if support.OutOfBounds(tx.Range()) {
+		return false
+	}
+	m := tx.Block(support).Model()
+	if _, thin := m.(model.Thin); thin {
+		return true
+	}
+	return m.FaceSolid(support, cube.FaceUp, tx)
 }
 
 // ScheduledTick updates the plate's power from the entities on it.
@@ -123,7 +137,11 @@ func (p PressurePlate) EncodeItem() (name string, meta int16) {
 
 // EncodeBlock encodes the pressure plate as a block.
 func (p PressurePlate) EncodeBlock() (string, map[string]any) {
-	return "minecraft:" + p.Type.String(), map[string]any{"redstone_signal": int32(world.ClampRedstonePower(p.Power))}
+	power := world.ClampRedstonePower(p.Power)
+	if !p.Type.Weighted() {
+		power = int(boolByte(power > 0))
+	}
+	return "minecraft:" + p.Type.String(), map[string]any{"redstone_signal": int32(power)}
 }
 
 // detects checks whether an entity can activate the plate.
@@ -190,6 +208,10 @@ func pressurePlateActivationBox(pos cube.Pos) cube.BBox {
 
 func allPressurePlates() (plates []world.Block) {
 	for _, t := range PressurePlateTypes() {
+		if !t.Weighted() {
+			plates = append(plates, PressurePlate{Type: t}, PressurePlate{Type: t, Power: 15})
+			continue
+		}
 		for power := 0; power <= 15; power++ {
 			plates = append(plates, PressurePlate{Type: t, Power: power})
 		}
