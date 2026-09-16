@@ -238,8 +238,9 @@ func parsePortRange(s string) (PortRange, error) {
 
 // PortRange is an inclusive UDP port range. A single port (Min == Max) is shared
 // by all connections through a UDP mux; a wider range can run out of ports under
-// load. Zero bounds need no validation: pion/ice's candidate gatherer replaces
-// them with 1 and 65535, so port selection is left to the operating system.
+// load. Zero bounds need no validation: pion/ice's candidate gatherer leaves port
+// selection to the operating system when both are zero, and substitutes 1024 for a
+// zero Min.
 type PortRange struct {
 	Min, Max uint16
 }
@@ -300,14 +301,32 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 		},
 	}
 
+	httpLog := conf.Log.With("net origin", "nethernet-http")
+	httpServer := nc.HTTPServer
+	if httpServer == nil {
+		httpServer = &http.Server{
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			IdleTimeout:       30 * time.Second,
+		}
+	}
+
 	tcp, err := net.Listen("tcp", nc.Address)
 	if err != nil {
 		_ = deferred.Close()
 		return nil, fmt.Errorf("listen NetherNet HTTP: %w", err)
 	}
-	deferred.deferClose(tcp.Close)
+	// Once httpServer.Serve takes ownership of tcp below, closing httpServer is
+	// what closes tcp: closing tcp itself as well would race Serve releasing it
+	// and report a spurious net.ErrClosed on an otherwise clean shutdown.
+	var serving bool
+	deferred.deferClose(func() error {
+		if serving {
+			return httpServer.Close()
+		}
+		return tcp.Close()
+	})
 
-	httpLog := conf.Log.With("net origin", "nethernet-http")
 	handler := endpoint.HandlerConfig{Logger: httpLog, Credentials: nc.Credentials}.New()
 	cfg := listenerConfig(conf)
 	l, err := cfg.ListenNetwork(minecraft.NetherNet{
@@ -319,22 +338,14 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 		return nil, fmt.Errorf("create NetherNet listener: %w", err)
 	}
 
-	httpServer := nc.HTTPServer
-	if httpServer == nil {
-		httpServer = &http.Server{
-			ReadHeaderTimeout: 5 * time.Second,
-			ReadTimeout:       10 * time.Second,
-			IdleTimeout:       30 * time.Second,
-		}
-	}
 	httpServer.Handler = logHTTPRequests(httpLog, handler)
+	serving = true
 	go func() {
 		err := httpServer.Serve(tcp)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, net.ErrClosed) {
 			conf.Log.Error("NetherNet HTTP listener closed unexpectedly: " + err.Error())
 		}
 	}()
-	deferred.deferClose(httpServer.Close)
 
 	conf.Log.Info("NetherNet listener running.", "addr", tcp.Addr())
 	return listener{Listener: l, close: deferred.Close}, nil
