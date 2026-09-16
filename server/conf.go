@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 	_ "unsafe"
 
@@ -220,18 +221,33 @@ func (conf Config) New() *Server {
 type UserConfig struct {
 	// Network holds settings related to network aspects of the server.
 	Network struct {
-		// Address is the TCP address on which the NetherNet HTTP signaling
-		// endpoint should listen. Players may connect to this address in order to
-		// join.
+		// Address is the address on which the server should listen. Players may
+		// connect to this address in order to join.
 		Address string
-		// KeyFile is the path to the PEM file containing the P-384 ECDSA private
-		// key used to identify this listener when clients connect over plain HTTP.
-		// If the file does not exist, a new key is generated and saved there. If
-		// empty, a temporary key is generated and not saved.
-		KeyFile string
-		// Domain is the identity-provider domain advertised to players connecting
-		// over plain HTTP. If empty, "self" is used.
-		Domain string
+		// Transport lists the network transports listened on, "raknet" and/or
+		// "nethernet". If empty, only RakNet is used. Custom transports are added
+		// programmatically through Config.Listeners.
+		Transport []string
+		// NetherNet holds settings for the NetherNet HTTP signaling listener.
+		NetherNet struct {
+			// Address is the TCP address used for NetherNet HTTP signaling. If
+			// empty, Network.Address is used. The listener serves plaintext HTTP;
+			// HTTPS should be terminated by a reverse proxy.
+			Address string
+			// KeyFile is the path to the PEM file containing the P-384 ECDSA
+			// private key used to identify this listener when clients connect
+			// over plain HTTP. If the file does not exist, a new key is generated
+			// and saved there. If empty, a temporary key is generated and not
+			// saved.
+			KeyFile string
+			// Domain is the identity-provider domain advertised to players
+			// connecting over plain HTTP. If empty, "self" is used.
+			Domain string
+			// UDPPorts is the UDP port, or "min-max" range, that player
+			// connections use. A single port is shared by all connections. If
+			// empty, the operating system picks the ports.
+			UDPPorts string
+		}
 	}
 	Server struct {
 		// Name is the name of the server as it shows up in the server list.
@@ -302,6 +318,10 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
 	}
+	listeners, err := uc.transportListeners()
+	if err != nil {
+		return conf, err
+	}
 	if !uc.Server.DisableJoinQuitMessages {
 		conf.JoinMessage, conf.QuitMessage = chat.MessageJoin, chat.MessageQuit
 	}
@@ -321,8 +341,36 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 			return conf, fmt.Errorf("create player provider: %w", err)
 		}
 	}
-	conf.Listeners = append(conf.Listeners, uc.netherNetListenerFunc)
+	conf.Listeners = append(conf.Listeners, listeners...)
 	return conf, nil
+}
+
+// transportListeners maps the transport names in UserConfig.Network.Transport to
+// their listener functions, defaulting to RakNet when none are named. Duplicate
+// names are listened on once.
+func (uc UserConfig) transportListeners() ([]func(Config) (Listener, error), error) {
+	names := uc.Network.Transport
+	if len(names) == 0 {
+		names = []string{"raknet"}
+	}
+	var listeners []func(Config) (Listener, error)
+	seen := make(map[string]bool, len(names))
+	for _, name := range names {
+		name = strings.ToLower(strings.TrimSpace(name))
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		switch name {
+		case "raknet":
+			listeners = append(listeners, uc.rakNetListenerFunc)
+		case "nethernet":
+			listeners = append(listeners, uc.netherNetListenerFunc)
+		default:
+			return nil, fmt.Errorf("unknown network transport %q", name)
+		}
+	}
+	return listeners, nil
 }
 
 // loadResources loads all resource packs found in a directory passed.
@@ -362,8 +410,10 @@ func loadGenerator(dim world.Dimension) world.Generator {
 func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
-	c.Network.KeyFile = "keys/server_identity_key.pem"
-	c.Network.Domain = "self"
+	c.Network.Transport = []string{"raknet"}
+	c.Network.NetherNet.KeyFile = "keys/server_identity_key.pem"
+	c.Network.NetherNet.Domain = "self"
+	c.Network.NetherNet.UDPPorts = "19133"
 	c.Server.Name = "Dragonfly Server"
 	c.Server.AuthEnabled = true
 	c.World.SaveData = true
