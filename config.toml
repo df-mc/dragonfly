@@ -11,8 +11,8 @@
   [Network.NetherNet]
     # Address is the TCP address used for NetherNet HTTP signaling. If empty, Network.Address is used.
     # The listener serves plaintext HTTP; terminate HTTPS with a reverse proxy such as Caddy or nginx.
-    # Clients only look for signaling on the exact host and port they enter, so a reverse proxy must
-    # answer there.
+    # Clients try HTTPS and then plain HTTP on the exact host and port they enter, so a reverse proxy
+    # must answer there.
     Address = ""
     # KeyFile is the path to the PEM file containing the P-384 ECDSA private key used to identify
     # this listener when clients connect over plain HTTP. If the file does not exist, a new key is
