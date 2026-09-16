@@ -50,6 +50,8 @@ func NewBarrel() Barrel {
 	}
 }
 
+func (Barrel) ContainerSize() int { return 27 }
+
 // Inventory returns the inventory of the barrel. The size of the inventory will be 27.
 func (b Barrel) Inventory(*world.Tx, cube.Pos) *inventory.Inventory {
 	return b.inventory
