@@ -87,6 +87,7 @@ func init() {
 	world.RegisterBlock(MossCarpet{})
 	world.RegisterBlock(MudBricks{})
 	world.RegisterBlock(Mud{})
+	world.RegisterBlock(Mycelium{})
 	world.RegisterBlock(NetherBrickFence{})
 	world.RegisterBlock(NetherGoldOre{})
 	world.RegisterBlock(NetherQuartzOre{})
@@ -227,6 +228,7 @@ func init() {
 	registerAll(allRedstoneTorches())
 	registerAll(allRedstoneWires())
 	registerAll(allSandstones())
+	registerAll(allSaplings())
 	registerAll(allSeaPickles())
 	registerAll(allSigns())
 	registerAll(allSkulls())
@@ -368,6 +370,7 @@ func init() {
 	world.RegisterItem(MudBricks{})
 	world.RegisterItem(MuddyMangroveRoots{})
 	world.RegisterItem(Mud{})
+	world.RegisterItem(Mycelium{})
 	world.RegisterItem(NetherBrickFence{})
 	world.RegisterItem(NetherGoldOre{})
 	world.RegisterItem(NetherQuartzOre{})
@@ -465,6 +468,9 @@ func init() {
 	}
 	for _, t := range AnvilTypes() {
 		world.RegisterItem(Anvil{Type: t})
+	}
+	for _, t := range SaplingTypes() {
+		world.RegisterItem(Sapling{Type: t})
 	}
 	for _, c := range item.Colours() {
 		world.RegisterItem(Banner{Colour: c})
