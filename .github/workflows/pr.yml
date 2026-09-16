@@ -23,7 +23,7 @@ jobs:
 
       - name: Verify generated code
         run: |
-          go generate ./server/block/
+          go generate ./server/block/ ./server/item/component/
           git diff --exit-code
 
       - name: Build deployment artifact
