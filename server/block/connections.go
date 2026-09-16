@@ -32,12 +32,12 @@ type connector interface {
 }
 
 // calculateConnections returns the Connections of the connector at a position.
-func calculateConnections(c connector, tx *world.Tx, pos cube.Pos) Connections {
+func calculateConnections(c connector, src world.BlockSource, pos cube.Pos) Connections {
 	return Connections{
-		north: c.Connects(pos, cube.FaceNorth, tx),
-		east:  c.Connects(pos, cube.FaceEast, tx),
-		south: c.Connects(pos, cube.FaceSouth, tx),
-		west:  c.Connects(pos, cube.FaceWest, tx),
+		north: c.Connects(pos, cube.FaceNorth, src),
+		east:  c.Connects(pos, cube.FaceEast, src),
+		south: c.Connects(pos, cube.FaceSouth, src),
+		west:  c.Connects(pos, cube.FaceWest, src),
 	}
 }
 

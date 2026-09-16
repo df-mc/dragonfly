@@ -11,8 +11,8 @@ const (
 	SubChunkVersion = 9
 	// CurrentBlockVersion is the current version of blocks (states) of the game. This version is composed
 	// of 4 bytes indicating a version, interpreted as a big endian int. The current version represents
-	// 1.16.0.14 {1, 16, 0, 14}.
-	CurrentBlockVersion int32 = 18040335
+	// 1.26.50.0 {1, 26, 50, 0}.
+	CurrentBlockVersion int32 = 18493952
 )
 
 var (

@@ -30,6 +30,12 @@ func (w WoodFence) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// DeriveState ...
+func (w WoodFence) DeriveState(pos cube.Pos, src world.BlockSource) world.Block {
+	w.Connections = calculateConnections(w.Model().(connector), src, pos)
+	return w
+}
+
 // BreakInfo ...
 func (w WoodFence) BreakInfo() BreakInfo {
 	return newBreakInfo(2, alwaysHarvestable, axeEffective, oneOf(w)).withBlastResistance(3)

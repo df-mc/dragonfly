@@ -50,21 +50,27 @@ func (s Stairs) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// DeriveState ...
+func (s Stairs) DeriveState(pos cube.Pos, src world.BlockSource) world.Block {
+	s.Corner = s.calculateCorner(src, pos)
+	return s
+}
+
 // calculateCorner calculates the corner that the stairs form with the stairs around them at a position in a world.
-func (s Stairs) calculateCorner(tx *world.Tx, pos cube.Pos) StairsCorner {
+func (s Stairs) calculateCorner(src world.BlockSource, pos cube.Pos) StairsCorner {
 	rotated := s.Facing.RotateRight()
-	if closed, ok := tx.Block(pos.Side(s.Facing.Face())).(Stairs); ok && closed.UpsideDown == s.UpsideDown {
+	if closed, ok := src.Block(pos.Side(s.Facing.Face())).(Stairs); ok && closed.UpsideDown == s.UpsideDown {
 		if closed.Facing == rotated {
 			return OuterRightStairsCorner()
 		} else if closed.Facing == rotated.Opposite() {
-			if s.continued(tx, pos) {
+			if s.continued(src, pos) {
 				return NoStairsCorner()
 			}
 			return OuterLeftStairsCorner()
 		}
 	}
-	if open, ok := tx.Block(pos.Side(s.Facing.Opposite().Face())).(Stairs); ok && open.UpsideDown == s.UpsideDown {
-		if open.Facing == rotated && !s.continued(tx, pos) {
+	if open, ok := src.Block(pos.Side(s.Facing.Opposite().Face())).(Stairs); ok && open.UpsideDown == s.UpsideDown {
+		if open.Facing == rotated && !s.continued(src, pos) {
 			return InnerRightStairsCorner()
 		} else if open.Facing == rotated.Opposite() {
 			return InnerLeftStairsCorner()
@@ -75,8 +81,8 @@ func (s Stairs) calculateCorner(tx *world.Tx, pos cube.Pos) StairsCorner {
 
 // continued returns true if the stairs are continued on their right side by stairs facing the same way. Stairs like
 // these do not form a corner.
-func (s Stairs) continued(tx *world.Tx, pos cube.Pos) bool {
-	side, ok := tx.Block(pos.Side(s.Facing.RotateRight().Face())).(Stairs)
+func (s Stairs) continued(src world.BlockSource, pos cube.Pos) bool {
+	side, ok := src.Block(pos.Side(s.Facing.RotateRight().Face())).(Stairs)
 	return ok && side.Facing == s.Facing && side.UpsideDown == s.UpsideDown
 }
 

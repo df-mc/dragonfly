@@ -27,6 +27,12 @@ func (p StainedGlassPane) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// DeriveState ...
+func (p StainedGlassPane) DeriveState(pos cube.Pos, src world.BlockSource) world.Block {
+	p.Connections = calculateConnections(p.Model().(connector), src, pos)
+	return p
+}
+
 // SideClosed ...
 func (p StainedGlassPane) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 	return false

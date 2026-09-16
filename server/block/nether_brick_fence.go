@@ -23,6 +23,12 @@ func (n NetherBrickFence) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// DeriveState ...
+func (n NetherBrickFence) DeriveState(pos cube.Pos, src world.BlockSource) world.Block {
+	n.Connections = calculateConnections(n.Model().(connector), src, pos)
+	return n
+}
+
 // BreakInfo ...
 func (n NetherBrickFence) BreakInfo() BreakInfo {
 	return newBreakInfo(2, pickaxeHarvestable, pickaxeEffective, oneOf(n)).withBlastResistance(6)

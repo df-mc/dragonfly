@@ -23,6 +23,12 @@ func (i IronBars) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// DeriveState ...
+func (i IronBars) DeriveState(pos cube.Pos, src world.BlockSource) world.Block {
+	i.Connections = calculateConnections(i.Model().(connector), src, pos)
+	return i
+}
+
 // BreakInfo ...
 func (i IronBars) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(i)).withBlastResistance(6)

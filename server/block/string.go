@@ -50,6 +50,14 @@ func (s String) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	tx.SetBlock(pos, s, nil)
 }
 
+// DeriveState ...
+//
+// Suspended is stored on disk, so only Connections is derived.
+func (s String) DeriveState(pos cube.Pos, src world.BlockSource) world.Block {
+	s.Connections = calculateConnections(s, src, pos)
+	return s
+}
+
 // Connects returns true if the tripwire connects to the block at the face
 // passed. Tripwire connects to other tripwire.
 func (String) Connects(pos cube.Pos, face cube.Face, src world.BlockSource) bool {

@@ -31,6 +31,12 @@ func (c CopperBars) NeighbourUpdateTick(pos, _ cube.Pos, tx *world.Tx) {
 	}
 }
 
+// DeriveState ...
+func (c CopperBars) DeriveState(pos cube.Pos, src world.BlockSource) world.Block {
+	c.Connections = calculateConnections(c.Model().(connector), src, pos)
+	return c
+}
+
 // BreakInfo ...
 func (c CopperBars) BreakInfo() BreakInfo {
 	return newBreakInfo(5, pickaxeHarvestable, pickaxeEffective, oneOf(c)).withBlastResistance(6)
