@@ -134,24 +134,34 @@ func netherNetKey(path string, log *slog.Logger) (*ecdsa.PrivateKey, error) {
 	return key, nil
 }
 
-// netherNetListenerFunc may be used to return a *minecraft.Listener accepting
-// NetherNet connections. It is the standard listener used when UserConfig.Config
-// is called.
+// rakNetListenerFunc returns a Listener accepting RakNet connections on
+// UserConfig.Network.Address. It is the default transport of UserConfig.Config.
+func (uc UserConfig) rakNetListenerFunc(conf Config) (Listener, error) {
+	l, err := listenerConfig(conf).Listen("raknet", uc.Network.Address)
+	if err != nil {
+		return nil, fmt.Errorf("create RakNet listener: %w", err)
+	}
+	conf.Log.Info("RakNet listener running.", "addr", l.Addr())
+	return listener{Listener: l}, nil
+}
+
+// netherNetListenerFunc returns a Listener accepting NetherNet connections,
+// configured from UserConfig.Network.NetherNet.
 func (uc UserConfig) netherNetListenerFunc(conf Config) (Listener, error) {
-	key, err := netherNetKey(uc.Network.KeyFile, conf.Log.With("net origin", "nethernet"))
+	nn := uc.Network.NetherNet
+	address := nn.Address
+	if address == "" {
+		address = uc.Network.Address
+	}
+	key, err := netherNetKey(nn.KeyFile, conf.Log.With("net origin", "nethernet"))
 	if err != nil {
 		return nil, err
 	}
-	r, err := parsePortRange(uc.Network.UDPPorts)
+	r, err := parsePortRange(nn.UDPPorts)
 	if err != nil {
 		return nil, fmt.Errorf("parse UDP port range: %w", err)
 	}
-	return NetherNetConfig{
-		Address:  uc.Network.Address,
-		Key:      key,
-		Domain:   uc.Network.Domain,
-		UDPPorts: r,
-	}.Listener(conf)
+	return NetherNetConfig{Address: address, Key: key, Domain: nn.Domain, UDPPorts: r}.Listener(conf)
 }
 
 // NetherNetConfig may be used to create a NetherNet Listener for a Server, accepting
@@ -185,8 +195,12 @@ type NetherNetConfig struct {
 }
 
 // parsePortRange parses the given string as a PortRange using the format
-// as described in [UserConfig.Network.UDPPorts].
+// as described in [UserConfig.Network.NetherNet.UDPPorts]. An empty string
+// yields the zero PortRange.
 func parsePortRange(s string) (PortRange, error) {
+	if s == "" {
+		return PortRange{}, nil
+	}
 	if !strings.Contains(s, "-") {
 		v, err := strconv.ParseUint(s, 10, 16)
 		if err != nil {
