@@ -92,6 +92,8 @@ github.com/sandertv/go-raknet v1.15.2-0.20260705184311-0d1fd09e2cf6 h1:Oj7QsiwWT
 github.com/sandertv/go-raknet v1.15.2-0.20260705184311-0d1fd09e2cf6/go.mod h1:/yysjwfCXm2+2OY8mBazLzcxJ3irnylKCyG3FLgUPVU=
 github.com/sandertv/gophertunnel v1.59.1-0.20260819162346-27901ba2e835 h1:lF1kkxzIGnMAn/vNN8NXNlBsk7mgyc+RQIxLRgp9lUY=
 github.com/sandertv/gophertunnel v1.59.1-0.20260819162346-27901ba2e835/go.mod h1:LZsch9elPoPzsJGDbx7ClWEHFjgHZ/lONvXF7m16Qn8=
+github.com/sandertv/gophertunnel v1.59.1-0.20260916181929-709768da0edf h1:xx470n5DwBavUbbo/Z0ssJPXA96miZDUwszN33k5a7Y=
+github.com/sandertv/gophertunnel v1.59.1-0.20260916181929-709768da0edf/go.mod h1:LZsch9elPoPzsJGDbx7ClWEHFjgHZ/lONvXF7m16Qn8=
 github.com/segmentio/fasthash v1.0.3 h1:EI9+KE1EwvMLBWwjpRDc+fEM+prwxDYbslddQGtrmhM=
 github.com/segmentio/fasthash v1.0.3/go.mod h1:waKX8l2N8yckOgmSsXJi7x1ZfdKZ4x7KRMzBtS3oedY=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
