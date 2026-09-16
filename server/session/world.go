@@ -572,13 +572,13 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 	case sound.Thunder:
 		pk.SoundType, pk.EntityType = packet.SoundEventThunder, "minecraft:lightning_bolt"
 	case sound.PressurePlateClickOn:
-		pk.SoundType = packet.SoundEventPressurePlateClickOn
+		pk.SoundType, pk.ExtraData = packet.SoundEventPressurePlateClickOn, int32(s.br.BlockRuntimeID(so.Block))
 	case sound.PressurePlateClickOff:
-		pk.SoundType = packet.SoundEventPressurePlateClickOff
+		pk.SoundType, pk.ExtraData = packet.SoundEventPressurePlateClickOff, int32(s.br.BlockRuntimeID(so.Block))
 	case sound.ButtonClickOn:
-		pk.SoundType = packet.SoundEventButtonClickOn
+		pk.SoundType, pk.ExtraData = packet.SoundEventButtonClickOn, int32(s.br.BlockRuntimeID(so.Block))
 	case sound.ButtonClickOff:
-		pk.SoundType = packet.SoundEventButtonClickOff
+		pk.SoundType, pk.ExtraData = packet.SoundEventButtonClickOff, int32(s.br.BlockRuntimeID(so.Block))
 	case sound.Click:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundClick,

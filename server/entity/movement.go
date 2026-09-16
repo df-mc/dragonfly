@@ -46,9 +46,10 @@ func (m *Movement) Send() {
 
 // StepOnBlock notifies the block beneath an entity.
 func StepOnBlock(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
-	box := e.H().Type().BBox(e).Translate(pos).Grow(-0.0001)
-	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
+	box := e.H().Type().BBox(e).Translate(pos)
 	y := int(math.Floor(box.Min()[1] - 0.0001))
+	horizontal := box.Grow(-0.0001)
+	low, high := cube.PosFromVec3(horizontal.Min()), cube.PosFromVec3(horizontal.Max())
 
 	for pos := range cube.Range3D(cube.Pos{low[0], y, low[2]}, cube.Pos{high[0], y, high[2]}) {
 		if stepper, ok := tx.Block(pos).(block.EntityStepper); ok {
@@ -58,21 +59,24 @@ func StepOnBlock(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
 	}
 }
 
-// checkSteppers checks pressure plates and the block beneath the entity.
+// checkSteppers checks redstone components and the block beneath the entity.
 func (m *Movement) checkSteppers(tx *world.Tx) {
-	checkPressurePlates(tx, m.e, m.pos)
+	checkRedstoneInsiders(tx, m.e, m.pos)
 	if m.onGround {
 		StepOnBlock(tx, m.e, m.pos)
 	}
 }
 
-// checkPressurePlates notifies each pressure plate touching an entity.
-func checkPressurePlates(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
+// checkRedstoneInsiders notifies buttons and pressure plates touching an entity.
+func checkRedstoneInsiders(tx *world.Tx, e world.Entity, pos mgl64.Vec3) {
 	box := e.H().Type().BBox(e).Translate(pos).Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 	for pos := range cube.Range3D(low, high) {
-		if plate, ok := tx.Block(pos).(block.PressurePlate); ok {
-			plate.EntityInside(pos, tx, e)
+		switch b := tx.Block(pos).(type) {
+		case block.PressurePlate:
+			b.EntityInside(pos, tx, e)
+		case block.Button:
+			b.EntityInside(pos, tx, e)
 		}
 	}
 }

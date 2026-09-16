@@ -25,20 +25,22 @@ func (r RedstoneLamp) LightEmissionLevel() uint8 {
 }
 
 // RedstonePowerUpdate updates the lamp when its power changes.
-func (r RedstoneLamp) RedstonePowerUpdate(pos cube.Pos, tx *world.Tx, power int) (world.Block, bool) {
-	lit := power > 0
-	if lit {
-		tx.CancelBlockUpdate(pos, r)
-	}
-	if lit == r.Lit {
-		return r, false
-	}
-	if !lit {
-		tx.ScheduleBlockUpdate(pos, r, redstoneLampOffDelay)
+func (r RedstoneLamp) RedstonePowerUpdate(_ cube.Pos, _ *world.Tx, power int) (world.Block, bool) {
+	if power == 0 || r.Lit {
 		return r, false
 	}
 	r.Lit = true
 	return r, true
+}
+
+// RedstonePowerActionUpdate changes the off timer after the power update is accepted.
+// It also schedules initially lit lamps with no power, even without a power edge.
+func (r RedstoneLamp) RedstonePowerActionUpdate(pos cube.Pos, tx *world.Tx, update world.RedstoneUpdate) {
+	if update.NewPower > 0 {
+		tx.CancelBlockUpdate(pos, r)
+	} else if r.Lit {
+		tx.ScheduleBlockUpdate(pos, r, redstoneLampOffDelay)
+	}
 }
 
 const redstoneLampOffDelay = 4 * time.Second / 20

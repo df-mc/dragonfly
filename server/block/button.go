@@ -44,6 +44,11 @@ func (b Button) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _
 
 // ProjectileHit presses a wooden button when struck by an activating projectile.
 func (b Button) ProjectileHit(pos cube.Pos, tx *world.Tx, e world.Entity, _ cube.Face) {
+	b.EntityInside(pos, tx, e)
+}
+
+// EntityInside presses a wooden button touched by an arrow or thrown trident.
+func (b Button) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) {
 	if b.Type.Wood() && b.activatingProjectileIntersects(e, buttonBox(b).Translate(pos.Vec3())) {
 		b.press(pos, tx)
 	}
@@ -56,7 +61,7 @@ func (b Button) press(pos cube.Pos, tx *world.Tx) {
 	b.Pressed = true
 	tx.SetBlock(pos, b, nil)
 	tx.ScheduleBlockUpdate(pos, b, b.pressDuration())
-	tx.PlaySound(pos.Vec3Centre(), sound.ButtonClickOn{})
+	tx.PlaySound(pos.Vec3Centre(), sound.ButtonClickOn{Block: b})
 }
 
 // NeighbourUpdateTick breaks an unsupported button.
@@ -77,7 +82,7 @@ func (b Button) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 	b.Pressed = false
 	tx.SetBlock(pos, b, nil)
-	tx.PlaySound(pos.Vec3Centre(), sound.ButtonClickOff{})
+	tx.PlaySound(pos.Vec3Centre(), sound.ButtonClickOff{Block: b})
 }
 
 // activatingProjectileWithin reports whether an activating projectile intersects the button.

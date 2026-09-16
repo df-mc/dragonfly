@@ -38,17 +38,21 @@ func (p PressurePlate) EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity) 
 	if !p.detects(e) || !entityIntersects(e, pressurePlateActivationBox(pos)) {
 		return
 	}
-	if p.Power > 0 {
-		return
-	}
 	power := 15
 	if p.Type.Weighted() {
 		power = max(1, p.detectPower(pos, tx))
 	}
+	if p.Power == power {
+		return
+	}
+	pressed := p.Power > 0
 	p.Power = power
 	tx.SetBlock(pos, p, nil)
+	if pressed {
+		return
+	}
 	tx.ScheduleBlockUpdate(pos, p, p.releaseDelay())
-	tx.PlaySound(pos.Vec3Centre(), sound.PressurePlateClickOn{})
+	tx.PlaySound(pos.Vec3Centre(), sound.PressurePlateClickOn{Block: p})
 }
 
 // NeighbourUpdateTick breaks an unsupported pressure plate.
@@ -74,7 +78,7 @@ func (p PressurePlate) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 	p.Power = 0
 	tx.SetBlock(pos, p, nil)
-	tx.PlaySound(pos.Vec3Centre(), sound.PressurePlateClickOff{})
+	tx.PlaySound(pos.Vec3Centre(), sound.PressurePlateClickOff{Block: p})
 }
 
 // RedstonePower returns the plate's signal strength.
