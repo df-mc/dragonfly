@@ -56,10 +56,16 @@ func (w *World) deriveChunkStates(pos ChunkPos, c *Column) {
 		if derived == Block(f.b) {
 			continue
 		}
-		// Written straight into the chunk: Tx.SetBlock would run neighbour updates and send block
-		// updates for a state that was only ever wrong in memory.
+		// Written straight into the chunk rather than through Tx.SetBlock, which would run the
+		// neighbour updates of a state that was only ever wrong in memory.
 		c.SetBlock(uint8(f.pos[0]), int16(f.pos[1]), uint8(f.pos[2]), 0, w.conf.Blocks.BlockRuntimeID(derived))
 		c.modified = true
+
+		// A chunk whose neighbours arrived after it was sent is upgraded while viewers already hold
+		// the state it was loaded with, so they are told about the block themselves.
+		for _, v := range c.viewers {
+			v.ViewBlockUpdate(f.pos, derived, 0)
+		}
 	}
 }
 
