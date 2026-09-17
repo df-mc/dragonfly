@@ -130,6 +130,7 @@ const (
 	hashLight
 	hashLilyPad
 	hashLitPumpkin
+	hashLodestone
 	hashLog
 	hashLoom
 	hashMagma
@@ -748,6 +749,10 @@ func (LilyPad) Hash() (uint64, uint64) {
 
 func (l LitPumpkin) Hash() (uint64, uint64) {
 	return hashLitPumpkin, uint64(l.Facing)
+}
+
+func (Lodestone) Hash() (uint64, uint64) {
+	return hashLodestone, 0
 }
 
 func (l Log) Hash() (uint64, uint64) {

@@ -17,6 +17,8 @@ type UseContext struct {
 	ConsumedItems []Stack
 	// NewItemSurvivalOnly will add any new items only in survival mode.
 	NewItemSurvivalOnly bool
+	// ReplaceHeldItem replaces the item stack held after the action is complete.
+	ReplaceHeldItem bool
 
 	// FirstFunc returns the first item in the context holder's inventory if found. The second return value describes
 	// whether the item was found. The comparable function is used to compare the item to the given item.
