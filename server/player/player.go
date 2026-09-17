@@ -1586,7 +1586,7 @@ func (p *Player) UseItem() {
 	if p.Handler().HandleItemUse(ctx); ctx.Cancelled() {
 		return
 	}
-	i, left := p.HeldItems()
+	i, _ = p.HeldItems()
 	it := i.Item()
 
 	if cd, ok := it.(item.Cooldown); ok {
@@ -1608,7 +1608,7 @@ func (p *Player) UseItem() {
 				// If the item was not charged yet, start charging.
 				p.usingSince, p.usingItem = time.Now(), true
 			}
-			p.handleUseContext(useCtx)
+			p.handleUseContext(useCtx, i)
 			p.updateState()
 			return
 		}
@@ -1619,7 +1619,7 @@ func (p *Player) UseItem() {
 		if usable.Charge(p, p.tx, useCtx, dur) {
 			p.session().SendChargeItemComplete()
 		}
-		p.handleUseContext(useCtx)
+		p.handleUseContext(useCtx, i)
 		p.updateState()
 	case item.Usable:
 		useCtx := p.useContext()
@@ -1629,8 +1629,7 @@ func (p *Player) UseItem() {
 		// We only swing the player's arm if the item held actually does something. If it doesn't, there is no
 		// reason to swing the arm.
 		p.SwingArm()
-		p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
-		p.addNewItem(useCtx)
+		p.handleUseContext(useCtx, i)
 	case item.Consumable:
 		if c, ok := usable.(interface{ CanConsume() bool }); ok && !c.CanConsume() {
 			p.ReleaseItem()
@@ -1662,7 +1661,7 @@ func (p *Player) UseItem() {
 			return
 		}
 		useCtx.CountSub, useCtx.NewItem = 1, usable.Consume(p.tx, p)
-		p.handleUseContext(useCtx)
+		p.handleUseContext(useCtx, i)
 		p.tx.PlaySound(p.Position().Add(mgl64.Vec3{0, 1.5}), sound.Burp{})
 	}
 }
@@ -1686,7 +1685,7 @@ func (p *Player) ReleaseItem() {
 		return
 	}
 	i.Item().(item.Releasable).Release(p, p.tx, useCtx, dur)
-	p.handleUseContext(useCtx)
+	p.handleUseContext(useCtx, i)
 	p.updateState()
 }
 
@@ -1721,11 +1720,14 @@ func (p *Player) canRelease() bool {
 	return true
 }
 
-// handleUseContext handles the item.UseContext after the item has been used.
-func (p *Player) handleUseContext(ctx *item.UseContext) {
-	i, left := p.HeldItems()
-
-	p.SetHeldItems(p.subtractItem(p.damageItem(i, ctx.Damage), ctx.CountSub), left)
+// handleUseContext handles ctx after used was used. Count and durability changes are applied only if the currently
+// held stack still matches used, preserving inventory changes made while the item action ran.
+func (p *Player) handleUseContext(ctx *item.UseContext, used item.Stack) {
+	held, offHand := p.HeldItems()
+	if !held.Empty() && !used.Empty() && held.Comparable(used) {
+		held = p.subtractItem(p.damageItem(held, ctx.Damage), ctx.CountSub)
+	}
+	p.SetHeldItems(held, offHand)
 	p.addNewItem(ctx)
 	for _, it := range ctx.ConsumedItems {
 		_, offHand := p.HeldItems()
@@ -1769,7 +1771,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		p.resendNearbyBlocks(pos, face)
 		return
 	}
-	i, left := p.HeldItems()
+	i, _ := p.HeldItems()
 	b := p.tx.Block(pos)
 	if act, ok := b.(block.Activatable); ok {
 		// If a player is sneaking, it will not activate the block clicked, unless it is not holding any
@@ -1779,8 +1781,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			// used.
 			if useCtx := p.useContext(); act.Activate(pos, face, p.tx, p, useCtx) {
 				p.SwingArm()
-				p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
-				p.addNewItem(useCtx)
+				p.handleUseContext(useCtx, i)
 				return
 			}
 		}
@@ -1796,8 +1797,7 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 			return
 		}
 		p.SwingArm()
-		p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
-		p.addNewItem(useCtx)
+		p.handleUseContext(useCtx, i)
 	case world.Block:
 		// The item IS a block, meaning it is being placed.
 		replacedPos := pos
@@ -1811,7 +1811,9 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		if !p.placeBlock(replacedPos, ib, false) || p.GameMode().CreativeInventory() {
 			return
 		}
-		p.SetHeldItems(p.subtractItem(i, 1), left)
+		useCtx := p.useContext()
+		useCtx.SubtractFromCount(1)
+		p.handleUseContext(useCtx, i)
 	}
 }
 
@@ -1826,7 +1828,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 	if p.Handler().HandleItemUseOnEntity(ctx, e); ctx.Cancelled() {
 		return false
 	}
-	i, left := p.HeldItems()
+	i, _ := p.HeldItems()
 	usable, ok := i.Item().(item.UsableOnEntity)
 	if !ok {
 		return true
@@ -1836,8 +1838,7 @@ func (p *Player) UseItemOnEntity(e world.Entity) bool {
 		return true
 	}
 	p.SwingArm()
-	p.SetHeldItems(p.subtractItem(p.damageItem(i, useCtx.Damage), useCtx.CountSub), left)
-	p.addNewItem(useCtx)
+	p.handleUseContext(useCtx, i)
 	return true
 }
 
