@@ -42,7 +42,9 @@ func teleport(e *Ent, tx *world.Tx, target trace.Result) {
 	if user, ok := owner.(teleporter); ok {
 		tx.PlaySound(user.Position(), sound.Teleport{})
 		user.Teleport(target.Position())
-		user.Hurt(5, FallDamageSource{})
+		if tx.World().FallDamage() {
+			user.Hurt(5, FallDamageSource{})
+		}
 	}
 }
 
