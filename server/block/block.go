@@ -196,6 +196,11 @@ func firstReplaceable(tx *world.Tx, pos cube.Pos, face cube.Face, with world.Blo
 	return pos, face, false
 }
 
+// entityIntersects checks whether an entity overlaps a box.
+func entityIntersects(e world.Entity, box cube.BBox) bool {
+	return e.H().Type().BBox(e).Translate(e.Position()).IntersectsWith(box)
+}
+
 // place places the block passed at the position passed. If the user implements the block.Placer interface, it
 // will use its PlaceBlock method. If not, the block is placed without interaction from the user.
 func place(tx *world.Tx, pos cube.Pos, b world.Block, user item.User, ctx *item.UseContext) {

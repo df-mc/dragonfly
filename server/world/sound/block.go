@@ -126,6 +126,38 @@ type DoorCrash struct{ sound }
 // Click is a clicking sound.
 type Click struct{ sound }
 
+// ButtonClickOn is the sound of a button being pressed.
+type ButtonClickOn struct {
+	// Block is the button or pressure plate whose material determines the sound.
+	Block world.Block
+
+	sound
+}
+
+// ButtonClickOff is the sound of a button being released.
+type ButtonClickOff struct {
+	// Block is the button or pressure plate whose material determines the sound.
+	Block world.Block
+
+	sound
+}
+
+// PressurePlateClickOn is the sound of a pressure plate being pressed.
+type PressurePlateClickOn struct {
+	// Block is the button or pressure plate whose material determines the sound.
+	Block world.Block
+
+	sound
+}
+
+// PressurePlateClickOff is the sound of a pressure plate being released.
+type PressurePlateClickOff struct {
+	// Block is the button or pressure plate whose material determines the sound.
+	Block world.Block
+
+	sound
+}
+
 // Ignite is a sound played when using a flint & steel.
 type Ignite struct{ sound }
 
