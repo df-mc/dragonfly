@@ -515,6 +515,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		CustomBlocks: srv.customBlocks,
 		GameRules: []protocol.GameRule{
 			{Name: "naturalregeneration", Value: false},
+			{Name: "respawnblocksexplode", Value: srv.world.RespawnBlocksExplode()},
 			{Name: "locatorBar", Value: false},
 		},
 
@@ -583,6 +584,7 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	conf.Locale, _ = language.Parse(strings.Replace(conn.ClientData().LanguageCode, "_", "-", 1))
 	conf.Skin = srv.parseSkin(conn.ClientData())
 	conf.Session = s
+	conf.WorldByDimension = srv.dimension
 
 	handle := world.EntitySpawnOpts{Position: conf.Position, ID: id}.New(player.Type, conf)
 	s.SetHandle(handle, conf.Skin)

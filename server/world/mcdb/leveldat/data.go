@@ -234,19 +234,20 @@ func (d *Data) Settings() *world.Settings {
 	difficulty, _ := world.DifficultyByID(int(d.Difficulty))
 	mode, _ := world.GameModeByID(int(d.GameType))
 	return &world.Settings{
-		Name:            d.LevelName,
-		Spawn:           cube.Pos{int(d.SpawnX), int(d.SpawnY), int(d.SpawnZ)},
-		Time:            d.Time,
-		TimeCycle:       d.DoDayLightCycle,
-		RainTime:        int64(d.RainTime),
-		Raining:         d.RainLevel > 0,
-		ThunderTime:     int64(d.LightningTime),
-		Thundering:      d.LightningLevel > 0,
-		WeatherCycle:    d.DoWeatherCycle,
-		CurrentTick:     d.CurrentTick,
-		DefaultGameMode: mode,
-		Difficulty:      difficulty,
-		TickRange:       d.ServerChunkTickRange,
+		Name:                 d.LevelName,
+		Spawn:                cube.Pos{int(d.SpawnX), int(d.SpawnY), int(d.SpawnZ)},
+		Time:                 d.Time,
+		TimeCycle:            d.DoDayLightCycle,
+		RainTime:             int64(d.RainTime),
+		Raining:              d.RainLevel > 0,
+		ThunderTime:          int64(d.LightningTime),
+		Thundering:           d.LightningLevel > 0,
+		WeatherCycle:         d.DoWeatherCycle,
+		CurrentTick:          d.CurrentTick,
+		DefaultGameMode:      mode,
+		Difficulty:           difficulty,
+		TickRange:            d.ServerChunkTickRange,
+		RespawnBlocksExplode: d.RespawnBlocksExplode,
 	}
 }
 
@@ -268,6 +269,7 @@ func (d *Data) PutSettings(s *world.Settings) {
 	}
 	d.CurrentTick = s.CurrentTick
 	d.ServerChunkTickRange = s.TickRange
+	d.RespawnBlocksExplode = s.RespawnBlocksExplode
 	mode, _ := world.GameModeID(s.DefaultGameMode)
 	d.GameType = int32(mode)
 	difficulty, _ := world.DifficultyID(s.Difficulty)
