@@ -1806,6 +1806,9 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		if replaceable, ok := p.tx.Block(replacedPos).(block.Replaceable); !ok || !replaceable.ReplaceableBy(ib) || replacedPos.OutOfBounds(p.tx.Range()) {
 			return
 		}
+		if deriver, ok := ib.(world.StateDeriver); ok {
+			ib = deriver.DeriveState(replacedPos, p.tx)
+		}
 		if !p.placeBlock(replacedPos, ib, false) || p.GameMode().CreativeInventory() {
 			return
 		}
