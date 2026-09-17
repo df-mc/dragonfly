@@ -173,6 +173,7 @@ const (
 	hashRawCopper
 	hashRawGold
 	hashRawIron
+	hashRedShrub
 	hashRedstoneBlock
 	hashRedstoneOre
 	hashRedstoneTorch
@@ -185,6 +186,7 @@ const (
 	hashSapling
 	hashSeaLantern
 	hashSeaPickle
+	hashShelfMushroom
 	hashShortGrass
 	hashShroomlight
 	hashShulkerBox
@@ -207,6 +209,7 @@ const (
 	hashStone
 	hashStoneBricks
 	hashStonecutter
+	hashStrawBed
 	hashString
 	hashSugarCane
 	hashSulfur
@@ -307,7 +310,7 @@ func (Beacon) Hash() (uint64, uint64) {
 }
 
 func (b Bed) Hash() (uint64, uint64) {
-	return hashBed, uint64(b.Facing) | uint64(boolByte(b.Head))<<2
+	return hashBed, uint64(b.Facing) | uint64(boolByte(b.Head))<<2 | uint64(boolByte(b.Occupied))<<3
 }
 
 func (b Bedrock) Hash() (uint64, uint64) {
@@ -922,6 +925,10 @@ func (RawIron) Hash() (uint64, uint64) {
 	return hashRawIron, 0
 }
 
+func (RedShrub) Hash() (uint64, uint64) {
+	return hashRedShrub, 0
+}
+
 func (RedstoneBlock) Hash() (uint64, uint64) {
 	return hashRedstoneBlock, 0
 }
@@ -959,7 +966,7 @@ func (s Sandstone) Hash() (uint64, uint64) {
 }
 
 func (s Sapling) Hash() (uint64, uint64) {
-	return hashSapling, uint64(s.Type.Uint8()) | uint64(boolByte(s.Aged))<<3
+	return hashSapling, uint64(s.Type.Uint8()) | uint64(boolByte(s.Aged))<<4
 }
 
 func (SeaLantern) Hash() (uint64, uint64) {
@@ -968,6 +975,10 @@ func (SeaLantern) Hash() (uint64, uint64) {
 
 func (s SeaPickle) Hash() (uint64, uint64) {
 	return hashSeaPickle, uint64(s.AdditionalCount) | uint64(boolByte(s.Dead))<<8
+}
+
+func (s ShelfMushroom) Hash() (uint64, uint64) {
+	return hashShelfMushroom, uint64(s.Facing) | uint64(boolByte(s.Large))<<2
 }
 
 func (ShortGrass) Hash() (uint64, uint64) {
@@ -1056,6 +1067,10 @@ func (s StoneBricks) Hash() (uint64, uint64) {
 
 func (s Stonecutter) Hash() (uint64, uint64) {
 	return hashStonecutter, uint64(s.Facing)
+}
+
+func (s StrawBed) Hash() (uint64, uint64) {
+	return hashStrawBed, uint64(s.Facing) | uint64(boolByte(s.Head))<<2 | uint64(boolByte(s.Occupied))<<3
 }
 
 func (s String) Hash() (uint64, uint64) {

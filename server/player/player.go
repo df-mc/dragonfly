@@ -1299,8 +1299,8 @@ func (p *Player) Sleep(pos cube.Pos) {
 	}
 
 	tx := p.tx
-	b, ok := tx.Block(pos).(block.Bed)
-	if !ok || b.Sleeper != nil {
+	b, ok := tx.Block(pos).(block.Sleepable)
+	if !ok || b.SleepingEntity() != nil {
 		// The player cannot sleep here.
 		return
 	}
@@ -1310,8 +1310,7 @@ func (p *Player) Sleep(pos cube.Pos) {
 		return
 	}
 
-	b.Sleeper = p.H()
-	tx.SetBlock(pos, b, nil)
+	b.StartSleeping(pos, tx, p.H())
 
 	tx.World().SetRequiredSleepDuration(time.Millisecond * 5050)
 
@@ -1345,9 +1344,8 @@ func (p *Player) Wake() {
 	p.updateState()
 
 	pos := p.sleepPos
-	if b, ok := tx.Block(pos).(block.Bed); ok {
-		b.Sleeper = nil
-		tx.SetBlock(pos, b, nil)
+	if b, ok := tx.Block(pos).(block.Sleepable); ok {
+		b.StopSleeping(pos, tx)
 	}
 }
 

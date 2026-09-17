@@ -111,6 +111,9 @@ func (s Stairs) Instrument() sound.Instrument {
 	if _, ok := s.Block.(BambooMosaic); ok {
 		return sound.Bass()
 	}
+	if _, ok := s.Block.(Wool); ok {
+		return sound.Guitar()
+	}
 	return sound.BassDrum()
 }
 

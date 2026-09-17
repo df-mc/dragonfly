@@ -60,6 +60,26 @@ func FloweringAzaleaLeaves() LeavesType {
 	return LeavesType{10}
 }
 
+// OrangePoplarLeaves returns orange poplar leaves material.
+func OrangePoplarLeaves() LeavesType {
+	return LeavesType{11}
+}
+
+// RedPoplarLeaves returns red poplar leaves material.
+func RedPoplarLeaves() LeavesType {
+	return LeavesType{12}
+}
+
+// YellowPoplarLeaves returns yellow poplar leaves material.
+func YellowPoplarLeaves() LeavesType {
+	return LeavesType{13}
+}
+
+// PoplarLeavesTypes returns the leaves types of poplar, which has no plain variant.
+func PoplarLeavesTypes() []LeavesType {
+	return []LeavesType{OrangePoplarLeaves(), RedPoplarLeaves(), YellowPoplarLeaves()}
+}
+
 // LeavesTypes returns all supported leaves types.
 func LeavesTypes() []LeavesType {
 	return []LeavesType{
@@ -74,6 +94,9 @@ func LeavesTypes() []LeavesType {
 		PaleOakLeaves(),
 		AzaleaLeaves(),
 		FloweringAzaleaLeaves(),
+		OrangePoplarLeaves(),
+		RedPoplarLeaves(),
+		YellowPoplarLeaves(),
 	}
 }
 
@@ -89,6 +112,9 @@ func WoodLeavesTypes() []LeavesType {
 		MangroveLeaves(),
 		CherryLeaves(),
 		PaleOakLeaves(),
+		OrangePoplarLeaves(),
+		RedPoplarLeaves(),
+		YellowPoplarLeaves(),
 	}
 }
 
@@ -101,14 +127,20 @@ func (t leavesType) Uint8() uint8 {
 
 // String returns the Bedrock identifier suffix for the leaves type.
 func (t leavesType) String() string {
-	if wood, ok := t.Wood(); ok {
-		return wood.String() + "_leaves"
-	}
 	switch t {
 	case 9:
 		return "azalea_leaves"
 	case 10:
 		return "azalea_leaves_flowered"
+	case 11:
+		return "orange_poplar_leaves"
+	case 12:
+		return "red_poplar_leaves"
+	case 13:
+		return "yellow_poplar_leaves"
+	}
+	if wood, ok := t.Wood(); ok {
+		return wood.String() + "_leaves"
 	}
 	panic("unknown leaves type")
 }
@@ -132,6 +164,8 @@ func (t leavesType) Sapling() (SaplingType, bool) {
 		return CherrySapling(), true
 	case 8:
 		return PaleOakSapling(), true
+	case 11, 12, 13:
+		return PoplarSapling(), true
 	default:
 		return SaplingType{}, false
 	}
@@ -158,6 +192,8 @@ func (t leavesType) Wood() (WoodType, bool) {
 		return CherryWood(), true
 	case 8:
 		return PaleOakWood(), true
+	case 11, 12, 13:
+		return PoplarWood(), true
 	default:
 		return WoodType{}, false
 	}

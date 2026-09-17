@@ -239,7 +239,10 @@ func init() {
 	registerAll(allStainedTerracotta())
 	registerAll(allStairs())
 	registerAll(allStoneBricks())
+	world.RegisterBlock(RedShrub{})
+	registerAll(allShelfMushrooms())
 	registerAll(allStonecutters())
+	registerAll(allStrawBeds())
 	registerAll(allString())
 	registerAll(allSugarCane())
 	registerAll(allTorches())
@@ -425,8 +428,11 @@ func init() {
 	world.RegisterItem(Sponge{})
 	world.RegisterItem(SporeBlossom{})
 	world.RegisterItem(Stonecutter{})
+	world.RegisterItem(RedShrub{})
+	world.RegisterItem(ShelfMushroom{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
+	world.RegisterItem(StrawBed{})
 	world.RegisterItem(String{})
 	world.RegisterItem(SugarCane{})
 	world.RegisterItem(Sulfur{})
@@ -503,6 +509,9 @@ func init() {
 	}
 	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
 	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})
+	for _, t := range PoplarLeavesTypes() {
+		world.RegisterItem(Leaves{Type: t, Persistent: true})
+	}
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
 		world.RegisterItem(CopperOre{Type: ore})
