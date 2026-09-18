@@ -1,6 +1,9 @@
 package chunk
 
-import "slices"
+import (
+	"fmt"
+	"slices"
+)
 
 // SubChunk is a cube of blocks located in a chunk. It has a size of 16x16x16 blocks and forms part of a stack
 // that forms a Chunk.
@@ -65,10 +68,20 @@ func (sub *SubChunk) Empty() bool {
 	return len(sub.storages) == 0 || (len(sub.storages) == 1 && len(sub.storages[0].palette.values) == 1 && sub.storages[0].palette.values[0] == sub.air)
 }
 
+// MaxLayers is the maximum number of block storages a SubChunk may hold. Both the network and the disk format encode
+// the storage count of a sub chunk as a single byte, so a sub chunk holding more storages than this cannot be
+// represented. The highest layer index that may be passed to Layer is therefore MaxLayers-1.
+const MaxLayers = 255
+
 // Layer returns a certain block storage/layer from a sub chunk. If no storage at the layer exists, the layer
-// is created, as well as all layers between the current highest layer and the new highest layer.
+// is created, as well as all layers between the current highest layer and the new highest layer. Layer panics if the
+// layer passed is MaxLayers, as such a layer cannot be encoded.
 func (sub *SubChunk) Layer(layer uint8) *PalettedStorage {
-	for uint8(len(sub.storages)) <= layer {
+	if int(layer) >= MaxLayers {
+		panic(fmt.Sprintf("layer %v is out of range: a sub chunk holds at most %v layers", layer, MaxLayers))
+	}
+	// The length is compared as an int rather than narrowed to a uint8, which wraps to 0 once the maximum is reached.
+	for len(sub.storages) <= int(layer) {
 		// Keep appending to storages until the requested layer is achieved. Makes working with new layers
 		// much easier.
 		sub.storages = append(sub.storages, emptyStorage(sub.air))
@@ -84,7 +97,7 @@ func (sub *SubChunk) Layers() []*PalettedStorage {
 // Block returns the runtime ID of the block located at the given X, Y and Z. X, Y and Z must be in a
 // range of 0-15.
 func (sub *SubChunk) Block(x, y, z byte, layer uint8) uint32 {
-	if uint8(len(sub.storages)) <= layer {
+	if len(sub.storages) <= int(layer) {
 		return sub.air
 	}
 	return sub.storages[layer].At(x, y, z)
@@ -136,14 +149,16 @@ func (sub *SubChunk) SkyLight(x, y, z byte) uint8 {
 // Compact cleans the garbage from all block storages that sub chunk contains, so that they may be
 // cleanly written to a database.
 func (sub *SubChunk) compact() {
-	newStorages := make([]*PalettedStorage, 0, len(sub.storages))
 	for _, storage := range sub.storages {
 		storage.compact()
-		if len(storage.palette.values) == 1 && storage.palette.values[0] == sub.air {
-			// If the palette has only air in it, it means the storage is empty, so we can ignore it.
-			continue
-		}
-		newStorages = append(newStorages, storage)
 	}
-	sub.storages = newStorages
+	// Only trailing all-air storages may be dropped, as a layer past the last stored layer already reads as air.
+	// Dropping an all-air storage below a populated one would renumber every layer above it instead.
+	for len(sub.storages) > 0 {
+		last := sub.storages[len(sub.storages)-1]
+		if len(last.palette.values) != 1 || last.palette.values[0] != sub.air {
+			break
+		}
+		sub.storages = sub.storages[:len(sub.storages)-1]
+	}
 }

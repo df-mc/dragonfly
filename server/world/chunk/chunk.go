@@ -102,7 +102,7 @@ func (chunk *Chunk) Sub() []*SubChunk {
 // sub chunk exists at the given y, the block is assumed to be air.
 func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
 	sub := chunk.SubChunk(y)
-	if sub.Empty() || uint8(len(sub.storages)) <= layer {
+	if sub.Empty() || len(sub.storages) <= int(layer) {
 		return chunk.air
 	}
 	return sub.storages[layer].At(x, uint8(y), z)
@@ -112,7 +112,7 @@ func (chunk *Chunk) Block(x uint8, y int16, z uint8, layer uint8) uint32 {
 // SubChunk exists at the given y, a new SubChunk is created and the block is set.
 func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint32) {
 	sub := chunk.sub[chunk.SubIndex(y)]
-	if uint8(len(sub.storages)) <= layer && block == chunk.air {
+	if len(sub.storages) <= int(layer) && block == chunk.air {
 		// Air was set at n layer, but there were less than n layers, so there already was air there.
 		// Don't do anything with this, just return.
 		return
