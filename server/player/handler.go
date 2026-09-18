@@ -6,6 +6,7 @@ import (
 
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/cmd"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
@@ -141,6 +142,10 @@ type Handler interface {
 	// HandleItemDrop handles the player dropping an item on the ground.
 	// ctx.Cancel() may be called to prevent the player from dropping the item.Stack passed on the ground.
 	HandleItemDrop(ctx *Context, s item.Stack)
+	// HandleMountEntity handles a player getting on an entity. It may change the seat or cancel the action.
+	HandleMountEntity(ctx *Context, rideable entity.Rideable, seatIndex *int)
+	// HandleDismountEntity handles a player getting off an entity. It may cancel the action.
+	HandleDismountEntity(ctx *Context, rideable entity.Rideable)
 	// HandleTransfer handles a player being transferred to another server. ctx.Cancel() may be called to
 	// cancel the transfer.
 	HandleTransfer(ctx *Context, addr *net.UDPAddr)
@@ -192,6 +197,8 @@ func (NopHandler) HandleItemRelease(ctx *Context, item item.Stack, dur time.Dura
 func (NopHandler) HandleItemConsume(*Context, item.Stack)                                  {}
 func (NopHandler) HandleItemDamage(*Context, item.Stack, *int)                             {}
 func (NopHandler) HandleAttackEntity(*Context, world.Entity, *float64, *float64, *bool)    {}
+func (NopHandler) HandleMountEntity(*Context, entity.Rideable, *int)                       {}
+func (NopHandler) HandleDismountEntity(*Context, entity.Rideable)                          {}
 func (NopHandler) HandleExperienceGain(*Context, *int)                                     {}
 func (NopHandler) HandlePunchAir(*Context)                                                 {}
 func (NopHandler) HandleHurt(*Context, *float64, bool, *time.Duration, world.DamageSource) {}

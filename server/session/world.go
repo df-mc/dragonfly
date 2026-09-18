@@ -58,6 +58,8 @@ func (s *Session) ViewEntity(e world.Entity) {
 	if s.entityHidden(e) {
 		return
 	}
+	// Restore riding links after the entity is added.
+	defer s.viewEntityLinks(e)
 	var runtimeID uint64
 
 	_, controllable := e.(Controllable)
@@ -180,6 +182,18 @@ func (s *Session) HideEntity(e world.Entity) {
 	if s.entityRuntimeID(e) == selfEntityRuntimeID {
 		return
 	}
+	if rideable, ok := e.(entity.Rideable); ok {
+		for _, rider := range rideable.Riders() {
+			if rider.Handle != nil {
+				s.viewEntityDismountHandles(rider.Handle, e.H(), true)
+			}
+		}
+	}
+	if rider, ok := e.(entity.Rider); ok {
+		if rideable := rider.RidingEntityHandle(); rideable != nil {
+			s.viewEntityDismountHandles(e.H(), rideable, true)
+		}
+	}
 
 	s.entityMutex.Lock()
 	id, ok := s.entityRuntimeIDs[e.H()]
@@ -291,6 +305,67 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
 		Flags:           packet.MoveFlagTeleport,
 	})
+}
+
+// ViewEntityMount shows an entity riding another entity.
+func (s *Session) ViewEntityMount(rider world.Entity, rideable world.Entity, driver bool) {
+	s.viewEntityMountHandles(rider.H(), rideable.H(), driver)
+}
+
+// ViewEntityDismount shows an entity getting off another entity.
+func (s *Session) ViewEntityDismount(rider world.Entity, rideable world.Entity) {
+	s.viewEntityDismount(rider, rideable, false)
+}
+
+func (s *Session) viewEntityMountHandles(rider, rideable *world.EntityHandle, driver bool) {
+	riderID, rideableID := s.handleRuntimeID(rider), s.handleRuntimeID(rideable)
+	if riderID == 0 || rideableID == 0 || riderID == rideableID {
+		return
+	}
+	linkType := protocol.EntityLinkPassenger
+	if driver {
+		linkType = protocol.EntityLinkRider
+	}
+	s.writePacket(&packet.SetActorLink{EntityLink: protocol.EntityLink{
+		RiddenEntityUniqueID: int64(rideableID),
+		RiderEntityUniqueID:  int64(riderID),
+		Type:                 byte(linkType),
+		RiderInitiated:       true,
+	}})
+}
+
+func (s *Session) viewEntityDismount(rider, rideable world.Entity, immediate bool) {
+	s.viewEntityDismountHandles(rider.H(), rideable.H(), immediate)
+}
+
+func (s *Session) viewEntityDismountHandles(rider, rideable *world.EntityHandle, immediate bool) {
+	riderID, rideableID := s.handleRuntimeID(rider), s.handleRuntimeID(rideable)
+	if riderID == 0 || rideableID == 0 || riderID == rideableID {
+		return
+	}
+	s.writePacket(&packet.SetActorLink{EntityLink: protocol.EntityLink{
+		RiddenEntityUniqueID: int64(rideableID),
+		RiderEntityUniqueID:  int64(riderID),
+		Type:                 byte(protocol.EntityLinkRemove),
+		Immediate:            immediate,
+		RiderInitiated:       true,
+	}})
+}
+
+func (s *Session) viewEntityLinks(e world.Entity) {
+	if rideable, ok := e.(entity.Rideable); ok {
+		controller := rideable.ControllingRider()
+		for _, rider := range rideable.Riders() {
+			if rider.Handle != nil {
+				s.viewEntityMountHandles(rider.Handle, e.H(), controller == rider.Handle)
+			}
+		}
+	}
+	if rider, ok := e.(entity.Rider); ok {
+		if rideable := rider.RidingEntityHandle(); rideable != nil {
+			s.viewEntityMountHandles(e.H(), rideable, rider.RidingEntityController())
+		}
+	}
 }
 
 // ViewEntityItems ...
@@ -1423,6 +1498,9 @@ func (s *Session) entityRuntimeID(e world.Entity) uint64 {
 }
 
 func (s *Session) handleRuntimeID(e *world.EntityHandle) uint64 {
+	if e == nil {
+		return 0
+	}
 	s.entityMutex.RLock()
 	defer s.entityMutex.RUnlock()
 
