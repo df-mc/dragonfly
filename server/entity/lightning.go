@@ -20,6 +20,12 @@ func NewLightning(opts world.EntitySpawnOpts) *world.EntityHandle {
 // NewLightningWithDamage creates a new lightning entities using the damage and
 // fire properties passed.
 func NewLightningWithDamage(opts world.EntitySpawnOpts, dmg float64, blockFire bool, entityFireDuration time.Duration) *world.EntityHandle {
+	return opts.New(LightningType, lightningStrikeConf(dmg, blockFire, entityFireDuration))
+}
+
+// lightningStrikeConf returns the StationaryBehaviourConfig of a lightning bolt with the damage and fire
+// properties passed bound to its Tick.
+func lightningStrikeConf(dmg float64, blockFire bool, entityFireDuration time.Duration) StationaryBehaviourConfig {
 	conf := lightningConf
 	conf.Tick = (&lightningState{
 		Damage:             dmg,
@@ -28,7 +34,7 @@ func NewLightningWithDamage(opts world.EntitySpawnOpts, dmg float64, blockFire b
 		state:              2,
 		lifetime:           rand.IntN(4) + 1,
 	}).tick
-	return opts.New(LightningType, conf)
+	return conf
 }
 
 var lightningConf = StationaryBehaviourConfig{SpawnSounds: []world.Sound{sound.Explosion{}, sound.Thunder{}}, ExistenceDuration: time.Second}
@@ -85,9 +91,8 @@ func (s *lightningState) dealDamage(e *Ent, tx *world.Tx) {
 // 4 additional attempts to spread it around that position.
 func (s *lightningState) spreadFire(tx *world.Tx, pos cube.Pos) {
 	s.fire().Start(tx, pos)
-	for i := 0; i < 4; i++ {
-		pos.Add(cube.Pos{rand.IntN(3) - 1, rand.IntN(3) - 1, rand.IntN(3) - 1})
-		s.fire().Start(tx, pos)
+	for range 4 {
+		s.fire().Start(tx, pos.Add(cube.Pos{rand.IntN(3) - 1, rand.IntN(3) - 1, rand.IntN(3) - 1}))
 	}
 }
 
@@ -118,7 +123,9 @@ func (t lightningType) Open(tx *world.Tx, handle *world.EntityHandle, data *worl
 	return &Ent{tx: tx, handle: handle, data: data}
 }
 func (t lightningType) DecodeNBT(_ map[string]any, data *world.EntityData) {
-	data.Data = lightningConf.New()
+	// Lightning stores no NBT of its own: recreate the default strike so a bolt
+	// loaded from disk still deals damage and starts fire.
+	data.Data = lightningStrikeConf(5, true, time.Second*8).New()
 }
 func (t lightningType) EncodeNBT(*world.EntityData) map[string]any { return nil }
 func (lightningType) EncodeEntity() string                         { return "minecraft:lightning_bolt" }
