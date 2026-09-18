@@ -29,6 +29,32 @@ func (i intRange) atInclusive() int {
 	return i.min + rand.IntN(i.max-i.min+1)
 }
 
+// weightedInt is a value paired with the weight it is drawn with.
+type weightedInt struct {
+	value, weight int
+}
+
+// weightedInts is a list of values drawn by weight, holding the radius of a poplar canopy.
+type weightedInts []weightedInt
+
+// at returns a value drawn by weight from the list.
+func (w weightedInts) at() int {
+	total := 0
+	for _, e := range w {
+		total += e.weight
+	}
+	if total <= 0 {
+		return 0
+	}
+	choice := rand.IntN(total)
+	for _, e := range w {
+		if choice -= e.weight; choice < 0 {
+			return e.value
+		}
+	}
+	return w[len(w)-1].value
+}
+
 // heightRange is the trunk_height of a tree feature that states a base and the intervals added to it.
 type heightRange struct {
 	base      int
@@ -143,6 +169,17 @@ func treeLeaf(tx *world.Tx, pos cube.Pos, leaves LeavesType, replaceable func(*w
 	}
 	tx.SetBlock(pos, Leaves{Type: leaves}, nil)
 	return true
+}
+
+// poplarLeafReplaceable is the may_replace of a poplar tree feature, which covers the decorations a poplar
+// puts on its own trunk as well as air and leaves. Without it a shelf mushroom on the upper trunk would be
+// left buried in the canopy grown around it.
+func poplarLeafReplaceable(tx *world.Tx, pos cube.Pos) bool {
+	switch tx.Block(pos).(type) {
+	case ShelfMushroom, RedShrub:
+		return !pos.OutOfBounds(tx.Range())
+	}
+	return treeLeafReplaceable(tx, pos)
 }
 
 // treeRoom returns whether a tree of the height passed has room above the position passed, being the only check
@@ -1069,6 +1106,21 @@ var (
 		canopy:         megaCanopy{height: intRange{3, 3}, baseRadius: 2, coreWidth: 2},
 		branchCanopy:   megaCanopy{height: intRange{2, 4}, baseRadius: 1, coreWidth: 1, simplified: true},
 	}
+	// poplarTree holds the values of the poplar tree features, which differ only in their leaf colour.
+	poplarTree = poplarTrunk{
+		trunkHeight: intRange{7, 11},
+		remaining:   intRange{4, 4},
+		branches:    intRange{1, 4},
+		// optional_shelf_mushroom_feature places one on a quarter of the trunk logs.
+		mushroomChance: 25,
+		canopy: poplarCanopy{
+			radius: weightedInts{
+				{value: 5, weight: 5}, {value: 6, weight: 5}, {value: 7, weight: 1}, {value: 8, weight: 1},
+			},
+			height:         intRange{5, 6},
+			sideHoleChance: 15,
+		},
+	}
 	// cherryTree holds the values of cherry_tree_feature.json.
 	cherryTree = cherryTrunk{
 		trunkHeight:  heightRange{base: 7, intervals: []int{1}, inclusive: true},
@@ -1082,10 +1134,196 @@ var (
 	}
 )
 
+// poplarFullerQuadrant returns whether the cell passed falls in the diagonal pair of quadrants that every leaf
+// layer of a poplar reaches one further into.
+func poplarFullerQuadrant(x, z int, sameSign bool) bool {
+	if sameSign {
+		return x < 0 && z < 0 || x > 0 && z > 0
+	}
+	return x < 0 && z > 0 || x > 0 && z < 0
+}
+
+// poplarCanopy is the canopy of a poplar: leaf layers stacked from below its position to the top of the tree,
+// narrowed at both ends, with a cross of logs laid through it.
+type poplarCanopy struct {
+	// radius holds the radii the canopy is drawn with. One is taken off whichever value is drawn.
+	radius weightedInts
+	// height is the number of leaf layers carried above the position of the canopy.
+	height intRange
+	// sideHoleChance is the chance in a hundred that a cell on the edge of a layer is left out.
+	sideHoleChance treeChance
+	// wood is the wood of the logs crossing the canopy. It is set by the trunk carrying it.
+	wood WoodType
+}
+
+// leafLayer places a single layer of the canopy at the height passed.
+func (c poplarCanopy) leafLayer(tx *world.Tx, origin cube.Pos, leaves LeavesType, height, radius, y int, sameSign bool) {
+	// The top two layers have their edges taken off entirely rather than only their corners.
+	topTwo := y == height-1 || y == height-2
+	for x := -radius; x <= radius; x++ {
+		for z := -radius; z <= radius; z++ {
+			if topTwo && (abs(x) == radius || abs(z) == radius) {
+				continue
+			}
+			bonus := 0
+			if topTwo {
+				bonus = -1
+			}
+			if poplarFullerQuadrant(x, z, sameSign) {
+				bonus = 1
+			}
+			// Every cell is rolled for, whether or not the edge it would reach is within the layer.
+			edge := 0
+			if !c.sideHoleChance.roll() {
+				edge = 1
+			}
+			if abs(x)+abs(z) > radius+bonus-1+edge {
+				continue
+			}
+			treeLeaf(tx, origin.Add(cube.Pos{x, y, z}), leaves, poplarLeafReplaceable)
+		}
+	}
+}
+
+// place ...
+func (c poplarCanopy) place(tx *world.Tx, origin cube.Pos, _ int, leaves LeavesType) {
+	r, h := c.radius.at()-1, c.height.atInclusive()
+	sameSign := rand.IntN(2) == 0
+
+	// The order the layers are laid in is the order the game lays them in.
+	c.leafLayer(tx, origin, leaves, h, r-2, h-1, sameSign)
+	c.leafLayer(tx, origin, leaves, h, r-1, h-2, sameSign)
+	c.leafLayer(tx, origin, leaves, h, r-1, h-3, sameSign)
+	for y := h - 4; y >= 1; y-- {
+		c.leafLayer(tx, origin, leaves, h, r, y, sameSign)
+	}
+
+	// A cross of logs runs out along the axes through the layer the canopy is widest at.
+	for x := -r; x <= r; x++ {
+		for z := -r; z <= r; z++ {
+			onAxis := x == 0 && r-abs(z) > 3 || z == 0 && r-abs(x) > 3
+			if !onAxis {
+				continue
+			}
+			bonus := 0
+			if poplarFullerQuadrant(x, z, sameSign) {
+				bonus = 1
+			}
+			if abs(x)+abs(z) > r-2+bonus {
+				continue
+			}
+			axis := cube.Z
+			if z == 0 {
+				axis = cube.X
+			}
+			treeLog(tx, origin.Add(cube.Pos{x, h - 4, z}), c.wood, axis)
+		}
+	}
+
+	c.leafLayer(tx, origin, leaves, h, r-1, 0, sameSign)
+	bottom := 2
+	if r < 3 {
+		bottom = 1
+	} else if r < 5 {
+		bottom = r - 2
+	}
+	c.leafLayer(tx, origin, leaves, h, bottom, -1, sameSign)
+}
+
+// poplarTrunk is the trunk of a poplar: a straight column carrying a few short support logs under its canopy.
+type poplarTrunk struct {
+	trunkHeight intRange
+	// remaining is how much of the trunk is left above the support logs.
+	remaining intRange
+	// branches is how many support logs are laid. It is never more than the four directions they take.
+	branches intRange
+	// mushroomChance is the chance in a hundred that a log of the trunk carries a shelf mushroom.
+	mushroomChance treeChance
+	canopy         poplarCanopy
+}
+
+// treeShelfMushroom gives the log at the position passed a shelf mushroom, on a side of it that has none of
+// its own next to it already.
+func treeShelfMushroom(tx *world.Tx, pos cube.Pos, chance treeChance) {
+	if !chance.roll() {
+		return
+	}
+	dirs := [4]cube.Direction{cube.North, cube.East, cube.South, cube.West}
+	rand.Shuffle(len(dirs), func(i, j int) { dirs[i], dirs[j] = dirs[j], dirs[i] })
+	for _, d := range dirs {
+		m := ShelfMushroom{Facing: d}
+		at := pos.Side(d.Face())
+		if !treeReplaceable(tx, at, m) {
+			continue
+		}
+		// Two shelf mushrooms are never placed next to one another.
+		adjacent := false
+		at.Neighbours(func(n cube.Pos) {
+			if _, ok := tx.Block(n).(ShelfMushroom); ok {
+				adjacent = true
+			}
+		}, tx.Range())
+		if adjacent {
+			continue
+		}
+		tx.SetBlock(at, m, nil)
+		return
+	}
+}
+
+// height ...
+func (t poplarTrunk) height() int {
+	return t.trunkHeight.atInclusive()
+}
+
+// place ...
+func (t poplarTrunk) place(tx *world.Tx, pos cube.Pos, height int, wood WoodType, leaves LeavesType) bool {
+	if !treeRoom(tx, pos, height) {
+		return false
+	}
+	// The height left above the support logs is drawn before any of the trunk is placed.
+	remaining := t.remaining.atInclusive()
+	for y := range height {
+		// A level the trunk cannot reach is passed over, leaving a gap behind rather than ending the tree.
+		at := pos.Add(cube.Pos{0, y})
+		if treeLog(tx, at, wood, cube.Y) {
+			treeShelfMushroom(tx, at, t.mushroomChance)
+		}
+	}
+
+	// The support logs take the first of the four directions once they have been shuffled.
+	dirs := treeDirections
+	rand.Shuffle(len(dirs), func(i, j int) { dirs[i], dirs[j] = dirs[j], dirs[i] })
+	offset := height - remaining
+	for _, d := range dirs[:min(t.branches.atInclusive(), len(dirs))] {
+		axis := cube.X
+		if d[2] != 0 {
+			axis = cube.Z
+		}
+		treeLog(tx, cube.Pos{pos[0] + d[0], pos[1] + offset - 1, pos[2] + d[2]}, wood, axis)
+	}
+
+	c := t.canopy
+	c.wood = wood
+	c.place(tx, pos.Add(cube.Pos{0, offset}), 1, leaves)
+
+	if below := pos.Side(cube.FaceDown); !treeSoil(tx.Block(below)) {
+		return true
+	} else if _, dirt := tx.Block(below).(Dirt); !dirt {
+		tx.SetBlock(below, Dirt{}, nil)
+	}
+	return true
+}
+
 // growTree grows the tree of the sapling type passed at the position passed, reporting whether it grew. Trees grown
 // from a two by two square of saplings are grown from the north west corner of that square.
 func growTree(t SaplingType, pos cube.Pos, tx *world.Tx) bool {
 	wood, leaves := t.Wood(), t.Leaves()
+	if t == PoplarSapling() {
+		// A poplar picks one of its three leaf colours and carries it through the whole tree.
+		colours := PoplarLeavesTypes()
+		leaves = colours[rand.IntN(len(colours))]
+	}
 
 	var trunk treeTrunk
 	switch t {
@@ -1115,6 +1353,8 @@ func growTree(t SaplingType, pos cube.Pos, tx *world.Tx) bool {
 		trunk = savannaTree
 	case CherrySapling():
 		trunk = cherryTree
+	case PoplarSapling():
+		trunk = poplarTree
 	default:
 		return false
 	}

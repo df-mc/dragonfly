@@ -1443,6 +1443,7 @@ func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 		e.markWorldReady(w)
 	}
 	w.calculateLight(pos)
+	w.deriveStates(pos)
 	return column
 }
 

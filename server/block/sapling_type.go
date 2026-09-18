@@ -45,10 +45,15 @@ func PaleOakSapling() SaplingType {
 	return SaplingType{7}
 }
 
+// PoplarSapling returns poplar sapling material.
+func PoplarSapling() SaplingType {
+	return SaplingType{8}
+}
+
 // SaplingTypes returns a list of all sapling types.
 func SaplingTypes() []SaplingType {
 	return []SaplingType{OakSapling(), SpruceSapling(), BirchSapling(), JungleSapling(), AcaciaSapling(),
-		DarkOakSapling(), CherrySapling(), PaleOakSapling()}
+		DarkOakSapling(), CherrySapling(), PaleOakSapling(), PoplarSapling()}
 }
 
 type sapling uint8
@@ -77,6 +82,8 @@ func (s sapling) Name() string {
 		return "Cherry Sapling"
 	case 7:
 		return "Pale Oak Sapling"
+	case 8:
+		return "Poplar Sapling"
 	}
 	panic("unknown sapling type")
 }
@@ -105,6 +112,8 @@ func (s sapling) Wood() WoodType {
 		return CherryWood()
 	case 7:
 		return PaleOakWood()
+	case 8:
+		return PoplarWood()
 	}
 	panic("unknown sapling type")
 }
@@ -128,6 +137,8 @@ func (s sapling) Leaves() LeavesType {
 		return CherryLeaves()
 	case 7:
 		return PaleOakLeaves()
+	case 8:
+		return OrangePoplarLeaves()
 	}
 	panic("unknown sapling type")
 }

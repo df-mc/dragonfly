@@ -19,6 +19,8 @@ type Chunk struct {
 	// recalculateHeightMap is true if the chunk's height map should be recalculated on the next call to the HeightMap
 	// function.
 	recalculateHeightMap bool
+	// legacyStates is true if the Chunk was decoded holding a block entry older than CurrentBlockVersion.
+	legacyStates bool
 	// heightMap is the height map of the chunk.
 	heightMap HeightMap
 	// sub holds all sub chunks part of the chunk. The pointers held by the array are nil if no sub chunk is
@@ -56,6 +58,7 @@ func (chunk *Chunk) Clone() *Chunk {
 		br:                   chunk.br,
 		air:                  chunk.air,
 		recalculateHeightMap: chunk.recalculateHeightMap,
+		legacyStates:         chunk.legacyStates,
 		heightMap:            slices.Clone(chunk.heightMap),
 		sub:                  make([]*SubChunk, len(chunk.sub)),
 		biomes:               make([]*PalettedStorage, len(chunk.biomes)),
@@ -86,6 +89,17 @@ func (chunk *Chunk) Equals(c *Chunk) bool {
 	}
 
 	return true
+}
+
+// LegacyStates returns true if the Chunk holds block entries older than CurrentBlockVersion, whose
+// states derived from surrounding blocks were defaulted rather than stored.
+func (chunk *Chunk) LegacyStates() bool {
+	return chunk.legacyStates
+}
+
+// MarkStatesUpgraded clears the flag returned by LegacyStates.
+func (chunk *Chunk) MarkStatesUpgraded() {
+	chunk.legacyStates = false
 }
 
 // Range returns the cube.Range of the Chunk as passed to New.

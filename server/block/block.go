@@ -270,6 +270,17 @@ func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
 	}
 }
 
+// Sleepable is an interface for blocks that a world.Sleeper can sleep in, such as Bed and StrawBed.
+type Sleepable interface {
+	// SleepingEntity returns the entity sleeping in the block, or nil if it is unoccupied.
+	SleepingEntity() *world.EntityHandle
+	// StartSleeping updates the block at pos for e having started sleeping in it.
+	StartSleeping(pos cube.Pos, tx *world.Tx, e *world.EntityHandle)
+	// StopSleeping updates the block at pos for its sleeper having woken up. A Bed is only freed up,
+	// while a StrawBed breaks.
+	StopSleeping(pos cube.Pos, tx *world.Tx)
+}
+
 // Flammable is an interface for blocks that can catch on fire.
 type Flammable interface {
 	// FlammabilityInfo returns information about a block's behaviour involving fire.

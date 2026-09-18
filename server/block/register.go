@@ -58,7 +58,7 @@ func init() {
 	}
 	world.RegisterBlock(EndStone{})
 	world.RegisterBlock(FletchingTable{})
-	world.RegisterBlock(GlassPane{})
+	registerAll(allGlassPane())
 	world.RegisterBlock(Glass{})
 	world.RegisterBlock(Glowstone{})
 	world.RegisterBlock(Gold{})
@@ -77,7 +77,7 @@ func init() {
 		world.RegisterBlock(b)
 	}
 	world.RegisterBlock(InvisibleBedrock{})
-	world.RegisterBlock(IronBars{})
+	registerAll(allIronBars())
 	world.RegisterBlock(Iron{})
 	world.RegisterBlock(Jukebox{})
 	world.RegisterBlock(Lapis{})
@@ -88,7 +88,7 @@ func init() {
 	world.RegisterBlock(MudBricks{})
 	world.RegisterBlock(Mud{})
 	world.RegisterBlock(Mycelium{})
-	world.RegisterBlock(NetherBrickFence{})
+	registerAll(allNetherBrickFence())
 	world.RegisterBlock(NetherGoldOre{})
 	world.RegisterBlock(NetherQuartzOre{})
 	world.RegisterBlock(NetherSprouts{})
@@ -239,7 +239,10 @@ func init() {
 	registerAll(allStainedTerracotta())
 	registerAll(allStairs())
 	registerAll(allStoneBricks())
+	world.RegisterBlock(RedShrub{})
+	registerAll(allShelfMushrooms())
 	registerAll(allStonecutters())
+	registerAll(allStrawBeds())
 	registerAll(allString())
 	registerAll(allSugarCane())
 	registerAll(allTorches())
@@ -425,8 +428,11 @@ func init() {
 	world.RegisterItem(Sponge{})
 	world.RegisterItem(SporeBlossom{})
 	world.RegisterItem(Stonecutter{})
+	world.RegisterItem(RedShrub{})
+	world.RegisterItem(ShelfMushroom{})
 	world.RegisterItem(Stone{Smooth: true})
 	world.RegisterItem(Stone{})
+	world.RegisterItem(StrawBed{})
 	world.RegisterItem(String{})
 	world.RegisterItem(SugarCane{})
 	world.RegisterItem(Sulfur{})
@@ -503,6 +509,9 @@ func init() {
 	}
 	world.RegisterItem(Leaves{Type: AzaleaLeaves(), Persistent: true})
 	world.RegisterItem(Leaves{Type: FloweringAzaleaLeaves(), Persistent: true})
+	for _, t := range PoplarLeavesTypes() {
+		world.RegisterItem(Leaves{Type: t, Persistent: true})
+	}
 	for _, ore := range OreTypes() {
 		world.RegisterItem(CoalOre{Type: ore})
 		world.RegisterItem(CopperOre{Type: ore})
