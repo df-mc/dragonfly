@@ -750,6 +750,9 @@ func (p *Player) Explode(src world.ExplosionSource, impact float64) {
 	explosionPos := src.Position()
 	diff := p.Position().Sub(explosionPos)
 	p.Hurt(math.Floor((impact*impact+impact)*3.5*src.Size()*2+1), entity.ExplosionDamageSource{Source: src})
+	if p.ridingHeldInPlace(p.tx) {
+		return
+	}
 	p.knockBack(explosionPos, impact, diff[1]/diff.Len()*impact)
 }
 

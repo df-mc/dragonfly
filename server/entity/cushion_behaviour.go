@@ -19,6 +19,7 @@ type cushionBehaviour struct {
 
 	// survivalDelay is the number of ticks until the next support check. It starts at 0, so the first tick checks.
 	survivalDelay int
+	exploded      bool
 	removed       bool
 }
 
@@ -40,6 +41,10 @@ func (b *cushionBehaviour) ServerAuthOnlyDismount() bool {
 // Tick breaks the cushion in lava or a lit campfire, and checks its support every 81-121 ticks like vanilla.
 func (b *cushionBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 	b.checkRider(e, tx)
+	if b.exploded {
+		b.destroy(e, tx, true)
+		return nil
+	}
 	if b.hurtByBlocks(e, tx) {
 		return nil
 	}
@@ -115,11 +120,10 @@ func (b *cushionBehaviour) Hurt(e *Ent, damage float64, src world.DamageSource) 
 	return damage, true
 }
 
-// Explode ...
-func (b *cushionBehaviour) Explode(e *Ent, _ world.ExplosionSource, impact float64) {
-	if impact > 0 {
-		b.destroy(e, e.tx, true)
-	}
+// Explode breaks the cushion on its next tick, even if the blast is fully blocked. The rider stays seated during the
+// explosion, so like vanilla it is not pushed by it.
+func (b *cushionBehaviour) Explode(*Ent, world.ExplosionSource, float64) {
+	b.exploded = true
 }
 
 // destroy breaks the cushion into wool particles, optionally dropping it with its name.
