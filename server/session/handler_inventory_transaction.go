@@ -3,6 +3,7 @@ package session
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/event"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
@@ -161,6 +162,19 @@ func (h *InventoryTransactionHandler) handleUseItemOnEntityTransaction(data *pro
 	switch data.ActionType {
 	case protocol.UseItemOnEntityActionInteract:
 		valid = c.UseItemOnEntity(e)
+		if rideable, ok := e.(entity.Rideable); ok {
+			if valid {
+				if nextSeatIndex, ok := rideable.NextFreeSeatIndex(vec32To64(data.ClickedPosition)); ok {
+					before := c.RidingEntityHandle()
+					c.MountEntity(tx, rideable, nextSeatIndex)
+					if after := c.RidingEntityHandle(); after == rideable.H() && before != after {
+						// The client does not swing its own arm when getting on an entity, so it is sent the swing too.
+						s.swingingArm.Store(false)
+						c.SwingArm()
+					}
+				}
+			}
+		}
 	case protocol.UseItemOnEntityActionAttack:
 		valid = c.AttackEntity(e)
 	default:
