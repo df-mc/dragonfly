@@ -17,7 +17,15 @@ func (h *InteractHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Co
 
 	switch pk.ActionType {
 	case packet.InteractActionMouseOverEntity:
-		// We don't need this action.
+		if h, ok := c.(interface {
+			HoverEntity(tx *world.Tx, e world.Entity)
+		}); ok {
+			var target world.Entity
+			if handle, ok := s.entityFromRuntimeID(pk.TargetEntityRuntimeID); ok {
+				target, _ = handle.Entity(tx)
+			}
+			h.HoverEntity(tx, target)
+		}
 	case packet.InteractActionOpenInventory:
 		if s.invOpened {
 			// When there is latency, this might end up being sent multiple times. If we send a ContainerOpen

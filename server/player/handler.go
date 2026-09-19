@@ -82,6 +82,9 @@ type Handler interface {
 	// HandleBlockPick handles the player picking a specific block at a position in its world. ctx.Cancel()
 	// may be called to cancel the block being picked.
 	HandleBlockPick(ctx *Context, pos cube.Pos, b world.Block)
+	// HandleEntityPick handles the player picking an entity in its world. ctx.Cancel() may be called to
+	// cancel the entity being picked.
+	HandleEntityPick(ctx *Context, e world.Entity)
 	// HandleItemUse handles the player using an item in the air. It is called for each item, although most
 	// will not actually do anything. Items such as snowballs may be thrown if HandleItemUse does not cancel
 	// the context using ctx.Cancel(). It is not called if the player is holding no item.
@@ -186,6 +189,7 @@ func (NopHandler) HandleStartBreak(*Context, cube.Pos)                          
 func (NopHandler) HandleBlockBreak(*Context, cube.Pos, *[]item.Stack, *int)                {}
 func (NopHandler) HandleBlockPlace(*Context, cube.Pos, world.Block)                        {}
 func (NopHandler) HandleBlockPick(*Context, cube.Pos, world.Block)                         {}
+func (NopHandler) HandleEntityPick(*Context, world.Entity)                                 {}
 func (NopHandler) HandleSignEdit(*Context, cube.Pos, bool, string, string)                 {}
 func (NopHandler) HandleSleep(*Context, *bool)                                             {}
 func (NopHandler) HandleLecternPageTurn(*Context, cube.Pos, int, *int)                     {}

@@ -61,6 +61,11 @@ type playerData struct {
 	seatIndex    int
 	controlling  bool
 	seatPosition mgl64.Vec3
+	seatRotation *entity.SeatRotation
+
+	// hoveredEntity is the entity the client reports looking at, and interactText the button text shown for it.
+	hoveredEntity *world.EntityHandle
+	interactText  string
 
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
@@ -765,7 +770,7 @@ func (p *Player) Absorption() float64 {
 // source of the velocity, typically the position of an attacking entity. The source is used to calculate the
 // direction which the entity should be knocked back in.
 func (p *Player) KnockBack(src mgl64.Vec3, force, height float64) {
-	if p.Dead() || !p.GameMode().AllowsTakingDamage() {
+	if p.Dead() || !p.GameMode().AllowsTakingDamage() || p.ridingHeldInPlace(p.tx) {
 		return
 	}
 	p.knockBack(src, force, height)
@@ -2014,8 +2019,9 @@ func (p *Player) breakContext() block.BreakContext {
 	ctx := block.BreakContext{
 		Underwater:   p.insideOfWater(),
 		AquaAffinity: aquaAffinity,
-		Airborne:     !p.OnGround(),
-		Flying:       p.Flying(),
+		// Like vanilla, riding players are never on the ground and mine as slowly as players in the air.
+		Airborne: !p.OnGround() || p.riddenEntity != nil,
+		Flying:   p.Flying(),
 	}
 	if e, ok := p.Effect(effect.Haste); ok {
 		ctx.HasteLevel = e.Level()
@@ -2284,6 +2290,54 @@ func (p *Player) PickBlock(pos cube.Pos) {
 	p.SetHeldItems(pickedItem, offhand)
 }
 
+// PickEntity makes the player pick an entity in the world. If the player is unable to pick the entity, the
+// method returns immediately.
+func (p *Player) PickEntity(e world.Entity) {
+	if !p.canReach(e.Position()) {
+		return
+	}
+
+	var pickedItem item.Stack
+	if pi, ok := e.(entity.Pickable); ok {
+		pickedItem = pi.Pick()
+	} else {
+		return
+	}
+
+	slot, found := p.Inventory().First(pickedItem)
+	if !found && !p.GameMode().CreativeInventory() {
+		return
+	}
+
+	ctx := NewEventContext(p.tx, p)
+	if p.Handler().HandleEntityPick(ctx, e); ctx.Cancelled() {
+		return
+	}
+	_, offhand := p.HeldItems()
+
+	if found {
+		if slot < 9 {
+			_ = p.SetHeldSlot(slot)
+			return
+		}
+		_ = p.Inventory().Swap(slot, int(*p.heldSlot))
+		return
+	}
+
+	firstEmpty, emptyFound := p.Inventory().FirstEmpty()
+	if !emptyFound {
+		p.SetHeldItems(pickedItem, offhand)
+		return
+	}
+	if firstEmpty < 9 {
+		_ = p.SetHeldSlot(firstEmpty)
+		_ = p.Inventory().SetItem(firstEmpty, pickedItem)
+		return
+	}
+	_ = p.Inventory().Swap(firstEmpty, int(*p.heldSlot))
+	p.SetHeldItems(pickedItem, offhand)
+}
+
 // Teleport teleports the player to a target position in the world. Unlike Move, it immediately changes the
 // position of the player, rather than showing an animation.
 func (p *Player) Teleport(pos mgl64.Vec3) {
@@ -2291,6 +2345,7 @@ func (p *Player) Teleport(pos mgl64.Vec3) {
 	if p.Handler().HandleTeleport(ctx, pos); ctx.Cancelled() {
 		return
 	}
+	p.dismountEntity(p.tx, false)
 	p.forceTeleport(pos)
 }
 
@@ -2664,6 +2719,10 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			p.updateState()
 		}
 	}
+	if p.hoveredEntity != nil || p.interactText != "" {
+		// The button text depends on state such as sneaking, so it is updated every tick.
+		p.updateInteractText(tx)
+	}
 	if _, ok := p.tx.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -2757,6 +2816,9 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 func (p *Player) TravelThroughPortal(tx *world.Tx, target world.Dimension) {
 	if !p.GameMode().HasCollision() {
 		// Game modes that pass through blocks, such as spectator, are not affected by portals.
+		return
+	}
+	if p.ridingHeldInPlace(tx) {
 		return
 	}
 	p.portalTravel.EnterPortal(p, tx, target)
@@ -2952,6 +3014,7 @@ func (p *Player) ChangeSeat(tx *world.Tx, seatIndex int) {
 	}
 	p.seatIndex = seatIndex
 	p.seatPosition = positions[seatIndex]
+	p.seatRotation = seatRotation(rideable, seatIndex)
 	afterController := controllerState(rideable)
 	p.syncRideableState(tx, rideable)
 
@@ -2996,6 +3059,9 @@ func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex i
 	if seatIndex < 0 || seatIndex >= len(positions) {
 		return
 	}
+	if f, ok := rideable.(entity.RiderFilter); ok && !f.AcceptsRider(p) {
+		return
+	}
 
 	mountHandled := false
 	if current, ok := p.RidingEntity(tx); ok {
@@ -3038,6 +3104,7 @@ func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex i
 	p.riddenEntity = rideable.H()
 	p.seatIndex = seatIndex
 	p.seatPosition = positions[seatIndex]
+	p.seatRotation = seatRotation(rideable, seatIndex)
 	afterController := controllerState(rideable)
 	p.syncRideableState(tx, rideable)
 
@@ -3056,9 +3123,16 @@ func (p *Player) MountEntity(tx *world.Tx, rideable entity.Rideable, seatIndex i
 	}
 }
 
-// DismountEntity removes the player from the entity being ridden.
+// DismountEntity removes the player from the entity being ridden, moving it to the dismount position if any.
 func (p *Player) DismountEntity(tx *world.Tx) {
+	rideable, ok := p.RidingEntity(tx)
 	p.dismountEntity(tx, true)
+	if !ok || p.riddenEntity != nil {
+		return
+	}
+	if d, ok := rideable.(entity.DismountPositioner); ok {
+		p.teleport(d.DismountPosition(p))
+	}
 }
 
 func (p *Player) dismountEntity(tx *world.Tx, callHandler bool) {
@@ -3101,6 +3175,64 @@ func (p *Player) clearRidingState() {
 	p.seatIndex = -1
 	p.controlling = false
 	p.seatPosition = mgl64.Vec3{}
+	p.seatRotation = nil
+}
+
+// SeatRotation returns how the seat of the player turns it, if it does.
+func (p *Player) SeatRotation() (entity.SeatRotation, bool) {
+	if p.riddenEntity == nil || p.seatRotation == nil {
+		return entity.SeatRotation{}, false
+	}
+	return *p.seatRotation, true
+}
+
+// seatRotation returns the rotation of a seat, or nil if the rideable does not turn its riders.
+func seatRotation(rideable entity.Rideable, seatIndex int) *entity.SeatRotation {
+	if r, ok := rideable.(entity.SeatRotator); ok {
+		rot := r.SeatRotation(seatIndex)
+		return &rot
+	}
+	return nil
+}
+
+// ridingHeldInPlace reports if the player rides an entity that holds its riders in place, such as a cushion.
+func (p *Player) ridingHeldInPlace(tx *world.Tx) bool {
+	rideable, ok := p.RidingEntity(tx)
+	if !ok {
+		return false
+	}
+	h, ok := rideable.(entity.RiderHolder)
+	return ok && h.HoldsRiders()
+}
+
+// HoverEntity sets the entity the player is looking at, or nil if it is not looking at one.
+func (p *Player) HoverEntity(tx *world.Tx, e world.Entity) {
+	if e == nil {
+		p.hoveredEntity = nil
+	} else {
+		p.hoveredEntity = e.H()
+	}
+	p.updateInteractText(tx)
+}
+
+// InteractText returns the text of the interact button shown for the entity looked at, if any.
+func (p *Player) InteractText() string {
+	return p.interactText
+}
+
+func (p *Player) updateInteractText(tx *world.Tx) {
+	text := ""
+	if p.hoveredEntity != nil {
+		if e, ok := p.hoveredEntity.Entity(tx); ok {
+			if t, ok := e.(entity.InteractTexter); ok {
+				text = t.InteractText(p)
+			}
+		}
+	}
+	if text != p.interactText {
+		p.interactText = text
+		p.updateState()
+	}
 }
 
 type ridingController struct {
@@ -3144,6 +3276,7 @@ func (p *Player) syncRideableState(tx *world.Tx, rideable entity.Rideable) bool 
 		changed := other.seatIndex != rider.SeatIndex || other.seatPosition != positions[rider.SeatIndex] || other.controlling != (controller == rider.Handle)
 		other.seatIndex = rider.SeatIndex
 		other.seatPosition = positions[rider.SeatIndex]
+		other.seatRotation = seatRotation(rideable, rider.SeatIndex)
 		other.controlling = controller == rider.Handle
 		if changed {
 			if other == p {

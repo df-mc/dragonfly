@@ -52,3 +52,38 @@ type Rideable interface {
 	// MoveInput handles movement from the controlling rider.
 	MoveInput(vector mgl64.Vec2, yaw, pitch float32)
 }
+
+// RiderFilter may be implemented by a Rideable that refuses some riders.
+type RiderFilter interface {
+	AcceptsRider(rider world.Entity) bool
+}
+
+// DismountPositioner may be implemented by a Rideable that moves riders getting off to a specific position.
+type DismountPositioner interface {
+	DismountPosition(rider world.Entity) mgl64.Vec3
+}
+
+// SeatRotation describes how a seat turns and restricts the rotation of its rider.
+type SeatRotation struct {
+	// RotateBy is the number of degrees the rider is turned by relative to the rideable.
+	RotateBy float32
+	// LockRotation limits the rider to looking at most LockDegrees away from the seat direction.
+	LockRotation bool
+	LockDegrees  float32
+}
+
+// SeatRotator may be implemented by a Rideable with seats that turn their riders.
+type SeatRotator interface {
+	SeatRotation(seatIndex int) SeatRotation
+}
+
+// RiderHolder may be implemented by a Rideable whose riders are not moved by knock back, pistons or portals.
+type RiderHolder interface {
+	HoldsRiders() bool
+}
+
+// InteractTexter may be implemented by an entity that shows a player looking at it a button, such as to sit down.
+// An empty string means no button is shown.
+type InteractTexter interface {
+	InteractText(user world.Entity) string
+}

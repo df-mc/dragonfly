@@ -128,7 +128,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 				EntityUniqueID:  int64(runtimeID),
 				EntityRuntimeID: runtimeID,
 				Item:            instanceFromItem(s.br, v.Behaviour().(*entity.ItemBehaviour).Item()),
-				Position:        vec64To32(v.Position()),
+				Position:        vec64To32(v.Position().Add(entityOffset(e))),
 				Velocity:        vec64To32(v.Velocity()),
 				EntityMetadata:  metadata,
 			})
@@ -153,7 +153,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 		EntityRuntimeID: runtimeID,
 		EntityType:      id,
 		EntityMetadata:  metadata,
-		Position:        vec64To32(e.Position()),
+		Position:        vec64To32(e.Position().Add(entityOffset(e))),
 		Velocity:        vec64To32(vel),
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
@@ -498,6 +498,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(s.br.BlockRuntimeID(pa.Block)),
 		})
+	case particle.BlockBreakNoSound:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticlesDestroyBlockNoSound,
+			Position:  vec64To32(pos),
+			EventData: int32(s.br.BlockRuntimeID(pa.Block)),
+		})
 	case particle.PunchBlock:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesCrackBlock,
@@ -775,6 +781,12 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventFallSmall
 	case sound.Burp:
 		pk.SoundType = packet.SoundEventBurp
+	case sound.CushionPlace:
+		pk.SoundType, pk.EntityType = packet.SoundEventSpawn, "minecraft:cushion"
+	case sound.CushionSit:
+		pk.SoundType, pk.EntityType = packet.SoundEventMount, "minecraft:cushion"
+	case sound.CushionBreak:
+		pk.SoundType, pk.EntityType = packet.SoundEventDeath, "minecraft:cushion"
 	case sound.DoorOpen:
 		pk.SoundType, pk.ExtraData = packet.SoundEventDoorOpen, int32(s.br.BlockRuntimeID(so.Block))
 	case sound.DoorClose:

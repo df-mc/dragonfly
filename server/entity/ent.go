@@ -41,6 +41,11 @@ func (e *Ent) Behaviour() Behaviour {
 	return e.data.Data.(Behaviour)
 }
 
+// ent allows entity types embedding an Ent to be handled like one.
+func (e *Ent) ent() *Ent {
+	return e
+}
+
 // Explode propagates the explosion behaviour of the underlying Behaviour.
 func (e *Ent) Explode(src world.ExplosionSource, impact float64) {
 	if expl, ok := e.Behaviour().(interface {
@@ -157,6 +162,10 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
 	m := e.Behaviour().Tick(e, tx)
+	if _, ok := e.handle.Entity(tx); !ok {
+		// Removed while ticking, such as a picked up item, so viewers no longer know the entity.
+		return
+	}
 	if e.finishPendingPortalTravel(tx) {
 		return
 	}

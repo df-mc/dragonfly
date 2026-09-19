@@ -37,7 +37,7 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagLingering)
 	}
 	s.addSpecificMetadata(e, m)
-	if ent, ok := e.(*entity.Ent); ok {
+	if ent, ok := e.(interface{ Behaviour() entity.Behaviour }); ok {
 		s.addSpecificMetadata(ent.Behaviour(), m)
 	}
 	return m
@@ -122,6 +122,28 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if r, ok := e.(entity.Rideable); ok {
 		// A value of -1 clears the controlling seat.
 		m[protocol.EntityDataKeyControllingSeatIndex] = int32(r.ControllingSeatIndex())
+	}
+	if r, ok := e.(seatRotated); ok {
+		if rot, riding := r.SeatRotation(); riding {
+			lockDegrees := float32(181)
+			if rot.LockRotation {
+				lockDegrees = rot.LockDegrees
+			}
+			m[protocol.EntityDataKeySeatLockPassengerRotation] = boolByte(rot.LockRotation)
+			m[protocol.EntityDataKeySeatLockPassengerRotationDegrees] = lockDegrees
+			m[protocol.EntityDataKeySeatRotationOffset] = uint8(1)
+			m[protocol.EntityDataKeySeatRotationOffsetDegrees] = rot.RotateBy
+		}
+	}
+	if g, ok := e.(gravityless); ok && g.Gravityless() {
+		m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasGravity)
+		m.UnsetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagClimb)
+	}
+	if d, ok := e.(serverAuthDismount); ok && d.ServerAuthOnlyDismount() {
+		m.SetFlag(protocol.EntityDataKeyFlagsTwo, protocol.EntityDataFlagDoesServerAuthOnlyDismount&63)
+	}
+	if t, ok := e.(interactTexter); ok {
+		m[protocol.EntityDataKeyInteractText] = t.InteractText()
 	}
 	if lock, ok := e.(interface{ SeatLockPassengerRotation() bool }); ok {
 		m[protocol.EntityDataKeySeatLockPassengerRotation] = boolByte(lock.SeatLockPassengerRotation())
@@ -378,4 +400,24 @@ type variable interface {
 
 type markVariable interface {
 	MarkVariant() int32
+}
+
+// seatRotated is an entity sitting in a seat that turns it.
+type seatRotated interface {
+	SeatRotation() (entity.SeatRotation, bool)
+}
+
+// gravityless is an entity not affected by gravity.
+type gravityless interface {
+	Gravityless() bool
+}
+
+// serverAuthDismount is a rideable entity that only the server may get riders off.
+type serverAuthDismount interface {
+	ServerAuthOnlyDismount() bool
+}
+
+// interactTexter is an entity shown an interact button for the entity it looks at.
+type interactTexter interface {
+	InteractText() string
 }
