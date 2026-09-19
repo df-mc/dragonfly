@@ -120,8 +120,7 @@ func (b *cushionBehaviour) Hurt(e *Ent, damage float64, src world.DamageSource) 
 	return damage, true
 }
 
-// Explode breaks the cushion on its next tick, even if the blast is fully blocked. The rider stays seated during the
-// explosion, so like vanilla it is not pushed by it.
+// Explode ...
 func (b *cushionBehaviour) Explode(*Ent, world.ExplosionSource, float64) {
 	b.exploded = true
 }
