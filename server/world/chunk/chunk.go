@@ -102,6 +102,12 @@ func (chunk *Chunk) MarkStatesUpgraded() {
 	chunk.legacyStates = false
 }
 
+// MarkLegacyStates sets the flag returned by LegacyStates, for a Chunk that was saved before its
+// derived states could be recalculated.
+func (chunk *Chunk) MarkLegacyStates() {
+	chunk.legacyStates = true
+}
+
 // Range returns the cube.Range of the Chunk as passed to New.
 func (chunk *Chunk) Range() cube.Range {
 	return chunk.r
