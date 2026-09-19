@@ -1,6 +1,7 @@
 package block
 
 import (
+	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 )
 
@@ -40,6 +41,8 @@ func encodeSlabBlock(block world.Block, double bool) (id string, suffix string) 
 			return "mossy_cobblestone", suffix
 		}
 		return "cobblestone", suffix
+	case Concrete:
+		return block.Colour.String() + "_concrete", suffix
 	case Copper:
 		if block.Type == CutCopper() {
 			suffix = "cut_copper_slab"
@@ -162,6 +165,8 @@ func encodeSlabBlock(block world.Block, double bool) (id string, suffix string) 
 		if !block.Chiseled {
 			return "tuff_brick", suffix
 		}
+	case Wool:
+		return block.Colour.String() + "_wool", suffix
 	}
 	panic("invalid block used for slab")
 }
@@ -223,6 +228,10 @@ func SlabBlocks() []world.Block {
 	for _, o := range OxidationTypes() {
 		b = append(b, Copper{Type: CutCopper(), Oxidation: o})
 		b = append(b, Copper{Type: CutCopper(), Oxidation: o, Waxed: true})
+	}
+	for _, c := range item.Colours() {
+		b = append(b, Concrete{Colour: c})
+		b = append(b, Wool{Colour: c})
 	}
 	return b
 }

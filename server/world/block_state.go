@@ -16,6 +16,10 @@ import (
 var (
 	//go:embed block_states.nbt
 	blockStateData []byte
+
+	//go:embed data_driven_blocks.nbt
+	dataDrivenBlockData []byte
+	dataDrivenBlocks    []DataDrivenBlock
 )
 
 func init() {
@@ -30,6 +34,26 @@ func init() {
 		}
 		DefaultBlockRegistry.RegisterBlockState(s)
 	}
+
+	var m struct {
+		Blocks []DataDrivenBlock `nbt:"blocks"`
+	}
+	if err := nbt.NewDecoderWithEncoding(bytes.NewBuffer(dataDrivenBlockData), nbt.LittleEndian).Decode(&m); err != nil {
+		panic(err)
+	}
+	dataDrivenBlocks = m.Blocks
+}
+
+// DataDrivenBlock holds the name of a block and the components that define it.
+type DataDrivenBlock struct {
+	Name       string         `nbt:"name"`
+	Components map[string]any `nbt:"components"`
+}
+
+// DataDrivenBlocks returns the vanilla data driven blocks. A client needs
+// these to complete its block palette.
+func DataDrivenBlocks() []DataDrivenBlock {
+	return dataDrivenBlocks
 }
 
 // BlockState holds a combination of a name and properties, together with a version.

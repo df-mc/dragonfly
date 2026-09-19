@@ -332,8 +332,8 @@ func (s *Session) close(tx *world.Tx, c Controllable) {
 	// early.
 	if tx != nil {
 		tx.RemoveEntity(c)
+		_ = s.ent.Close()
 	}
-	_ = s.ent.Close()
 
 	// This should always be called last due to the timing of the removal of
 	// entity runtime IDs.
@@ -608,6 +608,7 @@ func (s *Session) registerHandlers() {
 		packet.IDRequestAbility:            &RequestAbilityHandler{},
 		packet.IDRequestChunkRadius:        &RequestChunkRadiusHandler{},
 		packet.IDRespawn:                   &RespawnHandler{},
+		packet.IDSetPlayerFurnaceOptions:   nil,
 		packet.IDSetPlayerInventoryOptions: nil,
 		packet.IDSubChunkRequest:           &SubChunkRequestHandler{},
 		packet.IDText:                      &TextHandler{},
