@@ -57,6 +57,13 @@ func (l Lava) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	}
 }
 
+// IgniteProjectile ...
+func (Lava) IgniteProjectile(e world.Entity) {
+	if flammable, ok := e.(flammableEntity); ok {
+		flammable.SetOnFire(15 * time.Second)
+	}
+}
+
 // RandomTick ...
 func (l Lava) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 	i := r.IntN(3)

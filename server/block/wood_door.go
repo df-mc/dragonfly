@@ -119,6 +119,19 @@ func (d WoodDoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User,
 	return true
 }
 
+// WindChargeInteractionPos ...
+func (d WoodDoor) WindChargeInteractionPos(pos cube.Pos) cube.Pos {
+	if d.Top {
+		return pos.Side(cube.FaceDown)
+	}
+	return pos
+}
+
+// WindChargeInteract ...
+func (d WoodDoor) WindChargeInteract(pos cube.Pos, tx *world.Tx) {
+	d.Activate(pos, cube.FaceUp, tx, nil, nil)
+}
+
 // BreakInfo ...
 func (d WoodDoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(d))
