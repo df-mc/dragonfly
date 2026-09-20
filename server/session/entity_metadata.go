@@ -84,12 +84,16 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if c, ok := e.(arrow); ok && c.Critical() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagCritical)
 	}
+	// Everything the world resolves against blocks says so, not only a player.
+	// A game mode without collision, spectator, still takes it away.
+	collides := true
 	if g, ok := e.(gameMode); ok {
-		if g.GameMode().HasCollision() {
-			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasCollision)
-		}
+		collides = g.GameMode().HasCollision()
 	}
-	if o, ok := e.(orb); ok {
+	if collides {
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagHasCollision)
+	}
+	if o, ok := e.(orb); ok && metadataAllowedFor(e, entity.ExperienceOrbType) {
 		m[protocol.EntityDataKeyValue] = int32(o.Experience())
 	}
 	if f, ok := e.(firework); ok {
@@ -346,4 +350,12 @@ type variable interface {
 
 type markVariable interface {
 	MarkVariant() int32
+}
+
+// metadataAllowedFor reports whether metadata read from e may be sent: e either is no world.Entity, or an
+// entity of the world.EntityType passed. It filters metadata that a Behaviour reports through a method
+// another entity kind happens to share.
+func metadataAllowedFor(e any, t world.EntityType) bool {
+	ent, ok := e.(world.Entity)
+	return !ok || ent.H().Type() == t
 }

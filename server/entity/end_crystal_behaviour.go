@@ -46,9 +46,13 @@ func (b endCrystalBehaviour) Explode(e *Ent, _ world.ExplosionSource, impact flo
 }
 
 // Hurt makes the End crystal explode when damaged by any source, even by
-// damage that deals no health. Void damage removes it without an explosion.
+// damage that deals no health. End crystals are immune to fire damage, and
+// void damage removes them without an explosion.
 func (b endCrystalBehaviour) Hurt(e *Ent, damage float64, src world.DamageSource) (float64, bool) {
 	damage = max(damage, 0)
+	if src.Fire() {
+		return 0, false
+	}
 	if _, ok := src.(VoidDamageSource); ok {
 		_ = e.Close()
 		return damage, true
