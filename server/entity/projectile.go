@@ -307,7 +307,7 @@ func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.
 		if !ok {
 			return
 		}
-		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
+		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend, src)
 
 		for _, eff := range lt.conf.Potion.Effects() {
 			if lasting, ok := eff.Type().(effect.LastingType); ok {
