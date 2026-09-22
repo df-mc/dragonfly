@@ -478,6 +478,8 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 	data.Dimension = int32(dim)
 	data.Yaw, data.Pitch = float32(d.Rotation.Yaw()), float32(d.Rotation.Pitch())
 
+	data.PlayerPermissions, _ = d.PermissionLevel.Permissions()
+
 	data.EmoteChatMuted = srv.conf.MuteEmoteChat
 
 	if err := conn.StartGameContext(ctx, data); err != nil {
