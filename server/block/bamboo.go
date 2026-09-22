@@ -53,8 +53,11 @@ func (b Bamboo) FlammabilityInfo() FlammabilityInfo {
 
 // BreakInfo ...
 func (b Bamboo) BreakInfo() BreakInfo {
-	return newBreakInfo(1, alwaysHarvestable, axeEffective, oneOf(b))
+	return newBreakInfo(1, alwaysHarvestable, anyEffective(item.TypeAxe, item.TypeSword), oneOf(b))
 }
+
+// SwordMiningSpeed is high enough for a sword to break bamboo in one tick.
+func (Bamboo) SwordMiningSpeed() float64 { return 30 }
 
 // EncodeBlock ...
 func (b Bamboo) EncodeBlock() (string, map[string]any) {

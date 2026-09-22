@@ -53,8 +53,11 @@ func (b BambooSapling) RandomTick(pos cube.Pos, tx *world.Tx, r *rand.Rand) {
 
 // BreakInfo ...
 func (b BambooSapling) BreakInfo() BreakInfo {
-	return newBreakInfo(0, alwaysHarvestable, axeEffective, oneOf(Bamboo{})).withBlastResistance(1)
+	return newBreakInfo(0, alwaysHarvestable, anyEffective(item.TypeAxe, item.TypeSword), oneOf(Bamboo{})).withBlastResistance(1)
 }
+
+// SwordMiningSpeed ...
+func (BambooSapling) SwordMiningSpeed() float64 { return 30 }
 
 // HasLiquidDrops ...
 func (b BambooSapling) HasLiquidDrops() bool {

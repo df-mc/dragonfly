@@ -16,6 +16,12 @@ type Cobweb struct {
 // Cobweb is implemented because the item package needs to identify this block but cannot implement the block package.
 func (Cobweb) Cobweb() {}
 
+// SwordMiningSpeed ...
+func (Cobweb) SwordMiningSpeed() float64 { return 15 }
+
+// ShearsMiningSpeed ...
+func (Cobweb) ShearsMiningSpeed() float64 { return 15 }
+
 // EntityInside slows the entity's velocity and resets its fall distance while it is inside the cobweb.
 func (Cobweb) EntityInside(_ cube.Pos, _ *world.Tx, e world.Entity) {
 	if fallEntity, ok := e.(fallDistanceEntity); ok {
