@@ -5,6 +5,7 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/go-gl/mathgl/mgl64"
 	"math"
 	"math/rand/v2"
@@ -85,8 +86,11 @@ func (f *FallingBlockBehaviour) solidify(e *Ent, pos mgl64.Vec3, tx *world.Tx) {
 	if r, ok := tx.Block(bpos).(replaceable); ok && r.ReplaceableBy(f.block) {
 		tx.SetBlock(bpos, f.block, nil)
 	} else if i, ok := f.block.(world.Item); ok {
-		opts := world.EntitySpawnOpts{Position: bpos.Vec3Middle()}
-		tx.AddEntity(NewItem(opts, item.NewStack(i, 1)))
+		// Like vanilla, the block breaks with particles and is thrown from the centre of the falling block.
+		centre := pos.Add(mgl64.Vec3{0, e.H().Type().BBox(e).Height() / 2, 0})
+		tx.AddParticle(centre, particle.BlockBreak{Block: f.block})
+		vel := mgl64.Vec3{rand.Float64()*0.2 - 0.1, 0.2, rand.Float64()*0.2 - 0.1}
+		tx.AddEntity(NewItem(world.EntitySpawnOpts{Position: centre, Velocity: vel}, item.NewStack(i, 1)))
 	}
 }
 

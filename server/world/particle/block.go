@@ -35,6 +35,13 @@ type BlockBreak struct {
 	Block world.Block
 }
 
+// BlockBreakNoSound is a BlockBreak particle without the break sound, shown when a cushion breaks.
+type BlockBreakNoSound struct {
+	particle
+	// Block is the block of which particles should be shown.
+	Block world.Block
+}
+
 // PunchBlock is a particle shown when a player is punching a block. It shows particles of a specific block
 // type at a particular face of a block.
 type PunchBlock struct {

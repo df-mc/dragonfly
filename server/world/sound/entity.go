@@ -58,3 +58,12 @@ type FireworkBlast struct{ sound }
 
 // FireworkTwinkle is a sound played when a firework explodes and should twinkle.
 type FireworkTwinkle struct{ sound }
+
+// CushionPlace is a sound played when a cushion is placed.
+type CushionPlace struct{ sound }
+
+// CushionSit is a sound played when an entity sits down on a cushion.
+type CushionSit struct{ sound }
+
+// CushionBreak is a sound played when a cushion breaks.
+type CushionBreak struct{ sound }

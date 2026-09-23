@@ -141,6 +141,7 @@ func init() {
 		world.RegisterItem(BannerPattern{Type: pattern})
 	}
 	for _, c := range Colours() {
+		world.RegisterItem(Cushion{Colour: c})
 		world.RegisterItem(Dye{Colour: c})
 		world.RegisterItem(FireworkStar{FireworkExplosion: FireworkExplosion{Colour: c}})
 	}
