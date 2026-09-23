@@ -105,6 +105,8 @@ type Controllable interface {
 	FinishBreaking()
 	AbortBreaking()
 
+	AbortBrushing()
+
 	Exhaust(points float64)
 
 	OpenSign(pos cube.Pos, frontSide bool)
