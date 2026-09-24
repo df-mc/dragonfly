@@ -29,6 +29,13 @@ type BoneMealAffected interface {
 	BoneMeal(pos cube.Pos, tx *world.Tx) BoneMealResult
 }
 
+// BoneMealParticleAdder is implemented by a BoneMealAffected block that adds the bone meal particle itself. A
+// block that turns into another one has to add it before it does, as the client draws the particle for the block
+// it finds at the position.
+type BoneMealParticleAdder interface {
+	AddsBoneMealParticle()
+}
+
 // UseOnBlock ...
 func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
 	if bm, ok := tx.Block(pos).(BoneMealAffected); ok {
@@ -38,9 +45,11 @@ func (b BoneMeal) UseOnBlock(pos cube.Pos, _ cube.Face, _ mgl64.Vec3, tx *world.
 		}
 
 		ctx.SubtractFromCount(1)
-		tx.AddParticle(pos.Vec3(), particle.BoneMeal{
-			Area: result == BoneMealResultArea,
-		})
+		if _, ok := bm.(BoneMealParticleAdder); !ok {
+			tx.AddParticle(pos.Vec3(), particle.BoneMeal{
+				Area: result == BoneMealResultArea,
+			})
+		}
 		return true
 	}
 	return false
