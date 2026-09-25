@@ -15,7 +15,13 @@ import (
 // The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
 // noinspection GoUnusedExportedFunction
 func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, error) {
-	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r)
+	return networkDecodeBuffer(br, bytes.NewBuffer(data), count, r, NetworkEncoding)
+}
+
+// NetworkHashDecode decodes network serialised chunk data whose block palette entries are canonical network block
+// hashes. The sub chunk count passed must be that found in the LevelChunk packet.
+func NetworkHashDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, error) {
+	return networkDecodeBuffer(br, bytes.NewBuffer(data), count, r, NetworkHashEncoding)
 }
 
 // NetworkDecodeBuffer decodes the network serialised data from buf passed into a Chunk if successful. If not, the chunk
@@ -23,6 +29,16 @@ func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chu
 // The sub chunk count passed must be that found in the LevelChunk packet.
 // noinspection GoUnusedExportedFunction
 func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
+	return networkDecodeBuffer(br, buf, count, r, NetworkEncoding)
+}
+
+// NetworkHashDecodeBuffer decodes network serialised chunk data from buf whose block palette entries are canonical
+// network block hashes. The sub chunk count passed must be that found in the LevelChunk packet.
+func NetworkHashDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
+	return networkDecodeBuffer(br, buf, count, r, NetworkHashEncoding)
+}
+
+func networkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, encoding Encoding) (*Chunk, error) {
 	c := New(br, r)
 	// The declared count may exceed the number of sub-chunks supported by the
 	// dimension's vertical range, so validate it before indexing c.sub.
@@ -31,7 +47,7 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 	}
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		sub, err := decodeSubChunk(buf, c, &index, NetworkEncoding)
+		sub, err := decodeSubChunk(buf, c, &index, encoding)
 		if err != nil {
 			return nil, err
 		}
@@ -44,7 +60,7 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 	}
 	var last *PalettedStorage
 	for i := 0; i < len(c.sub); i++ {
-		b, err := decodePalettedStorage(buf, NetworkEncoding, BiomePaletteEncoding)
+		b, err := decodePalettedStorage(buf, encoding, BiomePaletteEncoding)
 		if err != nil {
 			return nil, err
 		}

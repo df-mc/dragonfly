@@ -1005,7 +1005,7 @@ func stackFromItem(br world.BlockRegistry, it item.Stack) protocol.ItemStack {
 
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
-		blockRuntimeID = br.BlockRuntimeID(b)
+		blockRuntimeID = blockNetworkID(br, b)
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())
@@ -1027,12 +1027,12 @@ func stackToItem(br world.BlockRegistry, it protocol.ItemStack) item.Stack {
 	if !ok {
 		t = block.Air{}
 	}
-	if it.BlockRuntimeID > 0 {
-		// It shouldn't matter if it (for whatever reason) wasn't able to get the block runtime ID,
-		// since on the next line, we assert that the block is an item. If it didn't succeed, it'll
-		// return air anyway.
-		b, _ := br.BlockByRuntimeID(uint32(it.BlockRuntimeID))
-		if t, ok = b.(world.Item); !ok {
+	if it.BlockRuntimeID != 0 {
+		if b, found := blockFromNetworkID(br, uint32(it.BlockRuntimeID)); found {
+			if t, ok = b.(world.Item); !ok {
+				t = block.Air{}
+			}
+		} else {
 			t = block.Air{}
 		}
 	}
@@ -1042,6 +1042,25 @@ func stackToItem(br world.BlockRegistry, it protocol.ItemStack) item.Stack {
 	}
 	s := item.NewStack(t, int(it.Count))
 	return item.ReadNBT(it.NBTData, &s)
+}
+
+// blockNetworkID returns the canonical network hash of b.
+func blockNetworkID(br world.BlockRegistry, b world.Block) uint32 {
+	rid := br.BlockRuntimeID(b)
+	hash, ok := br.RuntimeIDToHash(rid)
+	if !ok {
+		panic(fmt.Sprintf("cannot find network hash for block runtime ID %d", rid))
+	}
+	return hash
+}
+
+// blockFromNetworkID resolves a network block hash to a block in the local registry.
+func blockFromNetworkID(br world.BlockRegistry, id uint32) (world.Block, bool) {
+	rid, ok := br.HashToRuntimeID(id)
+	if !ok {
+		return nil, false
+	}
+	return br.BlockByRuntimeID(rid)
 }
 
 // instanceFromItem converts an item.Stack to its network ItemInstance representation.

@@ -101,7 +101,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		}
 	}
 
-	serialisedSubChunk := chunk.EncodeSubChunk(col.Chunk, chunk.NetworkEncoding, int(ind))
+	serialisedSubChunk := chunk.EncodeSubChunk(col.Chunk, chunk.NetworkHashEncoding, int(ind))
 
 	blockEntityBuf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
@@ -159,7 +159,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chu
 	}
 
 	var (
-		data   = chunk.Encode(c, chunk.NetworkEncoding)
+		data   = chunk.Encode(c, chunk.NetworkHashEncoding)
 		count  = uint32(len(data.SubChunks))
 		blobs  = append(data.SubChunks, data.Biomes)
 		hashes = make([]uint64, len(blobs))
@@ -216,7 +216,7 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, dim world.Dimension, c *c
 		return
 	}
 
-	data := chunk.Encode(c, chunk.NetworkEncoding)
+	data := chunk.Encode(c, chunk.NetworkHashEncoding)
 	chunkBuf := bytes.NewBuffer(nil)
 	for _, s := range data.SubChunks {
 		_, _ = chunkBuf.Write(s)

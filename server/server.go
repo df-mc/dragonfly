@@ -526,7 +526,8 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
 			ServerAuthoritativeBlockBreaking: true,
 		},
-		Dimensions: srv.customDimensions,
+		Dimensions:              srv.customDimensions,
+		UseBlockNetworkIDHashes: true,
 	}
 }
 
