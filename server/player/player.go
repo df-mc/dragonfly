@@ -93,6 +93,8 @@ type playerData struct {
 
 	enchantSeed int64
 
+	fishingHook *world.EntityHandle
+
 	mc           *entity.MovementComputer
 	portalTravel *entity.PortalTravelComputer
 
@@ -2451,6 +2453,36 @@ func (p *Player) Collect(s item.Stack) (int, bool) {
 // Experience returns the amount of experience the player has.
 func (p *Player) Experience() int {
 	return p.experience.Experience()
+}
+
+// FishingHook returns the handle of the fishing hook currently cast by the player, or nil if the player does
+// not have a fishing hook cast.
+func (p *Player) FishingHook() *world.EntityHandle {
+	return p.fishingHook
+}
+
+// SetFishingHook changes the fishing hook cast by the player. Nil may be passed to clear it.
+func (p *Player) SetFishingHook(hook *world.EntityHandle) {
+	p.fishingHook = hook
+}
+
+// ReelFishingHook reels in the fishing hook currently cast by the player. It returns the durability damage that
+// the fishing rod should take and true, or false if the player did not have a fishing hook cast.
+func (p *Player) ReelFishingHook() (int, bool) {
+	hook, ok := p.fishingHook.Entity(p.tx)
+	p.fishingHook = nil
+	if !ok {
+		return 0, false
+	}
+	e, ok := hook.(*entity.Ent)
+	if !ok {
+		return 0, false
+	}
+	b, ok := e.Behaviour().(*entity.FishingHookBehaviour)
+	if !ok {
+		return 0, false
+	}
+	return b.Reel(e, p.tx), true
 }
 
 // EnchantmentSeed is a seed used to calculate random enchantments with enchantment tables.

@@ -100,6 +100,9 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	} else if o, ok := e.(owned); ok && o.Owner() != nil {
 		m[protocol.EntityDataKeyOwner] = int64(s.handleRuntimeID(o.Owner()))
 	}
+	if h, ok := e.(fishingHook); ok && h.HookedEntity() != nil {
+		m[protocol.EntityDataKeyTarget] = int64(s.handleRuntimeID(h.HookedEntity()))
+	}
 	if sc, ok := e.(scaled); ok {
 		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
 	}
@@ -266,6 +269,10 @@ type scaled interface {
 
 type owned interface {
 	Owner() *world.EntityHandle
+}
+
+type fishingHook interface {
+	HookedEntity() *world.EntityHandle
 }
 
 type named interface {

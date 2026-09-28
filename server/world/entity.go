@@ -500,6 +500,7 @@ type EntityRegistryConfig struct {
 	EndCrystal         func(opts EntitySpawnOpts) *EntityHandle
 	EnderPearl         func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	Firework           func(opts EntitySpawnOpts, firework Item, owner Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *EntityHandle
+	FishingHook        func(opts EntitySpawnOpts, owner Entity, lure, luck int) *EntityHandle
 	LingeringPotion    func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
 	Snowball           func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	SplashPotion       func(opts EntitySpawnOpts, t any, owner Entity) *EntityHandle
