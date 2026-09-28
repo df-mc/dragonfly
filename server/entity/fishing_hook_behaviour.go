@@ -4,11 +4,13 @@ import (
 	"iter"
 	"math"
 	"math/rand/v2"
+	"slices"
 
 	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/block/cube/trace"
 	"github.com/df-mc/dragonfly/server/item"
+	"github.com/df-mc/dragonfly/server/item/loot"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -354,7 +356,9 @@ func (f *FishingHookBehaviour) Reel(e *Ent, tx *world.Tx) (damage int) {
 		d := ownerPos.Sub(pos)
 		vel := mgl64.Vec3{d[0] * 0.1, d[1]*0.1 + math.Sqrt(d.Len())*0.08, d[2] * 0.1}
 		conf := tx.World().EntityRegistry().Config()
-		tx.AddEntity(conf.Item(world.EntitySpawnOpts{Position: pos, Velocity: vel}, fishingLoot(f.conf.Luck)))
+		for _, s := range fishingLoot(tx, cube.PosFromVec3(pos), f.conf.Luck) {
+			tx.AddEntity(conf.Item(world.EntitySpawnOpts{Position: pos, Velocity: vel}, s))
+		}
 		tx.AddEntity(NewExperienceOrb(world.EntitySpawnOpts{Position: ownerPos.Add(mgl64.Vec3{0, 0.5, 0.5})}, 1+rand.IntN(6)))
 		damage = 1
 	}
@@ -362,6 +366,17 @@ func (f *FishingHookBehaviour) Reel(e *Ent, tx *world.Tx) (damage int) {
 		damage = 2
 	}
 	return damage
+}
+
+// fishingLoot generates the loot caught by a fishing hook at the position passed with the luck passed, using
+// the vanilla fishing loot tables. Fishing in a jungle uses the jungle loot table.
+func fishingLoot(tx *world.Tx, pos cube.Pos, luck int) []item.Stack {
+	path := loot.Fishing
+	if slices.Contains(tx.Biome(pos).Tags(), "jungle") {
+		path = loot.JungleFishing
+	}
+	t, _ := loot.Lookup(path)
+	return t.Generate(loot.Context{Luck: float64(luck)})
 }
 
 // shouldStopFishing checks if the owner of the hook stopped fishing: If it

@@ -168,19 +168,3 @@ func TestFishingHookOnGround(t *testing.T) {
 		}
 	})
 }
-
-func TestFishingLoot(t *testing.T) {
-	for luck := 0; luck <= 3; luck++ {
-		for range 2000 {
-			if s := fishingLoot(luck); s.Empty() {
-				t.Fatalf("fishing loot with luck %v returned an empty stack", luck)
-			}
-		}
-	}
-	for range 200 {
-		s := enchantFishingLoot(item.NewStack(item.Book{}, 1), 30)
-		if _, ok := s.Item().(item.EnchantedBook); !ok || len(s.Enchantments()) == 0 {
-			t.Fatalf("expected an enchanted book, got %v", s)
-		}
-	}
-}
