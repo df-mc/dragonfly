@@ -32,7 +32,7 @@ func (JungleEdge) WaterColour() color.RGBA {
 
 // Tags ...
 func (JungleEdge) Tags() []string {
-	return []string{"animal", "edge", "jungle", "monster", "overworld", "spawns_jungle_mobs", "spawns_warm_variant_farm_animals"}
+	return []string{"animal", "edge", "jungle", "monster", "overworld", "spawns_jungle_mobs", "spawns_warm_variant_farm_animals", "has_structure_abandoned_camp"}
 }
 
 // String ...

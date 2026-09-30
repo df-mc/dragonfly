@@ -5,12 +5,15 @@ go 1.26.0
 require (
 	github.com/brentp/intintmap v0.0.0-20251106190759-56907b1f8479
 	github.com/cespare/xxhash/v2 v2.3.0
+	github.com/df-mc/go-nethernet v1.0.20
 	github.com/df-mc/goleveldb v1.1.9
-	github.com/df-mc/worldupgrader v1.0.21
+	github.com/df-mc/worldupgrader v1.0.22
 	github.com/go-gl/mathgl v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml v1.9.5
-	github.com/sandertv/gophertunnel v1.61.0
+	github.com/pion/ice/v4 v4.2.7
+	github.com/pion/webrtc/v4 v4.2.16-0.20260627075746-7a223a6f4d4f
+	github.com/sandertv/gophertunnel v1.62.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
@@ -33,7 +36,6 @@ require (
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/pion/datachannel v1.6.2 // indirect
 	github.com/pion/dtls/v3 v3.1.4 // indirect
-	github.com/pion/ice/v4 v4.2.7 // indirect
 	github.com/pion/interceptor v0.1.45 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/mdns/v2 v2.1.0 // indirect

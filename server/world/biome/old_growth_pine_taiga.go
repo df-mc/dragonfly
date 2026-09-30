@@ -32,7 +32,7 @@ func (OldGrowthPineTaiga) WaterColour() color.RGBA {
 
 // Tags ...
 func (OldGrowthPineTaiga) Tags() []string {
-	return []string{"animal", "forest", "mega", "monster", "overworld", "rare", "taiga", "has_structure_trail_ruins", "spawns_cold_variant_farm_animals"}
+	return []string{"animal", "forest", "mega", "monster", "overworld", "rare", "taiga", "has_structure_trail_ruins", "spawns_cold_variant_farm_animals", "has_structure_abandoned_camp"}
 }
 
 // String ...

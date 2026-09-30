@@ -32,7 +32,7 @@ func (BirchForest) WaterColour() color.RGBA {
 
 // Tags ...
 func (BirchForest) Tags() []string {
-	return []string{"animal", "birch", "forest", "monster", "overworld", "bee_habitat"}
+	return []string{"animal", "birch", "forest", "monster", "overworld", "bee_habitat", "has_structure_abandoned_camp"}
 }
 
 // String ...

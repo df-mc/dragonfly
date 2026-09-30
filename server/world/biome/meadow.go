@@ -32,7 +32,7 @@ func (Meadow) WaterColour() color.RGBA {
 
 // Tags ...
 func (Meadow) Tags() []string {
-	return []string{"mountains", "monster", "overworld", "meadow", "bee_habitat"}
+	return []string{"mountains", "monster", "overworld", "meadow", "bee_habitat", "has_structure_abandoned_camp"}
 }
 
 // String ...

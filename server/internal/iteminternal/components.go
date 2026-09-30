@@ -103,6 +103,9 @@ func Components(it world.CustomItem) (map[string]any, error) {
 			"do_swing_animation": x.SwingAnimation(),
 		})
 	}
+	if x, ok := it.(item.Weapon); ok {
+		builder.AddProperty("damage", int32(x.AttackDamage()))
+	}
 	if x, ok := it.(item.Glinted); ok {
 		builder.AddComponent("minecraft:glint", map[string]any{
 			"value": x.Glinted(),

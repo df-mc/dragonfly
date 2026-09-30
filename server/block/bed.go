@@ -22,6 +22,8 @@ type Bed struct {
 	Facing cube.Direction
 	// Head is true if the bed is the head side.
 	Head bool
+	// Occupied is true while an entity is sleeping in the bed.
+	Occupied bool
 	// Sleeper is the user that is using the bed. It is only set for the Head part of the bed.
 	Sleeper *world.EntityHandle
 }
@@ -166,6 +168,35 @@ func (b Bed) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, _ *i
 	return true
 }
 
+// SleepingEntity ...
+func (b Bed) SleepingEntity() *world.EntityHandle {
+	return b.Sleeper
+}
+
+// StartSleeping ...
+func (b Bed) StartSleeping(pos cube.Pos, tx *world.Tx, e *world.EntityHandle) {
+	b.setOccupied(pos, tx, true)
+	b.Sleeper = e
+	b.Occupied = true
+	tx.SetBlock(pos, b, nil)
+}
+
+// StopSleeping ...
+func (b Bed) StopSleeping(pos cube.Pos, tx *world.Tx) {
+	b.setOccupied(pos, tx, false)
+	b.Sleeper = nil
+	b.Occupied = false
+	tx.SetBlock(pos, b, nil)
+}
+
+// setOccupied updates the occupied state of the other half of the bed, which holds no Sleeper of its own.
+func (b Bed) setOccupied(pos cube.Pos, tx *world.Tx, occupied bool) {
+	if side, sidePos, ok := b.side(pos, tx); ok {
+		side.Occupied = occupied
+		tx.SetBlock(sidePos, side, nil)
+	}
+}
+
 // EntityLand ...
 func (b Bed) EntityLand(_ cube.Pos, _ *world.Tx, e world.Entity, distance *float64) {
 	if _, ok := e.(fallDistanceEntity); ok {
@@ -202,7 +233,7 @@ func (b Bed) EncodeItem() (name string, meta int16) {
 func (b Bed) EncodeBlock() (name string, properties map[string]interface{}) {
 	return "minecraft:bed", map[string]interface{}{
 		"direction":      int32(horizontalDirection(b.Facing)),
-		"occupied_bit":   boolByte(b.Sleeper != nil),
+		"occupied_bit":   boolByte(b.Occupied),
 		"head_piece_bit": boolByte(b.Head),
 	}
 }
@@ -235,21 +266,28 @@ func (b Bed) head(pos cube.Pos, tx *world.Tx) (Bed, cube.Pos, bool) {
 
 // side returns the other side of the bed. If the other side is not a bed, the third return value is false.
 func (b Bed) side(pos cube.Pos, tx *world.Tx) (Bed, cube.Pos, bool) {
-	face := b.Facing.Face()
-	if b.Head {
-		face = face.Opposite()
-	}
-
-	sidePos := pos.Side(face)
+	sidePos := bedSide(pos, b.Facing, b.Head)
 	o, ok := tx.Block(sidePos).(Bed)
 	return o, sidePos, ok
+}
+
+// bedSide returns the position of the other half of a two block bed at pos.
+func bedSide(pos cube.Pos, facing cube.Direction, head bool) cube.Pos {
+	face := facing.Face()
+	if head {
+		face = face.Opposite()
+	}
+	return pos.Side(face)
 }
 
 // allBeds returns all possible beds.
 func allBeds() (beds []world.Block) {
 	for _, d := range cube.Directions() {
-		beds = append(beds, Bed{Facing: d})
-		beds = append(beds, Bed{Facing: d, Head: true})
+		for _, head := range []bool{false, true} {
+			for _, occupied := range []bool{false, true} {
+				beds = append(beds, Bed{Facing: d, Head: head, Occupied: occupied})
+			}
+		}
 	}
 	return
 }
