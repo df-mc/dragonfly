@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/pelletier/go-toml"
-	"log/slog"
-	"os"
 )
 
 func main() {
@@ -20,7 +21,10 @@ func main() {
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
 
-	srv.Listen()
+	if err := srv.Listen(); err != nil {
+		panic(err)
+	}
+
 	for p := range srv.Accept() {
 		_ = p
 	}

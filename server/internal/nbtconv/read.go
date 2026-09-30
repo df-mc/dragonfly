@@ -38,7 +38,7 @@ func Int32(m map[string]any, k string) int32 {
 	return v
 }
 
-// Int64 reads an int16 value from a map at key k.
+// Int64 reads an int64 value from a map at key k.
 func Int64(m map[string]any, k string) int64 {
 	v, _ := m[k].(int64)
 	return v
