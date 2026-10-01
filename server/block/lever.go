@@ -79,6 +79,14 @@ func (l Lever) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.User, _ 
 	return true
 }
 
+// WindChargeInteractionPos ...
+func (Lever) WindChargeInteractionPos(pos cube.Pos) cube.Pos { return pos }
+
+// WindChargeInteract ...
+func (l Lever) WindChargeInteract(pos cube.Pos, tx *world.Tx) {
+	l.Activate(pos, cube.FaceUp, tx, nil, nil)
+}
+
 func (l Lever) BreakInfo() BreakInfo {
 	return newBreakInfo(0.5, alwaysHarvestable, nothingEffective, oneOf(Lever{}))
 }

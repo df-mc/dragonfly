@@ -111,6 +111,19 @@ func (c Candle) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User, c
 	return false
 }
 
+// WindChargeInteractionPos ...
+func (Candle) WindChargeInteractionPos(pos cube.Pos) cube.Pos { return pos }
+
+// WindChargeInteract ...
+func (c Candle) WindChargeInteract(pos cube.Pos, tx *world.Tx) {
+	if !c.Lit {
+		return
+	}
+	c.Lit = false
+	tx.SetBlock(pos, c, nil)
+	tx.PlaySound(pos.Vec3Centre(), sound.FireExtinguish{})
+}
+
 // Ignite ...
 func (c Candle) Ignite(pos cube.Pos, tx *world.Tx, _ world.Entity) bool {
 	if _, ok := tx.Liquid(pos); ok || c.Lit {
