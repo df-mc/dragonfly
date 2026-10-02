@@ -545,25 +545,29 @@ func (s *Session) SendAbilities(c Controllable) {
 	if mode.AllowsInteraction() {
 		abilities |= protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
 	}
-	layers := []protocol.AbilityLayer{{
-		Type:             protocol.AbilityLayerTypeBase,
-		Abilities:        protocol.AbilityCount - 1,
-		Values:           abilities,
-		FlySpeed:         float32(c.FlightSpeed()),
-		VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
-		WalkSpeed:        protocol.AbilityBaseWalkSpeed,
-	}}
 	if mode == world.GameModeSpectator {
-		layers[0].Values = protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers |
+		abilities = protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers |
 			protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
-		layers = append([]protocol.AbilityLayer{spectatorAbilityLayer}, layers...)
 	}
-	s.writePacket(&packet.UpdateAbilities{AbilityData: protocol.AbilityData{
+	pk := &packet.UpdateAbilities{AbilityData: protocol.AbilityData{
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: protocol.CommandPermissionLevelAny,
-		Layers:             layers,
-	}})
+		Layers: []protocol.AbilityLayer{
+			{
+				Type:             protocol.AbilityLayerTypeBase,
+				Abilities:        protocol.AbilityCount - 1,
+				Values:           abilities,
+				FlySpeed:         float32(c.FlightSpeed()),
+				VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
+				WalkSpeed:        protocol.AbilityBaseWalkSpeed,
+			},
+		},
+	}}
+	if mode == world.GameModeSpectator {
+		pk.AbilityData.Layers = append([]protocol.AbilityLayer{spectatorAbilityLayer}, pk.AbilityData.Layers...)
+	}
+	s.writePacket(pk)
 }
 
 // spectatorAbilityLayer is the ability layer sent on top of the base layer of a player in spectator mode. It keeps
