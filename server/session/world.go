@@ -1012,9 +1012,9 @@ func (s *Session) ViewBrewingUpdate(prevBrewTime, brewTime time.Duration, prevFu
 // ViewBlockUpdate ...
 func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
-	if c, ok := b.(block.Cauldron); ok && layer == 0 && c.Level > 0 && c.Content == block.WaterCauldronContent() && c.Potion == nil && c.Colour == (color.RGBA{}) {
-		// Removing CustomColor from actor data leaves the client's cached dye
-		// visible. Recreate the undyed actor before loading its fresh data.
+	if c, ok := b.(block.Cauldron); ok && layer == 0 && c.Level > 0 {
+		// Cauldron liquid meshes cache colour after actor data changes, even
+		// when adding dye. Recreate the actor before loading its fresh data.
 		s.writePacket(&packet.UpdateBlock{
 			Position:          blockPos,
 			NewBlockRuntimeID: s.br.AirRuntimeID(),
