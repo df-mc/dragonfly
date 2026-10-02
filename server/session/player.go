@@ -545,21 +545,35 @@ func (s *Session) SendAbilities(c Controllable) {
 	if mode.AllowsInteraction() {
 		abilities |= protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers | protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
 	}
+	layers := []protocol.AbilityLayer{{
+		Type:             protocol.AbilityLayerTypeBase,
+		Abilities:        protocol.AbilityCount - 1,
+		Values:           abilities,
+		FlySpeed:         float32(c.FlightSpeed()),
+		VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
+		WalkSpeed:        protocol.AbilityBaseWalkSpeed,
+	}}
+	if mode == world.GameModeSpectator {
+		layers[0].Values = protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers |
+			protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs
+		layers = append([]protocol.AbilityLayer{spectatorAbilityLayer}, layers...)
+	}
 	s.writePacket(&packet.UpdateAbilities{AbilityData: protocol.AbilityData{
 		EntityUniqueID:     selfEntityRuntimeID,
 		PlayerPermissions:  packet.PermissionLevelMember,
 		CommandPermissions: protocol.CommandPermissionLevelAny,
-		Layers: []protocol.AbilityLayer{
-			{
-				Type:             protocol.AbilityLayerTypeBase,
-				Abilities:        protocol.AbilityCount - 1,
-				Values:           abilities,
-				FlySpeed:         float32(c.FlightSpeed()),
-				VerticalFlySpeed: float32(c.VerticalFlightSpeed()),
-				WalkSpeed:        protocol.AbilityBaseWalkSpeed,
-			},
-		},
+		Layers:             layers,
 	}})
+}
+
+// spectatorAbilityLayer is the ability layer sent on top of the base layer of a player in spectator mode. It keeps
+// the player flying and passing through blocks, while preventing it from stopping flight or interacting with the world.
+var spectatorAbilityLayer = protocol.AbilityLayer{
+	Type: protocol.AbilityLayerTypeSpectator,
+	Abilities: protocol.AbilityBuild | protocol.AbilityMine | protocol.AbilityDoorsAndSwitches | protocol.AbilityOpenContainers |
+		protocol.AbilityAttackPlayers | protocol.AbilityAttackMobs | protocol.AbilityInvulnerable | protocol.AbilityFlying |
+		protocol.AbilityMayFly | protocol.AbilityInstantBuild | protocol.AbilityNoClip,
+	Values: protocol.AbilityInvulnerable | protocol.AbilityFlying | protocol.AbilityNoClip,
 }
 
 // SendHealth sends the health and max health to the player.
@@ -1324,14 +1338,11 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 
 // gameTypeFromMode returns the game type ID from the game mode passed.
 func gameTypeFromMode(mode world.GameMode) int32 {
-	if !mode.Visible() && !mode.HasCollision() {
+	if mode == world.GameModeSpectator {
 		return packet.GameTypeSpectator
 	}
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		return packet.GameTypeCreative
-	}
-	if !mode.AllowsEditing() {
-		return packet.GameTypeAdventure
 	}
 	return packet.GameTypeSurvival
 }
