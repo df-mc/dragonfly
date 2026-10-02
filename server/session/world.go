@@ -536,6 +536,14 @@ func tierToSoundEvent(tier item.ArmourTier) string {
 
 // playSound plays a world.Sound at a position, disabling relative volume if set to true.
 func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool) {
+	if event, colour, ok := cauldronSoundEvent(t); ok {
+		s.writePacket(&packet.LevelEvent{
+			EventType: event,
+			Position:  vec64To32(pos),
+			EventData: nbtconv.Int32FromRGBA(colour),
+		})
+		return
+	}
 	pk := &packet.LevelSoundEvent{
 		Position:              vec64To32(pos),
 		EntityType:            ":",
