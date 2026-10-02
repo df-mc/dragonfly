@@ -1324,8 +1324,14 @@ func debugShapeToProtocol(shape debug.Shape, dim world.Dimension, attachedEntity
 
 // gameTypeFromMode returns the game type ID from the game mode passed.
 func gameTypeFromMode(mode world.GameMode) int32 {
+	if !mode.Visible() && !mode.HasCollision() {
+		return packet.GameTypeSpectator
+	}
 	if mode.AllowsFlying() && mode.CreativeInventory() {
 		return packet.GameTypeCreative
+	}
+	if !mode.AllowsEditing() {
+		return packet.GameTypeAdventure
 	}
 	return packet.GameTypeSurvival
 }
