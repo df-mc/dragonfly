@@ -500,7 +500,7 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 // server.
 func (srv *Server) defaultGameData() minecraft.GameData {
 	gm, _ := world.GameModeID(srv.world.DefaultGameMode())
-	if gm == 3 {
+	if srv.world.DefaultGameMode() == world.GameModeSpectator {
 		gm = packet.GameTypeSpectator
 	}
 	return minecraft.GameData{
