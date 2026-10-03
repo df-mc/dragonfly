@@ -3296,7 +3296,7 @@ func (p *Player) addNewItem(ctx *item.UseContext) {
 		return
 	}
 	held, left := p.HeldItems()
-	if held.Empty() {
+	if held.Empty() || ctx.NewItemReplaceHeld {
 		p.SetHeldItems(ctx.NewItem, left)
 		return
 	}
