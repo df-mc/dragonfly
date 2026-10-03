@@ -60,7 +60,7 @@ func (b BucketContent) LiquidType() string {
 	return "milk"
 }
 
-// Bucket is a tool used to carry water, lava and fish.
+// Bucket is a tool used to carry liquids, milk and powder snow.
 type Bucket struct {
 	// Content is the content that the bucket has. By default, this value resolves to an empty bucket.
 	Content BucketContent
@@ -111,13 +111,15 @@ func (b Bucket) FuelInfo() FuelInfo {
 }
 
 // UseOnBlock handles the bucket filling and emptying logic.
-func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
-	if b.Content.milk || b.Content.powderSnow {
-		// TODO: Place powder snow once its block is implemented.
+func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user User, ctx *UseContext) bool {
+	if b.Content.milk {
 		return false
 	}
 	if b.Empty() {
 		return b.fillFrom(pos, tx, ctx)
+	}
+	if b.Content.powderSnow {
+		return b.placePowderSnow(pos, face, tx, user, ctx)
 	}
 	liq := b.Content.liquid.WithDepth(8, false)
 	if bl := tx.Block(pos); canDisplace(bl, liq) || replaceableWith(bl, liq) {
@@ -138,6 +140,14 @@ func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world
 // fillFrom fills a bucket from the liquid at the position passed in the world. If there is no liquid or if
 // the liquid is no source, fillFrom returns false.
 func (b Bucket) fillFrom(pos cube.Pos, tx *world.Tx, ctx *UseContext) bool {
+	if _, snow := tx.Block(pos).(interface{ PowderSnow() }); snow {
+		tx.SetBlock(pos, nil, nil)
+		tx.PlaySound(pos.Vec3Centre(), sound.BucketFill{PowderSnow: true})
+		ctx.NewItem = NewStack(Bucket{Content: PowderSnowBucketContent()}, 1)
+		ctx.NewItemSurvivalOnly = true
+		ctx.SubtractFromCount(1)
+		return true
+	}
 	liquid, ok := tx.Liquid(pos)
 	if !ok {
 		return false
@@ -152,6 +162,36 @@ func (b Bucket) fillFrom(pos cube.Pos, tx *world.Tx, ctx *UseContext) bool {
 	ctx.NewItem = NewStack(Bucket{Content: LiquidBucketContent(liquid)}, 1)
 	ctx.NewItemSurvivalOnly = true
 	ctx.SubtractFromCount(1)
+	return true
+}
+
+// placePowderSnow uses the placement hook so cancelled placements do not consume the bucket.
+func (b Bucket) placePowderSnow(pos cube.Pos, face cube.Face, tx *world.Tx, user User, ctx *UseContext) bool {
+	snow, ok := tx.World().BlockRegistry().BlockByName("minecraft:powder_snow", nil)
+	if !ok {
+		return false
+	}
+	if !replaceableWith(tx.Block(pos), snow) {
+		pos = pos.Side(face)
+	}
+	if pos.OutOfBounds(tx.Range()) || !replaceableWith(tx.Block(pos), snow) {
+		return false
+	}
+	if placer, ok := user.(interface {
+		PlaceBlock(cube.Pos, world.Block, *UseContext)
+	}); ok {
+		before := ctx.CountSub
+		placer.PlaceBlock(pos, snow, ctx)
+		if ctx.CountSub == before {
+			return false
+		}
+	} else {
+		tx.SetBlock(pos, snow, nil)
+		ctx.SubtractFromCount(1)
+	}
+	tx.PlaySound(pos.Vec3Centre(), sound.BucketEmpty{PowderSnow: true})
+	ctx.NewItem = NewStack(Bucket{}, 1)
+	ctx.NewItemSurvivalOnly = true
 	return true
 }
 

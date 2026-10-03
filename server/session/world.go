@@ -687,6 +687,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventEnderEyePlaced
 	case sound.EndPortalCreated:
 		pk.SoundType = packet.SoundEventEndPortalCreated
+	case sound.Freezing:
+		pk.SoundType = packet.SoundEventPlayerHurtFreeze
 	case sound.Burning:
 		pk.SoundType = packet.SoundEventPlayerHurtOnFire
 	case sound.Drowning:
@@ -762,12 +764,20 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 			pk.SoundType = packet.SoundEventAttackNoDamage
 		}
 	case sound.BucketFill:
+		if so.PowderSnow {
+			pk.SoundType = packet.SoundEventBucketFillPowderSnow
+			break
+		}
 		if _, water := so.Liquid.(block.Water); water {
 			pk.SoundType = packet.SoundEventBucketFillWater
 			break
 		}
 		pk.SoundType = packet.SoundEventBucketFillLava
 	case sound.BucketEmpty:
+		if so.PowderSnow {
+			pk.SoundType = packet.SoundEventBucketEmptyPowderSnow
+			break
+		}
 		if _, water := so.Liquid.(block.Water); water {
 			pk.SoundType = packet.SoundEventBucketEmptyWater
 			break

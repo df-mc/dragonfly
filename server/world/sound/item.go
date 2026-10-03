@@ -30,6 +30,8 @@ type EquipItem struct {
 
 // BucketFill is a sound played when a bucket is filled using a liquid source block from the world.
 type BucketFill struct {
+	// PowderSnow specifies that the bucket collects powder snow instead of a liquid.
+	PowderSnow bool
 	// Liquid is the liquid that the bucket is filled up with.
 	Liquid world.Liquid
 
@@ -38,6 +40,8 @@ type BucketFill struct {
 
 // BucketEmpty is a sound played when a bucket with a liquid in it is placed into the world.
 type BucketEmpty struct {
+	// PowderSnow specifies that the bucket places powder snow instead of a liquid.
+	PowderSnow bool
 	// Liquid is the liquid that the bucket places into the world.
 	Liquid world.Liquid
 
