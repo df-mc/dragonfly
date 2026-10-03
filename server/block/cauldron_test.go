@@ -17,6 +17,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item/potion"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
+	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
@@ -183,6 +184,60 @@ func TestCauldronPotionForms(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestCauldronMixingParticles(t *testing.T) {
+	dye := color.RGBA{R: 40, G: 120, B: 200, A: 255}
+	water := color.RGBA{R: 52, G: 81, B: 89, A: 191}
+	for _, test := range []struct {
+		name   string
+		before block.Cauldron
+		input  world.Item
+		colour color.RGBA
+	}{
+		{
+			name: "dyed water and lava bucket", before: block.Cauldron{Level: 4, Colour: dye},
+			input: item.Bucket{Content: item.LiquidBucketContent(block.Lava{Depth: 8})}, colour: dye,
+		},
+		{
+			name: "dyed water and potion", before: block.Cauldron{Level: 4, Colour: dye},
+			input: item.Potion{Type: potion.Healing()}, colour: dye,
+		},
+		{
+			name: "potion and water bucket", before: block.Cauldron{Level: 4, Potion: item.Potion{Type: potion.Healing()}},
+			input: item.Bucket{Content: item.LiquidBucketContent(block.Water{Depth: 8})}, colour: water,
+		},
+		{
+			name: "different potions", before: block.Cauldron{Level: 4, Potion: item.Potion{Type: potion.Healing()}},
+			input: item.Potion{Type: potion.Poison()}, colour: water,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			w := world.Config{Synchronous: true, Entities: entity.DefaultRegistry}.New()
+			t.Cleanup(func() { _ = w.Close() })
+			recorder := &cauldronSoundRecorder{}
+			w.Handle(recorder)
+			got, err := world.Call(context.Background(), w, func(tx *world.Tx) (block.Cauldron, error) {
+				pos := cube.Pos{0, 1, 0}
+				tx.SetBlock(pos, test.before, nil)
+				var ctx item.UseContext
+				if !test.before.Activate(pos, cube.FaceUp, tx, &cauldronTestUser{held: item.NewStack(test.input, 1)}, &ctx) {
+					t.Error("incompatible mixing was not handled")
+				}
+				return tx.Block(pos).(block.Cauldron), nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, block.Cauldron{}) {
+				t.Fatalf("incompatible mixing retained contents: %#v", got)
+			}
+			want := sound.CauldronExplode{Colour: test.colour}
+			if recorder.count != 1 || recorder.sound != want || recorder.pos != (mgl64.Vec3{0.5, 1.375, 0.5}) {
+				t.Fatalf("mixing effect = (%#v, %v, count %d), want (%#v, [0.5 1.375 0.5], count 1)", recorder.sound, recorder.pos, recorder.count, want)
+			}
+		})
+	}
 }
 
 func TestCauldronArrowQuantities(t *testing.T) {
@@ -477,6 +532,18 @@ func TestCauldronRegisteredStates(t *testing.T) {
 	if got, ok := world.ItemByName("minecraft:cauldron", 0); !ok || !reflect.DeepEqual(got, block.Cauldron{}) {
 		t.Fatalf("registered cauldron item = %#v, %v", got, ok)
 	}
+}
+
+type cauldronSoundRecorder struct {
+	world.NopHandler
+	sound world.Sound
+	pos   mgl64.Vec3
+	count int
+}
+
+func (r *cauldronSoundRecorder) HandleSound(_ *world.Context, s world.Sound, pos mgl64.Vec3) {
+	r.sound, r.pos = s, pos
+	r.count++
 }
 
 type cauldronTestUser struct {

@@ -73,6 +73,7 @@ type CauldronCleanBanner struct {
 // CauldronExplode is played when incompatible liquids are mixed in a cauldron.
 type CauldronExplode struct {
 	sound
-	// Colour is the colour of the liquid being removed from the cauldron.
+	// Colour is the retained dye colour, or the default water colour if no dye
+	// was stored. Potions are cleared before the particle colour is chosen.
 	Colour color.RGBA
 }

@@ -181,8 +181,7 @@ func (c Cauldron) useBucket(pos cube.Pos, tx *world.Tx, b item.Bucket, ctx *item
 			return false
 		}
 		if c.Level > 0 && (c.Content != content || c.Potion != nil) {
-			c = Cauldron{}
-			tx.PlaySound(c.liquidPosition(pos), sound.CauldronExplode{Colour: c.liquidColour()})
+			c = c.explode(pos, tx)
 		} else {
 			c = Cauldron{Level: 6, Content: content}
 			switch content {
@@ -208,8 +207,7 @@ func (c Cauldron) usePotion(pos cube.Pos, tx *world.Tx, it world.Item, ctx *item
 	stored, _, _ := cauldronPotion(c.Potion)
 	water := p == potion.Water()
 	if c.Level > 0 && (c.Content != WaterCauldronContent() || (!water && c.Potion == nil) || (water && c.Potion != nil) || (c.Potion != nil && p != stored)) {
-		c = Cauldron{}
-		tx.PlaySound(c.liquidPosition(pos), sound.CauldronExplode{Colour: c.liquidColour()})
+		c = c.explode(pos, tx)
 	} else {
 		if c.Level == 6 && !water {
 			return true
@@ -228,6 +226,15 @@ func (c Cauldron) usePotion(pos cube.Pos, tx *world.Tx, it world.Item, ctx *item
 	ctx.NewItem = item.NewStack(item.GlassBottle{}, 1)
 	ctx.NewItemSurvivalOnly = true
 	return true
+}
+
+// explode empties incompatible contents and plays the native mixing effect.
+func (c Cauldron) explode(pos cube.Pos, tx *world.Tx) Cauldron {
+	// Bedrock clears the potion before choosing the particle colour, but retains
+	// any dye for the effect. The resulting empty cauldron stores neither.
+	c = Cauldron{Colour: c.Colour}
+	tx.PlaySound(c.liquidPosition(pos), sound.CauldronExplode{Colour: c.liquidColour()})
+	return Cauldron{}
 }
 
 // FillBottle ...
