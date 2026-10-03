@@ -56,6 +56,10 @@ type PickedUpAction struct {
 // FireworkExplosionAction is a world.EntityAction that makes a Firework rocket display an explosion particle.
 type FireworkExplosionAction struct{ action }
 
+// FishingHookBiteAction is a world.EntityAction that makes a fishing hook display the animation of a fish
+// biting it.
+type FishingHookBiteAction struct{ action }
+
 // TotemUseAction is a world.EntityAction that displays the totem use particles and animation.
 type TotemUseAction struct{ action }
 
