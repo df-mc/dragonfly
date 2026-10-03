@@ -65,6 +65,8 @@ type playerData struct {
 
 	usingSince time.Time
 
+	frozenTicks  int
+	inPowderSnow bool
 	glideTicks   int64
 	fireTicks    int64
 	fallDistance float64
@@ -474,7 +476,7 @@ func (p *Player) ScoreTag() string {
 // obtain.
 func (p *Player) SetSpeed(speed float64) {
 	p.speed = speed
-	p.session().SendSpeed(speed)
+	p.session().SendSpeed(max(0, speed-0.05*p.FreezingEffectStrength()))
 }
 
 // Speed returns the speed of the player, returning a value that indicates the blocks/tick speed. The default
@@ -690,6 +692,8 @@ func (p *Player) Hurt(dmg float64, src world.DamageSource) (float64, bool) {
 	}
 	if src.Fire() {
 		p.tx.PlaySound(pos, sound.Burning{})
+	} else if _, ok := src.(entity.FreezingDamageSource); ok {
+		p.tx.PlaySound(pos, sound.Freezing{})
 	} else if _, ok := src.(entity.DrowningDamageSource); ok {
 		p.tx.PlaySound(pos, sound.Drowning{})
 	}
@@ -1007,6 +1011,7 @@ func (p *Player) respawn(f func(p *Player)) {
 	p.sendFood()
 	p.Extinguish()
 	p.ResetFallDistance()
+	p.setFrozenTicks(0)
 
 	p.Handler().HandleRespawn(p, &pos, &w)
 
@@ -1518,6 +1523,9 @@ func (p *Player) EnderChestInventory() *inventory.Inventory {
 func (p *Player) SetGameMode(mode world.GameMode) {
 	previous := p.GameMode()
 	p.gameMode = mode
+	if !mode.AllowsTakingDamage() {
+		p.setFrozenTicks(0)
+	}
 
 	if !mode.AllowsFlying() {
 		p.StopFlying()
@@ -2636,6 +2644,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	if p.Dead() {
 		return
 	}
+	p.data.Age += time.Second / 20
 	if _, ok := p.tx.Liquid(cube.PosFromVec3(p.Position())); !ok {
 		p.StopSwimming()
 		if _, ok := p.Armour().Helmet().Item().(item.TurtleShell); ok {
@@ -2656,6 +2665,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 	p.checkBlockCollisions(p.data.Vel)
 	p.onGround = p.checkOnGround(mgl64.Vec3{})
 	p.checkEntitySteppers()
+	p.tickFreezing(int64(p.data.Age / (time.Second / 20)))
 
 	p.effects.Tick(p, p.tx)
 
@@ -2942,7 +2952,7 @@ func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
 		for x := minX; x <= maxX; x++ {
 			for z := minZ; z <= maxZ; z++ {
 				pos := cube.Pos{x, y, z}
-				boxes := p.tx.Block(pos).Model().BBox(pos, p.tx)
+				boxes := block.CollisionBoxes(pos, p.tx, p)
 				for _, box := range boxes {
 					blocks = append(blocks, box.Translate(pos.Vec3()))
 				}
@@ -2980,6 +2990,7 @@ func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
 
 // checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
 func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
+	p.inPowderSnow = false
 	box := entityBBox.Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
@@ -2988,6 +2999,9 @@ func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
 			for z := low[2]; z <= high[2]; z++ {
 				blockPos := cube.Pos{x, y, z}
 				b := p.tx.Block(blockPos)
+				if _, snow := b.(block.PowderSnow); snow {
+					p.inPowderSnow = true
+				}
 				if collide, ok := b.(block.EntityInsider); ok {
 					collide.EntityInside(blockPos, p.tx, p)
 					if _, liquid := b.(world.Liquid); liquid {
@@ -3033,7 +3047,7 @@ func (p *Player) checkOnGround(deltaPos mgl64.Vec3) bool {
 		for z := low[2]; z <= high[2]; z++ {
 			for y := low[1]; y < high[1]; y++ {
 				pos := cube.Pos{x, y, z}
-				for _, bb := range p.tx.Block(pos).Model().BBox(pos, p.tx) {
+				for _, bb := range block.CollisionBoxes(pos, p.tx, p) {
 					if bb.Translate(pos.Vec3()).IntersectsWith(box) {
 						return true
 					}
