@@ -28,7 +28,6 @@ func init() {
 	world.RegisterItem(Bread{})
 	world.RegisterItem(Brick{})
 	world.RegisterItem(Bucket{})
-	world.RegisterItem(Bucket{Content: PowderSnowBucketContent()})
 	world.RegisterItem(CarrotOnAStick{})
 	world.RegisterItem(Charcoal{})
 	world.RegisterItem(Chicken{Cooked: true})

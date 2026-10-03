@@ -10,9 +10,8 @@ import (
 
 // BucketContent is the content of a bucket.
 type BucketContent struct {
-	liquid     world.Liquid
-	milk       bool
-	powderSnow bool
+	liquid world.Liquid
+	milk   bool
 }
 
 // LiquidBucketContent returns a new BucketContent with the liquid passed in.
@@ -25,11 +24,6 @@ func MilkBucketContent() BucketContent {
 	return BucketContent{milk: true}
 }
 
-// PowderSnowBucketContent returns a bucket containing powder snow.
-func PowderSnowBucketContent() BucketContent {
-	return BucketContent{powderSnow: true}
-}
-
 // Liquid returns the world.Liquid that a Bucket with this BucketContent places.
 // If this BucketContent does not place a liquid block, false is returned.
 func (b BucketContent) Liquid() (world.Liquid, bool) {
@@ -38,12 +32,9 @@ func (b BucketContent) Liquid() (world.Liquid, bool) {
 
 // String converts the BucketContent to a string.
 func (b BucketContent) String() string {
-	switch {
-	case b.powderSnow:
-		return "powder_snow"
-	case b.milk:
+	if b.milk {
 		return "milk"
-	case b.liquid != nil:
+	} else if b.liquid != nil {
 		return b.liquid.LiquidType()
 	}
 	return ""
@@ -51,9 +42,6 @@ func (b BucketContent) String() string {
 
 // LiquidType returns the type of liquid the bucket contains.
 func (b BucketContent) LiquidType() string {
-	if b.powderSnow {
-		return "powder_snow"
-	}
 	if b.liquid != nil {
 		return b.liquid.LiquidType()
 	}
@@ -99,7 +87,7 @@ func (b Bucket) Consume(_ *world.Tx, c Consumer) Stack {
 
 // Empty returns true if the bucket is empty.
 func (b Bucket) Empty() bool {
-	return b.Content.liquid == nil && !b.Content.milk && !b.Content.powderSnow
+	return b.Content.liquid == nil && !b.Content.milk
 }
 
 // FuelInfo ...
@@ -112,8 +100,7 @@ func (b Bucket) FuelInfo() FuelInfo {
 
 // UseOnBlock handles the bucket filling and emptying logic.
 func (b Bucket) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, _ User, ctx *UseContext) bool {
-	if b.Content.milk || b.Content.powderSnow {
-		// TODO: Place powder snow once its block is implemented.
+	if b.Content.milk {
 		return false
 	}
 	if b.Empty() {

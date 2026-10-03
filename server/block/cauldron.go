@@ -154,20 +154,25 @@ func (c Cauldron) useBucket(pos cube.Pos, tx *world.Tx, b item.Bucket, ctx *item
 		if c.Level != 6 || c.Potion != nil {
 			return false
 		}
-		var content item.BucketContent
+		var filled world.Item
 		switch c.Content {
 		case WaterCauldronContent():
-			content = item.LiquidBucketContent(Water{Depth: 8})
+			filled = item.Bucket{Content: item.LiquidBucketContent(Water{Depth: 8})}
 			tx.PlaySound(c.liquidPosition(pos), sound.CauldronTakeWater{Colour: c.liquidColour()})
 		case LavaCauldronContent():
-			content = item.LiquidBucketContent(Lava{Depth: 8})
+			filled = item.Bucket{Content: item.LiquidBucketContent(Lava{Depth: 8})}
 			tx.PlaySound(c.liquidPosition(pos), sound.CauldronTakeLava{})
 		case PowderSnowCauldronContent():
-			content = item.PowderSnowBucketContent()
+			// Snow bucket item support is registered independently of cauldrons.
+			bucket, ok := world.ItemByName("minecraft:powder_snow_bucket", 0)
+			if !ok {
+				return false
+			}
+			filled = bucket
 			tx.PlaySound(pos.Vec3Centre(), sound.CauldronTakePowderSnow{})
 		}
 		c = Cauldron{}
-		ctx.NewItem = item.NewStack(item.Bucket{Content: content}, 1)
+		ctx.NewItem = item.NewStack(filled, 1)
 	} else {
 		var content CauldronContent
 		switch b.Content.String() {
@@ -197,7 +202,6 @@ func (c Cauldron) useBucket(pos cube.Pos, tx *world.Tx, b item.Bucket, ctx *item
 	}
 	tx.SetBlock(pos, c, nil)
 	ctx.SubtractFromCount(1)
-	ctx.NewItemSurvivalOnly = true
 	return true
 }
 
@@ -224,7 +228,6 @@ func (c Cauldron) usePotion(pos cube.Pos, tx *world.Tx, it world.Item, ctx *item
 	tx.SetBlock(pos, c, nil)
 	ctx.SubtractFromCount(1)
 	ctx.NewItem = item.NewStack(item.GlassBottle{}, 1)
-	ctx.NewItemSurvivalOnly = true
 	return true
 }
 
