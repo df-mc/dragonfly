@@ -102,6 +102,14 @@ func (f *FishingHookBehaviour) Owner() *world.EntityHandle {
 	return f.conf.Owner
 }
 
+// Immobile always returns true. Viewers otherwise simulate the physics of the
+// fishing hook themselves, which makes the hook fall through blocks into the
+// void client-side. The movement of the hook is fully controlled by the server
+// instead.
+func (f *FishingHookBehaviour) Immobile() bool {
+	return true
+}
+
 // HookedEntity returns the entity the fishing hook is attached to, or nil if
 // it is not attached to any entity.
 func (f *FishingHookBehaviour) HookedEntity() *world.EntityHandle {

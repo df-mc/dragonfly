@@ -168,3 +168,11 @@ func TestFishingHookOnGround(t *testing.T) {
 		}
 	})
 }
+
+func TestFishingHookImmobile(t *testing.T) {
+	// The hook must be immobile for viewers, or they simulate its physics themselves and it falls into the void.
+	b, ok := any(FishingHookBehaviourConfig{}.New()).(interface{ Immobile() bool })
+	if !ok || !b.Immobile() {
+		t.Fatal("fishing hook behaviour is not immobile")
+	}
+}
