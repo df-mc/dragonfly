@@ -312,6 +312,17 @@ func TestCauldronDyeMixesWater(t *testing.T) {
 	if !used || got.Level != 5 || got.Colour != want || ctx.CountSub != 1 {
 		t.Fatalf("mix dyes = (%#v, %v, %#v), want colour %#v", got, used, ctx, want)
 	}
+	for _, c := range []block.Cauldron{
+		{},
+		{Level: 6, Content: block.LavaCauldronContent()},
+		{Level: 6, Content: block.PowderSnowCauldronContent()},
+		{Level: 2, Potion: item.Potion{Type: potion.Healing()}},
+	} {
+		got, ctx, used := activateCauldron(t, c, item.NewStack(item.Dye{Colour: item.ColourRed()}, 1))
+		if used || !reflect.DeepEqual(got, c) || ctx.CountSub != 0 {
+			t.Fatalf("dye on %#v = (%#v, %v, %#v), want unchanged unhandled interaction", c, got, used, ctx)
+		}
+	}
 }
 
 func TestCauldronEntityInside(t *testing.T) {

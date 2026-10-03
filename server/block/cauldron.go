@@ -102,7 +102,7 @@ func (c Cauldron) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.User,
 	case item.Potion, item.SplashPotion, item.LingeringPotion:
 		return c.usePotion(pos, tx, it, ctx)
 	case item.Dye:
-		if c.Level == 0 || c.Content != WaterCauldronContent() || c.Potion != nil {
+		if !c.water() {
 			return false
 		}
 		colour := it.Colour.RGBA()
@@ -214,15 +214,12 @@ func (c Cauldron) usePotion(pos cube.Pos, tx *world.Tx, it world.Item, ctx *item
 		if c.Level == 6 && !water {
 			return true
 		}
-		c.Content = WaterCauldronContent()
-		c.Level = min(6, c.Level+2)
+		// A bottle leaves either undyed water or the poured potion behind.
+		c = Cauldron{Level: min(6, c.Level+2)}
 		if water {
-			c.Potion = nil
-			c.Colour = color.RGBA{}
 			tx.PlaySound(c.liquidPosition(pos), sound.CauldronFillWater{Colour: c.liquidColour()})
 		} else {
 			c.Potion = it
-			c.Colour = color.RGBA{}
 			tx.PlaySound(c.liquidPosition(pos), sound.CauldronFillPotion{Colour: c.liquidColour()})
 		}
 	}
