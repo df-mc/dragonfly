@@ -163,7 +163,8 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	if m != nil {
 		m.Send()
 	}
-	if e.checkPortalInsiders() && e.finishPendingPortalTravel(tx) {
+	HandleEntityInsideBlocks(e, tx)
+	if e.finishPendingPortalTravel(tx) {
 		return
 	}
 	e.stopPortalContact()
@@ -221,23 +222,7 @@ func (e *Ent) finishPendingPortalTravel(tx *world.Tx) bool {
 	return false
 }
 
-type portalBlock interface {
-	Portal() world.Dimension
-}
-
-// checkPortalInsiders checks whether the entity is inside portal blocks.
-// Other EntityInsider blocks are intentionally left to entity physics.
-func (e *Ent) checkPortalInsiders() bool {
-	box := e.H().Type().BBox(e).Translate(e.Position()).Grow(-0.0001)
-	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
-
-	for blockPos := range cube.Range3D(low, high) {
-		if p, ok := e.tx.Block(blockPos).(portalBlock); ok {
-			e.TravelThroughPortal(e.tx, p.Portal())
-			if e.pendingPortalTravel() {
-				return true
-			}
-		}
-	}
-	return false
+// stopHandlingInsideBlocks reports whether an inside-block effect queued terminal portal travel.
+func (e *Ent) stopHandlingInsideBlocks() bool {
+	return e.pendingPortalTravel()
 }
