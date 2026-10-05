@@ -1529,7 +1529,6 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 	}
 	if mode == world.GameModeSpectator {
 		p.session().CloseContainer(p.tx)
-		p.Wake()
 		p.StopGliding()
 		if p.usingItem {
 			p.usingItem = false
@@ -1540,6 +1539,9 @@ func (p *Player) SetGameMode(mode world.GameMode) {
 	p.session().SendGameMode(p)
 	for _, v := range p.viewers() {
 		v.ViewEntityGameMode(p)
+	}
+	if mode == world.GameModeSpectator {
+		p.Wake()
 	}
 	if mode.AllowsTakingDamage() {
 		p.session().SendHealth(p.Health(), p.MaxHealth(), p.absorptionHealth)
