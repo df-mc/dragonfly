@@ -40,6 +40,7 @@ func spectating(s Sleeper) bool {
 func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 	sleepers := tx.Sleepers()
 	time := tx.w.Time() % TimeFull
+	var sleeping bool
 
 	for s := range sleepers {
 		if !tx.Thundering() {
@@ -51,10 +52,15 @@ func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 			}
 		}
 
-		if _, ok := s.Sleeping(); !ok && !spectating(s) {
+		if _, ok := s.Sleeping(); ok {
+			sleeping = true
+		} else if !spectating(s) {
 			// We can't advance the time - not everyone is sleeping.
 			return
 		}
+	}
+	if !sleeping {
+		return
 	}
 
 	for s := range sleepers {

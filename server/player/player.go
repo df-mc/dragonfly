@@ -60,9 +60,8 @@ type playerData struct {
 	sneaking, sprinting, swimming, gliding, crawling, flying,
 	invisible, immobile, onGround, usingItem bool
 
-	sleeping    bool
-	sleepPos    cube.Pos
-	enterBedPos mgl64.Vec3
+	sleeping bool
+	sleepPos cube.Pos
 
 	usingSince time.Time
 
@@ -1315,7 +1314,6 @@ func (p *Player) Sleep(pos cube.Pos) {
 
 	tx.World().SetRequiredSleepDuration(time.Millisecond * 5050)
 
-	p.enterBedPos = p.data.Pos
 	p.data.Pos = pos.Vec3Middle().Add(mgl64.Vec3{0, 0.5625})
 	p.sleeping = true
 	p.sleepPos = pos
@@ -1345,16 +1343,10 @@ func (p *Player) Wake() {
 	}
 	p.updateState()
 
-	pos, standUp := p.sleepPos, p.sleepPos.Side(cube.FaceUp)
-	if b, ok := tx.Block(pos).(block.Bed); ok {
-		if c, ok := b.StandUpPosition(pos, tx, p.enterBedPos); ok {
-			standUp = c
-		}
-	}
+	pos := p.sleepPos
 	if b, ok := tx.Block(pos).(block.Sleepable); ok {
 		b.StopSleeping(pos, tx)
 	}
-	p.teleport(standUp.Vec3Middle())
 }
 
 // Sleeping returns true if the player is currently sleeping, along with the position of the bed the player is sleeping
