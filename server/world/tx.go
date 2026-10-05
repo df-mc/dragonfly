@@ -324,6 +324,9 @@ func (tx *Tx) BroadcastSleepingIndicator() {
 
 	var sleeping, allSleepers int
 	for s := range sleepers {
+		if spectating(s) {
+			continue
+		}
 		allSleepers++
 		if _, ok := s.Sleeping(); ok {
 			sleeping++
@@ -342,13 +345,18 @@ func (tx *Tx) BroadcastSleepingReminder(sleeper Sleeper) {
 
 	var notSleeping int
 	for s := range sleepers {
-		if _, ok := s.Sleeping(); !ok {
+		if _, ok := s.Sleeping(); !ok && !spectating(s) {
 			notSleeping++
 		}
 	}
 
 	for s := range sleepers {
-		if _, ok := s.Sleeping(); !ok {
+		if _, ok := s.Sleeping(); ok {
+			continue
+		}
+		if notSleeping == 0 {
+			s.Messaget(chat.MessageSkippingNight)
+		} else {
 			s.Messaget(chat.MessageSleeping, sleeper.Name(), notSleeping)
 		}
 	}

@@ -332,6 +332,81 @@ func (b Bed) SafeSpawn(pos cube.Pos, tx *world.Tx) (cube.Pos, bool) {
 	return cube.Pos{}, false
 }
 
+// Like vanilla, a sleeper stands up at the first free spot around the bed, starting on the side it got in from.
+var standUpOffsets = [...]cube.Pos{{1, 0, 0}, {1, 0, 1}, {1, 0, 2}, {0, 0, 2}, {-1, 0, 2}, {-1, 0, 1}, {-1, 0, 0}, {-1, 0, -1}, {0, 0, -1}, {1, 0, -1}, {0, 1, 0}, {0, 1, 1}}
+
+func (b Bed) StandUpPosition(pos cube.Pos, tx *world.Tx, enter mgl64.Vec3) (cube.Pos, bool) {
+	centre := pos.Vec3Middle()
+	var mirror bool
+	switch b.Facing {
+	case cube.North:
+		mirror = enter[0] < centre[0]
+	case cube.East:
+		mirror = enter[2] < centre[2]
+	case cube.South:
+		mirror = enter[0] > centre[0]
+	case cube.West:
+		mirror = enter[2] > centre[2]
+	}
+
+	var fallback cube.Pos
+	var found bool
+	for _, offset := range standUpOffsets {
+		x, z := offset[0], offset[2]
+		if mirror {
+			x = -x
+		}
+		switch b.Facing {
+		case cube.East:
+			x, z = -z, x
+		case cube.South:
+			x, z = -x, -z
+		case cube.West:
+			x, z = z, -x
+		}
+		c, below := pos.Add(cube.Pos{x, offset[1], z}), pos.Add(cube.Pos{x, offset[1] - 1, z})
+		if !canStandUpAt(c, tx) || len(tx.Block(below).Model().BBox(below, tx)) == 0 {
+			continue
+		}
+		if !dangerousToStandOn(tx.Block(c)) && !dangerousToStandOn(tx.Block(below)) {
+			return c, true
+		}
+		if !found {
+			fallback, found = c, true
+		}
+	}
+	return fallback, found
+}
+
+func canStandUpAt(pos cube.Pos, tx *world.Tx) bool {
+	_, bed := tx.Block(pos).(Bed)
+	if !bed {
+		switch blk := tx.Block(pos).(type) {
+		case EndPortal, EndPortalFrame:
+			return false
+		default:
+			if _, solid := blk.Model().(model.Solid); solid {
+				return false
+			}
+		}
+	}
+	if _, air := tx.Block(pos.Side(cube.FaceUp)).(Air); !air {
+		return false
+	}
+	_, air := tx.Block(pos.Add(cube.Pos{0, 2})).(Air)
+	return !bed || air
+}
+
+func dangerousToStandOn(b world.Block) bool {
+	switch b := b.(type) {
+	case Magma, Lava:
+		return true
+	case Flower:
+		return b.Type == WitherRose()
+	}
+	return false
+}
+
 // supportedFromBelow ...
 func supportedFromBelow(pos cube.Pos, tx *world.Tx) bool {
 	below := pos.Side(cube.FaceDown)

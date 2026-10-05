@@ -359,11 +359,11 @@ func (s *Session) ViewItemCooldown(item world.Item, duration time.Duration) {
 }
 
 // ViewSleepingPlayers ...
-func (s *Session) ViewSleepingPlayers(sleeping, max int) {
+func (s *Session) ViewSleepingPlayers(sleeping, total int) {
 	buf := bytes.NewBuffer(nil)
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian).Encode(map[string]any{
-		"ableToSleep":          int32(max),
-		"overworldPlayerCount": int32(max),
+		"ableToSleep":          int32(1),
+		"overworldPlayerCount": int32(max(total, 1)),
 		"sleepingPlayerCount":  int32(sleeping),
 	})
 
