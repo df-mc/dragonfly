@@ -3,6 +3,7 @@ package item
 import (
 	"fmt"
 	"maps"
+	"math"
 	"reflect"
 	"slices"
 	"sort"
@@ -490,4 +491,35 @@ func id(s Stack) int32 {
 // end, which is typically used for sending messages, popups and tips.
 func format(a []any) string {
 	return strings.TrimSuffix(fmt.Sprintln(a...), "\n")
+}
+
+// Repeatable is a stack RepeatStacks can split. Splitting needs to know how much a stack
+// holds and how much it may hold, and to build the pieces, which Grow does by returning the
+// same stack at a different count. Stack implements it, as does a type embedding one.
+type Repeatable[T any] interface {
+	// Count returns the number of items in the stack.
+	Count() int
+	// MaxCount returns the highest count a single stack of this item may hold.
+	MaxCount() int
+	// Grow returns the stack with its count changed by the amount passed.
+	Grow(int) T
+}
+
+// RepeatStacks multiplies the count of every stack passed by repetitions, splitting a
+// result that would exceed an item's max count across as many stacks as it takes.
+func RepeatStacks[T Repeatable[T]](items []T, repetitions int) []T {
+	output := make([]T, 0, len(items))
+	for _, o := range items {
+		count, maxCount := o.Count(), o.MaxCount()
+		total := count * repetitions
+
+		stacks := int(math.Ceil(float64(total) / float64(maxCount)))
+		for range stacks {
+			inc := min(total, maxCount)
+			total -= inc
+
+			output = append(output, o.Grow(inc-count))
+		}
+	}
+	return output
 }
