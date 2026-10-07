@@ -49,7 +49,11 @@ func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	defer l.mu.Unlock()
 
 	loaded := maps.Clone(l.loaded)
-	l.w.exec(func(tx *Tx) {
+	// The removal is scheduled rather than queued directly: this runs on the goroutine of the World being changed to,
+	// and a World only accepts work on its own goroutine, so queuing it here would block that goroutine until the
+	// World being left has room for it. Two Loaders changing worlds in opposite directions would then wait on each
+	// other forever.
+	l.w.Do(func(tx *Tx) {
 		for pos := range loaded {
 			tx.World().removeViewer(tx, pos, l)
 		}
