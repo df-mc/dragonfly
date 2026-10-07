@@ -223,7 +223,7 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 			// The entity was stored using an outdated chunk position. We update it and make sure it is ready
 			// for loaders to view it.
 			tx.World().entities[handle] = chunkPos
-			c.Entities = append(c.Entities, handle)
+			c.Entities, c.modified = append(c.Entities, handle), true
 
 			var viewers []Viewer
 
@@ -231,7 +231,7 @@ func (t ticker) tickEntities(tx *Tx, tick int64) {
 			// where the old chunk of the entity was not loaded. In this case, it should be safe simply to ignore
 			// the loaders from the old chunk. We can assume they never saw the entity in the first place.
 			if old, ok := tx.World().chunks[lastPos]; ok {
-				old.Entities = sliceutil.DeleteVal(old.Entities, handle)
+				old.Entities, old.modified = sliceutil.DeleteVal(old.Entities, handle), true
 				viewers = old.viewers
 			}
 
@@ -313,6 +313,9 @@ func (queue *scheduledTickQueue) tick(tx *Tx, tick int64) {
 	for _, t := range queue.ticks {
 		if t.t > tick {
 			continue
+		}
+		if c, ok := w.chunks[chunkPosFromBlockPos(t.pos)]; ok {
+			c.modified = true
 		}
 		b := tx.Block(t.pos)
 		if ticker, ok := b.(ScheduledTicker); ok && w.conf.Blocks.BlockHash(b) == t.bhash {
