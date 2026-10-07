@@ -68,6 +68,12 @@ func (b BookEditHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, _ Cont
 		}
 		book = book.SwapPages(page, int(pk.SecondaryPageNumber))
 	case packet.BookActionSign:
+		if len(pk.Title) > 32 {
+			return fmt.Errorf("title can not be longer than 32 bytes")
+		}
+		if len(pk.Author) > 32 {
+			return fmt.Errorf("author can not be longer than 32 bytes")
+		}
 		_ = s.inv.SetItem(slot, it.WithItem(item.WrittenBook{Title: pk.Title, Author: pk.Author, Pages: book.Pages, Generation: item.OriginalGeneration()}))
 		return nil
 	}
