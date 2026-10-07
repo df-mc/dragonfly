@@ -21,6 +21,8 @@ var MessageBedIsOccupied = Translate(str("%tile.bed.occupied"), 0, `This bed is 
 var MessageSleeping = Translate(str("%chat.type.sleeping"), 2, `%v is sleeping in a bed. To skip to dawn, %v more users need to sleep in beds at the same time.`)
 var MessageBedNotValid = Translate(str("%tile.bed.notValid"), 0, `Your home bed was missing or obstructed`)
 
+var MessageNowPlaying = Translate(str("%record.nowPlaying"), 1, `Now playing: %v`)
+
 type str string
 
 // Resolve returns the translation identifier as a string.
