@@ -231,7 +231,9 @@ func readEnchantments(m map[string]any, s *Stack) {
 	}
 	for _, ench := range enchantments {
 		if t, ok := EnchantmentByID(int(nbtInt16(ench, "id"))); ok {
-			*s = s.WithForcedEnchantments(NewEnchantment(t, int(nbtInt16(ench, "lvl"))))
+			// NewEnchantment panics below level 1, and this NBT is read from client packets
+			// and player saves, so it cannot be trusted to hold a sensible level.
+			*s = s.WithForcedEnchantments(NewEnchantment(t, int(max(nbtInt16(ench, "lvl"), 1))))
 		}
 	}
 }

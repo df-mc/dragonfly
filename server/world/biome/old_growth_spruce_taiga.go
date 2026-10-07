@@ -32,7 +32,7 @@ func (OldGrowthSpruceTaiga) WaterColour() color.RGBA {
 
 // Tags ...
 func (OldGrowthSpruceTaiga) Tags() []string {
-	return []string{"animal", "forest", "mega", "monster", "mutated", "overworld", "taiga", "has_structure_trail_ruins", "spawns_cold_variant_farm_animals"}
+	return []string{"animal", "forest", "mega", "monster", "mutated", "overworld", "taiga", "has_structure_trail_ruins", "spawns_cold_variant_farm_animals", "has_structure_abandoned_camp"}
 }
 
 // String ...

@@ -32,7 +32,7 @@ func (Swamp) WaterColour() color.RGBA {
 
 // Tags ...
 func (Swamp) Tags() []string {
-	return []string{"animal", "monster", "overworld", "swamp", "spawns_slimes_on_surface", "slime", "swamp_water_huge_mushroom"}
+	return []string{"animal", "monster", "overworld", "swamp", "spawns_slimes_on_surface", "slime", "swamp_water_huge_mushroom", "has_structure_abandoned_camp"}
 }
 
 // String ...

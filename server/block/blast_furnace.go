@@ -25,6 +25,8 @@ type BlastFurnace struct {
 	Lit bool
 }
 
+func (BlastFurnace) ContainerSize() int { return 3 }
+
 // NewBlastFurnace creates a new initialised blast furnace. The smelter is properly initialised.
 func NewBlastFurnace(face cube.Direction) BlastFurnace {
 	return BlastFurnace{

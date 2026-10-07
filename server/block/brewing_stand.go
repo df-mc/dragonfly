@@ -30,6 +30,8 @@ func NewBrewingStand() BrewingStand {
 	return BrewingStand{brewer: newBrewer()}
 }
 
+func (BrewingStand) ContainerSize() int { return 5 }
+
 // Model ...
 func (b BrewingStand) Model() world.BlockModel {
 	return model.BrewingStand{}
