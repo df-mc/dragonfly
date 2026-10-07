@@ -376,8 +376,9 @@ func (inv *Inventory) setItem(slot int, it item.Stack) func() {
 	}
 	before := inv.slots[slot]
 	inv.slots[slot] = it
+	f := inv.f
 	return func() {
-		inv.f(slot, before, it)
+		f(slot, before, it)
 	}
 }
 
