@@ -41,6 +41,11 @@ type OffsetEntity interface {
 	NetworkOffset() float64
 }
 
+const (
+	horizontalPlayerNetworkOffset = 0.4
+	sneakingPlayerNetworkOffset   = 1.27001
+)
+
 // entityHidden checks if a world.Entity is being explicitly hidden from the Session.
 func (s *Session) entityHidden(e world.Entity) bool {
 	s.entityMutex.RLock()
@@ -97,7 +102,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 			GameType:        gameTypeFromMode(v.GameMode()),
 			HeadYaw:         float32(yaw),
 			Pitch:           float32(pitch),
-			Position:        vec64To32(e.Position()),
+			Position:        vec64To32(entityNetworkPosition(e, e.Position())),
 			UUID:            v.UUID(),
 			Username:        v.Name(),
 			Yaw:             float32(yaw),
@@ -126,7 +131,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 				EntityUniqueID:  int64(runtimeID),
 				EntityRuntimeID: runtimeID,
 				Item:            instanceFromItem(s.br, v.Behaviour().(*entity.ItemBehaviour).Item()),
-				Position:        vec64To32(v.Position()),
+				Position:        vec64To32(entityNetworkPosition(e, v.Position())),
 				Velocity:        vec64To32(v.Velocity()),
 				EntityMetadata:  metadata,
 			})
@@ -151,7 +156,7 @@ func (s *Session) ViewEntity(e world.Entity) {
 		EntityRuntimeID: runtimeID,
 		EntityType:      id,
 		EntityMetadata:  metadata,
-		Position:        vec64To32(e.Position()),
+		Position:        vec64To32(entityNetworkPosition(e, e.Position())),
 		Velocity:        vec64To32(vel),
 		Pitch:           float32(pitch),
 		Yaw:             float32(yaw),
@@ -223,7 +228,7 @@ func (s *Session) viewEntityAbsoluteMovement(id uint64, e world.Entity, pos mgl6
 	}
 	s.writePacket(&packet.MoveActorAbsolute{
 		EntityRuntimeID: id,
-		Position:        vec64To32(pos.Add(entityOffset(e))),
+		Position:        vec64To32(entityNetworkPosition(e, pos)),
 		Rotation:        vec64To32(mgl64.Vec3{rot.Pitch(), rot.Yaw(), rot.Yaw()}),
 		Flags:           flags,
 	})
@@ -242,10 +247,37 @@ func (s *Session) ViewEntityVelocity(e world.Entity, velocity mgl64.Vec3) {
 
 // entityOffset returns the offset that entities have client-side.
 func entityOffset(e world.Entity) mgl64.Vec3 {
+	if e.H().Type().EncodeEntity() == "minecraft:player" {
+		if sl, ok := e.(sleeper); ok {
+			if _, sleeping := sl.Sleeping(); sleeping {
+				return mgl64.Vec3{0, 0.2}
+			}
+		}
+		if sw, ok := e.(swimmer); ok && sw.Swimming() {
+			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
+		}
+		if cr, ok := e.(crawler); ok && cr.Crawling() {
+			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
+		}
+		if gl, ok := e.(glider); ok && gl.Gliding() {
+			return mgl64.Vec3{0, horizontalPlayerNetworkOffset}
+		}
+		if sn, ok := e.(sneaker); ok && sn.Sneaking() {
+			return mgl64.Vec3{0, sneakingPlayerNetworkOffset}
+		}
+	}
 	if offset, ok := e.H().Type().(OffsetEntity); ok {
 		return mgl64.Vec3{0, offset.NetworkOffset()}
 	}
 	return mgl64.Vec3{}
+}
+
+func entityNetworkPosition(e world.Entity, pos mgl64.Vec3) mgl64.Vec3 {
+	return pos.Add(entityOffset(e))
+}
+
+func entityBasePosition(e world.Entity, pos mgl64.Vec3) mgl64.Vec3 {
+	return pos.Sub(entityOffset(e))
 }
 
 // ViewTime ...
@@ -274,7 +306,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	if _, ok := e.(Controllable); ok {
 		s.writePacket(&packet.MovePlayer{
 			EntityRuntimeID: id,
-			Position:        vec64To32(position.Add(entityOffset(e))),
+			Position:        vec64To32(entityNetworkPosition(e, position)),
 			Pitch:           float32(pitch),
 			Yaw:             float32(yaw),
 			HeadYaw:         float32(yaw),
@@ -287,7 +319,7 @@ func (s *Session) ViewEntityTeleport(e world.Entity, position mgl64.Vec3) {
 	}
 	s.writePacket(&packet.MoveActorAbsolute{
 		EntityRuntimeID: id,
-		Position:        vec64To32(position.Add(entityOffset(e))),
+		Position:        vec64To32(entityNetworkPosition(e, position)),
 		Rotation:        vec64To32(mgl64.Vec3{pitch, yaw, yaw}),
 		Flags:           packet.MoveFlagTeleport,
 	})
