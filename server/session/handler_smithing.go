@@ -39,6 +39,9 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerSmithingTableInput},
 		Slot:      smithingInputSlot,
 	}, s, tx)
+	if input.Empty() {
+		return fmt.Errorf("input item is missing")
+	}
 	if !matchingStacks(input, expectedInputs[0]) {
 		return fmt.Errorf("input item is not the same as expected input")
 	}
@@ -46,6 +49,11 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerSmithingTableMaterial},
 		Slot:      smithingMaterialSlot,
 	}, s, tx)
+	if material.Empty() {
+		// An empty slot compares equal to any item, so it has to be refused before the inputs are matched: the recipe
+		// would otherwise be crafted without the material being spent.
+		return fmt.Errorf("material item is missing")
+	}
 	if !matchingStacks(material, expectedInputs[1]) {
 		return fmt.Errorf("material item is not the same as expected material")
 	}
@@ -53,6 +61,9 @@ func (h *ItemStackRequestHandler) handleSmithing(a *protocol.CraftRecipeStackReq
 		Container: protocol.FullContainerName{ContainerID: protocol.ContainerSmithingTableTemplate},
 		Slot:      smithingTemplateSlot,
 	}, s, tx)
+	if template.Empty() {
+		return fmt.Errorf("template item is missing")
+	}
 	if !matchingStacks(template, expectedInputs[2]) {
 		return fmt.Errorf("template item is not the same as expected template")
 	}
