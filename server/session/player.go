@@ -1133,10 +1133,44 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 
 	s = skin.New(int(sk.SkinImageWidth), int(sk.SkinImageHeight))
 	s.Persona = sk.PersonaSkin
+	s.Premium = sk.PremiumSkin
+	s.CapeOnClassic = sk.PersonaCapeOnClassicSkin
+	s.PrimaryUser = sk.PrimaryUser
 	s.Pix = sk.SkinData
 	s.Model = sk.SkinGeometry
 	s.PlayFabID = sk.PlayFabID
+	s.SkinID = sk.SkinID
+	s.CapeID = sk.CapeID
 	s.FullID = sk.FullID
+	s.GeometryVersion = string(sk.GeometryDataEngineVersion)
+	s.AnimationData = string(sk.AnimationData)
+	s.SkinColour = argbToString(sk.SkinColour)
+
+	// PieceType is numeric on the wire; the skin package uses the persona_* names of the login data.
+	s.PersonaPieces = make([]skin.PersonaPiece, 0, len(sk.PersonaPieces))
+	for _, piece := range sk.PersonaPieces {
+		s.PersonaPieces = append(s.PersonaPieces, skin.PersonaPiece{
+			PieceID:   piece.PieceID,
+			PieceType: personaPieceName(piece.PieceType),
+			PackID:    piece.PackID.String(),
+			Default:   piece.Default,
+			ProductID: piece.ProductID,
+		})
+	}
+	s.PieceTintColours = make([]skin.PersonaPieceTintColour, 0, len(sk.PieceTintColours))
+	for _, tint := range sk.PieceTintColours {
+		t := skin.PersonaPieceTintColour{PieceType: tint.PieceType}
+		for i, colour := range tint.Colours {
+			t.Colours[i] = argbToString(colour)
+		}
+		s.PieceTintColours = append(s.PieceTintColours, t)
+	}
+	// The protocol carries the arm size as a number, the skin package as "wide" or "slim".
+	if sk.ArmSize == protocol.ArmSizeSlim {
+		s.ArmSize = "slim"
+	} else {
+		s.ArmSize = "wide"
+	}
 
 	s.Cape = skin.NewCape(int(sk.CapeImageWidth), int(sk.CapeImageHeight))
 	s.Cape.Pix = sk.CapeData
@@ -1160,7 +1194,8 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 		case protocol.SkinAnimationBody128x128:
 			t = skin.AnimationBody128x128
 		default:
-			return skin.Skin{}, fmt.Errorf("invalid animation type: %v", anim.AnimationType)
+			// An animation type this protocol version does not know: skip it, keep the rest of the skin.
+			continue
 		}
 
 		animation := skin.NewAnimation(int(anim.ImageWidth), int(anim.ImageHeight), int(anim.ExpressionType), t)
@@ -1170,6 +1205,12 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 		s.Animations = append(s.Animations, animation)
 	}
 	return
+}
+
+// argbToString formats a colour the way login data and the skin package spell one: hex with a leading '#',
+// alpha first. It is the inverse of parseARGB in session_list.go.
+func argbToString(c color.RGBA) string {
+	return fmt.Sprintf("#%02x%02x%02x%02x", c.A, c.R, c.G, c.B)
 }
 
 // shapeAttachedEntityRuntimeID returns the runtime ID of the entity attached to a debug shape.
