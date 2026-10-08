@@ -107,13 +107,8 @@ func (l *sessionList) unsendSessionFrom(s, from *Session) {
 	})
 }
 
-// skinToProtocol converts a skin to its protocol representation.
-//
-// Everything the client sent is carried back out unchanged. That matters most for persona skins: a persona
-// is assembled by the receiving client out of the marketplace pieces named in PersonaPieces and tinted by
-// PieceTintColours, so dropping either leaves the client with a skin it is told is a persona but cannot
-// build, which renders as an incomplete model. The same applies to AnimationData, which drives an animated
-// face or body.
+// skinToProtocol converts a skin to its protocol representation. Persona pieces, tints and animation data are
+// carried through unchanged, so receiving clients can build persona skins.
 func skinToProtocol(s skin.Skin) protocol.Skin {
 	animations := make([]protocol.SkinAnimation, 0, len(s.Animations))
 	for _, animation := range s.Animations {
@@ -145,7 +140,7 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		}
 		pieces = append(pieces, protocol.PersonaPiece{
 			PieceID:   piece.PieceID,
-			PieceType: skin.PersonaPieceTypeID(piece.PieceType),
+			PieceType: personaPieceType(piece.PieceType),
 			PackID:    packID,
 			Default:   piece.Default,
 			ProductID: piece.ProductID,
@@ -178,19 +173,17 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		geometryVersion = protocol.CurrentVersion
 	}
 	return protocol.Skin{
-		PlayFabID:         s.PlayFabID,
-		SkinID:            skinID,
-		SkinResourcePatch: s.ModelConfig.Encode(),
-		SkinImageWidth:    uint32(s.Bounds().Max.X),
-		SkinImageHeight:   uint32(s.Bounds().Max.Y),
-		SkinData:          s.Pix,
-		CapeImageWidth:    uint32(s.Cape.Bounds().Max.X),
-		CapeImageHeight:   uint32(s.Cape.Bounds().Max.Y),
-		CapeData:          s.Cape.Pix,
-		SkinGeometry:      model,
-		AnimationData:     []byte(s.AnimationData),
-		// ArmSize was never previously set here, so it always defaulted to the protocol zero value
-		// (ArmSizeSlim = 0) regardless of the real player's actual arm size.
+		PlayFabID:                s.PlayFabID,
+		SkinID:                   skinID,
+		SkinResourcePatch:        s.ModelConfig.Encode(),
+		SkinImageWidth:           uint32(s.Bounds().Max.X),
+		SkinImageHeight:          uint32(s.Bounds().Max.Y),
+		SkinData:                 s.Pix,
+		CapeImageWidth:           uint32(s.Cape.Bounds().Max.X),
+		CapeImageHeight:          uint32(s.Cape.Bounds().Max.Y),
+		CapeData:                 s.Cape.Pix,
+		SkinGeometry:             model,
+		AnimationData:            []byte(s.AnimationData),
 		ArmSize:                  armSizeToProtocol(s.ArmSize),
 		SkinColour:               parseARGB(s.SkinColour),
 		PremiumSkin:              s.Premium,

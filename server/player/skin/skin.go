@@ -19,9 +19,7 @@ type Skin struct {
 	// PrimaryUser specifies if the skin belongs to the primary user of the device.
 	PrimaryUser bool
 
-	// PersonaPieces holds the pieces a persona skin is assembled from. A persona skin sends marketplace
-	// content IDs rather than pixels, so re-broadcasting one without these leaves the receiving client with
-	// nothing to assemble the body out of.
+	// PersonaPieces holds the pieces a persona skin is built from.
 	PersonaPieces []PersonaPiece
 	// PieceTintColours holds the tint colours applied to some of the PersonaPieces.
 	PieceTintColours []PersonaPieceTintColour
@@ -57,14 +55,9 @@ type Skin struct {
 	// ModelConfig, in order to display them on the skin.
 	Animations []Animation
 
-	// ArmSize is the size of the arms of the player's model - either "wide" (generally for male/Steve-style
-	// skins) or "slim" (generally for female/Alex-style skins), as sent by the real client in
-	// login.ClientData.ArmSize. Previously never captured or re-forwarded here, meaning every player shown
-	// through this skin type was rebroadcast to other clients with arm geometry defaulting to the protocol
-	// zero value (ArmSizeSlim), regardless of the real skin's actual arm size.
+	// ArmSize is the size of the model's arms: "wide" or "slim".
 	ArmSize string
-	// SkinColour is a hex representation (including '#') of the base colour of the skin, as sent by the real
-	// client in login.ClientData.SkinColour. Previously never captured or re-forwarded here.
+	// SkinColour is the base colour of the skin in hex notation, such as "#ffaabbcc".
 	SkinColour string
 }
 

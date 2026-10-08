@@ -628,6 +628,15 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 	return w
 }
 
+// decodeBase64 decodes a base64 login field. An empty or invalid value decodes to an empty string.
+func decodeBase64(s string) string {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
 // parseSkin parses a skin from the login.ClientData and returns it.
 func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	// Gophertunnel guarantees the following values are valid data and are of
@@ -645,14 +654,12 @@ func (srv *Server) parseSkin(data login.ClientData) skin.Skin {
 	playerSkin.SkinID = data.SkinID
 	playerSkin.CapeID = data.CapeID
 	playerSkin.FullID = data.SkinID
-	playerSkin.GeometryVersion = data.SkinGeometryVersion
+	playerSkin.GeometryVersion = decodeBase64(data.SkinGeometryVersion)
 	playerSkin.ArmSize = data.ArmSize
 	playerSkin.SkinColour = data.SkinColour
-	playerSkin.AnimationData = data.SkinAnimationData
+	playerSkin.AnimationData = decodeBase64(data.SkinAnimationData)
 
-	// A persona skin names the marketplace content it is built from instead of carrying pixels for it. These
-	// two lists are that content: without them a receiving client is told the skin is a persona but given
-	// nothing to assemble, and renders an incomplete model.
+	// A persona skin is built by the client from these pieces and tints.
 	playerSkin.PersonaPieces = make([]skin.PersonaPiece, 0, len(data.PersonaPieces))
 	for _, piece := range data.PersonaPieces {
 		playerSkin.PersonaPieces = append(playerSkin.PersonaPieces, skin.PersonaPiece{

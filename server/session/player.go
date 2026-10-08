@@ -1146,14 +1146,12 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 	s.AnimationData = string(sk.AnimationData)
 	s.SkinColour = argbToString(sk.SkinColour)
 
-	// The marketplace content a persona is assembled from, carried through so this skin can be re-broadcast
-	// to other players as something they can actually build. PieceType arrives as a numeric type on the wire
-	// and is converted back to the persona_* name the skin package works in.
+	// PieceType is numeric on the wire; the skin package uses the persona_* names of the login data.
 	s.PersonaPieces = make([]skin.PersonaPiece, 0, len(sk.PersonaPieces))
 	for _, piece := range sk.PersonaPieces {
 		s.PersonaPieces = append(s.PersonaPieces, skin.PersonaPiece{
 			PieceID:   piece.PieceID,
-			PieceType: skin.PersonaPieceTypeName(piece.PieceType),
+			PieceType: personaPieceName(piece.PieceType),
 			PackID:    piece.PackID.String(),
 			Default:   piece.Default,
 			ProductID: piece.ProductID,
@@ -1167,9 +1165,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 		}
 		s.PieceTintColours = append(s.PieceTintColours, t)
 	}
-	// protocol.Skin.ArmSize is the numeric ArmSizeWide/ArmSizeSlim constant (unlike
-	// login.ClientData.ArmSize, a plain "wide"/"slim" string), so it is converted to the same string
-	// representation skin.Skin.ArmSize uses everywhere else.
+	// The protocol carries the arm size as a number, the skin package as "wide" or "slim".
 	if sk.ArmSize == protocol.ArmSizeSlim {
 		s.ArmSize = "slim"
 	} else {
@@ -1198,12 +1194,7 @@ func protocolToSkin(sk protocol.Skin) (s skin.Skin, err error) {
 		case protocol.SkinAnimationBody128x128:
 			t = skin.AnimationBody128x128
 		default:
-			// Was: return skin.Skin{}, fmt.Errorf(...) - discarding the ENTIRE skin change over
-			// one unrecognized animation entry. gophertunnel only documents 3 animation type
-			// constants (Head/Body32x32/Body128x128), so a real client sending anything else -
-			// a newer type this pinned protocol version doesn't know about yet, for example -
-			// would silently fail the whole skin change rather than applying everything it does
-			// understand. Skipping just the one unrecognized entry is strictly safer.
+			// An animation type this protocol version does not know: skip it, keep the rest of the skin.
 			continue
 		}
 
