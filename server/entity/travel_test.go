@@ -388,7 +388,7 @@ func TestPortalTravelClosesHandleWhenBothWorldsClose(t *testing.T) {
 	}
 
 	tc := NewPortalTravelComputer()
-	tc.transfer(handle, source, destination, origin, cube.Pos{10, 64, 10}, world.Overworld, world.Nether)
+	tc.transfer(handle, source, destination, origin, cube.Pos{10, 64, 10}, world.Overworld)
 
 	if !handle.Closed() {
 		t.Fatal("entity handle remained worldless after destination and recovery worlds closed")
@@ -420,7 +420,7 @@ func TestPortalTravelRethrowsDestinationPanic(t *testing.T) {
 	}()
 	tc := NewPortalTravelComputer()
 	tc.CreatePortal = true
-	tc.transfer(handle, source, destination, origin, cube.Pos{10, 64, 10}, world.Overworld, world.Nether)
+	tc.transfer(handle, source, destination, origin, cube.Pos{10, 64, 10}, world.Overworld)
 }
 
 func TestFallingBlockDoesNotTravelThroughPortal(t *testing.T) {
