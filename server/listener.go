@@ -369,6 +369,10 @@ func listenerConfig(conf Config) minecraft.ListenConfig {
 		TexturePacksRequired:   conf.ResourcesRequired,
 		Compression:            conf.Compression,
 		Allow:                  conf.Allower.Allow,
+		ResourcePackDelivery: minecraft.ResourcePackDeliveryConfig{
+			ChunkSize:      conf.ResourcePackChunkSize,
+			ChunkSendDelay: conf.ResourcePackChunkSendDelay,
+		},
 	}
 	if conf.Log.Enabled(context.Background(), slog.LevelDebug) {
 		cfg.ErrorLog = conf.Log.With("net origin", "gophertunnel")
