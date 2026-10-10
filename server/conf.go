@@ -52,6 +52,18 @@ type Config struct {
 	// produces a resource pack for custom items. If this is not desired (for
 	// example if a resource pack already exists), this can be set to false.
 	DisableResourceBuilding bool
+	// ResourcePackChunkSize is the size of each chunk of resource pack data
+	// sent to a joining client. Zero uses gophertunnel's default of 128KiB.
+	ResourcePackChunkSize uint32
+	// ResourcePackChunkSendDelay is how long to wait after sending each chunk
+	// of resource pack data. Zero uses gophertunnel's default of 200ms, and a
+	// negative value sends without pacing.
+	//
+	// The default caps pack delivery at 640KiB/s, which is a long wait for a
+	// server with sizeable packs: 50MB of them takes over a minute, longer
+	// than a proxy will hold a transfer open, so a client that has to download
+	// them never finishes joining. Servers with large packs should lower it.
+	ResourcePackChunkSendDelay time.Duration
 	// Allower may be used to specify what players can join the server and what
 	// players cannot. By returning false in the Allow method, for example if
 	// the player has been banned, will prevent the player from joining.
@@ -300,6 +312,18 @@ type UserConfig struct {
 		// Required is a boolean to force the client to load the resource pack
 		// on join. If they do not accept, they'll have to leave the server.
 		Required bool
+		// ChunkSize is the size in bytes of each chunk of pack data sent to a
+		// joining client. Zero uses gophertunnel's default of 128KiB.
+		ChunkSize uint32
+		// ChunkSendDelayMS is how many milliseconds to wait after sending each
+		// chunk of pack data. Zero uses gophertunnel's default of 200ms, and a
+		// negative value sends without pacing.
+		//
+		// The default caps delivery at 640KiB/s. A server with large packs
+		// should lower it: 50MB of packs takes over a minute at that rate,
+		// which is longer than a proxy holds a transfer open, so a client that
+		// has to download them never finishes joining.
+		ChunkSendDelayMS int
 	}
 }
 
@@ -317,6 +341,15 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
 		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
+		ResourcePackChunkSize:   uc.Resources.ChunkSize,
+	}
+	// Milliseconds in the user config so it stays a plain number in TOML, and
+	// so a negative value survives as "no pacing" rather than being read as an
+	// unset duration.
+	if uc.Resources.ChunkSendDelayMS < 0 {
+		conf.ResourcePackChunkSendDelay = -1
+	} else {
+		conf.ResourcePackChunkSendDelay = time.Duration(uc.Resources.ChunkSendDelayMS) * time.Millisecond
 	}
 	listeners, err := uc.transportListeners()
 	if err != nil {
