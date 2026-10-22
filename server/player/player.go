@@ -68,8 +68,8 @@ type playerData struct {
 	glideTicks   int64
 	fireTicks    int64
 	fallDistance float64
-	// insideTick is the last tick the player was checked for being inside blocks.
-	insideTick int64
+	// moved is true if the player moved since its last tick, which already checked its block collisions.
+	moved bool
 
 	breathing         bool
 	airSupplyTicks    int
@@ -2345,6 +2345,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		// Only update velocity if the player is not moving too fast to prevent potential OOMs.
 		p.data.Vel = deltaPos
 		p.checkBlockCollisions(deltaPos)
+		p.moved = true
 	}
 
 	horizontalVel := deltaPos
@@ -2395,6 +2396,7 @@ func (p *Player) Displace(deltaPos mgl64.Vec3) {
 	}
 	p.data.Pos, p.data.Vel = res, velocity
 	p.checkBlockCollisions(deltaPos)
+	p.moved = true
 	p.onGround = p.checkOnGround(deltaPos)
 	p.updateFallState(deltaPos[1])
 }
@@ -2655,7 +2657,11 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
-	p.checkBlockCollisions(p.data.Vel)
+	if !p.moved {
+		// A movement already checked collisions at the current position, so blocks only see the player once.
+		p.checkBlockCollisions(p.data.Vel)
+	}
+	p.moved = false
 	p.onGround = p.checkOnGround(mgl64.Vec3{})
 	p.checkEntitySteppers()
 
@@ -2982,12 +2988,6 @@ func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
 
 // checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
 func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
-	tick := p.tx.CurrentTick()
-	if tick == p.insideTick {
-		// Movement and the tick both check collisions, so only the first check in a tick counts.
-		return
-	}
-	p.insideTick = tick
 	box := entityBBox.Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
