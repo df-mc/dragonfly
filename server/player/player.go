@@ -68,6 +68,8 @@ type playerData struct {
 	glideTicks   int64
 	fireTicks    int64
 	fallDistance float64
+	// insideTick is the last tick the player was checked for being inside blocks.
+	insideTick int64
 
 	breathing         bool
 	airSupplyTicks    int
@@ -2980,6 +2982,12 @@ func (p *Player) checkBlockCollisions(vel mgl64.Vec3) {
 
 // checkEntityInsiders checks if the player is colliding with any EntityInsider blocks.
 func (p *Player) checkEntityInsiders(entityBBox cube.BBox) {
+	tick := p.tx.CurrentTick()
+	if tick == p.insideTick {
+		// Movement and the tick both check collisions, so only the first check in a tick counts.
+		return
+	}
+	p.insideTick = tick
 	box := entityBBox.Grow(-0.0001)
 	low, high := cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())
 
