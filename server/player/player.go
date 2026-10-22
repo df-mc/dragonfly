@@ -68,6 +68,8 @@ type playerData struct {
 	glideTicks   int64
 	fireTicks    int64
 	fallDistance float64
+	// moved is true if the player moved since its last tick, which already checked its block collisions.
+	moved bool
 
 	breathing         bool
 	airSupplyTicks    int
@@ -2343,6 +2345,7 @@ func (p *Player) Move(deltaPos mgl64.Vec3, deltaYaw, deltaPitch float64) {
 		// Only update velocity if the player is not moving too fast to prevent potential OOMs.
 		p.data.Vel = deltaPos
 		p.checkBlockCollisions(deltaPos)
+		p.moved = true
 	}
 
 	horizontalVel := deltaPos
@@ -2393,6 +2396,7 @@ func (p *Player) Displace(deltaPos mgl64.Vec3) {
 	}
 	p.data.Pos, p.data.Vel = res, velocity
 	p.checkBlockCollisions(deltaPos)
+	p.moved = true
 	p.onGround = p.checkOnGround(deltaPos)
 	p.updateFallState(deltaPos[1])
 }
@@ -2653,7 +2657,11 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
-	p.checkBlockCollisions(p.data.Vel)
+	if !p.moved {
+		// A movement already checked collisions at the current position, so blocks only see the player once.
+		p.checkBlockCollisions(p.data.Vel)
+	}
+	p.moved = false
 	p.onGround = p.checkOnGround(mgl64.Vec3{})
 	p.checkEntitySteppers()
 
