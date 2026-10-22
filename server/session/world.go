@@ -158,6 +158,11 @@ func (s *Session) ViewEntity(e world.Entity) {
 		HeadYaw:         float32(yaw),
 		BodyYaw:         float32(yaw),
 	})
+	if ent, ok := e.(*entity.Ent); ok && ent.Age() == 0 {
+		if f, ok := ent.Behaviour().(*entity.FireworkBehaviour); ok && f.Attached() {
+			s.viewGlideBoost(ent.H(), f)
+		}
+	}
 }
 
 // ViewEntityGameMode ...

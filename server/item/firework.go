@@ -77,9 +77,10 @@ func (f Firework) DecodeNBT(data map[string]any) any {
 	return f
 }
 
-// RandomisedDuration returns the randomised flight duration of the firework.
+// RandomisedDuration returns the randomised flight duration of the firework: its Duration plus 0-5 and 0-6 whole
+// ticks drawn separately, as vanilla rockets do.
 func (f Firework) RandomisedDuration() time.Duration {
-	return f.Duration + time.Duration(rand.IntN(int(time.Millisecond*600)))
+	return f.Duration + time.Duration(rand.IntN(6)+rand.IntN(7))*time.Second/20
 }
 
 // OffHand ...

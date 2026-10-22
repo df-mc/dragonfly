@@ -50,6 +50,9 @@ type Session struct {
 	emoteChatMuted bool
 
 	teleportPos atomic.Pointer[mgl64.Vec3]
+	// inputTick is the client tick of the latest PlayerAuthInput, which stamps movement effects.
+	inputTick  atomic.Uint64
+	glideBoost glideBoost
 
 	entityMutex sync.RWMutex
 	// currentEntityRuntimeID holds the runtime ID assigned to the last entity. It is incremented for every
