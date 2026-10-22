@@ -1024,8 +1024,8 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 // ViewEntityAction ...
 func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 	switch act := a.(type) {
-	case item.GlideBoostAction:
-		s.viewGlideBoost(e, act.Rocket)
+	case entity.GlideBoostAction:
+		s.viewGlideBoost(e, act.Duration)
 	case entity.SwingArmAction:
 		if _, ok := e.(Controllable); ok {
 			if s.entityRuntimeID(e) == selfEntityRuntimeID && s.swingingArm.Load() {
