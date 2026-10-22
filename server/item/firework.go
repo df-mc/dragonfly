@@ -31,7 +31,10 @@ func (f Firework) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 	tx.PlaySound(pos, sound.FireworkLaunch{})
 	create := tx.World().EntityRegistry().Config().Firework
 	opts := world.EntitySpawnOpts{Position: pos, Rotation: user.Rotation()}
-	tx.AddEntity(create(opts, f, user, 1.15, 0.04, true))
+	rocket := tx.AddEntity(create(opts, f, user, 1.15, 0.04, true))
+	for _, v := range tx.Viewers(pos) {
+		v.ViewEntityAction(user, GlideBoostAction{Rocket: rocket})
+	}
 
 	ctx.SubtractFromCount(1)
 	return true
@@ -76,6 +79,15 @@ func (f Firework) DecodeNBT(data map[string]any) any {
 	}
 	return f
 }
+
+// GlideBoostAction is a world.EntityAction performed when a gliding entity launches a firework attached to itself,
+// which boosts it for as long as Rocket lasts.
+type GlideBoostAction struct {
+	Rocket world.Entity
+}
+
+// EntityAction ...
+func (GlideBoostAction) EntityAction() {}
 
 // RandomisedDuration returns the randomised flight duration of the firework: its Duration plus 0-5 and 0-6 whole
 // ticks drawn separately, as vanilla rockets do.
