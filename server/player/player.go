@@ -1008,6 +1008,8 @@ func (p *Player) respawn(f func(p *Player)) {
 	p.sendFood()
 	p.Extinguish()
 	p.ResetFallDistance()
+	// The boost stops counting down while dead, so a respawned player starts without one.
+	p.glideBoost = 0
 
 	p.Handler().HandleRespawn(p, &pos, &w)
 
