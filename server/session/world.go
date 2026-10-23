@@ -856,8 +856,27 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		default:
 			panic(fmt.Errorf("disc (%v) does not have sound", so.DiscType.String()))
 		}
+		s.writePacket(&packet.PlaySound{
+			SoundName: pk.SoundType,
+			Position:  vec64To32(pos),
+			Volume:    1,
+			Pitch:     1,
+			Handle:    protocol.Option(discSoundHandle(pos)),
+		})
+		return
 	case sound.MusicDiscEnd:
-		pk.SoundType = packet.SoundEventRecordNull
+		stop := protocol.SoundDataUpdate{Type: protocol.SoundDataUpdateStop}
+		s.writePacket(&packet.ClientboundUpdateSoundData{
+			ServerSoundHandle: discSoundHandle(pos),
+			Stop:              stop,
+			SetVolume:         stop,
+			SetPitch:          stop,
+			Fade:              stop,
+			SeekTo:            stop,
+			Pause:             stop,
+			Resume:            stop,
+		})
+		return
 	case sound.FireCharge:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundBlazeFireball,
@@ -936,6 +955,17 @@ func (s *Session) PlaySound(t world.Sound, pos mgl64.Vec3) {
 // ViewSound ...
 func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	s.playSound(pos, soundType, false)
+}
+
+// discSoundHandle packs the jukebox position into a handle that is unique for every block in the world: 26 bits
+// each for X and Z and 12 bits for Y.
+func discSoundHandle(pos mgl64.Vec3) uint64 {
+	const (
+		xzMask = 1<<26 - 1
+		yMask  = 1<<12 - 1
+	)
+	p := cube.PosFromVec3(pos)
+	return uint64(p[0]&xzMask)<<38 | uint64(p[2]&xzMask)<<12 | uint64(p[1]&yMask)
 }
 
 // OpenSign ...
