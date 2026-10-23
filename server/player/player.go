@@ -1791,6 +1791,8 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		// The item does something when used on a block.
 		useCtx := p.useContext()
 		if !ib.UseOnBlock(pos, face, clickPos, p.tx, p, useCtx) {
+			// Undo a placement the client may have predicted.
+			p.resendNearbyBlocks(pos, face)
 			return
 		}
 		p.SwingArm()

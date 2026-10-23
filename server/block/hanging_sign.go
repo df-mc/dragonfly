@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
+	"github.com/df-mc/dragonfly/server/block/model"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
@@ -14,7 +15,6 @@ import (
 // HangingSign is a non-solid block that can display text and can be hung from the underside of blocks.
 type HangingSign struct {
 	transparent
-	empty
 	bass
 	sourceWaterDisplacer
 
@@ -28,6 +28,11 @@ type HangingSign struct {
 	Back SignText
 	// Attach describes how the hanging sign is mounted.
 	Attach HangingAttachment
+}
+
+// Model ...
+func (h HangingSign) Model() world.BlockModel {
+	return model.HangingSign{Wall: !h.Attach.ceiling, Axis: h.Attach.facing.RotateRight().Face().Axis()}
 }
 
 // SideClosed ...
@@ -151,15 +156,20 @@ func newPlacer(yaw float64, sneaking bool) placer {
 	}
 }
 
-// attachment only mounts a sign on the block clicked when a side is clicked, never falling back to anything else.
+// attachment hangs a sign from the ceiling for a bottom face, on a wall for a top face, and on the block clicked or
+// the one opposite it for a side.
 func attachment(pos cube.Pos, face cube.Face, tx *world.Tx, p placer) (HangingAttachment, bool) {
-	if face != cube.FaceDown && face != cube.FaceUp {
-		return wallAttachmentOn(pos, face.Opposite().Direction(), tx, p)
+	switch face {
+	case cube.FaceDown:
+		return ceilingAttachment(pos, tx, p)
+	case cube.FaceUp:
+		return wallAttachment(pos, tx, p)
 	}
-	if a, ok := ceilingAttachment(pos, tx, p); ok {
+	d := face.Opposite().Direction()
+	if a, ok := wallAttachmentOn(pos, d, tx, p); ok {
 		return a, true
 	}
-	return wallAttachment(pos, tx, p)
+	return wallAttachmentOn(pos, d.Opposite(), tx, p)
 }
 
 func ceilingAttachment(pos cube.Pos, tx *world.Tx, p placer) (HangingAttachment, bool) {
@@ -175,13 +185,13 @@ func ceilingAttachment(pos cube.Pos, tx *world.Tx, p placer) (HangingAttachment,
 	return AttachedCeilingHangingAttachment(p.o), true
 }
 
+// wallAttachment prefers the walls left and right of the placer, so the sign faces them.
 func wallAttachment(pos cube.Pos, tx *world.Tx, p placer) (HangingAttachment, bool) {
-	d := p.dir.Opposite()
-	for range cube.Directions() {
+	side := p.dir.RotateRight()
+	for _, d := range [...]cube.Direction{side, side.Opposite(), p.dir, p.dir.Opposite()} {
 		if a, ok := wallAttachmentOn(pos, d, tx, p); ok {
 			return a, true
 		}
-		d = d.RotateRight()
 	}
 	return HangingAttachment{}, false
 }
@@ -209,11 +219,7 @@ const lookEpsilon = 1e-6
 func (h HangingSign) Activate(pos cube.Pos, face cube.Face, tx *world.Tx, u item.User, _ *item.UseContext) bool {
 	// Holding a hanging sign only opens the editor where it cannot be hung.
 	if held, _ := u.HeldItems(); !held.Empty() {
-		if s, ok := held.Item().(HangingSign); ok {
-			if s.placeable(pos, face, tx, placerOf(u)) {
-				return false
-			}
-		} else if _, ok := held.Item().(world.Block); ok && !h.textFace(face) {
+		if s, ok := held.Item().(HangingSign); ok && s.placeable(pos, face, tx, placerOf(u)) {
 			return false
 		}
 	}
@@ -276,18 +282,12 @@ func (h HangingSign) placeable(pos cube.Pos, face cube.Face, tx *world.Tx, p pla
 	return ok
 }
 
-func (h HangingSign) textFace(face cube.Face) bool {
-	f := h.Attach.Rotation().Direction().Face()
-	return face == f || face == f.Opposite()
-}
-
 // EditingFrontSide returns whether the user is editing the front side of the sign.
 func (h HangingSign) EditingFrontSide(pos cube.Pos, userPos mgl64.Vec3) bool {
 	return userPos.Sub(pos.Vec3Centre()).Dot(h.Attach.Rotation().Vec3()) > 0
 }
 
-// straightHangs reports straight chains rather than a V. Crouching and blocks carrying only at their centre give
-// a V, and below another sign both signs have to run along the same axis.
+// straightHangs reports whether a sign hangs on straight chains rather than in a V.
 func straightHangs(b world.Block, kind support, p placer) bool {
 	if p.sneaking {
 		return false
@@ -320,12 +320,11 @@ func hangingSupport(b world.Block, pos cube.Pos, tx *world.Tx) support {
 	return noSupport
 }
 
-// classSupport covers the blocks whose vanilla class overrides canProvideSupport. None of them carry a sign on
-// their sides.
+// classSupport covers the blocks that decide their own support. None of them carry a sign on their sides.
 func classSupport(b world.Block) (support, bool) {
 	switch b := b.(type) {
 	case HangingSign, WoodFence, NetherBrickFence, Wall, IronBars, CopperBars, GlassPane,
-		Candle, Anvil, EnderChest, Chest, BrewingStand, Lectern:
+		Candle, Anvil, EnderChest, Chest, BrewingStand, DecoratedPot:
 		return centreSupport, true
 	case IronChain:
 		return verticalSupport(b.Axis), true
@@ -342,8 +341,13 @@ func classSupport(b world.Block) (support, bool) {
 		if b.Top || b.Open {
 			return noSupport, true
 		}
-		return centreSupport, true
-	case Stonecutter, EnchantingTable, Campfire, Farmland, DirtPath:
+		return fullSupport, true
+	case Grindstone:
+		if b.Attach == HangingGrindstoneAttachment() {
+			return centreSupport, true
+		}
+		return noSupport, true
+	case Stonecutter, EnchantingTable, Campfire, Farmland, DirtPath, Lectern:
 		return fullSupport, true
 	case Hopper, Leaves, Torch, CopperTorch, Lantern, CopperLantern:
 		return noSupport, true
