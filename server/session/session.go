@@ -614,7 +614,7 @@ func (s *Session) registerHandlers() {
 		packet.IDSubChunkRequest:                 &SubChunkRequestHandler{},
 		packet.IDText:                            &TextHandler{},
 		packet.IDServerBoundLoadingScreen:        &ServerBoundLoadingScreenHandler{},
-		packet.IDServerBoundDiagnostics:          nil,
+		packet.IDServerBoundDiagnostics:          &ServerBoundDiagnosticsHandler{},
 	}
 }
 
