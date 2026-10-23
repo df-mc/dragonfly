@@ -82,6 +82,9 @@ func (f *FallingBlockBehaviour) solidify(e *Ent, pos mgl64.Vec3, tx *world.Tx) {
 	}
 	f.passive.close = true
 
+	if fr, ok := f.block.(fragile); ok && fr.BreaksOnLanding() {
+		return
+	}
 	if r, ok := tx.Block(bpos).(replaceable); ok && r.ReplaceableBy(f.block) {
 		tx.SetBlock(bpos, f.block, nil)
 	} else if i, ok := f.block.(world.Item); ok {
@@ -134,4 +137,10 @@ type breakable interface {
 // landable ...
 type landable interface {
 	Landed(tx *world.Tx, pos cube.Pos)
+}
+
+// fragile ...
+type fragile interface {
+	// BreaksOnLanding returns whether the block breaks instead of being placed when it lands.
+	BreaksOnLanding() bool
 }
