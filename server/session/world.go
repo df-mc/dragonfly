@@ -3,7 +3,6 @@ package session
 import (
 	"bytes"
 	"fmt"
-	"hash/maphash"
 	"image/color"
 	"math/rand/v2"
 	"strings"
@@ -958,10 +957,15 @@ func (s *Session) ViewSound(pos mgl64.Vec3, soundType world.Sound) {
 	s.playSound(pos, soundType, false)
 }
 
-var discSoundSeed = maphash.MakeSeed()
-
+// discSoundHandle packs the jukebox position into a handle that is unique for every block in the world: 26 bits
+// each for X and Z and 12 bits for Y.
 func discSoundHandle(pos mgl64.Vec3) uint64 {
-	return maphash.Comparable(discSoundSeed, cube.PosFromVec3(pos))
+	const (
+		xzMask = 1<<26 - 1
+		yMask  = 1<<12 - 1
+	)
+	p := cube.PosFromVec3(pos)
+	return uint64(p[0]&xzMask)<<38 | uint64(p[2]&xzMask)<<12 | uint64(p[1]&yMask)
 }
 
 // OpenSign ...
