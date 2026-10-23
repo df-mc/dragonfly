@@ -1791,6 +1791,8 @@ func (p *Player) UseItemOnBlock(pos cube.Pos, face cube.Face, clickPos mgl64.Vec
 		// The item does something when used on a block.
 		useCtx := p.useContext()
 		if !ib.UseOnBlock(pos, face, clickPos, p.tx, p, useCtx) {
+			// Undo a placement the client may have predicted.
+			p.resendNearbyBlocks(pos, face)
 			return
 		}
 		p.SwingArm()
@@ -3104,7 +3106,12 @@ func (p *Player) OpenSign(pos cube.Pos, frontSide bool) {
 // EditSign edits the sign at the cube.Pos passed and writes the text passed to a sign at that position. If no sign is
 // present, an error is returned.
 func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
-	sign, ok := p.tx.Block(pos).(block.Sign)
+	b := p.tx.Block(pos)
+	sign, ok := b.(block.Sign)
+	hanging, isHanging := b.(block.HangingSign)
+	if isHanging {
+		sign, ok = block.Sign{Waxed: hanging.Waxed, Front: hanging.Front, Back: hanging.Back}, true
+	}
 	if !ok {
 		return fmt.Errorf("edit sign: no sign at position %v", pos)
 	}
@@ -3130,6 +3137,11 @@ func (p *Player) EditSign(pos cube.Pos, frontText, backText string) error {
 		}
 		sign.Back.Text = backText
 		sign.Back.Owner = p.XUID()
+	}
+	if isHanging {
+		hanging.Front, hanging.Back = sign.Front, sign.Back
+		p.tx.SetBlock(pos, hanging, nil)
+		return nil
 	}
 	p.tx.SetBlock(pos, sign, nil)
 	return nil
