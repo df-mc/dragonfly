@@ -4,16 +4,14 @@ import (
 	"fmt"
 
 	"github.com/df-mc/dragonfly/server/block/cube"
-	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
 const (
-	positionTrackingPayloadVersion = 1
-	positionTrackingStatusTracked  = 0
-	positionTrackingStatusMissing  = 2
+	positionTrackingPayloadVersion  = 1
+	positionTrackingStatusTracked   = 0
+	positionTrackingStatusDestroyed = 2
 )
 
 // PositionTrackingDBHandler handles client queries for lodestone compass targets.
@@ -28,42 +26,19 @@ func (*PositionTrackingDBHandler) Handle(p packet.Packet, s *Session, tx *world.
 	if pk.RequestAction != packet.PositionTrackingDBRequestActionQuery {
 		return fmt.Errorf("unknown position tracking request action %d", pk.RequestAction)
 	}
-	pos, dim, found := cube.Pos{}, 0, false
-	if s.holdsTrackingCompass(pk.TrackingID) {
-		pos, dim, found = tx.World().TrackedPosition(pk.TrackingID)
+	resp := &packet.PositionTrackingDBServerBroadcast{TrackingID: pk.TrackingID, Payload: map[string]any{}}
+	switch pos, dim, status := tx.World().TrackedPosition(pk.TrackingID); status {
+	case world.PositionTracked:
+		resp.BroadcastAction = packet.PositionTrackingDBBroadcastActionUpdate
+		resp.Payload = positionTrackingPayload(pk.TrackingID, pos, dim, positionTrackingStatusTracked)
+	case world.PositionDestroyed:
+		resp.BroadcastAction = packet.PositionTrackingDBBroadcastActionDestroy
+		resp.Payload = positionTrackingPayload(pk.TrackingID, cube.Pos{}, -1, positionTrackingStatusDestroyed)
+	default:
+		resp.BroadcastAction = packet.PositionTrackingDBBroadcastActionNotFound
 	}
-	action, status := byte(packet.PositionTrackingDBBroadcastActionUpdate), byte(positionTrackingStatusTracked)
-	if !found {
-		action, status = packet.PositionTrackingDBBroadcastActionNotFound, positionTrackingStatusMissing
-	}
-	s.writePacket(&packet.PositionTrackingDBServerBroadcast{
-		BroadcastAction: action,
-		TrackingID:      pk.TrackingID,
-		Payload:         positionTrackingPayload(pk.TrackingID, pos, dim, status),
-	})
+	s.writePacket(resp)
 	return nil
-}
-
-// holdsTrackingCompass reports whether a compass linked to handle sits anywhere the client is currently
-// drawing for this player. Queries for handles it holds no compass for are refused, so lodestone positions
-// cannot be found by walking the handle space.
-func (s *Session) holdsTrackingCompass(handle int32) bool {
-	hasHandle := func(stack item.Stack) bool {
-		compass, ok := stack.Item().(item.Compass)
-		return ok && compass.TrackingHandle == handle
-	}
-	// ui covers the cursor and crafting grid, and openedWindow the container the player is looking into,
-	// including an ender chest, which is stored there while open.
-	inventories := []*inventory.Inventory{s.inv, s.offHand, s.ui, s.openedWindow.Load()}
-	for _, inv := range inventories {
-		if inv == nil {
-			continue
-		}
-		if _, ok := inv.FirstFunc(hasHandle); ok {
-			return true
-		}
-	}
-	return false
 }
 
 func positionTrackingPayload(handle int32, pos cube.Pos, dim int, status byte) map[string]any {

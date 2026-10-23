@@ -1291,7 +1291,7 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 		s.writePacket(&packet.PositionTrackingDBServerBroadcast{
 			BroadcastAction: packet.PositionTrackingDBBroadcastActionDestroy,
 			TrackingID:      t.Handle,
-			Payload:         positionTrackingPayload(t.Handle, cube.Pos{}, 0, positionTrackingStatusMissing),
+			Payload:         positionTrackingPayload(t.Handle, cube.Pos{}, -1, positionTrackingStatusDestroyed),
 		})
 	case block.OpenAction:
 		s.writePacket(&packet.BlockEvent{

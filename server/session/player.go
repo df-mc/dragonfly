@@ -761,10 +761,7 @@ func (s *Session) VerifySlot(slot int, expected item.Stack) error {
 	actual, _ := s.inv.Item(slot)
 	if clientCompass, clientOK := clientSideItem.Item().(item.Compass); clientOK {
 		if serverCompass, serverOK := actual.Item().(item.Compass); serverOK && clientCompass.TrackingHandle != serverCompass.TrackingHandle {
-			// The Bedrock client predicts lodestone linking and may send a new
-			// trackingHandle before the server has processed the interaction.
-			// The handle remains server-authoritative, but a difference in this
-			// field alone is not an inventory mismatch.
+			// The client predicts the handle of a linked compass, so a different handle alone is no mismatch.
 			clientSideItem = clientSideItem.WithItem(serverCompass)
 		}
 	}
@@ -1046,8 +1043,7 @@ func stackToItem(br world.BlockRegistry, it protocol.ItemStack) item.Stack {
 		}
 	}
 	if compass, ok := t.(item.Compass); ok {
-		// Decode compasses even without NBT so the lodestone compass registry
-		// variant cannot leak its registration handle.
+		// Decoded even without NBT, or the lodestone compass variant keeps its registry handle.
 		t = compass.DecodeNBT(it.NBTData).(world.Item)
 		//noinspection SpellCheckingInspection
 	} else if nbter, ok := t.(world.NBTer); ok && len(it.NBTData) != 0 {
