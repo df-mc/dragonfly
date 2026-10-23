@@ -8,7 +8,6 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/particle"
-	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 // SuspiciousGravel is a fragile, gravity affected block holding an item that may be brushed out of it.
@@ -34,13 +33,12 @@ type SuspiciousGravel struct {
 
 // Brush ...
 func (s SuspiciousGravel) Brush(pos cube.Pos, tx *world.Tx, face cube.Face) bool {
-	s.brushProgress = s.advance(s.Dust, tx.CurrentTick(), face)
-	if s.completed() {
-		tx.SetBlock(pos, Gravel{}, nil)
-		tx.PlaySound(pos.Vec3Centre(), sound.BrushingCompleted{Block: s})
-		if !s.Item.Empty() {
-			dropItem(tx, s.Item, BrushOffset(pos, s.face))
-		}
+	progress, ok := s.advance(tx.CurrentTick(), face)
+	if !ok {
+		return false
+	}
+	if s.brushProgress = progress; s.completed() {
+		brushed(pos, tx, s, s.Item, s.face, Gravel{})
 		return true
 	}
 	s.Dust = s.dust()
@@ -51,18 +49,14 @@ func (s SuspiciousGravel) Brush(pos cube.Pos, tx *world.Tx, face cube.Face) bool
 
 // ScheduledTick ...
 func (s SuspiciousGravel) ScheduledTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
-	if s.count == 0 {
+	if s.count == 0 && !s.brushed {
 		return
 	}
-	if left, decay := s.decaying(tx.CurrentTick()); !decay {
-		tx.ScheduleBlockUpdate(pos, s, left)
-		return
-	}
-	progress := s.decayed()
+	progress, next := s.tick(tx.CurrentTick())
 	s.brushProgress, s.Dust = progress, progress.dust()
 	tx.SetBlock(pos, s, nil)
-	if s.count > 0 {
-		tx.ScheduleBlockUpdate(pos, s, brushDecayInterval)
+	if next > 0 {
+		tx.ScheduleBlockUpdate(pos, s, next)
 	}
 }
 

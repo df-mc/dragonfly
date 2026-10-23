@@ -35,10 +35,11 @@ type BlockBreak struct {
 	Block world.Block
 }
 
-// BrushDust is a particle shown when a block is brushed with a brush.
-type BrushDust struct {
+// BlockBreakNoSound is a particle shown when a block is destroyed without the break sound, such as a fully
+// brushed suspicious block.
+type BlockBreakNoSound struct {
 	particle
-	// Block is the block of which particles should be shown, textured like the block brushed.
+	// Block is the block of which particles should be shown.
 	Block world.Block
 }
 

@@ -423,9 +423,9 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			Position:  vec64To32(pos),
 			EventData: int32(s.br.BlockRuntimeID(pa.Block)),
 		})
-	case particle.BrushDust:
+	case particle.BlockBreakNoSound:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticleLegacyEvent | 86,
+			EventType: packet.LevelEventParticlesDestroyBlockNoSound,
 			Position:  vec64To32(pos),
 			EventData: int32(s.br.BlockRuntimeID(pa.Block)),
 		})

@@ -9,15 +9,15 @@ import (
 // Brush is a tool used to excavate suspicious sand and suspicious gravel.
 type Brush struct{}
 
-// brusher represents a User that can brush blocks over a longer duration, such as a player.
+// brusher represents a User that can brush blocks, such as a player.
 type brusher interface {
-	StartBrushing(pos cube.Pos, face cube.Face)
+	Brush(pos cube.Pos, face cube.Face)
 }
 
-// UseOnBlock ...
+// UseOnBlock brushes the block clicked. The client keeps using the brush on the block while it is held.
 func (Brush) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, _ *world.Tx, user User, _ *UseContext) bool {
 	if b, ok := user.(brusher); ok {
-		b.StartBrushing(pos, face)
+		b.Brush(pos, face)
 	}
 	return false
 }

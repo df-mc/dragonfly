@@ -7,18 +7,18 @@ import (
 	"github.com/df-mc/dragonfly/server/internal/nbtconv"
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/go-gl/mathgl/mgl64"
+	"github.com/df-mc/dragonfly/server/world/particle"
+	"github.com/df-mc/dragonfly/server/world/sound"
 )
 
 const (
 	// brushesRequired is the number of brushing actions needed to fully brush a suspicious block.
 	brushesRequired = 10
-	// brushResetDelay is the amount of ticks a block keeps its brushing progress after being brushed, with
-	// brushResetInterval being the same delay as a duration.
-	brushResetDelay    = 40
-	brushResetInterval = brushResetDelay * time.Second / 20
-	// brushDecayInterval is the time between two brushing progress losses.
-	brushDecayInterval = 2 * time.Second / 20
+	// brushResetInterval is how long a block keeps its progress after being brushed. Like vanilla, the progress
+	// is then checked again brushRecheckInterval later, and from there lost two brushes every brushDecayInterval.
+	brushResetInterval   = 2 * time.Second
+	brushRecheckInterval = time.Second / 5
+	brushDecayInterval   = time.Second / 5
 	// brushDirectionNone is the brush_direction of a block that has not been brushed yet.
 	brushDirectionNone = 6
 )
@@ -31,47 +31,47 @@ type Brushable interface {
 	Brush(pos cube.Pos, tx *world.Tx, face cube.Face) bool
 }
 
-// BrushOffset returns the position just outside the face passed, where brushing particles show and brushed
-// items drop.
-func BrushOffset(pos cube.Pos, face cube.Face) mgl64.Vec3 {
-	return pos.Vec3Centre().Add(pos.Side(face).Vec3().Sub(pos.Vec3()).Mul(0.6))
-}
-
 // brushProgress is the brushing state a suspicious block keeps track of.
 type brushProgress struct {
 	count    int
 	face     cube.Face
 	resetsAt int64
+	brushed  bool
+
+	nextBrush int64
 }
 
-// advance adds a brushing action, starting off at the dust passed if the block was not being brushed yet.
-func (p brushProgress) advance(dust int, tick int64, face cube.Face) brushProgress {
+// advance adds a brushing action at the tick passed, unless the block was brushed 10 ticks ago or less.
+func (p brushProgress) advance(tick int64, face cube.Face) (brushProgress, bool) {
+	if tick <= p.nextBrush {
+		return p, false
+	}
+	p.nextBrush = tick + 10
 	if p.count == 0 {
-		p.face, p.count = face, brushStageStart(dust)
+		p.face = face
 	}
-	p.count, p.resetsAt = p.count+1, tick+brushResetDelay
-	return p
+	p.count, p.resetsAt, p.brushed = p.count+1, tick+int64(brushResetInterval/(time.Second/20)), true
+	return p, true
 }
 
-// decaying returns the time left before the block loses a brushing action, along with whether it should lose
-// one at the tick passed. Progress restored from disk has no deadline left: Its scheduled block update was
-// saved with the delay that still remained, so the block is due as soon as that update fires again.
-func (p brushProgress) decaying(tick int64) (time.Duration, bool) {
-	if p.resetsAt == 0 || tick >= p.resetsAt {
-		return 0, true
+// tick returns the progress after a scheduled update at the tick passed, and the delay before the next one.
+func (p brushProgress) tick(tick int64) (brushProgress, time.Duration) {
+	if p.brushed {
+		if tick <= p.resetsAt {
+			return p, brushRecheckInterval
+		}
+		p.brushed = false
 	}
-	return time.Duration(p.resetsAt-tick) * time.Second / 20, false
+	if p.count == 0 {
+		return p, 0
+	}
+	p.count = max(p.count-2, 0)
+	return p, brushDecayInterval
 }
 
 // completed returns whether the block was fully brushed.
 func (p brushProgress) completed() bool {
 	return p.count >= brushesRequired
-}
-
-// decayed returns the progress with one brushing action removed.
-func (p brushProgress) decayed() brushProgress {
-	p.count--
-	return p
 }
 
 // dust returns the dust to display on the block, from 0 to 3.
@@ -85,6 +85,17 @@ func (p brushProgress) dust() int {
 		return 2
 	}
 	return 3
+}
+
+// brushed drops the item held by a fully brushed block in front of the face brushed and replaces the block.
+func brushed(pos cube.Pos, tx *world.Tx, b world.Block, it item.Stack, face cube.Face, with world.Block) {
+	if !it.Empty() {
+		create := tx.World().EntityRegistry().Config().Item
+		tx.AddEntity(create(world.EntitySpawnOpts{Position: pos.Side(face).Vec3Centre()}, it))
+	}
+	tx.PlaySound(pos.Vec3Centre(), sound.BrushingCompleted{Block: b})
+	tx.AddParticle(pos.Vec3(), particle.BlockBreakNoSound{Block: b})
+	tx.SetBlock(pos, with, nil)
 }
 
 // encodeNBT returns block entity data for the identifier and item passed.
@@ -112,17 +123,4 @@ func (p brushProgress) decodeNBT(data map[string]any) brushProgress {
 		p.face = cube.Face(direction)
 	}
 	return p
-}
-
-// brushStageStart returns the lowest brush count that displays the dust passed.
-func brushStageStart(dust int) int {
-	switch dust {
-	case 1:
-		return 1
-	case 2:
-		return 3
-	case 3:
-		return 6
-	}
-	return 0
 }
