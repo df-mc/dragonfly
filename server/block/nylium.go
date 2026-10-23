@@ -32,13 +32,14 @@ func (n Nylium) RandomTick(pos cube.Pos, tx *world.Tx, _ *rand.Rand) {
 	}
 }
 
-// smothers reports whether a block covers the nylium below it, turning it back into netherrack. Full blocks do
-// unless light passes through them, and of the partial shapes only those resting on a full bottom face do.
+// smothers reports whether a block covers the nylium below it, turning it back into netherrack. Full blocks do,
+// apart from the ones listed, and of the partial shapes only those resting on a full bottom face do.
 func smothers(b world.Block, pos cube.Pos, tx *world.Tx) bool {
 	switch m := b.Model().(type) {
 	case model.Solid:
 		switch b.(type) {
-		case Glass, StainedGlass, TintedGlass, Glowstone, SeaLantern, Ice, Slime, Beacon:
+		case Glass, StainedGlass, TintedGlass, Glowstone, SeaLantern, Ice, Slime, Beacon, Barrier, Wool, Froglight,
+			CopperGrate, DragonEgg, CopperGolemStatue, InvisibleBedrock:
 			return false
 		}
 		return true
