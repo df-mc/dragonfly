@@ -10,6 +10,7 @@ import (
 func init() {
 	world.RegisterItem(AmethystShard{})
 	world.RegisterItem(Apple{})
+	world.RegisterItem(ArmourStand{})
 	world.RegisterItem(Arrow{})
 	world.RegisterItem(BakedPotato{})
 	world.RegisterItem(Beef{Cooked: true})
