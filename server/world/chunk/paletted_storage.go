@@ -158,13 +158,15 @@ func (storage *PalettedStorage) resize(newPaletteSize paletteSize) {
 	if newPaletteSize == paletteSize(storage.bitsPerIndex) {
 		return // Don't resize if the size is already equal.
 	}
-	// Construct a new storage and set all values in there manually. We can't easily do this in a better
-	// way, because all values will be at a different index with a different length.
+	// Keep the palette while allocating words at the new width.
 	newStorage := newPalettedStorage(make([]uint32, newPaletteSize.uint32s()), storage.palette)
-	for x := byte(0); x < 16; x++ {
-		for y := byte(0); y < 16; y++ {
-			for z := byte(0); z < 16; z++ {
-				newStorage.setPaletteIndex(x, y, z, storage.paletteIndex(x, y, z))
+	// A zero-bit storage's implicit indices already match the zero-filled allocation.
+	if storage.bitsPerIndex != 0 {
+		for x := byte(0); x < 16; x++ {
+			for y := byte(0); y < 16; y++ {
+				for z := byte(0); z < 16; z++ {
+					newStorage.setPaletteIndex(x, y, z, storage.paletteIndex(x, y, z))
+				}
 			}
 		}
 	}
