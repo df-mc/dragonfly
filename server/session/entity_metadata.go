@@ -78,6 +78,13 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if o, ok := e.(onFire); ok && o.OnFireDuration() > 0 {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagOnFire)
 	}
+	if f, ok := e.(freezer); ok {
+		strength := float32(f.FreezingEffectStrength())
+		m[protocol.EntityDataKeyFreezingEffectStrength] = strength
+		if strength >= 1 {
+			m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagShaking)
+		}
+	}
 	if u, ok := e.(using); ok && u.UsingItem() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagUsingItem)
 	}
@@ -296,6 +303,10 @@ type glint interface {
 type areaEffectCloud interface {
 	effectBearer
 	Radius() float64
+}
+
+type freezer interface {
+	FreezingEffectStrength() float64
 }
 
 type onFire interface {

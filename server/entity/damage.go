@@ -96,3 +96,11 @@ func (ExplosionDamageSource) AffectedByEnchantment(e item.EnchantmentType) bool 
 	return e == enchantment.BlastProtection
 }
 func (ExplosionDamageSource) IgnoreTotem() bool { return false }
+
+// FreezingDamageSource is used for damage caused by prolonged powder snow exposure.
+type FreezingDamageSource struct{}
+
+func (FreezingDamageSource) ReducedByArmour() bool     { return false }
+func (FreezingDamageSource) ReducedByResistance() bool { return true }
+func (FreezingDamageSource) Fire() bool                { return false }
+func (FreezingDamageSource) IgnoreTotem() bool         { return false }

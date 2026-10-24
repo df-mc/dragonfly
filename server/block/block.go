@@ -90,6 +90,20 @@ type EntityInsider interface {
 	EntityInside(pos cube.Pos, tx *world.Tx, e world.Entity)
 }
 
+// EntityCollider supplies collision boxes that depend on the entity, such as leather boots on powder snow.
+type EntityCollider interface {
+	EntityBBox(pos cube.Pos, tx *world.Tx, e world.Entity) []cube.BBox
+}
+
+// CollisionBoxes returns the block's collision boxes for the entity passed.
+func CollisionBoxes(pos cube.Pos, tx *world.Tx, e world.Entity) []cube.BBox {
+	b := tx.Block(pos)
+	if collider, ok := b.(EntityCollider); ok {
+		return collider.EntityBBox(pos, tx, e)
+	}
+	return b.Model().BBox(pos, tx)
+}
+
 // EntityStepper represents a block that reacts to an entity standing on top of it.
 type EntityStepper interface {
 	// EntityStepOn is called every tick while an entity is standing on the top face of the block.

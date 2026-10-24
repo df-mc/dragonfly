@@ -15,6 +15,9 @@ type Drowning struct{ sound }
 // Burning is a sound played when an entity is on fire.
 type Burning struct{ sound }
 
+// Freezing is a sound played when a player takes freezing damage.
+type Freezing struct{ sound }
+
 // Fall is a sound played when an entity falls and hits ground.
 type Fall struct {
 	// Distance is the distance the entity has fallen.

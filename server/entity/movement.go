@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl64"
@@ -124,7 +125,7 @@ func (c *MovementComputer) CheckCollision(tx *world.Tx, e world.Entity, pos, vel
 
 	// Entities only ever have a single bounding box.
 	entityBBox := e.H().Type().BBox(e).Translate(pos)
-	blocks := blockBBoxsAround(tx, entityBBox.Extend(vel))
+	blocks := blockBBoxsAround(tx, entityBBox.Extend(vel), e)
 
 	if !mgl64.FloatEqualThreshold(deltaY, 0, epsilon) {
 		// First we move the entity BBox on the Y axis.
@@ -170,7 +171,7 @@ func (c *MovementComputer) CheckCollision(tx *world.Tx, e world.Entity, pos, vel
 
 // blockBBoxsAround returns all blocks around the entity passed, using the BBox passed to make a prediction of
 // what blocks need to have their BBox returned.
-func blockBBoxsAround(tx *world.Tx, box cube.BBox) []cube.BBox {
+func blockBBoxsAround(tx *world.Tx, box cube.BBox, e world.Entity) []cube.BBox {
 	grown := box.Grow(0.25)
 	min, max := grown.Min(), grown.Max()
 	minX, minY, minZ := int(math.Floor(min[0])), int(math.Floor(min[1])), int(math.Floor(min[2]))
@@ -187,7 +188,7 @@ func blockBBoxsAround(tx *world.Tx, box cube.BBox) []cube.BBox {
 		for x := minX; x < maxX; x++ {
 			for z := minZ; z < maxZ; z++ {
 				pos := cube.Pos{x, y, z}
-				boxes := tx.Block(pos).Model().BBox(pos, tx)
+				boxes := block.CollisionBoxes(pos, tx, e)
 				if len(boxes) != 0 && blockBBoxs == nil {
 					blockBBoxs = make([]cube.BBox, 0, predicted)
 				}
