@@ -11,6 +11,8 @@ import (
 type chunkRequest struct {
 	pos       ChunkPos
 	callbacks []chunkCallback
+	// loader owns the waiting allowance until a worker starts this request.
+	loader    *Loader
 	signalled bool
 
 	done   chan struct{}
@@ -32,14 +34,15 @@ type chunkWorkerPool struct {
 	queue chan *chunkRequest
 	wg    sync.WaitGroup
 
-	mu     sync.Mutex
-	closed bool
+	mu      sync.Mutex
+	closed  bool
+	waiting map[*Loader]int
 }
 
 // newChunkWorkerPool creates the workers' waiting queue. schedule limits
 // admission so loaders can reprioritise further requests when they move.
 func newChunkWorkerPool(w *World) *chunkWorkerPool {
-	return &chunkWorkerPool{w: w, queue: make(chan *chunkRequest, 4096)}
+	return &chunkWorkerPool{w: w, queue: make(chan *chunkRequest, 4096), waiting: make(map[*Loader]int)}
 }
 
 // doImmediate blocks until the chunk is ready and returns it.
@@ -64,8 +67,8 @@ func (r *chunkRequest) abort() {
 }
 
 // schedule hands r to the workers without blocking. It returns false if the
-// request cannot be accepted, e.g. when the world is closing. Waiting work is
-// limited to two requests per worker or one caller batch, whichever is larger.
+// request cannot be accepted, e.g. when the world is closing. Each loader may
+// queue two requests per worker or one caller batch, whichever is larger.
 func (p *chunkWorkerPool) schedule(r *chunkRequest, batchSize int) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -73,11 +76,12 @@ func (p *chunkWorkerPool) schedule(r *chunkRequest, batchSize int) bool {
 		p.closed = true
 		return false
 	}
-	if len(p.queue) >= max(2*p.w.conf.ChunkLoadWorkers, batchSize) {
+	if p.waiting[r.loader] >= max(2*p.w.conf.ChunkLoadWorkers, batchSize) {
 		return false
 	}
 	select {
 	case p.queue <- r:
+		p.waiting[r.loader]++
 		return true
 	default:
 		return false
@@ -94,11 +98,23 @@ func (p *chunkWorkerPool) handle() {
 		}
 		select {
 		case r := <-p.queue:
+			p.mu.Lock()
+			p.removeWaiting(r)
+			p.mu.Unlock()
 			r.load(p.w)
 		case <-p.w.closeStarted:
 			p.drainAndAbort()
 			return
 		}
+	}
+}
+
+// removeWaiting releases the requesting loader's allowance. p.mu must be held.
+func (p *chunkWorkerPool) removeWaiting(r *chunkRequest) {
+	if p.waiting[r.loader] == 1 {
+		delete(p.waiting, r.loader)
+	} else {
+		p.waiting[r.loader]--
 	}
 }
 
@@ -110,6 +126,7 @@ func (p *chunkWorkerPool) drainAndAbort() {
 	for {
 		select {
 		case r := <-p.queue:
+			p.removeWaiting(r)
 			r.abort()
 		default:
 			return

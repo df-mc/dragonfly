@@ -110,7 +110,7 @@ func (l *Loader) Load(tx *Tx, n int) {
 		l.loadQueue = l.loadQueue[1:]
 		l.mu.Unlock()
 
-		if !w.loadChunkAsync(tx, pos, n, func(tx2 *Tx, col *Column) {
+		if !w.loadChunkAsync(tx, pos, l, n, func(tx2 *Tx, col *Column) {
 			l.viewChunk(tx2, pos, col)
 		}) {
 			l.mu.Lock()
