@@ -36,6 +36,8 @@ type chunkWorkerPool struct {
 	closed bool
 }
 
+// newChunkWorkerPool creates the workers' waiting queue. schedule limits
+// admission so loaders can reprioritise further requests when they move.
 func newChunkWorkerPool(w *World) *chunkWorkerPool {
 	return &chunkWorkerPool{w: w, queue: make(chan *chunkRequest, 4096)}
 }
@@ -62,12 +64,16 @@ func (r *chunkRequest) abort() {
 }
 
 // schedule hands r to the workers without blocking. It returns false if the
-// request cannot be accepted, e.g. when the world is closing.
-func (p *chunkWorkerPool) schedule(r *chunkRequest) bool {
+// request cannot be accepted, e.g. when the world is closing. Waiting work is
+// limited to two requests per worker or one caller batch, whichever is larger.
+func (p *chunkWorkerPool) schedule(r *chunkRequest, batchSize int) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.closed || p.w.closed.Load() {
 		p.closed = true
+		return false
+	}
+	if len(p.queue) >= max(2*p.w.conf.ChunkLoadWorkers, batchSize) {
 		return false
 	}
 	select {

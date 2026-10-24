@@ -1408,8 +1408,9 @@ func (w *World) emptyColumn() *Column {
 }
 
 // loadChunkAsync loads or generates the chunk at pos in the background,
-// calling callback once ready. It returns false if it could not be scheduled.
-func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) bool {
+// calling callback once ready. batchSize preserves room for the caller's batch
+// in the waiting queue. It returns false if it could not be scheduled.
+func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, batchSize int, callback chunkCallback) bool {
 	if c, ok := w.chunks[pos]; ok {
 		callback(tx, c)
 		return true
@@ -1424,7 +1425,7 @@ func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) boo
 		return true
 	}
 	req := &chunkRequest{pos: pos, done: make(chan struct{}), callbacks: []chunkCallback{callback}}
-	if !w.chunkWorkers.schedule(req) {
+	if !w.chunkWorkers.schedule(req, batchSize) {
 		return false
 	}
 	w.chunkRequests[pos] = req

@@ -110,13 +110,20 @@ func (l *Loader) Load(tx *Tx, n int) {
 		l.loadQueue = l.loadQueue[1:]
 		l.mu.Unlock()
 
-		if !w.loadChunkAsync(tx, pos, func(tx2 *Tx, col *Column) {
+		if !w.loadChunkAsync(tx, pos, n, func(tx2 *Tx, col *Column) {
 			l.viewChunk(tx2, pos, col)
 		}) {
 			l.mu.Lock()
-			delete(l.pending, pos)
-			l.queueLoad(pos)
+			if l.w == w {
+				delete(l.pending, pos)
+				if l.queueLoad(pos) {
+					// Keep the nearest request first until the workers can accept it.
+					copy(l.loadQueue[1:], l.loadQueue)
+					l.loadQueue[0] = pos
+				}
+			}
 			l.mu.Unlock()
+			break
 		}
 	}
 }
@@ -207,23 +214,25 @@ func chunkDistance(a, b ChunkPos) int32 {
 }
 
 // queueLoad adds pos back to the load queue, unless it is already loaded,
-// queued, or no longer within the radius of the Loader.
-func (l *Loader) queueLoad(pos ChunkPos) {
+// queued, or no longer within the radius of the Loader. It reports whether pos
+// was added.
+func (l *Loader) queueLoad(pos ChunkPos) bool {
 	if l.closed || l.w == nil || !l.withinLoadRadius(pos) {
-		return
+		return false
 	}
 	if _, ok := l.loaded[pos]; ok {
-		return
+		return false
 	}
 	if _, ok := l.pending[pos]; ok {
-		return
+		return false
 	}
 	for _, queued := range l.loadQueue {
 		if queued == pos {
-			return
+			return false
 		}
 	}
 	l.loadQueue = append(l.loadQueue, pos)
+	return true
 }
 
 // populateLoadQueue populates the load queue of the loader. This method is called once to create the order in
