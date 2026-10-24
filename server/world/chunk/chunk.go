@@ -151,6 +151,46 @@ func (chunk *Chunk) SetBiome(x uint8, y int16, z uint8, biome uint32) {
 	chunk.biomes[chunk.SubIndex(y)].Set(x, uint8(y), z, biome)
 }
 
+// SetBiomeSection replaces the biomes of the 16x16x16 section containing block height y.
+// The array is indexed by [x][y][z] in quart coordinates: each value fills a 4x4x4 cube.
+// The section owns its storage independently of the input and other sections. Only used
+// biome IDs are stored, with no indices for a uniform section. As with SetBiome, y must
+// be within the Chunk's vertical range.
+func (chunk *Chunk) SetBiomeSection(y int16, biomes [4][4][4]uint32) {
+	var (
+		values  [64]uint32
+		indices [4][4][4]uint16
+		count   int
+	)
+	for x := range biomes {
+		for y := range biomes[x] {
+			for z, biome := range biomes[x][y] {
+				index := 0
+				for index < count && values[index] != biome {
+					index++
+				}
+				if index == count {
+					values[count] = biome
+					count++
+				}
+				indices[x][y][z] = uint16(index)
+			}
+		}
+	}
+	size := paletteSizeFor(count)
+	storage := newPalettedStorage(make([]uint32, size.uint32s()), newPalette(size, slices.Clone(values[:count])))
+	if size != 0 {
+		for x := uint8(0); x < 16; x++ {
+			for z := uint8(0); z < 16; z++ {
+				for y := uint8(0); y < 16; y++ {
+					storage.setPaletteIndex(x, y, z, indices[x>>2][y>>2][z>>2])
+				}
+			}
+		}
+	}
+	chunk.biomes[chunk.SubIndex(y)] = storage
+}
+
 // Light returns the light level at a specific position in the chunk.
 func (chunk *Chunk) Light(x uint8, y int16, z uint8) uint8 {
 	ux, uy, uz, sub := x&0xf, uint8(y&0xf), z&0xf, chunk.SubChunk(y)
