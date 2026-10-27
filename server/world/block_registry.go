@@ -42,6 +42,8 @@ type BlockRegistry interface {
 	BlockByRuntimeIDOrAir(rid uint32) Block
 	// BlockRuntimeID looks up the runtime ID of a previously registered Block.
 	BlockRuntimeID(block Block) (rid uint32)
+	// BlockNetworkID returns the network ID of a previously registered Block in the given mode.
+	BlockNetworkID(block Block, mode chunk.BlockIDMode) uint32
 	// RegisterBlock registers a Block implementation for a previously registered block state.
 	RegisterBlock(block Block)
 	// RegisterBlockState registers a block state that blocks may encode to.
@@ -197,21 +199,26 @@ func (br *BasicBlockRegistry) Blocks() []Block {
 	return slices.Clone(br.blocks)
 }
 
-// NetworkID returns the network ID of a registered runtime ID for the selected mode.
-func (br *BasicBlockRegistry) NetworkID(rid uint32, hashes bool) uint32 {
-	if !hashes {
+// NetworkID returns the network ID of a registered runtime ID in the given mode.
+func (br *BasicBlockRegistry) NetworkID(rid uint32, mode chunk.BlockIDMode) uint32 {
+	if mode == chunk.SequentialBlockIDs {
 		return rid
 	}
 	hash, _ := br.RuntimeIDToHash(rid)
 	return hash
 }
 
-// RuntimeID resolves a network ID to a runtime ID for the selected mode. Unknown IDs return false.
-func (br *BasicBlockRegistry) RuntimeID(networkID uint32, hashes bool) (rid uint32, ok bool) {
-	if hashes {
-		return br.HashToRuntimeID(networkID)
+// RuntimeID resolves a network ID in the given mode to a runtime ID. Unknown IDs return false.
+func (br *BasicBlockRegistry) RuntimeID(networkID uint32, mode chunk.BlockIDMode) (rid uint32, ok bool) {
+	if mode == chunk.SequentialBlockIDs {
+		return networkID, networkID < uint32(br.BlockCount())
 	}
-	return networkID, networkID < uint32(br.BlockCount())
+	return br.HashToRuntimeID(networkID)
+}
+
+// BlockNetworkID returns the network ID of a registered Block in the given mode.
+func (br *BasicBlockRegistry) BlockNetworkID(b Block, mode chunk.BlockIDMode) uint32 {
+	return br.NetworkID(br.BlockRuntimeID(b), mode)
 }
 
 func (br *BasicBlockRegistry) HashToRuntimeID(hash uint32) (rid uint32, ok bool) {

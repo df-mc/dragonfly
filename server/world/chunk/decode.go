@@ -7,20 +7,17 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// NetworkDecode decodes network serialised chunk data. The sub-chunk count must match the LevelChunk packet.
-// The optional hashes argument selects block state hashes; if omitted, sequential runtime IDs are used.
-// The BlockRegistry must be finalized and correspond to the registry used to encode the data.
+// NetworkDecode decodes network serialised chunk data whose block IDs are in the given mode. The sub-chunk count
+// must match the LevelChunk packet, and the BlockRegistry must be finalized and match the one used to encode it.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range, hashes ...bool) (*Chunk, error) {
-	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r, hashes...)
+func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range, mode BlockIDMode) (*Chunk, error) {
+	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r, mode)
 }
 
-// NetworkDecodeBuffer decodes network serialised chunk data from buf. The sub-chunk count must match the LevelChunk packet.
-// The optional hashes argument selects block state hashes; if omitted, sequential runtime IDs are used.
-// The BlockRegistry must be finalized and correspond to the registry used to encode the data.
+// NetworkDecodeBuffer decodes network serialised chunk data from buf, like NetworkDecode.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, hashes ...bool) (*Chunk, error) {
-	encoding := NetworkEncoding{BlockNetworkIDHashes: len(hashes) > 0 && hashes[0]}
+func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, mode BlockIDMode) (*Chunk, error) {
+	encoding := NetworkEncoding{BlockIDs: mode}
 	c := New(br, r)
 	// The declared count may exceed the number of sub-chunks supported by the
 	// dimension's vertical range, so validate it before indexing c.sub.

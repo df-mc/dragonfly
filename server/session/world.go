@@ -16,6 +16,7 @@ import (
 	"github.com/df-mc/dragonfly/server/item"
 	"github.com/df-mc/dragonfly/server/item/inventory"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/dragonfly/server/world/particle"
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/go-gl/mathgl/mgl32"
@@ -132,9 +133,9 @@ func (s *Session) ViewEntity(e world.Entity) {
 			})
 			return
 		case entity.TextType:
-			metadata[protocol.EntityDataKeyVariant] = int32(s.br.NetworkID(s.br.BlockRuntimeID(block.Air{}), !s.conf.DisableBlockNetworkIDHashes))
+			metadata[protocol.EntityDataKeyVariant] = int32(s.br.BlockNetworkID(block.Air{}, s.conf.BlockIDs))
 		case entity.FallingBlockType:
-			metadata[protocol.EntityDataKeyVariant] = int32(s.br.NetworkID(s.br.BlockRuntimeID(v.Behaviour().(*entity.FallingBlockBehaviour).Block()), !s.conf.DisableBlockNetworkIDHashes))
+			metadata[protocol.EntityDataKeyVariant] = int32(s.br.BlockNetworkID(v.Behaviour().(*entity.FallingBlockBehaviour).Block(), s.conf.BlockIDs))
 		}
 	}
 	if v, ok := e.H().Type().(NetworkEncodeableEntity); ok {
@@ -421,12 +422,12 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticlesDestroyBlock,
 			Position:  vec64To32(pos),
-			EventData: int32(s.br.NetworkID(s.br.BlockRuntimeID(pa.Block), !s.conf.DisableBlockNetworkIDHashes)),
+			EventData: int32(s.br.BlockNetworkID(pa.Block, s.conf.BlockIDs)),
 		})
 	case particle.PunchBlock:
-		id := s.br.NetworkID(s.br.BlockRuntimeID(pa.Block), !s.conf.DisableBlockNetworkIDHashes)
+		id := s.br.BlockNetworkID(pa.Block, s.conf.BlockIDs)
 		event, data := int32(packet.LevelEventParticlesCrackBlockDown)+int32(pa.Face), int32(id)
-		if s.conf.DisableBlockNetworkIDHashes {
+		if s.conf.BlockIDs == chunk.SequentialBlockIDs {
 			event, data = packet.LevelEventParticlesCrackBlock, int32(uint32(pa.Face)<<24|id)
 		}
 		s.writePacket(&packet.LevelEvent{
@@ -706,21 +707,21 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 	case sound.Burp:
 		pk.SoundType = packet.SoundEventBurp
 	case sound.DoorOpen:
-		pk.SoundType, pk.ExtraData = packet.SoundEventDoorOpen, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventDoorOpen, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.DoorClose:
-		pk.SoundType, pk.ExtraData = packet.SoundEventDoorClose, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventDoorClose, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.TrapdoorOpen:
-		pk.SoundType, pk.ExtraData = packet.SoundEventTrapdoorOpen, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventTrapdoorOpen, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.TrapdoorClose:
-		pk.SoundType, pk.ExtraData = packet.SoundEventTrapdoorClose, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventTrapdoorClose, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.FenceGateOpen:
-		pk.SoundType, pk.ExtraData = packet.SoundEventFenceGateOpen, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventFenceGateOpen, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.FenceGateClose:
-		pk.SoundType, pk.ExtraData = packet.SoundEventFenceGateClose, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventFenceGateClose, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.Deny:
 		pk.SoundType = packet.SoundEventDeny
 	case sound.BlockPlace:
-		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.AnvilLand:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundAnvilLand,
@@ -752,11 +753,11 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 	case sound.BarrelOpen:
 		pk.SoundType = packet.SoundEventBarrelOpen
 	case sound.BlockBreaking:
-		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventHit, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.ItemBreak:
 		pk.SoundType = packet.SoundEventBreak
 	case sound.ItemUseOn:
-		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(s.br.NetworkID(s.br.BlockRuntimeID(so.Block), !s.conf.DisableBlockNetworkIDHashes))
+		pk.SoundType, pk.ExtraData = packet.SoundEventItemUseOn, int32(s.br.BlockNetworkID(so.Block, s.conf.BlockIDs))
 	case sound.Fizz:
 		pk.SoundType = packet.SoundEventFizz
 	case sound.GlassBreak:
@@ -1011,7 +1012,7 @@ func (s *Session) ViewBlockUpdate(pos cube.Pos, b world.Block, layer int) {
 	blockPos := protocol.BlockPos{int32(pos[0]), int32(pos[1]), int32(pos[2])}
 	s.writePacket(&packet.UpdateBlock{
 		Position:          blockPos,
-		NewBlockRuntimeID: s.br.NetworkID(s.br.BlockRuntimeID(b), !s.conf.DisableBlockNetworkIDHashes),
+		NewBlockRuntimeID: s.br.BlockNetworkID(b, s.conf.BlockIDs),
 		Flags:             packet.BlockUpdateNetwork,
 		Layer:             uint32(layer),
 	})

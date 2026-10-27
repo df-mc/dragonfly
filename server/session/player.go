@@ -1005,7 +1005,7 @@ func (s *Session) stackFromItem(it item.Stack) protocol.ItemStack {
 
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
-		blockRuntimeID = s.br.NetworkID(s.br.BlockRuntimeID(b), !s.conf.DisableBlockNetworkIDHashes)
+		blockRuntimeID = s.br.BlockNetworkID(b, s.conf.BlockIDs)
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())
@@ -1028,7 +1028,7 @@ func (s *Session) stackToItem(it protocol.ItemStack) item.Stack {
 		t = block.Air{}
 	}
 	if it.BlockRuntimeID != 0 {
-		if rid, found := s.br.RuntimeID(uint32(it.BlockRuntimeID), !s.conf.DisableBlockNetworkIDHashes); found {
+		if rid, found := s.br.RuntimeID(uint32(it.BlockRuntimeID), s.conf.BlockIDs); found {
 			if t, ok = s.br.BlockByRuntimeIDOrAir(rid).(world.Item); !ok {
 				t = block.Air{}
 			}

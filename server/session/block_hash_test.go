@@ -21,11 +21,12 @@ func TestBlockNetworkPackets(t *testing.T) {
 	stone := block.Stone{}
 	rid := br.BlockRuntimeID(stone)
 	hash, _ := br.RuntimeIDToHash(rid)
-	for _, hashes := range []bool{false, true} {
+	for _, mode := range []chunk.BlockIDMode{chunk.SequentialBlockIDs, chunk.HashedBlockIDs} {
+		hashes := mode == chunk.HashedBlockIDs
 		t.Run(fmt.Sprintf("hashes=%t", hashes), func(t *testing.T) {
 			s := &Session{
 				br:      br,
-				conf:    Config{DisableBlockNetworkIDHashes: !hashes},
+				conf:    Config{BlockIDs: mode},
 				packets: make(chan packet.Packet, 1),
 			}
 			id := rid
@@ -66,19 +67,20 @@ func TestBlockNetworkBoundary(t *testing.T) {
 	c.SetBlock(1, -14, 3, 0, rid)
 	c.SetBlock(4, 2, 5, 0, rid)
 	c.SetBiome(1, -14, 3, 42)
-	runtimeData := chunk.Encode(c, chunk.NetworkEncoding{})
+	runtimeData := chunk.Encode(c, chunk.NetworkEncoding{BlockIDs: chunk.SequentialBlockIDs})
 
-	for _, hashes := range []bool{false, true} {
+	for _, mode := range []chunk.BlockIDMode{chunk.SequentialBlockIDs, chunk.HashedBlockIDs} {
+		hashes := mode == chunk.HashedBlockIDs
 		t.Run(fmt.Sprintf("hashes=%t", hashes), func(t *testing.T) {
-			s := &Session{br: br, conf: Config{DisableBlockNetworkIDHashes: !hashes}}
+			s := &Session{br: br, conf: Config{BlockIDs: mode}}
 			id := rid
 			if hashes {
 				id = hash
 			}
-			if got := br.NetworkID(rid, hashes); got != id {
+			if got := br.NetworkID(rid, mode); got != id {
 				t.Fatalf("network block ID = %d, want %d", got, id)
 			}
-			if got, ok := br.RuntimeID(id, hashes); !ok || got != rid {
+			if got, ok := br.RuntimeID(id, mode); !ok || got != rid {
 				t.Fatalf("runtime ID from network ID = %d, found %t, want %d", got, ok, rid)
 			}
 
@@ -91,7 +93,7 @@ func TestBlockNetworkBoundary(t *testing.T) {
 				t.Fatalf("item round trip = %#v, want %#v", got, stack)
 			}
 
-			data := chunk.Encode(c, chunk.NetworkEncoding{BlockNetworkIDHashes: hashes})
+			data := chunk.Encode(c, chunk.NetworkEncoding{BlockIDs: mode})
 			if hashes && bytes.Equal(data.SubChunks[0], runtimeData.SubChunks[0]) {
 				t.Fatal("hash and sequential ID sub-chunk encodings are identical")
 			}
@@ -99,7 +101,7 @@ func TestBlockNetworkBoundary(t *testing.T) {
 				t.Fatal("block network ID mode changed biome encoding")
 			}
 			wire := append(bytes.Join(data.SubChunks, nil), data.Biomes...)
-			decoded, err := chunk.NetworkDecode(br, wire, len(data.SubChunks), r, hashes)
+			decoded, err := chunk.NetworkDecode(br, wire, len(data.SubChunks), r, mode)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -111,11 +113,6 @@ func TestBlockNetworkBoundary(t *testing.T) {
 			if got := decoded.Biome(1, -14, 3); got != 42 {
 				t.Errorf("decoded biome = %d, want 42", got)
 			}
-			if !hashes {
-				if _, err := chunk.NetworkDecode(br, wire, len(data.SubChunks), r); err != nil {
-					t.Fatalf("decode without a mode: %v", err)
-				}
-			}
 		})
 	}
 }
@@ -124,8 +121,8 @@ func TestBlockNetworkBoundary(t *testing.T) {
 type missingHashRegistry struct{ world.BlockRegistry }
 
 // NetworkID returns an unknown hash in hash mode and the original ID in sequential mode.
-func (br missingHashRegistry) NetworkID(rid uint32, hashes bool) uint32 {
-	if hashes {
+func (br missingHashRegistry) NetworkID(rid uint32, mode chunk.BlockIDMode) uint32 {
+	if mode == chunk.HashedBlockIDs {
 		for id := uint32(1); ; id++ {
 			if _, ok := br.HashToRuntimeID(id); !ok {
 				return id
@@ -139,20 +136,20 @@ func TestUnknownBlockHashDecodesAsAir(t *testing.T) {
 	br := world.NewBlockRegistry()
 	br.Finalize()
 	unknown := missingHashRegistry{br}
-	id := unknown.NetworkID(br.BlockRuntimeID(block.Stone{}), true)
-	if _, ok := br.RuntimeID(id, true); ok {
+	id := unknown.NetworkID(br.BlockRuntimeID(block.Stone{}), chunk.HashedBlockIDs)
+	if _, ok := br.RuntimeID(id, chunk.HashedBlockIDs); ok {
 		t.Fatal("unknown hash resolved to a runtime ID")
 	}
-	if _, ok := br.RuntimeID(uint32(br.BlockCount()), false); ok {
+	if _, ok := br.RuntimeID(uint32(br.BlockCount()), chunk.SequentialBlockIDs); ok {
 		t.Fatal("out-of-range sequential ID resolved to a runtime ID")
 	}
 
 	r := cube.Range{0, 15}
 	c := chunk.New(unknown, r)
 	c.SetBlock(1, 2, 3, 0, br.BlockRuntimeID(block.Stone{}))
-	data := chunk.Encode(c, chunk.NetworkEncoding{BlockNetworkIDHashes: true})
+	data := chunk.Encode(c, chunk.NetworkEncoding{BlockIDs: chunk.HashedBlockIDs})
 	wire := append(bytes.Join(data.SubChunks, nil), data.Biomes...)
-	decoded, err := chunk.NetworkDecode(br, wire, 1, r, true)
+	decoded, err := chunk.NetworkDecode(br, wire, 1, r, chunk.HashedBlockIDs)
 	if err != nil {
 		t.Fatal(err)
 	}

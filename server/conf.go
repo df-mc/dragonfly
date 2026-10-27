@@ -18,6 +18,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
+	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/google/uuid"
@@ -61,9 +62,8 @@ type Config struct {
 	// local games. Allowing players to join without authentication is generally
 	// a security hazard.
 	AuthDisabled bool
-	// DisableBlockNetworkIDHashes uses sequential block runtime IDs on the network instead of block state hashes.
-	// By default, block network IDs are hashes.
-	DisableBlockNetworkIDHashes bool
+	// BlockIDs is the mode block IDs are sent to players in. The zero value sends block state hashes.
+	BlockIDs chunk.BlockIDMode
 	// MuteEmoteChat specifies if the player emote chat should be muted or not.
 	MuteEmoteChat bool
 	// MaxPlayers is the maximum amount of players allowed to join the server at
@@ -314,15 +314,15 @@ type UserConfig struct {
 func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 	var err error
 	conf := Config{
-		Log:                         log,
-		Name:                        uc.Server.Name,
-		ResourcesRequired:           uc.Resources.Required,
-		AuthDisabled:                !uc.Server.AuthEnabled,
-		DisableBlockNetworkIDHashes: !uc.Network.BlockNetworkIDHashes,
-		MuteEmoteChat:               uc.Server.MuteEmoteChat,
-		MaxPlayers:                  uc.Players.MaxCount,
-		MaxChunkRadius:              uc.Players.MaximumChunkRadius,
-		DisableResourceBuilding:     !uc.Resources.AutoBuildPack,
+		Log:                     log,
+		Name:                    uc.Server.Name,
+		ResourcesRequired:       uc.Resources.Required,
+		AuthDisabled:            !uc.Server.AuthEnabled,
+		BlockIDs:                blockIDMode(uc.Network.BlockNetworkIDHashes),
+		MuteEmoteChat:           uc.Server.MuteEmoteChat,
+		MaxPlayers:              uc.Players.MaxCount,
+		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
+		DisableResourceBuilding: !uc.Resources.AutoBuildPack,
 	}
 	listeners, err := uc.transportListeners()
 	if err != nil {
@@ -443,3 +443,11 @@ func creative_registerCreativeItems()
 //
 //go:linkname recipe_registerVanilla github.com/df-mc/dragonfly/server/item/recipe.registerVanilla
 func recipe_registerVanilla()
+
+// blockIDMode returns the block ID mode for the BlockNetworkIDHashes user setting.
+func blockIDMode(hashes bool) chunk.BlockIDMode {
+	if hashes {
+		return chunk.HashedBlockIDs
+	}
+	return chunk.SequentialBlockIDs
+}

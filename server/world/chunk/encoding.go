@@ -157,11 +157,9 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 }
 
 // NetworkEncoding is the Encoding for sending chunks over the network. It uses varints instead of NBT.
-// The zero value uses sequential runtime IDs.
 type NetworkEncoding struct {
-	// BlockNetworkIDHashes selects block state hashes instead of sequential runtime IDs for block palettes.
-	// Biome palettes are unaffected.
-	BlockNetworkIDHashes bool
+	// BlockIDs is the mode block palettes are written in. Biome palettes are unaffected.
+	BlockIDs BlockIDMode
 }
 
 func (NetworkEncoding) network() byte { return 1 }
@@ -172,7 +170,7 @@ func (e NetworkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, pe palette
 	blockEncoding, blockPalette := pe.(BlockPaletteEncoding)
 	for _, val := range p.values {
 		if blockPalette {
-			val = blockEncoding.Blocks.NetworkID(val, e.BlockNetworkIDHashes)
+			val = blockEncoding.Blocks.NetworkID(val, e.BlockIDs)
 		}
 		_ = protocol.WriteVarint32(buf, int32(val))
 	}
@@ -197,7 +195,7 @@ func (e NetworkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize,
 		blocks[i] = uint32(temp)
 		if blockPalette {
 			var found bool
-			if blocks[i], found = blockEncoding.Blocks.RuntimeID(blocks[i], e.BlockNetworkIDHashes); !found {
+			if blocks[i], found = blockEncoding.Blocks.RuntimeID(blocks[i], e.BlockIDs); !found {
 				// Unknown network IDs decode as air.
 				blocks[i] = blockEncoding.Blocks.AirRuntimeID()
 			}

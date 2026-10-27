@@ -26,6 +26,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
@@ -527,7 +528,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 			ServerAuthoritativeBlockBreaking: true,
 		},
 		Dimensions:              srv.customDimensions,
-		UseBlockNetworkIDHashes: !srv.conf.DisableBlockNetworkIDHashes,
+		UseBlockNetworkIDHashes: srv.conf.BlockIDs == chunk.HashedBlockIDs,
 	}
 }
 
@@ -573,14 +574,14 @@ func (srv *Server) createPlayer(id uuid.UUID, conn session.Conn, conf player.Con
 	srv.pwg.Add(1)
 
 	s := session.Config{
-		Log:                         srv.conf.Log,
-		MaxChunkRadius:              srv.conf.MaxChunkRadius,
-		EmoteChatMuted:              srv.conf.MuteEmoteChat,
-		JoinMessage:                 srv.conf.JoinMessage,
-		QuitMessage:                 srv.conf.QuitMessage,
-		HandleStop:                  srv.handleSessionClose,
-		BlockRegistry:               w.BlockRegistry(),
-		DisableBlockNetworkIDHashes: srv.conf.DisableBlockNetworkIDHashes,
+		Log:            srv.conf.Log,
+		MaxChunkRadius: srv.conf.MaxChunkRadius,
+		EmoteChatMuted: srv.conf.MuteEmoteChat,
+		JoinMessage:    srv.conf.JoinMessage,
+		QuitMessage:    srv.conf.QuitMessage,
+		HandleStop:     srv.handleSessionClose,
+		BlockRegistry:  w.BlockRegistry(),
+		BlockIDs:       srv.conf.BlockIDs,
 	}.New(conn)
 
 	conf.Name = conn.IdentityData().DisplayName
