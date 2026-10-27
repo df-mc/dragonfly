@@ -62,8 +62,6 @@ type BlockRegistry interface {
 	// BlockHash returns a unique identifier of the block including the block states. The hash is internal to Dragonfly
 	// and is used for fast map lookups; it does not need to match any in-game identifiers.
 	BlockHash(b Block) uint64
-	// RuntimeIDToHash resolves a runtime ID to its network block hash.
-	RuntimeIDToHash(runtimeID uint32) (hash uint32, ok bool)
 }
 
 const (
@@ -197,6 +195,23 @@ func (br *BasicBlockRegistry) Blocks() []Block {
 		panic("BlockRegistry.Blocks called on non finalized BlockRegistry")
 	}
 	return slices.Clone(br.blocks)
+}
+
+// NetworkID returns the network ID of a registered runtime ID for the selected mode.
+func (br *BasicBlockRegistry) NetworkID(rid uint32, hashes bool) uint32 {
+	if !hashes {
+		return rid
+	}
+	hash, _ := br.RuntimeIDToHash(rid)
+	return hash
+}
+
+// RuntimeID resolves a network ID to a runtime ID for the selected mode. Unknown IDs return false.
+func (br *BasicBlockRegistry) RuntimeID(networkID uint32, hashes bool) (rid uint32, ok bool) {
+	if hashes {
+		return br.HashToRuntimeID(networkID)
+	}
+	return networkID, networkID < uint32(br.BlockCount())
 }
 
 func (br *BasicBlockRegistry) HashToRuntimeID(hash uint32) (rid uint32, ok bool) {

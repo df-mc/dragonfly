@@ -25,6 +25,10 @@ type BlockRegistry interface {
 	LiquidDisplacingBlock(rid uint32) bool
 	// LiquidBlock reports whether the runtime ID represents a liquid block.
 	LiquidBlock(rid uint32) bool
+	// NetworkID returns the network ID of a registered runtime ID. If hashes is true, it returns the block state hash.
+	NetworkID(rid uint32, hashes bool) uint32
+	// RuntimeID resolves a network ID to a runtime ID for the selected mode. Unknown IDs return false.
+	RuntimeID(networkID uint32, hashes bool) (rid uint32, ok bool)
 	// HashToRuntimeID resolves a "network block hash" to a runtime ID.
 	HashToRuntimeID(hash uint32) (rid uint32, ok bool)
 	// RuntimeIDToHash resolves a runtime ID to its "network block hash".

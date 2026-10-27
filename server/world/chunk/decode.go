@@ -7,38 +7,20 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// NetworkDecode decodes the network serialised data passed into a Chunk if successful. If not, the chunk
-// returned is nil and the error non-nil.
-// The sub chunk count passed must be that found in the LevelChunk packet.
-// NetworkDecode creates a new buffer and calls NetworkDecodeBuffer.
-//
-// The BlockRegistry passed must be finalized and must correspond to the runtime IDs used in the chunk data.
+// NetworkDecode decodes network serialised chunk data. The sub-chunk count must match the LevelChunk packet.
+// The optional hashes argument selects block state hashes; if omitted, sequential runtime IDs are used.
+// The BlockRegistry must be finalized and correspond to the registry used to encode the data.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, error) {
-	return networkDecodeBuffer(br, bytes.NewBuffer(data), count, r, NetworkEncoding)
+func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range, hashes ...bool) (*Chunk, error) {
+	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r, hashes...)
 }
 
-// NetworkHashDecode decodes network serialised chunk data whose block palette entries are canonical network block
-// hashes. The sub chunk count passed must be that found in the LevelChunk packet.
-func NetworkHashDecode(br BlockRegistry, data []byte, count int, r cube.Range) (*Chunk, error) {
-	return networkDecodeBuffer(br, bytes.NewBuffer(data), count, r, NetworkHashEncoding)
-}
-
-// NetworkDecodeBuffer decodes the network serialised data from buf passed into a Chunk if successful. If not, the chunk
-// returned is nil and the error non-nil.
-// The sub chunk count passed must be that found in the LevelChunk packet.
+// NetworkDecodeBuffer decodes network serialised chunk data from buf. The sub-chunk count must match the LevelChunk packet.
+// The optional hashes argument selects block state hashes; if omitted, sequential runtime IDs are used.
+// The BlockRegistry must be finalized and correspond to the registry used to encode the data.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
-	return networkDecodeBuffer(br, buf, count, r, NetworkEncoding)
-}
-
-// NetworkHashDecodeBuffer decodes network serialised chunk data from buf whose block palette entries are canonical
-// network block hashes. The sub chunk count passed must be that found in the LevelChunk packet.
-func NetworkHashDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range) (*Chunk, error) {
-	return networkDecodeBuffer(br, buf, count, r, NetworkHashEncoding)
-}
-
-func networkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, encoding Encoding) (*Chunk, error) {
+func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, hashes ...bool) (*Chunk, error) {
+	encoding := NetworkEncoding{BlockNetworkIDHashes: len(hashes) > 0 && hashes[0]}
 	c := New(br, r)
 	// The declared count may exceed the number of sub-chunks supported by the
 	// dimension's vertical range, so validate it before indexing c.sub.

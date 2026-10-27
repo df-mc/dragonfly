@@ -101,7 +101,7 @@ func (s *Session) subChunkEntry(offset protocol.SubChunkOffset, ind int16, col *
 		}
 	}
 
-	serialisedSubChunk := chunk.EncodeSubChunk(col.Chunk, chunk.NetworkHashEncoding, int(ind))
+	serialisedSubChunk := chunk.EncodeSubChunk(col.Chunk, chunk.NetworkEncoding{BlockNetworkIDHashes: !s.conf.DisableBlockNetworkIDHashes}, int(ind))
 
 	blockEntityBuf := bytes.NewBuffer(nil)
 	enc := nbt.NewEncoderWithEncoding(blockEntityBuf, nbt.NetworkLittleEndian)
@@ -143,7 +143,7 @@ func (s *Session) dimensionID(dim world.Dimension) int32 {
 // data that the client doesn't yet have will be sent over the network.
 func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chunk.Chunk, blockEntities map[cube.Pos]world.Block) {
 	if subChunkRequests {
-		biomes := chunk.EncodeBiomes(c, chunk.NetworkEncoding)
+		biomes := chunk.EncodeBiomes(c, chunk.NetworkEncoding{BlockNetworkIDHashes: !s.conf.DisableBlockNetworkIDHashes})
 		if hash := xxhash.Sum64(biomes); s.trackBlob(hash, biomes) {
 			s.writePacket(&packet.LevelChunk{
 				Dimension:     s.dimensionID(dim),
@@ -159,7 +159,7 @@ func (s *Session) sendBlobHashes(pos world.ChunkPos, dim world.Dimension, c *chu
 	}
 
 	var (
-		data   = chunk.Encode(c, chunk.NetworkHashEncoding)
+		data   = chunk.Encode(c, chunk.NetworkEncoding{BlockNetworkIDHashes: !s.conf.DisableBlockNetworkIDHashes})
 		count  = uint32(len(data.SubChunks))
 		blobs  = append(data.SubChunks, data.Biomes)
 		hashes = make([]uint64, len(blobs))
@@ -211,12 +211,12 @@ func (s *Session) sendNetworkChunk(pos world.ChunkPos, dim world.Dimension, c *c
 			SubChunkCount: 0,
 			Position:      protocol.ChunkPos(pos),
 			SubChunkLimit: protocol.Option(int32(c.HighestFilledSubChunk())),
-			RawPayload:    append(chunk.EncodeBiomes(c, chunk.NetworkEncoding), 0),
+			RawPayload:    append(chunk.EncodeBiomes(c, chunk.NetworkEncoding{BlockNetworkIDHashes: !s.conf.DisableBlockNetworkIDHashes}), 0),
 		})
 		return
 	}
 
-	data := chunk.Encode(c, chunk.NetworkHashEncoding)
+	data := chunk.Encode(c, chunk.NetworkEncoding{BlockNetworkIDHashes: !s.conf.DisableBlockNetworkIDHashes})
 	chunkBuf := bytes.NewBuffer(nil)
 	for _, s := range data.SubChunks {
 		_, _ = chunkBuf.Write(s)
