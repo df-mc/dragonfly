@@ -206,9 +206,9 @@ func (e networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize,
 		blocks[i] = uint32(temp)
 		if useBlockHashes {
 			var found bool
-			blocks[i], found = blockEncoding.Blocks.HashToRuntimeID(blocks[i])
-			if !found {
-				return nil, fmt.Errorf("unknown network block hash %d", uint32(temp))
+			if blocks[i], found = blockEncoding.Blocks.HashToRuntimeID(blocks[i]); !found {
+				// Like the vanilla client, a block hash missing from the registry decodes as air.
+				blocks[i] = blockEncoding.Blocks.AirRuntimeID()
 			}
 		}
 	}

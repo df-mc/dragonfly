@@ -65,3 +65,27 @@ func TestBlockHashNetworkBoundary(t *testing.T) {
 		})
 	}
 }
+
+// missingHashRegistry is a registry that knows no network block hashes.
+type missingHashRegistry struct{ world.BlockRegistry }
+
+func (missingHashRegistry) HashToRuntimeID(uint32) (uint32, bool) { return 0, false }
+
+func TestUnknownBlockHashDecodesAsAir(t *testing.T) {
+	br := world.NewBlockRegistry()
+	br.Finalize()
+
+	r := cube.Range{0, 15}
+	c := chunk.New(br, r)
+	c.SetBlock(1, 2, 3, 0, br.BlockRuntimeID(block.Stone{}))
+	data := chunk.Encode(c, chunk.NetworkHashEncoding)
+	wire := append(append([]byte(nil), data.SubChunks[0]...), data.Biomes...)
+
+	decoded, err := chunk.NetworkHashDecode(missingHashRegistry{br}, wire, 1, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := decoded.Block(1, 2, 3, 0); got != br.AirRuntimeID() {
+		t.Fatalf("unknown hash decoded as runtime ID %d, want air %d", got, br.AirRuntimeID())
+	}
+}
