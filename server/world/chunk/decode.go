@@ -7,17 +7,16 @@ import (
 	"github.com/df-mc/dragonfly/server/block/cube"
 )
 
-// NetworkDecode decodes network serialised chunk data whose block IDs are in the given mode. The sub-chunk count
-// must match the LevelChunk packet, and the BlockRegistry must be finalized and match the one used to encode it.
+// NetworkDecode decodes network serialised chunk data written with encoding e. The sub-chunk count must match the
+// LevelChunk packet, and the BlockRegistry must be finalized and match the one used to encode it.
 // noinspection GoUnusedExportedFunction
-func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range, mode BlockIDMode) (*Chunk, error) {
-	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r, mode)
+func NetworkDecode(br BlockRegistry, data []byte, count int, r cube.Range, e NetworkEncoding) (*Chunk, error) {
+	return NetworkDecodeBuffer(br, bytes.NewBuffer(data), count, r, e)
 }
 
 // NetworkDecodeBuffer decodes network serialised chunk data from buf, like NetworkDecode.
 // noinspection GoUnusedExportedFunction
-func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, mode BlockIDMode) (*Chunk, error) {
-	encoding := NetworkEncoding{BlockIDs: mode}
+func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.Range, e NetworkEncoding) (*Chunk, error) {
 	c := New(br, r)
 	// The declared count may exceed the number of sub-chunks supported by the
 	// dimension's vertical range, so validate it before indexing c.sub.
@@ -26,7 +25,7 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 	}
 	for i := 0; i < count; i++ {
 		index := uint8(i)
-		sub, err := decodeSubChunk(buf, c, &index, encoding)
+		sub, err := decodeSubChunk(buf, c, &index, e)
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +38,7 @@ func NetworkDecodeBuffer(br BlockRegistry, buf *bytes.Buffer, count int, r cube.
 	}
 	var last *PalettedStorage
 	for i := 0; i < len(c.sub); i++ {
-		b, err := decodePalettedStorage(buf, encoding, BiomePaletteEncoding)
+		b, err := decodePalettedStorage(buf, e, BiomePaletteEncoding)
 		if err != nil {
 			return nil, err
 		}

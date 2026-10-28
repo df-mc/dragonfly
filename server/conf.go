@@ -18,7 +18,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/playerdb"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/biome"
-	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/df-mc/dragonfly/server/world/generator"
 	"github.com/df-mc/dragonfly/server/world/mcdb"
 	"github.com/google/uuid"
@@ -62,8 +61,9 @@ type Config struct {
 	// local games. Allowing players to join without authentication is generally
 	// a security hazard.
 	AuthDisabled bool
-	// BlockIDs is the mode block IDs are sent to players in. The zero value sends block state hashes.
-	BlockIDs chunk.BlockIDMode
+	// BlockNetworkIDHashes sends block state hashes as block network IDs, like vanilla, instead of sequential
+	// runtime IDs. DefaultConfig enables it.
+	BlockNetworkIDHashes bool
 	// MuteEmoteChat specifies if the player emote chat should be muted or not.
 	MuteEmoteChat bool
 	// MaxPlayers is the maximum amount of players allowed to join the server at
@@ -318,7 +318,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		Name:                    uc.Server.Name,
 		ResourcesRequired:       uc.Resources.Required,
 		AuthDisabled:            !uc.Server.AuthEnabled,
-		BlockIDs:                blockIDMode(uc.Network.BlockNetworkIDHashes),
+		BlockNetworkIDHashes:    uc.Network.BlockNetworkIDHashes,
 		MuteEmoteChat:           uc.Server.MuteEmoteChat,
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
@@ -443,11 +443,3 @@ func creative_registerCreativeItems()
 //
 //go:linkname recipe_registerVanilla github.com/df-mc/dragonfly/server/item/recipe.registerVanilla
 func recipe_registerVanilla()
-
-// blockIDMode returns the block ID mode for the BlockNetworkIDHashes user setting.
-func blockIDMode(hashes bool) chunk.BlockIDMode {
-	if hashes {
-		return chunk.HashedBlockIDs
-	}
-	return chunk.SequentialBlockIDs
-}

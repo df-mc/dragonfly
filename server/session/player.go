@@ -997,6 +997,28 @@ func valueOrDefault[T comparable](v, def T) T {
 	return v
 }
 
+// blockNetworkID returns the network ID of b: its block state hash or its runtime ID, as configured.
+func (s *Session) blockNetworkID(b world.Block) uint32 {
+	rid := s.br.BlockRuntimeID(b)
+	if !s.conf.BlockNetworkIDHashes {
+		return rid
+	}
+	hash, _ := s.br.RuntimeIDToHash(rid)
+	return hash
+}
+
+// blockFromNetworkID returns the block with a network ID sent by the client. Unknown IDs return air.
+func (s *Session) blockFromNetworkID(id uint32) world.Block {
+	if s.conf.BlockNetworkIDHashes {
+		rid, ok := s.br.HashToRuntimeID(id)
+		if !ok {
+			return block.Air{}
+		}
+		id = rid
+	}
+	return s.br.BlockByRuntimeIDOrAir(id)
+}
+
 // stackFromItem converts an item.Stack to its network ItemStack representation.
 func (s *Session) stackFromItem(it item.Stack) protocol.ItemStack {
 	if it.Empty() {
@@ -1005,7 +1027,7 @@ func (s *Session) stackFromItem(it item.Stack) protocol.ItemStack {
 
 	var blockRuntimeID uint32
 	if b, ok := it.Item().(world.Block); ok {
-		blockRuntimeID = s.br.BlockNetworkID(b, s.conf.BlockIDs)
+		blockRuntimeID = s.blockNetworkID(b)
 	}
 
 	rid, meta, _ := world.ItemRuntimeID(it.Item())
@@ -1028,11 +1050,7 @@ func (s *Session) stackToItem(it protocol.ItemStack) item.Stack {
 		t = block.Air{}
 	}
 	if it.BlockRuntimeID != 0 {
-		if rid, found := s.br.RuntimeID(uint32(it.BlockRuntimeID), s.conf.BlockIDs); found {
-			if t, ok = s.br.BlockByRuntimeIDOrAir(rid).(world.Item); !ok {
-				t = block.Air{}
-			}
-		} else {
+		if t, ok = s.blockFromNetworkID(uint32(it.BlockRuntimeID)).(world.Item); !ok {
 			t = block.Air{}
 		}
 	}

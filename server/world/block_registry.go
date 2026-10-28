@@ -42,8 +42,6 @@ type BlockRegistry interface {
 	BlockByRuntimeIDOrAir(rid uint32) Block
 	// BlockRuntimeID looks up the runtime ID of a previously registered Block.
 	BlockRuntimeID(block Block) (rid uint32)
-	// BlockNetworkID returns the network ID of a previously registered Block in the given mode.
-	BlockNetworkID(block Block, mode chunk.BlockIDMode) uint32
 	// RegisterBlock registers a Block implementation for a previously registered block state.
 	RegisterBlock(block Block)
 	// RegisterBlockState registers a block state that blocks may encode to.
@@ -64,6 +62,8 @@ type BlockRegistry interface {
 	// BlockHash returns a unique identifier of the block including the block states. The hash is internal to Dragonfly
 	// and is used for fast map lookups; it does not need to match any in-game identifiers.
 	BlockHash(b Block) uint64
+	// RuntimeIDToHash resolves a runtime ID to its network block hash.
+	RuntimeIDToHash(runtimeID uint32) (hash uint32, ok bool)
 }
 
 const (
@@ -197,28 +197,6 @@ func (br *BasicBlockRegistry) Blocks() []Block {
 		panic("BlockRegistry.Blocks called on non finalized BlockRegistry")
 	}
 	return slices.Clone(br.blocks)
-}
-
-// NetworkID returns the network ID of a registered runtime ID in the given mode.
-func (br *BasicBlockRegistry) NetworkID(rid uint32, mode chunk.BlockIDMode) uint32 {
-	if mode == chunk.SequentialBlockIDs {
-		return rid
-	}
-	hash, _ := br.RuntimeIDToHash(rid)
-	return hash
-}
-
-// RuntimeID resolves a network ID in the given mode to a runtime ID. Unknown IDs return false.
-func (br *BasicBlockRegistry) RuntimeID(networkID uint32, mode chunk.BlockIDMode) (rid uint32, ok bool) {
-	if mode == chunk.SequentialBlockIDs {
-		return networkID, networkID < uint32(br.BlockCount())
-	}
-	return br.HashToRuntimeID(networkID)
-}
-
-// BlockNetworkID returns the network ID of a registered Block in the given mode.
-func (br *BasicBlockRegistry) BlockNetworkID(b Block, mode chunk.BlockIDMode) uint32 {
-	return br.NetworkID(br.BlockRuntimeID(b), mode)
 }
 
 func (br *BasicBlockRegistry) HashToRuntimeID(hash uint32) (rid uint32, ok bool) {

@@ -21,7 +21,6 @@ import (
 	"github.com/df-mc/dragonfly/server/player/hud"
 	"github.com/df-mc/dragonfly/server/player/skin"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/dragonfly/server/world/chunk"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -172,8 +171,8 @@ type Config struct {
 	HandleStop func(*world.Tx, Controllable)
 	// BlockRegistry overrides the registry used for network serialization. If nil, world.DefaultBlockRegistry is used.
 	BlockRegistry world.BlockRegistry
-	// BlockIDs is the mode block IDs are sent in. The zero value sends block state hashes.
-	BlockIDs chunk.BlockIDMode
+	// BlockNetworkIDHashes sends block state hashes as block network IDs instead of sequential runtime IDs.
+	BlockNetworkIDHashes bool
 }
 
 func (conf Config) New(conn Conn) *Session {

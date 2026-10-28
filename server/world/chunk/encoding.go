@@ -158,8 +158,8 @@ func (diskEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, e pa
 
 // NetworkEncoding is the Encoding for sending chunks over the network. It uses varints instead of NBT.
 type NetworkEncoding struct {
-	// BlockIDs is the mode block palettes are written in. Biome palettes are unaffected.
-	BlockIDs BlockIDMode
+	// BlockHashes writes block palettes as block state hashes instead of runtime IDs. Biome palettes are unaffected.
+	BlockHashes bool
 }
 
 func (NetworkEncoding) network() byte { return 1 }
@@ -168,9 +168,10 @@ func (e NetworkEncoding) encodePalette(buf *bytes.Buffer, p *Palette, pe palette
 		_ = protocol.WriteVarint32(buf, int32(p.Len()))
 	}
 	blockEncoding, blockPalette := pe.(BlockPaletteEncoding)
+	hashes := e.BlockHashes && blockPalette
 	for _, val := range p.values {
-		if blockPalette {
-			val = blockEncoding.Blocks.NetworkID(val, e.BlockIDs)
+		if hashes {
+			val, _ = blockEncoding.Blocks.RuntimeIDToHash(val)
 		}
 		_ = protocol.WriteVarint32(buf, int32(val))
 	}
@@ -187,16 +188,17 @@ func (e NetworkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize,
 	}
 
 	blockEncoding, blockPalette := pe.(BlockPaletteEncoding)
+	hashes := e.BlockHashes && blockPalette
 	blocks, temp := make([]uint32, paletteCount), int32(0)
 	for i := int32(0); i < paletteCount; i++ {
 		if err := protocol.Varint32(buf, &temp); err != nil {
 			return nil, fmt.Errorf("error decoding palette entry: %w", err)
 		}
 		blocks[i] = uint32(temp)
-		if blockPalette {
+		if hashes {
 			var found bool
-			if blocks[i], found = blockEncoding.Blocks.RuntimeID(blocks[i], e.BlockIDs); !found {
-				// Unknown network IDs decode as air.
+			if blocks[i], found = blockEncoding.Blocks.HashToRuntimeID(blocks[i]); !found {
+				// Like the vanilla client, an unknown block hash decodes as air.
 				blocks[i] = blockEncoding.Blocks.AirRuntimeID()
 			}
 		}
