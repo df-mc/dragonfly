@@ -30,11 +30,17 @@ const (
 	TimeFull          = 24000
 )
 
+func spectating(s Sleeper) bool {
+	g, ok := s.(interface{ GameMode() GameMode })
+	return ok && g.GameMode() == GameModeSpectator
+}
+
 // tryAdvanceDay attempts to advance the day of the world, by first ensuring that all sleepers are sleeping, and then
 // updating the time of day.
 func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 	sleepers := tx.Sleepers()
 	time := tx.w.Time() % TimeFull
+	var sleeping bool
 
 	for s := range sleepers {
 		if !tx.Thundering() {
@@ -46,10 +52,15 @@ func (ticker) tryAdvanceDay(tx *Tx, timeCycle bool) {
 			}
 		}
 
-		if _, ok := s.Sleeping(); !ok {
+		if _, ok := s.Sleeping(); ok {
+			sleeping = true
+		} else if !spectating(s) {
 			// We can't advance the time - not everyone is sleeping.
 			return
 		}
+	}
+	if !sleeping {
+		return
 	}
 
 	for s := range sleepers {
