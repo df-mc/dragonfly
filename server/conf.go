@@ -61,6 +61,9 @@ type Config struct {
 	// local games. Allowing players to join without authentication is generally
 	// a security hazard.
 	AuthDisabled bool
+	// BlockNetworkIDHashes sends block state hashes as block network IDs, like vanilla, instead of sequential
+	// runtime IDs. DefaultConfig enables it.
+	BlockNetworkIDHashes bool
 	// MuteEmoteChat specifies if the player emote chat should be muted or not.
 	MuteEmoteChat bool
 	// MaxPlayers is the maximum amount of players allowed to join the server at
@@ -224,6 +227,8 @@ type UserConfig struct {
 		// Address is the address on which the server should listen. Players may
 		// connect to this address in order to join.
 		Address string
+		// BlockNetworkIDHashes controls whether block network IDs are block state hashes instead of sequential IDs.
+		BlockNetworkIDHashes bool
 		// Transport lists the network transports listened on, "raknet" and/or
 		// "nethernet". If empty, only RakNet is used. Custom transports are added
 		// programmatically through Config.Listeners.
@@ -313,6 +318,7 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		Name:                    uc.Server.Name,
 		ResourcesRequired:       uc.Resources.Required,
 		AuthDisabled:            !uc.Server.AuthEnabled,
+		BlockNetworkIDHashes:    uc.Network.BlockNetworkIDHashes,
 		MuteEmoteChat:           uc.Server.MuteEmoteChat,
 		MaxPlayers:              uc.Players.MaxCount,
 		MaxChunkRadius:          uc.Players.MaximumChunkRadius,
@@ -410,6 +416,7 @@ func loadGenerator(dim world.Dimension) world.Generator {
 func DefaultConfig() UserConfig {
 	c := UserConfig{}
 	c.Network.Address = ":19132"
+	c.Network.BlockNetworkIDHashes = true
 	c.Network.Transport = []string{"raknet"}
 	c.Network.NetherNet.KeyFile = "keys/server_identity_key.pem"
 	c.Network.NetherNet.Domain = "self"
