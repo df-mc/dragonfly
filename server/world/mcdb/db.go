@@ -174,6 +174,13 @@ func (db *DB) column(k dbKey) (*chunk.Column, error) {
 	if err != nil {
 		return nil, fmt.Errorf("decode chunk data: %w", err)
 	}
+	legacy, err := db.legacyStates(k)
+	if err != nil {
+		return nil, fmt.Errorf("read legacy states: %w", err)
+	}
+	if legacy {
+		col.Chunk.MarkLegacyStates()
+	}
 	col.Entities, err = db.entities(k)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		// Not all chunks need to have entities, so an ErrNotFound is fine here.
@@ -189,6 +196,18 @@ func (db *DB) column(k dbKey) (*chunk.Column, error) {
 		return nil, fmt.Errorf("read scheduled updates: %w", err)
 	}
 	return col, nil
+}
+
+// legacyStates reports whether the chunk was saved with keyLegacyStates present.
+func (db *DB) legacyStates(k dbKey) (bool, error) {
+	_, err := db.ldb.Get(k.Sum(keyLegacyStates), nil)
+	if errors.Is(err, leveldb.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (db *DB) version(k dbKey) (byte, error) {
@@ -348,13 +367,14 @@ func (db *DB) StoreColumn(pos world.ChunkPos, dim world.Dimension, col *chunk.Co
 
 func (db *DB) storeColumn(k dbKey, col *chunk.Column) error {
 	data := chunk.Encode(col.Chunk, chunk.DiskEncoding)
-	n := 7 + len(data.SubChunks) + len(col.Entities)
+	n := 8 + len(data.SubChunks) + len(col.Entities)
 	batch := leveldb.MakeBatch(n)
 
 	db.storeVersion(batch, k, chunkVersion)
 	db.storeBiomes(batch, k, data.Biomes)
 	db.storeSubChunks(batch, k, data.SubChunks, col.Chunk.Range())
 	db.storeFinalisation(batch, k, finalisationPopulated)
+	db.storeLegacyStates(batch, k, col.Chunk.LegacyStates())
 	db.storeEntities(batch, k, col.Entities)
 	db.storeBlockEntities(batch, k, col.BlockEntities)
 	db.storeScheduledUpdates(batch, k, col.Tick, col.ScheduledBlocks)
@@ -382,6 +402,17 @@ func (db *DB) storeFinalisation(batch *leveldb.Batch, k dbKey, finalisation uint
 	p := make([]byte, 4)
 	binary.LittleEndian.PutUint32(p, finalisation)
 	batch.Put(k.Sum(keyFinalisation), p)
+}
+
+// storeLegacyStates keeps keyLegacyStates while the chunk's derived states are still pending and removes
+// it once they were recalculated, so a chunk saved with defaulted states is not mistaken for an upgraded one.
+func (db *DB) storeLegacyStates(batch *leveldb.Batch, k dbKey, legacy bool) {
+	key := k.Sum(keyLegacyStates)
+	if !legacy {
+		batch.Delete(key)
+		return
+	}
+	batch.Put(key, []byte{1})
 }
 
 func (db *DB) storeEntities(batch *leveldb.Batch, k dbKey, entities []chunk.Entity) {

@@ -97,6 +97,10 @@ func (a *lightArea) propagate(queue *lightQueue) {
 		return
 	}
 	a.setLight(n.pos, n.lt, n.level)
+	if n.level == 1 {
+		// Every neighbour attenuates light by at least one, so none can be lit further.
+		return
+	}
 
 	x, y, z := n.pos[0], n.pos[1], n.pos[2]
 	a.propagateNeighbour(queue, n.lt, n.level, x+1, y, z)
