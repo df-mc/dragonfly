@@ -32,7 +32,7 @@ func (f FireCharge) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *w
 			return true
 		}
 
-		flame := fire()
+		flame := fire(s, tx)
 		tx.SetBlock(s, flame, nil)
 		tx.ScheduleBlockUpdate(s, flame, time.Duration(30+rand.IntN(10))*time.Second/20)
 		return true

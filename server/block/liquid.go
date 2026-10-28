@@ -168,6 +168,11 @@ func flowInto(b world.Liquid, src, pos cube.Pos, tx *world.Tx, falling bool) boo
 		if _, air := existing.(Air); !air {
 			tx.SetBlock(pos, nil, nil)
 			b.LiquidRemoveBlock(pos, tx, existing)
+			// Liquid washing a block away breaks it, so its break handler runs
+			// to update the blocks it leaves behind, as for an explosion.
+			if breakable, ok := existing.(Breakable); ok && breakable.BreakInfo().BreakHandler != nil {
+				breakable.BreakInfo().BreakHandler(pos, tx, nil)
+			}
 		}
 	}
 	tx.SetLiquid(pos, b.WithDepth(newDepth, falling))

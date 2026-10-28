@@ -19,7 +19,9 @@ type Chunk struct {
 	// recalculateHeightMap is true if the chunk's height map should be recalculated on the next call to the HeightMap
 	// function.
 	recalculateHeightMap bool
-	// legacyStates is true if the Chunk was decoded holding a block entry older than CurrentBlockVersion.
+	// legacyStates is true if the Chunk was decoded holding a block entry older
+	// than CurrentBlockVersion or lacking properties that were filled in while
+	// decoding it.
 	legacyStates bool
 	// heightMap is the height map of the chunk.
 	heightMap HeightMap
@@ -91,8 +93,9 @@ func (chunk *Chunk) Equals(c *Chunk) bool {
 	return true
 }
 
-// LegacyStates returns true if the Chunk holds block entries older than CurrentBlockVersion, whose
-// states derived from surrounding blocks were defaulted rather than stored.
+// LegacyStates returns true if the Chunk holds block entries older than
+// CurrentBlockVersion or lacking properties, whose states derived from
+// surrounding blocks were defaulted rather than stored.
 func (chunk *Chunk) LegacyStates() bool {
 	return chunk.legacyStates
 }

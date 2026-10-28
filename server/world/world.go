@@ -332,6 +332,10 @@ type SetOpts struct {
 	// around the changed block. This is used by the redstone engine while
 	// applying its own block-state updates to avoid duplicate same-tick work.
 	DisableRedstoneUpdates bool
+	// KeepRedstonePower makes SetBlock keep the power the redstone engine
+	// holds for the position, for a change that does not affect the power the
+	// block receives or emits, such as the shape of redstone wire.
+	KeepRedstonePower bool
 }
 
 // setBlock writes a block to the position passed. If a chunk is not yet loaded
@@ -426,7 +430,7 @@ func (tx *Tx) setBlock(pos cube.Pos, b Block, opts *SetOpts) {
 		}
 	}
 
-	if redstoneAfterRelevant || (needOldBlock && isRedstoneRelevant(oldBlock)) {
+	if !opts.KeepRedstonePower && (redstoneAfterRelevant || (needOldBlock && isRedstoneRelevant(oldBlock))) {
 		w.redstone.forget(pos)
 	}
 

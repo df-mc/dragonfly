@@ -154,7 +154,7 @@ func (s Stairs) SideClosed(pos, side cube.Pos, tx *world.Tx) bool {
 }
 
 // CanRedstoneWireStepDown ...
-func (Stairs) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+func (Stairs) CanRedstoneWireStepDown(cube.Pos, cube.Pos, world.BlockSource) bool {
 	return false
 }
 
