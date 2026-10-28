@@ -94,5 +94,8 @@ type GoatHorn struct {
 // blaze shoots a fireball.
 type FireCharge struct{ sound }
 
+// WindChargeBurst is a sound played when a wind charge bursts on impact.
+type WindChargeBurst struct{ sound }
+
 // Totem is a sound played when a player uses a totem.
 type Totem struct{ sound }
