@@ -229,6 +229,7 @@ type UserConfig struct {
 		// programmatically through Config.Listeners.
 		Transport []string
 		// NetherNet holds settings for the NetherNet HTTP signaling listener.
+		// See NetherNetConfig for how clients find it and how to expose it.
 		NetherNet struct {
 			// Address is the TCP address used for NetherNet HTTP signaling. If
 			// empty, Network.Address is used. The listener serves plaintext HTTP;
