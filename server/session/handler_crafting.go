@@ -15,14 +15,13 @@ import (
 // handleCraft handles the CraftRecipe request action.
 func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
-	if !ok {
-		// Try dynamic recipes if no static recipe matches
+	if _, multi := craft.(recipe.Multi); !ok || multi {
+		// Multi recipes have their behaviour hardcoded in the client and hold no inputs or outputs of their own, so
+		// their output has to be calculated from the items in the crafting grid like that of a dynamic recipe.
 		return h.tryDynamicCraft(s, tx, int(a.NumberOfCrafts))
 	}
-	_, shaped := craft.(recipe.Shaped)
-	_, shapeless := craft.(recipe.Shapeless)
-	if !shaped && !shapeless {
-		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+	if !craftable(craft) {
+		return fmt.Errorf("recipe with network id %v is not a crafting recipe", a.RecipeNetworkID)
 	}
 	if craft.Block() != "crafting_table" {
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
@@ -32,7 +31,13 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 	if timesCrafted < 1 {
 		return fmt.Errorf("times crafted must be at least 1")
 	}
+	if _, ok := craft.(recipe.UserDataShapeless); ok && timesCrafted > 1 {
+		// The output of these recipes holds the user data of one specific item, so crafting several at once would
+		// duplicate the user data of the first item crafted from.
+		return fmt.Errorf("recipe %v: recipes keeping user data can only be crafted one at a time", a.RecipeNetworkID)
+	}
 
+	var userData item.Stack
 	size := s.craftingSize()
 	offset := s.craftingOffset()
 	consumed := make([]bool, size)
@@ -53,6 +58,10 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 				continue
 			}
 			processed, consumed[slot-offset] = true, true
+			if _, ok := has.Item().(world.NBTer); ok && userData.Empty() {
+				// The item crafted from is the one holding user data, such as the shulker box of a dyeing recipe.
+				userData = has
+			}
 			st := has.Grow(-expected.Count() * timesCrafted)
 			h.setItemInSlot(protocol.StackRequestSlotInfo{
 				Container: protocol.FullContainerName{ContainerID: protocol.ContainerCraftingInput},
@@ -64,20 +73,19 @@ func (h *ItemStackRequestHandler) handleCraft(a *protocol.CraftRecipeStackReques
 			return fmt.Errorf("recipe %v: could not consume expected item: %v", a.RecipeNetworkID, expected)
 		}
 	}
-	return h.createResults(s, tx, repeatStacks(craft.Output(), timesCrafted)...)
+	return h.createResults(s, tx, repeatStacks(outputOf(craft, userData), timesCrafted)...)
 }
 
 // handleAutoCraft handles the AutoCraftRecipe request action.
 func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeStackRequestAction, s *Session, tx *world.Tx) error {
 	craft, ok := s.recipes[a.RecipeNetworkID]
-	if !ok {
-		// Try dynamic recipes if no static recipe matches
+	if _, multi := craft.(recipe.Multi); !ok || multi {
+		// Multi recipes have their behaviour hardcoded in the client and hold no inputs or outputs of their own, so
+		// their output has to be calculated from the items in the crafting grid like that of a dynamic recipe.
 		return h.tryDynamicCraft(s, tx, int(a.NumberOfCrafts))
 	}
-	_, shaped := craft.(recipe.Shaped)
-	_, shapeless := craft.(recipe.Shapeless)
-	if !shaped && !shapeless {
-		return fmt.Errorf("recipe with network id %v is not a shaped or shapeless recipe", a.RecipeNetworkID)
+	if !craftable(craft) {
+		return fmt.Errorf("recipe with network id %v is not a crafting recipe", a.RecipeNetworkID)
 	}
 	if craft.Block() != "crafting_table" {
 		return fmt.Errorf("recipe with network id %v is not a crafting table recipe", a.RecipeNetworkID)
@@ -86,6 +94,11 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 	timesCrafted := int(a.NumberOfCrafts)
 	if timesCrafted < 1 {
 		return fmt.Errorf("times crafted must be at least 1")
+	}
+	if _, ok := craft.(recipe.UserDataShapeless); ok && timesCrafted > 1 {
+		// The output of these recipes holds the user data of one specific item, so crafting several at once would
+		// duplicate the user data of the first item crafted from.
+		return fmt.Errorf("recipe %v: recipes keeping user data can only be crafted one at a time", a.RecipeNetworkID)
 	}
 
 	flattenedInputs := make([]recipe.Item, 0, len(craft.Input()))
@@ -104,6 +117,7 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		flattenedInputs = append(flattenedInputs, i)
 	}
 
+	var userData item.Stack
 	for _, expected := range flattenedInputs {
 		remaining := expected.Count() * timesCrafted
 
@@ -127,6 +141,9 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 				}
 				remaining -= removal
 
+				if _, ok := has.Item().(world.NBTer); ok && userData.Empty() {
+					userData = has
+				}
 				has = has.Grow(-removal)
 				h.setItemInSlot(protocol.StackRequestSlotInfo{
 					Container: protocol.FullContainerName{ContainerID: id},
@@ -147,7 +164,38 @@ func (h *ItemStackRequestHandler) handleAutoCraft(a *protocol.AutoCraftRecipeSta
 		}
 	}
 
-	return h.createResults(s, tx, repeatStacks(craft.Output(), timesCrafted)...)
+	return h.createResults(s, tx, repeatStacks(outputOf(craft, userData), timesCrafted)...)
+}
+
+// craftable returns true if the recipe passed can be crafted in a crafting grid.
+func craftable(craft recipe.Recipe) bool {
+	switch craft.(type) {
+	case recipe.Shaped, recipe.Shapeless, recipe.UserDataShapeless:
+		return true
+	}
+	return false
+}
+
+// outputOf returns the output of the recipe passed.
+func outputOf(craft recipe.Recipe, from item.Stack) []item.Stack {
+	output := craft.Output()
+	if _, ok := craft.(recipe.UserDataShapeless); !ok {
+		return output
+	}
+	data, ok := from.Item().(world.NBTer)
+	if !ok {
+		return output
+	}
+	stacks := make([]item.Stack, 0, len(output))
+	for _, st := range output {
+		if nbter, ok := st.Item().(world.NBTer); ok {
+			if decoded, ok := nbter.DecodeNBT(data.EncodeNBT()).(world.Item); ok {
+				st = st.WithItem(decoded)
+			}
+		}
+		stacks = append(stacks, st)
+	}
+	return stacks
 }
 
 // handleCreativeCraft handles the CreativeCraft request action.
