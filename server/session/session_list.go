@@ -1,7 +1,10 @@
 package session
 
 import (
+	"image/color"
 	"slices"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/df-mc/dragonfly/server/internal/sliceutil"
@@ -104,9 +107,10 @@ func (l *sessionList) unsendSessionFrom(s, from *Session) {
 	})
 }
 
-// skinToProtocol converts a skin to its protocol representation.
+// skinToProtocol converts a skin to its protocol representation. Persona pieces, tints and animation data are
+// carried through unchanged, so receiving clients can build persona skins.
 func skinToProtocol(s skin.Skin) protocol.Skin {
-	var animations []protocol.SkinAnimation
+	animations := make([]protocol.SkinAnimation, 0, len(s.Animations))
 	for _, animation := range s.Animations {
 		protocolAnim := protocol.SkinAnimation{
 			ImageWidth:  uint32(animation.Bounds().Max.X),
@@ -126,31 +130,97 @@ func skinToProtocol(s skin.Skin) protocol.Skin {
 		animations = append(animations, protocolAnim)
 	}
 
+	pieces := make([]protocol.PersonaPiece, 0, len(s.PersonaPieces))
+	for _, piece := range s.PersonaPieces {
+		packID, err := uuid.Parse(piece.PackID)
+		if err != nil {
+			// A malformed pack ID is not worth dropping the whole piece over: the client keys the piece off
+			// PieceID, and a nil pack ID is what it receives for a piece with no pack anyway.
+			packID = uuid.Nil
+		}
+		pieces = append(pieces, protocol.PersonaPiece{
+			PieceID:   piece.PieceID,
+			PieceType: personaPieceType(piece.PieceType),
+			PackID:    packID,
+			Default:   piece.Default,
+			ProductID: piece.ProductID,
+		})
+	}
+
+	tints := make([]protocol.PersonaPieceTintColour, 0, len(s.PieceTintColours))
+	for _, tint := range s.PieceTintColours {
+		t := protocol.PersonaPieceTintColour{PieceType: tint.PieceType}
+		for i, colour := range tint.Colours {
+			t.Colours[i] = parseARGB(colour)
+		}
+		tints = append(tints, t)
+	}
+
 	fullID := s.FullID
 	if fullID == "" {
 		fullID = uuid.New().String()
+	}
+	skinID := s.SkinID
+	if skinID == "" {
+		skinID = fullID
 	}
 	model := s.Model
 	if len(model) == 0 {
 		model = []byte("{}")
 	}
-	return protocol.Skin{
-		PlayFabID:                 s.PlayFabID,
-		SkinID:                    uuid.New().String(),
-		SkinResourcePatch:         s.ModelConfig.Encode(),
-		SkinImageWidth:            uint32(s.Bounds().Max.X),
-		SkinImageHeight:           uint32(s.Bounds().Max.Y),
-		SkinData:                  s.Pix,
-		CapeImageWidth:            uint32(s.Cape.Bounds().Max.X),
-		CapeImageHeight:           uint32(s.Cape.Bounds().Max.Y),
-		CapeData:                  s.Cape.Pix,
-		SkinGeometry:              model,
-		PersonaSkin:               s.Persona,
-		CapeID:                    uuid.New().String(),
-		FullID:                    fullID,
-		Animations:                animations,
-		Trusted:                   true,
-		OverrideAppearance:        true,
-		GeometryDataEngineVersion: []byte(protocol.CurrentVersion),
+	geometryVersion := s.GeometryVersion
+	if geometryVersion == "" {
+		geometryVersion = protocol.CurrentVersion
 	}
+	return protocol.Skin{
+		PlayFabID:                s.PlayFabID,
+		SkinID:                   skinID,
+		SkinResourcePatch:        s.ModelConfig.Encode(),
+		SkinImageWidth:           uint32(s.Bounds().Max.X),
+		SkinImageHeight:          uint32(s.Bounds().Max.Y),
+		SkinData:                 s.Pix,
+		CapeImageWidth:           uint32(s.Cape.Bounds().Max.X),
+		CapeImageHeight:          uint32(s.Cape.Bounds().Max.Y),
+		CapeData:                 s.Cape.Pix,
+		SkinGeometry:             model,
+		AnimationData:            []byte(s.AnimationData),
+		ArmSize:                  armSizeToProtocol(s.ArmSize),
+		SkinColour:               parseARGB(s.SkinColour),
+		PremiumSkin:              s.Premium,
+		PersonaSkin:              s.Persona,
+		PersonaCapeOnClassicSkin: s.CapeOnClassic,
+		PrimaryUser:              s.PrimaryUser,
+		PersonaPieces:            pieces,
+		PieceTintColours:         tints,
+		CapeID:                   s.CapeID,
+		FullID:                   fullID,
+		Animations:               animations,
+		Trusted:                  true,
+		// OverrideAppearance always true: this tells the receiving client to use the skin data sent
+		// here rather than falling back to any appearance it might otherwise guess for the player.
+		OverrideAppearance:        true,
+		GeometryDataEngineVersion: []byte(geometryVersion),
+	}
+}
+
+// parseARGB reads a colour written as hex with a leading '#', as both login.ClientData.SkinColour and the
+// persona piece tints use. Anything unparsable becomes a fully transparent zero colour, which is what an
+// unused tint slot ("#0") means anyway.
+func parseARGB(s string) color.RGBA {
+	v, err := strconv.ParseUint(strings.TrimPrefix(s, "#"), 16, 32)
+	if err != nil {
+		return color.RGBA{}
+	}
+	return color.RGBA{A: uint8(v >> 24), R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v)}
+}
+
+// armSizeToProtocol maps the real client's ArmSize string (login.ClientData.ArmSize, "wide" or
+// "slim") to the protocol.ArmSize* constant a re-broadcast skin packet needs. Defaults to
+// ArmSizeWide (the more common/vanilla-default value) for anything else, including an empty
+// string from an older client that never sent one, rather than silently defaulting to slim.
+func armSizeToProtocol(armSize string) uint8 {
+	if armSize == "slim" {
+		return protocol.ArmSizeSlim
+	}
+	return protocol.ArmSizeWide
 }
