@@ -71,6 +71,10 @@ type Config struct {
 	// be added to the World.
 	Entities EntityRegistry
 
+	// SoundHandles hands out the handles of sounds played in the World. Worlds
+	// sharing it never use the same handle. If left nil, the World uses its own.
+	SoundHandles *SoundHandles
+
 	// Blocks is the BlockRegistry used by the World.
 	// If left nil, DefaultBlockRegistry is used. For a non-default registry,
 	// use NewBlockRegistry(), register blocks/states, and call Finalize().
@@ -122,6 +126,9 @@ func (conf Config) New() *World {
 	}
 	if conf.Blocks == nil {
 		conf.Blocks = DefaultBlockRegistry
+	}
+	if conf.SoundHandles == nil {
+		conf.SoundHandles = &SoundHandles{}
 	}
 
 	// Initialize the passed block registry and also initialize the default block registry which
