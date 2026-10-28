@@ -17,7 +17,7 @@ func (WindsweptSavanna) Rainfall() float64 {
 
 // Depth ...
 func (WindsweptSavanna) Depth() float64 {
-	return 0.363
+	return 0.3625
 }
 
 // Scale ...

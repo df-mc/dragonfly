@@ -22,7 +22,7 @@ func (ShatteredSavannaPlateau) Depth() float64 {
 
 // Scale ...
 func (ShatteredSavannaPlateau) Scale() float64 {
-	return 1.212
+	return 1.2125
 }
 
 // WaterColour ...

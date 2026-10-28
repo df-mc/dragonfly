@@ -285,6 +285,18 @@ func (b Pumpkin) WithFacing(facing cube.Direction) world.Block {
 }
 
 // FacingDirection returns the horizontal direction the block faces.
+func (b ShelfMushroom) FacingDirection() cube.Direction {
+	return b.Facing
+}
+
+// WithFacing returns a copy of the block with its facing set to facing. It does not update any
+// other blocks that the block may be part of, such as the second half of a bed or door.
+func (b ShelfMushroom) WithFacing(facing cube.Direction) world.Block {
+	b.Facing = facing
+	return b
+}
+
+// FacingDirection returns the horizontal direction the block faces.
 func (b Smoker) FacingDirection() cube.Direction {
 	return b.Facing
 }
@@ -316,6 +328,18 @@ func (b Stonecutter) FacingDirection() cube.Direction {
 // WithFacing returns a copy of the block with its facing set to facing. It does not update any
 // other blocks that the block may be part of, such as the second half of a bed or door.
 func (b Stonecutter) WithFacing(facing cube.Direction) world.Block {
+	b.Facing = facing
+	return b
+}
+
+// FacingDirection returns the horizontal direction the block faces.
+func (b StrawBed) FacingDirection() cube.Direction {
+	return b.Facing
+}
+
+// WithFacing returns a copy of the block with its facing set to facing. It does not update any
+// other blocks that the block may be part of, such as the second half of a bed or door.
+func (b StrawBed) WithFacing(facing cube.Direction) world.Block {
 	b.Facing = facing
 	return b
 }

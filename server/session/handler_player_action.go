@@ -48,7 +48,7 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		// TODO: Properly utilize these actions.
 	case protocol.PlayerActionStopItemUseOn:
 		c.ReleaseItem()
-	case protocol.PlayerActionStartBuildingBlock:
+	case protocol.PlayerActionInteractWithBlock:
 		// Don't do anything for this action.
 	case protocol.PlayerActionCreativePlayerDestroyBlock:
 		// Don't do anything for this action.

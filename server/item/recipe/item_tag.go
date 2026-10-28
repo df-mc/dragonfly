@@ -3,6 +3,7 @@ package recipe
 import (
 	_ "embed"
 	"encoding/json"
+	"slices"
 )
 
 var (
@@ -51,10 +52,5 @@ func (i ItemTag) Tag() string {
 
 // Contains returns true if the item tag contains the item with the name passed.
 func (i ItemTag) Contains(name string) bool {
-	for _, item := range i.items {
-		if item == name {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(i.items, name)
 }

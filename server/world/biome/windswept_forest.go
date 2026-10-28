@@ -32,7 +32,7 @@ func (WindsweptForest) WaterColour() color.RGBA {
 
 // Tags ...
 func (WindsweptForest) Tags() []string {
-	return []string{"animal", "extreme_hills", "forest", "monster", "mountain", "overworld", "spawns_cold_variant_farm_animals"}
+	return []string{"animal", "extreme_hills", "forest", "monster", "mountain", "overworld", "spawns_cold_variant_farm_animals", "has_structure_abandoned_camp"}
 }
 
 // String ...

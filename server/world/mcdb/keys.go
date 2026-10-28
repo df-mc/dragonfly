@@ -35,6 +35,10 @@ const (
 	// keyChecksum holds a list of checksums of some sort. It's not clear of what data this checksum is composed or what
 	// these checksums are used for.
 	keyChecksums = ';' // 3b
+	// keyLegacyStates marks a chunk saved while its block states derived from surrounding blocks were still
+	// the defaults of an upgrade, so that they are recalculated when it is next loaded. It lies outside the
+	// range of tags vanilla writes.
+	keyLegacyStates = '|' // 7c
 
 	keyEntityIdentifiers = "digp"
 
