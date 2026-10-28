@@ -347,6 +347,24 @@ func (queue *scheduledTickQueue) schedule(br BlockRegistry, pos cube.Pos, b Bloc
 	queue.ticks = append(queue.ticks, scheduledTick{pos: pos, t: resTick, b: b, bhash: index.hash})
 }
 
+// retarget moves the ticks scheduled at pos for from over to to, for a block whose state changed
+// without a block update, so that they still run.
+func (queue *scheduledTickQueue) retarget(br BlockRegistry, pos cube.Pos, from, to Block) {
+	old := scheduledTickIndex{pos: pos, hash: br.BlockHash(from)}
+	furthest, ok := queue.furthestTicks[old]
+	if !ok {
+		return
+	}
+	index := scheduledTickIndex{pos: pos, hash: br.BlockHash(to)}
+	for i, t := range queue.ticks {
+		if t.pos == pos && t.bhash == old.hash {
+			queue.ticks[i].b, queue.ticks[i].bhash = to, index.hash
+		}
+	}
+	delete(queue.furthestTicks, old)
+	queue.furthestTicks[index] = max(queue.furthestTicks[index], furthest)
+}
+
 // fromChunk returns all scheduled ticks positioned within a ChunkPos.
 func (queue *scheduledTickQueue) fromChunk(pos ChunkPos) []scheduledTick {
 	m := make([]scheduledTick, 0, 8)

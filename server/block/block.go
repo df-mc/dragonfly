@@ -67,7 +67,7 @@ type NonSuffocating interface {
 type RedstoneWireStepDowner interface {
 	// CanRedstoneWireStepDown returns whether redstone wire may provide power while travelling down the block at
 	// pos from the wire position passed.
-	CanRedstoneWireStepDown(pos, from cube.Pos, tx *world.Tx) bool
+	CanRedstoneWireStepDown(pos, from cube.Pos, src world.BlockSource) bool
 }
 
 // Replaceable represents a block that may be replaced by another block automatically. An example is grass,

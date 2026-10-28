@@ -13,6 +13,10 @@ type BlockRegistry interface {
 	RuntimeIDToState(runtimeID uint32) (name string, properties map[string]any, found bool)
 	// StateToRuntimeID resolves a (name, properties) state representation to a runtime ID.
 	StateToRuntimeID(name string, properties map[string]any) (runtimeID uint32, found bool)
+	// DefaultProperties returns the properties of the default state of the
+	// block with the name passed, which are used to fill in properties that a
+	// stored state lacks. The map returned must not be modified.
+	DefaultProperties(name string) (properties map[string]any, found bool)
 	// FilteringBlock returns the light filtering value for the runtime ID.
 	FilteringBlock(rid uint32) uint8
 	// LightBlock returns the light emission value for the runtime ID.

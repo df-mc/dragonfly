@@ -17,7 +17,7 @@ func (g Glowstone) Instrument() sound.Instrument {
 }
 
 // CanRedstoneWireStepDown keeps dust from stepping down over glowstone despite its solid top face.
-func (Glowstone) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+func (Glowstone) CanRedstoneWireStepDown(cube.Pos, cube.Pos, world.BlockSource) bool {
 	return false
 }
 
