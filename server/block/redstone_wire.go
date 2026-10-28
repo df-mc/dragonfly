@@ -31,7 +31,13 @@ func (r RedstoneWire) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx 
 	}
 	r.Connections = redstoneWireConnections(pos, loadedSource{tx: tx})
 	place(tx, pos, r, user, ctx)
-	return placed(ctx)
+	if !placed(ctx) {
+		return false
+	}
+	// Wire one block up or down beside this wire connects to it without
+	// neighbouring it, so it does not get a neighbour update from this wire.
+	updateDiagonalRedstoneWires(pos, tx)
+	return true
 }
 
 // RedstonePower returns the wire's current signal strength from connected faces.
@@ -92,11 +98,10 @@ func (r RedstoneWire) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *wo
 		breakBlock(r, pos, tx)
 		return
 	}
-	r.updateConnections(pos, tx)
-	if changedNeighbour == pos {
-		// Wire one block up or down beside this wire connects to it without
-		// neighbouring it, so it is not updated by the wire being placed here
-		// otherwise.
+	if r.updateConnections(pos, tx) && changedNeighbour == pos {
+		// Wire set without its connections, such as by SetBlock, also links to
+		// wire diagonal to it, which gets no neighbour update from it. A power
+		// change leaves the connections as they are and skips this.
 		updateDiagonalRedstoneWires(pos, tx)
 	}
 }
@@ -108,14 +113,18 @@ func (r RedstoneWire) DeriveState(pos cube.Pos, src world.BlockSource) world.Blo
 }
 
 // updateConnections recalculates the connections of the wire at pos and
-// writes the wire if they changed. Only the shape of the wire changes, which
-// affects neither its neighbours nor the power it carries, so no updates
-// follow the write and the power the redstone engine holds for it is kept.
-func (r RedstoneWire) updateConnections(pos cube.Pos, tx *world.Tx) {
-	if connections := redstoneWireConnections(pos, loadedSource{tx: tx}); connections != r.Connections {
-		r.Connections = connections
-		tx.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true, KeepRedstonePower: true})
+// writes the wire if they changed, returning true if it did. Only the shape of
+// the wire changes, which affects neither its neighbours nor the power it
+// carries, so no updates follow the write and the power the redstone engine
+// holds for it is kept.
+func (r RedstoneWire) updateConnections(pos cube.Pos, tx *world.Tx) bool {
+	connections := redstoneWireConnections(pos, loadedSource{tx: tx})
+	if connections == r.Connections {
+		return false
 	}
+	r.Connections = connections
+	tx.SetBlock(pos, r, &world.SetOpts{DisableBlockUpdates: true, DisableRedstoneUpdates: true, KeepRedstonePower: true})
+	return true
 }
 
 func (RedstoneWire) HasLiquidDrops() bool {

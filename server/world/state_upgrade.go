@@ -60,6 +60,8 @@ func (w *World) deriveChunkStates(pos ChunkPos, c *Column) {
 		// neighbour updates of a state that was only ever wrong in memory.
 		c.SetBlock(uint8(f.pos[0]), int16(f.pos[1]), uint8(f.pos[2]), 0, w.conf.Blocks.BlockRuntimeID(derived))
 		c.modified = true
+		// Saved ticks name the state the block was loaded with, so they follow it to its derived state.
+		w.scheduledUpdates.retarget(w.conf.Blocks, f.pos, Block(f.b), derived)
 
 		// A chunk whose neighbours arrived after it was sent is upgraded while viewers already hold
 		// the state it was loaded with, so they are told about the block themselves.
