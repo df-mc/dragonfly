@@ -150,10 +150,17 @@ type MusicDiscPlay struct {
 
 	// DiscType is the disc type of the music disc.
 	DiscType DiscType
+	// Handle identifies the music while it plays, so that MusicDiscEnd can stop it.
+	Handle uint64
 }
 
 // MusicDiscEnd is a sound played when a music disc has stopped playing in a jukebox.
-type MusicDiscEnd struct{ sound }
+type MusicDiscEnd struct {
+	sound
+
+	// Handle is the Handle of the MusicDiscPlay sound that is stopped.
+	Handle uint64
+}
 
 // ItemAdd is a sound played when an item is added to an item frame or campfire.
 type ItemAdd struct{ sound }
