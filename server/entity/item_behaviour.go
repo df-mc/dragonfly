@@ -50,6 +50,7 @@ func (conf ItemBehaviourConfig) New() *ItemBehaviour {
 	b.passive = PassiveBehaviourConfig{
 		Gravity:           conf.Gravity,
 		Drag:              conf.Drag,
+		PushOutOfBlocks:   true,
 		ExistenceDuration: conf.ExistenceDuration,
 		Tick:              b.tick,
 	}.New()
