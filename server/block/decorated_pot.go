@@ -106,7 +106,8 @@ func (p DecoratedPot) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, u item.U
 	held, _ := u.HeldItems()
 	if held.Empty() || !p.Item.Comparable(held) || p.Item.Count() == p.Item.MaxCount() {
 		p.wobble(pos, tx, false)
-		return false
+		// A rejected item still uses up the click.
+		return !held.Empty()
 	}
 
 	if p.Item.Empty() {
