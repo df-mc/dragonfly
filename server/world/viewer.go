@@ -57,6 +57,10 @@ type Viewer interface {
 	ViewEntityState(e Entity)
 	// ViewEntityAnimation starts viewing an animation performed by an Entity.
 	ViewEntityAnimation(e Entity, a EntityAnimation)
+	// ViewEntityMount shows an entity riding another entity.
+	ViewEntityMount(rider Entity, rideable Entity, driver bool)
+	// ViewEntityDismount shows an entity getting off another entity.
+	ViewEntityDismount(rider Entity, rideable Entity)
 	// ViewParticle views a particle spawned at a given position in the world. It is called when a particle,
 	// for example a block breaking particle, is spawned near the player.
 	ViewParticle(pos mgl64.Vec3, p Particle)
@@ -102,6 +106,8 @@ func (NopViewer) ViewEntityArmour(Entity)                                       
 func (NopViewer) ViewEntityAction(Entity, EntityAction)                                      {}
 func (NopViewer) ViewEntityState(Entity)                                                     {}
 func (NopViewer) ViewEntityAnimation(Entity, EntityAnimation)                                {}
+func (NopViewer) ViewEntityMount(Entity, Entity, bool)                                       {}
+func (NopViewer) ViewEntityDismount(Entity, Entity)                                          {}
 func (NopViewer) ViewParticle(mgl64.Vec3, Particle)                                          {}
 func (NopViewer) ViewSound(mgl64.Vec3, Sound)                                                {}
 func (NopViewer) ViewBlockUpdate(cube.Pos, Block, int)                                       {}

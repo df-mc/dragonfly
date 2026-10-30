@@ -11,7 +11,7 @@ import (
 type InteractHandler struct{}
 
 // Handle ...
-func (h *InteractHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Controllable) error {
+func (h *InteractHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.Interact)
 	pos := c.Position()
 
@@ -35,6 +35,8 @@ func (h *InteractHandler) Handle(p packet.Packet, s *Session, _ *world.Tx, c Con
 				int32(pos[2]),
 			},
 		})
+	case packet.InteractActionLeaveVehicle:
+		c.DismountEntity(tx)
 	default:
 		return fmt.Errorf("unexpected interact packet action %v", pk.ActionType)
 	}
