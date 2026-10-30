@@ -58,3 +58,6 @@ type FireworkBlast struct{ sound }
 
 // FireworkTwinkle is a sound played when a firework explodes and should twinkle.
 type FireworkTwinkle struct{ sound }
+
+// Splash is a sound played when something splashes in water, such as when a fish bites a fishing hook.
+type Splash struct{ sound }
