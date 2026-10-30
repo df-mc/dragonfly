@@ -66,6 +66,7 @@ type playerData struct {
 	usingSince time.Time
 
 	glideTicks   int64
+	glideBoost   int64 // Ticks of firework glide boost left; -1 never ends.
 	fireTicks    int64
 	fallDistance float64
 
@@ -1007,6 +1008,8 @@ func (p *Player) respawn(f func(p *Player)) {
 	p.sendFood()
 	p.Extinguish()
 	p.ResetFallDistance()
+	// The boost stops counting down while dead, so a respawned player starts without one.
+	p.glideBoost = 0
 
 	p.Handler().HandleRespawn(p, &pos, &w)
 
@@ -1227,6 +1230,38 @@ func (p *Player) StartGliding() {
 	}
 	p.gliding = true
 	p.updateState()
+}
+
+// BoostGliding boosts the player for as long as rocket, a firework attached to it, lasts and shows the boost to its
+// viewers. Like the vanilla server, the boost only replaces the current one if it lasts at least as long as what
+// remains of it.
+func (p *Player) BoostGliding(rocket world.Entity) {
+	ent, ok := rocket.(*entity.Ent)
+	if !ok {
+		return
+	}
+	f, ok := ent.Behaviour().(*entity.FireworkBehaviour)
+	if !ok {
+		return
+	}
+	const tick = time.Second / 20
+	ticks := int64(-1)
+	if lifetime := f.ExistenceDuration(); lifetime != 0 {
+		ticks = int64((max(lifetime, 0) + tick - 1) / tick)
+	}
+	if !glideBoostReplaces(p.glideBoost, ticks) {
+		return
+	}
+	p.glideBoost = ticks
+	for _, v := range p.viewers() {
+		v.ViewEntityAction(p, entity.GlideBoostAction{Duration: time.Duration(ticks) * tick})
+	}
+}
+
+// glideBoostReplaces reports whether a glide boost of ticks replaces one with current ticks left, where -1 never
+// ends: only one lasting at least as long does.
+func glideBoostReplaces(current, ticks int64) bool {
+	return ticks == current || current != -1 && (ticks == -1 || current <= ticks)
 }
 
 // Gliding checks if the player is currently gliding.
@@ -2665,6 +2700,9 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 		}
 	}
 
+	if p.glideBoost > 0 {
+		p.glideBoost--
+	}
 	if _, ok := p.Armour().Chestplate().Item().(item.Elytra); ok && p.Gliding() {
 		if p.glideTicks += 1; p.glideTicks%20 == 0 {
 			d := p.damageItem(p.Armour().Chestplate(), 1)
