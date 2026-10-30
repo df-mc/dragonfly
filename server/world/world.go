@@ -47,6 +47,7 @@ type World struct {
 	// advance is a bool that specifies if this World should advance the current
 	// tick, time and weather saved in the Settings struct held by the World.
 	advance bool
+	paused  atomic.Bool
 
 	o sync.Once
 
