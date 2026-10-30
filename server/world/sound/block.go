@@ -5,6 +5,16 @@ import (
 	"github.com/go-gl/mathgl/mgl64"
 )
 
+// BlockSlide is played when an entity slides down the side of a block, such as a honey block.
+type BlockSlide struct {
+	// Block is the block slid down.
+	Block world.Block
+	// EntityType is the network name of the sliding entity, such as "minecraft:player".
+	EntityType string
+
+	sound
+}
+
 // BlockPlace is a sound sent when a block is placed.
 type BlockPlace struct {
 	// Block is the block which is placed, for which a sound should be played. The sound played depends on
