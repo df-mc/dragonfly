@@ -13,6 +13,7 @@ var DefaultRegistry = conf.New([]world.EntityType{
 	AreaEffectCloudType,
 	ArrowType,
 	BottleOfEnchantingType,
+	CushionType,
 	EggType,
 	EndCrystalType,
 	EnderPearlType,
@@ -34,9 +35,12 @@ var conf = world.EntityRegistryConfig{
 	EndCrystal:         NewEndCrystal,
 	Snowball:           NewSnowball,
 	BottleOfEnchanting: NewBottleOfEnchanting,
-	EnderPearl:         NewEnderPearl,
-	FallingBlock:       NewFallingBlock,
-	Lightning:          NewLightning,
+	Cushion: func(opts world.EntitySpawnOpts, colour any) *world.EntityHandle {
+		return NewCushion(opts, colour.(item.Colour))
+	},
+	EnderPearl:   NewEnderPearl,
+	FallingBlock: NewFallingBlock,
+	Lightning:    NewLightning,
 	Firework: func(opts world.EntitySpawnOpts, firework world.Item, owner world.Entity, sidewaysVelocityMultiplier, upwardsAcceleration float64, attached bool) *world.EntityHandle {
 		return newFirework(opts, firework.(item.Firework), owner, sidewaysVelocityMultiplier, upwardsAcceleration, attached)
 	},

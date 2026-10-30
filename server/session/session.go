@@ -581,6 +581,7 @@ func (s *Session) handlePacket(pk packet.Packet, tx *world.Tx, c Controllable) (
 func (s *Session) registerHandlers() {
 	s.handlers = map[uint32]packetHandler{
 		packet.IDActorEvent:                nil,
+		packet.IDActorPickRequest:          &ActorPickRequestHandler{},
 		packet.IDAdventureSettings:         nil, // Deprecated, the client still sends this though.
 		packet.IDAnimate:                   nil,
 		packet.IDAnvilDamage:               nil,
