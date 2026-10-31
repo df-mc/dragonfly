@@ -280,6 +280,7 @@ func (s *Session) Spawn(c Controllable, tx *world.Tx) {
 	s.sendInv(s.ui, protocol.WindowIDUI)
 	s.sendInv(s.offHand, protocol.WindowIDOffHand)
 	s.sendInv(s.armour.Inventory(), protocol.WindowIDArmour)
+	s.writePacket(&packet.PlayerHotBar{SelectedHotBarSlot: *s.heldSlot, WindowID: protocol.WindowIDInventory, SelectHotBarSlot: true})
 
 	chat.Global.Subscribe(c)
 	if !s.conf.JoinMessage.Zero() {
