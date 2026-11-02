@@ -11,6 +11,7 @@ import (
 type chunkRequest struct {
 	pos       ChunkPos
 	callbacks []chunkCallback
+	added     bool
 	signalled bool
 
 	done   chan struct{}
@@ -40,10 +41,11 @@ func newChunkWorkerPool(w *World) *chunkWorkerPool {
 	return &chunkWorkerPool{w: w, queue: make(chan *chunkRequest, 4096)}
 }
 
-// doImmediate blocks until the chunk is ready and returns it.
+// doImmediate blocks until the chunk is ready, adds it to the world and
+// returns it.
 func (r *chunkRequest) doImmediate(tx *Tx) *Column {
 	<-r.done
-	r.signal(tx)
+	r.add(tx)
 	return r.result
 }
 
@@ -111,13 +113,12 @@ func (p *chunkWorkerPool) drainAndAbort() {
 	}
 }
 
-// signal adds the finished chunk to the world and calls all callers waiting
-// for it. It always runs inside a world transaction.
-func (r *chunkRequest) signal(tx *Tx) {
-	if r.signalled {
+// add adds the finished chunk to the world, at most once.
+func (r *chunkRequest) add(tx *Tx) {
+	if r.added {
 		return
 	}
-	r.signalled = true
+	r.added = true
 
 	w := tx.World()
 	pos := r.pos
@@ -128,16 +129,26 @@ func (r *chunkRequest) signal(tx *Tx) {
 	}
 	if r.err != nil {
 		w.conf.Log.Error("load chunk: "+r.err.Error(), "X", pos[0], "Z", pos[1])
-		for _, recv := range r.callbacks {
-			recv(tx, nil)
-		}
 		return
 	}
 	r.result = w.addChunk(pos, r.col)
-	if w.closed.Load() {
+}
+
+// signal adds the finished chunk to the world and hands it to all callers
+// waiting for it. It always runs at the top level of a world transaction.
+func (r *chunkRequest) signal(tx *Tx) {
+	if r.signalled {
 		return
 	}
-	for _, recv := range r.callbacks {
+	r.signalled = true
+
+	r.add(tx)
+	if tx.World().closed.Load() {
+		return
+	}
+	callbacks := r.callbacks
+	r.callbacks = nil
+	for _, recv := range callbacks {
 		recv(tx, r.result)
 	}
 }
