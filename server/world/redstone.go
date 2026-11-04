@@ -1013,8 +1013,8 @@ type redstoneLightDiffuser interface {
 }
 
 // redstoneStrongPowerConductor reports whether b can conduct strong power through face.
-func redstoneStrongPowerConductor(pos cube.Pos, b Block, tx *Tx, face cube.Face) bool {
-	if !b.Model().FaceSolid(pos, face, tx) {
+func redstoneStrongPowerConductor(pos cube.Pos, b Block, src BlockSource, face cube.Face) bool {
+	if !b.Model().FaceSolid(pos, face, src) {
 		return false
 	}
 	if _, ok := b.(RedstoneNonConductive); ok {
@@ -1027,10 +1027,11 @@ func redstoneStrongPowerConductor(pos cube.Pos, b Block, tx *Tx, face cube.Face)
 }
 
 // RedstoneFullPowerConductor reports whether b is a full solid redstone conductor according to the default redstone
-// conductivity rules.
-func RedstoneFullPowerConductor(pos cube.Pos, b Block, tx *Tx) bool {
+// conductivity rules. Blocks whose model depends on the blocks around them
+// read those from src.
+func RedstoneFullPowerConductor(pos cube.Pos, b Block, src BlockSource) bool {
 	for _, face := range cube.Faces() {
-		if !redstoneStrongPowerConductor(pos, b, tx, face) {
+		if !redstoneStrongPowerConductor(pos, b, src, face) {
 			return false
 		}
 	}

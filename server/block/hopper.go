@@ -68,7 +68,7 @@ func (Hopper) SideClosed(cube.Pos, cube.Pos, *world.Tx) bool {
 }
 
 // CanRedstoneWireStepDown ...
-func (Hopper) CanRedstoneWireStepDown(cube.Pos, cube.Pos, *world.Tx) bool {
+func (Hopper) CanRedstoneWireStepDown(cube.Pos, cube.Pos, world.BlockSource) bool {
 	return false
 }
 

@@ -454,6 +454,19 @@ func (br *BasicBlockRegistry) StateToRuntimeID(name string, properties map[strin
 	return rid, ok
 }
 
+// DefaultProperties returns the properties of the default state of the block
+// with the name passed. The palette does not mark a default, so the first state
+// registered for the name is used. For vanilla blocks this matches the game's
+// default for every property a stored state can lack, as properties older than
+// the block state version are filled in by the upgrade schemas instead.
+func (br *BasicBlockRegistry) DefaultProperties(name string) (map[string]any, bool) {
+	if !br.finalized {
+		panic("BlockRegistry.DefaultProperties called on non finalized BlockRegistry")
+	}
+	properties, ok := br.blockProperties[name]
+	return properties, ok
+}
+
 // BlockHash returns a unique identifier of the block including the block states. This function is used internally
 // to convert a block to a single integer which can be used in map lookups. The hash produced therefore does not
 // need to match anything in the game, but it must be unique among all registered blocks.

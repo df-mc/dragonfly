@@ -27,7 +27,7 @@ func (endCrystalBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		pos := cube.PosFromVec3(e.Position())
 		if _, air := tx.Block(pos.Side(cube.FaceDown)).(block.Air); !air {
 			if _, air := tx.Block(pos).(block.Air); air {
-				fire := block.Fire{}
+				fire := block.Fire{}.DeriveState(pos, tx)
 				tx.SetBlock(pos, fire, nil)
 				tx.ScheduleBlockUpdate(pos, fire, time.Duration(30+rand.IntN(10))*time.Second/20)
 			}

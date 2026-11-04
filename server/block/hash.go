@@ -586,7 +586,7 @@ func (Fern) Hash() (uint64, uint64) {
 }
 
 func (f Fire) Hash() (uint64, uint64) {
-	return hashFire, uint64(f.Type.Uint8()) | uint64(f.Age)<<1
+	return hashFire, uint64(f.Type.Uint8()) | uint64(f.Age)<<1 | uint64(f.Connections.Uint8())<<9
 }
 
 func (FletchingTable) Hash() (uint64, uint64) {
@@ -942,7 +942,7 @@ func (t RedstoneTorch) Hash() (uint64, uint64) {
 }
 
 func (r RedstoneWire) Hash() (uint64, uint64) {
-	return hashRedstoneWire, uint64(r.Power)
+	return hashRedstoneWire, uint64(r.Power) | uint64(r.Connections.Uint8())<<8
 }
 
 func (ReinforcedDeepslate) Hash() (uint64, uint64) {

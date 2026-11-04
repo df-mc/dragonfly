@@ -206,6 +206,18 @@ func (s StrawBed) EncodeBlock() (name string, properties map[string]any) {
 	}
 }
 
+// EncodeNBT returns no data: a straw bed is a block entity only so that the world keeps the value
+// holding its Sleeper, which a runtime ID cannot carry. Vanilla has no block entity for it, so no
+// id is claimed.
+func (StrawBed) EncodeNBT() map[string]any {
+	return map[string]any{}
+}
+
+// DecodeNBT ...
+func (s StrawBed) DecodeNBT(map[string]any) any {
+	return s
+}
+
 // head returns the head side of the straw bed. If neither side is a head side, the third return value is false.
 func (s StrawBed) head(pos cube.Pos, tx *world.Tx) (StrawBed, cube.Pos, bool) {
 	headSide, headPos, ok := s.side(pos, tx)

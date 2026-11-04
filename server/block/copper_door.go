@@ -96,34 +96,15 @@ func (d CopperDoor) NeighbourUpdateTick(pos, changedNeighbour cube.Pos, tx *worl
 	}
 }
 
-// UseOnBlock handles the directional placing of doors
+// UseOnBlock places both door halves and chooses the hinge from nearby blocks.
 func (d CopperDoor) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx, user item.User, ctx *item.UseContext) bool {
-	if face != cube.FaceUp {
-		// Doors can only be placed when clicking the top face.
-		return false
-	}
-	below := pos
-	pos = pos.Side(cube.FaceUp)
-	if !replaceableWith(tx, pos, d) || !replaceableWith(tx, pos.Side(cube.FaceUp), d) {
-		return false
-	}
-	if !tx.Block(below).Model().FaceSolid(below, cube.FaceUp, tx) {
+	var ok bool
+	pos, ok = doorPlacementPosition(pos, face, tx, d)
+	if !ok {
 		return false
 	}
 	d.Facing = user.Rotation().Direction()
-	left := tx.Block(pos.Side(d.Facing.RotateLeft().Face()))
-	right := tx.Block(pos.Side(d.Facing.RotateRight().Face()))
-	if _, ok := left.Model().(model.Door); ok {
-		d.Right = true
-	}
-	// The side the door hinge is on can be affected by the blocks to the left and right of the door. In particular,
-	// opaque blocks on the right side of the door with transparent blocks on the left side result in a right sided
-	// door hinge.
-	if diffuser, ok := right.(LightDiffuser); !ok || diffuser.LightDiffusionLevel() != 0 {
-		if diffuser, ok := left.(LightDiffuser); ok && diffuser.LightDiffusionLevel() == 0 {
-			d.Right = true
-		}
-	}
+	d.Right = doorHingeRight(pos, d.Facing, tx)
 
 	ctx.IgnoreBBox = true
 	place(tx, pos, d, user, ctx)

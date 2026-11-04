@@ -119,6 +119,10 @@ func (h *ItemStackRequestHandler) handleRequest(req protocol.ItemStackRequest, s
 			err = h.handleCreate(a, s, tx)
 		case *protocol.ConsumeStackRequestAction, *protocol.CraftResultsDeprecatedStackRequestAction:
 			// Don't do anything with this.
+		case *protocol.CraftReservedStackRequestAction:
+			// The client sends this action for a crafting mechanic that has
+			// no known behaviour yet, so we cannot resolve it.
+			err = fmt.Errorf("reserved craft action %q is not supported", a.ReservedID)
 		default:
 			return fmt.Errorf("unhandled stack request action %#v", action)
 		}

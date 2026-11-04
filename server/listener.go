@@ -178,6 +178,13 @@ func ListenNetwork(conf Config, network minecraft.Network, address string) (List
 // NetherNetConfig may be used to create a NetherNet Listener for a Server, accepting
 // connections negotiated over a plaintext HTTP signaling endpoint. Its Listener method
 // matches the Config.Listeners function signature.
+//
+// Clients joining by address request '/v1/join' over HTTPS before plain HTTP, on the
+// server port and, for port 19132, also on 443 and 80, then join over RakNet if nothing
+// answers within a few seconds (see the go-nethernet endpoint package). So terminate
+// HTTPS with a trusted certificate on one of those ports to avoid the trust prompt, keep
+// RakNet listening while clients may fall back to it, and make sure every probed port
+// answers or refuses quickly: one that silently drops packets delays every join.
 type NetherNetConfig struct {
 	// Address is the TCP address the HTTP signaling endpoint is served on. HTTPS should
 	// be terminated by a reverse proxy.
@@ -297,7 +304,7 @@ func (nc NetherNetConfig) Listener(conf Config) (Listener, error) {
 		Log:            log,
 		AllowAnonymous: conf.AuthDisabled,
 		IssueServerIdentity: func(ctx context.Context) (*nethernet.Identity, error) {
-			return nethernet.GenerateServerIdentity(nc.Key, nc.Domain)
+			return nethernet.ServerIdentity(nc.Key, nc.Domain)
 		},
 	}
 

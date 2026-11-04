@@ -48,3 +48,32 @@ func allConnections() (all []Connections) {
 	}
 	return
 }
+
+// FireConnections holds the sides of fire that burn on the block on that side.
+type FireConnections struct {
+	north, east, south, west, up bool
+}
+
+// Uint8 returns the FireConnections as a uint8.
+func (c FireConnections) Uint8() uint8 {
+	return boolByte(c.north) | boolByte(c.east)<<1 | boolByte(c.south)<<2 | boolByte(c.west)<<3 | boolByte(c.up)<<4
+}
+
+// properties returns the block state properties of the FireConnections.
+func (c FireConnections) properties() map[string]any {
+	return map[string]any{
+		"minecraft:connection_north": c.north,
+		"minecraft:connection_east":  c.east,
+		"minecraft:connection_south": c.south,
+		"minecraft:connection_west":  c.west,
+		"minecraft:connection_up":    c.up,
+	}
+}
+
+// allFireConnections returns a list of all combinations of FireConnections.
+func allFireConnections() (all []FireConnections) {
+	for i := range 32 {
+		all = append(all, FireConnections{north: i&0x1 != 0, east: i&0x2 != 0, south: i&0x4 != 0, west: i&0x8 != 0, up: i&0x10 != 0})
+	}
+	return
+}
