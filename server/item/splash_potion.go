@@ -37,7 +37,9 @@ func (s SplashPotion) Use(tx *world.Tx, user User, ctx *UseContext) bool {
 // The added offset is an ellipse-like shape based on what the input pitch is.
 func throwableOffset(r cube.Rotation) cube.Rotation {
 	r[1] = max(min(r[1], 89.9), -89.9)
-	r[1] -= math.Sqrt(89.9*89.9-r[1]*r[1]) * (26.5 / 89.9)
+	// 89.9*89.9 is an exact constant while r[1]*r[1] rounds up at the clamp, so
+	// keep the root non-negative: a straight-down throw would otherwise get NaN.
+	r[1] -= math.Sqrt(max(0, 89.9*89.9-r[1]*r[1])) * (26.5 / 89.9)
 	r[1] = max(min(r[1], 89.9), -89.9)
 
 	return r
