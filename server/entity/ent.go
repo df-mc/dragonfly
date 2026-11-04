@@ -41,6 +41,14 @@ func (e *Ent) Behaviour() Behaviour {
 	return e.data.Data.(Behaviour)
 }
 
+// ProjectileOwner returns the entity that owns this Ent, if its behaviour exposes an owner.
+func (e *Ent) ProjectileOwner() *world.EntityHandle {
+	if owned, ok := e.Behaviour().(interface{ Owner() *world.EntityHandle }); ok {
+		return owned.Owner()
+	}
+	return nil
+}
+
 // Explode propagates the explosion behaviour of the underlying Behaviour.
 func (e *Ent) Explode(src world.ExplosionSource, impact float64) {
 	if expl, ok := e.Behaviour().(interface {

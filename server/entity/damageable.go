@@ -13,8 +13,8 @@ type behaviourDamageable interface {
 // vulnerable to the damage, and whether the entity could be damaged.
 func HurtEntity(e world.Entity, damage float64, src world.DamageSource) (n float64, vulnerable, ok bool) {
 	if l, ok := e.(Living); ok {
-		n, vulnerable = l.Hurt(damage, src)
-		return n, vulnerable, true
+		n, result := l.Hurt(damage, src)
+		return n, result.Accepted(), true
 	}
 	if ent, ok := e.(*Ent); ok {
 		if d, ok := ent.Behaviour().(behaviourDamageable); ok {

@@ -186,19 +186,13 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		return m
 	}
 
-	for i := 0; i < lt.conf.ParticleCount; i++ {
-		tx.AddParticle(result.Position(), lt.conf.Particle)
-	}
-	if lt.conf.Sound != nil {
-		tx.PlaySound(result.Position(), lt.conf.Sound)
-	}
-
+	deflected := false
 	switch r := result.(type) {
 	case trace.EntityResult:
 		if lt.conf.Damage >= 0 {
-			lt.hitEntity(r.Entity(), e, vel)
+			deflected = lt.hitEntity(r.Entity(), e, vel)
 		}
-		if DamageableEntity(r.Entity()) {
+		if !deflected && DamageableEntity(r.Entity()) {
 			lt.collidedEntities = append(lt.collidedEntities, r.Entity().H())
 		}
 	case trace.BlockResult:
@@ -207,11 +201,20 @@ func (lt *ProjectileBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 			h.ProjectileHit(bpos, tx, e, r.Face())
 		}
 		if lt.conf.SurviveBlockCollision {
+			lt.emitHitEffects(tx, result)
 			lt.hitBlockSurviving(e, r, m, tx)
 			return m
 		}
 		lt.close = true
 	}
+	if deflected {
+		m.pos = e.Position()
+		m.vel = e.Velocity()
+		m.dpos = m.pos.Sub(result.Position())
+		m.dvel = m.vel.Sub(vel)
+		return m
+	}
+	lt.emitHitEffects(tx, result)
 	if lt.conf.Hit != nil {
 		lt.conf.Hit(e, tx, result)
 	}
@@ -294,18 +297,25 @@ func (lt *ProjectileBehaviour) hitBlockSurviving(e *Ent, r trace.BlockResult, m 
 
 // hitEntity is called when a projectile hits an entity. It deals damage to the
 // entity if possible, and applies Living-specific effects such as knockback.
-func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.Vec3) {
-	owner, _ := lt.conf.Owner.Entity(e.tx)
-	src := ProjectileDamageSource{Projectile: e, Owner: owner}
+// It returns true if a shield deflected the projectile.
+func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.Vec3) bool {
+	var owner world.Entity
+	if lt.conf.Owner != nil {
+		owner, _ = lt.conf.Owner.Entity(e.tx)
+	}
+	src := ProjectileDamageSource{Projectile: e, Owner: owner, Piercing: lt.conf.PiercingLevel > 0}
 	dmg := math.Ceil(lt.conf.Damage * vel.Len())
 	if lt.conf.Critical {
 		dmg += rand.Float64() * dmg / 2
 	}
-	// TODO: Piercing arrows should bypass shield blocking when shields are implemented.
-	if _, vulnerable, ok := HurtEntity(victim, dmg, src); ok && vulnerable {
-		l, ok := victim.(Living)
-		if !ok {
-			return
+	if l, ok := victim.(Living); ok {
+		_, result := l.Hurt(dmg, src)
+		if result.Blocked() {
+			lt.deflect(e, vel)
+			return true
+		}
+		if !result.Accepted() {
+			return false
 		}
 		l.KnockBack(l.Position().Sub(vel), 0.45+lt.conf.KnockBackForceAddend, 0.3608+lt.conf.KnockBackHeightAddend)
 
@@ -319,7 +329,31 @@ func (lt *ProjectileBehaviour) hitEntity(victim world.Entity, e *Ent, vel mgl64.
 		if flammable, ok := l.(Flammable); ok && e.OnFireDuration() > 0 {
 			flammable.SetOnFire(time.Second * 5)
 		}
+	} else {
+		HurtEntity(victim, dmg, src)
 	}
+	return false
+}
+
+// emitHitEffects emits the configured effects for a final, non-deflected hit.
+func (lt *ProjectileBehaviour) emitHitEffects(tx *world.Tx, result trace.Result) {
+	pos := result.Position()
+	for i := 0; i < lt.conf.ParticleCount; i++ {
+		tx.AddParticle(pos, lt.conf.Particle)
+	}
+	if lt.conf.Sound != nil {
+		tx.PlaySound(pos, lt.conf.Sound)
+	}
+}
+
+// deflect reverses a shield-blocked projectile and moves it clear of the blocker.
+func (lt *ProjectileBehaviour) deflect(e *Ent, vel mgl64.Vec3) {
+	l := vel.Len()
+	if l == 0 {
+		return
+	}
+	e.SetVelocity(vel.Mul(-1))
+	e.data.Pos = e.Position().Sub(vel.Mul(0.05 / l))
 }
 
 // tickMovement ticks the movement of a projectile. It updates the position and
