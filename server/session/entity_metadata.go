@@ -43,6 +43,14 @@ func (s *Session) parseEntityMetadata(e world.Entity) protocol.EntityMetadata {
 	return m
 }
 
+// seatOffset returns the rider's current seat position.
+func (s *Session) seatOffset(e any) (mgl64.Vec3, bool) {
+	if r, ok := e.(entity.Rider); ok {
+		return r.SeatOffset()
+	}
+	return mgl64.Vec3{}, false
+}
+
 func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	if sn, ok := e.(sneaker); ok && sn.Sneaking() {
 		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagSneaking)
@@ -102,6 +110,30 @@ func (s *Session) addSpecificMetadata(e any, m protocol.EntityMetadata) {
 	}
 	if sc, ok := e.(scaled); ok {
 		m[protocol.EntityDataKeyScale] = float32(sc.Scale())
+	}
+	if pos, ok := s.seatOffset(e); ok {
+		m[protocol.EntityDataKeySeatOffset] = vec64To32(pos)
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
+	} else if rider, ok := e.(entity.Rider); ok && rider.SeatIndex() >= 0 {
+		// Use the entity position when no seat position is available.
+		m[protocol.EntityDataKeySeatOffset] = vec64To32(mgl64.Vec3{})
+		m.SetFlag(protocol.EntityDataKeyFlags, protocol.EntityDataFlagRiding)
+	}
+	if r, ok := e.(entity.Rideable); ok {
+		// A value of -1 clears the controlling seat.
+		m[protocol.EntityDataKeyControllingSeatIndex] = int32(r.ControllingSeatIndex())
+	}
+	if lock, ok := e.(interface{ SeatLockPassengerRotation() bool }); ok {
+		m[protocol.EntityDataKeySeatLockPassengerRotation] = boolByte(lock.SeatLockPassengerRotation())
+	}
+	if degrees, ok := e.(interface{ SeatLockPassengerRotationDegrees() float32 }); ok {
+		m[protocol.EntityDataKeySeatLockPassengerRotationDegrees] = degrees.SeatLockPassengerRotationDegrees()
+	}
+	if offset, ok := e.(interface{ SeatRotationOffset() float32 }); ok {
+		m[protocol.EntityDataKeySeatRotationOffset] = offset.SeatRotationOffset()
+	}
+	if degrees, ok := e.(interface{ SeatRotationOffsetDegrees() float32 }); ok {
+		m[protocol.EntityDataKeySeatRotationOffsetDegrees] = degrees.SeatRotationOffsetDegrees()
 	}
 	if t, ok := e.(tnt); ok {
 		m[protocol.EntityDataKeyFuseTime] = int32(t.Fuse().Milliseconds() / 50)
