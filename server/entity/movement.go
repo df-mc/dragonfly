@@ -66,7 +66,7 @@ func (c *MovementComputer) TickMovement(e world.Entity, pos, vel mgl64.Vec3, rot
 	viewers := tx.Viewers(pos)
 
 	velBefore := vel
-	vel = c.applyHorizontalForces(tx, pos, c.applyVerticalForces(vel))
+	vel = c.applyHorizontalForces(tx, pos, c.applyVerticalForces(c.applySlide(tx, e, vel)))
 	dPos, vel := c.CheckCollision(tx, e, pos, vel)
 
 	return &Movement{v: viewers, e: e,
@@ -94,6 +94,22 @@ func (c *MovementComputer) applyVerticalForces(vel mgl64.Vec3) mgl64.Vec3 {
 	vel[1] -= c.Gravity
 	if !c.DragBeforeGravity {
 		vel[1] *= 1 - c.Drag
+	}
+	return vel
+}
+
+// slider represents a block, such as a honey block, that changes the velocity of entities inside it.
+type slider interface {
+	SlideVelocity(pos cube.Pos, tx *world.Tx, e world.Entity, vel mgl64.Vec3) mgl64.Vec3
+}
+
+// applySlide lets every slider block the entity is inside change its velocity, before gravity and drag.
+func (c *MovementComputer) applySlide(tx *world.Tx, e world.Entity, vel mgl64.Vec3) mgl64.Vec3 {
+	box := e.H().Type().BBox(e).Translate(e.Position()).Grow(-0.0001)
+	for pos := range cube.Range3D(cube.PosFromVec3(box.Min()), cube.PosFromVec3(box.Max())) {
+		if s, ok := tx.Block(pos).(slider); ok {
+			vel = s.SlideVelocity(pos, tx, e, vel)
+		}
 	}
 	return vel
 }
