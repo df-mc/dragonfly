@@ -105,6 +105,9 @@ type playerData struct {
 
 	breakCounter uint32
 
+	brushing     bool
+	brushSoundAt int64
+
 	hunger *hungerManager
 
 	once sync.Once
@@ -907,6 +910,7 @@ func (p *Player) kill(src world.DamageSource) {
 	p.Handler().HandleDeath(p, src, &keepInv)
 	p.StopSneaking()
 	p.StopSprinting()
+	p.AbortBrushing()
 
 	pos := p.Position()
 	if !keepInv && p.GameMode() != world.GameModeSpectator {
@@ -1498,6 +1502,7 @@ func (p *Player) SetHeldSlot(to int) error {
 		return nil
 	}
 	*p.heldSlot = uint32(to)
+	p.AbortBrushing()
 	p.usingItem = false
 
 	for _, viewer := range p.viewers() {
@@ -2088,6 +2093,47 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
+	}
+}
+
+// Brush brushes the block at the position passed with the brush held, which the client does every few ticks
+// while the brush is held. Like vanilla, the block limits how often it makes progress and the brushing sound
+// plays at most every 9 ticks.
+func (p *Player) Brush(pos cube.Pos, face cube.Face) {
+	b := p.tx.Block(pos)
+	if _, air := b.(block.Air); air || !p.GameMode().AllowsInteraction() {
+		return
+	}
+	if !p.brushing {
+		p.brushing = true
+		if !p.usingItem {
+			p.usingItem = true
+			p.updateState()
+		}
+	}
+	if brushable, ok := b.(block.Brushable); ok && brushable.Brush(pos, p.tx, face) {
+		held, left := p.HeldItems()
+		damaged := p.damageItem(held, 1)
+		p.SetHeldItems(damaged, left)
+		if damaged.Empty() {
+			return
+		}
+	}
+	if now := p.tx.CurrentTick(); p.brushSoundAt < now {
+		p.brushSoundAt = now + 8
+		p.tx.PlaySound(pos.Vec3Centre(), sound.Brushing{Block: b})
+	}
+}
+
+// AbortBrushing makes the player stop brushing, or returns immediately if it isn't brushing anything.
+func (p *Player) AbortBrushing() {
+	if !p.brushing {
+		return
+	}
+	p.brushing = false
+	if p.usingItem {
+		p.usingItem = false
+		p.updateState()
 	}
 }
 
