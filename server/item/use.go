@@ -13,6 +13,9 @@ type UseContext struct {
 	// NewItem is the item that is added after the item is used. If the player no longer has an item in the
 	// hand, it'll be added there.
 	NewItem Stack
+	// NewItemReplaceHeld replaces the held stack with NewItem, including in
+	// creative mode. It is used when modifying an existing item in place.
+	NewItemReplaceHeld bool
 	// ConsumedItems contains a list of items that were consumed in the process of using the item.
 	ConsumedItems []Stack
 	// NewItemSurvivalOnly will add any new items only in survival mode.

@@ -36,6 +36,7 @@ const (
 	hashCandle
 	hashCarpet
 	hashCarrot
+	hashCauldron
 	hashChest
 	hashChiseledQuartz
 	hashCinnabar
@@ -375,6 +376,10 @@ func (c Carpet) Hash() (uint64, uint64) {
 
 func (c Carrot) Hash() (uint64, uint64) {
 	return hashCarrot, uint64(c.Growth)
+}
+
+func (c Cauldron) Hash() (uint64, uint64) {
+	return hashCauldron, uint64(c.Level) | uint64(c.Content.Uint8())<<8
 }
 
 func (c Chest) Hash() (uint64, uint64) {
