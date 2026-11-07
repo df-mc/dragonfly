@@ -53,6 +53,13 @@ type PickedUpAction struct {
 	action
 }
 
+// GlideBoostAction is a world.EntityAction that boosts a gliding entity for Duration, as a firework attached to it
+// does. A negative Duration boosts until another boost replaces it.
+type GlideBoostAction struct {
+	action
+	Duration time.Duration
+}
+
 // FireworkExplosionAction is a world.EntityAction that makes a Firework rocket display an explosion particle.
 type FireworkExplosionAction struct{ action }
 

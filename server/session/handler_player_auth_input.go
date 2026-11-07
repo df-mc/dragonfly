@@ -18,6 +18,7 @@ type PlayerAuthInputHandler struct{}
 // Handle ...
 func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerAuthInput)
+	s.inputTick.Store(pk.Tick)
 	if err := h.handleMovement(pk, s, c); err != nil {
 		return err
 	}
