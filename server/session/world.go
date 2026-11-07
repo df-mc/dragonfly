@@ -856,8 +856,27 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		default:
 			panic(fmt.Errorf("disc (%v) does not have sound", so.DiscType.String()))
 		}
+		s.writePacket(&packet.PlaySound{
+			SoundName: pk.SoundType,
+			Position:  vec64To32(pos),
+			Volume:    1,
+			Pitch:     1,
+			Handle:    protocol.Option(so.Handle),
+		})
+		return
 	case sound.MusicDiscEnd:
-		pk.SoundType = packet.SoundEventRecordNull
+		stop := protocol.SoundDataUpdate{Type: protocol.SoundDataUpdateStop}
+		s.writePacket(&packet.ClientboundUpdateSoundData{
+			ServerSoundHandle: so.Handle,
+			Stop:              stop,
+			SetVolume:         stop,
+			SetPitch:          stop,
+			Fade:              stop,
+			SeekTo:            stop,
+			Pause:             stop,
+			Resume:            stop,
+		})
+		return
 	case sound.FireCharge:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundBlazeFireball,
