@@ -46,6 +46,8 @@ type Server struct {
 	started atomic.Pointer[time.Time]
 
 	world, nether, end *world.World
+	// soundHandles is shared by all worlds of the server, so that sound handles are unique across them.
+	soundHandles world.SoundHandles
 
 	customBlocks     []protocol.BlockEntry
 	customItems      []protocol.ItemEntry
@@ -615,6 +617,7 @@ func (srv *Server) createWorld(dim world.Dimension, nether, end **world.World) *
 		ChunkLoadWorkers:    srv.conf.ChunkLoadWorkers,
 		Entities:            srv.conf.Entities,
 		Blocks:              srv.conf.Blocks,
+		SoundHandles:        &srv.soundHandles,
 		PortalDestination: func(dim world.Dimension) *world.World {
 			switch dim {
 			case world.Nether:
