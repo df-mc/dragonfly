@@ -371,7 +371,7 @@ func (s Stack) WithItem(t world.Item) Stack {
 		Damage(s.damage).
 		WithCustomName(s.customName).
 		WithLore(s.lore...).
-		WithEnchantments(s.Enchantments()...).
+		WithForcedEnchantments(s.Enchantments()...).
 		WithAnvilCost(s.anvilCost)
 	cp.unbreakable = s.unbreakable && s.MaxDurability() != -1
 	cp.data = s.data
