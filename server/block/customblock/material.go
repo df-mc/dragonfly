@@ -39,9 +39,20 @@ func (m Material) WithoutFaceDimming() Material {
 	return m
 }
 
-// WithAmbientOcclusion returns a copy of the Material with ambient occlusion enabled.
+// WithAmbientOcclusion returns a copy of the Material with ambient occlusion enabled at the
+// vanilla strength. Use WithAmbientOcclusionIntensity to set a different intensity.
 func (m Material) WithAmbientOcclusion() Material {
 	m.ambientOcclusion = 1
+	return m
+}
+
+// WithAmbientOcclusionIntensity returns a copy of the Material with ambient occlusion applied
+// at the intensity passed. The intensity must be between 0 and 10 inclusive.
+func (m Material) WithAmbientOcclusionIntensity(intensity float32) Material {
+	if !(intensity >= 0 && intensity <= 10) {
+		panic("customblock: ambient occlusion intensity must be between 0 and 10")
+	}
+	m.ambientOcclusion = intensity
 	return m
 }
 
