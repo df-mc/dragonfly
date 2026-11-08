@@ -82,7 +82,9 @@ func BuildAvailableCommands(
 
 		aliasesIndex := uint32(math.MaxUint32)
 		if len(c.Aliases()) > 0 {
-			aliasesIndex = uint32(len(enumIndices))
+			// The offset points into enums, so count that. The size of enumIndices
+			// only matches it as long as no two enums ever share a key.
+			aliasesIndex = uint32(len(enums))
 			enumIndices[c.Name()+"Aliases"] = aliasesIndex
 			enums = append(enums, commandEnum{Type: c.Name() + "Aliases", Options: c.Aliases()})
 		}
