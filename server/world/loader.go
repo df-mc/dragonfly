@@ -51,7 +51,7 @@ func (l *Loader) ChangeWorld(tx *Tx, new *World) {
 	loaded := maps.Clone(l.loaded)
 	l.w.exec(func(tx *Tx) {
 		for pos := range loaded {
-			tx.World().removeViewer(tx, pos, l)
+			tx.World().removeViewer(tx, pos, l, l.viewer)
 		}
 	})
 	clear(l.loaded)
@@ -124,27 +124,62 @@ func (l *Loader) Load(tx *Tx, n int) {
 // viewChunk passes a loaded chunk to the Loader's Viewer. If the chunk failed
 // to load, it is queued to be loaded again.
 func (l *Loader) viewChunk(tx *Tx, pos ChunkPos, c *Column) {
+	viewer, w, ok := l.recordChunk(tx, pos, c)
+	if !ok {
+		return
+	}
+	// The Viewer is called with l.mu released. Showing an entity to a Viewer may read a block outside the chunk being
+	// viewed, which can complete a chunk request that another Load queued. Completing a request runs its callbacks
+	// inline on this goroutine, and the callback a Loader registers is this method, so holding l.mu here would
+	// deadlock the world's transaction goroutine against itself.
+	viewer.ViewChunk(pos, w.Dimension(), c.BlockEntities, c.Chunk)
+	w.addViewer(tx, c, l, viewer)
+
+	if l.removeIfStale(w, pos) {
+		// The Loader was closed or moved to a different World while the Viewer was being called, so it will never
+		// remove itself from this chunk again. Undo the addition instead of leaking the Viewer into the old World.
+		w.removeViewer(tx, pos, l, viewer)
+	}
+}
+
+// recordChunk records a chunk as loaded by the Loader and returns the Viewer and World to pass it to. The last return
+// value is false if the chunk should not be viewed at all.
+//
+// The chunk is recorded before the Viewer is called rather than after it, so that a re-entrant call for the same
+// position returns at the loaded check below instead of blocking on a lock this goroutine already holds.
+func (l *Loader) recordChunk(tx *Tx, pos ChunkPos, c *Column) (Viewer, *World, bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	if l.closed || l.viewer == nil || l.w == nil || l.w != tx.World() {
-		return
+		return nil, nil, false
 	}
 	delete(l.pending, pos)
 	if c == nil {
 		l.queueLoad(pos)
-		return
+		return nil, nil, false
 	}
 	if _, ok := l.loaded[pos]; ok {
-		return
+		return nil, nil, false
 	}
 	if !l.withinLoadRadius(pos) {
-		return
+		return nil, nil, false
 	}
-	l.viewer.ViewChunk(pos, l.w.Dimension(), c.BlockEntities, c.Chunk)
-	l.w.addViewer(tx, c, l)
-
 	l.loaded[pos] = c
+	return l.viewer, l.w, true
+}
+
+// removeIfStale removes the chunk position passed from the chunks the Loader has loaded if the Loader was closed or
+// moved to a different World than the one passed, and reports whether it did.
+func (l *Loader) removeIfStale(w *World, pos ChunkPos) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if !l.closed && l.w == w {
+		return false
+	}
+	delete(l.loaded, pos)
+	return true
 }
 
 // Chunk attempts to return a chunk at the given ChunkPos. If the chunk is not loaded, the second return value will
@@ -163,7 +198,7 @@ func (l *Loader) Close(tx *Tx) {
 	defer l.mu.Unlock()
 
 	for pos := range l.loaded {
-		tx.World().removeViewer(tx, pos, l)
+		tx.World().removeViewer(tx, pos, l, l.viewer)
 	}
 	l.loaded = map[ChunkPos]*Column{}
 	clear(l.pending)
@@ -190,7 +225,7 @@ func (l *Loader) evictUnused(tx *Tx) {
 	for pos := range l.loaded {
 		if !l.withinLoadRadius(pos) {
 			delete(l.loaded, pos)
-			l.w.removeViewer(tx, pos, l)
+			l.w.removeViewer(tx, pos, l, l.viewer)
 		}
 	}
 }
