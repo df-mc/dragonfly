@@ -1413,22 +1413,21 @@ func (w *World) emptyColumn() *Column {
 
 // loadChunkAsync loads or generates the chunk at pos in the background,
 // calling callback once ready. It returns false if it could not be scheduled.
-func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback) bool {
+func (w *World) loadChunkAsync(tx *Tx, pos ChunkPos, callback chunkCallback, queued *atomic.Int32, batchSize int) bool {
 	if c, ok := w.chunks[pos]; ok {
-		callback(tx, c)
+		callback.receive(tx, c)
 		return true
 	}
 	if w.conf.Synchronous {
 		// Synchronous worlds have no chunk workers; load on the calling goroutine.
-		callback(tx, tx.chunk(pos))
+		callback.receive(tx, tx.chunk(pos))
 		return true
 	}
-	if req, ok := w.chunkRequests[pos]; ok {
-		req.callbacks = append(req.callbacks, callback)
+	if req, ok := w.chunkRequests[pos]; ok && req.attach(callback) {
 		return true
 	}
-	req := &chunkRequest{pos: pos, done: make(chan struct{}), callbacks: []chunkCallback{callback}}
-	if !w.chunkWorkers.schedule(req) {
+	req := &chunkRequest{pos: pos, queued: queued, done: make(chan struct{}), callbacks: []chunkCallback{callback}}
+	if !w.chunkWorkers.schedule(req, batchSize) {
 		return false
 	}
 	w.chunkRequests[pos] = req
@@ -1452,7 +1451,7 @@ func (w *World) addChunk(pos ChunkPos, c *chunk.Column) *Column {
 }
 
 // chunkFromAsyncPool waits for a pending background load of the chunk at pos,
-// returning false if none was underway.
+// returning false if none was underway or it was cancelled before generation.
 func (w *World) chunkFromAsyncPool(tx *Tx, pos ChunkPos) (*Column, bool) {
 	req, ok := w.chunkRequests[pos]
 	if ok {
