@@ -1190,15 +1190,17 @@ func (w *World) Save() {
 	<-w.exec(w.save(w.saveChunk))
 }
 
-// save saves all loaded chunks to the World's provider.
+// save calls f for every loaded chunk and saves the World's settings to the
+// provider. f is also called for read-only worlds so that closing them still
+// closes their chunks, while saveChunk skips writing them to the provider.
 func (w *World) save(f func(*Tx, ChunkPos, *Column)) execFunc {
 	return func(tx *Tx) {
-		if w.conf.ReadOnly {
-			return
-		}
 		w.conf.Log.Debug("Saving chunks in memory to disk...")
 		for pos, c := range w.chunks {
 			f(tx, pos, c)
+		}
+		if w.conf.ReadOnly {
+			return
 		}
 		w.conf.Log.Debug("Updating level.dat values...")
 		w.conf.Provider.SaveSettings(w.set)
@@ -1217,7 +1219,8 @@ func (w *World) saveChunk(_ *Tx, pos ChunkPos, c *Column) {
 
 // closeChunk saves a chunk and its entities to disk after compacting the chunk.
 // Afterwards, scheduled updates from that chunk are removed and all entities
-// in it are closed.
+// in it are closed. Players in read-only worlds are not closed, so closing such
+// a World does not disconnect them.
 func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 	w.saveChunk(tx, pos, c)
 	w.scheduledUpdates.removeChunk(pos)
@@ -1226,7 +1229,11 @@ func (w *World) closeChunk(tx *Tx, pos ChunkPos, c *Column) {
 	// themselves from the world in their Close method, which can lead to
 	// unexpected conditions.
 	for _, e := range slices.Clone(c.Entities) {
-		_ = e.mustEntity(tx).Close()
+		ent := e.mustEntity(tx)
+		if _, player := ent.(viewLayerViewer); player && w.conf.ReadOnly {
+			continue
+		}
+		_ = ent.Close()
 	}
 	clear(c.Entities)
 	delete(w.chunks, pos)
