@@ -495,6 +495,7 @@ type EntityRegistryConfig struct {
 	FallingBlock       func(opts EntitySpawnOpts, bl Block) *EntityHandle
 	TNT                func(opts EntitySpawnOpts, fuse time.Duration) *EntityHandle
 	BottleOfEnchanting func(opts EntitySpawnOpts, owner Entity) *EntityHandle
+	Cushion            func(opts EntitySpawnOpts, colour any) *EntityHandle
 	Arrow              func(opts EntitySpawnOpts, conf ArrowSpawnConfig) *EntityHandle
 	Egg                func(opts EntitySpawnOpts, owner Entity) *EntityHandle
 	EndCrystal         func(opts EntitySpawnOpts) *EntityHandle

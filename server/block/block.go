@@ -265,7 +265,7 @@ func (g gravityAffected) Solidifies(cube.Pos, *world.Tx) bool {
 func (g gravityAffected) fall(b world.Block, pos cube.Pos, tx *world.Tx) {
 	if replaceableWith(tx, pos.Side(cube.FaceDown), b) {
 		tx.SetBlock(pos, nil, nil)
-		opts := world.EntitySpawnOpts{Position: pos.Vec3Centre()}
+		opts := world.EntitySpawnOpts{Position: pos.Vec3Middle()}
 		tx.AddEntity(tx.World().EntityRegistry().Config().FallingBlock(opts, b))
 	}
 }
