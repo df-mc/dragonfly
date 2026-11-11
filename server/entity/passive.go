@@ -14,6 +14,9 @@ type PassiveBehaviourConfig struct {
 	// Drag is used to reduce all axes of the velocity every tick. Velocity is
 	// multiplied with (1-Drag) every tick.
 	Drag float64
+	// PushOutOfBlocks makes an entity that ends up inside a block rise out of
+	// it instead of running its physics for that tick.
+	PushOutOfBlocks bool
 	// ExistenceDuration is the duration that an entity with this behaviour
 	// should last. Once this time expires, the entity is closed. If
 	// ExistenceDuration is 0, the entity will never expire automatically.
@@ -84,7 +87,13 @@ func (p *PassiveBehaviour) Tick(e *Ent, tx *world.Tx) *Movement {
 		return nil
 	}
 
-	m := p.mc.TickMovement(e, e.data.Pos, e.data.Vel, e.data.Rot, tx)
+	var m *Movement
+	if p.conf.PushOutOfBlocks {
+		m = pushOutOfBlock(e, tx)
+	}
+	if m == nil {
+		m = p.mc.TickMovement(e, e.data.Pos, e.data.Vel, e.data.Rot, tx)
+	}
 	e.data.Pos, e.data.Vel = m.pos, m.vel
 	p.fallDistance = math.Max(p.fallDistance-m.dpos[1], 0)
 
