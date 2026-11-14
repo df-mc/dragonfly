@@ -71,6 +71,9 @@ type Session struct {
 	joinSkin skin.Skin
 
 	breakingPos cube.Pos
+	// heldItemPredicted is true while the client has predicted changes to its held item itself, so they
+	// should not be sent back to it.
+	heldItemPredicted atomic.Bool
 
 	inTransaction, containerOpened atomic.Bool
 	openedWindowID                 atomic.Uint32

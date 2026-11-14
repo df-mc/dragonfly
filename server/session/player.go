@@ -671,14 +671,16 @@ func (s *Session) HandleInventories(tx *world.Tx, c Controllable, inv, offHand, 
 
 func (s *Session) broadcastInvFunc(tx *world.Tx, c Controllable) inventory.SlotFunc {
 	return func(slot int, _, after item.Stack) {
-		if slot == int(*s.heldSlot) {
+		held := slot == int(*s.heldSlot)
+		if held {
 			for _, viewer := range tx.Viewers(c.Position()) {
 				viewer.ViewEntityItems(c)
 			}
 		}
-		if !s.inTransaction.Load() {
-			s.sendItem(after, slot, protocol.WindowIDInventory)
+		if s.inTransaction.Load() || (held && s.heldItemPredicted.Load()) {
+			return
 		}
+		s.sendItem(after, slot, protocol.WindowIDInventory)
 	}
 }
 

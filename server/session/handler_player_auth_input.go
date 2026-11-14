@@ -77,12 +77,13 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 			return err
 		}
 	}
+	predicted := predictsMinedItem(pk)
 	if pk.InputData.Load(packet.InputFlagPerformBlockActions) {
 		actions, ok := pk.BlockActions.Value()
 		if !ok {
 			return fmt.Errorf("block actions flag set without block actions")
 		}
-		if err := h.handleBlockActions(actions, s, c); err != nil {
+		if err := h.handleBlockActions(actions, predicted, s, c); err != nil {
 			return err
 		}
 	}
@@ -102,6 +103,10 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
 			s.conf.Log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
+			if predicted {
+				held, _ := c.HeldItems()
+				s.sendItem(held, int(*s.heldSlot), protocol.WindowIDInventory)
+			}
 		}
 	}
 	return nil
@@ -184,11 +189,36 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 }
 
 // handleBlockActions handles a slice of protocol.PlayerBlockAction present in a PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleBlockActions(a []protocol.PlayerBlockAction, s *Session, c Controllable) error {
+// If the client predicted the durability of the item it mined with, changes to its held item are left to
+// the item stack response instead of being resent, as resending the held item resets the client's mining
+// progress. BDS does the same in ServerPlayerBlockUseHandler::onBeforeMovementSimulation (0x8CE7BE0).
+func (h PlayerAuthInputHandler) handleBlockActions(a []protocol.PlayerBlockAction, predicted bool, s *Session, c Controllable) error {
+	if predicted {
+		s.heldItemPredicted.Store(true)
+		defer s.heldItemPredicted.Store(false)
+	}
 	for _, action := range a {
 		if err := handlePlayerAction(action.Action, action.Face, action.BlockPos, selfEntityRuntimeID, s, c); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// predictsMinedItem checks if the PlayerAuthInput packet passed carries an item stack request with the
+// client's prediction of the item it mined a block with.
+func predictsMinedItem(pk *packet.PlayerAuthInput) bool {
+	if !pk.InputData.Load(packet.InputFlagPerformItemStackRequest) {
+		return false
+	}
+	request, ok := pk.ItemStackRequest.Value()
+	if !ok {
+		return false
+	}
+	for _, action := range request.Actions {
+		if _, ok := action.(*protocol.MineBlockStackRequestAction); ok {
+			return true
+		}
+	}
+	return false
 }
