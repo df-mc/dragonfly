@@ -87,7 +87,7 @@ func TestBreakDuration(t *testing.T) {
 			name:      "wrong tier tool cannot harvest",
 			block:     block.DiamondOre{Type: block.StoneOre()},
 			stack:     woodPick,
-			wantTicks: 300,
+			wantTicks: 150,
 		},
 	}
 

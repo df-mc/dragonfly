@@ -425,9 +425,9 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 		})
 	case particle.PunchBlock:
 		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventParticlesCrackBlock,
+			EventType: packet.LevelEventParticlesCrackBlockDown + int32(pa.Face),
 			Position:  vec64To32(pos),
-			EventData: int32(s.br.BlockRuntimeID(pa.Block)) | (int32(pa.Face) << 24),
+			EventData: int32(s.br.BlockRuntimeID(pa.Block)),
 		})
 	case particle.EndermanTeleport:
 		s.writePacket(&packet.LevelEvent{
@@ -1300,11 +1300,11 @@ func (s *Session) ViewBlockAction(pos cube.Pos, a world.BlockAction) {
 			// An instant break has no cracking to animate, and encoding the crack speed would divide by zero.
 			break
 		}
-		s.writePacket(&packet.LevelEvent{
-			EventType: packet.LevelEventStartBlockCracking,
-			Position:  vec64To32(pos.Vec3()),
-			EventData: int32(65535 / (t.BreakTime.Seconds() * 20)),
-		})
+		// Like BDS, the cracks are updated along with their start, without which the client draws the cracks
+		// of the block it is breaking itself too slowly.
+		data := int32(65535 / (t.BreakTime.Seconds() * 20))
+		s.writePacket(&packet.LevelEvent{EventType: packet.LevelEventStartBlockCracking, Position: vec64To32(pos.Vec3()), EventData: data})
+		s.writePacket(&packet.LevelEvent{EventType: packet.LevelEventUpdateBlockCracking, Position: vec64To32(pos.Vec3()), EventData: data})
 	case block.StopCrackAction:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventStopBlockCracking,

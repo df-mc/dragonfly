@@ -53,10 +53,45 @@ func BreakDuration(b world.Block, i item.Stack, ctx BreakContext) time.Duration 
 	if !ok {
 		return math.MaxInt64
 	}
-	info := breakable.BreakInfo()
-	if info.Hardness <= 0 {
+	if breakable.BreakInfo().Hardness <= 0 {
 		return 0
 	}
+	progress := BreakProgress(b, i, ctx)
+	if progress >= 1 {
+		return 0
+	}
+	return time.Duration(math.Ceil(1/progress)) * time.Second / 20
+}
+
+// BreakProgress returns the fraction of the block passed that is broken every tick when it is broken using the
+// item passed, accounting for the status effects and environment described by ctx. A block is broken once
+// the progress made reaches 1. BreakProgress returns 0 for blocks that cannot be broken.
+func BreakProgress(b world.Block, i item.Stack, ctx BreakContext) float64 {
+	breakable, ok := b.(Breakable)
+	if !ok {
+		return 0
+	}
+	info := breakable.BreakInfo()
+	if info.Hardness < 0 {
+		return 0
+	}
+	positive := max(ctx.HasteLevel, ctx.ConduitPowerLevel)
+	progress := 1.0
+	if info.Hardness > 0 {
+		progress = baseBreakProgress(b, info, i, ctx, positive)
+	}
+	if positive > 0 {
+		progress *= math.Pow(1.2, float64(positive))
+	}
+	if ctx.MiningFatigueLevel > 0 {
+		progress *= math.Pow(0.7, float64(ctx.MiningFatigueLevel))
+	}
+	return progress
+}
+
+// baseBreakProgress returns the progress made every tick breaking a block with a positive hardness, before
+// the final Haste, Conduit Power and Mining Fatigue multipliers are applied.
+func baseBreakProgress(b world.Block, info BreakInfo, i item.Stack, ctx BreakContext, positive int) float64 {
 	t, ok := i.Item().(item.Tool)
 	if !ok {
 		t = item.ToolNone{}
@@ -65,19 +100,16 @@ func BreakDuration(b world.Block, i item.Stack, ctx BreakContext) time.Duration 
 	canHarvest := info.Harvestable(t)
 	speed := 1.0
 	if info.Effective(t) {
+		// The tier of the tool only decides if the block can be harvested: a tool of too low a tier keeps
+		// its speed and Efficiency.
 		speed = t.BaseMiningEfficiency(b)
-		if !canHarvest {
-			// A tool of the correct type but wrong tier (e.g. a wooden pickaxe on diamond ore) grants no
-			// speed bonus in Bedrock Edition.
-			speed = 1
-		} else if e, ok := i.Enchantment(enchantment.Efficiency); ok {
+		if e, ok := i.Enchantment(enchantment.Efficiency); ok {
 			speed += enchantment.Efficiency.Addend(e.Level())
 		}
 	}
 
 	// Haste and Conduit Power do not stack; the higher of the two is used. They boost both the mining speed
 	// and the final destroy progress per tick.
-	positive := max(ctx.HasteLevel, ctx.ConduitPowerLevel)
 	if positive > 0 {
 		speed *= 0.2*float64(positive) + 1
 	}
@@ -91,23 +123,10 @@ func BreakDuration(b world.Block, i item.Stack, ctx BreakContext) time.Duration 
 		speed /= 5
 	}
 
-	damage := speed / info.Hardness
 	if canHarvest {
-		damage /= 30
-	} else {
-		damage /= 100
+		return speed / info.Hardness / 30
 	}
-	if positive > 0 {
-		damage *= math.Pow(1.2, float64(positive))
-	}
-	if ctx.MiningFatigueLevel > 0 {
-		damage *= math.Pow(0.7, float64(ctx.MiningFatigueLevel))
-	}
-	if damage >= 1 {
-		// The block breaks within a single tick.
-		return 0
-	}
-	return time.Duration(math.Ceil(1/damage)) * time.Second / 20
+	return speed / info.Hardness / 100
 }
 
 // BreaksInstantly checks if the block passed breaks instantly, that is, it has zero hardness and so is
