@@ -527,6 +527,7 @@ func (srv *Server) defaultGameData() minecraft.GameData {
 
 		ServerAuthoritativeInventory: true,
 		PlayerMovementSettings: protocol.PlayerMovementSettings{
+			RewindHistorySize:                40,
 			ServerAuthoritativeBlockBreaking: true,
 		},
 		Dimensions: srv.customDimensions,

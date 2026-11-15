@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/go-gl/mathgl/mgl32"
@@ -18,6 +19,9 @@ type PlayerAuthInputHandler struct{}
 // Handle ...
 func (h PlayerAuthInputHandler) Handle(p packet.Packet, s *Session, tx *world.Tx, c Controllable) error {
 	pk := p.(*packet.PlayerAuthInput)
+	if err := h.handleBreaking(pk, s, tx, c); err != nil {
+		return err
+	}
 	if err := h.handleMovement(pk, s, c); err != nil {
 		return err
 	}
@@ -66,28 +70,20 @@ func (h PlayerAuthInputHandler) handleMovement(pk *packet.PlayerAuthInput, s *Se
 	return nil
 }
 
-// handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session, tx *world.Tx, c Controllable) error {
-	if pk.InputData.Load(packet.InputFlagPerformItemInteraction) {
-		data, ok := pk.ItemInteractionData.Value()
-		if !ok {
-			return fmt.Errorf("item interaction flag set without item interaction data")
-		}
-		if err := h.handleUseItemData(data, s, c); err != nil {
-			return err
-		}
-	}
+// handleBreaking handles the block actions and item stack request present in the PlayerAuthInput packet.
+// Like BDS, these are handled before the movement in the packet.
+func (h PlayerAuthInputHandler) handleBreaking(pk *packet.PlayerAuthInput, s *Session, tx *world.Tx, c Controllable) error {
+	predicted := predictsMinedItem(pk)
+	var actions []protocol.PlayerBlockAction
 	if pk.InputData.Load(packet.InputFlagPerformBlockActions) {
-		actions, ok := pk.BlockActions.Value()
-		if !ok {
+		var ok bool
+		if actions, ok = pk.BlockActions.Value(); !ok {
 			return fmt.Errorf("block actions flag set without block actions")
 		}
-		if err := h.handleBlockActions(actions, s, c); err != nil {
-			return err
-		}
 	}
-	h.handleInputFlags(pk.InputData, s, c)
-
+	if err := h.handleBlockActions(actions, predicted, s, tx, c); err != nil {
+		return err
+	}
 	if pk.InputData.Load(packet.InputFlagPerformItemStackRequest) {
 		request, ok := pk.ItemStackRequest.Value()
 		if !ok {
@@ -102,8 +98,27 @@ func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Ses
 			// Item stacks being out of sync isn't uncommon, so don't error. Just debug the error and let the
 			// revert do its work.
 			s.conf.Log.Debug("process packet: PlayerAuthInput: resolve item stack request: " + err.Error())
+			if predicted {
+				held, _ := c.HeldItems()
+				s.sendItem(held, int(*s.heldSlot), protocol.WindowIDInventory)
+			}
 		}
 	}
+	return nil
+}
+
+// handleActions handles the actions with the world that are present in the PlayerAuthInput packet.
+func (h PlayerAuthInputHandler) handleActions(pk *packet.PlayerAuthInput, s *Session, tx *world.Tx, c Controllable) error {
+	if pk.InputData.Load(packet.InputFlagPerformItemInteraction) {
+		data, ok := pk.ItemInteractionData.Value()
+		if !ok {
+			return fmt.Errorf("item interaction flag set without item interaction data")
+		}
+		if err := h.handleUseItemData(data, s, c); err != nil {
+			return err
+		}
+	}
+	h.handleInputFlags(pk.InputData, s, c)
 	return nil
 }
 
@@ -183,12 +198,61 @@ func (h PlayerAuthInputHandler) handleUseItemData(data protocol.UseItemTransacti
 	return nil
 }
 
-// handleBlockActions handles a slice of protocol.PlayerBlockAction present in a PlayerAuthInput packet.
-func (h PlayerAuthInputHandler) handleBlockActions(a []protocol.PlayerBlockAction, s *Session, c Controllable) error {
+// handleBlockActions handles a slice of protocol.PlayerBlockAction present in a PlayerAuthInput packet, after
+// which progress is made breaking the block the player is breaking, as BDS does once for every PlayerAuthInput
+// packet in ServerPlayerBlockUseHandler::onBeforeMovementSimulation (0x8CE7BE0).
+// If the client predicted the durability of the item it mined with, changes to its held item are left to
+// the item stack response instead of being resent, as resending the held item resets the client's mining
+// progress.
+func (h PlayerAuthInputHandler) handleBlockActions(a []protocol.PlayerBlockAction, predicted bool, s *Session, tx *world.Tx, c Controllable) error {
+	if predicted {
+		s.heldItemPredicted.Store(true)
+		defer s.heldItemPredicted.Store(false)
+	}
+	s.continuedBreak = false
 	for _, action := range a {
 		if err := handlePlayerAction(action.Action, action.Face, action.BlockPos, selfEntityRuntimeID, s, c); err != nil {
 			return err
 		}
 	}
+	if !s.continuedBreak {
+		c.ContinueBreaking(s.breakingFace)
+	}
+	h.correctPredictedBreak(s, tx, c)
 	return nil
+}
+
+// correctPredictedBreak resends the block the client predicted to be broken once it is clear the server will
+// not break it, so that the client does not keep showing it as broken.
+func (h PlayerAuthInputHandler) correctPredictedBreak(s *Session, tx *world.Tx, c Controllable) {
+	pos := s.predictedBreak
+	if pos == nil {
+		return
+	}
+	b := tx.Block(*pos)
+	if _, air := b.(block.Air); !air {
+		if current, breaking := c.Breaking(); breaking && current == *pos {
+			return
+		}
+		s.ViewBlockUpdate(*pos, b, 0)
+	}
+	s.predictedBreak = nil
+}
+
+// predictsMinedItem checks if the PlayerAuthInput packet passed carries an item stack request with the
+// client's prediction of the item it mined a block with.
+func predictsMinedItem(pk *packet.PlayerAuthInput) bool {
+	if !pk.InputData.Load(packet.InputFlagPerformItemStackRequest) {
+		return false
+	}
+	request, ok := pk.ItemStackRequest.Value()
+	if !ok {
+		return false
+	}
+	for _, action := range request.Actions {
+		if _, ok := action.(*protocol.MineBlockStackRequestAction); ok {
+			return true
+		}
+	}
+	return false
 }
