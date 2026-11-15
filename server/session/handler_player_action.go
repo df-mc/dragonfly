@@ -29,21 +29,38 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		// Don't do anything for these actions.
 	case protocol.PlayerActionStopSleeping:
 		c.Wake()
-	case protocol.PlayerActionStartBreak, protocol.PlayerActionContinueDestroyBlock:
+	case protocol.PlayerActionStartBreak:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
 
-		s.breakingPos = cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
-		c.StartBreaking(s.breakingPos, cube.Face(face))
-	case protocol.PlayerActionAbortBreak:
-		c.AbortBreaking()
-	case protocol.PlayerActionPredictDestroyBlock, protocol.PlayerActionStopBreak:
+		s.breakingPos, s.breakingFace = blockPos(pos), cube.Face(face)
+		c.StartBreaking(s.breakingPos, s.breakingFace)
+	case protocol.PlayerActionContinueDestroyBlock:
 		s.swingingArm.Store(true)
 		defer s.swingingArm.Store(false)
-		c.FinishBreaking()
-	case protocol.PlayerActionCrackBreak:
-		// Don't do anything for this action. It is no longer used. Block
-		// cracking is done fully server-side.
+
+		next := blockPos(pos)
+		if current, breaking := c.Breaking(); !breaking || current != next {
+			s.breakingPos = next
+			c.StartBreaking(next, cube.Face(face))
+		}
+		s.breakingFace = cube.Face(face)
+		c.ContinueBreaking(s.breakingFace)
+	case protocol.PlayerActionAbortBreak:
+		c.AbortBreaking()
+	case protocol.PlayerActionPredictDestroyBlock:
+		s.swingingArm.Store(true)
+		defer s.swingingArm.Store(false)
+
+		if c.GameMode().CreativeInventory() {
+			c.FinishBreaking()
+			break
+		}
+		predicted := blockPos(pos)
+		s.predictedBreak = &predicted
+	case protocol.PlayerActionStopBreak, protocol.PlayerActionCrackBreak:
+		// Only the client's cracking animation stops: the block is broken once the server has made
+		// enough progress breaking it.
 	case protocol.PlayerActionStartItemUseOn:
 		// TODO: Properly utilize these actions.
 	case protocol.PlayerActionStopItemUseOn:
@@ -60,4 +77,9 @@ func handlePlayerAction(action int32, face int32, pos protocol.BlockPos, entityR
 		return fmt.Errorf("unhandled ActionType %v", action)
 	}
 	return nil
+}
+
+// blockPos converts a protocol.BlockPos to a cube.Pos.
+func blockPos(pos protocol.BlockPos) cube.Pos {
+	return cube.Pos{int(pos[0]), int(pos[1]), int(pos[2])}
 }

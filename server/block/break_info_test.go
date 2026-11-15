@@ -1,6 +1,7 @@
 package block_test
 
 import (
+	"math"
 	"testing"
 
 	"github.com/df-mc/dragonfly/server/block"
@@ -127,6 +128,55 @@ func TestBreaksInstantly(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := block.BreaksInstantly(tt.block); got != tt.want {
+				t.Errorf("got %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestBreakProgress verifies the progress made every tick breaking a block, which is not rounded to whole
+// ticks like the duration returned by BreakDuration.
+func TestBreakProgress(t *testing.T) {
+	diamondPick := item.NewStack(item.Pickaxe{Tier: item.ToolTierDiamond}, 1)
+
+	tests := []struct {
+		name  string
+		block world.Block
+		stack item.Stack
+		ctx   block.BreakContext
+		want  float64
+	}{
+		{
+			name:  "best tool on stone",
+			block: block.Stone{},
+			stack: diamondPick,
+			want:  8.0 / 1.5 / 30,
+		},
+		{
+			name:  "bare hand on stone cannot harvest it",
+			block: block.Stone{},
+			want:  1.0 / 1.5 / 100,
+		},
+		{
+			name:  "zero-hardness block",
+			block: block.ShortGrass{},
+			want:  1,
+		},
+		{
+			name:  "mining fatigue slows zero-hardness blocks",
+			block: block.ShortGrass{},
+			ctx:   block.BreakContext{MiningFatigueLevel: 1},
+			want:  0.7,
+		},
+		{
+			name:  "unbreakable block",
+			block: block.Air{},
+			want:  0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := block.BreakProgress(tt.block, tt.stack, tt.ctx); math.Abs(got-tt.want) > 1e-9 {
 				t.Errorf("got %v, want %v", got, tt.want)
 			}
 		})

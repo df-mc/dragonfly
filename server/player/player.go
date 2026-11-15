@@ -98,12 +98,12 @@ type playerData struct {
 
 	collidedVertically, collidedHorizontally bool
 
-	breaking          bool
-	breakingPos       cube.Pos
-	breakingFace      cube.Face
-	lastBreakDuration time.Duration
-
-	breakCounter uint32
+	breaking                                         bool
+	breakingPos                                      cube.Pos
+	breakingFace                                     cube.Face
+	breakProgress                                    float64
+	lastBreakDuration                                time.Duration
+	lastBreakUpdate, nextBreakSound, breakDelayUntil time.Time
 
 	hunger *hungerManager
 
@@ -1963,9 +1963,11 @@ func (p *Player) AttackEntity(e world.Entity) bool {
 // If no block is present at the position, or if the block is out of range, StartBreaking will return
 // immediately and the block will not be broken. StartBreaking will stop the breaking of any block that the
 // player might be breaking before this method is called.
+// In creative mode, and for blocks without hardness, the block is broken immediately. Otherwise, the block
+// breaks once enough progress is made through calls to ContinueBreaking.
 func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
-	p.AbortBreaking()
-	if _, air := p.tx.Block(pos).(block.Air); air || !p.canReach(pos.Vec3Centre()) {
+	p.stopBreaking()
+	if _, air := p.tx.Block(pos).(block.Air); air || !p.canReachBreaking(pos) {
 		// The block was either out of range or air, so it can't be broken by the player.
 		return
 	}
@@ -2003,19 +2005,54 @@ func (p *Player) StartBreaking(pos cube.Pos, face cube.Face) {
 	p.SwingArm()
 
 	if p.GameMode().CreativeInventory() {
+		p.FinishBreaking()
 		return
 	}
+	now := time.Now()
+	p.breakProgress, p.lastBreakUpdate, p.nextBreakSound = 0, now, now.Add(breakSoundInterval)
 	p.lastBreakDuration = p.breakTime(pos)
 	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(pos, block.StartCrackAction{BreakTime: p.lastBreakDuration})
 	}
+	if block.BreaksInstantly(p.tx.Block(pos)) {
+		p.FinishBreaking()
+		p.breakDelayUntil = now.Add(breakDelay)
+	}
 }
 
-// breakTime returns the time needed to break a block at the position passed, taking into account the item
-// held, if the player is on the ground/underwater and if the player has any effects.
-func (p *Player) breakTime(pos cube.Pos) time.Duration {
+const (
+	// breakDelay is the time after breaking a block during which no progress is made breaking the next one,
+	// unless the block broken took less than a tick to break.
+	breakDelay = 250 * time.Millisecond
+	// breakSoundInterval is the interval at which the breaking sound is played while breaking a block.
+	breakSoundInterval = 200 * time.Millisecond
+	// breakReach and creativeBreakReach are the distances from the eyes within which a block may be broken.
+	breakReach, creativeBreakReach = 6.7, 12.0
+)
+
+// canReachBreaking checks if the player is close enough to the block at the position passed to break it.
+func (p *Player) canReachBreaking(pos cube.Pos) bool {
+	reach := breakReach
+	if p.GameMode().CreativeInventory() {
+		reach = creativeBreakReach
+	}
+	return p.canReach(pos.Vec3Centre()) && entity.EyePosition(p).Sub(pos.Vec3()).Len() < reach
+}
+
+// breakProgressPerTick returns the progress made every tick breaking the block at the position passed.
+func (p *Player) breakProgressPerTick(pos cube.Pos) float64 {
 	held, _ := p.HeldItems()
-	return block.BreakDuration(p.tx.Block(pos), held, p.breakContext())
+	return block.BreakProgress(p.tx.Block(pos), held, p.breakContext())
+}
+
+// breakTime returns the exact time needed to break the block at the position passed, which is used to
+// animate the cracks forming in the block.
+func (p *Player) breakTime(pos cube.Pos) time.Duration {
+	progress := p.breakProgressPerTick(pos)
+	if progress <= 0 {
+		return math.MaxInt64
+	}
+	return time.Duration(float64(time.Second) / 20 / progress)
 }
 
 // breakContext returns the block.BreakContext describing the status effects and environment currently
@@ -2040,47 +2077,66 @@ func (p *Player) breakContext() block.BreakContext {
 	return ctx
 }
 
+// Breaking checks if the player is currently breaking a block, returning the position of the block if so.
+func (p *Player) Breaking() (cube.Pos, bool) {
+	return p.breakingPos, p.breaking
+}
+
 // FinishBreaking makes the player finish breaking the block it is currently breaking, or returns immediately
 // if the player isn't breaking anything.
-// FinishBreaking will stop the animation and break the block.
+// FinishBreaking will stop the animation and break the block, regardless of the progress made breaking it.
 func (p *Player) FinishBreaking() {
 	if !p.breaking {
 		p.resendNearbyBlock(p.breakingPos)
 		return
 	}
-	p.AbortBreaking()
+	p.stopBreaking()
 	p.BreakBlock(p.breakingPos)
 }
 
 // AbortBreaking makes the player stop breaking the block it is currently breaking, or returns immediately
-// if the player isn't breaking anything.
-// Unlike FinishBreaking, AbortBreaking does not stop the animation.
+// if the player isn't breaking anything. Any progress made breaking the block is lost.
 func (p *Player) AbortBreaking() {
+	p.breakDelayUntil = time.Time{}
+	p.stopBreaking()
+}
+
+// stopBreaking stops the breaking of the block the player is currently breaking, if any, and stops the
+// cracks in the block from forming.
+func (p *Player) stopBreaking() {
 	if !p.breaking {
 		return
 	}
-	p.breaking, p.breakCounter = false, 0
+	p.breaking, p.breakProgress = false, 0
 	for _, viewer := range p.viewers() {
 		viewer.ViewBlockAction(p.breakingPos, block.StopCrackAction{})
 	}
 }
 
 // ContinueBreaking makes the player continue breaking the block it started breaking after a call to
-// Player.StartBreaking().
+// Player.StartBreaking(). Progress is made based on the time passed since the last call, and the block is
+// broken once it is fully broken. Breaking stops if the block is no longer in reach.
 // The face passed is used to display particles on the side of the block broken.
 func (p *Player) ContinueBreaking(face cube.Face) {
 	if !p.breaking {
 		return
 	}
 	pos := p.breakingPos
+	if !p.canReachBreaking(pos) {
+		p.AbortBreaking()
+		return
+	}
 	b := p.tx.Block(pos)
+	if _, air := b.(block.Air); air {
+		return
+	}
+	p.breakingFace = face
 	p.tx.AddParticle(pos.Vec3(), particle.PunchBlock{Block: b, Face: face})
 
-	if p.breakCounter++; p.breakCounter%5 == 0 {
+	now := time.Now()
+	if now.After(p.nextBreakSound) {
+		p.nextBreakSound = now.Add(breakSoundInterval)
 		p.SwingArm()
-
-		// We send this sound only every so often. Vanilla doesn't send it every tick while breaking
-		// either. Every 5 ticks seems accurate.
 		p.tx.PlaySound(pos.Vec3(), sound.BlockBreaking{Block: b})
 	}
 	if breakTime := p.breakTime(pos); breakTime != p.lastBreakDuration {
@@ -2088,6 +2144,19 @@ func (p *Player) ContinueBreaking(face cube.Face) {
 			viewer.ViewBlockAction(pos, block.ContinueCrackAction{BreakTime: breakTime})
 		}
 		p.lastBreakDuration = breakTime
+	}
+	if now.Before(p.breakDelayUntil) {
+		return
+	}
+	progress := p.breakProgressPerTick(pos)
+	p.breakProgress += now.Sub(p.lastBreakUpdate).Seconds() * 20 * progress
+	p.lastBreakUpdate = now
+	if p.breakProgress < 0.99999 {
+		return
+	}
+	p.FinishBreaking()
+	if progress < 0.99999 {
+		p.breakDelayUntil = now.Add(breakDelay)
 	}
 }
 
@@ -2721,7 +2790,7 @@ func (p *Player) Tick(tx *world.Tx, current int64) {
 			c.ContinueCharge(p, tx, p.useContext(), p.useDuration())
 		}
 	}
-	if p.breaking {
+	if p.breaking && p.session() == session.Nop {
 		p.ContinueBreaking(p.breakingFace)
 	}
 
