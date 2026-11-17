@@ -22,6 +22,8 @@ var MessageSleeping = Translate(str("%chat.type.sleeping"), 2, `%v is sleeping i
 var MessageSkippingNight = Translate(str("%multiplayer.playersSkippingNight"), 0, `Sleeping through this night`)
 var MessageBedNotValid = Translate(str("%tile.bed.notValid"), 0, `Your home bed was missing or obstructed`)
 
+var MessageNowPlaying = Translate(str("%record.nowPlaying"), 1, `Now playing: %v`)
+
 type str string
 
 // Resolve returns the translation identifier as a string.
