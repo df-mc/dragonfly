@@ -57,7 +57,8 @@ type Server struct {
 	pmu sync.RWMutex
 	// p holds a map of all players currently connected to the server. When they
 	// leave, they are removed from the map.
-	p map[uuid.UUID]*onlinePlayer
+	p       map[uuid.UUID]*onlinePlayer
+	joining map[uuid.UUID]struct{}
 	// pwg is a sync.WaitGroup used to wait for all players to be disconnected
 	// before server shutdown, so that their data is saved properly.
 	pwg sync.WaitGroup
@@ -137,9 +138,7 @@ func (srv *Server) Accept() iter.Seq[*player.Player] {
 			if !ok {
 				return
 			}
-			srv.pmu.Lock()
-			srv.p[inc.p.handle.UUID()] = inc.p
-			srv.pmu.Unlock()
+			srv.admitPlayer(inc.p.handle.UUID(), inc.p)
 
 			ret, err := world.Call(context.Background(), inc.w, func(tx *world.Tx) (bool, error) {
 				p := tx.AddEntity(inc.p.handle).(*player.Player)
@@ -257,6 +256,32 @@ func (srv *Server) Players(tx *world.Tx) iter.Seq[*player.Player] {
 			}
 		}
 	}
+}
+
+func (srv *Server) reservePlayer(id uuid.UUID) bool {
+	srv.pmu.Lock()
+	defer srv.pmu.Unlock()
+	if _, ok := srv.p[id]; ok {
+		return false
+	}
+	if _, ok := srv.joining[id]; ok {
+		return false
+	}
+	srv.joining[id] = struct{}{}
+	return true
+}
+
+func (srv *Server) admitPlayer(id uuid.UUID, p *onlinePlayer) {
+	srv.pmu.Lock()
+	srv.p[id] = p
+	delete(srv.joining, id)
+	srv.pmu.Unlock()
+}
+
+func (srv *Server) releasePlayer(id uuid.UUID) {
+	srv.pmu.Lock()
+	delete(srv.joining, id)
+	srv.pmu.Unlock()
 }
 
 // Player looks for a player on the server with the UUID passed. If found, the
@@ -464,6 +489,17 @@ func (srv *Server) wait() {
 // channel.
 func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listener) {
 	id := uuid.MustParse(conn.IdentityData().Identity)
+	if !srv.reservePlayer(id) {
+		_ = l.Disconnect(conn, "Already logged in.")
+		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
+		return
+	}
+	handedOff := false
+	defer func() {
+		if !handedOff {
+			srv.releasePlayer(id)
+		}
+	}()
 	data := srv.defaultGameData()
 
 	d, w, err := srv.conf.PlayerProvider.Load(id, srv.dimension)
@@ -486,13 +522,9 @@ func (srv *Server) finaliseConn(ctx context.Context, conn session.Conn, l Listen
 		srv.conf.Log.Debug("spawn failed: "+err.Error(), "raddr", conn.RemoteAddr())
 		return
 	}
-	if _, ok := srv.Player(id); ok {
-		_ = l.Disconnect(conn, "Already logged in.")
-		srv.conf.Log.Debug("spawn failed: already logged in", "raddr", conn.RemoteAddr())
-		return
-	}
 	_ = conn.WritePacket(&packet.ItemRegistry{Items: srv.customItems})
 	srv.incoming <- srv.createPlayer(id, conn, d, w)
+	handedOff = true
 }
 
 // defaultGameData returns a minecraft.GameData as sent for a new player. It
