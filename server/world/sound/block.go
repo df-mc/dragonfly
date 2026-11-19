@@ -23,6 +23,22 @@ type BlockBreaking struct {
 	sound
 }
 
+// Brushing is a sound played every time a block is brushed with a brush.
+type Brushing struct {
+	// Block is the block being brushed. The sound played depends on the block type.
+	Block world.Block
+
+	sound
+}
+
+// BrushingCompleted is a sound played when brushing a block with a brush is completed.
+type BrushingCompleted struct {
+	// Block is the block that was brushed. The sound played depends on the block type.
+	Block world.Block
+
+	sound
+}
+
 // GlassBreak is a sound played when a glass block or item is broken.
 type GlassBreak struct{ sound }
 

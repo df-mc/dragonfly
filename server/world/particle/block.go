@@ -35,6 +35,14 @@ type BlockBreak struct {
 	Block world.Block
 }
 
+// BlockBreakNoSound is a particle shown when a block is destroyed without the break sound, such as a fully
+// brushed suspicious block.
+type BlockBreakNoSound struct {
+	particle
+	// Block is the block of which particles should be shown.
+	Block world.Block
+}
+
 // PunchBlock is a particle shown when a player is punching a block. It shows particles of a specific block
 // type at a particular face of a block.
 type PunchBlock struct {
