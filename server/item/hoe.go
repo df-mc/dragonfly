@@ -28,6 +28,9 @@ func (h Hoe) UseOnBlock(pos cube.Pos, face cube.Face, _ mgl64.Vec3, tx *world.Tx
 			}
 			tx.SetBlock(pos, res, nil)
 			tx.PlaySound(pos.Vec3(), sound.ItemUseOn{Block: res})
+			if t, ok := b.(tillListener); ok {
+				t.Tilled(pos, tx)
+			}
 			ctx.DamageItem(1)
 			return true
 		}
@@ -40,6 +43,12 @@ type tillable interface {
 	// Till returns a block that results from tilling it. If tilling it does not have a result, the bool returned
 	// is false.
 	Till() (world.Block, bool)
+}
+
+// tillListener represents a tillable block that does something extra when it is tilled.
+type tillListener interface {
+	// Tilled is called after the block at pos was tilled.
+	Tilled(pos cube.Pos, tx *world.Tx)
 }
 
 // MaxCount ...
