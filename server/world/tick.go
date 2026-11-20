@@ -24,13 +24,29 @@ func (t ticker) tickLoop(w *World) {
 	for {
 		select {
 		case <-tc.C:
-			<-w.exec(t.tick)
+			<-w.exec(func(tx *Tx) {
+				if !w.paused.Load() {
+					t.tick(tx)
+				}
+			})
 		case <-w.closing:
 			// World is being closed: Stop ticking and get rid of a task.
 			w.running.Done()
 			return
 		}
 	}
+}
+
+// SetPaused suspends or resumes the automatic tick loop. While paused,
+// entities, block ticks, time and weather stand still; viewers, tasks and chunk
+// loading keep running, and resuming continues from the same state.
+func (w *World) SetPaused(paused bool) {
+	w.paused.Store(paused)
+}
+
+// Paused reports whether the automatic tick loop is suspended.
+func (w *World) Paused() bool {
+	return w.paused.Load()
 }
 
 // AdvanceTick advances the World by a single tick. It is generally only useful
