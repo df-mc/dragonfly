@@ -8,6 +8,10 @@ type HugeExplosion struct{ particle }
 // EndermanTeleport is a particle that shows up when an enderman teleports.
 type EndermanTeleport struct{ particle }
 
+// Bubble is a particle that shows up as a small bubble in water, for example when a fish approaches a fishing
+// hook.
+type Bubble struct{ particle }
+
 // SnowballPoof is a particle shown when a snowball collides with something.
 type SnowballPoof struct{ particle }
 

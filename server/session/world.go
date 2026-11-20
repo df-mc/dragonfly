@@ -452,6 +452,11 @@ func (s *Session) ViewParticle(pos mgl64.Vec3, p world.Particle) {
 			EventType: packet.LevelEventParticlesEvaporateWater,
 			Position:  vec64To32(pos),
 		})
+	case particle.Bubble:
+		s.writePacket(&packet.LevelEvent{
+			EventType: packet.LevelEventParticleLegacyEvent | 1,
+			Position:  vec64To32(pos),
+		})
 	case particle.SnowballPoof:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventParticleLegacyEvent | 15,
@@ -799,6 +804,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventCrossbowShoot
 	case sound.ArrowHit:
 		pk.SoundType = packet.SoundEventBowHit
+	case sound.Splash:
+		pk.SoundType = packet.SoundEventSplash
 	case sound.ItemThrow:
 		pk.SoundType, pk.EntityType = packet.SoundEventThrow, "minecraft:player"
 	case sound.LevelUp:
@@ -1078,6 +1085,13 @@ func (s *Session) ViewEntityAction(e world.Entity, a world.EntityAction) {
 			EventType:       packet.ActorEventShake,
 			EventData:       int32(act.Duration.Milliseconds() / 50),
 		})
+	case entity.FishingHookBiteAction:
+		for _, event := range []byte{packet.ActorEventFishhookHookTime, packet.ActorEventFishhookBubble, packet.ActorEventFishhookTease} {
+			s.writePacket(&packet.ActorEvent{
+				EntityRuntimeID: s.entityRuntimeID(e),
+				EventType:       event,
+			})
+		}
 	case entity.FireworkExplosionAction:
 		s.writePacket(&packet.ActorEvent{
 			EntityRuntimeID: s.entityRuntimeID(e),
