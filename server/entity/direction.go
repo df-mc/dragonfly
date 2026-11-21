@@ -20,3 +20,12 @@ func EyePosition(e world.Entity) mgl64.Vec3 {
 	}
 	return pos
 }
+
+// ExplosionImpulse returns the velocity added to an entity by an explosion.
+func ExplosionImpulse(e world.Entity, src world.ExplosionSource, impact float64) mgl64.Vec3 {
+	direction := EyePosition(e).Sub(src.Position())
+	if direction.Len() == 0 {
+		return mgl64.Vec3{}
+	}
+	return direction.Normalize().Mul(impact)
+}
