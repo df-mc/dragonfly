@@ -4,7 +4,6 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/df-mc/dragonfly/server/block"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/entity"
 	"github.com/df-mc/dragonfly/server/entity/effect"
@@ -26,6 +25,9 @@ type Config struct {
 	Name     string
 	Locale   language.Tag
 	GameMode world.GameMode
+	// WorldByDimension returns the default World for a Dimension. If nil, saved respawn points outside the player's
+	// current World cannot be resolved.
+	WorldByDimension func(world.Dimension) *world.World
 
 	Position               mgl64.Vec3
 	Rotation               cube.Rotation
@@ -72,6 +74,7 @@ func (cfg Config) Apply(data *world.EntityData) {
 		mc:                  &entity.MovementComputer{Gravity: 0.08, Drag: 0.02, DragBeforeGravity: true},
 		heldSlot:            &slot,
 		gameMode:            conf.GameMode,
+		worldByDimension:    conf.WorldByDimension,
 		skin:                conf.Skin,
 		enchantSeed:         conf.EnchantmentSeed,
 		s:                   conf.Session,
@@ -88,7 +91,9 @@ func (cfg Config) Apply(data *world.EntityData) {
 		fireTicks:           conf.FireTicks,
 		fallDistance:        conf.FallDistance,
 	}
-	playerUUID := conf.UUID
+	// Capture only the fields the callbacks below need: the computer outlives Apply, so closing over conf would keep
+	// the session, skin and inventories reachable for as long as the player exists.
+	playerUUID, worldByDimension := conf.UUID, conf.WorldByDimension
 	pdata.portalTravel = &entity.PortalTravelComputer{
 		Instantaneous: func(_, target world.Dimension) bool {
 			// End travel is always instant regardless of game mode; End portals target the End in either direction.
@@ -98,14 +103,27 @@ func (cfg Config) Apply(data *world.EntityData) {
 			e.(*Player).forceTeleport(pos)
 		},
 		SpawnPoint: func(tx *world.Tx) mgl64.Vec3 {
-			// Use the player's spawn only while its bed still exists and is unobstructed, like respawning.
-			pos := tx.World().PlayerSpawn(playerUUID)
-			if b, ok := tx.Block(pos).(block.Bed); ok && b.CanRespawnOn() {
-				if safe, ok := b.SafeSpawn(pos, tx); ok {
+			// Use the player's spawn only while its respawn block still exists and is unobstructed.
+			if spawn, ok := tx.World().PlayerSpawnPoint(playerUUID); ok && spawn.Dim == tx.World().Dimension() {
+				if safe, ok := safeSpawnLocation(tx, spawn.Pos); ok {
 					return safe.Vec3Middle()
 				}
 			}
 			return tx.World().Spawn().Vec3Middle()
+		},
+		EndSpawn: func(defaultDestination *world.World) (*world.World, func(*world.Tx) (mgl64.Vec3, bool)) {
+			spawn, ok := defaultDestination.PlayerSpawnPoint(playerUUID)
+			if !ok || worldByDimension == nil {
+				return nil, nil
+			}
+			spawnWorld := worldByDimension(spawn.Dim)
+			if spawnWorld == nil {
+				return nil, nil
+			}
+			return spawnWorld, func(tx *world.Tx) (mgl64.Vec3, bool) {
+				pos, ok := safeSpawnLocation(tx, spawn.Pos)
+				return pos.Vec3Middle(), ok
+			}
 		},
 		Player: true,
 		// Only players create a portal at the destination when no linked portal exists.
