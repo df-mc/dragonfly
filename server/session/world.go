@@ -716,6 +716,8 @@ func (s *Session) playSound(pos mgl64.Vec3, t world.Sound, disableRelative bool)
 		pk.SoundType = packet.SoundEventDeny
 	case sound.BlockPlace:
 		pk.SoundType, pk.ExtraData = packet.SoundEventPlace, int32(s.br.BlockRuntimeID(so.Block))
+	case sound.BlockSlide:
+		pk.SoundType, pk.ExtraData, pk.EntityType = packet.SoundEventLand, int32(s.br.BlockRuntimeID(so.Block)), so.EntityType
 	case sound.AnvilLand:
 		s.writePacket(&packet.LevelEvent{
 			EventType: packet.LevelEventSoundAnvilLand,
