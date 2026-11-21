@@ -182,6 +182,7 @@ type User interface {
 	UsingItem() bool
 	ReleaseItem()
 	UseItem()
+	GameMode() world.GameMode
 }
 
 // Carrier represents an entity that is able to carry an item.
