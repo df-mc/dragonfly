@@ -132,7 +132,7 @@ func (c Crossbow) ReleaseCharge(releaser Releaser, tx *world.Tx, ctx *UseContext
 	}
 
 	arrowConf := world.ArrowSpawnConfig{
-		Damage:              9,
+		Damage:              1,
 		Owner:               releaser,
 		Critical:            true,
 		ObtainArrowOnPickup: !creative,
@@ -178,7 +178,7 @@ func (c Crossbow) shoot(releaser Releaser, tx *world.Tx, offsetAngle float64, ar
 		arrowConf.Tip = c.Item.Item().(Arrow).Tip
 		arrow := createArrow(world.EntitySpawnOpts{
 			Position: torsoPosition(releaser),
-			Velocity: dirVec.Mul(5.15),
+			Velocity: dirVec.Mul(3.15),
 			Rotation: rot.Neg(),
 		}, arrowConf)
 		tx.AddEntity(arrow)
