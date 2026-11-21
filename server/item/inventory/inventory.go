@@ -34,6 +34,10 @@ type SlotValidatorFunc func(s item.Stack, slot int) bool
 // range of valid values for the inventory.
 var ErrSlotOutOfRange = errors.New("slot is out of range: must be in range 0 <= slot < inventory.Size()")
 
+// ErrSlotRejected is returned by methods on Inventory when the slot validator of the Inventory refused to hold the
+// item in the slot it was written to. The Inventory is left unchanged when this is returned.
+var ErrSlotRejected = errors.New("item is rejected by the slot validator of the inventory")
+
 // New creates a new inventory with the size passed. The inventory size cannot be changed after it has been
 // constructed.
 // A function may be passed which is called every time a slot is changed. The function may also be nil, if
@@ -88,7 +92,9 @@ func (inv *Inventory) Item(slot int) (item.Stack, error) {
 
 // SetItem sets a stack of items to a specific slot in the inventory. If an item is already present in the
 // slot, that item will be overwritten.
-// SetItem will return an error if the slot passed is out of range. (0 <= slot < inventory.Size())
+// SetItem will return an error if the slot passed is out of range. (0 <= slot < inventory.Size()) It returns
+// ErrSlotRejected if the slot validator of the Inventory refused to hold the item, in which case the Inventory is
+// left unchanged.
 func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 	inv.mu.Lock()
 
@@ -97,10 +103,13 @@ func (inv *Inventory) SetItem(slot int, item item.Stack) error {
 		inv.mu.Unlock()
 		return ErrSlotOutOfRange
 	}
-	f := inv.setItem(slot, item)
+	f, ok := inv.setItem(slot, item)
 
 	inv.mu.Unlock()
 
+	if !ok {
+		return ErrSlotRejected
+	}
 	f()
 	return nil
 }
@@ -154,7 +163,8 @@ func (inv *Inventory) FirstEmpty() (int, bool) {
 	return -1, false
 }
 
-// Swap swaps the items between two slots. Returns an error if either slot A or B are invalid.
+// Swap swaps the items between two slots. Returns an error if either slot A or B are invalid, or ErrSlotRejected if
+// the slot validator of the Inventory refused to hold either item, in which case neither slot is changed.
 func (inv *Inventory) Swap(slotA, slotB int) error {
 	inv.mu.Lock()
 
@@ -164,7 +174,14 @@ func (inv *Inventory) Swap(slotA, slotB int) error {
 		return ErrSlotOutOfRange
 	}
 	a, b := inv.slots[slotA], inv.slots[slotB]
-	fa, fb := inv.setItem(slotA, b), inv.setItem(slotB, a)
+	if !inv.validator(b, slotA) || !inv.validator(a, slotB) {
+		// Both slots are checked before either is written, so that a rejected second write cannot leave the swap
+		// half applied.
+		inv.mu.Unlock()
+		return ErrSlotRejected
+	}
+	fa, _ := inv.setItem(slotA, b)
+	fb, _ := inv.setItem(slotB, a)
 
 	inv.mu.Unlock()
 
@@ -179,7 +196,8 @@ func (inv *Inventory) Swap(slotA, slotB int) error {
 // If no existing stacks with leftover space are left, empty slots will be filled up with the remainder of the
 // item added.
 // If the item could not be fully added to the inventory, an error is returned along with the count that was
-// added to the inventory.
+// added to the inventory. Slots whose contents the slot validator of the Inventory refuses are skipped and do not
+// count towards that number.
 func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 	if it.Empty() {
 		return 0, nil
@@ -201,7 +219,10 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 			// Count stayed the same, meaning this slot either wasn't equal to this stack or was max size.
 			continue
 		}
-		f := inv.setItem(slot, a)
+		f, ok := inv.setItem(slot, a)
+		if !ok {
+			continue
+		}
 		//noinspection GoDeferInLoop
 		defer f()
 
@@ -214,7 +235,10 @@ func (inv *Inventory) AddItem(it item.Stack) (n int, err error) {
 	for _, slot := range emptySlots {
 		a, b := it.Grow(-math.MaxInt32).AddStack(it)
 
-		f := inv.setItem(slot, a)
+		f, ok := inv.setItem(slot, a)
+		if !ok {
+			continue
+		}
 		//noinspection GoDeferInLoop
 		defer f()
 
@@ -249,11 +273,13 @@ func (inv *Inventory) RemoveItemFunc(n int, comparable func(stack item.Stack) bo
 		}
 		c := slotIt.Count() - n
 
-		var f func()
-		if c <= 0 {
-			f = inv.setItem(slot, item.Stack{})
-		} else {
-			f = inv.setItem(slot, slotIt.Grow(-n))
+		rem := item.Stack{}
+		if c > 0 {
+			rem = slotIt.Grow(-n)
+		}
+		f, ok := inv.setItem(slot, rem)
+		if !ok {
+			continue
 		}
 
 		//noinspection GoDeferInLoop
@@ -332,8 +358,11 @@ func (inv *Inventory) Clear() []item.Stack {
 	items := make([]item.Stack, 0, inv.size())
 	for slot, i := range inv.slots {
 		if !i.Empty() {
+			f, ok := inv.setItem(slot, item.Stack{})
+			if !ok {
+				continue
+			}
 			items = append(items, i)
-			f := inv.setItem(slot, item.Stack{})
 			//noinspection GoDeferInLoop
 			defer f()
 		}
@@ -365,11 +394,12 @@ func (inv *Inventory) Handler() Handler {
 	return inv.h
 }
 
-// setItem sets an item to a specific slot and overwrites the existing item. It calls the function which is
-// called for every item change and does so without locking the inventory.
-func (inv *Inventory) setItem(slot int, it item.Stack) func() {
+// setItem sets an item to a specific slot and overwrites the existing item. It returns the function which is called
+// for every item change, to be called without the inventory locked, and reports whether the slot validator accepted
+// the item. The Inventory is left unchanged if it did not.
+func (inv *Inventory) setItem(slot int, it item.Stack) (func(), bool) {
 	if !inv.validator(it, slot) {
-		return func() {}
+		return func() {}, false
 	}
 	if it.Count() > it.MaxCount() {
 		it = it.Grow(it.MaxCount() - it.Count())
@@ -378,7 +408,7 @@ func (inv *Inventory) setItem(slot int, it item.Stack) func() {
 	inv.slots[slot] = it
 	return func() {
 		inv.f(slot, before, it)
-	}
+	}, true
 }
 
 // Size returns the size of the inventory. It is always the same value as that passed in the call to New() and
