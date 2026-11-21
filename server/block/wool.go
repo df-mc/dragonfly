@@ -29,6 +29,9 @@ func (w Wool) BreakInfo() BreakInfo {
 	return newBreakInfo(0.8, alwaysHarvestable, shearsEffective, oneOf(w))
 }
 
+// ShearsMiningSpeed ...
+func (Wool) ShearsMiningSpeed() float64 { return 5 }
+
 // EncodeItem ...
 func (w Wool) EncodeItem() (name string, meta int16) {
 	return "minecraft:" + w.Colour.String() + "_wool", 0

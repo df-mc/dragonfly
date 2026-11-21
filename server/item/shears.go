@@ -43,9 +43,18 @@ func (s Shears) HarvestLevel() int {
 	return 1
 }
 
-// BaseMiningEfficiency ...
-func (s Shears) BaseMiningEfficiency(world.Block) float64 {
-	return 1.5
+// ShearsMineable is implemented by blocks that shears mine faster than a bare hand.
+type ShearsMineable interface {
+	// ShearsMiningSpeed returns the speed shears mine the block at.
+	ShearsMiningSpeed() float64
+}
+
+// BaseMiningEfficiency returns the speed the block passed names for shears, or 1 if it names none.
+func (s Shears) BaseMiningEfficiency(b world.Block) float64 {
+	if m, ok := b.(ShearsMineable); ok {
+		return m.ShearsMiningSpeed()
+	}
+	return 1
 }
 
 // DurabilityInfo ...
