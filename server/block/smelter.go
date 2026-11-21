@@ -119,8 +119,12 @@ func (s *smelter) Durations() (remaining time.Duration, max time.Duration, cook 
 	return s.remainingDuration, s.maxDuration, s.cookDuration
 }
 
-// Experience returns the collected experience of the smelter.
+// Experience returns the collected experience of the smelter. Zero-value
+// smelter blocks, such as those decoded from a chunk palette, have none.
 func (s *smelter) Experience() int {
+	if s == nil {
+		return 0
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.experience
