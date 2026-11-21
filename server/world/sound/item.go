@@ -6,6 +6,9 @@ import "github.com/df-mc/dragonfly/server/world"
 // durability and breaks.
 type ItemBreak struct{ sound }
 
+// ShieldBlock is a sound played when a shield blocks damage.
+type ShieldBlock struct{ sound }
+
 // ItemThrow is a sound played when a player throws an item, such as a snowball.
 type ItemThrow struct{ sound }
 

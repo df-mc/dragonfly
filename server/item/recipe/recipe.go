@@ -27,6 +27,8 @@ type DynamicRecipe interface {
 	Match(input []Item) (output []item.Stack, ok bool)
 	// Block returns the block that is used to craft the recipe.
 	Block() string
+	// UUID returns the hardcoded multi-recipe ID that selects this dynamic recipe.
+	UUID() uuid.UUID
 }
 
 // Shapeless is a recipe that has no particular shape.
