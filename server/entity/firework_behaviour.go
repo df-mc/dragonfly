@@ -66,6 +66,11 @@ func (f *FireworkBehaviour) Attached() bool {
 	return f.conf.Attached
 }
 
+// ExistenceDuration returns how long the firework lasts before it explodes.
+func (f *FireworkBehaviour) ExistenceDuration() time.Duration {
+	return f.conf.ExistenceDuration
+}
+
 // Owner returns the world.Entity that launched the firework.
 func (f *FireworkBehaviour) Owner() *world.EntityHandle {
 	return f.conf.Owner
