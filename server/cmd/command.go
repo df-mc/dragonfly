@@ -75,11 +75,11 @@ func New(name, description string, aliases []string, r ...Runnable) Command {
 
 	for i, runnable := range r {
 		t := reflect.TypeOf(runnable)
-		if t.Kind() != reflect.Struct && (t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct) {
+		if t.Kind() != reflect.Struct && (t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct) {
 			panic(fmt.Sprintf("Runnable r must be struct or pointer to struct, but got %v", t.Kind()))
 		}
 		original := reflect.ValueOf(runnable)
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			original = original.Elem()
 		}
 
