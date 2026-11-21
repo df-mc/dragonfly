@@ -67,6 +67,14 @@ func (t WoodTrapdoor) Activate(pos cube.Pos, _ cube.Face, tx *world.Tx, _ item.U
 	return true
 }
 
+// WindChargeInteractionPos ...
+func (WoodTrapdoor) WindChargeInteractionPos(pos cube.Pos) cube.Pos { return pos }
+
+// WindChargeInteract ...
+func (t WoodTrapdoor) WindChargeInteract(pos cube.Pos, tx *world.Tx) {
+	t.Activate(pos, cube.FaceUp, tx, nil, nil)
+}
+
 // BreakInfo ...
 func (t WoodTrapdoor) BreakInfo() BreakInfo {
 	return newBreakInfo(3, alwaysHarvestable, axeEffective, oneOf(t))

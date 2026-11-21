@@ -41,6 +41,38 @@ func (e *Ent) Behaviour() Behaviour {
 	return e.data.Data.(Behaviour)
 }
 
+// Attackable represents an entity that handles an attack made against it, such
+// as a wind charge that reflects the projectile that hit it.
+type Attackable interface {
+	// Attack handles an attack against the entity by the attacker, returning
+	// whether the attack was handled.
+	Attack(attacker world.Entity) bool
+}
+
+// reflectable represents an entity that may reflect an attack made against it,
+// allowing projectiles to collide with it.
+type reflectable interface {
+	Reflectable() bool
+}
+
+// Attack lets the underlying behaviour handle an attack against the entity.
+func (e *Ent) Attack(attacker world.Entity) bool {
+	if attackable, ok := e.Behaviour().(interface {
+		Attack(e *Ent, attacker world.Entity) bool
+	}); ok {
+		return attackable.Attack(e, attacker)
+	}
+	return false
+}
+
+// Reflectable reports whether the underlying behaviour may reflect an attack.
+func (e *Ent) Reflectable() bool {
+	if r, ok := e.Behaviour().(reflectable); ok {
+		return r.Reflectable()
+	}
+	return false
+}
+
 // Explode propagates the explosion behaviour of the underlying Behaviour.
 func (e *Ent) Explode(src world.ExplosionSource, impact float64) {
 	if expl, ok := e.Behaviour().(interface {
