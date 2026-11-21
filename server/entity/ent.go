@@ -157,6 +157,9 @@ func (e *Ent) Tick(tx *world.Tx, current int64) {
 	e.SetOnFire(e.OnFireDuration() - time.Second/20)
 
 	m := e.Behaviour().Tick(e, tx)
+	if e.handle.Closed() {
+		return
+	}
 	if e.finishPendingPortalTravel(tx) {
 		return
 	}
